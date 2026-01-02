@@ -17,3 +17,20 @@ Litterbugs is a community-driven mobile app that allows users to report, view, a
 
 ## Status
 🚧 Version 1 — in testing
+
+## Litterbugs Privacy Policy
+
+Litterbugs respects your privacy.
+
+The app may collect limited information only to provide core functionality, including:
+
+Account information if you choose to sign in
+
+Photos and location data related to litter reports you submit
+
+This information is used solely to operate the app and improve community cleanup efforts. Litterbugs does not sell personal data or use it for advertising.
+
+You may use the app as a guest with limited features. You can delete your account or request data removal at any time.
+
+If you have questions about privacy, please contact:
+jameslukeb.evj@gmail.com
