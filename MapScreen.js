@@ -241,12 +241,31 @@ export default function MapScreen() {
   };
 
 // User Can Sign Out
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      Alert.alert('Sign out failed', error.message);
-    }
-  };
+// Confirm before signing the user out
+
+const handleSignOut = () => {
+  Alert.alert(
+    'Sign Out',
+    'Are you sure you want to sign out?',
+    [
+      {
+        text: 'No',
+        style: 'cancel',
+      },
+      {
+        text: 'Yes',
+        style: 'destructive',
+        onPress: async () => {
+          const { error } = await supabase.auth.signOut();
+
+          if (error) {
+            Alert.alert('Sign out failed', error.message);
+          }
+        },
+      },
+    ]
+  );
+};
 
 // User Can Center Back to their Location on Map
   const centerOnUser = async () => {
@@ -456,9 +475,6 @@ export default function MapScreen() {
       return { bg: '#FF8A00', icon: 'trash-outline' }; // your current orange
     };
     
-
-
-
     
 // Get User ID to Allow Edit/Delete of Their Reports
     useEffect(() => {
@@ -534,19 +550,19 @@ useEffect(() => {
     selectedReport.user_id === currentUserId;
   
 // Links out to Patreon Account
-const openPatreon = async () => {
-  try {
-    const supported = await Linking.canOpenURL(PATREON_URL);
-    if (!supported) {
-      Alert.alert("Can't open link", "Unable to open Patreon on this device.");
-      return;
-    }
-    await Linking.openURL(PATREON_URL);
-  } catch (e) {
-    console.log("Patreon link error:", e);
-    Alert.alert("Link error", "Something went wrong opening Patreon.");
-  }
-};
+// const openPatreon = async () => {
+//   try {
+//     const supported = await Linking.canOpenURL(PATREON_URL);
+//     if (!supported) {
+//       Alert.alert("Can't open link", "Unable to open Patreon on this device.");
+//       return;
+//     }
+//     await Linking.openURL(PATREON_URL);
+//   } catch (e) {
+//     console.log("Patreon link error:", e);
+//     Alert.alert("Link error", "Something went wrong opening Patreon.");
+//   }
+// };
 
 
 
@@ -616,14 +632,14 @@ const openPatreon = async () => {
         </TouchableOpacity>
 
         {/* Support Button (Patreon) */}
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.supportButton}
           onPress={openPatreon}
           accessibilityRole="button"
           accessibilityLabel="Support Litterbugs on Patreon"
         >
           <Ionicons name="heart" size={22} color="#E53935" />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
 
       {/* Center Me Button */}
