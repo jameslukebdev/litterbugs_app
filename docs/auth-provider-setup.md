@@ -19,9 +19,9 @@ Live read-back on 2026-08-15 confirms that email confirmation is enabled. The se
 
 Keep `support@litterbugs.app` as the Auth sender for this release. No `hello@litterbugs.app` inbox, forwarding route, or additional inbound-mail DNS record is needed for the authentication upgrade.
 
-The confirmation and recovery templates use concise Litterbugs wording. Their live subjects are `Verify your Litterbugs email` and `Reset your Litterbugs password`; both retain Supabase's standard `{{ .ConfirmationURL }}` variable so the requested mobile redirect is carried through the one-time link.
+The confirmation and recovery templates use concise Litterbugs wording. Their live subjects are `Verify your Litterbugs email` and `Reset your Litterbugs password`; each body has exactly one clear action and retains Supabase's standard `{{ .ConfirmationURL }}` variable so the requested mobile redirect is carried through the one-time link.
 
-One verification message and one recovery message still need to be sent to an intentional test address before release.
+A live verification message reached an intentional test inbox and its one-time link verified the account. A recovery message and the installed-physical-iPhone callback handoff still need to be tested before release.
 
 Do not paste the SMTP password into chat, a terminal command, `.env`, or Git.
 

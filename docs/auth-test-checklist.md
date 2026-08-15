@@ -18,8 +18,10 @@ Use this checklist on the iOS development client before moving PR #2 out of draf
 
 ## Email authentication
 
-- [ ] A new email account receives a verification message and cannot sign in before verification.
-- [ ] A valid verification link opens Litterbugs and establishes the correct session.
+- [x] A new email account receives a verification message from the approved Litterbugs sender.
+- [ ] A new email account cannot sign in before verification.
+- [x] A valid verification link verifies the account server-side.
+- [ ] A valid verification link opened on an installed physical iPhone opens Litterbugs and establishes the correct session.
 - [ ] Resend verification sends a fresh usable link.
 - [x] An expired or already-used verification callback shows a useful error and tells the user to request a new link.
 - [x] Existing email and correct password signs in.
@@ -96,6 +98,7 @@ Repeat email verification, recovery, and one browser OAuth callback in each stat
 - [x] Software keyboard does not hide the active email or password control on the iPhone 17 Pro simulator.
 - [x] Authentication actions have visible loading/disabled states, including session restore, provider/email/guest actions, password update, and confirmed sign-out.
 - [x] Buttons and links have useful accessibility labels and at least a 44-point touch target.
+- [x] Authentication fields, password text, and prior errors are cleared across sign-in and sign-out navigation changes.
 - [ ] Existing map, report creation, report editing, photo, and location behavior still works.
 - [x] No database, RLS, report, or Storage behavior changed in this branch.
 - [x] No provider, SMTP, Apple, or Supabase secret appears in tracked Git content or application logs reviewed during this test.
@@ -113,6 +116,7 @@ Repeat email verification, recovery, and one browser OAuth callback in each stat
 - Provider errors are translated to short retry guidance; native browser and network implementation details are not displayed to users.
 - Confirmed sign-out keeps the existing Yes/No alert and displays a disabled `Signing out…` state until Supabase responds.
 - Synthetic denied and expired deep-link callbacks were routed through the installed app without creating a user. Denial produced calm retry guidance; expiration produced an actionable request-a-new-link message.
+- A live signup message arrived from the approved sender and its one-time link verified the intentional test account. Opening that mobile callback from desktop Chrome could not launch the iOS-only `litterbugs://` route, so the physical-iPhone handoff remains a separate required check.
 
 ## Live Supabase audit
 
@@ -120,7 +124,7 @@ Repeat email verification, recovery, and one browser OAuth callback in each stat
 - Project read-back: `mvaygkflcjswtwchflrk` is `Litterbugs` and reports `ACTIVE_HEALTHY`.
 - Auth logs confirm Google signup/login/logout, successful email-password login, rejected invalid credentials, and rejected repeated signup.
 - Live Auth configuration confirms the verified Resend sender `support@litterbugs.app`, SMTP host/port/username, and the presence of the encrypted Partner-specific SMTP password. No secret value is recorded here.
-- Live Auth configuration confirms the branded confirmation and recovery subjects and the required `{{ .ConfirmationURL }}` variable in both templates.
+- Live Auth configuration read-back confirms the branded confirmation and recovery subjects, exactly one user action in each body, and the required `{{ .ConfirmationURL }}` variable in both templates.
 - Project read-back reports zero database migrations, zero Supabase branches, and zero Edge Functions.
 - No personal email address, token, provider secret, or callback payload is recorded in this checklist.
 
