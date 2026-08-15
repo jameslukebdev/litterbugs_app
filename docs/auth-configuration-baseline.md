@@ -29,6 +29,8 @@ The disabled Apple, Google, and Facebook provider forms contained dormant values
 
 The Supabase dashboard showed a Free project with no backups, migrations, or database branches. This feature does not change database schema, RLS, Storage, reports, or existing user data.
 
+Before changing Auth email copy, the confirmation subject was `Confirm Your Signup` and its generic body said `Follow this link to confirm your user` with the standard `{{ .ConfirmationURL }}` link. The recovery subject was `Reset Your Password` and its generic body said `Follow this link to reset the password for your user` with the same standard link variable. Neither template mentioned Supabase or Litterbugs.
+
 ## Intended Auth-only changes
 
 - Disable email auto-confirm so new email/password users must verify their address.
@@ -45,6 +47,7 @@ Provider and SMTP secrets must stay in their provider consoles and the Supabase 
 - Added `litterbugs://auth/reset-password` to the redirect allow list.
 - Preserved all four existing redirect URLs for compatibility.
 - Verified the saved settings after reloading the Supabase dashboard.
+- Replaced only the generic confirmation and recovery email wording with concise Litterbugs copy while preserving Supabase's standard `{{ .ConfirmationURL }}` link variable.
 
 Google and Facebook are now enabled with new Litterbugs-specific provider records. Apple remains disabled while production Apple-team setup is deferred.
 

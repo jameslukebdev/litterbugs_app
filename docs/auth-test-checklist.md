@@ -13,6 +13,7 @@ Use this checklist on the iOS development client before moving PR #2 out of draf
 - [x] The Apple button remains hidden while Apple configuration is deferred.
 - [ ] Before App Store release, Apple is enabled with the production team's existing `com.litterbugs.app` App ID.
 - [x] Custom SMTP is configured with the approved `support@litterbugs.app` sender and a Partner-specific Resend credential.
+- [x] Confirmation and recovery templates use friendly Litterbugs subjects and preserve the standard one-time link variable.
 - [x] Google is in Production; the current Meta development tester is authorized for role-based testing.
 
 ## Email authentication
@@ -118,6 +119,7 @@ Repeat email verification, recovery, and one browser OAuth callback in each stat
 - Project read-back: `mvaygkflcjswtwchflrk` is `Litterbugs` and reports `ACTIVE_HEALTHY`.
 - Auth logs confirm Google signup/login/logout, successful email-password login, rejected invalid credentials, and rejected repeated signup.
 - Live Auth configuration confirms the verified Resend sender `support@litterbugs.app`, SMTP host/port/username, and the presence of the encrypted Partner-specific SMTP password. No secret value is recorded here.
+- Live Auth configuration confirms the branded confirmation and recovery subjects and the required `{{ .ConfirmationURL }}` variable in both templates.
 - Project read-back reports zero database migrations, zero Supabase branches, and zero Edge Functions.
 - No personal email address, token, provider secret, or callback payload is recorded in this checklist.
 
