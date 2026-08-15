@@ -25,7 +25,15 @@ Copy the new provider IDs and secrets into the matching Supabase Auth provider. 
 
 ## Apple
 
-Create a new Apple App ID for `com.gegibson.litterbugs` with Sign in with Apple enabled. Native iOS login uses that App ID. For browser-based Apple login on Android, create a separate Services ID and signing key for this app, then configure the Apple provider in Supabase. Apple's browser OAuth secret must be rotated before it expires.
+Create the new Apple App ID in the **same Apple Developer team that will own and distribute the live app**. Do not register it in a temporary or prototype team and plan to transfer it later; Sign in with Apple adds avoidable transfer requirements.
+
+- Internal description: `Litterbugs Partner`
+- Bundle ID: `com.gegibson.litterbugs`
+- Capability: Sign in with Apple
+
+Apple requires the Account Holder or an Admin to register an App ID. If the production Apple membership is an organization, its Account Holder can invite the person completing setup as an Admin with access to Certificates, Identifiers & Profiles. If it is an individual membership, the Account Holder must perform the identifier and signing setup directly.
+
+Native iOS login uses that App ID. For browser-based Apple login on Android, create a separate Services ID and signing key in the same production team, then configure the Apple provider in Supabase. Apple's browser OAuth secret must be rotated before it expires.
 
 ## EAS development client
 
