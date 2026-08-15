@@ -1,5 +1,5 @@
 // MapScreen.js
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,9 @@ import {
   TouchableOpacity,
   Platform,
   Alert,
-  TouchableWithoutFeedback,
+  Keyboard,
+  Animated,
+  PanResponder,
   KeyboardAvoidingView,
   ScrollView,
   ActivityIndicator,
@@ -35,10 +37,22 @@ const FALLBACK_REGION = {
 // State Functions
 export default function MapScreen() {
   const [region, setRegion] = useState(FALLBACK_REGION);
+  const REPORT_STEPS = [
+    'Title',
+    'Photos',
+    'Litter Types',
+    'Severity',
+    'Notes',
+    'Review',
+  ];
   const MAX_REPORT_DISTANCE_MILES = 10;
   const [markers, setMarkers] = useState([]); // saved reports
   const [draftCoord, setDraftCoord] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [reportStep, setReportStep] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const stepTranslateX = useRef(new Animated.Value(0)).current;
+  const stepOpacity = useRef(new Animated.Value(1)).current;
   const [form, setForm] = useState({
     title: '',
     selectedTypes: [],
@@ -57,8 +71,139 @@ export default function MapScreen() {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [photosLoading, setPhotosLoading] = useState(false);
+
   // const PATREON_URL = "https://patreon.com/litterbugs?utm_medium=unknown&utm_source=join_link&utm_campaign=creatorshare_creator&utm_content=copyLink"; // <-- paste your real link
 
+  // =============================
+// Multi-step Report Form
+// =============================
+
+const resetReportWizard = () => {
+  setReportStep(0);
+  stepTranslateX.setValue(0);
+  stepOpacity.setValue(1);
+  setIsTransitioning(false);
+};
+
+// Determines whether the user can move forward from a given step
+const canAdvanceFromStep = (step = reportStep) => {
+  // Litter Types are required.
+  // Either a preset selection OR something typed in "Other" counts.
+  if (step === 2) {
+    return (
+      (form.selectedTypes?.length ?? 0) > 0 ||
+      Boolean(form.types?.trim())
+    );
+  }
+
+  // Severity is required
+  if (step === 3) {
+    return Boolean(form.severity);
+  }
+
+  // All other steps are optional
+  return true;
+};
+
+// Animate between report screens
+const transitionToReportStep = (nextStep, direction) => {
+  if (
+    isTransitioning ||
+    nextStep < 0 ||
+    nextStep >= REPORT_STEPS.length ||
+    nextStep === reportStep
+  ) {
+    return;
+  }
+
+  Keyboard.dismiss();
+  setIsTransitioning(true);
+
+  // Slide current screen out
+  Animated.parallel([
+    Animated.timing(stepTranslateX, {
+      toValue: direction > 0 ? -80 : 80,
+      duration: 150,
+      useNativeDriver: true,
+    }),
+    Animated.timing(stepOpacity, {
+      toValue: 0,
+      duration: 120,
+      useNativeDriver: true,
+    }),
+  ]).start(() => {
+    setReportStep(nextStep);
+
+    // Position incoming screen on opposite side
+    stepTranslateX.setValue(direction > 0 ? 80 : -80);
+
+    // Slide new screen in
+    Animated.parallel([
+      Animated.timing(stepTranslateX, {
+        toValue: 0,
+        duration: 190,
+        useNativeDriver: true,
+      }),
+      Animated.timing(stepOpacity, {
+        toValue: 1,
+        duration: 170,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsTransitioning(false);
+    });
+  });
+};
+
+const goToNextReportStep = () => {
+  if (reportStep >= REPORT_STEPS.length - 1) return;
+
+  if (!canAdvanceFromStep(reportStep)) return;
+
+  transitionToReportStep(reportStep + 1, 1);
+};
+
+const goToPreviousReportStep = () => {
+  if (reportStep <= 0) return;
+
+  transitionToReportStep(reportStep - 1, -1);
+};
+
+// Used by the Edit buttons on the review screen
+const jumpToReportStep = (step) => {
+  if (step === reportStep) return;
+
+  transitionToReportStep(
+    step,
+    step > reportStep ? 1 : -1
+  );
+};
+
+// Allow horizontal swiping in addition to arrow navigation
+const reportStepPanResponder = PanResponder.create({
+  onMoveShouldSetPanResponder: (_, gestureState) => {
+    const { dx, dy } = gestureState;
+
+    return (
+      Math.abs(dx) > 24 &&
+      Math.abs(dx) > Math.abs(dy) * 1.2
+    );
+  },
+
+  onPanResponderRelease: (_, gestureState) => {
+    // Swipe left = next
+    if (gestureState.dx <= -55) {
+      goToNextReportStep();
+    }
+
+    // Swipe right = back
+    else if (gestureState.dx >= 55) {
+      goToPreviousReportStep();
+    }
+  },
+});
+ 
+  
 
 
 // Getting the Map Working 
@@ -164,8 +309,10 @@ const onMapPress = async (e) => {
       selectedNotes: [],
       notes: '',
     });
-
+    
+    resetReportWizard();
     setFormOpen(true);
+
   } catch (error) {
     console.log('Report location verification error:', error);
 
@@ -179,7 +326,6 @@ const onMapPress = async (e) => {
 
 // Save Report Function
   const saveReport = async () => {
-    if (isSaving) return; // extra protection
     if (!draftCoord && !isEditing) return;
   
     try {
@@ -188,7 +334,7 @@ const onMapPress = async (e) => {
       const user = authData?.user ?? null;
   
       const createPayload = {
-        title: form.title?.trim() || 'Litter report',
+        title: form.title?.trim() || 'Litter Report',
         litter_types: form.selectedTypes?.length ? form.selectedTypes : null,
         types: form.types?.trim() || null,
         notes_presets: form.selectedNotes?.length ? form.selectedNotes : null,
@@ -200,7 +346,7 @@ const onMapPress = async (e) => {
       };
   
       const updatePayload = {
-        title: form.title?.trim() || 'Litter report',
+        title: form.title?.trim() || 'Litter Report',
         litter_types: form.selectedTypes?.length ? form.selectedTypes : null,
         types: form.types?.trim() || null, 
         notes_presets: form.selectedNotes?.length ? form.selectedNotes : null,
@@ -272,49 +418,38 @@ const onMapPress = async (e) => {
       setFormOpen(false);
       setIsEditing(false);
       setEditingReportId(null);
-  
-      Alert.alert('Report saved', 'Thanks for helping keep the community clean!');
+      resetReportWizard();
+      
+      Alert.alert(
+        'Report saved',
+        'Thanks for helping keep the community clean!'
+      );
     } catch (e) {
       console.error('Unexpected save error:', e);
       Alert.alert('Error', 'Something went wrong saving your report.');
     }
   };
   
-// Confrim Save Report - Prevents Duplicates 
-  const confirmSaveReport = () => {
-    // Prevent double taps immediately
-    if (isSaving) return;
-  
-    Alert.alert(
-      'Save report?',
-      'Are you ready to save this litter report?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Save',
-          style: 'default',
-          onPress: async () => {
-            setIsSaving(true);
-            try {
-              await saveReport();
-            } finally {
-              // Always release loading, even if saveReport errors
-              setIsSaving(false);
-            }
-          },
-        },
-      ]
-    );
-  };
-  
+// Final submit from Review screen
+const submitReport = async () => {
+  if (isSaving) return;
+
+  setIsSaving(true);
+
+  try {
+    await saveReport();
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   // Cancel Report
   const cancelDraft = () => {
     setDraftCoord(null);
     setFormOpen(false);
+    setIsEditing(false);
+    setEditingReportId(null);
+    resetReportWizard();
   };
 
 // User Can Sign Out
@@ -641,6 +776,758 @@ useEffect(() => {
 //   }
 // };
 
+// =============================
+// Report Form Step Content
+// =============================
+
+const renderReportStep = () => {
+  const reviewPhotos =
+    form.photos.length > 0
+      ? form.photos
+      : isEditing
+        ? reportPhotoUrls
+        : [];
+
+  switch (reportStep) {
+
+    // =============================
+    // STEP 1 — TITLE
+    // =============================
+    case 0:
+      return (
+        <View style={styles.wizardStep}>
+          <Text style={styles.wizardEyebrow}>
+            OPTIONAL
+          </Text>
+
+          <Text style={styles.wizardTitle}>
+            Give this report a title
+          </Text>
+
+          <Text style={styles.wizardDescription}>
+            Keep it short and recognizable. If you leave this blank,
+            we'll use “Litter Report.”
+          </Text>
+
+          <TextInput
+            style={[
+              styles.input,
+              styles.wizardLargeInput,
+            ]}
+            placeholder="Litter Report"
+            value={form.title}
+            onChangeText={(text) =>
+              setForm((prev) => ({
+                ...prev,
+                title: text,
+              }))
+            }
+            editable={!isSaving}
+            maxLength={80}
+            returnKeyType="next"
+            onSubmitEditing={goToNextReportStep}
+          />
+        </View>
+      );
+
+
+    // =============================
+    // STEP 2 — PHOTOS
+    // =============================
+    case 1:
+      return (
+        <View style={styles.wizardStep}>
+          <Text style={styles.wizardEyebrow}>
+            OPTIONAL · RECOMMENDED
+          </Text>
+
+          <Text style={styles.wizardTitle}>
+            Add photos
+          </Text>
+
+          <Text style={styles.wizardDescription}>
+            Photos make the site easier to identify and help show
+            what the area looked like before cleanup.
+          </Text>
+
+          {isEditing ? (
+            <View style={styles.existingPhotoNotice}>
+              <Ionicons
+                name="images-outline"
+                size={34}
+                color="#2F7D32"
+              />
+
+              <Text style={styles.existingPhotoTitle}>
+                Existing photos will stay attached
+              </Text>
+
+              <Text style={styles.existingPhotoText}>
+                Photo replacement isn't enabled while editing a report yet.
+              </Text>
+
+              {reportPhotoUrls.length > 0 && (
+                <View style={styles.wizardPhotoGrid}>
+                  {reportPhotoUrls.map((uri, index) => (
+                    <Image
+                      key={`${uri}-${index}`}
+                      source={{ uri }}
+                      style={styles.wizardPhotoThumb}
+                    />
+                  ))}
+                </View>
+              )}
+            </View>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={[
+                  styles.wizardPhotoButton,
+                  form.photos.length >= 3 &&
+                    styles.wizardDisabled,
+                ]}
+                onPress={pickImage}
+                disabled={
+                  isSaving ||
+                  form.photos.length >= 3
+                }
+              >
+                <View style={styles.wizardPhotoIcon}>
+                  <Ionicons
+                    name="camera-outline"
+                    size={34}
+                    color="#2F7D32"
+                  />
+                </View>
+
+                <Text style={styles.wizardPhotoButtonTitle}>
+                  {form.photos.length >= 3
+                    ? '3 photos added'
+                    : 'Add a photo'}
+                </Text>
+
+                <Text style={styles.wizardPhotoHelper}>
+                  Up to 3 photos
+                </Text>
+              </TouchableOpacity>
+
+              {form.photos.length > 0 && (
+                <View style={styles.wizardPhotoGrid}>
+                  {form.photos.map((uri, index) => (
+                    <View
+                      key={`${uri}-${index}`}
+                      style={styles.wizardPhotoContainer}
+                    >
+                      <Image
+                        source={{ uri }}
+                        style={styles.wizardPhotoThumb}
+                      />
+
+                      <TouchableOpacity
+                        style={styles.deletePhotoButton}
+                        onPress={() =>
+                          removePhoto(index)
+                        }
+                      >
+                        <Text style={styles.deletePhotoText}>
+                          ✕
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </>
+          )}
+        </View>
+      );
+
+
+    // =============================
+    // STEP 3 — LITTER TYPES
+    // =============================
+    case 2:
+      return (
+        <View style={styles.wizardStep}>
+          <Text style={styles.wizardEyebrow}>
+            REQUIRED
+          </Text>
+
+          <Text style={styles.wizardTitle}>
+            What kind of litter did you find?
+          </Text>
+
+          <Text style={styles.wizardDescription}>
+            Select all that apply. You can also type something
+            that isn't listed.
+          </Text>
+
+          <View style={styles.typeBox}>
+            <View style={styles.typeChipRow}>
+              {LITTER_OPTIONS.map(({ label, icon }) => {
+                const selected =
+                  form.selectedTypes?.includes(label);
+
+                return (
+                  <TouchableOpacity
+                    key={label}
+                    style={[
+                      styles.typeChip,
+                      selected &&
+                        styles.typeChipSelected,
+                    ]}
+                    onPress={() => {
+                      setForm((prev) => {
+                        const alreadySelected =
+                          prev.selectedTypes?.includes(
+                            label
+                          );
+
+                        return {
+                          ...prev,
+
+                          selectedTypes:
+                            alreadySelected
+                              ? prev.selectedTypes.filter(
+                                  (type) =>
+                                    type !== label
+                                )
+                              : [
+                                  ...(prev.selectedTypes ||
+                                    []),
+                                  label,
+                                ],
+                        };
+                      });
+                    }}
+                  >
+                    <Ionicons
+                      name={icon}
+                      size={17}
+                      color={
+                        selected ? '#fff' : '#555'
+                      }
+                      style={styles.typeChipIcon}
+                    />
+
+                    <Text
+                      style={[
+                        styles.typeChipText,
+                        selected &&
+                          styles.typeChipTextSelected,
+                      ]}
+                    >
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          <Text style={styles.wizardFieldLabel}>
+            Other
+          </Text>
+
+          <TextInput
+            style={styles.input}
+            placeholder="Mattress, appliances, or another type"
+            value={form.types}
+            onChangeText={(text) =>
+              setForm((prev) => ({
+                ...prev,
+                types: text,
+              }))
+            }
+          />
+
+          {!canAdvanceFromStep(2) && (
+            <Text style={styles.requiredHint}>
+              Select at least one litter type to continue.
+            </Text>
+          )}
+        </View>
+      );
+
+
+    // =============================
+    // STEP 4 — SEVERITY
+    // =============================
+    case 3:
+      return (
+        <View style={styles.wizardStep}>
+          <Text style={styles.wizardEyebrow}>
+            REQUIRED
+          </Text>
+
+          <Text style={styles.wizardTitle}>
+            How severe is it?
+          </Text>
+
+          <Text style={styles.wizardDescription}>
+            Choose the level that best matches what you saw.
+          </Text>
+
+          <View style={styles.wizardSeverityList}>
+            {[
+              {
+                level: 'Low',
+                icon: 'leaf-outline',
+              },
+              {
+                level: 'Medium',
+                icon: 'trash-outline',
+              },
+              {
+                level: 'High',
+                icon: 'warning-outline',
+              },
+            ].map(({ level, icon }) => {
+              const selected =
+                form.severity === level;
+
+              return (
+                <TouchableOpacity
+                  key={level}
+                  style={[
+                    styles.wizardSeverityOption,
+                    selected &&
+                      styles.wizardSeveritySelected,
+                  ]}
+                  onPress={() =>
+                    setForm((prev) => ({
+                      ...prev,
+                      severity: level,
+                    }))
+                  }
+                >
+                  <Ionicons
+                    name={icon}
+                    size={27}
+                    color={
+                      selected
+                        ? '#2F7D32'
+                        : '#667085'
+                    }
+                  />
+
+                  <Text
+                    style={[
+                      styles.wizardSeverityText,
+                      selected &&
+                        styles.wizardSeverityTextSelected,
+                    ]}
+                  >
+                    {level}
+                  </Text>
+
+                  <View
+                    style={[
+                      styles.wizardRadio,
+                      selected &&
+                        styles.wizardRadioSelected,
+                    ]}
+                  >
+                    {selected && (
+                      <View
+                        style={
+                          styles.wizardRadioInner
+                        }
+                      />
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {!form.severity && (
+            <Text style={styles.requiredHint}>
+              Choose a severity level to continue.
+            </Text>
+          )}
+        </View>
+      );
+
+
+    // =============================
+    // STEP 5 — NOTES
+    // =============================
+    case 4:
+      return (
+        <View style={styles.wizardStep}>
+          <Text style={styles.wizardEyebrow}>
+            OPTIONAL · RECOMMENDED
+          </Text>
+
+          <Text style={styles.wizardTitle}>
+            Anything else people should know?
+          </Text>
+
+          <Text style={styles.wizardDescription}>
+            Add details that could help someone safely find and
+            understand the site.
+          </Text>
+
+          <View style={styles.notesBox}>
+            <View style={styles.notesChipRow}>
+              {NOTES_OPTIONS.map(
+                ({ label, icon }) => {
+                  const selected =
+                    form.selectedNotes?.includes(
+                      label
+                    );
+
+                  return (
+                    <TouchableOpacity
+                      key={label}
+                      style={[
+                        styles.notesChip,
+                        selected &&
+                          styles.notesChipSelected,
+                      ]}
+                      onPress={() => {
+                        setForm((prev) => {
+                          const alreadySelected =
+                            prev.selectedNotes?.includes(
+                              label
+                            );
+
+                          return {
+                            ...prev,
+
+                            selectedNotes:
+                              alreadySelected
+                                ? prev.selectedNotes.filter(
+                                    (note) =>
+                                      note !== label
+                                  )
+                                : [
+                                    ...(prev.selectedNotes ||
+                                      []),
+                                    label,
+                                  ],
+                          };
+                        });
+                      }}
+                    >
+                      <Ionicons
+                        name={icon}
+                        size={17}
+                        color={
+                          selected
+                            ? '#fff'
+                            : '#555'
+                        }
+                        style={
+                          styles.notesChipIcon
+                        }
+                      />
+
+                      <Text
+                        style={[
+                          styles.notesChipText,
+                          selected &&
+                            styles.notesChipTextSelected,
+                        ]}
+                      >
+                        {label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                }
+              )}
+            </View>
+          </View>
+
+          <Text style={styles.wizardFieldLabel}>
+            Other
+          </Text>
+
+          <TextInput
+            style={[
+              styles.input,
+              styles.wizardNotesInput,
+            ]}
+            placeholder="Add any extra details"
+            value={form.notes}
+            onChangeText={(text) =>
+              setForm((prev) => ({
+                ...prev,
+                notes: text,
+              }))
+            }
+            multiline
+            textAlignVertical="top"
+            maxLength={500}
+          />
+        </View>
+      );
+
+
+    // =============================
+    // STEP 6 — REVIEW & SUBMIT
+    // =============================
+    case 5:
+      return (
+        <View style={styles.wizardStep}>
+          <Text style={styles.wizardEyebrow}>
+            FINAL STEP
+          </Text>
+
+          <Text style={styles.wizardTitle}>
+            Review your report
+          </Text>
+
+          <Text style={styles.wizardDescription}>
+            Make sure everything looks right before you submit it.
+          </Text>
+
+
+          <View style={styles.reviewCard}>
+
+            {/* TITLE */}
+            <View style={styles.reviewSection}>
+              <View style={styles.reviewHeader}>
+                <Text style={styles.reviewLabel}>
+                  Title
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() =>
+                    jumpToReportStep(0)
+                  }
+                >
+                  <Text style={styles.reviewEdit}>
+                    Edit
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.reviewValue}>
+                {form.title?.trim() ||
+                  'Litter Report'}
+              </Text>
+            </View>
+
+
+            <View style={styles.reviewDivider} />
+
+
+            {/* PHOTOS */}
+            <View style={styles.reviewSection}>
+              <View style={styles.reviewHeader}>
+                <Text style={styles.reviewLabel}>
+                  Photos
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() =>
+                    jumpToReportStep(1)
+                  }
+                >
+                  <Text style={styles.reviewEdit}>
+                    Edit
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {reviewPhotos.length > 0 ? (
+                <View style={styles.reviewPhotoRow}>
+                  {reviewPhotos.map(
+                    (uri, index) => (
+                      <Image
+                        key={`${uri}-${index}`}
+                        source={{ uri }}
+                        style={styles.reviewPhoto}
+                      />
+                    )
+                  )}
+                </View>
+              ) : (
+                <Text style={styles.reviewMuted}>
+                  No photos added
+                </Text>
+              )}
+            </View>
+
+
+            <View style={styles.reviewDivider} />
+
+
+            {/* LITTER TYPES */}
+            <View style={styles.reviewSection}>
+              <View style={styles.reviewHeader}>
+                <Text style={styles.reviewLabel}>
+                  Litter Types
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() =>
+                    jumpToReportStep(2)
+                  }
+                >
+                  <Text style={styles.reviewEdit}>
+                    Edit
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.reviewChipRow}>
+                {form.selectedTypes.map(
+                  (type) => (
+                    <View
+                      key={type}
+                      style={styles.reviewTypeChip}
+                    >
+                      <Text
+                        style={
+                          styles.reviewChipText
+                        }
+                      >
+                        {type}
+                      </Text>
+                    </View>
+                  )
+                )}
+
+                {form.types?.trim() ? (
+                  <View
+                    style={styles.reviewTypeChip}
+                  >
+                    <Text
+                      style={styles.reviewChipText}
+                    >
+                      {form.types.trim()}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+
+
+            <View style={styles.reviewDivider} />
+
+
+            {/* SEVERITY */}
+            <View style={styles.reviewSection}>
+              <View style={styles.reviewHeader}>
+                <Text style={styles.reviewLabel}>
+                  Severity
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() =>
+                    jumpToReportStep(3)
+                  }
+                >
+                  <Text style={styles.reviewEdit}>
+                    Edit
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.reviewValue}>
+                {form.severity}
+              </Text>
+            </View>
+
+
+            <View style={styles.reviewDivider} />
+
+
+            {/* NOTES */}
+            <View style={styles.reviewSection}>
+              <View style={styles.reviewHeader}>
+                <Text style={styles.reviewLabel}>
+                  Notes
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() =>
+                    jumpToReportStep(4)
+                  }
+                >
+                  <Text style={styles.reviewEdit}>
+                    Edit
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {form.selectedNotes.length > 0 && (
+                <View style={styles.reviewChipRow}>
+                  {form.selectedNotes.map(
+                    (note) => (
+                      <View
+                        key={note}
+                        style={
+                          styles.reviewNoteChip
+                        }
+                      >
+                        <Text
+                          style={
+                            styles.reviewChipText
+                          }
+                        >
+                          {note}
+                        </Text>
+                      </View>
+                    )
+                  )}
+                </View>
+              )}
+
+              {form.notes?.trim() ? (
+                <Text style={styles.reviewNotes}>
+                  {form.notes.trim()}
+                </Text>
+              ) : form.selectedNotes.length ===
+                0 ? (
+                <Text style={styles.reviewMuted}>
+                  No additional notes
+                </Text>
+              ) : null}
+            </View>
+
+          </View>
+
+
+          <TouchableOpacity
+            style={[
+              styles.wizardSubmitButton,
+              isSaving && styles.wizardDisabled,
+            ]}
+            onPress={submitReport}
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <>
+                <Ionicons
+                  name="checkmark-circle-outline"
+                  size={23}
+                  color="#fff"
+                />
+
+                <Text
+                  style={
+                    styles.wizardSubmitText
+                  }
+                >
+                  Submit Report
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      );
+
+    default:
+      return null;
+  }
+};
+
 
 
 
@@ -734,279 +1621,177 @@ useEffect(() => {
         <Ionicons name="layers-outline" size={32} color={getMapTypeColor()} />
       </TouchableOpacity>
 
+{/* Multi-step Report Form */}
+<Modal
+  visible={formOpen}
+  animationType="slide"
+  transparent
+  onRequestClose={cancelDraft}
+>
+  <View style={styles.modalBackdrop}>
+    <KeyboardAvoidingView
+      behavior={
+        Platform.OS === 'ios'
+          ? 'padding'
+          : 'height'
+      }
+      style={styles.wizardKeyboardView}
+    >
+      <View style={styles.wizardSheet}>
+
+        {isSaving && (
+          <View
+            style={styles.savingOverlay}
+            pointerEvents="auto"
+          />
+        )}
 
 
+        {/* Persistent Header */}
+        <View style={styles.wizardHeader}>
 
+          <View style={{ flex: 1 }}>
+            <Text style={styles.wizardHeaderTitle}>
+              {isEditing
+                ? 'Edit Litter Report'
+                : 'New Litter Report'}
+            </Text>
 
-      {/* Modal for Form */}
-      <Modal
-        visible={formOpen}
-        animationType="slide"
-        transparent
-        onRequestClose={cancelDraft}
-      >
-          <View style={styles.modalBackdrop}>
-            <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-              style={{ flex: 1, justifyContent: 'flex-end' }}
-            >
-              {/* Prevent taps inside the sheet from closing it */}
-              <TouchableWithoutFeedback>
-                <View style={styles.sheet}>
-                {isSaving && <View style={styles.savingOverlay} pointerEvents="auto" />}
-
-                    <Text style={styles.sheetTitle}>New Litter Report</Text>
-  
-                    <View style={styles.divider} />  
-
-                  <ScrollView
-                    keyboardShouldPersistTaps="handled"
-                    showsVerticalScrollIndicator={true}
-                  >
-
-                  {/* Title */}
-                  <Text style={[styles.label, styles.section]}>Title</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Short title (e.g., Bags & cans by trail)"
-                    value={form.title}  
-                      onChangeText={(t) =>
-                        setForm((prev) => ({ ...prev, title: t }))
-                      }
-                      returnKeyType="next"
-                      editable={!isSaving}
-                    /> 
-
-                    {/* Litter Types */}
-                    <Text style={[styles.label, styles.section]}>Litter Types</Text>
-
-                    <View style={styles.typeBox}>
-                      <ScrollView
-                        nestedScrollEnabled={true}
-                        showsVerticalScrollIndicator={true}
-                        style={{ maxHeight: 140 }}  // controls chip area height
-                      >
-                        <View style={styles.typeChipRow}>
-                          {LITTER_OPTIONS.map(({ label, icon }) => {
-                            const selected = form.selectedTypes?.includes(label);
-
-                            return (
-                              <TouchableOpacity
-                                key={label}
-                                style={[styles.typeChip, selected && styles.typeChipSelected, isSaving && { opacity: 0.6 },
-                                ]}
-                                onPress={() => {
-                                  setForm((prev) => {
-                                    const alreadySelected = prev.selectedTypes?.includes(label);
-                                    return {
-                                      ...prev,
-                                      selectedTypes: alreadySelected
-                                        ? prev.selectedTypes.filter((t) => t !== label)
-                                        : [...(prev.selectedTypes || []), label],
-                                    };
-                                  });
-                                }}
-                                disabled={isSaving}
-                              >
-                                <Ionicons
-                                  name={icon}
-                                  size={16}
-                                  color={selected ? '#fff' : '#555'}
-                                  style={styles.typeChipIcon}
-                                />
-                                <Text
-                                  style={[
-                                    styles.typeChipText,
-                                    selected && styles.typeChipTextSelected,
-                                  ]}
-                                >
-                                  {label}
-                                </Text>
-                              </TouchableOpacity>
-                            );
-                          })}
-                        </View>
-                      </ScrollView>
-                    </View>
-
-                    {/* Other (optional) */}
-                    <Text style={styles.photoHelper}>Other</Text>
-                    <TextInput
-                      style={[styles.input, { minHeight: 40 }]}
-                      placeholder="Other types (e.g., mattress, appliances)"
-                      value={form.otherType}
-                      onChangeText={(t) =>
-                        setForm((prev) => ({ ...prev, types: t }))
-                      }
-                      editable={!isSaving}
-                    />
-
-                    {/* Photo Uploads */}
-                    <Text style={[styles.label, styles.section]}>Upload Photos</Text>
-                    <Text style={styles.photoHelper}>Up to 3</Text>
-
-                    <TouchableOpacity
-                      style={[styles.photoButton, isSaving && { opacity: 0.5 }]}                      
-                      onPress={pickImage}
-                      disabled={isSaving}
-                      accessibilityRole="button"
-                      accessibilityLabel="Add a photo of the litter"
-                    >
-                      <Ionicons name="camera-outline" size={24} color="#2F7D32" />
-                    </TouchableOpacity>
-
-                    {/* Thumbnails */}
-                    <View style={styles.photoRow}>
-                      {form.photos.map((uri, i) => (
-                        <View key={i} style={styles.photoContainer}>
-                          <Image
-                            source={{ uri }}
-                            style={styles.photoThumb}
-                          />
-
-                          <TouchableOpacity
-                            style={styles.deletePhotoButton}
-                            onPress={() => removePhoto(i)}
-                          >
-                            <Text style={styles.deletePhotoText}>✕</Text>
-                          </TouchableOpacity>
-                        </View>
-                      ))}
-                    </View>
-
-                    {/* Severity */}
-                    <Text style={[styles.label, styles.section]}>Severity</Text>
-                    <View style={styles.severityRow}>
-                      {['Low', 'Medium', 'High'].map((level) => {
-                        const selected = form.severity === level;
-                        return (
-                          <TouchableOpacity
-                            key={level}
-                            style={[
-                              styles.severityChip,
-                              selected && styles.severityChipSelected,
-                              isSaving && { opacity: 0.6 },
-                            ]}
-                            onPress={() =>
-                              setForm((prev) => ({ ...prev, severity: level }))
-                            }
-                            disabled={isSaving}
-                          >
-                            <Text
-                              style={[
-                                styles.severityChipText,
-                                selected && styles.severityChipTextSelected,
-                              ]}
-                            >
-                              {level}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-
-                    {/* Notes */}
-                    <Text style={[styles.label, styles.section]}>Notes</Text>
-
-                    {/* Scrollable preset notes */}
-                    <View style={styles.notesBox}>
-                      <ScrollView
-                        nestedScrollEnabled={true}
-                        showsVerticalScrollIndicator={true}
-                        style={{ maxHeight: 120 }}
-                      >
-                       <View style={styles.notesChipRow}>
-                      {NOTES_OPTIONS.map(({ label, icon }) => {
-                        const selected = form.selectedNotes?.includes(label);
-
-                        return (
-                          <TouchableOpacity
-                            key={label}
-                            style={[styles.notesChip, selected && styles.notesChipSelected, isSaving && { opacity: 0.6 },
-                            ]}
-                            onPress={() => {
-                              setForm((prev) => {
-                                const already = prev.selectedNotes?.includes(label);
-                                return {
-                                  ...prev,
-                                  selectedNotes: already
-                                    ? prev.selectedNotes.filter((n) => n !== label)
-                                    : [...(prev.selectedNotes || []), label],
-                                };
-                              });
-                            }}
-                            disabled={isSaving}
-                          >
-                            <Ionicons
-                              name={icon}
-                              size={16}
-                              color={selected ? '#fff' : '#555'}
-                              style={styles.notesChipIcon}
-                            />
-                            <Text
-                              style={[
-                                styles.notesChipText,
-                                selected && styles.notesChipTextSelected,
-                              ]}
-                            >
-                              {label}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-
-                      </ScrollView>
-                    </View>
-
-                    {/* Thin free-text box underneath */}
-                    <Text style={styles.photoHelper}>Other</Text>
-                    <TextInput
-                      style={[styles.input, { minHeight: 40 }]}
-                      placeholder="Add any extra details"
-                      value={form.notes}
-                      onChangeText={(t) =>
-                        setForm((prev) => ({ ...prev, notes: t }))
-                      }
-                      editable={!isSaving}
-
-                    />
-
-                  </ScrollView>
-
-                  {/* Sticky Footer */}
-                    <View style={styles.footerBar}>
-
-                      {/* Cancel Button*/}  
-                      <TouchableOpacity
-                        style={[
-                          styles.btn,
-                          styles.cancelBtn,
-                          isSaving && { opacity: 0.5 },
-                        ]}
-                        onPress={cancelDraft}
-                        disabled={isSaving}
-                      >
-                        <Text style={[styles.btnText, { color: '#333' }]}>Cancel</Text>
-                      </TouchableOpacity>
-
-                    {/* Save Button */}
-                    <TouchableOpacity
-                      style={[styles.btn, styles.saveBtn]}
-                      onPress={confirmSaveReport}
-                      disabled={isSaving}
-                    >
-                      <Text style={styles.btnText}>
-                        {isSaving ? 'Saving…' : 'Save'}
-                      </Text>
-                    </TouchableOpacity>
-
-                    </View>
-                </View>
-              </TouchableWithoutFeedback>
-            </KeyboardAvoidingView>
+            <Text style={styles.wizardHeaderStep}>
+              {REPORT_STEPS[reportStep]}
+            </Text>
           </View>
-      </Modal>
+
+          <TouchableOpacity
+            style={styles.wizardCloseButton}
+            onPress={cancelDraft}
+            disabled={isSaving}
+          >
+            <Ionicons
+              name="close"
+              size={25}
+              color="#374151"
+            />
+          </TouchableOpacity>
+
+        </View>
+
+
+        <View style={styles.wizardDivider} />
+
+
+        {/* Animated Page */}
+        <Animated.View
+          {...reportStepPanResponder.panHandlers}
+          style={[
+            styles.wizardPage,
+            {
+              opacity: stepOpacity,
+
+              transform: [
+                {
+                  translateX:
+                    stepTranslateX,
+                },
+              ],
+            },
+          ]}
+        >
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={
+              styles.wizardScrollContent
+            }
+          >
+            {renderReportStep()}
+          </ScrollView>
+        </Animated.View>
+
+
+        {/* Persistent bottom navigation */}
+        <View style={styles.wizardFooter}>
+
+          {/* LEFT */}
+          <TouchableOpacity
+            style={styles.wizardArrowButton}
+            onPress={goToPreviousReportStep}
+            disabled={
+              reportStep === 0 ||
+              isTransitioning ||
+              isSaving
+            }
+          >
+            <Ionicons
+              name="arrow-back-circle"
+              size={39}
+              color={
+                reportStep === 0 ||
+                isTransitioning ||
+                isSaving
+                  ? '#D1D5DB'
+                  : '#4B5563'
+              }
+            />
+          </TouchableOpacity>
+
+
+          {/* DOTS */}
+          <View style={styles.wizardDots}>
+            {REPORT_STEPS.map(
+              (step, index) => (
+                <View
+                  key={step}
+                  style={[
+                    styles.wizardDot,
+
+                    index === reportStep &&
+                      styles.wizardDotActive,
+                  ]}
+                />
+              )
+            )}
+          </View>
+
+
+          {/* RIGHT */}
+          <TouchableOpacity
+            style={styles.wizardArrowButton}
+            onPress={goToNextReportStep}
+            disabled={
+              reportStep ===
+                REPORT_STEPS.length - 1 ||
+              !canAdvanceFromStep(
+                reportStep
+              ) ||
+              isTransitioning ||
+              isSaving
+            }
+          >
+            <Ionicons
+              name="arrow-forward-circle"
+              size={39}
+              color={
+                reportStep ===
+                  REPORT_STEPS.length - 1 ||
+                !canAdvanceFromStep(
+                  reportStep
+                ) ||
+                isTransitioning ||
+                isSaving
+                  ? '#D1D5DB'
+                  : '#2F7D32'
+              }
+            />
+          </TouchableOpacity>
+
+        </View>
+      </View>
+    </KeyboardAvoidingView>
+  </View>
+</Modal>
+
+
 
 
 
@@ -1228,6 +2013,15 @@ useEffect(() => {
 
                           setEditingReportId(selectedReport.id);
                           setIsEditing(true);
+                          
+                          // Keep the original location attached to the report
+                          setDraftCoord({
+                            latitude: selectedReport.latitude,
+                            longitude: selectedReport.longitude,
+                          });
+                          
+                          resetReportWizard();
+                          
                           setDetailsOpen(false);
                           setFormOpen(true);
                         }}
@@ -1253,6 +2047,422 @@ useEffect(() => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F5F6F7' },
+  
+  /* ============================= */
+/* Multi-step Report Form        */
+/* ============================= */
+
+wizardKeyboardView: {
+  flex: 1,
+  justifyContent: 'flex-end',
+},
+
+wizardSheet: {
+  height: '92%',
+  backgroundColor: '#FFFFFF',
+  borderTopLeftRadius: 24,
+  borderTopRightRadius: 24,
+  overflow: 'hidden',
+},
+
+wizardHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  paddingHorizontal: 22,
+  paddingTop: 22,
+  paddingBottom: 15,
+},
+
+wizardHeaderTitle: {
+  fontSize: 22,
+  fontWeight: '800',
+  color: '#1F2937',
+},
+
+wizardHeaderStep: {
+  marginTop: 3,
+  fontSize: 13,
+  fontWeight: '600',
+  color: '#6B7280',
+},
+
+wizardCloseButton: {
+  width: 42,
+  height: 42,
+  borderRadius: 21,
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: '#F3F4F6',
+},
+
+wizardDivider: {
+  height: 1,
+  backgroundColor: 'rgba(0,0,0,0.08)',
+},
+
+wizardPage: {
+  flex: 1,
+},
+
+wizardScrollContent: {
+  flexGrow: 1,
+  paddingHorizontal: 24,
+  paddingTop: 34,
+  paddingBottom: 34,
+},
+
+wizardStep: {
+  flexGrow: 1,
+},
+
+wizardEyebrow: {
+  fontSize: 12,
+  fontWeight: '800',
+  letterSpacing: 0.8,
+  color: '#2F7D32',
+  marginBottom: 10,
+},
+
+wizardTitle: {
+  fontSize: 28,
+  lineHeight: 34,
+  fontWeight: '800',
+  color: '#1F2937',
+  marginBottom: 10,
+},
+
+wizardDescription: {
+  fontSize: 16,
+  lineHeight: 23,
+  color: '#667085',
+  marginBottom: 28,
+},
+
+wizardLargeInput: {
+  minHeight: 58,
+  fontSize: 17,
+},
+
+wizardFieldLabel: {
+  fontSize: 14,
+  fontWeight: '700',
+  color: '#4B5563',
+  marginTop: 18,
+  marginBottom: 7,
+},
+
+requiredHint: {
+  marginTop: 12,
+  fontSize: 13,
+  fontWeight: '600',
+  color: '#B45309',
+},
+
+wizardDisabled: {
+  opacity: 0.55,
+},
+
+
+/* Photos */
+
+wizardPhotoButton: {
+  minHeight: 190,
+  borderRadius: 20,
+  borderWidth: 2,
+  borderStyle: 'dashed',
+  borderColor: '#A5D6A7',
+  backgroundColor: '#F1F8E9',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 24,
+},
+
+wizardPhotoIcon: {
+  width: 64,
+  height: 64,
+  borderRadius: 32,
+  backgroundColor: '#FFFFFF',
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginBottom: 12,
+},
+
+wizardPhotoButtonTitle: {
+  fontSize: 18,
+  fontWeight: '800',
+  color: '#2F7D32',
+},
+
+wizardPhotoHelper: {
+  marginTop: 5,
+  fontSize: 13,
+  color: '#667085',
+},
+
+wizardPhotoGrid: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  gap: 12,
+  marginTop: 20,
+},
+
+wizardPhotoContainer: {
+  position: 'relative',
+},
+
+wizardPhotoThumb: {
+  width: 96,
+  height: 96,
+  borderRadius: 14,
+  backgroundColor: '#E5E7EB',
+},
+
+existingPhotoNotice: {
+  borderRadius: 20,
+  borderWidth: 1,
+  borderColor: '#C8E6C9',
+  backgroundColor: '#F1F8E9',
+  padding: 22,
+  alignItems: 'center',
+},
+
+existingPhotoTitle: {
+  marginTop: 10,
+  fontSize: 17,
+  fontWeight: '800',
+  color: '#2F7D32',
+  textAlign: 'center',
+},
+
+existingPhotoText: {
+  marginTop: 6,
+  fontSize: 14,
+  lineHeight: 20,
+  color: '#667085',
+  textAlign: 'center',
+},
+
+
+/* Severity */
+
+wizardSeverityList: {
+  gap: 14,
+},
+
+wizardSeverityOption: {
+  minHeight: 74,
+  borderRadius: 18,
+  borderWidth: 1.5,
+  borderColor: '#D1D5DB',
+  backgroundColor: '#F9FAFB',
+  flexDirection: 'row',
+  alignItems: 'center',
+  paddingHorizontal: 20,
+  gap: 14,
+},
+
+wizardSeveritySelected: {
+  borderColor: '#66BB6A',
+  backgroundColor: '#F1F8E9',
+},
+
+wizardSeverityText: {
+  flex: 1,
+  fontSize: 18,
+  fontWeight: '700',
+  color: '#374151',
+},
+
+wizardSeverityTextSelected: {
+  color: '#2F7D32',
+},
+
+wizardRadio: {
+  width: 24,
+  height: 24,
+  borderRadius: 12,
+  borderWidth: 2,
+  borderColor: '#D1D5DB',
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+
+wizardRadioSelected: {
+  borderColor: '#66BB6A',
+},
+
+wizardRadioInner: {
+  width: 12,
+  height: 12,
+  borderRadius: 6,
+  backgroundColor: '#66BB6A',
+},
+
+wizardNotesInput: {
+  minHeight: 120,
+  paddingTop: 14,
+},
+
+
+/* Review */
+
+reviewCard: {
+  backgroundColor: '#F9FAFB',
+  borderRadius: 20,
+  borderWidth: 1,
+  borderColor: '#E5E7EB',
+  paddingHorizontal: 18,
+  marginBottom: 24,
+},
+
+reviewSection: {
+  paddingVertical: 17,
+},
+
+reviewHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  marginBottom: 8,
+},
+
+reviewLabel: {
+  fontSize: 14,
+  fontWeight: '800',
+  color: '#667085',
+  textTransform: 'uppercase',
+  letterSpacing: 0.5,
+},
+
+reviewEdit: {
+  fontSize: 14,
+  fontWeight: '800',
+  color: '#2F7D32',
+},
+
+reviewValue: {
+  fontSize: 17,
+  fontWeight: '700',
+  color: '#1F2937',
+},
+
+reviewMuted: {
+  fontSize: 15,
+  color: '#9CA3AF',
+},
+
+reviewDivider: {
+  height: 1,
+  backgroundColor: '#E5E7EB',
+},
+
+reviewPhotoRow: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  gap: 10,
+},
+
+reviewPhoto: {
+  width: 78,
+  height: 78,
+  borderRadius: 12,
+  backgroundColor: '#E5E7EB',
+},
+
+reviewChipRow: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  gap: 8,
+},
+
+reviewTypeChip: {
+  backgroundColor: '#66BB6A',
+  paddingHorizontal: 11,
+  paddingVertical: 7,
+  borderRadius: 999,
+},
+
+reviewNoteChip: {
+  backgroundColor: '#42A5F5',
+  paddingHorizontal: 11,
+  paddingVertical: 7,
+  borderRadius: 999,
+},
+
+reviewChipText: {
+  color: '#FFFFFF',
+  fontSize: 13,
+  fontWeight: '700',
+},
+
+reviewNotes: {
+  marginTop: 10,
+  fontSize: 15,
+  lineHeight: 22,
+  color: '#374151',
+},
+
+wizardSubmitButton: {
+  minHeight: 56,
+  borderRadius: 16,
+  backgroundColor: '#66BB6A',
+  flexDirection: 'row',
+  gap: 9,
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginBottom: 8,
+},
+
+wizardSubmitText: {
+  color: '#FFFFFF',
+  fontSize: 17,
+  fontWeight: '800',
+},
+
+
+/* Persistent bottom navigation */
+
+wizardFooter: {
+  minHeight: 82,
+  paddingHorizontal: 22,
+  paddingTop: 12,
+  paddingBottom: 20,
+  borderTopWidth: 1,
+  borderTopColor: 'rgba(0,0,0,0.08)',
+  backgroundColor: '#FFFFFF',
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+},
+
+wizardArrowButton: {
+  width: 52,
+  height: 52,
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+
+wizardDots: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 8,
+  flex: 1,
+},
+
+wizardDot: {
+  width: 7,
+  height: 7,
+  borderRadius: 3.5,
+  backgroundColor: '#D1D5DB',
+},
+
+wizardDotActive: {
+  width: 9,
+  height: 9,
+  borderRadius: 4.5,
+  backgroundColor: '#2F7D32',
+},
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.25)',
