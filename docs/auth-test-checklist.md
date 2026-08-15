@@ -93,7 +93,7 @@ Repeat email verification, recovery, and one browser OAuth callback in each stat
 - [x] Welcome screen wording, logo, colors, Get Started, and Support Litterbugs remain intact.
 - [x] Authentication layout fits the smallest supported iPhone without clipped actions.
 - [x] Software keyboard does not hide the active email or password control on the iPhone 17 Pro simulator.
-- [ ] Every asynchronous action has a visible loading/disabled state.
+- [x] Authentication actions have visible loading/disabled states, including session restore, provider/email/guest actions, password update, and confirmed sign-out.
 - [x] Buttons and links have useful accessibility labels and at least a 44-point touch target.
 - [ ] Existing map, report creation, report editing, photo, and location behavior still works.
 - [x] No database, RLS, report, or Storage behavior changed in this branch.
@@ -110,6 +110,7 @@ Repeat email verification, recovery, and one browser OAuth callback in each stat
 - Accessibility/source audit: auth controls expose useful labels, visible links meet the 44-point minimum, disabled provider/email actions visibly dim, and session restoration displays a loading indicator instead of a blank screen.
 - Small-screen pass: the welcome screen, auth buttons, email sheet, and keyboard-open email form fit an iPhone SE (3rd generation) simulator without clipping actions. The temporary simulator was deleted immediately after testing and the single iPhone 17 Pro simulator was restored.
 - Provider errors are translated to short retry guidance; native browser and network implementation details are not displayed to users.
+- Confirmed sign-out keeps the existing Yes/No alert and displays a disabled `Signing out…` state until Supabase responds.
 
 ## Live Supabase audit
 

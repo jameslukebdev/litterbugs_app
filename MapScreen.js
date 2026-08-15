@@ -57,6 +57,7 @@ export default function MapScreen() {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [photosLoading, setPhotosLoading] = useState(false);
   // const PATREON_URL = "https://patreon.com/litterbugs?utm_medium=unknown&utm_source=join_link&utm_campaign=creatorshare_creator&utm_content=copyLink"; // <-- paste your real link
@@ -323,6 +324,8 @@ const onMapPress = async (e) => {
 // Confirm before signing the user out
 
 const handleSignOut = () => {
+  if (signingOut) return;
+
   const guestWarning = currentUser?.is_anonymous
     ? 'Are you sure you want to sign out? This guest account cannot be recovered or transferred.'
     : 'Are you sure you want to sign out?';
@@ -339,12 +342,16 @@ const handleSignOut = () => {
         text: 'Yes',
         style: 'destructive',
         onPress: async () => {
-          setAccountOpen(false);
+          setSigningOut(true);
           const { error } = await supabase.auth.signOut();
 
           if (error) {
+            setSigningOut(false);
             Alert.alert('Sign out failed', error.message);
+            return;
           }
+
+          setAccountOpen(false);
         },
       },
     ]
@@ -727,9 +734,13 @@ useEffect(() => {
           visible={accountOpen}
           animationType="slide"
           transparent
-          onRequestClose={() => setAccountOpen(false)}
+          onRequestClose={() => {
+            if (!signingOut) setAccountOpen(false);
+          }}
         >
-          <TouchableWithoutFeedback onPress={() => setAccountOpen(false)}>
+          <TouchableWithoutFeedback onPress={() => {
+            if (!signingOut) setAccountOpen(false);
+          }}>
             <View style={styles.accountBackdrop}>
               <TouchableWithoutFeedback>
                 <View style={styles.accountSheet}>
@@ -746,8 +757,9 @@ useEffect(() => {
                       ) : null}
                     </View>
                     <TouchableOpacity
-                      style={styles.accountCloseButton}
+                      style={[styles.accountCloseButton, signingOut && { opacity: 0.5 }]}
                       onPress={() => setAccountOpen(false)}
+                      disabled={signingOut}
                       accessibilityLabel="Close account menu"
                     >
                       <Ionicons name="close" size={24} color="#555" />
@@ -761,13 +773,18 @@ useEffect(() => {
                   ) : null}
 
                   <TouchableOpacity
-                    style={styles.accountSignOutButton}
+                    style={[styles.accountSignOutButton, signingOut && { opacity: 0.65 }]}
                     onPress={handleSignOut}
+                    disabled={signingOut}
                     accessibilityRole="button"
-                    accessibilityLabel="Sign out"
+                    accessibilityLabel={signingOut ? 'Signing out' : 'Sign out'}
                   >
-                    <Ionicons name="log-out-outline" size={21} color="#B42318" />
-                    <Text style={styles.accountSignOutText}>Sign out</Text>
+                    {signingOut ? (
+                      <ActivityIndicator size="small" color="#B42318" />
+                    ) : (
+                      <Ionicons name="log-out-outline" size={21} color="#B42318" />
+                    )}
+                    <Text style={styles.accountSignOutText}>{signingOut ? 'Signing out…' : 'Sign out'}</Text>
                   </TouchableOpacity>
                 </View>
               </TouchableWithoutFeedback>
