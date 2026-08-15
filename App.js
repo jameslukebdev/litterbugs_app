@@ -166,7 +166,7 @@ export default function App() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator key={session ? 'signed-in' : 'signed-out'} screenOptions={{ headerShown: false }}>
         {session ? (
           /* -------------------------
              Logged-in flow
