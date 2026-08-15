@@ -6,7 +6,9 @@ Recorded on 2026-08-14 before any Auth configuration changes.
 
 - GitHub repository: `jameslukebdev/litterbugs_app`
 - Supabase project ref: `mvaygkflcjswtwchflrk`
-- Mobile bundle/package ID: `com.gegibson.litterbugs`
+- Existing production iOS bundle ID: `com.litterbugs.app`
+- App Store listing: `Litterbugs: Community Cleanup` (`6757313862`), published by James Luke Barber
+- Deferred Android package ID: `com.litterbugs.app` (no existing Google Play listing was identified)
 - Deep-link scheme: `litterbugs`
 - The retired prototype is not a source for code, credentials, provider records, or EAS configuration.
 

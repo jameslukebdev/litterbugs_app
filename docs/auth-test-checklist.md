@@ -4,7 +4,7 @@ Use this checklist on the iOS development client before moving PR #2 out of draf
 
 ## Preconditions
 
-- [ ] Test build uses bundle ID `com.gegibson.litterbugs`.
+- [ ] Test build uses the existing production bundle ID `com.litterbugs.app`.
 - [ ] App points to Supabase project `mvaygkflcjswtwchflrk`.
 - [ ] Email confirmation is required.
 - [ ] `litterbugs://auth/callback` is allowed.

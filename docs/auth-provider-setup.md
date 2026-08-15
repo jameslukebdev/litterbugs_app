@@ -1,6 +1,6 @@
 # Auth Provider Setup
 
-Use only Supabase project `mvaygkflcjswtwchflrk` and newly created provider records for bundle/package ID `com.gegibson.litterbugs`.
+Use only Supabase project `mvaygkflcjswtwchflrk` and provider records belonging to the existing production app, whose permanent iOS bundle ID is `com.litterbugs.app`.
 
 ## Supabase redirect allow list
 
@@ -25,15 +25,14 @@ Copy the new provider IDs and secrets into the matching Supabase Auth provider. 
 
 ## Apple
 
-Create the new Apple App ID in the **same Apple Developer team that will own and distribute the live app**. Do not register it in a temporary or prototype team and plan to transfer it later; Sign in with Apple adds avoidable transfer requirements.
+The live App Store app already exists as `Litterbugs: Community Cleanup` (`6757313862`) with bundle ID `com.litterbugs.app`. Use and configure that existing App ID in the partner's production Apple Developer team. Do not register a second App ID or transfer a temporary identifier; Sign in with Apple adds avoidable transfer requirements.
 
-- Internal description: `Litterbugs Partner`
-- Bundle ID: `com.gegibson.litterbugs`
-- Capability: Sign in with Apple
+- Existing bundle ID: `com.litterbugs.app`
+- Required capability: Sign in with Apple
 
 Apple requires the Account Holder or an Admin to register an App ID. If the production Apple membership is an organization, its Account Holder can invite the person completing setup as an Admin with access to Certificates, Identifiers & Profiles. If it is an individual membership, the Account Holder must perform the identifier and signing setup directly.
 
-Native iOS login uses that App ID. For browser-based Apple login on Android, create a separate Services ID and signing key in the same production team, then configure the Apple provider in Supabase. Apple's browser OAuth secret must be rotated before it expires.
+Native iOS login uses that existing App ID. For browser-based Apple login on Android, create a separate Services ID and signing key in the same production team, then configure the Apple provider in Supabase. Apple's browser OAuth secret must be rotated before it expires.
 
 ## EAS development client
 

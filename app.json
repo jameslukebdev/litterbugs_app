@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.gegibson.litterbugs",
+      "bundleIdentifier": "com.litterbugs.app",
       "usesAppleSignIn": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "We use your location to center the map and help you report nearby litter.",
@@ -23,7 +23,7 @@
       }
     },
     "android": {
-      "package": "com.gegibson.litterbugs",
+      "package": "com.litterbugs.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
