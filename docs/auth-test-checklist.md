@@ -21,9 +21,9 @@ Use this checklist on the iOS development client before moving PR #2 out of draf
 - [ ] A valid verification link opens Litterbugs and establishes the correct session.
 - [ ] Resend verification sends a fresh usable link.
 - [ ] An expired or already-used verification link shows a useful error and recovery action.
-- [ ] Existing email and correct password signs in.
-- [ ] Incorrect password shows an error and never creates an account.
-- [ ] An explicit duplicate signup does not create a second identity and directs the user toward sign-in or recovery.
+- [x] Existing email and correct password signs in.
+- [x] Incorrect password shows a mismatch error and the login path never calls signup.
+- [x] An explicit duplicate signup does not create a second identity and directs the user toward sign-in or recovery.
 - [ ] Forgot password does not disclose whether an account exists.
 - [ ] A valid recovery link opens the new-password screen.
 - [ ] Mismatched or short replacement passwords are rejected locally.
@@ -106,6 +106,14 @@ Repeat email verification, recovery, and one browser OAuth callback in each stat
 - Runtime: one Litterbugs development client connected to one local Metro server
 - Verified: branded iOS OAuth prompt, Google new and returning sign-in, Google/Facebook cancellation recovery, open/background/cold-start browser-auth callback routing, session restore, signed-out restore, email login/signup/recovery layouts, software-keyboard layout, Guest warning, Account sheet, and Yes/No sign-out behavior
 - Remaining: Facebook credential completion, email delivery/recovery, successful provider callbacks from background and cold start, permission/network failure cases, smallest supported iPhone, physical-iPhone testing, approved SMTP sender, and Apple before App Store submission
+
+## Live Supabase audit
+
+- Date: 2026-08-15
+- Project read-back: `mvaygkflcjswtwchflrk` is `Litterbugs` and reports `ACTIVE_HEALTHY`.
+- Auth logs confirm Google signup/login/logout, successful email-password login, rejected invalid credentials, and rejected repeated signup.
+- Project read-back reports zero database migrations, zero Supabase branches, and zero Edge Functions.
+- No personal email address, token, provider secret, or callback payload is recorded in this checklist.
 
 ## Release decision
 
