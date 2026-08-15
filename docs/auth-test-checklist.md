@@ -9,7 +9,9 @@ Use this checklist on the iOS development client before moving PR #2 out of draf
 - [ ] Email confirmation is required.
 - [ ] `litterbugs://auth/callback` is allowed.
 - [ ] `litterbugs://auth/reset-password` is allowed.
-- [ ] Google, Apple, and Facebook are enabled with new Litterbugs-specific provider records.
+- [ ] Google and Facebook are enabled with new Litterbugs-specific provider records.
+- [ ] The Apple button remains hidden while Apple configuration is deferred.
+- [ ] Before App Store release, Apple is enabled with the production team's existing `com.litterbugs.app` App ID.
 - [ ] Verification and recovery email uses the approved `support@litterbugs.app` sender.
 - [ ] Testers are authorized in provider test/development modes.
 
@@ -45,6 +47,7 @@ Run every provider section with both a new provider account and a returning acco
 
 ### Apple
 
+- [ ] Deferred Google/Facebook test builds do not display the Apple button.
 - [ ] Native Apple sheet opens from the official Apple button.
 - [ ] New account succeeds on a physical iPhone.
 - [ ] Returning account succeeds.
@@ -97,6 +100,7 @@ Repeat email verification, recovery, and one browser OAuth callback in each stat
 
 ## Release decision
 
+- [ ] Apple authentication is enabled and its tests pass before submitting a build that includes Google or Facebook login to App Review.
 - [ ] All required iOS checks pass with evidence.
 - [ ] Any failures are fixed and retested.
 - [ ] PR #2 receives partner review.

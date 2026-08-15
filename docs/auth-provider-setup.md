@@ -27,12 +27,23 @@ Copy the new provider IDs and secrets into the matching Supabase Auth provider. 
 
 The live App Store app already exists as `Litterbugs: Community Cleanup` (`6757313862`) with bundle ID `com.litterbugs.app`. Use and configure that existing App ID in the partner's production Apple Developer team. Do not register a second App ID or transfer a temporary identifier; Sign in with Apple adds avoidable transfer requirements.
 
+Apple is temporarily deferred while Google and Facebook are configured and tested. The Apple button is hidden, and the Apple capability/plugin is omitted from the current test build. The implementation remains staged in source code.
+
 - Existing bundle ID: `com.litterbugs.app`
 - Required capability: Sign in with Apple
 
 Apple requires the Account Holder or an Admin to register an App ID. If the production Apple membership is an organization, its Account Holder can invite the person completing setup as an Admin with access to Certificates, Identifiers & Profiles. If it is an individual membership, the Account Holder must perform the identifier and signing setup directly.
 
 Native iOS login uses that existing App ID. For browser-based Apple login on Android, create a separate Services ID and signing key in the same production team, then configure the Apple provider in Supabase. Apple's browser OAuth secret must be rotated before it expires.
+
+Before an App Store submission that includes Google or Facebook login:
+
+1. Enable Sign in with Apple for the existing `com.litterbugs.app` App ID in the production Apple team.
+2. Restore `ios.usesAppleSignIn: true` and the `expo-apple-authentication` config plugin in `app.json`.
+3. Set `APPLE_AUTH_ENABLED` to `true` in `AuthScreen.js`.
+4. Create a fresh iOS build and complete the physical-iPhone Apple tests.
+
+Apple App Review Guideline 4.8 generally requires an equivalent privacy-preserving login option when a primary account uses a third-party login such as Google or Facebook. Google/Facebook-only builds are suitable for development testing, but should not be submitted to the App Store until Apple login is enabled and verified.
 
 ## EAS development client
 

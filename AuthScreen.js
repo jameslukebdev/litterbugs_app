@@ -17,9 +17,15 @@ import { supabase } from './lib/supabase';
 
 WebBrowser.maybeCompleteAuthSession();
 
+// Apple remains implemented but is intentionally hidden until the production
+// Apple Developer team enables Sign in with Apple for com.litterbugs.app.
+const APPLE_AUTH_ENABLED = false;
+
 const PROVIDERS = [
   { id: 'google', label: 'Continue with Google', icon: 'logo-google' },
-  { id: 'apple', label: 'Continue with Apple', icon: 'logo-apple' },
+  ...(APPLE_AUTH_ENABLED
+    ? [{ id: 'apple', label: 'Continue with Apple', icon: 'logo-apple' }]
+    : []),
   { id: 'facebook', label: 'Continue with Facebook', icon: 'logo-facebook' },
 ];
 

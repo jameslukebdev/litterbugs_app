@@ -16,7 +16,6 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.litterbugs.app",
-      "usesAppleSignIn": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "We use your location to center the map and help you report nearby litter.",
         "ITSAppUsesNonExemptEncryption": false
@@ -35,8 +34,7 @@
     },
     "plugins": [
       "expo-secure-store",
-      "expo-web-browser",
-      "expo-apple-authentication"
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {
