@@ -52,3 +52,5 @@ npx expo start --dev-client --tunnel --clear
 ```
 
 Stop the existing Metro process before changing connection modes. Rebuild only after native dependencies or native configuration changes.
+
+Before moving the authentication PR out of draft, complete and record the iOS checks in [auth-test-checklist.md](./auth-test-checklist.md).
