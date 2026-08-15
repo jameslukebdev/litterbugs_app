@@ -31,6 +31,20 @@ const PROVIDERS = [
 
 const cleanAddress = (value) => value.trim().toLowerCase();
 
+const getProviderErrorMessage = (error) => {
+  const message = error?.message?.toLowerCase() || '';
+
+  if (/network|internet|offline|failed to fetch/.test(message)) {
+    return 'Check your internet connection and try again.';
+  }
+
+  if (/another web browser is already open|browser.*already open/.test(message)) {
+    return 'Close the current sign-in window, then try again.';
+  }
+
+  return 'We couldn’t complete sign in. Please try again.';
+};
+
 export default function AuthScreen() {
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [emailMode, setEmailMode] = useState('login');
@@ -167,7 +181,7 @@ export default function AuthScreen() {
     } catch (error) {
       if (error?.code === 'ERR_REQUEST_CANCELED') return;
       const name = provider.charAt(0).toUpperCase() + provider.slice(1);
-      Alert.alert(`${name} sign in unavailable`, error.message || 'Please try again.');
+      Alert.alert(`${name} sign in unavailable`, getProviderErrorMessage(error));
     } finally {
       setLoadingProvider(null);
     }
@@ -267,7 +281,11 @@ export default function AuthScreen() {
       <Modal visible={emailModalOpen} animationType="slide" transparent onRequestClose={closeEmail}>
         <TouchableWithoutFeedback onPress={closeEmail}>
           <View style={emailStyles.backdrop}>
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={emailStyles.kav}>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              keyboardVerticalOffset={Platform.OS === 'ios' ? -36 : 0}
+              style={emailStyles.kav}
+            >
               <TouchableWithoutFeedback>
                 <View style={emailStyles.sheet}>
                   <View style={emailStyles.handle} />
