@@ -42,6 +42,8 @@ Current isolated development resources (non-secret identifiers only):
 
 As of 2026-08-15, the new Google and Facebook credentials are stored only in their provider consoles and the matching Supabase Auth provider forms. Both Supabase providers are enabled. The Google app is in Production with verified Litterbugs branding visible to users, and the Meta app remains unpublished for role-based development testing.
 
+All mobile callback URLs are generated from the literal `litterbugs` app scheme. This keeps local-development OAuth and email links on `litterbugs://auth/callback` or `litterbugs://auth/reset-password` instead of allowing an Expo development host such as `localhost` to become the final destination.
+
 ### Google production configuration
 
 1. Create a new Google Cloud project dedicated to the production Litterbugs app. Do not select an unrelated project or the retired prototype.
@@ -64,6 +66,8 @@ The Google app moved to Production on 2026-08-15. The permanent `litterbugs.app`
 6. Save the new App ID and App Secret only in the Meta console and the Facebook provider form in Supabase project `mvaygkflcjswtwchflrk`.
 
 Keep the Meta app in Development mode until its privacy URL, data-deletion instructions, business verification, and any required review are complete. Development mode is sufficient for role-based partner testing.
+
+The Meta app now has an iOS platform entry for the production bundle ID `com.litterbugs.app`. Its App Review request includes only the standard `email` and `public_profile` login permissions, both of which Meta describes as automatically granted to apps for their allowed login uses. The review has not been submitted. Remaining Meta-owned steps include connecting the app to the verified business portfolio, confirming a monitored contact email, certifying allowed use, answering the data-handling questions, supplying reviewer instructions, and submitting the completed request. Until Meta approves and the app is published, role-based testers may see Meta's red **Submit for Login Review** warning.
 
 Authoritative references: [Supabase Google login setup](https://supabase.com/docs/guides/auth/social-login/auth-google) and [Supabase Facebook login setup](https://supabase.com/docs/guides/auth/social-login/auth-facebook).
 
@@ -102,7 +106,7 @@ The isolated iOS simulator development build completed successfully on 2026-08-1
 - Profile: `development-simulator`
 - Runtime: Expo SDK 54
 
-It was installed and verified in a single iPhone 17 Pro simulator. Browser OAuth now requests a private iOS authentication session, which removes the technical app/domain confirmation prompt before the provider page. Google completed a new and returning sign-in and returned to the app; Facebook reached Meta's hosted login page and canceled back to the app cleanly. Provider-hosted pages remain controlled by Google and Meta, with the public Litterbugs name and logo supplied through each provider's branding configuration.
+It was installed and verified in a single iPhone 17 Pro simulator. Browser OAuth requests a private iOS authentication session, which removes the technical app/domain confirmation prompt before the provider page. Google completed a new and returning sign-in and returned to the app; Facebook reached Meta's hosted login page and canceled back to the app cleanly. Provider-hosted pages remain controlled by Google and Meta, with the public Litterbugs name and logo supplied through each provider's branding configuration.
 
 Build a new iOS development client only after native dependencies or native configuration change:
 

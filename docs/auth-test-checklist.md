@@ -9,6 +9,7 @@ Use this checklist on the iOS development client before moving PR #2 out of draf
 - [x] Email confirmation is required.
 - [x] `litterbugs://auth/callback` is allowed.
 - [x] `litterbugs://auth/reset-password` is allowed.
+- [x] OAuth and email callback generation is pinned to the literal `litterbugs` scheme and cannot fall back to a local Expo host.
 - [x] Google and Facebook are enabled with new Litterbugs-specific provider records.
 - [x] The Apple button remains hidden while Apple configuration is deferred.
 - [ ] Before App Store release, Apple is enabled with the production team's existing `com.litterbugs.app` App ID.
@@ -66,6 +67,8 @@ Run every provider section with both a new provider account and a returning acco
 - [ ] New account succeeds.
 - [ ] Returning account succeeds.
 - [x] User cancellation returns safely to Litterbugs.
+- [x] Meta's hosted permission page displays the correct Litterbugs name and logo.
+- [ ] A successful permission grant returns to `litterbugs://auth/callback` instead of `localhost`.
 - [ ] Permission denial produces a useful error.
 - [ ] Matching an existing verified email does not create an unintended duplicate identity.
 - [ ] Network interruption fails safely and allows retry.
@@ -110,7 +113,7 @@ Repeat email verification, recovery, and one browser OAuth callback in each stat
 - Device: iPhone 17 Pro simulator, iOS 26.5
 - Runtime: one Litterbugs development client connected to one local Metro server
 - Verified: private iOS OAuth session without the technical app/domain prompt, Google new and returning sign-in, Google/Facebook cancellation recovery, open/background/cold-start browser-auth callback routing, session restore, signed-out restore, email login/signup/recovery layouts, software-keyboard layout, Guest warning, Account sheet, and Yes/No sign-out behavior
-- Remaining: Facebook credential completion, verification/recovery email delivery, successful provider callbacks from background and cold start, permission/network failure cases, physical-iPhone testing, and Apple before App Store submission
+- Remaining: Facebook credential completion and corrected callback retest, recovery email delivery, successful provider callbacks from background and cold start, permission/network failure cases, physical-iPhone testing, Meta review/publication, and Apple before App Store submission
 - Accessibility/source audit: auth controls expose useful labels, visible links meet the 44-point minimum, disabled provider/email actions visibly dim, and session restoration displays a loading indicator instead of a blank screen.
 - Small-screen pass: the welcome screen, auth buttons, email sheet, and keyboard-open email form fit an iPhone SE (3rd generation) simulator without clipping actions. The temporary simulator was deleted immediately after testing and the single iPhone 17 Pro simulator was restored.
 - Provider errors are translated to short retry guidance; native browser and network implementation details are not displayed to users.
