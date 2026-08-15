@@ -94,7 +94,7 @@ Repeat email verification, recovery, and one browser OAuth callback in each stat
 - [ ] Authentication layout fits the smallest supported iPhone without clipped actions.
 - [x] Software keyboard does not hide the active email or password control on the iPhone 17 Pro simulator.
 - [ ] Every asynchronous action has a visible loading/disabled state.
-- [ ] Buttons and links have useful accessibility labels and at least a 44-point touch target.
+- [x] Buttons and links have useful accessibility labels and at least a 44-point touch target.
 - [ ] Existing map, report creation, report editing, photo, and location behavior still works.
 - [x] No database, RLS, report, or Storage behavior changed in this branch.
 - [x] No provider, SMTP, Apple, or Supabase secret appears in tracked Git content or application logs reviewed during this test.
@@ -107,6 +107,7 @@ Repeat email verification, recovery, and one browser OAuth callback in each stat
 - Runtime: one Litterbugs development client connected to one local Metro server
 - Verified: private iOS OAuth session without the technical app/domain prompt, Google new and returning sign-in, Google/Facebook cancellation recovery, open/background/cold-start browser-auth callback routing, session restore, signed-out restore, email login/signup/recovery layouts, software-keyboard layout, Guest warning, Account sheet, and Yes/No sign-out behavior
 - Remaining: Facebook credential completion, email delivery/recovery, successful provider callbacks from background and cold start, permission/network failure cases, smallest supported iPhone, physical-iPhone testing, approved SMTP sender, and Apple before App Store submission
+- Accessibility/source audit: auth controls expose useful labels, visible links meet the 44-point minimum, disabled provider/email actions visibly dim, and session restoration displays a loading indicator instead of a blank screen.
 
 ## Live Supabase audit
 

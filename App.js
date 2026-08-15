@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { StyleSheet, Text, View, Image, TouchableOpacity, useWindowDimensions, Alert, Linking } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View, Image, TouchableOpacity, useWindowDimensions, Alert, Linking } from 'react-native';
 
 import AuthScreen from './AuthScreen';
 import MapScreen from './MapScreen';
@@ -53,6 +53,8 @@ function HomeScreen({ navigation }) {
       <TouchableOpacity
         style={styles.button}
         onPress={() => navigation.navigate('Auth')}
+        accessibilityRole="button"
+        accessibilityLabel="Get Started"
       >
         <Text style={styles.buttonText}>Get Started</Text>
       </TouchableOpacity>
@@ -138,8 +140,14 @@ export default function App() {
     };
   }, []);
 
-  // ⛔ Don’t render navigation until session is known
-  if (authLoading) return null;
+  // Don’t render navigation until session is known.
+  if (authLoading) {
+    return (
+      <View style={styles.authLoading} accessibilityLabel="Loading Litterbugs">
+        <ActivityIndicator size="large" color="#2F7D32" />
+      </View>
+    );
+  }
 
   if (session && passwordRecovery) {
     return (
@@ -201,6 +209,12 @@ export default function App() {
 
 
 const styles = StyleSheet.create({
+  authLoading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F6F7',
+  },
   container: {
     flex: 1,
     backgroundColor: '#F5F6F7',

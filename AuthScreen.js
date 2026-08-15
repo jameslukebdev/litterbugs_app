@@ -70,6 +70,8 @@ export default function AuthScreen() {
   };
 
   const handleEmailSubmit = async () => {
+    if (loadingEmail) return;
+
     setFormError('');
     const cleanEmail = validateEmail();
     if (!cleanEmail) return;
@@ -157,6 +159,8 @@ export default function AuthScreen() {
   };
 
   const handleProvider = async (provider) => {
+    if (loadingProvider) return;
+
     try {
       setLoadingProvider(provider);
       await signInWithProvider(provider);
@@ -170,6 +174,8 @@ export default function AuthScreen() {
   };
 
   const handleGuestSignIn = async () => {
+    if (loadingProvider) return;
+
     try {
       setLoadingProvider('guest');
       const { error } = await supabase.auth.signInAnonymously();
@@ -247,11 +253,11 @@ export default function AuthScreen() {
             <Text style={styles.dividerText}>or</Text>
             <View style={styles.divider} />
           </View>
-          <TouchableOpacity style={styles.emailButton} onPress={openEmail} disabled={Boolean(loadingProvider)} accessibilityRole="button" accessibilityLabel="Continue with Email">
+          <TouchableOpacity style={[styles.emailButton, loadingProvider && styles.disabled]} onPress={openEmail} disabled={Boolean(loadingProvider)} accessibilityRole="button" accessibilityLabel="Continue with Email">
             <Ionicons name="mail-outline" size={21} color="#fff" style={styles.buttonIcon} />
             <Text style={styles.emailText}>Continue with Email</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.guestLink} onPress={handleGuestSignIn} disabled={Boolean(loadingProvider)} accessibilityRole="button" accessibilityLabel="Continue as Guest">
+          <TouchableOpacity style={[styles.guestLink, loadingProvider && styles.disabled]} onPress={handleGuestSignIn} disabled={Boolean(loadingProvider)} accessibilityRole="button" accessibilityLabel="Continue as Guest">
             {loadingProvider === 'guest' ? <ActivityIndicator color="#555" /> : <Text style={styles.guestText}>Continue as Guest</Text>}
           </TouchableOpacity>
         </View>
@@ -290,7 +296,7 @@ export default function AuthScreen() {
                         </>
                       )}
                       {!!formError && <Text style={emailStyles.error}>{formError}</Text>}
-                      <TouchableOpacity style={emailStyles.primaryButton} onPress={closeEmail}>
+                      <TouchableOpacity style={emailStyles.primaryButton} onPress={closeEmail} accessibilityRole="button" accessibilityLabel="Done">
                         <Text style={emailStyles.primaryButtonText}>Done</Text>
                       </TouchableOpacity>
                     </View>
@@ -304,7 +310,7 @@ export default function AuthScreen() {
                               : emailMode === 'forgot' ? 'We’ll send a secure link to your email.' : 'Welcome back.'}
                           </Text>
                         </View>
-                        <TouchableOpacity onPress={closeEmail} style={emailStyles.closeButton} accessibilityLabel="Close">
+                        <TouchableOpacity onPress={closeEmail} style={emailStyles.closeButton} accessibilityRole="button" accessibilityLabel="Close">
                           <Ionicons name="close" size={24} color="#555" />
                         </TouchableOpacity>
                       </View>
@@ -337,7 +343,13 @@ export default function AuthScreen() {
                       )}
 
                       {emailMode === 'login' && (
-                        <TouchableOpacity style={emailStyles.forgotButton} onPress={() => resetForm('forgot')}>
+                        <TouchableOpacity
+                          style={[emailStyles.forgotButton, loadingEmail && styles.disabled]}
+                          onPress={() => resetForm('forgot')}
+                          disabled={loadingEmail}
+                          accessibilityRole="button"
+                          accessibilityLabel="Forgot password"
+                        >
                           <Text style={emailStyles.linkText}>Forgot password?</Text>
                         </TouchableOpacity>
                       )}
@@ -353,7 +365,13 @@ export default function AuthScreen() {
                         <Text style={emailStyles.switchText}>
                           {emailMode === 'login' ? 'New to Litterbugs?' : emailMode === 'signup' ? 'Already have an account?' : 'Remember your password?'}
                         </Text>
-                        <TouchableOpacity onPress={() => resetForm(emailMode === 'login' ? 'signup' : 'login')}>
+                        <TouchableOpacity
+                          style={[emailStyles.switchLinkButton, loadingEmail && styles.disabled]}
+                          onPress={() => resetForm(emailMode === 'login' ? 'signup' : 'login')}
+                          disabled={loadingEmail}
+                          accessibilityRole="button"
+                          accessibilityLabel={emailMode === 'login' ? 'Create account' : 'Sign in'}
+                        >
                           <Text style={emailStyles.switchLink}>{emailMode === 'login' ? 'Create account' : 'Sign in'}</Text>
                         </TouchableOpacity>
                       </View>
@@ -408,13 +426,14 @@ const emailStyles = StyleSheet.create({
   passwordRow: { minHeight: 50, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FAFBFC', borderWidth: 1, borderColor: '#D8DDE2', borderRadius: 12 },
   passwordInput: { flex: 1, paddingHorizontal: 14 },
   eyeButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
-  forgotButton: { minHeight: 42, alignSelf: 'flex-end', justifyContent: 'center' },
+  forgotButton: { minHeight: 44, alignSelf: 'flex-end', justifyContent: 'center' },
   linkText: { color: '#2F7D32', fontSize: 14, fontWeight: '800' },
   error: { color: '#B42318', fontSize: 14, lineHeight: 20, marginTop: 9 },
   primaryButton: { minHeight: 52, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#2F7D32', marginTop: 14, width: '100%' },
   primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '800' },
   switchRow: { minHeight: 46, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 6 },
   switchText: { color: '#666', fontSize: 14 },
+  switchLinkButton: { minHeight: 44, justifyContent: 'center' },
   switchLink: { color: '#2F7D32', fontSize: 14, fontWeight: '800' },
   sentContent: { alignItems: 'center', paddingTop: 4 },
   sentTitle: { fontSize: 22, fontWeight: '800', color: '#333', marginTop: 12 },

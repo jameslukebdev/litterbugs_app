@@ -46,7 +46,9 @@ Provider and SMTP secrets must stay in their provider consoles and the Supabase 
 - Preserved all four existing redirect URLs for compatibility.
 - Verified the saved settings after reloading the Supabase dashboard.
 
-Apple, Google, and Facebook remain disabled until new app-specific provider records and credentials are created. Custom SMTP is also still pending valid credentials.
+Google and Facebook are now enabled with new Litterbugs-specific provider records. Apple remains disabled while production Apple-team setup is deferred. Custom SMTP is still pending a valid mail-provider login and SMTP credential.
+
+The live SMTP page was read back again on 2026-08-15. Custom SMTP is off and all custom sender/host/username/password fields are empty, so no prior SMTP secret can be reused. A separate root `litterbugs.app` sending-domain entry was created in Resend for the requested `support@litterbugs.app` sender. Its isolated DKIM, `send`-subdomain MX/SPF, and monitoring-only DMARC records were added to Cloudflare without changing website or inbox routing. Resend verification is pending DNS propagation. No unsaved SMTP form changes were left in the dashboard.
 
 ## Manual rollback
 
