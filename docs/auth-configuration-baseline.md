@@ -23,6 +23,8 @@ The public Auth settings endpoint reported:
 - Phone auto-confirm disabled
 - Redirect allow list: `exp://127.0.0.1:19000`, `exp://192.168.1.204:19000`, `exp://*`, and the legacy `litterbugs://auth-callback`
 
+The disabled Apple, Google, and Facebook provider forms contained dormant values. They were not validated as belonging to this app and must not be reused. No provider secret was revealed or copied during the baseline review.
+
 The Supabase dashboard showed a Free project with no backups, migrations, or database branches. This feature does not change database schema, RLS, Storage, reports, or existing user data.
 
 ## Intended Auth-only changes
@@ -33,6 +35,16 @@ The Supabase dashboard showed a Free project with no backups, migrations, or dat
 - Configure custom SMTP using `support@litterbugs.app` only after valid SMTP credentials are available.
 
 Provider and SMTP secrets must stay in their provider consoles and the Supabase dashboard. They must never be written to this repository.
+
+## Applied on 2026-08-15
+
+- Enabled **Confirm email**, disabling email auto-confirm for future email/password signups.
+- Added `litterbugs://auth/callback` to the redirect allow list.
+- Added `litterbugs://auth/reset-password` to the redirect allow list.
+- Preserved all four existing redirect URLs for compatibility.
+- Verified the saved settings after reloading the Supabase dashboard.
+
+Apple, Google, and Facebook remain disabled until new app-specific provider records and credentials are created. Custom SMTP is also still pending valid credentials.
 
 ## Manual rollback
 
