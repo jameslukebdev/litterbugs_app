@@ -15,14 +15,9 @@ The current allow list contains the older `litterbugs://auth-callback` route. Ke
 
 Under Authentication → Providers → Email, require email confirmation. Configure custom SMTP separately so verification and recovery messages come from `support@litterbugs.app`. Keep SMTP credentials only in Supabase.
 
-Live read-back on 2026-08-15 confirms that email confirmation is enabled and custom SMTP is disabled. The custom SMTP form contains no saved sender, host, username, or password. A separate root `litterbugs.app` sending-domain entry now exists in Resend for the exact `support@litterbugs.app` sender. Its isolated DNS records are present on Cloudflare's authoritative nameserver, and Resend verification is pending DNS propagation.
+Live read-back on 2026-08-15 confirms that email confirmation is enabled. The separate root `litterbugs.app` sending domain is Verified in Resend, and a new sending-only credential scoped to that exact domain is stored only in the correct Supabase project. Supabase's live Auth configuration confirms sender `support@litterbugs.app`, sender name `Litterbugs`, host `smtp.resend.com`, port `465`, username `resend`, and an encrypted password. The isolated DNS records are present on Cloudflare's authoritative nameserver. Website routing, inbox routing, and the retired prototype's Resend resources were not changed.
 
-To finish the requested sender safely:
-
-1. Wait for Resend to mark the root `litterbugs.app` sending domain Verified.
-2. Create a dedicated, sending-only SMTP credential scoped to that domain for Supabase Auth.
-3. Enter the sender, sender name, SMTP host, port, username, and password directly in the Supabase dashboard.
-4. Save, reload the dashboard, and send one verification and one recovery test.
+One verification message and one recovery message still need to be sent to an intentional test address before release.
 
 Do not paste the SMTP password into chat, a terminal command, `.env`, or Git.
 

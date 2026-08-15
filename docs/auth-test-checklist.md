@@ -12,7 +12,7 @@ Use this checklist on the iOS development client before moving PR #2 out of draf
 - [x] Google and Facebook are enabled with new Litterbugs-specific provider records.
 - [x] The Apple button remains hidden while Apple configuration is deferred.
 - [ ] Before App Store release, Apple is enabled with the production team's existing `com.litterbugs.app` App ID.
-- [ ] Verification and recovery email uses the approved `support@litterbugs.app` sender.
+- [x] Custom SMTP is configured with the approved `support@litterbugs.app` sender and a Partner-specific Resend credential.
 - [x] Google is in Production; the current Meta development tester is authorized for role-based testing.
 
 ## Email authentication
@@ -106,7 +106,7 @@ Repeat email verification, recovery, and one browser OAuth callback in each stat
 - Device: iPhone 17 Pro simulator, iOS 26.5
 - Runtime: one Litterbugs development client connected to one local Metro server
 - Verified: private iOS OAuth session without the technical app/domain prompt, Google new and returning sign-in, Google/Facebook cancellation recovery, open/background/cold-start browser-auth callback routing, session restore, signed-out restore, email login/signup/recovery layouts, software-keyboard layout, Guest warning, Account sheet, and Yes/No sign-out behavior
-- Remaining: Facebook credential completion, email delivery/recovery, successful provider callbacks from background and cold start, permission/network failure cases, physical-iPhone testing, approved SMTP sender, and Apple before App Store submission
+- Remaining: Facebook credential completion, verification/recovery email delivery, successful provider callbacks from background and cold start, permission/network failure cases, physical-iPhone testing, and Apple before App Store submission
 - Accessibility/source audit: auth controls expose useful labels, visible links meet the 44-point minimum, disabled provider/email actions visibly dim, and session restoration displays a loading indicator instead of a blank screen.
 - Small-screen pass: the welcome screen, auth buttons, email sheet, and keyboard-open email form fit an iPhone SE (3rd generation) simulator without clipping actions. The temporary simulator was deleted immediately after testing and the single iPhone 17 Pro simulator was restored.
 - Provider errors are translated to short retry guidance; native browser and network implementation details are not displayed to users.
@@ -116,6 +116,7 @@ Repeat email verification, recovery, and one browser OAuth callback in each stat
 - Date: 2026-08-15
 - Project read-back: `mvaygkflcjswtwchflrk` is `Litterbugs` and reports `ACTIVE_HEALTHY`.
 - Auth logs confirm Google signup/login/logout, successful email-password login, rejected invalid credentials, and rejected repeated signup.
+- Live Auth configuration confirms the verified Resend sender `support@litterbugs.app`, SMTP host/port/username, and the presence of the encrypted Partner-specific SMTP password. No secret value is recorded here.
 - Project read-back reports zero database migrations, zero Supabase branches, and zero Edge Functions.
 - No personal email address, token, provider secret, or callback payload is recorded in this checklist.
 
