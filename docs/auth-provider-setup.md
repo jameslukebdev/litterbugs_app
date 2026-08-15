@@ -17,11 +17,36 @@ Under Authentication → Providers → Email, require email confirmation. Config
 
 ## Google and Facebook
 
-Create new provider applications. Each provider's OAuth callback is:
+Create new provider applications. Do not reuse the dormant credentials currently visible in the disabled Supabase provider forms. Each provider's OAuth callback is:
 
 `https://mvaygkflcjswtwchflrk.supabase.co/auth/v1/callback`
 
 Copy the new provider IDs and secrets into the matching Supabase Auth provider. Do not place them in `.env`, `app.json`, or source files.
+
+### Google test configuration
+
+1. Create a new Google Cloud project dedicated to the production Litterbugs app. Do not select an unrelated project or the retired prototype.
+2. In Google Auth Platform, configure an External audience in Testing mode.
+3. Use only the `openid`, `.../auth/userinfo.email`, and `.../auth/userinfo.profile` scopes required by Supabase Auth.
+4. Create an OAuth client with application type **Web application**.
+5. Add the exact Supabase callback above under **Authorized redirect URIs**.
+6. Add only the two partners and intentional test accounts as test users.
+7. Save the new Client ID and Client Secret only in the Google console and the Google provider form in Supabase project `mvaygkflcjswtwchflrk`.
+
+Keep the Google app in Testing mode until the app's public privacy/domain requirements are ready. Google brand verification and public publishing are release work, not prerequisites for partner testing.
+
+### Facebook test configuration
+
+1. Create a new Meta app dedicated to the production Litterbugs app. Keep it separate from every existing Meta app and business portfolio not owned by this project.
+2. Add the **Authentication and account creation** use case (Facebook Login).
+3. In Facebook Login settings, add the exact Supabase callback above under **Valid OAuth Redirect URIs**.
+4. Confirm both `public_profile` and `email` are Ready for testing; Supabase Auth requires the email permission.
+5. Add only the two partners and intentional test accounts under App Roles, and have each invited tester accept the role.
+6. Save the new App ID and App Secret only in the Meta console and the Facebook provider form in Supabase project `mvaygkflcjswtwchflrk`.
+
+Keep the Meta app in Development mode until its privacy URL, data-deletion instructions, business verification, and any required review are complete. Development mode is sufficient for role-based partner testing.
+
+Authoritative references: [Supabase Google login setup](https://supabase.com/docs/guides/auth/social-login/auth-google) and [Supabase Facebook login setup](https://supabase.com/docs/guides/auth/social-login/auth-facebook).
 
 ## Apple
 
