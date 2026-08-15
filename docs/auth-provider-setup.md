@@ -85,7 +85,16 @@ This repository is linked to the isolated EAS project `@gegibson/litterbugs-part
 
 The current rollout is iOS-first. Android setup and Android builds are deferred until a later branch or explicit follow-up; do not start Android Studio, Gradle, or an Android emulator for the current work.
 
-Build the iOS development client after the Apple account and signing credentials are ready:
+The isolated iOS simulator development build completed successfully on 2026-08-15:
+
+- Build ID: `1371c8b8-4a57-4e73-bfce-10c918b0c4b6`
+- Build page: `https://expo.dev/accounts/gegibson/projects/litterbugs-partner/builds/1371c8b8-4a57-4e73-bfce-10c918b0c4b6`
+- Profile: `development-simulator`
+- Runtime: Expo SDK 54
+
+It was installed and verified in a single iPhone 17 Pro simulator. The native iOS authentication prompt correctly identifies the host app as **Litterbugs**. Google completed a new and returning sign-in and returned to the app; Facebook reached Meta's hosted login page and canceled back to the app cleanly. Provider-hosted pages and the standard iOS authentication confirmation are intentionally not restyled by the app.
+
+Build a new iOS development client only after native dependencies or native configuration change:
 
 ```sh
 npx eas-cli build --profile development --platform ios
