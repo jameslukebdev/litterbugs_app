@@ -68,9 +68,10 @@ Run every provider section with both a new provider account and a returning acco
 - [ ] Returning account succeeds.
 - [x] User cancellation returns safely to Litterbugs.
 - [x] Meta's hosted permission page displays the correct Litterbugs name and logo.
+- [x] The first approved Meta grant created one Facebook identity server-side in the correct Supabase project.
 - [ ] A successful permission grant returns to `litterbugs://auth/callback` instead of `localhost`.
 - [ ] Permission denial produces a useful error.
-- [ ] Matching an existing verified email does not create an unintended duplicate identity.
+- [x] Matching an existing verified email links the Facebook identity to the existing user instead of creating a duplicate user.
 - [ ] Network interruption fails safely and allows retry.
 
 ## Callback and lifecycle states
@@ -125,6 +126,7 @@ Repeat email verification, recovery, and one browser OAuth callback in each stat
 
 - Date: 2026-08-15
 - Project read-back: `mvaygkflcjswtwchflrk` is `Litterbugs` and reports `ACTIVE_HEALTHY`.
+- Identity read-back reports one Google identity and one Facebook identity. The Facebook identity shares its user with the existing email identity; no duplicate provider user was created.
 - Auth logs confirm Google signup/login/logout, successful email-password login, rejected invalid credentials, and rejected repeated signup.
 - Live Auth configuration confirms the verified Resend sender `support@litterbugs.app`, SMTP host/port/username, and the presence of the encrypted Partner-specific SMTP password. No secret value is recorded here.
 - Live Auth configuration read-back confirms the branded confirmation and recovery subjects, exactly one user action in each body, and the required `{{ .ConfirmationURL }}` variable in both templates.
