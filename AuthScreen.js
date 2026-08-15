@@ -268,13 +268,23 @@ export default function AuthScreen() {
                       <Text style={emailStyles.sentTitle}>Check your email</Text>
                       <Text style={emailStyles.sentText}>
                         {sentReason === 'signup'
-                          ? `We sent a verification link to ${cleanAddress(email)}. Open it to finish creating your account.`
+                          ? `If ${cleanAddress(email)} is new, a verification link is on its way. If you’ve used this email before, sign in or reset your password.`
                           : `If an account exists for ${cleanAddress(email)}, a password-reset link is on its way.`}
                       </Text>
                       {sentReason === 'signup' && (
-                        <TouchableOpacity style={emailStyles.textButton} onPress={handleResend} disabled={loadingEmail} accessibilityRole="button" accessibilityLabel="Resend verification email">
-                          {loadingEmail ? <ActivityIndicator color="#2F7D32" /> : <Text style={emailStyles.linkText}>Resend verification email</Text>}
-                        </TouchableOpacity>
+                        <>
+                          <TouchableOpacity style={emailStyles.textButton} onPress={handleResend} disabled={loadingEmail} accessibilityRole="button" accessibilityLabel="Resend verification email">
+                            {loadingEmail ? <ActivityIndicator color="#2F7D32" /> : <Text style={emailStyles.linkText}>Resend verification email</Text>}
+                          </TouchableOpacity>
+                          <View style={emailStyles.sentLinksRow}>
+                            <TouchableOpacity style={emailStyles.sentLinkButton} onPress={() => resetForm('login')} accessibilityRole="button" accessibilityLabel="Sign in instead">
+                              <Text style={emailStyles.linkText}>Sign in instead</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={emailStyles.sentLinkButton} onPress={() => resetForm('forgot')} accessibilityRole="button" accessibilityLabel="Reset password">
+                              <Text style={emailStyles.linkText}>Reset password</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </>
                       )}
                       {!!formError && <Text style={emailStyles.error}>{formError}</Text>}
                       <TouchableOpacity style={emailStyles.primaryButton} onPress={closeEmail}>
@@ -407,4 +417,6 @@ const emailStyles = StyleSheet.create({
   sentTitle: { fontSize: 22, fontWeight: '800', color: '#333', marginTop: 12 },
   sentText: { fontSize: 15, lineHeight: 22, color: '#5C6670', textAlign: 'center', marginTop: 8 },
   textButton: { minHeight: 44, justifyContent: 'center', marginTop: 5 },
+  sentLinksRow: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', columnGap: 18 },
+  sentLinkButton: { minHeight: 44, justifyContent: 'center' },
 });
