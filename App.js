@@ -7,6 +7,8 @@ import { StyleSheet, Text, View, Image, TouchableOpacity, useWindowDimensions, A
 
 import AuthScreen from './AuthScreen';
 import MapScreen from './MapScreen';
+import ResetPasswordScreen from './ResetPasswordScreen';
+import { handleAuthCallbackUrl, PASSWORD_RECOVERY_PATH } from './lib/auth';
 import { supabase } from './lib/supabase';
 
 const Stack = createNativeStackNavigator();
@@ -77,28 +79,75 @@ function HomeScreen({ navigation }) {
 export default function App() {
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
 
   useEffect(() => {
-    // 1️⃣ Restore session on app load
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setAuthLoading(false);
-    });
+    let mounted = true;
 
-    // 2️⃣ Listen for auth changes (login / logout)
     const { data: subscription } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
+      (event, nextSession) => {
+        if (!mounted) return;
+        setSession(nextSession);
+        if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
       }
     );
 
+    const processAuthUrl = async (url) => {
+      if (!url) return;
+      try {
+        const result = await handleAuthCallbackUrl(url);
+        if (result.type === 'recovery' || url.includes(PASSWORD_RECOVERY_PATH)) {
+          setPasswordRecovery(true);
+        }
+      } catch (error) {
+        Alert.alert(
+          'This link is no longer valid',
+          error.message || 'Please return to Litterbugs and request a new link.'
+        );
+      }
+    };
+
+    const linkSubscription = Linking.addEventListener('url', ({ url }) => {
+      processAuthUrl(url);
+    });
+
+    const restoreSession = async () => {
+      const [{ data }, initialUrl] = await Promise.all([
+        supabase.auth.getSession(),
+        Linking.getInitialURL(),
+      ]);
+
+      if (!mounted) return;
+      setSession(data.session);
+      await processAuthUrl(initialUrl);
+      if (mounted) setAuthLoading(false);
+    };
+
+    restoreSession().catch((error) => {
+      console.log('Auth restore error:', error);
+      if (mounted) setAuthLoading(false);
+    });
+
     return () => {
+      mounted = false;
+      linkSubscription.remove();
       subscription.subscription.unsubscribe();
     };
   }, []);
 
   // ⛔ Don’t render navigation until session is known
   if (authLoading) return null;
+
+  if (session && passwordRecovery) {
+    return (
+      <ResetPasswordScreen
+        onComplete={() => {
+          setPasswordRecovery(false);
+          Alert.alert('Password updated', 'Your new password is ready to use.');
+        }}
+      />
+    );
+  }
 
   return (
     <NavigationContainer>

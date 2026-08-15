@@ -1,542 +1,404 @@
 import { useState } from 'react';
-import { View, 
-  Text, 
-  Modal, 
-  TextInput, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Platform, 
-  Image, 
-  TouchableWithoutFeedback, 
-  ActivityIndicator,
-  KeyboardAvoidingView,
- } from 'react-native';
+import {
+  ActivityIndicator, Alert, Image, KeyboardAvoidingView, Modal, Platform,
+  ScrollView, StyleSheet, Text, TextInput, TouchableOpacity,
+  TouchableWithoutFeedback, View,
+} from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from './lib/supabase';
-import { Alert } from 'react-native';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
 
+import {
+  resendSignupVerification, sendPasswordRecovery, signInWithEmail,
+  signInWithProvider, signUpWithEmail,
+} from './lib/auth';
+import { supabase } from './lib/supabase';
 
 WebBrowser.maybeCompleteAuthSession();
 
+const PROVIDERS = [
+  { id: 'google', label: 'Continue with Google', icon: 'logo-google' },
+  { id: 'apple', label: 'Continue with Apple', icon: 'logo-apple' },
+  { id: 'facebook', label: 'Continue with Facebook', icon: 'logo-facebook' },
+];
+
+const cleanAddress = (value) => value.trim().toLowerCase();
 
 export default function AuthScreen() {
-    const navigation = useNavigation();
-    const [emailModalOpen, setEmailModalOpen] = useState(false);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [loadingEmail, setLoadingEmail] = useState(false);
-    const redirectTo = Linking.createURL('auth-callback');
-    const [showPassword, setShowPassword] = useState(false);
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [emailMode, setEmailMode] = useState('login');
+  const [sentReason, setSentReason] = useState('signup');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loadingEmail, setLoadingEmail] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState(null);
+  const [formError, setFormError] = useState('');
 
+  const resetForm = (mode = 'login') => {
+    setEmailMode(mode);
+    setPassword('');
+    setShowPassword(false);
+    setFormError('');
+  };
 
-    const handleEmailContinue = async () => {
-      const cleanEmail = email.trim().toLowerCase();
-    
-      if (!cleanEmail || !password) {
-        Alert.alert('Missing info', 'Please enter an email and password.');
-        return;
-      }
-    
-      if (password.length < 6) {
-        Alert.alert('Password too short', 'Password must be at least 6 characters.');
-        return;
-      }
-    
-      try {
-        setLoadingEmail(true);
-    
-        // 1️⃣ Try sign-in first
-        const { data: signInData, error: signInError } =
-          await supabase.auth.signInWithPassword({
-            email: cleanEmail,
-            password,
-          });
-    
-        if (!signInError && signInData?.session) {
-          // ✅ Signed in successfully
-          setEmailModalOpen(false);
-          setPassword('');
+  const openEmail = () => {
+    resetForm('login');
+    setEmailModalOpen(true);
+  };
+
+  const closeEmail = () => {
+    if (loadingEmail) return;
+    setEmailModalOpen(false);
+    resetForm('login');
+  };
+
+  const validateEmail = () => {
+    const cleanEmail = cleanAddress(email);
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setFormError('Enter a valid email address.');
+      return null;
+    }
+    return cleanEmail;
+  };
+
+  const handleEmailSubmit = async () => {
+    setFormError('');
+    const cleanEmail = validateEmail();
+    if (!cleanEmail) return;
+
+    if (emailMode === 'login' && !password) {
+      setFormError('Enter your password.');
+      return;
+    }
+
+    if (emailMode === 'signup' && password.length < 8) {
+      setFormError('Use at least 8 characters for your new password.');
+      return;
+    }
+
+    try {
+      setLoadingEmail(true);
+
+      if (emailMode === 'login') {
+        const { error } = await signInWithEmail(cleanEmail, password);
+        if (error) {
+          const unverified = error.message?.toLowerCase().includes('email not confirmed');
+          setFormError(unverified
+            ? 'Please verify your email before signing in.'
+            : 'That email and password did not match. Try again or reset your password.');
           return;
         }
-    
-        // ❗ Only attempt sign-up if user truly does not exist
-        const shouldAttemptSignUp =
-          signInError?.message?.toLowerCase().includes('invalid login credentials') ||
-          signInError?.message?.toLowerCase().includes('user not found');
-    
-        if (!shouldAttemptSignUp) {
-          // ❌ Wrong password, unconfirmed email, etc.
-          Alert.alert('Sign-in failed', signInError.message);
-          return;
-        }
-    
-        // 2️⃣ Try sign-up
-        const { data: signUpData, error: signUpError } =
-          await supabase.auth.signUp({
-            email: cleanEmail,
-            password,
-          });
-    
-        if (signUpError) {
-          Alert.alert('Unable to continue', signUpError.message);
-          return;
-        }
-    
-        if (signUpData?.session) {
-          // ✅ Signed up & logged in immediately
-          setEmailModalOpen(false);
-          setPassword('');
-          return;
-        }
-    
-        // ✅ Email confirmation required
-        Alert.alert(
-          'Check your email',
-          'We sent you a confirmation link. Please confirm your email, then come back and sign in.'
-        );
-    
         setEmailModalOpen(false);
         setPassword('');
-      } catch (e) {
-        Alert.alert('Error', 'Something went wrong. Please try again.');
-        console.log('Email auth error:', e);
-      } finally {
-        setLoadingEmail(false);
+        return;
       }
-    };
 
-    
-    const handleGuestSignIn = async () => {
-      try {
-        const { data, error } = await supabase.auth.signInAnonymously();
-    
+      if (emailMode === 'signup') {
+        const { data, error } = await signUpWithEmail(cleanEmail, password);
         if (error) {
-          Alert.alert('Guest sign-in failed', error.message);
+          const duplicate = error.message?.toLowerCase().includes('already registered')
+            || error.message?.toLowerCase().includes('already been registered');
+          setFormError(duplicate
+            ? 'An account may already exist for this email. Try signing in or reset your password.'
+            : error.message || 'Unable to create your account.');
           return;
         }
-    
-        // ✅ Inform user of guest limitations (shown once per sign-in)
-        Alert.alert(
-          'Guest Mode',
-          'As a guest, you may create and view litter reports anonymously.\n\nTo edit or delete your reports, you must sign in. Anonymous users cannot edit or delete their reports once created.',
-          [{ text: 'OK' }]
-        );
-    
-        // ✅ Session is now set
-        // App.js auth listener will redirect automatically
-      } catch (err) {
-        console.log('Guest auth error:', err);
-        Alert.alert('Error', 'Unable to continue as guest.');
+        if (data?.session) {
+          setEmailModalOpen(false);
+          setPassword('');
+          return;
+        }
+        setSentReason('signup');
+        setEmailMode('sent');
+        setPassword('');
+        return;
       }
-    };
-    
-    
 
+      const { error } = await sendPasswordRecovery(cleanEmail);
+      if (error) {
+        setFormError(error.message || 'Unable to send a reset link.');
+        return;
+      }
+      setSentReason('recovery');
+      setEmailMode('sent');
+    } catch (error) {
+      setFormError(error.message || 'Something went wrong. Please try again.');
+    } finally {
+      setLoadingEmail(false);
+    }
+  };
 
+  const handleResend = async () => {
+    setFormError('');
+    const cleanEmail = validateEmail();
+    if (!cleanEmail) return;
 
-    // const handleGoogleSignIn = async () => {
-    //   console.log('Google button pressed');
-    
-    //   try {
-    //     const redirectTo = Linking.createURL('auth-callback');
-    
-    //     const { data, error } = await supabase.auth.signInWithOAuth({
-    //       provider: 'google',
-    //       options: {
-    //         redirectTo,
-    //       },
-    //     });
-    
-    //     if (error) {
-    //       Alert.alert('Google sign-in failed', error.message);
-    //       return;
-    //     }
-    
-    //     if (!data?.url) {
-    //       console.log('No OAuth URL returned');
-    //       return;
-    //     }
-    
-    //     console.log('Opening OAuth URL:', data.url);
-    
-    //     await WebBrowser.openAuthSessionAsync(
-    //       data.url,
-    //       redirectTo
-    //     );
-    
-    //   } catch (err) {
-    //     console.log('Unexpected Google auth error:', err);
-    //   }
-    // };
-    
-    
-    
-    
+    try {
+      setLoadingEmail(true);
+      const { error } = await resendSignupVerification(cleanEmail);
+      if (error) throw error;
+      Alert.alert('Email sent', 'We sent a fresh verification link.');
+    } catch (error) {
+      setFormError(error.message || 'Unable to resend the verification email.');
+    } finally {
+      setLoadingEmail(false);
+    }
+  };
+
+  const handleProvider = async (provider) => {
+    try {
+      setLoadingProvider(provider);
+      await signInWithProvider(provider);
+    } catch (error) {
+      if (error?.code === 'ERR_REQUEST_CANCELED') return;
+      const name = provider.charAt(0).toUpperCase() + provider.slice(1);
+      Alert.alert(`${name} sign in unavailable`, error.message || 'Please try again.');
+    } finally {
+      setLoadingProvider(null);
+    }
+  };
+
+  const handleGuestSignIn = async () => {
+    try {
+      setLoadingProvider('guest');
+      const { error } = await supabase.auth.signInAnonymously();
+      if (error) throw error;
+      Alert.alert(
+        'Guest mode',
+        'You can create and manage reports during this guest session. If you sign out or remove the app, this guest account and its reports cannot be transferred or recovered.',
+        [{ text: 'Continue' }]
+      );
+    } catch (error) {
+      Alert.alert('Guest sign-in failed', error.message || 'Unable to continue as a guest.');
+    } finally {
+      setLoadingProvider(null);
+    }
+  };
+
+  const renderProviderButton = ({ id, label, icon }) => {
+    const loading = loadingProvider === id;
+    const disabled = Boolean(loadingProvider);
+
+    if (id === 'apple' && Platform.OS === 'ios') {
+      return (
+        <View
+          key={id}
+          style={[styles.appleButtonFrame, disabled && styles.disabled]}
+          pointerEvents={disabled ? 'none' : 'auto'}
+        >
+          {loading ? <ActivityIndicator color="#222" /> : (
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+              cornerRadius={14}
+              style={styles.nativeAppleButton}
+              onPress={() => handleProvider('apple')}
+            />
+          )}
+        </View>
+      );
+    }
+
+    return (
+      <TouchableOpacity
+        key={id}
+        style={[styles.providerButton, id === 'facebook' && styles.facebookButton, disabled && styles.disabled]}
+        onPress={() => handleProvider(id)}
+        disabled={disabled}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+      >
+        {loading ? <ActivityIndicator color={id === 'facebook' ? '#fff' : '#333'} /> : (
+          <>
+            <Ionicons name={icon} size={21} color={id === 'facebook' ? '#fff' : '#222'} style={styles.buttonIcon} />
+            <Text style={[styles.providerText, id === 'facebook' && styles.facebookText]}>{label}</Text>
+          </>
+        )}
+      </TouchableOpacity>
+    );
+  };
+
+  const title = emailMode === 'signup'
+    ? 'Create your account'
+    : emailMode === 'forgot' ? 'Reset your password' : 'Sign in with email';
 
   return (
     <View style={styles.container}>
-      <Image
-        source={require('./assets/LB_Logo_PNG.png')}
-        style={styles.logo}
-        resizeMode="contain"
-      />
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <Image source={require('./assets/LB_Logo_PNG.png')} style={styles.logo} resizeMode="contain" />
+        <Text style={styles.title}>Join the Cleanup Movement</Text>
+        <Text style={styles.subtitle}>Sign in to track and share reports.</Text>
 
-      <Text style={styles.title}>Join the Cleanup Movement</Text>
-      <Text style={styles.subtitle}>Sign in to track and share reports.</Text>
-
-      {/* <TouchableOpacity style={styles.googleButton} onPress={handleGoogleSignIn}>
-          <Ionicons
-          name="logo-google"
-          size={20}
-          color="#4285F4"
-          style={styles.buttonIcon}
-          />
-        <Text style={styles.googleText}>Continue with Google</Text>
-      </TouchableOpacity> */}
-
-      {/* {Platform.OS === 'ios' && (
-        <TouchableOpacity style={styles.appleButton} onPress={() => console.log('Apple sign in')}>
-                <Ionicons
-                  name="logo-apple"
-                  size={20}
-                  color="#000"
-                  style={styles.buttonIcon}
-                  />
-          <Text style={styles.appleText}>Continue with Apple</Text>
-        </TouchableOpacity>
-      )} */}
-
-      <TouchableOpacity 
-        style={styles.emailButton}  
-        onPress={() => setEmailModalOpen(true)} 
-         >
-            <Ionicons
-            name="mail-outline"
-            size={20}
-            color="#2F7D32"
-            style={styles.buttonIcon}
-            />
+        <View style={styles.actions}>
+          {PROVIDERS.map(renderProviderButton)}
+          <View style={styles.dividerRow}>
+            <View style={styles.divider} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.divider} />
+          </View>
+          <TouchableOpacity style={styles.emailButton} onPress={openEmail} disabled={Boolean(loadingProvider)} accessibilityRole="button" accessibilityLabel="Continue with Email">
+            <Ionicons name="mail-outline" size={21} color="#fff" style={styles.buttonIcon} />
             <Text style={styles.emailText}>Continue with Email</Text>
-      </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.guestButton}
-          onPress={handleGuestSignIn}
-          >
-          <Ionicons
-            name="person-outline"
-            size={20}
-            color="#555"
-            style={styles.buttonIcon}
-          />
-          <Text style={styles.guestText}>Continue as Guest</Text>
-        </TouchableOpacity>
-
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.guestLink} onPress={handleGuestSignIn} disabled={Boolean(loadingProvider)} accessibilityRole="button" accessibilityLabel="Continue as Guest">
+            {loadingProvider === 'guest' ? <ActivityIndicator color="#555" /> : <Text style={styles.guestText}>Continue as Guest</Text>}
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
 
       <StatusBar hidden={false} />
+      <Modal visible={emailModalOpen} animationType="slide" transparent onRequestClose={closeEmail}>
+        <TouchableWithoutFeedback onPress={closeEmail}>
+          <View style={emailStyles.backdrop}>
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={emailStyles.kav}>
+              <TouchableWithoutFeedback>
+                <View style={emailStyles.sheet}>
+                  <View style={emailStyles.handle} />
+                  {emailMode === 'sent' ? (
+                    <View style={emailStyles.sentContent}>
+                      <Ionicons name="mail-unread-outline" size={42} color="#2F7D32" />
+                      <Text style={emailStyles.sentTitle}>Check your email</Text>
+                      <Text style={emailStyles.sentText}>
+                        {sentReason === 'signup'
+                          ? `We sent a verification link to ${cleanAddress(email)}. Open it to finish creating your account.`
+                          : `If an account exists for ${cleanAddress(email)}, a password-reset link is on its way.`}
+                      </Text>
+                      {sentReason === 'signup' && (
+                        <TouchableOpacity style={emailStyles.textButton} onPress={handleResend} disabled={loadingEmail} accessibilityRole="button" accessibilityLabel="Resend verification email">
+                          {loadingEmail ? <ActivityIndicator color="#2F7D32" /> : <Text style={emailStyles.linkText}>Resend verification email</Text>}
+                        </TouchableOpacity>
+                      )}
+                      {!!formError && <Text style={emailStyles.error}>{formError}</Text>}
+                      <TouchableOpacity style={emailStyles.primaryButton} onPress={closeEmail}>
+                        <Text style={emailStyles.primaryButtonText}>Done</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <>
+                      <View style={emailStyles.headingRow}>
+                        <View style={emailStyles.headingCopy}>
+                          <Text style={emailStyles.title}>{title}</Text>
+                          <Text style={emailStyles.subtitle}>
+                            {emailMode === 'signup' ? 'We’ll email you a link to verify your account.'
+                              : emailMode === 'forgot' ? 'We’ll send a secure link to your email.' : 'Welcome back.'}
+                          </Text>
+                        </View>
+                        <TouchableOpacity onPress={closeEmail} style={emailStyles.closeButton} accessibilityLabel="Close">
+                          <Ionicons name="close" size={24} color="#555" />
+                        </TouchableOpacity>
+                      </View>
 
+                      <Text style={emailStyles.label}>Email</Text>
+                      <TextInput
+                        value={email} onChangeText={setEmail} placeholder="you@example.com"
+                        autoCapitalize="none" autoCorrect={false} keyboardType="email-address"
+                        textContentType="emailAddress" autoComplete="email" style={emailStyles.input}
+                        accessibilityLabel="Email address"
+                      />
 
-<Modal
-  visible={emailModalOpen}
-  animationType="slide"
-  transparent
-  onRequestClose={() => setEmailModalOpen(false)}
->
-  <TouchableWithoutFeedback onPress={() => setEmailModalOpen(false)}>
-    <View style={emailModalStyles.backdrop}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={emailModalStyles.kav}
-      >
-        <TouchableWithoutFeedback>
-          <View style={emailModalStyles.sheet}>
-            <Text style={emailModalStyles.title}>Sign in with Email</Text>
-            <Text style={emailModalStyles.subtitle}>
-            </Text>
+                      {emailMode !== 'forgot' && (
+                        <>
+                          <Text style={emailStyles.label}>Password</Text>
+                          <View style={emailStyles.passwordRow}>
+                            <TextInput
+                              value={password} onChangeText={setPassword} placeholder="At least 8 characters"
+                              autoCapitalize="none" autoCorrect={false} secureTextEntry={!showPassword}
+                              textContentType={emailMode === 'signup' ? 'newPassword' : 'password'}
+                              autoComplete={emailMode === 'signup' ? 'new-password' : 'current-password'}
+                              style={emailStyles.passwordInput} returnKeyType="done"
+                              onSubmitEditing={handleEmailSubmit} accessibilityLabel="Password"
+                            />
+                            <TouchableOpacity onPress={() => setShowPassword((visible) => !visible)} style={emailStyles.eyeButton} accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}>
+                              <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={22} color="#666" />
+                            </TouchableOpacity>
+                          </View>
+                        </>
+                      )}
 
-            <Text style={emailModalStyles.label}>Email</Text>
-            <TextInput
-              value={email}
-              onChangeText={setEmail}
-              placeholder="you@example.com"
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              textContentType="emailAddress"
-              style={emailModalStyles.input}
-              returnKeyType="next"
-            />
-
-            <Text style={emailModalStyles.label}>Password</Text>
-
-            <View style={{ position: 'relative' }}>
-              <TextInput
-                value={password}
-                onChangeText={setPassword}
-                placeholder="••••••••"
-                autoCapitalize="none"
-                autoCorrect={false}
-                secureTextEntry={!showPassword}   // 👈 key change
-                textContentType="password"
-                style={emailModalStyles.input}
-                returnKeyType="done"
-              />
-
-              <TouchableOpacity
-                onPress={() => setShowPassword((prev) => !prev)}
-                style={{
-                  position: 'absolute',
-                  right: 14,
-                  top: '50%',
-                  transform: [{ translateY: -12 }],
-                }}
-                accessibilityLabel={
-                  showPassword ? 'Hide password' : 'Show password'
-                }
-              >
-                <Ionicons
-                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                  size={22}
-                  color="#666"
-                />
-              </TouchableOpacity>
-            </View>
-
-
-            <TouchableOpacity
-              style={emailModalStyles.primaryBtn}
-              onPress={handleEmailContinue}
-              // onPress={async () => {
-              //   // UI-only placeholder for now
-              //   setLoadingEmail(true);
-              //   setTimeout(() => {
-              //     console.log('Email auth submit:', { email, password });
-              //     setLoadingEmail(false);
-              //     // leave modal open for now; we’ll close it after Supabase auth succeeds
-              //   }, 400);
-              // }}
-              disabled={loadingEmail}
-              accessibilityRole="button"
-              accessibilityLabel="Continue with email and password"
-            >
-              {loadingEmail ? (
-                <ActivityIndicator />
-              ) : (
-                <Text style={emailModalStyles.primaryBtnText}>Continue</Text>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={emailModalStyles.secondaryBtn}
-              onPress={() => setEmailModalOpen(false)}
-              accessibilityRole="button"
-              accessibilityLabel="Cancel email sign in"
-            >
-              <Text style={emailModalStyles.secondaryBtnText}>Cancel</Text>
-            </TouchableOpacity>
+                      {emailMode === 'login' && (
+                        <TouchableOpacity style={emailStyles.forgotButton} onPress={() => resetForm('forgot')}>
+                          <Text style={emailStyles.linkText}>Forgot password?</Text>
+                        </TouchableOpacity>
+                      )}
+                      {!!formError && <Text style={emailStyles.error}>{formError}</Text>}
+                      <TouchableOpacity style={[emailStyles.primaryButton, loadingEmail && styles.disabled]} onPress={handleEmailSubmit} disabled={loadingEmail} accessibilityRole="button" accessibilityLabel={title}>
+                        {loadingEmail ? <ActivityIndicator color="#fff" /> : (
+                          <Text style={emailStyles.primaryButtonText}>
+                            {emailMode === 'signup' ? 'Create account' : emailMode === 'forgot' ? 'Send reset link' : 'Sign in'}
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                      <View style={emailStyles.switchRow}>
+                        <Text style={emailStyles.switchText}>
+                          {emailMode === 'login' ? 'New to Litterbugs?' : emailMode === 'signup' ? 'Already have an account?' : 'Remember your password?'}
+                        </Text>
+                        <TouchableOpacity onPress={() => resetForm(emailMode === 'login' ? 'signup' : 'login')}>
+                          <Text style={emailStyles.switchLink}>{emailMode === 'login' ? 'Create account' : 'Sign in'}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </>
+                  )}
+                </View>
+              </TouchableWithoutFeedback>
+            </KeyboardAvoidingView>
           </View>
         </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+      </Modal>
     </View>
-  </TouchableWithoutFeedback>
-</Modal>
-
-    </View>  
   );
 }
 
-
-
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F6F7',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  logo: {
-    width: 200,
-    height: 200,
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#333',
-    marginBottom: 6,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  googleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#81C784', // friendly green
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 14,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3.5,
-    elevation: 3,
-  },
-  googleText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  appleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FF6F61',
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 14,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3.5,
-    elevation: 3,
-  },
-  appleText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  emailButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FF6F61',
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 14,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3.5,
-    elevation: 3,
-  },
-  emailText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  linkText: {
-    color: '#4A78FF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  buttonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonIcon: {
-    marginRight: 8,
-  },
-  guestButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFC42E',
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 14,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3.5,
-    elevation: 3,
-  },
-  guestText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
+  container: { flex: 1, backgroundColor: '#F5F6F7' },
+  content: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 24 },
+  logo: { width: 145, height: 145, marginBottom: 8 },
+  title: { fontSize: 23, fontWeight: '800', color: '#333', marginBottom: 6, textAlign: 'center' },
+  subtitle: { fontSize: 15, color: '#666', marginBottom: 22, textAlign: 'center' },
+  actions: { width: '100%', maxWidth: 420 },
+  providerButton: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: '#D8DDE2', borderRadius: 14, marginBottom: 11 },
+  providerText: { color: '#222', fontSize: 16, fontWeight: '700' },
+  facebookButton: { backgroundColor: '#4267B2', borderColor: '#4267B2' },
+  facebookText: { color: '#fff' },
+  appleButtonFrame: { height: 52, justifyContent: 'center', marginBottom: 11 },
+  nativeAppleButton: { width: '100%', height: 52 },
+  buttonIcon: { marginRight: 10 },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 4 },
+  divider: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: '#BCC3CA' },
+  dividerText: { marginHorizontal: 12, color: '#777', fontSize: 13 },
+  emailButton: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#E57373', borderRadius: 14, marginTop: 7 },
+  emailText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  guestLink: { minHeight: 48, alignItems: 'center', justifyContent: 'center', marginTop: 5 },
+  guestText: { color: '#4F5B66', fontSize: 15, fontWeight: '700', textDecorationLine: 'underline' },
+  disabled: { opacity: 0.58 },
 });
 
-const emailModalStyles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.30)',
-    justifyContent: 'flex-end',
-  },
-  kav: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#333',
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: '#666',
-    marginBottom: 12,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 6,
-    marginTop: 10,
-  },
-  input: {
-    backgroundColor: '#F5F6F7',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-  },
-  primaryBtn: {
-    backgroundColor: '#81C784',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 14,
-  },
-  primaryBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  secondaryBtn: {
-    backgroundColor: '#EAEAEA',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  secondaryBtnText: {
-    color: '#333',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-
+const emailStyles = StyleSheet.create({
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.34)', justifyContent: 'flex-end' },
+  kav: { flex: 1, justifyContent: 'flex-end' },
+  sheet: { backgroundColor: '#fff', paddingHorizontal: 22, paddingTop: 10, paddingBottom: Platform.OS === 'ios' ? 34 : 22, borderTopLeftRadius: 22, borderTopRightRadius: 22 },
+  handle: { width: 42, height: 5, borderRadius: 3, backgroundColor: '#D3D7DB', alignSelf: 'center', marginBottom: 14 },
+  headingRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  headingCopy: { flex: 1 },
+  closeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginTop: -8, marginRight: -10 },
+  title: { fontSize: 22, fontWeight: '800', color: '#333' },
+  subtitle: { fontSize: 14, lineHeight: 20, color: '#666', marginTop: 5, marginBottom: 10 },
+  label: { fontSize: 14, fontWeight: '700', color: '#333', marginBottom: 7, marginTop: 11 },
+  input: { minHeight: 50, backgroundColor: '#FAFBFC', borderWidth: 1, borderColor: '#D8DDE2', borderRadius: 12, paddingHorizontal: 14 },
+  passwordRow: { minHeight: 50, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FAFBFC', borderWidth: 1, borderColor: '#D8DDE2', borderRadius: 12 },
+  passwordInput: { flex: 1, paddingHorizontal: 14 },
+  eyeButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
+  forgotButton: { minHeight: 42, alignSelf: 'flex-end', justifyContent: 'center' },
+  linkText: { color: '#2F7D32', fontSize: 14, fontWeight: '800' },
+  error: { color: '#B42318', fontSize: 14, lineHeight: 20, marginTop: 9 },
+  primaryButton: { minHeight: 52, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#2F7D32', marginTop: 14, width: '100%' },
+  primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  switchRow: { minHeight: 46, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 6 },
+  switchText: { color: '#666', fontSize: 14 },
+  switchLink: { color: '#2F7D32', fontSize: 14, fontWeight: '800' },
+  sentContent: { alignItems: 'center', paddingTop: 4 },
+  sentTitle: { fontSize: 22, fontWeight: '800', color: '#333', marginTop: 12 },
+  sentText: { fontSize: 15, lineHeight: 22, color: '#5C6670', textAlign: 'center', marginTop: 8 },
+  textButton: { minHeight: 44, justifyContent: 'center', marginTop: 5 },
 });
-

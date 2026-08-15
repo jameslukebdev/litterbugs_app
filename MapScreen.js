@@ -54,6 +54,8 @@ export default function MapScreen() {
   const [editingReportId, setEditingReportId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [photosLoading, setPhotosLoading] = useState(false);
   const PATREON_URL = "https://patreon.com/litterbugs?utm_medium=unknown&utm_source=join_link&utm_campaign=creatorshare_creator&utm_content=copyLink"; // <-- paste your real link
@@ -244,9 +246,13 @@ export default function MapScreen() {
 // Confirm before signing the user out
 
 const handleSignOut = () => {
+  const guestWarning = currentUser?.is_anonymous
+    ? 'Are you sure you want to sign out? This guest account cannot be recovered or transferred.'
+    : 'Are you sure you want to sign out?';
+
   Alert.alert(
     'Sign Out',
-    'Are you sure you want to sign out?',
+    guestWarning,
     [
       {
         text: 'No',
@@ -256,6 +262,7 @@ const handleSignOut = () => {
         text: 'Yes',
         style: 'destructive',
         onPress: async () => {
+          setAccountOpen(false);
           const { error } = await supabase.auth.signOut();
 
           if (error) {
@@ -480,6 +487,7 @@ const handleSignOut = () => {
     useEffect(() => {
       supabase.auth.getUser().then(({ data }) => {
         setCurrentUserId(data.user?.id ?? null);
+        setCurrentUser(data.user ?? null);
       });
     }, []);
     
@@ -544,10 +552,17 @@ useEffect(() => {
 
 
 // Checks if User is Owner of Report
-    const isOwner =
+  const isOwner =
     currentUserId &&
     selectedReport &&
     selectedReport.user_id === currentUserId;
+
+  const isGuest = Boolean(currentUser?.is_anonymous);
+  const accountProvider = isGuest
+    ? 'Guest account'
+    : currentUser?.app_metadata?.provider
+      ? `${currentUser.app_metadata.provider.charAt(0).toUpperCase()}${currentUser.app_metadata.provider.slice(1)} account`
+      : 'Litterbugs account';
   
 // Links out to Patreon Account
 // const openPatreon = async () => {
@@ -621,15 +636,67 @@ useEffect(() => {
       </MapView>
 
 
-      {/* Sign Out Button */}
+      {/* Account Button */}
         <TouchableOpacity
-          style={styles.signOutButton}
-          onPress={handleSignOut}
+          style={styles.accountButton}
+          onPress={() => setAccountOpen(true)}
           accessibilityRole="button"
-          accessibilityLabel="Sign out"
+          accessibilityLabel="Open account menu"
         >
-          <Ionicons name="log-out-outline" size={22} color="#444" />
+          <Ionicons name="person-circle-outline" size={25} color="#444" />
         </TouchableOpacity>
+
+        <Modal
+          visible={accountOpen}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setAccountOpen(false)}
+        >
+          <TouchableWithoutFeedback onPress={() => setAccountOpen(false)}>
+            <View style={styles.accountBackdrop}>
+              <TouchableWithoutFeedback>
+                <View style={styles.accountSheet}>
+                  <View style={styles.accountHandle} />
+                  <View style={styles.accountHeadingRow}>
+                    <View style={styles.accountIcon}>
+                      <Ionicons name={isGuest ? 'person-outline' : 'person-circle-outline'} size={28} color="#2F7D32" />
+                    </View>
+                    <View style={styles.accountCopy}>
+                      <Text style={styles.accountTitle}>Account</Text>
+                      <Text style={styles.accountStatus}>{accountProvider}</Text>
+                      {!isGuest && currentUser?.email ? (
+                        <Text style={styles.accountEmail} numberOfLines={1}>{currentUser.email}</Text>
+                      ) : null}
+                    </View>
+                    <TouchableOpacity
+                      style={styles.accountCloseButton}
+                      onPress={() => setAccountOpen(false)}
+                      accessibilityLabel="Close account menu"
+                    >
+                      <Ionicons name="close" size={24} color="#555" />
+                    </TouchableOpacity>
+                  </View>
+
+                  {isGuest ? (
+                    <Text style={styles.accountGuestNote}>
+                      Guest accounts cannot be recovered or transferred after signing out.
+                    </Text>
+                  ) : null}
+
+                  <TouchableOpacity
+                    style={styles.accountSignOutButton}
+                    onPress={handleSignOut}
+                    accessibilityRole="button"
+                    accessibilityLabel="Sign out"
+                  >
+                    <Ionicons name="log-out-outline" size={21} color="#B42318" />
+                    <Text style={styles.accountSignOutText}>Sign out</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
 
         {/* Support Button (Patreon) */}
         {/* <TouchableOpacity
@@ -1450,7 +1517,7 @@ footerBar: {
   borderTopWidth: 1,
   borderColor: 'rgba(0,0,0,0.08)',
 }, 
-signOutButton: {
+accountButton: {
   position: 'absolute',
   top: 30,
   right: 15,
@@ -1468,9 +1535,93 @@ signOutButton: {
   shadowOffset: { width: 0, height: 1 },
   elevation: 3,
 },
+accountBackdrop: {
+  flex: 1,
+  justifyContent: 'flex-end',
+  backgroundColor: 'rgba(0,0,0,0.34)',
+},
+accountSheet: {
+  backgroundColor: '#fff',
+  paddingHorizontal: 22,
+  paddingTop: 10,
+  paddingBottom: Platform.OS === 'ios' ? 34 : 22,
+  borderTopLeftRadius: 22,
+  borderTopRightRadius: 22,
+},
+accountHandle: {
+  width: 42,
+  height: 5,
+  borderRadius: 3,
+  backgroundColor: '#D3D7DB',
+  alignSelf: 'center',
+  marginBottom: 18,
+},
+accountHeadingRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+},
+accountIcon: {
+  width: 48,
+  height: 48,
+  borderRadius: 24,
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: '#EAF5EA',
+},
+accountCopy: {
+  flex: 1,
+  marginLeft: 12,
+},
+accountTitle: {
+  fontSize: 20,
+  fontWeight: '800',
+  color: '#333',
+},
+accountStatus: {
+  color: '#53606B',
+  fontSize: 14,
+  marginTop: 2,
+},
+accountEmail: {
+  color: '#737E87',
+  fontSize: 13,
+  marginTop: 2,
+},
+accountCloseButton: {
+  width: 44,
+  height: 44,
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+accountGuestNote: {
+  marginTop: 16,
+  padding: 12,
+  borderRadius: 10,
+  backgroundColor: '#FFF7E6',
+  color: '#6F4B00',
+  fontSize: 13,
+  lineHeight: 19,
+},
+accountSignOutButton: {
+  minHeight: 50,
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 8,
+  marginTop: 20,
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: '#F1B8B4',
+  backgroundColor: '#FFF7F6',
+},
+accountSignOutText: {
+  color: '#B42318',
+  fontSize: 16,
+  fontWeight: '800',
+},
 supportButton: {
   position: "absolute",
-  top: 85, // <-- adjust if your signOutButton top differs
+  top: 85, // <-- adjust if your accountButton top differs
   right: 14,
   backgroundColor: "rgba(255,255,255,0.95)",
   width: 44,
