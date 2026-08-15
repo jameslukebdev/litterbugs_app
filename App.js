@@ -102,12 +102,16 @@ export default function App() {
           setPasswordRecovery(true);
         }
       } catch (error) {
-        const cancelled = /cancel|denied|declined|access_denied/i.test(error.message || '');
+        const errorMessage = error.message || '';
+        const cancelled = /cancel|denied|declined|access_denied/i.test(errorMessage);
+        const expired = /expired|otp_expired|invalid.*link|already.*used/i.test(errorMessage);
         Alert.alert(
           cancelled ? 'Sign in wasn’t completed' : 'This link is no longer valid',
           cancelled
             ? 'No changes were made. You can try again whenever you’re ready.'
-            : error.message || 'Please return to Litterbugs and request a new link.'
+            : expired
+              ? 'This link may have expired or already been used. Return to Litterbugs and request a new link.'
+              : 'Return to Litterbugs and request a new link.'
         );
       }
     };

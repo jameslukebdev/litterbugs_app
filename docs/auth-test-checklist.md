@@ -21,7 +21,7 @@ Use this checklist on the iOS development client before moving PR #2 out of draf
 - [ ] A new email account receives a verification message and cannot sign in before verification.
 - [ ] A valid verification link opens Litterbugs and establishes the correct session.
 - [ ] Resend verification sends a fresh usable link.
-- [ ] An expired or already-used verification link shows a useful error and recovery action.
+- [x] An expired or already-used verification callback shows a useful error and tells the user to request a new link.
 - [x] Existing email and correct password signs in.
 - [x] Incorrect password shows a mismatch error and the login path never calls signup.
 - [x] An explicit duplicate signup does not create a second identity and directs the user toward sign-in or recovery.
@@ -29,7 +29,7 @@ Use this checklist on the iOS development client before moving PR #2 out of draf
 - [ ] A valid recovery link opens the new-password screen.
 - [ ] Mismatched or short replacement passwords are rejected locally.
 - [ ] Saving a valid replacement password succeeds and the new password signs in.
-- [ ] An expired recovery link shows a useful error and allows requesting another link.
+- [x] An expired recovery callback shows a useful error and tells the user to request a new link.
 - [x] A signed-in Google session is restored after fully closing and reopening the app.
 - [x] A signed-out session stays signed out after fully closing and reopening the app.
 
@@ -112,6 +112,7 @@ Repeat email verification, recovery, and one browser OAuth callback in each stat
 - Small-screen pass: the welcome screen, auth buttons, email sheet, and keyboard-open email form fit an iPhone SE (3rd generation) simulator without clipping actions. The temporary simulator was deleted immediately after testing and the single iPhone 17 Pro simulator was restored.
 - Provider errors are translated to short retry guidance; native browser and network implementation details are not displayed to users.
 - Confirmed sign-out keeps the existing Yes/No alert and displays a disabled `Signing out…` state until Supabase responds.
+- Synthetic denied and expired deep-link callbacks were routed through the installed app without creating a user. Denial produced calm retry guidance; expiration produced an actionable request-a-new-link message.
 
 ## Live Supabase audit
 
