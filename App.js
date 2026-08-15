@@ -100,9 +100,12 @@ export default function App() {
           setPasswordRecovery(true);
         }
       } catch (error) {
+        const cancelled = /cancel|denied|declined|access_denied/i.test(error.message || '');
         Alert.alert(
-          'This link is no longer valid',
-          error.message || 'Please return to Litterbugs and request a new link.'
+          cancelled ? 'Sign in wasn’t completed' : 'This link is no longer valid',
+          cancelled
+            ? 'No changes were made. You can try again whenever you’re ready.'
+            : error.message || 'Please return to Litterbugs and request a new link.'
         );
       }
     };

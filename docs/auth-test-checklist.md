@@ -71,8 +71,8 @@ Run every provider section with both a new provider account and a returning acco
 Repeat email verification, recovery, and one browser OAuth callback in each state:
 
 - [x] App already open for the Google browser OAuth callback.
-- [ ] App in the background.
-- [ ] App fully closed.
+- [x] Browser-auth cancellation callback with the app in the background.
+- [x] Browser-auth cancellation callback with the app fully closed.
 - [ ] Replaying the same callback does not create duplicate work or an extra session.
 - [ ] Returning to the foreground resumes token refresh without running it unnecessarily in the background.
 
@@ -104,8 +104,8 @@ Repeat email verification, recovery, and one browser OAuth callback in each stat
 - Build: EAS iOS simulator development build `1371c8b8-4a57-4e73-bfce-10c918b0c4b6`
 - Device: iPhone 17 Pro simulator, iOS 26.5
 - Runtime: one Litterbugs development client connected to one local Metro server
-- Verified: branded iOS OAuth prompt, Google new and returning sign-in, Google/Facebook cancellation recovery, Google open-app callback, session restore, signed-out restore, email login/signup/recovery layouts, software-keyboard layout, Guest warning, Account sheet, and Yes/No sign-out behavior
-- Remaining: Facebook credential completion, email delivery/recovery, background and cold-start callbacks, permission/network failure cases, smallest supported iPhone, physical-iPhone testing, approved SMTP sender, and Apple before App Store submission
+- Verified: branded iOS OAuth prompt, Google new and returning sign-in, Google/Facebook cancellation recovery, open/background/cold-start browser-auth callback routing, session restore, signed-out restore, email login/signup/recovery layouts, software-keyboard layout, Guest warning, Account sheet, and Yes/No sign-out behavior
+- Remaining: Facebook credential completion, email delivery/recovery, successful provider callbacks from background and cold start, permission/network failure cases, smallest supported iPhone, physical-iPhone testing, approved SMTP sender, and Apple before App Store submission
 
 ## Release decision
 
