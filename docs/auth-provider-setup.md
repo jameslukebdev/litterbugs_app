@@ -30,19 +30,19 @@ Current isolated development resources (non-secret identifiers only):
 - Meta app: `Litterbugs Community Cleanup` (app ID `1477683410862512`)
 - Supabase project: `mvaygkflcjswtwchflrk`
 
-As of 2026-08-15, the new Google and Facebook credentials are stored only in their provider consoles and the matching Supabase Auth provider forms. Both Supabase providers are enabled. The Google app remains in Testing mode, and the Meta app remains unpublished for role-based development testing.
+As of 2026-08-15, the new Google and Facebook credentials are stored only in their provider consoles and the matching Supabase Auth provider forms. Both Supabase providers are enabled. The Google app is in Production with its Litterbugs branding under review, and the Meta app remains unpublished for role-based development testing.
 
-### Google test configuration
+### Google production configuration
 
 1. Create a new Google Cloud project dedicated to the production Litterbugs app. Do not select an unrelated project or the retired prototype.
-2. In Google Auth Platform, configure an External audience in Testing mode.
+2. In Google Auth Platform, configure an External audience. Use Testing only during initial setup, then move to Production for public sign-in and brand verification.
 3. Use only the `openid`, `.../auth/userinfo.email`, and `.../auth/userinfo.profile` scopes required by Supabase Auth.
 4. Create an OAuth client with application type **Web application**.
 5. Add the exact Supabase callback above under **Authorized redirect URIs**.
-6. Add only the two partners and intentional test accounts as test users.
+6. During Testing, add only the two partners and intentional test accounts. Production mode is no longer limited to that test-user list.
 7. Save the new Client ID and Client Secret only in the Google console and the Google provider form in Supabase project `mvaygkflcjswtwchflrk`.
 
-Keep the Google app in Testing mode until the app's public privacy/domain requirements are ready. Google brand verification and public publishing are release work, not prerequisites for partner testing.
+The Google app moved to Production on 2026-08-15. The permanent `litterbugs.app` domain is verified in Google Search Console through a single Cloudflare TXT record, and the Litterbugs name, logo, homepage, privacy policy, and terms are under Google brand review. Keep the DNS verification record in place so domain ownership remains valid.
 
 ### Facebook test configuration
 
@@ -92,7 +92,7 @@ The isolated iOS simulator development build completed successfully on 2026-08-1
 - Profile: `development-simulator`
 - Runtime: Expo SDK 54
 
-It was installed and verified in a single iPhone 17 Pro simulator. The native iOS authentication prompt correctly identifies the host app as **Litterbugs**. Google completed a new and returning sign-in and returned to the app; Facebook reached Meta's hosted login page and canceled back to the app cleanly. Provider-hosted pages and the standard iOS authentication confirmation are intentionally not restyled by the app.
+It was installed and verified in a single iPhone 17 Pro simulator. Browser OAuth now requests a private iOS authentication session, which removes the technical app/domain confirmation prompt before the provider page. Google completed a new and returning sign-in and returned to the app; Facebook reached Meta's hosted login page and canceled back to the app cleanly. Provider-hosted pages remain controlled by Google and Meta, with the public Litterbugs name and logo supplied through each provider's branding configuration.
 
 Build a new iOS development client only after native dependencies or native configuration change:
 

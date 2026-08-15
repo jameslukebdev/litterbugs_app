@@ -13,7 +13,7 @@ Use this checklist on the iOS development client before moving PR #2 out of draf
 - [x] The Apple button remains hidden while Apple configuration is deferred.
 - [ ] Before App Store release, Apple is enabled with the production team's existing `com.litterbugs.app` App ID.
 - [ ] Verification and recovery email uses the approved `support@litterbugs.app` sender.
-- [x] The current Google and Meta development tester is authorized in provider test/development modes.
+- [x] Google is in Production; the current Meta development tester is authorized for role-based testing.
 
 ## Email authentication
 
@@ -104,8 +104,8 @@ Repeat email verification, recovery, and one browser OAuth callback in each stat
 - Build: EAS iOS simulator development build `1371c8b8-4a57-4e73-bfce-10c918b0c4b6`
 - Device: iPhone 17 Pro simulator, iOS 26.5
 - Runtime: one Litterbugs development client connected to one local Metro server
-- Verified: branded iOS OAuth prompt, Google new and returning sign-in, Google/Facebook cancellation recovery, open/background/cold-start browser-auth callback routing, session restore, signed-out restore, email login/signup/recovery layouts, software-keyboard layout, Guest warning, Account sheet, and Yes/No sign-out behavior
-- Remaining: Facebook credential completion, email delivery/recovery, successful provider callbacks from background and cold start, permission/network failure cases, smallest supported iPhone, physical-iPhone testing, approved SMTP sender, and Apple before App Store submission
+- Verified: private iOS OAuth session without the technical app/domain prompt, Google new and returning sign-in, Google/Facebook cancellation recovery, open/background/cold-start browser-auth callback routing, session restore, signed-out restore, email login/signup/recovery layouts, software-keyboard layout, Guest warning, Account sheet, and Yes/No sign-out behavior
+- Remaining: Google brand-review approval and provider-page retest, Facebook credential completion, email delivery/recovery, successful provider callbacks from background and cold start, permission/network failure cases, smallest supported iPhone, physical-iPhone testing, approved SMTP sender, and Apple before App Store submission
 
 ## Live Supabase audit
 

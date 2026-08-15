@@ -103,12 +103,15 @@ export default function AuthScreen() {
 
       if (emailMode === 'signup') {
         const { data, error } = await signUpWithEmail(cleanEmail, password);
-        if (error) {
-          const duplicate = error.message?.toLowerCase().includes('already registered')
-            || error.message?.toLowerCase().includes('already been registered');
+        const hiddenDuplicate = Array.isArray(data?.user?.identities)
+          && data.user.identities.length === 0;
+        const duplicate = error?.message?.toLowerCase().includes('already registered')
+          || error?.message?.toLowerCase().includes('already been registered')
+          || hiddenDuplicate;
+        if (error || duplicate) {
           setFormError(duplicate
             ? 'An account may already exist for this email. Try signing in or reset your password.'
-            : error.message || 'Unable to create your account.');
+            : error?.message || 'Unable to create your account.');
           return;
         }
         if (data?.session) {
