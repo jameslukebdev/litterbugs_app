@@ -17,6 +17,8 @@ Under Authentication → Providers → Email, require email confirmation. Config
 
 Live read-back on 2026-08-15 confirms that email confirmation is enabled. The separate root `litterbugs.app` sending domain is Verified in Resend, and a new sending-only credential scoped to that exact domain is stored only in the correct Supabase project. Supabase's live Auth configuration confirms sender `support@litterbugs.app`, sender name `Litterbugs`, host `smtp.resend.com`, port `465`, username `resend`, and an encrypted password. The isolated DNS records are present on Cloudflare's authoritative nameserver. Website routing, inbox routing, and the retired prototype's Resend resources were not changed.
 
+Keep `support@litterbugs.app` as the Auth sender for this release. No `hello@litterbugs.app` inbox, forwarding route, or additional inbound-mail DNS record is needed for the authentication upgrade.
+
 The confirmation and recovery templates use concise Litterbugs wording. Their live subjects are `Verify your Litterbugs email` and `Reset your Litterbugs password`; both retain Supabase's standard `{{ .ConfirmationURL }}` variable so the requested mobile redirect is carried through the one-time link.
 
 One verification message and one recovery message still need to be sent to an intentional test address before release.
