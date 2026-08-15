@@ -35,6 +35,7 @@ const FALLBACK_REGION = {
 // State Functions
 export default function MapScreen() {
   const [region, setRegion] = useState(FALLBACK_REGION);
+  const MAX_REPORT_DISTANCE_MILES = 10;
   const [markers, setMarkers] = useState([]); // saved reports
   const [draftCoord, setDraftCoord] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -56,8 +57,7 @@ export default function MapScreen() {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [photosLoading, setPhotosLoading] = useState(false);
-  const PATREON_URL = "https://patreon.com/litterbugs?utm_medium=unknown&utm_source=join_link&utm_campaign=creatorshare_creator&utm_content=copyLink"; // <-- paste your real link
-
+  // const PATREON_URL = "https://patreon.com/litterbugs?utm_medium=unknown&utm_source=join_link&utm_campaign=creatorshare_creator&utm_content=copyLink"; // <-- paste your real link
 
 
 
@@ -81,23 +81,100 @@ export default function MapScreen() {
     })();
   }, []);
 
+// Calculate distance between two GPS coordinates using the Haversine formula
+const getDistanceMiles = (pointA, pointB) => {
+  const EARTH_RADIUS_MILES = 3958.8;
 
-// Pressing Map opens Litter Form 
-  const onMapPress = (e) => {
-    const coord = e.nativeEvent.coordinate;
+  const toRadians = (degrees) => degrees * (Math.PI / 180);
+
+  const lat1 = toRadians(pointA.latitude);
+  const lon1 = toRadians(pointA.longitude);
+  const lat2 = toRadians(pointB.latitude);
+  const lon2 = toRadians(pointB.longitude);
+
+  const deltaLat = lat2 - lat1;
+  const deltaLon = lon2 - lon1;
+
+  const a =
+    Math.sin(deltaLat / 2) ** 2 +
+    Math.cos(lat1) *
+      Math.cos(lat2) *
+      Math.sin(deltaLon / 2) ** 2;
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return EARTH_RADIUS_MILES * c;
+};
+
+// Pressing Map opens Litter Form
+// Reports can only be created near the user's current GPS location
+const onMapPress = async (e) => {
+  const coord = e.nativeEvent.coordinate;
+
+  try {
+    // Check whether location permission is available
+    let { status } = await Location.getForegroundPermissionsAsync();
+
+    if (status !== 'granted') {
+      const permissionResult =
+        await Location.requestForegroundPermissionsAsync();
+
+      status = permissionResult.status;
+    }
+
+    if (status !== 'granted') {
+      Alert.alert(
+        'Location Required',
+        'Litterbugs needs your location to verify that a report is near you.'
+      );
+      return;
+    }
+
+    // Get the user's current GPS location
+    const loc = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
+    });
+
+    const userCoord = {
+      latitude: loc.coords.latitude,
+      longitude: loc.coords.longitude,
+    };
+
+    // Calculate distance from user to selected report location
+    const distanceMiles = getDistanceMiles(userCoord, coord);
+
+    // Block reports that are outside the permitted radius
+    if (distanceMiles > MAX_REPORT_DISTANCE_MILES) {
+      Alert.alert(
+        'Report Location Too Far Away',
+        `Litterbugs reports can only be created within ${MAX_REPORT_DISTANCE_MILES} miles of your current location. You can still browse and view reports anywhere on the map.`
+      );
+      return;
+    }
+
+    // Location is valid — continue opening the report form
     setDraftCoord(coord);
-    // reset form each time
+
     setForm({
       title: '',
-      selectedTypes: [],   // ✅ should be an array
+      selectedTypes: [],
       types: '',
       photos: [],
       severity: '',
       selectedNotes: [],
       notes: '',
     });
+
     setFormOpen(true);
-  };
+  } catch (error) {
+    console.log('Report location verification error:', error);
+
+    Alert.alert(
+      'Unable to Verify Location',
+      'Litterbugs could not determine your current location. Please try again.'
+    );
+  }
+};
 
 
 // Save Report Function
