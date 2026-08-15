@@ -4,13 +4,13 @@ Use this checklist on the iOS development client before moving PR #2 out of draf
 
 ## Preconditions
 
-- [ ] Test build uses the existing production bundle ID `com.litterbugs.app`.
-- [ ] App points to Supabase project `mvaygkflcjswtwchflrk`.
-- [ ] Email confirmation is required.
-- [ ] `litterbugs://auth/callback` is allowed.
-- [ ] `litterbugs://auth/reset-password` is allowed.
-- [ ] Google and Facebook are enabled with new Litterbugs-specific provider records.
-- [ ] The Apple button remains hidden while Apple configuration is deferred.
+- [x] Test build uses the existing production bundle ID `com.litterbugs.app`.
+- [x] App points to Supabase project `mvaygkflcjswtwchflrk`.
+- [x] Email confirmation is required.
+- [x] `litterbugs://auth/callback` is allowed.
+- [x] `litterbugs://auth/reset-password` is allowed.
+- [x] Google and Facebook are enabled with new Litterbugs-specific provider records.
+- [x] The Apple button remains hidden while Apple configuration is deferred.
 - [ ] Before App Store release, Apple is enabled with the production team's existing `com.litterbugs.app` App ID.
 - [ ] Verification and recovery email uses the approved `support@litterbugs.app` sender.
 - [ ] Testers are authorized in provider test/development modes.

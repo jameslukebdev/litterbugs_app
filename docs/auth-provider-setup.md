@@ -23,6 +23,15 @@ Create new provider applications. Do not reuse the dormant credentials currently
 
 Copy the new provider IDs and secrets into the matching Supabase Auth provider. Do not place them in `.env`, `app.json`, or source files.
 
+Current isolated development resources (non-secret identifiers only):
+
+- Google Cloud project: `litterbugs-auth` (project number `895118598665`)
+- Google OAuth client: `Litterbugs Supabase Web Client`
+- Meta app: `Litterbugs Community Cleanup` (app ID `1477683410862512`)
+- Supabase project: `mvaygkflcjswtwchflrk`
+
+As of 2026-08-15, the new Google and Facebook credentials are stored only in their provider consoles and the matching Supabase Auth provider forms. Both Supabase providers are enabled. The Google app remains in Testing mode, and the Meta app remains unpublished for role-based development testing.
+
 ### Google test configuration
 
 1. Create a new Google Cloud project dedicated to the production Litterbugs app. Do not select an unrelated project or the retired prototype.
