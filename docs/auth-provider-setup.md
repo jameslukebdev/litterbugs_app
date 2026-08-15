@@ -30,7 +30,7 @@ Current isolated development resources (non-secret identifiers only):
 - Meta app: `Litterbugs Community Cleanup` (app ID `1477683410862512`)
 - Supabase project: `mvaygkflcjswtwchflrk`
 
-As of 2026-08-15, the new Google and Facebook credentials are stored only in their provider consoles and the matching Supabase Auth provider forms. Both Supabase providers are enabled. The Google app is in Production with its Litterbugs branding under review, and the Meta app remains unpublished for role-based development testing.
+As of 2026-08-15, the new Google and Facebook credentials are stored only in their provider consoles and the matching Supabase Auth provider forms. Both Supabase providers are enabled. The Google app is in Production with verified Litterbugs branding visible to users, and the Meta app remains unpublished for role-based development testing.
 
 ### Google production configuration
 
@@ -42,7 +42,7 @@ As of 2026-08-15, the new Google and Facebook credentials are stored only in the
 6. During Testing, add only the two partners and intentional test accounts. Production mode is no longer limited to that test-user list.
 7. Save the new Client ID and Client Secret only in the Google console and the Google provider form in Supabase project `mvaygkflcjswtwchflrk`.
 
-The Google app moved to Production on 2026-08-15. The permanent `litterbugs.app` domain is verified in Google Search Console through a single Cloudflare TXT record, and the Litterbugs name, logo, homepage, privacy policy, and terms are under Google brand review. Keep the DNS verification record in place so domain ownership remains valid.
+The Google app moved to Production on 2026-08-15. The permanent `litterbugs.app` domain is verified in Google Search Console through a single Cloudflare TXT record, and Google verified and published the Litterbugs name, logo, homepage, privacy policy, and terms. Keep the DNS verification record in place so domain ownership remains valid.
 
 ### Facebook test configuration
 

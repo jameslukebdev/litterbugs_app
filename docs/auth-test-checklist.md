@@ -41,6 +41,7 @@ Run every provider section with both a new provider account and a returning acco
 - [x] New account succeeds.
 - [x] Returning account succeeds.
 - [x] User cancellation returns safely to Litterbugs.
+- [x] Provider page displays the verified Litterbugs name and logo instead of the Supabase hostname.
 - [ ] Permission denial produces a useful error.
 - [ ] Matching an existing verified email does not create an unintended duplicate identity.
 - [ ] Network interruption fails safely and allows retry.
@@ -105,7 +106,7 @@ Repeat email verification, recovery, and one browser OAuth callback in each stat
 - Device: iPhone 17 Pro simulator, iOS 26.5
 - Runtime: one Litterbugs development client connected to one local Metro server
 - Verified: private iOS OAuth session without the technical app/domain prompt, Google new and returning sign-in, Google/Facebook cancellation recovery, open/background/cold-start browser-auth callback routing, session restore, signed-out restore, email login/signup/recovery layouts, software-keyboard layout, Guest warning, Account sheet, and Yes/No sign-out behavior
-- Remaining: Google brand-review approval and provider-page retest, Facebook credential completion, email delivery/recovery, successful provider callbacks from background and cold start, permission/network failure cases, smallest supported iPhone, physical-iPhone testing, approved SMTP sender, and Apple before App Store submission
+- Remaining: Facebook credential completion, email delivery/recovery, successful provider callbacks from background and cold start, permission/network failure cases, smallest supported iPhone, physical-iPhone testing, approved SMTP sender, and Apple before App Store submission
 
 ## Live Supabase audit
 
