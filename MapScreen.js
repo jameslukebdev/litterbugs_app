@@ -17,6 +17,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Linking,
+  useWindowDimensions,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -71,6 +72,12 @@ export default function MapScreen() {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [photosLoading, setPhotosLoading] = useState(false);
+  // Report detail photo carousel
+  const [reportPhotoIndex, setReportPhotoIndex] = useState(0);
+  const { width: screenWidth } = useWindowDimensions();
+  // Leave 20px margin on each side of the main report photo
+  const reportHeroWidth = Math.max(screenWidth - 40, 280);
+
 
   // const PATREON_URL = "https://patreon.com/litterbugs?utm_medium=unknown&utm_source=join_link&utm_campaign=creatorshare_creator&utm_content=copyLink"; // <-- paste your real link
 
@@ -203,8 +210,6 @@ const reportStepPanResponder = PanResponder.create({
   },
 });
  
-  
-
 
 // Getting the Map Working 
   useEffect(() => {
@@ -730,29 +735,29 @@ useEffect(() => {
   loadReports();
 }, []);
 
-    
-    // Load Photos into Existing Report
-    useEffect(() => {
-      const loadPhotoUrls = async () => {
-        // start loading whenever selectedReport changes
-        setPhotosLoading(true);
+// Load Photos into Existing Report
+useEffect(() => {
+  const loadPhotoUrls = async () => {
+    // Always begin a newly opened report on its first photo
+    setReportPhotoIndex(0);
+    setPhotosLoading(true);
 
-        if (!selectedReport?.photo_paths?.length) {
-          setReportPhotoUrls([]);
-          setPhotosLoading(false);
-          return;
-        }
+    if (!selectedReport?.photo_paths?.length) {
+      setReportPhotoUrls([]);
+      setPhotosLoading(false);
+      return;
+    }
 
-        const urls = await Promise.all(
-          selectedReport.photo_paths.map((p) => getSignedPhotoUrl(p))
-        );
+    const urls = await Promise.all(
+      selectedReport.photo_paths.map((p) => getSignedPhotoUrl(p))
+    );
 
-        setReportPhotoUrls(urls.filter(Boolean));
-        setPhotosLoading(false);
-      };
+    setReportPhotoUrls(urls.filter(Boolean));
+    setPhotosLoading(false);
+  };
 
-      loadPhotoUrls();
-    }, [selectedReport]);
+  loadPhotoUrls();
+}, [selectedReport]);    
 
 
 // Checks if User is Owner of Report
@@ -1791,256 +1796,591 @@ const renderReportStep = () => {
   </View>
 </Modal>
 
+{/* ============================= */}
+{/* Redesigned Report Detail View */}
+{/* ============================= */}
+
+<Modal
+  visible={detailsOpen}
+  animationType="slide"
+  transparent
+  onRequestClose={() => setDetailsOpen(false)}
+>
+  <View style={styles.modalBackdrop}>
+    <View style={styles.reportSheet}>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        bounces
+        contentContainerStyle={styles.reportPostScrollContent}
+      >
+
+        {/* ============================= */}
+        {/* Report Header                 */}
+        {/* ============================= */}
+
+        <View style={styles.reportPostHeader}>
+
+          {/*
+            Future profile integration:
+            reporter avatar / display name can eventually
+            be inserted here without restructuring the report.
+          */}
+
+          <Text style={styles.reportPostTitle}>
+            {selectedReport?.title || 'Litter Report'}
+          </Text>
+
+          {/* Report dates */}
+          <View style={styles.reportMetaStack}>
+
+            {selectedReport?.created_at && (
+              <View style={styles.reportMetaItem}>
+                <Ionicons
+                  name="time-outline"
+                  size={17}
+                  color="#667085"
+                />
+
+                <View>
+                  <Text style={styles.reportMetaItemLabel}>
+                    Reported
+                  </Text>
+
+                  <Text style={styles.reportMetaItemText}>
+                    {new Date(
+                      selectedReport.created_at
+                    ).toLocaleString()}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {selectedReport?.expires_at && (
+              <View style={styles.reportMetaItem}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={17}
+                  color="#667085"
+                />
+
+                <View>
+                  <Text style={styles.reportMetaItemLabel}>
+                    Expires
+                  </Text>
+
+                  <Text style={styles.reportMetaItemText}>
+                    {new Date(
+                      selectedReport.expires_at
+                    ).toLocaleDateString()}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+          </View>
 
 
+          {/* Severity */}
+          {selectedReport?.severity && (
+            <View
+              style={[
+                styles.reportSeverityPill,
 
+                selectedReport.severity === 'Low' &&
+                  styles.severityLow,
 
-{/* Read Reports */}
-        <Modal
-        visible={detailsOpen}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setDetailsOpen(false)}
-        >
-          <View style={styles.modalBackdrop}>
-          <View style={styles.reportSheet}>
-            
-             {/* Title */}
-            <Text style={styles.reportTitle}>
-                  {selectedReport?.title || 'Litter Report'}
+                selectedReport.severity === 'Medium' &&
+                  styles.severityMedium,
+
+                selectedReport.severity === 'High' &&
+                  styles.severityHigh,
+              ]}
+            >
+              <Ionicons
+                name={
+                  selectedReport.severity === 'High'
+                    ? 'warning-outline'
+                    : selectedReport.severity === 'Low'
+                      ? 'leaf-outline'
+                      : 'trash-outline'
+                }
+                size={17}
+                color="#FFFFFF"
+              />
+
+              <Text style={styles.reportSeverityText}>
+                {selectedReport.severity} Severity
               </Text>
-         
-            {/* Divider */}
-            <View style={{ height: 1, backgroundColor: 'rgba(0,0,0,0.08)', marginBottom: 12 }} />
-                
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                bounces
-                alwaysBounceVertical
-                overScrollMode="always"
-                decelerationRate="fast"
-                keyboardShouldPersistTaps="handled"
-                scrollEventThrottle={16}
-                contentContainerStyle={{
-                  paddingTop: 12,        // ✅ breathing room above title
-                  paddingBottom: 140,    // footer clearance
-                }}
-                >
-            
-                {/* Litter Types */}
-                {selectedReport?.litter_types?.length > 0 && (
-                  <View style={styles.reportSection}>
-                    <Text style={styles.reportSectionLabel}>Litter Types</Text>
+            </View>
+          )}
 
-                    <View style={styles.reportChipRow}>
-                      {selectedReport.litter_types.map((t) => (
-                        <View
-                          key={t}
-                          style={[styles.reportChip, styles.reportTypeChip]}
-                        >
-                          <Text style={styles.reportChipText}>{t}</Text>
-                        </View>
-                      ))}
-                    </View>
+        </View>
+
+
+        {/* ============================= */}
+        {/* Main Photo / Carousel         */}
+        {/* ============================= */}
+
+        {photosLoading ? (
+
+          <View style={styles.reportPhotoLoadingCard}>
+            <ActivityIndicator
+              size="large"
+              color="#66BB6A"
+            />
+
+            <Text style={styles.reportPhotoLoadingText}>
+              Loading photos…
+            </Text>
+          </View>
+
+        ) : reportPhotoUrls.length > 0 ? (
+
+          <View
+            style={[
+              styles.reportPhotoCarousel,
+              {
+                width: reportHeroWidth,
+              },
+            ]}
+          >
+
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              decelerationRate="fast"
+              snapToInterval={reportHeroWidth}
+              onMomentumScrollEnd={(event) => {
+                const offsetX =
+                  event.nativeEvent.contentOffset.x;
+
+                const nextIndex = Math.round(
+                  offsetX / reportHeroWidth
+                );
+
+                setReportPhotoIndex(nextIndex);
+              }}
+            >
+
+              {reportPhotoUrls.map((uri, index) => (
+                <Image
+                  key={`${uri}-${index}`}
+                  source={{ uri }}
+                  resizeMode="cover"
+                  style={[
+                    styles.reportHeroImage,
+                    {
+                      width: reportHeroWidth,
+                    },
+                  ]}
+                />
+              ))}
+
+            </ScrollView>
+
+
+            {/* Instagram-style photo count */}
+            {reportPhotoUrls.length > 1 && (
+              <View style={styles.reportPhotoCounter}>
+                <Text style={styles.reportPhotoCounterText}>
+                  {reportPhotoIndex + 1}/{reportPhotoUrls.length}
+                </Text>
+              </View>
+            )}
+
+          </View>
+
+        ) : (
+
+          /* Graceful layout for reports without photos */
+          <View style={styles.reportNoPhotoCard}>
+
+            <View style={styles.reportNoPhotoIcon}>
+              <Ionicons
+                name="image-outline"
+                size={32}
+                color="#98A2B3"
+              />
+            </View>
+
+            <Text style={styles.reportNoPhotoTitle}>
+              No photo added
+            </Text>
+
+            <Text style={styles.reportNoPhotoText}>
+              This report was submitted without a photo.
+            </Text>
+
+          </View>
+        )}
+
+
+        {/* Photo pagination dots */}
+        {!photosLoading &&
+          reportPhotoUrls.length > 1 && (
+
+          <View style={styles.reportPhotoDots}>
+
+            {reportPhotoUrls.map((_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.reportPhotoDot,
+
+                  index === reportPhotoIndex &&
+                    styles.reportPhotoDotActive,
+                ]}
+              />
+            ))}
+
+          </View>
+        )}
+
+
+        {/* ============================= */}
+        {/* Main Report Information       */}
+        {/* ============================= */}
+
+        <View style={styles.reportPostBody}>
+
+
+          {/* Litter Types */}
+          {(
+            selectedReport?.litter_types?.length > 0 ||
+            selectedReport?.types
+          ) && (
+
+            <View style={styles.reportPostSection}>
+
+              <View style={styles.reportSectionHeader}>
+
+                <Ionicons
+                  name="trash-outline"
+                  size={20}
+                  color="#2F7D32"
+                />
+
+                <Text style={styles.reportPostSectionTitle}>
+                  Litter Types
+                </Text>
+
+              </View>
+
+
+              <View style={styles.reportChipRow}>
+
+                {selectedReport?.litter_types?.map((type) => (
+
+                  <View
+                    key={type}
+                    style={[
+                      styles.reportChip,
+                      styles.reportTypeChip,
+                    ]}
+                  >
+                    <Text style={styles.reportChipText}>
+                      {type}
+                    </Text>
                   </View>
-                )}
 
-                {/* Other Litter Types */}
+                ))}
+
+
+                {/* User-entered "Other" litter type */}
                 {selectedReport?.types && (
-                  <View style={styles.reportSection}>
-                    <Text style={styles.reportNotesText}>
+
+                  <View
+                    style={[
+                      styles.reportChip,
+                      styles.reportOtherTypeChip,
+                    ]}
+                  >
+                    <Text style={styles.reportOtherTypeText}>
                       {selectedReport.types}
                     </Text>
                   </View>
+
                 )}
 
-                {/* Severity */}
-                {selectedReport?.severity && (
-                  <View style={styles.reportSection}>
-                    <Text style={styles.reportSectionLabel}>Severity</Text>
-                    <View
-                      style={[
-                        styles.reportSeverityPill,
-                        selectedReport.severity === 'Low' && styles.severityLow,
-                        selectedReport.severity === 'Medium' && styles.severityMedium,
-                        selectedReport.severity === 'High' && styles.severityHigh,
-                      ]}
-                    >
-                      <Text style={styles.reportSeverityText}>
-                        {selectedReport.severity}
-                      </Text>
-                    </View>
-                  </View>
-                )}
+              </View>
 
-                {/* Notes Presets */}
-                {selectedReport?.notes_presets?.length > 0 && (
-                  <View style={styles.reportSection}>
-                    <Text style={styles.reportSectionLabel}>Notes</Text>
+            </View>
+          )}
 
-                    <View style={styles.reportChipRow}>
-                      {selectedReport.notes_presets.map((n) => (
-                        <View
-                          key={n}
-                          style={[styles.reportChip, styles.reportNoteChip]}
-                        >
-                          <Text style={styles.reportChipText}>{n}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                )}
 
-                {/* Free Text Notes */}
-                {selectedReport?.notes_other && (
-                  <View style={styles.reportSection}>
-                    <Text style={styles.reportNotesText}>
-                      {selectedReport.notes_other}
+          {/* Notes */}
+          {selectedReport?.notes_presets?.length > 0 && (
+
+            <View style={styles.reportPostSection}>
+
+              <View style={styles.reportSectionHeader}>
+
+                <Ionicons
+                  name="information-circle-outline"
+                  size={21}
+                  color="#1E88E5"
+                />
+
+                <Text style={styles.reportPostSectionTitle}>
+                  Notes
+                </Text>
+
+              </View>
+
+
+              <View style={styles.reportChipRow}>
+
+                {selectedReport.notes_presets.map((note) => (
+
+                  <View
+                    key={note}
+                    style={[
+                      styles.reportChip,
+                      styles.reportNoteChip,
+                    ]}
+                  >
+                    <Text style={styles.reportChipText}>
+                      {note}
                     </Text>
                   </View>
-                )}
 
-                {/* Photos */}
-                {(photosLoading || reportPhotoUrls.length > 0) && (
-                  <View style={{ marginBottom: 20 }}>
-                    <Text style={styles.reportSectionLabel}>Photos</Text>
+                ))}
 
-                    {photosLoading ? (
-                      <View style={{ paddingVertical: 18 }}>
-                        <ActivityIndicator size="small" />
-                      </View>
-                    ) : (
-                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                        {reportPhotoUrls.map((uri, i) => (
-                          <Image
-                            key={`${uri}-${i}`}
-                            source={{ uri }}
-                            style={{
-                              width: 140,
-                              height: 140,
-                              borderRadius: 14,
-                              marginRight: 12,
-                              backgroundColor: '#EEE',
-                            }}
-                          />
-                        ))}
-                      </ScrollView>
-                    )}
-                  </View>
-                )}
+              </View>
 
-                <View style={styles.divider} />
-
-                {/* Metadata */}
-                <View style={styles.reportSection}>
-                  <Text style={styles.reportMetaLabel}>Reported</Text>
-                  <Text style={styles.reportMetaText}>
-                  {selectedReport?.created_at
-                    ? new Date(selectedReport.created_at).toLocaleString()
-                    : ''}
-                  </Text>
-                
-                  {/* Expires (only show if present) */}
-                  {selectedReport?.expires_at ? (
-                    <>
-                      <Text style={[styles.reportMetaLabel, { marginTop: 10 }]}>Expires</Text>
-                      <Text style={styles.reportMetaText}>
-                      {new Date(selectedReport.expires_at).toLocaleDateString()}
-                      </Text>
-                    </>
-                  ) : null}      
-                </View>
-             
-              </ScrollView>
+            </View>
+          )}
 
 
+          {/* Additional descriptive information */}
+          {selectedReport?.notes_other && (
 
-              <View style={styles.footerBar}>
+            <View style={styles.reportPostSection}>
 
-                {isOwner && (
-                <TouchableOpacity
-                style={[styles.btn, { backgroundColor: '#E57373' }]}
-                onPress={() => {
-                  Alert.alert(
-                    'Delete report?',
-                    'This action cannot be undone.',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Delete',
-                        style: 'destructive',
-                        onPress: async () => {
-                          const { error } = await supabase
-                            .from('reports')
-                            .delete()
-                            .eq('id', selectedReport.id);
+              <View style={styles.reportSectionHeader}>
 
-                          if (error) {
-                            Alert.alert('Delete failed', error.message);
-                            return;
-                          }
+                <Ionicons
+                  name="document-text-outline"
+                  size={20}
+                  color="#667085"
+                />
 
-                          setMarkers((prev) =>
-                            prev.filter((m) => m.id !== selectedReport.id)
-                          );
+                <Text style={styles.reportPostSectionTitle}>
+                  Additional Details
+                </Text>
 
-                          setDetailsOpen(false);
-                          setSelectedReport(null);
-                        },
-                      },
-                    ]
-                  );
-                }}
-              >
-                <Text style={[styles.btnText, { color: '#fff' }]}>Delete</Text>
-                    </TouchableOpacity>
-                  )}
+              </View>
+
+              <View style={styles.reportDetailsCard}>
+
+                <Text style={styles.reportDetailsText}>
+                  {selectedReport.notes_other}
+                </Text>
+
+              </View>
+
+            </View>
+          )}
 
 
-                  {isOwner && (
-                      <TouchableOpacity
-                        style={[styles.btn, styles.saveBtn]}
-                        onPress={() => {
-                          setForm({
-                            title: selectedReport.title || '',
-                            selectedTypes: selectedReport.litter_types || [],
-                            types: selectedReport.types || '',   // ✅ ADD
-                            photos: [], // we do NOT re-edit photos in v1
-                            severity: selectedReport.severity || '',
-                            selectedNotes: selectedReport.notes_presets || [],
-                            notes: selectedReport.notes_other || '',
-                          });
+          {/*
+            Version 2:
+            Cleanup status, cleaner identity, claim button,
+            bounty/payment information and before/after
+            cleanup information can be inserted here.
+          */}
 
-                          setEditingReportId(selectedReport.id);
-                          setIsEditing(true);
-                          
-                          // Keep the original location attached to the report
-                          setDraftCoord({
-                            latitude: selectedReport.latitude,
-                            longitude: selectedReport.longitude,
-                          });
-                          
-                          resetReportWizard();
-                          
-                          setDetailsOpen(false);
-                          setFormOpen(true);
-                        }}
-                      >
-                <Text style={styles.btnText}>Edit</Text>
-                    </TouchableOpacity>
-                  )}
-                  <TouchableOpacity
-                    style={[styles.btn, styles.cancelBtn]}
-                    onPress={() => setDetailsOpen(false)}
-                  >
-                    <Text style={[styles.btnText, { color: '#333' }]}>Close</Text>
-                  </TouchableOpacity>
-            </View> 
+        </View>
 
-      
-            </View> 
-          </View>
-      </Modal>
+      </ScrollView>
+
+
+      {/* ============================= */}
+      {/* Persistent Footer             */}
+      {/* ============================= */}
+
+      <View style={styles.reportFooter}>
+
+
+        {/* DELETE — signed-in owner only */}
+        {isOwner && (
+
+          <TouchableOpacity
+            style={[
+              styles.reportFooterButton,
+              styles.reportDeleteButton,
+            ]}
+            onPress={() => {
+
+              Alert.alert(
+                'Delete report?',
+                'This action cannot be undone.',
+                [
+                  {
+                    text: 'Cancel',
+                    style: 'cancel',
+                  },
+                  {
+                    text: 'Delete',
+                    style: 'destructive',
+
+                    onPress: async () => {
+
+                      const { error } = await supabase
+                        .from('reports')
+                        .delete()
+                        .eq(
+                          'id',
+                          selectedReport.id
+                        );
+
+                      if (error) {
+                        Alert.alert(
+                          'Delete failed',
+                          error.message
+                        );
+
+                        return;
+                      }
+
+                      setMarkers((prev) =>
+                        prev.filter(
+                          (marker) =>
+                            marker.id !==
+                            selectedReport.id
+                        )
+                      );
+
+                      setDetailsOpen(false);
+                      setSelectedReport(null);
+                    },
+                  },
+                ]
+              );
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Delete report"
+          >
+
+            <Ionicons
+              name="trash-outline"
+              size={19}
+              color="#FFFFFF"
+            />
+
+            <Text style={styles.reportDeleteButtonText}>
+              Delete
+            </Text>
+
+          </TouchableOpacity>
+        )}
+
+
+        {/* EDIT — signed-in owner only */}
+        {isOwner && (
+
+          <TouchableOpacity
+            style={[
+              styles.reportFooterButton,
+              styles.reportEditButton,
+            ]}
+            onPress={() => {
+
+              setForm({
+                title:
+                  selectedReport.title || '',
+
+                selectedTypes:
+                  selectedReport.litter_types || [],
+
+                types:
+                  selectedReport.types || '',
+
+                // Photos remain unchanged in v1
+                photos: [],
+
+                severity:
+                  selectedReport.severity || '',
+
+                selectedNotes:
+                  selectedReport.notes_presets || [],
+
+                notes:
+                  selectedReport.notes_other || '',
+              });
+
+
+              setEditingReportId(
+                selectedReport.id
+              );
+
+              setIsEditing(true);
+
+
+              // Keep original report location
+              setDraftCoord({
+                latitude:
+                  selectedReport.latitude,
+
+                longitude:
+                  selectedReport.longitude,
+              });
+
+
+              resetReportWizard();
+
+              setDetailsOpen(false);
+              setFormOpen(true);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Edit report"
+          >
+
+            <Ionicons
+              name="create-outline"
+              size={19}
+              color="#FFFFFF"
+            />
+
+            <Text style={styles.reportEditButtonText}>
+              Edit
+            </Text>
+
+          </TouchableOpacity>
+        )}
+
+
+        {/* CLOSE — everyone */}
+        <TouchableOpacity
+          style={[
+            styles.reportFooterButton,
+            styles.reportCloseButton,
+          ]}
+          onPress={() => setDetailsOpen(false)}
+          accessibilityRole="button"
+          accessibilityLabel="Close report"
+        >
+
+          <Ionicons
+            name="close-outline"
+            size={20}
+            color="#374151"
+          />
+
+          <Text style={styles.reportCloseButtonText}>
+            Close
+          </Text>
+
+        </TouchableOpacity>
+
+      </View>
+
+    </View>
+  </View>
+</Modal>
+
     </View>
   );
 }
@@ -2774,82 +3114,85 @@ supportButton: {
 },
 
 /* ============================= */
-/* Report Details Modal Styles   */
+/* Redesigned Report Detail View */
 /* ============================= */
 
 reportSheet: {
-  flex: 1, // ✅ REQUIRED
+  flex: 1,
   backgroundColor: '#FFFFFF',
-  paddingHorizontal: 20,
-  paddingTop: 85,
-  paddingBottom: 25, // space for footer
   borderTopLeftRadius: 24,
   borderTopRightRadius: 24,
+  overflow: 'hidden',
 },
 
 
-reportTitle: {
-  fontSize: 26,
+/* Main vertical report scroll */
+
+reportPostScrollContent: {
+  paddingTop: 72,
+  paddingBottom: 125,
+},
+
+
+/* ============================= */
+/* Header                        */
+/* ============================= */
+
+reportPostHeader: {
+  paddingHorizontal: 22,
+  paddingBottom: 22,
+},
+
+reportPostTitle: {
+  fontSize: 30,
+  lineHeight: 36,
   fontWeight: '800',
-  color: '#111827',
-  marginBottom: 20, // ⬅️ increase slightly
+  color: '#1F2937',
+  marginBottom: 18,
 },
 
-
-reportSection: {
-  marginBottom: 20,
+reportMetaStack: {
+  gap: 11,
+  marginBottom: 18,
 },
 
-reportSectionLabel: {
-  fontSize: 17,
-  fontWeight: '700',
-  color: '#111827',
-  marginBottom: 10,
-},
-
-/* Chips – shared visual language */
-
-reportChipRow: {
+reportMetaItem: {
   flexDirection: 'row',
-  flexWrap: 'wrap',
+  alignItems: 'flex-start',
   gap: 10,
 },
 
-reportChip: {
+reportMetaItemLabel: {
+  fontSize: 12,
+  fontWeight: '800',
+  color: '#667085',
+  textTransform: 'uppercase',
+  letterSpacing: 0.45,
+  marginBottom: 2,
+},
+
+reportMetaItemText: {
+  fontSize: 14,
+  color: '#667085',
+},
+
+
+/* ============================= */
+/* Severity                      */
+/* ============================= */
+
+reportSeverityPill: {
+  alignSelf: 'flex-start',
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 7,
   paddingHorizontal: 14,
   paddingVertical: 8,
   borderRadius: 999,
 },
 
-reportChipText: {
-  fontSize: 14,
-  fontWeight: '600',
-  color: '#FFFFFF',
-},
-
-/* Litter Types (green – confirmed) */
-
-reportTypeChip: {
-  backgroundColor: '#66BB6A',
-},
-
-/* Notes (blue – contextual) */
-
-reportNoteChip: {
-  backgroundColor: '#42A5F5',
-},
-
-/* Severity */
-
-reportSeverityPill: {
-  alignSelf: 'flex-start',
-  paddingHorizontal: 16,
-  paddingVertical: 8,
-  borderRadius: 999,
-},
-
 severityLow: {
-  backgroundColor: '#81C784',
+  backgroundColor: '#66BB6A',
 },
 
 severityMedium: {
@@ -2861,33 +3204,275 @@ severityHigh: {
 },
 
 reportSeverityText: {
-  fontSize: 15,
+  fontSize: 14,
+  fontWeight: '800',
+  color: '#FFFFFF',
+},
+
+
+/* ============================= */
+/* Main photo carousel           */
+/* ============================= */
+
+reportPhotoCarousel: {
+  alignSelf: 'center',
+  position: 'relative',
+  borderRadius: 22,
+  overflow: 'hidden',
+  backgroundColor: '#F3F4F6',
+},
+
+reportHeroImage: {
+  height: 355,
+  backgroundColor: '#E5E7EB',
+},
+
+reportPhotoCounter: {
+  position: 'absolute',
+  top: 14,
+  right: 14,
+  backgroundColor: 'rgba(17,24,39,0.72)',
+  paddingHorizontal: 10,
+  paddingVertical: 5,
+  borderRadius: 999,
+},
+
+reportPhotoCounterText: {
+  color: '#FFFFFF',
+  fontSize: 12,
+  fontWeight: '800',
+},
+
+reportPhotoDots: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 7,
+  marginTop: 13,
+  marginBottom: 4,
+},
+
+reportPhotoDot: {
+  width: 7,
+  height: 7,
+  borderRadius: 3.5,
+  backgroundColor: '#D1D5DB',
+},
+
+reportPhotoDotActive: {
+  width: 9,
+  height: 9,
+  borderRadius: 4.5,
+  backgroundColor: '#2F7D32',
+},
+
+
+/* Loading photo state */
+
+reportPhotoLoadingCard: {
+  marginHorizontal: 20,
+  height: 260,
+  borderRadius: 22,
+  backgroundColor: '#F9FAFB',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderWidth: 1,
+  borderColor: '#E5E7EB',
+},
+
+reportPhotoLoadingText: {
+  marginTop: 12,
+  fontSize: 14,
+  fontWeight: '600',
+  color: '#667085',
+},
+
+
+/* No-photo state */
+
+reportNoPhotoCard: {
+  marginHorizontal: 20,
+  paddingVertical: 27,
+  paddingHorizontal: 20,
+  borderRadius: 20,
+  backgroundColor: '#F9FAFB',
+  borderWidth: 1,
+  borderColor: '#E5E7EB',
+  alignItems: 'center',
+},
+
+reportNoPhotoIcon: {
+  width: 58,
+  height: 58,
+  borderRadius: 29,
+  backgroundColor: '#F3F4F6',
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginBottom: 10,
+},
+
+reportNoPhotoTitle: {
+  fontSize: 16,
+  fontWeight: '800',
+  color: '#475467',
+},
+
+reportNoPhotoText: {
+  marginTop: 4,
+  fontSize: 13,
+  lineHeight: 19,
+  textAlign: 'center',
+  color: '#98A2B3',
+},
+
+
+/* ============================= */
+/* Post body                     */
+/* ============================= */
+
+reportPostBody: {
+  paddingHorizontal: 22,
+  paddingTop: 30,
+},
+
+reportPostSection: {
+  marginBottom: 28,
+},
+
+reportSectionHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 8,
+  marginBottom: 13,
+},
+
+reportPostSectionTitle: {
+  fontSize: 18,
+  fontWeight: '800',
+  color: '#1F2937',
+},
+
+
+/* Chips */
+
+reportChipRow: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  gap: 9,
+},
+
+reportChip: {
+  paddingHorizontal: 13,
+  paddingVertical: 8,
+  borderRadius: 999,
+},
+
+reportChipText: {
+  fontSize: 13,
   fontWeight: '700',
   color: '#FFFFFF',
 },
 
-/* Free-text notes */
+reportTypeChip: {
+  backgroundColor: '#66BB6A',
+},
 
-reportNotesText: {
+reportNoteChip: {
+  backgroundColor: '#42A5F5',
+},
+
+/* Typed "Other" litter type */
+
+reportOtherTypeChip: {
+  backgroundColor: '#F1F8E9',
+  borderWidth: 1,
+  borderColor: '#A5D6A7',
+},
+
+reportOtherTypeText: {
+  fontSize: 13,
+  fontWeight: '700',
+  color: '#2F7D32',
+},
+
+
+/* Additional descriptive text */
+
+reportDetailsCard: {
+  padding: 17,
+  borderRadius: 16,
+  backgroundColor: '#F9FAFB',
+  borderWidth: 1,
+  borderColor: '#E5E7EB',
+},
+
+reportDetailsText: {
   fontSize: 16,
   lineHeight: 24,
   color: '#374151',
 },
 
-/* Metadata */
 
-reportMetaLabel: {
-  fontSize: 14,
-  fontWeight: '600',
-  color: '#6B7280',
-  marginBottom: 4,
+/* ============================= */
+/* Persistent footer             */
+/* ============================= */
+
+reportFooter: {
+  position: 'absolute',
+  bottom: 0,
+  left: 0,
+  right: 0,
+  flexDirection: 'row',
+  gap: 10,
+  paddingHorizontal: 16,
+  paddingTop: 12,
+  paddingBottom: 20,
+  backgroundColor: '#FFFFFF',
+  borderTopWidth: 1,
+  borderTopColor: 'rgba(0,0,0,0.08)',
 },
 
-reportMetaText: {
-  fontSize: 14,
-  color: '#6B7280',
+reportFooterButton: {
+  flex: 1,
+  minHeight: 52,
+  borderRadius: 14,
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 7,
 },
 
+reportDeleteButton: {
+  backgroundColor: '#E57373',
+},
+
+reportDeleteButtonText: {
+  color: '#FFFFFF',
+  fontSize: 15,
+  fontWeight: '800',
+},
+
+reportEditButton: {
+  backgroundColor: '#66BB6A',
+},
+
+reportEditButtonText: {
+  color: '#FFFFFF',
+  fontSize: 15,
+  fontWeight: '800',
+},
+
+reportCloseButton: {
+  backgroundColor: '#F3F4F6',
+  borderWidth: 1,
+  borderColor: '#E5E7EB',
+},
+
+reportCloseButtonText: {
+  color: '#374151',
+  fontSize: 15,
+  fontWeight: '800',
+},
 
 
 // 2× larger marker hit area + icon wrap (Safety Orange)
