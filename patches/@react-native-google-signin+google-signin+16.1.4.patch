@@ -1,0 +1,30 @@
+diff --git a/node_modules/@react-native-google-signin/google-signin/ios/RNGoogleSignin.mm b/node_modules/@react-native-google-signin/google-signin/ios/RNGoogleSignin.mm
+index c56cac8..aef08f9 100644
+--- a/node_modules/@react-native-google-signin/google-signin/ios/RNGoogleSignin.mm
++++ b/node_modules/@react-native-google-signin/google-signin/ios/RNGoogleSignin.mm
+@@ -133,2 +133,3 @@ + (BOOL)requiresMainQueueSetup
+       NSString* hint = options[@"loginHint"];
++      NSString* nonce = options[@"nonce"];
+       NSArray* scopes = self.scopes;
+@@ -139 +140 @@ + (BOOL)requiresMainQueueSetup
+-      [GIDSignIn.sharedInstance signInWithPresentingViewController:presentingViewController hint:hint additionalScopes:scopes completion:^(GIDSignInResult * _Nullable signInResult, NSError * _Nullable error) {
++      [GIDSignIn.sharedInstance signInWithPresentingViewController:presentingViewController hint:hint additionalScopes:scopes nonce:nonce completion:^(GIDSignInResult * _Nullable signInResult, NSError * _Nullable error) {
+diff --git a/node_modules/@react-native-google-signin/google-signin/lib/typescript/src/types.d.ts b/node_modules/@react-native-google-signin/google-signin/lib/typescript/src/types.d.ts
+index 693048c..773f87f 100644
+--- a/node_modules/@react-native-google-signin/google-signin/lib/typescript/src/types.d.ts
++++ b/node_modules/@react-native-google-signin/google-signin/lib/typescript/src/types.d.ts
+@@ -10,0 +11,4 @@ export type SignInParams = {
++    /**
++     * iOS only. A hashed nonce to include in the returned OpenID Connect token.
++     */
++    nonce?: string;
+diff --git a/node_modules/@react-native-google-signin/google-signin/src/types.ts b/node_modules/@react-native-google-signin/google-signin/src/types.ts
+index 3fe73ea..108cecb 100644
+--- a/node_modules/@react-native-google-signin/google-signin/src/types.ts
++++ b/node_modules/@react-native-google-signin/google-signin/src/types.ts
+@@ -10,0 +11,5 @@ export type SignInParams = {
++
++  /**
++   * iOS only. A hashed nonce to include in the returned OpenID Connect token.
++   */
++  nonce?: string;

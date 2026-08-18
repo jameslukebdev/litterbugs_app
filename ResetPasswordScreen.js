@@ -39,7 +39,7 @@ export default function ResetPasswordScreen({ onComplete }) {
       if (error) throw error;
       onComplete();
     } catch (error) {
-      setMessage(error.message || 'Unable to update your password. Please request a new link.');
+      setMessage('We couldn’t update your password. Check your connection or request a new link.');
     } finally {
       setLoading(false);
     }

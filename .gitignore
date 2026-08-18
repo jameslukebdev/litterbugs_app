@@ -24,11 +24,13 @@ pnpm-debug.log*
 # Env / secrets
 .env
 .env.*
+!.env.example
 *.pem
 
-# Native folders (if you ever prebuild/eject)
+# Generated native projects
 ios/
 android/
 
 # TypeScript / caches
 *.tsbuildinfo
+auth-bridge/.wrangler/

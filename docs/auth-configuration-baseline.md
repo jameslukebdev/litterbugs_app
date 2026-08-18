@@ -10,7 +10,7 @@ Recorded on 2026-08-14 before any Auth configuration changes.
 - App Store listing: `Litterbugs: Community Cleanup` (`6757313862`), published by James Luke Barber
 - Deferred Android package ID: `com.litterbugs.app` (no existing Google Play listing was identified)
 - Deep-link scheme: `litterbugs`
-- The retired prototype is not a source for code, credentials, provider records, or EAS configuration.
+- Only records, credentials, identifiers, and EAS configuration created for this Litterbugs project are in scope.
 
 ## Existing Supabase Auth settings
 
@@ -51,7 +51,7 @@ Provider and SMTP secrets must stay in their provider consoles and the Supabase 
 
 Google and Facebook are now enabled with new Litterbugs-specific provider records. Apple remains disabled while production Apple-team setup is deferred.
 
-Custom SMTP is configured with a new Resend credential created specifically for this Partner app. The root `litterbugs.app` sending domain is verified in Resend, and Supabase Auth is configured with sender `support@litterbugs.app`, sender name `Litterbugs`, host `smtp.resend.com`, port `465`, and username `resend`. Supabase's live Auth configuration response confirms that the encrypted SMTP password is present. The isolated DKIM, `send`-subdomain MX/SPF, and monitoring-only DMARC records were added to Cloudflare without changing website or inbox routing. No retired-prototype SMTP key, domain record, or credential was changed or reused.
+Custom SMTP is configured with a new Resend credential created specifically for this Partner app. The root `litterbugs.app` sending domain is verified in Resend, and Supabase Auth is configured with sender `support@litterbugs.app`, sender name `Litterbugs`, host `smtp.resend.com`, port `465`, and username `resend`. Supabase's live Auth configuration response confirms that the encrypted SMTP password is present. The isolated DKIM, `send`-subdomain MX/SPF, and monitoring-only DMARC records were added to Cloudflare without changing website or inbox routing. No other SMTP key, domain record, or credential was changed or reused.
 
 ## Manual rollback
 
@@ -60,6 +60,6 @@ Because this Free project has no Auth-settings backup, rollback is manual:
 1. Disable Google, Apple, and Facebook in Supabase Auth Providers.
 2. Re-enable email auto-confirm if the former behavior is required.
 3. Remove the two `litterbugs://` redirect URLs if the app no longer uses them.
-4. Disable custom SMTP and clear the Partner-specific sender and credential if this configuration must be rolled back. The retired prototype's separate Resend resources require no rollback because they were not changed.
+4. Disable custom SMTP and clear the project-specific sender and credential if this configuration must be rolled back.
 
 No database rollback is required because this work makes no database changes.

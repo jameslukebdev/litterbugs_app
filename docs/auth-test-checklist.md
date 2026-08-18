@@ -1,144 +1,118 @@
 # Authentication Release Checklist
 
-Use this checklist on the iOS development client before moving PR #2 out of draft. Record the test date, tester, device, result, and useful evidence. Do not record passwords, tokens, provider secrets, or private email links.
+Record only test date, device, result, and non-sensitive evidence. Never record
+passwords, tokens, secrets, or private email links.
 
-## Preconditions
+## Configuration
 
-- [x] Test build uses the existing production bundle ID `com.litterbugs.app`.
 - [x] App points to Supabase project `mvaygkflcjswtwchflrk`.
+- [x] Production identity remains `com.litterbugs.app` with scheme `litterbugs`.
+- [x] Apple's live App Store record confirms bundle `com.litterbugs.app`, App Store ID `6757313862`, and seller James Luke Barber (2026-08-17).
+- [x] Google and Facebook use new Litterbugs-specific provider records.
 - [x] Email confirmation is required.
-- [x] `litterbugs://auth/callback` is allowed.
-- [x] `litterbugs://auth/reset-password` is allowed.
-- [x] OAuth and email callback generation is pinned to the literal `litterbugs` scheme and cannot fall back to a local Expo host.
-- [x] Google and Facebook are enabled with new Litterbugs-specific provider records.
-- [x] The Apple button remains hidden while Apple configuration is deferred.
-- [ ] Before App Store release, Apple is enabled with the production team's existing `com.litterbugs.app` App ID.
-- [x] Custom SMTP is configured with the approved `support@litterbugs.app` sender and a Partner-specific Resend credential.
-- [x] Confirmation and recovery templates use friendly Litterbugs subjects and preserve the standard one-time link variable.
-- [x] Google is in Production; the current Meta development tester is authorized for role-based testing.
+- [x] Verification and recovery redirects are allowed.
+- [x] Custom SMTP sends as `support@litterbugs.app`.
+- [x] No provider or SMTP secret is tracked by Git.
+- [x] No unrelated project name, identifier, credential, or organization is referenced by tracked files.
+- [x] Meta confirms the app is managed by the isolated `Litterbugs Community Cleanup` business portfolio, ID `863596096684215` (2026-08-18).
+- [x] Google OAuth is in production, Litterbugs branding is verified, and only non-sensitive OpenID/email/profile scopes are requested (Google Auth Platform audit, 2026-08-17).
+- [x] Live Auth settings recheck confirms email signup and anonymous access enabled, email auto-confirm disabled, Google and Facebook enabled, and Apple/phone disabled in `mvaygkflcjswtwchflrk` (rechecked through the public Auth settings endpoint, 2026-08-18).
+- [x] Correct Litterbugs business ownership is connected in Meta; the ownership email is confirmed and Grant E Gibson has active full access. Meta business verification remains a release gate (2026-08-18).
+- [x] Production Google iOS client `Litterbugs Production iOS` is confirmed for `com.litterbugs.app` and App Store ID `6757313862`, with matching EAS production values (2026-08-18).
+- [ ] Apple sign-in is enabled and tested before App Store submission.
+
+## Automated and build checks
+
+- [x] JavaScript syntax checks pass.
+- [x] `git diff --check` passes.
+- [x] Expo Doctor passes all 18 checks.
+- [x] iOS production export succeeds.
+- [x] Android export succeeds with the deferred browser fallback.
+- [x] Local iOS Release build succeeds with native Google and browser-based Facebook authentication.
+- [x] Native QA artifact identifies itself as `Litterbugs`.
+- [x] Tracked Expo config resolves production bundle ID `com.litterbugs.app`.
+- [x] EAS profiles isolate QA and production environments; the build-worker guard rejects a Google iOS client/bundle mismatch. Production resolves to `com.litterbugs.app`, preview/development resolve to `com.gegibson.litterbugs.qa`, and each environment contains only the authentication values required by the current implementation (rechecked 2026-08-18).
+- [x] Current self-contained Release QA artifacts are built and signed for the iOS simulator and physical iPhone (2026-08-17); Metro is not required. The final-source simulator artifact was rebuilt from scratch after the last code change.
+- [x] A clean reinstall of the preserved final-source simulator artifact launches directly to the branded Welcome screen without Metro, cached app data, warnings, or technical metadata (2026-08-18).
+- [x] The nonce-corrected physical Release QA build is installed and running on Sarah's iPhone 6s (iOS 15.8.2, 2026-08-17).
+- [x] The final-source physical Release QA build was rebuilt locally with two compiler jobs, signed with the isolated `com.gegibson.litterbugs.qa` profile, installed over the previous QA build, launched through Xcode, and captured on Sarah's iPhone 6s (iOS 15.8.2, 2026-08-18). The first launch displayed the expected iOS location-permission prompt.
+- [x] The combined worktree preserves the newest `origin/main` report-form and report-detail redesigns together with the account sheet and authentication changes (2026-08-18).
+- [ ] Record the reviewed `MapScreen.js` reconciliation in branch history after partner approval.
+- [x] The combined self-contained simulator app opens the redesigned report wizard, then returns to the shared map/account sheet and completes confirmed guest sign-out (iOS 26.5 simulator, 2026-08-17).
 
 ## Email authentication
 
-- [x] A new email account receives a verification message from the approved Litterbugs sender.
-- [ ] A new email account cannot sign in before verification.
-- [x] A valid verification link verifies the account server-side.
-- [ ] A valid verification link opened on an installed physical iPhone opens Litterbugs and establishes the correct session.
-- [ ] Resend verification sends a fresh usable link.
-- [x] An expired or already-used verification callback shows a useful error and tells the user to request a new link.
-- [x] Existing email and correct password signs in.
-- [x] Incorrect password shows a mismatch error and the login path never calls signup.
-- [x] An explicit duplicate signup does not create a second identity and directs the user toward sign-in or recovery.
-- [ ] Forgot password does not disclose whether an account exists.
-- [ ] A valid recovery link opens the new-password screen.
-- [ ] Mismatched or short replacement passwords are rejected locally.
-- [ ] Saving a valid replacement password succeeds and the new password signs in.
-- [x] An expired recovery callback shows a useful error and tells the user to request a new link.
-- [x] A signed-in Google session is restored after fully closing and reopening the app.
-- [x] A signed-out session stays signed out after fully closing and reopening the app.
+- [x] New signup sends one verification action.
+- [x] Unverified account cannot sign in.
+- [x] Valid verification link confirms the account.
+- [x] Login succeeds after verification.
+- [x] Incorrect password shows friendly guidance.
+- [x] Duplicate signup never becomes login or creates another identity.
+- [x] Verification resend works after the cooldown.
+- [x] Recovery email opens the in-app new-password screen.
+- [x] New password saves and signs in successfully.
+- [x] Expired or replayed links show recoverable guidance.
+- [ ] Verification and recovery handoffs are repeated on the current physical build.
 
-## Social authentication on iPhone
+## Google iOS
 
-Run every provider section with both a new provider account and a returning account.
+- [x] Native QA build reaches Google without displaying a Supabase host prompt (iOS 26.5 simulator, repeated 2026-08-18).
+- [x] Returning sign-in succeeds through the native Google flow, reaches the map, and records a successful Supabase `/token` exchange (`id_token`, 200; signed iOS 26.5 Release simulator, repeated 2026-08-18).
+- [x] The same Google button creates a new Supabase user for a first-time Google identity; a privacy-safe identity audit confirms one Google identity was created together with its user (2026-08-17).
+- [x] Cancellation returns to Litterbugs without an error alert (repeated on the installed signed QA app, iOS 26.5 simulator, 2026-08-18).
+- [x] Declining access on Google's own consent screen returns to the Litterbugs sign-in screen without an error or technical text (signed iOS 26.5 Release simulator, 2026-08-17).
+- [x] Matching email attaches to the intended existing user without duplication (Supabase identity audit, 2026-08-17).
+- [x] Native Google returns through the iOS SDK rather than an app URL callback; cancellation returns safely to the foreground, and the resulting Supabase session survives a fully closed relaunch (repeated 2026-08-18).
+- [x] Session survives app termination and a cold relaunch (signed iOS 26.5 Release simulator, repeated 2026-08-18).
+- [x] Confirmed sign out returns to Welcome, clears the Supabase session, and invokes native Google sign-out (signed iOS 26.5 Release simulator, repeated 2026-08-18).
 
-### Google
+## Facebook iOS
 
-- [x] New account succeeds.
-- [x] Returning account succeeds.
-- [x] User cancellation returns safely to Litterbugs.
-- [x] Provider page displays the verified Litterbugs name and logo instead of the Supabase hostname.
-- [ ] Permission denial produces a useful error.
-- [ ] Matching an existing verified email does not create an unintended duplicate identity.
-- [ ] Network interruption fails safely and allows retry.
+- [x] Signed QA build reaches Facebook through `auth.litterbugs.app` without displaying a Supabase host prompt (iOS 26.5 Release simulator, 2026-08-18).
+- [x] Returning sign-in succeeds through standard Facebook browser OAuth, returns to the Litterbugs map, and records a successful Supabase PKCE `/token` exchange (200; signed iOS 26.5 Release simulator, 2026-08-18).
+- [x] Cancellation at the Apple consent prompt returns to Litterbugs without an error alert or stale-token exchange (signed iOS 26.5 Release simulator, 2026-08-18).
+- [ ] Cancellation or permission denial on Facebook's provider-owned consent page returns to Litterbugs without a technical alert. The final build recognizes the provider cancellation and denial responses, but the isolated system browser prevented unattended interaction with Facebook's inner Cancel button.
+- [x] Matching email attaches to the intended existing email user without duplication (Supabase identity audit, 2026-08-17).
+- [x] Facebook returns through the centralized `litterbugs://auth/callback` handler, and the resulting Supabase session survives a fully closed relaunch (signed iOS 26.5 Release simulator, 2026-08-18).
+- [x] Session survives app termination and a cold relaunch (signed iOS 26.5 Release simulator, 2026-08-18).
+- [x] Sign out clears the Supabase session; a repeat login requires explicit Facebook confirmation and returns successfully (signed iOS 26.5 Release simulator, 2026-08-18).
+- [ ] A genuinely new Facebook account completes signup when a test account is available (explicitly deferred for branch review because Meta test-user creation is unavailable and a separate real account was not available).
 
-### Apple
+## App behavior and presentation
 
-- [x] Deferred Google/Facebook test builds do not display the Apple button.
-- [ ] Native Apple sheet opens from the official Apple button.
-- [ ] New account succeeds on a physical iPhone.
-- [ ] Returning account succeeds.
-- [ ] Hide My Email succeeds.
-- [ ] User cancellation returns safely to Litterbugs.
-- [ ] Permission or credential failure produces a useful error.
-- [ ] Matching an existing verified email does not create an unintended duplicate identity.
-- [ ] Network interruption fails safely and allows retry.
+- [x] Existing Google, Facebook, email, and guest buttons retain their layout (visual and accessibility-tree pass on the installed signed QA app, iOS 26.5 simulator, 2026-08-18).
+- [x] Google uses the official multicolor G on white.
+- [x] Facebook uses Meta blue `#1877F2` with a white mark and text.
+- [x] Provider buttons retain their icon, label, dimensions, and color while displaying a compact in-button progress state, so the app-controlled portion of the browser handoff does not jump (current signed QA app, iOS 26.5 simulator, 2026-08-18).
+- [x] Login, signup, and password recovery remain explicit separate actions (signed iOS 26.5 Release simulator, 2026-08-17).
+- [x] Failed login shows friendly guidance and never creates an account (final-source Release UI pass, `/token` 400, and zero-user Supabase audit for the test address, 2026-08-17).
+- [x] Account sheet shows simple account status without provider metadata (repeated on the installed signed QA app, iOS 26.5 simulator, 2026-08-18).
+- [x] Existing Yes/No sign-out confirmation is preserved; `No` keeps the session and `Yes` returns to Welcome (repeated on the installed signed QA app, iOS 26.5 simulator, 2026-08-18; earlier final-source pass also recorded Supabase `/logout` 204).
+- [x] Email sheet remains usable on small screens and with the keyboard open.
+- [x] Guest mode creates an anonymous session, shows the non-transfer warning, and remains available without report transfer (repeated on the installed signed QA app, iOS 26.5 simulator, 2026-08-18).
+- [x] A guest session survives app termination and a cold relaunch (repeated on the installed signed QA app, iOS 26.5 simulator, 2026-08-18).
+- [x] Google and Facebook provider screens display Litterbugs branding and no Supabase metadata; Facebook uses the validated `auth.litterbugs.app` bridge and standard `facebook.com` consent screen (fresh final-source signed iOS 26.5 Release simulator, 2026-08-18).
+- [x] The live Facebook bridge health check passes, accepts only the exact Litterbugs Supabase/Facebook/callback combination, and rejects unapproved hosts and providers with HTTP 400 (2026-08-18).
+- [x] A denied auth callback cold-launches into friendly retry guidance without raw provider metadata (iOS 26.5 simulator, 2026-08-17).
+- [x] An expired recovery callback foregrounds from the background into friendly request-a-new-link guidance (iOS 26.5 simulator, 2026-08-17).
+- [ ] Current physical-device pass finds no Supabase host, raw metadata, or technical alert text (both providers pass on the signed simulator build but have not been repeated on the current physical build).
 
-### Facebook
+## Known QA limits
 
-- [ ] New account succeeds.
-- [ ] Returning account succeeds.
-- [x] User cancellation returns safely to Litterbugs.
-- [x] Meta's hosted permission page displays the correct Litterbugs name and logo.
-- [x] The first approved Meta grant created one Facebook identity server-side in the correct Supabase project.
-- [ ] A successful permission grant returns to `litterbugs://auth/callback` instead of `localhost`.
-- [ ] Permission denial produces a useful error.
-- [x] Matching an existing verified email links the Facebook identity to the existing user instead of creating a duplicate user.
-- [ ] Network interruption fails safely and allows retry.
+- The physical test phone is an iPhone 6s on iOS 15.8.2. The current Xcode can install, launch, and capture the signed Litterbugs build, but its UI-test runner rejects this older OS as an unsupported logic-test destination. Physical interaction results above therefore come from direct device testing, Xcode screenshots, app relaunches, and Supabase Auth logs rather than unattended XCTest.
+- Meta's simulated test-user service is currently unavailable. A genuinely new Facebook-user signup remains unverified until Meta restores test users or a separate real tester account is available.
 
-## Callback and lifecycle states
+## Branch merge gates
 
-Repeat email verification, recovery, and one browser OAuth callback in each state:
+- [ ] The implemented Google, Facebook, email, recovery, guest, session, and sign-out scope is accepted with any remaining provider-owned manual QA limits documented above.
+- [ ] The branch is reconciled with the latest `origin/main` and the combined result passes the final smoke checks.
+- [ ] Partner reviews and approves the branch.
+- [ ] Only after approval is the branch pushed or merged.
 
-- [x] App already open for the Google browser OAuth callback.
-- [x] Browser-auth cancellation callback with the app in the background.
-- [x] Browser-auth cancellation callback with the app fully closed.
-- [ ] Replaying the same callback does not create duplicate work or an extra session.
-- [ ] Returning to the foreground resumes token refresh without running it unnecessarily in the background.
+## Deferred App Store gates
 
-## Guest and account behavior
+- [ ] Complete Meta business verification and any required public provider review before public Facebook login release.
+- [ ] Implement and test Apple login before submitting an App Store build that contains third-party social login.
+- [ ] Repeat the full release checklist on the final App Store candidate.
 
-- [x] Continue as Guest remains available as a quiet action.
-- [ ] Guest can use the existing report experience.
-- [x] Guest reports are not presented as transferable to a permanent account.
-- [x] Account sheet shows Guest status and the recovery warning.
-- [x] Account sheet shows provider and email for a permanent account.
-- [x] Sign out opens the Yes/No confirmation.
-- [x] No closes the confirmation and preserves the session.
-- [x] Yes signs out and returns to the existing Welcome to Litterbugs screen.
-
-## UI and regression checks
-
-- [x] Welcome screen wording, logo, colors, Get Started, and Support Litterbugs remain intact.
-- [x] Authentication layout fits the smallest supported iPhone without clipped actions.
-- [x] Software keyboard does not hide the active email or password control on the iPhone 17 Pro simulator.
-- [x] Authentication actions have visible loading/disabled states, including session restore, provider/email/guest actions, password update, and confirmed sign-out.
-- [x] Buttons and links have useful accessibility labels and at least a 44-point touch target.
-- [x] Authentication fields, password text, and prior errors are cleared across sign-in and sign-out navigation changes.
-- [ ] Existing map, report creation, report editing, photo, and location behavior still works.
-- [x] No database, RLS, report, or Storage behavior changed in this branch.
-- [x] No provider, SMTP, Apple, or Supabase secret appears in tracked Git content or application logs reviewed during this test.
-
-## Recorded iOS simulator pass
-
-- Date: 2026-08-15
-- Build: EAS iOS simulator development build `1371c8b8-4a57-4e73-bfce-10c918b0c4b6`
-- Device: iPhone 17 Pro simulator, iOS 26.5
-- Runtime: one Litterbugs development client connected to one local Metro server
-- Verified: private iOS OAuth session without the technical app/domain prompt, Google new and returning sign-in, Google/Facebook cancellation recovery, open/background/cold-start browser-auth callback routing, session restore, signed-out restore, email login/signup/recovery layouts, software-keyboard layout, Guest warning, Account sheet, and Yes/No sign-out behavior
-- Remaining: Facebook credential completion and corrected callback retest, recovery email delivery, successful provider callbacks from background and cold start, permission/network failure cases, physical-iPhone testing, Meta review/publication, and Apple before App Store submission
-- Accessibility/source audit: auth controls expose useful labels, visible links meet the 44-point minimum, disabled provider/email actions visibly dim, and session restoration displays a loading indicator instead of a blank screen.
-- Small-screen pass: the welcome screen, auth buttons, email sheet, and keyboard-open email form fit an iPhone SE (3rd generation) simulator without clipping actions. The temporary simulator was deleted immediately after testing and the single iPhone 17 Pro simulator was restored.
-- Provider errors are translated to short retry guidance; native browser and network implementation details are not displayed to users.
-- Confirmed sign-out keeps the existing Yes/No alert and displays a disabled `Signing out…` state until Supabase responds.
-- Synthetic denied and expired deep-link callbacks were routed through the installed app without creating a user. Denial produced calm retry guidance; expiration produced an actionable request-a-new-link message.
-- A live signup message arrived from the approved sender and its one-time link verified the intentional test account. Opening that mobile callback from desktop Chrome could not launch the iOS-only `litterbugs://` route, so the physical-iPhone handoff remains a separate required check.
-
-## Live Supabase audit
-
-- Date: 2026-08-15
-- Project read-back: `mvaygkflcjswtwchflrk` is `Litterbugs` and reports `ACTIVE_HEALTHY`.
-- Identity read-back reports one Google identity and one Facebook identity. The Facebook identity shares its user with the existing email identity; no duplicate provider user was created.
-- Auth logs confirm Google signup/login/logout, successful email-password login, rejected invalid credentials, and rejected repeated signup.
-- Live Auth configuration confirms the verified Resend sender `support@litterbugs.app`, SMTP host/port/username, and the presence of the encrypted Partner-specific SMTP password. No secret value is recorded here.
-- Live Auth configuration read-back confirms the branded confirmation and recovery subjects, exactly one user action in each body, and the required `{{ .ConfirmationURL }}` variable in both templates.
-- Project read-back reports zero database migrations, zero Supabase branches, and zero Edge Functions.
-- No personal email address, token, provider secret, or callback payload is recorded in this checklist.
-
-## Release decision
-
-- [ ] Apple authentication is enabled and its tests pass before submitting a build that includes Google or Facebook login to App Review.
-- [ ] All required iOS checks pass with evidence.
-- [ ] Any failures are fixed and retested.
-- [ ] PR #2 receives partner review.
-- [ ] PR #2 is moved from draft to ready only after the live Auth configuration and physical-iPhone tests pass.
-
-Android provider setup and testing are intentionally deferred.
+Android native provider setup and testing remain deferred.

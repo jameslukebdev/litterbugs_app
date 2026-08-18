@@ -1,131 +1,161 @@
-# Auth Provider Setup
+# Authentication Provider Setup
 
-Use only Supabase project `mvaygkflcjswtwchflrk` and provider records belonging to the existing production app, whose permanent iOS bundle ID is `com.litterbugs.app`.
+This branch belongs only to the Partner Litterbugs app and Supabase project
+`mvaygkflcjswtwchflrk`. Use only the provider records, credentials, identifiers,
+and build project documented here.
 
-## Supabase redirect allow list
+## App identity
 
-Add these exact mobile routes under Authentication → URL Configuration:
+- App name: `Litterbugs`
+- Production iOS bundle ID: `com.litterbugs.app`
+- Production Android package: `com.litterbugs.app`
+- Existing App Store ID: `6757313862`
+- App scheme: `litterbugs`
+- EAS project: `@gegibson/litterbugs-partner`
+
+Apple's public App Store lookup was rechecked on 2026-08-17 and reports
+`com.litterbugs.app` for App Store ID `6757313862` (seller James Luke Barber).
+The production Google client must use that exact pair.
+
+`APP_VARIANT=qa` plus `IOS_BUNDLE_IDENTIFIER` selects the isolated QA identity.
+Production profiles set `APP_VARIANT=production` and always use the production
+bundle ID from `app.json`, even if a developer's local `.env` contains QA values.
+
+## Local and build environment
+
+Copy `.env.example` to `.env` and supply the Litterbugs-specific values. Never
+commit `.env` or place provider secrets in source code.
+
+| Variable | Purpose |
+| --- | --- |
+| `EXPO_PUBLIC_SUPABASE_URL` | Correct Litterbugs Supabase URL |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Public Supabase client key |
+| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | Google web client configured in Supabase |
+| `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | Google iOS client for the build's bundle ID |
+| `GOOGLE_IOS_CLIENT_BUNDLE_ID` | Bundle ID that owns the selected Google iOS client |
+| `APP_VARIANT` | `qa` for local/internal builds or `production` for release builds |
+| `IOS_BUNDLE_IDENTIFIER` | Optional local-QA override only |
+
+The tracked Expo config adds only the native Google plugin when its required
+build values are present. Facebook uses the secure system browser and does not
+add a Meta SDK, client token, or native Meta build configuration. A development
+build is required for the native Google provider; Expo Go cannot load it.
+
+EAS profiles are pinned to their matching remote environment. On the EAS build
+worker, configuration fails if an auth value is missing or the Google iOS
+client's recorded bundle ID does not match the app bundle ID. The worker-only
+check is intentional because EAS first evaluates dynamic config before loading
+the selected remote environment. This prevents a QA client from being packaged
+into a production app without breaking normal EAS config inspection.
+
+## Supabase
+
+Keep these routes under Authentication → URL Configuration:
 
 - `litterbugs://auth/callback`
 - `litterbugs://auth/reset-password`
 
-The current allow list contains the older `litterbugs://auth-callback` route. Keep it only while an older build still needs it; it does not replace the two routes above.
+Email confirmation must remain enabled. Verification and recovery messages use
+the monitored sender `support@litterbugs.app` and contain one clear action.
+SMTP credentials remain only in Supabase.
 
-## Email
-
-Under Authentication → Providers → Email, require email confirmation. Configure custom SMTP separately so verification and recovery messages come from `support@litterbugs.app`. Keep SMTP credentials only in Supabase.
-
-Live read-back on 2026-08-15 confirms that email confirmation is enabled. The separate root `litterbugs.app` sending domain is Verified in Resend, and a new sending-only credential scoped to that exact domain is stored only in the correct Supabase project. Supabase's live Auth configuration confirms sender `support@litterbugs.app`, sender name `Litterbugs`, host `smtp.resend.com`, port `465`, username `resend`, and an encrypted password. The isolated DNS records are present on Cloudflare's authoritative nameserver. Website routing, inbox routing, and the retired prototype's Resend resources were not changed.
-
-Keep `support@litterbugs.app` as the Auth sender for this release. No `hello@litterbugs.app` inbox, forwarding route, or additional inbound-mail DNS record is needed for the authentication upgrade.
-
-The confirmation and recovery templates use concise Litterbugs wording. Their live subjects are `Verify your Litterbugs email` and `Reset your Litterbugs password`; each body has exactly one clear action and retains Supabase's standard `{{ .ConfirmationURL }}` variable so the requested mobile redirect is carried through the one-time link.
-
-A live verification message reached an intentional test inbox and its one-time link verified the account. A recovery message and the installed-physical-iPhone callback handoff still need to be tested before release.
-
-Do not paste the SMTP password into chat, a terminal command, `.env`, or Git.
-
-## Google and Facebook
-
-Create new provider applications. Do not reuse the dormant credentials currently visible in the disabled Supabase provider forms. Each provider's OAuth callback is:
+Google and Facebook must remain enabled in this exact project. Their web OAuth
+callback is:
 
 `https://mvaygkflcjswtwchflrk.supabase.co/auth/v1/callback`
 
-Copy the new provider IDs and secrets into the matching Supabase Auth provider. Do not place them in `.env`, `app.json`, or source files.
+The iOS app uses the native Google SDK and sends its token to
+`supabase.auth.signInWithIdToken`. Facebook uses Supabase browser OAuth and
+returns to `litterbugs://auth/callback`. The provider callback above remains in
+the Google and Meta consoles, while the app-facing handoff uses the Litterbugs
+scheme.
 
-Current isolated development resources (non-secret identifiers only):
+## Google
 
-- Google Cloud project: `litterbugs-auth` (project number `895118598665`)
-- Google OAuth client: `Litterbugs Supabase Web Client`
-- Meta app: `Litterbugs Community Cleanup` (app ID `1477683410862512`)
-- Supabase project: `mvaygkflcjswtwchflrk`
+- Google Cloud project: `litterbugs-auth`
+- Project number: `895118598665`
+- Supabase web client: `Litterbugs Supabase Web Client`
 
-As of 2026-08-15, the new Google and Facebook credentials are stored only in their provider consoles and the matching Supabase Auth provider forms. Both Supabase providers are enabled. The Google app is in Production with verified Litterbugs branding visible to users, and the Meta app remains unpublished for role-based development testing.
+The web client ID and secret belong in the Google console and Supabase provider
+settings. Each native bundle ID requires its own iOS OAuth client. The iOS client
+ID is public configuration, but it is supplied through the build environment so
+QA and production identities cannot be confused.
 
-All mobile callback URLs are generated from the literal `litterbugs` app scheme. This keeps local-development OAuth and email links on `litterbugs://auth/callback` or `litterbugs://auth/reset-password` instead of allowing an Expo development host such as `localhost` to become the final destination.
+Google has separate native clients for the isolated QA identity and the live
+App Store identity. The production client `Litterbugs Production iOS` was
+created on 2026-08-18 for `com.litterbugs.app` and App Store ID `6757313862`.
+Its public client ID and matching bundle marker are stored in the EAS
+`production` environment. Do not rename or repurpose the QA client.
 
-### Google production configuration
+Google branding must continue to show the Litterbugs name and logo. Keep scopes
+limited to OpenID, email, and profile.
 
-1. Create a new Google Cloud project dedicated to the production Litterbugs app. Do not select an unrelated project or the retired prototype.
-2. In Google Auth Platform, configure an External audience. Use Testing only during initial setup, then move to Production for public sign-in and brand verification.
-3. Use only the `openid`, `.../auth/userinfo.email`, and `.../auth/userinfo.profile` scopes required by Supabase Auth.
-4. Create an OAuth client with application type **Web application**.
-5. Add the exact Supabase callback above under **Authorized redirect URIs**.
-6. During Testing, add only the two partners and intentional test accounts. Production mode is no longer limited to that test-user list.
-7. Save the new Client ID and Client Secret only in the Google console and the Google provider form in Supabase project `mvaygkflcjswtwchflrk`.
+Supabase verifies a one-time nonce on native Google ID tokens. The free React
+Native Google wrapper does not expose the nonce argument that is available in
+GoogleSignIn iOS 9+, so the tracked `patch-package` patch exposes only that
+upstream SDK parameter. The app sends a SHA-256 nonce to Google and the original
+nonce to `signInWithIdToken`, as required by Supabase. Keep this patch applied by
+the `postinstall` script until the wrapper exposes the same parameter upstream.
 
-The Google app moved to Production on 2026-08-15. The permanent `litterbugs.app` domain is verified in Google Search Console through a single Cloudflare TXT record, and Google verified and published the Litterbugs name, logo, homepage, privacy policy, and terms. Keep the DNS verification record in place so domain ownership remains valid.
+## Facebook
 
-### Facebook test configuration
+- Meta app: `Litterbugs Community Cleanup`
+- App ID: `1477683410862512`
 
-1. Create a new Meta app dedicated to the production Litterbugs app. Keep it separate from every existing Meta app and business portfolio not owned by this project.
-2. Add the **Authentication and account creation** use case (Facebook Login).
-3. In Facebook Login settings, add the exact Supabase callback above under **Valid OAuth Redirect URIs**.
-4. Confirm both `public_profile` and `email` are Ready for testing; Supabase Auth requires the email permission.
-5. Add only the two partners and intentional test accounts under App Roles, and have each invited tester accept the role.
-6. Save the new App ID and App Secret only in the Meta console and the Facebook provider form in Supabase project `mvaygkflcjswtwchflrk`.
+The Meta iOS platform supports multiple bundle IDs. Keep both the isolated QA
+bundle and the production bundle on that platform, and keep permissions limited
+to `public_profile` and `email`. The App Secret stays only in Meta and Supabase;
+no Meta client token is packaged in the app.
 
-Keep the Meta app in Development mode until its privacy URL, data-deletion instructions, business verification, and any required review are complete. Development mode is sufficient for role-based partner testing.
+As of 2026-08-18, the Meta iOS platform contains both
+`com.gegibson.litterbugs.qa` and `com.litterbugs.app`, with App Store ID
+`6757313862` recorded for the production app.
 
-The Meta app now has an iOS platform entry for the production bundle ID `com.litterbugs.app`. Its App Review request includes only the standard `email` and `public_profile` login permissions, both of which Meta describes as automatically granted to apps for their allowed login uses. The review has not been submitted. Remaining Meta-owned steps include connecting the app to the verified business portfolio, confirming a monitored contact email, certifying allowed use, answering the data-handling questions, supplying reviewer instructions, and submitting the completed request. Until Meta approves and the app is published, role-based testers may see Meta's red **Submit for Login Review** warning.
+Facebook sign-in uses Supabase's browser OAuth flow. The app first opens the
+Litterbugs-owned `https://auth.litterbugs.app/start` bridge, which validates the
+exact Supabase authorization target and then hands off to Facebook. This keeps
+the Apple consent prompt branded as Litterbugs without proxying credentials or
+tokens. The bridge is not an authentication provider and stores no user data.
 
-Authoritative references: [Supabase Google login setup](https://supabase.com/docs/guides/auth/social-login/auth-google) and [Supabase Facebook login setup](https://supabase.com/docs/guides/auth/social-login/auth-facebook).
+The Meta app is managed by the isolated `Litterbugs Community Cleanup` business
+portfolio, ID `863596096684215`. Grant E Gibson has active full access. Complete
+Meta business verification and any required provider review before public
+release. Do not move the app to an unrelated portfolio.
+
+While the Meta app is unpublished, real test accounts must have the Tester or
+consumer-tester role and accept the invitation before signing in. Meta simulated
+test-user creation is currently unavailable, so first-time Facebook-user testing
+requires a separate tester account that has not authorized Litterbugs.
 
 ## Apple
 
-The live App Store app already exists as `Litterbugs: Community Cleanup` (`6757313862`) with bundle ID `com.litterbugs.app`. Use and configure that existing App ID in the partner's production Apple Developer team. Do not register a second App ID or transfer a temporary identifier; Sign in with Apple adds avoidable transfer requirements.
+Apple sign-in is not implemented on this branch. Apple code and native packages
+are intentionally absent while the partner's Apple Developer team setup is
+deferred. Do not create or transfer a replacement production App ID.
 
-Apple is temporarily deferred while Google and Facebook are configured and tested. The Apple button is hidden, and the Apple capability/plugin is omitted from the current test build. The implementation remains staged in source code.
+Before submitting an App Store build that contains third-party social login,
+enable Sign in with Apple on the existing production App ID
+`com.litterbugs.app`, implement it as a separate reviewed change, and test new,
+returning, cancelled, background, and cold-start sign-in paths.
 
-- Existing bundle ID: `com.litterbugs.app`
-- Required capability: Sign in with Apple
+## Build and run
 
-Apple requires the Account Holder or an Admin to register an App ID. If the production Apple membership is an organization, its Account Holder can invite the person completing setup as an Admin with access to Certificates, Identifiers & Profiles. If it is an individual membership, the Account Holder must perform the identifier and signing setup directly.
-
-Native iOS login uses that existing App ID. For browser-based Apple login on Android, create a separate Services ID and signing key in the same production team, then configure the Apple provider in Supabase. Apple's browser OAuth secret must be rotated before it expires.
-
-Before an App Store submission that includes Google or Facebook login:
-
-1. Enable Sign in with Apple for the existing `com.litterbugs.app` App ID in the production Apple team.
-2. Restore `ios.usesAppleSignIn: true` and the `expo-apple-authentication` config plugin in `app.json`.
-3. Set `APPLE_AUTH_ENABLED` to `true` in `AuthScreen.js`.
-4. Create a fresh iOS build and complete the physical-iPhone Apple tests.
-
-Apple App Review Guideline 4.8 generally requires an equivalent privacy-preserving login option when a primary account uses a third-party login such as Google or Facebook. Google/Facebook-only builds are suitable for development testing, but should not be submitted to the App Store until Apple login is enabled and verified.
-
-## EAS development client
-
-This repository is linked to the isolated EAS project `@gegibson/litterbugs-partner` (`df0d0855-71d9-4943-b278-d1f083ab6b06`). Do not link the retired prototype's EAS project.
-
-The current rollout is iOS-first. Android setup and Android builds are deferred until a later branch or explicit follow-up; do not start Android Studio, Gradle, or an Android emulator for the current work.
-
-The isolated iOS simulator development build completed successfully on 2026-08-15:
-
-- Build ID: `1371c8b8-4a57-4e73-bfce-10c918b0c4b6`
-- Build page: `https://expo.dev/accounts/gegibson/projects/litterbugs-partner/builds/1371c8b8-4a57-4e73-bfce-10c918b0c4b6`
-- Profile: `development-simulator`
-- Runtime: Expo SDK 54
-
-It was installed and verified in a single iPhone 17 Pro simulator. Browser OAuth requests a private iOS authentication session, which removes the technical app/domain confirmation prompt before the provider page. Google completed a new and returning sign-in and returned to the app; Facebook reached Meta's hosted login page and canceled back to the app cleanly. Provider-hosted pages remain controlled by Google and Meta, with the public Litterbugs name and logo supplied through each provider's branding configuration.
-
-Build a new iOS development client only after native dependencies or native configuration change:
+After installing or changing a native package, regenerate the ignored native
+project and rebuild the development client:
 
 ```sh
-npx eas-cli build --profile development --platform ios
+npx expo prebuild --platform ios
+npx pod-install ios
 ```
 
-For the local iOS simulator, run exactly one Metro server with:
+Run one Metro server at a time:
 
 ```sh
-npx expo start --dev-client --localhost --clear
+npx expo start --dev-client --clear
 ```
 
-After each partner installs the development build on a physical iPhone, use a single tunnel server when they are not on the same network:
+Use `--tunnel` only when the test device cannot reach the computer over the local
+network. Rebuild only after native dependencies or native configuration change.
 
-```sh
-npx expo start --dev-client --tunnel --clear
-```
-
-Stop the existing Metro process before changing connection modes. Rebuild only after native dependencies or native configuration changes.
-
-Before moving the authentication PR out of draft, complete and record the iOS checks in [auth-test-checklist.md](./auth-test-checklist.md).
+No authentication change is ready for merge until the current checklist in
+`docs/auth-test-checklist.md` passes and the partner approves the branch.

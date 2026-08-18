@@ -1,0 +1,25 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "litterbugs-auth-bridge",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-18",
+  "compatibility_flags": ["nodejs_compat"],
+  "rules": [
+    {
+      "type": "Data",
+      "globs": ["**/*.png"],
+      "fallthrough": true
+    }
+  ],
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "auth.litterbugs.app",
+      "custom_domain": true
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}

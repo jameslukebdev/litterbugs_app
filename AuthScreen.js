@@ -6,7 +6,6 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
 
 import {
@@ -17,24 +16,28 @@ import { supabase } from './lib/supabase';
 
 WebBrowser.maybeCompleteAuthSession();
 
-// Apple remains implemented but is intentionally hidden until the production
-// Apple Developer team enables Sign in with Apple for com.litterbugs.app.
-const APPLE_AUTH_ENABLED = false;
-
 const PROVIDERS = [
-  { id: 'google', label: 'Continue with Google', icon: 'logo-google' },
-  ...(APPLE_AUTH_ENABLED
-    ? [{ id: 'apple', label: 'Continue with Apple', icon: 'logo-apple' }]
-    : []),
+  {
+    id: 'google',
+    label: 'Continue with Google',
+    image: require('./assets/google-g-logo.png'),
+  },
   { id: 'facebook', label: 'Continue with Facebook', icon: 'logo-facebook' },
 ];
 
 const cleanAddress = (value) => value.trim().toLowerCase();
 
+const isNetworkError = (error) =>
+  /network|internet|offline|failed to fetch|network request failed/i.test(error?.message || '');
+
+const isProviderCancellation = (error) =>
+  error?.code === 'ERR_REQUEST_CANCELED'
+  || /cancelled|canceled|denied|declined|access_denied|authentication session.*error 1/i.test(error?.message || '');
+
 const getProviderErrorMessage = (error) => {
   const message = error?.message?.toLowerCase() || '';
 
-  if (/network|internet|offline|failed to fetch/.test(message)) {
+  if (isNetworkError(error)) {
     return 'Check your internet connection and try again.';
   }
 
@@ -107,9 +110,11 @@ export default function AuthScreen() {
         const { error } = await signInWithEmail(cleanEmail, password);
         if (error) {
           const unverified = error.message?.toLowerCase().includes('email not confirmed');
-          setFormError(unverified
-            ? 'Please verify your email before signing in.'
-            : 'That email and password did not match. Try again or reset your password.');
+          setFormError(isNetworkError(error)
+            ? 'Check your internet connection and try again.'
+            : unverified
+              ? 'Please verify your email before signing in.'
+              : 'That email and password did not match. Try again or reset your password.');
           return;
         }
         setEmailModalOpen(false);
@@ -127,7 +132,7 @@ export default function AuthScreen() {
         if (error || duplicate) {
           setFormError(duplicate
             ? 'An account may already exist for this email. Try signing in or reset your password.'
-            : error?.message || 'Unable to create your account.');
+            : 'We couldn’t create your account. Check your connection and try again.');
           return;
         }
         if (data?.session) {
@@ -143,13 +148,13 @@ export default function AuthScreen() {
 
       const { error } = await sendPasswordRecovery(cleanEmail);
       if (error) {
-        setFormError(error.message || 'Unable to send a reset link.');
+        setFormError('We couldn’t send a reset link. Check your connection and try again.');
         return;
       }
       setSentReason('recovery');
       setEmailMode('sent');
     } catch (error) {
-      setFormError(error.message || 'Something went wrong. Please try again.');
+      setFormError('Something went wrong. Check your connection and try again.');
     } finally {
       setLoadingEmail(false);
     }
@@ -166,7 +171,7 @@ export default function AuthScreen() {
       if (error) throw error;
       Alert.alert('Email sent', 'We sent a fresh verification link.');
     } catch (error) {
-      setFormError(error.message || 'Unable to resend the verification email.');
+      setFormError('We couldn’t resend the email. Check your connection and try again.');
     } finally {
       setLoadingEmail(false);
     }
@@ -179,7 +184,7 @@ export default function AuthScreen() {
       setLoadingProvider(provider);
       await signInWithProvider(provider);
     } catch (error) {
-      if (error?.code === 'ERR_REQUEST_CANCELED') return;
+      if (isProviderCancellation(error)) return;
       const name = provider.charAt(0).toUpperCase() + provider.slice(1);
       Alert.alert(`${name} sign in unavailable`, getProviderErrorMessage(error));
     } finally {
@@ -200,50 +205,49 @@ export default function AuthScreen() {
         [{ text: 'Continue' }]
       );
     } catch (error) {
-      Alert.alert('Guest sign-in failed', error.message || 'Unable to continue as a guest.');
+      Alert.alert('Guest mode unavailable', 'Check your connection and try again.');
     } finally {
       setLoadingProvider(null);
     }
   };
 
-  const renderProviderButton = ({ id, label, icon }) => {
+  const renderProviderButton = ({ id, label, icon, image }) => {
     const loading = loadingProvider === id;
     const disabled = Boolean(loadingProvider);
-
-    if (id === 'apple' && Platform.OS === 'ios') {
-      return (
-        <View
-          key={id}
-          style={[styles.appleButtonFrame, disabled && styles.disabled]}
-          pointerEvents={disabled ? 'none' : 'auto'}
-        >
-          {loading ? <ActivityIndicator color="#222" /> : (
-            <AppleAuthentication.AppleAuthenticationButton
-              buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
-              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-              cornerRadius={14}
-              style={styles.nativeAppleButton}
-              onPress={() => handleProvider('apple')}
-            />
-          )}
-        </View>
-      );
-    }
+    const providerName = id.charAt(0).toUpperCase() + id.slice(1);
+    const visibleLabel = loading ? `Signing in with ${providerName}…` : label;
 
     return (
       <TouchableOpacity
         key={id}
-        style={[styles.providerButton, id === 'facebook' && styles.facebookButton, disabled && styles.disabled]}
+        style={[
+          styles.providerButton,
+          id === 'google' && styles.googleButton,
+          id === 'facebook' && styles.facebookButton,
+          disabled && !loading && styles.disabled,
+        ]}
         onPress={() => handleProvider(id)}
         disabled={disabled}
         accessibilityRole="button"
-        accessibilityLabel={label}
+        accessibilityLabel={visibleLabel}
+        accessibilityState={{ disabled, busy: loading }}
       >
-        {loading ? <ActivityIndicator color={id === 'facebook' ? '#fff' : '#333'} /> : (
-          <>
-            <Ionicons name={icon} size={21} color={id === 'facebook' ? '#fff' : '#222'} style={styles.buttonIcon} />
-            <Text style={[styles.providerText, id === 'facebook' && styles.facebookText]}>{label}</Text>
-          </>
+        {image ? (
+          <Image source={image} style={styles.googleIcon} resizeMode="contain" />
+        ) : (
+          <Ionicons name={icon} size={21} color={id === 'facebook' ? '#fff' : '#222'} style={styles.buttonIcon} />
+        )}
+        <Text style={[
+          styles.providerText,
+          id === 'google' && styles.googleText,
+          id === 'facebook' && styles.facebookText,
+        ]}>{visibleLabel}</Text>
+        {loading && (
+          <ActivityIndicator
+            size="small"
+            color={id === 'facebook' ? '#fff' : '#333'}
+            style={styles.providerSpinner}
+          />
         )}
       </TouchableOpacity>
     );
@@ -279,15 +283,21 @@ export default function AuthScreen() {
 
       <StatusBar hidden={false} />
       <Modal visible={emailModalOpen} animationType="slide" transparent onRequestClose={closeEmail}>
-        <TouchableWithoutFeedback onPress={closeEmail}>
+        <TouchableWithoutFeedback onPress={closeEmail} accessible={false}>
           <View style={emailStyles.backdrop}>
             <KeyboardAvoidingView
               behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
               keyboardVerticalOffset={Platform.OS === 'ios' ? -36 : 0}
               style={emailStyles.kav}
             >
-              <TouchableWithoutFeedback>
+              <TouchableWithoutFeedback accessible={false}>
                 <View style={emailStyles.sheet}>
+                  <ScrollView
+                    contentContainerStyle={emailStyles.sheetContent}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                    bounces={false}
+                  >
                   <View style={emailStyles.handle} />
                   {emailMode === 'sent' ? (
                     <View style={emailStyles.sentContent}>
@@ -395,6 +405,7 @@ export default function AuthScreen() {
                       </View>
                     </>
                   )}
+                  </ScrollView>
                 </View>
               </TouchableWithoutFeedback>
             </KeyboardAvoidingView>
@@ -414,10 +425,12 @@ const styles = StyleSheet.create({
   actions: { width: '100%', maxWidth: 420 },
   providerButton: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: '#D8DDE2', borderRadius: 14, marginBottom: 11 },
   providerText: { color: '#222', fontSize: 16, fontWeight: '700' },
-  facebookButton: { backgroundColor: '#4267B2', borderColor: '#4267B2' },
+  providerSpinner: { position: 'absolute', right: 16 },
+  googleButton: { borderColor: '#747775' },
+  googleText: { color: '#1F1F1F' },
+  googleIcon: { width: 20, height: 20, marginRight: 10 },
+  facebookButton: { backgroundColor: '#1877F2', borderColor: '#1877F2' },
   facebookText: { color: '#fff' },
-  appleButtonFrame: { height: 52, justifyContent: 'center', marginBottom: 11 },
-  nativeAppleButton: { width: '100%', height: 52 },
   buttonIcon: { marginRight: 10 },
   dividerRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 4 },
   divider: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: '#BCC3CA' },
@@ -432,7 +445,8 @@ const styles = StyleSheet.create({
 const emailStyles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.34)', justifyContent: 'flex-end' },
   kav: { flex: 1, justifyContent: 'flex-end' },
-  sheet: { backgroundColor: '#fff', paddingHorizontal: 22, paddingTop: 10, paddingBottom: Platform.OS === 'ios' ? 34 : 22, borderTopLeftRadius: 22, borderTopRightRadius: 22 },
+  sheet: { maxHeight: '92%', backgroundColor: '#fff', borderTopLeftRadius: 22, borderTopRightRadius: 22, overflow: 'hidden' },
+  sheetContent: { paddingHorizontal: 22, paddingTop: 10, paddingBottom: Platform.OS === 'ios' ? 34 : 22 },
   handle: { width: 42, height: 5, borderRadius: 3, backgroundColor: '#D3D7DB', alignSelf: 'center', marginBottom: 14 },
   headingRow: { flexDirection: 'row', alignItems: 'flex-start' },
   headingCopy: { flex: 1 },

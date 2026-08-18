@@ -13,7 +13,7 @@ import { supabase } from './lib/supabase';
 
 const Stack = createNativeStackNavigator();
 
-const PATREON_URL = "https://patreon.com/litterbugs?utm_medium=unknown&utm_source=join_link&utm_campaign=creatorshare_creator&utm_content=copyLink"; // <-- paste your real link
+const PATREON_URL = "https://patreon.com/litterbugs?utm_medium=unknown&utm_source=join_link&utm_campaign=creatorshare_creator&utm_content=copyLink";
 
 
 const openPatreon = async () => {
@@ -98,7 +98,10 @@ export default function App() {
       if (!url) return;
       try {
         const result = await handleAuthCallbackUrl(url);
-        if (result.type === 'recovery' || url.includes(PASSWORD_RECOVERY_PATH)) {
+        if (
+          result.type === 'recovery' ||
+          (result.handled && url.includes(PASSWORD_RECOVERY_PATH))
+        ) {
           setPasswordRecovery(true);
         }
       } catch (error) {
@@ -121,14 +124,24 @@ export default function App() {
     });
 
     const restoreSession = async () => {
-      const [{ data }, initialUrl] = await Promise.all([
+      const [sessionResult, initialUrlResult] = await Promise.allSettled([
         supabase.auth.getSession(),
         Linking.getInitialURL(),
       ]);
 
       if (!mounted) return;
-      setSession(data.session);
-      await processAuthUrl(initialUrl);
+      if (sessionResult.status === 'fulfilled') {
+        setSession(sessionResult.value.data.session);
+      } else {
+        console.log('Session restore error:', sessionResult.reason);
+      }
+
+      if (initialUrlResult.status === 'fulfilled') {
+        await processAuthUrl(initialUrlResult.value);
+      } else {
+        console.log('Initial link error:', initialUrlResult.reason);
+      }
+
       if (mounted) setAuthLoading(false);
     };
 
@@ -242,7 +255,7 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   button: {
-    backgroundColor: '#81C784', // friendly green
+    backgroundColor: '#2E7D32', // accessible Litterbugs green
     paddingVertical: 16,
     paddingHorizontal: 48,
     borderRadius: 14,
