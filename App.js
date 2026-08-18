@@ -3,15 +3,17 @@ import { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { StyleSheet, Text, View, Image, TouchableOpacity, useWindowDimensions, Alert, Linking } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View, Image, TouchableOpacity, useWindowDimensions, Alert, Linking } from 'react-native';
 
 import AuthScreen from './AuthScreen';
 import MapScreen from './MapScreen';
+import ResetPasswordScreen from './ResetPasswordScreen';
+import { handleAuthCallbackUrl, PASSWORD_RECOVERY_PATH } from './lib/auth';
 import { supabase } from './lib/supabase';
 
 const Stack = createNativeStackNavigator();
 
-const PATREON_URL = "https://patreon.com/litterbugs?utm_medium=unknown&utm_source=join_link&utm_campaign=creatorshare_creator&utm_content=copyLink"; // <-- paste your real link
+const PATREON_URL = "https://patreon.com/litterbugs?utm_medium=unknown&utm_source=join_link&utm_campaign=creatorshare_creator&utm_content=copyLink";
 
 
 const openPatreon = async () => {
@@ -51,6 +53,8 @@ function HomeScreen({ navigation }) {
       <TouchableOpacity
         style={styles.button}
         onPress={() => navigation.navigate('Auth')}
+        accessibilityRole="button"
+        accessibilityLabel="Get Started"
       >
         <Text style={styles.buttonText}>Get Started</Text>
       </TouchableOpacity>
@@ -77,32 +81,105 @@ function HomeScreen({ navigation }) {
 export default function App() {
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
 
   useEffect(() => {
-    // 1️⃣ Restore session on app load
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setAuthLoading(false);
-    });
+    let mounted = true;
 
-    // 2️⃣ Listen for auth changes (login / logout)
     const { data: subscription } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
+      (event, nextSession) => {
+        if (!mounted) return;
+        setSession(nextSession);
+        if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
       }
     );
 
+    const processAuthUrl = async (url) => {
+      if (!url) return;
+      try {
+        const result = await handleAuthCallbackUrl(url);
+        if (
+          result.type === 'recovery' ||
+          (result.handled && url.includes(PASSWORD_RECOVERY_PATH))
+        ) {
+          setPasswordRecovery(true);
+        }
+      } catch (error) {
+        const errorMessage = error.message || '';
+        const cancelled = /cancel|denied|declined|access_denied/i.test(errorMessage);
+        const expired = /expired|otp_expired|invalid.*link|already.*used/i.test(errorMessage);
+        Alert.alert(
+          cancelled ? 'Sign in wasn’t completed' : 'This link is no longer valid',
+          cancelled
+            ? 'No changes were made. You can try again whenever you’re ready.'
+            : expired
+              ? 'This link may have expired or already been used. Return to Litterbugs and request a new link.'
+              : 'Return to Litterbugs and request a new link.'
+        );
+      }
+    };
+
+    const linkSubscription = Linking.addEventListener('url', ({ url }) => {
+      processAuthUrl(url);
+    });
+
+    const restoreSession = async () => {
+      const [sessionResult, initialUrlResult] = await Promise.allSettled([
+        supabase.auth.getSession(),
+        Linking.getInitialURL(),
+      ]);
+
+      if (!mounted) return;
+      if (sessionResult.status === 'fulfilled') {
+        setSession(sessionResult.value.data.session);
+      } else {
+        console.log('Session restore error:', sessionResult.reason);
+      }
+
+      if (initialUrlResult.status === 'fulfilled') {
+        await processAuthUrl(initialUrlResult.value);
+      } else {
+        console.log('Initial link error:', initialUrlResult.reason);
+      }
+
+      if (mounted) setAuthLoading(false);
+    };
+
+    restoreSession().catch((error) => {
+      console.log('Auth restore error:', error);
+      if (mounted) setAuthLoading(false);
+    });
+
     return () => {
+      mounted = false;
+      linkSubscription.remove();
       subscription.subscription.unsubscribe();
     };
   }, []);
 
-  // ⛔ Don’t render navigation until session is known
-  if (authLoading) return null;
+  // Don’t render navigation until session is known.
+  if (authLoading) {
+    return (
+      <View style={styles.authLoading} accessibilityLabel="Loading Litterbugs">
+        <ActivityIndicator size="large" color="#2F7D32" />
+      </View>
+    );
+  }
+
+  if (session && passwordRecovery) {
+    return (
+      <ResetPasswordScreen
+        onComplete={() => {
+          setPasswordRecovery(false);
+          Alert.alert('Password updated', 'Your new password is ready to use.');
+        }}
+      />
+    );
+  }
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator key={session ? 'signed-in' : 'signed-out'} screenOptions={{ headerShown: false }}>
         {session ? (
           /* -------------------------
              Logged-in flow
@@ -149,6 +226,12 @@ export default function App() {
 
 
 const styles = StyleSheet.create({
+  authLoading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F6F7',
+  },
   container: {
     flex: 1,
     backgroundColor: '#F5F6F7',
@@ -172,7 +255,7 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   button: {
-    backgroundColor: '#81C784', // friendly green
+    backgroundColor: '#2E7D32', // accessible Litterbugs green
     paddingVertical: 16,
     paddingHorizontal: 48,
     borderRadius: 14,

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "litterbugs",
-    "slug": "litterbugs",
+    "name": "Litterbugs",
+    "slug": "litterbugs-partner",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -15,12 +15,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourname.litterbugs",
+      "bundleIdentifier": "com.litterbugs.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "We use your location to center the map and help you report nearby litter."
+        "NSLocationWhenInUseUsageDescription": "We use your location to center the map and help you report nearby litter.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
+      "package": "com.litterbugs.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -33,6 +35,12 @@
     "plugins": [
       "expo-secure-store",
       "expo-web-browser"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "df0d0855-71d9-4943-b278-d1f083ab6b06"
+      }
+    },
+    "owner": "gegibson"
   }
 }

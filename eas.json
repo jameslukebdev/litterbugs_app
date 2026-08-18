@@ -1,0 +1,44 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "environment": "development",
+      "env": {
+        "APP_VARIANT": "qa",
+        "IOS_BUNDLE_IDENTIFIER": "com.gegibson.litterbugs.qa"
+      },
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "development-simulator": {
+      "environment": "development",
+      "env": {
+        "APP_VARIANT": "qa",
+        "IOS_BUNDLE_IDENTIFIER": "com.gegibson.litterbugs.qa"
+      },
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      }
+    },
+    "preview": {
+      "environment": "preview",
+      "env": {
+        "APP_VARIANT": "qa",
+        "IOS_BUNDLE_IDENTIFIER": "com.gegibson.litterbugs.qa"
+      },
+      "distribution": "internal"
+    },
+    "production": {
+      "environment": "production",
+      "env": {
+        "APP_VARIANT": "production"
+      },
+      "autoIncrement": true
+    }
+  }
+}

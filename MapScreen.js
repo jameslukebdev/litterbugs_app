@@ -24,6 +24,7 @@ import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from './lib/supabase'
+import { signOut } from './lib/auth';
 import * as FileSystem from 'expo-file-system/legacy';
 
 
@@ -70,6 +71,9 @@ export default function MapScreen() {
   const [editingReportId, setEditingReportId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [photosLoading, setPhotosLoading] = useState(false);
   // Report detail photo carousel
@@ -209,7 +213,7 @@ const reportStepPanResponder = PanResponder.create({
     }
   },
 });
- 
+
 
 // Getting the Map Working 
   useEffect(() => {
@@ -314,7 +318,7 @@ const onMapPress = async (e) => {
       selectedNotes: [],
       notes: '',
     });
-    
+
     resetReportWizard();
     setFormOpen(true);
 
@@ -424,7 +428,7 @@ const onMapPress = async (e) => {
       setIsEditing(false);
       setEditingReportId(null);
       resetReportWizard();
-      
+
       Alert.alert(
         'Report saved',
         'Thanks for helping keep the community clean!'
@@ -461,9 +465,15 @@ const submitReport = async () => {
 // Confirm before signing the user out
 
 const handleSignOut = () => {
+  if (signingOut) return;
+
+  const guestWarning = currentUser?.is_anonymous
+    ? 'Are you sure you want to sign out? This guest account cannot be recovered or transferred.'
+    : 'Are you sure you want to sign out?';
+
   Alert.alert(
     'Sign Out',
-    'Are you sure you want to sign out?',
+    guestWarning,
     [
       {
         text: 'No',
@@ -473,11 +483,16 @@ const handleSignOut = () => {
         text: 'Yes',
         style: 'destructive',
         onPress: async () => {
-          const { error } = await supabase.auth.signOut();
+          setSigningOut(true);
+          const { error } = await signOut();
 
           if (error) {
-            Alert.alert('Sign out failed', error.message);
+            setSigningOut(false);
+            Alert.alert('Couldn’t sign out', 'Check your connection and try again.');
+            return;
           }
+
+          setAccountOpen(false);
         },
       },
     ]
@@ -697,6 +712,7 @@ const handleSignOut = () => {
     useEffect(() => {
       supabase.auth.getUser().then(({ data }) => {
         setCurrentUserId(data.user?.id ?? null);
+        setCurrentUser(data.user ?? null);
       });
     }, []);
     
@@ -757,15 +773,18 @@ useEffect(() => {
   };
 
   loadPhotoUrls();
-}, [selectedReport]);    
+}, [selectedReport]);
 
 
 // Checks if User is Owner of Report
-    const isOwner =
+  const isOwner =
     currentUserId &&
     selectedReport &&
     selectedReport.user_id === currentUserId;
-  
+
+  const isGuest = Boolean(currentUser?.is_anonymous);
+  const accountStatus = isGuest ? 'Guest account' : 'Signed in';
+
 // Links out to Patreon Account
 // const openPatreon = async () => {
 //   try {
@@ -1590,15 +1609,79 @@ const renderReportStep = () => {
       </MapView>
 
 
-      {/* Sign Out Button */}
+      {/* Account Button */}
         <TouchableOpacity
-          style={styles.signOutButton}
-          onPress={handleSignOut}
+          style={styles.accountButton}
+          onPress={() => setAccountOpen(true)}
           accessibilityRole="button"
-          accessibilityLabel="Sign out"
+          accessibilityLabel="Open account menu"
         >
-          <Ionicons name="log-out-outline" size={22} color="#444" />
+          <Ionicons name="person-circle-outline" size={25} color="#444" />
         </TouchableOpacity>
+
+        <Modal
+          visible={accountOpen}
+          animationType="slide"
+          transparent
+          onRequestClose={() => {
+            if (!signingOut) setAccountOpen(false);
+          }}
+        >
+          <View style={styles.accountBackdrop}>
+            <TouchableOpacity
+              style={StyleSheet.absoluteFill}
+              activeOpacity={1}
+              accessible={false}
+              onPress={() => {
+                if (!signingOut) setAccountOpen(false);
+              }}
+            />
+            <View style={styles.accountSheet}>
+              <View style={styles.accountHandle} />
+              <View style={styles.accountHeadingRow}>
+                <View style={styles.accountIcon}>
+                  <Ionicons name={isGuest ? 'person-outline' : 'person-circle-outline'} size={28} color="#2F7D32" />
+                </View>
+                <View style={styles.accountCopy}>
+                  <Text style={styles.accountTitle}>Account</Text>
+                  <Text style={styles.accountStatus}>{accountStatus}</Text>
+                  {!isGuest && currentUser?.email ? (
+                    <Text style={styles.accountEmail} numberOfLines={1}>{currentUser.email}</Text>
+                  ) : null}
+                </View>
+                <TouchableOpacity
+                  style={[styles.accountCloseButton, signingOut && { opacity: 0.5 }]}
+                  onPress={() => setAccountOpen(false)}
+                  disabled={signingOut}
+                  accessibilityLabel="Close account menu"
+                >
+                  <Ionicons name="close" size={24} color="#555" />
+                </TouchableOpacity>
+              </View>
+
+              {isGuest ? (
+                <Text style={styles.accountGuestNote}>
+                  Guest accounts cannot be recovered or transferred after signing out.
+                </Text>
+              ) : null}
+
+              <TouchableOpacity
+                style={[styles.accountSignOutButton, signingOut && { opacity: 0.65 }]}
+                onPress={handleSignOut}
+                disabled={signingOut}
+                accessibilityRole="button"
+                accessibilityLabel={signingOut ? 'Signing out' : 'Sign out'}
+              >
+                {signingOut ? (
+                  <ActivityIndicator size="small" color="#B42318" />
+                ) : (
+                  <Ionicons name="log-out-outline" size={21} color="#B42318" />
+                )}
+                <Text style={styles.accountSignOutText}>{signingOut ? 'Signing out…' : 'Sign out'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
         {/* Support Button (Patreon) */}
         {/* <TouchableOpacity
@@ -2387,7 +2470,7 @@ const renderReportStep = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F5F6F7' },
-  
+
   /* ============================= */
 /* Multi-step Report Form        */
 /* ============================= */
@@ -3077,7 +3160,7 @@ footerBar: {
   borderTopWidth: 1,
   borderColor: 'rgba(0,0,0,0.08)',
 }, 
-signOutButton: {
+accountButton: {
   position: 'absolute',
   top: 30,
   right: 15,
@@ -3095,9 +3178,93 @@ signOutButton: {
   shadowOffset: { width: 0, height: 1 },
   elevation: 3,
 },
+accountBackdrop: {
+  flex: 1,
+  justifyContent: 'flex-end',
+  backgroundColor: 'rgba(0,0,0,0.34)',
+},
+accountSheet: {
+  backgroundColor: '#fff',
+  paddingHorizontal: 22,
+  paddingTop: 10,
+  paddingBottom: Platform.OS === 'ios' ? 34 : 22,
+  borderTopLeftRadius: 22,
+  borderTopRightRadius: 22,
+},
+accountHandle: {
+  width: 42,
+  height: 5,
+  borderRadius: 3,
+  backgroundColor: '#D3D7DB',
+  alignSelf: 'center',
+  marginBottom: 18,
+},
+accountHeadingRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+},
+accountIcon: {
+  width: 48,
+  height: 48,
+  borderRadius: 24,
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: '#EAF5EA',
+},
+accountCopy: {
+  flex: 1,
+  marginLeft: 12,
+},
+accountTitle: {
+  fontSize: 20,
+  fontWeight: '800',
+  color: '#333',
+},
+accountStatus: {
+  color: '#53606B',
+  fontSize: 14,
+  marginTop: 2,
+},
+accountEmail: {
+  color: '#737E87',
+  fontSize: 13,
+  marginTop: 2,
+},
+accountCloseButton: {
+  width: 44,
+  height: 44,
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+accountGuestNote: {
+  marginTop: 16,
+  padding: 12,
+  borderRadius: 10,
+  backgroundColor: '#FFF7E6',
+  color: '#6F4B00',
+  fontSize: 13,
+  lineHeight: 19,
+},
+accountSignOutButton: {
+  minHeight: 50,
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 8,
+  marginTop: 20,
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: '#F1B8B4',
+  backgroundColor: '#FFF7F6',
+},
+accountSignOutText: {
+  color: '#B42318',
+  fontSize: 16,
+  fontWeight: '800',
+},
 supportButton: {
   position: "absolute",
-  top: 85, // <-- adjust if your signOutButton top differs
+  top: 85, // <-- adjust if your accountButton top differs
   right: 14,
   backgroundColor: "rgba(255,255,255,0.95)",
   width: 44,
