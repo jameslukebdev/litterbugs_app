@@ -62,4 +62,10 @@ Because this Free project has no Auth-settings backup, rollback is manual:
 3. Remove the two `litterbugs://` redirect URLs if the app no longer uses them.
 4. Disable custom SMTP and clear the project-specific sender and credential if this configuration must be rolled back.
 
-No database rollback is required because this work makes no database changes.
+That statement describes the original authentication-only upgrade. The later
+Android release branch adds one reviewed account-deletion migration and an Edge
+Function. Its migration makes `reports.user_id` nullable, changes the foreign
+key to `ON DELETE SET NULL`, and indexes report ownership. The authenticated
+Edge Function performs the deletion and anonymization with its service-role
+credential kept only in Supabase secrets. See `docs/android-google-play.md` for
+the current behavior and release checks.

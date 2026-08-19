@@ -30,6 +30,8 @@ pnpm-debug.log*
 # Generated native projects
 ios/
 android/
+artifacts/
+supabase/.temp/
 
 # TypeScript / caches
 *.tsbuildinfo

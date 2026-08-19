@@ -1,16 +1,16 @@
 Litterbugs Privacy Policy
 
-Litterbugs respects your privacy.
+Last updated: August 19, 2026
 
-The app may collect limited information only to provide core functionality, including:
+Litterbugs uses account information to sign you in and associate reports with your account. Reports may include a location, litter category, severity, status, date, optional text, and photos you choose to upload.
 
-Account information if you choose to sign in
+Location access is used to center the map and confirm that new reports are near you. Photos are uploaded only when you select them for a report. Litterbugs does not sell personal data or use it for advertising.
 
-Photos and location data related to litter reports you submit
+You can delete your account from the Account menu in the app or at:
+https://auth.litterbugs.app/delete-account
 
-This information is used solely to operate the app and improve community cleanup efforts. Litterbugs does not sell personal data or use it for advertising.
+Deletion removes your account, profile, active refresh sessions, uploaded report photos, and potentially identifying free text. We retain only de-identified community report information: location, litter category, severity, status, and timestamps. Retained reports no longer contain your user ID and cannot be reconnected to your deleted account.
 
-You may use the app as a guest with limited features. You can delete your account or request data removal at any time.
+Litterbugs uses Supabase for authentication, database, and photo storage; Google Maps or Apple Maps for map display; and optional Google or Facebook sign-in when selected.
 
-If you have questions about privacy, please contact:
-jameslukeb.evj@gmail.com
+Questions can be sent to support@litterbugs.app.

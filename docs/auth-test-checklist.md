@@ -115,4 +115,27 @@ passwords, tokens, secrets, or private email links.
 - [ ] Implement and test Apple login before submitting an App Store build that contains third-party social login.
 - [ ] Repeat the full release checklist on the final App Store candidate.
 
-Android native provider setup and testing remain deferred.
+## Android Google Play
+
+- [x] QA configuration resolves to `Litterbugs QA` and `com.litterbugs.app.qa`.
+- [x] Production configuration resolves to `Litterbugs` and `com.litterbugs.app`.
+- [x] Android configuration does not require iOS OAuth values.
+- [x] Missing Android Maps configuration fails a configured build early.
+- [x] Expo Doctor passes all 18 checks.
+- [x] API 36 debug compilation succeeds.
+- [x] QA APK identifies package `com.litterbugs.app.qa`, version `1.0.0`, min SDK 24, and target SDK 36.
+- [x] QA signing SHA-1 is recorded in `docs/android-google-play.md`.
+- [x] Official multicolor Google asset remains tracked and used by the shared auth screen.
+- [x] Live account deletion integration test removes the Auth user, session, and uploaded photo; anonymizes only that user's report; retains community fields; and leaves an unrelated user's report unchanged (2026-08-19).
+- [x] An unconfirmed deletion request is rejected without deleting the account; the same temporary account can then be deleted only after explicit confirmation (2026-08-19).
+- [x] External deletion, neutral email-request, confirmation, privacy, logo, and Worker health routes respond successfully.
+- [x] Live migration and authenticated `delete-account` Edge Function are present in Supabase project `mvaygkflcjswtwchflrk`.
+- [x] Create restricted QA and production Maps keys in the `litterbugs-auth` Google Cloud project.
+- [x] Store the QA and production Maps keys in their matching EAS environments.
+- [ ] Install a fresh QA APK on the Pixel and verify Maps, location allow/deny, markers, offline recovery, auth callbacks, Guest, account sheet, and sign-out confirmation.
+- [ ] Repeat the device flow on an API 36 emulator.
+- [x] Build and inspect the signed production AAB (`1.0.0`, version code 3, target SDK 36, production package/signing identity, Maps metadata present, no QA/prototype references, and no overlay or microphone permission).
+- [ ] Run focused iOS regression checks for the shared Account-sheet deletion action.
+- [ ] Choose the permanent Play Console owner before creating the public app record.
+
+Full instructions and Play release gates are in `docs/android-google-play.md`.

@@ -33,13 +33,20 @@ commit `.env` or place provider secrets in source code.
 | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | Google web client configured in Supabase |
 | `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | Google iOS client for the build's bundle ID |
 | `GOOGLE_IOS_CLIENT_BUNDLE_ID` | Bundle ID that owns the selected Google iOS client |
+| `GOOGLE_MAPS_ANDROID_API_KEY` | Restricted native Maps SDK for Android key |
 | `APP_VARIANT` | `qa` for local/internal builds or `production` for release builds |
 | `IOS_BUNDLE_IDENTIFIER` | Optional local-QA override only |
+| `ANDROID_PACKAGE_IDENTIFIER` | `com.litterbugs.app.qa` for QA or `com.litterbugs.app` for production |
 
 The tracked Expo config adds only the native Google plugin when its required
 build values are present. Facebook uses the secure system browser and does not
 add a Meta SDK, client token, or native Meta build configuration. A development
 build is required for the native Google provider; Expo Go cannot load it.
+
+On Android, both Google and Facebook keep the existing secure browser OAuth
+flow. Android builds do not require iOS OAuth values. They do require the exact
+Android package marker and a restricted Maps SDK for Android key. See
+`docs/android-google-play.md` for the two-environment Maps configuration.
 
 EAS profiles are pinned to their matching remote environment. On the EAS build
 worker, configuration fails if an auth value is missing or the Google iOS
@@ -126,6 +133,14 @@ While the Meta app is unpublished, real test accounts must have the Tester or
 consumer-tester role and accept the invitation before signing in. Meta simulated
 test-user creation is currently unavailable, so first-time Facebook-user testing
 requires a separate tester account that has not authorized Litterbugs.
+
+## Account deletion
+
+The Account sheet invokes the authenticated `delete-account` Edge Function.
+The public request and privacy pages live under `auth.litterbugs.app`; they are
+small compliance helpers and do not require a separate Litterbugs website. The
+Supabase service-role credential remains available only inside the Edge
+Function runtime.
 
 ## Apple
 

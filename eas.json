@@ -8,7 +8,8 @@
       "environment": "development",
       "env": {
         "APP_VARIANT": "qa",
-        "IOS_BUNDLE_IDENTIFIER": "com.gegibson.litterbugs.qa"
+        "IOS_BUNDLE_IDENTIFIER": "com.gegibson.litterbugs.qa",
+        "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app.qa"
       },
       "developmentClient": true,
       "distribution": "internal"
@@ -17,7 +18,8 @@
       "environment": "development",
       "env": {
         "APP_VARIANT": "qa",
-        "IOS_BUNDLE_IDENTIFIER": "com.gegibson.litterbugs.qa"
+        "IOS_BUNDLE_IDENTIFIER": "com.gegibson.litterbugs.qa",
+        "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app.qa"
       },
       "developmentClient": true,
       "distribution": "internal",
@@ -29,14 +31,16 @@
       "environment": "preview",
       "env": {
         "APP_VARIANT": "qa",
-        "IOS_BUNDLE_IDENTIFIER": "com.gegibson.litterbugs.qa"
+        "IOS_BUNDLE_IDENTIFIER": "com.gegibson.litterbugs.qa",
+        "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app.qa"
       },
       "distribution": "internal"
     },
     "production": {
       "environment": "production",
       "env": {
-        "APP_VARIANT": "production"
+        "APP_VARIANT": "production",
+        "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app"
       },
       "autoIncrement": true
     }

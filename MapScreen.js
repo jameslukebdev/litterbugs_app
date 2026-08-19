@@ -24,7 +24,7 @@ import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from './lib/supabase'
-import { signOut } from './lib/auth';
+import { deleteCurrentAccount, signOut } from './lib/auth';
 import * as FileSystem from 'expo-file-system/legacy';
 
 
@@ -74,6 +74,7 @@ export default function MapScreen() {
   const [currentUser, setCurrentUser] = useState(null);
   const [accountOpen, setAccountOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [photosLoading, setPhotosLoading] = useState(false);
   // Report detail photo carousel
@@ -493,6 +494,36 @@ const handleSignOut = () => {
           }
 
           setAccountOpen(false);
+        },
+      },
+    ]
+  );
+};
+
+const handleDeleteAccount = () => {
+  if (signingOut || deletingAccount) return;
+
+  Alert.alert(
+    'Delete Account',
+    'This permanently deletes your account and uploaded photos. Community report locations, categories, severity, status, and dates will remain without your identity. This cannot be undone.',
+    [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete Account',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            setDeletingAccount(true);
+            await deleteCurrentAccount();
+            setAccountOpen(false);
+          } catch (error) {
+            Alert.alert(
+              'Couldn’t delete account',
+              'No additional changes were made. Check your connection and try again.'
+            );
+          } finally {
+            setDeletingAccount(false);
+          }
         },
       },
     ]
@@ -1624,7 +1655,7 @@ const renderReportStep = () => {
           animationType="slide"
           transparent
           onRequestClose={() => {
-            if (!signingOut) setAccountOpen(false);
+            if (!signingOut && !deletingAccount) setAccountOpen(false);
           }}
         >
           <View style={styles.accountBackdrop}>
@@ -1633,7 +1664,7 @@ const renderReportStep = () => {
               activeOpacity={1}
               accessible={false}
               onPress={() => {
-                if (!signingOut) setAccountOpen(false);
+                if (!signingOut && !deletingAccount) setAccountOpen(false);
               }}
             />
             <View style={styles.accountSheet}>
@@ -1650,9 +1681,9 @@ const renderReportStep = () => {
                   ) : null}
                 </View>
                 <TouchableOpacity
-                  style={[styles.accountCloseButton, signingOut && { opacity: 0.5 }]}
+                  style={[styles.accountCloseButton, (signingOut || deletingAccount) && { opacity: 0.5 }]}
                   onPress={() => setAccountOpen(false)}
-                  disabled={signingOut}
+                  disabled={signingOut || deletingAccount}
                   accessibilityLabel="Close account menu"
                 >
                   <Ionicons name="close" size={24} color="#555" />
@@ -1666,9 +1697,9 @@ const renderReportStep = () => {
               ) : null}
 
               <TouchableOpacity
-                style={[styles.accountSignOutButton, signingOut && { opacity: 0.65 }]}
+                style={[styles.accountSignOutButton, (signingOut || deletingAccount) && { opacity: 0.65 }]}
                 onPress={handleSignOut}
-                disabled={signingOut}
+                disabled={signingOut || deletingAccount}
                 accessibilityRole="button"
                 accessibilityLabel={signingOut ? 'Signing out' : 'Sign out'}
               >
@@ -1678,6 +1709,23 @@ const renderReportStep = () => {
                   <Ionicons name="log-out-outline" size={21} color="#B42318" />
                 )}
                 <Text style={styles.accountSignOutText}>{signingOut ? 'Signing out…' : 'Sign out'}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.accountDeleteButton, (signingOut || deletingAccount) && { opacity: 0.65 }]}
+                onPress={handleDeleteAccount}
+                disabled={signingOut || deletingAccount}
+                accessibilityRole="button"
+                accessibilityLabel={deletingAccount ? 'Deleting account' : 'Delete account'}
+              >
+                {deletingAccount ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Ionicons name="trash-outline" size={21} color="#FFFFFF" />
+                )}
+                <Text style={styles.accountDeleteText}>
+                  {deletingAccount ? 'Deleting account…' : 'Delete account'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -3259,6 +3307,21 @@ accountSignOutButton: {
 },
 accountSignOutText: {
   color: '#B42318',
+  fontSize: 16,
+  fontWeight: '800',
+},
+accountDeleteButton: {
+  minHeight: 50,
+  marginTop: 12,
+  borderRadius: 12,
+  backgroundColor: '#B42318',
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 8,
+},
+accountDeleteText: {
+  color: '#FFFFFF',
   fontSize: 16,
   fontWeight: '800',
 },
