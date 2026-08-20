@@ -31,6 +31,7 @@ passwords, tokens, secrets, or private email links.
 - [x] Local iOS Release build succeeds with native Google and browser-based Facebook authentication.
 - [x] Native QA artifact identifies itself as `Litterbugs`.
 - [x] Tracked Expo config resolves production bundle ID `com.litterbugs.app`.
+- [x] Shared EAS project `@litterbugs-community-cleanup/litterbugs-partner` builds the internal `development-primary` client as `com.litterbugs.app` for a registered iPhone (2026-08-20).
 - [x] EAS profiles isolate QA and production environments; the build-worker guard rejects a Google iOS client/bundle mismatch. Production resolves to `com.litterbugs.app`, preview/development resolve to `com.gegibson.litterbugs.qa`, and each environment contains only the authentication values required by the current implementation (rechecked 2026-08-18).
 - [x] Current self-contained Release QA artifacts are built and signed for the iOS simulator and physical iPhone (2026-08-17); Metro is not required. The final-source simulator artifact was rebuilt from scratch after the last code change.
 - [x] A clean reinstall of the preserved final-source simulator artifact launches directly to the branded Welcome screen without Metro, cached app data, warnings, or technical metadata (2026-08-18).
@@ -56,6 +57,7 @@ passwords, tokens, secrets, or private email links.
 
 ## Google iOS
 
+- [x] Returning Google sign-in succeeds in the shared `com.litterbugs.app` development client on Luke's iPhone 13 and reaches the authenticated app (2026-08-20).
 - [x] Native QA build reaches Google without displaying a Supabase host prompt (iOS 26.5 simulator, repeated 2026-08-18).
 - [x] Returning sign-in succeeds through the native Google flow, reaches the map, and records a successful Supabase `/token` exchange (`id_token`, 200; signed iOS 26.5 Release simulator, repeated 2026-08-18).
 - [x] The same Google button creates a new Supabase user for a first-time Google identity; a privacy-safe identity audit confirms one Google identity was created together with its user (2026-08-17).

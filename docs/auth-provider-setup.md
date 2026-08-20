@@ -11,7 +11,7 @@ and build project documented here.
 - Production Android package: `com.litterbugs.app`
 - Existing App Store ID: `6757313862`
 - App scheme: `litterbugs`
-- EAS project: `@gegibson/litterbugs-partner`
+- EAS project: `@litterbugs-community-cleanup/litterbugs-partner`
 
 Apple's public App Store lookup was rechecked on 2026-08-17 and reports
 `com.litterbugs.app` for App Store ID `6757313862` (seller James Luke Barber).
@@ -154,6 +154,18 @@ enable Sign in with Apple on the existing production App ID
 returning, cancelled, background, and cold-start sign-in paths.
 
 ## Build and run
+
+The shared primary development client uses the production app identity and EAS
+environment while remaining an internal development build:
+
+```sh
+npx eas-cli@latest build --platform ios --profile development-primary
+```
+
+This profile builds `com.litterbugs.app` from the shared Expo organization. A
+developer must belong to that Expo organization to start the build. Installing
+an ad hoc iOS build also requires the test phone to be registered in the Apple
+team and included in the provisioning profile used by EAS.
 
 After installing or changing a native package, regenerate the ignored native
 project and rebuild the development client:
