@@ -125,10 +125,11 @@ export function AuthDialog({ onClose }: { onClose: () => void }) {
             </button>
             <button className="provider-button facebook-provider" onClick={() => startProvider('facebook')} disabled={Boolean(loading)}>
               <span className="provider-button-content">
-                <svg className="facebook-provider-icon" viewBox="0 0 24 24" aria-hidden>
-                  <circle cx="12" cy="12" r="12" fill="#fff" />
-                  <path fill="#1877f2" d="M13.55 20v-7h2.35l.35-2.73h-2.7V8.53c0-.79.22-1.33 1.36-1.33h1.45V4.76c-.25-.03-1.11-.1-2.11-.1-2.09 0-3.52 1.28-3.52 3.62v1.99H7.65V13H10v7h3.55Z" />
-                </svg>
+                <span className="facebook-provider-icon-frame" aria-hidden>
+                  <svg className="facebook-provider-icon" viewBox="0 0 512 512">
+                    <path fill="#1877f2" fillRule="evenodd" d="M480 257.35c0-123.7-100.3-224-224-224s-224 100.3-224 224c0 111.8 81.9 204.47 189 221.29V322.12h-56.89v-64.77H221V208c0-56.13 33.45-87.16 84.61-87.16 24.51 0 50.15 4.38 50.15 4.38v55.13H327.5c-27.81 0-36.51 17.26-36.51 35v42h62.12l-9.92 64.77H291v156.54c107.1-16.81 189-109.48 189-221.31Z" />
+                  </svg>
+                </span>
                 <span>{loading === 'facebook' ? 'Opening Facebook…' : 'Continue with Facebook'}</span>
               </span>
             </button>

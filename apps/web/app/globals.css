@@ -94,7 +94,8 @@ button:disabled { cursor: not-allowed; opacity: .6; }
 .provider-button-content { display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
 .google-provider-icon { width: 20px; height: 20px; object-fit: contain; }
 .google-provider { color: #1f1f1f; background: #fff; border: 1px solid #747775; }.google-provider:hover { background: #f8faf8; }
-.facebook-provider-icon { width: 21px; height: 21px; flex: none; }
+.facebook-provider-icon-frame { width: 22px; height: 22px; flex: none; display: grid; place-items: center; border-radius: 50%; background: #fff; }
+.facebook-provider-icon { width: 18px; height: 18px; }
 .facebook-provider { color: #fff; background: #1877f2; border: 1px solid #1877f2; }.facebook-provider:hover { background: #1168d6; }
 .auth-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: #829087; font-size: 12px; }
 .auth-divider::before, .auth-divider::after { content: ''; height: 1px; flex: 1; background: #e0e5e1; }

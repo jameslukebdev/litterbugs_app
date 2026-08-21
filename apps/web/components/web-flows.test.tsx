@@ -21,6 +21,10 @@ describe('web product boundaries', () => {
     expect(screen.queryByRole('button', { name: /continue with apple/i })).toBeNull();
     expect(screen.getByRole('button', { name: /continue with google/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /continue with facebook/i })).toBeTruthy();
+    const facebookMark = document.querySelector('.facebook-provider-icon');
+    expect(facebookMark?.getAttribute('viewBox')).toBe('0 0 512 512');
+    expect(facebookMark?.querySelector('path')?.getAttribute('fill')).toBe('#1877f2');
+    expect(facebookMark?.querySelector('path')?.getAttribute('fill-rule')).toBe('evenodd');
     expect(screen.getByRole('button', { name: /^sign in$/i })).toBeTruthy();
     expect(screen.getByLabelText('Email address')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /guest/i })).toBeNull();
