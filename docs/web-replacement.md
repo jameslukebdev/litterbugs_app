@@ -193,6 +193,13 @@ unchanged and healthy. The detached old deployment is preserved temporarily at
 The later HEIC compatibility correction was deployed from clean `main` commit
 `2941a44` as `dpl_Goy21KScnTdcbrNpmdrjAxqE8ZnE`; beta and apex each passed the
 same five-profile photo regression before and after their aliases moved.
+The app-style sign-in correction was deployed from clean `main` commit
+`30cec23` as `dpl_8734Dr7WWjqbxfBDn4NuG1MticqF`. On August 21, 2026,
+`litterbugs.app` and `www.litterbugs.app` were explicitly moved from the prior
+deployment to that artifact. Direct apex verification confirmed the app-style
+provider screen, the correct Google map, and a decoded live report photo with
+no browser errors. The apex is the canonical live website; beta remains the
+pre-release acceptance alias.
 The old Vercel project's Git connection was removed and all 94 of its
 production/preview environment records were deleted, while the new project's
 14 scoped records remained intact. The private `gegibson-oss/litterbugs`

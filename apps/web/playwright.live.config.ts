@@ -10,7 +10,7 @@ export default defineConfig({
   retries: 0,
   reporter: 'line',
   use: {
-    baseURL: process.env.WEB_QA_URL ?? 'https://beta.litterbugs.app',
+    baseURL: process.env.WEB_QA_URL ?? 'https://litterbugs.app',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },

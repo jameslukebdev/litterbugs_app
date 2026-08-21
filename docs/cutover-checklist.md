@@ -143,6 +143,12 @@ gate passes.
       real `High example` photos decoded in five serialized desktop/mobile
       browser profiles. The same five-profile suite then passed on the apex,
       and the deployment recorded zero runtime error logs.
+- [x] Deploy the app-style web sign-in from clean `main` commit `30cec23` as
+      `dpl_8734Dr7WWjqbxfBDn4NuG1MticqF`, then explicitly move
+      `litterbugs.app` and `www.litterbugs.app` from the prior deployment to
+      that accepted artifact. Verify the app-style provider screen and a real
+      report photo directly on the apex with zero browser errors. Treat the
+      apex as the canonical live web target; beta remains a staging alias.
 
 ## Deferred Apple follow-up (not a web-replacement launch gate)
 
