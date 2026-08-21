@@ -21,11 +21,6 @@ describe('web product boundaries', () => {
     expect(screen.queryByRole('button', { name: /continue with apple/i })).toBeNull();
     expect(screen.getByRole('button', { name: /continue with google/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /continue with facebook/i })).toBeTruthy();
-    expect(screen.getByText('Join the Cleanup Movement')).toBeTruthy();
-    expect(screen.getByText('Sign in to track and share reports.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: /continue with email/i })).toBeTruthy();
-    expect(screen.queryByLabelText('Email address')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: /continue with email/i }));
     expect(screen.getByRole('button', { name: /^sign in$/i })).toBeTruthy();
     expect(screen.getByLabelText('Email address')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /guest/i })).toBeNull();

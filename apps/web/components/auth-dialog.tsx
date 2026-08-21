@@ -3,14 +3,13 @@
 import { useState } from 'react';
 import Image from 'next/image';
 
-import { Icon } from '@/components/icon';
 import { ModalShell } from '@/components/modal-shell';
 import { createClient } from '@/lib/supabase/client';
 
-type AuthMode = 'providers' | 'login' | 'signup' | 'forgot' | 'sent';
+type EmailMode = 'login' | 'signup' | 'forgot' | 'sent';
 
 export function AuthDialog({ onClose }: { onClose: () => void }) {
-  const [mode, setMode] = useState<AuthMode>('providers');
+  const [mode, setMode] = useState<EmailMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -38,7 +37,6 @@ export function AuthDialog({ onClose }: { onClose: () => void }) {
     event.preventDefault();
     setMessage('');
     if (!cleanEmail || !cleanEmail.includes('@')) return setMessage('Enter a valid email address.');
-    if (mode === 'providers') return;
     if (mode === 'login' && !password) return setMessage('Enter your password.');
     if (mode === 'signup' && password.length < 8) return setMessage('Use at least 8 characters for your new password.');
 
@@ -95,6 +93,7 @@ export function AuthDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <ModalShell onClose={onClose} label="Sign in to Litterbugs" className="auth-dialog" closeDisabled={Boolean(loading)}>
+      <Image className="auth-logo" src="/brand/litterbugs-logo.png" alt="Litterbugs" width={636} height={433} />
       {mode === 'sent' ? (
         <div className="auth-sent">
           <span className="success-mark" aria-hidden>✓</span>
@@ -109,47 +108,33 @@ export function AuthDialog({ onClose }: { onClose: () => void }) {
             {sentReason === 'signup' && <button onClick={() => { setMode('forgot'); setMessage(''); }}>Reset password</button>}
           </div>
         </div>
-      ) : mode === 'providers' ? (
-        <div className="auth-provider-screen">
-          <Image className="auth-logo" src="/brand/litterbugs-logo.png" alt="Litterbugs" width={636} height={433} priority />
-          <div className="auth-heading auth-provider-heading">
-            <h2>Join the Cleanup Movement</h2>
-            <p>Sign in to track and share reports.</p>
-          </div>
-
-          <div className="provider-grid">
-            <button className="provider-button google-provider" onClick={() => startProvider('google')} disabled={Boolean(loading)}>
-              <span className="google-provider-icon" aria-hidden>
-                <svg viewBox="0 0 18 18">
-                  <path fill="#EA4335" d="M17.64 9.205c0-.638-.057-1.252-.164-1.841H9v3.482h4.844a4.14 4.14 0 0 1-1.797 2.715v2.258h2.909c1.703-1.568 2.684-3.878 2.684-6.614Z"/>
-                  <path fill="#4285F4" d="M9 18c2.43 0 4.468-.806 5.956-2.181l-2.909-2.258c-.806.54-1.835.859-3.047.859-2.344 0-4.328-1.585-5.037-3.714H.956v2.333A9 9 0 0 0 9 18Z"/>
-                  <path fill="#FBBC05" d="M3.963 10.706A5.41 5.41 0 0 1 3.682 9c0-.592.102-1.168.281-1.706V4.961H.956A9 9 0 0 0 0 9c0 1.452.347 2.827.956 4.039l3.007-2.333Z"/>
-                  <path fill="#34A853" d="M9 3.58c1.321 0 2.507.454 3.441 1.346l2.581-2.581C13.464.892 11.426 0 9 0A9 9 0 0 0 .956 4.961l3.007 2.333C4.672 5.165 6.656 3.58 9 3.58Z"/>
-                </svg>
-              </span>
-              {loading === 'google' ? 'Opening Google…' : 'Continue with Google'}
-            </button>
-            <button className="provider-button facebook-provider" onClick={() => startProvider('facebook')} disabled={Boolean(loading)}>
-              <span className="facebook-provider-icon" aria-hidden>f</span>
-              {loading === 'facebook' ? 'Opening Facebook…' : 'Continue with Facebook'}
-            </button>
-          </div>
-
-          <div className="auth-divider"><span>or</span></div>
-
-          <button className="provider-button email-provider" onClick={() => { setMode('login'); setMessage(''); }} disabled={Boolean(loading)}>
-            <Icon name="mail" />
-            Continue with Email
-          </button>
-          {message && <p className="form-message error-message auth-provider-message" role="alert">{message}</p>}
-          {loading && <p className="sr-only" aria-live="polite">Opening {providerLabel} sign in</p>}
-        </div>
       ) : (
         <>
           <div className="auth-heading">
-            <h2>{mode === 'signup' ? 'Create your account' : mode === 'forgot' ? 'Reset your password' : 'Sign in with email'}</h2>
-            <p>{mode === 'signup' ? 'We’ll email you a link to verify your account.' : mode === 'forgot' ? 'We’ll send a secure link to your email.' : 'Welcome back.'}</p>
+            <span className="eyebrow">HELP KEEP YOUR COMMUNITY CLEAN</span>
+            <h2>{mode === 'signup' ? 'Create your account' : mode === 'forgot' ? 'Reset your password' : 'Welcome to Litterbugs'}</h2>
+            <p>{mode === 'forgot' ? 'We’ll email you a secure password reset link.' : 'Sign in to report litter and manage the reports you create.'}</p>
           </div>
+
+          {mode !== 'forgot' && <div className="provider-grid">
+            <button className="provider-button google-provider" onClick={() => startProvider('google')} disabled={Boolean(loading)}>
+              <span className="provider-button-content">
+                <Image className="google-provider-icon" src="/brand/google-g-logo.png" alt="" width={200} height={204} aria-hidden />
+                <span>{loading === 'google' ? 'Opening Google…' : 'Continue with Google'}</span>
+              </span>
+            </button>
+            <button className="provider-button facebook-provider" onClick={() => startProvider('facebook')} disabled={Boolean(loading)}>
+              <span className="provider-button-content">
+                <svg className="facebook-provider-icon" viewBox="0 0 24 24" aria-hidden>
+                  <circle cx="12" cy="12" r="12" fill="#fff" />
+                  <path fill="#1877f2" d="M13.55 20v-7h2.35l.35-2.73h-2.7V8.53c0-.79.22-1.33 1.36-1.33h1.45V4.76c-.25-.03-1.11-.1-2.11-.1-2.09 0-3.52 1.28-3.52 3.62v1.99H7.65V13H10v7h3.55Z" />
+                </svg>
+                <span>{loading === 'facebook' ? 'Opening Facebook…' : 'Continue with Facebook'}</span>
+              </span>
+            </button>
+          </div>}
+
+          {mode !== 'forgot' && <div className="auth-divider"><span>or use email</span></div>}
 
           <form className="auth-form" onSubmit={submitEmail}>
             <label>Email address<input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" disabled={Boolean(loading)} /></label>
@@ -163,8 +148,8 @@ export function AuthDialog({ onClose }: { onClose: () => void }) {
           <div className="auth-switches">
             {mode === 'login' && <><button onClick={() => { setMode('forgot'); setMessage(''); }}>Forgot password?</button><span>New to Litterbugs? <button onClick={() => { setMode('signup'); setMessage(''); }}>Create an account</button></span></>}
             {mode !== 'login' && <button onClick={() => { setMode('login'); setMessage(''); }}>Back to sign in</button>}
-            <button onClick={() => { setMode('providers'); setMessage(''); setPassword(''); }}>Back to sign-in options</button>
           </div>
+          {loading && loading !== 'email' && <p className="sr-only" aria-live="polite">Opening {providerLabel} sign in</p>}
         </>
       )}
     </ModalShell>
