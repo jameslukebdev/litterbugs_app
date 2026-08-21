@@ -64,6 +64,16 @@ describe('mobile configuration non-regression', () => {
         distribution: 'internal',
         ios: { simulator: true },
       },
+      'development-primary': {
+        environment: 'production',
+        env: {
+          APP_VARIANT: 'production',
+          IOS_BUNDLE_IDENTIFIER: 'com.litterbugs.app',
+          ANDROID_PACKAGE_IDENTIFIER: 'com.litterbugs.app',
+        },
+        developmentClient: true,
+        distribution: 'internal',
+      },
       preview: {
         environment: 'preview',
         env: {

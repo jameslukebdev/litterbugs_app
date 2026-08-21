@@ -29,6 +29,7 @@ monorepo layout.
 - `npm run mobile:doctor` — run Expo Doctor
 - `npm run mobile:build:android:qa` / `npm run mobile:build:ios:qa` — build the unchanged `preview` profile
 - `npm run mobile:build:ios:simulator` — build the unchanged iOS simulator profile
+- `npm run mobile:build:ios:primary` — build Luke's shared production-identity development client
 - `npm run mobile:build:android:production` / `npm run mobile:build:ios:production` — build the unchanged production profile when release is authorized
 - `npm run web:dev` — start the website locally
 - `npm run web:build` — build the production website

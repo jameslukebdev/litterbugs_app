@@ -16,6 +16,7 @@
     "mobile:build:android:qa": "cd apps/mobile && npx eas-cli build --platform android --profile preview",
     "mobile:build:ios:qa": "cd apps/mobile && npx eas-cli build --platform ios --profile preview",
     "mobile:build:ios:simulator": "cd apps/mobile && npx eas-cli build --platform ios --profile development-simulator",
+    "mobile:build:ios:primary": "cd apps/mobile && npx eas-cli build --platform ios --profile development-primary",
     "mobile:build:android:production": "cd apps/mobile && npx eas-cli build --platform android --profile production",
     "mobile:build:ios:production": "cd apps/mobile && npx eas-cli build --platform ios --profile production",
     "auth-bridge:check": "wrangler deploy --dry-run --config services/auth-bridge/wrangler.jsonc",

@@ -35,6 +35,7 @@ changing their configuration:
 npm run mobile:build:android:qa
 npm run mobile:build:ios:qa
 npm run mobile:build:ios:simulator
+npm run mobile:build:ios:primary
 npm run mobile:build:android:production
 npm run mobile:build:ios:production
 ```
