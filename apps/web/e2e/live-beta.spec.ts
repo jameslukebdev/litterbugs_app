@@ -44,6 +44,8 @@ test('public map, report detail, controls, and signed-out boundaries work', asyn
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('button', { name: /Continue with Google/i })).toBeVisible();
   await expect(dialog.getByRole('button', { name: /Continue with Facebook/i })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: /Continue with Email/i })).toBeVisible();
+  await dialog.getByRole('button', { name: /Continue with Email/i }).click();
   await expect(dialog.getByLabel('Email address')).toBeVisible();
   await expect(dialog.getByRole('button', { name: /Apple/i })).toHaveCount(0);
   await expect(dialog.getByRole('button', { name: /Guest/i })).toHaveCount(0);

@@ -2,7 +2,7 @@ import type { SVGProps } from 'react';
 
 type IconName =
   | 'account' | 'calendar' | 'camera' | 'chevron-left' | 'chevron-right'
-  | 'close' | 'edit' | 'image' | 'info' | 'layers' | 'location'
+  | 'close' | 'edit' | 'image' | 'info' | 'layers' | 'location' | 'mail'
   | 'minus' | 'plus' | 'trash' | 'warning';
 
 const paths: Record<IconName, React.ReactNode> = {
@@ -17,6 +17,7 @@ const paths: Record<IconName, React.ReactNode> = {
   info: <><circle cx="12" cy="12" r="10"/><path d="M12 11v6M12 7h.01"/></>,
   layers: <><path d="m12 2 9 5-9 5-9-5Z"/><path d="m3 12 9 5 9-5M3 17l9 5 9-5"/></>,
   location: <><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></>,
+  mail: <><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></>,
   minus: <path d="M5 12h14"/>,
   plus: <path d="M12 5v14M5 12h14"/>,
   trash: <><path d="M3 6h18M8 6V4h8v2M19 6l-1 15H6L5 6M10 11v6M14 11v6"/></>,
