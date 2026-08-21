@@ -147,7 +147,13 @@ Both were applied to `mvaygkflcjswtwchflrk` on August 21, 2026 after explicit
 owner authorization. Post-apply two-user API testing and the five-browser
 hosted flow passed, including owner/cross-owner enforcement, expiration, exact
 public coordinates, photo upload/sign/edit/delete, and asynchronous orphan
-cleanup. No disposable fixtures remain.
+cleanup. The exact fixtures created by those runs were removed.
+
+The final hosted-data reconciliation on August 21, 2026 also found and removed
+four older anonymous, email-less QA identities, five test reports, and three
+matching Storage objects left by earlier acceptance work. Post-cleanup checks
+confirmed zero matching users, identities, sessions, profiles, reports,
+objects, or `QA`/`test`-titled reports remain in the live project.
 
 A live disposable Guest test also verified the deployed account-deletion
 function on the correct project: its only uploaded object was removed, its Auth

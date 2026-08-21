@@ -194,6 +194,12 @@ Storage-object cleanup, and confirmed account deletion. Read-only backend
 verification found zero remaining reports, photo objects, or disposable Auth
 identities after cleanup.
 
+The later full-project reconciliation found four unrelated anonymous QA
+identities left by older acceptance runs. Those exact identities, their five
+reports, and three matching photo objects were removed. The final hosted query
+confirmed zero remaining target users, identities, sessions, profiles,
+reports, Storage objects, or `QA`/`test`-titled reports.
+
 Final Android evidence:
 
 - `docs/evidence/mobile/android-final-marker.png`

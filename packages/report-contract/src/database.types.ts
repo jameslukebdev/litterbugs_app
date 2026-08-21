@@ -9,6 +9,8 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
@@ -89,6 +91,10 @@ export type Database = {
     }
     Functions: {
       delete_expired_reports: { Args: never; Returns: undefined }
+      verify_report_photo_cleanup_webhook: {
+        Args: { candidate_secret: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

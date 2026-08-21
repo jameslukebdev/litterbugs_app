@@ -49,6 +49,11 @@ gate passes.
       pre-migration Storage orphans were removed during exact-user fixture
       cleanup. The post-migration rerun passed asynchronous deletion in all five
       profiles.
+- [x] Reconcile older hosted QA data after all acceptance runs. Remove the four
+      anonymous, email-less QA identities, five test reports, and three matching
+      Storage objects found by the final audit. Verify zero remaining target
+      users, identities, sessions, profiles, reports, objects, or report titles
+      containing `QA` or `test`.
 
 ## Maps and cross-client behavior
 

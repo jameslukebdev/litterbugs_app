@@ -59,6 +59,14 @@ Guest test: one object uploaded under the user's existing folder convention was
 removed, the deleted Auth identity no longer resolved, and the object was no
 longer downloadable. No report fixture was created by that test.
 
+A final hosted-data reconciliation on August 21, 2026 found four older
+anonymous, email-less QA identities from earlier acceptance work. They owned
+exactly five test reports and three matching `report_photos` objects, with no
+profiles or provider identities. Those exact rows, objects, sessions, and Auth
+users were removed from `mvaygkflcjswtwchflrk`. A post-cleanup query verified
+zero remaining target users, identities, sessions, profiles, reports, Storage
+objects, or report titles containing `QA` or `test`.
+
 Before the deleted project was removed, its schema-only historical backup was
 verified at
 `/Users/grantgibson/Downloads/Litterbugs-US-East-syvgqzfbhkczkwozvola-schema-2026-08-21.sql`:
