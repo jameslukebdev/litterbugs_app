@@ -26,6 +26,7 @@ import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from './lib/supabase'
 import { deleteCurrentAccount, signOut } from './lib/auth';
+import { canManageReport, isPermanentUser, permanentUserId } from './lib/reportAccess';
 import * as FileSystem from 'expo-file-system/legacy';
 
 
@@ -35,6 +36,13 @@ const FALLBACK_REGION = {
   longitude: -82.5540,
   latitudeDelta: 0.08,
   longitudeDelta: 0.08,
+};
+
+const showPermanentAccountRequired = () => {
+  Alert.alert(
+    'Account required',
+    'Guest mode is read-only. Sign out and use email, Google, or Facebook to create and manage reports.'
+  );
 };
 
 // State Functions
@@ -268,6 +276,11 @@ const getDistanceMiles = (pointA, pointB) => {
 // Pressing Map opens Litter Form
 // Reports can only be created near the user's current GPS location
 const onMapPress = async (e) => {
+  if (!isPermanentUser(currentUser)) {
+    showPermanentAccountRequired();
+    return;
+  }
+
   const coord = e.nativeEvent.coordinate;
 
   try {
@@ -346,6 +359,16 @@ const onMapPress = async (e) => {
       // ✅ get user FIRST
       const { data: authData } = await supabase.auth.getUser();
       const user = authData?.user ?? null;
+      const userId = permanentUserId(user);
+
+      if (!userId) {
+        setDraftCoord(null);
+        setFormOpen(false);
+        setIsEditing(false);
+        setEditingReportId(null);
+        showPermanentAccountRequired();
+        return;
+      }
   
       const createPayload = {
         title: form.title?.trim() || 'Litter Report',
@@ -356,7 +379,7 @@ const onMapPress = async (e) => {
         severity: form.severity || null,
         latitude: draftCoord.latitude,
         longitude: draftCoord.longitude,
-        user_id: user?.id ?? null,
+        user_id: userId,
       };
   
       const updatePayload = {
@@ -375,6 +398,7 @@ const onMapPress = async (e) => {
           .from('reports')
           .update(updatePayload)
           .eq('id', editingReportId)
+          .eq('user_id', userId)
           .select()
           .single());
       } else {
@@ -396,7 +420,7 @@ const onMapPress = async (e) => {
         photoPaths = await uploadReportPhotos(
           form.photos,
           data.id,
-          user?.id ?? 'guest'
+          userId
         );
       }
   
@@ -404,7 +428,8 @@ const onMapPress = async (e) => {
         await supabase
           .from('reports')
           .update({ photo_paths: photoPaths })
-          .eq('id', data.id);
+          .eq('id', data.id)
+          .eq('user_id', userId);
   
         data.photo_paths = photoPaths;
       }
@@ -747,7 +772,7 @@ const handleDeleteAccount = () => {
 // Get User ID to Allow Edit/Delete of Their Reports
     useEffect(() => {
       supabase.auth.getUser().then(({ data }) => {
-        setCurrentUserId(data.user?.id ?? null);
+        setCurrentUserId(permanentUserId(data.user));
         setCurrentUser(data.user ?? null);
       });
     }, []);
@@ -824,13 +849,10 @@ useEffect(() => {
 
 
 // Checks if User is Owner of Report
-  const isOwner =
-    currentUserId &&
-    selectedReport &&
-    selectedReport.user_id === currentUserId;
+  const isOwner = canManageReport(selectedReport, currentUser);
 
   const isGuest = Boolean(currentUser?.is_anonymous);
-  const accountStatus = isGuest ? 'Guest account' : 'Signed in';
+  const accountStatus = isGuest ? 'Read-only access' : 'Signed in';
 
 // Links out to Patreon Account
 // const openPatreon = async () => {
@@ -1690,7 +1712,7 @@ const renderReportStep = () => {
                   <Ionicons name={isGuest ? 'person-outline' : 'person-circle-outline'} size={28} color="#2F7D32" />
                 </View>
                 <View style={styles.accountCopy}>
-                  <Text style={styles.accountTitle}>Account</Text>
+                  <Text style={styles.accountTitle}>{isGuest ? 'Guest mode' : 'Account'}</Text>
                   <Text style={styles.accountStatus}>{accountStatus}</Text>
                   {!isGuest && currentUser?.email ? (
                     <Text style={styles.accountEmail} numberOfLines={1}>{currentUser.email}</Text>
@@ -1708,7 +1730,7 @@ const renderReportStep = () => {
 
               {isGuest ? (
                 <Text style={styles.accountGuestNote}>
-                  Guest accounts cannot be recovered or transferred after signing out.
+                  Guest mode is read-only. You can browse the map and open reports. Sign in with a permanent account to participate.
                 </Text>
               ) : null}
 
@@ -2397,7 +2419,8 @@ const renderReportStep = () => {
                         .eq(
                           'id',
                           selectedReport.id
-                        );
+                        )
+                        .eq('user_id', currentUserId);
 
                       if (error) {
                         Alert.alert(
