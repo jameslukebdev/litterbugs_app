@@ -200,6 +200,12 @@ deployment to that artifact. Direct apex verification confirmed the app-style
 provider screen, the correct Google map, and a decoded live report photo with
 no browser errors. The apex is the canonical live website; beta remains the
 pre-release acceptance alias.
+The narrowly scoped provider-mark correction was then deployed from clean
+`main` commit `b8e9a2f` as `dpl_4ib36QWYS2QwMKt6hDebUxVrYau3`. It uses the
+same Google image asset as mobile and a vector Facebook mark, while restoring
+the original inline email/password form below the provider buttons. Beta and
+the production apex both passed browser verification before their aliases
+moved to the corrected artifact.
 The old Vercel project's Git connection was removed and all 94 of its
 production/preview environment records were deleted, while the new project's
 14 scoped records remained intact. The private `gegibson-oss/litterbugs`

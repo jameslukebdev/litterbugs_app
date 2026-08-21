@@ -149,6 +149,10 @@ gate passes.
       that accepted artifact. Verify the app-style provider screen and a real
       report photo directly on the apex with zero browser errors. Treat the
       apex as the canonical live web target; beta remains a staging alias.
+- [x] Correct the provider marks from clean `main` commit `b8e9a2f` as
+      `dpl_4ib36QWYS2QwMKt6hDebUxVrYau3`: use the exact mobile Google asset and
+      a vector Facebook mark while restoring the pre-change inline email form.
+      Pass beta and apex browser verification before moving the apex and `www`.
 
 ## Deferred Apple follow-up (not a web-replacement launch gate)
 
