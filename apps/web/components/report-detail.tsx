@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import type { Report } from '@litterbugs/report-contract';
 
 import { Icon } from '@/components/icon';
+import { getWebCompatibleReportPhotoUrl } from '@/lib/report-photo';
 import { createClient } from '@/lib/supabase/client';
 
 export function ReportDetail({
@@ -21,31 +22,43 @@ export function ReportDetail({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [photoIndex, setPhotoIndex] = useState(0);
-  const [loadingPhotos, setLoadingPhotos] = useState(true);
+  const [signedPhoto, setSignedPhoto] = useState<{ path: string; src: string | null; failed: boolean }>({ path: '', src: null, failed: false });
+  const [renderedPhoto, setRenderedPhoto] = useState<{ path: string; loaded: boolean; failed: boolean }>({ path: '', loaded: false, failed: false });
+  const photoPaths = report.photo_paths ?? [];
+  const displayedPhotoIndex = photoPaths.length ? photoIndex % photoPaths.length : 0;
+  const currentPhotoPath = photoPaths[displayedPhotoIndex];
+  const compatibilityUrl = currentPhotoPath
+    ? getWebCompatibleReportPhotoUrl(currentPhotoPath)
+    : null;
+  const currentSignedPhoto = signedPhoto.path === currentPhotoPath ? signedPhoto : null;
+  const currentRenderedPhoto = renderedPhoto.path === currentPhotoPath ? renderedPhoto : null;
+  const photoSrc = compatibilityUrl ?? currentSignedPhoto?.src ?? null;
+  const photoLoaded = currentRenderedPhoto?.loaded ?? false;
+  const photoFailed = currentRenderedPhoto?.failed || currentSignedPhoto?.failed || false;
 
   useEffect(() => {
     let cancelled = false;
 
-    async function signPhotos() {
-      if (!report.photo_paths?.length) {
-        setPhotoUrls([]);
-        setLoadingPhotos(false);
-        return;
-      }
-      const results = await Promise.all(report.photo_paths.map((path) =>
-        createClient().storage.from('report_photos').createSignedUrl(path, 60 * 60),
-      ));
+    async function loadPhotoSource() {
+      if (!currentPhotoPath || compatibilityUrl) return;
+
+      const { data, error } = await createClient().storage
+        .from('report_photos')
+        .createSignedUrl(currentPhotoPath, 60 * 60);
+
       if (!cancelled) {
-        setPhotoUrls(results.flatMap(({ data }) => data?.signedUrl ? [data.signedUrl] : []));
-        setLoadingPhotos(false);
+        setSignedPhoto({
+          path: currentPhotoPath,
+          src: data?.signedUrl ?? null,
+          failed: Boolean(error || !data?.signedUrl),
+        });
       }
     }
 
-    void signPhotos();
+    void loadPhotoSource();
     return () => { cancelled = true; };
-  }, [report]);
+  }, [compatibilityUrl, currentPhotoPath]);
 
   const severity = report.severity ?? 'Medium';
   const hasLitterTypes = Boolean(report.litter_types?.length || report.types);
@@ -65,16 +78,27 @@ export function ReportDetail({
         </header>
 
         <div className="report-photo-region">
-          {loadingPhotos ? (
-            <div className="photo-placeholder"><span className="spinner" /><span>Loading photos…</span></div>
-          ) : photoUrls.length ? (
+          {photoPaths.length ? (
             <>
-              <img className="report-photo" src={photoUrls[photoIndex]} alt={`Report photo ${photoIndex + 1} of ${photoUrls.length}`} />
-              {photoUrls.length > 1 && (
+              {photoSrc && !photoFailed && (
+                <img
+                  className={`report-photo${photoLoaded ? '' : ' report-photo-loading'}`}
+                  src={photoSrc}
+                  alt={`Report photo ${displayedPhotoIndex + 1} of ${photoPaths.length}`}
+                  onLoad={() => setRenderedPhoto({ path: currentPhotoPath, loaded: true, failed: false })}
+                  onError={() => setRenderedPhoto({ path: currentPhotoPath, loaded: false, failed: true })}
+                />
+              )}
+              {!photoLoaded && (
+                <div className="photo-placeholder photo-placeholder-overlay">
+                  {photoFailed ? <><Icon name="image" /><strong>Photo unavailable</strong><span>This photo could not be displayed.</span></> : <><span className="spinner" /><span>Loading photo…</span></>}
+                </div>
+              )}
+              {photoPaths.length > 1 && (
                 <>
-                  <button className="photo-arrow photo-previous" onClick={() => setPhotoIndex((photoIndex - 1 + photoUrls.length) % photoUrls.length)} aria-label="Previous photo"><Icon name="chevron-left" /></button>
-                  <button className="photo-arrow photo-next" onClick={() => setPhotoIndex((photoIndex + 1) % photoUrls.length)} aria-label="Next photo"><Icon name="chevron-right" /></button>
-                  <span className="photo-count">{photoIndex + 1}/{photoUrls.length}</span>
+                  <button className="photo-arrow photo-previous" onClick={() => setPhotoIndex((displayedPhotoIndex - 1 + photoPaths.length) % photoPaths.length)} aria-label="Previous photo"><Icon name="chevron-left" /></button>
+                  <button className="photo-arrow photo-next" onClick={() => setPhotoIndex((displayedPhotoIndex + 1) % photoPaths.length)} aria-label="Next photo"><Icon name="chevron-right" /></button>
+                  <span className="photo-count">{displayedPhotoIndex + 1}/{photoPaths.length}</span>
                 </>
               )}
             </>
