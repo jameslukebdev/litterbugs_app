@@ -201,7 +201,7 @@ export default function AuthScreen() {
       if (error) throw error;
       Alert.alert(
         'Guest mode',
-        'You can create and manage reports during this guest session. If you sign out or remove the app, this guest account and its reports cannot be transferred or recovered.',
+        'Guest mode is read-only. You can browse the map and open reports, but creating, editing, deleting, and participating in cleanups require a permanent account.',
         [{ text: 'Continue' }]
       );
     } catch (error) {

@@ -7,7 +7,12 @@ begin;
 insert into auth.users (id)
 values
   ('11111111-1111-4111-8111-111111111111'),
-  ('22222222-2222-4222-8222-222222222222');
+  ('22222222-2222-4222-8222-222222222222'),
+  ('33333333-3333-4333-8333-333333333333');
+
+update auth.users
+set is_anonymous = true
+where id = '33333333-3333-4333-8333-333333333333';
 
 insert into public.reports (id, user_id, title, latitude, longitude)
 values (
@@ -16,12 +21,23 @@ values (
   'User B report',
   35,
   -78
+), (
+  '33333333-3333-4333-8333-333333333334',
+  '33333333-3333-4333-8333-333333333333',
+  'Anonymous user report',
+  35,
+  -78
 );
 
 set local role authenticated;
 select set_config(
   'request.jwt.claim.sub',
   '11111111-1111-4111-8111-111111111111',
+  true
+);
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"11111111-1111-4111-8111-111111111111","is_anonymous":false}',
   true
 );
 
@@ -45,6 +61,10 @@ declare
   affected integer;
   expiration timestamptz;
 begin
+  if not public.is_permanent_user() then
+    raise exception 'Permanent user failed the permanent-user boundary';
+  end if;
+
   select expires_at into expiration
   from public.reports
   where id = '11111111-1111-4111-8111-111111111112';
@@ -80,6 +100,22 @@ begin
   exception
     when insufficient_privilege then null;
   end;
+
+  insert into public.reports (id, user_id, title, latitude, longitude)
+  values (
+    '11111111-1111-4111-8111-111111111113',
+    '11111111-1111-4111-8111-111111111111',
+    'User A deletable report',
+    35,
+    -78
+  );
+
+  delete from public.reports
+  where id = '11111111-1111-4111-8111-111111111113';
+  get diagnostics affected = row_count;
+  if affected <> 1 then
+    raise exception 'Permanent owner could not delete their report';
+  end if;
 end;
 $$;
 
@@ -95,6 +131,7 @@ values (
 do $$
 declare
   delete_policy_count integer;
+  upload_policy_count integer;
   expiration_search_path text;
   cleanup_search_path text;
 begin
@@ -115,10 +152,23 @@ begin
   where schemaname = 'storage'
     and tablename = 'objects'
     and policyname = 'Owners can delete report photos'
-    and cmd = 'DELETE';
+    and cmd = 'DELETE'
+    and qual like '%is_permanent_user%';
 
   if delete_policy_count <> 1 then
-    raise exception 'Owner photo deletion policy is missing';
+    raise exception 'Permanent-owner photo deletion policy is missing';
+  end if;
+
+  select count(*) into upload_policy_count
+  from pg_policies
+  where schemaname = 'storage'
+    and tablename = 'objects'
+    and policyname = 'Owners can upload report photos'
+    and cmd = 'INSERT'
+    and with_check like '%is_permanent_user%';
+
+  if upload_policy_count <> 1 then
+    raise exception 'Permanent-owner photo upload policy is missing';
   end if;
 
   select coalesce(array_to_string(proconfig, ','), '')
@@ -138,6 +188,82 @@ begin
   if cleanup_search_path not like '%search_path=%' then
     raise exception 'delete_expired_reports search_path is not fixed';
   end if;
+end;
+$$;
+
+-- Anonymous Supabase users use the authenticated Postgres role, but the JWT
+-- boundary keeps their access read-only even for rows and folders they own.
+select set_config(
+  'request.jwt.claim.sub',
+  '33333333-3333-4333-8333-333333333333',
+  true
+);
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"33333333-3333-4333-8333-333333333333","is_anonymous":true}',
+  true
+);
+
+do $$
+declare
+  affected integer;
+  visible integer;
+begin
+  if public.is_permanent_user() then
+    raise exception 'Anonymous user passed the permanent-user boundary';
+  end if;
+
+  if has_table_privilege('anon', 'public.reports', 'INSERT')
+    or has_table_privilege('anon', 'public.reports', 'UPDATE')
+    or has_table_privilege('anon', 'public.reports', 'DELETE') then
+    raise exception 'Signed-out anon role retains report write grants';
+  end if;
+
+  select count(*) into visible
+  from public.reports;
+  if visible < 1 then
+    raise exception 'Anonymous user cannot read reports';
+  end if;
+
+  begin
+    insert into public.reports (user_id, title, latitude, longitude)
+    values (
+      '33333333-3333-4333-8333-333333333333',
+      'Forbidden anonymous insert',
+      35,
+      -78
+    );
+    raise exception 'Anonymous user inserted a report';
+  exception
+    when insufficient_privilege then null;
+  end;
+
+  update public.reports
+  set title = 'Forbidden anonymous update'
+  where id = '33333333-3333-4333-8333-333333333334';
+  get diagnostics affected = row_count;
+  if affected <> 0 then
+    raise exception 'Anonymous user updated a report';
+  end if;
+
+  delete from public.reports
+  where id = '33333333-3333-4333-8333-333333333334';
+  get diagnostics affected = row_count;
+  if affected <> 0 then
+    raise exception 'Anonymous user deleted a report';
+  end if;
+
+  begin
+    insert into storage.objects (bucket_id, name, owner_id)
+    values (
+      'report_photos',
+      '33333333-3333-4333-8333-333333333333/report-c/forbidden.jpg',
+      '33333333-3333-4333-8333-333333333333'
+    );
+    raise exception 'Anonymous user uploaded a report photo';
+  exception
+    when insufficient_privilege then null;
+  end;
 end;
 $$;
 

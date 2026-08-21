@@ -54,6 +54,15 @@ coordinates and expiration behavior were unchanged; and asynchronous photo
 cleanup succeeded. Both temporary Auth identities were deleted and zero
 fixtures remained.
 
+The applied `20260821202747_guest_read_only_reports.sql` migration preserves
+public report and photo reads while requiring a non-anonymous Supabase JWT for
+report inserts, owner updates/deletes, and report-photo uploads/deletes. It also
+removes report write grants from the signed-out `anon` role. Its expanded SQL
+test passed against the hosted schema after deployment inside a single
+transaction that rolled back every fixture. Live policy verification confirmed
+the permanent-user helper, owner-only report and photo writes, retained public
+reads, and removed signed-out report write privileges.
+
 The deployed account-deletion function has separately passed a live disposable
 Guest test: one object uploaded under the user's existing folder convention was
 removed, the deleted Auth identity no longer resolved, and the object was no
