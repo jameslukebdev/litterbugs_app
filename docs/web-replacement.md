@@ -9,7 +9,10 @@ The new website lives in `apps/web` and connects only to Supabase project
 - Google Maps JavaScript API with location centering and roadmap, satellite,
   hybrid, and terrain controls.
 - Mobile-style report details with signed private photo URLs, types, severity,
-  notes, reported date, and expiration date.
+  notes, reported date, and expiration date. Mobile-created HEIC/HEIF objects
+  are converted to cached JPEG responses by a web-only endpoint after it proves
+  the object belongs to an active, unexpired report; stored objects and mobile
+  behavior remain unchanged.
 - A signed-out prompt before report creation; there is no web Guest mode.
 - Email/password, Google, and Facebook authentication. Apple remains absent
   until the production App ID transfer and provider setup are complete.
@@ -109,6 +112,14 @@ again and fresh Storage signing probes confirmed each object was removed
 asynchronously. Exact cleanup retained zero report rows, Storage objects, or
 test identities.
 
+The public acceptance spec also opens the live mobile-created `High example`
+report and requires all three HEIC photos to decode with nonzero browser image
+dimensions. That regression passed sequentially on beta and production in
+desktop Chrome, Firefox, Safari/WebKit, mobile Chrome, and mobile
+Safari/WebKit. The compatibility endpoint loads only the selected photo, keeps
+browser-compatible formats on their existing signed-URL path, rejects unknown
+or invalid paths, and returns no secret or service-role credential to clients.
+
 For future hosted cleanup regression runs, set
 `WEB_QA_EXPECT_ASYNC_PHOTO_CLEANUP=1` for the same hosted test. It will poll the
 real Storage signing endpoint after report deletion and fail unless the
@@ -179,6 +190,9 @@ retained its redirect, and all five desktop/mobile browser profiles passed
 against the production apex with one worker. `auth.litterbugs.app` remained
 unchanged and healthy. The detached old deployment is preserved temporarily at
 `https://litterbugs-1q6eqqaia-grant-9890s-projects.vercel.app`.
+The later HEIC compatibility correction was deployed from clean `main` commit
+`2941a44` as `dpl_Goy21KScnTdcbrNpmdrjAxqE8ZnE`; beta and apex each passed the
+same five-profile photo regression before and after their aliases moved.
 The old Vercel project's Git connection was removed and all 94 of its
 production/preview environment records were deleted, while the new project's
 14 scoped records remained intact. The private `gegibson-oss/litterbugs`

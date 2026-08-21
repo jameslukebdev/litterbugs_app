@@ -35,6 +35,10 @@ gate passes.
       report fields in the rolled-back hosted SQL test and committed function
       source.
 - [x] Add web callback/reset URLs without removing mobile callbacks.
+- [x] Keep Apple disabled until the separately authorized post-transfer project.
+      The final live dashboard reload and public Auth authorize probe confirmed
+      Apple disabled while Google and Facebook remained enabled and redirected
+      to their provider hosts.
 - [x] Verify Google and Facebook OAuth begin at the correct project and redirect
       to their providers with the beta callback.
 - [x] Test a confirmed disposable email user through live web sign-in, report
@@ -133,6 +137,12 @@ gate passes.
       five production browser profiles passed sequentially with one worker.
 - [x] Keep `auth.litterbugs.app` unchanged and recheck its health endpoint after
       both alias moves.
+- [x] Deploy the mobile-HEIC web compatibility fix from clean `main` commit
+      `2941a44` as `dpl_Goy21KScnTdcbrNpmdrjAxqE8ZnE`, accept it on beta, and
+      move the apex, `www`, beta, and stable Vercel aliases only after all three
+      real `High example` photos decoded in five serialized desktop/mobile
+      browser profiles. The same five-profile suite then passed on the apex,
+      and the deployment recorded zero runtime error logs.
 
 ## Deferred Apple follow-up (not a web-replacement launch gate)
 

@@ -51,6 +51,14 @@ Provider and SMTP secrets must stay in their provider consoles and the Supabase 
 
 Google and Facebook are now enabled with new Litterbugs-specific provider records. Apple remains disabled while production Apple-team setup is deferred.
 
+The final web-replacement audit on August 21, 2026 found that the dormant Apple
+provider toggle had later been turned on even though no Apple OAuth secret or
+web Service ID was configured. It was turned back off to match the locked
+product decision. A fresh dashboard reload reports Apple `Disabled`, and the
+public Auth authorize endpoint now rejects Apple with `provider is not enabled`
+while Google and Facebook still redirect to their provider hosts. No client,
+callback, secret, mobile setting, or other Auth provider was changed.
+
 Custom SMTP is configured with a new Resend credential created specifically for this Partner app. The root `litterbugs.app` sending domain is verified in Resend, and Supabase Auth is configured with sender `support@litterbugs.app`, sender name `Litterbugs`, host `smtp.resend.com`, port `465`, and username `resend`. Supabase's live Auth configuration response confirms that the encrypted SMTP password is present. The isolated DKIM, `send`-subdomain MX/SPF, and monitoring-only DMARC records were added to Cloudflare without changing website or inbox routing. No other SMTP key, domain record, or credential was changed or reused.
 
 ## Manual rollback
