@@ -1,0 +1,12 @@
+.git/
+.vercel/
+node_modules/
+apps/*/node_modules/
+packages/*/node_modules/
+apps/web/.next/
+apps/mobile/android/
+apps/mobile/ios/
+apps/mobile/.expo/
+coverage/
+artifacts/
+*.log

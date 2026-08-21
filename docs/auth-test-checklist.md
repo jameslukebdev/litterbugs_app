@@ -19,7 +19,9 @@ passwords, tokens, secrets, or private email links.
 - [x] Live Auth settings recheck confirms email signup and anonymous access enabled, email auto-confirm disabled, Google and Facebook enabled, and Apple/phone disabled in `mvaygkflcjswtwchflrk` (rechecked through the public Auth settings endpoint, 2026-08-18).
 - [x] Correct Litterbugs business ownership is connected in Meta; the ownership email is confirmed and Grant E Gibson has active full access. Meta business verification remains a release gate (2026-08-18).
 - [x] Production Google iOS client `Litterbugs Production iOS` is confirmed for `com.litterbugs.app` and App Store ID `6757313862`, with matching EAS production values (2026-08-18).
-- [ ] Apple sign-in is enabled and tested before App Store submission.
+- [ ] After `com.litterbugs.app` transfers to Grant's Apple team, implement and
+      test Apple sign-in as a separately authorized project. It is intentionally
+      absent from the current mobile and web clients.
 
 ## Automated and build checks
 
@@ -70,7 +72,7 @@ passwords, tokens, secrets, or private email links.
 
 - [x] Signed QA build reaches Facebook through `auth.litterbugs.app` without displaying a Supabase host prompt (iOS 26.5 Release simulator, 2026-08-18).
 - [x] Returning sign-in succeeds through standard Facebook browser OAuth, returns to the Litterbugs map, and records a successful Supabase PKCE `/token` exchange (200; signed iOS 26.5 Release simulator, 2026-08-18).
-- [x] Cancellation at the Apple consent prompt returns to Litterbugs without an error alert or stale-token exchange (signed iOS 26.5 Release simulator, 2026-08-18).
+- [x] Cancellation at the Facebook provider consent prompt returns to Litterbugs without an error alert or stale-token exchange (signed iOS 26.5 Release simulator, 2026-08-18).
 - [ ] Cancellation or permission denial on Facebook's provider-owned consent page returns to Litterbugs without a technical alert. The final build recognizes the provider cancellation and denial responses, but the isolated system browser prevented unattended interaction with Facebook's inner Cancel button.
 - [x] Matching email attaches to the intended existing email user without duplication (Supabase identity audit, 2026-08-17).
 - [x] Facebook returns through the centralized `litterbugs://auth/callback` handler, and the resulting Supabase session survives a fully closed relaunch (signed iOS 26.5 Release simulator, 2026-08-18).
@@ -112,7 +114,8 @@ passwords, tokens, secrets, or private email links.
 ## Deferred App Store gates
 
 - [ ] Complete Meta business verification and any required public provider review before public Facebook login release.
-- [ ] Implement and test Apple login before submitting an App Store build that contains third-party social login.
+- [ ] After the App ID transfer, implement and test Apple login before submitting
+      an App Store build that contains third-party social login.
 - [ ] Repeat the full release checklist on the final App Store candidate.
 
 ## Android Google Play
@@ -133,7 +136,15 @@ passwords, tokens, secrets, or private email links.
 - [x] Create restricted QA and production Maps keys in the `litterbugs-auth` Google Cloud project.
 - [x] Store the QA and production Maps keys in their matching EAS environments.
 - [ ] Install a fresh QA APK on the Pixel and verify Maps, location allow/deny, markers, offline recovery, auth callbacks, Guest, account sheet, and sign-out confirmation.
-- [ ] Repeat the device flow on an API 36 emulator.
+- [x] Repeat the device flow on an API 36 emulator. The fresh moved-workspace
+      APK passed onboarding, sign-in, Guest, Google Maps, location, report
+      creation/edit/delete, account, and sign-out verification on August 21,
+      2026; see `docs/mobile-non-regression.md`.
+- [x] The final API 36 QA candidate passed the real Android system photo picker,
+      valid JPEG upload, signed detail rendering, force-stop/cold-restart,
+      custom marker selection, owner edit/delete, Storage cleanup, and
+      confirmed Guest-account deletion. Exact hosted checks found zero
+      disposable reports, objects, or Auth identities (2026-08-21).
 - [x] Build and inspect the signed production AAB (`1.0.0`, version code 3, target SDK 36, production package/signing identity, Maps metadata present, no QA/prototype references, and no overlay or microphone permission).
 - [ ] Run focused iOS regression checks for the shared Account-sheet deletion action.
 - [ ] Choose the permanent Play Console owner before creating the public app record.

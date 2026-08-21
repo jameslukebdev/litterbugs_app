@@ -36,6 +36,15 @@ The current local QA certificate SHA-1 is:
 
 `5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25`
 
+The current EAS internal-preview QA certificate SHA-1 is:
+
+`57:4F:3D:D6:42:74:C8:C7:C0:1F:C1:12:5D:B4:85:10:71:4D:B6:68`
+
+Both QA fingerprints are allowed only for `com.litterbugs.app.qa` on the
+existing QA Maps key. The EAS fingerprint was added and verified against build
+`2f110d70-f1bf-441e-9702-c79eef83dfc6` on August 21, 2026; the production Maps
+key and production package restrictions were not changed.
+
 The current production upload certificate SHA-1 is:
 
 `79:E6:D2:50:03:74:57:40:DE:02:EB:F9:8F:3A:20:1D:58:85:73:4C`
@@ -66,14 +75,44 @@ environment but compiles on the Mac, so it does not consume a cloud-build
 credit.
 
 ```sh
-npx expo-doctor
+npm run mobile:doctor
+cd apps/mobile
 npx eas-cli build --platform android --profile preview --local \
-  --non-interactive --output artifacts/litterbugs-qa.apk
+  --non-interactive --output ../../artifacts/litterbugs-qa.apk
 ```
 
 Before judging the UI on a device, uninstall the stale APK and verify that the
 installed package is `com.litterbugs.app.qa`. A black Google mark indicates an
 old artifact; the current source uses the official multicolor Google asset.
+
+## Final Android QA verification
+
+The final local acceptance candidate built and installed successfully on the
+API 36 emulator on August 21, 2026:
+
+- Artifact: `/tmp/litterbugs-android-qa-release-candidate-20260821.apk`
+- SHA-256: `2ff1942dd8a800c898840757d3bb562c12ab43e0f4e6bb55f09d271d92a808ab`
+- Package/version: `com.litterbugs.app.qa` / `1.0.0`
+- SDK range: minimum 24, target 36
+
+The final pass used Android's real system photo picker and the live correct
+Supabase project. It verified a valid JPEG upload, signed photo rendering in
+report detail, persistence after a force-stop and cold restart, full custom
+marker rendering and selection, report edit, report delete, Storage cleanup,
+and confirmed Guest-account deletion. Exact cleanup checks found no remaining
+QA report, photo object, or Auth identity.
+
+Two Android-only rendering corrections were required by the pinned native
+stack. Android report details use the Expo-compatible `expo-image` renderer for
+the existing signed URLs. The pinned `react-native-maps` `1.20.1` dependency
+uses the Android bitmap-sizing change from
+[upstream PR #5913](https://github.com/react-native-maps/react-native-maps/pull/5913),
+plus a one-second marker-tracking warm-up. Neither correction changes iOS,
+authentication, the report flow, the database contract, the map provider, or
+product functionality.
+
+The QA APK is an ephemeral test artifact. This verification does not authorize
+a production build, Play Console upload, or publication.
 
 ## Production release gates
 

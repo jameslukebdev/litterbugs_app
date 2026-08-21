@@ -2,12 +2,18 @@
 
 # dependencies
 node_modules/
+apps/*/node_modules/
+packages/*/node_modules/
 
 # Expo
 .expo/
 .expo-shared/
 dist/
 web-build/
+.next/
+coverage/
+playwright-report/
+test-results/
 
 # Logs
 npm-debug.log*
@@ -35,4 +41,5 @@ supabase/.temp/
 
 # TypeScript / caches
 *.tsbuildinfo
-auth-bridge/.wrangler/
+services/auth-bridge/.wrangler/
+.vercel

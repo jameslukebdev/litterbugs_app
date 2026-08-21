@@ -1,0 +1,59 @@
+--- a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapMarker.java
++++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapMarker.java
+@@ -11,0 +12 @@
++import android.view.ViewGroup;
+@@ -522,0 +524,19 @@
++
++  /**
++   * Expand bitmap bounds using sizes already produced by RN layout. Do not call {@link
++   * View#measure} on Catalyst/Fabric views because those views must be measured by React Native.
++   */
++  private static void expandSnapshotSizeFromSubtree(View root, int[] maxWh) {
++    if (root == null || root.getVisibility() == View.GONE) {
++      return;
++    }
++
++    int width = root.getWidth();
++    int height = root.getHeight();
++
++    if (width <= 0) {
++      width = root.getMeasuredWidth();
++    }
++    if (height <= 0) {
++      height = root.getMeasuredHeight();
++    }
+@@ -523,0 +544,19 @@
++    if (width > 0) {
++      maxWh[0] = Math.max(maxWh[0], width);
++    }
++    if (height > 0) {
++      maxWh[1] = Math.max(maxWh[1], height);
++    }
++
++    if (root instanceof ViewGroup) {
++      ViewGroup viewGroup = (ViewGroup) root;
++      for (int index = 0; index < viewGroup.getChildCount(); index++) {
++        View child = viewGroup.getChildAt(index);
++        if (child instanceof MapCallout) {
++          continue;
++        }
++        expandSnapshotSizeFromSubtree(child, maxWh);
++      }
++    }
++  }
++
+@@ -526,0 +566,14 @@
++
++    if (hasCustomMarkerView && getChildCount() > 0) {
++      int[] maxWh = new int[] {width, height};
++      for (int index = 0; index < getChildCount(); index++) {
++        View child = getChildAt(index);
++        if (child instanceof MapCallout) {
++          continue;
++        }
++        expandSnapshotSizeFromSubtree(child, maxWh);
++      }
++      width = maxWh[0];
++      height = maxWh[1];
++    }
++

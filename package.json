@@ -1,46 +1,37 @@
 {
-  "name": "litterbugs",
+  "name": "litterbugs-partner",
   "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "postinstall": "patch-package",
-    "start": "npx expo start",
-    "android": "npx expo start --android",
-    "ios": "npx expo start --ios",
-    "web": "npx expo start --web"
-  },
-  "dependencies": {
-    "@react-native-async-storage/async-storage": "2.2.0",
-    "@react-native-google-signin/google-signin": "16.1.4",
-    "@react-navigation/native": "^7.1.19",
-    "@react-navigation/native-stack": "^7.6.2",
-    "@supabase/supabase-js": "^2.87.1",
-    "aes-js": "^3.1.2",
-    "expo": "~54.0.37",
-    "expo-constants": "~18.0.14",
-    "expo-crypto": "~15.0.9",
-    "expo-dev-client": "~6.0.21",
-    "expo-file-system": "~19.0.24",
-    "expo-image-picker": "~17.0.11",
-    "expo-linking": "~8.0.12",
-    "expo-location": "~19.0.8",
-    "expo-secure-store": "~15.0.8",
-    "expo-status-bar": "~3.0.9",
-    "expo-web-browser": "~15.0.11",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "react-native": "0.81.5",
-    "react-native-get-random-values": "^1.11.0",
-    "react-native-maps": "1.20.1",
-    "react-native-safe-area-context": "~5.6.0",
-    "react-native-screens": "~4.16.0",
-    "react-native-url-polyfill": "^3.0.0",
-    "react-native-web": "^0.21.0"
-  },
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "postinstall": "node scripts/apply-mobile-patches.mjs",
+    "mobile:start": "npm run start --workspace @litterbugs/mobile",
+    "mobile:ios": "npm run ios --workspace @litterbugs/mobile",
+    "mobile:android": "npm run android --workspace @litterbugs/mobile",
+    "mobile:doctor": "cd apps/mobile && npx expo-doctor",
+    "mobile:config": "cd apps/mobile && npx expo config --json",
+    "mobile:build:android:qa": "cd apps/mobile && npx eas-cli build --platform android --profile preview",
+    "mobile:build:ios:qa": "cd apps/mobile && npx eas-cli build --platform ios --profile preview",
+    "mobile:build:ios:simulator": "cd apps/mobile && npx eas-cli build --platform ios --profile development-simulator",
+    "mobile:build:android:production": "cd apps/mobile && npx eas-cli build --platform android --profile production",
+    "mobile:build:ios:production": "cd apps/mobile && npx eas-cli build --platform ios --profile production",
+    "auth-bridge:check": "wrangler deploy --dry-run --config services/auth-bridge/wrangler.jsonc",
+    "supabase:functions:check": "npx --yes deno@2.5.4 check --config supabase/functions/deno.json supabase/functions/delete-account/index.ts supabase/functions/cleanup-report-photos/index.ts",
+    "web:dev": "npm run dev --workspace @litterbugs/web",
+    "web:build": "npm run build --workspace @litterbugs/web",
+    "web:start": "npm run start --workspace @litterbugs/web",
+    "web:lint": "npm run lint --workspace @litterbugs/web",
+    "web:test:cross-browser": "npm exec --workspace @litterbugs/web playwright test -- --config=playwright.live.config.ts",
+    "web:boundaries": "node scripts/check-web-boundaries.mjs",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "check": "npm run typecheck && npm test && npm run web:lint && npm run web:build && npm run web:boundaries && npm run supabase:functions:check && npm run auth-bridge:check"
+  },
   "devDependencies": {
-    "@types/react": "~19.1.10",
-    "patch-package": "^8.0.1",
-    "typescript": "~5.9.2"
+    "patch-package": "8.0.1",
+    "wrangler": "4.125.0"
   }
 }

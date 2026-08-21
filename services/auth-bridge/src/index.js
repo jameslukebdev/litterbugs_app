@@ -1,4 +1,4 @@
-import litterbugsLogo from '../../assets/LB_Logo_PNG.png';
+import litterbugsLogo from '../assets/LB_Logo_PNG.png';
 
 const SUPABASE_ORIGIN = 'https://mvaygkflcjswtwchflrk.supabase.co';
 const SUPABASE_AUTHORIZE_PATH = '/auth/v1/authorize';

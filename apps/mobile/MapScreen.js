@@ -22,6 +22,7 @@ import {
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
+import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from './lib/supabase'
 import { deleteCurrentAccount, signOut } from './lib/auth';
@@ -49,6 +50,9 @@ export default function MapScreen() {
   ];
   const MAX_REPORT_DISTANCE_MILES = 10;
   const [markers, setMarkers] = useState([]); // saved reports
+  const [tracksReportMarkers, setTracksReportMarkers] = useState(
+    Platform.OS === 'android'
+  );
   const [draftCoord, setDraftCoord] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
   const [reportStep, setReportStep] = useState(0);
@@ -718,10 +722,11 @@ const handleDeleteAccount = () => {
         console.error('Signed URL error:', error);
         return null;
       }
-    
+
       return data.signedUrl;
     };
-    
+
+
 // Set Map Marker Based on Severity 
     const getMarkerStyleBySeverity = (severity) => {
       const s = (severity || '').toLowerCase();
@@ -781,6 +786,17 @@ useEffect(() => {
 
   loadReports();
 }, []);
+
+useEffect(() => {
+  if (Platform.OS !== 'android' || markers.length === 0) return undefined;
+
+  setTracksReportMarkers(true);
+  const stopTracking = setTimeout(() => {
+    setTracksReportMarkers(false);
+  }, 1000);
+
+  return () => clearTimeout(stopTracking);
+}, [markers.length]);
 
 // Load Photos into Existing Report
 useEffect(() => {
@@ -1611,7 +1627,7 @@ const renderReportStep = () => {
             <Marker
               key={m.id}
               coordinate={m.coordinate}
-              tracksViewChanges={false}
+              tracksViewChanges={tracksReportMarkers}
               anchor={{ x: 0.5, y: 0.5 }}
               onPress={(e) => {
                 e?.stopPropagation?.();
@@ -2073,6 +2089,7 @@ const renderReportStep = () => {
               styles.reportPhotoCarousel,
               {
                 width: reportHeroWidth,
+                ...(Platform.OS === 'android' ? { overflow: 'visible' } : null),
               },
             ]}
           >
@@ -2095,19 +2112,34 @@ const renderReportStep = () => {
               }}
             >
 
-              {reportPhotoUrls.map((uri, index) => (
-                <Image
-                  key={`${uri}-${index}`}
-                  source={{ uri }}
-                  resizeMode="cover"
-                  style={[
-                    styles.reportHeroImage,
-                    {
+              {reportPhotoUrls.map((uri, index) =>
+                Platform.OS === 'android' ? (
+                  <ExpoImage
+                    key={`${uri}-${index}`}
+                    source={uri}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    style={{
                       width: reportHeroWidth,
-                    },
-                  ]}
-                />
-              ))}
+                      height: 355,
+                      borderRadius: 22,
+                      backgroundColor: '#E5E7EB',
+                    }}
+                  />
+                ) : (
+                  <Image
+                    key={`${uri}-${index}`}
+                    source={{ uri }}
+                    resizeMode="cover"
+                    style={[
+                      styles.reportHeroImage,
+                      {
+                        width: reportHeroWidth,
+                      },
+                    ]}
+                  />
+                )
+              )}
 
             </ScrollView>
 

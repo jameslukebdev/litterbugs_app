@@ -11,7 +11,7 @@ and build project documented here.
 - Production Android package: `com.litterbugs.app`
 - Existing App Store ID: `6757313862`
 - App scheme: `litterbugs`
-- EAS project: `@gegibson/litterbugs-partner`
+- EAS project: `@litterbugs-community-cleanup/litterbugs-partner`
 
 Apple's public App Store lookup was rechecked on 2026-08-17 and reports
 `com.litterbugs.app` for App Store ID `6757313862` (seller James Luke Barber).
@@ -19,12 +19,14 @@ The production Google client must use that exact pair.
 
 `APP_VARIANT=qa` plus `IOS_BUNDLE_IDENTIFIER` selects the isolated QA identity.
 Production profiles set `APP_VARIANT=production` and always use the production
-bundle ID from `app.json`, even if a developer's local `.env` contains QA values.
+bundle ID from `apps/mobile/app.json`, even if a developer's local environment
+contains QA values.
 
 ## Local and build environment
 
-Copy `.env.example` to `.env` and supply the Litterbugs-specific values. Never
-commit `.env` or place provider secrets in source code.
+Copy `apps/mobile/.env.example` to `apps/mobile/.env` and supply the
+Litterbugs-specific values. Never commit environment files or place provider
+secrets in source code.
 
 | Variable | Purpose |
 | --- | --- |
@@ -61,6 +63,8 @@ Keep these routes under Authentication → URL Configuration:
 
 - `litterbugs://auth/callback`
 - `litterbugs://auth/reset-password`
+- `https://litterbugs.app/auth/callback`
+- `https://litterbugs.app/auth/reset-password`
 
 Email confirmation must remain enabled. Verification and recovery messages use
 the monitored sender `support@litterbugs.app` and contain one clear action.
@@ -121,8 +125,9 @@ As of 2026-08-18, the Meta iOS platform contains both
 Facebook sign-in uses Supabase's browser OAuth flow. The app first opens the
 Litterbugs-owned `https://auth.litterbugs.app/start` bridge, which validates the
 exact Supabase authorization target and then hands off to Facebook. This keeps
-the Apple consent prompt branded as Litterbugs without proxying credentials or
-tokens. The bridge is not an authentication provider and stores no user data.
+the iOS browser consent prompt branded as Litterbugs without proxying
+credentials or tokens. The bridge is not an authentication provider and stores
+no user data.
 
 The Meta app is managed by the isolated `Litterbugs Community Cleanup` business
 portfolio, ID `863596096684215`. Grant E Gibson has active full access. Complete
@@ -144,14 +149,41 @@ Function runtime.
 
 ## Apple
 
-Apple sign-in is not implemented on this branch. Apple code and native packages
-are intentionally absent while the partner's Apple Developer team setup is
-deferred. Do not create or transfer a replacement production App ID.
+Apple sign-in is not currently present in the mobile app and is not exposed on
+the website. Do not add it to either client as part of the monorepo move.
 
-Before submitting an App Store build that contains third-party social login,
-enable Sign in with Apple on the existing production App ID
-`com.litterbugs.app`, implement it as a separate reviewed change, and test new,
-returning, cancelled, background, and cold-start sign-in paths.
+The production App Store record and App ID currently belong to James Luke
+Barber's Apple team `DB39U76V6Q`. Grant Gibson's receiving Apple team is
+`RLXNU225W4`. Transfer the existing App Store app; do not register a second
+`com.litterbugs.app` identifier. Apple transfers the associated App ID when the
+App Store transfer is accepted, preserving the bundle ID and App Store record.
+
+Do not create the web Service ID on the receiving team before the production
+App ID arrives. After transfer acceptance, enable or verify Sign in with Apple
+on the transferred App ID, make it the primary identifier, and associate the
+new web Service ID with it. Use `litterbugs.app` as the web domain and the
+correct project's callback:
+
+`https://mvaygkflcjswtwchflrk.supabase.co/auth/v1/callback`
+
+A read-only audit on 2026-08-21 found zero `apple` rows in
+`mvaygkflcjswtwchflrk.auth.identities`. Recheck immediately before the App
+Store transfer. If it remains zero, there are no existing Supabase Apple users
+to migrate between Apple teams. If any Apple identity exists at that point,
+stop and complete Apple's Sign in with Apple transfer-identifier procedure
+within its transfer window before enabling the receiving-team configuration.
+
+Current web verification: Google and Facebook return provider redirects from
+project `mvaygkflcjswtwchflrk`. Apple web OAuth is intentionally not presented
+because its Service ID and OAuth secret do not exist yet. Configure and test the
+new Service ID and rotating OAuth secret before adding the provider to either
+client.
+
+For the later Apple-auth project, enable Sign in with Apple on the transferred
+production App ID `com.litterbugs.app`; do not create a replacement production
+App ID. Supabase will then need the appropriate native and separate web Service
+ID client identifiers. Test the mobile change separately under the user's
+explicit authorization.
 
 ## Build and run
 
@@ -159,6 +191,7 @@ After installing or changing a native package, regenerate the ignored native
 project and rebuild the development client:
 
 ```sh
+cd apps/mobile
 npx expo prebuild --platform ios
 npx pod-install ios
 ```
@@ -166,6 +199,7 @@ npx pod-install ios
 Run one Metro server at a time:
 
 ```sh
+cd apps/mobile
 npx expo start --dev-client --clear
 ```
 
