@@ -24,19 +24,14 @@ import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from './lib/supabase'
-import { deleteCurrentAccount, signOut } from './lib/auth';
 import { canManageReport, isPermanentUser, permanentUserId } from './lib/reportAccess';
+import { BOTTOM_NAV_METRICS, getBottomNavClearance } from './lib/navigationLayout';
+import { useReports } from './lib/reports';
+import { useSession } from './lib/session';
+import MapReportSheet, { getMapReportSheetMetrics } from './MapReportSheet';
 import * as FileSystem from 'expo-file-system/legacy';
-
-
-// Region Shown on Map
-const FALLBACK_REGION = {
-  latitude: 35.6009, // Boone-ish fallback
-  longitude: -82.5540,
-  latitudeDelta: 0.08,
-  longitudeDelta: 0.08,
-};
 
 const showPermanentAccountRequired = () => {
   Alert.alert(
@@ -46,8 +41,7 @@ const showPermanentAccountRequired = () => {
 };
 
 // State Functions
-export default function MapScreen() {
-  const [region, setRegion] = useState(FALLBACK_REGION);
+export default function MapScreen({ route, navigation }) {
   const REPORT_STEPS = [
     'Title',
     'Photos',
@@ -57,7 +51,6 @@ export default function MapScreen() {
     'Review',
   ];
   const MAX_REPORT_DISTANCE_MILES = 10;
-  const [markers, setMarkers] = useState([]); // saved reports
   const [tracksReportMarkers, setTracksReportMarkers] = useState(
     Platform.OS === 'android'
   );
@@ -82,16 +75,39 @@ export default function MapScreen() {
   const [reportPhotoUrls, setReportPhotoUrls] = useState([]);
   const [editingReportId, setEditingReportId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [accountOpen, setAccountOpen] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
-  const [deletingAccount, setDeletingAccount] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [photosLoading, setPhotosLoading] = useState(false);
+  const [mapSheetExpanded, setMapSheetExpanded] = useState(false);
   // Report detail photo carousel
   const [reportPhotoIndex, setReportPhotoIndex] = useState(0);
-  const { width: screenWidth } = useWindowDimensions();
+  const { user: currentUser } = useSession();
+  const {
+    markers,
+    reportsInSearchRegion,
+    refreshing: reportsRefreshing,
+    mapRegion: region,
+    searchRegion,
+    setMapRegion: setRegion,
+    commitMapRegion,
+    searchMapRegion,
+    refreshReports,
+    upsertReport,
+    removeReport,
+  } = useReports();
+  const currentUserId = permanentUserId(currentUser);
+  const insets = useSafeAreaInsets();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const bottomNavClearance = getBottomNavClearance(insets.bottom);
+  const reportSheetMetrics = getMapReportSheetMetrics(
+    screenHeight,
+    bottomNavClearance
+  );
+  const mapControlsBottom = (
+    mapSheetExpanded
+      ? reportSheetMetrics.sheetHeight
+      : reportSheetMetrics.collapsedVisibleHeight
+  )
+    + BOTTOM_NAV_METRICS.mapControlGap;
   // Leave 20px margin on each side of the main report photo
   const reportHeroWidth = Math.max(screenWidth - 40, 280);
 
@@ -235,18 +251,17 @@ const reportStepPanResponder = PanResponder.create({
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') return;
         const loc = await Location.getCurrentPositionAsync({});
-        setRegion((r) => ({
-          ...r,
+        commitMapRegion({
           latitude: loc.coords.latitude,
           longitude: loc.coords.longitude,
           latitudeDelta: 0.02,
           longitudeDelta: 0.02,
-        }));
+        });
       } catch (e) {
         console.log('Location error', e);
       }
     })();
-  }, []);
+  }, [commitMapRegion]);
 
 // Calculate distance between two GPS coordinates using the Haversine formula
 const getDistanceMiles = (pointA, pointB) => {
@@ -356,10 +371,7 @@ const onMapPress = async (e) => {
     if (!draftCoord && !isEditing) return;
   
     try {
-      // ✅ get user FIRST
-      const { data: authData } = await supabase.auth.getUser();
-      const user = authData?.user ?? null;
-      const userId = permanentUserId(user);
+      const userId = permanentUserId(currentUser);
 
       if (!userId) {
         setDraftCoord(null);
@@ -434,24 +446,7 @@ const onMapPress = async (e) => {
         data.photo_paths = photoPaths;
       }
   
-      // ✅ Safe map update
-      if (data.latitude && data.longitude) {
-        setMarkers((prev) =>
-          isEditing
-            ? prev.map((m) => (m.id === data.id ? { ...m, report: data } : m))
-            : [
-                ...prev,
-                {
-                  id: data.id,
-                  coordinate: {
-                    latitude: data.latitude,
-                    longitude: data.longitude,
-                  },
-                  report: data,
-                },
-              ]
-        );
-      }
+      upsertReport(data);
   
       setDraftCoord(null);
       setFormOpen(false);
@@ -491,85 +486,16 @@ const submitReport = async () => {
     resetReportWizard();
   };
 
-// User Can Sign Out
-// Confirm before signing the user out
-
-const handleSignOut = () => {
-  if (signingOut) return;
-
-  const guestWarning = currentUser?.is_anonymous
-    ? 'Are you sure you want to sign out? This guest account cannot be recovered or transferred.'
-    : 'Are you sure you want to sign out?';
-
-  Alert.alert(
-    'Sign Out',
-    guestWarning,
-    [
-      {
-        text: 'No',
-        style: 'cancel',
-      },
-      {
-        text: 'Yes',
-        style: 'destructive',
-        onPress: async () => {
-          setSigningOut(true);
-          const { error } = await signOut();
-
-          if (error) {
-            setSigningOut(false);
-            Alert.alert('Couldn’t sign out', 'Check your connection and try again.');
-            return;
-          }
-
-          setAccountOpen(false);
-        },
-      },
-    ]
-  );
-};
-
-const handleDeleteAccount = () => {
-  if (signingOut || deletingAccount) return;
-
-  Alert.alert(
-    'Delete Account',
-    'This permanently deletes your account and uploaded photos. Community report locations, categories, severity, status, and dates will remain without your identity. This cannot be undone.',
-    [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete Account',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            setDeletingAccount(true);
-            await deleteCurrentAccount();
-            setAccountOpen(false);
-          } catch (error) {
-            Alert.alert(
-              'Couldn’t delete account',
-              'No additional changes were made. Check your connection and try again.'
-            );
-          } finally {
-            setDeletingAccount(false);
-          }
-        },
-      },
-    ]
-  );
-};
-
 // User Can Center Back to their Location on Map
   const centerOnUser = async () => {
     try {
       const loc = await Location.getCurrentPositionAsync({});
-      setRegion((prev) => ({
-        ...prev,
+      commitMapRegion({
         latitude: loc.coords.latitude,
         longitude: loc.coords.longitude,
         latitudeDelta: 0.02,
         longitudeDelta: 0.02,
-      }));
+      });
     } catch (e) {
       console.log('Center error:', e);
       Alert.alert('Location Error', 'Unable to find your location.');
@@ -769,49 +695,6 @@ const handleDeleteAccount = () => {
     };
     
     
-// Get User ID to Allow Edit/Delete of Their Reports
-    useEffect(() => {
-      supabase.auth.getUser().then(({ data }) => {
-        setCurrentUserId(permanentUserId(data.user));
-        setCurrentUser(data.user ?? null);
-      });
-    }, []);
-    
-
-// Load Reports From Supabase (only unexpired)
-useEffect(() => {
-  const loadReports = async () => {
-    const nowIso = new Date().toISOString();
-
-    const { data, error } = await supabase
-      .from('reports')
-      .select('*')
-      .gt('expires_at', nowIso); // only reports that haven't expired
-
-    if (error) {
-      console.log('loadReports error:', error);
-      return;
-    }
-
-    if (data) {
-      setMarkers(
-        data
-          .filter((r) => typeof r.latitude === 'number' && typeof r.longitude === 'number')
-          .map((r) => ({
-            id: r.id,
-            coordinate: {
-              latitude: r.latitude,
-              longitude: r.longitude,
-            },
-            report: r,
-          }))
-      );
-    }
-  };
-
-  loadReports();
-}, []);
-
 useEffect(() => {
   if (Platform.OS !== 'android' || markers.length === 0) return undefined;
 
@@ -822,6 +705,32 @@ useEffect(() => {
 
   return () => clearTimeout(stopTracking);
 }, [markers.length]);
+
+const openReportDetails = (report) => {
+  if (!report) return;
+  setSelectedReport(report);
+  setDetailsOpen(true);
+};
+
+useEffect(() => {
+  const requestedReportId = route?.params?.reportId;
+  if (!requestedReportId || markers.length === 0) return;
+
+  const requestedMarker = markers.find(
+    ({ id }) => String(id) === String(requestedReportId)
+  );
+
+  if (!requestedMarker) return;
+
+  commitMapRegion({
+    latitude: requestedMarker.coordinate.latitude,
+    longitude: requestedMarker.coordinate.longitude,
+    latitudeDelta: 0.02,
+    longitudeDelta: 0.02,
+  });
+  openReportDetails(requestedMarker.report);
+  navigation.setParams({ reportId: undefined });
+}, [commitMapRegion, markers, navigation, route?.params?.reportId]);
 
 // Load Photos into Existing Report
 useEffect(() => {
@@ -850,9 +759,6 @@ useEffect(() => {
 
 // Checks if User is Owner of Report
   const isOwner = canManageReport(selectedReport, currentUser);
-
-  const isGuest = Boolean(currentUser?.is_anonymous);
-  const accountStatus = isGuest ? 'Read-only access' : 'Signed in';
 
 // Links out to Patreon Account
 // const openPatreon = async () => {
@@ -1653,8 +1559,7 @@ const renderReportStep = () => {
               anchor={{ x: 0.5, y: 0.5 }}
               onPress={(e) => {
                 e?.stopPropagation?.();
-                setSelectedReport(m.report);
-                setDetailsOpen(true);
+                openReportDetails(m.report);
               }}
             >
               <View style={styles.reportMarkerHitLg}>
@@ -1677,97 +1582,16 @@ const renderReportStep = () => {
         )}
       </MapView>
 
-
-      {/* Account Button */}
-        <TouchableOpacity
-          style={styles.accountButton}
-          onPress={() => setAccountOpen(true)}
-          accessibilityRole="button"
-          accessibilityLabel="Open account menu"
-        >
-          <Ionicons name="person-circle-outline" size={25} color="#444" />
-        </TouchableOpacity>
-
-        <Modal
-          visible={accountOpen}
-          animationType="slide"
-          transparent
-          onRequestClose={() => {
-            if (!signingOut && !deletingAccount) setAccountOpen(false);
-          }}
-        >
-          <View style={styles.accountBackdrop}>
-            <TouchableOpacity
-              style={StyleSheet.absoluteFill}
-              activeOpacity={1}
-              accessible={false}
-              onPress={() => {
-                if (!signingOut && !deletingAccount) setAccountOpen(false);
-              }}
-            />
-            <View style={styles.accountSheet}>
-              <View style={styles.accountHandle} />
-              <View style={styles.accountHeadingRow}>
-                <View style={styles.accountIcon}>
-                  <Ionicons name={isGuest ? 'person-outline' : 'person-circle-outline'} size={28} color="#2F7D32" />
-                </View>
-                <View style={styles.accountCopy}>
-                  <Text style={styles.accountTitle}>{isGuest ? 'Guest mode' : 'Account'}</Text>
-                  <Text style={styles.accountStatus}>{accountStatus}</Text>
-                  {!isGuest && currentUser?.email ? (
-                    <Text style={styles.accountEmail} numberOfLines={1}>{currentUser.email}</Text>
-                  ) : null}
-                </View>
-                <TouchableOpacity
-                  style={[styles.accountCloseButton, (signingOut || deletingAccount) && { opacity: 0.5 }]}
-                  onPress={() => setAccountOpen(false)}
-                  disabled={signingOut || deletingAccount}
-                  accessibilityLabel="Close account menu"
-                >
-                  <Ionicons name="close" size={24} color="#555" />
-                </TouchableOpacity>
-              </View>
-
-              {isGuest ? (
-                <Text style={styles.accountGuestNote}>
-                  Guest mode is read-only. You can browse the map and open reports. Sign in with a permanent account to participate.
-                </Text>
-              ) : null}
-
-              <TouchableOpacity
-                style={[styles.accountSignOutButton, (signingOut || deletingAccount) && { opacity: 0.65 }]}
-                onPress={handleSignOut}
-                disabled={signingOut || deletingAccount}
-                accessibilityRole="button"
-                accessibilityLabel={signingOut ? 'Signing out' : 'Sign out'}
-              >
-                {signingOut ? (
-                  <ActivityIndicator size="small" color="#B42318" />
-                ) : (
-                  <Ionicons name="log-out-outline" size={21} color="#B42318" />
-                )}
-                <Text style={styles.accountSignOutText}>{signingOut ? 'Signing out…' : 'Sign out'}</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.accountDeleteButton, (signingOut || deletingAccount) && { opacity: 0.65 }]}
-                onPress={handleDeleteAccount}
-                disabled={signingOut || deletingAccount}
-                accessibilityRole="button"
-                accessibilityLabel={deletingAccount ? 'Deleting account' : 'Delete account'}
-              >
-                {deletingAccount ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Ionicons name="trash-outline" size={21} color="#FFFFFF" />
-                )}
-                <Text style={styles.accountDeleteText}>
-                  {deletingAccount ? 'Deleting account…' : 'Delete account'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
+      <TouchableOpacity
+        style={styles.searchAreaButton}
+        onPress={searchMapRegion}
+        activeOpacity={0.78}
+        accessibilityRole="button"
+        accessibilityLabel="Search this map area"
+        accessibilityHint="Updates the nearby report list for the visible map area"
+      >
+        <Text style={styles.searchAreaButtonText}>Search this area</Text>
+      </TouchableOpacity>
 
         {/* Support Button (Patreon) */}
         {/* <TouchableOpacity
@@ -1782,7 +1606,15 @@ const renderReportStep = () => {
 
       {/* Center Me Button */}
       <TouchableOpacity
-        style={styles.centerButton}
+        style={[
+          styles.centerButton,
+          {
+            bottom:
+              mapControlsBottom +
+              BOTTOM_NAV_METRICS.mapControlSize +
+              BOTTOM_NAV_METRICS.mapControlGap,
+          },
+        ]}
         onPress={centerOnUser}
         accessibilityRole="button"
         accessibilityLabel="Center map on your location"
@@ -1791,9 +1623,24 @@ const renderReportStep = () => {
       </TouchableOpacity>
 
       {/* Map Type Toggle Button */}
-      <TouchableOpacity style={styles.mapTypeButton} onPress={toggleMapType}>
+      <TouchableOpacity
+        style={[styles.mapTypeButton, { bottom: mapControlsBottom }]}
+        onPress={toggleMapType}
+        accessibilityRole="button"
+        accessibilityLabel="Change map style"
+      >
         <Ionicons name="layers-outline" size={32} color={getMapTypeColor()} />
       </TouchableOpacity>
+
+      <MapReportSheet
+        reports={reportsInSearchRegion}
+        origin={searchRegion}
+        onReportPress={openReportDetails}
+        bottomClearance={bottomNavClearance}
+        refreshing={reportsRefreshing}
+        onRefresh={() => refreshReports({ showRefresh: true })}
+        onExpandedChange={setMapSheetExpanded}
+      />
 
 {/* Multi-step Report Form */}
 <Modal
@@ -2431,13 +2278,7 @@ const renderReportStep = () => {
                         return;
                       }
 
-                      setMarkers((prev) =>
-                        prev.filter(
-                          (marker) =>
-                            marker.id !==
-                            selectedReport.id
-                        )
-                      );
+                      removeReport(selectedReport.id);
 
                       setDetailsOpen(false);
                       setSelectedReport(null);
@@ -3061,9 +2902,31 @@ wizardDotActive: {
     color: '#fff',
     fontWeight: '700',
   },
+  searchAreaButton: {
+    position: 'absolute',
+    top: 18,
+    alignSelf: 'center',
+    minHeight: 48,
+    paddingHorizontal: 24,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.12)',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.16,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  searchAreaButtonText: {
+    color: '#2F7D32',
+    fontSize: 16,
+    fontWeight: '800',
+  },
   centerButton: {
     position: 'absolute',
-    bottom: 130,
     right: 20,
     backgroundColor: '#fff',
     width: 56,
@@ -3081,7 +2944,6 @@ wizardDotActive: {
   },
   mapTypeButton: {
     position: 'absolute',
-    bottom: 60,
     right: 20,
     backgroundColor: '#fff',
     width: 56,
@@ -3263,126 +3125,9 @@ footerBar: {
   borderTopWidth: 1,
   borderColor: 'rgba(0,0,0,0.08)',
 }, 
-accountButton: {
-  position: 'absolute',
-  top: 30,
-  right: 15,
-  backgroundColor: '#fff',
-  width: 44,
-  height: 44,
-  borderRadius: 22,
-  alignItems: 'center',
-  justifyContent: 'center',
-  borderWidth: 1,
-  borderColor: 'rgba(0,0,0,0.15)',
-  shadowColor: '#000',
-  shadowOpacity: 0.15,
-  shadowRadius: 2,
-  shadowOffset: { width: 0, height: 1 },
-  elevation: 3,
-},
-accountBackdrop: {
-  flex: 1,
-  justifyContent: 'flex-end',
-  backgroundColor: 'rgba(0,0,0,0.34)',
-},
-accountSheet: {
-  backgroundColor: '#fff',
-  paddingHorizontal: 22,
-  paddingTop: 10,
-  paddingBottom: Platform.OS === 'ios' ? 34 : 22,
-  borderTopLeftRadius: 22,
-  borderTopRightRadius: 22,
-},
-accountHandle: {
-  width: 42,
-  height: 5,
-  borderRadius: 3,
-  backgroundColor: '#D3D7DB',
-  alignSelf: 'center',
-  marginBottom: 18,
-},
-accountHeadingRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-},
-accountIcon: {
-  width: 48,
-  height: 48,
-  borderRadius: 24,
-  alignItems: 'center',
-  justifyContent: 'center',
-  backgroundColor: '#EAF5EA',
-},
-accountCopy: {
-  flex: 1,
-  marginLeft: 12,
-},
-accountTitle: {
-  fontSize: 20,
-  fontWeight: '800',
-  color: '#333',
-},
-accountStatus: {
-  color: '#53606B',
-  fontSize: 14,
-  marginTop: 2,
-},
-accountEmail: {
-  color: '#737E87',
-  fontSize: 13,
-  marginTop: 2,
-},
-accountCloseButton: {
-  width: 44,
-  height: 44,
-  alignItems: 'center',
-  justifyContent: 'center',
-},
-accountGuestNote: {
-  marginTop: 16,
-  padding: 12,
-  borderRadius: 10,
-  backgroundColor: '#FFF7E6',
-  color: '#6F4B00',
-  fontSize: 13,
-  lineHeight: 19,
-},
-accountSignOutButton: {
-  minHeight: 50,
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: 8,
-  marginTop: 20,
-  borderRadius: 12,
-  borderWidth: 1,
-  borderColor: '#F1B8B4',
-  backgroundColor: '#FFF7F6',
-},
-accountSignOutText: {
-  color: '#B42318',
-  fontSize: 16,
-  fontWeight: '800',
-},
-accountDeleteButton: {
-  minHeight: 50,
-  marginTop: 12,
-  borderRadius: 12,
-  backgroundColor: '#B42318',
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: 8,
-},
-accountDeleteText: {
-  color: '#FFFFFF',
-  fontSize: 16,
-  fontWeight: '800',
-},
 supportButton: {
   position: "absolute",
-  top: 85, // <-- adjust if your accountButton top differs
+  top: 85,
   right: 14,
   backgroundColor: "rgba(255,255,255,0.95)",
   width: 44,

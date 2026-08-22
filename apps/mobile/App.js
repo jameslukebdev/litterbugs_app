@@ -6,9 +6,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, StyleSheet, Text, View, Image, TouchableOpacity, useWindowDimensions, Alert, Linking } from 'react-native';
 
 import AuthScreen from './AuthScreen';
-import MapScreen from './MapScreen';
+import AppTabs from './AppTabs';
 import ResetPasswordScreen from './ResetPasswordScreen';
 import { handleAuthCallbackUrl, PASSWORD_RECOVERY_PATH } from './lib/auth';
+import { SessionProvider } from './lib/session';
 import { supabase } from './lib/supabase';
 
 const Stack = createNativeStackNavigator();
@@ -178,49 +179,37 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator key={session ? 'signed-in' : 'signed-out'} screenOptions={{ headerShown: false }}>
-        {session ? (
-          /* -------------------------
-             Logged-in flow
-          ------------------------- */
-          <Stack.Screen
-            name="Map"
-            component={MapScreen}
-            options={{
-              headerShown: true,
-              headerTitle: () => (
-                <Image
-                  source={require('./assets/LB_Logo_PNG.png')}
-                  style={{ width: 120, height: 40, resizeMode: "contain" }}
-                />
-              ),
-              headerTitleAlign: "center",
-              headerBackTitleVisible: false,
-            }}
-          />
-        ) : (
-          /* -------------------------
-             Logged-out flow
-          ------------------------- */
-          <>
-            <Stack.Screen name="Home" component={HomeScreen} />
-            <Stack.Screen
-              name="Auth"
-              component={AuthScreen}
-              options={{
-                headerShown: true,
-                title: '',
-                headerShadowVisible: false,
-                headerTintColor: '#2F7D32',
-                headerStyle: { backgroundColor: '#F5F6F7' },
-                headerBackTitleVisible: false,
-              }}
-            />
-          </>
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+    <SessionProvider session={session}>
+      <NavigationContainer>
+        <Stack.Navigator key={session ? 'signed-in' : 'signed-out'} screenOptions={{ headerShown: false }}>
+          {session ? (
+            /* -------------------------
+               Logged-in flow
+            ------------------------- */
+            <Stack.Screen name="App" component={AppTabs} />
+          ) : (
+            /* -------------------------
+               Logged-out flow
+            ------------------------- */
+            <>
+              <Stack.Screen name="Home" component={HomeScreen} />
+              <Stack.Screen
+                name="Auth"
+                component={AuthScreen}
+                options={{
+                  headerShown: true,
+                  title: '',
+                  headerShadowVisible: false,
+                  headerTintColor: '#2F7D32',
+                  headerStyle: { backgroundColor: '#F5F6F7' },
+                  headerBackTitleVisible: false,
+                }}
+              />
+            </>
+          )}
+        </Stack.Navigator>
+      </NavigationContainer>
+    </SessionProvider>
   );
 }
 
