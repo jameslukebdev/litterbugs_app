@@ -4,8 +4,9 @@ This directory belongs only to project `mvaygkflcjswtwchflrk` in
 jameslukebdev's organization. Any future change to that organization or project
 requires explicit owner authorization.
 
-The committed migrations and `delete-account` Edge Function predate the web
-replacement and are preserved unchanged. The former website project
+The earlier migrations and Edge Functions predate the web replacement. Version
+2 profile work adds new migrations and extends `delete-account` while retaining
+the established report and photo behavior. The former website project
 `syvgqzfbhkczkwozvola` was permanently deleted on August 21, 2026 and is
 historical-only. Never attempt to connect or apply this directory to it.
 
@@ -67,6 +68,31 @@ The deployed account-deletion function has separately passed a live disposable
 Guest test: one object uploaded under the user's existing folder convention was
 removed, the deleted Auth identity no longer resolved, and the object was no
 longer downloadable. No report fixture was created by that test.
+
+## Version 2 profile foundation
+
+The hosted `profile_foundation` and `profile_foundation_advisor_indexes`
+migrations were applied on August 23, 2026. They create one public profile for
+each permanent Auth identity, preserve original Auth creation dates, detach
+legacy anonymous report ownership, relate reports to profiles, maintain a
+lifetime report counter, and add owner-only block and insert-only moderation
+tables. The new public `profile_avatars` bucket accepts one image of at most
+5 MB at `uid/avatar`; owner insert, select, update, and delete policies support
+Storage upserts.
+
+Post-deployment reconciliation found 30 permanent Auth identities, 30 profiles,
+zero anonymous profiles, zero anonymously owned reports, one retained owned
+report, and a matching lifetime-counter total of one. Read-only policy checks
+confirmed public profile reads, no client profile insert/delete or counter
+updates, no client moderation reads/status writes, private trigger isolation,
+and all avatar write policies. Security-advisor warnings related to anonymous
+Auth remain until the planned release cutover; write policies also require the
+permanent-user boundary. The updated `delete-account` function is active and
+removes the fixed profile-avatar path before deleting the identity.
+
+`tests/profile_foundation.sql` is a rollback-only disposable-database suite for
+profile provisioning and validation, lifetime counts, block/moderation RLS, and
+avatar paths. It must not be run directly against retained hosted data.
 
 A final hosted-data reconciliation on August 21, 2026 found four older
 anonymous, email-less QA identities from earlier acceptance work. They owned

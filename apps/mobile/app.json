@@ -34,7 +34,15 @@
     },
     "plugins": [
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Litterbugs uses your photos when you choose report or profile pictures.",
+          "cameraPermission": "Litterbugs uses your camera when you take report or profile pictures.",
+          "microphonePermission": false
+        }
+      ]
     ],
     "extra": {
       "eas": {

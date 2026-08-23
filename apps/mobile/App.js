@@ -1,42 +1,39 @@
-// App.js
 import { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ActivityIndicator, StyleSheet, Text, View, Image, TouchableOpacity, useWindowDimensions, Alert, Linking } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Linking,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
-import AuthScreen from './AuthScreen';
 import AppTabs from './AppTabs';
+import AuthScreen from './AuthScreen';
+import BlockedAccountsScreen from './BlockedAccountsScreen';
+import CompleteProfileScreen from './CompleteProfileScreen';
+import EditProfileScreen from './EditProfileScreen';
+import PublicProfileScreen from './PublicProfileScreen';
+import ReportUserScreen from './ReportUserScreen';
 import ResetPasswordScreen from './ResetPasswordScreen';
-import { handleAuthCallbackUrl, PASSWORD_RECOVERY_PATH } from './lib/auth';
+import { handleAuthCallbackUrl, PASSWORD_RECOVERY_PATH, signOut } from './lib/auth';
+import { ProfileProvider, useProfile } from './lib/profile';
+import { isPermanentUser } from './lib/reportAccess';
+import { ReportsProvider } from './lib/reports';
 import { SessionProvider } from './lib/session';
 import { supabase } from './lib/supabase';
 
 const Stack = createNativeStackNavigator();
 
-const PATREON_URL = "https://patreon.com/litterbugs?utm_medium=unknown&utm_source=join_link&utm_campaign=creatorshare_creator&utm_content=copyLink";
-
-
-const openPatreon = async () => {
-  try {
-    const supported = await Linking.canOpenURL(PATREON_URL);
-    if (!supported) {
-      Alert.alert("Can't open link", "Unable to open Patreon on this device.");
-      return;
-    }
-    await Linking.openURL(PATREON_URL);
-  } catch (e) {
-    console.log("Patreon link error:", e);
-    Alert.alert("Link error", "Something went wrong opening Patreon.");
-  }
-};
-/* -------------------------
-   Home / Welcome Screen
-------------------------- */
 function HomeScreen({ navigation }) {
   const { width, height } = useWindowDimensions();
-  const logoSize = Math.min(width * 0.5, height * 0.55, 640);
-
+  const logoSize = Math.min(width * 0.5, height * 0.45, 360);
 
   return (
     <View style={styles.container}>
@@ -45,40 +42,130 @@ function HomeScreen({ navigation }) {
         style={[styles.logo, { width: logoSize, height: logoSize }]}
         resizeMode="contain"
       />
-
       <Text style={styles.title}>Welcome to Litterbugs!</Text>
-      <Text style={styles.subtitle}>
-        Clean your community one report at a time
-      </Text>
+      <Text style={styles.subtitle}>Clean your community one report at a time</Text>
 
       <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate('Auth')}
+        style={styles.primaryButton}
+        onPress={() => navigation.navigate('App', { screen: 'Map' })}
         accessibilityRole="button"
-        accessibilityLabel="Get Started"
+        accessibilityLabel="Explore the Map"
       >
-        <Text style={styles.buttonText}>Get Started</Text>
+        <Text style={styles.primaryButtonText}>Explore the Map</Text>
       </TouchableOpacity>
 
-       {/* Support Litterbugs Button */}
-        <TouchableOpacity
-          style={styles.supportLitterbugsButton}
-          onPress={openPatreon}
-          accessibilityRole="button"
-          accessibilityLabel="Support Litterbugs on Patreon"
-        >
-          <Text style={styles.supportLitterbugsButtonText}>Support Litterbugs</Text>
-        </TouchableOpacity> 
-
-
+      <TouchableOpacity
+        style={styles.secondaryButton}
+        onPress={() => navigation.navigate('Auth')}
+        accessibilityRole="button"
+        accessibilityLabel="Sign in or create account"
+      >
+        <Text style={styles.secondaryButtonText}>Sign in or create account</Text>
+      </TouchableOpacity>
       <StatusBar hidden={false} />
     </View>
   );
 }
 
-/* -------------------------
-   App Root
-------------------------- */
+function LoadingScreen({ label = 'Loading Litterbugs' }) {
+  return (
+    <View style={styles.loading} accessibilityLabel={label}>
+      <ActivityIndicator size="large" color="#2F7D32" />
+    </View>
+  );
+}
+
+function ProfileLoadError() {
+  const { refreshProfile } = useProfile();
+  return (
+    <View style={styles.errorState}>
+      <Text style={styles.errorTitle}>We couldn’t load your profile</Text>
+      <Text style={styles.errorText}>Check your connection and try again.</Text>
+      <TouchableOpacity style={styles.primaryButton} onPress={refreshProfile}>
+        <Text style={styles.primaryButtonText}>Try again</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.textButton} onPress={signOut}>
+        <Text style={styles.textButtonText}>Sign out</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function AppNavigation({ session, passwordRecovery, onRecoveryComplete }) {
+  const { profile, loading } = useProfile();
+  const permanent = isPermanentUser(session?.user);
+
+  if (passwordRecovery && permanent) {
+    return (
+      <ResetPasswordScreen
+        onComplete={() => {
+          onRecoveryComplete();
+          Alert.alert('Password updated', 'Your new password is ready to use.');
+        }}
+      />
+    );
+  }
+
+  if (permanent && loading && !profile) return <LoadingScreen label="Loading profile" />;
+  if (permanent && !loading && !profile) return <ProfileLoadError />;
+
+  const initialRouteName = permanent
+    ? profile?.profile_completed_at ? 'App' : 'CompleteProfile'
+    : 'Home';
+
+  const headerOptions = {
+    headerShown: true,
+    headerShadowVisible: false,
+    headerTintColor: '#2F7D32',
+    headerStyle: { backgroundColor: '#FFFFFF' },
+    headerBackTitleVisible: false,
+    headerBackButtonDisplayMode: 'minimal',
+  };
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator
+        key={permanent ? 'permanent' : 'signed-out'}
+        initialRouteName={initialRouteName}
+        screenOptions={{ headerShown: false }}
+      >
+        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="App" component={AppTabs} />
+        <Stack.Screen
+          name="Auth"
+          component={AuthScreen}
+          options={{ ...headerOptions, title: '' }}
+        />
+        <Stack.Screen
+          name="CompleteProfile"
+          component={CompleteProfileScreen}
+          options={{ ...headerOptions, title: 'Complete your profile', headerBackVisible: false }}
+        />
+        <Stack.Screen
+          name="EditProfile"
+          component={EditProfileScreen}
+          options={{ ...headerOptions, title: 'Edit profile' }}
+        />
+        <Stack.Screen
+          name="PublicProfile"
+          component={PublicProfileScreen}
+          options={{ ...headerOptions, title: 'Profile' }}
+        />
+        <Stack.Screen
+          name="BlockedAccounts"
+          component={BlockedAccountsScreen}
+          options={{ ...headerOptions, title: 'Blocked accounts' }}
+        />
+        <Stack.Screen
+          name="ReportUser"
+          component={ReportUserScreen}
+          options={{ ...headerOptions, title: 'Report user', presentation: 'modal' }}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
+
 export default function App() {
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -87,10 +174,23 @@ export default function App() {
   useEffect(() => {
     let mounted = true;
 
+    const normalizeSession = (nextSession) => {
+      if (nextSession?.user?.is_anonymous === true) {
+        setSession(null);
+        setTimeout(() => {
+          supabase.auth.signOut({ scope: 'local' }).catch((error) => {
+            console.log('Anonymous session cleanup error:', error);
+          });
+        }, 0);
+        return;
+      }
+      setSession(nextSession);
+    };
+
     const { data: subscription } = supabase.auth.onAuthStateChange(
       (event, nextSession) => {
         if (!mounted) return;
-        setSession(nextSession);
+        normalizeSession(nextSession);
         if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
       }
     );
@@ -100,21 +200,21 @@ export default function App() {
       try {
         const result = await handleAuthCallbackUrl(url);
         if (
-          result.type === 'recovery' ||
-          (result.handled && url.includes(PASSWORD_RECOVERY_PATH))
+          result.type === 'recovery'
+          || (result.handled && url.includes(PASSWORD_RECOVERY_PATH))
         ) {
           setPasswordRecovery(true);
         }
       } catch (error) {
-        const errorMessage = error.message || '';
-        const cancelled = /cancel|denied|declined|access_denied/i.test(errorMessage);
-        const expired = /expired|otp_expired|invalid.*link|already.*used/i.test(errorMessage);
+        const message = error.message || '';
+        const cancelled = /cancel|denied|declined|access_denied/i.test(message);
+        const expired = /expired|otp_expired|invalid.*link|already.*used/i.test(message);
         Alert.alert(
           cancelled ? 'Sign in wasn’t completed' : 'This link is no longer valid',
           cancelled
             ? 'No changes were made. You can try again whenever you’re ready.'
             : expired
-              ? 'This link may have expired or already been used. Return to Litterbugs and request a new link.'
+              ? 'This link may have expired or already been used. Request a new link.'
               : 'Return to Litterbugs and request a new link.'
         );
       }
@@ -132,7 +232,7 @@ export default function App() {
 
       if (!mounted) return;
       if (sessionResult.status === 'fulfilled') {
-        setSession(sessionResult.value.data.session);
+        normalizeSession(sessionResult.value.data.session);
       } else {
         console.log('Session restore error:', sessionResult.reason);
       }
@@ -158,64 +258,25 @@ export default function App() {
     };
   }, []);
 
-  // Don’t render navigation until session is known.
-  if (authLoading) {
-    return (
-      <View style={styles.authLoading} accessibilityLabel="Loading Litterbugs">
-        <ActivityIndicator size="large" color="#2F7D32" />
-      </View>
-    );
-  }
-
-  if (session && passwordRecovery) {
-    return (
-      <ResetPasswordScreen
-        onComplete={() => {
-          setPasswordRecovery(false);
-          Alert.alert('Password updated', 'Your new password is ready to use.');
-        }}
-      />
-    );
-  }
+  if (authLoading) return <LoadingScreen />;
 
   return (
     <SessionProvider session={session}>
-      <NavigationContainer>
-        <Stack.Navigator key={session ? 'signed-in' : 'signed-out'} screenOptions={{ headerShown: false }}>
-          {session ? (
-            /* -------------------------
-               Logged-in flow
-            ------------------------- */
-            <Stack.Screen name="App" component={AppTabs} />
-          ) : (
-            /* -------------------------
-               Logged-out flow
-            ------------------------- */
-            <>
-              <Stack.Screen name="Home" component={HomeScreen} />
-              <Stack.Screen
-                name="Auth"
-                component={AuthScreen}
-                options={{
-                  headerShown: true,
-                  title: '',
-                  headerShadowVisible: false,
-                  headerTintColor: '#2F7D32',
-                  headerStyle: { backgroundColor: '#F5F6F7' },
-                  headerBackTitleVisible: false,
-                }}
-              />
-            </>
-          )}
-        </Stack.Navigator>
-      </NavigationContainer>
+      <ProfileProvider>
+        <ReportsProvider>
+          <AppNavigation
+            session={session}
+            passwordRecovery={passwordRecovery}
+            onRecoveryComplete={() => setPasswordRecovery(false)}
+          />
+        </ReportsProvider>
+      </ProfileProvider>
     </SessionProvider>
   );
 }
 
-
 const styles = StyleSheet.create({
-  authLoading: {
+  loading: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -223,63 +284,54 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#F5F6F7',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 10,
+    paddingHorizontal: 24,
+    backgroundColor: '#F5F6F7',
   },
-  logo: { marginBottom: 15, },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
+  logo: { marginBottom: 12 },
+  title: { color: '#252A2E', fontSize: 28, fontWeight: '800', textAlign: 'center' },
   subtitle: {
+    maxWidth: 330,
+    marginTop: 10,
+    marginBottom: 34,
+    color: '#667078',
     fontSize: 16,
-    color: '#666',
+    lineHeight: 23,
     textAlign: 'center',
-    paddingHorizontal: 40,
-    marginBottom: 40,
   },
-  button: {
-    backgroundColor: '#2E7D32', // accessible Litterbugs green
-    paddingVertical: 16,
-    paddingHorizontal: 48,
+  primaryButton: {
+    width: '100%',
+    maxWidth: 390,
+    minHeight: 54,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3.84,
-    elevation: 5,
+    backgroundColor: '#2E7D32',
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  supportLitterbugsButton: {
+  primaryButtonText: { color: '#FFFFFF', fontSize: 17, fontWeight: '800' },
+  secondaryButton: {
+    width: '100%',
+    maxWidth: 390,
+    minHeight: 52,
     marginTop: 12,
-    backgroundColor: "#E57373", // matches your app’s red family
-    paddingVertical: 16,
-    paddingHorizontal: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#2E7D32',
     borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3.84,
-    elevation: 5,
-
+    backgroundColor: '#FFFFFF',
   },
-  
-  supportLitterbugsButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
+  secondaryButtonText: { color: '#2E7D32', fontSize: 16, fontWeight: '800' },
+  errorState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+    backgroundColor: '#F5F6F7',
   },
-  
+  errorTitle: { color: '#252A2E', fontSize: 22, fontWeight: '800', textAlign: 'center' },
+  errorText: { marginVertical: 10, color: '#667078', fontSize: 15, textAlign: 'center' },
+  textButton: { minHeight: 48, justifyContent: 'center', marginTop: 8 },
+  textButtonText: { color: '#2E7D32', fontSize: 15, fontWeight: '800' },
 });

@@ -3,7 +3,7 @@ import { createContext, useContext, useMemo } from 'react';
 const SessionContext = createContext({
   session: null,
   user: null,
-  isGuest: false,
+  isPermanentUser: false,
 });
 
 export function SessionProvider({ session, children }) {
@@ -13,7 +13,7 @@ export function SessionProvider({ session, children }) {
     return {
       session,
       user,
-      isGuest: Boolean(user?.is_anonymous),
+      isPermanentUser: Boolean(user?.id && user.is_anonymous !== true),
     };
   }, [session]);
 

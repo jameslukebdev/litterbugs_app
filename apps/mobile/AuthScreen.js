@@ -12,7 +12,6 @@ import {
   resendSignupVerification, sendPasswordRecovery, signInWithEmail,
   signInWithProvider, signUpWithEmail,
 } from './lib/auth';
-import { supabase } from './lib/supabase';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -192,25 +191,6 @@ export default function AuthScreen() {
     }
   };
 
-  const handleGuestSignIn = async () => {
-    if (loadingProvider) return;
-
-    try {
-      setLoadingProvider('guest');
-      const { error } = await supabase.auth.signInAnonymously();
-      if (error) throw error;
-      Alert.alert(
-        'Guest mode',
-        'Guest mode is read-only. You can browse the map and open reports, but creating, editing, deleting, and participating in cleanups require a permanent account.',
-        [{ text: 'Continue' }]
-      );
-    } catch (error) {
-      Alert.alert('Guest mode unavailable', 'Check your connection and try again.');
-    } finally {
-      setLoadingProvider(null);
-    }
-  };
-
   const renderProviderButton = ({ id, label, icon, image }) => {
     const loading = loadingProvider === id;
     const disabled = Boolean(loadingProvider);
@@ -274,9 +254,6 @@ export default function AuthScreen() {
           <TouchableOpacity style={[styles.emailButton, loadingProvider && styles.disabled]} onPress={openEmail} disabled={Boolean(loadingProvider)} accessibilityRole="button" accessibilityLabel="Continue with Email">
             <Ionicons name="mail-outline" size={21} color="#fff" style={styles.buttonIcon} />
             <Text style={styles.emailText}>Continue with Email</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.guestLink, loadingProvider && styles.disabled]} onPress={handleGuestSignIn} disabled={Boolean(loadingProvider)} accessibilityRole="button" accessibilityLabel="Continue as Guest">
-            {loadingProvider === 'guest' ? <ActivityIndicator color="#555" /> : <Text style={styles.guestText}>Continue as Guest</Text>}
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -437,8 +414,6 @@ const styles = StyleSheet.create({
   dividerText: { marginHorizontal: 12, color: '#777', fontSize: 13 },
   emailButton: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#E57373', borderRadius: 14, marginTop: 7 },
   emailText: { color: '#fff', fontSize: 16, fontWeight: '800' },
-  guestLink: { minHeight: 48, alignItems: 'center', justifyContent: 'center', marginTop: 5 },
-  guestText: { color: '#4F5B66', fontSize: 15, fontWeight: '700', textDecorationLine: 'underline' },
   disabled: { opacity: 0.58 },
 });
 

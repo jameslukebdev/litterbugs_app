@@ -18,21 +18,139 @@ export type Database = {
     Tables: {
       profiles: {
         Row: {
+          avatar_path: string | null
+          bio: string | null
           created_at: string
           display_name: string | null
           id: string
+          location: string | null
+          profile_completed_at: string | null
+          provider_avatar_url: string | null
+          reports_created_count: number
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          avatar_path?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          location?: string | null
+          profile_completed_at?: string | null
+          provider_avatar_url?: string | null
+          reports_created_count?: number
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          avatar_path?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          location?: string | null
+          profile_completed_at?: string | null
+          provider_avatar_url?: string | null
+          reports_created_count?: number
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      user_blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_blocks_blocked_id_fkey"
+            columns: ["blocked_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_blocks_blocker_id_fkey"
+            columns: ["blocker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_moderation_reports: {
+        Row: {
+          created_at: string
+          details: string | null
+          id: string
+          reason: string
+          reported_user_id: string
+          reporter_id: string
+          resolution: string | null
+          reviewed_at: string | null
+          source_report_id: string | null
+          status: string
         }
         Insert: {
           created_at?: string
-          display_name?: string | null
+          details?: string | null
           id?: string
+          reason: string
+          reported_user_id: string
+          reporter_id: string
+          resolution?: string | null
+          reviewed_at?: string | null
+          source_report_id?: string | null
+          status?: string
         }
         Update: {
           created_at?: string
-          display_name?: string | null
+          details?: string | null
           id?: string
+          reason?: string
+          reported_user_id?: string
+          reporter_id?: string
+          resolution?: string | null
+          reviewed_at?: string | null
+          source_report_id?: string | null
+          status?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_moderation_reports_reported_user_id_fkey"
+            columns: ["reported_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_moderation_reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_moderation_reports_source_report_id_fkey"
+            columns: ["source_report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reports: {
         Row: {
@@ -83,7 +201,15 @@ export type Database = {
           types?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "reports_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -91,6 +217,7 @@ export type Database = {
     }
     Functions: {
       delete_expired_reports: { Args: never; Returns: undefined }
+      is_permanent_user: { Args: never; Returns: boolean }
       verify_report_photo_cleanup_webhook: {
         Args: { candidate_secret: string }
         Returns: boolean
@@ -231,3 +358,7 @@ export const Constants = {
 export type Report = Tables<'reports'>
 export type ReportInsert = TablesInsert<'reports'>
 export type ReportUpdate = TablesUpdate<'reports'>
+export type Profile = Tables<'profiles'>
+export type ProfileUpdate = TablesUpdate<'profiles'>
+export type UserBlock = Tables<'user_blocks'>
+export type UserModerationReport = Tables<'user_moderation_reports'>

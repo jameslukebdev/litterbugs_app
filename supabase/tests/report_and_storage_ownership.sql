@@ -4,15 +4,11 @@
 
 begin;
 
-insert into auth.users (id)
+insert into auth.users (id, is_anonymous)
 values
-  ('11111111-1111-4111-8111-111111111111'),
-  ('22222222-2222-4222-8222-222222222222'),
-  ('33333333-3333-4333-8333-333333333333');
-
-update auth.users
-set is_anonymous = true
-where id = '33333333-3333-4333-8333-333333333333';
+  ('11111111-1111-4111-8111-111111111111', false),
+  ('22222222-2222-4222-8222-222222222222', false),
+  ('33333333-3333-4333-8333-333333333333', true);
 
 insert into public.reports (id, user_id, title, latitude, longitude)
 values (
@@ -23,7 +19,7 @@ values (
   -78
 ), (
   '33333333-3333-4333-8333-333333333334',
-  '33333333-3333-4333-8333-333333333333',
+  null,
   'Anonymous user report',
   35,
   -78

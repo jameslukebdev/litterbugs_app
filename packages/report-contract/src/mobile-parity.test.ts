@@ -18,6 +18,10 @@ const mobileSource = readFileSync(
   new URL('../../../apps/mobile/MapScreen.js', import.meta.url),
   'utf8',
 );
+const mobileReportsSource = readFileSync(
+  new URL('../../../apps/mobile/lib/reports.js', import.meta.url),
+  'utf8',
+);
 
 function block(pattern: RegExp): string {
   const match = mobileSource.match(pattern);
@@ -34,7 +38,11 @@ function quotedValues(source: string, key?: string): string[] {
 
 describe('mobile report parity', () => {
   it('keeps the web fallback map center aligned with mobile', () => {
-    const fallbackBlock = block(/const FALLBACK_REGION = \{([\s\S]*?)\};/);
+    const fallbackMatch = mobileReportsSource.match(
+      /export const DEFAULT_MAP_REGION = Object\.freeze\(\{([\s\S]*?)\}\);/,
+    );
+    expect(fallbackMatch).not.toBeNull();
+    const fallbackBlock = fallbackMatch?.[1] ?? '';
     const latitude = Number(fallbackBlock.match(/latitude:\s*(-?\d+(?:\.\d+)?)/)?.[1]);
     const longitude = Number(fallbackBlock.match(/longitude:\s*(-?\d+(?:\.\d+)?)/)?.[1]);
 

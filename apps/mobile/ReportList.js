@@ -117,6 +117,7 @@ export function ReportListItem({ report, origin, onPress }) {
     `${severity.label} severity`,
     metadata,
     getLitterSummary(report),
+    `Reported by ${report?.reporter?.display_name || 'Reporter unavailable'}`,
   ].filter(Boolean).join(', ');
 
   return (
@@ -148,6 +149,9 @@ export function ReportListItem({ report, origin, onPress }) {
 
         <Text style={styles.types} numberOfLines={1}>
           {getLitterSummary(report)}
+        </Text>
+        <Text style={styles.reporter} numberOfLines={1}>
+          By {report?.reporter?.display_name || 'Reporter unavailable'}
         </Text>
       </View>
 
@@ -258,6 +262,12 @@ const styles = StyleSheet.create({
     color: '#7A8187',
     fontSize: 14,
     lineHeight: 19,
+  },
+  reporter: {
+    marginTop: 3,
+    color: '#657169',
+    fontSize: 13,
+    fontWeight: '600',
   },
   divider: {
     height: StyleSheet.hairlineWidth,

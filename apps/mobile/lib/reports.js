@@ -9,6 +9,7 @@ import {
 } from 'react';
 
 import { supabase } from './supabase';
+import { useProfile } from './profile';
 
 export const DEFAULT_MAP_REGION = Object.freeze({
   latitude: 35.6009,
@@ -80,13 +81,14 @@ function sortReportsByDistance(reports, origin) {
 }
 
 export function ReportsProvider({ children }) {
-  const [reports, setReports] = useState([]);
+  const [allReports, setAllReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [mapRegion, setMapRegion] = useState(DEFAULT_MAP_REGION);
   const [searchRegion, setSearchRegion] = useState(DEFAULT_MAP_REGION);
   const photoUrlCache = useRef(new Map());
+  const { blockedIds } = useProfile();
 
   const refreshReports = useCallback(async ({ showRefresh = false } = {}) => {
     if (showRefresh) setRefreshing(true);
@@ -95,14 +97,24 @@ export function ReportsProvider({ children }) {
     const nowIso = new Date().toISOString();
     const { data, error: reportsError } = await supabase
       .from('reports')
-      .select('*')
+      .select(`
+        *,
+        reporter:profiles!reports_user_id_fkey(
+          id,
+          display_name,
+          username,
+          provider_avatar_url,
+          avatar_path,
+          updated_at
+        )
+      `)
       .gt('expires_at', nowIso);
 
     if (reportsError) {
       console.log('loadReports error:', reportsError);
       setError('Reports could not be loaded. Pull to try again.');
     } else {
-      setReports(data ?? []);
+      setAllReports(data ?? []);
       setError(null);
     }
 
@@ -113,6 +125,12 @@ export function ReportsProvider({ children }) {
   useEffect(() => {
     refreshReports();
   }, [refreshReports]);
+
+  const reports = useMemo(() => {
+    if (blockedIds.length === 0) return allReports;
+    const blocked = new Set(blockedIds);
+    return allReports.filter((report) => !blocked.has(report.user_id));
+  }, [allReports, blockedIds]);
 
   const markers = useMemo(
     () => reports
@@ -151,7 +169,7 @@ export function ReportsProvider({ children }) {
   const upsertReport = useCallback((nextReport) => {
     if (!nextReport?.id) return;
 
-    setReports((current) => {
+    setAllReports((current) => {
       const reportIndex = current.findIndex(({ id }) => id === nextReport.id);
       if (reportIndex === -1) return [...current, nextReport];
 
@@ -162,7 +180,7 @@ export function ReportsProvider({ children }) {
   }, []);
 
   const removeReport = useCallback((reportId) => {
-    setReports((current) => current.filter(({ id }) => id !== reportId));
+    setAllReports((current) => current.filter(({ id }) => id !== reportId));
   }, []);
 
   const getReportPhotoUrl = useCallback(async (path) => {

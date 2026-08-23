@@ -6,7 +6,8 @@ Litterbugs is a community-driven mobile app that allows users to report, view, a
 - 📍 Map-based litter reporting
 - 📸 Photo uploads
 - ⏱️ Auto-expiring reports
-- 🔐 Guest + email authentication
+- 🔐 Email, Google, and Facebook authentication with persistent profiles
+- 👤 Public profiles, report attribution, blocking, and user reporting
 - 🧹 Community cleanup workflow (planned)
 
 ## Tech Stack
@@ -16,7 +17,7 @@ Litterbugs is a community-driven mobile app that allows users to report, view, a
 - Expo Maps
 
 ## Status
-🚧 Version 1 — in testing
+🚧 Version 2 — in testing
 
 ## Litterbugs Privacy Policy
 
@@ -30,7 +31,7 @@ Photos and location data related to litter reports you submit
 
 This information is used solely to operate the app and improve community cleanup efforts. Litterbugs does not sell personal data or use it for advertising.
 
-You may use the app as a guest with limited features. You can delete your account or request data removal at any time.
+You may browse public reports and profiles without signing in. A permanent account is required to submit reports. You can delete your account or request data removal at any time.
 
 If you have questions about privacy, please contact:
 jameslukeb.evj@gmail.com

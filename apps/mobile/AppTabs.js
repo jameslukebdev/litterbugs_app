@@ -5,7 +5,6 @@ import FloatingBottomTabBar from './FloatingBottomTabBar';
 import MapScreen from './MapScreen';
 import ProfileScreen from './ProfileScreen';
 import ReportsScreen from './ReportsScreen';
-import { ReportsProvider } from './lib/reports';
 
 const Tab = createBottomTabNavigator();
 
@@ -21,8 +20,7 @@ function MapHeaderLogo() {
 
 export default function AppTabs() {
   return (
-    <ReportsProvider>
-      <Tab.Navigator
+    <Tab.Navigator
         initialRouteName="Map"
         backBehavior="initialRoute"
         tabBar={(props) => <FloatingBottomTabBar {...props} />}
@@ -63,8 +61,7 @@ export default function AppTabs() {
             tabBarAccessibilityLabel: 'Profile',
           }}
         />
-      </Tab.Navigator>
-    </ReportsProvider>
+    </Tab.Navigator>
   );
 }
 

@@ -34,7 +34,18 @@ describe('mobile configuration non-regression', () => {
         },
       },
     });
-    expect(appJson.plugins).toEqual(['expo-secure-store', 'expo-web-browser']);
+    expect(appJson.plugins).toEqual([
+      'expo-secure-store',
+      'expo-web-browser',
+      [
+        'expo-image-picker',
+        {
+          photosPermission: 'Litterbugs uses your photos when you choose report or profile pictures.',
+          cameraPermission: 'Litterbugs uses your camera when you take report or profile pictures.',
+          microphonePermission: false,
+        },
+      ],
+    ]);
   });
 
   it('keeps every existing build profile and environment mapping unchanged', () => {

@@ -31,12 +31,14 @@ import { BOTTOM_NAV_METRICS, getBottomNavClearance } from './lib/navigationLayou
 import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
 import MapReportSheet, { getMapReportSheetMetrics } from './MapReportSheet';
+import ReporterIdentity from './ReporterIdentity';
+import { useProfile } from './lib/profile';
 import * as FileSystem from 'expo-file-system/legacy';
 
 const showPermanentAccountRequired = () => {
   Alert.alert(
     'Account required',
-    'Guest mode is read-only. Sign out and use email, Google, or Facebook to create and manage reports.'
+    'Sign in with email, Google, or Facebook to create and manage reports.'
   );
 };
 
@@ -81,6 +83,14 @@ export default function MapScreen({ route, navigation }) {
   // Report detail photo carousel
   const [reportPhotoIndex, setReportPhotoIndex] = useState(0);
   const { user: currentUser } = useSession();
+  const {
+    profile: currentProfile,
+    blockedIds,
+    pendingReportCoordinate,
+    setPendingReportCoordinate,
+    consumePendingReportCoordinate,
+    refreshProfile,
+  } = useProfile();
   const {
     markers,
     reportsInSearchRegion,
@@ -290,14 +300,7 @@ const getDistanceMiles = (pointA, pointB) => {
 
 // Pressing Map opens Litter Form
 // Reports can only be created near the user's current GPS location
-const onMapPress = async (e) => {
-  if (!isPermanentUser(currentUser)) {
-    showPermanentAccountRequired();
-    return;
-  }
-
-  const coord = e.nativeEvent.coordinate;
-
+const beginReportAtCoordinate = async (coord) => {
   try {
     // Check whether location permission is available
     let { status } = await Location.getForegroundPermissionsAsync();
@@ -364,6 +367,27 @@ const onMapPress = async (e) => {
     );
   }
 };
+
+const onMapPress = (e) => {
+  const coord = e.nativeEvent.coordinate;
+  if (!isPermanentUser(currentUser)) {
+    setPendingReportCoordinate(coord);
+    navigation.getParent()?.navigate('Auth');
+    return;
+  }
+
+  beginReportAtCoordinate(coord);
+};
+
+useEffect(() => {
+  if (!currentUserId || !pendingReportCoordinate) return;
+  const coordinate = consumePendingReportCoordinate();
+  if (coordinate) beginReportAtCoordinate(coordinate);
+}, [currentUserId, pendingReportCoordinate]);
+
+useEffect(() => navigation.addListener('focus', () => {
+  if (!isPermanentUser(currentUser)) setPendingReportCoordinate(null);
+}), [currentUser, navigation, setPendingReportCoordinate]);
 
 
 // Save Report Function
@@ -446,7 +470,8 @@ const onMapPress = async (e) => {
         data.photo_paths = photoPaths;
       }
   
-      upsertReport(data);
+      upsertReport({ ...data, reporter: data.reporter || currentProfile });
+      if (!isEditing) await refreshProfile();
   
       setDraftCoord(null);
       setFormOpen(false);
@@ -711,6 +736,13 @@ const openReportDetails = (report) => {
   setSelectedReport(report);
   setDetailsOpen(true);
 };
+
+useEffect(() => {
+  if (selectedReport?.user_id && blockedIds.includes(selectedReport.user_id)) {
+    setDetailsOpen(false);
+    setSelectedReport(null);
+  }
+}, [blockedIds, selectedReport?.user_id]);
 
 useEffect(() => {
   const requestedReportId = route?.params?.reportId;
@@ -1837,11 +1869,20 @@ const renderReportStep = () => {
 
         <View style={styles.reportPostHeader}>
 
-          {/*
-            Future profile integration:
-            reporter avatar / display name can eventually
-            be inserted here without restructuring the report.
-          */}
+          <ReporterIdentity
+            profile={selectedReport?.reporter}
+            onPress={selectedReport?.reporter?.id ? () => {
+              setDetailsOpen(false);
+              if (selectedReport.reporter.id === currentUserId) {
+                navigation.navigate('Profile');
+              } else {
+                navigation.getParent()?.navigate('PublicProfile', {
+                  profileId: selectedReport.reporter.id,
+                  sourceReportId: selectedReport.id,
+                });
+              }
+            } : undefined}
+          />
 
           <Text style={styles.reportPostTitle}>
             {selectedReport?.title || 'Litter Report'}
@@ -3174,6 +3215,7 @@ reportPostHeader: {
 },
 
 reportPostTitle: {
+  marginTop: 14,
   fontSize: 30,
   lineHeight: 36,
   fontWeight: '800',

@@ -110,6 +110,12 @@ Deno.serve(async (request: Request) => {
       .filter((path) => typeof path === "string" && path.startsWith(userPrefix));
     await removeInChunks(admin.storage, photoPaths);
 
+    const avatarPath = `${user.id}/avatar`;
+    const { error: avatarError } = await admin.storage
+      .from("profile_avatars")
+      .remove([avatarPath]);
+    if (avatarError) throw avatarError;
+
     const { count: anonymizedCount, error: anonymizeError } = await admin
       .from("reports")
       .update({
@@ -139,6 +145,7 @@ Deno.serve(async (request: Request) => {
       deleted: true,
       anonymizedReports: anonymizedCount ?? 0,
       removedPhotos: photoPaths.length,
+      removedProfileAvatar: true,
     });
   } catch (error) {
     console.error("Account deletion failed", error);
