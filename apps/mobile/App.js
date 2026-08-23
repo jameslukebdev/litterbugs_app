@@ -123,7 +123,7 @@ function AppNavigation({ session, passwordRecovery, onRecoveryComplete }) {
   };
 
   return (
-    <NavigationContainer>
+    <NavigationContainer key={permanent ? 'permanent-navigation' : 'signed-out-navigation'}>
       <Stack.Navigator
         key={permanent ? 'permanent' : 'signed-out'}
         initialRouteName={initialRouteName}

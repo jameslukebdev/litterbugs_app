@@ -88,7 +88,11 @@ export default function PublicProfileScreen({ navigation, route }) {
           sourceReportId,
         }),
       },
-      { text: 'Block User', style: 'destructive', onPress: confirmBlock },
+      {
+        text: 'Block User',
+        style: 'destructive',
+        onPress: () => setTimeout(confirmBlock, 250),
+      },
       { text: 'Cancel', style: 'cancel' },
     ]);
   };
