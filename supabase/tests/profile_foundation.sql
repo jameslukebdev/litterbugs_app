@@ -28,6 +28,12 @@ insert into auth.users (
   true,
   '{}',
   now()
+), (
+  'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+  'profile-email@example.com',
+  false,
+  '{}',
+  '2026-03-04T05:06:07Z'
 );
 
 do $$
@@ -37,12 +43,15 @@ declare
   seeded_name text;
   seeded_avatar text;
   seeded_created_at timestamptz;
+  email_display_name text;
+  email_completed_at timestamptz;
 begin
   select count(*) into permanent_profiles
   from public.profiles
   where id in (
     'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
-    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    'dddddddd-dddd-4ddd-8ddd-dddddddddddd'
   );
 
   select count(*) into anonymous_profiles
@@ -54,7 +63,12 @@ begin
   from public.profiles
   where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
-  if permanent_profiles <> 2 then
+  select display_name, profile_completed_at
+  into email_display_name, email_completed_at
+  from public.profiles
+  where id = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+
+  if permanent_profiles <> 3 then
     raise exception 'Permanent users did not receive one profile each';
   end if;
   if anonymous_profiles <> 0 then
@@ -65,6 +79,9 @@ begin
   end if;
   if seeded_created_at <> '2026-01-02T03:04:05Z'::timestamptz then
     raise exception 'Auth creation date was not preserved';
+  end if;
+  if email_display_name is not null or email_completed_at is not null then
+    raise exception 'Metadata-free email profile was incorrectly completed';
   end if;
 end;
 $$;
@@ -155,6 +172,38 @@ begin
   end;
 end;
 $$;
+
+reset role;
+
+update auth.users
+set raw_user_meta_data = '{"full_name":"Provider Reset"}'
+where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+
+do $$
+declare
+  current_display_name text;
+begin
+  select display_name into current_display_name
+  from public.profiles
+  where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+
+  if current_display_name <> 'Updated Profile' then
+    raise exception 'Later provider metadata overwrote the Litterbugs profile';
+  end if;
+end;
+$$;
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  true
+);
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","is_anonymous":false}',
+  true
+);
 
 insert into public.reports (
   id,

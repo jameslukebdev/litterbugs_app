@@ -20,6 +20,7 @@ import {
   uploadProfileAvatar,
 } from './lib/profileAvatar';
 import { validateProfileDraft } from './lib/profileValidation';
+import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
 
 function FieldError({ children }) {
@@ -29,6 +30,7 @@ function FieldError({ children }) {
 export default function EditProfileScreen({ navigation }) {
   const { user } = useSession();
   const { profile, updateProfile } = useProfile();
+  const { refreshReports } = useReports();
   const [displayName, setDisplayName] = useState(profile?.display_name || '');
   const [username, setUsername] = useState(profile?.username || '');
   const [bio, setBio] = useState(profile?.bio || '');
@@ -54,6 +56,7 @@ export default function EditProfileScreen({ navigation }) {
       if (avatarAsset) avatarPath = await uploadProfileAvatar(user.id, avatarAsset);
 
       await updateProfile({ ...validation.values, avatar_path: avatarPath });
+      await refreshReports();
       navigation.goBack();
     } catch (saveError) {
       console.log('Profile save error:', saveError);
@@ -95,34 +98,34 @@ export default function EditProfileScreen({ navigation }) {
         </TouchableOpacity>
 
         <Text style={styles.label}>Display name</Text>
-        <TextInput value={displayName} onChangeText={setField(setDisplayName, 'displayName')} maxLength={60} autoCapitalize="words" style={[styles.input, errors.displayName && styles.inputError]} />
+        <TextInput value={displayName} onChangeText={setField(setDisplayName, 'displayName')} maxLength={60} autoCapitalize="words" style={[styles.input, errors.displayName && styles.inputError]} accessibilityLabel="Display name" />
         <Text style={styles.counter}>{displayName.length}/60</Text>
         <FieldError>{errors.displayName}</FieldError>
 
         <Text style={styles.label}>Username <Text style={styles.optional}>(optional)</Text></Text>
         <View style={[styles.usernameRow, errors.username && styles.inputError]}>
           <Text style={styles.at}>@</Text>
-          <TextInput value={username} onChangeText={setField(setUsername, 'username')} maxLength={30} autoCapitalize="none" autoCorrect={false} style={styles.usernameInput} placeholder="cleanup.friend" />
+          <TextInput value={username} onChangeText={setField(setUsername, 'username')} maxLength={30} autoCapitalize="none" autoCorrect={false} style={styles.usernameInput} placeholder="cleanup.friend" accessibilityLabel="Username" />
         </View>
         <Text style={styles.counter}>{username.length}/30</Text>
         <FieldError>{errors.username}</FieldError>
 
         <Text style={styles.label}>Bio <Text style={styles.optional}>(optional)</Text></Text>
-        <TextInput value={bio} onChangeText={setField(setBio, 'bio')} maxLength={160} multiline textAlignVertical="top" style={[styles.input, styles.multiline, errors.bio && styles.inputError]} placeholder="Tell your community a little about yourself." />
+        <TextInput value={bio} onChangeText={setField(setBio, 'bio')} maxLength={160} multiline textAlignVertical="top" style={[styles.input, styles.multiline, errors.bio && styles.inputError]} placeholder="Tell your community a little about yourself." accessibilityLabel="Bio" />
         <Text style={styles.counter}>{bio.length}/160</Text>
         <FieldError>{errors.bio}</FieldError>
 
         <Text style={styles.label}>Location <Text style={styles.optional}>(optional)</Text></Text>
-        <TextInput value={location} onChangeText={setField(setLocation, 'location')} maxLength={80} style={[styles.input, errors.location && styles.inputError]} placeholder="Asheville, NC" />
+        <TextInput value={location} onChangeText={setField(setLocation, 'location')} maxLength={80} style={[styles.input, errors.location && styles.inputError]} placeholder="Asheville, NC" accessibilityLabel="Location" />
         <Text style={styles.helper}>This is public. Use a city or region, not a street address.</Text>
         <Text style={styles.counter}>{location.length}/80</Text>
         <FieldError>{errors.location}</FieldError>
 
         <View style={styles.actions}>
-          <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.goBack()} disabled={saving}>
+          <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.goBack()} disabled={saving} accessibilityRole="button" accessibilityLabel="Cancel profile changes">
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.saveButton, saving && styles.disabled]} onPress={save} disabled={saving} accessibilityState={{ busy: saving }}>
+          <TouchableOpacity style={[styles.saveButton, saving && styles.disabled]} onPress={save} disabled={saving} accessibilityRole="button" accessibilityLabel="Save profile" accessibilityState={{ busy: saving }}>
             {saving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.saveText}>Save</Text>}
           </TouchableOpacity>
         </View>

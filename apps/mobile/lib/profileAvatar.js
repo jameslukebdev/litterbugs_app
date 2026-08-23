@@ -5,6 +5,13 @@ import * as ImagePicker from 'expo-image-picker';
 import { supabase } from './supabase';
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+const ALLOWED_AVATAR_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+]);
 
 const base64ToUint8Array = (base64) => {
   const binary = globalThis.atob
@@ -93,10 +100,16 @@ export const uploadProfileAvatar = async (userId, asset) => {
     encoding: 'base64',
   });
   const bytes = base64ToUint8Array(base64);
-  const contentType = asset.mimeType
+  const detectedContentType = asset.mimeType
     || (Platform.OS === 'ios' && /\.hei[cf]$/i.test(asset.uri)
       ? 'image/heic'
       : 'image/jpeg');
+  const contentType = detectedContentType === 'image/jpg'
+    ? 'image/jpeg'
+    : detectedContentType.toLowerCase();
+  if (!ALLOWED_AVATAR_MIME_TYPES.has(contentType)) {
+    throw new Error('Choose a JPEG, PNG, WebP, HEIC, or HEIF image.');
+  }
   const path = `${userId}/avatar`;
 
   const { error } = await supabase.storage

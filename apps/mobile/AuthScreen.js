@@ -31,7 +31,7 @@ const isNetworkError = (error) =>
 
 const isProviderCancellation = (error) =>
   error?.code === 'ERR_REQUEST_CANCELED'
-  || /cancelled|canceled|denied|declined|access_denied|authentication session.*error 1/i.test(error?.message || '');
+  || /cancelled|canceled|denied|declined|access_denied|permissions error|authentication session.*error 1/i.test(error?.message || '');
 
 const getProviderErrorMessage = (error) => {
   const message = error?.message?.toLowerCase() || '';

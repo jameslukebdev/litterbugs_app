@@ -16,11 +16,13 @@ import ProfileAvatar from './ProfileAvatar';
 import { signOut } from './lib/auth';
 import { useProfile } from './lib/profile';
 import { showAvatarSourceMenu, uploadProfileAvatar } from './lib/profileAvatar';
+import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
 
 export default function CompleteProfileScreen({ navigation }) {
   const { user } = useSession();
   const { profile, updateProfile } = useProfile();
+  const { refreshReports } = useReports();
   const [displayName, setDisplayName] = useState(profile?.display_name || '');
   const [avatarAsset, setAvatarAsset] = useState(null);
   const [error, setError] = useState('');
@@ -43,6 +45,7 @@ export default function CompleteProfileScreen({ navigation }) {
       let avatarPath = profile?.avatar_path ?? null;
       if (avatarAsset) avatarPath = await uploadProfileAvatar(user.id, avatarAsset);
       await updateProfile({ display_name: cleanName, avatar_path: avatarPath });
+      await refreshReports();
       navigation.replace('App', { screen: 'Map' });
     } catch (saveError) {
       console.log('Complete profile error:', saveError);
@@ -100,7 +103,7 @@ export default function CompleteProfileScreen({ navigation }) {
           {saving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryText}>Continue</Text>}
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.signOutButton} onPress={signOut} disabled={saving}>
+        <TouchableOpacity style={styles.signOutButton} onPress={signOut} disabled={saving} accessibilityRole="button" accessibilityLabel="Sign out">
           <Text style={styles.signOutText}>Sign out</Text>
         </TouchableOpacity>
       </ScrollView>
