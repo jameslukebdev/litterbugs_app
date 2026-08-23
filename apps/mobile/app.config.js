@@ -12,6 +12,7 @@ module.exports = ({ config }) => {
   const isIosBuild = buildPlatform === 'ios';
   const isAndroidBuild = buildPlatform === 'android';
   const shouldConfigureIos = isIosBuild || !buildPlatform;
+  const shouldConfigureAndroid = isAndroidBuild || !buildPlatform;
   const appName = isAndroidBuild && !isProduction
     ? 'Litterbugs QA'
     : config.name;
@@ -23,7 +24,7 @@ module.exports = ({ config }) => {
     : 'com.litterbugs.app.qa';
   const androidPackage = process.env.ANDROID_PACKAGE_IDENTIFIER
     || expectedAndroidPackage;
-  const googleMapsAndroidApiKey = isAndroidBuild
+  const googleMapsAndroidApiKey = shouldConfigureAndroid
     ? process.env.GOOGLE_MAPS_ANDROID_API_KEY
     : undefined;
   const androidBlockedPermissions = isAndroidBuild && isProduction
