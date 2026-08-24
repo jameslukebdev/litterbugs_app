@@ -33,6 +33,7 @@ export function cleanupStatusPresentation(report, currentUserIsCleaner = false) 
         icon: 'time-outline',
         tone: 'active',
         showClaimActions: currentUserIsCleaner,
+        showSubmissionAction: false,
       };
     case 'completion_submitted':
       return {
@@ -41,6 +42,7 @@ export function cleanupStatusPresentation(report, currentUserIsCleaner = false) 
         icon: 'hourglass-outline',
         tone: 'active',
         showClaimActions: false,
+        showSubmissionAction: false,
       };
     case 'changes_requested':
       return {
@@ -49,6 +51,7 @@ export function cleanupStatusPresentation(report, currentUserIsCleaner = false) 
         icon: 'refresh-circle-outline',
         tone: 'active',
         showClaimActions: false,
+        showSubmissionAction: currentUserIsCleaner,
       };
     case 'completed':
       return {
@@ -57,6 +60,7 @@ export function cleanupStatusPresentation(report, currentUserIsCleaner = false) 
         icon: 'checkmark-circle-outline',
         tone: 'completed',
         showClaimActions: false,
+        showSubmissionAction: false,
       };
     default:
       return null;
