@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -11,11 +11,14 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ProfileAvatar from './ProfileAvatar';
 import ProfileReportList from './ProfileReportList';
 import { deleteCurrentAccount, signOut } from './lib/auth';
+import { loadCurrentUserActiveCleanups } from './lib/cleanup';
+import { cleanupStatusPresentation } from './lib/cleanupEligibility';
 import { getBottomNavClearance } from './lib/navigationLayout';
 import { useProfile } from './lib/profile';
 import { isPermanentUser } from './lib/reportAccess';
@@ -55,6 +58,40 @@ function ActionRow({ label, icon, onPress, destructive = false, busy = false }) 
   );
 }
 
+function ActiveCleanupRow({ attempt, onPress, divided }) {
+  const presentation = cleanupStatusPresentation(
+    { cleanup_state: attempt.status },
+    true
+  );
+  const deadline = attempt.status === 'claimed' && attempt.claim_expires_at
+    ? `Complete by ${new Date(attempt.claim_expires_at).toLocaleString()}`
+    : presentation?.description;
+
+  return (
+    <TouchableOpacity
+      style={[styles.activeCleanupRow, divided && styles.activeCleanupDivider]}
+      onPress={onPress}
+      activeOpacity={0.72}
+      accessibilityRole="button"
+      accessibilityLabel={`Return to ${attempt.report?.title || 'active cleanup'}`}
+      accessibilityHint="Opens the claimed cleanup report on the map"
+    >
+      <View style={styles.activeCleanupIcon}>
+        <Ionicons name={presentation?.icon || 'time-outline'} size={24} color="#8A6400" />
+      </View>
+      <View style={styles.activeCleanupCopy}>
+        <Text style={styles.activeCleanupTitle} numberOfLines={2}>
+          {attempt.report?.title || 'Litter cleanup'}
+        </Text>
+        <Text style={styles.activeCleanupStatus}>{presentation?.title}</Text>
+        <Text style={styles.activeCleanupDeadline}>{deadline}</Text>
+        <Text style={styles.activeCleanupLink}>Return to cleanup</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={22} color="#9A7A18" />
+    </TouchableOpacity>
+  );
+}
+
 function SignedOutProfile({ navigation, bottomPadding }) {
   return (
     <ScrollView contentContainerStyle={[styles.signedOutContent, { paddingBottom: bottomPadding }]}>
@@ -87,6 +124,9 @@ export default function ProfileScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const [signingOut, setSigningOut] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [activeCleanups, setActiveCleanups] = useState([]);
+  const [activeCleanupsLoading, setActiveCleanupsLoading] = useState(false);
+  const [activeCleanupsError, setActiveCleanupsError] = useState(false);
   const accountBusy = signingOut || deletingAccount;
   const bottomPadding = getBottomNavClearance(insets.bottom) + 18;
 
@@ -94,6 +134,30 @@ export default function ProfileScreen({ navigation }) {
     () => reports.filter((report) => report.user_id === user?.id),
     [reports, user?.id]
   );
+
+  const refreshActiveCleanups = useCallback(async () => {
+    if (!permanent || !user?.id) {
+      setActiveCleanups([]);
+      setActiveCleanupsError(false);
+      return;
+    }
+
+    try {
+      setActiveCleanupsLoading(true);
+      const cleanups = await loadCurrentUserActiveCleanups(user.id);
+      setActiveCleanups(cleanups);
+      setActiveCleanupsError(false);
+    } catch (error) {
+      console.log('Active cleanup load error:', error);
+      setActiveCleanupsError(true);
+    } finally {
+      setActiveCleanupsLoading(false);
+    }
+  }, [permanent, user?.id]);
+
+  useFocusEffect(useCallback(() => {
+    refreshActiveCleanups();
+  }, [refreshActiveCleanups]));
 
   if (!permanent) {
     return <SignedOutProfile navigation={navigation} bottomPadding={bottomPadding} />;
@@ -147,6 +211,7 @@ export default function ProfileScreen({ navigation }) {
     await Promise.allSettled([
       refreshProfile(),
       refreshReports({ showRefresh: true }),
+      refreshActiveCleanups(),
     ]);
   };
 
@@ -155,7 +220,7 @@ export default function ProfileScreen({ navigation }) {
       style={styles.container}
       contentContainerStyle={{ paddingBottom: bottomPadding }}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor="#2F7D32" />}
+      refreshControl={<RefreshControl refreshing={loading || activeCleanupsLoading} onRefresh={refresh} tintColor="#2F7D32" />}
     >
       <View style={styles.identity}>
         <ProfileAvatar profile={profile} size={104} />
@@ -183,6 +248,37 @@ export default function ProfileScreen({ navigation }) {
       <View style={styles.statCard}>
         <Text style={styles.statValue}>{profile?.reports_created_count ?? 0}</Text>
         <Text style={styles.statLabel}>Reports submitted</Text>
+      </View>
+
+      <Text style={styles.sectionTitle}>My cleanups</Text>
+      <View style={[styles.card, styles.activeCleanupCard]}>
+        {activeCleanupsLoading && activeCleanups.length === 0 ? (
+          <View style={styles.activeCleanupEmpty}>
+            <ActivityIndicator color="#8A6400" />
+            <Text style={styles.activeCleanupEmptyText}>Checking active cleanups…</Text>
+          </View>
+        ) : activeCleanupsError ? (
+          <TouchableOpacity style={styles.activeCleanupEmpty} onPress={refreshActiveCleanups}>
+            <Ionicons name="cloud-offline-outline" size={27} color="#8A6400" />
+            <Text style={styles.activeCleanupEmptyTitle}>Couldn’t load cleanups</Text>
+            <Text style={styles.activeCleanupEmptyText}>Tap to try again.</Text>
+          </TouchableOpacity>
+        ) : activeCleanups.length > 0 ? (
+          activeCleanups.map((attempt, index) => (
+            <ActiveCleanupRow
+              key={attempt.id}
+              attempt={attempt}
+              divided={index > 0}
+              onPress={() => navigation.navigate('Map', { reportId: attempt.report_id })}
+            />
+          ))
+        ) : (
+          <View style={styles.activeCleanupEmpty}>
+            <Ionicons name="leaf-outline" size={27} color="#6F797F" />
+            <Text style={styles.activeCleanupEmptyTitle}>No active cleanups</Text>
+            <Text style={styles.activeCleanupEmptyText}>Claimed cleanups will appear here.</Text>
+          </View>
+        )}
       </View>
 
       <Text style={styles.sectionTitle}>Active reports</Text>
@@ -239,6 +335,18 @@ const styles = StyleSheet.create({
   statLabel: { marginTop: 3, color: '#687178', fontSize: 14, fontWeight: '700' },
   sectionTitle: { marginHorizontal: 20, marginTop: 27, marginBottom: 9, color: '#30363B', fontSize: 17, fontWeight: '800' },
   card: { marginHorizontal: 16, overflow: 'hidden', borderRadius: 16, backgroundColor: '#FFFFFF' },
+  activeCleanupCard: { borderWidth: 1, borderColor: '#E7CF79', backgroundColor: '#FFF9DD' },
+  activeCleanupRow: { minHeight: 124, padding: 16, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF9DD' },
+  activeCleanupDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E7CF79' },
+  activeCleanupIcon: { width: 46, height: 46, marginRight: 13, borderRadius: 23, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8E9A6' },
+  activeCleanupCopy: { flex: 1, marginRight: 8 },
+  activeCleanupTitle: { color: '#4F3A00', fontSize: 16, fontWeight: '800' },
+  activeCleanupStatus: { marginTop: 4, color: '#755900', fontSize: 13, fontWeight: '800' },
+  activeCleanupDeadline: { marginTop: 3, color: '#806715', fontSize: 13, lineHeight: 18 },
+  activeCleanupLink: { marginTop: 8, color: '#2F7D32', fontSize: 14, fontWeight: '800' },
+  activeCleanupEmpty: { minHeight: 126, alignItems: 'center', justifyContent: 'center', padding: 20 },
+  activeCleanupEmptyTitle: { marginTop: 8, color: '#4F5960', fontSize: 15, fontWeight: '800' },
+  activeCleanupEmptyText: { marginTop: 5, color: '#747D84', fontSize: 14, textAlign: 'center' },
   actionRow: { minHeight: 60, paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E0E3E5', backgroundColor: '#FFFFFF' },
   actionCopy: { flexDirection: 'row', alignItems: 'center', gap: 11 },
   actionText: { color: '#30363B', fontSize: 16 },

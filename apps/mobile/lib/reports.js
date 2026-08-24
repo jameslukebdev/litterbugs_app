@@ -20,6 +20,18 @@ export const DEFAULT_MAP_REGION = Object.freeze({
 
 const ReportsContext = createContext(null);
 
+const REPORT_SELECT = `
+  *,
+  reporter:profiles!reports_user_id_fkey(
+    id,
+    display_name,
+    username,
+    provider_avatar_url,
+    avatar_path,
+    updated_at
+  )
+`;
+
 export function getDistanceMiles(pointA, pointB) {
   if (!pointA || !pointB) return null;
 
@@ -97,17 +109,7 @@ export function ReportsProvider({ children }) {
     const nowIso = new Date().toISOString();
     const { data, error: reportsError } = await supabase
       .from('reports')
-      .select(`
-        *,
-        reporter:profiles!reports_user_id_fkey(
-          id,
-          display_name,
-          username,
-          provider_avatar_url,
-          avatar_path,
-          updated_at
-        )
-      `)
+      .select(REPORT_SELECT)
       .gt('expires_at', nowIso);
 
     if (reportsError) {
@@ -125,6 +127,17 @@ export function ReportsProvider({ children }) {
   useEffect(() => {
     refreshReports();
   }, [refreshReports]);
+
+  const getReportById = useCallback(async (reportId) => {
+    const { data, error: reportError } = await supabase
+      .from('reports')
+      .select(REPORT_SELECT)
+      .eq('id', reportId)
+      .maybeSingle();
+
+    if (reportError) throw reportError;
+    return data;
+  }, []);
 
   const reports = useMemo(() => {
     if (blockedIds.length === 0) return allReports;
@@ -217,12 +230,14 @@ export function ReportsProvider({ children }) {
     commitMapRegion,
     searchMapRegion,
     refreshReports,
+    getReportById,
     upsertReport,
     removeReport,
     getReportPhotoUrl,
   }), [
     commitMapRegion,
     error,
+    getReportById,
     getReportPhotoUrl,
     loading,
     mapRegion,

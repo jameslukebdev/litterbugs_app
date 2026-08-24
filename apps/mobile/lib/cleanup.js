@@ -67,3 +67,56 @@ export async function releaseCleanup(cleanupId) {
   if (error) throw error;
   return data;
 }
+
+export async function loadUnreadCleanupNotifications() {
+  const { data, error } = await supabase
+    .from('cleanup_notifications')
+    .select('id, cleanup_attempt_id, report_id, event_type, created_at')
+    .eq('event_type', 'claim_expired')
+    .is('read_at', null)
+    .order('created_at', { ascending: true })
+    .limit(20);
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function acknowledgeCleanupNotifications(notificationIds) {
+  if (!notificationIds.length) return [];
+
+  const { data, error } = await supabase.rpc(
+    'acknowledge_cleanup_notifications',
+    { target_notification_ids: notificationIds }
+  );
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function loadCurrentUserActiveCleanups(userId) {
+  const { data: attempts, error: attemptsError } = await supabase
+    .from('cleanup_attempts')
+    .select('id, report_id, status, claimed_at, claim_expires_at, last_activity_at')
+    .eq('cleaner_id', userId)
+    .in('status', ['claimed', 'completion_submitted', 'changes_requested'])
+    .order('last_activity_at', { ascending: false });
+
+  if (attemptsError) throw attemptsError;
+  if (!attempts?.length) return [];
+
+  const { data: reports, error: reportsError } = await supabase
+    .from('reports')
+    .select('id, title, severity, cleanup_state')
+    .in('id', attempts.map(({ report_id: reportId }) => reportId));
+
+  if (reportsError) throw reportsError;
+
+  const reportsById = new Map(
+    (reports ?? []).map((report) => [report.id, report])
+  );
+
+  return attempts.map((attempt) => ({
+    ...attempt,
+    report: reportsById.get(attempt.report_id) ?? null,
+  }));
+}

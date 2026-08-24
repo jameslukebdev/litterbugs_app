@@ -3,6 +3,9 @@ import { describe, expect, it } from 'vitest';
 import {
   canOfferCleanup,
   cleanupActionMessage,
+  cleanupExpirationNoticeMessage,
+  cleanupMapTone,
+  cleanupStatusPresentation,
   isCleanupInProgress,
   isCurrentCleaner,
 } from './cleanupEligibility';
@@ -59,5 +62,38 @@ describe('cleanup eligibility', () => {
     expect(isCurrentCleaner(attempt, permanentUser)).toBe(true);
     expect(isCurrentCleaner(attempt, { id: 'other', is_anonymous: false })).toBe(false);
     expect(isCurrentCleaner(attempt, { id: permanentUser.id, is_anonymous: true })).toBe(false);
+  });
+
+  it('describes one or multiple expired reservations', () => {
+    expect(cleanupExpirationNoticeMessage(1)).toContain('24-hour');
+    expect(cleanupExpirationNoticeMessage(2)).toContain('2 cleanup reservations');
+  });
+
+  it('maps every public cleanup state to the intended marker tone', () => {
+    expect(cleanupMapTone({ cleanup_state: 'available' })).toBe('available');
+    expect(cleanupMapTone({ cleanup_state: 'claimed' })).toBe('active');
+    expect(cleanupMapTone({ cleanup_state: 'completion_submitted' })).toBe('active');
+    expect(cleanupMapTone({ cleanup_state: 'changes_requested' })).toBe('active');
+    expect(cleanupMapTone({ cleanup_state: 'completed' })).toBe('completed');
+    expect(cleanupMapTone({ cleanup_state: 'released' })).toBe('available');
+    expect(cleanupMapTone({ cleanup_state: 'expired' })).toBe('available');
+  });
+
+  it('shows actions only for the cleaner while a report is claimed', () => {
+    expect(cleanupStatusPresentation({ cleanup_state: 'claimed' }, true)).toMatchObject({
+      title: 'Cleanup in Progress',
+      showClaimActions: true,
+    });
+    expect(cleanupStatusPresentation({ cleanup_state: 'claimed' }, false)).toMatchObject({
+      title: 'Cleanup in Progress',
+      showClaimActions: false,
+    });
+    expect(cleanupStatusPresentation({ cleanup_state: 'completion_submitted' }, true)).toMatchObject({
+      title: 'Awaiting Cleanup Review',
+      showClaimActions: false,
+    });
+    expect(cleanupStatusPresentation({ cleanup_state: 'changes_requested' }, true).title).toBe('Changes Requested');
+    expect(cleanupStatusPresentation({ cleanup_state: 'completed' }, true).title).toBe('Cleanup Complete');
+    expect(cleanupStatusPresentation({ cleanup_state: 'available' }, true)).toBeNull();
   });
 });

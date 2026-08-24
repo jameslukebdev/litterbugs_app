@@ -16,6 +16,53 @@ export function isCleanupInProgress(report) {
   );
 }
 
+export function cleanupMapTone(report) {
+  if (isCleanupInProgress(report)) return 'active';
+  if (report?.cleanup_state === 'completed') return 'completed';
+  return 'available';
+}
+
+export function cleanupStatusPresentation(report, currentUserIsCleaner = false) {
+  switch (report?.cleanup_state) {
+    case 'claimed':
+      return {
+        title: 'Cleanup in Progress',
+        description: currentUserIsCleaner
+          ? 'You claimed this cleanup.'
+          : 'Another volunteer has claimed this report.',
+        icon: 'time-outline',
+        tone: 'active',
+        showClaimActions: currentUserIsCleaner,
+      };
+    case 'completion_submitted':
+      return {
+        title: 'Awaiting Cleanup Review',
+        description: 'Cleanup results were submitted and are waiting for the original reporter to review them.',
+        icon: 'hourglass-outline',
+        tone: 'active',
+        showClaimActions: false,
+      };
+    case 'changes_requested':
+      return {
+        title: 'Changes Requested',
+        description: 'The reporter requested updated cleanup evidence from the cleaner.',
+        icon: 'refresh-circle-outline',
+        tone: 'active',
+        showClaimActions: false,
+      };
+    case 'completed':
+      return {
+        title: 'Cleanup Complete',
+        description: 'This cleanup was approved and is preserved as a community impact record.',
+        icon: 'checkmark-circle-outline',
+        tone: 'completed',
+        showClaimActions: false,
+      };
+    default:
+      return null;
+  }
+}
+
 export function isCurrentCleaner(attempt, user) {
   return Boolean(
     isPermanentUser(user)
@@ -50,4 +97,12 @@ export function cleanupActionMessage(error) {
   }
 
   return 'We couldn’t update this cleanup. Check your connection and try again.';
+}
+
+export function cleanupExpirationNoticeMessage(count) {
+  if (count > 1) {
+    return `${count} cleanup reservations expired. Those reports are available for other volunteers.`;
+  }
+
+  return 'Your 24-hour cleanup reservation expired. The report is available for another volunteer.';
 }

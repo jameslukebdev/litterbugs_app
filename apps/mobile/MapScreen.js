@@ -16,6 +16,7 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   ActivityIndicator,
+  AppState,
   Linking,
   useWindowDimensions,
 } from 'react-native';
@@ -35,18 +36,27 @@ import ReporterIdentity from './ReporterIdentity';
 import CleanupWaiverModal from './CleanupWaiverModal';
 import {
   acceptCleanupWaiver,
+  acknowledgeCleanupNotifications,
   claimCleanup,
   loadActiveCleanupAttempt,
   loadCurrentCleanupWaiver,
+  loadUnreadCleanupNotifications,
   releaseCleanup,
 } from './lib/cleanup';
 import {
   canOfferCleanup,
   cleanupActionMessage,
+  cleanupExpirationNoticeMessage,
+  cleanupMapTone,
+  cleanupStatusPresentation,
   isCleanupInProgress,
   isCurrentCleaner,
 } from './lib/cleanupEligibility';
 import { useProfile } from './lib/profile';
+import {
+  CLEANUP_NAVIGATION_SAFETY_REMINDER,
+  cleanupNavigationUrls,
+} from './lib/cleanupNavigation';
 import * as FileSystem from 'expo-file-system/legacy';
 
 const showPermanentAccountRequired = () => {
@@ -102,6 +112,7 @@ export default function MapScreen({ route, navigation }) {
   const [cleanupActionBusy, setCleanupActionBusy] = useState(false);
   const [selectedCleanupAttempt, setSelectedCleanupAttempt] = useState(null);
   const [cleanupAttemptLoading, setCleanupAttemptLoading] = useState(false);
+  const cleanupNoticeCheckInFlight = useRef(false);
   // Report detail photo carousel
   const [reportPhotoIndex, setReportPhotoIndex] = useState(0);
   const { user: currentUser } = useSession();
@@ -123,6 +134,7 @@ export default function MapScreen({ route, navigation }) {
     commitMapRegion,
     searchMapRegion,
     refreshReports,
+    getReportById,
     upsertReport,
     removeReport,
   } = useReports();
@@ -142,6 +154,66 @@ export default function MapScreen({ route, navigation }) {
     + BOTTOM_NAV_METRICS.mapControlGap;
   // Leave 20px margin on each side of the main report photo
   const reportHeroWidth = Math.max(screenWidth - 40, 280);
+
+  useEffect(() => {
+    if (!currentUserId) return undefined;
+
+    let active = true;
+
+    const checkExpirationNotices = async () => {
+      if (cleanupNoticeCheckInFlight.current) return;
+
+      try {
+        cleanupNoticeCheckInFlight.current = true;
+        const notices = await loadUnreadCleanupNotifications();
+        if (!active || notices.length === 0) return;
+
+        const expiredReportIds = new Set(
+          notices.map(({ report_id: reportId }) => reportId)
+        );
+        const expiredAttemptIds = new Set(
+          notices.map(({ cleanup_attempt_id: attemptId }) => attemptId)
+        );
+
+        setSelectedReport((report) => (
+          expiredReportIds.has(report?.id)
+            ? { ...report, cleanup_state: 'available' }
+            : report
+        ));
+        setSelectedCleanupAttempt((attempt) => (
+          expiredAttemptIds.has(attempt?.id) ? null : attempt
+        ));
+
+        Alert.alert(
+          notices.length > 1
+            ? 'Cleanup reservations expired'
+            : 'Cleanup reservation expired',
+          cleanupExpirationNoticeMessage(notices.length)
+        );
+
+        await acknowledgeCleanupNotifications(
+          notices.map(({ id }) => id)
+        );
+        await refreshReports({ showRefresh: false });
+      } catch (error) {
+        console.log('Cleanup expiration notice error:', error);
+      } finally {
+        cleanupNoticeCheckInFlight.current = false;
+      }
+    };
+
+    checkExpirationNotices();
+    const interval = setInterval(checkExpirationNotices, 60 * 1000);
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') checkExpirationNotices();
+    });
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+      subscription.remove();
+    };
+  }, [currentUserId, refreshReports]);
 
   useEffect(() => {
     if (!cleanupWaiverQueued || detailsOpen) return undefined;
@@ -749,11 +821,13 @@ const submitReport = async () => {
 
 // Set Map Marker Based on Severity 
     const getMarkerStyleByReport = (report) => {
-      if (isCleanupInProgress(report)) {
+      const mapTone = cleanupMapTone(report);
+
+      if (mapTone === 'active') {
         return { bg: '#E0A800', icon: 'time-outline' };
       }
 
-      if (report?.cleanup_state === 'completed') {
+      if (mapTone === 'completed') {
         return { bg: '#2F7D32', icon: 'checkmark-circle-outline' };
       }
 
@@ -798,23 +872,60 @@ useEffect(() => {
 
 useEffect(() => {
   const requestedReportId = route?.params?.reportId;
-  if (!requestedReportId || markers.length === 0) return;
+  if (!requestedReportId) return undefined;
 
-  const requestedMarker = markers.find(
-    ({ id }) => String(id) === String(requestedReportId)
-  );
+  let active = true;
 
-  if (!requestedMarker) return;
+  const openRequestedReport = async () => {
+    const requestedMarker = markers.find(
+      ({ id }) => String(id) === String(requestedReportId)
+    );
 
-  commitMapRegion({
-    latitude: requestedMarker.coordinate.latitude,
-    longitude: requestedMarker.coordinate.longitude,
-    latitudeDelta: 0.02,
-    longitudeDelta: 0.02,
-  });
-  openReportDetails(requestedMarker.report);
-  navigation.setParams({ reportId: undefined });
-}, [commitMapRegion, markers, navigation, route?.params?.reportId]);
+    try {
+      const report = requestedMarker?.report
+        ?? await getReportById(requestedReportId);
+
+      if (!active) return;
+
+      if (!report) {
+        Alert.alert('Report unavailable', 'This cleanup report could not be opened.');
+        navigation.setParams({ reportId: undefined });
+        return;
+      }
+
+      const latitude = Number(report.latitude);
+      const longitude = Number(report.longitude);
+      if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+        commitMapRegion({
+          latitude,
+          longitude,
+          latitudeDelta: 0.02,
+          longitudeDelta: 0.02,
+        });
+      }
+
+      openReportDetails(report);
+      navigation.setParams({ reportId: undefined });
+    } catch (error) {
+      console.log('Requested report load error:', error);
+      if (active) {
+        Alert.alert('Report unavailable', 'Check your connection and try again.');
+      }
+    }
+  };
+
+  openRequestedReport();
+
+  return () => {
+    active = false;
+  };
+}, [
+  commitMapRegion,
+  getReportById,
+  markers,
+  navigation,
+  route?.params?.reportId,
+]);
 
 // Load Photos into Existing Report
 useEffect(() => {
@@ -876,10 +987,13 @@ useEffect(() => {
     && !selectedReport?.cancelled_at
   );
   const cleanupEligible = canOfferCleanup(selectedReport, currentUser);
-  const cleanupInProgress = isCleanupInProgress(selectedReport);
   const currentUserIsCleaner = isCurrentCleaner(
     selectedCleanupAttempt,
     currentUser
+  );
+  const cleanupStatus = cleanupStatusPresentation(
+    selectedReport,
+    currentUserIsCleaner
   );
 
   const executeCleanupClaim = async () => {
@@ -995,28 +1109,60 @@ useEffect(() => {
     selectedReport?.id,
   ]);
 
-  const openCleanupNavigation = async () => {
-    const latitude = Number(selectedReport?.latitude);
-    const longitude = Number(selectedReport?.longitude);
+  const openExternalMap = async (preferredUrl, fallbackUrl) => {
+    try {
+      const supported = await Linking.canOpenURL(preferredUrl);
+      await Linking.openURL(supported ? preferredUrl : fallbackUrl);
+    } catch (error) {
+      console.log('Cleanup navigation error:', error);
 
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      try {
+        await Linking.openURL(fallbackUrl);
+      } catch (fallbackError) {
+        console.log('Cleanup navigation fallback error:', fallbackError);
+        Alert.alert('Unable to open maps', 'Try opening the report location in your maps app.');
+      }
+    }
+  };
+
+  const openCleanupNavigation = () => {
+    const urls = cleanupNavigationUrls(selectedReport);
+
+    if (!urls) {
       Alert.alert('Location unavailable', 'This report does not have a valid cleanup location.');
       return;
     }
 
-    const destination = `${latitude},${longitude}`;
-    const nativeUrl = Platform.OS === 'ios'
-      ? `http://maps.apple.com/?daddr=${destination}`
-      : `geo:${destination}?q=${destination}`;
-    const fallbackUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
-
-    try {
-      const supported = await Linking.canOpenURL(nativeUrl);
-      await Linking.openURL(supported ? nativeUrl : fallbackUrl);
-    } catch (error) {
-      console.log('Cleanup navigation error:', error);
-      Alert.alert('Unable to open maps', 'Try opening the report location in your maps app.');
+    if (Platform.OS === 'ios') {
+      Alert.alert(
+        'Navigate to Cleanup',
+        CLEANUP_NAVIGATION_SAFETY_REMINDER,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Apple Maps',
+            onPress: () => openExternalMap(urls.apple, urls.google),
+          },
+          {
+            text: 'Google Maps',
+            onPress: () => openExternalMap(urls.google, urls.google),
+          },
+        ]
+      );
+      return;
     }
+
+    Alert.alert(
+      'Navigate to Cleanup',
+      CLEANUP_NAVIGATION_SAFETY_REMINDER,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Open Maps',
+          onPress: () => openExternalMap(urls.android, urls.google),
+        },
+      ]
+    );
   };
 
   const executeCleanupRelease = async () => {
@@ -1048,7 +1194,7 @@ useEffect(() => {
   const confirmCleanupRelease = () => {
     Alert.alert(
       'Release this cleanup?',
-      'The report will become available for another volunteer.',
+      'This report will become available for another volunteer.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -2562,30 +2708,56 @@ const renderReportStep = () => {
             </View>
           )}
 
-          {cleanupInProgress && (
-            <View style={styles.cleanupProgressCard}>
+          {cleanupStatus && (
+            <View
+              style={[
+                styles.cleanupProgressCard,
+                cleanupStatus.tone === 'completed' && styles.cleanupCompleteStatusCard,
+              ]}
+            >
               <View style={styles.cleanupProgressHeader}>
-                <View style={styles.cleanupProgressIcon}>
-                  <Ionicons name="time-outline" size={24} color="#8A6400" />
+                <View
+                  style={[
+                    styles.cleanupProgressIcon,
+                    cleanupStatus.tone === 'completed' && styles.cleanupCompleteStatusIcon,
+                  ]}
+                >
+                  <Ionicons
+                    name={cleanupStatus.icon}
+                    size={24}
+                    color={cleanupStatus.tone === 'completed' ? '#2F7D32' : '#8A6400'}
+                  />
                 </View>
                 <View style={styles.cleanupProgressCopy}>
-                  <Text style={styles.cleanupProgressTitle}>
-                    {currentUserIsCleaner ? 'Cleanup claimed' : 'Cleanup in Progress'}
+                  <Text
+                    style={[
+                      styles.cleanupProgressTitle,
+                      cleanupStatus.tone === 'completed' && styles.cleanupCompleteStatusTitle,
+                    ]}
+                  >
+                    {cleanupStatus.title}
                   </Text>
-                  <Text style={styles.cleanupProgressText}>
-                    {currentUserIsCleaner && selectedCleanupAttempt?.claim_expires_at
+                  <Text
+                    style={[
+                      styles.cleanupProgressText,
+                      cleanupStatus.tone === 'completed' && styles.cleanupCompleteStatusText,
+                    ]}
+                  >
+                    {selectedReport?.cleanup_state === 'claimed'
+                      && currentUserIsCleaner
+                      && selectedCleanupAttempt?.claim_expires_at
                       ? `Complete by ${new Date(selectedCleanupAttempt.claim_expires_at).toLocaleString()}.`
-                      : 'Another volunteer has claimed this report.'}
+                      : cleanupStatus.description}
                   </Text>
                 </View>
               </View>
 
-              {cleanupAttemptLoading ? (
+              {selectedReport?.cleanup_state === 'claimed' && cleanupAttemptLoading ? (
                 <View style={styles.cleanupProgressLoading}>
                   <ActivityIndicator color="#8A6400" />
                   <Text style={styles.cleanupProgressLoadingText}>Checking cleanup details…</Text>
                 </View>
-              ) : currentUserIsCleaner ? (
+              ) : cleanupStatus.showClaimActions ? (
                 <View style={styles.cleanupActionStack}>
                   <TouchableOpacity
                     style={[styles.cleanupActionButton, styles.cleanupNavigateButton]}
@@ -3937,6 +4109,11 @@ cleanupProgressCard: {
   backgroundColor: '#FFF9DD',
 },
 
+cleanupCompleteStatusCard: {
+  borderColor: '#9CCB9F',
+  backgroundColor: '#EDF8EE',
+},
+
 cleanupProgressHeader: {
   flexDirection: 'row',
   alignItems: 'flex-start',
@@ -3952,6 +4129,10 @@ cleanupProgressIcon: {
   backgroundColor: '#F8E9A6',
 },
 
+cleanupCompleteStatusIcon: {
+  backgroundColor: '#D4ECD6',
+},
+
 cleanupProgressCopy: {
   flex: 1,
 },
@@ -3962,11 +4143,19 @@ cleanupProgressTitle: {
   fontWeight: '800',
 },
 
+cleanupCompleteStatusTitle: {
+  color: '#245F28',
+},
+
 cleanupProgressText: {
   marginTop: 5,
   color: '#806715',
   fontSize: 14,
   lineHeight: 20,
+},
+
+cleanupCompleteStatusText: {
+  color: '#3E7041',
 },
 
 cleanupProgressLoading: {
