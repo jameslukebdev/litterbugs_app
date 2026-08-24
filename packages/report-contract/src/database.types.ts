@@ -1,5 +1,3 @@
-// Generated from Supabase project mvaygkflcjswtwchflrk.
-// Regenerate with: supabase gen types --project-id mvaygkflcjswtwchflrk --schema public
 export type Json =
   | string
   | number
@@ -16,6 +14,306 @@ export type Database = {
   }
   public: {
     Tables: {
+      cleanup_attempts: {
+        Row: {
+          approval_method: string | null
+          cancelled_at: string | null
+          claim_expires_at: string
+          claimed_at: string
+          cleaner_id: string | null
+          completed_at: string | null
+          expired_at: string | null
+          final_reviewer_id: string | null
+          final_submission_id: string | null
+          first_submitted_at: string | null
+          id: string
+          is_self_cleanup: boolean
+          last_activity_at: string
+          latest_submitted_at: string | null
+          released_at: string | null
+          report_id: string
+          reporter_id: string | null
+          review_due_at: string | null
+          status: string
+          waiver_version: string
+        }
+        Insert: {
+          approval_method?: string | null
+          cancelled_at?: string | null
+          claim_expires_at: string
+          claimed_at?: string
+          cleaner_id?: string | null
+          completed_at?: string | null
+          expired_at?: string | null
+          final_reviewer_id?: string | null
+          final_submission_id?: string | null
+          first_submitted_at?: string | null
+          id?: string
+          is_self_cleanup?: boolean
+          last_activity_at?: string
+          latest_submitted_at?: string | null
+          released_at?: string | null
+          report_id: string
+          reporter_id?: string | null
+          review_due_at?: string | null
+          status?: string
+          waiver_version: string
+        }
+        Update: {
+          approval_method?: string | null
+          cancelled_at?: string | null
+          claim_expires_at?: string
+          claimed_at?: string
+          cleaner_id?: string | null
+          completed_at?: string | null
+          expired_at?: string | null
+          final_reviewer_id?: string | null
+          final_submission_id?: string | null
+          first_submitted_at?: string | null
+          id?: string
+          is_self_cleanup?: boolean
+          last_activity_at?: string
+          latest_submitted_at?: string | null
+          released_at?: string | null
+          report_id?: string
+          reporter_id?: string | null
+          review_due_at?: string | null
+          status?: string
+          waiver_version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cleanup_attempts_cleaner_id_fkey"
+            columns: ["cleaner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleanup_attempts_final_reviewer_id_fkey"
+            columns: ["final_reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleanup_attempts_final_submission_fkey"
+            columns: ["final_submission_id", "id"]
+            isOneToOne: false
+            referencedRelation: "cleanup_submissions"
+            referencedColumns: ["id", "cleanup_attempt_id"]
+          },
+          {
+            foreignKeyName: "cleanup_attempts_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleanup_attempts_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleanup_attempts_waiver_version_fkey"
+            columns: ["waiver_version"]
+            isOneToOne: false
+            referencedRelation: "cleanup_waiver_versions"
+            referencedColumns: ["version"]
+          },
+        ]
+      }
+      cleanup_reviews: {
+        Row: {
+          cleanup_attempt_id: string
+          created_at: string
+          decision: string
+          id: string
+          note: string | null
+          reason_codes: string[] | null
+          reviewer_id: string | null
+          submission_id: string
+        }
+        Insert: {
+          cleanup_attempt_id: string
+          created_at?: string
+          decision: string
+          id?: string
+          note?: string | null
+          reason_codes?: string[] | null
+          reviewer_id?: string | null
+          submission_id: string
+        }
+        Update: {
+          cleanup_attempt_id?: string
+          created_at?: string
+          decision?: string
+          id?: string
+          note?: string | null
+          reason_codes?: string[] | null
+          reviewer_id?: string | null
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cleanup_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleanup_reviews_submission_attempt_fkey"
+            columns: ["submission_id", "cleanup_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "cleanup_submissions"
+            referencedColumns: ["id", "cleanup_attempt_id"]
+          },
+        ]
+      }
+      cleanup_submission_photos: {
+        Row: {
+          display_order: number
+          id: string
+          storage_path: string
+          submission_id: string
+          uploaded_at: string
+        }
+        Insert: {
+          display_order: number
+          id?: string
+          storage_path: string
+          submission_id: string
+          uploaded_at?: string
+        }
+        Update: {
+          display_order?: number
+          id?: string
+          storage_path?: string
+          submission_id?: string
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cleanup_submission_photos_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "cleanup_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cleanup_submissions: {
+        Row: {
+          bags_or_items_removed: number | null
+          cleanup_attempt_id: string
+          created_at: string
+          description: string
+          duration_minutes: number | null
+          id: string
+          submission_number: number
+          submitted_by: string | null
+        }
+        Insert: {
+          bags_or_items_removed?: number | null
+          cleanup_attempt_id: string
+          created_at?: string
+          description: string
+          duration_minutes?: number | null
+          id?: string
+          submission_number: number
+          submitted_by?: string | null
+        }
+        Update: {
+          bags_or_items_removed?: number | null
+          cleanup_attempt_id?: string
+          created_at?: string
+          description?: string
+          duration_minutes?: number | null
+          id?: string
+          submission_number?: number
+          submitted_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cleanup_submissions_cleanup_attempt_id_fkey"
+            columns: ["cleanup_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "cleanup_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleanup_submissions_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cleanup_waiver_acceptances: {
+        Row: {
+          accepted_at: string
+          user_id: string
+          waiver_version: string
+        }
+        Insert: {
+          accepted_at?: string
+          user_id: string
+          waiver_version: string
+        }
+        Update: {
+          accepted_at?: string
+          user_id?: string
+          waiver_version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cleanup_waiver_acceptances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleanup_waiver_acceptances_waiver_version_fkey"
+            columns: ["waiver_version"]
+            isOneToOne: false
+            referencedRelation: "cleanup_waiver_versions"
+            referencedColumns: ["version"]
+          },
+        ]
+      }
+      cleanup_waiver_versions: {
+        Row: {
+          body: string
+          is_active: boolean
+          published_at: string
+          retired_at: string | null
+          title: string
+          version: string
+        }
+        Insert: {
+          body: string
+          is_active?: boolean
+          published_at?: string
+          retired_at?: string | null
+          title: string
+          version: string
+        }
+        Update: {
+          body?: string
+          is_active?: boolean
+          published_at?: string
+          retired_at?: string | null
+          title?: string
+          version?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_path: string | null
@@ -57,6 +355,74 @@ export type Database = {
           username?: string | null
         }
         Relationships: []
+      }
+      reports: {
+        Row: {
+          cancelled_at: string | null
+          cleanup_state: string
+          created_at: string | null
+          expired_at: string | null
+          expires_at: string | null
+          id: string
+          latitude: number | null
+          litter_types: string[] | null
+          longitude: number | null
+          notes_other: string | null
+          notes_presets: string[] | null
+          photo_paths: string[] | null
+          severity: string | null
+          status: string | null
+          title: string | null
+          types: string | null
+          user_id: string | null
+        }
+        Insert: {
+          cancelled_at?: string | null
+          cleanup_state?: string
+          created_at?: string | null
+          expired_at?: string | null
+          expires_at?: string | null
+          id?: string
+          latitude?: number | null
+          litter_types?: string[] | null
+          longitude?: number | null
+          notes_other?: string | null
+          notes_presets?: string[] | null
+          photo_paths?: string[] | null
+          severity?: string | null
+          status?: string | null
+          title?: string | null
+          types?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          cancelled_at?: string | null
+          cleanup_state?: string
+          created_at?: string | null
+          expired_at?: string | null
+          expires_at?: string | null
+          id?: string
+          latitude?: number | null
+          litter_types?: string[] | null
+          longitude?: number | null
+          notes_other?: string | null
+          notes_presets?: string[] | null
+          photo_paths?: string[] | null
+          severity?: string | null
+          status?: string | null
+          title?: string | null
+          types?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_blocks: {
         Row: {
@@ -152,72 +518,138 @@ export type Database = {
           },
         ]
       }
-      reports: {
-        Row: {
-          created_at: string | null
-          expires_at: string | null
-          id: string
-          latitude: number | null
-          litter_types: string[] | null
-          longitude: number | null
-          notes_other: string | null
-          notes_presets: string[] | null
-          photo_paths: string[] | null
-          severity: string | null
-          status: string | null
-          title: string | null
-          types: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          expires_at?: string | null
-          id?: string
-          latitude?: number | null
-          litter_types?: string[] | null
-          longitude?: number | null
-          notes_other?: string | null
-          notes_presets?: string[] | null
-          photo_paths?: string[] | null
-          severity?: string | null
-          status?: string | null
-          title?: string | null
-          types?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          expires_at?: string | null
-          id?: string
-          latitude?: number | null
-          litter_types?: string[] | null
-          longitude?: number | null
-          notes_other?: string | null
-          notes_presets?: string[] | null
-          photo_paths?: string[] | null
-          severity?: string | null
-          status?: string | null
-          title?: string | null
-          types?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "reports_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      claim_cleanup: {
+        Args: { target_report_id: string }
+        Returns: {
+          approval_method: string | null
+          cancelled_at: string | null
+          claim_expires_at: string
+          claimed_at: string
+          cleaner_id: string | null
+          completed_at: string | null
+          expired_at: string | null
+          final_reviewer_id: string | null
+          final_submission_id: string | null
+          first_submitted_at: string | null
+          id: string
+          is_self_cleanup: boolean
+          last_activity_at: string
+          latest_submitted_at: string | null
+          released_at: string | null
+          report_id: string
+          reporter_id: string | null
+          review_due_at: string | null
+          status: string
+          waiver_version: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cleanup_attempts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       delete_expired_reports: { Args: never; Returns: undefined }
       is_permanent_user: { Args: never; Returns: boolean }
+      release_cleanup: {
+        Args: { target_cleanup_id: string }
+        Returns: {
+          approval_method: string | null
+          cancelled_at: string | null
+          claim_expires_at: string
+          claimed_at: string
+          cleaner_id: string | null
+          completed_at: string | null
+          expired_at: string | null
+          final_reviewer_id: string | null
+          final_submission_id: string | null
+          first_submitted_at: string | null
+          id: string
+          is_self_cleanup: boolean
+          last_activity_at: string
+          latest_submitted_at: string | null
+          released_at: string | null
+          report_id: string
+          reporter_id: string | null
+          review_due_at: string | null
+          status: string
+          waiver_version: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cleanup_attempts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      review_cleanup: {
+        Args: {
+          request_change_reasons?: string[]
+          review_decision: string
+          reviewer_note?: string
+          target_cleanup_id: string
+          target_submission_id: string
+        }
+        Returns: {
+          approval_method: string | null
+          cancelled_at: string | null
+          claim_expires_at: string
+          claimed_at: string
+          cleaner_id: string | null
+          completed_at: string | null
+          expired_at: string | null
+          final_reviewer_id: string | null
+          final_submission_id: string | null
+          first_submitted_at: string | null
+          id: string
+          is_self_cleanup: boolean
+          last_activity_at: string
+          latest_submitted_at: string | null
+          released_at: string | null
+          report_id: string
+          reporter_id: string | null
+          review_due_at: string | null
+          status: string
+          waiver_version: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cleanup_attempts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      submit_cleanup: {
+        Args: {
+          cleanup_bags_or_items_removed?: number
+          cleanup_description: string
+          cleanup_duration_minutes?: number
+          cleanup_photo_paths: string[]
+          target_cleanup_id: string
+          target_submission_id: string
+        }
+        Returns: {
+          bags_or_items_removed: number | null
+          cleanup_attempt_id: string
+          created_at: string
+          description: string
+          duration_minutes: number | null
+          id: string
+          submission_number: number
+          submitted_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cleanup_submissions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       verify_report_photo_cleanup_webhook: {
         Args: { candidate_secret: string }
         Returns: boolean
@@ -362,3 +794,9 @@ export type Profile = Tables<'profiles'>
 export type ProfileUpdate = TablesUpdate<'profiles'>
 export type UserBlock = Tables<'user_blocks'>
 export type UserModerationReport = Tables<'user_moderation_reports'>
+export type CleanupAttempt = Tables<'cleanup_attempts'>
+export type CleanupSubmission = Tables<'cleanup_submissions'>
+export type CleanupSubmissionPhoto = Tables<'cleanup_submission_photos'>
+export type CleanupReview = Tables<'cleanup_reviews'>
+export type CleanupWaiverVersion = Tables<'cleanup_waiver_versions'>
+export type CleanupWaiverAcceptance = Tables<'cleanup_waiver_acceptances'>
