@@ -47,6 +47,8 @@ import {
   canOfferCleanup,
   cleanupActionMessage,
   cleanupExpirationNoticeMessage,
+  cleanupMapTone,
+  cleanupStatusPresentation,
   isCleanupInProgress,
   isCurrentCleaner,
 } from './lib/cleanupEligibility';
@@ -814,11 +816,13 @@ const submitReport = async () => {
 
 // Set Map Marker Based on Severity 
     const getMarkerStyleByReport = (report) => {
-      if (isCleanupInProgress(report)) {
+      const mapTone = cleanupMapTone(report);
+
+      if (mapTone === 'active') {
         return { bg: '#E0A800', icon: 'time-outline' };
       }
 
-      if (report?.cleanup_state === 'completed') {
+      if (mapTone === 'completed') {
         return { bg: '#2F7D32', icon: 'checkmark-circle-outline' };
       }
 
@@ -941,10 +945,13 @@ useEffect(() => {
     && !selectedReport?.cancelled_at
   );
   const cleanupEligible = canOfferCleanup(selectedReport, currentUser);
-  const cleanupInProgress = isCleanupInProgress(selectedReport);
   const currentUserIsCleaner = isCurrentCleaner(
     selectedCleanupAttempt,
     currentUser
+  );
+  const cleanupStatus = cleanupStatusPresentation(
+    selectedReport,
+    currentUserIsCleaner
   );
 
   const executeCleanupClaim = async () => {
@@ -2627,30 +2634,56 @@ const renderReportStep = () => {
             </View>
           )}
 
-          {cleanupInProgress && (
-            <View style={styles.cleanupProgressCard}>
+          {cleanupStatus && (
+            <View
+              style={[
+                styles.cleanupProgressCard,
+                cleanupStatus.tone === 'completed' && styles.cleanupCompleteStatusCard,
+              ]}
+            >
               <View style={styles.cleanupProgressHeader}>
-                <View style={styles.cleanupProgressIcon}>
-                  <Ionicons name="time-outline" size={24} color="#8A6400" />
+                <View
+                  style={[
+                    styles.cleanupProgressIcon,
+                    cleanupStatus.tone === 'completed' && styles.cleanupCompleteStatusIcon,
+                  ]}
+                >
+                  <Ionicons
+                    name={cleanupStatus.icon}
+                    size={24}
+                    color={cleanupStatus.tone === 'completed' ? '#2F7D32' : '#8A6400'}
+                  />
                 </View>
                 <View style={styles.cleanupProgressCopy}>
-                  <Text style={styles.cleanupProgressTitle}>
-                    {currentUserIsCleaner ? 'Cleanup claimed' : 'Cleanup in Progress'}
+                  <Text
+                    style={[
+                      styles.cleanupProgressTitle,
+                      cleanupStatus.tone === 'completed' && styles.cleanupCompleteStatusTitle,
+                    ]}
+                  >
+                    {cleanupStatus.title}
                   </Text>
-                  <Text style={styles.cleanupProgressText}>
-                    {currentUserIsCleaner && selectedCleanupAttempt?.claim_expires_at
+                  <Text
+                    style={[
+                      styles.cleanupProgressText,
+                      cleanupStatus.tone === 'completed' && styles.cleanupCompleteStatusText,
+                    ]}
+                  >
+                    {selectedReport?.cleanup_state === 'claimed'
+                      && currentUserIsCleaner
+                      && selectedCleanupAttempt?.claim_expires_at
                       ? `Complete by ${new Date(selectedCleanupAttempt.claim_expires_at).toLocaleString()}.`
-                      : 'Another volunteer has claimed this report.'}
+                      : cleanupStatus.description}
                   </Text>
                 </View>
               </View>
 
-              {cleanupAttemptLoading ? (
+              {selectedReport?.cleanup_state === 'claimed' && cleanupAttemptLoading ? (
                 <View style={styles.cleanupProgressLoading}>
                   <ActivityIndicator color="#8A6400" />
                   <Text style={styles.cleanupProgressLoadingText}>Checking cleanup details…</Text>
                 </View>
-              ) : currentUserIsCleaner ? (
+              ) : cleanupStatus.showClaimActions ? (
                 <View style={styles.cleanupActionStack}>
                   <TouchableOpacity
                     style={[styles.cleanupActionButton, styles.cleanupNavigateButton]}
@@ -4002,6 +4035,11 @@ cleanupProgressCard: {
   backgroundColor: '#FFF9DD',
 },
 
+cleanupCompleteStatusCard: {
+  borderColor: '#9CCB9F',
+  backgroundColor: '#EDF8EE',
+},
+
 cleanupProgressHeader: {
   flexDirection: 'row',
   alignItems: 'flex-start',
@@ -4017,6 +4055,10 @@ cleanupProgressIcon: {
   backgroundColor: '#F8E9A6',
 },
 
+cleanupCompleteStatusIcon: {
+  backgroundColor: '#D4ECD6',
+},
+
 cleanupProgressCopy: {
   flex: 1,
 },
@@ -4027,11 +4069,19 @@ cleanupProgressTitle: {
   fontWeight: '800',
 },
 
+cleanupCompleteStatusTitle: {
+  color: '#245F28',
+},
+
 cleanupProgressText: {
   marginTop: 5,
   color: '#806715',
   fontSize: 14,
   lineHeight: 20,
+},
+
+cleanupCompleteStatusText: {
+  color: '#3E7041',
 },
 
 cleanupProgressLoading: {
