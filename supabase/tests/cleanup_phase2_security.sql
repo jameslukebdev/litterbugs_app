@@ -379,6 +379,15 @@ begin
 end;
 $$;
 
+set constraints
+  cleanup_submissions_require_photos,
+  cleanup_submission_photos_require_valid_count
+  immediate;
+set constraints
+  cleanup_submissions_require_photos,
+  cleanup_submission_photos_require_valid_count
+  deferred;
+
 do $$
 declare
   active_cleanup_id uuid;

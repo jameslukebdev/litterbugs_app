@@ -1168,6 +1168,7 @@ useEffect(() => {
   const openCleanupSubmission = () => {
     if (!selectedCleanupAttempt?.id || !selectedReport?.id) return;
 
+    setDetailsOpen(false);
     navigation.getParent()?.navigate('CleanupSubmission', {
       cleanupId: selectedCleanupAttempt.id,
       reportId: selectedReport.id,
