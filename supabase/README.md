@@ -90,6 +90,74 @@ Auth remain until the planned release cutover; write policies also require the
 permanent-user boundary. The updated `delete-account` function is active and
 removes the fixed profile-avatar path before deleting the identity.
 
+## Volunteer cleanup backend foundation
+
+The hosted `cleanup_backend_foundation`,
+`cleanup_backend_foundation_advisor_fixes`, and
+`complete_cleanup_phase1_model` migrations were applied on August 24, 2026.
+They preserve the legacy `reports.status` field while adding a
+server-managed cleanup-state projection, soft report expiration, immutable
+cleanup attempts, versioned completion submissions, private reviews, and
+versioned waiver acceptances. No placeholder or final legal waiver text was
+seeded.
+
+Phase 1 stores ordered after-photo metadata in
+`cleanup_submission_photos` instead of an array on the submission row. Every
+submission is transactionally constrained to one through three photos, while
+each revision and its evidence remain immutable. Completed attempts record an
+explicit `reporter_approved`, `self_approved`, or `auto_approved` outcome and
+the final manual reviewer when that profile still exists. Request-change
+reasons are limited to the four product-approved structured values.
+
+The migrations replace both dashboard-created destructive expiration jobs with
+one version-controlled hourly `litterbugs-workflow-maintenance` job. Existing
+reports were backfilled to `available`; expired available reports are retained
+with `expired_at` instead of being physically deleted, and completed reports
+are excluded from report expiration. Report owners retain the existing create,
+edit, and delete behavior only while reports are available and active. Cleanup
+workflow columns and transactional tables have no direct client write grants.
+
+The private `cleanup_photos` bucket accepts JPEG, PNG, WebP, HEIC, and HEIF
+images of at most 5 MB under the future `uid/attempt/submission/file` path
+contract. Its policies reserve writes for the cleaner on active attempts and
+public reads for accepted evidence on completed attempts.
+
+`tests/cleanup_backend_foundation.sql` and `tests/cleanup_phase1_model.sql`
+passed against the hosted schema inside transactions that rolled back all Auth
+users, reports, waiver rows, attempts, submissions, reviews, photo metadata,
+Storage fixtures, and scheduler assertions. The hosted performance advisor
+reports no missing cleanup foreign-key indexes or duplicate cleanup SELECT
+policies; newly added indexes remain expectedly unused until workflow traffic
+begins.
+
+## Volunteer cleanup transition security
+
+The hosted `secure_cleanup_state_transitions` migration was applied on August
+24, 2026. Cleanup mutations now run only through the authenticated
+`claim_cleanup`, `release_cleanup`, `submit_cleanup`, and `review_cleanup` RPCs.
+Each RPC derives the cleaner or reviewer from `auth.uid()`, rejects anonymous
+Supabase users, validates the current state, and creates timestamps in the
+database. Clients retain no direct write grants on cleanup transaction tables.
+
+Claiming locks the report row before checking availability, expires a stale
+claim within the same transaction, and relies on the existing partial unique
+index as a second concurrency guard. Only a permanent user who accepted the
+current active waiver can claim. Concurrent callers therefore cannot create two
+active attempts for one report.
+
+Submission requires one through three owned objects in the private cleanup
+bucket and records an immutable revision. Review permission comes from the
+original report owner rather than a client-supplied ID. Reporter approval,
+self-approval, structured change requests, 24-hour claim expiration, and
+48-hour automatic approval all preserve attempt and submission history.
+
+`tests/cleanup_phase2_security.sql` passed before deployment with the migration
+loaded in a rollback-only transaction and passed again against the deployed
+schema. It covers guest denial, missing-waiver denial, atomic claim conflicts,
+direct-write rejection, unauthorized release and review attempts, spoofed photo
+paths, revision history, all approval methods, claim expiration, auto-approval,
+and exact function grants.
+
 `tests/profile_foundation.sql` is a rollback-only disposable-database suite for
 profile provisioning and validation, lifetime counts, block/moderation RLS, and
 avatar paths. It must not be run directly against retained hosted data.

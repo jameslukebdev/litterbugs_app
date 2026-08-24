@@ -20,7 +20,10 @@ vi.mock('@/lib/supabase/client', () => ({
 }));
 
 const report: Report = {
+  cancelled_at: null,
+  cleanup_state: 'available',
   created_at: '2026-08-21T12:00:00.000Z',
+  expired_at: null,
   expires_at: '2026-09-20T12:00:00.000Z',
   id: 'report-id',
   latitude: 35.99,
