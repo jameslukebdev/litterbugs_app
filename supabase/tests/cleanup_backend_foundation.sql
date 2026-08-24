@@ -28,18 +28,6 @@ values
     now()
   );
 
-insert into public.cleanup_waiver_versions (
-  version,
-  title,
-  body,
-  is_active
-) values (
-  'development-placeholder-v1',
-  'Development cleanup guidelines',
-  'Disposable test text. This is not legal waiver content.',
-  true
-);
-
 set local role authenticated;
 select set_config(
   'request.jwt.claim.sub',
@@ -64,10 +52,9 @@ insert into public.reports (
   -78
 );
 
-insert into public.cleanup_waiver_acceptances (user_id, waiver_version)
-values (
-  '11111111-1111-4111-8111-111111111111',
-  'development-placeholder-v1'
+select public.accept_cleanup_waiver(
+  'cleanup-waiver-development-v1',
+  'cleanup-guidelines-development-v1'
 );
 
 do $$
@@ -123,6 +110,7 @@ begin
     cleaner_id,
     reporter_id,
     waiver_version,
+    guidelines_version,
     claimed_at,
     claim_expires_at,
     is_self_cleanup
@@ -130,7 +118,8 @@ begin
     report_id,
     '22222222-2222-4222-8222-222222222222',
     '11111111-1111-4111-8111-111111111111',
-    'development-placeholder-v1',
+    'cleanup-waiver-development-v1',
+    'cleanup-guidelines-development-v1',
     now(),
     now() + interval '24 hours',
     false
@@ -147,6 +136,7 @@ begin
       cleaner_id,
       reporter_id,
       waiver_version,
+      guidelines_version,
       claimed_at,
       claim_expires_at,
       is_self_cleanup
@@ -154,7 +144,8 @@ begin
       report_id,
       '11111111-1111-4111-8111-111111111111',
       '11111111-1111-4111-8111-111111111111',
-      'development-placeholder-v1',
+      'cleanup-waiver-development-v1',
+      'cleanup-guidelines-development-v1',
       now(),
       now() + interval '24 hours',
       true
@@ -208,13 +199,15 @@ begin
       cleaner_id,
       reporter_id,
       waiver_version,
+      guidelines_version,
       claimed_at,
       claim_expires_at
     ) values (
       report_id,
       '11111111-1111-4111-8111-111111111111',
       '11111111-1111-4111-8111-111111111111',
-      'development-placeholder-v1',
+      'cleanup-waiver-development-v1',
+      'cleanup-guidelines-development-v1',
       now(),
       now() + interval '24 hours'
     );

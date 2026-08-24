@@ -28,18 +28,6 @@ values
     now()
   );
 
-insert into public.cleanup_waiver_versions (
-  version,
-  title,
-  body,
-  is_active
-) values (
-  'phase1-test-waiver-v1',
-  'Phase 1 disposable test waiver',
-  'Disposable test text. This is not legal waiver content.',
-  true
-);
-
 insert into public.reports (
   id,
   user_id,
@@ -62,6 +50,7 @@ insert into public.cleanup_attempts (
   cleaner_id,
   reporter_id,
   waiver_version,
+  guidelines_version,
   status,
   is_self_cleanup,
   claimed_at,
@@ -71,7 +60,8 @@ insert into public.cleanup_attempts (
   '44444444-4444-4444-8444-444444444444',
   '22222222-2222-4222-8222-222222222222',
   '11111111-1111-4111-8111-111111111111',
-  'phase1-test-waiver-v1',
+  'cleanup-waiver-development-v1',
+  'cleanup-guidelines-development-v1',
   'claimed',
   false,
   now(),

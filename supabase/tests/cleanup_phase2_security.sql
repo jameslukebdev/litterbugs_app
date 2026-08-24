@@ -35,27 +35,21 @@ values
     now()
   );
 
-insert into public.cleanup_waiver_versions (
-  version,
-  title,
-  body,
-  is_active
-) values (
-  'phase2-test-waiver-v1',
-  'Phase 2 disposable test waiver',
-  'Disposable test text. This is not legal waiver content.',
-  true
-);
-
-insert into public.cleanup_waiver_acceptances (user_id, waiver_version)
+insert into public.cleanup_waiver_acceptances (
+  user_id,
+  waiver_version,
+  guidelines_version
+)
 values
   (
     '22222222-2222-4222-8222-222222222222',
-    'phase2-test-waiver-v1'
+    'cleanup-waiver-development-v1',
+    'cleanup-guidelines-development-v1'
   ),
   (
     '33333333-3333-4333-8333-333333333333',
-    'phase2-test-waiver-v1'
+    'cleanup-waiver-development-v1',
+    'cleanup-guidelines-development-v1'
   );
 
 insert into public.reports (
@@ -527,10 +521,9 @@ select set_config(
   true
 );
 
-insert into public.cleanup_waiver_acceptances (user_id, waiver_version)
-values (
-  '11111111-1111-4111-8111-111111111111',
-  'phase2-test-waiver-v1'
+select public.accept_cleanup_waiver(
+  'cleanup-waiver-development-v1',
+  'cleanup-guidelines-development-v1'
 );
 
 do $$

@@ -26,6 +26,7 @@ export type Database = {
           final_reviewer_id: string | null
           final_submission_id: string | null
           first_submitted_at: string | null
+          guidelines_version: string
           id: string
           is_self_cleanup: boolean
           last_activity_at: string
@@ -48,6 +49,7 @@ export type Database = {
           final_reviewer_id?: string | null
           final_submission_id?: string | null
           first_submitted_at?: string | null
+          guidelines_version: string
           id?: string
           is_self_cleanup?: boolean
           last_activity_at?: string
@@ -70,6 +72,7 @@ export type Database = {
           final_reviewer_id?: string | null
           final_submission_id?: string | null
           first_submitted_at?: string | null
+          guidelines_version?: string
           id?: string
           is_self_cleanup?: boolean
           last_activity_at?: string
@@ -119,10 +122,10 @@ export type Database = {
           },
           {
             foreignKeyName: "cleanup_attempts_waiver_version_fkey"
-            columns: ["waiver_version"]
+            columns: ["waiver_version", "guidelines_version"]
             isOneToOne: false
             referencedRelation: "cleanup_waiver_versions"
-            referencedColumns: ["version"]
+            referencedColumns: ["waiver_version", "guidelines_version"]
           },
         ]
       }
@@ -257,16 +260,19 @@ export type Database = {
       cleanup_waiver_acceptances: {
         Row: {
           accepted_at: string
+          guidelines_version: string
           user_id: string
           waiver_version: string
         }
         Insert: {
           accepted_at?: string
+          guidelines_version: string
           user_id: string
           waiver_version: string
         }
         Update: {
           accepted_at?: string
+          guidelines_version?: string
           user_id?: string
           waiver_version?: string
         }
@@ -279,38 +285,41 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "cleanup_waiver_acceptances_waiver_version_fkey"
-            columns: ["waiver_version"]
+            foreignKeyName: "cleanup_waiver_acceptances_version_fkey"
+            columns: ["waiver_version", "guidelines_version"]
             isOneToOne: false
             referencedRelation: "cleanup_waiver_versions"
-            referencedColumns: ["version"]
+            referencedColumns: ["waiver_version", "guidelines_version"]
           },
         ]
       }
       cleanup_waiver_versions: {
         Row: {
           body: string
+          guidelines_version: string
           is_active: boolean
           published_at: string
           retired_at: string | null
           title: string
-          version: string
+          waiver_version: string
         }
         Insert: {
           body: string
+          guidelines_version: string
           is_active?: boolean
           published_at?: string
           retired_at?: string | null
           title: string
-          version: string
+          waiver_version: string
         }
         Update: {
           body?: string
+          guidelines_version?: string
           is_active?: boolean
           published_at?: string
           retired_at?: string | null
           title?: string
-          version?: string
+          waiver_version?: string
         }
         Relationships: []
       }
@@ -523,6 +532,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_cleanup_waiver: {
+        Args: {
+          accepted_guidelines_version: string
+          accepted_waiver_version: string
+        }
+        Returns: {
+          accepted_at: string
+          guidelines_version: string
+          user_id: string
+          waiver_version: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cleanup_waiver_acceptances"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       claim_cleanup: {
         Args: { target_report_id: string }
         Returns: {
@@ -536,6 +563,7 @@ export type Database = {
           final_reviewer_id: string | null
           final_submission_id: string | null
           first_submitted_at: string | null
+          guidelines_version: string
           id: string
           is_self_cleanup: boolean
           last_activity_at: string
@@ -569,6 +597,7 @@ export type Database = {
           final_reviewer_id: string | null
           final_submission_id: string | null
           first_submitted_at: string | null
+          guidelines_version: string
           id: string
           is_self_cleanup: boolean
           last_activity_at: string
@@ -606,6 +635,7 @@ export type Database = {
           final_reviewer_id: string | null
           final_submission_id: string | null
           first_submitted_at: string | null
+          guidelines_version: string
           id: string
           is_self_cleanup: boolean
           last_activity_at: string

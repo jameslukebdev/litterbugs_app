@@ -32,6 +32,16 @@ import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
 import MapReportSheet, { getMapReportSheetMetrics } from './MapReportSheet';
 import ReporterIdentity from './ReporterIdentity';
+import CleanupWaiverModal from './CleanupWaiverModal';
+import {
+  acceptCleanupWaiver,
+  claimCleanup,
+  loadCurrentCleanupWaiver,
+} from './lib/cleanup';
+import {
+  canOfferCleanup,
+  cleanupActionMessage,
+} from './lib/cleanupEligibility';
 import { useProfile } from './lib/profile';
 import * as FileSystem from 'expo-file-system/legacy';
 
@@ -80,6 +90,11 @@ export default function MapScreen({ route, navigation }) {
   const [isSaving, setIsSaving] = useState(false);
   const [photosLoading, setPhotosLoading] = useState(false);
   const [mapSheetExpanded, setMapSheetExpanded] = useState(false);
+  const [cleanupWaiver, setCleanupWaiver] = useState(null);
+  const [cleanupWaiverOpen, setCleanupWaiverOpen] = useState(false);
+  const [cleanupWaiverQueued, setCleanupWaiverQueued] = useState(false);
+  const [reportReopenQueued, setReportReopenQueued] = useState(false);
+  const [cleanupActionBusy, setCleanupActionBusy] = useState(false);
   // Report detail photo carousel
   const [reportPhotoIndex, setReportPhotoIndex] = useState(0);
   const { user: currentUser } = useSession();
@@ -120,6 +135,28 @@ export default function MapScreen({ route, navigation }) {
     + BOTTOM_NAV_METRICS.mapControlGap;
   // Leave 20px margin on each side of the main report photo
   const reportHeroWidth = Math.max(screenWidth - 40, 280);
+
+  useEffect(() => {
+    if (!cleanupWaiverQueued || detailsOpen) return undefined;
+
+    const timer = setTimeout(() => {
+      setCleanupWaiverQueued(false);
+      setCleanupWaiverOpen(true);
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [cleanupWaiverQueued, detailsOpen]);
+
+  useEffect(() => {
+    if (!reportReopenQueued || cleanupWaiverOpen) return undefined;
+
+    const timer = setTimeout(() => {
+      setReportReopenQueued(false);
+      if (selectedReport) setDetailsOpen(true);
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [cleanupWaiverOpen, reportReopenQueued, selectedReport]);
 
 
   // const PATREON_URL = "https://patreon.com/litterbugs?utm_medium=unknown&utm_source=join_link&utm_campaign=creatorshare_creator&utm_content=copyLink"; // <-- paste your real link
@@ -791,6 +828,73 @@ useEffect(() => {
 
 // Checks if User is Owner of Report
   const isOwner = canManageReport(selectedReport, currentUser);
+  const cleanupEligible = canOfferCleanup(selectedReport, currentUser);
+
+  const finishCleanupClaim = async ({ reopenReport = false } = {}) => {
+    if (!selectedReport?.id) return;
+
+    await claimCleanup(selectedReport.id);
+
+    const claimedReport = {
+      ...selectedReport,
+      cleanup_state: 'claimed',
+    };
+
+    setSelectedReport(claimedReport);
+    upsertReport(claimedReport);
+    setCleanupWaiverOpen(false);
+    if (reopenReport) setReportReopenQueued(true);
+
+    Alert.alert(
+      'Cleanup claimed',
+      'This cleanup is reserved for you for 24 hours.'
+    );
+  };
+
+  const beginCleanupClaim = async () => {
+    if (cleanupActionBusy || !cleanupEligible) return;
+
+    try {
+      setCleanupActionBusy(true);
+      const waiverStatus = await loadCurrentCleanupWaiver();
+
+      if (waiverStatus.acceptedAt) {
+        await finishCleanupClaim();
+        return;
+      }
+
+      setCleanupWaiver(waiverStatus.waiver);
+      setCleanupWaiverQueued(true);
+      setDetailsOpen(false);
+    } catch (error) {
+      Alert.alert('Unable to start cleanup', cleanupActionMessage(error));
+    } finally {
+      setCleanupActionBusy(false);
+    }
+  };
+
+  const acceptWaiverAndClaim = async () => {
+    if (!cleanupWaiver || cleanupActionBusy) return;
+
+    try {
+      setCleanupActionBusy(true);
+      await acceptCleanupWaiver(cleanupWaiver);
+      await finishCleanupClaim({ reopenReport: true });
+    } catch (error) {
+      if (/cleanup_waiver_outdated/i.test(error?.message ?? '')) {
+        try {
+          const waiverStatus = await loadCurrentCleanupWaiver();
+          setCleanupWaiver(waiverStatus.waiver);
+        } catch (refreshError) {
+          console.log('Cleanup waiver refresh error:', refreshError);
+        }
+      }
+
+      Alert.alert('Unable to start cleanup', cleanupActionMessage(error));
+    } finally {
+      setCleanupActionBusy(false);
+    }
+  };
 
 // Links out to Patreon Account
 // const openPatreon = async () => {
@@ -2258,12 +2362,41 @@ const renderReportStep = () => {
           )}
 
 
-          {/*
-            Version 2:
-            Cleanup status, cleaner identity, claim button,
-            bounty/payment information and before/after
-            cleanup information can be inserted here.
-          */}
+          {cleanupEligible && (
+            <View style={styles.cleanupEligibilityCard}>
+              <View style={styles.cleanupEligibilityHeader}>
+                <View style={styles.cleanupEligibilityIcon}>
+                  <Ionicons name="leaf-outline" size={24} color="#2F7D32" />
+                </View>
+                <View style={styles.cleanupEligibilityCopy}>
+                  <Text style={styles.cleanupEligibilityTitle}>Ready to clean this up?</Text>
+                  <Text style={styles.cleanupEligibilityText}>
+                    Claim this report for 24 hours. First-time cleaners review the current safety acknowledgment before claiming.
+                  </Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.cleanupButton,
+                  cleanupActionBusy && styles.cleanupButtonDisabled,
+                ]}
+                onPress={beginCleanupClaim}
+                disabled={cleanupActionBusy}
+                accessibilityRole="button"
+                accessibilityLabel="Clean Up"
+              >
+                {cleanupActionBusy ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons name="hand-left-outline" size={21} color="#FFFFFF" />
+                    <Text style={styles.cleanupButtonText}>Clean Up</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
 
         </View>
 
@@ -2448,6 +2581,18 @@ const renderReportStep = () => {
     </View>
   </View>
 </Modal>
+
+<CleanupWaiverModal
+  visible={cleanupWaiverOpen}
+  waiver={cleanupWaiver}
+  accepting={cleanupActionBusy}
+  onAccept={acceptWaiverAndClaim}
+  onClose={() => {
+    if (cleanupActionBusy) return;
+    setCleanupWaiverOpen(false);
+    setReportReopenQueued(true);
+  }}
+/>
 
     </View>
   );
@@ -3482,6 +3627,68 @@ reportDetailsText: {
   fontSize: 16,
   lineHeight: 24,
   color: '#374151',
+},
+
+cleanupEligibilityCard: {
+  marginBottom: 28,
+  padding: 18,
+  borderWidth: 1,
+  borderColor: '#C8D8C9',
+  borderRadius: 18,
+  backgroundColor: '#F4FAF4',
+},
+
+cleanupEligibilityHeader: {
+  flexDirection: 'row',
+  alignItems: 'flex-start',
+  gap: 12,
+},
+
+cleanupEligibilityIcon: {
+  width: 46,
+  height: 46,
+  borderRadius: 23,
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: '#E3F1E4',
+},
+
+cleanupEligibilityCopy: {
+  flex: 1,
+},
+
+cleanupEligibilityTitle: {
+  color: '#244A27',
+  fontSize: 18,
+  fontWeight: '800',
+},
+
+cleanupEligibilityText: {
+  marginTop: 5,
+  color: '#537056',
+  fontSize: 14,
+  lineHeight: 20,
+},
+
+cleanupButton: {
+  minHeight: 52,
+  marginTop: 17,
+  borderRadius: 14,
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 8,
+  backgroundColor: '#2F7D32',
+},
+
+cleanupButtonDisabled: {
+  opacity: 0.6,
+},
+
+cleanupButtonText: {
+  color: '#FFFFFF',
+  fontSize: 16,
+  fontWeight: '800',
 },
 
 

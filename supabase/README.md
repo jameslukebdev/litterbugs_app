@@ -158,6 +158,33 @@ direct-write rejection, unauthorized release and review attempts, spoofed photo
 paths, revision history, all approval methods, claim expiration, auto-approval,
 and exact function grants.
 
+## Cleanup waiver and eligibility
+
+The hosted `cleanup_waiver_and_eligibility` and
+`cleanup_waiver_advisor_indexes` migrations were applied on August 24, 2026.
+They independently version the cleanup acknowledgment and safety guidelines,
+record immutable acceptance timestamps, and preserve both accepted versions on
+each cleanup attempt. Direct acceptance inserts were removed from clients;
+`accept_cleanup_waiver` derives the permanent user from `auth.uid()` and accepts
+only the exact active version pair displayed by the app.
+
+The active text is explicitly labeled as a development-only placeholder. It
+includes basic protective-equipment, roadway, parking, hazardous-material,
+sharps, trespassing, local-regulation, and stop-if-unsafe guidance. It also
+states that a lawyer-approved version must replace it before public release.
+
+The mobile report detail view offers **Clean Up** only to permanent users for
+available, unexpired, uncancelled reports. First-time cleaners must explicitly
+check the acknowledgment before accepting and atomically claiming the report.
+Returning cleaners with the current version pair proceed directly to claiming;
+changing either required version forces a new acceptance.
+
+`tests/cleanup_phase3_waiver.sql` verifies guest denial, exact-version
+acceptance, immutable/idempotent acceptance records, removal of direct inserts,
+claim version history, and required re-acceptance after a version change. All
+earlier cleanup suites were updated for the two-version contract and pass
+against the deployed schema in rollback-only transactions.
+
 `tests/profile_foundation.sql` is a rollback-only disposable-database suite for
 profile provisioning and validation, lifetime counts, block/moderation RLS, and
 avatar paths. It must not be run directly against retained hosted data.
