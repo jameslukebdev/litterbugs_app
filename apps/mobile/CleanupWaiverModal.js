@@ -97,12 +97,12 @@ export default function CleanupWaiverModal({
             onPress={onAccept}
             disabled={!acknowledged || accepting}
             accessibilityRole="button"
-            accessibilityLabel="Accept cleanup acknowledgment and claim cleanup"
+            accessibilityLabel="Accept cleanup acknowledgment and continue"
           >
             {accepting ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={styles.acceptButtonText}>Accept and Claim Cleanup</Text>
+              <Text style={styles.acceptButtonText}>Accept and Continue</Text>
             )}
           </TouchableOpacity>
         </View>
