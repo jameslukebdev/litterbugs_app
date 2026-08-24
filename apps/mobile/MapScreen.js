@@ -134,6 +134,7 @@ export default function MapScreen({ route, navigation }) {
     commitMapRegion,
     searchMapRegion,
     refreshReports,
+    getReportById,
     upsertReport,
     removeReport,
   } = useReports();
@@ -871,23 +872,60 @@ useEffect(() => {
 
 useEffect(() => {
   const requestedReportId = route?.params?.reportId;
-  if (!requestedReportId || markers.length === 0) return;
+  if (!requestedReportId) return undefined;
 
-  const requestedMarker = markers.find(
-    ({ id }) => String(id) === String(requestedReportId)
-  );
+  let active = true;
 
-  if (!requestedMarker) return;
+  const openRequestedReport = async () => {
+    const requestedMarker = markers.find(
+      ({ id }) => String(id) === String(requestedReportId)
+    );
 
-  commitMapRegion({
-    latitude: requestedMarker.coordinate.latitude,
-    longitude: requestedMarker.coordinate.longitude,
-    latitudeDelta: 0.02,
-    longitudeDelta: 0.02,
-  });
-  openReportDetails(requestedMarker.report);
-  navigation.setParams({ reportId: undefined });
-}, [commitMapRegion, markers, navigation, route?.params?.reportId]);
+    try {
+      const report = requestedMarker?.report
+        ?? await getReportById(requestedReportId);
+
+      if (!active) return;
+
+      if (!report) {
+        Alert.alert('Report unavailable', 'This cleanup report could not be opened.');
+        navigation.setParams({ reportId: undefined });
+        return;
+      }
+
+      const latitude = Number(report.latitude);
+      const longitude = Number(report.longitude);
+      if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+        commitMapRegion({
+          latitude,
+          longitude,
+          latitudeDelta: 0.02,
+          longitudeDelta: 0.02,
+        });
+      }
+
+      openReportDetails(report);
+      navigation.setParams({ reportId: undefined });
+    } catch (error) {
+      console.log('Requested report load error:', error);
+      if (active) {
+        Alert.alert('Report unavailable', 'Check your connection and try again.');
+      }
+    }
+  };
+
+  openRequestedReport();
+
+  return () => {
+    active = false;
+  };
+}, [
+  commitMapRegion,
+  getReportById,
+  markers,
+  navigation,
+  route?.params?.reportId,
+]);
 
 // Load Photos into Existing Report
 useEffect(() => {
