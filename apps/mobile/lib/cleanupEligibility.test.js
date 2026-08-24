@@ -93,6 +93,8 @@ describe('cleanup eligibility', () => {
       showClaimActions: false,
     });
     expect(cleanupStatusPresentation({ cleanup_state: 'changes_requested' }, true).title).toBe('Changes Requested');
+    expect(cleanupStatusPresentation({ cleanup_state: 'changes_requested' }, true).showSubmissionAction).toBe(true);
+    expect(cleanupStatusPresentation({ cleanup_state: 'changes_requested' }, false).showSubmissionAction).toBe(false);
     expect(cleanupStatusPresentation({ cleanup_state: 'completed' }, true).title).toBe('Cleanup Complete');
     expect(cleanupStatusPresentation({ cleanup_state: 'available' }, true)).toBeNull();
   });

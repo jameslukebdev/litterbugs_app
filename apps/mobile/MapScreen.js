@@ -1165,6 +1165,16 @@ useEffect(() => {
     );
   };
 
+  const openCleanupSubmission = () => {
+    if (!selectedCleanupAttempt?.id || !selectedReport?.id) return;
+
+    setDetailsOpen(false);
+    navigation.getParent()?.navigate('CleanupSubmission', {
+      cleanupId: selectedCleanupAttempt.id,
+      reportId: selectedReport.id,
+    });
+  };
+
   const executeCleanupRelease = async () => {
     if (!selectedCleanupAttempt?.id || cleanupActionBusy) return;
 
@@ -2772,12 +2782,7 @@ const renderReportStep = () => {
 
                   <TouchableOpacity
                     style={[styles.cleanupActionButton, styles.cleanupCompleteButton]}
-                    onPress={() => {
-                      Alert.alert(
-                        'Complete cleanup',
-                        'Photo and result submission will be added in the next cleanup phase. Your claim remains active.'
-                      );
-                    }}
+                    onPress={openCleanupSubmission}
                     disabled={cleanupActionBusy}
                     accessibilityRole="button"
                     accessibilityLabel="Complete Cleanup"
@@ -2801,6 +2806,19 @@ const renderReportStep = () => {
                         <Text style={styles.cleanupReleaseActionText}>Release Cleanup</Text>
                       </>
                     )}
+                  </TouchableOpacity>
+                </View>
+              ) : cleanupStatus.showSubmissionAction ? (
+                <View style={styles.cleanupActionStack}>
+                  <TouchableOpacity
+                    style={[styles.cleanupActionButton, styles.cleanupCompleteButton]}
+                    onPress={openCleanupSubmission}
+                    disabled={cleanupActionBusy}
+                    accessibilityRole="button"
+                    accessibilityLabel="Update Cleanup Submission"
+                  >
+                    <Ionicons name="camera-outline" size={20} color="#2F7D32" />
+                    <Text style={styles.cleanupSecondaryActionText}>Update Cleanup Submission</Text>
                   </TouchableOpacity>
                 </View>
               ) : null}

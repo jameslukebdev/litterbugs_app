@@ -18,6 +18,7 @@ import AppTabs from './AppTabs';
 import AuthScreen from './AuthScreen';
 import BlockedAccountsScreen from './BlockedAccountsScreen';
 import CompleteProfileScreen from './CompleteProfileScreen';
+import CleanupSubmissionScreen from './CleanupSubmissionScreen';
 import EditProfileScreen from './EditProfileScreen';
 import PublicProfileScreen from './PublicProfileScreen';
 import ReportUserScreen from './ReportUserScreen';
@@ -145,6 +146,11 @@ function AppNavigation({ session, passwordRecovery, onRecoveryComplete }) {
           name="EditProfile"
           component={EditProfileScreen}
           options={{ ...headerOptions, title: 'Edit profile' }}
+        />
+        <Stack.Screen
+          name="CleanupSubmission"
+          component={CleanupSubmissionScreen}
+          options={{ ...headerOptions, title: 'Complete cleanup' }}
         />
         <Stack.Screen
           name="PublicProfile"
