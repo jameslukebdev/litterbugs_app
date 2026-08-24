@@ -36,11 +36,15 @@ import CleanupWaiverModal from './CleanupWaiverModal';
 import {
   acceptCleanupWaiver,
   claimCleanup,
+  loadActiveCleanupAttempt,
   loadCurrentCleanupWaiver,
+  releaseCleanup,
 } from './lib/cleanup';
 import {
   canOfferCleanup,
   cleanupActionMessage,
+  isCleanupInProgress,
+  isCurrentCleaner,
 } from './lib/cleanupEligibility';
 import { useProfile } from './lib/profile';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -94,7 +98,10 @@ export default function MapScreen({ route, navigation }) {
   const [cleanupWaiverOpen, setCleanupWaiverOpen] = useState(false);
   const [cleanupWaiverQueued, setCleanupWaiverQueued] = useState(false);
   const [reportReopenQueued, setReportReopenQueued] = useState(false);
+  const [claimConfirmationQueued, setClaimConfirmationQueued] = useState(false);
   const [cleanupActionBusy, setCleanupActionBusy] = useState(false);
+  const [selectedCleanupAttempt, setSelectedCleanupAttempt] = useState(null);
+  const [cleanupAttemptLoading, setCleanupAttemptLoading] = useState(false);
   // Report detail photo carousel
   const [reportPhotoIndex, setReportPhotoIndex] = useState(0);
   const { user: currentUser } = useSession();
@@ -741,8 +748,16 @@ const submitReport = async () => {
 
 
 // Set Map Marker Based on Severity 
-    const getMarkerStyleBySeverity = (severity) => {
-      const s = (severity || '').toLowerCase();
+    const getMarkerStyleByReport = (report) => {
+      if (isCleanupInProgress(report)) {
+        return { bg: '#E0A800', icon: 'time-outline' };
+      }
+
+      if (report?.cleanup_state === 'completed') {
+        return { bg: '#2F7D32', icon: 'checkmark-circle-outline' };
+      }
+
+      const s = (report?.severity || '').toLowerCase();
     
       if (s === 'low') {
         return { bg: '#43A047', icon: 'trash-outline' }; // green + bottle-ish
@@ -825,29 +840,89 @@ useEffect(() => {
   loadPhotoUrls();
 }, [selectedReport]);
 
+useEffect(() => {
+  let active = true;
+
+  if (!selectedReport?.id || !isCleanupInProgress(selectedReport) || !currentUserId) {
+    setSelectedCleanupAttempt(null);
+    setCleanupAttemptLoading(false);
+    return undefined;
+  }
+
+  setCleanupAttemptLoading(true);
+  loadActiveCleanupAttempt(selectedReport.id)
+    .then((attempt) => {
+      if (active) setSelectedCleanupAttempt(attempt);
+    })
+    .catch((error) => {
+      console.log('Cleanup attempt load error:', error);
+      if (active) setSelectedCleanupAttempt(null);
+    })
+    .finally(() => {
+      if (active) setCleanupAttemptLoading(false);
+    });
+
+  return () => {
+    active = false;
+  };
+}, [currentUserId, selectedReport?.cleanup_state, selectedReport?.id]);
+
 
 // Checks if User is Owner of Report
-  const isOwner = canManageReport(selectedReport, currentUser);
+  const isOwner = Boolean(
+    canManageReport(selectedReport, currentUser)
+    && selectedReport?.cleanup_state === 'available'
+    && !selectedReport?.expired_at
+    && !selectedReport?.cancelled_at
+  );
   const cleanupEligible = canOfferCleanup(selectedReport, currentUser);
+  const cleanupInProgress = isCleanupInProgress(selectedReport);
+  const currentUserIsCleaner = isCurrentCleaner(
+    selectedCleanupAttempt,
+    currentUser
+  );
 
-  const finishCleanupClaim = async ({ reopenReport = false } = {}) => {
-    if (!selectedReport?.id) return;
+  const executeCleanupClaim = async () => {
+    if (!selectedReport?.id || cleanupActionBusy) return;
 
-    await claimCleanup(selectedReport.id);
+    try {
+      setCleanupActionBusy(true);
+      const claimedAttempt = await claimCleanup(selectedReport.id);
 
-    const claimedReport = {
-      ...selectedReport,
-      cleanup_state: 'claimed',
-    };
+      const claimedReport = {
+        ...selectedReport,
+        cleanup_state: 'claimed',
+      };
 
-    setSelectedReport(claimedReport);
-    upsertReport(claimedReport);
-    setCleanupWaiverOpen(false);
-    if (reopenReport) setReportReopenQueued(true);
+      setSelectedCleanupAttempt(claimedAttempt);
+      setSelectedReport(claimedReport);
+      upsertReport(claimedReport);
+
+      Alert.alert(
+        'Cleanup claimed',
+        `Complete by ${new Date(claimedAttempt.claim_expires_at).toLocaleString()}.`
+      );
+    } catch (error) {
+      Alert.alert('Unable to claim cleanup', cleanupActionMessage(error));
+      await refreshReports({ showRefresh: false });
+    } finally {
+      setCleanupActionBusy(false);
+    }
+  };
+
+  const confirmCleanupClaim = () => {
+    if (!cleanupEligible) return;
 
     Alert.alert(
-      'Cleanup claimed',
-      'This cleanup is reserved for you for 24 hours.'
+      'Claim this cleanup?',
+      "You'll have 24 hours to complete the cleanup and submit your results.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Claim Cleanup',
+          onPress: executeCleanupClaim,
+        },
+      ]
     );
   };
 
@@ -859,7 +934,7 @@ useEffect(() => {
       const waiverStatus = await loadCurrentCleanupWaiver();
 
       if (waiverStatus.acceptedAt) {
-        await finishCleanupClaim();
+        confirmCleanupClaim();
         return;
       }
 
@@ -873,13 +948,15 @@ useEffect(() => {
     }
   };
 
-  const acceptWaiverAndClaim = async () => {
+  const acceptWaiverAndContinue = async () => {
     if (!cleanupWaiver || cleanupActionBusy) return;
 
     try {
       setCleanupActionBusy(true);
       await acceptCleanupWaiver(cleanupWaiver);
-      await finishCleanupClaim({ reopenReport: true });
+      setCleanupWaiverOpen(false);
+      setReportReopenQueued(true);
+      setClaimConfirmationQueued(true);
     } catch (error) {
       if (/cleanup_waiver_outdated/i.test(error?.message ?? '')) {
         try {
@@ -894,6 +971,93 @@ useEffect(() => {
     } finally {
       setCleanupActionBusy(false);
     }
+  };
+
+  useEffect(() => {
+    if (
+      !claimConfirmationQueued
+      || !detailsOpen
+      || cleanupWaiverOpen
+      || cleanupActionBusy
+    ) return undefined;
+
+    const timer = setTimeout(() => {
+      setClaimConfirmationQueued(false);
+      confirmCleanupClaim();
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [
+    claimConfirmationQueued,
+    cleanupActionBusy,
+    cleanupWaiverOpen,
+    detailsOpen,
+    selectedReport?.id,
+  ]);
+
+  const openCleanupNavigation = async () => {
+    const latitude = Number(selectedReport?.latitude);
+    const longitude = Number(selectedReport?.longitude);
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      Alert.alert('Location unavailable', 'This report does not have a valid cleanup location.');
+      return;
+    }
+
+    const destination = `${latitude},${longitude}`;
+    const nativeUrl = Platform.OS === 'ios'
+      ? `http://maps.apple.com/?daddr=${destination}`
+      : `geo:${destination}?q=${destination}`;
+    const fallbackUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
+
+    try {
+      const supported = await Linking.canOpenURL(nativeUrl);
+      await Linking.openURL(supported ? nativeUrl : fallbackUrl);
+    } catch (error) {
+      console.log('Cleanup navigation error:', error);
+      Alert.alert('Unable to open maps', 'Try opening the report location in your maps app.');
+    }
+  };
+
+  const executeCleanupRelease = async () => {
+    if (!selectedCleanupAttempt?.id || cleanupActionBusy) return;
+
+    try {
+      setCleanupActionBusy(true);
+      const releasedAttempt = await releaseCleanup(selectedCleanupAttempt.id);
+      const availableReport = {
+        ...selectedReport,
+        cleanup_state: 'available',
+      };
+
+      setSelectedCleanupAttempt(null);
+      setSelectedReport(availableReport);
+      upsertReport(availableReport);
+
+      Alert.alert(
+        releasedAttempt.status === 'expired' ? 'Claim expired' : 'Cleanup released',
+        'This report is available for another volunteer.'
+      );
+    } catch (error) {
+      Alert.alert('Unable to release cleanup', cleanupActionMessage(error));
+    } finally {
+      setCleanupActionBusy(false);
+    }
+  };
+
+  const confirmCleanupRelease = () => {
+    Alert.alert(
+      'Release this cleanup?',
+      'The report will become available for another volunteer.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Release Cleanup',
+          style: 'destructive',
+          onPress: executeCleanupRelease,
+        },
+      ]
+    );
   };
 
 // Links out to Patreon Account
@@ -1685,7 +1849,7 @@ const renderReportStep = () => {
         >
 
         {markers.map((m) => {
-          const { bg, icon } = getMarkerStyleBySeverity(m?.report?.severity);
+          const { bg, icon } = getMarkerStyleByReport(m?.report);
 
           return (
             <Marker
@@ -2398,6 +2562,79 @@ const renderReportStep = () => {
             </View>
           )}
 
+          {cleanupInProgress && (
+            <View style={styles.cleanupProgressCard}>
+              <View style={styles.cleanupProgressHeader}>
+                <View style={styles.cleanupProgressIcon}>
+                  <Ionicons name="time-outline" size={24} color="#8A6400" />
+                </View>
+                <View style={styles.cleanupProgressCopy}>
+                  <Text style={styles.cleanupProgressTitle}>
+                    {currentUserIsCleaner ? 'Cleanup claimed' : 'Cleanup in Progress'}
+                  </Text>
+                  <Text style={styles.cleanupProgressText}>
+                    {currentUserIsCleaner && selectedCleanupAttempt?.claim_expires_at
+                      ? `Complete by ${new Date(selectedCleanupAttempt.claim_expires_at).toLocaleString()}.`
+                      : 'Another volunteer has claimed this report.'}
+                  </Text>
+                </View>
+              </View>
+
+              {cleanupAttemptLoading ? (
+                <View style={styles.cleanupProgressLoading}>
+                  <ActivityIndicator color="#8A6400" />
+                  <Text style={styles.cleanupProgressLoadingText}>Checking cleanup details…</Text>
+                </View>
+              ) : currentUserIsCleaner ? (
+                <View style={styles.cleanupActionStack}>
+                  <TouchableOpacity
+                    style={[styles.cleanupActionButton, styles.cleanupNavigateButton]}
+                    onPress={openCleanupNavigation}
+                    disabled={cleanupActionBusy}
+                    accessibilityRole="button"
+                    accessibilityLabel="Navigate to Cleanup"
+                  >
+                    <Ionicons name="navigate-outline" size={20} color="#FFFFFF" />
+                    <Text style={styles.cleanupPrimaryActionText}>Navigate to Cleanup</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.cleanupActionButton, styles.cleanupCompleteButton]}
+                    onPress={() => {
+                      Alert.alert(
+                        'Complete cleanup',
+                        'Photo and result submission will be added in the next cleanup phase. Your claim remains active.'
+                      );
+                    }}
+                    disabled={cleanupActionBusy}
+                    accessibilityRole="button"
+                    accessibilityLabel="Complete Cleanup"
+                  >
+                    <Ionicons name="checkmark-circle-outline" size={20} color="#2F7D32" />
+                    <Text style={styles.cleanupSecondaryActionText}>Complete Cleanup</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.cleanupActionButton, styles.cleanupReleaseButton]}
+                    onPress={confirmCleanupRelease}
+                    disabled={cleanupActionBusy}
+                    accessibilityRole="button"
+                    accessibilityLabel="Release Cleanup"
+                  >
+                    {cleanupActionBusy ? (
+                      <ActivityIndicator color="#A33A32" />
+                    ) : (
+                      <>
+                        <Ionicons name="return-down-back-outline" size={20} color="#A33A32" />
+                        <Text style={styles.cleanupReleaseActionText}>Release Cleanup</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+            </View>
+          )}
+
         </View>
 
       </ScrollView>
@@ -2586,7 +2823,7 @@ const renderReportStep = () => {
   visible={cleanupWaiverOpen}
   waiver={cleanupWaiver}
   accepting={cleanupActionBusy}
-  onAccept={acceptWaiverAndClaim}
+  onAccept={acceptWaiverAndContinue}
   onClose={() => {
     if (cleanupActionBusy) return;
     setCleanupWaiverOpen(false);
@@ -3688,6 +3925,108 @@ cleanupButtonDisabled: {
 cleanupButtonText: {
   color: '#FFFFFF',
   fontSize: 16,
+  fontWeight: '800',
+},
+
+cleanupProgressCard: {
+  marginBottom: 28,
+  padding: 18,
+  borderWidth: 1,
+  borderColor: '#E7CF79',
+  borderRadius: 18,
+  backgroundColor: '#FFF9DD',
+},
+
+cleanupProgressHeader: {
+  flexDirection: 'row',
+  alignItems: 'flex-start',
+  gap: 12,
+},
+
+cleanupProgressIcon: {
+  width: 46,
+  height: 46,
+  borderRadius: 23,
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: '#F8E9A6',
+},
+
+cleanupProgressCopy: {
+  flex: 1,
+},
+
+cleanupProgressTitle: {
+  color: '#664B00',
+  fontSize: 18,
+  fontWeight: '800',
+},
+
+cleanupProgressText: {
+  marginTop: 5,
+  color: '#806715',
+  fontSize: 14,
+  lineHeight: 20,
+},
+
+cleanupProgressLoading: {
+  marginTop: 16,
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 10,
+},
+
+cleanupProgressLoadingText: {
+  color: '#806715',
+  fontSize: 14,
+  fontWeight: '600',
+},
+
+cleanupActionStack: {
+  marginTop: 18,
+  gap: 10,
+},
+
+cleanupActionButton: {
+  minHeight: 50,
+  borderRadius: 13,
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 8,
+},
+
+cleanupNavigateButton: {
+  backgroundColor: '#2F7D32',
+},
+
+cleanupCompleteButton: {
+  borderWidth: 1,
+  borderColor: '#8FBC92',
+  backgroundColor: '#FFFFFF',
+},
+
+cleanupReleaseButton: {
+  borderWidth: 1,
+  borderColor: '#D9A6A1',
+  backgroundColor: '#FFFFFF',
+},
+
+cleanupPrimaryActionText: {
+  color: '#FFFFFF',
+  fontSize: 15,
+  fontWeight: '800',
+},
+
+cleanupSecondaryActionText: {
+  color: '#2F7D32',
+  fontSize: 15,
+  fontWeight: '800',
+},
+
+cleanupReleaseActionText: {
+  color: '#A33A32',
+  fontSize: 15,
   fontWeight: '800',
 },
 

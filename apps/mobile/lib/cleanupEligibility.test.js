@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
   canOfferCleanup,
   cleanupActionMessage,
+  isCleanupInProgress,
+  isCurrentCleaner,
 } from './cleanupEligibility';
 
 const permanentUser = { id: 'cleaner', is_anonymous: false };
@@ -46,5 +48,16 @@ describe('cleanup eligibility', () => {
     expect(cleanupActionMessage({ message: 'This cleanup was just claimed' })).toContain('just claimed');
     expect(cleanupActionMessage({ message: 'cleanup_waiver_outdated' })).toContain('changed');
     expect(cleanupActionMessage({ message: 'cleanup_requires_permanent_account' })).toContain('permanent account');
+    expect(cleanupActionMessage({ message: 'cleanup_not_cleaner' })).toContain('Only the cleaner');
+  });
+
+  it('distinguishes the active cleaner from other report viewers', () => {
+    const attempt = { cleaner_id: permanentUser.id };
+
+    expect(isCleanupInProgress({ cleanup_state: 'claimed' })).toBe(true);
+    expect(isCleanupInProgress({ cleanup_state: 'available' })).toBe(false);
+    expect(isCurrentCleaner(attempt, permanentUser)).toBe(true);
+    expect(isCurrentCleaner(attempt, { id: 'other', is_anonymous: false })).toBe(false);
+    expect(isCurrentCleaner(attempt, { id: permanentUser.id, is_anonymous: true })).toBe(false);
   });
 });

@@ -10,6 +10,20 @@ export function canOfferCleanup(report, user, now = new Date()) {
   return Number.isFinite(expirationTime) && expirationTime > now.getTime();
 }
 
+export function isCleanupInProgress(report) {
+  return ['claimed', 'completion_submitted', 'changes_requested'].includes(
+    report?.cleanup_state
+  );
+}
+
+export function isCurrentCleaner(attempt, user) {
+  return Boolean(
+    isPermanentUser(user)
+    && attempt?.cleaner_id
+    && attempt.cleaner_id === user.id
+  );
+}
+
 export function cleanupActionMessage(error) {
   const message = error?.message ?? '';
 
@@ -28,6 +42,12 @@ export function cleanupActionMessage(error) {
   if (/cleanup_requires_permanent_account|cleanup_profile_required/i.test(message)) {
     return 'Sign in with a permanent account before joining a cleanup.';
   }
+  if (/cleanup_not_cleaner/i.test(message)) {
+    return 'Only the cleaner who claimed this report can release it.';
+  }
+  if (/cleanup_(not_claimed|claim_expired)/i.test(message)) {
+    return 'This cleanup claim is no longer active.';
+  }
 
-  return 'We couldn’t start this cleanup. Check your connection and try again.';
+  return 'We couldn’t update this cleanup. Check your connection and try again.';
 }
