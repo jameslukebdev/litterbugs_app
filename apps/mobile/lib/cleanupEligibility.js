@@ -51,3 +51,11 @@ export function cleanupActionMessage(error) {
 
   return 'We couldn’t update this cleanup. Check your connection and try again.';
 }
+
+export function cleanupExpirationNoticeMessage(count) {
+  if (count > 1) {
+    return `${count} cleanup reservations expired. Those reports are available for other volunteers.`;
+  }
+
+  return 'Your 24-hour cleanup reservation expired. The report is available for another volunteer.';
+}

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   canOfferCleanup,
   cleanupActionMessage,
+  cleanupExpirationNoticeMessage,
   isCleanupInProgress,
   isCurrentCleaner,
 } from './cleanupEligibility';
@@ -59,5 +60,10 @@ describe('cleanup eligibility', () => {
     expect(isCurrentCleaner(attempt, permanentUser)).toBe(true);
     expect(isCurrentCleaner(attempt, { id: 'other', is_anonymous: false })).toBe(false);
     expect(isCurrentCleaner(attempt, { id: permanentUser.id, is_anonymous: true })).toBe(false);
+  });
+
+  it('describes one or multiple expired reservations', () => {
+    expect(cleanupExpirationNoticeMessage(1)).toContain('24-hour');
+    expect(cleanupExpirationNoticeMessage(2)).toContain('2 cleanup reservations');
   });
 });

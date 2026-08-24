@@ -110,8 +110,8 @@ the final manual reviewer when that profile still exists. Request-change
 reasons are limited to the four product-approved structured values.
 
 The migrations replace both dashboard-created destructive expiration jobs with
-one version-controlled hourly `litterbugs-workflow-maintenance` job. Existing
-reports were backfilled to `available`; expired available reports are retained
+one version-controlled once-per-minute `litterbugs-workflow-maintenance` job.
+Existing reports were backfilled to `available`; expired available reports are retained
 with `expired_at` instead of being physically deleted, and completed reports
 are excluded from report expiration. Report owners retain the existing create,
 edit, and delete behavior only while reports are available and active. Cleanup
@@ -157,6 +157,30 @@ schema. It covers guest denial, missing-waiver denial, atomic claim conflicts,
 direct-write rejection, unauthorized release and review attempts, spoofed photo
 paths, revision history, all approval methods, claim expiration, auto-approval,
 and exact function grants.
+
+## Cleanup release and expiration
+
+Cleanup claim and review durations are centralized in the private database
+functions `cleanup_claim_duration()` and `cleanup_review_duration()`. Their
+production values are fixed at 24 hours and 48 hours. Cleanup transition RPCs
+use those functions, and table constraints independently reject inconsistent
+deadlines.
+
+The server runs `private.run_cleanup_maintenance()` once per minute through one
+`litterbugs-workflow-maintenance` Cron job. The stored `claim_expires_at`
+timestamp remains authoritative: expiration history records that exact value,
+the report returns to `available`, and an unread `claim_expired` notice is
+created for the cleaner. The mobile app checks unread notices while active and
+when returning to the foreground. Mobile timers are used only to retrieve
+server-created notices; they never decide whether a claim expired.
+
+To test the 24-hour or 48-hour paths without changing production durations,
+use a rollback-only SQL transaction with disposable users and reports. Backdate
+both timestamps while preserving their constraint relationship, run
+`private.run_cleanup_maintenance()`, assert the resulting state, and finish with
+`rollback`. `tests/cleanup_phase5_expiration.sql` demonstrates this method. Do
+not edit the private duration functions for QA and do not commit shortened
+intervals.
 
 ## Cleanup waiver and eligibility
 

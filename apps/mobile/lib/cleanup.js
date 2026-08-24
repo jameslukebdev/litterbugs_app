@@ -67,3 +67,28 @@ export async function releaseCleanup(cleanupId) {
   if (error) throw error;
   return data;
 }
+
+export async function loadUnreadCleanupNotifications() {
+  const { data, error } = await supabase
+    .from('cleanup_notifications')
+    .select('id, cleanup_attempt_id, report_id, event_type, created_at')
+    .eq('event_type', 'claim_expired')
+    .is('read_at', null)
+    .order('created_at', { ascending: true })
+    .limit(20);
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function acknowledgeCleanupNotifications(notificationIds) {
+  if (!notificationIds.length) return [];
+
+  const { data, error } = await supabase.rpc(
+    'acknowledge_cleanup_notifications',
+    { target_notification_ids: notificationIds }
+  );
+
+  if (error) throw error;
+  return data ?? [];
+}

@@ -16,6 +16,7 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   ActivityIndicator,
+  AppState,
   Linking,
   useWindowDimensions,
 } from 'react-native';
@@ -35,14 +36,17 @@ import ReporterIdentity from './ReporterIdentity';
 import CleanupWaiverModal from './CleanupWaiverModal';
 import {
   acceptCleanupWaiver,
+  acknowledgeCleanupNotifications,
   claimCleanup,
   loadActiveCleanupAttempt,
   loadCurrentCleanupWaiver,
+  loadUnreadCleanupNotifications,
   releaseCleanup,
 } from './lib/cleanup';
 import {
   canOfferCleanup,
   cleanupActionMessage,
+  cleanupExpirationNoticeMessage,
   isCleanupInProgress,
   isCurrentCleaner,
 } from './lib/cleanupEligibility';
@@ -102,6 +106,7 @@ export default function MapScreen({ route, navigation }) {
   const [cleanupActionBusy, setCleanupActionBusy] = useState(false);
   const [selectedCleanupAttempt, setSelectedCleanupAttempt] = useState(null);
   const [cleanupAttemptLoading, setCleanupAttemptLoading] = useState(false);
+  const cleanupNoticeCheckInFlight = useRef(false);
   // Report detail photo carousel
   const [reportPhotoIndex, setReportPhotoIndex] = useState(0);
   const { user: currentUser } = useSession();
@@ -142,6 +147,66 @@ export default function MapScreen({ route, navigation }) {
     + BOTTOM_NAV_METRICS.mapControlGap;
   // Leave 20px margin on each side of the main report photo
   const reportHeroWidth = Math.max(screenWidth - 40, 280);
+
+  useEffect(() => {
+    if (!currentUserId) return undefined;
+
+    let active = true;
+
+    const checkExpirationNotices = async () => {
+      if (cleanupNoticeCheckInFlight.current) return;
+
+      try {
+        cleanupNoticeCheckInFlight.current = true;
+        const notices = await loadUnreadCleanupNotifications();
+        if (!active || notices.length === 0) return;
+
+        const expiredReportIds = new Set(
+          notices.map(({ report_id: reportId }) => reportId)
+        );
+        const expiredAttemptIds = new Set(
+          notices.map(({ cleanup_attempt_id: attemptId }) => attemptId)
+        );
+
+        setSelectedReport((report) => (
+          expiredReportIds.has(report?.id)
+            ? { ...report, cleanup_state: 'available' }
+            : report
+        ));
+        setSelectedCleanupAttempt((attempt) => (
+          expiredAttemptIds.has(attempt?.id) ? null : attempt
+        ));
+
+        Alert.alert(
+          notices.length > 1
+            ? 'Cleanup reservations expired'
+            : 'Cleanup reservation expired',
+          cleanupExpirationNoticeMessage(notices.length)
+        );
+
+        await acknowledgeCleanupNotifications(
+          notices.map(({ id }) => id)
+        );
+        await refreshReports({ showRefresh: false });
+      } catch (error) {
+        console.log('Cleanup expiration notice error:', error);
+      } finally {
+        cleanupNoticeCheckInFlight.current = false;
+      }
+    };
+
+    checkExpirationNotices();
+    const interval = setInterval(checkExpirationNotices, 60 * 1000);
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') checkExpirationNotices();
+    });
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+      subscription.remove();
+    };
+  }, [currentUserId, refreshReports]);
 
   useEffect(() => {
     if (!cleanupWaiverQueued || detailsOpen) return undefined;
@@ -1048,7 +1113,7 @@ useEffect(() => {
   const confirmCleanupRelease = () => {
     Alert.alert(
       'Release this cleanup?',
-      'The report will become available for another volunteer.',
+      'This report will become available for another volunteer.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
