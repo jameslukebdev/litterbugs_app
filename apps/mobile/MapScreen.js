@@ -53,6 +53,10 @@ import {
   isCurrentCleaner,
 } from './lib/cleanupEligibility';
 import { useProfile } from './lib/profile';
+import {
+  CLEANUP_NAVIGATION_SAFETY_REMINDER,
+  cleanupNavigationUrls,
+} from './lib/cleanupNavigation';
 import * as FileSystem from 'expo-file-system/legacy';
 
 const showPermanentAccountRequired = () => {
@@ -1067,28 +1071,60 @@ useEffect(() => {
     selectedReport?.id,
   ]);
 
-  const openCleanupNavigation = async () => {
-    const latitude = Number(selectedReport?.latitude);
-    const longitude = Number(selectedReport?.longitude);
+  const openExternalMap = async (preferredUrl, fallbackUrl) => {
+    try {
+      const supported = await Linking.canOpenURL(preferredUrl);
+      await Linking.openURL(supported ? preferredUrl : fallbackUrl);
+    } catch (error) {
+      console.log('Cleanup navigation error:', error);
 
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      try {
+        await Linking.openURL(fallbackUrl);
+      } catch (fallbackError) {
+        console.log('Cleanup navigation fallback error:', fallbackError);
+        Alert.alert('Unable to open maps', 'Try opening the report location in your maps app.');
+      }
+    }
+  };
+
+  const openCleanupNavigation = () => {
+    const urls = cleanupNavigationUrls(selectedReport);
+
+    if (!urls) {
       Alert.alert('Location unavailable', 'This report does not have a valid cleanup location.');
       return;
     }
 
-    const destination = `${latitude},${longitude}`;
-    const nativeUrl = Platform.OS === 'ios'
-      ? `http://maps.apple.com/?daddr=${destination}`
-      : `geo:${destination}?q=${destination}`;
-    const fallbackUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
-
-    try {
-      const supported = await Linking.canOpenURL(nativeUrl);
-      await Linking.openURL(supported ? nativeUrl : fallbackUrl);
-    } catch (error) {
-      console.log('Cleanup navigation error:', error);
-      Alert.alert('Unable to open maps', 'Try opening the report location in your maps app.');
+    if (Platform.OS === 'ios') {
+      Alert.alert(
+        'Navigate to Cleanup',
+        CLEANUP_NAVIGATION_SAFETY_REMINDER,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Apple Maps',
+            onPress: () => openExternalMap(urls.apple, urls.google),
+          },
+          {
+            text: 'Google Maps',
+            onPress: () => openExternalMap(urls.google, urls.google),
+          },
+        ]
+      );
+      return;
     }
+
+    Alert.alert(
+      'Navigate to Cleanup',
+      CLEANUP_NAVIGATION_SAFETY_REMINDER,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Open Maps',
+          onPress: () => openExternalMap(urls.android, urls.google),
+        },
+      ]
+    );
   };
 
   const executeCleanupRelease = async () => {
