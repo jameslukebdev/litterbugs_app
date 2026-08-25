@@ -555,6 +555,63 @@ end;
 $$;
 
 update public.cleanup_attempts
+set
+  status = 'completion_submitted',
+  first_submitted_at = now() - interval '49 hours',
+  latest_submitted_at = now() - interval '49 hours',
+  review_due_at = now() - interval '1 hour',
+  correction_due_at = null,
+  last_activity_at = now() - interval '49 hours'
+where report_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+  and status = 'changes_requested';
+
+update public.reports
+set cleanup_state = 'completion_submitted'
+where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1';
+
+select private.run_cleanup_maintenance();
+
+do $$
+begin
+  if not exists (
+    select 1
+    from public.cleanup_attempts
+    where report_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+      and status = 'completion_submitted'
+      and approval_method is null
+  ) or exists (
+    select 1
+    from public.cleanup_reviews
+    join public.cleanup_attempts
+      on cleanup_attempts.id = cleanup_reviews.cleanup_attempt_id
+    where cleanup_attempts.report_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+      and cleanup_reviews.decision = 'auto_approved'
+  ) then
+    raise exception 'Automatic approval overrode an existing reporter decision';
+  end if;
+end;
+$$;
+
+update public.cleanup_attempts
+set
+  status = 'changes_requested',
+  review_due_at = null,
+  correction_due_at = (
+    select cleanup_reviews.created_at + private.cleanup_correction_duration()
+    from public.cleanup_reviews
+    where cleanup_reviews.cleanup_attempt_id = cleanup_attempts.id
+      and cleanup_reviews.decision = 'changes_requested'
+    order by cleanup_reviews.created_at desc
+    limit 1
+  )
+where report_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+  and status = 'completion_submitted';
+
+update public.reports
+set cleanup_state = 'changes_requested'
+where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1';
+
+update public.cleanup_attempts
 set correction_due_at = now() - interval '1 minute'
 where report_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
   and status = 'changes_requested';
@@ -886,6 +943,7 @@ set
 where report_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa5';
 
 select private.run_cleanup_maintenance();
+select private.run_cleanup_maintenance();
 
 do $$
 declare
@@ -899,18 +957,19 @@ begin
   if auto_cleanup.status <> 'completed'
     or auto_cleanup.approval_method <> 'auto_approved'
     or auto_cleanup.final_reviewer_id is not null
-    or auto_cleanup.completed_at <> auto_cleanup.review_due_at then
+    or auto_cleanup.completed_at <= auto_cleanup.review_due_at
+    or auto_cleanup.completed_at <> auto_cleanup.last_activity_at then
     raise exception 'Maintenance did not apply the 48-hour automatic approval';
   end if;
 
-  if not exists (
-    select 1
+  if (
+    select count(*)
     from public.cleanup_reviews
     where cleanup_attempt_id = auto_cleanup.id
       and decision = 'auto_approved'
       and reviewer_id is null
-  ) then
-    raise exception 'Automatic approval review history is missing';
+  ) <> 1 then
+    raise exception 'Automatic approval was not idempotent';
   end if;
 
   select * into expired_cleanup
@@ -977,12 +1036,12 @@ begin
     raise exception 'Reporter review notifications are incomplete';
   end if;
 
-  if not exists (
-    select 1 from public.cleanup_notifications
+  if (
+    select count(*) from public.cleanup_notifications
     where report_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3'
       and event_type = 'cleanup_auto_approved'
-  ) then
-    raise exception 'Automatic approval notification is missing';
+  ) <> 1 then
+    raise exception 'Automatic approval notification was not idempotent';
   end if;
 
   if not exists (
@@ -997,6 +1056,16 @@ $$;
 
 do $$
 begin
+  if not exists (
+    select 1
+    from pg_indexes
+    where schemaname = 'public'
+      and tablename = 'cleanup_reviews'
+      and indexname = 'cleanup_reviews_one_auto_approval_per_attempt_idx'
+  ) then
+    raise exception 'Automatic approval idempotency index is missing';
+  end if;
+
   if has_function_privilege('anon', 'public.claim_cleanup(uuid)', 'execute') then
     raise exception 'Anon retained execute on claim_cleanup';
   end if;
