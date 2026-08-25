@@ -19,6 +19,7 @@ import AuthScreen from './AuthScreen';
 import BlockedAccountsScreen from './BlockedAccountsScreen';
 import CompleteProfileScreen from './CompleteProfileScreen';
 import CleanupSubmissionScreen from './CleanupSubmissionScreen';
+import CleanupReviewScreen from './CleanupReviewScreen';
 import EditProfileScreen from './EditProfileScreen';
 import PublicProfileScreen from './PublicProfileScreen';
 import ReportUserScreen from './ReportUserScreen';
@@ -151,6 +152,11 @@ function AppNavigation({ session, passwordRecovery, onRecoveryComplete }) {
           name="CleanupSubmission"
           component={CleanupSubmissionScreen}
           options={{ ...headerOptions, title: 'Complete cleanup' }}
+        />
+        <Stack.Screen
+          name="CleanupReview"
+          component={CleanupReviewScreen}
+          options={{ ...headerOptions, title: 'Review cleanup' }}
         />
         <Stack.Screen
           name="PublicProfile"

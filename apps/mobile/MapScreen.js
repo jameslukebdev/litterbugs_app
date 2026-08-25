@@ -991,9 +991,14 @@ useEffect(() => {
     selectedCleanupAttempt,
     currentUser
   );
+  const currentUserIsReporter = Boolean(
+    currentUserId
+    && selectedCleanupAttempt?.reporter_id === currentUserId
+  );
   const cleanupStatus = cleanupStatusPresentation(
     selectedReport,
-    currentUserIsCleaner
+    currentUserIsCleaner,
+    currentUserIsReporter
   );
 
   const executeCleanupClaim = async () => {
@@ -1170,6 +1175,16 @@ useEffect(() => {
 
     setDetailsOpen(false);
     navigation.getParent()?.navigate('CleanupSubmission', {
+      cleanupId: selectedCleanupAttempt.id,
+      reportId: selectedReport.id,
+    });
+  };
+
+  const openCleanupReview = () => {
+    if (!selectedCleanupAttempt?.id || !selectedReport?.id) return;
+
+    setDetailsOpen(false);
+    navigation.getParent()?.navigate('CleanupReview', {
       cleanupId: selectedCleanupAttempt.id,
       reportId: selectedReport.id,
     });
@@ -2819,6 +2834,19 @@ const renderReportStep = () => {
                   >
                     <Ionicons name="camera-outline" size={20} color="#2F7D32" />
                     <Text style={styles.cleanupSecondaryActionText}>Update Cleanup Submission</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : cleanupStatus.showReviewAction ? (
+                <View style={styles.cleanupActionStack}>
+                  <TouchableOpacity
+                    style={[styles.cleanupActionButton, styles.cleanupCompleteButton]}
+                    onPress={openCleanupReview}
+                    disabled={cleanupActionBusy}
+                    accessibilityRole="button"
+                    accessibilityLabel="Review Cleanup"
+                  >
+                    <Ionicons name="images-outline" size={20} color="#2F7D32" />
+                    <Text style={styles.cleanupSecondaryActionText}>Review Cleanup</Text>
                   </TouchableOpacity>
                 </View>
               ) : null}

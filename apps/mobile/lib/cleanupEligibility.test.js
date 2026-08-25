@@ -91,7 +91,13 @@ describe('cleanup eligibility', () => {
     expect(cleanupStatusPresentation({ cleanup_state: 'completion_submitted' }, true)).toMatchObject({
       title: 'Awaiting Cleanup Review',
       showClaimActions: false,
+      showReviewAction: false,
     });
+    expect(cleanupStatusPresentation(
+      { cleanup_state: 'completion_submitted' },
+      false,
+      true
+    ).showReviewAction).toBe(true);
     expect(cleanupStatusPresentation({ cleanup_state: 'changes_requested' }, true).title).toBe('Changes Requested');
     expect(cleanupStatusPresentation({ cleanup_state: 'changes_requested' }, true).showSubmissionAction).toBe(true);
     expect(cleanupStatusPresentation({ cleanup_state: 'changes_requested' }, false).showSubmissionAction).toBe(false);
