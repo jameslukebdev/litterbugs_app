@@ -37,6 +37,7 @@ describe('mobile configuration non-regression', () => {
     expect(appJson.plugins).toEqual([
       'expo-secure-store',
       'expo-web-browser',
+      'expo-notifications',
       [
         'expo-image-picker',
         {

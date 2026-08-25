@@ -71,7 +71,7 @@ export async function releaseCleanup(cleanupId) {
 export async function loadUnreadCleanupNotifications() {
   const { data, error } = await supabase
     .from('cleanup_notifications')
-    .select('id, cleanup_attempt_id, report_id, review_id, event_type, created_at')
+    .select('id, cleanup_attempt_id, report_id, review_id, submission_id, event_type, created_at')
     .is('read_at', null)
     .order('created_at', { ascending: true })
     .limit(20);

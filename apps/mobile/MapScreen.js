@@ -46,12 +46,16 @@ import {
 import {
   canOfferCleanup,
   cleanupActionMessage,
-  cleanupNotificationPresentation,
   cleanupMapTone,
   cleanupStatusPresentation,
   isCleanupInProgress,
   isCurrentCleaner,
 } from './lib/cleanupEligibility';
+import {
+  cleanupNotificationDestination,
+  cleanupNotificationPresentation,
+  cleanupStateFromNotification,
+} from './lib/cleanupNotifications';
 import { useProfile } from './lib/profile';
 import {
   CLEANUP_NAVIGATION_SAFETY_REMINDER,
@@ -168,56 +172,41 @@ export default function MapScreen({ route, navigation }) {
         const notices = await loadUnreadCleanupNotifications();
         if (!active || notices.length === 0) return;
 
-        const expiredNotices = notices.filter(({ event_type: eventType }) => (
-          eventType === 'claim_expired' || eventType === 'correction_expired'
-        ));
-        const changeNotices = notices.filter(({ event_type: eventType }) => (
-          eventType === 'changes_requested'
-        ));
-        const expiredReportIds = new Set(
-          expiredNotices.map(({ report_id: reportId }) => reportId)
-        );
-        const expiredAttemptIds = new Set(
-          expiredNotices.map(({ cleanup_attempt_id: attemptId }) => attemptId)
-        );
-        const changedReportIds = new Set(
-          changeNotices.map(({ report_id: reportId }) => reportId)
-        );
-        const changedAttemptIds = new Set(
-          changeNotices.map(({ cleanup_attempt_id: attemptId }) => attemptId)
-        );
+        const reportStates = new Map();
+        const attemptStates = new Map();
+        notices.forEach((notice) => {
+          const state = cleanupStateFromNotification(notice);
+          if (!state) return;
+          reportStates.set(notice.report_id, state);
+          attemptStates.set(notice.cleanup_attempt_id, state);
+        });
 
-        setSelectedReport((report) => (
-          expiredReportIds.has(report?.id)
-            ? { ...report, cleanup_state: 'available' }
-            : changedReportIds.has(report?.id)
-              ? { ...report, cleanup_state: 'changes_requested' }
-              : report
-        ));
-        setSelectedCleanupAttempt((attempt) => (
-          expiredAttemptIds.has(attempt?.id)
-            ? null
-            : changedAttemptIds.has(attempt?.id)
-              ? { ...attempt, status: 'changes_requested' }
-              : attempt
-        ));
+        setSelectedReport((report) => {
+          const state = reportStates.get(report?.id);
+          return state ? { ...report, cleanup_state: state } : report;
+        });
+        setSelectedCleanupAttempt((attempt) => {
+          const state = attemptStates.get(attempt?.id);
+          if (state === 'available') return null;
+          return state ? { ...attempt, status: state } : attempt;
+        });
 
         const presentation = cleanupNotificationPresentation(notices);
-        const feedbackNotice = notices.length === 1
-          ? changeNotices[0]
+        const destination = notices.length === 1
+          ? cleanupNotificationDestination(notices[0])
           : null;
         Alert.alert(
           presentation.title,
           presentation.message,
-          feedbackNotice
+          destination
             ? [
               { text: 'Later', style: 'cancel' },
               {
-                text: 'Review Feedback',
-                onPress: () => navigation.getParent()?.navigate('CleanupFeedback', {
-                  cleanupId: feedbackNotice.cleanup_attempt_id,
-                  reportId: feedbackNotice.report_id,
-                }),
+                text: destination.label,
+                onPress: () => navigation.getParent()?.navigate(
+                  destination.name,
+                  destination.params
+                ),
               },
             ]
             : [{ text: 'OK' }]

@@ -20,7 +20,7 @@
     "mobile:build:android:production": "cd apps/mobile && npx eas-cli build --platform android --profile production",
     "mobile:build:ios:production": "cd apps/mobile && npx eas-cli build --platform ios --profile production",
     "auth-bridge:check": "wrangler deploy --dry-run --config services/auth-bridge/wrangler.jsonc",
-    "supabase:functions:check": "npx --yes deno@2.5.4 check --config supabase/functions/deno.json supabase/functions/delete-account/index.ts supabase/functions/cleanup-report-photos/index.ts",
+    "supabase:functions:check": "npx --yes deno@2.5.4 check --config supabase/functions/deno.json supabase/functions/delete-account/index.ts supabase/functions/cleanup-report-photos/index.ts supabase/functions/send-cleanup-notifications/index.ts",
     "web:dev": "npm run dev --workspace @litterbugs/web",
     "web:build": "npm run build --workspace @litterbugs/web",
     "web:start": "npm run start --workspace @litterbugs/web",
