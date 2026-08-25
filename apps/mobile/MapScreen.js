@@ -33,6 +33,7 @@ import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
 import MapReportSheet, { getMapReportSheetMetrics } from './MapReportSheet';
 import ReporterIdentity from './ReporterIdentity';
+import CompletedCleanupStory from './CompletedCleanupStory';
 import CleanupWaiverModal from './CleanupWaiverModal';
 import {
   acceptCleanupWaiver,
@@ -61,6 +62,7 @@ import {
   CLEANUP_NAVIGATION_SAFETY_REMINDER,
   cleanupNavigationUrls,
 } from './lib/cleanupNavigation';
+import { loadCompletedCleanupImpact } from './lib/cleanupImpact';
 import * as FileSystem from 'expo-file-system/legacy';
 
 const showPermanentAccountRequired = () => {
@@ -116,6 +118,10 @@ export default function MapScreen({ route, navigation }) {
   const [cleanupActionBusy, setCleanupActionBusy] = useState(false);
   const [selectedCleanupAttempt, setSelectedCleanupAttempt] = useState(null);
   const [cleanupAttemptLoading, setCleanupAttemptLoading] = useState(false);
+  const [completedCleanupImpact, setCompletedCleanupImpact] = useState(null);
+  const [completedCleanupImpactLoading, setCompletedCleanupImpactLoading] = useState(false);
+  const [completedCleanupImpactError, setCompletedCleanupImpactError] = useState(null);
+  const [completedCleanupImpactReloadKey, setCompletedCleanupImpactReloadKey] = useState(0);
   const cleanupNoticeCheckInFlight = useRef(false);
   // Report detail photo carousel
   const [reportPhotoIndex, setReportPhotoIndex] = useState(0);
@@ -998,6 +1004,45 @@ useEffect(() => {
     active = false;
   };
 }, [currentUserId, selectedReport?.cleanup_state, selectedReport?.id]);
+
+useEffect(() => {
+  let active = true;
+
+  if (!selectedReport?.id || selectedReport.cleanup_state !== 'completed') {
+    setCompletedCleanupImpact(null);
+    setCompletedCleanupImpactError(null);
+    setCompletedCleanupImpactLoading(false);
+    return undefined;
+  }
+
+  setCompletedCleanupImpactLoading(true);
+  setCompletedCleanupImpactError(null);
+
+  loadCompletedCleanupImpact(selectedReport.id)
+    .then((impact) => {
+      if (!active) return;
+      setCompletedCleanupImpact(impact);
+      if (!impact) setCompletedCleanupImpactError('cleanup_impact_unavailable');
+    })
+    .catch((error) => {
+      console.log('Completed cleanup impact load error:', error);
+      if (active) {
+        setCompletedCleanupImpact(null);
+        setCompletedCleanupImpactError(error?.message || 'cleanup_impact_unavailable');
+      }
+    })
+    .finally(() => {
+      if (active) setCompletedCleanupImpactLoading(false);
+    });
+
+  return () => {
+    active = false;
+  };
+}, [
+  completedCleanupImpactReloadKey,
+  selectedReport?.cleanup_state,
+  selectedReport?.id,
+]);
 
 
 // Checks if User is Owner of Report
@@ -2333,6 +2378,39 @@ const renderReportStep = () => {
         contentContainerStyle={styles.reportPostScrollContent}
       >
 
+        {selectedReport?.cleanup_state === 'completed' ? (
+          <>
+            <CompletedCleanupStory
+              impact={completedCleanupImpact}
+              loading={completedCleanupImpactLoading}
+              error={completedCleanupImpactError}
+              photoWidth={reportHeroWidth}
+              onRetry={() => {
+                setCompletedCleanupImpactReloadKey((current) => current + 1);
+              }}
+              onCleanerPress={completedCleanupImpact?.cleaner?.id ? () => {
+                setDetailsOpen(false);
+                if (completedCleanupImpact.cleaner.id === currentUserId) {
+                  navigation.navigate('Profile');
+                } else {
+                  navigation.getParent()?.navigate('PublicProfile', {
+                    profileId: completedCleanupImpact.cleaner.id,
+                    sourceReportId: selectedReport.id,
+                  });
+                }
+              } : undefined}
+            />
+
+            <View style={styles.originalReportDivider}>
+              <Text style={styles.originalReportEyebrow}>BEFORE THE CLEANUP</Text>
+              <Text style={styles.originalReportTitle}>Original litter report</Text>
+              <Text style={styles.originalReportText}>
+                See what was reported at this location before the volunteer cleanup.
+              </Text>
+            </View>
+          </>
+        ) : null}
+
         {/* ============================= */}
         {/* Report Header                 */}
         {/* ============================= */}
@@ -2383,7 +2461,7 @@ const renderReportStep = () => {
               </View>
             )}
 
-            {selectedReport?.expires_at && (
+            {selectedReport?.expires_at && selectedReport?.cleanup_state !== 'completed' && (
               <View style={styles.reportMetaItem}>
                 <Ionicons
                   name="calendar-outline"
@@ -2404,6 +2482,29 @@ const renderReportStep = () => {
                 </View>
               </View>
             )}
+
+            {selectedReport?.latitude != null
+              && selectedReport?.longitude != null
+              && Number.isFinite(Number(selectedReport.latitude))
+              && Number.isFinite(Number(selectedReport?.longitude)) ? (
+              <View style={styles.reportMetaItem}>
+                <Ionicons
+                  name="location-outline"
+                  size={17}
+                  color="#667085"
+                />
+
+                <View>
+                  <Text style={styles.reportMetaItemLabel}>
+                    Location
+                  </Text>
+
+                  <Text style={styles.reportMetaItemText}>
+                    {Number(selectedReport.latitude).toFixed(5)}, {Number(selectedReport.longitude).toFixed(5)}
+                  </Text>
+                </View>
+              </View>
+            ) : null}
 
           </View>
 
@@ -2448,6 +2549,13 @@ const renderReportStep = () => {
         {/* ============================= */}
         {/* Main Photo / Carousel         */}
         {/* ============================= */}
+
+        {selectedReport?.cleanup_state === 'completed' ? (
+          <View style={styles.beforePhotoHeading}>
+            <Ionicons name="images-outline" size={20} color="#667085" />
+            <Text style={styles.beforePhotoHeadingText}>Before cleanup</Text>
+          </View>
+        ) : null}
 
         {photosLoading ? (
 
@@ -2549,11 +2657,15 @@ const renderReportStep = () => {
             </View>
 
             <Text style={styles.reportNoPhotoTitle}>
-              No photo added
+              {selectedReport?.cleanup_state === 'completed'
+                ? 'No original photo was provided'
+                : 'No photo added'}
             </Text>
 
             <Text style={styles.reportNoPhotoText}>
-              This report was submitted without a photo.
+              {selectedReport?.cleanup_state === 'completed'
+                ? 'The cleanup impact remains available with its after photos and details.'
+                : 'This report was submitted without a photo.'}
             </Text>
 
           </View>
@@ -2764,7 +2876,7 @@ const renderReportStep = () => {
             </View>
           )}
 
-          {cleanupStatus && (
+          {cleanupStatus && selectedReport?.cleanup_state !== 'completed' && (
             <View
               style={[
                 styles.cleanupProgressCard,
@@ -3845,6 +3957,37 @@ reportPostScrollContent: {
   paddingBottom: 125,
 },
 
+originalReportDivider: {
+  paddingHorizontal: 22,
+  paddingTop: 25,
+  paddingBottom: 22,
+  borderTopWidth: StyleSheet.hairlineWidth,
+  borderTopColor: '#C9D8CB',
+  backgroundColor: '#FFFFFF',
+},
+
+originalReportEyebrow: {
+  color: '#6B776D',
+  fontSize: 11,
+  letterSpacing: 1.05,
+  fontWeight: '800',
+},
+
+originalReportTitle: {
+  marginTop: 5,
+  color: '#263129',
+  fontSize: 23,
+  lineHeight: 29,
+  fontWeight: '900',
+},
+
+originalReportText: {
+  marginTop: 7,
+  color: '#6A746C',
+  fontSize: 14,
+  lineHeight: 20,
+},
+
 
 /* ============================= */
 /* Header                        */
@@ -3887,6 +4030,20 @@ reportMetaItemLabel: {
 reportMetaItemText: {
   fontSize: 14,
   color: '#667085',
+},
+
+beforePhotoHeading: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 8,
+  paddingHorizontal: 22,
+  paddingBottom: 12,
+},
+
+beforePhotoHeadingText: {
+  color: '#4F5A52',
+  fontSize: 17,
+  fontWeight: '900',
 },
 
 

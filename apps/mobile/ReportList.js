@@ -106,6 +106,7 @@ export function ReportListItem({ report, origin, onPress }) {
   const { width } = useWindowDimensions();
   const thumbnailSize = Math.min(112, Math.max(94, width * 0.27));
   const severity = getSeverity(report);
+  const completed = report?.cleanup_state === 'completed';
   const distance = getDistanceMiles(origin, report);
   const relativeTime = getRelativeTime(report?.created_at);
   const metadata = [
@@ -114,7 +115,7 @@ export function ReportListItem({ report, origin, onPress }) {
   ].filter(Boolean).join(' · ');
   const accessibilityLabel = [
     report?.title || 'Litter report',
-    `${severity.label} severity`,
+    completed ? 'Cleanup complete' : `${severity.label} severity`,
     metadata,
     getLitterSummary(report),
     `Reported by ${report?.reporter?.display_name || 'Reporter unavailable'}`,
@@ -133,9 +134,18 @@ export function ReportListItem({ report, origin, onPress }) {
 
       <View style={styles.rowCopy}>
         <View style={styles.severityRow}>
-          <Ionicons name={severity.icon} size={18} color={severity.color} />
-          <Text style={[styles.severityText, { color: severity.color }]}>
-            {severity.label} severity
+          <Ionicons
+            name={completed ? 'checkmark-circle' : severity.icon}
+            size={18}
+            color={completed ? '#2F7D32' : severity.color}
+          />
+          <Text
+            style={[
+              styles.severityText,
+              { color: completed ? '#2F7D32' : severity.color },
+            ]}
+          >
+            {completed ? 'Cleanup complete' : `${severity.label} severity`}
           </Text>
         </View>
 

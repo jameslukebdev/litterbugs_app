@@ -10,6 +10,7 @@ import {
 
 import { supabase } from './supabase';
 import { useProfile } from './profile';
+import { completedImpactReportFilter } from './reportVisibility';
 
 export const DEFAULT_MAP_REGION = Object.freeze({
   latitude: 35.6009,
@@ -110,7 +111,7 @@ export function ReportsProvider({ children }) {
     const { data, error: reportsError } = await supabase
       .from('reports')
       .select(REPORT_SELECT)
-      .gt('expires_at', nowIso);
+      .or(completedImpactReportFilter(nowIso));
 
     if (reportsError) {
       console.log('loadReports error:', reportsError);
