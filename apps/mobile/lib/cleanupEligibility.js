@@ -22,7 +22,11 @@ export function cleanupMapTone(report) {
   return 'available';
 }
 
-export function cleanupStatusPresentation(report, currentUserIsCleaner = false) {
+export function cleanupStatusPresentation(
+  report,
+  currentUserIsCleaner = false,
+  currentUserIsReporter = false
+) {
   switch (report?.cleanup_state) {
     case 'claimed':
       return {
@@ -34,6 +38,7 @@ export function cleanupStatusPresentation(report, currentUserIsCleaner = false) 
         tone: 'active',
         showClaimActions: currentUserIsCleaner,
         showSubmissionAction: false,
+        showReviewAction: false,
       };
     case 'completion_submitted':
       return {
@@ -43,6 +48,7 @@ export function cleanupStatusPresentation(report, currentUserIsCleaner = false) 
         tone: 'active',
         showClaimActions: false,
         showSubmissionAction: false,
+        showReviewAction: currentUserIsReporter,
       };
     case 'changes_requested':
       return {
@@ -52,6 +58,7 @@ export function cleanupStatusPresentation(report, currentUserIsCleaner = false) 
         tone: 'active',
         showClaimActions: false,
         showSubmissionAction: currentUserIsCleaner,
+        showReviewAction: false,
       };
     case 'completed':
       return {
@@ -61,6 +68,7 @@ export function cleanupStatusPresentation(report, currentUserIsCleaner = false) 
         tone: 'completed',
         showClaimActions: false,
         showSubmissionAction: false,
+        showReviewAction: false,
       };
     default:
       return null;
