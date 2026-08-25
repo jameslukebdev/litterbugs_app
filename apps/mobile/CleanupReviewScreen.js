@@ -233,8 +233,8 @@ export default function CleanupReviewScreen({ navigation, route }) {
 
   const confirmApproval = () => {
     Alert.alert(
-      'Approve cleanup?',
-      'This will mark the cleanup complete and preserve it as a community impact record.',
+      'Approve this cleanup?',
+      'This will mark the litter report as cleaned and preserve it as a completed cleanup.',
       [
         { text: 'Cancel', style: 'cancel' },
         {

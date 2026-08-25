@@ -413,6 +413,51 @@ end;
 $$;
 
 reset role;
+update public.reports
+set user_id = '33333333-3333-4333-8333-333333333333'
+where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1';
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  '11111111-1111-4111-8111-111111111111',
+  true
+);
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"11111111-1111-4111-8111-111111111111","is_anonymous":false}',
+  true
+);
+
+do $$
+declare
+  active_cleanup_id uuid;
+begin
+  select id into active_cleanup_id
+  from public.cleanup_attempts
+  where report_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+    and status = 'completion_submitted';
+
+  begin
+    perform public.review_cleanup(
+      active_cleanup_id,
+      'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1',
+      'approved',
+      null,
+      null
+    );
+    raise exception 'Stored reporter reviewed after report ownership changed';
+  exception
+    when insufficient_privilege then null;
+  end;
+end;
+$$;
+
+reset role;
+update public.reports
+set user_id = '11111111-1111-4111-8111-111111111111'
+where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1';
+
 set local role authenticated;
 select set_config(
   'request.jwt.claim.sub',
