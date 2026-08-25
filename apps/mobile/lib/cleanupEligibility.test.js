@@ -5,6 +5,7 @@ import {
   cleanupActionMessage,
   cleanupExpirationNoticeMessage,
   cleanupMapTone,
+  cleanupNotificationPresentation,
   cleanupStatusPresentation,
   isCleanupInProgress,
   isCurrentCleaner,
@@ -67,6 +68,24 @@ describe('cleanup eligibility', () => {
   it('describes one or multiple expired reservations', () => {
     expect(cleanupExpirationNoticeMessage(1)).toContain('24-hour');
     expect(cleanupExpirationNoticeMessage(2)).toContain('2 cleanup reservations');
+  });
+
+  it('presents change-request and correction-expiration notices', () => {
+    expect(cleanupNotificationPresentation([{ event_type: 'changes_requested' }])).toMatchObject({
+      title: 'Cleanup changes requested',
+      message: expect.stringContaining('24 hours'),
+    });
+    expect(cleanupNotificationPresentation([{ event_type: 'correction_expired' }])).toMatchObject({
+      title: 'Cleanup correction window expired',
+      message: expect.stringContaining('history'),
+    });
+    expect(cleanupNotificationPresentation([
+      { event_type: 'changes_requested' },
+      { event_type: 'correction_expired' },
+    ])).toMatchObject({
+      title: 'Cleanup updates',
+      message: expect.stringContaining('2'),
+    });
   });
 
   it('maps every public cleanup state to the intended marker tone', () => {

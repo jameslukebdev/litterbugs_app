@@ -46,7 +46,7 @@ import {
 import {
   canOfferCleanup,
   cleanupActionMessage,
-  cleanupExpirationNoticeMessage,
+  cleanupNotificationPresentation,
   cleanupMapTone,
   cleanupStatusPresentation,
   isCleanupInProgress,
@@ -160,7 +160,7 @@ export default function MapScreen({ route, navigation }) {
 
     let active = true;
 
-    const checkExpirationNotices = async () => {
+    const checkCleanupNotices = async () => {
       if (cleanupNoticeCheckInFlight.current) return;
 
       try {
@@ -168,27 +168,59 @@ export default function MapScreen({ route, navigation }) {
         const notices = await loadUnreadCleanupNotifications();
         if (!active || notices.length === 0) return;
 
+        const expiredNotices = notices.filter(({ event_type: eventType }) => (
+          eventType === 'claim_expired' || eventType === 'correction_expired'
+        ));
+        const changeNotices = notices.filter(({ event_type: eventType }) => (
+          eventType === 'changes_requested'
+        ));
         const expiredReportIds = new Set(
-          notices.map(({ report_id: reportId }) => reportId)
+          expiredNotices.map(({ report_id: reportId }) => reportId)
         );
         const expiredAttemptIds = new Set(
-          notices.map(({ cleanup_attempt_id: attemptId }) => attemptId)
+          expiredNotices.map(({ cleanup_attempt_id: attemptId }) => attemptId)
+        );
+        const changedReportIds = new Set(
+          changeNotices.map(({ report_id: reportId }) => reportId)
+        );
+        const changedAttemptIds = new Set(
+          changeNotices.map(({ cleanup_attempt_id: attemptId }) => attemptId)
         );
 
         setSelectedReport((report) => (
           expiredReportIds.has(report?.id)
             ? { ...report, cleanup_state: 'available' }
-            : report
+            : changedReportIds.has(report?.id)
+              ? { ...report, cleanup_state: 'changes_requested' }
+              : report
         ));
         setSelectedCleanupAttempt((attempt) => (
-          expiredAttemptIds.has(attempt?.id) ? null : attempt
+          expiredAttemptIds.has(attempt?.id)
+            ? null
+            : changedAttemptIds.has(attempt?.id)
+              ? { ...attempt, status: 'changes_requested' }
+              : attempt
         ));
 
+        const presentation = cleanupNotificationPresentation(notices);
+        const feedbackNotice = notices.length === 1
+          ? changeNotices[0]
+          : null;
         Alert.alert(
-          notices.length > 1
-            ? 'Cleanup reservations expired'
-            : 'Cleanup reservation expired',
-          cleanupExpirationNoticeMessage(notices.length)
+          presentation.title,
+          presentation.message,
+          feedbackNotice
+            ? [
+              { text: 'Later', style: 'cancel' },
+              {
+                text: 'Review Feedback',
+                onPress: () => navigation.getParent()?.navigate('CleanupFeedback', {
+                  cleanupId: feedbackNotice.cleanup_attempt_id,
+                  reportId: feedbackNotice.report_id,
+                }),
+              },
+            ]
+            : [{ text: 'OK' }]
         );
 
         await acknowledgeCleanupNotifications(
@@ -196,16 +228,16 @@ export default function MapScreen({ route, navigation }) {
         );
         await refreshReports({ showRefresh: false });
       } catch (error) {
-        console.log('Cleanup expiration notice error:', error);
+        console.log('Cleanup notification error:', error);
       } finally {
         cleanupNoticeCheckInFlight.current = false;
       }
     };
 
-    checkExpirationNotices();
-    const interval = setInterval(checkExpirationNotices, 60 * 1000);
+    checkCleanupNotices();
+    const interval = setInterval(checkCleanupNotices, 60 * 1000);
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') checkExpirationNotices();
+      if (state === 'active') checkCleanupNotices();
     });
 
     return () => {
@@ -1185,6 +1217,16 @@ useEffect(() => {
 
     setDetailsOpen(false);
     navigation.getParent()?.navigate('CleanupReview', {
+      cleanupId: selectedCleanupAttempt.id,
+      reportId: selectedReport.id,
+    });
+  };
+
+  const openCleanupFeedback = () => {
+    if (!selectedCleanupAttempt?.id || !selectedReport?.id) return;
+
+    setDetailsOpen(false);
+    navigation.getParent()?.navigate('CleanupFeedback', {
       cleanupId: selectedCleanupAttempt.id,
       reportId: selectedReport.id,
     });
@@ -2826,14 +2868,24 @@ const renderReportStep = () => {
               ) : cleanupStatus.showSubmissionAction ? (
                 <View style={styles.cleanupActionStack}>
                   <TouchableOpacity
+                    style={[styles.cleanupActionButton, styles.cleanupFeedbackButton]}
+                    onPress={openCleanupFeedback}
+                    disabled={cleanupActionBusy}
+                    accessibilityRole="button"
+                    accessibilityLabel="Review Cleanup Feedback"
+                  >
+                    <Ionicons name="document-text-outline" size={20} color="#755900" />
+                    <Text style={styles.cleanupFeedbackActionText}>Review Feedback</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
                     style={[styles.cleanupActionButton, styles.cleanupCompleteButton]}
                     onPress={openCleanupSubmission}
                     disabled={cleanupActionBusy}
                     accessibilityRole="button"
-                    accessibilityLabel="Update Cleanup Submission"
+                    accessibilityLabel="Update Submission"
                   >
                     <Ionicons name="camera-outline" size={20} color="#2F7D32" />
-                    <Text style={styles.cleanupSecondaryActionText}>Update Cleanup Submission</Text>
+                    <Text style={styles.cleanupSecondaryActionText}>Update Submission</Text>
                   </TouchableOpacity>
                 </View>
               ) : cleanupStatus.showReviewAction ? (
@@ -4239,6 +4291,18 @@ cleanupCompleteButton: {
   borderWidth: 1,
   borderColor: '#8FBC92',
   backgroundColor: '#FFFFFF',
+},
+
+cleanupFeedbackButton: {
+  borderWidth: 1,
+  borderColor: '#D6BE71',
+  backgroundColor: '#FFF9DD',
+},
+
+cleanupFeedbackActionText: {
+  color: '#755900',
+  fontSize: 15,
+  fontWeight: '800',
 },
 
 cleanupReleaseButton: {

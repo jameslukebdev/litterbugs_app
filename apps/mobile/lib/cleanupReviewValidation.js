@@ -3,7 +3,7 @@ export const MAX_CLEANUP_REVIEW_NOTE_LENGTH = 500;
 export const CLEANUP_CHANGE_REASONS = Object.freeze([
   {
     code: 'additional_photo_needed',
-    label: 'Additional photo needed',
+    label: 'Need another photo',
     description: 'The result needs another or clearer after photo.',
   },
   {
@@ -13,7 +13,7 @@ export const CLEANUP_CHANGE_REASONS = Object.freeze([
   },
   {
     code: 'details_unclear',
-    label: 'Details are unclear',
+    label: 'Need more information',
     description: 'The description or impact details need clarification.',
   },
   {
@@ -22,6 +22,11 @@ export const CLEANUP_CHANGE_REASONS = Object.freeze([
     description: 'A different evidence update is needed.',
   },
 ]);
+
+export function cleanupChangeReasonLabel(code) {
+  return CLEANUP_CHANGE_REASONS.find((reason) => reason.code === code)?.label
+    ?? 'Requested update';
+}
 
 const ALLOWED_REASON_CODES = new Set(
   CLEANUP_CHANGE_REASONS.map(({ code }) => code)

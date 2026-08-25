@@ -35,6 +35,9 @@ const submissionErrorMessage = (error) => {
   if (/cleanup_claim_expired/i.test(message)) {
     return 'This cleanup claim expired before the evidence was submitted.';
   }
+  if (/cleanup_correction_expired/i.test(message)) {
+    return 'The 24-hour update window expired. This report is available for another volunteer.';
+  }
   if (/cleanup_submission_(not_allowed|invalid_state)/i.test(message)) {
     return 'This cleanup is no longer available for submission.';
   }
@@ -154,7 +157,9 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
       await refreshReports({ showRefresh: false });
 
       Alert.alert(
-        'Cleanup submitted',
+        context.attempt.status === 'changes_requested'
+          ? 'Cleanup resubmitted'
+          : 'Cleanup submitted',
         'Your cleanup evidence is awaiting review. The original reporter has 48 hours to respond before automatic approval.',
         [{
           text: 'View report',
@@ -190,6 +195,13 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
 
   const reportTitle = context.report?.title || 'Litter cleanup';
   const normalized = currentValidation().normalized;
+  const isCorrection = context.attempt.status === 'changes_requested';
+  const correctionDeadline = isCorrection
+    ? new Date(context.attempt.correction_due_at).toLocaleString(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    })
+    : null;
 
   return (
     <KeyboardAvoidingView
@@ -202,11 +214,28 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.eyebrow}>{step === 'form' ? 'CLEANUP EVIDENCE' : 'REVIEW'}</Text>
+        <Text style={styles.eyebrow}>
+          {step === 'form' ? (isCorrection ? 'UPDATE EVIDENCE' : 'CLEANUP EVIDENCE') : 'REVIEW'}
+        </Text>
         <Text style={styles.title}>
-          {step === 'form' ? 'Show what you cleaned' : 'Review your cleanup'}
+          {step === 'form'
+            ? (isCorrection ? 'Update your submission' : 'Show what you cleaned')
+            : (isCorrection ? 'Review your update' : 'Review your cleanup')}
         </Text>
         <Text style={styles.reportTitle}>{reportTitle}</Text>
+
+        {isCorrection && step === 'form' ? (
+          <View style={styles.correctionNotice}>
+            <Ionicons name="time-outline" size={21} color="#755900" />
+            <View style={styles.correctionNoticeCopy}>
+              <Text style={styles.correctionNoticeTitle}>Changes requested</Text>
+              <Text style={styles.correctionNoticeText}>Resubmit by {correctionDeadline}.</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('CleanupFeedback', { cleanupId })}>
+                <Text style={styles.feedbackLink}>Review reporter feedback</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : null}
 
         {step === 'form' ? (
           <>
@@ -370,7 +399,9 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
               ) : (
                 <>
                   <Ionicons name="checkmark-circle-outline" size={21} color="#FFFFFF" />
-                  <Text style={styles.primaryButtonText}>Submit Cleanup</Text>
+                  <Text style={styles.primaryButtonText}>
+                    {isCorrection ? 'Resubmit Cleanup' : 'Submit Cleanup'}
+                  </Text>
                 </>
               )}
             </TouchableOpacity>
@@ -397,6 +428,11 @@ const styles = StyleSheet.create({
   eyebrow: { color: '#2F7D32', fontSize: 12, fontWeight: '900', letterSpacing: 1.2 },
   title: { marginTop: 7, color: '#202428', fontSize: 28, fontWeight: '900' },
   reportTitle: { marginTop: 7, color: '#687178', fontSize: 15, fontWeight: '700' },
+  correctionNotice: { marginTop: 18, padding: 14, flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: 14, backgroundColor: '#FFF9DD' },
+  correctionNoticeCopy: { flex: 1 },
+  correctionNoticeTitle: { color: '#755900', fontSize: 14, fontWeight: '900' },
+  correctionNoticeText: { marginTop: 3, color: '#755900', fontSize: 13, lineHeight: 18 },
+  feedbackLink: { marginTop: 7, color: '#2F7D32', fontSize: 13, fontWeight: '900' },
   section: { marginTop: 22, padding: 17, borderRadius: 18, backgroundColor: '#FFFFFF' },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
   sectionTitle: { flex: 1, color: '#30363B', fontSize: 18, fontWeight: '800' },
