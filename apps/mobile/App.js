@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { NavigationContainer } from '@react-navigation/native';
+import {
+  NavigationContainer,
+  useNavigationContainerRef,
+} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {
   ActivityIndicator,
@@ -26,7 +29,16 @@ import PublicProfileScreen from './PublicProfileScreen';
 import ReportUserScreen from './ReportUserScreen';
 import ResetPasswordScreen from './ResetPasswordScreen';
 import { handleAuthCallbackUrl, PASSWORD_RECOVERY_PATH, signOut } from './lib/auth';
+import { acknowledgeCleanupNotifications } from './lib/cleanup';
+import { cleanupNotificationDestination } from './lib/cleanupNotifications';
 import { ProfileProvider, useProfile } from './lib/profile';
+import {
+  addCleanupNotificationResponseListener,
+  clearLastCleanupNotificationResponse,
+  getLastCleanupNotificationResponse,
+  registerCleanupPushDevice,
+  subscribeToPushTokenChanges,
+} from './lib/pushNotifications';
 import { isPermanentUser } from './lib/reportAccess';
 import { ReportsProvider } from './lib/reports';
 import { SessionProvider } from './lib/session';
@@ -97,6 +109,62 @@ function ProfileLoadError() {
 function AppNavigation({ session, passwordRecovery, onRecoveryComplete }) {
   const { profile, loading } = useProfile();
   const permanent = isPermanentUser(session?.user);
+  const navigationRef = useNavigationContainerRef();
+  const pendingNotificationData = useRef(null);
+  const handledNotificationId = useRef(null);
+
+  const openNotificationData = useCallback((data) => {
+    const notificationId = data?.notificationId;
+    if (notificationId && handledNotificationId.current === notificationId) return;
+
+    const destination = cleanupNotificationDestination(data);
+    if (!destination) return;
+    if (!navigationRef.isReady()) {
+      pendingNotificationData.current = data;
+      return;
+    }
+
+    handledNotificationId.current = notificationId ?? null;
+    pendingNotificationData.current = null;
+    navigationRef.navigate(destination.name, destination.params);
+    if (notificationId) {
+      acknowledgeCleanupNotifications([notificationId]).catch((error) => {
+        console.log('Cleanup notification acknowledgment error:', error);
+      });
+    }
+  }, [navigationRef]);
+
+  useEffect(() => {
+    if (!permanent || !profile?.profile_completed_at) return undefined;
+
+    registerCleanupPushDevice().catch((error) => {
+      console.log('Cleanup push registration error:', error);
+    });
+    const tokenSubscription = subscribeToPushTokenChanges();
+    return () => tokenSubscription.remove();
+  }, [permanent, profile?.profile_completed_at]);
+
+  useEffect(() => {
+    if (!permanent) return undefined;
+
+    const responseSubscription = addCleanupNotificationResponseListener((response) => {
+      openNotificationData(response.notification.request.content.data);
+    });
+
+    getLastCleanupNotificationResponse()
+      .then((response) => {
+        if (response) {
+          openNotificationData(response.notification.request.content.data);
+          return clearLastCleanupNotificationResponse();
+        }
+        return null;
+      })
+      .catch((error) => {
+        console.log('Cleanup notification response error:', error);
+      });
+
+    return () => responseSubscription.remove();
+  }, [openNotificationData, permanent]);
 
   if (passwordRecovery && permanent) {
     return (
@@ -126,7 +194,15 @@ function AppNavigation({ session, passwordRecovery, onRecoveryComplete }) {
   };
 
   return (
-    <NavigationContainer key={permanent ? 'permanent-navigation' : 'signed-out-navigation'}>
+    <NavigationContainer
+      key={permanent ? 'permanent-navigation' : 'signed-out-navigation'}
+      ref={navigationRef}
+      onReady={() => {
+        if (pendingNotificationData.current) {
+          openNotificationData(pendingNotificationData.current);
+        }
+      }}
+    >
       <Stack.Navigator
         key={permanent ? 'permanent' : 'signed-out'}
         initialRouteName={initialRouteName}

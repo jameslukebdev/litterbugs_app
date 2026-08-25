@@ -91,6 +91,14 @@ insert into public.reports (
     35,
     -78,
     now() + interval '30 days'
+  ),
+  (
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa5',
+    '11111111-1111-4111-8111-111111111111',
+    'Phase 2 claim reminder report',
+    35,
+    -78,
+    now() + interval '30 days'
   );
 
 set local role anon;
@@ -846,6 +854,10 @@ begin
   perform public.claim_cleanup(
     'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4'
   );
+
+  perform public.claim_cleanup(
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa5'
+  );
 end;
 $$;
 
@@ -865,6 +877,13 @@ set
   claim_expires_at = now() - interval '1 hour',
   last_activity_at = now() - interval '25 hours'
 where report_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4';
+
+update public.cleanup_attempts
+set
+  claimed_at = now() - interval '23 hours',
+  claim_expires_at = now() + interval '1 hour',
+  last_activity_at = now() - interval '23 hours'
+where report_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa5';
 
 select private.run_cleanup_maintenance();
 
@@ -911,6 +930,68 @@ begin
   ) then
     raise exception 'Expired claim did not return the report to available';
   end if;
+
+  if not exists (
+    select 1
+    from public.cleanup_notifications
+    where report_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa5'
+      and event_type = 'claim_expiring_soon'
+  ) or not exists (
+    select 1
+    from public.cleanup_attempts
+    where report_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa5'
+      and status = 'claimed'
+  ) then
+    raise exception 'Maintenance did not create the one-time claim reminder';
+  end if;
+end;
+$$;
+
+do $$
+begin
+  if not exists (
+    select 1 from public.cleanup_notifications
+    where report_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+      and event_type = 'report_claimed'
+  ) then
+    raise exception 'Reporter claim notification is missing';
+  end if;
+
+  if (
+    select count(*) from public.cleanup_notifications
+    where report_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+      and event_type = 'completion_submitted'
+  ) <> 2 then
+    raise exception 'Submission notifications did not preserve both revisions';
+  end if;
+
+  if not exists (
+    select 1 from public.cleanup_notifications
+    where report_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+      and event_type = 'changes_requested'
+  ) or not exists (
+    select 1 from public.cleanup_notifications
+    where report_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+      and event_type = 'cleanup_approved'
+  ) then
+    raise exception 'Reporter review notifications are incomplete';
+  end if;
+
+  if not exists (
+    select 1 from public.cleanup_notifications
+    where report_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3'
+      and event_type = 'cleanup_auto_approved'
+  ) then
+    raise exception 'Automatic approval notification is missing';
+  end if;
+
+  if not exists (
+    select 1 from public.cleanup_notifications
+    where report_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4'
+      and event_type = 'claim_expired'
+  ) then
+    raise exception 'Claim expiration notification is missing';
+  end if;
 end;
 $$;
 
@@ -934,6 +1015,14 @@ begin
     'execute'
   ) then
     raise exception 'Authenticated users can execute private auto approval';
+  end if;
+
+  if has_function_privilege(
+    'authenticated',
+    'public.claim_cleanup_push_deliveries(uuid,integer)',
+    'execute'
+  ) then
+    raise exception 'Authenticated users can claim private push deliveries';
   end if;
 end;
 $$;

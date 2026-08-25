@@ -5,6 +5,7 @@ import {
   clearNativeProviderSessions,
   signInWithNativeProvider,
 } from './nativeSocialAuth';
+import { unregisterCurrentPushDevice } from './pushNotifications';
 
 /** @typedef {'google' | 'facebook'} AuthProvider */
 
@@ -145,6 +146,10 @@ export const signInWithProvider = async (provider) => {
 };
 
 export const signOut = async () => {
+  await Promise.race([
+    unregisterCurrentPushDevice().catch(() => false),
+    new Promise((resolve) => setTimeout(resolve, 1000)),
+  ]);
   const result = await supabase.auth.signOut();
   if (!result.error) {
     await Promise.allSettled([clearNativeProviderSessions()]);

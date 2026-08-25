@@ -1,0 +1,2 @@
+create index cleanup_notification_deliveries_push_device_idx
+  on public.cleanup_notification_deliveries (push_device_id);

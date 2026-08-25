@@ -3,9 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   canOfferCleanup,
   cleanupActionMessage,
-  cleanupExpirationNoticeMessage,
   cleanupMapTone,
-  cleanupNotificationPresentation,
   cleanupStatusPresentation,
   isCleanupInProgress,
   isCurrentCleaner,
@@ -63,29 +61,6 @@ describe('cleanup eligibility', () => {
     expect(isCurrentCleaner(attempt, permanentUser)).toBe(true);
     expect(isCurrentCleaner(attempt, { id: 'other', is_anonymous: false })).toBe(false);
     expect(isCurrentCleaner(attempt, { id: permanentUser.id, is_anonymous: true })).toBe(false);
-  });
-
-  it('describes one or multiple expired reservations', () => {
-    expect(cleanupExpirationNoticeMessage(1)).toContain('24-hour');
-    expect(cleanupExpirationNoticeMessage(2)).toContain('2 cleanup reservations');
-  });
-
-  it('presents change-request and correction-expiration notices', () => {
-    expect(cleanupNotificationPresentation([{ event_type: 'changes_requested' }])).toMatchObject({
-      title: 'Cleanup changes requested',
-      message: expect.stringContaining('24 hours'),
-    });
-    expect(cleanupNotificationPresentation([{ event_type: 'correction_expired' }])).toMatchObject({
-      title: 'Cleanup correction window expired',
-      message: expect.stringContaining('history'),
-    });
-    expect(cleanupNotificationPresentation([
-      { event_type: 'changes_requested' },
-      { event_type: 'correction_expired' },
-    ])).toMatchObject({
-      title: 'Cleanup updates',
-      message: expect.stringContaining('2'),
-    });
   });
 
   it('maps every public cleanup state to the intended marker tone', () => {

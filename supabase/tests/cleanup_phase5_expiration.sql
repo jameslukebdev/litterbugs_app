@@ -112,6 +112,7 @@ begin
     select 1
     from public.cleanup_notifications
     where cleanup_attempt_id = released.id
+      and event_type = 'claim_expired'
   ) then
     raise exception 'Voluntary release incorrectly created an expiration notice';
   end if;
@@ -156,7 +157,8 @@ begin
 
   select * into notice
   from public.cleanup_notifications
-  where cleanup_attempt_id = expired.id;
+  where cleanup_attempt_id = expired.id
+    and event_type = 'claim_expired';
 
   if notice.user_id <> expired.cleaner_id
     or notice.event_type <> 'claim_expired'
@@ -171,6 +173,7 @@ begin
     select count(*)
     from public.cleanup_notifications
     where cleanup_attempt_id = expired.id
+      and event_type = 'claim_expired'
   ) <> 1 then
     raise exception 'Expiration notification was duplicated';
   end if;
@@ -191,7 +194,11 @@ select set_config(
 
 do $$
 begin
-  if exists (select 1 from public.cleanup_notifications) then
+  if exists (
+    select 1
+    from public.cleanup_notifications
+    where event_type = 'claim_expired'
+  ) then
     raise exception 'Anonymous user could read a cleanup expiration notice';
   end if;
 
@@ -221,8 +228,20 @@ select set_config(
 
 do $$
 begin
-  if exists (select 1 from public.cleanup_notifications) then
+  if exists (
+    select 1
+    from public.cleanup_notifications
+    where event_type = 'claim_expired'
+  ) then
     raise exception 'Reporter could read the cleaner expiration notice';
+  end if;
+
+  if not exists (
+    select 1
+    from public.cleanup_notifications
+    where event_type = 'report_claimed'
+  ) then
+    raise exception 'Reporter could not read their report claim notice';
   end if;
 end;
 $$;
@@ -246,7 +265,8 @@ declare
 begin
   select id into notification_id
   from public.cleanup_notifications
-  where read_at is null;
+  where read_at is null
+    and event_type = 'claim_expired';
 
   perform public.acknowledge_cleanup_notifications(array[notification_id]);
 
