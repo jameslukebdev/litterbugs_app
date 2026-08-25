@@ -509,10 +509,120 @@ begin
   ) then
     raise exception 'review_cleanup did not derive the reporter identity';
   end if;
+
+  if not exists (
+    select 1
+    from public.cleanup_attempts
+    join public.cleanup_reviews
+      on cleanup_reviews.cleanup_attempt_id = cleanup_attempts.id
+    where cleanup_attempts.id = active_cleanup_id
+      and cleanup_attempts.status = 'changes_requested'
+      and cleanup_attempts.cleaner_id = '33333333-3333-4333-8333-333333333333'
+      and cleanup_attempts.review_due_at is null
+      and cleanup_attempts.correction_due_at =
+        cleanup_reviews.created_at + interval '24 hours'
+  ) then
+    raise exception 'Change request did not start the 24-hour correction window';
+  end if;
+
 end;
 $$;
 
 reset role;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from public.cleanup_notifications
+    join public.cleanup_reviews
+      on cleanup_reviews.id = cleanup_notifications.review_id
+    where cleanup_notifications.user_id = '33333333-3333-4333-8333-333333333333'
+      and cleanup_notifications.event_type = 'changes_requested'
+      and cleanup_notifications.cleanup_attempt_id = cleanup_reviews.cleanup_attempt_id
+  ) then
+    raise exception 'Cleaner change-request notification is missing';
+  end if;
+end;
+$$;
+
+update public.cleanup_attempts
+set correction_due_at = now() - interval '1 minute'
+where report_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+  and status = 'changes_requested';
+
+select private.run_cleanup_maintenance();
+
+do $$
+declare
+  expired_cleanup public.cleanup_attempts%rowtype;
+begin
+  select * into expired_cleanup
+  from public.cleanup_attempts
+  where report_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+    and cleaner_id = '33333333-3333-4333-8333-333333333333';
+
+  if expired_cleanup.status <> 'expired'
+    or expired_cleanup.correction_due_at is not null then
+    raise exception 'Maintenance did not expire correction: status %, due %, expired %',
+      expired_cleanup.status,
+      expired_cleanup.correction_due_at,
+      expired_cleanup.expired_at;
+  end if;
+
+  if not exists (
+    select 1
+    from public.reports
+    where id = expired_cleanup.report_id
+      and cleanup_state = 'available'
+  ) then
+    raise exception 'Expired correction did not return the report to available';
+  end if;
+
+  if not exists (
+    select 1
+    from public.cleanup_submissions
+    where cleanup_attempt_id = expired_cleanup.id
+      and submission_number = 1
+  ) or not exists (
+    select 1
+    from public.cleanup_reviews
+    where cleanup_attempt_id = expired_cleanup.id
+      and decision = 'changes_requested'
+  ) then
+    raise exception 'Expired correction destroyed submission or review history';
+  end if;
+
+  if not exists (
+    select 1
+    from public.cleanup_notifications
+    where cleanup_attempt_id = expired_cleanup.id
+      and event_type = 'correction_expired'
+  ) then
+    raise exception 'Correction-expiration notification is missing';
+  end if;
+end;
+$$;
+
+update public.cleanup_attempts
+set
+  status = 'changes_requested',
+  expired_at = null,
+  correction_due_at = (
+    select cleanup_reviews.created_at + private.cleanup_correction_duration()
+    from public.cleanup_reviews
+    where cleanup_reviews.cleanup_attempt_id = cleanup_attempts.id
+      and cleanup_reviews.decision = 'changes_requested'
+    order by cleanup_reviews.created_at desc
+    limit 1
+  )
+where report_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+  and cleaner_id = '33333333-3333-4333-8333-333333333333';
+
+update public.reports
+set cleanup_state = 'changes_requested'
+where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1';
+
 set local role authenticated;
 select set_config(
   'request.jwt.claim.sub',
@@ -559,6 +669,29 @@ begin
     3,
     35
   );
+
+  if not exists (
+    select 1
+    from public.cleanup_attempts
+    where id = active_cleanup_id
+      and status = 'completion_submitted'
+      and correction_due_at is null
+      and review_due_at = latest_submitted_at + interval '48 hours'
+  ) then
+    raise exception 'Resubmission did not start a fresh 48-hour review window';
+  end if;
+
+  if (
+    select count(*)
+    from public.cleanup_submissions
+    where cleanup_attempt_id = active_cleanup_id
+  ) <> 2 or (
+    select count(*)
+    from public.cleanup_reviews
+    where cleanup_attempt_id = active_cleanup_id
+  ) <> 1 then
+    raise exception 'Resubmission overwrote cleanup history';
+  end if;
 end;
 $$;
 

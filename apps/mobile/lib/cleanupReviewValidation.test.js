@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   CLEANUP_CHANGE_REASONS,
   MAX_CLEANUP_REVIEW_NOTE_LENGTH,
+  cleanupChangeReasonLabel,
   validateCleanupChangeRequest,
 } from './cleanupReviewValidation';
 
@@ -48,5 +49,11 @@ describe('cleanup reporter review validation', () => {
       reasons: ['other'],
       note: 'x'.repeat(MAX_CLEANUP_REVIEW_NOTE_LENGTH + 1),
     }).errors.note).toBeTruthy();
+  });
+
+  it('uses the locked product labels for cleaner feedback', () => {
+    expect(cleanupChangeReasonLabel('additional_photo_needed')).toBe('Need another photo');
+    expect(cleanupChangeReasonLabel('details_unclear')).toBe('Need more information');
+    expect(cleanupChangeReasonLabel('other')).toBe('Other');
   });
 });

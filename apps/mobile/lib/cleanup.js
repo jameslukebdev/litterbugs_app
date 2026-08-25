@@ -48,7 +48,7 @@ export async function claimCleanup(reportId) {
 export async function loadActiveCleanupAttempt(reportId) {
   const { data, error } = await supabase
     .from('cleanup_attempts')
-    .select('id, report_id, cleaner_id, reporter_id, status, claimed_at, claim_expires_at')
+    .select('id, report_id, cleaner_id, reporter_id, status, claimed_at, claim_expires_at, correction_due_at')
     .eq('report_id', reportId)
     .in('status', ['claimed', 'completion_submitted', 'changes_requested'])
     .order('claimed_at', { ascending: false })
@@ -71,8 +71,7 @@ export async function releaseCleanup(cleanupId) {
 export async function loadUnreadCleanupNotifications() {
   const { data, error } = await supabase
     .from('cleanup_notifications')
-    .select('id, cleanup_attempt_id, report_id, event_type, created_at')
-    .eq('event_type', 'claim_expired')
+    .select('id, cleanup_attempt_id, report_id, review_id, event_type, created_at')
     .is('read_at', null)
     .order('created_at', { ascending: true })
     .limit(20);
@@ -96,7 +95,7 @@ export async function acknowledgeCleanupNotifications(notificationIds) {
 export async function loadCurrentUserActiveCleanups(userId) {
   const { data: attempts, error: attemptsError } = await supabase
     .from('cleanup_attempts')
-    .select('id, report_id, status, claimed_at, claim_expires_at, last_activity_at')
+    .select('id, report_id, status, claimed_at, claim_expires_at, correction_due_at, last_activity_at')
     .eq('cleaner_id', userId)
     .in('status', ['claimed', 'completion_submitted', 'changes_requested'])
     .order('last_activity_at', { ascending: false });
