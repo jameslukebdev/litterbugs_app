@@ -17,8 +17,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ProfileAvatar from './ProfileAvatar';
 import ProfileReportList from './ProfileReportList';
 import { deleteCurrentAccount, signOut } from './lib/auth';
-import { loadCurrentUserActiveCleanups } from './lib/cleanup';
+import { loadCurrentUserCleanupSummary } from './lib/cleanup';
 import { cleanupStatusPresentation } from './lib/cleanupEligibility';
+import {
+  cleanupApprovalLabel,
+  emptyCleanupSummary,
+} from './lib/cleanupProfile';
 import { getBottomNavClearance } from './lib/navigationLayout';
 import { useProfile } from './lib/profile';
 import { isPermanentUser } from './lib/reportAccess';
@@ -92,6 +96,44 @@ function ActiveCleanupRow({ attempt, onPress, divided }) {
   );
 }
 
+function CleanupStat({ value, label, divided }) {
+  return (
+    <View style={[styles.cleanupStat, divided && styles.cleanupStatDivider]}>
+      <Text style={styles.cleanupStatValue}>{value}</Text>
+      <Text style={styles.cleanupStatLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function CompletedCleanupRow({ attempt, onPress, divided }) {
+  const completedDate = attempt.completed_at
+    ? new Date(attempt.completed_at).toLocaleDateString()
+    : 'Date unavailable';
+
+  return (
+    <TouchableOpacity
+      style={[styles.completedCleanupRow, divided && styles.completedCleanupDivider]}
+      onPress={onPress}
+      activeOpacity={0.72}
+      accessibilityRole="button"
+      accessibilityLabel={`Open completed cleanup ${attempt.report?.title || ''}`.trim()}
+    >
+      <View style={styles.completedCleanupIcon}>
+        <Ionicons name="checkmark" size={22} color="#FFFFFF" />
+      </View>
+      <View style={styles.completedCleanupCopy}>
+        <Text style={styles.completedCleanupTitle} numberOfLines={2}>
+          {attempt.report?.title || 'Completed litter cleanup'}
+        </Text>
+        <Text style={styles.completedCleanupMeta}>
+          {completedDate} · {cleanupApprovalLabel(attempt.approval_method)}
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={22} color="#6C8B70" />
+    </TouchableOpacity>
+  );
+}
+
 function SignedOutProfile({ navigation, bottomPadding }) {
   return (
     <ScrollView contentContainerStyle={[styles.signedOutContent, { paddingBottom: bottomPadding }]}>
@@ -124,9 +166,9 @@ export default function ProfileScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const [signingOut, setSigningOut] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
-  const [activeCleanups, setActiveCleanups] = useState([]);
-  const [activeCleanupsLoading, setActiveCleanupsLoading] = useState(false);
-  const [activeCleanupsError, setActiveCleanupsError] = useState(false);
+  const [cleanupSummary, setCleanupSummary] = useState(emptyCleanupSummary);
+  const [cleanupsLoading, setCleanupsLoading] = useState(false);
+  const [cleanupsError, setCleanupsError] = useState(false);
   const accountBusy = signingOut || deletingAccount;
   const bottomPadding = getBottomNavClearance(insets.bottom) + 18;
 
@@ -135,29 +177,29 @@ export default function ProfileScreen({ navigation }) {
     [reports, user?.id]
   );
 
-  const refreshActiveCleanups = useCallback(async () => {
+  const refreshCleanups = useCallback(async () => {
     if (!permanent || !user?.id) {
-      setActiveCleanups([]);
-      setActiveCleanupsError(false);
+      setCleanupSummary(emptyCleanupSummary());
+      setCleanupsError(false);
       return;
     }
 
     try {
-      setActiveCleanupsLoading(true);
-      const cleanups = await loadCurrentUserActiveCleanups(user.id);
-      setActiveCleanups(cleanups);
-      setActiveCleanupsError(false);
+      setCleanupsLoading(true);
+      const summary = await loadCurrentUserCleanupSummary(user.id);
+      setCleanupSummary(summary);
+      setCleanupsError(false);
     } catch (error) {
-      console.log('Active cleanup load error:', error);
-      setActiveCleanupsError(true);
+      console.log('Profile cleanup load error:', error);
+      setCleanupsError(true);
     } finally {
-      setActiveCleanupsLoading(false);
+      setCleanupsLoading(false);
     }
   }, [permanent, user?.id]);
 
   useFocusEffect(useCallback(() => {
-    refreshActiveCleanups();
-  }, [refreshActiveCleanups]));
+    refreshCleanups();
+  }, [refreshCleanups]));
 
   if (!permanent) {
     return <SignedOutProfile navigation={navigation} bottomPadding={bottomPadding} />;
@@ -211,7 +253,7 @@ export default function ProfileScreen({ navigation }) {
     await Promise.allSettled([
       refreshProfile(),
       refreshReports({ showRefresh: true }),
-      refreshActiveCleanups(),
+      refreshCleanups(),
     ]);
   };
 
@@ -220,7 +262,7 @@ export default function ProfileScreen({ navigation }) {
       style={styles.container}
       contentContainerStyle={{ paddingBottom: bottomPadding }}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={loading || activeCleanupsLoading} onRefresh={refresh} tintColor="#2F7D32" />}
+      refreshControl={<RefreshControl refreshing={loading || cleanupsLoading} onRefresh={refresh} tintColor="#2F7D32" />}
     >
       <View style={styles.identity}>
         <ProfileAvatar profile={profile} size={104} />
@@ -251,20 +293,27 @@ export default function ProfileScreen({ navigation }) {
       </View>
 
       <Text style={styles.sectionTitle}>My cleanups</Text>
+      <View style={styles.cleanupStatsCard}>
+        <CleanupStat value={cleanupSummary.counts.completed} label="Completed" />
+        <CleanupStat value={cleanupSummary.counts.awaitingReview} label="Awaiting review" divided />
+        <CleanupStat value={cleanupSummary.counts.active} label="Active" divided />
+      </View>
+
+      <Text style={styles.subsectionTitle}>Current cleanups</Text>
       <View style={[styles.card, styles.activeCleanupCard]}>
-        {activeCleanupsLoading && activeCleanups.length === 0 ? (
+        {cleanupsLoading && cleanupSummary.current.length === 0 ? (
           <View style={styles.activeCleanupEmpty}>
             <ActivityIndicator color="#8A6400" />
-            <Text style={styles.activeCleanupEmptyText}>Checking active cleanups…</Text>
+            <Text style={styles.activeCleanupEmptyText}>Checking your cleanups…</Text>
           </View>
-        ) : activeCleanupsError ? (
-          <TouchableOpacity style={styles.activeCleanupEmpty} onPress={refreshActiveCleanups}>
+        ) : cleanupsError ? (
+          <TouchableOpacity style={styles.activeCleanupEmpty} onPress={refreshCleanups}>
             <Ionicons name="cloud-offline-outline" size={27} color="#8A6400" />
             <Text style={styles.activeCleanupEmptyTitle}>Couldn’t load cleanups</Text>
             <Text style={styles.activeCleanupEmptyText}>Tap to try again.</Text>
           </TouchableOpacity>
-        ) : activeCleanups.length > 0 ? (
-          activeCleanups.map((attempt, index) => (
+        ) : cleanupSummary.current.length > 0 ? (
+          cleanupSummary.current.map((attempt, index) => (
             <ActiveCleanupRow
               key={attempt.id}
               attempt={attempt}
@@ -276,7 +325,27 @@ export default function ProfileScreen({ navigation }) {
           <View style={styles.activeCleanupEmpty}>
             <Ionicons name="leaf-outline" size={27} color="#6F797F" />
             <Text style={styles.activeCleanupEmptyTitle}>No active cleanups</Text>
-            <Text style={styles.activeCleanupEmptyText}>Claimed cleanups will appear here.</Text>
+            <Text style={styles.activeCleanupEmptyText}>Claimed and awaiting-review cleanups will appear here.</Text>
+          </View>
+        )}
+      </View>
+
+      <Text style={styles.subsectionTitle}>Completed cleanups</Text>
+      <View style={styles.card}>
+        {cleanupSummary.completed.length > 0 ? (
+          cleanupSummary.completed.map((attempt, index) => (
+            <CompletedCleanupRow
+              key={attempt.id}
+              attempt={attempt}
+              divided={index > 0}
+              onPress={() => navigation.navigate('Map', { reportId: attempt.report_id })}
+            />
+          ))
+        ) : (
+          <View style={styles.completedCleanupEmpty}>
+            <Ionicons name="checkmark-circle-outline" size={29} color="#6F797F" />
+            <Text style={styles.activeCleanupEmptyTitle}>No completed cleanups yet</Text>
+            <Text style={styles.activeCleanupEmptyText}>Your completed cleanup history will appear here.</Text>
           </View>
         )}
       </View>
@@ -334,7 +403,13 @@ const styles = StyleSheet.create({
   statValue: { color: '#245F2A', fontSize: 28, fontWeight: '800' },
   statLabel: { marginTop: 3, color: '#687178', fontSize: 14, fontWeight: '700' },
   sectionTitle: { marginHorizontal: 20, marginTop: 27, marginBottom: 9, color: '#30363B', fontSize: 17, fontWeight: '800' },
+  subsectionTitle: { marginHorizontal: 20, marginTop: 16, marginBottom: 8, color: '#596168', fontSize: 14, fontWeight: '800' },
   card: { marginHorizontal: 16, overflow: 'hidden', borderRadius: 16, backgroundColor: '#FFFFFF' },
+  cleanupStatsCard: { marginHorizontal: 16, flexDirection: 'row', overflow: 'hidden', borderRadius: 16, backgroundColor: '#FFFFFF' },
+  cleanupStat: { flex: 1, minHeight: 86, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  cleanupStatDivider: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: '#DDE2DE' },
+  cleanupStatValue: { color: '#245F2A', fontSize: 25, fontWeight: '800' },
+  cleanupStatLabel: { minHeight: 34, marginTop: 4, color: '#687178', fontSize: 12, lineHeight: 16, fontWeight: '700', textAlign: 'center' },
   activeCleanupCard: { borderWidth: 1, borderColor: '#E7CF79', backgroundColor: '#FFF9DD' },
   activeCleanupRow: { minHeight: 124, padding: 16, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF9DD' },
   activeCleanupDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E7CF79' },
@@ -347,6 +422,13 @@ const styles = StyleSheet.create({
   activeCleanupEmpty: { minHeight: 126, alignItems: 'center', justifyContent: 'center', padding: 20 },
   activeCleanupEmptyTitle: { marginTop: 8, color: '#4F5960', fontSize: 15, fontWeight: '800' },
   activeCleanupEmptyText: { marginTop: 5, color: '#747D84', fontSize: 14, textAlign: 'center' },
+  completedCleanupRow: { minHeight: 82, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF' },
+  completedCleanupDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E0E3E5' },
+  completedCleanupIcon: { width: 40, height: 40, marginRight: 13, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: '#2F7D32' },
+  completedCleanupCopy: { flex: 1, marginRight: 8 },
+  completedCleanupTitle: { color: '#30363B', fontSize: 15, fontWeight: '800' },
+  completedCleanupMeta: { marginTop: 5, color: '#687178', fontSize: 13 },
+  completedCleanupEmpty: { minHeight: 126, alignItems: 'center', justifyContent: 'center', padding: 20 },
   actionRow: { minHeight: 60, paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E0E3E5', backgroundColor: '#FFFFFF' },
   actionCopy: { flexDirection: 'row', alignItems: 'center', gap: 11 },
   actionText: { color: '#30363B', fontSize: 16 },
