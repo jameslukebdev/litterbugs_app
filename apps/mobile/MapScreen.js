@@ -20,9 +20,10 @@ import {
   Linking,
   useWindowDimensions,
 } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import { Marker } from 'react-native-maps';
+import ClusteredMapView from 'react-native-map-clustering';
 import * as Location from 'expo-location';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -90,6 +91,7 @@ export default function MapScreen({ route, navigation }) {
   const [tracksReportMarkers, setTracksReportMarkers] = useState(
     Platform.OS === 'android'
   );
+  const reportClusterRef = useRef();
   const [draftCoord, setDraftCoord] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
   const [reportStep, setReportStep] = useState(0);
@@ -889,33 +891,58 @@ const submitReport = async () => {
     };
 
 
-// Set Map Marker Based on Severity 
+// Set available marker icons by severity and active/completed markers by status.
     const getMarkerStyleByReport = (report) => {
       const mapTone = cleanupMapTone(report);
 
       if (mapTone === 'active') {
-        return { bg: '#E0A800', icon: 'time-outline' };
+        return {
+          bg: '#E0A800',
+          icon: 'time-outline',
+          iconFamily: 'ionicons',
+          statusIcon: null,
+        };
       }
 
       if (mapTone === 'completed') {
-        return { bg: '#2F7D32', icon: 'checkmark-circle-outline' };
+        return {
+          bg: '#2F7D32',
+          icon: 'leaf-outline',
+          iconFamily: 'ionicons',
+          statusIcon: 'checkmark',
+        };
       }
 
-      const s = (report?.severity || '').toLowerCase();
-    
-      if (s === 'low') {
-        return { bg: '#43A047', icon: 'trash-outline' }; // green + bottle-ish
-      }
-    
-      if (s === 'high') {
-        return { bg: '#E53935', icon: 'warning-outline' }; // red + hazard/warning
-      }
-    
-      // default = Medium (or missing/unknown)
-      return { bg: '#FF8A00', icon: 'trash-outline' }; // your current orange
+      const severity = (report?.severity || '').toLowerCase();
+      const isLowSeverity = severity === 'low';
+      const icon = isLowSeverity
+        ? 'bottle-soda-outline'
+        : severity === 'high'
+          ? 'warning-outline'
+          : 'trash-outline';
+
+      return {
+        bg: '#D32F2F',
+        icon,
+        iconFamily: isLowSeverity ? 'material-community' : 'ionicons',
+        statusIcon: null,
+      };
     };
-    
-    
+
+    const getClusterStatusCounts = (clusterId) => {
+      const leaves = reportClusterRef.current?.getLeaves(clusterId, Infinity) || [];
+
+      return leaves.reduce((counts, leaf) => {
+        const [, mapTone] = String(leaf?.properties?.identifier || '').split(':');
+
+        if (mapTone === 'available' || mapTone === 'active' || mapTone === 'completed') {
+          counts[mapTone] += 1;
+        }
+
+        return counts;
+      }, { available: 0, active: 0, completed: 0 });
+    };
+
 useEffect(() => {
   if (Platform.OS !== 'android' || markers.length === 0) return undefined;
 
@@ -2119,11 +2146,74 @@ const renderReportStep = () => {
   // Map View . . .
   return (
     <View style={styles.container}>
-        <MapView
+        <ClusteredMapView
           style={StyleSheet.absoluteFill}
           initialRegion={region}
           region={region}
           onRegionChangeComplete={setRegion}
+          maxZoom={14}
+          radius={20}
+          superClusterRef={reportClusterRef}
+          renderCluster={({ id, geometry, properties, onPress }) => {
+            const statusCounts = getClusterStatusCounts(id);
+            const statusBadges = [
+              {
+                key: 'available',
+                count: statusCounts.available,
+                color: '#D32F2F',
+                icon: 'trash-bin-outline',
+              },
+              {
+                key: 'active',
+                count: statusCounts.active,
+                color: '#9A7000',
+                icon: 'time-outline',
+              },
+              {
+                key: 'completed',
+                count: statusCounts.completed,
+                color: '#2F7D32',
+                icon: 'leaf-outline',
+              },
+            ].filter(({ count }) => count > 0);
+
+            return (
+              <Marker
+                key={`cluster-${id}`}
+                coordinate={{
+                  latitude: geometry.coordinates[1],
+                  longitude: geometry.coordinates[0],
+                }}
+                tracksViewChanges={false}
+                anchor={{ x: 0.5, y: 0.5 }}
+                onPress={(event) => {
+                  event?.stopPropagation?.();
+                  onPress();
+                }}
+              >
+                <View style={styles.reportClusterHit}>
+                  <View style={styles.reportClusterBubble}>
+                    <Text style={styles.reportClusterText}>
+                      {properties.point_count}
+                    </Text>
+                  </View>
+                  <View style={styles.reportClusterStatusRow}>
+                    {statusBadges.map(({ key, count, color, icon }) => (
+                      <View
+                        key={key}
+                        style={[styles.reportClusterStatusBadge, { borderColor: color }]}
+                      >
+                        <Ionicons name={icon} size={11} color={color} />
+                        <Text style={[styles.reportClusterStatusCount, { color }]}>
+                          {count}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              </Marker>
+            );
+          }}
           onPress={(e) => {
             if (detailsOpen || isSaving) return;
             onMapPress(e);
@@ -2134,12 +2224,18 @@ const renderReportStep = () => {
         >
 
         {markers.map((m) => {
-          const { bg, icon } = getMarkerStyleByReport(m?.report);
+          const {
+            bg,
+            icon,
+            iconFamily,
+            statusIcon,
+          } = getMarkerStyleByReport(m?.report);
 
           return (
             <Marker
               key={m.id}
               coordinate={m.coordinate}
+              identifier={`report:${cleanupMapTone(m.report)}:${m.id}`}
               tracksViewChanges={tracksReportMarkers}
               anchor={{ x: 0.5, y: 0.5 }}
               onPress={(e) => {
@@ -2149,7 +2245,16 @@ const renderReportStep = () => {
             >
               <View style={styles.reportMarkerHitLg}>
                 <View style={[styles.reportMarkerIconWrapLg, { backgroundColor: bg }]}>
-                  <Ionicons name={icon} size={34} color="#fff" />
+                  {iconFamily === 'material-community' ? (
+                    <MaterialCommunityIcons name={icon} size={34} color="#fff" />
+                  ) : (
+                    <Ionicons name={icon} size={34} color="#fff" />
+                  )}
+                  {statusIcon ? (
+                    <View style={styles.reportMarkerStatusBadge}>
+                      <Ionicons name={statusIcon} size={16} color="#374151" />
+                    </View>
+                  ) : null}
                 </View>
               </View>
             </Marker>
@@ -2160,12 +2265,13 @@ const renderReportStep = () => {
         {draftCoord && (
           <Marker
             coordinate={draftCoord}
+            cluster={false}
             pinColor="#FFC42E"
             title="Draft report"
             description="Fill the form below to save"
           />
         )}
-      </MapView>
+      </ClusteredMapView>
 
       <TouchableOpacity
         style={styles.searchAreaButton}
@@ -4597,7 +4703,7 @@ reportCloseButtonText: {
 },
 
 
-// 2× larger marker hit area + icon wrap (Safety Orange)
+// Enlarged marker hit area and status-colored icon wrap.
 reportMarkerHitLg: {
   width: 88,          // was 44
   height: 88,         // was 44
@@ -4613,7 +4719,7 @@ reportMarkerIconWrapLg: {
   borderRadius: 30,
   alignItems: 'center',
   justifyContent: 'center',
-  backgroundColor: '#FF8A00', // Safety Orange
+  backgroundColor: '#D32F2F',
   borderWidth: 3,     // slightly thicker for scale
   borderColor: '#fff',
   shadowColor: '#000',
@@ -4621,6 +4727,70 @@ reportMarkerIconWrapLg: {
   shadowRadius: 7,
   shadowOffset: { width: 0, height: 3 },
   elevation: 6,
+},
+reportMarkerStatusBadge: {
+  position: 'absolute',
+  right: -3,
+  bottom: -3,
+  width: 24,
+  height: 24,
+  borderRadius: 12,
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: '#fff',
+  borderWidth: 2,
+  borderColor: '#374151',
+},
+reportClusterHit: {
+  width: 96,
+  height: 80,
+  borderRadius: 40,
+  alignItems: 'center',
+  justifyContent: 'center',
+  paddingBottom: 12,
+  backgroundColor: 'rgba(0,0,0,0.01)',
+},
+reportClusterBubble: {
+  width: 52,
+  height: 52,
+  borderRadius: 26,
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: '#B448CF',
+  borderWidth: 3,
+  borderColor: '#fff',
+  shadowColor: '#000',
+  shadowOpacity: 0.25,
+  shadowRadius: 6,
+  shadowOffset: { width: 0, height: 3 },
+  elevation: 6,
+},
+reportClusterText: {
+  color: '#fff',
+  fontSize: 17,
+  fontWeight: '800',
+},
+reportClusterStatusRow: {
+  position: 'absolute',
+  bottom: 0,
+  flexDirection: 'row',
+  gap: 3,
+},
+reportClusterStatusBadge: {
+  minWidth: 27,
+  height: 20,
+  borderRadius: 10,
+  paddingHorizontal: 4,
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: '#fff',
+  borderWidth: 2,
+},
+reportClusterStatusCount: {
+  fontSize: 10,
+  fontWeight: '900',
+  lineHeight: 12,
 },
 savingOverlay: {
   ...StyleSheet.absoluteFillObject,
