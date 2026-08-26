@@ -27,7 +27,11 @@ import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from './lib/supabase'
-import { canManageReport, isPermanentUser, permanentUserId } from './lib/reportAccess';
+import {
+  canEditOrDeleteReport,
+  isPermanentUser,
+  permanentUserId,
+} from './lib/reportAccess';
 import { BOTTOM_NAV_METRICS, getBottomNavClearance } from './lib/navigationLayout';
 import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
@@ -532,6 +536,19 @@ useEffect(() => navigation.addListener('focus', () => {
   if (!isPermanentUser(currentUser)) setPendingReportCoordinate(null);
 }), [currentUser, navigation, setPendingReportCoordinate]);
 
+const reconcileReportAfterBlockedMutation = async (reportId) => {
+  try {
+    const latestReport = await getReportById(reportId);
+    if (latestReport) upsertReport(latestReport);
+    else removeReport(reportId);
+    return latestReport;
+  } catch (error) {
+    console.log('Report reconciliation error:', error);
+    await refreshReports({ showRefresh: false });
+    return null;
+  }
+};
+
 
 // Save Report Function
   const saveReport = async () => {
@@ -589,6 +606,32 @@ useEffect(() => navigation.addListener('focus', () => {
       }
   
       if (error) {
+        if (
+          isEditing
+          && (
+            error.code === 'PGRST116'
+            || /0 rows|no rows|cannot coerce/i.test(error.message ?? '')
+          )
+        ) {
+          const latestReport = await reconcileReportAfterBlockedMutation(editingReportId);
+          setFormOpen(false);
+          setIsEditing(false);
+          setEditingReportId(null);
+          setDraftCoord(null);
+
+          if (latestReport) {
+            setSelectedReport(latestReport);
+            setDetailsOpen(true);
+            Alert.alert(
+              'Report locked',
+              'Cleanup activity has started, so this report can no longer be edited.'
+            );
+          } else {
+            Alert.alert('Report unavailable', 'This report is no longer available.');
+          }
+          return;
+        }
+
         Alert.alert('Save failed', error.message);
         return;
       }
@@ -1046,12 +1089,7 @@ useEffect(() => {
 
 
 // Checks if User is Owner of Report
-  const isOwner = Boolean(
-    canManageReport(selectedReport, currentUser)
-    && selectedReport?.cleanup_state === 'available'
-    && !selectedReport?.expired_at
-    && !selectedReport?.cancelled_at
-  );
+  const isOwner = canEditOrDeleteReport(selectedReport, currentUser);
   const cleanupEligible = canOfferCleanup(selectedReport, currentUser);
   const currentUserIsCleaner = isCurrentCleaner(
     selectedCleanupAttempt,
@@ -3042,14 +3080,16 @@ const renderReportStep = () => {
 
                     onPress: async () => {
 
-                      const { error } = await supabase
+                      const { data: deletedReport, error } = await supabase
                         .from('reports')
                         .delete()
                         .eq(
                           'id',
                           selectedReport.id
                         )
-                        .eq('user_id', currentUserId);
+                        .eq('user_id', currentUserId)
+                        .select('id')
+                        .maybeSingle();
 
                       if (error) {
                         Alert.alert(
@@ -3057,6 +3097,25 @@ const renderReportStep = () => {
                           error.message
                         );
 
+                        return;
+                      }
+
+                      if (!deletedReport) {
+                        const latestReport = await reconcileReportAfterBlockedMutation(
+                          selectedReport.id
+                        );
+
+                        if (latestReport) {
+                          setSelectedReport(latestReport);
+                          Alert.alert(
+                            'Report locked',
+                            'Cleanup activity has started, so this report can no longer be deleted.'
+                          );
+                        } else {
+                          setDetailsOpen(false);
+                          setSelectedReport(null);
+                          Alert.alert('Report unavailable', 'This report was already removed.');
+                        }
                         return;
                       }
 

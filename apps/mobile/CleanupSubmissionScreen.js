@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -14,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Image as ExpoImage } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -252,7 +252,14 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
                 <View style={styles.photoGrid}>
                   {photos.map((photo, index) => (
                     <View key={`${photo.uri}-${index}`} style={styles.photoWrap}>
-                      <Image source={{ uri: photo.uri }} style={styles.photo} />
+                      <ExpoImage
+                        source={photo.uri}
+                        contentFit="cover"
+                        cachePolicy="none"
+                        transition={120}
+                        style={styles.photo}
+                        accessibilityLabel={`After-cleanup photo ${index + 1}`}
+                      />
                       <TouchableOpacity
                         style={styles.removePhoto}
                         onPress={() => removePhoto(index)}
@@ -356,7 +363,16 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
               <Text style={styles.reviewLabel}>AFTER PHOTOS</Text>
               <View style={styles.photoGrid}>
                 {photos.map((photo, index) => (
-                  <Image key={`${photo.uri}-${index}`} source={{ uri: photo.uri }} style={styles.reviewPhoto} />
+                  <View key={`${photo.uri}-${index}`} style={styles.reviewPhotoWrap}>
+                    <ExpoImage
+                      source={{ uri: photo.uri }}
+                      contentFit="cover"
+                      cachePolicy="none"
+                      transition={120}
+                      style={styles.reviewPhoto}
+                      accessibilityLabel={`After-cleanup review photo ${index + 1}`}
+                    />
+                  </View>
                 ))}
               </View>
               {photos.length === 1 ? (
@@ -459,7 +475,8 @@ const styles = StyleSheet.create({
   secondaryButtonText: { color: '#2F7D32', fontSize: 15, fontWeight: '800' },
   reviewCard: { marginTop: 22, padding: 18, borderRadius: 18, backgroundColor: '#FFFFFF' },
   reviewLabel: { marginTop: 16, color: '#6D767D', fontSize: 11, fontWeight: '900', letterSpacing: 0.8 },
-  reviewPhoto: { width: '31%', aspectRatio: 1, borderRadius: 12, backgroundColor: '#E9ECEE' },
+  reviewPhotoWrap: { width: '31%', aspectRatio: 1, overflow: 'hidden', borderRadius: 12, backgroundColor: '#E9ECEE' },
+  reviewPhoto: { width: '100%', height: '100%' },
   reviewText: { marginTop: 7, color: '#30363B', fontSize: 16, lineHeight: 23 },
   reviewMetrics: { flexDirection: 'row', gap: 12 },
   reviewMetric: { flex: 1 },

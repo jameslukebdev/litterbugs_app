@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { summarizeCleanupAttempts } from './cleanupProfile';
 
 export async function loadCurrentCleanupWaiver() {
   const { data: waiver, error: waiverError } = await supabase
@@ -92,16 +93,16 @@ export async function acknowledgeCleanupNotifications(notificationIds) {
   return data ?? [];
 }
 
-export async function loadCurrentUserActiveCleanups(userId) {
+export async function loadCurrentUserCleanupSummary(userId) {
   const { data: attempts, error: attemptsError } = await supabase
     .from('cleanup_attempts')
-    .select('id, report_id, status, claimed_at, claim_expires_at, correction_due_at, last_activity_at')
+    .select('id, report_id, status, claimed_at, claim_expires_at, correction_due_at, latest_submitted_at, completed_at, approval_method, is_self_cleanup, last_activity_at')
     .eq('cleaner_id', userId)
-    .in('status', ['claimed', 'completion_submitted', 'changes_requested'])
+    .in('status', ['claimed', 'completion_submitted', 'changes_requested', 'completed'])
     .order('last_activity_at', { ascending: false });
 
   if (attemptsError) throw attemptsError;
-  if (!attempts?.length) return [];
+  if (!attempts?.length) return summarizeCleanupAttempts();
 
   const { data: reports, error: reportsError } = await supabase
     .from('reports')
@@ -114,8 +115,8 @@ export async function loadCurrentUserActiveCleanups(userId) {
     (reports ?? []).map((report) => [report.id, report])
   );
 
-  return attempts.map((attempt) => ({
+  return summarizeCleanupAttempts(attempts.map((attempt) => ({
     ...attempt,
     report: reportsById.get(attempt.report_id) ?? null,
-  }));
+  })));
 }
