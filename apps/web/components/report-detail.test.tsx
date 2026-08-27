@@ -103,4 +103,19 @@ describe('ReportDetail photos', () => {
     expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Close' })).toBeTruthy();
   });
+
+  it('shows the cleaner-facing reward and cleanup status', () => {
+    render(
+      <ReportDetail
+        report={{ ...report, funded_amount_cents: 12500, cleanup_state: 'claimed' }}
+        isOwner={false}
+        onClose={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Cleaner gets $125.00')).toBeTruthy();
+    expect(screen.getByText('Cleanup in progress')).toBeTruthy();
+  });
 });

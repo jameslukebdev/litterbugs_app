@@ -5,9 +5,24 @@
 import { useEffect, useState } from 'react';
 import type { Report } from '@litterbugs/report-contract';
 
+import { CleanupAction } from '@/components/cleanup-action';
+import { CleanupReviewAction } from '@/components/cleanup-review-action';
 import { Icon } from '@/components/icon';
 import { getWebCompatibleReportPhotoUrl } from '@/lib/report-photo';
 import { createClient } from '@/lib/supabase/client';
+
+const formatUsd = (cents: number) => new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+}).format(cents / 100);
+
+function cleanupStatusLabel(status: string) {
+  if (status === 'claimed') return 'Cleanup in progress';
+  if (status === 'completion_submitted') return 'Cleanup photos under review';
+  if (status === 'changes_requested') return 'Cleaner is updating photos';
+  if (status === 'completed') return 'Cleanup complete';
+  return 'Available to clean';
+}
 
 export function ReportDetail({
   report,
@@ -15,12 +30,18 @@ export function ReportDetail({
   onClose,
   onEdit,
   onDelete,
+  userId = null,
+  onRequireSignIn,
+  onReportChanged,
 }: {
   report: Report;
   isOwner: boolean;
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  userId?: string | null;
+  onRequireSignIn?: () => void;
+  onReportChanged?: () => void | Promise<void>;
 }) {
   const [photoIndex, setPhotoIndex] = useState(0);
   const [signedPhoto, setSignedPhoto] = useState<{ path: string; src: string | null; failed: boolean }>({ path: '', src: null, failed: false });
@@ -75,6 +96,10 @@ export function ReportDetail({
             {report.created_at && <span><Icon name="info" /> <span><small>Reported</small>{new Date(report.created_at).toLocaleString()}</span></span>}
             {report.expires_at && <span><Icon name="calendar" /> <span><small>Expires</small>{new Date(report.expires_at).toLocaleDateString()}</span></span>}
           </div>
+          <div className="report-status-row">
+            <span className="cleanup-status-pill">{cleanupStatusLabel(report.cleanup_state)}</span>
+            {report.funded_amount_cents > 0 && <strong className="reward-pill">Cleaner gets {formatUsd(report.funded_amount_cents)}</strong>}
+          </div>
         </header>
 
         <div className="report-photo-region">
@@ -117,6 +142,8 @@ export function ReportDetail({
       <footer className="report-detail-footer">
         {isOwner && !report.funding_locked_at && <button className="danger-button compact-button" onClick={onDelete}><Icon name="trash" />Delete</button>}
         {isOwner && !report.funding_locked_at && <button className="secondary-button compact-button" onClick={onEdit}><Icon name="edit" />Edit</button>}
+        <CleanupReviewAction report={report} userId={userId} isOwner={isOwner} onChanged={onReportChanged} />
+        <CleanupAction report={report} userId={userId} onRequireSignIn={onRequireSignIn} onChanged={onReportChanged} />
         <button className="primary-button compact-button close-detail-button" onClick={onClose}>Close</button>
       </footer>
     </aside>
