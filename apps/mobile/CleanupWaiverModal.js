@@ -35,7 +35,7 @@ export default function CleanupWaiverModal({
       <View style={styles.container}>
         <View style={styles.header}>
           <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>DEVELOPMENT VERSION</Text>
+            <Text style={styles.eyebrow}>CLEANUP SAFETY</Text>
             <Text style={styles.title}>{waiver?.title ?? 'Cleanup acknowledgment'}</Text>
           </View>
           <TouchableOpacity
@@ -54,13 +54,6 @@ export default function CleanupWaiverModal({
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.warningCard}>
-            <Ionicons name="construct-outline" size={22} color="#9A6700" />
-            <Text style={styles.warningText}>
-              This placeholder is for product testing only and requires lawyer review before public release.
-            </Text>
-          </View>
-
           <Text style={styles.body}>{waiver?.body ?? ''}</Text>
 
           <View style={styles.versionCard}>
@@ -83,7 +76,7 @@ export default function CleanupWaiverModal({
               color={acknowledged ? '#2F7D32' : '#7A8288'}
             />
             <Text style={styles.acknowledgmentText}>
-              I have read and explicitly accept this development waiver and safety guidance.
+              I have read and accept this cleanup safety and funded reward acknowledgment.
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -128,17 +121,7 @@ const styles = StyleSheet.create({
   closeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   scroll: { flex: 1 },
   content: { padding: 20, paddingBottom: 34 },
-  warningCard: {
-    padding: 15,
-    flexDirection: 'row',
-    gap: 11,
-    borderWidth: 1,
-    borderColor: '#F0D58C',
-    borderRadius: 14,
-    backgroundColor: '#FFF8E1',
-  },
-  warningText: { flex: 1, color: '#6B4F00', fontSize: 14, lineHeight: 20, fontWeight: '600' },
-  body: { marginTop: 22, color: '#30363B', fontSize: 16, lineHeight: 25 },
+  body: { color: '#30363B', fontSize: 16, lineHeight: 25 },
   versionCard: { marginTop: 24, padding: 15, borderRadius: 14, backgroundColor: '#F5F6F7' },
   versionLabel: { color: '#6B7379', fontSize: 12, fontWeight: '800', textTransform: 'uppercase' },
   versionValue: { marginTop: 4, color: '#30363B', fontSize: 14, fontWeight: '700' },
