@@ -15,7 +15,7 @@ const createSignedPhotoUrl = async (bucket, path) => {
 export async function loadCleanupReviewContext(cleanupId, userId) {
   const { data: attempt, error: attemptError } = await supabase
     .from('cleanup_attempts')
-    .select('id, report_id, cleaner_id, reporter_id, status, review_due_at, is_self_cleanup')
+    .select('id, report_id, cleaner_id, reporter_id, status, review_due_at, is_self_cleanup, is_paid, reward_amount_cents, financial_review_status, financial_review_summary, first_paid_admin_status, dispute_status, disputed_at, dispute_reason')
     .eq('id', cleanupId)
     .maybeSingle();
 
@@ -103,6 +103,15 @@ export async function reviewCleanup({
     reviewer_note: note,
   });
 
+  if (error) throw error;
+  return data;
+}
+
+export async function disputePaidCleanup(cleanupId, reason) {
+  const { data, error } = await supabase.rpc('dispute_paid_cleanup', {
+    target_cleanup_id: cleanupId,
+    dispute_reason: reason,
+  });
   if (error) throw error;
   return data;
 }

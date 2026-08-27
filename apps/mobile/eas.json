@@ -27,6 +27,19 @@
         "simulator": true
       }
     },
+    "production-simulator": {
+      "environment": "production",
+      "env": {
+        "APP_VARIANT": "production",
+        "IOS_BUNDLE_IDENTIFIER": "com.litterbugs.app",
+        "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app"
+      },
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      }
+    },
     "development-primary": {
       "environment": "production",
       "env": {
@@ -43,6 +56,15 @@
         "APP_VARIANT": "qa",
         "IOS_BUNDLE_IDENTIFIER": "com.gegibson.litterbugs.qa",
         "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app.qa"
+      },
+      "distribution": "internal"
+    },
+    "production-internal": {
+      "environment": "production",
+      "env": {
+        "APP_VARIANT": "production",
+        "IOS_BUNDLE_IDENTIFIER": "com.litterbugs.app",
+        "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app"
       },
       "distribution": "internal"
     },

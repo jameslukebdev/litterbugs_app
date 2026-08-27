@@ -4,6 +4,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
 
 import { supabase } from './supabase';
+import { requestGeminiReview } from './funding';
 
 export const MAX_CLEANUP_PHOTO_BYTES = 5 * 1024 * 1024;
 
@@ -65,7 +66,7 @@ export async function chooseCleanupPhotos(source, selectionLimit) {
 export async function loadCleanupSubmissionContext(cleanupId, userId) {
   const { data: attempt, error: attemptError } = await supabase
     .from('cleanup_attempts')
-    .select('id, report_id, cleaner_id, status, claimed_at, claim_expires_at, correction_due_at')
+    .select('id, report_id, cleaner_id, status, claimed_at, claim_expires_at, correction_due_at, is_paid, reward_amount_cents')
     .eq('id', cleanupId)
     .maybeSingle();
 
@@ -121,6 +122,7 @@ export async function uploadCleanupSubmission({
   description,
   bagsOrItemsRemoved,
   durationMinutes,
+  isPaid = false,
 }) {
   const submissionId = Crypto.randomUUID();
   const uploadedPaths = [];
@@ -157,7 +159,15 @@ export async function uploadCleanupSubmission({
     );
 
     if (submissionError) throw submissionError;
-    return data;
+    let aiReview = null;
+    if (isPaid) {
+      try {
+        aiReview = await requestGeminiReview({ cleanupId });
+      } catch (reviewError) {
+        console.log('Funded cleanup review deferred:', reviewError);
+      }
+    }
+    return { submission: data, aiReview };
   } catch (error) {
     if (uploadedPaths.length > 0) {
       await supabase.storage

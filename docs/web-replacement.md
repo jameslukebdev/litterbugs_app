@@ -21,10 +21,14 @@ The new website lives in `apps/web` and connects only to Supabase project
 - Owner-only editing and deletion.
 - Account status, sign-out, password recovery, and the existing account-deletion
   Edge Function.
+- A separately protected `/admin` cleanup-review inbox. Every read and decision
+  is reauthorized against a private membership record and MFA assurance level 2.
 
 There is deliberately no report list, search, profile UI, My Reports page,
 realtime feed, funding, donations, Stripe, claims, evidence, cleanup review,
-payout, moderation, operations, admin, or placeholder future-feature UI.
+payout, moderation, operations, or placeholder future-feature UI in the public
+web experience. `/admin` is the only operational exception and never contains
+public checkout or client-side financial credentials.
 
 The shared contract has an automated parity gate that reads the mechanically
 moved `apps/mobile/MapScreen.js` source. It fails if the web contract drifts

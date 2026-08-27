@@ -24,7 +24,11 @@ import CompleteProfileScreen from './CompleteProfileScreen';
 import CleanupFeedbackScreen from './CleanupFeedbackScreen';
 import CleanupSubmissionScreen from './CleanupSubmissionScreen';
 import CleanupReviewScreen from './CleanupReviewScreen';
+import ContributionHistoryScreen from './ContributionHistoryScreen';
 import EditProfileScreen from './EditProfileScreen';
+import ExpiredReportsScreen from './ExpiredReportsScreen';
+import FundingContributionScreen from './FundingContributionScreen';
+import PayoutSetupScreen from './PayoutSetupScreen';
 import PublicProfileScreen from './PublicProfileScreen';
 import ReportUserScreen from './ReportUserScreen';
 import ResetPasswordScreen from './ResetPasswordScreen';
@@ -239,6 +243,26 @@ function AppNavigation({ session, passwordRecovery, onRecoveryComplete }) {
           name="CleanupReview"
           component={CleanupReviewScreen}
           options={{ ...headerOptions, title: 'Review cleanup' }}
+        />
+        <Stack.Screen
+          name="FundingContribution"
+          component={FundingContributionScreen}
+          options={{ ...headerOptions, title: 'Cleanup fund' }}
+        />
+        <Stack.Screen
+          name="PayoutSetup"
+          component={PayoutSetupScreen}
+          options={{ ...headerOptions, title: 'Cleanup payouts' }}
+        />
+        <Stack.Screen
+          name="ContributionHistory"
+          component={ContributionHistoryScreen}
+          options={{ ...headerOptions, title: 'Contributions' }}
+        />
+        <Stack.Screen
+          name="ExpiredReports"
+          component={ExpiredReportsScreen}
+          options={{ ...headerOptions, title: 'Expired reports' }}
         />
         <Stack.Screen
           name="PublicProfile"

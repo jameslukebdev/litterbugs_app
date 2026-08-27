@@ -22,20 +22,35 @@ export type Database = {
           claimed_at: string
           cleaner_id: string | null
           completed_at: string | null
+          correction_due_at: string | null
+          dispute_reason: string | null
+          dispute_status: string
+          disputed_at: string | null
           expired_at: string | null
+          financial_review_attempts: number
+          financial_review_status: string
+          financial_review_summary: string | null
           final_reviewer_id: string | null
           final_submission_id: string | null
+          first_paid_admin_status: string
+          first_paid_cleanup: boolean
           first_submitted_at: string | null
           guidelines_version: string
           id: string
+          is_paid: boolean
           is_self_cleanup: boolean
           last_activity_at: string
           latest_submitted_at: string | null
+          payout_attempts: number
+          payout_last_error: string | null
+          payout_status: string
           released_at: string | null
           report_id: string
           reporter_id: string | null
+          reward_amount_cents: number
           review_due_at: string | null
           status: string
+          stripe_transfer_id: string | null
           waiver_version: string
         }
         Insert: {
@@ -45,20 +60,35 @@ export type Database = {
           claimed_at?: string
           cleaner_id?: string | null
           completed_at?: string | null
+          correction_due_at?: string | null
+          dispute_reason?: string | null
+          dispute_status?: string
+          disputed_at?: string | null
           expired_at?: string | null
+          financial_review_attempts?: number
+          financial_review_status?: string
+          financial_review_summary?: string | null
           final_reviewer_id?: string | null
           final_submission_id?: string | null
+          first_paid_admin_status?: string
+          first_paid_cleanup?: boolean
           first_submitted_at?: string | null
           guidelines_version: string
           id?: string
+          is_paid?: boolean
           is_self_cleanup?: boolean
           last_activity_at?: string
           latest_submitted_at?: string | null
+          payout_attempts?: number
+          payout_last_error?: string | null
+          payout_status?: string
           released_at?: string | null
           report_id: string
           reporter_id?: string | null
+          reward_amount_cents?: number
           review_due_at?: string | null
           status?: string
+          stripe_transfer_id?: string | null
           waiver_version: string
         }
         Update: {
@@ -68,20 +98,35 @@ export type Database = {
           claimed_at?: string
           cleaner_id?: string | null
           completed_at?: string | null
+          correction_due_at?: string | null
+          dispute_reason?: string | null
+          dispute_status?: string
+          disputed_at?: string | null
           expired_at?: string | null
+          financial_review_attempts?: number
+          financial_review_status?: string
+          financial_review_summary?: string | null
           final_reviewer_id?: string | null
           final_submission_id?: string | null
+          first_paid_admin_status?: string
+          first_paid_cleanup?: boolean
           first_submitted_at?: string | null
           guidelines_version?: string
           id?: string
+          is_paid?: boolean
           is_self_cleanup?: boolean
           last_activity_at?: string
           latest_submitted_at?: string | null
+          payout_attempts?: number
+          payout_last_error?: string | null
+          payout_status?: string
           released_at?: string | null
           report_id?: string
           reporter_id?: string | null
+          reward_amount_cents?: number
           review_due_at?: string | null
           status?: string
+          stripe_transfer_id?: string | null
           waiver_version?: string
         }
         Relationships: [
@@ -126,6 +171,103 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cleanup_waiver_versions"
             referencedColumns: ["waiver_version", "guidelines_version"]
+          },
+        ]
+      }
+      cleanup_contributions: {
+        Row: {
+          auto_refund_due_at: string | null
+          cleanup_attempt_id: string | null
+          client_request_id: string
+          contributor_id: string | null
+          created_at: string
+          currency: string
+          failure_code: string | null
+          id: string
+          platform_fee_cents: number
+          principal_amount_cents: number
+          refund_attempts: number
+          refund_processing_started_at: string | null
+          refund_requested_at: string | null
+          refunded_at: string | null
+          report_id: string
+          status: string
+          stripe_charge_id: string | null
+          stripe_payment_intent_id: string | null
+          stripe_refund_id: string | null
+          succeeded_at: string | null
+          total_amount_cents: number
+          updated_at: string
+        }
+        Insert: {
+          auto_refund_due_at?: string | null
+          cleanup_attempt_id?: string | null
+          client_request_id: string
+          contributor_id?: string | null
+          created_at?: string
+          currency?: string
+          failure_code?: string | null
+          id?: string
+          platform_fee_cents: number
+          principal_amount_cents: number
+          refund_attempts?: number
+          refund_processing_started_at?: string | null
+          refund_requested_at?: string | null
+          refunded_at?: string | null
+          report_id: string
+          status?: string
+          stripe_charge_id?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_refund_id?: string | null
+          succeeded_at?: string | null
+          total_amount_cents: number
+          updated_at?: string
+        }
+        Update: {
+          auto_refund_due_at?: string | null
+          cleanup_attempt_id?: string | null
+          client_request_id?: string
+          contributor_id?: string | null
+          created_at?: string
+          currency?: string
+          failure_code?: string | null
+          id?: string
+          platform_fee_cents?: number
+          principal_amount_cents?: number
+          refund_attempts?: number
+          refund_processing_started_at?: string | null
+          refund_requested_at?: string | null
+          refunded_at?: string | null
+          report_id?: string
+          status?: string
+          stripe_charge_id?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_refund_id?: string | null
+          succeeded_at?: string | null
+          total_amount_cents?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cleanup_contributions_cleanup_attempt_id_fkey"
+            columns: ["cleanup_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "cleanup_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleanup_contributions_contributor_id_fkey"
+            columns: ["contributor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleanup_contributions_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -372,6 +514,11 @@ export type Database = {
           created_at: string | null
           expired_at: string | null
           expires_at: string | null
+          funded_amount_cents: number
+          funding_eligibility: string
+          funding_frozen_at: string | null
+          funding_hold_reason: string | null
+          funding_locked_at: string | null
           id: string
           latitude: number | null
           litter_types: string[] | null
@@ -379,6 +526,9 @@ export type Database = {
           notes_other: string | null
           notes_presets: string[] | null
           photo_paths: string[] | null
+          original_photo_reviewed_at: string | null
+          renewal_decision_due_at: string | null
+          renewal_status: string
           severity: string | null
           status: string | null
           title: string | null
@@ -391,6 +541,11 @@ export type Database = {
           created_at?: string | null
           expired_at?: string | null
           expires_at?: string | null
+          funded_amount_cents?: number
+          funding_eligibility?: string
+          funding_frozen_at?: string | null
+          funding_hold_reason?: string | null
+          funding_locked_at?: string | null
           id?: string
           latitude?: number | null
           litter_types?: string[] | null
@@ -398,6 +553,9 @@ export type Database = {
           notes_other?: string | null
           notes_presets?: string[] | null
           photo_paths?: string[] | null
+          original_photo_reviewed_at?: string | null
+          renewal_decision_due_at?: string | null
+          renewal_status?: string
           severity?: string | null
           status?: string | null
           title?: string | null
@@ -410,6 +568,11 @@ export type Database = {
           created_at?: string | null
           expired_at?: string | null
           expires_at?: string | null
+          funded_amount_cents?: number
+          funding_eligibility?: string
+          funding_frozen_at?: string | null
+          funding_hold_reason?: string | null
+          funding_locked_at?: string | null
           id?: string
           latitude?: number | null
           litter_types?: string[] | null
@@ -417,6 +580,9 @@ export type Database = {
           notes_other?: string | null
           notes_presets?: string[] | null
           photo_paths?: string[] | null
+          original_photo_reviewed_at?: string | null
+          renewal_decision_due_at?: string | null
+          renewal_status?: string
           severity?: string | null
           status?: string | null
           title?: string | null
@@ -582,8 +748,53 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      claim_cleanup_payout_operation: {
+        Args: never
+        Returns: Database["public"]["Tables"]["cleanup_attempts"]["Row"]
+      }
+      claim_cleanup_refund_operation: {
+        Args: never
+        Returns: Database["public"]["Tables"]["cleanup_contributions"]["Row"]
+      }
       delete_expired_reports: { Args: never; Returns: undefined }
+      get_cleanup_admin_case: { Args: { target_case_id: string }; Returns: Json }
+      is_cleanup_admin: { Args: never; Returns: boolean }
+      is_cleanup_admin_member: { Args: never; Returns: boolean }
       is_permanent_user: { Args: never; Returns: boolean }
+      list_cleanup_admin_cases: { Args: { target_status?: string }; Returns: Json }
+      mark_cleanup_payout_result: {
+        Args: {
+          target_cleanup_id: string
+          target_error?: string | null
+          target_transfer_id?: string | null
+          transfer_succeeded: boolean
+        }
+        Returns: Database["public"]["Tables"]["cleanup_attempts"]["Row"]
+      }
+      mark_cleanup_refund_processing: {
+        Args: {
+          target_contribution_id: string
+          target_refund_id: string
+        }
+        Returns: Database["public"]["Tables"]["cleanup_contributions"]["Row"]
+      }
+      mark_cleanup_refund_result: {
+        Args: {
+          refund_succeeded: boolean
+          target_contribution_id: string
+          target_error?: string | null
+          target_refund_id?: string | null
+        }
+        Returns: Database["public"]["Tables"]["cleanup_contributions"]["Row"]
+      }
+      mark_cleanup_transfer_reversed: {
+        Args: {
+          target_cleanup_id: string
+          target_error: string
+          target_transfer_id: string
+        }
+        Returns: Database["public"]["Tables"]["cleanup_attempts"]["Row"]
+      }
       release_cleanup: {
         Args: { target_cleanup_id: string }
         Returns: {
@@ -653,6 +864,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      resolve_cleanup_admin_case: {
+        Args: { target_action: string; target_case_id: string; target_reason: string }
+        Returns: Json
       }
       submit_cleanup: {
         Args: {

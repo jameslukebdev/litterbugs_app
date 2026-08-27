@@ -115,8 +115,8 @@ export function ReportDetail({
       </div>
 
       <footer className="report-detail-footer">
-        {isOwner && <button className="danger-button compact-button" onClick={onDelete}><Icon name="trash" />Delete</button>}
-        {isOwner && <button className="secondary-button compact-button" onClick={onEdit}><Icon name="edit" />Edit</button>}
+        {isOwner && !report.funding_locked_at && <button className="danger-button compact-button" onClick={onDelete}><Icon name="trash" />Delete</button>}
+        {isOwner && !report.funding_locked_at && <button className="secondary-button compact-button" onClick={onEdit}><Icon name="edit" />Edit</button>}
         <button className="primary-button compact-button close-detail-button" onClick={onClose}>Close</button>
       </footer>
     </aside>

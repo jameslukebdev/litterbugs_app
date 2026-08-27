@@ -25,13 +25,21 @@ const report: Report = {
   created_at: '2026-08-21T12:00:00.000Z',
   expired_at: null,
   expires_at: '2026-09-20T12:00:00.000Z',
+  funded_amount_cents: 0,
+  funding_eligibility: 'pending',
+  funding_frozen_at: null,
+  funding_hold_reason: null,
+  funding_locked_at: null,
   id: 'report-id',
   latitude: 35.99,
   litter_types: ['Bottles'],
   longitude: -78.9,
   notes_other: null,
   notes_presets: null,
+  original_photo_reviewed_at: null,
   photo_paths: null,
+  renewal_decision_due_at: null,
+  renewal_status: 'active',
   severity: 'High',
   status: 'active',
   title: 'Photo report',
@@ -78,5 +86,21 @@ describe('ReportDetail photos', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Next photo' }));
     await waitFor(() => expect(createSignedUrl).toHaveBeenCalledTimes(2));
     expect(createSignedUrl).toHaveBeenLastCalledWith('user/report/two.png', 60 * 60);
+  });
+
+  it('does not offer ordinary edit or delete controls after funding locks a report', () => {
+    render(
+      <ReportDetail
+        report={{ ...report, funding_locked_at: '2026-08-26T12:00:00.000Z' }}
+        isOwner
+        onClose={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Close' })).toBeTruthy();
   });
 });

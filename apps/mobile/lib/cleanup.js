@@ -96,7 +96,7 @@ export async function acknowledgeCleanupNotifications(notificationIds) {
 export async function loadCurrentUserCleanupSummary(userId) {
   const { data: attempts, error: attemptsError } = await supabase
     .from('cleanup_attempts')
-    .select('id, report_id, status, claimed_at, claim_expires_at, correction_due_at, latest_submitted_at, completed_at, approval_method, is_self_cleanup, last_activity_at')
+    .select('id, report_id, status, claimed_at, claim_expires_at, correction_due_at, latest_submitted_at, completed_at, approval_method, is_self_cleanup, is_paid, reward_amount_cents, financial_review_status, first_paid_admin_status, dispute_status, payout_status, last_activity_at')
     .eq('cleaner_id', userId)
     .in('status', ['claimed', 'completion_submitted', 'changes_requested', 'completed'])
     .order('last_activity_at', { ascending: false });

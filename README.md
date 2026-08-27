@@ -13,10 +13,12 @@ docs                     Product and provider documentation
 
 ## Product boundary
 
-The web app mirrors the current report and account capabilities of the mobile
-app. It intentionally has no feed, place search, profiles, funding, payments,
-claims, cleanup review, payouts, admin tools, or web guest mode. Public visitors
+The public web app mirrors the current report and account capabilities of the
+mobile app. It intentionally has no feed, place search, profiles, funding,
+payments, claims, cleanup review, payouts, or web guest mode. Public visitors
 can browse active reports; a real Supabase account is required for all writes.
+The sole operational exception is the protected `/admin` cleanup-review inbox,
+which requires private membership and MFA and exposes no public checkout.
 
 The Expo app's behavior, appearance, identifiers, dependency versions, native
 plugins, URL scheme, EAS project, and build profiles are not changed by the
@@ -28,7 +30,7 @@ monorepo layout.
 - `npm run mobile:ios` / `npm run mobile:android` — open the existing app
 - `npm run mobile:doctor` — run Expo Doctor
 - `npm run mobile:build:android:qa` / `npm run mobile:build:ios:qa` — build the unchanged `preview` profile
-- `npm run mobile:build:ios:simulator` — build the unchanged iOS simulator profile
+- `npm run mobile:build:ios:simulator` — build the iOS simulator development profile
 - `npm run mobile:build:ios:primary` — build Luke's shared production-identity development client
 - `npm run mobile:build:android:production` / `npm run mobile:build:ios:production` — build the unchanged production profile when release is authorized
 - `npm run web:dev` — start the website locally

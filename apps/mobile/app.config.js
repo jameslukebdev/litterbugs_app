@@ -37,7 +37,37 @@ module.exports = ({ config }) => {
   const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
   const googleIosClientBundleId = process.env.GOOGLE_IOS_CLIENT_BUNDLE_ID;
   const googleUrlScheme = toGoogleUrlScheme(googleIosClientId);
+  const stripeAppleMerchantIdentifier = process.env.STRIPE_APPLE_MERCHANT_IDENTIFIER
+    || 'merchant.com.litterbugs.app';
   const plugins = [...(config.plugins || [])];
+  if (!plugins.some((plugin) => (
+    plugin === 'expo-build-properties'
+    || (Array.isArray(plugin) && plugin[0] === 'expo-build-properties')
+  ))) {
+    plugins.push([
+      'expo-build-properties',
+      {
+        ios: {
+          buildReactNativeFromSource: true,
+        },
+      },
+    ]);
+  }
+  if (!plugins.includes('./plugins/with-ios-fmt-xcode26-fix')) {
+    plugins.push('./plugins/with-ios-fmt-xcode26-fix');
+  }
+  if (!plugins.some((plugin) => (
+    plugin === '@stripe/stripe-react-native'
+    || (Array.isArray(plugin) && plugin[0] === '@stripe/stripe-react-native')
+  ))) {
+    plugins.push([
+      '@stripe/stripe-react-native',
+      {
+        merchantIdentifier: stripeAppleMerchantIdentifier,
+        enableGooglePay: true,
+      },
+    ]);
+  }
 
   // EAS evaluates this file once before it loads the selected remote
   // environment. Validate on the worker, where every sensitive build value is
@@ -107,6 +137,10 @@ module.exports = ({ config }) => {
           googleMaps: { apiKey: googleMapsAndroidApiKey },
         } : {}),
       },
+    },
+    extra: {
+      ...config.extra,
+      stripeAppleMerchantIdentifier,
     },
     plugins,
   };

@@ -8,7 +8,7 @@ type CleanupPushDelivery = {
   expo_push_token: string;
   event_type: string;
   report_id: string;
-  cleanup_attempt_id: string;
+  cleanup_attempt_id: string | null;
   review_id: string | null;
   submission_id: string | null;
 };
@@ -73,6 +73,51 @@ const notificationContent = (eventType: string) => {
       return {
         title: "Cleanup update window expired",
         body: "The report is available to other volunteers again.",
+      };
+    case "paid_review_started":
+      return {
+        title: "Funded cleanup ready for review",
+        body: "Gemini accepted the photos. You have 48 hours to dispute the cleanup.",
+      };
+    case "paid_cleanup_disputed":
+      return {
+        title: "Cleanup disputed",
+        body: "The payout is paused while an administrator reviews the cleanup.",
+      };
+    case "cleanup_reward_sent":
+      return {
+        title: "Cleanup reward sent",
+        body: "Your cleanup reward was transferred to your Stripe account.",
+      };
+    case "cleanup_payout_failed":
+      return {
+        title: "Cleanup reward needs attention",
+        body: "Your cleanup is approved, but the reward transfer needs administrator review.",
+      };
+    case "cleanup_fund_increased":
+      return {
+        title: "Cleanup fund increased",
+        body: "A member added money to your report’s cleaner reward.",
+      };
+    case "cleanup_contribution_refunded":
+      return {
+        title: "Cleanup contribution refunded",
+        body: "Your full cleanup contribution and Litterbugs fee were refunded.",
+      };
+    case "report_renewal_due":
+      return {
+        title: "Renew or close your litter report",
+        body: "You have 7 days to renew it or its cleanup fund will be refunded.",
+      };
+    case "report_renewed":
+      return {
+        title: "Report renewed",
+        body: "Your report and its cleanup fund are active for another 30 days.",
+      };
+    case "report_funding_photos_needed":
+      return {
+        title: "Better report photos needed",
+        body: "Replace the original report photos before members can fund this cleanup.",
       };
     default:
       return null;

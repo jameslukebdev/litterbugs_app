@@ -1,0 +1,61 @@
+
+[functions.create-cleanup-contribution]
+enabled = true
+verify_jwt = false
+import_map = "./functions/create-cleanup-contribution/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/create-cleanup-contribution/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/create-cleanup-contribution/*.html" ]
+
+[functions.create-cleaner-onboarding-link]
+enabled = true
+verify_jwt = false
+import_map = "./functions/create-cleaner-onboarding-link/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/create-cleaner-onboarding-link/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/create-cleaner-onboarding-link/*.html" ]
+
+[functions.stripe-onboarding-redirect]
+enabled = true
+verify_jwt = false
+import_map = "./functions/stripe-onboarding-redirect/deno.json"
+entrypoint = "./functions/stripe-onboarding-redirect/index.ts"
+
+[functions.stripe-webhook]
+enabled = true
+verify_jwt = false
+import_map = "./functions/stripe-webhook/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/stripe-webhook/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/stripe-webhook/*.html" ]
+
+[functions.admin-cleanup-case]
+enabled = true
+verify_jwt = false
+import_map = "./functions/admin-cleanup-case/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/admin-cleanup-case/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/admin-cleanup-case/*.html" ]
+
+[functions.run-financial-maintenance]
+enabled = true
+verify_jwt = false
+import_map = "./functions/run-financial-maintenance/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/run-financial-maintenance/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/run-financial-maintenance/*.html" ]

@@ -18,9 +18,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ProfileAvatar from './ProfileAvatar';
 import {
+  disputePaidCleanup,
   loadCleanupReviewContext,
   reviewCleanup,
 } from './lib/cleanupReview';
+import { formatUsd } from './lib/funding';
 import {
   CLEANUP_CHANGE_REASONS,
   MAX_CLEANUP_REVIEW_NOTE_LENGTH,
@@ -280,6 +282,38 @@ export default function CleanupReviewScreen({ navigation, route }) {
     );
   };
 
+  const submitPaidDispute = () => {
+    const reason = note.trim();
+    if (reason.length < 3) {
+      setErrors({ note: 'Briefly explain what does not look right.' });
+      return;
+    }
+    Alert.alert(
+      'Dispute this cleanup?',
+      'The payout will remain frozen while an administrator reviews the photos.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Submit dispute',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setSubmitting(true);
+              const nextAttempt = await disputePaidCleanup(context.attempt.id, reason);
+              setContext((current) => ({ ...current, attempt: nextAttempt }));
+              setMode('review');
+              Alert.alert('Dispute submitted', 'An administrator will review it. The reward remains frozen.');
+            } catch (error) {
+              Alert.alert('Couldn’t submit dispute', reviewErrorMessage(error));
+            } finally {
+              setSubmitting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (loading) return <LoadingState />;
 
   if (loadError || !context) {
@@ -350,6 +384,24 @@ export default function CleanupReviewScreen({ navigation, route }) {
           emptyText="No original photo was provided."
           width={photoViewerWidth}
         />
+
+        {context.attempt.is_paid ? (
+          <View style={styles.financialCard}>
+            <Text style={styles.financialEyebrow}>FUNDED CLEANUP</Text>
+            <Text style={styles.financialReward}>Cleaner receives {formatUsd(context.attempt.reward_amount_cents)}</Text>
+            <Text style={styles.financialSummary}>
+              {context.attempt.financial_review_summary
+                || 'Gemini is checking photo quality, location consistency, and obvious signs of manipulation.'}
+            </Text>
+            {context.attempt.review_due_at ? (
+              <Text style={styles.disputeDeadline}>
+                Dispute by {new Date(context.attempt.review_due_at).toLocaleString()}
+              </Text>
+            ) : (
+              <Text style={styles.disputeDeadline}>The 48-hour dispute window has not started yet.</Text>
+            )}
+          </View>
+        ) : null}
         <PhotoSection
           title="After"
           urls={context.afterPhotoUrls}
@@ -385,7 +437,51 @@ export default function CleanupReviewScreen({ navigation, route }) {
           </Text>
         </View>
 
-        {mode === 'review' ? (
+        {context.attempt.is_paid && mode === 'review' ? (
+          <View style={styles.actionSection}>
+            {context.attempt.dispute_status === 'open' ? (
+              <View style={styles.disputeStatusCard}>
+                <Ionicons name="shield-checkmark-outline" size={22} color="#8A6400" />
+                <Text style={styles.disputeStatusText}>Your dispute is awaiting admin review. The reward is frozen.</Text>
+              </View>
+            ) : context.attempt.financial_review_status === 'passed' && context.attempt.review_due_at ? (
+              <>
+                <Text style={styles.paidReviewNotice}>No approval is required. If you do nothing, the reward is released after the full 48-hour window.</Text>
+                <TouchableOpacity style={styles.requestButton} onPress={() => setMode('dispute')} disabled={submitting}>
+                  <Ionicons name="flag-outline" size={21} color="#A33A32" />
+                  <Text style={styles.requestButtonText}>Dispute cleanup</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <View style={styles.disputeStatusCard}>
+                <ActivityIndicator color="#8A6400" />
+                <Text style={styles.disputeStatusText}>Automated or admin verification is still in progress. Payout is paused.</Text>
+              </View>
+            )}
+          </View>
+        ) : context.attempt.is_paid && mode === 'dispute' ? (
+          <View style={styles.changeSection}>
+            <Text style={styles.sectionTitle}>Explain the dispute</Text>
+            <Text style={styles.helper}>Describe what looks incomplete, unsafe, or inconsistent with the original report.</Text>
+            <TextInput
+              style={[styles.noteInput, errors.note && styles.inputError]}
+              value={note}
+              onChangeText={(value) => { setNote(value); setErrors({}); }}
+              placeholder="What should the administrator review?"
+              multiline
+              maxLength={1000}
+              textAlignVertical="top"
+              editable={!submitting}
+            />
+            {errors.note ? <Text style={styles.error}>{errors.note}</Text> : null}
+            <TouchableOpacity style={[styles.requestSubmitButton, submitting && styles.disabled]} onPress={submitPaidDispute} disabled={submitting}>
+              {submitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.requestSubmitText}>Submit dispute</Text>}
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.secondaryButton} onPress={() => setMode('review')} disabled={submitting}>
+              <Text style={styles.secondaryButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        ) : mode === 'review' ? (
           <View style={styles.actionSection}>
             <TouchableOpacity
               style={[styles.approveButton, submitting && styles.disabled]}
@@ -493,6 +589,14 @@ const styles = StyleSheet.create({
   reportTitle: { marginTop: 7, color: '#687178', fontSize: 15, fontWeight: '700' },
   section: { marginTop: 20, padding: 17, borderRadius: 18, backgroundColor: '#FFFFFF' },
   sectionTitle: { color: '#30363B', fontSize: 18, fontWeight: '800' },
+  financialCard: { marginTop: 20, padding: 18, borderWidth: 1, borderColor: '#9CCB9F', borderRadius: 18, backgroundColor: '#EAF6EB' },
+  financialEyebrow: { color: '#3F6843', fontSize: 11, fontWeight: '900', letterSpacing: 1 },
+  financialReward: { marginTop: 5, color: '#245F2A', fontSize: 22, fontWeight: '900' },
+  financialSummary: { marginTop: 8, color: '#526C55', fontSize: 14, lineHeight: 20 },
+  disputeDeadline: { marginTop: 10, color: '#37633B', fontSize: 13, fontWeight: '800' },
+  paidReviewNotice: { padding: 15, color: '#59636A', fontSize: 14, lineHeight: 20, borderRadius: 13, backgroundColor: '#FFFFFF' },
+  disputeStatusCard: { padding: 16, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: '#E7CF79', borderRadius: 14, backgroundColor: '#FFF9DD' },
+  disputeStatusText: { flex: 1, color: '#755900', fontSize: 14, lineHeight: 20, fontWeight: '700' },
   identityRow: { minHeight: 64, marginTop: 10, flexDirection: 'row', alignItems: 'center' },
   identityCopy: { flex: 1, marginLeft: 12 },
   identityName: { color: '#202428', fontSize: 16, fontWeight: '800' },

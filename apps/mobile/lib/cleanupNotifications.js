@@ -31,6 +31,42 @@ const CLEANUP_NOTIFICATION_CONTENT = Object.freeze({
     title: 'Cleanup update window expired',
     message: 'The report is available to other volunteers again. Your earlier evidence remains in the cleanup history.',
   },
+  paid_review_started: {
+    title: 'Funded cleanup ready for review',
+    message: 'Gemini accepted the photos. You have 48 hours to dispute the cleanup.',
+  },
+  paid_cleanup_disputed: {
+    title: 'Cleanup disputed',
+    message: 'The payout is paused while an administrator reviews the cleanup.',
+  },
+  cleanup_reward_sent: {
+    title: 'Cleanup reward sent',
+    message: 'Your cleanup reward was transferred to your Stripe account.',
+  },
+  cleanup_payout_failed: {
+    title: 'Cleanup reward needs attention',
+    message: 'Your cleanup is approved, but the reward transfer needs administrator review.',
+  },
+  cleanup_fund_increased: {
+    title: 'Cleanup fund increased',
+    message: 'A member added money to your report’s cleaner reward.',
+  },
+  cleanup_contribution_refunded: {
+    title: 'Contribution refunded',
+    message: 'Your full cleanup contribution and Litterbugs fee were refunded.',
+  },
+  report_renewal_due: {
+    title: 'Renew or close your report',
+    message: 'You have 7 days to renew it or its cleanup fund will be refunded.',
+  },
+  report_renewed: {
+    title: 'Report renewed',
+    message: 'Your report and its cleanup fund are active for another 30 days.',
+  },
+  report_funding_photos_needed: {
+    title: 'Better report photos needed',
+    message: 'Replace the original report photos before members can fund this cleanup.',
+  },
 });
 
 export function cleanupNotificationPresentation(notices) {
@@ -54,9 +90,47 @@ export function cleanupNotificationDestination(notification) {
   const reportId = notification?.report_id ?? notification?.reportId;
   const cleanupId = notification?.cleanup_attempt_id ?? notification?.cleanupId;
 
-  if (!reportId || !cleanupId) return null;
+  if (!reportId) return null;
 
-  if (eventType === 'completion_submitted') {
+  if (eventType === 'report_renewal_due') {
+    return {
+      name: 'ExpiredReports',
+      label: 'Review Expired Reports',
+      params: { reportId },
+    };
+  }
+
+  if (eventType === 'cleanup_contribution_refunded') {
+    return {
+      name: 'ContributionHistory',
+      label: 'View Contribution History',
+      params: {},
+    };
+  }
+
+  if (eventType === 'cleanup_payout_failed') {
+    return {
+      name: 'PayoutSetup',
+      label: 'Review Payout Setup',
+      params: {},
+    };
+  }
+
+  if (
+    eventType === 'cleanup_fund_increased'
+    || eventType === 'report_renewed'
+    || eventType === 'report_funding_photos_needed'
+  ) {
+    return {
+      name: 'App',
+      label: 'View Report',
+      params: { screen: 'Map', params: { reportId } },
+    };
+  }
+
+  if (!cleanupId) return null;
+
+  if (eventType === 'completion_submitted' || eventType === 'paid_review_started') {
     return {
       name: 'CleanupReview',
       label: 'Review Cleanup',
@@ -89,6 +163,7 @@ export function cleanupStateFromNotification(notification) {
     case 'claim_expiring_soon':
       return 'claimed';
     case 'completion_submitted':
+    case 'paid_review_started':
       return 'completion_submitted';
     case 'changes_requested':
       return 'changes_requested';

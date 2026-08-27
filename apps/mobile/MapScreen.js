@@ -1,5 +1,5 @@
 // MapScreen.js
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -68,6 +68,13 @@ import {
   cleanupNavigationUrls,
 } from './lib/cleanupNavigation';
 import { loadCompletedCleanupImpact } from './lib/cleanupImpact';
+import {
+  formatUsd,
+  loadCleanupFeatureFlags,
+  loadPayoutStatus,
+  loadReportFundingFeedback,
+  requestGeminiReview,
+} from './lib/funding';
 import * as FileSystem from 'expo-file-system/legacy';
 
 const showPermanentAccountRequired = () => {
@@ -91,6 +98,7 @@ export default function MapScreen({ route, navigation }) {
   const [tracksReportMarkers, setTracksReportMarkers] = useState(
     Platform.OS === 'android'
   );
+  const reportMarkerTrackingTimerRef = useRef(null);
   const reportClusterRef = useRef();
   const [draftCoord, setDraftCoord] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -128,6 +136,9 @@ export default function MapScreen({ route, navigation }) {
   const [completedCleanupImpactLoading, setCompletedCleanupImpactLoading] = useState(false);
   const [completedCleanupImpactError, setCompletedCleanupImpactError] = useState(null);
   const [completedCleanupImpactReloadKey, setCompletedCleanupImpactReloadKey] = useState(0);
+  const [paymentsEnabled, setPaymentsEnabled] = useState(false);
+  const [geminiReviewEnabled, setGeminiReviewEnabled] = useState(false);
+  const [reportFundingFeedback, setReportFundingFeedback] = useState(null);
   const cleanupNoticeCheckInFlight = useRef(false);
   // Report detail photo carousel
   const [reportPhotoIndex, setReportPhotoIndex] = useState(0);
@@ -155,6 +166,7 @@ export default function MapScreen({ route, navigation }) {
     removeReport,
   } = useReports();
   const currentUserId = permanentUserId(currentUser);
+  const fundingEnabled = paymentsEnabled && geminiReviewEnabled;
   const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const bottomNavClearance = getBottomNavClearance(insets.bottom);
@@ -162,6 +174,53 @@ export default function MapScreen({ route, navigation }) {
     screenHeight,
     bottomNavClearance
   );
+
+  useEffect(() => {
+    let active = true;
+    loadCleanupFeatureFlags()
+      .then((flags) => {
+        if (!active) return;
+        setPaymentsEnabled(Boolean(flags.payments_enabled));
+        setGeminiReviewEnabled(Boolean(flags.gemini_financial_review_enabled));
+      })
+      .catch(() => {
+        if (!active) return;
+        setPaymentsEnabled(false);
+        setGeminiReviewEnabled(false);
+      });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const shouldLoad = geminiReviewEnabled
+      && currentUserId
+      && selectedReport?.user_id === currentUserId
+      && ['better_photos', 'safety_hold', 'ineligible'].includes(
+        selectedReport?.funding_eligibility
+      );
+    if (!shouldLoad) {
+      setReportFundingFeedback(null);
+      return undefined;
+    }
+    loadReportFundingFeedback(selectedReport.id)
+      .then((feedback) => {
+        if (active) setReportFundingFeedback(feedback);
+      })
+      .catch((error) => {
+        console.log('Report funding feedback load error:', error);
+        if (active) setReportFundingFeedback(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [
+    currentUserId,
+    geminiReviewEnabled,
+    selectedReport?.funding_eligibility,
+    selectedReport?.id,
+    selectedReport?.user_id,
+  ]);
   const mapControlsBottom = (
     mapSheetExpanded
       ? reportSheetMetrics.sheetHeight
@@ -592,13 +651,46 @@ const reconcileReportAfterBlockedMutation = async (reportId) => {
       let data, error;
   
       if (isEditing && editingReportId) {
+        let replacementPhotoPaths = [];
+        if (form.photos?.length > 0) {
+          replacementPhotoPaths = await uploadReportPhotos(
+            form.photos,
+            editingReportId,
+            userId
+          );
+        }
+        const previousPhotoPaths = selectedReport?.photo_paths ?? [];
         ({ data, error } = await supabase
           .from('reports')
-          .update(updatePayload)
+          .update({
+            ...updatePayload,
+            ...(replacementPhotoPaths.length > 0
+              ? { photo_paths: replacementPhotoPaths }
+              : {}),
+          })
           .eq('id', editingReportId)
           .eq('user_id', userId)
           .select()
           .single());
+        if (error && replacementPhotoPaths.length > 0) {
+          await supabase.storage.from('report_photos').remove(replacementPhotoPaths);
+        }
+        if (!error && replacementPhotoPaths.length > 0) {
+          const obsoletePaths = previousPhotoPaths.filter(
+            (path) => !replacementPhotoPaths.includes(path)
+          );
+          if (obsoletePaths.length > 0) {
+            const { error: cleanupError } = await supabase.storage
+              .from('report_photos')
+              .remove(obsoletePaths);
+            if (cleanupError) console.log('Old report photo cleanup failed:', cleanupError);
+          }
+          if (geminiReviewEnabled) {
+            requestGeminiReview({ reportId: editingReportId }).catch((reviewError) => {
+              console.log('Updated report funding photo review deferred:', reviewError);
+            });
+          }
+        }
       } else {
         ({ data, error } = await supabase
           .from('reports')
@@ -638,28 +730,55 @@ const reconcileReportAfterBlockedMutation = async (reportId) => {
         return;
       }
   
-      // ✅ Photo uploads unchanged
+      // Edited report replacements are handled with the report update above.
       let photoPaths = [];
       if (!isEditing && form.photos?.length > 0) {
-        photoPaths = await uploadReportPhotos(
-          form.photos,
-          data.id,
-          userId
-        );
+        try {
+          photoPaths = await uploadReportPhotos(
+            form.photos,
+            data.id,
+            userId
+          );
+        } catch (photoError) {
+          const { error: rollbackError } = await supabase
+            .from('reports')
+            .delete()
+            .eq('id', data.id)
+            .eq('user_id', userId);
+          if (rollbackError) console.log('Empty report rollback failed:', rollbackError);
+          throw photoError;
+        }
       }
   
       if (photoPaths.length > 0) {
-        await supabase
+        const { error: photoUpdateError } = await supabase
           .from('reports')
           .update({ photo_paths: photoPaths })
           .eq('id', data.id)
           .eq('user_id', userId);
+
+        if (photoUpdateError) {
+          await supabase.storage.from('report_photos').remove(photoPaths);
+          const { error: rollbackError } = await supabase
+            .from('reports')
+            .delete()
+            .eq('id', data.id)
+            .eq('user_id', userId);
+          if (rollbackError) console.log('Report photo rollback failed:', rollbackError);
+          throw photoUpdateError;
+        }
   
         data.photo_paths = photoPaths;
+        if (geminiReviewEnabled) {
+          requestGeminiReview({ reportId: data.id }).catch((reviewError) => {
+            console.log('Report funding photo review deferred:', reviewError);
+          });
+        }
       }
   
       upsertReport({ ...data, reporter: data.reporter || currentProfile });
-      if (!isEditing) await refreshProfile();
+      if (isEditing) await refreshReports({ showRefresh: false });
+      else await refreshProfile();
   
       setDraftCoord(null);
       setFormOpen(false);
@@ -673,7 +792,10 @@ const reconcileReportAfterBlockedMutation = async (reportId) => {
       );
     } catch (e) {
       console.error('Unexpected save error:', e);
-      Alert.alert('Error', 'Something went wrong saving your report.');
+      Alert.alert(
+        'Couldn’t save report',
+        e?.message || 'Something went wrong saving your report.'
+      );
     }
   };
   
@@ -838,43 +960,49 @@ const submitReport = async () => {
     // Upload Photos to Supabase, helper function
     const uploadReportPhotos = async (photoUris, reportId, userId) => {
       const uploadedPaths = [];
-    
-      for (let i = 0; i < photoUris.length; i++) {
-        const uri = photoUris[i];
-    
-        try {
+
+      try {
+        for (let i = 0; i < photoUris.length; i++) {
+          const uri = photoUris[i];
           // Read local file as base64
           const base64 = await FileSystem.readAsStringAsync(uri, {
             encoding: 'base64',
           });
-    
+
           // Convert base64 -> bytes
           const bytes = base64ToUint8Array(base64);
-    
+          if (bytes.byteLength > 5 * 1024 * 1024) {
+            throw new Error('Each report photo must be 5 MB or smaller.');
+          }
+
           // File naming
-          const fileExt = (uri.split('.').pop() || 'jpg').toLowerCase();
+          const candidateExt = (uri.split('?')[0].split('.').pop() || 'jpg').toLowerCase();
+          const fileExt = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'].includes(candidateExt)
+            ? candidateExt
+            : 'jpg';
           const filePath = `${userId}/${reportId}/${Date.now()}-${i}.${fileExt}`;
-    
+
           // Upload bytes
           const { error } = await supabase.storage
             .from('report_photos')
             .upload(filePath, bytes, {
-              contentType: `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`,
+              contentType: `image/${['jpg', 'jpeg'].includes(fileExt) ? 'jpeg' : fileExt}`,
               upsert: false,
             });
-    
-          if (error) {
-            console.error('Upload error:', error);
-            continue;
-          }
-    
+
+          if (error) throw error;
           uploadedPaths.push(filePath);
-        } catch (err) {
-          console.error('Photo upload failed:', err);
         }
+        return uploadedPaths;
+      } catch (error) {
+        if (uploadedPaths.length > 0) {
+          const { error: cleanupError } = await supabase.storage
+            .from('report_photos')
+            .remove(uploadedPaths);
+          if (cleanupError) console.log('New report photo cleanup failed:', cleanupError);
+        }
+        throw error;
       }
-    
-      return uploadedPaths;
     };
     
     const getSignedPhotoUrl = async (path) => {
@@ -943,16 +1071,28 @@ const submitReport = async () => {
       }, { available: 0, active: 0, completed: 0 });
     };
 
-useEffect(() => {
-  if (Platform.OS !== 'android' || markers.length === 0) return undefined;
+const refreshReportMarkerSnapshots = useCallback(() => {
+  if (Platform.OS !== 'android' || markers.length === 0) return;
 
   setTracksReportMarkers(true);
-  const stopTracking = setTimeout(() => {
+  if (reportMarkerTrackingTimerRef.current) {
+    clearTimeout(reportMarkerTrackingTimerRef.current);
+  }
+  reportMarkerTrackingTimerRef.current = setTimeout(() => {
     setTracksReportMarkers(false);
+    reportMarkerTrackingTimerRef.current = null;
   }, 1000);
-
-  return () => clearTimeout(stopTracking);
 }, [markers.length]);
+
+useEffect(() => {
+  refreshReportMarkerSnapshots();
+}, [refreshReportMarkerSnapshots]);
+
+useEffect(() => () => {
+  if (reportMarkerTrackingTimerRef.current) {
+    clearTimeout(reportMarkerTrackingTimerRef.current);
+  }
+}, []);
 
 const openReportDetails = (report) => {
   if (!report) return;
@@ -1137,6 +1277,12 @@ useEffect(() => {
 
     try {
       setCleanupActionBusy(true);
+      if (Number(selectedReport.funded_amount_cents) > 0) {
+        const payout = await loadPayoutStatus();
+        if (!payout?.payoutsEnabled) {
+          throw new Error('cleaner_payout_onboarding_required');
+        }
+      }
       const claimedAttempt = await claimCleanup(selectedReport.id);
 
       const claimedReport = {
@@ -1153,7 +1299,24 @@ useEffect(() => {
         `Complete by ${new Date(claimedAttempt.claim_expires_at).toLocaleString()}.`
       );
     } catch (error) {
-      Alert.alert('Unable to claim cleanup', cleanupActionMessage(error));
+      if (/cleaner_payout_onboarding_required/i.test(error?.message ?? '')) {
+        Alert.alert(
+          'Payout setup required',
+          'Finish Stripe payout setup before claiming a funded cleanup.',
+          [
+            { text: 'Not now', style: 'cancel' },
+            {
+              text: 'Set up payouts',
+              onPress: () => {
+                setDetailsOpen(false);
+                navigation.getParent()?.navigate('PayoutSetup');
+              },
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Unable to claim cleanup', cleanupActionMessage(error));
+      }
       await refreshReports({ showRefresh: false });
     } finally {
       setCleanupActionBusy(false);
@@ -1461,7 +1624,7 @@ const renderReportStep = () => {
             what the area looked like before cleanup.
           </Text>
 
-          {isEditing ? (
+          {isEditing && form.photos.length === 0 ? (
             <View style={styles.existingPhotoNotice}>
               <Ionicons
                 name="images-outline"
@@ -1474,7 +1637,7 @@ const renderReportStep = () => {
               </Text>
 
               <Text style={styles.existingPhotoText}>
-                Photo replacement isn't enabled while editing a report yet.
+                Keep these photos, or choose a new set below. Saving a new set replaces all existing report photos.
               </Text>
 
               {reportPhotoUrls.length > 0 && (
@@ -1488,9 +1651,31 @@ const renderReportStep = () => {
                   ))}
                 </View>
               )}
+
+              <TouchableOpacity
+                style={styles.replacePhotoButton}
+                onPress={pickImage}
+                disabled={isSaving}
+                accessibilityRole="button"
+                accessibilityLabel="Replace report photos"
+              >
+                <Text style={styles.replacePhotoButtonText}>Choose replacement photos</Text>
+              </TouchableOpacity>
             </View>
           ) : (
             <>
+              {isEditing ? (
+                <View style={styles.replacementPhotoNotice}>
+                  <Text style={styles.existingPhotoTitle}>New photo set selected</Text>
+                  <Text style={styles.existingPhotoText}>These photos will replace the existing set when you save.</Text>
+                  <TouchableOpacity
+                    onPress={() => setForm((prev) => ({ ...prev, photos: [] }))}
+                    disabled={isSaving}
+                  >
+                    <Text style={styles.keepExistingPhotosText}>Keep existing photos instead</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
               <TouchableOpacity
                 style={[
                   styles.wizardPhotoButton,
@@ -1514,7 +1699,7 @@ const renderReportStep = () => {
                 <Text style={styles.wizardPhotoButtonTitle}>
                   {form.photos.length >= 3
                     ? '3 photos added'
-                    : 'Add a photo'}
+                    : isEditing ? 'Add another replacement' : 'Add a photo'}
                 </Text>
 
                 <Text style={styles.wizardPhotoHelper}>
@@ -2150,7 +2335,10 @@ const renderReportStep = () => {
           style={StyleSheet.absoluteFill}
           initialRegion={region}
           region={region}
-          onRegionChangeComplete={setRegion}
+          onRegionChangeComplete={(nextRegion) => {
+            setRegion(nextRegion);
+            refreshReportMarkerSnapshots();
+          }}
           maxZoom={14}
           radius={20}
           superClusterRef={reportClusterRef}
@@ -2184,7 +2372,7 @@ const renderReportStep = () => {
                   latitude: geometry.coordinates[1],
                   longitude: geometry.coordinates[0],
                 }}
-                tracksViewChanges={false}
+                tracksViewChanges={tracksReportMarkers}
                 anchor={{ x: 0.5, y: 0.5 }}
                 onPress={(event) => {
                   event?.stopPropagation?.();
@@ -2244,6 +2432,13 @@ const renderReportStep = () => {
               }}
             >
               <View style={styles.reportMarkerHitLg}>
+                {fundingEnabled
+                  && selectedReport?.id === m.report?.id
+                  && Number(m.report?.funded_amount_cents) > 0 ? (
+                  <View style={styles.markerRewardBadge}>
+                    <Text style={styles.markerRewardText}>{formatUsd(m.report.funded_amount_cents)}</Text>
+                  </View>
+                ) : null}
                 <View style={[styles.reportMarkerIconWrapLg, { backgroundColor: bg }]}>
                   {iconFamily === 'material-community' ? (
                     <MaterialCommunityIcons name={icon} size={34} color="#fff" />
@@ -2579,6 +2774,15 @@ const renderReportStep = () => {
           <Text style={styles.reportPostTitle}>
             {selectedReport?.title || 'Litter Report'}
           </Text>
+
+          {fundingEnabled && Number(selectedReport?.funded_amount_cents) > 0 ? (
+            <View style={styles.rewardBadge}>
+              <Ionicons name="cash-outline" size={18} color="#245F2A" />
+              <Text style={styles.rewardBadgeText}>
+                Cleaner receives {formatUsd(selectedReport.funded_amount_cents)}
+              </Text>
+            </View>
+          ) : null}
 
           {/* Report dates */}
           <View style={styles.reportMetaStack}>
@@ -2984,6 +3188,70 @@ const renderReportStep = () => {
           )}
 
 
+          {geminiReviewEnabled
+            && isOwner
+            && selectedReport?.cleanup_state === 'available'
+            && selectedReport?.renewal_status === 'active'
+            && selectedReport?.funding_eligibility !== 'eligible' ? (
+            <View style={styles.fundingFeedbackCard}>
+              <Ionicons
+                name={selectedReport?.funding_eligibility === 'better_photos'
+                  ? 'camera-outline'
+                  : selectedReport?.funding_eligibility === 'ineligible'
+                    ? 'alert-circle-outline'
+                    : 'time-outline'}
+                size={23}
+                color="#8A5A14"
+              />
+              <View style={styles.fundingCopy}>
+                <Text style={styles.fundingFeedbackTitle}>
+                  {selectedReport?.funding_eligibility === 'better_photos'
+                    ? 'Better photos needed for funding'
+                    : selectedReport?.funding_eligibility === 'safety_hold'
+                      ? 'Funding review needs attention'
+                      : selectedReport?.funding_eligibility === 'ineligible'
+                        ? 'Funding unavailable'
+                        : 'Checking funding eligibility'}
+                </Text>
+                <Text style={styles.fundingFeedbackText}>
+                  {reportFundingFeedback?.user_summary
+                    || selectedReport?.funding_hold_reason
+                    || (selectedReport?.funding_eligibility === 'better_photos'
+                      ? 'Edit this report to replace its original photos.'
+                      : 'The report can still be cleaned by volunteers while this check finishes.')}
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
+          {fundingEnabled
+            && selectedReport?.cleanup_state === 'available'
+            && selectedReport?.renewal_status === 'active'
+            && selectedReport?.funding_eligibility === 'eligible' ? (
+            <View style={styles.fundingCard}>
+              <View style={styles.fundingCopy}>
+                <Text style={styles.fundingTitle}>Cleanup fund</Text>
+                <Text style={styles.fundingAmount}>Cleaner receives {formatUsd(selectedReport?.funded_amount_cents)}</Text>
+                <Text style={styles.fundingText}>Add to the reward that motivates someone to complete this cleanup.</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.fundingButton}
+                onPress={() => {
+                  setDetailsOpen(false);
+                  if (!currentUserId) {
+                    navigation.getParent()?.navigate('Auth');
+                  } else {
+                    navigation.getParent()?.navigate('FundingContribution', { reportId: selectedReport.id });
+                  }
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Add to cleanup fund"
+              >
+                <Text style={styles.fundingButtonText}>Add funds</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+
           {cleanupEligible && (
             <View style={styles.cleanupEligibilityCard}>
               <View style={styles.cleanupEligibilityHeader}>
@@ -3163,7 +3431,7 @@ const renderReportStep = () => {
 
 
         {/* DELETE — signed-in owner only */}
-        {isOwner && (
+        {isOwner && !selectedReport?.funding_locked_at && (
 
           <TouchableOpacity
             style={[
@@ -3253,7 +3521,7 @@ const renderReportStep = () => {
 
 
         {/* EDIT — signed-in owner only */}
-        {isOwner && (
+        {isOwner && !selectedReport?.funding_locked_at && (
 
           <TouchableOpacity
             style={[
@@ -3272,7 +3540,7 @@ const renderReportStep = () => {
                 types:
                   selectedReport.types || '',
 
-                // Photos remain unchanged in v1
+                // Empty means keep the current photos unless replacements are chosen.
                 photos: [],
 
                 severity:
@@ -3565,6 +3833,39 @@ existingPhotoText: {
   fontSize: 14,
   lineHeight: 20,
   color: '#667085',
+  textAlign: 'center',
+},
+
+replacePhotoButton: {
+  minHeight: 46,
+  marginTop: 18,
+  paddingHorizontal: 18,
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: 12,
+  backgroundColor: '#2F7D32',
+},
+
+replacePhotoButtonText: {
+  color: '#FFFFFF',
+  fontSize: 14,
+  fontWeight: '800',
+},
+
+replacementPhotoNotice: {
+  marginBottom: 14,
+  padding: 16,
+  borderWidth: 1,
+  borderColor: '#C8E6C9',
+  borderRadius: 16,
+  backgroundColor: '#F1F8E9',
+},
+
+keepExistingPhotosText: {
+  marginTop: 12,
+  color: '#2F7D32',
+  fontSize: 14,
+  fontWeight: '800',
   textAlign: 'center',
 },
 
@@ -4172,6 +4473,24 @@ reportPostTitle: {
   marginBottom: 18,
 },
 
+rewardBadge: {
+  alignSelf: 'flex-start',
+  marginBottom: 18,
+  paddingHorizontal: 12,
+  paddingVertical: 8,
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 7,
+  borderRadius: 999,
+  backgroundColor: '#E3F1E4',
+},
+
+rewardBadgeText: {
+  color: '#245F2A',
+  fontSize: 14,
+  fontWeight: '900',
+},
+
 reportMetaStack: {
   gap: 11,
   marginBottom: 18,
@@ -4447,6 +4766,81 @@ reportDetailsText: {
   color: '#374151',
 },
 
+fundingCard: {
+  marginBottom: 18,
+  padding: 18,
+  borderWidth: 1,
+  borderColor: '#9CCB9F',
+  borderRadius: 18,
+  backgroundColor: '#EAF6EB',
+},
+
+fundingFeedbackCard: {
+  marginBottom: 18,
+  padding: 17,
+  flexDirection: 'row',
+  alignItems: 'flex-start',
+  gap: 11,
+  borderWidth: 1,
+  borderColor: '#E5C58B',
+  borderRadius: 18,
+  backgroundColor: '#FFF8E8',
+},
+
+fundingFeedbackTitle: {
+  color: '#754B13',
+  fontSize: 15,
+  fontWeight: '900',
+},
+
+fundingFeedbackText: {
+  marginTop: 5,
+  color: '#765C34',
+  fontSize: 14,
+  lineHeight: 20,
+},
+
+fundingCopy: {
+  flex: 1,
+},
+
+fundingTitle: {
+  color: '#37633B',
+  fontSize: 13,
+  fontWeight: '900',
+  letterSpacing: 0.7,
+  textTransform: 'uppercase',
+},
+
+fundingAmount: {
+  marginTop: 5,
+  color: '#245F2A',
+  fontSize: 22,
+  fontWeight: '900',
+},
+
+fundingText: {
+  marginTop: 6,
+  color: '#537056',
+  fontSize: 14,
+  lineHeight: 20,
+},
+
+fundingButton: {
+  minHeight: 48,
+  marginTop: 15,
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: 13,
+  backgroundColor: '#2F7D32',
+},
+
+fundingButtonText: {
+  color: '#FFFFFF',
+  fontSize: 15,
+  fontWeight: '900',
+},
+
 cleanupEligibilityCard: {
   marginBottom: 28,
   padding: 18,
@@ -4711,6 +5105,24 @@ reportMarkerHitLg: {
   alignItems: 'center',
   justifyContent: 'center',
   backgroundColor: 'rgba(0,0,0,0.01)', // keeps touch target reliable
+},
+
+markerRewardBadge: {
+  position: 'absolute',
+  top: -2,
+  zIndex: 2,
+  paddingHorizontal: 8,
+  paddingVertical: 4,
+  borderWidth: 1,
+  borderColor: '#8FBC92',
+  borderRadius: 999,
+  backgroundColor: '#FFFFFF',
+},
+
+markerRewardText: {
+  color: '#245F2A',
+  fontSize: 11,
+  fontWeight: '900',
 },
 
 reportMarkerIconWrapLg: {

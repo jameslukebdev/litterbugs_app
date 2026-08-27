@@ -1,11 +1,16 @@
 {
   "version": "5",
   "specifiers": {
+    "jsr:@std/encoding@1": "1.0.11",
     "jsr:@supabase/functions-js@*": "2.110.7",
     "npm:@supabase/supabase-js@2.87.1": "2.87.1",
-    "npm:openai@^4.52.5": "4.104.0"
+    "npm:openai@^4.52.5": "4.104.0",
+    "npm:stripe@22.5.0": "22.5.0"
   },
   "jsr": {
+    "@std/encoding@1.0.11": {
+      "integrity": "e7cef2f0b3153bccc17431e7c864a1de03a4b6d9647389c43e08aaa775d37385"
+    },
     "@supabase/functions-js@2.110.7": {
       "integrity": "07e0d01291f07ff34bbfbffdd567c2c32a5b3c5fbeacddc62f12f0147d7b5c3d",
       "dependencies": [
@@ -258,6 +263,9 @@
         "node-fetch"
       ],
       "bin": true
+    },
+    "stripe@22.5.0": {
+      "integrity": "sha512-QVwMwriC0bbySx6R4dpsvJ0W//GojC1kwWVS6rPSoVqDUIZX4Hy3TaUrd2AZeXEAaKbfWIjQjvo3vKAReHZ0vQ=="
     },
     "tr46@0.0.3": {
       "integrity": "sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw=="

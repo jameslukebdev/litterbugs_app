@@ -76,6 +76,17 @@ describe('mobile configuration non-regression', () => {
         distribution: 'internal',
         ios: { simulator: true },
       },
+      'production-simulator': {
+        environment: 'production',
+        env: {
+          APP_VARIANT: 'production',
+          IOS_BUNDLE_IDENTIFIER: 'com.litterbugs.app',
+          ANDROID_PACKAGE_IDENTIFIER: 'com.litterbugs.app',
+        },
+        developmentClient: true,
+        distribution: 'internal',
+        ios: { simulator: true },
+      },
       'development-primary': {
         environment: 'production',
         env: {
@@ -102,6 +113,15 @@ describe('mobile configuration non-regression', () => {
           ANDROID_PACKAGE_IDENTIFIER: 'com.litterbugs.app',
         },
         autoIncrement: true,
+      },
+      'production-internal': {
+        environment: 'production',
+        env: {
+          APP_VARIANT: 'production',
+          IOS_BUNDLE_IDENTIFIER: 'com.litterbugs.app',
+          ANDROID_PACKAGE_IDENTIFIER: 'com.litterbugs.app',
+        },
+        distribution: 'internal',
       },
     });
   });
