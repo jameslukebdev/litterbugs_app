@@ -1,9 +1,19 @@
+diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapMarker.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapMarker.java
+index b755f9b..d48e5da 100644
 --- a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapMarker.java
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapMarker.java
-@@ -11,0 +12 @@
+@@ -9,6 +9,7 @@ import android.graphics.drawable.Animatable;
+ import android.graphics.drawable.Drawable;
+ import android.net.Uri;
+ import android.view.View;
 +import android.view.ViewGroup;
-@@ -522,0 +524,19 @@
-+
+ import android.widget.LinearLayout;
+ import android.animation.ObjectAnimator;
+ import android.util.Property;
+@@ -521,9 +522,61 @@ public class MapMarker extends MapFeature {
+     mLastBitmapCreated = null;
+   }
+ 
 +  /**
 +   * Expand bitmap bounds using sizes already produced by RN layout. Do not call {@link
 +   * View#measure} on Catalyst/Fabric views because those views must be measured by React Native.
@@ -22,7 +32,7 @@
 +    if (height <= 0) {
 +      height = root.getMeasuredHeight();
 +    }
-@@ -523,0 +544,19 @@
++
 +    if (width > 0) {
 +      maxWh[0] = Math.max(maxWh[0], width);
 +    }
@@ -42,7 +52,9 @@
 +    }
 +  }
 +
-@@ -526,0 +566,14 @@
+   private Bitmap createDrawable() {
+     int width = this.width <= 0 ? 100 : this.width;
+     int height = this.height <= 0 ? 100 : this.height;
 +
 +    if (hasCustomMarkerView && getChildCount() > 0) {
 +      int[] maxWh = new int[] {width, height};
@@ -57,3 +69,6 @@
 +      height = maxWh[1];
 +    }
 +
+     this.buildDrawingCache();
+ 
+     // Do not create the doublebuffer-bitmap each time. reuse it to save memory.

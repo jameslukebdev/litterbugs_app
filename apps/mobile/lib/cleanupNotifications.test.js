@@ -22,6 +22,26 @@ describe('cleanup notifications', () => {
       .toContain('approved');
     expect(cleanupNotificationPresentation([{ event_type: 'cleanup_auto_approved' }]).message)
       .toContain('automatically');
+    expect(cleanupNotificationPresentation([{ event_type: 'correction_expired' }]).message)
+      .toContain('available');
+    expect(cleanupNotificationPresentation([{ event_type: 'paid_review_started' }]).message)
+      .toContain('48 hours');
+    expect(cleanupNotificationPresentation([{ event_type: 'paid_cleanup_disputed' }]).message)
+      .toContain('paused');
+    expect(cleanupNotificationPresentation([{ event_type: 'cleanup_reward_sent' }]).message)
+      .toContain('transferred');
+    expect(cleanupNotificationPresentation([{ event_type: 'cleanup_fund_increased' }]).message)
+      .toContain('added money');
+    expect(cleanupNotificationPresentation([{ event_type: 'cleanup_contribution_refunded' }]).message)
+      .toContain('refunded');
+    expect(cleanupNotificationPresentation([{ event_type: 'cleanup_payout_failed' }]).message)
+      .toContain('administrator');
+    expect(cleanupNotificationPresentation([{ event_type: 'report_renewal_due' }]).message)
+      .toContain('7 days');
+    expect(cleanupNotificationPresentation([{ event_type: 'report_renewed' }]).message)
+      .toContain('another 30 days');
+    expect(cleanupNotificationPresentation([{ event_type: 'report_funding_photos_needed' }]).message)
+      .toContain('Replace');
   });
 
   it('routes review and feedback events to dedicated screens', () => {
@@ -43,6 +63,27 @@ describe('cleanup notifications', () => {
       event_type: 'cleanup_approved',
       report_id: 'report',
       cleanup_attempt_id: 'cleanup',
+    })).toMatchObject({
+      name: 'App',
+      params: { screen: 'Map', params: { reportId: 'report' } },
+    });
+    expect(cleanupNotificationDestination({
+      event_type: 'cleanup_fund_increased',
+      report_id: 'report',
+      cleanup_attempt_id: null,
+    })).toMatchObject({
+      name: 'App',
+      params: { screen: 'Map', params: { reportId: 'report' } },
+    });
+    expect(cleanupNotificationDestination({
+      event_type: 'cleanup_contribution_refunded',
+      report_id: 'report',
+      cleanup_attempt_id: null,
+    })).toMatchObject({ name: 'ContributionHistory' });
+    expect(cleanupNotificationDestination({
+      event_type: 'report_funding_photos_needed',
+      report_id: 'report',
+      cleanup_attempt_id: null,
     })).toMatchObject({
       name: 'App',
       params: { screen: 'Map', params: { reportId: 'report' } },

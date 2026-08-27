@@ -19,6 +19,7 @@ import ProfileReportList from './ProfileReportList';
 import { deleteCurrentAccount, signOut } from './lib/auth';
 import { loadCurrentUserCleanupSummary } from './lib/cleanup';
 import { cleanupStatusPresentation } from './lib/cleanupEligibility';
+import { formatUsd, loadCleanupFeatureFlags } from './lib/funding';
 import {
   cleanupApprovalLabel,
   emptyCleanupSummary,
@@ -70,6 +71,21 @@ function ActiveCleanupRow({ attempt, onPress, divided }) {
   const deadline = attempt.status === 'claimed' && attempt.claim_expires_at
     ? `Complete by ${new Date(attempt.claim_expires_at).toLocaleString()}`
     : presentation?.description;
+  const paidStatus = attempt.dispute_status === 'open'
+    ? 'Reward paused for dispute review'
+      : attempt.financial_review_status === 'admin_review'
+      ? 'Reward paused for admin review'
+      : attempt.financial_review_status === 'better_photos'
+        ? 'Replacement photos requested'
+      : attempt.first_paid_admin_status === 'pending'
+        ? 'First reward awaiting admin check'
+        : attempt.financial_review_status === 'passed'
+          ? 'Reward in 48-hour dispute window'
+          : attempt.financial_review_status === 'queued'
+            ? 'Photos awaiting automated review'
+            : attempt.status === 'claimed'
+              ? 'Reward frozen for this cleanup'
+              : 'Reward pending';
 
   return (
     <TouchableOpacity
@@ -88,6 +104,11 @@ function ActiveCleanupRow({ attempt, onPress, divided }) {
           {attempt.report?.title || 'Litter cleanup'}
         </Text>
         <Text style={styles.activeCleanupStatus}>{presentation?.title}</Text>
+        {attempt.is_paid ? (
+          <Text style={styles.activeCleanupReward}>
+            {formatUsd(attempt.reward_amount_cents)} · {paidStatus}
+          </Text>
+        ) : null}
         <Text style={styles.activeCleanupDeadline}>{deadline}</Text>
         <Text style={styles.activeCleanupLink}>Return to cleanup</Text>
       </View>
@@ -109,6 +130,13 @@ function CompletedCleanupRow({ attempt, onPress, divided }) {
   const completedDate = attempt.completed_at
     ? new Date(attempt.completed_at).toLocaleDateString()
     : 'Date unavailable';
+  const payoutStatus = {
+    blocked: 'Awaiting release',
+    pending: 'Transfer queued',
+    processing: 'Transfer processing',
+    transferred: 'Reward sent',
+    failed: 'Transfer needs attention',
+  }[attempt.payout_status] || 'Payout status unavailable';
 
   return (
     <TouchableOpacity
@@ -128,6 +156,11 @@ function CompletedCleanupRow({ attempt, onPress, divided }) {
         <Text style={styles.completedCleanupMeta}>
           {completedDate} · {cleanupApprovalLabel(attempt.approval_method)}
         </Text>
+        {attempt.is_paid ? (
+          <Text style={styles.completedCleanupReward}>
+            {formatUsd(attempt.reward_amount_cents)} · {payoutStatus}
+          </Text>
+        ) : null}
       </View>
       <Ionicons name="chevron-forward" size={22} color="#6C8B70" />
     </TouchableOpacity>
@@ -169,6 +202,8 @@ export default function ProfileScreen({ navigation }) {
   const [cleanupSummary, setCleanupSummary] = useState(emptyCleanupSummary);
   const [cleanupsLoading, setCleanupsLoading] = useState(false);
   const [cleanupsError, setCleanupsError] = useState(false);
+  const [fundingEnabled, setFundingEnabled] = useState(false);
+  const [fundingSchemaReady, setFundingSchemaReady] = useState(false);
   const accountBusy = signingOut || deletingAccount;
   const bottomPadding = getBottomNavClearance(insets.bottom) + 18;
 
@@ -199,6 +234,17 @@ export default function ProfileScreen({ navigation }) {
 
   useFocusEffect(useCallback(() => {
     refreshCleanups();
+    loadCleanupFeatureFlags()
+      .then((flags) => {
+        setFundingSchemaReady(true);
+        setFundingEnabled(Boolean(
+          flags.payments_enabled && flags.gemini_financial_review_enabled
+        ));
+      })
+      .catch(() => {
+        setFundingSchemaReady(false);
+        setFundingEnabled(false);
+      });
   }, [refreshCleanups]));
 
   if (!permanent) {
@@ -371,6 +417,27 @@ export default function ProfileScreen({ navigation }) {
           icon="ban-outline"
           onPress={() => navigation.getParent()?.navigate('BlockedAccounts')}
         />
+        {fundingSchemaReady ? (
+          <ActionRow
+            label="Expired report decisions"
+            icon="calendar-outline"
+            onPress={() => navigation.getParent()?.navigate('ExpiredReports')}
+          />
+        ) : null}
+        {fundingEnabled ? (
+          <>
+            <ActionRow
+              label="Cleanup payout setup"
+              icon="wallet-outline"
+              onPress={() => navigation.getParent()?.navigate('PayoutSetup')}
+            />
+            <ActionRow
+              label="Contribution history"
+              icon="receipt-outline"
+              onPress={() => navigation.getParent()?.navigate('ContributionHistory')}
+            />
+          </>
+        ) : null}
         <ActionRow label="Support Litterbugs" icon="heart-outline" onPress={openPatreon} />
         <ActionRow label={signingOut ? 'Signing out…' : 'Sign out'} icon="log-out-outline" onPress={handleSignOut} busy={signingOut} />
       </View>
@@ -417,6 +484,7 @@ const styles = StyleSheet.create({
   activeCleanupCopy: { flex: 1, marginRight: 8 },
   activeCleanupTitle: { color: '#4F3A00', fontSize: 16, fontWeight: '800' },
   activeCleanupStatus: { marginTop: 4, color: '#755900', fontSize: 13, fontWeight: '800' },
+  activeCleanupReward: { marginTop: 3, color: '#245F2A', fontSize: 13, fontWeight: '800' },
   activeCleanupDeadline: { marginTop: 3, color: '#806715', fontSize: 13, lineHeight: 18 },
   activeCleanupLink: { marginTop: 8, color: '#2F7D32', fontSize: 14, fontWeight: '800' },
   activeCleanupEmpty: { minHeight: 126, alignItems: 'center', justifyContent: 'center', padding: 20 },
@@ -428,6 +496,7 @@ const styles = StyleSheet.create({
   completedCleanupCopy: { flex: 1, marginRight: 8 },
   completedCleanupTitle: { color: '#30363B', fontSize: 15, fontWeight: '800' },
   completedCleanupMeta: { marginTop: 5, color: '#687178', fontSize: 13 },
+  completedCleanupReward: { marginTop: 4, color: '#245F2A', fontSize: 13, fontWeight: '800' },
   completedCleanupEmpty: { minHeight: 126, alignItems: 'center', justifyContent: 'center', padding: 20 },
   actionRow: { minHeight: 60, paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E0E3E5', backgroundColor: '#FFFFFF' },
   actionCopy: { flexDirection: 'row', alignItems: 'center', gap: 11 },

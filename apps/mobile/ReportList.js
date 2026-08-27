@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 
 import { getDistanceMiles, useReports } from './lib/reports';
+import { formatUsd } from './lib/funding';
 
 const SEVERITY = Object.freeze({
   high: { color: '#E53935', icon: 'warning' },
@@ -153,6 +154,12 @@ export function ReportListItem({ report, origin, onPress }) {
           {report?.title || 'Litter Report'}
         </Text>
 
+        {Number(report?.funded_amount_cents) > 0 ? (
+          <View style={styles.rewardPill}>
+            <Text style={styles.rewardText}>Cleaner gets {formatUsd(report.funded_amount_cents)}</Text>
+          </View>
+        ) : null}
+
         {metadata ? (
           <Text style={styles.metadata} numberOfLines={1}>{metadata}</Text>
         ) : null}
@@ -260,6 +267,19 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 22,
     fontWeight: '800',
+  },
+  rewardPill: {
+    alignSelf: 'flex-start',
+    marginTop: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: '#E3F1E4',
+  },
+  rewardText: {
+    color: '#245F2A',
+    fontSize: 12,
+    fontWeight: '900',
   },
   metadata: {
     marginTop: 5,

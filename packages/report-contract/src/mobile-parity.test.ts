@@ -70,7 +70,7 @@ describe('mobile report parity', () => {
     expect([...SEVERITY_LEVELS]).toEqual(mobileSeverityLevels);
   });
 
-  it('keeps all current mobile limits and edit-photo behavior unchanged', () => {
+  it('keeps mobile limits aligned and supports bounded report-photo replacement', () => {
     expect(MAX_REPORT_DISTANCE_MILES).toBe(10);
     expect(mobileSource).toContain('const MAX_REPORT_DISTANCE_MILES = 10;');
     expect(MAX_REPORT_PHOTOS).toBe(3);
@@ -79,6 +79,8 @@ describe('mobile report parity', () => {
     expect(mobileSource).toContain('maxLength={80}');
     expect(MAX_REPORT_NOTES_LENGTH).toBe(500);
     expect(mobileSource).toContain('maxLength={500}');
-    expect(mobileSource).toContain("Photo replacement isn't enabled while editing a report yet.");
+    expect(mobileSource).toContain('accessibilityLabel="Replace report photos"');
+    expect(mobileSource).toContain('{ photo_paths: replacementPhotoPaths }');
+    expect(mobileSource).toContain('bytes.byteLength > 5 * 1024 * 1024');
   });
 });

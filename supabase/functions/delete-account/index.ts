@@ -70,6 +70,12 @@ Deno.serve(async (request: Request) => {
   if (userError || !user) return jsonResponse({ error: "Authentication required" }, 401);
 
   try {
+    const { error: financialCleanupError } = await admin.rpc(
+      "prepare_funded_cleanup_account_deletion",
+      { target_user_id: user.id },
+    );
+    if (financialCleanupError) throw financialCleanupError;
+
     const { data: reports, error: reportsError } = await admin
       .from("reports")
       .select("photo_paths")

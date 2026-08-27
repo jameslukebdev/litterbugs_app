@@ -148,25 +148,41 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
 
     try {
       setSubmitting(true);
-      await uploadCleanupSubmission({
+      const result = await uploadCleanupSubmission({
         cleanupId: context.attempt.id,
         userId,
         photos,
+        isPaid: context.attempt.is_paid,
         ...validation.normalized,
       });
       await refreshReports({ showRefresh: false });
 
+      const aiDecision = result.aiReview?.ai;
+      const paidMessage = aiDecision?.status === 'better_photos'
+        ? aiDecision.summary
+        : aiDecision?.status === 'passed'
+          ? 'Gemini accepted the photos. The reporter now has 48 hours to dispute the cleanup; there is no early approval.'
+          : aiDecision?.status === 'admin_review'
+            ? 'The payout is paused for a lightweight admin review. No action is needed unless Litterbugs contacts you.'
+            : 'Your photos are queued for Gemini review. The 48-hour dispute window starts only after they pass.';
+
       Alert.alert(
-        context.attempt.status === 'changes_requested'
+        aiDecision?.status === 'better_photos'
+          ? 'Better photos needed'
+          : context.attempt.status === 'changes_requested'
           ? 'Cleanup resubmitted'
           : 'Cleanup submitted',
-        'Your cleanup evidence is awaiting review. The original reporter has 48 hours to respond before automatic approval.',
+        context.attempt.is_paid
+          ? paidMessage
+          : 'Your cleanup evidence is awaiting review. The original reporter has 48 hours to respond before automatic approval.',
         [{
-          text: 'View report',
-          onPress: () => navigation.navigate('App', {
-            screen: 'Map',
-            params: { reportId: context.attempt.report_id },
-          }),
+          text: aiDecision?.status === 'better_photos' ? 'Review feedback' : 'View report',
+          onPress: () => aiDecision?.status === 'better_photos'
+            ? navigation.replace('CleanupFeedback', { cleanupId: context.attempt.id })
+            : navigation.navigate('App', {
+              screen: 'Map',
+              params: { reportId: context.attempt.report_id },
+            }),
         }],
         { cancelable: false }
       );
