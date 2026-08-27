@@ -115,7 +115,7 @@ describe('ReportDetail photos', () => {
       />,
     );
 
-    expect(screen.getByText('Cleaner gets $125.00')).toBeTruthy();
+    expect(screen.getByText('$125.00 reward')).toBeTruthy();
     expect(screen.getByText('Cleanup in progress')).toBeTruthy();
   });
 });
