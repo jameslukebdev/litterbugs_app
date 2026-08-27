@@ -46,3 +46,51 @@ No unresolved P2-or-higher visual or interaction findings remain.
 - A fresh Android API 36 development build passed native phone and tablet-class viewport checks. The installed stale QA client was replaced before testing because it predated the current Expo native modules.
 - Android swipe-up expansion, swipe-down collapse, Profile navigation, and hardware Back-to-Map passed.
 - iPad mini layout, safe-area clearance, guest browsing, tab placement, and report-sheet expansion passed.
+
+---
+
+# Web Map and Header Design QA
+
+## Visual truth
+
+- Airbnb desktop map/results reference: Refero screen `6ed840e9-829f-4eda-919e-cff8cd9713f3`
+- Airbnb mobile map/list reference: Refero screen `d3d4812f-67f9-41da-902d-6a7de9ec3a68`
+- Trulia desktop map/results reference: Refero screen `dd5001c2-510a-42de-9533-9328b8d96de7`
+- Zillow desktop reference capture: `/tmp/litterbugs-design-qa/zillow-desktop.png`
+- Production desktop capture: `/tmp/litterbugs-design-qa/litterbugs-production-desktop.png`
+- Production selected-report capture: `/tmp/litterbugs-design-qa/litterbugs-production-detail.png`
+- Mobile list capture: `/tmp/litterbugs-design-qa/litterbugs-mobile-list.png`
+- Desktop comparison composite: `/tmp/litterbugs-design-qa/desktop-comparison.png`
+
+## Test state
+
+- Desktop viewport: 1280×720 at 1x density
+- Mobile viewport: 390×844 at 1x density
+- User state: signed out
+- Data state: 11 active test reports, including photographed, funded, claimed, completed, and unfunded reports
+- Interaction state: default map/results view, mobile list sheet, selected report details, and signed-out report action
+
+## Comparison findings and resolutions
+
+- P1 — The previous floating report panel obscured too much of the map. Replaced it with the persistent desktop results/map split used by Zillow, Airbnb, and Trulia.
+- P2 — The page carried labels, badges, explanations, and instructions that competed with the reports. Removed the map instruction, legend, eyebrow, subtitle, and status pills.
+- P2 — The text-only result list did not scan like a marketplace. Added report photography, compact reward/status text, clear dates, and a two-column desktop result grid.
+- P2 — Report pins were generic alert icons. Replaced them with compact reward and availability labels, including a dark selected state.
+- P2 — The mobile list could open partway down. Reset the list position when opened and made each row size to its own content.
+- P2 — Selecting a report unnecessarily recreated all map markers. Selection now updates the existing marker appearance.
+- P2 — Near-midnight report dates differed between server and browser time zones, causing a hydration warning. Public report dates now use one deterministic time zone.
+
+## Required fidelity surfaces
+
+- Typography: Existing Litterbugs typography is retained with marketplace-style scale and hierarchy.
+- Spacing: Desktop split, card gutters, map controls, and mobile sheet spacing match the reference patterns without copying another brand.
+- Colors: Existing Litterbugs green, white surfaces, muted gray metadata, and subtle borders remain consistent.
+- Images: Real report photos are used, including the web-compatible HEIC path; reports without photos use compact text cards rather than fabricated imagery.
+- Copy: Visible copy is short and plain. Navigation is Map, Cleanup policy, and Terms; the primary map action is Report litter.
+- Header: The Litterbugs logo is visually centered, navigation sits on the left, and account access sits on the right.
+- Interactions: Map/list switching, result selection, report details, navigation links, account/sign-in access, and the report action were exercised.
+- Console: The production-only hydration mismatch was reproduced and traced to time-zone-dependent date formatting; the deterministic-date fix is covered by a focused test before redeployment.
+
+## Result
+
+final result: passed

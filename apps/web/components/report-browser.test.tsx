@@ -9,7 +9,7 @@ import { ReportBrowser } from './report-browser';
 const report: MappableReport = {
   cancelled_at: null,
   cleanup_state: 'available',
-  created_at: '2026-08-26T12:00:00.000Z',
+  created_at: '2026-08-26T00:15:00.000Z',
   expired_at: null,
   expires_at: '2026-09-25T12:00:00.000Z',
   funded_amount_cents: 12500,
@@ -45,6 +45,7 @@ describe('ReportBrowser', () => {
     expect(screen.getByRole('heading', { name: '1 cleanup opportunity' })).toBeTruthy();
     expect(screen.getByText('Roadside bottles')).toBeTruthy();
     expect(screen.getByText('$125 reward')).toBeTruthy();
+    expect(screen.getByText('Aug 26')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: /roadside bottles/i }));
     expect(onSelect).toHaveBeenCalledWith(report);
