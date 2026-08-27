@@ -32,6 +32,25 @@ reviews; the flags and the launch sequence below remain the release boundary.
   They are production drafts and must not be described as legally approved
   until a qualified attorney signs off.
 
+### Focused Supabase security-advisor triage (2026-08-27)
+
+The production advisor results were reviewed against the deployed grants,
+policies, function guards, and existing authorization tests:
+
+- Financial audit, Stripe-event, and administrator tables intentionally have
+  RLS with no client policies, which is a client deny-all boundary.
+- Client workflow RPCs are executable by `authenticated`, never `anon`; each
+  relevant function uses an empty `search_path` and rechecks the permanent
+  user, record ownership, workflow state, or AAL2 administrator membership
+  before reading or changing protected data.
+- Pending cleanup evidence is visible only to its cleaner and reporter. The
+  nested metadata policy prevents outsiders from satisfying the Storage rule;
+  anonymous users can read only the accepted final submission after completion.
+- The `pg_net` extension is used by the authenticated maintenance schedule and
+  is not a client authorization path.
+- Leaked-password protection is the remaining actionable advisor warning. It
+  requires Supabase Pro and stays an explicit launch-day gate below.
+
 ## Required configuration
 
 Set these Supabase Edge Function secrets:
