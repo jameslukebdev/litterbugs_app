@@ -10,12 +10,16 @@ reviews; the flags and the launch sequence below remain the release boundary.
 ## Current production state (2026-08-27)
 
 - `main` contains the funded-cleanup implementation and published legal pages.
-- Supabase migrations are applied through `20260827120000`; the funded-cleanup
-  Edge Functions and the every-minute financial maintenance schedule are
-  active.
+  Vercel production deployment `dpl_8o42pjS8zAzWczxbQMcR1UZBvEFt` serves the
+  merged revision at `litterbugs.app`.
+- Supabase migrations are applied through `20260827171622`; all funded-cleanup
+  Edge Functions are active and the authenticated financial maintenance job is
+  scheduled every minute with both required Vault entries present.
 - `payments_enabled=false` and
-  `gemini_financial_review_enabled=false`. Production contains zero
-  contributions and zero cleaner payout accounts.
+  `gemini_financial_review_enabled=false`. Production contains zero successful
+  contributions and zero cleaner payout accounts. One failed administrator
+  preview contribution remains for inbox demonstration; it has no Stripe
+  PaymentIntent or charge and moved no money.
 - The permanent AAL2 administrator is enrolled and `/admin` is live.
 - The launch revision publishes `cleanup-acknowledgment-v2` with
   `cleanup-safety-guidelines-v2`. It presents separate, conspicuous safety and
@@ -23,20 +27,34 @@ reviews; the flags and the launch sequence below remain the release boundary.
   claimant to affirm that they are at least 18. Earlier versions are retired
   when the migration is applied.
 - The live Stripe account is identity-verified with no active requirements.
-  Payments, payouts, and transfers are active. The snapshot and Accounts v2
-  webhook destinations are active, and the intended payment methods are cards,
-  Apple Pay, Cash App Pay, Google Pay, and Link. Apple Pay remains unavailable
-  in the production iOS build until the Apple organization transfer and
-  merchant configuration below are complete.
-- The Gemini relay is deployed to the production Google Cloud project with
-  pay-as-you-go billing and the $5 budget alerts. The completed dark-launch
-  fixture evidence below used only synthetic, non-user photos.
+  Payments, payouts, and transfers are active, and the platform payout schedule
+  is Manual. The snapshot destination is active for 11 events and the Accounts
+  v2 thin destination is active for seven events, both with zero delivery
+  errors. The intended payment methods are cards, Apple Pay, Cash App Pay,
+  Google Pay, and Link. Apple Pay remains unavailable in the production iOS
+  build until the Apple organization transfer and merchant configuration below
+  are complete.
+- The `litterbugs-gemini-relay` service is healthy in the production Google
+  Cloud project with zero minimum instances, two maximum instances, concurrency
+  four, 512 MiB memory, a 60-second timeout, pay-as-you-go billing, and the $5
+  budget alerts. Its dedicated runtime identity has secret access only on the
+  relay shared secret. The completed dark-launch fixture evidence below used
+  only synthetic, non-user photos.
 - Expanded Terms, Privacy, Cleanup and Reward Policy, safety guidelines, and
   the in-app acknowledgment were prepared from the production rules with a
   ChatGPT Pro legal-drafting pass. They are production drafts and must not be
   described as legally approved or guaranteed enforceable. The limited review
   questions and acceptance evidence are recorded in
   `docs/legal-acceptance-and-review.md`.
+
+The remaining launch gates are external or deliberately deferred: Apple must
+finish converting the Burrow Base developer account before the app transfer,
+merchant identity, production signing, and physical-iPhone Apple Pay test;
+Supabase leaked-password protection requires the deferred Pro upgrade; and the
+production legal drafts have not received qualified legal sign-off. After those
+items, the only planned activation work is the ordered controlled rollout in
+this document. Do not create a second QA application or repeat completed broad
+test work while waiting.
 
 ### Focused Supabase security-advisor triage (2026-08-27)
 
@@ -77,8 +95,8 @@ Set these Supabase Edge Function secrets:
 Set `STRIPE_APPLE_MERCHANT_IDENTIFIER` for the mobile build. The fallback is `merchant.com.litterbugs.app`; the value must match the Apple merchant ID configured for the app and Stripe account.
 
 Gemini 3.7 Flash runs through Gemini Enterprise Agent Platform, not the AI
-Studio developer endpoint. The `gemini-relay` Cloud Run service runs in
-`litterbugs-auth` as the dedicated `litterbugs-gemini-review` service account
+Studio developer endpoint. The `litterbugs-gemini-relay` Cloud Run service runs
+in `litterbugs-auth` as the dedicated `litterbugs-gemini-review` service account
 and obtains short-lived Google credentials from its runtime identity. Supabase
 sends only short-lived signed references to private Litterbugs photos; the
 relay accepts only the two Litterbugs storage buckets and never logs request
