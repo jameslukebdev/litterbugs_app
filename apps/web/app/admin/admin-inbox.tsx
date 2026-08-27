@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import { getWebCompatibleReportPhotoUrl } from '@/lib/report-photo';
 import { createClient } from '@/lib/supabase/client';
 
 import styles from './admin.module.css';
@@ -23,7 +24,7 @@ type AdminCase = {
 
 type CaseDetail = {
   case: AdminCase & { context?: Record<string, unknown> };
-  report: { title?: string | null; severity?: string | null; funding_eligibility?: string } | null;
+  report: { title?: string | null; severity?: string | null; funding_eligibility?: string; photo_paths?: string[] | null } | null;
   attempt: { reward_amount_cents?: number; financial_review_summary?: string | null; financial_review_status?: string; dispute_reason?: string | null; dispute_status?: string; first_paid_cleanup?: boolean; payout_status?: string } | null;
   contribution: { principal_amount_cents?: number; platform_fee_cents?: number; total_amount_cents?: number; status?: string; failure_code?: string | null } | null;
   cleaner_history: { completed_cleanups?: number; paid_rewards_sent?: number } | null;
@@ -42,30 +43,45 @@ const labels: Record<string, string> = {
   payout_failure: 'Payout failure',
 };
 
+const priorityLabels: Record<number, string> = {
+  1: 'Urgent',
+  2: 'Normal',
+  3: 'Low',
+};
+
 const actions: Record<string, Array<{ value: string; label: string; destructive?: boolean }>> = {
   report_safety: [
-    { value: 'approve_funding', label: 'Clear for funding' },
-    { value: 'reject_funding', label: 'Keep funding blocked', destructive: true },
-    { value: 'close_and_refund', label: 'Close report & refund', destructive: true },
+    { value: 'approve_funding', label: 'Allow funding' },
+    { value: 'reject_funding', label: 'Block funding for this report', destructive: true },
+    { value: 'close_and_refund', label: 'Close report and refund contributors', destructive: true },
   ],
   gemini_review: [
-    { value: 'approve_cleanup', label: 'Accept evidence' },
-    { value: 'request_better_photos', label: 'Request better photos' },
-    { value: 'reject_cleanup', label: 'Reject cleanup', destructive: true },
-    { value: 'reject_and_close', label: 'Reject, close & refund', destructive: true },
+    { value: 'approve_cleanup', label: 'Approve photos and start dispute window' },
+    { value: 'request_better_photos', label: 'Ask cleaner for better photos' },
+    { value: 'reject_cleanup', label: 'Reject cleanup and reopen report', destructive: true },
+    { value: 'reject_and_close', label: 'Reject cleanup, close report, and refund', destructive: true },
   ],
   first_paid_cleanup: [
-    { value: 'approve_cleanup', label: 'Clear first payout' },
-    { value: 'reject_cleanup', label: 'Reject cleanup', destructive: true },
-    { value: 'reject_and_close', label: 'Reject, close & refund', destructive: true },
+    { value: 'approve_cleanup', label: 'Approve first paid cleanup' },
+    { value: 'reject_cleanup', label: 'Reject cleanup and reopen report', destructive: true },
+    { value: 'reject_and_close', label: 'Reject cleanup, close report, and refund', destructive: true },
   ],
   dispute: [
-    { value: 'deny_dispute', label: 'Deny dispute' },
-    { value: 'uphold_dispute', label: 'Uphold dispute', destructive: true },
-    { value: 'reject_and_close', label: 'Uphold, close & refund', destructive: true },
+    { value: 'deny_dispute', label: 'Deny dispute and continue reward process' },
+    { value: 'uphold_dispute', label: 'Uphold dispute and reopen report', destructive: true },
+    { value: 'reject_and_close', label: 'Uphold dispute, close report, and refund', destructive: true },
   ],
   refund_failure: [{ value: 'retry_refund', label: 'Retry refund' }],
   payout_failure: [{ value: 'retry_payout', label: 'Retry payout' }],
+};
+
+const decisionGuidance: Record<string, string> = {
+  report_safety: 'Allow funding only when the report appears safe for an ordinary community cleanup. Blocking prevents contributions; closing also starts any required refunds.',
+  gemini_review: 'Compare the location and cleanup evidence. Approval begins the 48-hour reporter dispute window; rejection reopens the report for another cleaner.',
+  first_paid_cleanup: 'Confirm the first paid cleanup is credible before allowing its reward process to continue.',
+  dispute: 'Compare the reporter’s concern with the complete photo set. Upholding the dispute rejects this cleanup and reopens the report.',
+  refund_failure: 'Retry only after confirming this contribution is still owed a refund and the recorded amount is correct.',
+  payout_failure: 'Retry only after confirming the cleanup was approved and the cleaner’s payout account is ready.',
 };
 
 const money = (cents = 0) => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(cents / 100);
@@ -158,7 +174,7 @@ export function AdminInbox() {
         <div className={styles.caseList}>
           {visibleCases.map((item) => (
             <button key={item.id} className={`${styles.caseRow} ${selected?.case.id === item.id ? styles.selectedCase : ''}`} onClick={() => void openCase(item)}>
-              <span className={styles.caseTopline}><span className={styles.caseType}>{labels[item.case_type] || item.case_type}</span><span className={styles.priority}>P{item.priority}</span></span>
+              <span className={styles.caseTopline}><span className={styles.caseType}>{labels[item.case_type] || item.case_type}</span><span className={styles.priority}>{priorityLabels[item.priority] ?? 'Normal'}</span></span>
               <strong>{item.report_title || item.title}</strong>
               <span>{item.summary || 'Open this case for details.'}</span>
               <time>{new Date(item.created_at).toLocaleString()}</time>
@@ -206,7 +222,12 @@ export function AdminInbox() {
 
             {selected.photos && ((selected.photos.before?.length ?? 0) + (selected.photos.after?.length ?? 0) > 0) ? (
               <div className={styles.photoSections}>
-                <EvidencePhotos title="Before" urls={selected.photos.before ?? []} />
+                <EvidencePhotos
+                  title="Before"
+                  urls={selected.photos.before ?? []}
+                  paths={selected.report?.photo_paths ?? []}
+                  adminCaseId={selected.case.id}
+                />
                 <EvidencePhotos title="After" urls={selected.photos.after ?? []} />
               </div>
             ) : null}
@@ -229,7 +250,8 @@ export function AdminInbox() {
 
             {selected.case.status === 'open' ? (
               <div className={styles.decisionPanel}>
-                <label>Decision reason<textarea value={reason} onChange={(event) => setReason(event.target.value)} maxLength={1000} placeholder="Record the evidence and reasoning for this decision." /></label>
+                <p>{decisionGuidance[selected.case.case_type]}</p>
+                <label>Why are you making this decision?<textarea value={reason} onChange={(event) => setReason(event.target.value)} maxLength={1000} placeholder="Describe the photos, payment information, or safety facts that support your choice." /></label>
                 <div className={styles.actionGrid}>
                   {(actions[selected.case.case_type] ?? []).map((action) => (
                     <button key={action.value} className={action.destructive ? styles.dangerButton : styles.primaryButton} onClick={() => void resolve(action)} disabled={Boolean(busy)}>
@@ -252,16 +274,31 @@ export function AdminInbox() {
   );
 }
 
-function EvidencePhotos({ title, urls }: { title: string; urls: string[] }) {
+function EvidencePhotos({
+  title,
+  urls,
+  paths = [],
+  adminCaseId,
+}: {
+  title: string;
+  urls: string[];
+  paths?: string[];
+  adminCaseId?: string;
+}) {
   if (urls.length === 0) return null;
   return (
     <div>
       <h3>{title}</h3>
       <div className={styles.photoGrid}>
-        {urls.map((url, index) => (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img key={url} src={url} alt={`${title} evidence ${index + 1}`} />
-        ))}
+        {urls.map((url, index) => {
+          const compatibleUrl = paths[index]
+            ? getWebCompatibleReportPhotoUrl(paths[index], { adminCaseId })
+            : null;
+          return (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={url} src={compatibleUrl ?? url} alt={`${title} evidence ${index + 1}`} />
+          );
+        })}
       </div>
     </div>
   );
