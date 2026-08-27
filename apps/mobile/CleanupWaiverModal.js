@@ -90,7 +90,7 @@ export default function CleanupWaiverModal({
               color={acknowledged ? '#2F7D32' : '#7A8288'}
             />
             <Text style={styles.acknowledgmentText}>
-              I have read and accept the safety guidelines and funded reward acknowledgment, including the assumption of risk and release, for this claim.
+              I confirm I am 18 or older. I have read and accept the safety guidelines and funded reward acknowledgment, including the assumption of risk and release, for this claim.
             </Text>
           </TouchableOpacity>
         </ScrollView>

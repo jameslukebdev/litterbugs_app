@@ -38,8 +38,10 @@ counsel identifies a specific need.
   Carolina court proceedings; it does not add mandatory consumer arbitration.
 - The ordinary-negligence release is conspicuous and expressly excludes gross
   negligence, willful misconduct, and rights that cannot legally be waived.
+- Every cleanup claimant must affirm they are at least 18. Funded cleaners must
+  also be in the United States and satisfy Stripe's payout requirements.
 - The liability cap is the greater of $100 or the Litterbugs platform fees paid
-  by the user during the preceding six months, where such a cap is lawful.
+  by the user during the preceding 12 months, where such a cap is lawful.
 - Litterbugs does not claim to provide insurance or hazardous-material services.
 
 ## Focused attorney review

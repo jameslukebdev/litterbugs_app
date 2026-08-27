@@ -33,7 +33,7 @@ export default function CleanupPolicyPage() {
           title: 'Claiming a cleanup',
           content: <>
             <p>When an eligible cleaner claims a report, contributions stop and any funded reward is frozen for that attempt. The cleaner has 24 hours to complete the cleanup and submit evidence. A reporter may clean their own report and receive its reward, but the same review, dispute, and administrator rules apply.</p>
-            <p>Before every claim, the cleaner must review and explicitly accept the current Cleanup Safety, Assumption of Risk, and Funded Reward Acknowledgment. Funded cleaners must be at least 18, be in the United States, and be eligible for Stripe payouts.</p>
+            <p>Before every claim, the cleaner must be at least 18 and review and explicitly accept the current Cleanup Safety, Assumption of Risk, and Funded Reward Acknowledgment. Funded cleaners must also be in the United States and be eligible for Stripe payouts.</p>
           </>,
         },
         {

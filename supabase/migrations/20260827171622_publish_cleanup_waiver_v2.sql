@@ -36,8 +36,8 @@ PLEASE READ BEFORE CLAIMING THIS CLEANUP
 
 My choice and eligibility
 • I am voluntarily choosing whether to claim this cleanup. I am not required to perform it.
-• If this is a funded cleanup, I confirm that I am at least 18 years old, am in the United States, and will complete Stripe’s identity, tax-information, and payout requirements.
-• I participate independently, not as an employee, agent, contractor, or representative of Litterbugs or Burrow Base LLC. I decide whether, when, and how to attempt the cleanup within the claim rules.
+• I confirm that I am at least 18 years old. If this is a funded cleanup, I am in the United States and will complete Stripe’s identity, tax-information, and payout requirements.
+• I participate independently, not as an employee, agent, partner, joint venturer, or representative of Litterbugs or Burrow Base LLC. I decide whether, when, and how to attempt the cleanup within the claim rules.
 
 My safety assessment
 • Before and during the cleanup, I will assess traffic, parking, weather, terrain, property access, physical ability, waste, tools, protective equipment, disposal options, animals, other people, and changing conditions.
@@ -69,7 +69,7 @@ $guidelines$,
   $release$
 Outdoor litter cleanup can involve cuts, punctures, falls, strains, traffic, weather, animals, contaminated or sharp materials, property conditions, interactions with other people, and other known or unexpected risks. I knowingly and voluntarily assume the risks of choosing, traveling to, entering, and attempting this cleanup, including risks caused by conditions Litterbugs did not create or control.
 
-To the fullest extent permitted by applicable law, I release and agree not to hold Burrow Base LLC, Litterbugs, and their owners, officers, employees, and agents liable for claims, injuries, losses, or property damage arising from my voluntary cleanup participation or my failure to follow these safety rules, including claims based on ordinary negligence. This release does not apply to gross negligence, willful misconduct, or liability that applicable law does not allow to be waived.
+To the fullest extent permitted by applicable law, I release and agree not to hold Burrow Base LLC, Litterbugs, and their owners, officers, employees, and agents liable for claims, injuries, losses, or property damage arising from my voluntary cleanup participation or my failure to follow these safety rules, including claims based on ordinary negligence. This release does not apply to gross negligence, reckless or willful misconduct, or liability that applicable law does not allow to be waived.
 $release$,
   true,
   now(),

@@ -16,8 +16,9 @@ this context are the source of truth.
   emergency service, environmental regulator, or hazardous-material service.
 - A permanent Litterbugs account is required to report litter, contribute,
   claim a cleanup, dispute a cleanup, or receive a funded reward.
-- Funded cleaners must be at least 18, be in the United States, and satisfy
-  Stripe identity, eligibility, tax-information, and payout requirements.
+- Every cleanup claimant must be at least 18. Funded cleaners must also be in
+  the United States and satisfy Stripe identity, eligibility, tax-information,
+  and payout requirements.
 - A reporter may clean their own report and receive its reward. The same photo,
   Gemini, dispute-window, first-paid-cleanup, and administrator rules apply.
 

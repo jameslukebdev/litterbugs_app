@@ -19,8 +19,9 @@ reviews; the flags and the launch sequence below remain the release boundary.
 - The permanent AAL2 administrator is enrolled and `/admin` is live.
 - The launch revision publishes `cleanup-acknowledgment-v2` with
   `cleanup-safety-guidelines-v2`. It presents separate, conspicuous safety and
-  assumption-of-risk/release sections before every claim. Earlier versions are
-  retired when the migration is applied.
+  assumption-of-risk/release sections before every claim and requires every
+  claimant to affirm that they are at least 18. Earlier versions are retired
+  when the migration is applied.
 - The live Stripe account is identity-verified with no active requirements.
   Payments, payouts, and transfers are active. The snapshot and Accounts v2
   webhook destinations are active, and the intended payment methods are cards,

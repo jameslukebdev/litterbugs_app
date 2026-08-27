@@ -96,7 +96,7 @@ export default function PrivacyPage() {
         },
         {
           title: 'Children',
-          content: <p>Litterbugs is not directed to children under 13, and we do not knowingly collect personal information from them. Funded cleanup rewards are limited to adults age 18 or older. If you believe a child has submitted personal information, contact us.</p>,
+          content: <p>Litterbugs is not directed to children under 13, and we do not knowingly collect personal information from them. Cleanup claims are limited to adults age 18 or older. If you believe a child has submitted personal information, contact us.</p>,
         },
         {
           title: 'Changes and contact',
