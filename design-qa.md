@@ -94,3 +94,55 @@ No unresolved P2-or-higher visual or interaction findings remain.
 ## Result
 
 final result: passed
+
+---
+
+# Web Results Grid Refinement
+
+## Source and implementation
+
+- Source visual truth: `/var/folders/g1/z5srknk55b52bfd28jykgmj00000gn/T/TemporaryItems/NSIRD_screencaptureui_GcoFbv/Screenshot 2026-08-27 at 6.34.24 PM.png`
+- Supporting Refero references: Trulia `b1954998-526a-4a0f-9f76-92163295d0ec`; Airbnb `6ed840e9-829f-4eda-919e-cff8cd9713f3`
+- Production desktop implementation: `/tmp/litterbugs-grid-production-final.png`
+- Production mobile implementation: `/tmp/litterbugs-grid-production-mobile-full.png`
+- Normalized desktop comparison: `/tmp/litterbugs-grid-zillow-comparison-final.png`
+- Source pixels: 1542×1085, cropped to the 1430×795 website region and normalized to 1280×720
+- Implementation pixels and CSS viewport: 1280×720 at 1x density
+- Mobile CSS viewport: 390×844 at 1x density
+- State: signed out, 11 active test reports, default desktop map/results view and open mobile results sheet
+
+## Full-view comparison
+
+The normalized comparison places the supplied Zillow result screen and the live Litterbugs implementation in one image. Both now use a centered brand header, a dominant left map, a scrollable right results grid, compact marker labels, white image-led cards, subtle gray page framing, rounded corners, and restrained borders/shadows. Litterbugs intentionally gives the map a larger 60/40 share and omits Zillow's search/filter chrome because the product has no equivalent search task and the user requested less instructional clutter.
+
+## Focused regions
+
+- Header: the Litterbugs header is 72 CSS pixels high, uses 15-pixel navigation, a smaller centered logo, and a 40-pixel account action. This matches the density and spacing of the supplied Zillow header while retaining Litterbugs branding.
+- Cards: production cards use 16:9 images, 12-pixel radii, visible borders, white surfaces, subtle elevation, two-line titles, aligned reward/status rows, and a distinct light-gray results background.
+- Responsive state: at 1280 CSS pixels the map is 768 pixels and the list is 512 pixels. At 390×844 the experience remains map-first and opens the results as a full-width bottom sheet.
+- Images: report-card sources are converted to cached 720×405 WebP thumbnails. A sampled HEIC card fell from 1,853,515 bytes to 18,326 bytes; a sampled JPEG card was 23,100 bytes. Three visible production images completed in 894 ms on the verified cached load.
+
+## Comparison history
+
+- P1 — Map hierarchy: the previous implementation placed the results on the left and made them visually equal to the map. Fixed by moving the map left and assigning it the dominant 60% desktop share. Post-fix evidence: `/tmp/litterbugs-grid-production-final.png`.
+- P2 — Card separation: cards previously blended into the white page because their borders were transparent and their surface was transparent. Fixed with a gray results surface, white card surfaces, visible borders, radius, and subtle elevation. Post-fix evidence: `/tmp/litterbugs-grid-zillow-comparison-final.png`.
+- P2 — Card density: 4:3 images made each card too tall and reduced scan speed. Fixed with 16:9 imagery, tighter gutters, consistent copy height, and responsive one-column behavior below 1100 pixels. Post-fix evidence: `/tmp/litterbugs-grid-production-final.png`.
+- P2 — Information loss: single-line titles truncated useful report context. Fixed with a two-line title region and aligned status/reward rows. Post-fix evidence: `/tmp/litterbugs-grid-production-final.png`.
+- P1 — Image delivery: cards requested full-resolution phone photos and some browser-compatible photos waited for client-side signing. Fixed by using one verified, cached thumbnail endpoint for HEIC, JPEG, PNG, and WebP card photos. Post-fix evidence: measured 18–23 KB card assets and a sub-second cached visible-image load.
+- P2 — Header scale: the earlier logo and header typography were oversized relative to the supplied Zillow reference. Fixed with a 72-pixel header, 48-pixel logo box, 15-pixel navigation, and tighter horizontal rhythm. Post-fix evidence: `/tmp/litterbugs-grid-zillow-comparison-final.png`.
+
+## Verification
+
+- Main navigation, report selection, map/list behavior, and the mobile results sheet were exercised.
+- Production was checked at desktop and mobile CSS viewports.
+- Production console errors and warnings checked: none.
+- Web tests passed: 12 files, 37 tests.
+- TypeScript, lint, build, and web boundary checks passed.
+
+## Follow-up polish
+
+- P3 — Real user-created titles may benefit from future content guidance, but no additional UI instruction should be added to this results screen.
+
+## Result
+
+final result: passed
