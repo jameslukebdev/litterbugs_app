@@ -31,12 +31,23 @@ import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
 
 const PATREON_URL = 'https://patreon.com/litterbugs?utm_medium=unknown&utm_source=join_link&utm_campaign=creatorshare_creator&utm_content=copyLink';
+const TERMS_URL = 'https://litterbugs.app/terms';
+const PRIVACY_URL = 'https://litterbugs.app/privacy';
+const CLEANUP_POLICY_URL = 'https://litterbugs.app/cleanup-policy';
 
 const openPatreon = async () => {
   try {
     await Linking.openURL(PATREON_URL);
   } catch (error) {
     Alert.alert('Can’t open link', 'Unable to open Patreon on this device.');
+  }
+};
+
+const openLitterbugsLink = async (url) => {
+  try {
+    await Linking.openURL(url);
+  } catch (error) {
+    Alert.alert('Can’t open link', 'Unable to open this Litterbugs page on your device.');
   }
 };
 
@@ -186,6 +197,8 @@ function SignedOutProfile({ navigation, bottomPadding }) {
       </TouchableOpacity>
       <View style={styles.signedOutSupport}>
         <ActionRow label="Support Litterbugs" icon="heart-outline" onPress={openPatreon} />
+        <ActionRow label="Terms of use" icon="document-text-outline" onPress={() => openLitterbugsLink(TERMS_URL)} />
+        <ActionRow label="Privacy policy" icon="shield-checkmark-outline" onPress={() => openLitterbugsLink(PRIVACY_URL)} />
       </View>
     </ScrollView>
   );
@@ -438,6 +451,9 @@ export default function ProfileScreen({ navigation }) {
             />
           </>
         ) : null}
+        <ActionRow label="Terms of use" icon="document-text-outline" onPress={() => openLitterbugsLink(TERMS_URL)} />
+        <ActionRow label="Privacy policy" icon="shield-checkmark-outline" onPress={() => openLitterbugsLink(PRIVACY_URL)} />
+        <ActionRow label="Cleanup and reward policy" icon="leaf-outline" onPress={() => openLitterbugsLink(CLEANUP_POLICY_URL)} />
         <ActionRow label="Support Litterbugs" icon="heart-outline" onPress={openPatreon} />
         <ActionRow label={signingOut ? 'Signing out…' : 'Sign out'} icon="log-out-outline" onPress={handleSignOut} busy={signingOut} />
       </View>
