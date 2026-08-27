@@ -41,9 +41,10 @@ describe('ReportBrowser', () => {
     const onSelect = vi.fn();
     render(<ReportBrowser reports={[report]} open onToggle={vi.fn()} onSelect={onSelect} />);
 
-    expect(screen.getByText('1 active report')).toBeTruthy();
+    expect(screen.getByText('Map')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: '1 cleanup opportunity' })).toBeTruthy();
     expect(screen.getByText('Roadside bottles')).toBeTruthy();
-    expect(screen.getByText('Cleaner gets $125')).toBeTruthy();
+    expect(screen.getByText('$125 reward')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: /roadside bottles/i }));
     expect(onSelect).toHaveBeenCalledWith(report);

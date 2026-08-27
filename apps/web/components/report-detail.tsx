@@ -16,6 +16,12 @@ const formatUsd = (cents: number) => new Intl.NumberFormat('en-US', {
   currency: 'USD',
 }).format(cents / 100);
 
+const formatDate = (value: string) => new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+}).format(new Date(value));
+
 function cleanupStatusLabel(status: string) {
   if (status === 'claimed') return 'Cleanup in progress';
   if (status === 'completion_submitted') return 'Cleanup photos under review';
@@ -90,15 +96,15 @@ export function ReportDetail({
       <button className="icon-button sheet-close" onClick={onClose} aria-label="Close report details"><Icon name="close" /></button>
       <div className="report-detail-scroll">
         <header className="report-detail-header">
-          <span className={`severity-pill severity-${severity.toLowerCase()}`}><span className="severity-dot" />{severity} severity</span>
           <h2>{report.title || 'Litter Report'}</h2>
-          <div className="report-dates">
-            {report.created_at && <span><Icon name="info" /> <span><small>Reported</small>{new Date(report.created_at).toLocaleString()}</span></span>}
-            {report.expires_at && <span><Icon name="calendar" /> <span><small>Expires</small>{new Date(report.expires_at).toLocaleDateString()}</span></span>}
+          <div className="report-summary-line">
+            <span className={`report-detail-severity report-detail-severity-${severity.toLowerCase()}`}><span />{severity}</span>
+            {report.created_at && <span>{formatDate(report.created_at)}</span>}
+            {report.expires_at && <span>Expires {formatDate(report.expires_at)}</span>}
           </div>
           <div className="report-status-row">
-            <span className="cleanup-status-pill">{cleanupStatusLabel(report.cleanup_state)}</span>
-            {report.funded_amount_cents > 0 && <strong className="reward-pill">Cleaner gets {formatUsd(report.funded_amount_cents)}</strong>}
+            <span>{cleanupStatusLabel(report.cleanup_state)}</span>
+            {report.funded_amount_cents > 0 && <strong>{formatUsd(report.funded_amount_cents)} reward</strong>}
           </div>
         </header>
 
@@ -133,9 +139,9 @@ export function ReportDetail({
         </div>
 
         <div className="report-detail-body">
-          {hasLitterTypes && <section className="detail-section"><h3><Icon name="trash" />Litter Types</h3><div className="chip-row">{report.litter_types?.map((type) => <span className="detail-chip type-chip" key={type}>{type}</span>)}{report.types && <span className="detail-chip other-chip">{report.types}</span>}</div></section>}
-          {!!report.notes_presets?.length && <section className="detail-section"><h3><Icon name="info" />Notes</h3><div className="chip-row">{report.notes_presets.map((note) => <span className="detail-chip note-chip" key={note}>{note}</span>)}</div></section>}
-          {report.notes_other && <section className="detail-section"><h3><Icon name="edit" />Additional Details</h3><p className="additional-details">{report.notes_other}</p></section>}
+          {hasLitterTypes && <p className="report-detail-fact"><strong>Litter</strong><span>{[...(report.litter_types ?? []), ...(report.types ? [report.types] : [])].join(', ')}</span></p>}
+          {!!report.notes_presets?.length && <p className="report-detail-fact"><strong>Notes</strong><span>{report.notes_presets.join(', ')}</span></p>}
+          {report.notes_other && <p className="report-detail-fact"><strong>Details</strong><span>{report.notes_other}</span></p>}
         </div>
       </div>
 

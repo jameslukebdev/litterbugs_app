@@ -32,6 +32,19 @@ import { createClient } from '@/lib/supabase/client';
 const MAP_TYPES = ['roadmap', 'satellite', 'hybrid', 'terrain'] as const;
 let mapsConfigured = false;
 
+function markerLabel(report: MappableReport) {
+  if (report.cleanup_state === 'completed') return 'Done';
+  if (report.cleanup_state === 'claimed') return 'Busy';
+  if (report.funded_amount_cents > 0) {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0,
+    }).format(report.funded_amount_cents / 100);
+  }
+  return 'Open';
+}
+
 export function MapExperience({
   initialReports,
   initialUserId,
@@ -49,6 +62,8 @@ export function MapExperience({
   const mapElementRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
+  const markerGlyphsRef = useRef(new Map<string, HTMLElement>());
+  const selectedReportIdRef = useRef<string | null>(null);
   const advancedMarkerRef = useRef<typeof google.maps.marker.AdvancedMarkerElement | null>(null);
   const mapClickRef = useRef<(coordinates: Coordinates) => void>(() => undefined);
   const [reports, setReports] = useState<MappableReport[]>(initialReports.filter(hasReportCoordinates));
@@ -67,6 +82,7 @@ export function MapExperience({
   const [authOpen, setAuthOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [reportListOpen, setReportListOpen] = useState(false);
+  const [reportMode, setReportMode] = useState(false);
   const [toast, setToast] = useState('');
 
   const refreshReports = useCallback(async () => {
@@ -166,13 +182,12 @@ export function MapExperience({
     const AdvancedMarkerElement = advancedMarkerRef.current;
     if (!mapReady || !map || !AdvancedMarkerElement) return;
     markersRef.current.forEach((marker) => { marker.map = null; });
+    markerGlyphsRef.current.clear();
     markersRef.current = reports.map((report) => {
-      const severity = report.severity?.toLowerCase();
-      const color = severity === 'low' ? '#34a853' : severity === 'high' ? '#e5483f' : '#f58a31';
       const markerGlyph = document.createElement('span');
-      markerGlyph.className = 'report-map-marker';
-      markerGlyph.style.setProperty('--marker-color', color);
-      markerGlyph.textContent = '!';
+      markerGlyph.className = `report-map-marker${selectedReportIdRef.current === report.id ? ' report-map-marker-selected' : ''}`;
+      markerGlyph.textContent = markerLabel(report);
+      markerGlyphsRef.current.set(report.id, markerGlyph);
       const marker = new AdvancedMarkerElement({
         map,
         position: { lat: report.latitude, lng: report.longitude },
@@ -180,10 +195,20 @@ export function MapExperience({
         gmpClickable: true,
       });
       marker.append(markerGlyph);
-      marker.addEventListener('gmp-click', () => setSelectedReport(report));
+      marker.addEventListener('gmp-click', () => {
+        setSelectedReport(report);
+        setReportListOpen(false);
+      });
       return marker;
     });
   }, [mapReady, reports]);
+
+  useEffect(() => {
+    selectedReportIdRef.current = selectedReport?.id ?? null;
+    markerGlyphsRef.current.forEach((glyph, reportId) => {
+      glyph.classList.toggle('report-map-marker-selected', reportId === selectedReport?.id);
+    });
+  }, [selectedReport?.id]);
 
   const beginReport = useCallback(async (coordinates: Coordinates) => {
     if (!userId) {
@@ -198,14 +223,25 @@ export function MapExperience({
         return;
       }
       setDraftCoordinates(coordinates);
+      setReportMode(false);
     } catch {
       setToast('Litterbugs needs your location to verify that a report is near you. Allow location access and try again.');
     }
   }, [userId]);
 
   useEffect(() => {
-    mapClickRef.current = (coordinates) => { void beginReport(coordinates); };
-  }, [beginReport]);
+    mapClickRef.current = (coordinates) => {
+      if (reportMode) void beginReport(coordinates);
+    };
+  }, [beginReport, reportMode]);
+
+  function toggleReportMode() {
+    if (!userId) {
+      setAuthOpen(true);
+      return;
+    }
+    setReportMode((current) => !current);
+  }
 
   async function centerOnUser() {
     try {
@@ -338,32 +374,40 @@ export function MapExperience({
   return (
     <main className="map-page">
       <header className="site-header">
+        <nav className="site-navigation" aria-label="Main navigation">
+          <Link href="/" aria-current="page">Map</Link>
+          <Link href="/cleanup-policy">Cleanup policy</Link>
+          <Link href="/terms">Terms</Link>
+        </nav>
         <Link href="/" className="brand-link" aria-label="Litterbugs home"><Image src="/brand/litterbugs-logo.png" alt="Litterbugs" width={636} height={433} priority /></Link>
-        <div className="header-context"><span className="live-dot" />Community litter map</div>
         <button className={userId ? 'account-button' : 'signin-button'} onClick={() => userId ? setAccountOpen(true) : setAuthOpen(true)}>
           {userId && <Icon name="account" />}{userId ? 'Account' : 'Sign in'}
         </button>
       </header>
 
-      <section className="map-stage" aria-label="Litterbugs report map">
-        <div ref={mapElementRef} className="google-map" />
-        {!mapReady && !mapError && <div className="map-loading"><span className="spinner" /><span>Loading map…</span></div>}
-        {mapError && <div className="map-error"><Icon name="warning" /><strong>Map unavailable</strong><span>{mapError}</span></div>}
+      <div className="map-workspace">
+        <ReportBrowser reports={reports} open={reportListOpen} onToggle={() => setReportListOpen((open) => !open)} onSelect={openReport} selectedReportId={selectedReport?.id} />
+        <section className={`map-stage${reportMode ? ' map-stage-reporting' : ''}`} aria-label="Litterbugs report map">
+          <div ref={mapElementRef} className="google-map" />
+          {!mapReady && !mapError && <div className="map-loading"><span className="spinner" /><span>Loading map…</span></div>}
+          {mapError && <div className="map-error"><Icon name="warning" /><strong>Map unavailable</strong><span>{mapError}</span></div>}
 
-        <div className="map-guidance"><strong>{userId ? 'Click the map to report litter' : 'Explore active litter reports'}</strong><span>{userId ? 'Reports must be within 10 miles of you.' : 'Sign in when you’re ready to submit.'}</span></div>
-        <div className="zoom-controls" aria-label="Map zoom controls">
-          <button onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() ?? 12) + 1)} aria-label="Zoom in"><Icon name="plus" /></button>
-          <button onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() ?? 12) - 1)} aria-label="Zoom out"><Icon name="minus" /></button>
-        </div>
-        <div className="map-action-controls">
-          <button onClick={toggleMapType} aria-label={`Change map type. Current: ${MAP_TYPES[mapTypeIndex]}`} title="Change map type"><Icon name="layers" /></button>
-          <button onClick={centerOnUser} aria-label="Center map on your location" title="My location"><Icon name="location" /></button>
-        </div>
+          <button className={`report-litter-button${reportMode ? ' report-litter-button-active' : ''}`} onClick={toggleReportMode} aria-pressed={reportMode}>
+            {reportMode ? 'Cancel' : 'Report litter'}
+          </button>
 
-        <div className="severity-legend" aria-label="Report severity legend"><span><i className="legend-low" />Low</span><span><i className="legend-medium" />Medium</span><span><i className="legend-high" />High</span></div>
-        <ReportBrowser reports={reports} open={reportListOpen} onToggle={() => setReportListOpen((open) => !open)} onSelect={openReport} />
-        {(initialError || toast) && <div className={`toast ${initialError && !toast ? 'toast-warning' : ''}`} role="status">{toast || 'Some reports could not be loaded. The map is still available.'}</div>}
-      </section>
+          <div className="zoom-controls" aria-label="Map zoom controls">
+            <button onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() ?? 12) + 1)} aria-label="Zoom in"><Icon name="plus" /></button>
+            <button onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() ?? 12) - 1)} aria-label="Zoom out"><Icon name="minus" /></button>
+          </div>
+          <div className="map-action-controls">
+            <button onClick={toggleMapType} aria-label={`Change map type. Current: ${MAP_TYPES[mapTypeIndex]}`} title="Change map type"><Icon name="layers" /></button>
+            <button onClick={centerOnUser} aria-label="Center map on your location" title="My location"><Icon name="location" /></button>
+          </div>
+
+          {(initialError || toast) && <div className={`toast ${initialError && !toast ? 'toast-warning' : ''}`} role="status">{toast || 'Some reports could not be loaded. The map is still available.'}</div>}
+        </section>
+      </div>
 
       {selectedReport && <ReportDetail key={selectedReport.id} report={selectedReport} userId={userId} isOwner={canManageReport(selectedReport, userId)} onRequireSignIn={() => { setSelectedReport(null); setAuthOpen(true); }} onReportChanged={refreshReports} onClose={() => setSelectedReport(null)} onEdit={() => { void editSelectedReport(); }} onDelete={() => { void deleteSelectedReport(); }} />}
       {draftCoordinates && <ReportWizard initialDraft={{ ...EMPTY_REPORT_DRAFT }} isEditing={false} onClose={() => setDraftCoordinates(null)} onSubmit={saveReport} />}
