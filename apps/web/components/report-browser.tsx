@@ -24,7 +24,11 @@ function reportStatus(report: MappableReport) {
 
 function reportDate(createdAt: string | null) {
   if (!createdAt) return '';
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date(createdAt));
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(createdAt));
 }
 
 function ReportThumbnail({ report }: { report: MappableReport }) {
