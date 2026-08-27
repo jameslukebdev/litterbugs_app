@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { getWebCompatibleReportPhotoUrl, isHeicReportPhoto } from './report-photo';
+import {
+  getReportCardPhotoUrl,
+  getWebCompatibleReportPhotoUrl,
+  isHeicReportPhoto,
+  isReportCardPhoto,
+} from './report-photo';
 
 describe('report photo delivery', () => {
   it('routes HEIC and HEIF objects through the web compatibility endpoint', () => {
@@ -15,6 +20,15 @@ describe('report photo delivery', () => {
     expect(isHeicReportPhoto('user/report/photo.jpeg')).toBe(false);
     expect(isHeicReportPhoto('user/report/photo.png')).toBe(false);
     expect(getWebCompatibleReportPhotoUrl('user/report/photo.webp')).toBeNull();
+  });
+
+  it('routes supported card photos through the cached thumbnail endpoint', () => {
+    expect(isReportCardPhoto('user/report/photo.jpg')).toBe(true);
+    expect(isReportCardPhoto('user/report/photo.heic')).toBe(true);
+    expect(getReportCardPhotoUrl('user/report/photo.jpg')).toBe(
+      '/api/report-photo?path=user%2Freport%2Fphoto.jpg&variant=card',
+    );
+    expect(getReportCardPhotoUrl('user/report/photo.pdf')).toBeNull();
   });
 
   it('scopes administrator HEIC conversion to the authenticated case', () => {

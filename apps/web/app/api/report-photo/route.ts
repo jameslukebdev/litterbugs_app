@@ -1,8 +1,9 @@
 import 'server-only';
 
 import convert from 'heic-convert';
+import sharp from 'sharp';
 
-import { isHeicReportPhoto } from '@/lib/report-photo';
+import { isHeicReportPhoto, isReportCardPhoto } from '@/lib/report-photo';
 import { createClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
@@ -22,6 +23,7 @@ export async function GET(request: Request) {
   const searchParams = new URL(request.url).searchParams;
   const photoPath = searchParams.get('path')?.trim() ?? '';
   const adminCaseId = searchParams.get('caseId')?.trim() ?? '';
+  const variant = searchParams.get('variant')?.trim() ?? '';
 
   if (
     !photoPath ||
@@ -29,12 +31,15 @@ export async function GET(request: Request) {
     photoPath.startsWith('/') ||
     photoPath.includes('\0') ||
     photoPath.split('/').includes('..') ||
-    !isHeicReportPhoto(photoPath)
+    !(variant === 'card' ? isReportCardPhoto(photoPath) : isHeicReportPhoto(photoPath))
   ) {
     return errorResponse(400, 'Invalid report photo path.');
   }
   if (adminCaseId && !UUID_PATTERN.test(adminCaseId)) {
     return errorResponse(400, 'Invalid administrator case.');
+  }
+  if (variant && variant !== 'card') {
+    return errorResponse(400, 'Invalid report photo variant.');
   }
 
   try {
@@ -74,11 +79,21 @@ export async function GET(request: Request) {
     if (downloadError || !source) return errorResponse(404, 'Report photo not found.');
     if (source.size > MAX_SOURCE_BYTES) return errorResponse(413, 'Report photo is too large.');
 
-    const jpeg = await convert({
-      buffer: new Uint8Array(await source.arrayBuffer()),
-      format: 'JPEG',
-      quality: 0.82,
-    });
+    const sourceBuffer = new Uint8Array(await source.arrayBuffer());
+    const browserImage = isHeicReportPhoto(photoPath)
+      ? Buffer.from(await convert({
+        buffer: sourceBuffer,
+        format: 'JPEG',
+        quality: 0.82,
+      }))
+      : Buffer.from(sourceBuffer);
+    const cardImage = variant === 'card'
+      ? await sharp(browserImage)
+        .rotate()
+        .resize({ width: 720, height: 405, fit: 'cover', position: 'centre', withoutEnlargement: true })
+        .webp({ quality: 76 })
+        .toBuffer()
+      : browserImage;
     const secondsUntilExpiration = expiresAt
       ? Math.floor((new Date(expiresAt).getTime() - now.getTime()) / 1000)
       : 0;
@@ -86,14 +101,14 @@ export async function GET(request: Request) {
       ? Math.max(0, Math.min(MAX_CACHE_SECONDS, secondsUntilExpiration))
       : 0;
 
-    return new Response(Buffer.from(jpeg), {
+    return new Response(cardImage, {
       status: 200,
       headers: {
         'Cache-Control': adminCaseId
           ? 'private, no-store'
           : `public, max-age=${cacheSeconds}, s-maxage=${cacheSeconds}`,
-        'Content-Type': 'image/jpeg',
-        'Content-Length': String(jpeg.byteLength),
+        'Content-Type': variant === 'card' ? 'image/webp' : 'image/jpeg',
+        'Content-Length': String(cardImage.byteLength),
         'X-Content-Type-Options': 'nosniff',
       },
     });

@@ -6,8 +6,7 @@ import type { MappableReport } from '@litterbugs/report-contract';
 import { useEffect, useRef, useState } from 'react';
 
 import { Icon } from '@/components/icon';
-import { getWebCompatibleReportPhotoUrl } from '@/lib/report-photo';
-import { createClient } from '@/lib/supabase/client';
+import { getReportCardPhotoUrl } from '@/lib/report-photo';
 
 const formatUsd = (cents: number) => new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -31,35 +30,23 @@ function reportDate(createdAt: string | null) {
   }).format(new Date(createdAt));
 }
 
-function ReportThumbnail({ report }: { report: MappableReport }) {
+function ReportThumbnail({ report, priority }: { report: MappableReport; priority: boolean }) {
   const photoPath = report.photo_paths?.[0];
-  const compatibilityUrl = photoPath ? getWebCompatibleReportPhotoUrl(photoPath) : null;
-  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const src = photoPath ? getReportCardPhotoUrl(photoPath) : null;
   const [failed, setFailed] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    if (!photoPath || compatibilityUrl) return;
-
-    void createClient().storage
-      .from('report_photos')
-      .createSignedUrl(photoPath, 60 * 60)
-      .then(({ data, error }) => {
-        if (!cancelled) {
-          setSignedUrl(data?.signedUrl ?? null);
-          setFailed(Boolean(error || !data?.signedUrl));
-        }
-      });
-
-    return () => { cancelled = true; };
-  }, [compatibilityUrl, photoPath]);
-
-  if (!photoPath || failed) return null;
-  const src = compatibilityUrl ?? signedUrl;
+  if (!src || failed) return null;
 
   return (
     <span className="report-result-photo">
-      {src && <img src={src} alt="" onError={() => setFailed(true)} />}
+      <img
+        src={src}
+        alt=""
+        decoding="async"
+        loading={priority ? 'eager' : 'lazy'}
+        fetchPriority={priority ? 'high' : 'auto'}
+        onError={() => setFailed(true)}
+      />
     </span>
   );
 }
@@ -94,7 +81,7 @@ export function ReportBrowser({
           <button className="icon-button report-browser-close" onClick={onToggle} aria-label="Close report list"><Icon name="close" /></button>
         </header>
         <div className="report-browser-list" ref={listRef}>
-          {reports.length ? reports.map((report) => {
+          {reports.length ? reports.map((report, index) => {
             const severity = (report.severity ?? 'Medium').toLowerCase();
             const selected = report.id === selectedReportId;
             const hasPhoto = Boolean(report.photo_paths?.[0]);
@@ -105,7 +92,7 @@ export function ReportBrowser({
                 onClick={() => onSelect(report)}
                 aria-current={selected ? 'true' : undefined}
               >
-                <ReportThumbnail report={report} />
+                <ReportThumbnail report={report} priority={index < 4} />
                 <span className="report-result-copy">
                   <strong>{report.title || 'Litter Report'}</strong>
                   <span className="report-result-status">{reportStatus(report)}</span>

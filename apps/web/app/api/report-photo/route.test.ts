@@ -1,10 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { rpc, download, from, convert } = vi.hoisted(() => ({
+const { rpc, download, from, convert, sharp, rotate, resize, webp, toBuffer } = vi.hoisted(() => ({
   rpc: vi.fn(),
   download: vi.fn(),
   from: vi.fn(),
   convert: vi.fn(),
+  sharp: vi.fn(),
+  rotate: vi.fn(),
+  resize: vi.fn(),
+  webp: vi.fn(),
+  toBuffer: vi.fn(),
 }));
 
 vi.mock('server-only', () => ({}));
@@ -18,6 +23,7 @@ vi.mock('@/lib/supabase/server', () => ({
 }));
 
 vi.mock('heic-convert', () => ({ default: convert }));
+vi.mock('sharp', () => ({ default: sharp }));
 
 import { GET } from './route';
 
@@ -29,11 +35,21 @@ beforeEach(() => {
   download.mockReset();
   from.mockReset();
   convert.mockReset();
+  sharp.mockReset();
+  rotate.mockReset();
+  resize.mockReset();
+  webp.mockReset();
+  toBuffer.mockReset();
   download.mockResolvedValue({
     data: new Blob([new Uint8Array([1, 2, 3])], { type: 'image/heic' }),
     error: null,
   });
   convert.mockResolvedValue(new Uint8Array([4, 5, 6]));
+  toBuffer.mockResolvedValue(Buffer.from([7, 8, 9]));
+  webp.mockReturnValue({ toBuffer });
+  resize.mockReturnValue({ webp });
+  rotate.mockReturnValue({ resize });
+  sharp.mockReturnValue({ rotate });
 });
 
 describe('administrator report photo compatibility route', () => {
@@ -77,5 +93,39 @@ describe('administrator report photo compatibility route', () => {
 
     expect(response.status).toBe(404);
     expect(download).not.toHaveBeenCalled();
+  });
+});
+
+describe('public report card photos', () => {
+  it('serves a small cached WebP thumbnail without HEIC conversion for a browser image', async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: { expires_at: '2099-01-01T00:00:00.000Z' },
+      error: null,
+    });
+    from.mockReturnValue({
+      select: () => ({
+        contains: () => ({
+          or: () => ({
+            gt: () => ({
+              limit: () => ({ maybeSingle }),
+            }),
+          }),
+        }),
+      }),
+    });
+    download.mockResolvedValueOnce({
+      data: new Blob([new Uint8Array([1, 2, 3])], { type: 'image/png' }),
+      error: null,
+    });
+
+    const response = await GET(new Request(
+      'http://localhost/api/report-photo?path=user%2Freport%2Fphoto.png&variant=card',
+    ));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('image/webp');
+    expect(Number(response.headers.get('content-length'))).toBeGreaterThan(0);
+    expect(response.headers.get('cache-control')).toMatch(/^public, max-age=/);
+    expect(convert).not.toHaveBeenCalled();
   });
 });
