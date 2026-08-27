@@ -1,6 +1,36 @@
 # Funded cleanup MVP launch checklist
 
-The funded-cleanup code ships dark in the real Litterbugs app and its linked backend. Both database flags are created as `false`; Stripe stays in its isolated sandbox and Gemini uses only non-user test fixtures until this checklist is complete. This is the production app architecture under test, not a separate QA-only payment app.
+The funded-cleanup code ships dark in the real Litterbugs app and its linked
+backend. Live Stripe and Gemini credentials are installed in the production
+backend, but both server-side feature flags remain `false`. This is the
+production app architecture, not a separate QA-only payment app. Provider
+credentials being present does not authorize live charges or paid Gemini
+reviews; the flags and the launch sequence below remain the release boundary.
+
+## Current production state (2026-08-27)
+
+- `main` contains the funded-cleanup implementation and published legal pages.
+- Supabase migrations are applied through `20260827120000`; the funded-cleanup
+  Edge Functions and the every-minute financial maintenance schedule are
+  active.
+- `payments_enabled=false` and
+  `gemini_financial_review_enabled=false`. Production contains zero
+  contributions and zero cleaner payout accounts.
+- The permanent AAL2 administrator is enrolled and `/admin` is live.
+- The active in-app acknowledgment is `cleanup-acknowledgment-v1` with
+  `cleanup-safety-guidelines-v1`. The prior development waiver is retired.
+- The live Stripe account is identity-verified with no active requirements.
+  Payments, payouts, and transfers are active. The snapshot and Accounts v2
+  webhook destinations are active, and the intended payment methods are cards,
+  Apple Pay, Cash App Pay, Google Pay, and Link. Apple Pay remains unavailable
+  in the production iOS build until the Apple organization transfer and
+  merchant configuration below are complete.
+- The Gemini relay is deployed to the production Google Cloud project with
+  pay-as-you-go billing and the $5 budget alerts. The completed dark-launch
+  fixture evidence below used only synthetic, non-user photos.
+- Terms, privacy, cleanup policy, and the in-app acknowledgment are published.
+  They are production drafts and must not be described as legally approved
+  until a qualified attorney signs off.
 
 ## Required configuration
 
@@ -109,6 +139,65 @@ Sign in at `/admin` with the same provider as that permanent account (Google or 
 
 The `/admin` backend rechecks permanent-account status, private membership, and Supabase AAL2 for every read and decision. Do not distribute the service-role key to the website or mobile app.
 
+## Apple organization transfer handoff
+
+Do not create a temporary production Apple Pay identity under an individual
+developer account. Complete these steps once Apple finishes converting the
+Burrow Base account to an organization:
+
+1. Confirm the Burrow Base and Luke Apple Developer accounts are no longer in
+   a pending or changing state and both Account Holders have accepted the
+   current agreements.
+2. Luke's Account Holder initiates the transfer of the existing Litterbugs app
+   and `com.litterbugs.app` to the Burrow Base Account Holder.
+3. The Burrow Base Account Holder accepts the transfer and confirms that the
+   app record, bundle ID, reviews, and current availability are intact and that
+   existing users can continue receiving updates.
+4. Register the production Apple merchant identity under Burrow Base, connect
+   it to the live Stripe account, and set the matching
+   `STRIPE_APPLE_MERCHANT_IDENTIFIER` in the production mobile build.
+5. Replace the production iOS signing credentials with Burrow Base credentials,
+   create a clean production build, and test Apple Pay, PaymentSheet, hosted
+   cleaner onboarding, return links, and payout status on a physical iPhone.
+
+### App Review note template
+
+Use this note for the funded-cleanup submission, replacing the bracketed demo
+details immediately before submission:
+
+> Litterbugs lets signed-in community members add money to a reward pool for a
+> real-world litter cleanup performed outside the app. A contribution does not
+> unlock digital content or app functionality. Contributors pay through Stripe
+> PaymentSheet using supported cards and wallets. After cleanup evidence is
+> reviewed and the dispute window closes, the cleaner receives the displayed
+> reward through Stripe Connect. Litterbugs retains the separately disclosed
+> 10% platform fee. Reviewers can use `[DEMO ACCOUNT]` and open
+> `[FRESH FUNDED REPORT]` to inspect the contribution disclosure, evidence
+> review, dispute, and payout-status flows. The production backend and review
+> report will remain available for the duration of App Review.
+
+Do not submit placeholder credentials. Create or select the review account and
+fresh report only when the submitted build is ready, so the reviewer does not
+receive stale workflow data.
+
+## Counsel review brief
+
+Send the attorney these live pages together with the active in-app
+acknowledgment text:
+
+- `https://www.litterbugs.app/terms`
+- `https://www.litterbugs.app/privacy`
+- `https://www.litterbugs.app/cleanup-policy`
+- `cleanup-acknowledgment-v1` and `cleanup-safety-guidelines-v1`
+
+Ask for written approval or required edits covering: the non-charitable nature
+of contributions; the 10% fee; the 30-day report and seven-day renewal rules;
+full-fee refunds and the 23-month maximum age; reporter disputes and admin
+decisions; cleaner eligibility, safety, independent status, and taxes; platform
+responsibility for processing costs and chargebacks; and Gemini photo
+processing, retention, privacy, and human escalation. Record the reviewed
+version and date before enabling payments.
+
 ## Gates before either feature flag changes
 
 Keep both flags `false` until every applicable item below is complete:
@@ -131,9 +220,10 @@ Keep both flags `false` until every applicable item below is complete:
   test for denial, MFA, filtering, evidence, decisions, and audit history.
 - Enable Supabase Auth leaked-password protection before production accounts
   can administer or receive funded-cleanup payments.
-- Replace the development cleanup waiver and finish legal review of the terms,
-  privacy/AI disclosure, fee and refund disclosure, dispute rules, tax
-  responsibility, and App Store physical-services explanation.
+- Obtain qualified legal sign-off on the published terms, privacy/AI
+  disclosure, cleanup policy, active acknowledgment, fee and refund disclosure,
+  dispute rules, tax responsibility, and App Store physical-services
+  explanation.
 - Complete physical-iPhone sandbox testing for Apple Pay, PaymentSheet, hosted
   onboarding/return links, standard payouts, and App Store presentation.
 
@@ -143,7 +233,12 @@ admin, Stripe sandbox, legal, and physical-device gates are all signed off.
 
 ## Test-mode acceptance
 
-Apply the migrations and deploy the six funded-cleanup functions to the linked Litterbugs backend while all providers remain non-live-money and both flags remain off. Confirm the existing volunteer workflow first. Then enable paid Gemini first, review report-photo outcomes, and enable payments only after the Stripe webhook and maintenance schedule are healthy.
+Test-mode acceptance is complete. The funded-cleanup migrations and functions
+were deployed together while both flags remained off; the volunteer workflow,
+Stripe sandbox ledger behavior, webhook reconciliation, maintenance schedule,
+Gemini fixture outcomes, and administrator boundary were exercised before live
+provider credentials were installed. The live credentials remain dark behind
+the same two flags.
 
 Reports created while Gemini review is disabled do not build a dormant AI queue. Enabling the flag is intentionally non-retroactive: only a report created afterward, or an existing report whose owner deliberately replaces its photo set afterward, enters financial photo review. This keeps pre-launch test reports out of paid Gemini processing and out of the funded-cleanup ledger.
 
@@ -186,6 +281,36 @@ Before live mode, verify:
 
 ## Live-mode prerequisites
 
-Update the terms, privacy policy, cleanup waiver, 10% fee disclosure, full-refund rules, AI-photo disclosure, dispute policy, and cleaner tax-responsibility language. Confirm Burrow Base LLC’s Connect platform settings, U.S.-only eligibility, standard payouts, the live platform's **Manual payouts** schedule, Apple merchant configuration, Gemini paid-service data controls, and App Store wording for real-world cleanup services.
+The published terms, privacy policy, cleanup policy, and active acknowledgment
+contain the planned 10% fee, full-refund rules, AI-photo disclosure, dispute
+policy, and cleaner tax-responsibility language. Obtain qualified legal
+sign-off on those exact versions. Confirm the Apple merchant configuration and
+physical-iPhone behavior after the organization transfer; the other live
+Stripe, Gemini, administrator, and backend configuration is recorded in the
+current production state above.
 
 Do not enable the flags merely because the code was deployed. Enable them only after test-mode money reconciliation, administrator coverage, monitoring, and the legal copy are signed off.
+
+## Minimal live activation and rollback
+
+Do not repeat the full QA suite at launch. Use this ordered production check:
+
+1. Keep both flags off while the Apple transfer, merchant configuration,
+   physical-iPhone payment test, and legal sign-off are completed.
+2. Upgrade Supabase to Pro, enable leaked-password protection, and confirm the
+   administrator can still complete AAL2 authentication.
+3. Repeat the small synthetic Gemini fixture set, then enable only
+   `gemini_financial_review_enabled`.
+4. Create a fresh report after the flag change and confirm its original photo
+   becomes funding-eligible. Do not reuse pre-launch reports.
+5. Enable `payments_enabled`, make one minimum $5 contribution, and confirm the
+   principal, 10% fee, total charge, receipt, Stripe event, and Litterbugs
+   ledger all agree.
+6. Complete cleaner onboarding and one real cleanup path, including Gemini
+   evidence review, the complete 48-hour dispute window, the first-paid-cleanup
+   admin check, and the exact $5 transfer. Do not shorten the real timing rules
+   for launch testing.
+7. If every step reconciles, leave the features on for the controlled rollout.
+   If any money, review, or payout state disagrees, immediately set both flags
+   to `false`, leave the webhook destinations and audit records intact, and use
+   the admin workflow to refund or resolve the affected transaction.
