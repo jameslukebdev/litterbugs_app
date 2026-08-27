@@ -7,7 +7,7 @@ const { rpc, download, from, convert } = vi.hoisted(() => ({
   convert: vi.fn(),
 }));
 
-vi.mock('server-only', () => ({}), { virtual: true });
+vi.mock('server-only', () => ({}));
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({

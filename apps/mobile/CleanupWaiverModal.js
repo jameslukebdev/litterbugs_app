@@ -56,6 +56,20 @@ export default function CleanupWaiverModal({
         >
           <Text style={styles.body}>{waiver?.body ?? ''}</Text>
 
+          {waiver?.guidelines_body ? (
+            <View style={styles.guidelinesCard}>
+              <Text style={styles.guidelinesTitle}>Cleanup safety guidelines</Text>
+              <Text style={styles.guidelinesBody}>{waiver.guidelines_body}</Text>
+            </View>
+          ) : null}
+
+          {waiver?.release_body ? (
+            <View style={styles.releaseCard}>
+              <Text style={styles.releaseTitle}>Assumption of risk and release</Text>
+              <Text style={styles.releaseBody}>{waiver.release_body}</Text>
+            </View>
+          ) : null}
+
           <View style={styles.versionCard}>
             <Text style={styles.versionLabel}>Waiver version</Text>
             <Text style={styles.versionValue}>{waiver?.waiver_version}</Text>
@@ -76,7 +90,7 @@ export default function CleanupWaiverModal({
               color={acknowledged ? '#2F7D32' : '#7A8288'}
             />
             <Text style={styles.acknowledgmentText}>
-              I have read and accept this cleanup safety and funded reward acknowledgment.
+              I have read and accept the safety guidelines and funded reward acknowledgment, including the assumption of risk and release, for this claim.
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -95,7 +109,7 @@ export default function CleanupWaiverModal({
             {accepting ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={styles.acceptButtonText}>Accept and Continue</Text>
+              <Text style={styles.acceptButtonText}>Accept and Review Claim</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -122,6 +136,32 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 20, paddingBottom: 34 },
   body: { color: '#30363B', fontSize: 16, lineHeight: 25 },
+  guidelinesCard: {
+    marginTop: 24,
+    padding: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E2C87A',
+    backgroundColor: '#FFF9E8',
+  },
+  guidelinesTitle: { color: '#6F4E00', fontSize: 16, lineHeight: 22, fontWeight: '800' },
+  guidelinesBody: { marginTop: 8, color: '#4A3B1F', fontSize: 15, lineHeight: 23 },
+  releaseCard: {
+    marginTop: 20,
+    padding: 16,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#A23A2A',
+    backgroundColor: '#FFF4F1',
+  },
+  releaseTitle: {
+    color: '#7C2418',
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  releaseBody: { marginTop: 8, color: '#49251F', fontSize: 15, lineHeight: 23, fontWeight: '600' },
   versionCard: { marginTop: 24, padding: 15, borderRadius: 14, backgroundColor: '#F5F6F7' },
   versionLabel: { color: '#6B7379', fontSize: 12, fontWeight: '800', textTransform: 'uppercase' },
   versionValue: { marginTop: 4, color: '#30363B', fontSize: 14, fontWeight: '700' },

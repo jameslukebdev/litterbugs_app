@@ -192,16 +192,18 @@ each cleanup attempt. Direct acceptance inserts were removed from clients;
 `accept_cleanup_waiver` derives the permanent user from `auth.uid()` and accepts
 only the exact active version pair displayed by the app.
 
-The active text is explicitly labeled as a development-only placeholder. It
-includes basic protective-equipment, roadway, parking, hazardous-material,
-sharps, trespassing, local-regulation, and stop-if-unsafe guidance. It also
-states that a lawyer-approved version must replace it before public release.
+The launch migration publishes a production-draft acknowledgment and separate
+safety-guidelines and assumption-of-risk/release bodies. It covers protective
+equipment, roadways, parking, hazardous materials, sharps, property access,
+local disposal rules, stop-if-unsafe guidance, funded-reward review, Stripe,
+taxes, and Gemini processing. It is not described as attorney-approved.
 
 The mobile report detail view offers **Clean Up** only to permanent users for
-available, unexpired, uncancelled reports. First-time cleaners must explicitly
-check the acknowledgment before accepting and atomically claiming the report.
-Returning cleaners with the current version pair proceed directly to claiming;
-changing either required version forces a new acceptance.
+available, unexpired, uncancelled reports. Every cleanup claim presents the
+current text and requires a fresh unchecked confirmation in the app before the
+claim screen continues. The server still requires an immutable acceptance of
+the exact active version pair and copies both versions onto each cleanup
+attempt; changing either version therefore forces a new database acceptance.
 
 `tests/cleanup_phase3_waiver.sql` verifies guest denial, exact-version
 acceptance, immutable/idempotent acceptance records, removal of direct inserts,
