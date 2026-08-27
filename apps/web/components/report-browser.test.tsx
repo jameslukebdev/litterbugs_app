@@ -50,4 +50,12 @@ describe('ReportBrowser', () => {
     fireEvent.click(screen.getByRole('button', { name: /roadside bottles/i }));
     expect(onSelect).toHaveBeenCalledWith(report);
   });
+
+  it('uses a cached, right-sized image for a photographed report card', () => {
+    render(<ReportBrowser reports={[{ ...report, photo_paths: ['user/report/photo.jpg'] }]} open onToggle={vi.fn()} onSelect={vi.fn()} />);
+
+    const image = document.querySelector('.report-result-photo img');
+    expect(image?.getAttribute('src')).toBe('/api/report-photo?path=user%2Freport%2Fphoto.jpg&variant=card');
+    expect(image?.getAttribute('fetchpriority')).toBe('high');
+  });
 });
