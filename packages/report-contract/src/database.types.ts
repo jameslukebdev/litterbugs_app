@@ -438,27 +438,33 @@ export type Database = {
       cleanup_waiver_versions: {
         Row: {
           body: string
+          guidelines_body: string | null
           guidelines_version: string
           is_active: boolean
           published_at: string
+          release_body: string | null
           retired_at: string | null
           title: string
           waiver_version: string
         }
         Insert: {
           body: string
+          guidelines_body?: string | null
           guidelines_version: string
           is_active?: boolean
           published_at?: string
+          release_body?: string | null
           retired_at?: string | null
           title: string
           waiver_version: string
         }
         Update: {
           body?: string
+          guidelines_body?: string | null
           guidelines_version?: string
           is_active?: boolean
           published_at?: string
+          release_body?: string | null
           retired_at?: string | null
           title?: string
           waiver_version?: string
@@ -757,6 +763,10 @@ export type Database = {
         Returns: Database["public"]["Tables"]["cleanup_contributions"]["Row"]
       }
       delete_expired_reports: { Args: never; Returns: undefined }
+      dispute_paid_cleanup: {
+        Args: { dispute_reason: string; target_cleanup_id: string }
+        Returns: Database["public"]["Tables"]["cleanup_attempts"]["Row"]
+      }
       get_cleanup_admin_case: { Args: { target_case_id: string }; Returns: Json }
       is_cleanup_admin: { Args: never; Returns: boolean }
       is_cleanup_admin_member: { Args: never; Returns: boolean }

@@ -22,6 +22,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccountDialog } from '@/components/account-dialog';
 import { AuthDialog } from '@/components/auth-dialog';
 import { Icon } from '@/components/icon';
+import { ReportBrowser } from '@/components/report-browser';
 import { canManageReport, realUserId } from '@/lib/report-access';
 import { getBrowserLocation } from '@/lib/geolocation';
 import { ReportDetail } from '@/components/report-detail';
@@ -65,6 +66,7 @@ export function MapExperience({
   const [editPhotoUrls, setEditPhotoUrls] = useState<string[]>([]);
   const [authOpen, setAuthOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [reportListOpen, setReportListOpen] = useState(false);
   const [toast, setToast] = useState('');
 
   const refreshReports = useCallback(async () => {
@@ -78,7 +80,11 @@ export function MapExperience({
       setToast('Reports could not be refreshed. Check your connection and try again.');
       return;
     }
-    setReports((data ?? []).filter(hasReportCoordinates));
+    const nextReports = (data ?? []).filter(hasReportCoordinates);
+    setReports(nextReports);
+    setSelectedReport((current) => current
+      ? nextReports.find(({ id }) => id === current.id) ?? current
+      : null);
   }, []);
 
   useEffect(() => {
@@ -136,14 +142,24 @@ export function MapExperience({
             map.panTo({ lat: location.latitude, lng: location.longitude });
             map.setZoom(14);
           }
-        }).catch(() => undefined);
+        }).catch(() => {
+          if (cancelled || !reports.length) return;
+          if (reports.length === 1) {
+            map.panTo({ lat: reports[0].latitude, lng: reports[0].longitude });
+            map.setZoom(14);
+            return;
+          }
+          const bounds = new google.maps.LatLngBounds();
+          reports.forEach((report) => bounds.extend({ lat: report.latitude, lng: report.longitude }));
+          map.fitBounds(bounds, 90);
+        });
       } catch {
         if (!cancelled) setMapError('Google Maps could not load. Check the browser key and try again.');
       }
     }
     void startMap();
     return () => { cancelled = true; };
-  }, [googleMapsKey, googleMapsMapId]);
+  }, [googleMapsKey, googleMapsMapId, reports]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -205,6 +221,18 @@ export function MapExperience({
     const nextIndex = (mapTypeIndex + 1) % MAP_TYPES.length;
     setMapTypeIndex(nextIndex);
     mapRef.current?.setMapTypeId(MAP_TYPES[nextIndex] as google.maps.MapTypeId);
+  }
+
+  function openReport(report: MappableReport) {
+    setSelectedReport(report);
+    setReportListOpen(false);
+    mapRef.current?.panTo({ lat: report.latitude, lng: report.longitude });
+    if ((mapRef.current?.getZoom() ?? 0) < 14) mapRef.current?.setZoom(14);
+  }
+
+  function openReportById(reportId: string) {
+    const report = reports.find(({ id }) => id === reportId);
+    if (report) openReport(report);
   }
 
   async function saveReport(draft: ReportDraft) {
@@ -333,14 +361,15 @@ export function MapExperience({
         </div>
 
         <div className="severity-legend" aria-label="Report severity legend"><span><i className="legend-low" />Low</span><span><i className="legend-medium" />Medium</span><span><i className="legend-high" />High</span></div>
+        <ReportBrowser reports={reports} open={reportListOpen} onToggle={() => setReportListOpen((open) => !open)} onSelect={openReport} />
         {(initialError || toast) && <div className={`toast ${initialError && !toast ? 'toast-warning' : ''}`} role="status">{toast || 'Some reports could not be loaded. The map is still available.'}</div>}
       </section>
 
-      {selectedReport && <ReportDetail key={selectedReport.id} report={selectedReport} isOwner={canManageReport(selectedReport, userId)} onClose={() => setSelectedReport(null)} onEdit={() => { void editSelectedReport(); }} onDelete={() => { void deleteSelectedReport(); }} />}
+      {selectedReport && <ReportDetail key={selectedReport.id} report={selectedReport} userId={userId} isOwner={canManageReport(selectedReport, userId)} onRequireSignIn={() => { setSelectedReport(null); setAuthOpen(true); }} onReportChanged={refreshReports} onClose={() => setSelectedReport(null)} onEdit={() => { void editSelectedReport(); }} onDelete={() => { void deleteSelectedReport(); }} />}
       {draftCoordinates && <ReportWizard initialDraft={{ ...EMPTY_REPORT_DRAFT }} isEditing={false} onClose={() => setDraftCoordinates(null)} onSubmit={saveReport} />}
       {editingReport && <ReportWizard initialDraft={editDraft} isEditing existingPhotoUrls={editPhotoUrls} onClose={() => { setEditingReport(null); setEditPhotoUrls([]); }} onSubmit={saveReport} />}
       {authOpen && <AuthDialog onClose={() => setAuthOpen(false)} />}
-      {accountOpen && <AccountDialog onClose={() => setAccountOpen(false)} onSignedOut={() => { setAccountOpen(false); setUserId(null); }} />}
+      {accountOpen && <AccountDialog onClose={() => setAccountOpen(false)} onOpenReport={openReportById} onSignedOut={() => { setAccountOpen(false); setUserId(null); }} />}
     </main>
   );
 }
