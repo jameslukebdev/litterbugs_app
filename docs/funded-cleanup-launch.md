@@ -239,10 +239,11 @@ Keep both flags `false` until every applicable item below is complete:
   test for denial, MFA, filtering, evidence, decisions, and audit history.
 - Enable Supabase Auth leaked-password protection before production accounts
   can administer or receive funded-cleanup payments.
-- Obtain qualified legal sign-off on the published terms, privacy/AI
-  disclosure, cleanup policy, active acknowledgment, fee and refund disclosure,
-  dispute rules, tax responsibility, and App Store physical-services
-  explanation.
+- Obtain qualified legal review of the published terms, privacy/AI disclosure,
+  fee and refund disclosure, dispute rules, cleaner tax responsibility, active
+  cleanup acknowledgment, and App Store physical-services explanation. Publish
+  a new version of any document or acknowledgment that counsel requires before
+  enabling payments.
 - Complete physical-iPhone sandbox testing for Apple Pay, PaymentSheet, hosted
   onboarding/return links, standard payouts, and App Store presentation.
 
@@ -301,12 +302,12 @@ Before live mode, verify:
 ## Live-mode prerequisites
 
 The published terms, privacy policy, cleanup policy, and active acknowledgment
-contain the planned 10% fee, full-refund rules, AI-photo disclosure, dispute
-policy, and cleaner tax-responsibility language. Obtain qualified legal
-sign-off on those exact versions. Confirm the Apple merchant configuration and
-physical-iPhone behavior after the organization transfer; the other live
-Stripe, Gemini, administrator, and backend configuration is recorded in the
-current production state above.
+contain the planned 10% fee, full-refund rules, AI-photo disclosure, dispute,
+safety, independent-participant, and cleaner tax-responsibility language. These
+production drafts still require qualified legal review before payments are
+enabled. Confirm the Apple merchant configuration and physical-iPhone behavior
+after the organization transfer; the other live Stripe, Gemini, administrator,
+and backend configuration is recorded in the current production state above.
 
 Do not enable the flags merely because the code was deployed. Enable them only after test-mode money reconciliation, administrator coverage, monitoring, and the legal copy are signed off.
 
