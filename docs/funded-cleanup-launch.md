@@ -17,8 +17,11 @@ reviews; the flags and the launch sequence below remain the release boundary.
   `gemini_financial_review_enabled=false`. Production contains zero
   contributions and zero cleaner payout accounts.
 - The permanent AAL2 administrator is enrolled and `/admin` is live.
-- The active in-app acknowledgment is `cleanup-acknowledgment-v1` with
-  `cleanup-safety-guidelines-v1`. The prior development waiver is retired.
+- The launch revision publishes `cleanup-acknowledgment-v2` with
+  `cleanup-safety-guidelines-v2`. It presents separate, conspicuous safety and
+  assumption-of-risk/release sections before every claim and requires every
+  claimant to affirm that they are at least 18. Earlier versions are retired
+  when the migration is applied.
 - The live Stripe account is identity-verified with no active requirements.
   Payments, payouts, and transfers are active. The snapshot and Accounts v2
   webhook destinations are active, and the intended payment methods are cards,
@@ -28,9 +31,12 @@ reviews; the flags and the launch sequence below remain the release boundary.
 - The Gemini relay is deployed to the production Google Cloud project with
   pay-as-you-go billing and the $5 budget alerts. The completed dark-launch
   fixture evidence below used only synthetic, non-user photos.
-- Terms, privacy, cleanup policy, and the in-app acknowledgment are published.
-  They are production drafts and must not be described as legally approved
-  until a qualified attorney signs off.
+- Expanded Terms, Privacy, Cleanup and Reward Policy, safety guidelines, and
+  the in-app acknowledgment were prepared from the production rules with a
+  ChatGPT Pro legal-drafting pass. They are production drafts and must not be
+  described as legally approved or guaranteed enforceable. The limited review
+  questions and acceptance evidence are recorded in
+  `docs/legal-acceptance-and-review.md`.
 
 ### Focused Supabase security-advisor triage (2026-08-27)
 
@@ -207,7 +213,7 @@ acknowledgment text:
 - `https://www.litterbugs.app/terms`
 - `https://www.litterbugs.app/privacy`
 - `https://www.litterbugs.app/cleanup-policy`
-- `cleanup-acknowledgment-v1` and `cleanup-safety-guidelines-v1`
+- `cleanup-acknowledgment-v2` and `cleanup-safety-guidelines-v2`
 
 Ask for written approval or required edits covering: the non-charitable nature
 of contributions; the 10% fee; the 30-day report and seven-day renewal rules;
@@ -239,10 +245,11 @@ Keep both flags `false` until every applicable item below is complete:
   test for denial, MFA, filtering, evidence, decisions, and audit history.
 - Enable Supabase Auth leaked-password protection before production accounts
   can administer or receive funded-cleanup payments.
-- Obtain qualified legal sign-off on the published terms, privacy/AI
-  disclosure, cleanup policy, active acknowledgment, fee and refund disclosure,
-  dispute rules, tax responsibility, and App Store physical-services
-  explanation.
+- Obtain qualified legal review of the published terms, privacy/AI disclosure,
+  fee and refund disclosure, dispute rules, cleaner tax responsibility, active
+  cleanup acknowledgment, and App Store physical-services explanation. Publish
+  a new version of any document or acknowledgment that counsel requires before
+  enabling payments.
 - Complete physical-iPhone sandbox testing for Apple Pay, PaymentSheet, hosted
   onboarding/return links, standard payouts, and App Store presentation.
 
@@ -301,12 +308,12 @@ Before live mode, verify:
 ## Live-mode prerequisites
 
 The published terms, privacy policy, cleanup policy, and active acknowledgment
-contain the planned 10% fee, full-refund rules, AI-photo disclosure, dispute
-policy, and cleaner tax-responsibility language. Obtain qualified legal
-sign-off on those exact versions. Confirm the Apple merchant configuration and
-physical-iPhone behavior after the organization transfer; the other live
-Stripe, Gemini, administrator, and backend configuration is recorded in the
-current production state above.
+contain the planned 10% fee, full-refund rules, AI-photo disclosure, dispute,
+safety, independent-participant, and cleaner tax-responsibility language. These
+production drafts still require qualified legal review before payments are
+enabled. Confirm the Apple merchant configuration and physical-iPhone behavior
+after the organization transfer; the other live Stripe, Gemini, administrator,
+and backend configuration is recorded in the current production state above.
 
 Do not enable the flags merely because the code was deployed. Enable them only after test-mode money reconciliation, administrator coverage, monitoring, and the legal copy are signed off.
 

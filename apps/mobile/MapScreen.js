@@ -1345,12 +1345,6 @@ useEffect(() => {
     try {
       setCleanupActionBusy(true);
       const waiverStatus = await loadCurrentCleanupWaiver();
-
-      if (waiverStatus.acceptedAt) {
-        confirmCleanupClaim();
-        return;
-      }
-
       setCleanupWaiver(waiverStatus.waiver);
       setCleanupWaiverQueued(true);
       setDetailsOpen(false);
@@ -3261,7 +3255,7 @@ const renderReportStep = () => {
                 <View style={styles.cleanupEligibilityCopy}>
                   <Text style={styles.cleanupEligibilityTitle}>Ready to clean this up?</Text>
                   <Text style={styles.cleanupEligibilityText}>
-                    Claim this report for 24 hours. First-time cleaners review the current safety acknowledgment before claiming.
+                    Claim this report for 24 hours. Review and accept the current safety acknowledgment before every claim.
                   </Text>
                 </View>
               </View>

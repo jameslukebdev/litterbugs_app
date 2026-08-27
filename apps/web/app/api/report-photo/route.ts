@@ -9,6 +9,7 @@ export const runtime = 'nodejs';
 
 const MAX_SOURCE_BYTES = 25 * 1024 * 1024;
 const MAX_CACHE_SECONDS = 60 * 60;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function errorResponse(status: number, message: string) {
   return Response.json({ error: message }, {
@@ -18,7 +19,9 @@ function errorResponse(status: number, message: string) {
 }
 
 export async function GET(request: Request) {
-  const photoPath = new URL(request.url).searchParams.get('path')?.trim() ?? '';
+  const searchParams = new URL(request.url).searchParams;
+  const photoPath = searchParams.get('path')?.trim() ?? '';
+  const adminCaseId = searchParams.get('caseId')?.trim() ?? '';
 
   if (
     !photoPath ||
@@ -30,21 +33,39 @@ export async function GET(request: Request) {
   ) {
     return errorResponse(400, 'Invalid report photo path.');
   }
+  if (adminCaseId && !UUID_PATTERN.test(adminCaseId)) {
+    return errorResponse(400, 'Invalid administrator case.');
+  }
 
   try {
     const now = new Date();
     const supabase = await createClient();
-    const { data: report, error: reportError } = await supabase
-      .from('reports')
-      .select('expires_at')
-      .contains('photo_paths', [photoPath])
-      .or('status.is.null,status.eq.active')
-      .gt('expires_at', now.toISOString())
-      .limit(1)
-      .maybeSingle();
+    let expiresAt: string | null = null;
 
-    if (reportError) return errorResponse(502, 'Report photo could not be verified.');
-    if (!report?.expires_at) return errorResponse(404, 'Report photo not found.');
+    if (adminCaseId) {
+      const { data: detail, error: caseError } = await supabase.rpc(
+        'get_cleanup_admin_case',
+        { target_case_id: adminCaseId },
+      );
+      if (caseError) return errorResponse(403, 'Administrator access with MFA is required.');
+      const report = (detail as { report?: { photo_paths?: string[] | null } | null } | null)?.report;
+      if (!report?.photo_paths?.includes(photoPath)) {
+        return errorResponse(404, 'Report photo not found in this case.');
+      }
+    } else {
+      const { data: report, error: reportError } = await supabase
+        .from('reports')
+        .select('expires_at')
+        .contains('photo_paths', [photoPath])
+        .or('status.is.null,status.eq.active')
+        .gt('expires_at', now.toISOString())
+        .limit(1)
+        .maybeSingle();
+
+      if (reportError) return errorResponse(502, 'Report photo could not be verified.');
+      if (!report?.expires_at) return errorResponse(404, 'Report photo not found.');
+      expiresAt = report.expires_at;
+    }
 
     const { data: source, error: downloadError } = await supabase.storage
       .from('report_photos')
@@ -58,15 +79,19 @@ export async function GET(request: Request) {
       format: 'JPEG',
       quality: 0.82,
     });
-    const secondsUntilExpiration = Math.floor(
-      (new Date(report.expires_at).getTime() - now.getTime()) / 1000,
-    );
-    const cacheSeconds = Math.max(0, Math.min(MAX_CACHE_SECONDS, secondsUntilExpiration));
+    const secondsUntilExpiration = expiresAt
+      ? Math.floor((new Date(expiresAt).getTime() - now.getTime()) / 1000)
+      : 0;
+    const cacheSeconds = expiresAt
+      ? Math.max(0, Math.min(MAX_CACHE_SECONDS, secondsUntilExpiration))
+      : 0;
 
     return new Response(Buffer.from(jpeg), {
       status: 200,
       headers: {
-        'Cache-Control': `public, max-age=${cacheSeconds}, s-maxage=${cacheSeconds}`,
+        'Cache-Control': adminCaseId
+          ? 'private, no-store'
+          : `public, max-age=${cacheSeconds}, s-maxage=${cacheSeconds}`,
         'Content-Type': 'image/jpeg',
         'Content-Length': String(jpeg.byteLength),
         'X-Content-Type-Options': 'nosniff',

@@ -4,7 +4,12 @@ export function isHeicReportPhoto(path: string): boolean {
   return HEIC_PATH_PATTERN.test(path.split(/[?#]/, 1)[0]);
 }
 
-export function getWebCompatibleReportPhotoUrl(path: string): string | null {
+export function getWebCompatibleReportPhotoUrl(
+  path: string,
+  options?: { adminCaseId?: string },
+): string | null {
   if (!isHeicReportPhoto(path)) return null;
-  return `/api/report-photo?path=${encodeURIComponent(path)}`;
+  const params = new URLSearchParams({ path });
+  if (options?.adminCaseId) params.set('caseId', options.adminCaseId);
+  return `/api/report-photo?${params.toString()}`;
 }

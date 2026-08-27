@@ -4,7 +4,7 @@ import { summarizeCleanupAttempts } from './cleanupProfile';
 export async function loadCurrentCleanupWaiver() {
   const { data: waiver, error: waiverError } = await supabase
     .from('cleanup_waiver_versions')
-    .select('waiver_version, guidelines_version, title, body, published_at')
+    .select('waiver_version, guidelines_version, title, body, guidelines_body, release_body, published_at')
     .eq('is_active', true)
     .is('retired_at', null)
     .maybeSingle();
@@ -12,19 +12,7 @@ export async function loadCurrentCleanupWaiver() {
   if (waiverError) throw waiverError;
   if (!waiver) throw new Error('cleanup_waiver_unavailable');
 
-  const { data: acceptance, error: acceptanceError } = await supabase
-    .from('cleanup_waiver_acceptances')
-    .select('accepted_at')
-    .eq('waiver_version', waiver.waiver_version)
-    .eq('guidelines_version', waiver.guidelines_version)
-    .maybeSingle();
-
-  if (acceptanceError) throw acceptanceError;
-
-  return {
-    waiver,
-    acceptedAt: acceptance?.accepted_at ?? null,
-  };
+  return { waiver };
 }
 
 export async function acceptCleanupWaiver(waiver) {

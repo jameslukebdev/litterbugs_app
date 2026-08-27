@@ -16,4 +16,12 @@ describe('report photo delivery', () => {
     expect(isHeicReportPhoto('user/report/photo.png')).toBe(false);
     expect(getWebCompatibleReportPhotoUrl('user/report/photo.webp')).toBeNull();
   });
+
+  it('scopes administrator HEIC conversion to the authenticated case', () => {
+    expect(getWebCompatibleReportPhotoUrl('user/report/photo.heic', {
+      adminCaseId: '11111111-1111-4111-8111-111111111111',
+    })).toBe(
+      '/api/report-photo?path=user%2Freport%2Fphoto.heic&caseId=11111111-1111-4111-8111-111111111111',
+    );
+  });
 });

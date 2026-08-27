@@ -50,7 +50,12 @@ const openCases = [
 
 const openDetail = {
   case: { ...openCases[0], context: {} },
-  report: { title: 'Creek trail litter', severity: 'medium', funding_eligibility: 'eligible' },
+  report: {
+    title: 'Creek trail litter',
+    severity: 'medium',
+    funding_eligibility: 'eligible',
+    photo_paths: ['cleaner/report/before.heic'],
+  },
   attempt: {
     reward_amount_cents: 2500,
     financial_review_summary: 'The cleanup is plausible but disputed.',
@@ -90,6 +95,8 @@ describe('funded cleanup admin inbox', () => {
     render(<AdminInbox />);
     expect(await screen.findByText('Creek trail litter')).toBeTruthy();
     expect(screen.getByText('Park entrance cleanup')).toBeTruthy();
+    expect(screen.getByText('Urgent')).toBeTruthy();
+    expect(screen.getByText('Normal')).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText('Filter case type'), { target: { value: 'dispute' } });
     expect(screen.getByText('Creek trail litter')).toBeTruthy();
@@ -100,13 +107,18 @@ describe('funded cleanup admin inbox', () => {
     expect(screen.getByText('Automated findings')).toBeTruthy();
     expect(screen.getByText('usable')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Deny dispute' }));
+    expect(screen.getByAltText('Before evidence 1').getAttribute('src')).toBe(
+      '/api/report-photo?path=cleaner%2Freport%2Fbefore.heic&caseId=case-dispute',
+    );
+    expect(screen.getByText(/Compare the reporter’s concern with the complete photo set/i)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Deny dispute and continue reward process' }));
     expect(await screen.findByText('Add a short decision reason first.')).toBeTruthy();
 
-    fireEvent.change(screen.getByLabelText('Decision reason'), {
+    fireEvent.change(screen.getByLabelText('Why are you making this decision?'), {
       target: { value: 'The complete photo set supports the cleanup.' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Deny dispute' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Deny dispute and continue reward process' }));
 
     await waitFor(() => expect(confirm).toHaveBeenCalledOnce());
     await waitFor(() => expect(invoke).toHaveBeenCalledWith(
