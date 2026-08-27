@@ -284,6 +284,15 @@ Gemini fixture outcomes, and administrator boundary were exercised before live
 provider credentials were installed. The live credentials remain dark behind
 the same two flags.
 
+The merged production revision was rechecked on 2026-08-27 after deployment:
+all nine Supabase Edge Function entry points passed Deno type-checking, all
+seven shared financial-security tests passed, and all six Gemini relay boundary
+tests passed. The focused tests cover signed onboarding state, internal-secret
+authentication, exact Stripe charge/refund/transfer reconciliation, relay
+origin and credential requirements, exact-photo reuse, fixed-model enforcement,
+private signed-photo access, request-size limits, and rejection of unauthorized
+relay calls.
+
 Reports created while Gemini review is disabled do not build a dormant AI queue. Enabling the flag is intentionally non-retroactive: only a report created afterward, or an existing report whose owner deliberately replaces its photo set afterward, enters financial photo review. This keeps pre-launch test reports out of paid Gemini processing and out of the funded-cleanup ledger.
 
 ### Dark-launch Gemini evidence (2026-08-26)
