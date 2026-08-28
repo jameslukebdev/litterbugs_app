@@ -237,3 +237,48 @@ The normalized comparison places the supplied Zillow result screen and the live 
 ## Result
 
 final result: passed
+
+---
+
+# Larger Header Logo Refinement
+
+## Source and implementation
+
+- Source visual truth: `/var/folders/g1/z5srknk55b52bfd28jykgmj00000gn/T/TemporaryItems/NSIRD_screencaptureui_kCRhZx/Screenshot 2026-08-28 at 11.28.10 AM.png`
+- Live desktop implementation: `/tmp/litterbugs-larger-header-logo-live.png`
+- Live mobile implementation: `/tmp/litterbugs-larger-header-logo-mobile.png`
+- Focused normalized comparison: `/tmp/litterbugs-larger-logo-comparison.png`
+- Source pixels: 1570×100
+- Desktop implementation: 1280×720 CSS viewport at 1x density; header comparison normalized to 1570×100
+- Mobile implementation: 390×844 CSS viewport at 1x density
+- State: signed out on the live implementation; the supplied comparison shows the signed-in Account state
+
+## Full-view and focused comparison
+
+The supplied side-by-side header showed the stacked Litterbugs logo at roughly 70 pixels wide, while the Zillow wordmark occupied roughly 107 pixels and read more confidently. The updated live header renders the Litterbugs logo at 91×62 CSS pixels. Because the Litterbugs mark is stacked rather than horizontal, its letter height now has similar visual weight to the Zillow wordmark without increasing the 78-pixel header height.
+
+The focused comparison confirms the logo remains centered independently of the unequal navigation and account controls. Navigation typography, spacing, red brand color, button sizing, and the header divider remain unchanged.
+
+## Required fidelity surfaces
+
+- Fonts and typography: existing Inter navigation treatment is unchanged; the larger raster logo makes its embedded lettering more readable.
+- Spacing and layout rhythm: desktop logo height increased from 48 to 62 pixels within the existing 78-pixel header; tablet uses 58 pixels and mobile retains the compact 48-pixel size.
+- Colors and tokens: no color changes; the exact red brand treatment remains intact.
+- Image quality: the supplied high-resolution Litterbugs logo asset is used directly, with its aspect ratio preserved and no stretching or replacement art.
+- Copy and content: no navigation or account copy changed.
+
+## Comparison history
+
+- P2 — Logo readability: the first live version was noticeably smaller and less legible than the Zillow reference. Fixed by increasing the desktop logo from 48 to 62 pixels high and the intermediate tablet size to 58 pixels. Post-fix evidence: `/tmp/litterbugs-larger-logo-comparison.png`.
+- P2 — Responsive risk: applying the full desktop increase at phone widths could crowd the header. Prevented by retaining the established 48-pixel mobile logo. The 390-pixel live view has no horizontal overflow.
+
+## Verification
+
+- Production desktop and mobile views were visually inspected.
+- Desktop logo measured 91×62 CSS pixels; mobile logo measured 70.5×48 CSS pixels.
+- Production console errors and warnings from `litterbugs.app` checked: none.
+- TypeScript, lint, CSS diff check, and the remote Vercel production build passed.
+
+## Result
+
+final result: passed
