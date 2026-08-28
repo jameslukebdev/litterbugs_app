@@ -85,6 +85,9 @@ Set these Supabase Edge Function secrets:
 - `STRIPE_SECRET_KEY`
 - `STRIPE_PUBLISHABLE_KEY`
 - `STRIPE_WEBHOOK_SECRET`
+- `STRIPE_TEST_WEBHOOK_SECRET` (optional sandbox destination; accepted only for
+  `livemode=false` snapshot events and never as a replacement for the live
+  signing secret)
 - `STRIPE_V2_WEBHOOK_SECRET`
 - `STRIPE_V2_API_VERSION` (the Accounts v2 API version configured for the platform)
 - `STRIPE_ONBOARDING_REDIRECT_BASE_URL` (the public `stripe-onboarding-redirect` Edge Function URL)
@@ -166,6 +169,14 @@ Create a Stripe snapshot webhook endpoint for `stripe-webhook` using the same AP
 - `transfer.created`
 - `transfer.updated`
 - `transfer.reversed`
+
+Keep the live endpoint secret in `STRIPE_WEBHOOK_SECRET`. If the production
+backend is also used for gated sandbox verification, create a separate
+test-mode endpoint with the same subscriptions and store only that endpoint's
+secret in `STRIPE_TEST_WEBHOOK_SECRET`. The webhook accepts the test secret
+only when the signed event itself has `livemode=false`, so sandbox verification
+cannot authorize a live event. Retire replaced endpoints instead of leaving a
+destination to retry rejected signatures.
 
 Create a separate Accounts v2 thin-event destination pointing to the same function and store its signing secret as `STRIPE_V2_WEBHOOK_SECRET`. Subscribe to:
 
