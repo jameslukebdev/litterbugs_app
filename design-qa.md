@@ -4,6 +4,97 @@
 
 final result: passed
 
+---
+
+# Red Brand and Header Refinement
+
+## Source and implementation
+
+- Nomads color reference: `/var/folders/g1/z5srknk55b52bfd28jykgmj00000gn/T/TemporaryItems/NSIRD_screencaptureui_sz5zUi/Screenshot 2026-08-28 at 10.58.28 AM.png`
+- Zillow navigation references: `/var/folders/g1/z5srknk55b52bfd28jykgmj00000gn/T/TemporaryItems/NSIRD_screencaptureui_vhPmJc/Screenshot 2026-08-28 at 10.59.04 AM.png` and `/var/folders/g1/z5srknk55b52bfd28jykgmj00000gn/T/TemporaryItems/NSIRD_screencaptureui_wrc25k/Screenshot 2026-08-28 at 11.00.44 AM.png`
+- Live desktop implementation: `/tmp/litterbugs-red-brand-live.png`
+- Live mobile implementation: `/tmp/litterbugs-red-brand-mobile.png`
+- Normalized header comparison: `/tmp/litterbugs-red-brand-header-comparison.png`
+- Desktop CSS viewport: 1280×720 at 1x density
+- Mobile CSS viewport: 390×844 at 1x density
+- User state: signed out
+
+## Full-view comparison
+
+The live site now uses the Nomads brand red (`#FF4742`) across branded actions, navigation emphasis, selected-card treatment, and interactive hover states. The header follows the supplied Zillow reference with Inter at 16 pixels, regular weight, 28-pixel line height, dark text, approximately 30-pixel item spacing, a centered logo, and balanced left/right navigation groups.
+
+## Focused regions
+
+- Color: the live Sign in and Report litter buttons measure `rgb(255, 71, 66)`, matching `#FF4742`; the Sign in hover measures `rgb(225, 62, 58)` for clear feedback.
+- Header: desktop height is 78 pixels with 48-pixel horizontal padding. Navigation measures 16 pixels, weight 400, line height 28 pixels, and uses Inter with the intended fallbacks.
+- Responsive state: at 390 pixels the desktop navigation is hidden, the centered logo and red Sign in action remain balanced, the red Report litter action remains visible, and no horizontal overflow is present.
+- Semantics: green remains only where it communicates data such as Low severity or a successful state; it no longer functions as the website's brand color.
+
+## Comparison history
+
+- P1 — Brand inconsistency: the site previously used green for primary actions and emphasis. Fixed by introducing one red brand token and applying it consistently to public, legal, and administrator branded surfaces.
+- P2 — Header rhythm: navigation was smaller and tighter than the supplied Zillow reference. Fixed with Inter, 16-pixel regular navigation text, 28-pixel line height, 30-pixel gaps, and a 78-pixel header.
+- P2 — Incomplete interaction color: primary buttons and secondary controls did not share a coherent hover treatment. Fixed with the red brand token, a darker red primary hover, and light-red secondary hover states.
+- P2 — Mobile consistency: the mobile header needed the same brand treatment without crowding. Verified with hidden desktop navigation, centered logo, red Sign in action, and zero horizontal overflow.
+
+## Verification
+
+- Production desktop and mobile views were visually inspected.
+- Sign in hover and default primary-action colors were measured in the live page.
+- Production console errors and warnings from `litterbugs.app` checked: none.
+- Web tests passed: 12 files, 37 tests.
+- TypeScript, lint, and the remote Vercel production build passed.
+
+## Result
+
+final result: passed
+
+---
+
+# Report Card Consistency QA
+
+## Source and implementation
+
+- Source visual truth: `/var/folders/g1/z5srknk55b52bfd28jykgmj00000gn/T/TemporaryItems/NSIRD_screencaptureui_HXtLPb/Screenshot 2026-08-28 at 10.42.40 AM.png`
+- Production desktop implementation: `/tmp/litterbugs-card-consistency-desktop.png`
+- Production mobile implementation: `/tmp/litterbugs-card-consistency-mobile.png`
+- Focused comparison: `/tmp/litterbugs-card-consistency-comparison.png`
+- Source pixels: 815×660 cropped grid view
+- Desktop implementation pixels and CSS viewport: 1596×1020 at 1x density
+- Mobile implementation pixels and CSS viewport: 390×844 at 1x density
+- State: signed out, 11 active test reports, default desktop grid and open mobile results sheet
+
+## Full-view and focused comparison
+
+The combined comparison places the supplied broken layout and the corrected live grid in one image. The earlier no-photo card spans both columns while photo cards use one column. In production, every report uses the same single-column footprint, 16:9 media region, copy height, border, radius, and vertical spacing. The no-photo state uses the existing image icon and a truthful label rather than fabricated imagery.
+
+The focused card region is sufficient for this scoped change because the map, header, and surrounding results layout were not changed. Desktop measurements confirm the first ten cards are each 285×269 CSS pixels. Mobile measurements confirm the first four cards are each 343×302 CSS pixels.
+
+## Required fidelity surfaces
+
+- Typography: Titles, reward/status text, severity, and dates retain the existing type scale and two-line title allowance.
+- Spacing and layout rhythm: Photo and no-photo cards now share identical grid tracks, media proportions, copy height, padding, gaps, borders, radii, and elevation.
+- Colors and tokens: The neutral no-photo state uses existing gray surface and text values; status and severity colors are unchanged.
+- Image quality: Existing report photographs remain uncropped beyond the established 16:9 card treatment. Missing or failed photos show the existing image-library icon and concise state text.
+- Copy and content: Real report content is unchanged. The only added copy is `No photo` or `Photo unavailable` when that state is true.
+
+## Comparison history
+
+- P2 — Inconsistent geometry: no-photo cards used a special full-width compact layout, interrupting the two-column scan pattern. Fixed by removing that exception and rendering the same media/content frame for every report. Post-fix evidence: `/tmp/litterbugs-card-consistency-comparison.png`.
+- P2 — Responsive inconsistency: the special card geometry also changed differently at tablet and mobile breakpoints. Fixed by using one card structure at every breakpoint. Post-fix evidence: desktop cards measure 285×269 and mobile cards measure 343×302.
+
+## Verification
+
+- Focused component tests passed: 2 tests.
+- Web typecheck and lint passed.
+- Production deployment completed successfully.
+- Production checked at desktop and mobile CSS viewports.
+- Production console errors and warnings checked: none.
+
+## Result
+
+final result: passed
+
 No unresolved P2-or-higher visual or interaction findings remain.
 
 ## Comparison inputs

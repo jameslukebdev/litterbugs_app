@@ -22,7 +22,7 @@
 
 .backLink,
 .footer a {
-  color: #2f7d32;
+  color: #ff4742;
   font-weight: 800;
   text-decoration: none;
 }
@@ -35,7 +35,7 @@
 .eyebrow {
   display: block;
   margin-top: 30px;
-  color: #2f7d32;
+  color: #ff4742;
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.12em;
