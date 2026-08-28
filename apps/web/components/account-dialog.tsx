@@ -42,6 +42,7 @@ export function AccountDialog({
   const [email, setEmail] = useState('');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [reports, setReports] = useState<Report[]>([]);
+  const [expiredReports, setExpiredReports] = useState<Report[]>([]);
   const [cleanups, setCleanups] = useState<CleanupAttempt[]>([]);
   const [contributions, setContributions] = useState<ContributionRow[]>([]);
   const [message, setMessage] = useState('');
@@ -61,7 +62,7 @@ export function AccountDialog({
       }
 
       setEmail(user.email ?? '');
-      const [profileResult, reportsResult, cleanupResult, contributionResult] = await Promise.all([
+      const [profileResult, reportsResult, expiredReportsResult, cleanupResult, contributionResult] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
         supabase
           .from('reports')
@@ -70,6 +71,14 @@ export function AccountDialog({
           .or('status.is.null,status.eq.active')
           .gt('expires_at', new Date().toISOString())
           .order('created_at', { ascending: false })
+          .limit(8),
+        supabase
+          .from('reports')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('renewal_status', 'decision_required')
+          .gt('renewal_decision_due_at', new Date().toISOString())
+          .order('renewal_decision_due_at', { ascending: true })
           .limit(8),
         supabase
           .from('cleanup_attempts')
@@ -88,9 +97,10 @@ export function AccountDialog({
       if (cancelled) return;
       setProfile(profileResult.data);
       setReports(reportsResult.data ?? []);
+      setExpiredReports(expiredReportsResult.data ?? []);
       setCleanups((cleanupResult.data ?? []) as unknown as CleanupAttempt[]);
       setContributions(contributionResult.data ?? []);
-      if (profileResult.error || reportsResult.error || cleanupResult.error || contributionResult.error) {
+      if (profileResult.error || reportsResult.error || expiredReportsResult.error || cleanupResult.error || contributionResult.error) {
         setMessage('Some account activity could not be loaded. You can still use the map.');
       }
       setDataLoading(false);
@@ -147,6 +157,31 @@ export function AccountDialog({
     onClose();
   }
 
+  async function renewReport(reportId: string) {
+    setBusyAction(`renew:${reportId}`);
+    const { error } = await createClient().rpc('renew_report', { target_report_id: reportId });
+    setBusyAction('');
+    if (error) {
+      setMessage('The report could not be renewed. Refresh and try again.');
+      return;
+    }
+    setExpiredReports((current) => current.filter(({ id }) => id !== reportId));
+    setMessage('Report renewed for 30 days with its cleanup fund preserved.');
+  }
+
+  async function closeExpiredReport(reportId: string) {
+    if (!window.confirm('Close this report and refund every active contribution, including the 10% fee?')) return;
+    setBusyAction(`close:${reportId}`);
+    const { error } = await createClient().rpc('close_expired_report', { target_report_id: reportId });
+    setBusyAction('');
+    if (error) {
+      setMessage('The report could not be closed. Refresh and try again.');
+      return;
+    }
+    setExpiredReports((current) => current.filter(({ id }) => id !== reportId));
+    setMessage('Report closed. Full contribution refunds have been queued.');
+  }
+
   const displayName = profile?.display_name || profile?.username || email.split('@')[0] || 'Litterbugs member';
   const initial = displayName.charAt(0).toUpperCase();
 
@@ -176,6 +211,40 @@ export function AccountDialog({
           </section>
 
           <div className="member-dashboard-grid">
+            {expiredReports.length ? (
+              <section className="member-panel">
+                <header><div><span className="eyebrow">ACTION NEEDED</span><h3>Renew or close reports</h3></div></header>
+                <div className="member-activity-list">
+                  {expiredReports.map((report) => (
+                    <div key={report.id} className="member-activity-row member-completed-row">
+                      <span>
+                        <strong>{report.title || 'Litter Report'}</strong>
+                        <small>
+                          {formatUsd(report.funded_amount_cents)} reward · Decide by {new Date(report.renewal_decision_due_at ?? '').toLocaleDateString()}
+                        </small>
+                      </span>
+                      <div className="account-actions">
+                        <button
+                          className="secondary-button compact-button"
+                          onClick={() => renewReport(report.id)}
+                          disabled={Boolean(busyAction)}
+                        >
+                          {busyAction === `renew:${report.id}` ? 'Renewing…' : 'Renew 30 days'}
+                        </button>
+                        <button
+                          className="danger-button compact-button"
+                          onClick={() => closeExpiredReport(report.id)}
+                          disabled={Boolean(busyAction)}
+                        >
+                          {busyAction === `close:${report.id}` ? 'Closing…' : 'Close and refund'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
             <section className="member-panel">
               <header><div><span className="eyebrow">REPORTED BY YOU</span><h3>My active reports</h3></div></header>
               <div className="member-activity-list">
@@ -220,6 +289,7 @@ export function AccountDialog({
                     <span>
                       <strong>{formatUsd(contribution.principal_amount_cents)} cleanup reward</strong>
                       <small>{contribution.status.replaceAll('_', ' ')} · {new Date(contribution.created_at).toLocaleDateString()}</small>
+                      <small>{formatUsd(contribution.platform_fee_cents)} fee · {formatUsd(contribution.total_amount_cents)} total charged</small>
                     </span>
                     <Icon name="chevron-right" />
                   </button>
