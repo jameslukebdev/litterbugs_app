@@ -7,7 +7,7 @@ production app architecture, not a separate QA-only payment app. Provider
 credentials being present does not authorize live charges or paid Gemini
 reviews; the flags and the launch sequence below remain the release boundary.
 
-## Current production state (2026-08-27)
+## Current production state (2026-08-28)
 
 - `main` contains the funded-cleanup implementation and published legal pages.
   Vercel production deployment `dpl_8o42pjS8zAzWczxbQMcR1UZBvEFt` serves the
@@ -20,6 +20,9 @@ reviews; the flags and the launch sequence below remain the release boundary.
   contributions and zero cleaner payout accounts. One failed administrator
   preview contribution remains for inbox demonstration; it has no Stripe
   PaymentIntent or charge and moved no money.
+- The current native production identity is `com.litterbugs.app` on both iOS
+  and Android. The temporary `.qa` development identity is not the funded-
+  cleanup release target and was not used for the final Android payment check.
 - The permanent AAL2 administrator is enrolled and `/admin` is live.
 - The launch revision publishes `cleanup-acknowledgment-v2` with
   `cleanup-safety-guidelines-v2`. It presents separate, conspicuous safety and
@@ -318,6 +321,31 @@ Stripe sandbox ledger behavior, webhook reconciliation, maintenance schedule,
 Gemini fixture outcomes, and administrator boundary were exercised before live
 provider credentials were installed. The live credentials remain dark behind
 the same two flags.
+
+### Card-checkout evidence (2026-08-28)
+
+The final device checks used Stripe sandbox funds only; no real money moved:
+
+- iPhone card PaymentSheet completed under the existing Litterbugs iOS app
+  continuity path. Stripe confirmed test PaymentIntent
+  `pi_3U9WdjKUBoEpySr60w6nvBfr` as succeeded. The hosted cleaner-onboarding and
+  return-link path was also exercised without enabling Apple Pay.
+- Web card checkout completed for $5.50. Stripe confirmed test PaymentIntent
+  `pi_3U9YYWKUBoEpySr61Rh4W3yd` as succeeded, and the production webhook
+  handler recorded its success event exactly once.
+- Android card PaymentSheet completed for $5.50 in package
+  `com.litterbugs.app`. Stripe confirmed test PaymentIntent
+  `pi_3U9YhFKUBoEpySr60MJgZzXf` as succeeded, and the production webhook
+  handler recorded its success event exactly once. The PaymentSheet offered
+  card and other Stripe-supported methods while Apple Pay remained absent.
+- PR #54 added a client-side Stripe status check before the mobile app may show
+  a contribution receipt. An unconfirmed result now blocks a repeat submission
+  instead of presenting a false success. All 67 mobile tests passed and the
+  Android production bundle exported successfully from the revision that also
+  includes Luke's PR #53 social-sharing changes.
+
+Both server-side feature flags were rechecked after these sandbox payments and
+remain `false`.
 
 The merged production revision was rechecked on 2026-08-27 after deployment:
 all nine Supabase Edge Function entry points passed Deno type-checking, all
