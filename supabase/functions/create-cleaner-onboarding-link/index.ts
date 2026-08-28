@@ -9,6 +9,7 @@ import {
   stripeRecipientState,
   stripeClient,
   type StripeRecipientAccount,
+  type StripeOnboardingReturnTarget,
   stripeV2,
 } from "../_shared/funded-cleanup.ts";
 
@@ -33,7 +34,7 @@ Deno.serve(async (request: Request) => {
     return jsonResponse({ error: "Cleanup payouts are not available yet" }, 409);
   }
 
-  let body: { mode?: unknown; confirmAge18?: unknown } = {};
+  let body: { mode?: unknown; confirmAge18?: unknown; returnTarget?: unknown } = {};
   try {
     body = await request.json();
   } catch {
@@ -44,6 +45,9 @@ Deno.serve(async (request: Request) => {
     : body.mode === "dashboard"
       ? "dashboard"
       : "link";
+  const returnTarget: StripeOnboardingReturnTarget = body.returnTarget === "web"
+    ? "web"
+    : "mobile";
   if (mode === "link" && body.confirmAge18 !== true) {
     return jsonResponse({ error: "You must confirm that you are at least 18" }, 400);
   }
@@ -133,7 +137,7 @@ Deno.serve(async (request: Request) => {
       return jsonResponse({ error: "Finish payout onboarding before opening the dashboard" }, 409);
     }
 
-    const link = await createStripeRecipientOnboardingLink(account.id);
+    const link = await createStripeRecipientOnboardingLink(account.id, returnTarget);
 
     return jsonResponse({
       url: link.url,

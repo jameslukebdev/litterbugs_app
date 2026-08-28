@@ -16,6 +16,16 @@ const textResponse = (message: string, status: number) => new Response(message, 
   headers: { ...noStoreHeaders, "Content-Type": "text/plain; charset=utf-8" },
 });
 
+const onboardingReturnLocation = (returnTarget: "mobile" | "web") => {
+  if (returnTarget === "mobile") return "litterbugs://stripe-onboarding-return";
+  const target = new URL(
+    Deno.env.get("STRIPE_WEB_ONBOARDING_RETURN_URL")
+      ?? "https://litterbugs.app/?stripe_onboarding=return",
+  );
+  if (target.protocol !== "https:") throw new Error("Web onboarding return URL must use HTTPS");
+  return target.toString();
+};
+
 Deno.serve(async (request: Request) => {
   if (request.method !== "GET") return textResponse("Method not allowed", 405);
 
@@ -40,7 +50,7 @@ Deno.serve(async (request: Request) => {
     if (mode === "return") {
       return new Response(null, {
         status: 302,
-        headers: { ...noStoreHeaders, Location: "litterbugs://stripe-onboarding-return" },
+        headers: { ...noStoreHeaders, Location: onboardingReturnLocation(state.returnTarget) },
       });
     }
 
@@ -52,7 +62,7 @@ Deno.serve(async (request: Request) => {
     if (paymentsFlagError) throw paymentsFlagError;
     if (!paymentsFlag.enabled) return textResponse("Cleanup payouts are not available yet", 409);
 
-    const link = await createStripeRecipientOnboardingLink(state.accountId);
+    const link = await createStripeRecipientOnboardingLink(state.accountId, state.returnTarget);
     return new Response(null, {
       status: 302,
       headers: { ...noStoreHeaders, Location: link.url },

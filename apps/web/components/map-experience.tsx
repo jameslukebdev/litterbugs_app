@@ -116,6 +116,15 @@ export function MapExperience({
   }, [router]);
 
   useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('stripe_onboarding') !== 'return') return;
+    url.searchParams.delete('stripe_onboarding');
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+    const timeout = window.setTimeout(() => setAccountOpen(true), 0);
+    return () => window.clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
     if (!toast) return;
     const timeout = window.setTimeout(() => setToast(''), 5000);
     return () => window.clearTimeout(timeout);

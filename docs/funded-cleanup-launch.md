@@ -30,10 +30,10 @@ reviews; the flags and the launch sequence below remain the release boundary.
   Payments, payouts, and transfers are active, and the platform payout schedule
   is Manual. The snapshot destination is active for 11 events and the Accounts
   v2 thin destination is active for seven events, both with zero delivery
-  errors. The intended payment methods are cards, Apple Pay, Cash App Pay,
-  Google Pay, and Link. Apple Pay remains unavailable in the production iOS
-  build until the Apple organization transfer and merchant configuration below
-  are complete.
+  errors. Current checkout uses ordinary card entry on iOS and
+  Stripe-supported methods on Android and web. Apple Pay is explicitly disabled
+  in native build configuration and PaymentSheet runtime configuration until
+  the organization transfer and merchant configuration below are complete.
 - The `litterbugs-gemini-relay` service is healthy in the production Google
   Cloud project with zero minimum instances, two maximum instances, concurrency
   four, 512 MiB memory, a 60-second timeout, pay-as-you-go billing, and the $5
@@ -47,14 +47,17 @@ reviews; the flags and the launch sequence below remain the release boundary.
   questions and acceptance evidence are recorded in
   `docs/legal-acceptance-and-review.md`.
 
-The remaining launch gates are external or deliberately deferred: Apple must
-finish converting the Burrow Base developer account before the app transfer,
-merchant identity, production signing, and physical-iPhone Apple Pay test;
-Supabase leaked-password protection requires the deferred Pro upgrade; and the
-production legal drafts have not received qualified legal sign-off. After those
-items, the only planned activation work is the ordered controlled rollout in
-this document. Do not create a second QA application or repeat completed broad
-test work while waiting.
+The funded-cleanup launch no longer waits for Apple to finish converting the
+Burrow Base developer account. Apple has not provided a dependable timeline and
+approval could take weeks, so interim iOS builds, physical-device card testing,
+and any update continue under Luke's existing live Apple account and the
+existing `com.litterbugs.app` identity. Luke may still need to create or refresh
+signing credentials or approve submission. Apple Pay, final app ownership,
+organization signing, and the organization Merchant ID remain deferred gates;
+they are not abandoned. Supabase leaked-password protection requires the
+deferred Pro upgrade, and the production legal drafts have not received
+qualified legal sign-off. Do not create a second QA application or repeat
+completed broad test work while waiting.
 
 ### Focused Supabase security-advisor triage (2026-08-27)
 
@@ -86,13 +89,20 @@ Set these Supabase Edge Function secrets:
 - `STRIPE_V2_API_VERSION` (the Accounts v2 API version configured for the platform)
 - `STRIPE_ONBOARDING_REDIRECT_BASE_URL` (the public `stripe-onboarding-redirect` Edge Function URL)
 - `STRIPE_ONBOARDING_STATE_SECRET` (a separate long, random signing value)
+- `STRIPE_WEB_ONBOARDING_RETURN_URL` (optional; defaults to the production web
+  account return at `https://litterbugs.app`)
 - `GEMINI_RELAY_URL` (the exact HTTPS origin of the production Google Cloud Run
   relay; do not include a path or trailing slash)
 - `GEMINI_RELAY_SHARED_SECRET` (a separate random value of at least 32
   characters, configured only in the relay and Supabase Edge Functions)
 - `FINANCIAL_MAINTENANCE_SECRET` (a long, random server-to-server value)
 
-Set `STRIPE_APPLE_MERCHANT_IDENTIFIER` for the mobile build. The fallback is `merchant.com.litterbugs.app`; the value must match the Apple merchant ID configured for the app and Stripe account.
+Keep `ENABLE_APPLE_PAY=false` in every current EAS profile. With that setting,
+the Stripe native plugin receives no Merchant ID, the iOS build needs no Apple
+Pay entitlement, and PaymentSheet receives no Apple Pay runtime configuration.
+Card entry remains available. After the app transfer, set
+`ENABLE_APPLE_PAY=true` and provide `STRIPE_APPLE_MERCHANT_IDENTIFIER`; the
+build fails rather than silently enabling Apple Pay without that value.
 
 Gemini 3.7 Flash runs through Gemini Enterprise Agent Platform, not the AI
 Studio developer endpoint. The `litterbugs-gemini-relay` Cloud Run service runs
@@ -182,11 +192,17 @@ Sign in at `/admin` with the same provider as that permanent account (Google or 
 
 The `/admin` backend rechecks permanent-account status, private membership, and Supabase AAL2 for every read and decision. Do not distribute the service-role key to the website or mobile app.
 
-## Apple organization transfer handoff
+## Interim iOS continuity and final Apple handoff
 
-Do not create a temporary production Apple Pay identity under an individual
-developer account. Complete these steps once Apple finishes converting the
-Burrow Base account to an organization:
+Apple has not provided a dependable conversion timeline. Continue development,
+physical-device card testing, and any interim App Store update using Luke's
+existing live Apple account, the existing App Store listing, and
+`com.litterbugs.app`. Keep `ENABLE_APPLE_PAY=false`; do not add a temporary
+Merchant ID or Apple Pay entitlement under Luke's individual account.
+
+This is an interim continuity plan, not a change to final ownership. Complete
+these steps once Apple finishes converting the Burrow Base account to an
+organization:
 
 1. Confirm the Burrow Base and Luke Apple Developer accounts are no longer in
    a pending or changing state and both Account Holders have accepted the
@@ -202,6 +218,11 @@ Burrow Base account to an organization:
 5. Replace the production iOS signing credentials with Burrow Base credentials,
    create a clean production build, and test Apple Pay, PaymentSheet, hosted
    cleaner onboarding, return links, and payout status on a physical iPhone.
+
+After the transfer, future iOS publishing and signing move to the Burrow Base
+organization. The transfer and Apple Pay work stay on the checklist even though
+neither blocks current funded-cleanup development, card testing, or interim
+releases.
 
 ### App Review note template
 
@@ -268,8 +289,11 @@ Keep both flags `false` until every applicable item below is complete:
   cleanup acknowledgment, and App Store physical-services explanation. Publish
   a new version of any document or acknowledgment that counsel requires before
   enabling payments.
-- Complete physical-iPhone sandbox testing for Apple Pay, PaymentSheet, hosted
-  onboarding/return links, standard payouts, and App Store presentation.
+- Complete sandbox testing for iOS card PaymentSheet under Luke's existing app
+  identity, Android checkout under Grant's Google Play package/account plan,
+  web checkout, hosted onboarding/return links, standard payouts, and App Store
+  presentation. Apple Pay-specific testing remains a deferred post-transfer
+  gate.
 
 Enable `gemini_financial_review_enabled` first for the controlled fixture and
 report-photo review rollout. Enable `payments_enabled` only after the Gemini,
@@ -329,7 +353,10 @@ Before live mode, verify:
 - claim freeze, two replacement-photo rounds followed by third-attempt escalation, dispute, both admin outcomes, first-paid-cleanup check, and 48-hour auto approval;
 - renewal keeps the fund; close, no response, and 23-month aging refund the complete charge;
 - interrupted provider calls reuse their original idempotency key, while an administrator-approved retry advances to one new key without duplicating money;
-- Apple Pay, cards, hosted onboarding, return links, and the Express payout dashboard on a physical iPhone;
+- card PaymentSheet, hosted onboarding, return links, and the Express payout
+  dashboard on a physical iPhone using Luke's existing app identity;
+- Android checkout and return behavior using Grant's production package/account
+  plan, plus the equivalent web card and payout flows;
 - `/admin` denial, TOTP enrollment/challenge, filters, evidence, required reasons, confirmations, and audit history.
 
 ## Live-mode prerequisites
@@ -338,9 +365,10 @@ The published terms, privacy policy, cleanup policy, and active acknowledgment
 contain the planned 10% fee, full-refund rules, AI-photo disclosure, dispute,
 safety, independent-participant, and cleaner tax-responsibility language. These
 production drafts still require qualified legal review before payments are
-enabled. Confirm the Apple merchant configuration and physical-iPhone behavior
-after the organization transfer; the other live Stripe, Gemini, administrator,
-and backend configuration is recorded in the current production state above.
+enabled. Confirm iOS card PaymentSheet and hosted onboarding on a physical
+iPhone now. Confirm Apple Pay separately after the organization transfer; it is
+not part of the interim activation path. The other live Stripe, Gemini,
+administrator, and backend configuration is recorded above.
 
 Do not enable the flags merely because the code was deployed. Enable them only after test-mode money reconciliation, administrator coverage, monitoring, and the legal copy are signed off.
 
@@ -348,8 +376,9 @@ Do not enable the flags merely because the code was deployed. Enable them only a
 
 Do not repeat the full QA suite at launch. Use this ordered production check:
 
-1. Keep both flags off while the Apple transfer, merchant configuration,
-   physical-iPhone payment test, and legal sign-off are completed.
+1. Keep both flags off while the applicable card-payment, hosted-onboarding,
+   reconciliation, physical-device, and legal checks are completed. Do not wait
+   for the Apple organization conversion or Apple Pay configuration.
 2. Upgrade Supabase to Pro, enable leaked-password protection, and confirm the
    administrator can still complete AAL2 authentication.
 3. Repeat the small synthetic Gemini fixture set, then enable only

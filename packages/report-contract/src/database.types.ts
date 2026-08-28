@@ -271,6 +271,24 @@ export type Database = {
           },
         ]
       }
+      cleanup_feature_flags: {
+        Row: {
+          enabled: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cleanup_reviews: {
         Row: {
           cleanup_attempt_id: string

@@ -31,8 +31,6 @@ const forbiddenEverywhere = [
   ['maplibre', 'MapLibre'],
   ['openfreemap', 'OpenFreeMap'],
   ['openmaptiles', 'OpenMapTiles'],
-  ['@stripe/', 'Stripe'],
-  ['stripe.com', 'Stripe'],
 ];
 const forbiddenInProjectSource = [
   ...forbiddenEverywhere,
@@ -40,6 +38,9 @@ const forbiddenInProjectSource = [
   ['places.googleapis.com', 'Google Places API'],
   ['service_role', 'a Supabase service-role credential'],
   ['supabase_secret', 'a Supabase secret key'],
+  ['stripe_secret_key', 'a Stripe secret-key variable'],
+  ['sk_live_', 'a live Stripe secret key'],
+  ['sk_test_', 'a test Stripe secret key'],
 ];
 
 function collectFiles(relativeRoot) {
@@ -84,8 +85,15 @@ const dependencyNames = Object.keys({
   ...webPackage.dependencies,
   ...webPackage.devDependencies,
 }).map((name) => name.toLowerCase());
+const allowedStripeDependencies = new Set([
+  '@stripe/react-stripe-js',
+  '@stripe/stripe-js',
+]);
 for (const dependency of dependencyNames) {
-  if (dependency.includes('maplibre') || dependency.includes('stripe')) {
+  if (
+    dependency.includes('maplibre')
+    || (dependency.includes('stripe') && !allowedStripeDependencies.has(dependency))
+  ) {
     violations.push(`apps/web/package.json contains forbidden dependency ${dependency}`);
   }
 }

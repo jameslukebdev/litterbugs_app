@@ -161,10 +161,16 @@ const onboardingSigningKey = () => crypto.subtle.importKey(
   ["sign", "verify"],
 );
 
-export const createStripeOnboardingState = async (accountId: string) => {
+export type StripeOnboardingReturnTarget = "mobile" | "web";
+
+export const createStripeOnboardingState = async (
+  accountId: string,
+  returnTarget: StripeOnboardingReturnTarget = "mobile",
+) => {
   if (!/^acct_[A-Za-z0-9]+$/.test(accountId)) throw new Error("Invalid Stripe account ID");
   const payload = bytesToBase64Url(textEncoder.encode(JSON.stringify({
     accountId,
+    returnTarget,
     expiresAt: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
   })));
   const signature = await crypto.subtle.sign(
@@ -187,21 +193,29 @@ export const verifyStripeOnboardingState = async (state: string) => {
     );
     if (!valid) return null;
     const parsed = JSON.parse(new TextDecoder().decode(base64UrlToBytes(payload)));
+    const returnTarget = parsed?.returnTarget ?? "mobile";
     if (
       !/^acct_[A-Za-z0-9]+$/.test(parsed?.accountId)
+      || (returnTarget !== "mobile" && returnTarget !== "web")
       || !Number.isInteger(parsed?.expiresAt)
       || parsed.expiresAt < Math.floor(Date.now() / 1000)
     ) return null;
-    return { accountId: parsed.accountId as string };
+    return {
+      accountId: parsed.accountId as string,
+      returnTarget: returnTarget as StripeOnboardingReturnTarget,
+    };
   } catch {
     return null;
   }
 };
 
-const stripeOnboardingUrls = async (accountId: string) => {
+const stripeOnboardingUrls = async (
+  accountId: string,
+  returnTarget: StripeOnboardingReturnTarget,
+) => {
   const baseUrl = new URL(requiredEnv("STRIPE_ONBOARDING_REDIRECT_BASE_URL"));
   if (baseUrl.protocol !== "https:") throw new Error("Stripe onboarding redirect must use HTTPS");
-  const state = await createStripeOnboardingState(accountId);
+  const state = await createStripeOnboardingState(accountId, returnTarget);
   const createUrl = (mode: "return" | "refresh") => {
     const url = new URL(baseUrl);
     url.searchParams.set("mode", mode);
@@ -211,8 +225,11 @@ const stripeOnboardingUrls = async (accountId: string) => {
   return { returnUrl: createUrl("return"), refreshUrl: createUrl("refresh") };
 };
 
-export const createStripeRecipientOnboardingLink = async (accountId: string) => {
-  const { returnUrl, refreshUrl } = await stripeOnboardingUrls(accountId);
+export const createStripeRecipientOnboardingLink = async (
+  accountId: string,
+  returnTarget: StripeOnboardingReturnTarget = "mobile",
+) => {
+  const { returnUrl, refreshUrl } = await stripeOnboardingUrls(accountId, returnTarget);
   return stripeV2<StripeAccountLink>("/core/account_links", {
     method: "POST",
     body: JSON.stringify({
