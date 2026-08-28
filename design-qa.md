@@ -6,6 +6,51 @@ final result: passed
 
 ---
 
+# Red Brand and Header Refinement
+
+## Source and implementation
+
+- Nomads color reference: `/var/folders/g1/z5srknk55b52bfd28jykgmj00000gn/T/TemporaryItems/NSIRD_screencaptureui_sz5zUi/Screenshot 2026-08-28 at 10.58.28 AM.png`
+- Zillow navigation references: `/var/folders/g1/z5srknk55b52bfd28jykgmj00000gn/T/TemporaryItems/NSIRD_screencaptureui_vhPmJc/Screenshot 2026-08-28 at 10.59.04 AM.png` and `/var/folders/g1/z5srknk55b52bfd28jykgmj00000gn/T/TemporaryItems/NSIRD_screencaptureui_wrc25k/Screenshot 2026-08-28 at 11.00.44 AM.png`
+- Live desktop implementation: `/tmp/litterbugs-red-brand-live.png`
+- Live mobile implementation: `/tmp/litterbugs-red-brand-mobile.png`
+- Normalized header comparison: `/tmp/litterbugs-red-brand-header-comparison.png`
+- Desktop CSS viewport: 1280×720 at 1x density
+- Mobile CSS viewport: 390×844 at 1x density
+- User state: signed out
+
+## Full-view comparison
+
+The live site now uses the Nomads brand red (`#FF4742`) across branded actions, navigation emphasis, selected-card treatment, and interactive hover states. The header follows the supplied Zillow reference with Inter at 16 pixels, regular weight, 28-pixel line height, dark text, approximately 30-pixel item spacing, a centered logo, and balanced left/right navigation groups.
+
+## Focused regions
+
+- Color: the live Sign in and Report litter buttons measure `rgb(255, 71, 66)`, matching `#FF4742`; the Sign in hover measures `rgb(225, 62, 58)` for clear feedback.
+- Header: desktop height is 78 pixels with 48-pixel horizontal padding. Navigation measures 16 pixels, weight 400, line height 28 pixels, and uses Inter with the intended fallbacks.
+- Responsive state: at 390 pixels the desktop navigation is hidden, the centered logo and red Sign in action remain balanced, the red Report litter action remains visible, and no horizontal overflow is present.
+- Semantics: green remains only where it communicates data such as Low severity or a successful state; it no longer functions as the website's brand color.
+
+## Comparison history
+
+- P1 — Brand inconsistency: the site previously used green for primary actions and emphasis. Fixed by introducing one red brand token and applying it consistently to public, legal, and administrator branded surfaces.
+- P2 — Header rhythm: navigation was smaller and tighter than the supplied Zillow reference. Fixed with Inter, 16-pixel regular navigation text, 28-pixel line height, 30-pixel gaps, and a 78-pixel header.
+- P2 — Incomplete interaction color: primary buttons and secondary controls did not share a coherent hover treatment. Fixed with the red brand token, a darker red primary hover, and light-red secondary hover states.
+- P2 — Mobile consistency: the mobile header needed the same brand treatment without crowding. Verified with hidden desktop navigation, centered logo, red Sign in action, and zero horizontal overflow.
+
+## Verification
+
+- Production desktop and mobile views were visually inspected.
+- Sign in hover and default primary-action colors were measured in the live page.
+- Production console errors and warnings from `litterbugs.app` checked: none.
+- Web tests passed: 12 files, 37 tests.
+- TypeScript, lint, and the remote Vercel production build passed.
+
+## Result
+
+final result: passed
+
+---
+
 # Report Card Consistency QA
 
 ## Source and implementation
