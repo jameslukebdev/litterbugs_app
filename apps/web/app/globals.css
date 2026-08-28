@@ -28,8 +28,8 @@ button:disabled { cursor: not-allowed; opacity: .6; }
 .map-page { height: 100dvh; min-height: 540px; overflow: hidden; }
 .site-header { height: 78px; padding: 0 48px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; border-bottom: 1px solid #d8ddd9; background: rgba(255,255,255,.98); position: relative; z-index: 20; font-family: var(--font-inter), Inter, "Adjusted Arial", Tahoma, Geneva, sans-serif; }
 .site-navigation { justify-self: start; display: flex; align-items: center; gap: 30px; }
-.site-navigation a { color: #111116; font-size: 16px; font-weight: 400; line-height: 28px; text-decoration: none; }
-.site-navigation a:hover, .site-navigation a[aria-current='page'] { color: var(--green); }
+.site-navigation a { color: #111116; font-size: 16px; font-weight: 500; line-height: 28px; text-decoration: none; }
+.site-navigation a:hover { color: var(--green); }
 .brand-link { grid-column: 2; justify-self: center; display: inline-flex; align-items: center; height: 68px; }
 .brand-link img { width: auto; height: 62px; max-width: 170px; object-fit: contain; }
 .signin-button, .account-button { justify-self: end; min-height: 40px; border-radius: 12px; padding: 0 19px; font-size: 15px; font-weight: 700; cursor: pointer; transition: background .16s ease, border-color .16s ease, color .16s ease; }
