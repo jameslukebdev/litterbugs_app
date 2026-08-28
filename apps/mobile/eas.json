@@ -8,6 +8,7 @@
       "environment": "development",
       "env": {
         "APP_VARIANT": "qa",
+        "ENABLE_APPLE_PAY": "false",
         "IOS_BUNDLE_IDENTIFIER": "com.gegibson.litterbugs.qa",
         "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app.qa"
       },
@@ -18,6 +19,7 @@
       "environment": "development",
       "env": {
         "APP_VARIANT": "qa",
+        "ENABLE_APPLE_PAY": "false",
         "IOS_BUNDLE_IDENTIFIER": "com.gegibson.litterbugs.qa",
         "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app.qa"
       },
@@ -31,6 +33,7 @@
       "environment": "production",
       "env": {
         "APP_VARIANT": "production",
+        "ENABLE_APPLE_PAY": "false",
         "IOS_BUNDLE_IDENTIFIER": "com.litterbugs.app",
         "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app"
       },
@@ -44,6 +47,7 @@
       "environment": "production",
       "env": {
         "APP_VARIANT": "production",
+        "ENABLE_APPLE_PAY": "false",
         "IOS_BUNDLE_IDENTIFIER": "com.litterbugs.app",
         "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app"
       },
@@ -54,6 +58,7 @@
       "environment": "preview",
       "env": {
         "APP_VARIANT": "qa",
+        "ENABLE_APPLE_PAY": "false",
         "IOS_BUNDLE_IDENTIFIER": "com.gegibson.litterbugs.qa",
         "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app.qa"
       },
@@ -63,6 +68,7 @@
       "environment": "production",
       "env": {
         "APP_VARIANT": "production",
+        "ENABLE_APPLE_PAY": "false",
         "IOS_BUNDLE_IDENTIFIER": "com.litterbugs.app",
         "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app"
       },
@@ -72,6 +78,7 @@
       "environment": "production",
       "env": {
         "APP_VARIANT": "production",
+        "ENABLE_APPLE_PAY": "false",
         "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app"
       },
       "autoIncrement": true
