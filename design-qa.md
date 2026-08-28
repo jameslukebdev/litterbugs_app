@@ -282,3 +282,48 @@ The focused comparison confirms the logo remains centered independently of the u
 ## Result
 
 final result: passed
+
+---
+
+# Neutral Medium-Weight Navigation
+
+## Source and implementation
+
+- Earlier Litterbugs navigation: `/var/folders/g1/z5srknk55b52bfd28jykgmj00000gn/T/TemporaryItems/NSIRD_screencaptureui_03gemm/Screenshot 2026-08-28 at 11.52.31 AM.png`
+- Zillow visual reference: `/var/folders/g1/z5srknk55b52bfd28jykgmj00000gn/T/TemporaryItems/NSIRD_screencaptureui_jSsTdf/Screenshot 2026-08-28 at 11.52.38 AM.png`
+- Live implementation: `/tmp/litterbugs-neutral-medium-nav-live.png`
+- Focused normalized comparison: `/tmp/litterbugs-neutral-medium-nav-comparison.png`
+- Earlier Litterbugs source pixels: 349×90; Zillow source pixels: 327×78
+- Implementation viewport: 1280×720 CSS pixels at 1x density; navigation region normalized to 349×90 for comparison
+- State: signed out, Map route selected, default navigation state plus Cleanup policy hover
+
+## Full-view and focused comparison
+
+The live navigation now uses medium-weight Inter text that more closely matches the visual density of the Zillow reference. Map, Cleanup policy, and Terms all render in the same dark color even though Map remains correctly identified as the current page for accessibility. The red selected-page styling is gone.
+
+The focused comparison includes the earlier Litterbugs navigation, the supplied Zillow reference, and the revised live navigation in one image. Spacing, 16-pixel size, and 28-pixel line height remain unchanged, so this refinement improves weight and neutrality without changing the established header rhythm.
+
+## Required fidelity surfaces
+
+- Fonts and typography: Inter remains at 16 pixels and 28-pixel line height; weight increased from 400 to 500.
+- Spacing and layout rhythm: navigation gaps and header alignment are unchanged.
+- Colors and tokens: every resting navigation label measures `rgb(17, 17, 22)`; red remains only as a temporary hover color.
+- Image quality: no image assets changed; the existing logo remains sharp and correctly scaled.
+- Copy and content: navigation labels are unchanged.
+
+## Comparison history
+
+- P2 — Selected-page indicator: Map previously rendered red while the reference kept all resting navigation labels neutral. Fixed by removing the current-page color rule. Post-fix evidence: `/tmp/litterbugs-neutral-medium-nav-comparison.png`.
+- P2 — Navigation weight: the earlier 400 weight appeared lighter than the supplied reference. Fixed by moving the navigation to 500. Post-fix evidence: the live computed weight is 500 for all three links.
+
+## Verification
+
+- Production navigation was visually inspected at 1280×720.
+- All three resting labels measured the same dark color and 500 weight.
+- The existing red hover response remains functional.
+- Production console errors and warnings from `litterbugs.app` checked: none.
+- TypeScript, lint, CSS diff check, and the remote Vercel production build passed.
+
+## Result
+
+final result: passed
