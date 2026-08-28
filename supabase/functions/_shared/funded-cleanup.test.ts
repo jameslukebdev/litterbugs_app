@@ -10,6 +10,74 @@ import {
   refundMatchesLedger,
   transferMatchesLedger,
 } from "./stripe-reconciliation.ts";
+import { constructStripeWebhookEvent } from "./stripe-webhook-signing.ts";
+
+Deno.test("Stripe webhooks accept the live secret first", async () => {
+  const attemptedSecrets: string[] = [];
+  const event = await constructStripeWebhookEvent({
+    rawBody: "{}",
+    signature: "signature",
+    liveSecret: "live-secret",
+    testSecret: "test-secret",
+    constructEvent: (_body, _signature, secret) => {
+      attemptedSecrets.push(secret);
+      if (secret !== "live-secret") throw new Error("wrong secret");
+      return Promise.resolve({ livemode: true, id: "evt_live" });
+    },
+  });
+
+  if (event.id !== "evt_live" || attemptedSecrets.join(",") !== "live-secret") {
+    throw new Error("The live Stripe webhook secret was not preferred");
+  }
+});
+
+Deno.test("Stripe webhooks accept a separately signed test-mode event", async () => {
+  const attemptedSecrets: string[] = [];
+  const event = await constructStripeWebhookEvent({
+    rawBody: "{}",
+    signature: "signature",
+    liveSecret: "live-secret",
+    testSecret: "test-secret",
+    constructEvent: (_body, _signature, secret) => {
+      attemptedSecrets.push(secret);
+      if (secret === "live-secret") throw new Error("signature mismatch");
+      return Promise.resolve({ livemode: false, id: "evt_test" });
+    },
+  });
+
+  if (
+    event.id !== "evt_test" ||
+    attemptedSecrets.join(",") !== "live-secret,test-secret"
+  ) {
+    throw new Error(
+      "The Stripe test webhook secret was not used as a fallback",
+    );
+  }
+});
+
+Deno.test("Stripe test webhook secret cannot authorize a live-mode event", async () => {
+  let rejected = false;
+  try {
+    await constructStripeWebhookEvent({
+      rawBody: "{}",
+      signature: "signature",
+      liveSecret: "live-secret",
+      testSecret: "test-secret",
+      constructEvent: (_body, _signature, secret) => {
+        if (secret === "live-secret") throw new Error("signature mismatch");
+        return Promise.resolve({ livemode: true, id: "evt_forged" });
+      },
+    });
+  } catch (error) {
+    rejected = /signature mode/.test(String(error));
+  }
+
+  if (!rejected) {
+    throw new Error(
+      "A live-mode event was accepted with the test webhook secret",
+    );
+  }
+});
 
 Deno.test("Stripe onboarding state accepts its account and rejects tampering", async () => {
   Deno.env.set(
