@@ -37,8 +37,13 @@ module.exports = ({ config }) => {
   const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
   const googleIosClientBundleId = process.env.GOOGLE_IOS_CLIENT_BUNDLE_ID;
   const googleUrlScheme = toGoogleUrlScheme(googleIosClientId);
-  const stripeAppleMerchantIdentifier = process.env.STRIPE_APPLE_MERCHANT_IDENTIFIER
-    || 'merchant.com.litterbugs.app';
+  const stripeApplePayEnabled = process.env.ENABLE_APPLE_PAY === 'true';
+  const stripeAppleMerchantIdentifier = stripeApplePayEnabled
+    ? process.env.STRIPE_APPLE_MERCHANT_IDENTIFIER
+    : undefined;
+  if (stripeApplePayEnabled && !stripeAppleMerchantIdentifier) {
+    throw new Error('STRIPE_APPLE_MERCHANT_IDENTIFIER is required when ENABLE_APPLE_PAY=true.');
+  }
   const plugins = [...(config.plugins || [])];
   if (!plugins.some((plugin) => (
     plugin === 'expo-build-properties'
@@ -63,7 +68,9 @@ module.exports = ({ config }) => {
     plugins.push([
       '@stripe/stripe-react-native',
       {
-        merchantIdentifier: stripeAppleMerchantIdentifier,
+        ...(stripeApplePayEnabled ? {
+          merchantIdentifier: stripeAppleMerchantIdentifier,
+        } : {}),
         enableGooglePay: true,
       },
     ]);
@@ -140,7 +147,8 @@ module.exports = ({ config }) => {
     },
     extra: {
       ...config.extra,
-      stripeAppleMerchantIdentifier,
+      stripeApplePayEnabled,
+      ...(stripeAppleMerchantIdentifier ? { stripeAppleMerchantIdentifier } : {}),
     },
     plugins,
   };

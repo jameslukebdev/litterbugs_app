@@ -59,6 +59,7 @@ describe('mobile configuration non-regression', () => {
         environment: 'development',
         env: {
           APP_VARIANT: 'qa',
+          ENABLE_APPLE_PAY: 'false',
           IOS_BUNDLE_IDENTIFIER: 'com.gegibson.litterbugs.qa',
           ANDROID_PACKAGE_IDENTIFIER: 'com.litterbugs.app.qa',
         },
@@ -69,6 +70,7 @@ describe('mobile configuration non-regression', () => {
         environment: 'development',
         env: {
           APP_VARIANT: 'qa',
+          ENABLE_APPLE_PAY: 'false',
           IOS_BUNDLE_IDENTIFIER: 'com.gegibson.litterbugs.qa',
           ANDROID_PACKAGE_IDENTIFIER: 'com.litterbugs.app.qa',
         },
@@ -80,6 +82,7 @@ describe('mobile configuration non-regression', () => {
         environment: 'production',
         env: {
           APP_VARIANT: 'production',
+          ENABLE_APPLE_PAY: 'false',
           IOS_BUNDLE_IDENTIFIER: 'com.litterbugs.app',
           ANDROID_PACKAGE_IDENTIFIER: 'com.litterbugs.app',
         },
@@ -91,6 +94,7 @@ describe('mobile configuration non-regression', () => {
         environment: 'production',
         env: {
           APP_VARIANT: 'production',
+          ENABLE_APPLE_PAY: 'false',
           IOS_BUNDLE_IDENTIFIER: 'com.litterbugs.app',
           ANDROID_PACKAGE_IDENTIFIER: 'com.litterbugs.app',
         },
@@ -101,6 +105,7 @@ describe('mobile configuration non-regression', () => {
         environment: 'preview',
         env: {
           APP_VARIANT: 'qa',
+          ENABLE_APPLE_PAY: 'false',
           IOS_BUNDLE_IDENTIFIER: 'com.gegibson.litterbugs.qa',
           ANDROID_PACKAGE_IDENTIFIER: 'com.litterbugs.app.qa',
         },
@@ -110,6 +115,7 @@ describe('mobile configuration non-regression', () => {
         environment: 'production',
         env: {
           APP_VARIANT: 'production',
+          ENABLE_APPLE_PAY: 'false',
           ANDROID_PACKAGE_IDENTIFIER: 'com.litterbugs.app',
         },
         autoIncrement: true,
@@ -118,6 +124,7 @@ describe('mobile configuration non-regression', () => {
         environment: 'production',
         env: {
           APP_VARIANT: 'production',
+          ENABLE_APPLE_PAY: 'false',
           IOS_BUNDLE_IDENTIFIER: 'com.litterbugs.app',
           ANDROID_PACKAGE_IDENTIFIER: 'com.litterbugs.app',
         },

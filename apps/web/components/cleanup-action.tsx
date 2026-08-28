@@ -157,7 +157,9 @@ export function CleanupAction({
     const claim = await supabase.rpc('claim_cleanup', { target_report_id: report.id });
     setBusy('');
     if (claim.error) {
-      setMessage('This cleanup is no longer available to claim. Refresh the report and try again.');
+      setMessage(report.funded_amount_cents > 0
+        ? 'Finish cleanup payout setup before claiming this funded cleanup.'
+        : 'This cleanup is no longer available to claim. Refresh the report and try again.');
       return;
     }
     setWaiverOpen(false);

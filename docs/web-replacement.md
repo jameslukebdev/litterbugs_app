@@ -19,16 +19,24 @@ The new website lives in `apps/web` and connects only to Supabase project
 - The same Title, Photos, Litter Types, Severity, Notes, and Review report steps.
 - The same ten-mile creation boundary and maximum of three photos.
 - Owner-only editing and deletion.
+- Feature-gated funded-cleanup card contributions through Stripe's Payment
+  Element, using the same principal, 10% fee, full-refund rule, PaymentIntent,
+  webhook reconciliation, and dark-launch flags as mobile.
+- Cleaner payout status and Stripe-hosted onboarding, with a signed return path
+  back to the web account and no bank or identity details stored by the site.
+- Contribution history, funded claims, cleanup evidence, Gemini-backed review,
+  the 48-hour reporter dispute window, and administrator escalation.
 - Account status, sign-out, password recovery, and the existing account-deletion
   Edge Function.
 - A separately protected `/admin` cleanup-review inbox. Every read and decision
   is reauthorized against a private membership record and MFA assurance level 2.
 
-There is deliberately no report list, search, profile UI, My Reports page,
-realtime feed, funding, donations, Stripe, claims, evidence, cleanup review,
-payout, moderation, operations, or placeholder future-feature UI in the public
-web experience. `/admin` is the only operational exception and never contains
-public checkout or client-side financial credentials.
+The public website still omits broad social-profile, moderation, realtime-feed,
+and placeholder future-feature UI. Funded cleanups intentionally reuse the same
+backend as mobile: the browser receives only Stripe's publishable key and one
+PaymentIntent client secret after the authenticated Edge Function creates the
+ledger entry. Secret Stripe keys and service-role credentials never enter the
+website environment.
 
 The shared contract has an automated parity gate that reads the mechanically
 moved `apps/mobile/MapScreen.js` source. It fails if the web contract drifts

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { Icon } from '@/components/icon';
 import { ModalShell } from '@/components/modal-shell';
+import { PayoutSetupAction } from '@/components/payout-setup-action';
 import { createClient } from '@/lib/supabase/client';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -15,6 +16,7 @@ type CleanupAttempt = Pick<
 > & {
   report: Pick<Report, 'id' | 'title' | 'severity' | 'cleanup_state'> | null;
 };
+type ContributionRow = Database['public']['Tables']['cleanup_contributions']['Row'];
 
 function formatUsd(cents: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
@@ -41,6 +43,7 @@ export function AccountDialog({
   const [profile, setProfile] = useState<Profile | null>(null);
   const [reports, setReports] = useState<Report[]>([]);
   const [cleanups, setCleanups] = useState<CleanupAttempt[]>([]);
+  const [contributions, setContributions] = useState<ContributionRow[]>([]);
   const [message, setMessage] = useState('');
   const [busyAction, setBusyAction] = useState('');
   const [dataLoading, setDataLoading] = useState(true);
@@ -58,7 +61,7 @@ export function AccountDialog({
       }
 
       setEmail(user.email ?? '');
-      const [profileResult, reportsResult, cleanupResult] = await Promise.all([
+      const [profileResult, reportsResult, cleanupResult, contributionResult] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
         supabase
           .from('reports')
@@ -75,13 +78,19 @@ export function AccountDialog({
           .in('status', ['claimed', 'changes_requested', 'completion_submitted', 'completed'])
           .order('last_activity_at', { ascending: false })
           .limit(12),
+        supabase
+          .from('cleanup_contributions')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(12),
       ]);
 
       if (cancelled) return;
       setProfile(profileResult.data);
       setReports(reportsResult.data ?? []);
       setCleanups((cleanupResult.data ?? []) as unknown as CleanupAttempt[]);
-      if (profileResult.error || reportsResult.error || cleanupResult.error) {
+      setContributions(contributionResult.data ?? []);
+      if (profileResult.error || reportsResult.error || cleanupResult.error || contributionResult.error) {
         setMessage('Some account activity could not be loaded. You can still use the map.');
       }
       setDataLoading(false);
@@ -202,6 +211,22 @@ export function AccountDialog({
                 {!cleanups.length && <p className="member-empty">Claimed and completed cleanups will appear here.</p>}
               </div>
             </section>
+
+            <section className="member-panel member-contributions-panel">
+              <header><div><span className="eyebrow">CLEANUP FUNDS</span><h3>My contributions</h3></div></header>
+              <div className="member-activity-list">
+                {contributions.map((contribution) => (
+                  <button key={contribution.id} className="member-activity-row" onClick={() => openReport(contribution.report_id)}>
+                    <span>
+                      <strong>{formatUsd(contribution.principal_amount_cents)} cleanup reward</strong>
+                      <small>{contribution.status.replaceAll('_', ' ')} · {new Date(contribution.created_at).toLocaleDateString()}</small>
+                    </span>
+                    <Icon name="chevron-right" />
+                  </button>
+                ))}
+                {!contributions.length && <p className="member-empty">Your cleanup contributions will appear here.</p>}
+              </div>
+            </section>
           </div>
         </>
       )}
@@ -209,6 +234,7 @@ export function AccountDialog({
       <section className="member-settings">
         <div><span className="eyebrow">ACCOUNT SETTINGS</span><p>{email}</p></div>
         <div className="account-actions">
+          <PayoutSetupAction />
           <button className="secondary-button" onClick={sendRecovery} disabled={Boolean(busyAction)}>{busyAction === 'recovery' ? 'Sending…' : 'Reset password'}</button>
           <button className="secondary-button" onClick={signOut} disabled={Boolean(busyAction)}>{busyAction === 'signout' ? 'Signing out…' : 'Sign out'}</button>
           <button className="danger-button" onClick={deleteAccount} disabled={Boolean(busyAction)}>{busyAction === 'delete' ? 'Deleting account…' : 'Delete account'}</button>

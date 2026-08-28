@@ -17,9 +17,9 @@ Deno.test("Stripe onboarding state accepts its account and rejects tampering", a
     "test-only-secret-that-is-long-enough",
   );
   try {
-    const state = await createStripeOnboardingState("acct_test123");
+    const state = await createStripeOnboardingState("acct_test123", "web");
     const verified = await verifyStripeOnboardingState(state);
-    if (verified?.accountId !== "acct_test123") {
+    if (verified?.accountId !== "acct_test123" || verified.returnTarget !== "web") {
       throw new Error("Valid state was rejected");
     }
 

@@ -7,7 +7,9 @@ import type { Report } from '@litterbugs/report-contract';
 
 import { CleanupAction } from '@/components/cleanup-action';
 import { CleanupReviewAction } from '@/components/cleanup-review-action';
+import { FundingContributionAction } from '@/components/funding-contribution-action';
 import { Icon } from '@/components/icon';
+import { PayoutSetupAction } from '@/components/payout-setup-action';
 import { getWebCompatibleReportPhotoUrl } from '@/lib/report-photo';
 import { createClient } from '@/lib/supabase/client';
 
@@ -150,6 +152,8 @@ export function ReportDetail({
         {isOwner && !report.funding_locked_at && <button className="danger-button compact-button" onClick={onDelete}><Icon name="trash" />Delete</button>}
         {isOwner && !report.funding_locked_at && <button className="secondary-button compact-button" onClick={onEdit}><Icon name="edit" />Edit</button>}
         <CleanupReviewAction report={report} userId={userId} isOwner={isOwner} onChanged={onReportChanged} />
+        <FundingContributionAction report={report} userId={userId} onRequireSignIn={onRequireSignIn} onChanged={onReportChanged} />
+        {userId && report.funded_amount_cents > 0 && report.cleanup_state !== 'completed' && <PayoutSetupAction compact />}
         <CleanupAction report={report} userId={userId} onRequireSignIn={onRequireSignIn} onChanged={onReportChanged} />
         <button className="primary-button compact-button close-detail-button" onClick={onClose}>Close</button>
       </footer>

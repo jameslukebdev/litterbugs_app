@@ -23,6 +23,7 @@ import {
   loadCleanupFeatureFlags,
 } from './lib/funding';
 import { calculatePlatformFee, parseContributionAmount } from './lib/fundingMath';
+import { paymentSheetConfiguration, stripeInitializationConfiguration } from './lib/paymentConfiguration';
 import { useReports } from './lib/reports';
 
 export default function FundingContributionScreen({ navigation, route }) {
@@ -64,20 +65,20 @@ export default function FundingContributionScreen({ navigation, route }) {
         principalAmountCents: principalCents,
         clientRequestId: Crypto.randomUUID(),
       });
-      await initStripe({
+      const applePayEnabled = Platform.OS === 'ios'
+        && Constants.expoConfig?.extra?.stripeApplePayEnabled === true;
+      await initStripe(stripeInitializationConfiguration({
         publishableKey: intent.publishableKey,
-        merchantIdentifier: Constants.expoConfig?.extra?.stripeAppleMerchantIdentifier
-          || 'merchant.com.litterbugs.app',
         urlScheme: 'litterbugs',
-      });
-      const { error: initError } = await initPaymentSheet({
-        merchantDisplayName: 'Litterbugs',
+        applePayEnabled,
+        merchantIdentifier: Constants.expoConfig?.extra?.stripeAppleMerchantIdentifier,
+      }));
+      const { error: initError } = await initPaymentSheet(paymentSheetConfiguration({
         paymentIntentClientSecret: intent.paymentIntentClientSecret,
-        returnURL: 'litterbugs://stripe-redirect',
-        applePay: { merchantCountryCode: 'US' },
-        googlePay: { merchantCountryCode: 'US', testEnv: __DEV__ },
-        allowsDelayedPaymentMethods: false,
-      });
+        platform: Platform.OS,
+        applePayEnabled,
+        isDevelopment: __DEV__,
+      }));
       if (initError) throw new Error(initError.message);
       const { error: paymentError } = await presentPaymentSheet();
       if (paymentError) {
