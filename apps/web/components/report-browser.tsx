@@ -35,7 +35,14 @@ function ReportThumbnail({ report, priority }: { report: MappableReport; priorit
   const src = photoPath ? getReportCardPhotoUrl(photoPath) : null;
   const [failed, setFailed] = useState(false);
 
-  if (!src || failed) return null;
+  if (!src || failed) {
+    return (
+      <span className="report-result-photo report-result-photo-empty">
+        <Icon name="image" />
+        <span>{failed ? 'Photo unavailable' : 'No photo'}</span>
+      </span>
+    );
+  }
 
   return (
     <span className="report-result-photo">
@@ -84,10 +91,9 @@ export function ReportBrowser({
           {reports.length ? reports.map((report, index) => {
             const severity = (report.severity ?? 'Medium').toLowerCase();
             const selected = report.id === selectedReportId;
-            const hasPhoto = Boolean(report.photo_paths?.[0]);
             return (
               <button
-                className={`report-result${hasPhoto ? '' : ' report-result-no-photo'}${selected ? ' report-result-selected' : ''}`}
+                className={`report-result${selected ? ' report-result-selected' : ''}`}
                 key={report.id}
                 onClick={() => onSelect(report)}
                 aria-current={selected ? 'true' : undefined}
