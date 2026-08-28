@@ -46,6 +46,8 @@ describe('ReportBrowser', () => {
     expect(screen.getByText('Roadside bottles')).toBeTruthy();
     expect(screen.getByText('$125 reward')).toBeTruthy();
     expect(screen.getByText('Aug 26')).toBeTruthy();
+    expect(screen.getByText('No photo')).toBeTruthy();
+    expect(document.querySelector('.report-result-photo')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: /roadside bottles/i }));
     expect(onSelect).toHaveBeenCalledWith(report);
