@@ -14,7 +14,12 @@ import {
 import * as Crypto from 'expo-crypto';
 import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
-import { initStripe, initPaymentSheet, presentPaymentSheet } from '@stripe/stripe-react-native';
+import {
+  initStripe,
+  initPaymentSheet,
+  presentPaymentSheet,
+  retrievePaymentIntent,
+} from '@stripe/stripe-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -24,6 +29,7 @@ import {
 } from './lib/funding';
 import { calculatePlatformFee, parseContributionAmount } from './lib/fundingMath';
 import { paymentSheetConfiguration, stripeInitializationConfiguration } from './lib/paymentConfiguration';
+import { evaluatePaymentConfirmation } from './lib/paymentConfirmation';
 import { useReports } from './lib/reports';
 
 export default function FundingContributionScreen({ navigation, route }) {
@@ -36,6 +42,7 @@ export default function FundingContributionScreen({ navigation, route }) {
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
   const [receipt, setReceipt] = useState(null);
+  const [confirmationPending, setConfirmationPending] = useState(false);
   const principalCents = useMemo(() => parseContributionAmount(amount), [amount]);
   const feeCents = principalCents == null ? null : calculatePlatformFee(principalCents);
 
@@ -85,6 +92,17 @@ export default function FundingContributionScreen({ navigation, route }) {
         if (paymentError.code === 'Canceled') return;
         throw new Error(paymentError.message);
       }
+
+      const paymentConfirmation = evaluatePaymentConfirmation(
+        await retrievePaymentIntent(intent.paymentIntentClientSecret),
+      );
+      if (!paymentConfirmation.confirmed) {
+        setConfirmationPending(true);
+        await refreshReports({ showRefresh: false });
+        Alert.alert('Payment confirmation pending', paymentConfirmation.message);
+        return;
+      }
+
       setReceipt(intent);
       await refreshReports({ showRefresh: false });
     } catch (error) {
@@ -168,8 +186,15 @@ export default function FundingContributionScreen({ navigation, route }) {
           </Text>
         </View>
 
-        <TouchableOpacity style={[styles.primaryButton, (!principalCents || paying) && styles.disabled]} onPress={pay} disabled={!principalCents || paying}>
-          {paying ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryButtonText}>Continue to secure payment</Text>}
+        {confirmationPending ? (
+          <View style={styles.pendingCard}>
+            <Ionicons name="time-outline" size={21} color="#7A5810" />
+            <Text style={styles.pendingText}>Stripe is confirming your payment. Return to the report and refresh it shortly. Do not submit it again.</Text>
+          </View>
+        ) : null}
+
+        <TouchableOpacity style={[styles.primaryButton, (!principalCents || paying || confirmationPending) && styles.disabled]} onPress={pay} disabled={!principalCents || paying || confirmationPending}>
+          {paying ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryButtonText}>{confirmationPending ? 'Payment confirmation pending' : 'Continue to secure payment'}</Text>}
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -205,6 +230,8 @@ const styles = StyleSheet.create({
   totalValue: { color: '#202428', fontSize: 18, fontWeight: '900' },
   termsCard: { marginTop: 16, padding: 15, flexDirection: 'row', gap: 10, borderRadius: 14, backgroundColor: '#EAF0F2' },
   termsText: { flex: 1, color: '#52636B', fontSize: 13, lineHeight: 19 },
+  pendingCard: { marginTop: 16, padding: 15, flexDirection: 'row', gap: 10, borderRadius: 14, backgroundColor: '#FFF4D6' },
+  pendingText: { flex: 1, color: '#7A5810', fontSize: 13, lineHeight: 19 },
   primaryButton: { minWidth: 220, minHeight: 54, marginTop: 22, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#2F7D32' },
   primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
   disabled: { opacity: 0.55 },
