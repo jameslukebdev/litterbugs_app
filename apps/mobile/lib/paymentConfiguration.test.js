@@ -1,11 +1,24 @@
 import { describe, expect, it } from 'vitest';
 
+import appConfig from '../app.json';
+import easConfig from '../eas.json';
+
 import {
   paymentSheetConfiguration,
   stripeInitializationConfiguration,
 } from './paymentConfiguration';
 
 describe('funded-cleanup payment configuration', () => {
+  it('keeps every native build on the same JavaScript engine', () => {
+    expect(appConfig.expo.jsEngine).toBe('hermes');
+  });
+
+  it('keeps Apple Pay disabled in every interim EAS build profile', () => {
+    for (const profile of Object.values(easConfig.build)) {
+      expect(profile.env?.ENABLE_APPLE_PAY).toBe('false');
+    }
+  });
+
   it('keeps Apple Pay and its Merchant ID out of the interim iOS build', () => {
     expect(stripeInitializationConfiguration({
       publishableKey: 'pk_test_example',
