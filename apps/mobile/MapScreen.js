@@ -18,6 +18,7 @@ import {
   ActivityIndicator,
   AppState,
   Linking,
+  Share,
   useWindowDimensions,
 } from 'react-native';
 import { Marker } from 'react-native-maps';
@@ -76,6 +77,11 @@ import {
   requestGeminiReview,
 } from './lib/funding';
 import { shouldClusterReports } from './lib/mapClustering';
+import {
+  createNativeReportShareContent,
+  createReportShareModel,
+  isReportShareable,
+} from './lib/reportSharing';
 import * as FileSystem from 'expo-file-system/legacy';
 
 const MAP_MARKER_TRANSITION_MS = 180;
@@ -169,6 +175,7 @@ export default function MapScreen({ route, navigation }) {
   const [completedCleanupImpactLoading, setCompletedCleanupImpactLoading] = useState(false);
   const [completedCleanupImpactError, setCompletedCleanupImpactError] = useState(null);
   const [completedCleanupImpactReloadKey, setCompletedCleanupImpactReloadKey] = useState(0);
+  const [reportShareBusy, setReportShareBusy] = useState(false);
   const [paymentsEnabled, setPaymentsEnabled] = useState(false);
   const [geminiReviewEnabled, setGeminiReviewEnabled] = useState(false);
   const [reportFundingFeedback, setReportFundingFeedback] = useState(null);
@@ -1300,6 +1307,31 @@ useEffect(() => {
     currentUserId
     && selectedCleanupAttempt?.reporter_id === currentUserId
   );
+  const selectedReportIsShareable = isReportShareable(selectedReport);
+
+  const shareSelectedReport = async () => {
+    const model = createReportShareModel({
+      report: selectedReport,
+      impact: completedCleanupImpact,
+      beforePhotoUrl: reportPhotoUrls[0] ?? null,
+      afterPhotoUrl: completedCleanupImpact?.afterPhotoUrls?.[0] ?? null,
+    });
+
+    if (!model || reportShareBusy) return;
+
+    setReportShareBusy(true);
+    try {
+      await Share.share(
+        createNativeReportShareContent(model, Platform.OS),
+        { dialogTitle: model.state === 'completed' ? 'Share cleanup impact' : 'Share cleanup report' }
+      );
+    } catch (error) {
+      console.log('Report sharing error:', error);
+      Alert.alert('Sharing unavailable', 'We couldn’t open the share menu. Please try again.');
+    } finally {
+      setReportShareBusy(false);
+    }
+  };
   const cleanupStatus = cleanupStatusPresentation(
     selectedReport,
     currentUserIsCleaner,
@@ -2750,7 +2782,10 @@ const renderReportStep = () => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         bounces
-        contentContainerStyle={styles.reportPostScrollContent}
+        contentContainerStyle={[
+          styles.reportPostScrollContent,
+          selectedReportIsShareable && styles.reportPostScrollContentShareable,
+        ]}
       >
 
         {selectedReport?.cleanup_state === 'completed' ? (
@@ -3457,6 +3492,30 @@ const renderReportStep = () => {
         </View>
 
       </ScrollView>
+
+
+      {selectedReportIsShareable ? (
+        <View style={styles.reportShareBar}>
+          <TouchableOpacity
+            style={styles.reportShareButton}
+            onPress={shareSelectedReport}
+            disabled={reportShareBusy}
+            accessibilityRole="button"
+            accessibilityLabel={selectedReport?.cleanup_state === 'completed'
+              ? 'Share completed cleanup'
+              : 'Share litter report'}
+          >
+            {reportShareBusy ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <>
+                <Ionicons name="share-social-outline" size={20} color="#FFFFFF" />
+                <Text style={styles.reportShareButtonText}>Share</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      ) : null}
 
 
       {/* ============================= */}
@@ -4459,6 +4518,10 @@ reportPostScrollContent: {
   paddingBottom: 125,
 },
 
+reportPostScrollContentShareable: {
+  paddingBottom: 200,
+},
+
 originalReportDivider: {
   paddingHorizontal: 22,
   paddingTop: 25,
@@ -5088,6 +5151,32 @@ reportFooter: {
   backgroundColor: '#FFFFFF',
   borderTopWidth: 1,
   borderTopColor: 'rgba(0,0,0,0.08)',
+},
+
+reportShareBar: {
+  position: 'absolute',
+  left: 0,
+  right: 0,
+  bottom: 85,
+  paddingHorizontal: 16,
+  paddingTop: 12,
+  backgroundColor: '#FFFFFF',
+},
+
+reportShareButton: {
+  minHeight: 50,
+  borderRadius: 14,
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 8,
+  backgroundColor: '#B448CF',
+},
+
+reportShareButtonText: {
+  color: '#FFFFFF',
+  fontSize: 15,
+  fontWeight: '800',
 },
 
 reportFooterButton: {

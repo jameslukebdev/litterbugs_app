@@ -50,6 +50,23 @@ import { supabase } from './lib/supabase';
 
 const Stack = createNativeStackNavigator();
 
+const navigationLinking = {
+  prefixes: [
+    'litterbugs://',
+    'https://litterbugs.app',
+    'https://www.litterbugs.app',
+  ],
+  config: {
+    screens: {
+      App: {
+        screens: {
+          Map: 'reports/:reportId',
+        },
+      },
+    },
+  },
+};
+
 function HomeScreen({ navigation }) {
   const { width, height } = useWindowDimensions();
   const logoSize = Math.min(width * 0.5, height * 0.45, 360);
@@ -201,6 +218,7 @@ function AppNavigation({ session, passwordRecovery, onRecoveryComplete }) {
     <NavigationContainer
       key={permanent ? 'permanent-navigation' : 'signed-out-navigation'}
       ref={navigationRef}
+      linking={navigationLinking}
       onReady={() => {
         if (pendingNotificationData.current) {
           openNotificationData(pendingNotificationData.current);

@@ -1,4 +1,6 @@
 const GOOGLE_CLIENT_SUFFIX = '.apps.googleusercontent.com';
+const REPORT_LINK_HOST = 'litterbugs.app';
+const REPORT_LINK_PATH_PREFIX = '/reports/';
 
 const toGoogleUrlScheme = (clientId) => {
   if (!clientId?.endsWith(GOOGLE_CLIENT_SUFFIX)) return null;
@@ -80,6 +82,33 @@ module.exports = ({ config }) => {
   // environment. Validate on the worker, where every sensitive build value is
   // available, and in explicit local build simulations.
   const isConfiguredBuild = process.env.EAS_BUILD === 'true';
+  const associatedDomains = isProduction
+    ? [...new Set([
+      ...(config.ios?.associatedDomains || []),
+      `applinks:${REPORT_LINK_HOST}`,
+    ])]
+    : config.ios?.associatedDomains;
+  const reportIntentFilter = {
+    action: 'VIEW',
+    autoVerify: true,
+    data: [{
+      scheme: 'https',
+      host: REPORT_LINK_HOST,
+      pathPrefix: REPORT_LINK_PATH_PREFIX,
+    }],
+    category: ['BROWSABLE', 'DEFAULT'],
+  };
+  const androidIntentFilters = isProduction
+    ? [
+      ...(config.android?.intentFilters || []).filter((filter) => (
+        !filter.data?.some((entry) => (
+          entry.host === REPORT_LINK_HOST
+          && entry.pathPrefix === REPORT_LINK_PATH_PREFIX
+        ))
+      )),
+      reportIntentFilter,
+    ]
+    : config.android?.intentFilters;
 
   if (isConfiguredBuild) {
     const requiredBuildValues = {
@@ -131,6 +160,7 @@ module.exports = ({ config }) => {
     ios: {
       ...config.ios,
       bundleIdentifier: iosBundleIdentifier,
+      ...(associatedDomains ? { associatedDomains } : {}),
     },
     android: {
       ...config.android,
@@ -138,6 +168,7 @@ module.exports = ({ config }) => {
       ...(androidBlockedPermissions ? {
         blockedPermissions: [...new Set(androidBlockedPermissions)],
       } : {}),
+      ...(androidIntentFilters ? { intentFilters: androidIntentFilters } : {}),
       config: {
         ...config.android?.config,
         ...(googleMapsAndroidApiKey ? {
