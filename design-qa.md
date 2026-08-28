@@ -4,6 +4,52 @@
 
 final result: passed
 
+---
+
+# Report Card Consistency QA
+
+## Source and implementation
+
+- Source visual truth: `/var/folders/g1/z5srknk55b52bfd28jykgmj00000gn/T/TemporaryItems/NSIRD_screencaptureui_HXtLPb/Screenshot 2026-08-28 at 10.42.40 AM.png`
+- Production desktop implementation: `/tmp/litterbugs-card-consistency-desktop.png`
+- Production mobile implementation: `/tmp/litterbugs-card-consistency-mobile.png`
+- Focused comparison: `/tmp/litterbugs-card-consistency-comparison.png`
+- Source pixels: 815×660 cropped grid view
+- Desktop implementation pixels and CSS viewport: 1596×1020 at 1x density
+- Mobile implementation pixels and CSS viewport: 390×844 at 1x density
+- State: signed out, 11 active test reports, default desktop grid and open mobile results sheet
+
+## Full-view and focused comparison
+
+The combined comparison places the supplied broken layout and the corrected live grid in one image. The earlier no-photo card spans both columns while photo cards use one column. In production, every report uses the same single-column footprint, 16:9 media region, copy height, border, radius, and vertical spacing. The no-photo state uses the existing image icon and a truthful label rather than fabricated imagery.
+
+The focused card region is sufficient for this scoped change because the map, header, and surrounding results layout were not changed. Desktop measurements confirm the first ten cards are each 285×269 CSS pixels. Mobile measurements confirm the first four cards are each 343×302 CSS pixels.
+
+## Required fidelity surfaces
+
+- Typography: Titles, reward/status text, severity, and dates retain the existing type scale and two-line title allowance.
+- Spacing and layout rhythm: Photo and no-photo cards now share identical grid tracks, media proportions, copy height, padding, gaps, borders, radii, and elevation.
+- Colors and tokens: The neutral no-photo state uses existing gray surface and text values; status and severity colors are unchanged.
+- Image quality: Existing report photographs remain uncropped beyond the established 16:9 card treatment. Missing or failed photos show the existing image-library icon and concise state text.
+- Copy and content: Real report content is unchanged. The only added copy is `No photo` or `Photo unavailable` when that state is true.
+
+## Comparison history
+
+- P2 — Inconsistent geometry: no-photo cards used a special full-width compact layout, interrupting the two-column scan pattern. Fixed by removing that exception and rendering the same media/content frame for every report. Post-fix evidence: `/tmp/litterbugs-card-consistency-comparison.png`.
+- P2 — Responsive inconsistency: the special card geometry also changed differently at tablet and mobile breakpoints. Fixed by using one card structure at every breakpoint. Post-fix evidence: desktop cards measure 285×269 and mobile cards measure 343×302.
+
+## Verification
+
+- Focused component tests passed: 2 tests.
+- Web typecheck and lint passed.
+- Production deployment completed successfully.
+- Production checked at desktop and mobile CSS viewports.
+- Production console errors and warnings checked: none.
+
+## Result
+
+final result: passed
+
 No unresolved P2-or-higher visual or interaction findings remain.
 
 ## Comparison inputs
