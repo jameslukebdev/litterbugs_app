@@ -327,3 +327,49 @@ The focused comparison includes the earlier Litterbugs navigation, the supplied 
 ## Result
 
 final result: passed
+
+---
+
+# Prominent Header Logo
+
+## Source and implementation
+
+- Source visual truth: `/var/folders/g1/z5srknk55b52bfd28jykgmj00000gn/T/TemporaryItems/NSIRD_screencaptureui_mSIJGE/Screenshot 2026-08-28 at 12.03.04 PM.png`
+- Live reference-width implementation: `/tmp/litterbugs-prominent-header-logo-830.png`
+- Live desktop implementation: `/tmp/litterbugs-prominent-header-logo-live.png`
+- Live mobile implementation: `/tmp/litterbugs-prominent-header-logo-mobile.png`
+- Focused normalized comparison: `/tmp/litterbugs-prominent-logo-comparison.png`
+- Source pixels: 1067×133, including a 238-pixel Zillow reference region and an approximately 830-pixel Litterbugs browser region
+- Implementation viewports: 830×720 and 1280×720 desktop/tablet; 390×844 mobile; all at 1x density
+- State: signed out, Map route selected
+
+## Full-view and focused comparison
+
+The supplied comparison showed the horizontal Zillow wordmark at roughly 160 pixels wide and the earlier stacked Litterbugs mark at roughly 90 pixels wide. The revised live Litterbugs mark now measures 132×90 CSS pixels, giving its embedded lettering comparable prominence while preserving the stacked artwork's original aspect ratio.
+
+The 830-pixel comparison matches the visible width of the user's Litterbugs browser region. The logo is now unmistakably larger than the earlier version, remains exactly centered, and has a dedicated 96-pixel header so none of the artwork is cropped or allowed to overlap the map.
+
+## Required fidelity surfaces
+
+- Fonts and typography: navigation typography remains unchanged; the larger brand raster materially improves the legibility of its embedded lettering.
+- Spacing and layout rhythm: desktop and tablet header height is 96 pixels with a 90-pixel logo; navigation and account controls remain vertically centered. Mobile retains the 66-pixel header.
+- Colors and tokens: no color changes were introduced.
+- Image quality: the original high-resolution Litterbugs artwork remains proportional, sharp, and uncropped.
+- Copy and content: no text changed.
+
+## Comparison history
+
+- P2 — Insufficient logo presence: the earlier 91×62 desktop mark and 100×68 tablet mark remained visibly smaller than the supplied Zillow reference. Fixed by increasing the desktop and tablet mark to 132×90 and providing a 96-pixel header. Post-fix evidence: `/tmp/litterbugs-prominent-logo-comparison.png`.
+- P2 — Mobile crowding risk: applying the new 90-pixel mark on phones would displace the account action. Prevented by retaining the existing 70.5×48 mobile logo and 66-pixel mobile header; the 390-pixel view has no horizontal overflow.
+
+## Verification
+
+- Production was visually inspected at the reference width, full desktop width, and mobile width.
+- The 830- and 1280-pixel views both measure the logo at 132×90 CSS pixels.
+- The mobile view remains 70.5×48 with zero horizontal overflow.
+- Production console errors and warnings from `litterbugs.app` checked: none.
+- TypeScript, lint, CSS diff check, and the remote Vercel production build passed.
+
+## Result
+
+final result: passed
