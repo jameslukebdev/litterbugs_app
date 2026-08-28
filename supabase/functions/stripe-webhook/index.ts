@@ -15,6 +15,7 @@ import {
   refundMatchesLedger,
   transferMatchesLedger,
 } from "../_shared/stripe-reconciliation.ts";
+import { constructStripeWebhookEvent } from "../_shared/stripe-webhook-signing.ts";
 
 type JsonObject = Record<string, unknown>;
 
@@ -339,11 +340,14 @@ Deno.serve(async (request: Request) => {
       return await processThinAccountEvent(admin, stripe, rawBody, signature, rawPayload);
     }
 
-    const event = await stripe.webhooks.constructEventAsync(
+    const event = await constructStripeWebhookEvent({
       rawBody,
       signature,
-      requiredEnv("STRIPE_WEBHOOK_SECRET"),
-    );
+      liveSecret: requiredEnv("STRIPE_WEBHOOK_SECRET"),
+      testSecret: Deno.env.get("STRIPE_TEST_WEBHOOK_SECRET"),
+      constructEvent: (payload, header, secret) =>
+        stripe.webhooks.constructEventAsync(payload, header, secret),
+    });
     if (await alreadyProcessed(admin, event.id)) {
       return jsonResponse({ received: true, duplicate: true });
     }
