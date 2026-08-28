@@ -376,9 +376,11 @@ export function MapExperience({
       <header className="site-header">
         <nav className="site-navigation" aria-label="Main navigation">
           <Link href="/" aria-current="page">Map</Link>
+          <Link href="/about">About</Link>
           <Link href="/cleanup-policy">Cleanup policy</Link>
           <Link href="/terms">Terms</Link>
         </nav>
+        <Link href="/about" className="mobile-about-link">About</Link>
         <Link href="/" className="brand-link" aria-label="Litterbugs home"><Image src="/brand/litterbugs-logo.png" alt="Litterbugs" width={636} height={433} priority /></Link>
         <button className={userId ? 'account-button' : 'signin-button'} onClick={() => userId ? setAccountOpen(true) : setAuthOpen(true)}>
           {userId && <Icon name="account" />}{userId ? 'Account' : 'Sign in'}
