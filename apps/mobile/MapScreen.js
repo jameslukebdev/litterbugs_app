@@ -75,7 +75,42 @@ import {
   loadReportFundingFeedback,
   requestGeminiReview,
 } from './lib/funding';
+import { shouldClusterReports } from './lib/mapClustering';
 import * as FileSystem from 'expo-file-system/legacy';
+
+const MAP_MARKER_TRANSITION_MS = 180;
+
+function MapMarkerTransition({ children, transitionKey }) {
+  const opacity = useRef(new Animated.Value(0.72)).current;
+  const scale = useRef(new Animated.Value(0.94)).current;
+
+  useEffect(() => {
+    opacity.setValue(0.72);
+    scale.setValue(0.94);
+
+    const transition = Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: MAP_MARKER_TRANSITION_MS,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scale, {
+        toValue: 1,
+        duration: MAP_MARKER_TRANSITION_MS,
+        useNativeDriver: true,
+      }),
+    ]);
+
+    transition.start();
+    return () => transition.stop();
+  }, [opacity, scale, transitionKey]);
+
+  return (
+    <Animated.View style={{ opacity, transform: [{ scale }] }}>
+      {children}
+    </Animated.View>
+  );
+}
 
 const showPermanentAccountRequired = () => {
   Alert.alert(
@@ -95,9 +130,7 @@ export default function MapScreen({ route, navigation }) {
     'Review',
   ];
   const MAX_REPORT_DISTANCE_MILES = 10;
-  const [tracksReportMarkers, setTracksReportMarkers] = useState(
-    Platform.OS === 'android'
-  );
+  const [tracksReportMarkers, setTracksReportMarkers] = useState(true);
   const reportMarkerTrackingTimerRef = useRef(null);
   const reportClusterRef = useRef();
   const [draftCoord, setDraftCoord] = useState(null);
@@ -167,6 +200,7 @@ export default function MapScreen({ route, navigation }) {
   } = useReports();
   const currentUserId = permanentUserId(currentUser);
   const fundingEnabled = paymentsEnabled && geminiReviewEnabled;
+  const reportClusteringEnabled = shouldClusterReports(region);
   const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const bottomNavClearance = getBottomNavClearance(insets.bottom);
@@ -1072,7 +1106,7 @@ const submitReport = async () => {
     };
 
 const refreshReportMarkerSnapshots = useCallback(() => {
-  if (Platform.OS !== 'android' || markers.length === 0) return;
+  if (markers.length === 0) return;
 
   setTracksReportMarkers(true);
   if (reportMarkerTrackingTimerRef.current) {
@@ -2335,6 +2369,8 @@ const renderReportStep = () => {
           }}
           maxZoom={14}
           radius={20}
+          animationEnabled={false}
+          clusteringEnabled={reportClusteringEnabled}
           superClusterRef={reportClusterRef}
           renderCluster={({ id, geometry, properties, onPress }) => {
             const statusCounts = getClusterStatusCounts(id);
@@ -2373,26 +2409,28 @@ const renderReportStep = () => {
                   onPress();
                 }}
               >
-                <View style={styles.reportClusterHit}>
-                  <View style={styles.reportClusterBubble}>
-                    <Text style={styles.reportClusterText}>
-                      {properties.point_count}
-                    </Text>
+                <MapMarkerTransition transitionKey={`cluster-${id}`}>
+                  <View style={styles.reportClusterHit}>
+                    <View style={styles.reportClusterBubble}>
+                      <Text style={styles.reportClusterText}>
+                        {properties.point_count}
+                      </Text>
+                    </View>
+                    <View style={styles.reportClusterStatusRow}>
+                      {statusBadges.map(({ key, count, color, icon }) => (
+                        <View
+                          key={key}
+                          style={[styles.reportClusterStatusBadge, { borderColor: color }]}
+                        >
+                          <Ionicons name={icon} size={11} color={color} />
+                          <Text style={[styles.reportClusterStatusCount, { color }]}>
+                            {count}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
                   </View>
-                  <View style={styles.reportClusterStatusRow}>
-                    {statusBadges.map(({ key, count, color, icon }) => (
-                      <View
-                        key={key}
-                        style={[styles.reportClusterStatusBadge, { borderColor: color }]}
-                      >
-                        <Ionicons name={icon} size={11} color={color} />
-                        <Text style={[styles.reportClusterStatusCount, { color }]}>
-                          {count}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
+                </MapMarkerTransition>
               </Marker>
             );
           }}
@@ -2425,27 +2463,31 @@ const renderReportStep = () => {
                 openReportDetails(m.report);
               }}
             >
-              <View style={styles.reportMarkerHitLg}>
-                {fundingEnabled
-                  && selectedReport?.id === m.report?.id
-                  && Number(m.report?.funded_amount_cents) > 0 ? (
-                  <View style={styles.markerRewardBadge}>
-                    <Text style={styles.markerRewardText}>{formatUsd(m.report.funded_amount_cents)}</Text>
-                  </View>
-                ) : null}
-                <View style={[styles.reportMarkerIconWrapLg, { backgroundColor: bg }]}>
-                  {iconFamily === 'material-community' ? (
-                    <MaterialCommunityIcons name={icon} size={34} color="#fff" />
-                  ) : (
-                    <Ionicons name={icon} size={34} color="#fff" />
-                  )}
-                  {statusIcon ? (
-                    <View style={styles.reportMarkerStatusBadge}>
-                      <Ionicons name={statusIcon} size={16} color="#374151" />
+              <MapMarkerTransition
+                transitionKey={`${reportClusteringEnabled ? 'clustered' : 'direct'}:${m.id}`}
+              >
+                <View style={styles.reportMarkerHitLg}>
+                  {fundingEnabled
+                    && selectedReport?.id === m.report?.id
+                    && Number(m.report?.funded_amount_cents) > 0 ? (
+                    <View style={styles.markerRewardBadge}>
+                      <Text style={styles.markerRewardText}>{formatUsd(m.report.funded_amount_cents)}</Text>
                     </View>
                   ) : null}
+                  <View style={[styles.reportMarkerIconWrapLg, { backgroundColor: bg }]}>
+                    {iconFamily === 'material-community' ? (
+                      <MaterialCommunityIcons name={icon} size={34} color="#fff" />
+                    ) : (
+                      <Ionicons name={icon} size={34} color="#fff" />
+                    )}
+                    {statusIcon ? (
+                      <View style={styles.reportMarkerStatusBadge}>
+                        <Ionicons name={statusIcon} size={16} color="#374151" />
+                      </View>
+                    ) : null}
+                  </View>
                 </View>
-              </View>
+              </MapMarkerTransition>
             </Marker>
           );
         })}
