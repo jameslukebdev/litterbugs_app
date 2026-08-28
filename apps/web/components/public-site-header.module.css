@@ -46,7 +46,7 @@
 }
 
 .navLink[aria-current='page']::after,
-.activeSummary::after {
+.policyMenu .activeSummary::after {
   position: absolute;
   right: 0;
   bottom: -8px;
