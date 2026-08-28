@@ -329,7 +329,7 @@ button.member-activity-row:hover { background: var(--green-soft); }
 .standalone-logo { display: block; width: auto; height: 90px; max-width: 180px; margin: 0 auto 22px; }.standalone-icon { width: 54px; height: 54px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: #b95e19; font-size: 30px; font-weight: 900; }
 .company-page { min-height: 100dvh; padding: 42px 22px; background: #f1f5f1; }
 .company-card { width: min(720px, 100%); margin: 0 auto; padding: 36px; background: #fff; border: 1px solid #dfe5df; border-radius: 24px; box-shadow: var(--shadow); }
-.company-logo { display: block; width: auto; height: 82px; max-width: 190px; object-fit: contain; margin-bottom: 22px; }
+.company-eyebrow { margin: 0 0 10px; color: var(--brand-red) !important; font-size: 12px; font-weight: 900; letter-spacing: .12em; }
 .company-card h1 { margin: 0 0 14px; font-size: clamp(29px, 5vw, 42px); line-height: 1.08; letter-spacing: -.035em; }
 .company-card h2 { margin: 28px 0 8px; font-size: 18px; }
 .company-card p { color: #4f5d54; line-height: 1.65; }

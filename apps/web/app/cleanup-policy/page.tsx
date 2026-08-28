@@ -10,6 +10,7 @@ export const metadata: Metadata = {
 export default function CleanupPolicyPage() {
   return (
     <LegalPage
+      activePath="/cleanup-policy"
       eyebrow="CLEANUP, FUNDING & SAFETY"
       title="Cleanup and reward policy"
       summary="The plain-language rules for contributions, report pools, safe participation, evidence review, disputes, refunds, and cleaner rewards."

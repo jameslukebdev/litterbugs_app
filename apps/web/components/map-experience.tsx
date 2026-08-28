@@ -15,13 +15,12 @@ import {
   type ReportDraft,
 } from '@litterbugs/report-contract';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { AccountDialog } from '@/components/account-dialog';
 import { AuthDialog } from '@/components/auth-dialog';
 import { Icon } from '@/components/icon';
+import { PublicSiteHeader } from '@/components/public-site-header';
 import { ReportBrowser } from '@/components/report-browser';
 import { canManageReport, realUserId } from '@/lib/report-access';
 import { getBrowserLocation } from '@/lib/geolocation';
@@ -373,19 +372,14 @@ export function MapExperience({
 
   return (
     <main className="map-page">
-      <header className="site-header">
-        <nav className="site-navigation" aria-label="Main navigation">
-          <Link href="/" aria-current="page">Map</Link>
-          <Link href="/about">About</Link>
-          <Link href="/cleanup-policy">Cleanup policy</Link>
-          <Link href="/terms">Terms</Link>
-        </nav>
-        <Link href="/about" className="mobile-about-link">About</Link>
-        <Link href="/" className="brand-link" aria-label="Litterbugs home"><Image src="/brand/litterbugs-logo.png" alt="Litterbugs" width={636} height={433} priority /></Link>
-        <button className={userId ? 'account-button' : 'signin-button'} onClick={() => userId ? setAccountOpen(true) : setAuthOpen(true)}>
-          {userId && <Icon name="account" />}{userId ? 'Account' : 'Sign in'}
-        </button>
-      </header>
+      <PublicSiteHeader
+        activePath="/"
+        action={(
+          <button className={userId ? 'account-button' : 'signin-button'} onClick={() => userId ? setAccountOpen(true) : setAuthOpen(true)}>
+            {userId && <Icon name="account" />}{userId ? 'Account' : 'Sign in'}
+          </button>
+        )}
+      />
 
       <div className="map-workspace">
         <ReportBrowser reports={reports} open={reportListOpen} onToggle={() => setReportListOpen((open) => !open)} onSelect={openReport} selectedReportId={selectedReport?.id} />
