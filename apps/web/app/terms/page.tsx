@@ -10,6 +10,7 @@ export const metadata: Metadata = {
 export default function TermsPage() {
   return (
     <LegalPage
+      activePath="/terms"
       eyebrow="LITTERBUGS TERMS"
       title="Terms of use"
       summary="These terms govern Litterbugs accounts, community reports, cleanup funding, cleaner rewards, safety, reviews, disputes, and refunds."

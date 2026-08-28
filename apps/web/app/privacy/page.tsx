@@ -10,6 +10,7 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <LegalPage
+      activePath="/privacy"
       eyebrow="LITTERBUGS PRIVACY"
       title="Privacy policy"
       summary="This policy explains how Burrow Base LLC collects, uses, shares, and protects information when operating Litterbugs."
