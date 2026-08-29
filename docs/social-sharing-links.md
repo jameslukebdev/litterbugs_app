@@ -23,13 +23,13 @@ coordinates or non-public profile fields.
 - The report webpage includes an Apple Smart App Banner with the report URL as
   its app argument.
 
-The interim `development-primary` and `production-internal` profiles set
-`ENABLE_IOS_ASSOCIATED_DOMAINS=false`. This lets current `com.litterbugs.app`
-builds use Luke's existing provisioning profile while its Associated Domains
-capability is unavailable. Shared report URLs continue to open the web report,
-and Android App Links remain enabled. After the Apple capability is available,
-remove that override or set it to `true`, rebuild iOS, and complete the native
-link-opening check below.
+The interim `development-primary`, `production-internal`, and `production`
+profiles set `ENABLE_IOS_ASSOCIATED_DOMAINS=false`. This lets every current
+`com.litterbugs.app` build, including the App Store build, use Luke's existing
+provisioning profile while its Associated Domains capability is unavailable.
+Shared report URLs continue to open the web report, and Android App Links remain
+enabled. After the Apple capability is available, remove that override or set it
+to `true`, rebuild iOS, and complete the native link-opening check below.
 
 The AASA file lists both the current Apple team `DB39U76V6Q` and the receiving
 team `RLXNU225W4` for `com.litterbugs.app` so the website is ready for the
@@ -42,7 +42,9 @@ the association file before release.
 
 1. Deploy the web changes so both `/.well-known/` association endpoints are
    publicly available over HTTPS without redirects.
-2. Enable or verify Associated Domains for the current Apple App ID.
+2. For the current interim release, keep Associated Domains disabled in the iOS
+   EAS profile. After the app transfer, enable and verify it for the receiving
+   organization's Apple App ID.
 3. Create a new `development-primary` or production native build. The existing
    installed development client cannot gain new associated-domain entitlements
    from a JavaScript update.
