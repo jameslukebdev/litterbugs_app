@@ -251,8 +251,18 @@ export const isUuid = (value: unknown): value is string =>
   typeof value === "string"
   && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
-export const errorMessage = (error: unknown) =>
-  error instanceof Error ? error.message : "Unexpected error";
+export const errorMessage = (error: unknown) => {
+  if (error instanceof Error) return error.message;
+  if (
+    error
+    && typeof error === "object"
+    && "message" in error
+    && typeof error.message === "string"
+  ) {
+    return error.message;
+  }
+  return "Unexpected error";
+};
 
 export const hasExactOriginalPhotoReuse = (
   reportHashes: readonly string[],

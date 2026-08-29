@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import {
   authenticatedUser,
   corsHeaders,
+  errorMessage,
   isUuid,
   jsonResponse,
   serviceClient,
@@ -95,7 +96,7 @@ Deno.serve(async (request: Request) => {
     return jsonResponse({ error: "Invalid admin operation" }, 400);
   } catch (error) {
     console.error("Admin cleanup case operation failed", error);
-    const message = error instanceof Error ? error.message : String(error);
+    const message = errorMessage(error);
     if (/cleanup_admin_mfa_required|permission denied|insufficient_privilege/i.test(message)) {
       return jsonResponse({ error: "Admin access with MFA is required" }, 403);
     }

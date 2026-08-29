@@ -1,9 +1,19 @@
 import {
   createStripeOnboardingState,
+  errorMessage,
   hasExactOriginalPhotoReuse,
   secureSecretEqual,
   verifyStripeOnboardingState,
 } from "./funded-cleanup.ts";
+
+Deno.test("errorMessage preserves provider and PostgREST error messages", () => {
+  if (errorMessage(new Error("provider_failed")) !== "provider_failed") {
+    throw new Error("Error instance message was not preserved");
+  }
+  if (errorMessage({ message: "cleanup_admin_mfa_required" }) !== "cleanup_admin_mfa_required") {
+    throw new Error("Structured error message was not preserved");
+  }
+});
 import { geminiRelayConfig } from "./google-cloud.ts";
 import {
   paymentIntentMatchesLedger,
