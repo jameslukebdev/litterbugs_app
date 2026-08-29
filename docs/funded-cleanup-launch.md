@@ -1,11 +1,11 @@
 # Funded cleanup MVP launch checklist
 
-The funded-cleanup code ships dark in the real Litterbugs app and its linked
-backend. Live Stripe and Gemini credentials are installed in the production
-backend, but both server-side feature flags remain `false`. This is the
-production app architecture, not a separate QA-only payment app. Provider
-credentials being present does not authorize live charges or paid Gemini
-reviews; the flags and the launch sequence below remain the release boundary.
+The funded-cleanup code ships in the real Litterbugs app and its linked backend.
+Live Stripe and Gemini credentials are installed in production. Gemini review
+is enabled while live payments remain disabled. This is the production app
+architecture, not a separate QA-only payment app. Provider credentials being
+present does not authorize live charges; the payment flag and launch sequence
+below remain the financial release boundary.
 
 ## Current production state (2026-08-28)
 
@@ -16,7 +16,7 @@ reviews; the flags and the launch sequence below remain the release boundary.
   Edge Functions are active and the authenticated financial maintenance job is
   scheduled every minute with both required Vault entries present.
 - `payments_enabled=false` and
-  `gemini_financial_review_enabled=false`. Production contains zero successful
+  `gemini_financial_review_enabled=true`. Production contains zero successful
   contributions and zero cleaner payout accounts. One failed administrator
   preview contribution remains for inbox demonstration; it has no Stripe
   PaymentIntent or charge and moved no money.
@@ -57,10 +57,11 @@ and any update continue under Luke's existing live Apple account and the
 existing `com.litterbugs.app` identity. Luke may still need to create or refresh
 signing credentials or approve submission. Apple Pay, final app ownership,
 organization signing, and the organization Merchant ID remain deferred gates;
-they are not abandoned. Supabase leaked-password protection requires the
-deferred Pro upgrade, and the production legal drafts have not received
-qualified legal sign-off. Do not create a second QA application or repeat
-completed broad test work while waiting.
+they are not abandoned. Supabase leaked-password protection remains deferred
+until a future Pro upgrade, and the production legal drafts have not received
+qualified legal sign-off. Grant explicitly removed both items as launch blockers
+on 2026-08-28; they remain documented follow-up risks rather than gates. Do not
+create a second QA application or repeat completed broad test work while waiting.
 
 ### Focused Supabase security-advisor triage (2026-08-27)
 
@@ -79,7 +80,7 @@ policies, function guards, and existing authorization tests:
 - The `pg_net` extension is used by the authenticated maintenance schedule and
   is not a client authorization path.
 - Leaked-password protection is the remaining actionable advisor warning. It
-  requires Supabase Pro and stays an explicit launch-day gate below.
+  requires Supabase Pro and is deferred as a post-launch hardening item.
 
 ## Required configuration
 
@@ -258,10 +259,10 @@ Do not submit placeholder credentials. Create or select the review account and
 fresh report only when the submitted build is ready, so the reviewer does not
 receive stale workflow data.
 
-## Counsel review brief
+## Optional future counsel review brief
 
-Send the attorney these live pages together with the active in-app
-acknowledgment text:
+If outside counsel is engaged later, send the attorney these live pages together
+with the active in-app acknowledgment text:
 
 - `https://www.litterbugs.app/terms`
 - `https://www.litterbugs.app/privacy`
@@ -273,12 +274,12 @@ of contributions; the 10% fee; the 30-day report and seven-day renewal rules;
 full-fee refunds and the 23-month maximum age; reporter disputes and admin
 decisions; cleaner eligibility, safety, independent status, and taxes; platform
 responsibility for processing costs and chargebacks; and Gemini photo
-processing, retention, privacy, and human escalation. Record the reviewed
-version and date before enabling payments.
+processing, retention, privacy, and human escalation. Record any reviewed
+version and date as a post-launch policy hardening update.
 
-## Gates before either feature flag changes
+## Remaining gates before live payments
 
-Keep both flags `false` until every applicable item below is complete:
+Keep `payments_enabled=false` until every applicable item below is complete:
 
 - Apply all pending funded-cleanup migrations and deploy the matching Edge
   Functions from the same reviewed revision.
@@ -296,13 +297,6 @@ Keep both flags `false` until every applicable item below is complete:
   to an active report pool.
 - Bootstrap the permanent AAL2 administrator and complete the desktop admin
   test for denial, MFA, filtering, evidence, decisions, and audit history.
-- Enable Supabase Auth leaked-password protection before production accounts
-  can administer or receive funded-cleanup payments.
-- Obtain qualified legal review of the published terms, privacy/AI disclosure,
-  fee and refund disclosure, dispute rules, cleaner tax responsibility, active
-  cleanup acknowledgment, and App Store physical-services explanation. Publish
-  a new version of any document or acknowledgment that counsel requires before
-  enabling payments.
 - Complete sandbox testing for iOS card PaymentSheet under Luke's existing app
   identity, Android checkout under Grant's Google Play package/account plan,
   web checkout, hosted onboarding/return links, standard payouts, and App Store
@@ -311,7 +305,7 @@ Keep both flags `false` until every applicable item below is complete:
 
 Enable `gemini_financial_review_enabled` first for the controlled fixture and
 report-photo review rollout. Enable `payments_enabled` only after the Gemini,
-admin, Stripe sandbox, legal, and physical-device gates are all signed off.
+admin, Stripe sandbox, and physical-device gates are all signed off.
 
 ## Test-mode acceptance
 
@@ -345,7 +339,11 @@ The final device checks used Stripe sandbox funds only; no real money moved:
   includes Luke's PR #53 social-sharing changes.
 
 Both server-side feature flags were rechecked after these sandbox payments and
-remain `false`.
+remained `false` at that time. Gemini review was enabled on 2026-08-28 while
+payments remained off. A minimal live relay request returned the expected
+structured `better_photos` decision with reason `insufficient_coverage`,
+confirming the production Gemini model and authentication path without sending
+a user photo or moving money.
 
 The merged production revision was rechecked on 2026-08-27 after deployment:
 all nine Supabase Edge Function entry points passed Deno type-checking, all
@@ -398,40 +396,40 @@ Before live mode, verify:
   plan, plus the equivalent web card and payout flows;
 - `/admin` denial, TOTP enrollment/challenge, filters, evidence, required reasons, confirmations, and audit history.
 
-## Live-mode prerequisites
+## Live-payment prerequisites
 
 The published terms, privacy policy, cleanup policy, and active acknowledgment
 contain the planned 10% fee, full-refund rules, AI-photo disclosure, dispute,
-safety, independent-participant, and cleaner tax-responsibility language. These
-production drafts still require qualified legal review before payments are
-enabled. Confirm iOS card PaymentSheet and hosted onboarding on a physical
-iPhone now. Confirm Apple Pay separately after the organization transfer; it is
-not part of the interim activation path. The other live Stripe, Gemini,
-administrator, and backend configuration is recorded above.
+safety, independent-participant, and cleaner tax-responsibility language. Grant
+accepted the current production drafts for the initial rollout without making
+outside legal review a launch gate. Confirm iOS card PaymentSheet and hosted
+onboarding on a physical iPhone now. Confirm Apple Pay separately after the
+organization transfer; it is not part of the interim activation path. The other
+live Stripe, Gemini, administrator, and backend configuration is recorded above.
 
-Do not enable the flags merely because the code was deployed. Enable them only after test-mode money reconciliation, administrator coverage, monitoring, and the legal copy are signed off.
+Do not enable payments merely because the code was deployed. Enable them only
+after the live Gemini report-photo check, money reconciliation, administrator
+coverage, monitoring, and production mobile package checks are complete.
 
 ## Minimal live activation and rollback
 
 Do not repeat the full QA suite at launch. Use this ordered production check:
 
-1. Keep both flags off while the applicable card-payment, hosted-onboarding,
-   reconciliation, physical-device, and legal checks are completed. Do not wait
-   for the Apple organization conversion or Apple Pay configuration.
-2. Upgrade Supabase to Pro, enable leaked-password protection, and confirm the
-   administrator can still complete AAL2 authentication.
-3. Repeat the small synthetic Gemini fixture set, then enable only
-   `gemini_financial_review_enabled`.
-4. Create a fresh report after the flag change and confirm its original photo
+1. Keep `payments_enabled=false` while the applicable card-payment,
+   hosted-onboarding, reconciliation, and physical-device checks are completed.
+   Do not wait for the Apple organization conversion or Apple Pay configuration.
+2. `gemini_financial_review_enabled` is active. Its minimal production relay
+   check passed without a user photo or a financial transaction.
+3. Create a fresh report after the flag change and confirm its original photo
    becomes funding-eligible. Do not reuse pre-launch reports.
-5. Enable `payments_enabled`, make one minimum $5 contribution, and confirm the
+4. Enable `payments_enabled`, make one minimum $5 contribution, and confirm the
    principal, 10% fee, total charge, receipt, Stripe event, and Litterbugs
    ledger all agree.
-6. Complete cleaner onboarding and one real cleanup path, including Gemini
+5. Complete cleaner onboarding and one real cleanup path, including Gemini
    evidence review, the complete 48-hour dispute window, the first-paid-cleanup
    admin check, and the exact $5 transfer. Do not shorten the real timing rules
    for launch testing.
-7. If every step reconciles, leave the features on for the controlled rollout.
+6. If every step reconciles, leave the features on for the controlled rollout.
    If any money, review, or payout state disagrees, immediately set both flags
    to `false`, leave the webhook destinations and audit records intact, and use
    the admin workflow to refund or resolve the affected transaction.
