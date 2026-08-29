@@ -12,6 +12,7 @@ import {
   stripeClient,
 } from "../_shared/funded-cleanup.ts";
 import { geminiRelayConfig } from "../_shared/google-cloud.ts";
+import { claimedOperationRow } from "../_shared/maintenance-operation.ts";
 
 type AiCheck = {
   id: string;
@@ -29,6 +30,21 @@ type GeminiDecision = {
   decision: "pass" | "better_photos" | "admin_review" | "fail";
   summary: string;
   reason_codes: string[];
+};
+
+type RefundOperation = {
+  id: string;
+  stripe_payment_intent_id: string;
+  total_amount_cents: number;
+  refund_attempts: number;
+};
+
+type PayoutOperation = {
+  id: string;
+  cleaner_id: string;
+  report_id: string;
+  reward_amount_cents: number;
+  payout_attempts: number;
 };
 
 const reasonCodes = [
@@ -356,11 +372,22 @@ const processAiCheck = async (
 };
 
 const processRefund = async (admin: ReturnType<typeof serviceClient>) => {
-  const { data: contribution, error } = await admin.rpc(
+  const { data, error } = await admin.rpc(
     "claim_cleanup_refund_operation",
   );
   if (error) throw error;
+  const contribution = claimedOperationRow<RefundOperation>(data);
   if (!contribution) return null;
+  if (
+    !isUuid(contribution.id) ||
+    !contribution.stripe_payment_intent_id.startsWith("pi_") ||
+    !Number.isSafeInteger(contribution.total_amount_cents) ||
+    contribution.total_amount_cents <= 0 ||
+    !Number.isSafeInteger(contribution.refund_attempts) ||
+    contribution.refund_attempts < 1
+  ) {
+    throw new Error("Refund operation returned invalid ledger data");
+  }
 
   let refund;
   try {
@@ -412,11 +439,22 @@ const processRefund = async (admin: ReturnType<typeof serviceClient>) => {
 };
 
 const processPayout = async (admin: ReturnType<typeof serviceClient>) => {
-  const { data: attempt, error } = await admin.rpc(
+  const { data, error } = await admin.rpc(
     "claim_cleanup_payout_operation",
   );
   if (error) throw error;
+  const attempt = claimedOperationRow<PayoutOperation>(data);
   if (!attempt) return null;
+  if (
+    !isUuid(attempt.id) || !isUuid(attempt.cleaner_id) ||
+    !isUuid(attempt.report_id) ||
+    !Number.isSafeInteger(attempt.reward_amount_cents) ||
+    attempt.reward_amount_cents <= 0 ||
+    !Number.isSafeInteger(attempt.payout_attempts) ||
+    attempt.payout_attempts < 1
+  ) {
+    throw new Error("Payout operation returned invalid ledger data");
+  }
 
   const { data: payoutAccount, error: accountError } = await admin
     .from("cleaner_payout_accounts")
