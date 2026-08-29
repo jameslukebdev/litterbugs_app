@@ -56,6 +56,42 @@ below remain the financial release boundary.
   questions and acceptance evidence are recorded in
   `docs/legal-acceptance-and-review.md`.
 
+## Live activation continuation (2026-08-29)
+
+- Both production feature flags were enabled for the controlled activation
+  sequence. The fresh report above remained Gemini-approved and financially
+  eligible.
+- Exactly one live contribution succeeded: $5.00 of cleanup principal plus the
+  displayed $0.50 Litterbugs fee, for a $5.50 total charge. Stripe PaymentIntent
+  `pi_3U9lPQ40KMkUKMFW0zjg7jkn`, charge
+  `ch_3U9lPQ40KMkUKMFW0UBrQUHe`, and contribution
+  `4b8362cb-b214-4106-937c-060b81b9b29a` reconcile to that breakdown. Three
+  abandoned duplicate PaymentIntents were canceled and the ledger records
+  their cancellation; they did not create successful charges.
+- PR #65 corrected the production financial-maintenance worker so empty refund
+  or payout claims can never become blank Stripe requests. Deployed
+  `run-financial-maintenance` version 31 returned HTTP 200 on subsequent
+  scheduled runs, and no blank refund request occurred after deployment.
+- The live Stripe profile now points to `https://www.litterbugs.app/` and
+  records `support@litterbugs.app`, the production privacy policy, and the
+  production terms. Payments, payouts, transfers, identity verification, the
+  manual platform payout schedule, platform responsibilities, and hosted
+  Express onboarding selections remain active or completed in Stripe.
+- One controlled cleaner-onboarding retry after those profile updates still
+  returned Stripe error `account_create_activation_required` on
+  `POST /v2/core/accounts`. Stripe's Connected accounts page independently
+  reports that Connect setup is almost complete and disables creation of the
+  first live connected account. No cleaner payout account was created. This is
+  the remaining provider-side gate for the paid claim, 48-hour approval, and
+  exact-principal transfer check; do not loop retries until Stripe changes the
+  platform activation state.
+- The authorized IRS and North Carolina records identify Burrow Base LLC, while
+  the Stripe tax profile currently classifies the shared legal entity as an
+  individual under Grant Gibson. The production website and policy fields were
+  safe to correct immediately. Any change to business type, tax identity, or
+  associated attestation must use Stripe's legal-entity update process rather
+  than being inferred from the connected-account error.
+
 The funded-cleanup launch no longer waits for Apple to finish converting the
 Burrow Base developer account. Apple has not provided a dependable timeline and
 approval could take weeks, so interim iOS builds, physical-device card testing,
