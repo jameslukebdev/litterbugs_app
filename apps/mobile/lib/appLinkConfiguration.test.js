@@ -18,10 +18,11 @@ afterEach(() => {
 });
 
 describe('app link configuration', () => {
-  it('disables the entitlement only for current internal production-identity builds', () => {
+  it('disables the entitlement for every current production-identity iOS build', () => {
     expect(easConfig.build['development-primary'].env.ENABLE_IOS_ASSOCIATED_DOMAINS).toBe('false');
     expect(easConfig.build['production-internal'].env.ENABLE_IOS_ASSOCIATED_DOMAINS).toBe('false');
-    expect(easConfig.build.production.env.ENABLE_IOS_ASSOCIATED_DOMAINS).toBeUndefined();
+    expect(easConfig.build.production.env.ENABLE_IOS_ASSOCIATED_DOMAINS).toBe('false');
+    expect(easConfig.build.production.env.IOS_BUNDLE_IDENTIFIER).toBe('com.litterbugs.app');
   });
 
   it('adds verified report links only to the production app identity', () => {
@@ -71,5 +72,16 @@ describe('app link configuration', () => {
     delete process.env.ENABLE_IOS_ASSOCIATED_DOMAINS;
     const final = configureApp({ config: baseConfig });
     expect(final.ios.associatedDomains).toEqual(['applinks:litterbugs.app']);
+  });
+
+  it('keeps the current App Store build free of deferred Apple entitlements', () => {
+    Object.assign(process.env, easConfig.build.production.env);
+    process.env.EAS_BUILD_PLATFORM = 'ios';
+
+    const storeBuild = configureApp({ config: baseConfig });
+
+    expect(storeBuild.ios.bundleIdentifier).toBe('com.litterbugs.app');
+    expect(storeBuild.ios.associatedDomains).toBeUndefined();
+    expect(storeBuild.extra.stripeApplePayEnabled).toBe(false);
   });
 });
