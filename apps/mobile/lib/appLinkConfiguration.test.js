@@ -84,4 +84,13 @@ describe('app link configuration', () => {
     expect(storeBuild.ios.associatedDomains).toBeUndefined();
     expect(storeBuild.extra.stripeApplePayEnabled).toBe(false);
   });
+
+  it('builds the production simulator as the standalone app', () => {
+    const simulatorProfile = easConfig.build['production-simulator'];
+
+    expect(simulatorProfile.developmentClient).toBe(false);
+    expect(simulatorProfile.env.APP_VARIANT).toBe('production');
+    expect(simulatorProfile.env.IOS_BUNDLE_IDENTIFIER).toBe('com.litterbugs.app');
+    expect(simulatorProfile.env.ENABLE_APPLE_PAY).toBe('false');
+  });
 });

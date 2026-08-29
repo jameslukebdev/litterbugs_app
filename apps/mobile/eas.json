@@ -37,7 +37,7 @@
         "IOS_BUNDLE_IDENTIFIER": "com.litterbugs.app",
         "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app"
       },
-      "developmentClient": true,
+      "developmentClient": false,
       "distribution": "internal",
       "ios": {
         "simulator": true
