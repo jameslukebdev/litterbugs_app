@@ -43,6 +43,12 @@ below remain the financial release boundary.
   budget alerts. Its dedicated runtime identity has secret access only on the
   relay shared secret. The completed dark-launch fixture evidence below used
   only synthetic, non-user photos.
+- After Gemini review was enabled, a fresh synthetic report was submitted
+  through the standalone production iOS app (`com.litterbugs.app`). Production
+  check `ca47e051-f773-4188-84af-18277ec8eee9` passed with
+  `gemini-3.7-flash`, made report `580f7363-a32b-43f3-bc0a-32a13c7be5cc`
+  financially eligible, and correctly opened no administrator case. Payments
+  remained disabled throughout this live application check.
 - Expanded Terms, Privacy, Cleanup and Reward Policy, safety guidelines, and
   the in-app acknowledgment were prepared from the production rules with a
   ChatGPT Pro legal-drafting pass. They are production drafts and must not be
@@ -353,6 +359,13 @@ authentication, exact Stripe charge/refund/transfer reconciliation, relay
 origin and credential requirements, exact-photo reuse, fixed-model enforcement,
 private signed-photo access, request-size limits, and rejection of unauthorized
 relay calls.
+
+The final production boundary check on 2026-08-28 also confirmed that a normal
+member cannot read the administrator inbox. PR #62 preserves structured
+PostgREST denial messages, and deployed `admin-cleanup-case` version 20 now
+returns the intended HTTP 403 response with the MFA requirement instead of a
+generic server error. All 11 shared financial-security tests and every Edge
+Function type check passed before deployment.
 
 Reports created while Gemini review is disabled do not build a dormant AI queue. Enabling the flag is intentionally non-retroactive: only a report created afterward, or an existing report whose owner deliberately replaces its photo set afterward, enters financial photo review. This keeps pre-launch test reports out of paid Gemini processing and out of the funded-cleanup ledger.
 
