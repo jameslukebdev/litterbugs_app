@@ -8,6 +8,11 @@ import type { Report } from '@litterbugs/report-contract';
 import { FiCheck, FiCopy, FiMail, FiMessageCircle, FiShare2 } from 'react-icons/fi';
 
 import { Icon } from '@/components/icon';
+import {
+  reportShareDestinationUrls,
+  reportShareImageFilename,
+  reportShareImageUrl,
+} from '@/lib/report-share-destinations';
 import styles from './report-share-dialog.module.css';
 
 type ShareableReport = Pick<
@@ -48,10 +53,14 @@ export function ReportShareDialog({
   onShared?: () => void;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const downloadLinkRef = useRef<HTMLAnchorElement>(null);
   const [feedback, setFeedback] = useState<ShareFeedback | null>(null);
+  const [shareImageFile, setShareImageFile] = useState<File | null>(null);
   const nativeShareAvailable = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
   const { title, eyebrow, message } = reportShareCopy(report);
   const shareMessage = `${message}\n\n${shareUrl}`;
+  const imageUrl = reportShareImageUrl(shareUrl);
+  const imageFilename = reportShareImageFilename(title);
   const litterTypes = [...(report.litter_types ?? []), ...(report.types ? [report.types] : [])];
   const details = [
     report.severity ? `${report.severity} priority` : null,
@@ -65,6 +74,29 @@ export function ReportShareDialog({
     if (!open) return;
     dialogRef.current?.focus();
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !nativeShareAvailable || typeof navigator.canShare !== 'function') return;
+    let cancelled = false;
+
+    async function prepareShareImage() {
+      try {
+        const response = await fetch(imageUrl);
+        if (!response.ok) return;
+        const blob = await response.blob();
+        const file = new File([blob], imageFilename, { type: blob.type || 'image/png' });
+        if (!cancelled && navigator.canShare?.({ files: [file] })) setShareImageFile(file);
+      } catch {
+        // Text and link sharing remain available when the image cannot be prepared.
+      }
+    }
+
+    void prepareShareImage();
+    return () => {
+      cancelled = true;
+      setShareImageFile(null);
+    };
+  }, [imageFilename, imageUrl, nativeShareAvailable, open]);
 
   function closeDialog() {
     setFeedback(null);
@@ -123,7 +155,12 @@ export function ReportShareDialog({
     }
 
     try {
-      await navigator.share({ title, text: message, url: shareUrl });
+      await navigator.share({
+        title,
+        text: message,
+        url: shareUrl,
+        ...(shareImageFile ? { files: [shareImageFile] } : {}),
+      });
       onShared?.();
       closeDialog();
     } catch (error) {
@@ -133,15 +170,16 @@ export function ReportShareDialog({
   }
 
   async function prepareInstagramShare() {
+    downloadLinkRef.current?.click();
     try {
       await navigator.clipboard.writeText(shareMessage);
       setFeedback({
-        message: 'Instagram is opening in a new tab. The prepared caption and report link are copied—paste them into your post, Story, or message.',
+        message: 'Instagram Create is opening. Your branded share image is downloading and the caption is copied—upload the image, then paste the caption.',
         tone: 'success',
       });
     } catch {
       setFeedback({
-        message: 'Instagram is opening, but the caption could not be copied. Use Copy link, then paste it into Instagram.',
+        message: 'Instagram Create is opening and your share image is downloading, but the caption could not be copied. Use Copy link before posting.',
         tone: 'error',
       });
     }
@@ -149,12 +187,7 @@ export function ReportShareDialog({
 
   if (!open) return null;
 
-  const encodedMessage = encodeURIComponent(shareMessage);
-  const emailHref = `mailto:?subject=${encodeURIComponent(`${title} | Litterbugs`)}&body=${encodedMessage}`;
-  const messagesHref = `sms:?body=${encodedMessage}`;
-  const whatsappHref = `https://wa.me/?text=${encodedMessage}`;
-  const facebookHref = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
-  const xHref = `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}&url=${encodeURIComponent(shareUrl)}`;
+  const destinationUrls = reportShareDestinationUrls({ message, shareUrl, title });
 
   return createPortal(
     <div
@@ -171,6 +204,7 @@ export function ReportShareDialog({
         tabIndex={-1}
         onKeyDown={handleDialogKeyDown}
       >
+        <a ref={downloadLinkRef} href={imageUrl} download={imageFilename} hidden aria-hidden="true" tabIndex={-1}>Download share image</a>
         <header className={styles.header}>
           <div>
             <p className={styles.eyebrow}>Share a Litterbugs report</p>
@@ -206,21 +240,21 @@ export function ReportShareDialog({
               <span>Copy the public report URL</span>
             </span>
           </button>
-          <a className={styles.option} href={emailHref}>
+          <a className={styles.option} href={destinationUrls.email}>
             <span className={`${styles.optionIcon} ${styles.utilityIcon}`} aria-hidden="true"><FiMail /></span>
             <span className={styles.optionCopy}><strong>Email</strong><span>Open your email app</span></span>
           </a>
-          <a className={styles.option} href={messagesHref}>
+          <a className={styles.option} href={destinationUrls.messages}>
             <span className={`${styles.optionIcon} ${styles.utilityIcon}`} aria-hidden="true"><FiMessageCircle /></span>
             <span className={styles.optionCopy}><strong>Text message</strong><span>Open your default messaging app</span></span>
           </a>
-          <a className={styles.option} href={whatsappHref} target="_blank" rel="noopener noreferrer">
+          <a className={styles.option} href={destinationUrls.whatsapp} target="_blank" rel="noopener noreferrer">
             <span className={`${styles.optionIcon} ${styles.brandIcon}`} aria-hidden="true">
               <img className={styles.brandMark} src="/brand/social/whatsapp-glyph.png" alt="" />
             </span>
             <span className={styles.optionCopy}><strong>WhatsApp</strong><span>Share to a chat</span></span>
           </a>
-          <a className={styles.option} href={facebookHref} target="_blank" rel="noopener noreferrer">
+          <a className={styles.option} href={destinationUrls.facebook} target="_blank" rel="noopener noreferrer">
             <span className={`${styles.optionIcon} ${styles.brandIcon}`} aria-hidden="true">
               <img className={styles.brandMark} src="/brand/social/facebook-logo.png" alt="" />
             </span>
@@ -228,7 +262,7 @@ export function ReportShareDialog({
           </a>
           <a
             className={styles.option}
-            href="https://www.instagram.com/"
+            href={destinationUrls.instagram}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => { void prepareInstagramShare(); }}
@@ -238,10 +272,10 @@ export function ReportShareDialog({
             </span>
             <span className={styles.optionCopy}>
               <strong>Instagram</strong>
-              <span>Copy the caption and open Instagram</span>
+              <span>Open Create with a branded image and caption</span>
             </span>
           </a>
-          <a className={styles.option} href={xHref} target="_blank" rel="noopener noreferrer">
+          <a className={styles.option} href={destinationUrls.x} target="_blank" rel="noopener noreferrer">
             <span className={`${styles.optionIcon} ${styles.brandIcon}`} aria-hidden="true">
               <img className={styles.brandMark} src="/brand/social/x-logo.png" alt="" />
             </span>

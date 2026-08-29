@@ -51,7 +51,9 @@ afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
   vi.clearAllMocks();
+  vi.unstubAllGlobals();
   Object.defineProperty(navigator, 'share', { configurable: true, value: undefined });
+  Object.defineProperty(navigator, 'canShare', { configurable: true, value: undefined });
   Object.defineProperty(window, 'matchMedia', { configurable: true, value: undefined });
 });
 
@@ -124,6 +126,43 @@ describe('ReportDetail photos', () => {
 
     expect(screen.getByText('$125.00 reward')).toBeTruthy();
     expect(screen.getByText('Cleanup in progress')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Share' })).toBeNull();
+  });
+
+  it('offers sharing only for public available and completed reports', () => {
+    const { rerender } = render(
+      <ReportDetail
+        report={report}
+        isOwner={false}
+        onClose={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Share' })).toBeTruthy();
+
+    rerender(
+      <ReportDetail
+        report={{ ...report, cleanup_state: 'completion_submitted' }}
+        isOwner={false}
+        onClose={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: 'Share' })).toBeNull();
+
+    rerender(
+      <ReportDetail
+        report={{ ...report, cleanup_state: 'completed' }}
+        isOwner={false}
+        onClose={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Share' })).toBeTruthy();
   });
 
   it('opens as a modal, focuses close, and closes on Escape', () => {
@@ -204,7 +243,8 @@ describe('ReportDetail photos', () => {
     expect(screen.getByRole('link', { name: /Email/ }).getAttribute('href')).toMatch(/^mailto:\?subject=/);
     expect(screen.getByRole('link', { name: /Text message/ }).getAttribute('href')).toMatch(/^sms:\?body=/);
     expect(screen.getByRole('link', { name: /WhatsApp/ }).getAttribute('href')).toMatch(/^https:\/\/wa\.me\/\?text=/);
-    expect(screen.getByRole('link', { name: /Facebook/ }).getAttribute('href')).toMatch(/^https:\/\/www\.facebook\.com\/sharer\/sharer\.php\?u=/);
+    expect(screen.getByRole('link', { name: /Facebook/ }).getAttribute('href')).toMatch(/^https:\/\/www\.facebook\.com\/dialog\/share\?app_id=/);
+    expect(screen.getByRole('link', { name: /Instagram/ }).getAttribute('href')).toBe('https://www.instagram.com/create/select/');
     expect(screen.getByRole('link', { name: /^X/ }).getAttribute('href')).toMatch(/^https:\/\/twitter\.com\/intent\/tweet\?text=/);
 
     const destinationUrls = Array.from(shareDialog.querySelectorAll<HTMLAnchorElement>('a')).map(({ href }) => href).join(' ');
@@ -239,13 +279,18 @@ describe('ReportDetail photos', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));
     const instagramLink = screen.getByRole('link', { name: /Instagram/ });
-    expect(instagramLink.textContent).toContain('Copy the caption and open Instagram');
-    expect(instagramLink.getAttribute('href')).toBe('https://www.instagram.com/');
+    expect(instagramLink.textContent).toContain('Open Create with a branded image and caption');
+    expect(instagramLink.getAttribute('href')).toBe('https://www.instagram.com/create/select/');
     expect(instagramLink.getAttribute('target')).toBe('_blank');
+    const downloadLink = document.querySelector<HTMLAnchorElement>('a[download]');
+    expect(downloadLink?.getAttribute('href')).toBe('http://localhost:3000/reports/report-id/share-image');
+    expect(downloadLink?.getAttribute('download')).toBe('litterbugs-photo-report.png');
+    const download = vi.spyOn(downloadLink as HTMLAnchorElement, 'click').mockImplementation(() => undefined);
     fireEvent.click(instagramLink);
 
+    expect(download).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining('http://localhost:3000/reports/report-id')));
-    expect(screen.getByRole('status').textContent).toContain('Instagram is opening in a new tab');
+    expect(screen.getByRole('status').textContent).toContain('Instagram Create is opening');
   });
 
   it('uses the native share sheet directly on coarse-pointer devices', async () => {
@@ -299,10 +344,50 @@ describe('ReportDetail photos', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));
+    const downloadLink = document.querySelector<HTMLAnchorElement>('a[download]');
+    vi.spyOn(downloadLink as HTMLAnchorElement, 'click').mockImplementation(() => undefined);
     fireEvent.click(screen.getByRole('link', { name: /Instagram/ }));
 
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
     expect(nativeShare).not.toHaveBeenCalled();
+  });
+
+  it('includes the branded report image in the device share menu when file sharing is supported', async () => {
+    const nativeShare = vi.fn().mockResolvedValue(undefined);
+    const canShare = vi.fn().mockReturnValue(true);
+    const fetchImage = vi.fn().mockResolvedValue({
+      ok: true,
+      blob: async () => new Blob(['image'], { type: 'image/png' }),
+    });
+    vi.stubGlobal('fetch', fetchImage);
+    Object.defineProperty(navigator, 'share', { configurable: true, value: nativeShare });
+    Object.defineProperty(navigator, 'canShare', { configurable: true, value: canShare });
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn(() => ({ matches: false })),
+    });
+
+    render(
+      <ReportDetail
+        report={report}
+        isOwner={false}
+        onClose={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Share' }));
+    await waitFor(() => expect(canShare).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole('button', { name: /More apps/ }));
+
+    await waitFor(() => expect(nativeShare).toHaveBeenCalledTimes(1));
+    expect(fetchImage).toHaveBeenCalledWith('http://localhost:3000/reports/report-id/share-image');
+    expect(nativeShare).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Photo report',
+      url: 'http://localhost:3000/reports/report-id',
+      files: [expect.objectContaining({ name: 'litterbugs-photo-report.png', type: 'image/png' })],
+    }));
   });
 
   it('keeps the chooser open when the native share sheet is cancelled', async () => {

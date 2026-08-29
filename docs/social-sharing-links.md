@@ -10,6 +10,36 @@ Only available reports and completed cleanup impact records receive Share action
 Pending cleanup states remain unshareable. Shared copy does not contain report
 coordinates or non-public profile fields.
 
+## Destination behavior
+
+The website uses a destination-specific composer where the platform provides
+one. Every destination requires the person sharing to review and confirm the
+post or message; Litterbugs never posts automatically.
+
+- **Facebook:** the official Facebook Share Dialog opens with the existing
+  Litterbugs Meta App ID and the public report URL. Facebook builds its preview
+  from the report page's Open Graph metadata and branded image.
+- **WhatsApp:** `wa.me` opens the contact picker with the report message and URL
+  prefilled.
+- **X:** X's Web Intent opens a new-post composer with the report message, URL,
+  and `#Litterbugs` hashtag prefilled.
+- **Email and text message:** the operating system's email or SMS composer opens
+  with privacy-safe report copy and the public report URL.
+- **Instagram on desktop web:** Instagram does not provide a documented web
+  sharing URL that uploads media or prefills a post for an arbitrary visitor.
+  Litterbugs opens Instagram Create, downloads a 1080×1350 branded report card,
+  and copies the prepared caption so the user can upload and confirm the post.
+- **Installed apps / More apps:** when Web Share file support is available,
+  Litterbugs includes the branded report card with the report text and URL.
+  Otherwise it shares the text and URL.
+
+The native Expo app keeps Luke's React Native share-sheet implementation. Meta's
+direct Instagram Stories integration requires native Android implicit intents
+or the iOS `instagram-stories` custom URL scheme, a Facebook App ID, and a local
+image asset. It cannot be implemented by adding a website URL or JavaScript-only
+Expo change. A future targeted native Stories button should be implemented as a
+small native sharing module and tested in a new physical-device build.
+
 ## App-opening behavior
 
 - iOS Universal Links use `applinks:litterbugs.app` and the website AASA file.

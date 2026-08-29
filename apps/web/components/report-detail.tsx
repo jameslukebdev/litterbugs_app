@@ -11,6 +11,7 @@ import { FundingContributionAction } from '@/components/funding-contribution-act
 import { Icon } from '@/components/icon';
 import { PayoutSetupAction } from '@/components/payout-setup-action';
 import { ReportShareDialog } from '@/components/report-share-dialog';
+import { isPubliclyShareableReport } from '@/lib/public-report-share-model';
 import { getReportCardPhotoUrl, getReportDetailPhotoUrl, getWebCompatibleReportPhotoUrl } from '@/lib/report-photo';
 import { createClient } from '@/lib/supabase/client';
 
@@ -115,6 +116,7 @@ export function ReportDetail({
 
   const severity = report.severity ?? 'Medium';
   const hasLitterTypes = Boolean(report.litter_types?.length || report.types);
+  const shareable = isPubliclyShareableReport(report);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -219,16 +221,18 @@ export function ReportDetail({
               <Icon name="heart" />
               <span>{favorite ? 'Saved' : 'Favorite'}</span>
             </button>
-            <button
-              ref={shareButtonRef}
-              type="button"
-              aria-haspopup="dialog"
-              aria-expanded={shareDialogOpen}
-              onClick={() => { void shareReport(); }}
-            >
-              <Icon name="share" />
-              <span>Share</span>
-            </button>
+            {shareable && (
+              <button
+                ref={shareButtonRef}
+                type="button"
+                aria-haspopup="dialog"
+                aria-expanded={shareDialogOpen}
+                onClick={() => { void shareReport(); }}
+              >
+                <Icon name="share" />
+                <span>Share</span>
+              </button>
+            )}
             <button type="button" aria-pressed={hidden} onClick={() => onHiddenChange?.(!hidden)}>
               <Icon name="eye-off" />
               <span>{hidden ? 'Hidden' : 'Hide'}</span>
