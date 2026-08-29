@@ -13,12 +13,14 @@ docs                     Product and provider documentation
 
 ## Product boundary
 
-The public web app mirrors the current report and account capabilities of the
-mobile app. It intentionally has no feed, place search, profiles, funding,
-payments, claims, cleanup review, payouts, or web guest mode. Public visitors
-can browse active reports; a real Supabase account is required for all writes.
-The sole operational exception is the protected `/admin` cleanup-review inbox,
-which requires private membership and MFA and exposes no public checkout.
+The public web app mirrors the current report, account, and funded-cleanup
+capabilities of the mobile app. Signed-in members can contribute through
+Stripe, complete cleaner payout onboarding, claim cleanups, submit evidence,
+review funded work, dispute a paid cleanup, and renew or close eligible reports.
+Public visitors can browse active reports, but a real Supabase account is
+required for every write or financial action. Web Guest mode, broad social
+profiles, place search, and the realtime feed remain intentionally absent. The
+protected `/admin` cleanup-review inbox requires private membership and MFA.
 
 The Expo app's behavior, appearance, identifiers, dependency versions, native
 plugins, URL scheme, EAS project, and build profiles are not changed by the

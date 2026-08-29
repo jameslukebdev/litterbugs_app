@@ -48,6 +48,7 @@
       "env": {
         "APP_VARIANT": "production",
         "ENABLE_APPLE_PAY": "false",
+        "ENABLE_IOS_ASSOCIATED_DOMAINS": "false",
         "IOS_BUNDLE_IDENTIFIER": "com.litterbugs.app",
         "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app"
       },
@@ -69,6 +70,7 @@
       "env": {
         "APP_VARIANT": "production",
         "ENABLE_APPLE_PAY": "false",
+        "ENABLE_IOS_ASSOCIATED_DOMAINS": "false",
         "IOS_BUNDLE_IDENTIFIER": "com.litterbugs.app",
         "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app"
       },

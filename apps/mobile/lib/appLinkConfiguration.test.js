@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 const require = createRequire(import.meta.url);
 const configureApp = require('../app.config.js');
+const easConfig = require('../eas.json');
 const originalEnvironment = { ...process.env };
 const baseConfig = {
   name: 'Litterbugs',
@@ -17,6 +18,12 @@ afterEach(() => {
 });
 
 describe('app link configuration', () => {
+  it('disables the entitlement only for current internal production-identity builds', () => {
+    expect(easConfig.build['development-primary'].env.ENABLE_IOS_ASSOCIATED_DOMAINS).toBe('false');
+    expect(easConfig.build['production-internal'].env.ENABLE_IOS_ASSOCIATED_DOMAINS).toBe('false');
+    expect(easConfig.build.production.env.ENABLE_IOS_ASSOCIATED_DOMAINS).toBeUndefined();
+  });
+
   it('adds verified report links only to the production app identity', () => {
     process.env.APP_VARIANT = 'production';
     process.env.IOS_BUNDLE_IDENTIFIER = 'com.litterbugs.app';
@@ -48,5 +55,21 @@ describe('app link configuration', () => {
 
     expect(qa.ios.associatedDomains).toBeUndefined();
     expect(qa.android.intentFilters).toBeUndefined();
+  });
+
+  it('can omit the iOS entitlement while preserving Android and the later enablement path', () => {
+    process.env.APP_VARIANT = 'production';
+    process.env.IOS_BUNDLE_IDENTIFIER = 'com.litterbugs.app';
+    process.env.ANDROID_PACKAGE_IDENTIFIER = 'com.litterbugs.app';
+    process.env.ENABLE_IOS_ASSOCIATED_DOMAINS = 'false';
+
+    const interim = configureApp({ config: baseConfig });
+
+    expect(interim.ios.associatedDomains).toBeUndefined();
+    expect(interim.android.intentFilters).toHaveLength(1);
+
+    delete process.env.ENABLE_IOS_ASSOCIATED_DOMAINS;
+    const final = configureApp({ config: baseConfig });
+    expect(final.ios.associatedDomains).toEqual(['applinks:litterbugs.app']);
   });
 });
