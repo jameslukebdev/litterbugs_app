@@ -111,11 +111,45 @@ below remain the financial release boundary.
   controlled activation checks before the pause. The administrator refund and
   payout failures remain explicitly titled preview fixtures and moved no real
   money.
-- Do not re-enable `payments_enabled` until Stripe activates live connected-
-  account creation. Then use a controlled window to create one recipient,
-  complete hosted onboarding and return links, claim the existing $5 reward,
-  run the full 48-hour review and first-paid-cleanup check, and reconcile the
-  exact $5 transfer before reopening contributions.
+- At this pause, `payments_enabled` was not to be re-enabled until Stripe
+  activated live connected-account creation. The continuation below records
+  the subsequent activation and controlled recipient test.
+
+### Live recipient and evidence continuation (2026-08-29)
+
+- Stripe activated live connected-account creation. The controlled synthetic
+  cleaner completed hosted onboarding for recipient account
+  `acct_1U9s3a3nb4PO7rCN`; Stripe and the Litterbugs ledger both report the
+  account as enabled for payouts with no currently due requirements.
+- The existing $5 funded report was claimed as a paid self-cleanup. Funding
+  froze at exactly $5, later contributions became unavailable, and the cleaner
+  acknowledged the production cleanup waiver and safety guidelines.
+- The controlled before-and-after submission passed one production review with
+  `gemini-3.7-flash` and prompt `funded-cleanup-v1`. Gemini recorded a plain-
+  language same-location/cleanup summary and opened the required first-paid-
+  cleanup administrator case; Gemini did not approve or transfer money.
+- Grant's AAL2 administrator approved the one-time first-cleanup check. The
+  decision and reason are present in the append-only audit record. A controlled
+  reporter dispute then froze the reward, opened an urgent administrator case,
+  and was denied after the matching evidence was reviewed. The original
+  dispute deadline remained unchanged throughout both decisions.
+- Cleanup attempt `a2c41888-3b7e-430e-8246-42730ae979d5` remains in
+  `completion_submitted` with `payout_status=blocked`, zero payout attempts,
+  and no Stripe transfer. Its full 48-hour window ends at
+  `2026-08-31T20:19:25.787369Z`; this production timing rule was not shortened
+  for testing.
+- `payments_enabled=false` and `gemini_financial_review_enabled=true`. The live
+  contribution's `payment_intent.succeeded` event is recorded exactly once,
+  and all 30 scheduled financial-maintenance runs checked during the final
+  half-hour audit succeeded without releasing the reward early.
+- Both Grant's permanent account and Luke's existing confirmed Litterbugs
+  account are active administrator members. Each person must use their own
+  authenticator enrollment; Luke's membership does not copy or bypass Grant's
+  AAL2 setup.
+- The remaining live financial check is deliberately time-gated: after the
+  unchanged deadline, use a controlled activation window to reconcile one
+  exact $5 transfer to the enabled recipient before deciding whether to reopen
+  public contributions.
 
 The funded-cleanup launch no longer waits for Apple to finish converting the
 Burrow Base developer account. Apple has not provided a dependable timeline and
