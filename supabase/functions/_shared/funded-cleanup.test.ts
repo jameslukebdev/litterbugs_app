@@ -5,6 +5,43 @@ import {
   secureSecretEqual,
   verifyStripeOnboardingState,
 } from "./funded-cleanup.ts";
+import { claimedOperationRow } from "./maintenance-operation.ts";
+
+Deno.test("financial operation claims normalize empty database results", () => {
+  if (claimedOperationRow([]) !== null) {
+    throw new Error("An empty result set was treated as an operation");
+  }
+  if (claimedOperationRow({ id: null, amount: null }) !== null) {
+    throw new Error("A null composite row was treated as an operation");
+  }
+});
+
+Deno.test("financial operation claims accept exactly one identified row", () => {
+  const row = { id: "operation-1", amount: 550 };
+  if (claimedOperationRow(row) !== row) {
+    throw new Error("A single object result was not preserved");
+  }
+  if (claimedOperationRow([row]) !== row) {
+    throw new Error("A single-row array result was not normalized");
+  }
+});
+
+Deno.test("financial operation claims reject ambiguous or malformed rows", () => {
+  for (
+    const data of [
+      [{ id: "operation-1" }, { id: "operation-2" }],
+      { id: null, amount: 550 },
+    ]
+  ) {
+    let rejected = false;
+    try {
+      claimedOperationRow(data);
+    } catch {
+      rejected = true;
+    }
+    if (!rejected) throw new Error("An unsafe operation result was accepted");
+  }
+});
 
 Deno.test("errorMessage preserves provider and PostgREST error messages", () => {
   if (errorMessage(new Error("provider_failed")) !== "provider_failed") {
