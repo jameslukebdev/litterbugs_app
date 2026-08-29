@@ -40,6 +40,7 @@ module.exports = ({ config }) => {
   const googleIosClientBundleId = process.env.GOOGLE_IOS_CLIENT_BUNDLE_ID;
   const googleUrlScheme = toGoogleUrlScheme(googleIosClientId);
   const stripeApplePayEnabled = process.env.ENABLE_APPLE_PAY === 'true';
+  const iosAssociatedDomainsEnabled = process.env.ENABLE_IOS_ASSOCIATED_DOMAINS !== 'false';
   const stripeAppleMerchantIdentifier = stripeApplePayEnabled
     ? process.env.STRIPE_APPLE_MERCHANT_IDENTIFIER
     : undefined;
@@ -82,12 +83,12 @@ module.exports = ({ config }) => {
   // environment. Validate on the worker, where every sensitive build value is
   // available, and in explicit local build simulations.
   const isConfiguredBuild = process.env.EAS_BUILD === 'true';
-  const associatedDomains = isProduction
-    ? [...new Set([
-      ...(config.ios?.associatedDomains || []),
-      `applinks:${REPORT_LINK_HOST}`,
-    ])]
-    : config.ios?.associatedDomains;
+  const reportAssociatedDomain = `applinks:${REPORT_LINK_HOST}`;
+  const configuredAssociatedDomains = (config.ios?.associatedDomains || [])
+    .filter((domain) => domain !== reportAssociatedDomain);
+  const associatedDomains = isProduction && iosAssociatedDomainsEnabled
+    ? [...new Set([...configuredAssociatedDomains, reportAssociatedDomain])]
+    : configuredAssociatedDomains.length > 0 ? configuredAssociatedDomains : undefined;
   const reportIntentFilter = {
     action: 'VIEW',
     autoVerify: true,
