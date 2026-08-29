@@ -142,6 +142,15 @@ below remain the financial release boundary.
   contribution's `payment_intent.succeeded` event is recorded exactly once,
   and all 30 scheduled financial-maintenance runs checked during the final
   half-hour audit succeeded without releasing the reward early.
+- The post-decision completion audit passed 36 launch-focused mobile tests, 22
+  web funding/admin tests, 14 shared Stripe and Gemini security tests, and six
+  Gemini relay boundary tests. The full deployed-schema transaction suite also
+  passed against the linked production database, covering multi-contributor
+  math, renewal and complete refunds, 23-month aging, out-of-order events,
+  chargebacks, payout and refund retry idempotency, self-cleanup timing, and
+  both dispute outcomes. Its rollback was verified: no fixture users or reports
+  remained, the feature flags were unchanged, and the controlled live cleanup
+  still had zero payout attempts and no transfer.
 - Both Grant's permanent account and Luke's existing confirmed Litterbugs
   account are active administrator members. Each person must use their own
   authenticator enrollment; Luke's membership does not copy or bypass Grant's
