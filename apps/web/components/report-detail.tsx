@@ -10,6 +10,7 @@ import { CleanupReviewAction } from '@/components/cleanup-review-action';
 import { FundingContributionAction } from '@/components/funding-contribution-action';
 import { Icon } from '@/components/icon';
 import { PayoutSetupAction } from '@/components/payout-setup-action';
+import { ReportShareDialog } from '@/components/report-share-dialog';
 import { getReportCardPhotoUrl, getReportDetailPhotoUrl, getWebCompatibleReportPhotoUrl } from '@/lib/report-photo';
 import { createClient } from '@/lib/supabase/client';
 
@@ -64,11 +65,14 @@ export function ReportDetail({
 }) {
   const dialogRef = useRef<HTMLElement>(null);
   const backButtonRef = useRef<HTMLButtonElement>(null);
+  const shareButtonRef = useRef<HTMLButtonElement>(null);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [signedPhoto, setSignedPhoto] = useState<{ path: string; src: string | null; failed: boolean }>({ path: '', src: null, failed: false });
   const [renderedPhoto, setRenderedPhoto] = useState<{ path: string; loaded: boolean; failed: boolean }>({ path: '', loaded: false, failed: false });
   const [renderedPreview, setRenderedPreview] = useState<{ path: string; loaded: boolean; failed: boolean }>({ path: '', loaded: false, failed: false });
   const [actionStatus, setActionStatus] = useState('');
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
   const photoPaths = report.photo_paths ?? [];
   const displayedPhotoIndex = photoPaths.length ? photoIndex % photoPaths.length : 0;
   const currentPhotoPath = photoPaths[displayedPhotoIndex];
@@ -171,19 +175,27 @@ export function ReportDetail({
   async function shareReport() {
     const url = new URL(`/reports/${encodeURIComponent(report.id)}`, window.location.origin);
     const title = report.title || 'Litter report';
+    const prefersNativeShare = typeof navigator.share === 'function'
+      && typeof window.matchMedia === 'function'
+      && window.matchMedia('(pointer: coarse)').matches;
 
     try {
-      if (navigator.share && navigator.maxTouchPoints > 0) {
+      if (prefersNativeShare) {
         await navigator.share({ title, text: `View this cleanup report on Litterbugs.`, url: url.toString() });
         notify('Report shared.');
       } else {
-        await navigator.clipboard.writeText(url.toString());
-        notify('Report link copied.');
+        setShareUrl(url.toString());
+        setShareDialogOpen(true);
       }
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
       notify('The report link could not be shared.');
     }
+  }
+
+  function closeShareDialog() {
+    setShareDialogOpen(false);
+    window.requestAnimationFrame(() => shareButtonRef.current?.focus());
   }
 
   return (
@@ -207,7 +219,13 @@ export function ReportDetail({
               <Icon name="heart" />
               <span>{favorite ? 'Saved' : 'Favorite'}</span>
             </button>
-            <button type="button" onClick={() => { void shareReport(); }}>
+            <button
+              ref={shareButtonRef}
+              type="button"
+              aria-haspopup="dialog"
+              aria-expanded={shareDialogOpen}
+              onClick={() => { void shareReport(); }}
+            >
               <Icon name="share" />
               <span>Share</span>
             </button>
@@ -296,6 +314,14 @@ export function ReportDetail({
             </footer>
           </div>
         </div>
+        <ReportShareDialog
+          open={shareDialogOpen}
+          report={report}
+          previewPhotoUrl={previewPhotoUrl}
+          shareUrl={shareUrl}
+          onClose={closeShareDialog}
+          onShared={() => notify('Report shared.')}
+        />
       </aside>
     </div>
   );

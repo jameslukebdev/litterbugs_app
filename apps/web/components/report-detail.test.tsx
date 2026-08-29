@@ -50,6 +50,8 @@ const report: Report = {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  Object.defineProperty(navigator, 'share', { configurable: true, value: undefined });
+  Object.defineProperty(window, 'matchMedia', { configurable: true, value: undefined });
 });
 
 describe('ReportDetail photos', () => {
@@ -147,13 +149,17 @@ describe('ReportDetail photos', () => {
     expect(onClose).toHaveBeenCalledTimes(2);
   });
 
-  it('offers working favorite, share, and hide actions in the modal toolbar', async () => {
+  it('opens a destination chooser on desktop and copies only after Copy link is selected', async () => {
     const onFavoriteChange = vi.fn();
     const onHiddenChange = vi.fn();
     const onNotify = vi.fn();
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'share', { configurable: true, value: undefined });
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn(() => ({ matches: false })),
+    });
 
     render(
       <ReportDetail
@@ -174,9 +180,152 @@ describe('ReportDetail photos', () => {
 
     expect(onFavoriteChange).toHaveBeenCalledWith(true);
     expect(onHiddenChange).toHaveBeenCalledWith(true);
+    expect(writeText).not.toHaveBeenCalled();
+
+    const shareDialog = screen.getByRole('dialog', { name: 'Share this cleanup report' });
+    expect(shareDialog).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Email/ })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Text message/ })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /WhatsApp/ })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Facebook/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Instagram/ })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /^X/ })).toBeTruthy();
+
+    expect(screen.getByRole('link', { name: /WhatsApp/ }).querySelector('img')?.getAttribute('src'))
+      .toBe('/brand/social/whatsapp-glyph.png');
+    expect(screen.getByRole('link', { name: /Facebook/ }).querySelector('img')?.getAttribute('src'))
+      .toBe('/brand/social/facebook-logo.png');
+    expect(screen.getByRole('button', { name: /Instagram/ }).querySelector('img')?.getAttribute('src'))
+      .toBe('/brand/social/instagram-glyph.png');
+    expect(screen.getByRole('link', { name: /^X/ }).querySelector('img')?.getAttribute('src'))
+      .toBe('/brand/social/x-logo.png');
+
+    expect(screen.getByRole('link', { name: /Email/ }).getAttribute('href')).toMatch(/^mailto:\?subject=/);
+    expect(screen.getByRole('link', { name: /Text message/ }).getAttribute('href')).toMatch(/^sms:\?body=/);
+    expect(screen.getByRole('link', { name: /WhatsApp/ }).getAttribute('href')).toMatch(/^https:\/\/wa\.me\/\?text=/);
+    expect(screen.getByRole('link', { name: /Facebook/ }).getAttribute('href')).toMatch(/^https:\/\/www\.facebook\.com\/sharer\/sharer\.php\?u=/);
+    expect(screen.getByRole('link', { name: /^X/ }).getAttribute('href')).toMatch(/^https:\/\/twitter\.com\/intent\/tweet\?text=/);
+
+    const destinationUrls = Array.from(shareDialog.querySelectorAll<HTMLAnchorElement>('a')).map(({ href }) => href).join(' ');
+    expect(destinationUrls).not.toContain('35.99');
+    expect(destinationUrls).not.toContain('-78.9');
+
+    fireEvent.click(screen.getByRole('button', { name: /Copy link/ }));
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
     expect(writeText.mock.calls[0][0]).toBe('http://localhost:3000/reports/report-id');
-    expect((await screen.findByRole('status')).textContent).toBe('Report link copied.');
-    expect(onNotify).toHaveBeenCalledWith('Report link copied.');
+    expect(screen.getByText('Link copied. Choose a destination or close this window.')).toBeTruthy();
+    expect(onNotify).not.toHaveBeenCalled();
+  });
+
+  it('gives Instagram an honest copy-link fallback when native sharing is unavailable', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'share', { configurable: true, value: undefined });
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn(() => ({ matches: false })),
+    });
+
+    render(
+      <ReportDetail
+        report={report}
+        isOwner={false}
+        onClose={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Share' }));
+    expect(screen.getByRole('button', { name: /Instagram/ }).textContent).toContain('Copy the report link for Instagram');
+    fireEvent.click(screen.getByRole('button', { name: /Instagram/ }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('http://localhost:3000/reports/report-id'));
+    expect(screen.getByRole('status').textContent)
+      .toBe('Instagram sharing is not available in this browser. The report link was copied instead.');
+  });
+
+  it('uses the native share sheet directly on coarse-pointer devices', async () => {
+    const nativeShare = vi.fn().mockResolvedValue(undefined);
+    const onNotify = vi.fn();
+    Object.defineProperty(navigator, 'share', { configurable: true, value: nativeShare });
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn(() => ({ matches: true })),
+    });
+
+    render(
+      <ReportDetail
+        report={report}
+        isOwner={false}
+        onClose={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onNotify={onNotify}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Share' }));
+    await waitFor(() => expect(nativeShare).toHaveBeenCalledWith({
+      title: 'Photo report',
+      text: 'View this cleanup report on Litterbugs.',
+      url: 'http://localhost:3000/reports/report-id',
+    }));
+    expect(screen.queryByRole('dialog', { name: 'Share this cleanup report' })).toBeNull();
+    expect(onNotify).toHaveBeenCalledWith('Report shared.');
+  });
+
+  it('routes Instagram through the native device share menu on desktop', async () => {
+    const nativeShare = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'share', { configurable: true, value: nativeShare });
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn(() => ({ matches: false })),
+    });
+
+    render(
+      <ReportDetail
+        report={report}
+        isOwner={false}
+        onClose={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Share' }));
+    fireEvent.click(screen.getByRole('button', { name: /Instagram/ }));
+
+    await waitFor(() => expect(nativeShare).toHaveBeenCalledWith({
+      title: 'Photo report',
+      text: 'View Photo report and help clean it up with Litterbugs.',
+      url: 'http://localhost:3000/reports/report-id',
+    }));
+  });
+
+  it('keeps the chooser open when the native share sheet is cancelled', async () => {
+    const nativeShare = vi.fn().mockRejectedValue(new DOMException('Cancelled', 'AbortError'));
+    Object.defineProperty(navigator, 'share', { configurable: true, value: nativeShare });
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn(() => ({ matches: false })),
+    });
+
+    render(
+      <ReportDetail
+        report={report}
+        isOwner={false}
+        onClose={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Share' }));
+    fireEvent.click(screen.getByRole('button', { name: /More apps/ }));
+
+    await waitFor(() => expect(nativeShare).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole('dialog', { name: 'Share this cleanup report' })).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toBe('');
   });
 });

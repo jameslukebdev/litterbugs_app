@@ -74,25 +74,29 @@ export default async function SharedReportPage({ params }: Props) {
           <Link href="/" aria-label="Litterbugs home">
             <img className={styles.logo} src="/brand/litterbugs-logo.png" alt="Litterbugs" />
           </Link>
-          <Link className={styles.mapLink} href="/">Explore the map</Link>
+          <Link className={styles.mapLink} href="/">Back to search</Link>
         </header>
 
         <article className={styles.story}>
           <section className={`${styles.hero} ${completed ? styles.heroCompleted : ''}`}>
-            <p className={styles.eyebrow}>
-              {completed ? '✓ Cleanup Complete' : 'Volunteer Cleanup Needed'}
-            </p>
+            <p className={styles.shareLabel}>Shared Litterbugs report</p>
+            <p className={styles.eyebrow}>{completed ? 'Cleanup complete' : 'Cleanup needed'}</p>
             <h1>{report.title}</h1>
+            <p className={styles.heroDescription}>
+              {completed
+                ? 'A Litterbugs community member finished this cleanup. See the public impact summary below.'
+                : 'A community member reported litter that is available for volunteer cleanup.'}
+            </p>
             <div className={styles.heroMeta}>
-              <span>{report.generalLocation}</span>
               {completed && report.cleanerName ? <span>Cleaned by {report.cleanerName}</span> : null}
-              {!completed && report.severity ? <span>{report.severity} severity</span> : null}
+              {!completed && report.severity ? <span>{report.severity} priority</span> : null}
               {completed && report.completionDate ? <span>{formatDate(report.completionDate)}</span> : null}
+              {!completed && report.reportDate ? <span>Reported {formatDate(report.reportDate)}</span> : null}
             </div>
           </section>
 
           {(report.beforePhotoUrl || report.afterPhotoUrl) ? (
-            <div className={styles.photos}>
+            <div className={`${styles.photos} ${report.beforePhotoUrl && report.afterPhotoUrl ? '' : styles.singlePhoto}`}>
               {report.afterPhotoUrl ? (
                 <div className={styles.photo}>
                   <img src={report.afterPhotoUrl} alt="Location after the cleanup" />
@@ -109,43 +113,57 @@ export default async function SharedReportPage({ params }: Props) {
           ) : null}
 
           <div className={styles.content}>
-            {completed ? (
-              <section className={styles.section}>
-                <h2>Community impact</h2>
-                <p>{report.cleanupDescription || 'A Litterbugs volunteer completed this cleanup.'}</p>
-              </section>
-            ) : (
-              <section className={styles.section}>
-                <h2>This location needs help</h2>
-                <p>{report.notes || 'Open this report in Litterbugs to see the details and help clean the area.'}</p>
-              </section>
-            )}
+            <div className={styles.reportCopy}>
+              {completed ? (
+                <section className={styles.section}>
+                  <p className={styles.sectionLabel}>Impact story</p>
+                  <h2>Cleanup completed</h2>
+                  <p>{report.cleanupDescription || 'A Litterbugs volunteer completed this cleanup.'}</p>
+                </section>
+              ) : (
+                <section className={styles.section}>
+                  <p className={styles.sectionLabel}>Report details</p>
+                  <h2>What needs attention</h2>
+                  <p>{report.notes || 'Open this report on the Litterbugs map to see the public details and help clean the area.'}</p>
+                </section>
+              )}
 
-            <div className={styles.facts}>
-              {impactFacts.map((fact) => (
-                <div className={styles.fact} key={fact}>
-                  <strong>Cleanup impact</strong>
-                  <span>{fact}</span>
-                </div>
-              ))}
-              {report.litterTypes.length ? (
-                <div className={styles.fact}>
-                  <strong>Original litter</strong>
-                  <span>{report.litterTypes.join(', ')}</span>
-                </div>
-              ) : null}
-              {report.reportDate ? (
-                <div className={styles.fact}>
-                  <strong>Originally reported</strong>
-                  <span>{formatDate(report.reportDate)}</span>
-                </div>
-              ) : null}
+              <div className={styles.facts}>
+                {impactFacts.map((fact) => (
+                  <div className={styles.fact} key={fact}>
+                    <strong>Cleanup impact</strong>
+                    <span>{fact}</span>
+                  </div>
+                ))}
+                {report.litterTypes.length ? (
+                  <div className={styles.fact}>
+                    <strong>{completed ? 'Original litter' : 'Reported litter'}</strong>
+                    <span>{report.litterTypes.join(', ')}</span>
+                  </div>
+                ) : null}
+                {report.reportDate ? (
+                  <div className={styles.fact}>
+                    <strong>Reported</strong>
+                    <span>{formatDate(report.reportDate)}</span>
+                  </div>
+                ) : null}
+              </div>
             </div>
 
-            <div className={styles.actions}>
-              <OpenReportAction reportId={report.id} className={styles.primaryAction} />
-              <Link className={styles.secondaryAction} href="/">Browse the map</Link>
-            </div>
+            <aside className={styles.actionCard}>
+              <p className={styles.sectionLabel}>{completed ? 'Explore the report' : 'Help clean up'}</p>
+              <h2>{completed ? 'See it on the map' : 'Ready to help?'}</h2>
+              <p>
+                {completed
+                  ? 'View the report in context on the Litterbugs map.'
+                  : 'View the report on the map for the location and current cleanup status.'}
+              </p>
+              <div className={styles.actions}>
+                <Link className={styles.primaryAction} href={`/?report=${encodeURIComponent(report.id)}`}>View on map</Link>
+                <OpenReportAction reportId={report.id} className={styles.secondaryAction} />
+              </div>
+              <small>{report.generalLocation}. Private profile details are not included on this shared page.</small>
+            </aside>
           </div>
         </article>
       </div>

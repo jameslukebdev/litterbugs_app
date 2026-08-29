@@ -120,7 +120,7 @@ export async function loadPublicReportShare(reportId: string): Promise<PublicRep
     id: report.id,
     state: report.cleanup_state as 'available' | 'completed',
     title: report.title?.trim() || 'Litter Report',
-    generalLocation: 'Open Litterbugs to view the report location',
+    generalLocation: 'Exact location shown only in Litterbugs',
     severity: report.severity,
     notes: reportNotes(report),
     litterTypes: litterTypes(report),
