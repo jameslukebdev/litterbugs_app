@@ -2,6 +2,7 @@ import type { Database } from '@litterbugs/report-contract';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type Profile = Database['public']['Tables']['profiles']['Row'];
+export type ProfileAvatarFields = Pick<Profile, 'avatar_path' | 'display_name' | 'provider_avatar_url' | 'updated_at'>;
 
 export type ProfileDraft = {
   displayName: string;
@@ -51,7 +52,7 @@ export function validateProfileDraft(draft: ProfileDraft) {
 
 export function getProfileAvatarUrl(
   supabase: SupabaseClient<Database>,
-  profile: Profile | null,
+  profile: ProfileAvatarFields | null,
 ) {
   if (profile?.avatar_path) {
     const { data } = supabase.storage.from('profile_avatars').getPublicUrl(profile.avatar_path);

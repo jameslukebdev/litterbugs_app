@@ -458,6 +458,7 @@ export function MapExperience({
             <PublicAccountAction
               ref={accountActionRef}
               initialUserId={initialUserId}
+              onAccountDataChanged={refreshReports}
               onOpenReport={openReportById}
               onUserChange={handleUserChange}
             />

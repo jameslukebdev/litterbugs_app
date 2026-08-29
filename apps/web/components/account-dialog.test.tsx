@@ -6,7 +6,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AccountDialog } from './account-dialog';
 
-const { rpc, profileUpdate, reportQueryNumber } = vi.hoisted(() => ({
+const { blockDelete, blockedRows, rpc, profileUpdate, reportQueryNumber } = vi.hoisted(() => ({
+  blockDelete: vi.fn(),
+  blockedRows: { value: [] as unknown[] },
   rpc: vi.fn(async () => ({ data: null, error: null })),
   profileUpdate: vi.fn(),
   reportQueryNumber: { value: 0 },
@@ -47,6 +49,7 @@ const expiredReport: Report = {
 function query(result: { data: unknown; error: null }) {
   const builder = {
     eq: () => builder,
+    delete: () => { blockDelete(); return builder; },
     gt: () => builder,
     in: () => builder,
     limit: () => Promise.resolve(result),
@@ -79,6 +82,8 @@ vi.mock('@/lib/supabase/client', () => ({
           avatar_path: null,
           provider_avatar_url: null,
           profile_completed_at: '2026-08-01T00:00:00.000Z',
+          reports_created_count: 7,
+          created_at: '2026-01-01T00:00:00.000Z',
           updated_at: '2026-08-01T00:00:00.000Z',
         },
         error: null,
@@ -101,6 +106,7 @@ vi.mock('@/lib/supabase/client', () => ({
           error: null,
         });
       }
+      if (table === 'user_blocks') return query({ data: blockedRows.value, error: null });
       return query({ data: [], error: null });
     },
     rpc,
@@ -115,6 +121,8 @@ vi.mock('@/lib/supabase/client', () => ({
 }));
 
 beforeEach(() => {
+  blockDelete.mockClear();
+  blockedRows.value = [];
   reportQueryNumber.value = 0;
   rpc.mockClear();
   profileUpdate.mockClear();
@@ -141,6 +149,33 @@ describe('AccountDialog expired report decisions', () => {
     })));
     expect(onProfileChanged).toHaveBeenCalled();
     expect(await screen.findByText(/website and app account are now up to date/i)).toBeTruthy();
+    expect(screen.getByText('7')).toBeTruthy();
+    expect(screen.getByText('Reports submitted')).toBeTruthy();
+  });
+
+  it('loads and unblocks the same blocked accounts used by the mobile app', async () => {
+    blockedRows.value = [{
+      blocked_id: 'blocked-member-id',
+      blocked: {
+        id: 'blocked-member-id',
+        display_name: 'Blocked Member',
+        username: 'blocked.member',
+        provider_avatar_url: null,
+        avatar_path: null,
+        updated_at: '2026-08-01T00:00:00.000Z',
+      },
+    }];
+    const onAccountDataChanged = vi.fn();
+    render(<AccountDialog onClose={vi.fn()} onSignedOut={vi.fn()} onOpenReport={vi.fn()} onAccountDataChanged={onAccountDataChanged} />);
+
+    expect(await screen.findByText('Blocked Member')).toBeTruthy();
+    expect(screen.getByText('@blocked.member')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Unblock' }));
+
+    await waitFor(() => expect(blockDelete).toHaveBeenCalledTimes(1));
+    expect(onAccountDataChanged).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText(/public reports are visible again/i)).toBeTruthy();
+    expect(screen.queryByText('Blocked Member')).toBeNull();
   });
 
   it('renews an expired report for 30 days while preserving its displayed fund', async () => {

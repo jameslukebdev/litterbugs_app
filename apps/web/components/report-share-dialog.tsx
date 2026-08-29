@@ -132,6 +132,21 @@ export function ReportShareDialog({
     }
   }
 
+  async function prepareInstagramShare() {
+    try {
+      await navigator.clipboard.writeText(shareMessage);
+      setFeedback({
+        message: 'Instagram is opening in a new tab. The prepared caption and report link are copied—paste them into your post, Story, or message.',
+        tone: 'success',
+      });
+    } catch {
+      setFeedback({
+        message: 'Instagram is opening, but the caption could not be copied. Use Copy link, then paste it into Instagram.',
+        tone: 'error',
+      });
+    }
+  }
+
   if (!open) return null;
 
   const encodedMessage = encodeURIComponent(shareMessage);
@@ -211,15 +226,21 @@ export function ReportShareDialog({
             </span>
             <span className={styles.optionCopy}><strong>Facebook</strong><span>Start a new post</span></span>
           </a>
-          <button className={styles.option} type="button" onClick={() => { void openNativeShare('Instagram'); }}>
+          <a
+            className={styles.option}
+            href="https://www.instagram.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => { void prepareInstagramShare(); }}
+          >
             <span className={`${styles.optionIcon} ${styles.brandIcon}`} aria-hidden="true">
               <img className={styles.brandMark} src="/brand/social/instagram-glyph.png" alt="" />
             </span>
             <span className={styles.optionCopy}>
               <strong>Instagram</strong>
-              <span>{nativeShareAvailable ? 'Choose in your device share menu' : 'Copy the report link for Instagram'}</span>
+              <span>Copy the caption and open Instagram</span>
             </span>
-          </button>
+          </a>
           <a className={styles.option} href={xHref} target="_blank" rel="noopener noreferrer">
             <span className={`${styles.optionIcon} ${styles.brandIcon}`} aria-hidden="true">
               <img className={styles.brandMark} src="/brand/social/x-logo.png" alt="" />
@@ -229,7 +250,7 @@ export function ReportShareDialog({
           {nativeShareAvailable ? (
             <button className={`${styles.option} ${styles.moreOption}`} type="button" onClick={() => { void openNativeShare(); }}>
               <span className={`${styles.optionIcon} ${styles.utilityIcon}`} aria-hidden="true"><FiShare2 /></span>
-              <span className={styles.optionCopy}><strong>More apps</strong><span>Open your device share menu</span></span>
+              <span className={styles.optionCopy}><strong>More apps</strong><span>AirDrop, Messages, Notes, and installed apps</span></span>
             </button>
           ) : null}
         </div>

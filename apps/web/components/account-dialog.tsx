@@ -2,7 +2,9 @@
 
 import type { Database, Report } from '@litterbugs/report-contract';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { FiCheckCircle, FiExternalLink, FiFileText, FiHeart, FiKey, FiLogOut, FiMapPin, FiShield, FiTrash2 } from 'react-icons/fi';
 
 import { Icon } from '@/components/icon';
 import { ModalShell } from '@/components/modal-shell';
@@ -19,11 +21,27 @@ import { createClient } from '@/lib/supabase/client';
 type CleanupAttemptRow = Database['public']['Tables']['cleanup_attempts']['Row'];
 type CleanupAttempt = Pick<
   CleanupAttemptRow,
-  'id' | 'report_id' | 'status' | 'claim_expires_at' | 'completed_at' | 'is_paid' | 'reward_amount_cents' | 'payout_status'
+  | 'approval_method'
+  | 'claim_expires_at'
+  | 'completed_at'
+  | 'dispute_status'
+  | 'financial_review_status'
+  | 'first_paid_admin_status'
+  | 'id'
+  | 'is_paid'
+  | 'payout_status'
+  | 'report_id'
+  | 'reward_amount_cents'
+  | 'status'
 > & {
   report: Pick<Report, 'id' | 'title' | 'severity' | 'cleanup_state'> | null;
 };
 type ContributionRow = Database['public']['Tables']['cleanup_contributions']['Row'];
+type BlockedProfile = Pick<Profile, 'id' | 'display_name' | 'username' | 'provider_avatar_url' | 'avatar_path' | 'updated_at'>;
+type BlockedAccount = {
+  blocked_id: string;
+  blocked: BlockedProfile | null;
+};
 
 function formatUsd(cents: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
@@ -37,16 +55,48 @@ function cleanupStatus(attempt: CleanupAttempt) {
   return 'Cleanup complete';
 }
 
+function cleanupRewardStatus(attempt: CleanupAttempt) {
+  if (!attempt.is_paid) return '';
+  if (attempt.dispute_status === 'open') return 'Reward paused for dispute review';
+  if (attempt.financial_review_status === 'admin_review') return 'Reward paused for admin review';
+  if (attempt.financial_review_status === 'better_photos') return 'Replacement photos requested';
+  if (attempt.first_paid_admin_status === 'pending') return 'First reward awaiting admin check';
+  if (attempt.financial_review_status === 'passed') return 'Reward in 48-hour dispute window';
+  if (attempt.financial_review_status === 'queued') return 'Photos awaiting automated review';
+  if (attempt.status === 'claimed') return 'Reward frozen for this cleanup';
+  return attempt.payout_status === 'transferred' ? 'Reward sent' : 'Reward pending';
+}
+
+function cleanupApprovalLabel(approvalMethod: string | null) {
+  if (approvalMethod === 'self_approved') return 'Self cleanup';
+  if (approvalMethod === 'auto_approved') return 'Automatically approved';
+  return 'Reporter approved';
+}
+
+function contributionStatusLabel(status: string) {
+  return ({
+    payment_pending: 'Processing',
+    succeeded: 'In cleanup fund',
+    refund_pending: 'Refund processing',
+    refund_processing: 'Refund processing',
+    refunded: 'Refunded',
+    failed: 'Not completed',
+    paid_out: 'Paid to cleaner',
+  } as Record<string, string>)[status] ?? status.replaceAll('_', ' ');
+}
+
 export function AccountDialog({
   onClose,
   onSignedOut,
   onOpenReport,
   onProfileChanged,
+  onAccountDataChanged,
 }: {
   onClose: () => void;
   onSignedOut: () => void;
   onOpenReport: (reportId: string) => void;
   onProfileChanged?: (profile: Profile) => void;
+  onAccountDataChanged?: () => void | Promise<void>;
 }) {
   const [userId, setUserId] = useState('');
   const [email, setEmail] = useState('');
@@ -64,6 +114,7 @@ export function AccountDialog({
   const [expiredReports, setExpiredReports] = useState<Report[]>([]);
   const [cleanups, setCleanups] = useState<CleanupAttempt[]>([]);
   const [contributions, setContributions] = useState<ContributionRow[]>([]);
+  const [blockedAccounts, setBlockedAccounts] = useState<BlockedAccount[]>([]);
   const [message, setMessage] = useState('');
   const [busyAction, setBusyAction] = useState('');
   const [dataLoading, setDataLoading] = useState(true);
@@ -82,7 +133,7 @@ export function AccountDialog({
 
       setUserId(user.id);
       setEmail(user.email ?? '');
-      const [profileResult, reportsResult, expiredReportsResult, cleanupResult, contributionResult] = await Promise.all([
+      const [profileResult, reportsResult, expiredReportsResult, cleanupResult, contributionResult, blockedResult] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
         supabase
           .from('reports')
@@ -91,7 +142,7 @@ export function AccountDialog({
           .or('status.is.null,status.eq.active')
           .gt('expires_at', new Date().toISOString())
           .order('created_at', { ascending: false })
-          .limit(8),
+          .limit(50),
         supabase
           .from('reports')
           .select('*')
@@ -99,19 +150,25 @@ export function AccountDialog({
           .eq('renewal_status', 'decision_required')
           .gt('renewal_decision_due_at', new Date().toISOString())
           .order('renewal_decision_due_at', { ascending: true })
-          .limit(8),
+          .limit(50),
         supabase
           .from('cleanup_attempts')
-          .select('id, report_id, status, claim_expires_at, completed_at, is_paid, reward_amount_cents, payout_status, report:reports(id,title,severity,cleanup_state)')
+          .select('id, report_id, status, claim_expires_at, completed_at, is_paid, reward_amount_cents, payout_status, approval_method, dispute_status, financial_review_status, first_paid_admin_status, report:reports(id,title,severity,cleanup_state)')
           .eq('cleaner_id', user.id)
           .in('status', ['claimed', 'changes_requested', 'completion_submitted', 'completed'])
           .order('last_activity_at', { ascending: false })
-          .limit(12),
+          .limit(50),
         supabase
           .from('cleanup_contributions')
           .select('*')
           .order('created_at', { ascending: false })
-          .limit(12),
+          .limit(50),
+        supabase
+          .from('user_blocks')
+          .select('blocked_id, blocked:profiles!user_blocks_blocked_id_fkey(id,display_name,username,provider_avatar_url,avatar_path,updated_at)')
+          .eq('blocker_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(50),
       ]);
 
       if (cancelled) return;
@@ -125,7 +182,8 @@ export function AccountDialog({
       setExpiredReports(expiredReportsResult.data ?? []);
       setCleanups((cleanupResult.data ?? []) as unknown as CleanupAttempt[]);
       setContributions(contributionResult.data ?? []);
-      if (profileResult.error || reportsResult.error || expiredReportsResult.error || cleanupResult.error || contributionResult.error) {
+      setBlockedAccounts((blockedResult.data ?? []) as unknown as BlockedAccount[]);
+      if (profileResult.error || reportsResult.error || expiredReportsResult.error || cleanupResult.error || contributionResult.error || blockedResult.error) {
         setMessage('Some account activity could not be loaded. You can still use the map.');
       }
       setDataLoading(false);
@@ -309,10 +367,35 @@ export function AccountDialog({
     setMessage('Report closed. Full contribution refunds have been queued.');
   }
 
+  async function unblockAccount(profileId: string) {
+    if (!userId) return;
+    setBusyAction(`unblock:${profileId}`);
+    setMessage('');
+    const { error } = await createClient()
+      .from('user_blocks')
+      .delete()
+      .eq('blocker_id', userId)
+      .eq('blocked_id', profileId);
+    if (error) {
+      setMessage('Couldn’t unblock that account. Check your connection and try again.');
+      setBusyAction('');
+      return;
+    }
+    setBlockedAccounts((current) => current.filter(({ blocked_id }) => blocked_id !== profileId));
+    await onAccountDataChanged?.();
+    setMessage('Account unblocked. Its public reports are visible again.');
+    setBusyAction('');
+  }
+
   const displayName = getProfileLabel(profile, email);
   const initial = displayName.charAt(0).toUpperCase();
   const savedAvatarUrl = getProfileAvatarUrl(createClient(), profile);
   const visibleAvatarUrl = avatarPreview || (removeAvatar ? '' : savedAvatarUrl);
+  const joinedLabel = profile?.created_at
+    ? new Date(profile.created_at).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+    : '';
+  const awaitingReviewCount = cleanups.filter(({ status }) => status === 'completion_submitted').length;
+  const activeCleanupCount = cleanups.filter(({ status }) => status === 'claimed' || status === 'changes_requested').length;
 
   return (
     <ModalShell onClose={onClose} label="Your Litterbugs account" className="account-dialog member-dashboard" closeDisabled={Boolean(busyAction)}>
@@ -321,11 +404,11 @@ export function AccountDialog({
           {visibleAvatarUrl ? <Image src={visibleAvatarUrl} alt="" width={64} height={64} unoptimized /> : (initial || <Icon name="account" />)}
         </div>
         <div className="member-profile-summary">
-          <span className="eyebrow">YOUR LITTERBUGS ACCOUNT</span>
           <h2>{displayName}</h2>
-          <p className="member-profile-line">
-            {[profile?.username ? `@${profile.username}` : null, profile?.location].filter(Boolean).join(' · ') || email}
-          </p>
+          {profile?.username ? <p className="member-profile-username">@{profile.username}</p> : null}
+          {profile?.location ? <p className="member-profile-location"><FiMapPin aria-hidden />{profile.location}</p> : null}
+          {profile?.bio ? <p className="member-profile-bio">{profile.bio}</p> : null}
+          {joinedLabel ? <p className="member-profile-joined">Joined {joinedLabel}</p> : null}
         </div>
         {!profileEditing && <button className="secondary-button member-edit-profile" onClick={startProfileEdit}>Edit profile</button>}
       </header>
@@ -400,10 +483,15 @@ export function AccountDialog({
         <div className="member-dashboard-loading"><span className="spinner" /><span>Loading your activity…</span></div>
       ) : (
         <>
-          <section className="member-stats" aria-label="Litterbugs activity summary">
-            <div><strong>{reports.length}</strong><span>Active reports</span></div>
-            <div><strong>{activeCleanups.length}</strong><span>Current cleanups</span></div>
+          <section className="member-report-stat" aria-label="Reports submitted">
+            <strong>{profile?.reports_created_count ?? reports.length}</strong>
+            <span>Reports submitted</span>
+          </section>
+
+          <section className="member-stats" aria-label="Cleanup activity summary">
             <div><strong>{completedCleanups.length}</strong><span>Completed</span></div>
+            <div><strong>{awaitingReviewCount}</strong><span>Awaiting review</span></div>
+            <div><strong>{activeCleanupCount}</strong><span>Active</span></div>
           </section>
 
           <div className="member-dashboard-grid">
@@ -454,26 +542,39 @@ export function AccountDialog({
             </section>
 
             <section className="member-panel">
-              <header><div><span className="eyebrow">CLEANUP ACTIVITY</span><h3>My cleanups</h3></div></header>
+              <header><div><span className="eyebrow">CLEANUP ACTIVITY</span><h3>Current cleanups</h3></div></header>
               <div className="member-activity-list">
                 {activeCleanups.map((attempt) => (
                   <button key={attempt.id} className="member-activity-row" onClick={() => openReport(attempt.report_id)}>
                     <span>
                       <strong>{attempt.report?.title || 'Litter cleanup'}</strong>
                       <small>{cleanupStatus(attempt)}{attempt.is_paid ? ` · ${formatUsd(attempt.reward_amount_cents)}` : ''}</small>
+                      {attempt.is_paid ? <small className="member-reward-status">{cleanupRewardStatus(attempt)}</small> : null}
+                      {attempt.status === 'claimed' && attempt.claim_expires_at ? (
+                        <small>Complete by {new Date(attempt.claim_expires_at).toLocaleString()}</small>
+                      ) : null}
                     </span>
                     <Icon name="chevron-right" />
                   </button>
                 ))}
-                {completedCleanups.slice(0, 4).map((attempt) => (
-                  <div key={attempt.id} className="member-activity-row member-completed-row">
+                {!activeCleanups.length && <p className="member-empty">Claimed and awaiting-review cleanups will appear here.</p>}
+              </div>
+            </section>
+
+            <section className="member-panel">
+              <header><div><span className="eyebrow">YOUR IMPACT</span><h3>Completed cleanups</h3></div></header>
+              <div className="member-activity-list">
+                {completedCleanups.map((attempt) => (
+                  <button key={attempt.id} className="member-activity-row member-completed-row" onClick={() => openReport(attempt.report_id)}>
                     <span>
                       <strong>{attempt.report?.title || 'Completed litter cleanup'}</strong>
-                      <small>{cleanupStatus(attempt)}{attempt.completed_at ? ` · ${new Date(attempt.completed_at).toLocaleDateString()}` : ''}</small>
+                      <small>{attempt.completed_at ? new Date(attempt.completed_at).toLocaleDateString() : 'Date unavailable'} · {cleanupApprovalLabel(attempt.approval_method)}</small>
+                      {attempt.is_paid ? <small className="member-reward-status">{formatUsd(attempt.reward_amount_cents)} · {cleanupRewardStatus(attempt)}</small> : null}
                     </span>
-                  </div>
+                    <Icon name="chevron-right" />
+                  </button>
                 ))}
-                {!cleanups.length && <p className="member-empty">Claimed and completed cleanups will appear here.</p>}
+                {!completedCleanups.length && <p className="member-empty">Your completed cleanup history will appear here.</p>}
               </div>
             </section>
 
@@ -484,7 +585,7 @@ export function AccountDialog({
                   <button key={contribution.id} className="member-activity-row" onClick={() => openReport(contribution.report_id)}>
                     <span>
                       <strong>{formatUsd(contribution.principal_amount_cents)} cleanup reward</strong>
-                      <small>{contribution.status.replaceAll('_', ' ')} · {new Date(contribution.created_at).toLocaleDateString()}</small>
+                      <small>{contributionStatusLabel(contribution.status)} · {new Date(contribution.created_at).toLocaleString()}</small>
                       <small>{formatUsd(contribution.platform_fee_cents)} fee · {formatUsd(contribution.total_amount_cents)} total charged</small>
                     </span>
                     <Icon name="chevron-right" />
@@ -493,17 +594,52 @@ export function AccountDialog({
                 {!contributions.length && <p className="member-empty">Your cleanup contributions will appear here.</p>}
               </div>
             </section>
+
+            <section className="member-panel member-blocked-panel">
+              <header><div><span className="eyebrow">PRIVACY &amp; SAFETY</span><h3>Blocked accounts</h3></div></header>
+              <div className="member-activity-list">
+                {blockedAccounts.map(({ blocked_id, blocked }) => {
+                  const blockedAvatarUrl = getProfileAvatarUrl(createClient(), blocked);
+                  return (
+                    <div key={blocked_id} className="member-activity-row member-blocked-row">
+                      <span className="member-blocked-avatar" aria-hidden>
+                        {blockedAvatarUrl ? <Image src={blockedAvatarUrl} alt="" width={44} height={44} unoptimized /> : (blocked?.display_name?.charAt(0).toUpperCase() || '?')}
+                      </span>
+                      <span>
+                        <strong>{blocked?.display_name || 'Profile unavailable'}</strong>
+                        {blocked?.username ? <small>@{blocked.username}</small> : null}
+                      </span>
+                      <button
+                        className="secondary-button compact-button"
+                        type="button"
+                        onClick={() => { void unblockAccount(blocked_id); }}
+                        disabled={Boolean(busyAction)}
+                      >
+                        {busyAction === `unblock:${blocked_id}` ? 'Unblocking…' : 'Unblock'}
+                      </button>
+                    </div>
+                  );
+                })}
+                {!blockedAccounts.length && <p className="member-empty">No blocked accounts. Accounts you block in Litterbugs will appear here on every device.</p>}
+              </div>
+            </section>
           </div>
         </>
       )}
 
       <section className="member-settings">
-        <div><span className="eyebrow">ACCOUNT SETTINGS</span><p>{email}</p></div>
-        <div className="account-actions">
+        <div className="member-settings-heading"><span className="eyebrow">ACCOUNT</span><h3>Account settings</h3><p>{email || 'Managed by your sign-in provider'}</p></div>
+        <div className="member-setting-links">
+          <Link href="/terms"><FiFileText aria-hidden /><span>Terms of use</span><FiExternalLink aria-hidden /></Link>
+          <Link href="/privacy"><FiShield aria-hidden /><span>Privacy policy</span><FiExternalLink aria-hidden /></Link>
+          <Link href="/cleanup-policy"><FiCheckCircle aria-hidden /><span>Cleanup &amp; reward policy</span><FiExternalLink aria-hidden /></Link>
+          <a href="https://patreon.com/litterbugs?utm_medium=unknown&utm_source=join_link&utm_campaign=creatorshare_creator&utm_content=copyLink" target="_blank" rel="noopener noreferrer"><FiHeart aria-hidden /><span>Support Litterbugs</span><FiExternalLink aria-hidden /></a>
+        </div>
+        <div className="account-actions member-account-actions">
           <PayoutSetupAction />
-          <button className="secondary-button" onClick={sendRecovery} disabled={Boolean(busyAction)}>{busyAction === 'recovery' ? 'Sending…' : 'Reset password'}</button>
-          <button className="secondary-button" onClick={signOut} disabled={Boolean(busyAction)}>{busyAction === 'signout' ? 'Signing out…' : 'Sign out'}</button>
-          <button className="danger-button" onClick={deleteAccount} disabled={Boolean(busyAction)}>{busyAction === 'delete' ? 'Deleting account…' : 'Delete account'}</button>
+          <button className="secondary-button" onClick={sendRecovery} disabled={Boolean(busyAction)}><FiKey aria-hidden />{busyAction === 'recovery' ? 'Sending…' : 'Reset password'}</button>
+          <button className="secondary-button" onClick={signOut} disabled={Boolean(busyAction)}><FiLogOut aria-hidden />{busyAction === 'signout' ? 'Signing out…' : 'Sign out'}</button>
+          <button className="danger-button" onClick={deleteAccount} disabled={Boolean(busyAction)}><FiTrash2 aria-hidden />{busyAction === 'delete' ? 'Deleting account…' : 'Delete account'}</button>
         </div>
       </section>
     </ModalShell>

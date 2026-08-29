@@ -49,6 +49,7 @@ const report: Report = {
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   vi.clearAllMocks();
   Object.defineProperty(navigator, 'share', { configurable: true, value: undefined });
   Object.defineProperty(window, 'matchMedia', { configurable: true, value: undefined });
@@ -188,14 +189,14 @@ describe('ReportDetail photos', () => {
     expect(screen.getByRole('link', { name: /Text message/ })).toBeTruthy();
     expect(screen.getByRole('link', { name: /WhatsApp/ })).toBeTruthy();
     expect(screen.getByRole('link', { name: /Facebook/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Instagram/ })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Instagram/ })).toBeTruthy();
     expect(screen.getByRole('link', { name: /^X/ })).toBeTruthy();
 
     expect(screen.getByRole('link', { name: /WhatsApp/ }).querySelector('img')?.getAttribute('src'))
       .toBe('/brand/social/whatsapp-glyph.png');
     expect(screen.getByRole('link', { name: /Facebook/ }).querySelector('img')?.getAttribute('src'))
       .toBe('/brand/social/facebook-logo.png');
-    expect(screen.getByRole('button', { name: /Instagram/ }).querySelector('img')?.getAttribute('src'))
+    expect(screen.getByRole('link', { name: /Instagram/ }).querySelector('img')?.getAttribute('src'))
       .toBe('/brand/social/instagram-glyph.png');
     expect(screen.getByRole('link', { name: /^X/ }).querySelector('img')?.getAttribute('src'))
       .toBe('/brand/social/x-logo.png');
@@ -217,7 +218,7 @@ describe('ReportDetail photos', () => {
     expect(onNotify).not.toHaveBeenCalled();
   });
 
-  it('gives Instagram an honest copy-link fallback when native sharing is unavailable', async () => {
+  it('opens Instagram directly with a prepared caption instead of the device share sheet', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'share', { configurable: true, value: undefined });
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
@@ -237,12 +238,14 @@ describe('ReportDetail photos', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));
-    expect(screen.getByRole('button', { name: /Instagram/ }).textContent).toContain('Copy the report link for Instagram');
-    fireEvent.click(screen.getByRole('button', { name: /Instagram/ }));
+    const instagramLink = screen.getByRole('link', { name: /Instagram/ });
+    expect(instagramLink.textContent).toContain('Copy the caption and open Instagram');
+    expect(instagramLink.getAttribute('href')).toBe('https://www.instagram.com/');
+    expect(instagramLink.getAttribute('target')).toBe('_blank');
+    fireEvent.click(instagramLink);
 
-    await waitFor(() => expect(writeText).toHaveBeenCalledWith('http://localhost:3000/reports/report-id'));
-    expect(screen.getByRole('status').textContent)
-      .toBe('Instagram sharing is not available in this browser. The report link was copied instead.');
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining('http://localhost:3000/reports/report-id')));
+    expect(screen.getByRole('status').textContent).toContain('Instagram is opening in a new tab');
   });
 
   it('uses the native share sheet directly on coarse-pointer devices', async () => {
@@ -275,9 +278,11 @@ describe('ReportDetail photos', () => {
     expect(onNotify).toHaveBeenCalledWith('Report shared.');
   });
 
-  it('routes Instagram through the native device share menu on desktop', async () => {
+  it('keeps Instagram destination-specific even when native sharing is available', async () => {
     const nativeShare = vi.fn().mockResolvedValue(undefined);
+    const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'share', { configurable: true, value: nativeShare });
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
     Object.defineProperty(window, 'matchMedia', {
       configurable: true,
       value: vi.fn(() => ({ matches: false })),
@@ -294,13 +299,10 @@ describe('ReportDetail photos', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));
-    fireEvent.click(screen.getByRole('button', { name: /Instagram/ }));
+    fireEvent.click(screen.getByRole('link', { name: /Instagram/ }));
 
-    await waitFor(() => expect(nativeShare).toHaveBeenCalledWith({
-      title: 'Photo report',
-      text: 'View Photo report and help clean it up with Litterbugs.',
-      url: 'http://localhost:3000/reports/report-id',
-    }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    expect(nativeShare).not.toHaveBeenCalled();
   });
 
   it('keeps the chooser open when the native share sheet is cancelled', async () => {

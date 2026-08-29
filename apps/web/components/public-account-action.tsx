@@ -17,9 +17,10 @@ export type PublicAccountActionHandle = {
 
 export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
   initialUserId?: string | null;
+  onAccountDataChanged?: () => void | Promise<void>;
   onOpenReport?: (reportId: string) => void;
   onUserChange?: (userId: string | null) => void;
-}>(function PublicAccountAction({ initialUserId = null, onOpenReport, onUserChange }, ref) {
+}>(function PublicAccountAction({ initialUserId = null, onAccountDataChanged, onOpenReport, onUserChange }, ref) {
   const router = useRouter();
   const [userId, setUserId] = useState(initialUserId);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -98,6 +99,7 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
       {accountOpen && userId && (
         <AccountDialog
           onClose={() => setAccountOpen(false)}
+          onAccountDataChanged={onAccountDataChanged}
           onOpenReport={openReport}
           onProfileChanged={setProfile}
           onSignedOut={() => {
