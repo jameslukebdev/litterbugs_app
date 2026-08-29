@@ -86,7 +86,7 @@ describe('mobile configuration non-regression', () => {
           IOS_BUNDLE_IDENTIFIER: 'com.litterbugs.app',
           ANDROID_PACKAGE_IDENTIFIER: 'com.litterbugs.app',
         },
-        developmentClient: true,
+        developmentClient: false,
         distribution: 'internal',
         ios: { simulator: true },
       },
@@ -95,6 +95,7 @@ describe('mobile configuration non-regression', () => {
         env: {
           APP_VARIANT: 'production',
           ENABLE_APPLE_PAY: 'false',
+          ENABLE_IOS_ASSOCIATED_DOMAINS: 'false',
           IOS_BUNDLE_IDENTIFIER: 'com.litterbugs.app',
           ANDROID_PACKAGE_IDENTIFIER: 'com.litterbugs.app',
         },
@@ -116,6 +117,8 @@ describe('mobile configuration non-regression', () => {
         env: {
           APP_VARIANT: 'production',
           ENABLE_APPLE_PAY: 'false',
+          ENABLE_IOS_ASSOCIATED_DOMAINS: 'false',
+          IOS_BUNDLE_IDENTIFIER: 'com.litterbugs.app',
           ANDROID_PACKAGE_IDENTIFIER: 'com.litterbugs.app',
         },
         autoIncrement: true,
@@ -125,6 +128,7 @@ describe('mobile configuration non-regression', () => {
         env: {
           APP_VARIANT: 'production',
           ENABLE_APPLE_PAY: 'false',
+          ENABLE_IOS_ASSOCIATED_DOMAINS: 'false',
           IOS_BUNDLE_IDENTIFIER: 'com.litterbugs.app',
           ANDROID_PACKAGE_IDENTIFIER: 'com.litterbugs.app',
         },
