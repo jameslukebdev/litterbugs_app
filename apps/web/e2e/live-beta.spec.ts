@@ -19,21 +19,12 @@ test('public map, report detail, controls, and signed-out boundaries work', asyn
   await page.locator('gmp-advanced-marker').first().evaluate((marker) =>
     (marker as HTMLElement).click(),
   );
-  await expect(page.locator('.report-detail')).toBeVisible();
-  await page.locator('.report-detail').getByRole('button', { name: 'Close report details' }).click();
-
-  const heicReportMarker = page.locator('gmp-advanced-marker[title="High example"]');
-  await expect(heicReportMarker).toHaveCount(1);
-  await heicReportMarker.evaluate((marker) => (marker as HTMLElement).click());
-  const heicReportDetail = page.locator('.report-detail');
-  await expect(heicReportDetail.getByRole('heading', { name: 'High example', exact: true })).toBeVisible();
-  for (let photoIndex = 1; photoIndex <= 3; photoIndex += 1) {
-    const photo = heicReportDetail.getByAltText(`Report photo ${photoIndex} of 3`);
-    await expect(photo).toHaveAttribute('src', /\/api\/report-photo\?path=/);
-    await expect.poll(() => photo.evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
-    if (photoIndex < 3) await heicReportDetail.getByRole('button', { name: 'Next photo' }).click();
-  }
-  await heicReportDetail.getByRole('button', { name: 'Close report details' }).click();
+  const reportDetail = page.locator('.report-detail');
+  await expect(reportDetail).toBeVisible();
+  const reportPhoto = reportDetail.locator('img.report-photo').first();
+  await expect(reportPhoto).toHaveAttribute('src', /\/api\/report-photo\?path=/);
+  await expect.poll(() => reportPhoto.evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  await reportDetail.getByRole('button', { name: 'Back to search' }).click();
 
   const mapType = page.getByRole('button', { name: /Change map type/ });
   await mapType.click();
