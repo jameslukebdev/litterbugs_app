@@ -20,12 +20,17 @@ export function AuthDialog({ onClose }: { onClose: () => void }) {
   const cleanEmail = email.trim().toLowerCase();
   const providerLabel = loading ? loading.charAt(0).toUpperCase() + loading.slice(1) : '';
 
+  function authCallbackUrl() {
+    const returnPath = `${window.location.pathname}${window.location.search}`;
+    return `${window.location.origin}/auth/callback?next=${encodeURIComponent(returnPath)}`;
+  }
+
   async function startProvider(provider: 'google' | 'facebook') {
     setMessage('');
     setLoading(provider);
     const { error } = await createClient().auth.signInWithOAuth({
       provider,
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/` },
+      options: { redirectTo: authCallbackUrl() },
     });
     if (error) {
       setMessage(`We couldn’t start ${provider} sign in. Check your connection and try again.`);
@@ -57,7 +62,7 @@ export function AuthDialog({ onClose }: { onClose: () => void }) {
       const { data, error } = await supabase.auth.signUp({
         email: cleanEmail,
         password,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/` },
+        options: { emailRedirectTo: authCallbackUrl() },
       });
       setLoading('');
       const hiddenDuplicate = Array.isArray(data.user?.identities) && data.user.identities.length === 0;
@@ -85,7 +90,7 @@ export function AuthDialog({ onClose }: { onClose: () => void }) {
     const { error } = await createClient().auth.resend({
       type: 'signup',
       email: cleanEmail,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/` },
+      options: { emailRedirectTo: authCallbackUrl() },
     });
     setLoading('');
     setMessage(error ? 'We couldn’t resend the email. Check your connection and try again.' : 'A fresh verification email is on its way.');

@@ -6,8 +6,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AccountDialog } from './account-dialog';
 
-const { rpc, reportQueryNumber } = vi.hoisted(() => ({
+const { rpc, profileUpdate, reportQueryNumber } = vi.hoisted(() => ({
   rpc: vi.fn(async () => ({ data: null, error: null })),
+  profileUpdate: vi.fn(),
   reportQueryNumber: { value: 0 },
 }));
 
@@ -53,6 +54,8 @@ function query(result: { data: unknown; error: null }) {
     or: () => builder,
     order: () => builder,
     select: () => builder,
+    single: () => Promise.resolve(result),
+    update: (values: unknown) => { profileUpdate(values); return builder; },
   };
   return builder;
 }
@@ -66,7 +69,20 @@ vi.mock('@/lib/supabase/client', () => ({
     },
     functions: { invoke: vi.fn(async () => ({ data: null, error: null })) },
     from: (table: string) => {
-      if (table === 'profiles') return query({ data: { id: 'member-id', display_name: 'Member' }, error: null });
+      if (table === 'profiles') return query({
+        data: {
+          id: 'member-id',
+          display_name: 'Member',
+          username: 'member',
+          bio: null,
+          location: null,
+          avatar_path: null,
+          provider_avatar_url: null,
+          profile_completed_at: '2026-08-01T00:00:00.000Z',
+          updated_at: '2026-08-01T00:00:00.000Z',
+        },
+        error: null,
+      });
       if (table === 'reports') {
         reportQueryNumber.value += 1;
         return query({ data: reportQueryNumber.value === 1 ? [] : [expiredReport], error: null });
@@ -88,12 +104,20 @@ vi.mock('@/lib/supabase/client', () => ({
       return query({ data: [], error: null });
     },
     rpc,
+    storage: {
+      from: () => ({
+        getPublicUrl: () => ({ data: { publicUrl: '' } }),
+        remove: vi.fn(async () => ({ error: null })),
+        upload: vi.fn(async () => ({ error: null })),
+      }),
+    },
   }),
 }));
 
 beforeEach(() => {
   reportQueryNumber.value = 0;
   rpc.mockClear();
+  profileUpdate.mockClear();
 });
 
 afterEach(() => {
@@ -102,6 +126,23 @@ afterEach(() => {
 });
 
 describe('AccountDialog expired report decisions', () => {
+  it('edits the same persistent member profile used by the mobile app', async () => {
+    const onProfileChanged = vi.fn();
+    render(<AccountDialog onClose={vi.fn()} onSignedOut={vi.fn()} onOpenReport={vi.fn()} onProfileChanged={onProfileChanged} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit profile' }));
+    fireEvent.change(screen.getByRole('textbox', { name: /^Display name/ }), { target: { value: 'Sam Cleaner' } });
+    fireEvent.change(screen.getByRole('textbox', { name: /Location/ }), { target: { value: 'Asheville, NC' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save profile' }));
+
+    await waitFor(() => expect(profileUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      display_name: 'Sam Cleaner',
+      location: 'Asheville, NC',
+    })));
+    expect(onProfileChanged).toHaveBeenCalled();
+    expect(await screen.findByText(/website and app account are now up to date/i)).toBeTruthy();
+  });
+
   it('renews an expired report for 30 days while preserving its displayed fund', async () => {
     render(<AccountDialog onClose={vi.fn()} onSignedOut={vi.fn()} onOpenReport={vi.fn()} />);
 

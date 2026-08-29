@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   getReportCardPhotoUrl,
+  getReportDetailPhotoUrl,
   getWebCompatibleReportPhotoUrl,
   isHeicReportPhoto,
   isReportCardPhoto,
@@ -29,6 +30,16 @@ describe('report photo delivery', () => {
       '/api/report-photo?path=user%2Freport%2Fphoto.jpg&variant=card',
     );
     expect(getReportCardPhotoUrl('user/report/photo.pdf')).toBeNull();
+  });
+
+  it('routes supported detail photos through the optimized detail endpoint', () => {
+    expect(getReportDetailPhotoUrl('user/report/photo.jpg')).toBe(
+      '/api/report-photo?path=user%2Freport%2Fphoto.jpg&variant=detail',
+    );
+    expect(getReportDetailPhotoUrl('user/report/photo.heic')).toBe(
+      '/api/report-photo?path=user%2Freport%2Fphoto.heic&variant=detail',
+    );
+    expect(getReportDetailPhotoUrl('user/report/photo.pdf')).toBeNull();
   });
 
   it('scopes administrator HEIC conversion to the authenticated case', () => {

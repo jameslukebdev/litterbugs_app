@@ -1,4 +1,304 @@
+# Zillow-Sized Responsive Grid and Search Navigation
+
+## Source and implementation
+
+- User-reported cramped grid: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/grid-cramped-source.png`
+- User-selected Zillow grid reference: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/grid-zillow-source.png`
+- Live Zillow reference URL: `https://www.zillow.com/newland-nc/`
+- Browser-rendered 1104px implementation: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/grid-zillow-responsive-1104-top.png`
+- Browser-rendered 1440px implementation: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/grid-zillow-responsive-1440.png`
+- Browser-rendered 700px implementation: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/grid-zillow-responsive-700.png`
+- Browser-rendered 390px implementation: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/grid-zillow-responsive-390.png`
+- Equal-state before/after comparison: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/grid-responsive-before-after.png`
+- Zillow/implementation wide-panel comparison: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/grid-zillow-wide-comparison.png`
+- Local implementation: `http://localhost:3020/`
+- CSS viewports: 1440×1000, 1280×850, 1279×850, 1200×850, 1104×850, 1024×850, 900×850, 800×850, 701×850, 700×850, 600×850, and 390×844 at 1x density.
+- Source problem-state content was normalized from the supplied 1200×1070 browser screenshot to an unscaled 1104×850 page region. The implementation comparison is an unscaled 1104×850 browser-rendered page. The wide Zillow comparison uses 747×720 and 750×720 result-panel crops at 1x density.
+- State: public map, signed out, Available filter, Newest sort; mobile/tablet result sheet open where applicable.
+
+## Live Zillow measurements
+
+- At 1440px and 1280px, Zillow's result panel is 735px wide with two 343.5px tracks, 344px cards, 20px side padding, and an 8px gap.
+- At 1200px, 1104px, and 1024px, Zillow switches to one 320px card inside a 360px result panel instead of compressing two cards.
+- At 900px and 800px, Zillow gives the list the full viewport and uses two cards measuring about 419px and 369px respectively.
+- Zillow cards remained about 304px tall in the measured desktop states. Litterbugs cards are intentionally taller because they preserve a separate reward/volunteer line, workflow status, litter-type attributes, severity, and date.
+
+## Full-view and focused comparison
+
+The equal-state comparison shows the reported 1104px layout and the corrected implementation side by side. The earlier implementation kept two roughly 195px cards inside a narrow panel, truncating task attributes and leaving a conspicuous empty second-column region after the third result. The corrected state follows Zillow's breakpoint and presents one 319px card in a 375px panel, with consecutive cards separated by only 8px.
+
+The wide-panel comparison places the selected Zillow result grid and Litterbugs' 1440px implementation together. Both use a roughly 750px panel, two approximately 343px card tracks, 20px side padding, and an 8px grid gap. This focused comparison is necessary because the requested issue concerns exact card tracks and responsive density rather than the map itself.
+
+## Required fidelity surfaces
+
+- Fonts and typography: the established Litterbugs Inter hierarchy is unchanged. Wider cards prevent reward, title, litter-type, severity, and date text from collapsing into unreadable fragments.
+- Spacing and layout rhythm: the desktop grid now uses Zillow's 8px gap and 20px side padding. At 1280px and above, visible cards measure 343px in two columns. From 701–1279px, visible cards measure 319px in one column. The mobile sheet uses an auto-fit 300px minimum, yielding two 323px cards at 700px, one centered 420px card at 600px, and one 343px card at 390px.
+- Colors and visual tokens: no color tokens changed. The neutral grid surface, red value hierarchy, black selected filter, and semantic severity colors remain intact.
+- Image quality and asset fidelity: report photographs remain real, right-sized assets with the established crop. The responsive change gives them Zillow-like presentation widths without stretching or replacing them.
+- Copy and content: `Search` replaces `Map` in desktop and mobile header navigation. The Map label remains only where it describes an actual view toggle, which preserves accurate control semantics.
+- Interaction and accessibility: filter scrolling, native sorting, card selection, map-marker synchronization, and the mobile Map/List toggle remain functional. Mobile Search remains available through the Menu. No card becomes narrower than 319px in the measured supported states.
+
+## Findings
+
+- No actionable P0/P1/P2 mismatch remains.
+- P3 — Litterbugs retains its map-first bottom sheet below 701px instead of copying Zillow's full-page mobile list. This is intentional because Litterbugs' core task starts with a location and already provides an explicit Map/List toggle.
+- P3 — Litterbugs cards are 28–42px taller than Zillow cards at comparable widths because Litterbugs exposes additional task and safety metadata. Removing that information would reduce usability for cleanup decisions.
+
+## Comparison history
+
+- P1 — Two cards were compressed to roughly 195px at the 1104px problem viewport. Fixed by matching Zillow's single-column intermediate breakpoint and maintaining a 319px visible card width.
+- P2 — The 14px grid gap and odd two-column layout amplified dead space between a three-card result set. Fixed with Zillow's 8px gap and a one-column intermediate layout.
+- P2 — The earlier responsive rules changed from two tiny cards to one large card without a stable minimum. Fixed with measured desktop panel widths and a 300px mobile auto-fit minimum plus a 420px single-card cap.
+- P2 — The header still labeled the discovery route `Map`. Fixed by renaming the shared desktop and mobile navigation link to `Search` while preserving actual Map view-toggle copy.
+- Post-fix evidence: `grid-responsive-before-after.png`, `grid-zillow-wide-comparison.png`, and the 1440px, 1104px, 700px, and 390px implementation captures.
+
+## Verification
+
+- Measured Litterbugs cards: 343px at 1440/1280; 319px at 1279/1200/1104/1024/900/800/701; 323px at 700; 420px centered at 600; 343px at 390.
+- Browser-tested mobile card selection and detail close behavior.
+- Browser-tested mobile Menu and Search link visibility.
+- Browser console errors and warnings: none.
+- Web tests: 18 files, 51 tests passed.
+- Lint, TypeScript, and production build passed.
+
+## Result
+
+final result: passed
+
+---
+
+# Cleanup Opportunity Grid, Navigation Labels, and Favicon
+
+## Source and implementation
+
+- Source visual truth — existing Litterbugs grid: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/grid-audit-litterbugs-source.png`
+- Source visual truth — selected Zillow grid reference: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/grid-audit-zillow-grid.png`
+- Research and implementation specification: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/grid-card-research.md`
+- Browser-rendered desktop implementation: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/grid-redesign-desktop-final.png`
+- Browser-rendered mobile implementation: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/grid-redesign-mobile.png`
+- Normalized focused comparison: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/grid-redesign-qa-comparison.png`
+- Transparent favicon check: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/favicon-transparency-check.png`
+- Local implementation: `http://localhost:3020/`
+- Desktop CSS viewport and implementation pixels: 1440×1000 at 1x density.
+- Mobile CSS viewport and implementation pixels: 390×844 at 1x density.
+- Supplied Litterbugs source pixels: 556×777. Zillow source pixels: 744×725. The 1836×760 focused comparison normalizes each source and the implementation result panel to 760px high without changing aspect ratio.
+- State: public map, signed out, default Available filter, Newest sort; mobile results sheet open.
+
+## Full-view and focused comparison
+
+The full desktop and mobile captures verify the map/results composition, sticky result controls, card hierarchy, responsive sheet, and header labels. The normalized three-panel comparison places the old Litterbugs grid, the selected Zillow reference, and the new implementation in one image. It shows that the new grid preserves Litterbugs content while adopting the reference's fixed media, stronger primary value line, aligned card tracks, restrained elevation, and quick-scanning metadata.
+
+The focused comparison is required because the meaningful differences are inside the result cards: workflow badge placement, reward/title hierarchy, task attributes, metadata contrast, fixed geometry, and filter density. The favicon transparency check composites the final PNG over blue to prove that no white canvas remains.
+
+## Required fidelity surfaces
+
+- Fonts and typography: report cards now use the existing Inter stack. Reward/volunteer value is 18px/850, title is 14px with a two-line clamp, filter and metadata text is 12–12.5px, and the result heading is 20px. The prior 11px low-contrast metadata treatment is removed.
+- Spacing and layout rhythm: desktop retains two columns above the established tablet breakpoint with 14px gaps and 18px panel padding. Cards use a fixed 16:9 media region, 14px radius, consistent copy height, 7px internal rhythm, and an aligned metadata divider. Mobile uses one column in the existing bottom sheet with scrollable filter chips and no horizontal page overflow.
+- Colors and visual tokens: white cards, neutral gray-green tags, near-black selected filters, and the existing accessible red hierarchy match Litterbugs' system. Red remains the selected-card and primary-value accent; severity colors remain semantic. Hover no longer moves or zooms cards.
+- Image quality and asset fidelity: real report photographs continue through the right-sized card image route with `object-fit: cover`; missing photos use the existing icon library. Multiple-photo reports show a truthful count rather than fake carousel dots. The browser icon uses a generated brand-consistent red bug asset at 256×256 with alpha transparency and no white background.
+- Copy and content: workflow status, reward type, title, litter types, severity, and date are now separate facts. `Field Guide` replaces `How it works`, and `Safety` replaces `Info` in desktop navigation; route destinations remain unchanged.
+- Interaction states: Available, Rewarded, Volunteer, In progress, and All reports filters work. Newest, Highest reward, and Highest severity sorting work. Filter changes update both cards and map markers. Cards still open the existing report detail and preserve its close behavior.
+- Accessibility: filter buttons expose `aria-pressed`, sorting has an accessible label, selected cards retain `aria-current`, focus-visible styling remains, targets are at least 36–44px depending on context, and small text colors meet the intended contrast improvement.
+
+## Findings
+
+- No actionable P0/P1/P2 mismatch remains.
+- P3 — At the 390px viewport, the fifth `All reports` filter sits off-screen until horizontal scrolling. This is intentional progressive disclosure; every control remains keyboard- and touch-reachable without compressing labels.
+- P3 — The favicon deliberately uses one enlarged brand bug instead of the complete wordmark because the full logo is illegible at a 16px browser-tab size.
+
+## Comparison history
+
+- P1 — Reward and workflow state were conflated, so a funded open report hid its `Open` state. Fixed by rendering an image-level workflow badge and a separate reward/volunteer value line.
+- P1 — Completed and operational preview reports were counted as cleanup opportunities. Fixed by defaulting to genuinely available reports while retaining explicit In progress and All reports views. Filtered card counts and map-marker counts stay synchronized.
+- P2 — Title-first hierarchy and 11px metadata made the cards slow to scan. Fixed with reward-first hierarchy, task attributes, darker 12px metadata, and an aligned footer.
+- P2 — Hover translation and image zoom destabilized a dense two-column grid. Removed both motion effects while retaining border and elevation feedback.
+- P2 — The first favicon used a complete wordmark and then a white-canvas bug, both of which failed at browser-tab size. Replaced with one enlarged 256px bug and post-processed alpha transparency. The page now advertises the new transparent asset through icon, shortcut-icon, and apple-touch-icon metadata.
+- Post-fix evidence: `grid-redesign-qa-comparison.png`, `grid-redesign-desktop-final.png`, `grid-redesign-mobile.png`, and `favicon-transparency-check.png`.
+
+## Verification
+
+- Browser-tested filter state: All reports displayed 11 cards and 11 map markers.
+- Browser-tested sort state: Highest reward became the selected native sort option.
+- Browser-tested report interaction: first card opened its detail sheet and Close report details removed it.
+- Browser-tested navigation: Safety opened the Information and policies menu; Field Guide navigated to `/about`.
+- Browser-tested favicon metadata: shortcut icon, icon, and apple-touch-icon all resolve to `/brand/litterbugs-favicon-transparent.png`; file metadata reports four channels and alpha transparency.
+- Browser console errors and warnings: none.
+- Web tests: 18 files, 51 tests passed.
+- Lint, TypeScript, and production build passed.
+
+## Result
+
+final result: passed
+
+---
+
 # Mobile Reports Navigation Design QA
+
+## Result
+
+final result: passed
+
+---
+
+# Mobile Menu Typography and Sign-In Color
+
+## Source and implementation
+
+- Source visual truth: `/var/folders/g1/z5srknk55b52bfd28jykgmj00000gn/T/TemporaryItems/NSIRD_screencaptureui_qd5zdj/Screenshot 2026-08-28 at 4.28.12 PM.png`
+- Browser-rendered implementation: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/menu-signin-matched-width.png`
+- Normalized focused comparison: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/menu-signin-header-comparison.png`
+- Local implementation: `http://localhost:3020/`
+- CSS viewport: 612×400 pixels; the in-app browser capture excludes its 15-pixel scrollbar gutter and produces a 597×390 image at 1x density.
+- Source pixels: 597×137 at 1x density. The source app header was cropped to 597×66 from y=44; the implementation app header was cropped to 597×66 from y=0. The side-by-side comparison uses these equal-size, unscaled crops.
+- State: public map route, signed out, report mode inactive, mobile navigation closed.
+
+## Full-view and focused comparison
+
+The full browser capture verifies the revised header in the live map experience. The equal-size focused comparison was required because the requested changes concern small UI typography and button color. It places the supplied problem state and the revised implementation in one image, with browser debugging chrome excluded.
+
+## Required fidelity surfaces
+
+- Fonts and typography: Menu now uses the same Inter-stack 16px/600 treatment as Map, How it works, and Info in non-mobile navigation. The visible 44×44px mobile touch target is retained.
+- Spacing and layout rhythm: the 66px header, centered logo, 6px action gap, 42px action heights, and 12px radii are unchanged. Menu, Report, and Sign in remain fully visible without collision.
+- Colors and visual tokens: Report stays the solid brand-red primary action. Signed-out Sign in now uses the existing brand-red-soft token with red text and a light red border, creating a colored secondary action without competing with Report. Signed-in Account remains neutral.
+- Image quality and asset fidelity: the original Litterbugs logo remains centered, proportional, and sharp. No replacement or code-drawn asset was introduced.
+- Copy and content: Menu, Report, and Sign in labels are unchanged; no truncation or wrapping was introduced.
+
+## Findings
+
+- No actionable P0/P1/P2 mismatch remains.
+- P3 — The soft red Sign in button intentionally has lower contrast and emphasis than Report; this preserves the primary/secondary action hierarchy.
+
+## Comparison history
+
+- P2 — Menu typography did not match the desktop navigation: the supplied state used a smaller 13px/800 control while the desktop navigation used 16px/600. Fixed by applying the desktop size and weight to the mobile Menu trigger.
+- P2 — Sign in lacked brand color and read as a generic neutral utility button. Fixed with a signed-out-only soft red class; Account keeps its existing neutral treatment after authentication.
+- Post-fix evidence: computed Menu typography is 16px/600. Computed Sign in colors are `rgb(200, 50, 46)` text, `rgb(255, 240, 239)` background, and `rgb(255, 196, 193)` border. The matched-width comparison shows both changes without altering header geometry.
+
+## Verification
+
+- Menu opens the Mobile navigation region and closes successfully.
+- Sign in opens the existing authentication dialog.
+- Horizontal header controls remain in frame; no browser console warnings or errors were recorded.
+- Web tests passed: 18 files, 50 tests.
+- Lint, TypeScript, and diff checks passed.
+
+## Result
+
+final result: passed
+
+---
+
+# Account-Aware Public Header
+
+## Source and implementation
+
+- Source visual truth: `/var/folders/g1/z5srknk55b52bfd28jykgmj00000gn/T/TemporaryItems/NSIRD_screencaptureui_duDsBt/Screenshot 2026-08-28 at 3.46.48 PM.png`
+- Browser-rendered desktop implementation: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/account-header-desktop.png`
+- Focused equal-width comparison: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/account-header-neutral-comparison.png`
+- Sign-in dialog state: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/account-header-auth-dialog.png`
+- Mobile implementation: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/account-header-mobile.png`
+- Source pixels: 290×107 at 1x density. Desktop implementation pixels and CSS viewport: 1265×712 at 1x density. Focused comparison uses two 290-pixel-wide crops without horizontal scaling. Mobile CSS viewport: 390×844 at 1x density.
+- State: public How it works route, signed out; sign-in dialog open for the provider interaction check; mobile navigation closed for the responsive header check.
+
+## Full-view and focused comparison
+
+The full desktop capture confirms that the account action sits inside the established centered-logo header without changing its navigation rhythm. The focused comparison places the reported red `Back to map` state and the revised neutral `Sign in` control in one normalized image. The revised control preserves the same compact scale and rounded geometry while removing the unrelated high-emphasis red treatment.
+
+A focused comparison was required because the control color, border, weight, and spacing are too small to judge reliably in the full page. Separate desktop, dialog, and mobile captures verify the interaction and responsive states.
+
+## Required fidelity surfaces
+
+- Fonts and typography: the action uses the existing Inter stack at 14px with a strong but not oversized weight; the label remains one line at desktop and mobile widths.
+- Spacing and layout rhythm: the 42px control height provides a practical target without crowding the 80px desktop or 66px mobile header. The Info-to-account gap and centered logo remain unchanged.
+- Colors and visual tokens: the former solid red action is replaced with a neutral near-white surface, gray-green border, and near-black text. Red remains reserved for active navigation and primary product actions.
+- Image quality and asset fidelity: the original high-resolution Litterbugs logo remains centered, proportional, and uncropped. Signed-in profile photos use the existing Supabase avatar asset rather than generated or code-drawn art.
+- Copy and content: `Back to map` is removed. The control now says `Sign in` for guests and `Account` for authenticated members. The sign-in dialog exposes Google, Facebook, and email authentication.
+- Responsive behavior: the 390px implementation keeps Menu, logo, and Sign in visible with no overlap or horizontal overflow; the mobile menu still opens independently.
+
+## Findings
+
+- No actionable P0/P1/P2 visual or interaction mismatch remains in the supplied signed-out header state.
+- P3 residual test gap: the signed-in avatar/account header state could not be browser-captured without using a real member session. Its conditional UI and persistent profile callback are covered by automated component tests.
+
+## Comparison history
+
+- P1 — Wrong action and emphasis: the source used a bright red `Back to map` button on a page whose header already included Map navigation. Fixed by replacing it with an authentication-aware `Sign in`/`Account` control.
+- P2 — Color mismatch: the solid red fill gave the utility account action the same emphasis as a primary conversion button. Fixed with a neutral surface, restrained border, and neutral hover treatment. Post-fix evidence: `account-header-neutral-comparison.png`.
+- P2 — Cross-page inconsistency: the map owned separate sign-in/account buttons while public pages owned a back button. Fixed with one shared account component used by both surfaces.
+
+## Verification
+
+- Primary interaction tested: Sign in opens the authentication dialog.
+- Authentication choices verified in the rendered dialog: Google, Facebook, and email/password.
+- Mobile Menu opens and exposes Map, How it works, and all policy links.
+- Browser console errors and warnings checked in desktop, dialog, and mobile states: none.
+- Web tests passed: 18 files, 50 tests.
+- Lint, TypeScript, production build, and diff check passed.
+- Latest fetched `origin/main` and this branch base both resolve to `517a660`; no newer Luke/main commit is missing from this work.
+
+## Follow-up polish
+
+- P3 — After the owner signs in locally, capture the real avatar/account state once to confirm the longest expected display name does not materially widen the header action.
+
+## Result
+
+final result: passed
+
+---
+
+# How Litterbugs Works — Refero-Led Landing Page
+
+## Source and implementation
+
+- User-reported problem state: `/var/folders/g1/z5srknk55b52bfd28jykgmj00000gn/T/TemporaryItems/NSIRD_screencaptureui_62BYYT/Screenshot 2026-08-28 at 3.25.11 PM.png`
+- Normalized local problem-state capture: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/about-before.png`
+- Refero Instacart process-page reference: `https://refero.design/pages/56e3d771-b7b0-479a-8e07-70ad59c01ba7`
+- Refero Faire marketplace explainer reference: `https://refero.design/pages/f1b7f74c-a7c3-4f51-abb7-83c1fed06709`
+- Refero Care safety-center reference: `https://refero.design/pages/9d4ca336-8f84-4b4c-b717-edb1de263465`
+- Refero Discord community landing reference: `https://refero.design/pages/8f6f0115-d3a3-489c-82a6-9aa5aa79d66e`
+- Browser-rendered desktop implementation: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/about-after-desktop-final.png`
+- Browser-rendered mobile implementation: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/about-after-mobile.png`
+- Normalized problem-state/final comparison: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/about-before-after.png`
+- Local implementation URL: `http://localhost:3020/about`
+- Desktop QA viewport: 1280×900 CSS pixels at 1x density. The browser content captures were 1265 pixels wide because the vertical scrollbar occupies 15 CSS pixels. The comparison uses equal 1264×888 top-viewport crops with no scaling.
+- Full desktop implementation: 1265×3005 pixels from a 1280-pixel CSS viewport. Mobile implementation: 375×4120 pixels from a 390×844 CSS viewport, with the same 15-pixel scrollbar exclusion and no density scaling.
+- State: public, signed out, How it works active; mobile navigation was additionally tested expanded.
+
+## Full-view and focused comparison
+
+The normalized side-by-side comparison places the reported alert-like page and the rebuilt hero/process layout in one input. The original concentrates all content in one elevated 720-pixel card, while the final viewport establishes a full-width purpose-led hero and immediately introduces the next process section. The full-page desktop and mobile captures verify the complete section sequence, alternating surfaces, policy links, role cards, and closing map action.
+
+The 1264×888 normalized comparison also serves as the focused hero-region review. A second micro-crop was unnecessary because the headline, navigation, button sizing, typography hierarchy, section boundary, and removal of the modal-like surface are all readable at that scale.
+
+## Required fidelity surfaces
+
+- Fonts and typography: the existing Inter family is preserved. The 52–84px responsive hero scale creates a clear marketing-page hierarchy; 36–68px section headings, 18–23px explanatory text, and 12–13px uppercase labels remain legible and wrap cleanly on desktop and mobile.
+- Spacing and layout rhythm: the page now uses 560px hero depth, 92–108px desktop section padding, a 1120px content frame, two-column section intros, and three-column process/role grids. Mobile collapses to one column with 64–72px section rhythm, full-width 48px actions, and no overlap or horizontal overflow.
+- Colors and visual tokens: the existing white, soft green, near-black, and Litterbugs red roles are preserved. A dark green trust band adds contrast without introducing a competing brand color; white and muted green foregrounds remain readable.
+- Image quality and asset fidelity: the existing header keeps the original sharp Litterbugs logo. The page does not substitute product imagery with fake screenshots, handcrafted SVGs, emoji, or CSS drawings. The first-pass decorative CSS circles were removed before final capture.
+- Copy and content: the page now explains the actual Report → Rally support → Clean and verify journey, describes the reporter/contributor/cleaner roles, states that contributions are not charitable donations, and retains direct links to cleanup policy, safety and waiver, terms, and support.
+- States and interactions: the desktop and mobile header states render correctly; the mobile Menu expands to the complete navigation; the “See the three steps” control scrolls to `#process`; map CTAs and policy links resolve to their intended routes.
+- Accessibility: semantic regions and heading levels are ordered, the process is an ordered list, policy links have a navigation label, controls have 44–48px minimum targets, focus-visible styling is present, and motion is disabled under `prefers-reduced-motion`.
+
+## Comparison history
+
+- P1 — Alert/modal composition: the original page looked like a dismissible system notice because every idea, support link, and CTA lived in one floating rounded card. Fixed by replacing the card shell with a full-width editorial hero, sectioned process narrative, transparency band, role grid, and closing CTA. Post-fix evidence: the normalized `about-before-after.png` comparison and full-page desktop capture.
+- P2 — First-pass decorative hero circles: the initial implementation used two radial CSS circles in the hero, which were not supported by a source asset and distracted from the purpose-led typography. Removed the gradients and retained a clean solid soft-green band. Post-fix evidence: `about-after-desktop-final.png`.
+- P2 — Mobile density risk: three-column process, policy, and role content could have become cramped below 700px. Fixed with single-column stacking, reduced section padding, full-width CTA buttons, shorter policy rows, and border-based process separation. Post-fix evidence: `about-after-mobile.png`.
+- No actionable P0/P1/P2 finding remains.
+
+## Verification
+
+- Primary interactions tested: mobile Menu open/close and in-page “See the three steps” jump. The anchor reached `#process` with the section at the top of the viewport.
+- Browser logs checked: no errors or warnings; only normal React development and hot-reload informational messages were present.
+- Web tests passed: 17 files, 47 tests.
+- Lint, TypeScript, production build, web-boundary check, and `git diff --check` passed.
+- Branch `codex/website-ui-ux-next` and latest fetched `origin/main` both resolve to `517a660`, so no newer main-branch work was omitted.
+
+## Follow-up polish
+
+- P3 — Once real cleanup activity is plentiful, one authentic before/after cleanup photograph or live map product capture could add emotional proof between the process and trust sections. It should be added only as a real, correctly licensed product asset.
 
 ## Result
 
@@ -369,6 +669,161 @@ The 830-pixel comparison matches the visible width of the user's Litterbugs brow
 - The mobile view remains 70.5×48 with zero horizontal overflow.
 - Production console errors and warnings from `litterbugs.app` checked: none.
 - TypeScript, lint, CSS diff check, and the remote Vercel production build passed.
+
+## Result
+
+final result: passed
+
+---
+
+# Public Navigation Density
+
+## Source and implementation
+
+- Source visual truth: `/var/folders/g1/z5srknk55b52bfd28jykgmj00000gn/T/TemporaryItems/NSIRD_screencaptureui_inKxVI/Screenshot 2026-08-28 at 3.00.47 PM.png`
+- Local implementation: `http://localhost:3020/`
+- Desktop implementation: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/nav-page-desktop.png`
+- Focused implementation crop: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/nav-header-desktop.png`
+- Normalized side-by-side comparison: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/nav-header-comparison.png`
+- Mobile menu state: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/nav-header-mobile-menu.png`
+- Desktop viewport: 989×600 CSS pixels. Mobile viewport: 390×844 CSS pixels.
+- Source and focused implementation pixels: 989×83 at 1x density; the comparison uses equal-size crops with no scaling.
+- State: signed out, Map active; mobile menu expanded for the responsive interaction check.
+
+## Full-view and focused comparison
+
+The full desktop capture verifies the header inside the live map/results experience. A focused comparison was also required because typography weight, logo balance, label spacing, and action placement are too small to judge reliably at full-page scale. The supplied screenshot documents the reported problem state; the equal-size implementation crop shows the corrected layout.
+
+## Required fidelity surfaces
+
+- Fonts and typography: desktop navigation is 17px/700 above 1100px and 16px/700 at the 989-pixel reference width. The existing Inter stack, one-line labels, and hierarchy are preserved.
+- Spacing and layout rhythm: the two desktop groups are aligned inward around the centered brand, with a 24-pixel link gap, mirrored logo-side spacing, an 80-pixel header, and a constrained 1180-pixel content frame.
+- Colors and tokens: the existing white, near-black, and Litterbugs red system is unchanged; active, hover, focus, and primary-action colors retain their semantic roles.
+- Image quality and asset fidelity: the original Litterbugs logo asset remains centered, proportional, and sharp; no substitute asset or code-drawn approximation was introduced.
+- Copy and content: Map, How it works, Info, and Sign in remain unchanged, preserving routes and information architecture.
+- Responsive behavior: at 390 pixels the mobile header fits, the Menu control remains available, and the Mobile navigation region opens successfully.
+
+## Comparison history
+
+- P1 — Typography and density: the reference showed small labels pushed toward opposing viewport edges, making the header feel weak and disconnected. Fixed by increasing desktop size and weight, reducing intra-zone gaps, constraining the header frame, and aligning both navigation groups toward the centered brand.
+- Post-fix evidence: the 989×83 comparison shows a visibly larger, tighter group with the full Sign in action in frame. No actionable P0/P1/P2 mismatch remains.
+- P3 — Exact compactness is preference-level only. The mirrored desktop offsets can be adjusted by 8–12 pixels after user review if an even tighter group is preferred.
+
+## Verification
+
+- Mobile Menu interaction passed; the Mobile navigation region rendered.
+- Browser console warnings and errors checked: none.
+- Web tests passed: 17 files, 47 tests.
+- Lint, TypeScript, production build, and diff check passed.
+- Branch base and `origin/main` both resolve to `517a660`.
+
+## Result
+
+final result: passed
+
+---
+
+# Refero-Calibrated Navigation Middle Ground
+
+## Source and implementation
+
+- Refero Airbnb map header: `https://refero.design/pages/281b08a2-7dc1-4997-b0b9-efe27f7fdabd`
+- Refero Airbnb destination header: `https://refero.design/pages/cd9af1be-a756-4190-9517-be75171261c1`
+- Refero District discovery header: `https://refero.design/pages/18c25912-245c-43a4-90e4-1ebaf95d669b`
+- Refero Faire marketplace header: `https://refero.design/pages/52baabbf-b429-4341-a187-2cc39635cd9f`
+- Research comparison board: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/refero-header-comparison-board.png`
+- Wide/tight/middle-ground comparison: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/nav-header-three-way.png`
+- Browser-rendered implementation: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/nav-page-middle-ground-989.png`
+- Mobile menu state: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/nav-middle-ground-mobile.png`
+- Desktop comparison viewport: 989×600 CSS pixels at 1x density; focused header crops are 989×83 pixels with no scaling. Mobile viewport: 390×844 CSS pixels at 1x density.
+- State: public map route, signed out, Map active; mobile menu expanded for interaction verification.
+
+## Full-view and focused comparison
+
+The research board places four current Refero consumer/marketplace headers and the revised Litterbugs implementation in one comparison input. The references consistently use 14–16px medium or semibold navigation, clear but restrained gaps inside a group, and larger visual separation between functional groups. The implementation adapts those patterns to Litterbugs' centered stacked logo rather than copying any one brand.
+
+The three-way focused comparison shows the original edge-pinned layout, the over-tight first revision, and the middle-ground revision at the same 989×83 crop. The final layout sits visibly between both extremes and keeps every persistent control fully in frame.
+
+## Required fidelity surfaces
+
+- Fonts and typography: Inter remains the product font. Desktop navigation is now 16px/600 with one-line labels and a 2px active underline, matching the Refero range without returning to the earlier 15px/light appearance.
+- Spacing and layout rhythm: link gaps are 26px on desktop and 22px at tablet widths. Responsive logo-side spacing is 88–104px on desktop and 76–96px on tablet, producing a clear center brand zone without pushing navigation to the viewport edges.
+- Colors and visual tokens: the white, near-black, and red Litterbugs system is unchanged; no Refero brand colors were copied.
+- Image quality and asset fidelity: the existing Litterbugs logo remains centered, proportional, and sharp. No source asset was replaced.
+- Copy and content: Map, How it works, Info, and Sign in are unchanged; routes and navigation behavior remain stable.
+- Responsive behavior: mobile retains its compact Menu/logo/action composition, opens the Mobile navigation region, and has zero horizontal overflow.
+
+## Comparison history
+
+- P1 — Original layout too spread out: persistent items were pushed toward the edges and read as disconnected. The first revision corrected this but over-compressed both groups around the logo.
+- P2 — First revision too tight/heavy: 16–17px bold labels and 34–56px logo-side gaps made the controls feel crowded. Fixed with 16px semibold labels, a lighter 2px active rule, slightly wider within-group rhythm, and responsive 76–104px logo-side spacing.
+- Post-fix evidence: at 989px the left navigation spans x=195–351, the centered logo spans x=440–549, and the right actions span x=638–776. This preserves 89px of air on both sides of the logo while keeping the complete header cluster balanced.
+- No actionable P0/P1/P2 finding remains.
+
+## Verification
+
+- Refero reference images and the browser-rendered implementation were inspected together.
+- Mobile menu interaction passed; horizontal overflow measured 0px.
+- Browser console warnings and errors checked: none.
+- Web tests passed: 17 files, 47 tests.
+- Lint, TypeScript, production build, and diff check passed.
+
+## Follow-up polish
+
+- P3 — The 89px tablet reference gap can move by roughly 8px after preference feedback without changing the established hierarchy.
+
+## Result
+
+final result: passed
+
+---
+
+# First-Paint Account Styling and Header Report Action
+
+## Source and implementation
+
+- Broken first-paint source: `/var/folders/g1/z5srknk55b52bfd28jykgmj00000gn/T/TemporaryItems/NSIRD_screencaptureui_Qi6bWi/Screenshot 2026-08-28 at 4.15.07 PM.png`
+- Settled source state: `/var/folders/g1/z5srknk55b52bfd28jykgmj00000gn/T/TemporaryItems/NSIRD_screencaptureui_aGJ7Ii/Screenshot 2026-08-28 at 4.15.22 PM.png`
+- Browser-rendered desktop implementation: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/report-header-desktop.png`
+- Browser-rendered mobile implementation: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/report-header-mobile.png`
+- Focused three-state comparison: `/Users/grantgibson/.codex/visualizations/2026/08/28/01a04933-e1cd-75c2-86c0-1e8b617a5cb5/report-header-render-comparison.png`
+- Source pixels: 176×70 and 202×76 at 1x density. Desktop implementation: 1280×720 CSS pixels at 1x density. Mobile implementation: 390×844 CSS pixels at 1x density. The focused current header region is a 320×80 unscaled crop; the comparison places each natural-size capture in one 738×100 canvas without density conversion.
+- State: public map route, signed out, report mode inactive; desktop first meaningful render and ready mobile render.
+
+## Full-view and focused comparison
+
+The full desktop implementation verifies the action inside the complete map/results layout. The full mobile implementation verifies that Menu, centered brand, Report, and Sign in remain visible without overlap or horizontal overflow.
+
+The focused comparison places the broken browser-default button, the later styled account button, and the revised first-painted header together. It confirms that the neutral account treatment is present immediately and that the new reporting action is integrated as a distinct primary control.
+
+## Required fidelity surfaces
+
+- Fonts and typography: the existing Inter header treatment remains. Report litter and Sign in use 14px desktop text; mobile uses 13px and shortens only the visible reporting label to Report while retaining the accessible name Report litter.
+- Spacing and layout rhythm: both actions are 42px high with 12px radii and a 10px desktop gap. At 390px, the action group spans x=239–376, leaving 9px between the centered logo and the reporting button with zero horizontal overflow.
+- Colors and visual tokens: Report litter uses the established Litterbugs red primary token. Sign in remains a neutral near-white utility control with a gray-green border and near-black text.
+- Image quality and asset fidelity: the supplied Litterbugs logo remains the original raster asset, proportional, centered, sharp, and uncropped. No replacement imagery or code-drawn asset was introduced.
+- Copy and content: desktop displays Report litter and Sign in. Mobile displays Report and Sign in; Report retains `aria-label="Report litter"`.
+- Interaction states: clicking Report litter while signed out opens the existing authentication dialog. The dialog visibly includes Google, Facebook, and email sign-in choices.
+
+## Findings
+
+- No actionable P0/P1/P2 mismatch remains.
+- P3 — The mobile logo-to-report gap is intentionally compact at the 390px breakpoint. It remains visually separated and can gain a few pixels only by reducing action padding or the logo size, neither of which is currently warranted.
+
+## Comparison history
+
+- P1 — Unstyled first paint: the supplied capture showed a browser-default Sign in button before route-specific component CSS settled. Fixed by moving the critical account-control rules into the root stylesheet loaded with the application shell. Post-fix computed first-paint values are 42px height, 12px radius, `rgb(247, 248, 247)` background, and flex layout.
+- P1 — Reporting action separated from navigation: Report litter previously floated over the map canvas. Fixed by moving the same functional control into the map header beside Account/Sign in and removing the duplicate map overlay control.
+- P2 — Mobile crowding risk: two full desktop labels would collide with the centered logo. Fixed with a visible Report label at phone widths while preserving the full accessible name and 42px touch target.
+
+## Verification
+
+- Page identity: `http://localhost:3020/`, title `Litterbugs`.
+- First meaningful render contained the map header and results; no framework overlay was present.
+- Browser console errors and warnings checked in desktop and mobile states: none.
+- Primary interaction verified: Report litter → Sign in dialog.
+- Web tests passed: 18 files, 50 tests.
+- Lint, TypeScript, production build, and diff check passed.
 
 ## Result
 
