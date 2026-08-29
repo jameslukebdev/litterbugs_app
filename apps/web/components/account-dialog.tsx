@@ -1,14 +1,21 @@
 'use client';
 
 import type { Database, Report } from '@litterbugs/report-contract';
+import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 
 import { Icon } from '@/components/icon';
 import { ModalShell } from '@/components/modal-shell';
 import { PayoutSetupAction } from '@/components/payout-setup-action';
+import {
+  getProfileAvatarUrl,
+  getProfileLabel,
+  validateProfileDraft,
+  type Profile,
+  type ProfileDraftErrors,
+} from '@/lib/profile';
 import { createClient } from '@/lib/supabase/client';
 
-type Profile = Database['public']['Tables']['profiles']['Row'];
 type CleanupAttemptRow = Database['public']['Tables']['cleanup_attempts']['Row'];
 type CleanupAttempt = Pick<
   CleanupAttemptRow,
@@ -34,13 +41,25 @@ export function AccountDialog({
   onClose,
   onSignedOut,
   onOpenReport,
+  onProfileChanged,
 }: {
   onClose: () => void;
   onSignedOut: () => void;
   onOpenReport: (reportId: string) => void;
+  onProfileChanged?: (profile: Profile) => void;
 }) {
+  const [userId, setUserId] = useState('');
   const [email, setEmail] = useState('');
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [profileEditing, setProfileEditing] = useState(false);
+  const [displayNameDraft, setDisplayNameDraft] = useState('');
+  const [usernameDraft, setUsernameDraft] = useState('');
+  const [bioDraft, setBioDraft] = useState('');
+  const [locationDraft, setLocationDraft] = useState('');
+  const [profileErrors, setProfileErrors] = useState<ProfileDraftErrors & { avatarFile?: string }>({});
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [removeAvatar, setRemoveAvatar] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState('');
   const [reports, setReports] = useState<Report[]>([]);
   const [expiredReports, setExpiredReports] = useState<Report[]>([]);
   const [cleanups, setCleanups] = useState<CleanupAttempt[]>([]);
@@ -61,6 +80,7 @@ export function AccountDialog({
         return;
       }
 
+      setUserId(user.id);
       setEmail(user.email ?? '');
       const [profileResult, reportsResult, expiredReportsResult, cleanupResult, contributionResult] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
@@ -96,6 +116,11 @@ export function AccountDialog({
 
       if (cancelled) return;
       setProfile(profileResult.data);
+      setDisplayNameDraft(profileResult.data?.display_name ?? '');
+      setUsernameDraft(profileResult.data?.username ?? '');
+      setBioDraft(profileResult.data?.bio ?? '');
+      setLocationDraft(profileResult.data?.location ?? '');
+      setProfileEditing(Boolean(profileResult.data && !profileResult.data.profile_completed_at));
       setReports(reportsResult.data ?? []);
       setExpiredReports(expiredReportsResult.data ?? []);
       setCleanups((cleanupResult.data ?? []) as unknown as CleanupAttempt[]);
@@ -109,6 +134,10 @@ export function AccountDialog({
     void loadDashboard();
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => () => {
+    if (avatarPreview.startsWith('blob:')) URL.revokeObjectURL(avatarPreview);
+  }, [avatarPreview]);
 
   const activeCleanups = useMemo(
     () => cleanups.filter(({ status }) => status !== 'completed'),
@@ -152,6 +181,104 @@ export function AccountDialog({
     onSignedOut();
   }
 
+  function startProfileEdit() {
+    setDisplayNameDraft(profile?.display_name ?? '');
+    setUsernameDraft(profile?.username ?? '');
+    setBioDraft(profile?.bio ?? '');
+    setLocationDraft(profile?.location ?? '');
+    setProfileErrors({});
+    setAvatarFile(null);
+    setAvatarPreview('');
+    setRemoveAvatar(false);
+    setProfileEditing(true);
+  }
+
+  function cancelProfileEdit() {
+    if (!profile?.profile_completed_at) return;
+    setProfileEditing(false);
+    setProfileErrors({});
+    setAvatarFile(null);
+    setAvatarPreview('');
+    setRemoveAvatar(false);
+  }
+
+  function chooseAvatar(file: File | undefined) {
+    if (!file) return;
+    const contentType = file.type.toLowerCase() === 'image/jpg' ? 'image/jpeg' : file.type.toLowerCase();
+    const allowed = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
+    if (!allowed.has(contentType)) {
+      setProfileErrors((current) => ({ ...current, avatarFile: 'Choose a JPEG, PNG, WebP, HEIC, or HEIF image.' }));
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setProfileErrors((current) => ({ ...current, avatarFile: 'Choose an image smaller than 5 MB.' }));
+      return;
+    }
+    setProfileErrors((current) => ({ ...current, avatarFile: undefined }));
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+    setRemoveAvatar(false);
+  }
+
+  async function saveProfile(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const validation = validateProfileDraft({
+      displayName: displayNameDraft,
+      username: usernameDraft,
+      bio: bioDraft,
+      location: locationDraft,
+    });
+    if (!validation.valid || !userId) {
+      setProfileErrors(validation.errors);
+      return;
+    }
+
+    setBusyAction('profile');
+    setMessage('');
+    setProfileErrors({});
+    const supabase = createClient();
+    let avatarPath = removeAvatar ? null : profile?.avatar_path ?? null;
+
+    try {
+      if (removeAvatar && profile?.avatar_path) {
+        const { error } = await supabase.storage.from('profile_avatars').remove([profile.avatar_path]);
+        if (error) throw error;
+      }
+      if (avatarFile) {
+        avatarPath = `${userId}/avatar`;
+        const { error } = await supabase.storage.from('profile_avatars').upload(avatarPath, avatarFile, {
+          contentType: avatarFile.type || 'image/jpeg',
+          upsert: true,
+        });
+        if (error) throw error;
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ ...validation.values, avatar_path: avatarPath })
+        .eq('id', userId)
+        .select('*')
+        .single();
+      if (error) throw error;
+      setProfile(data);
+      onProfileChanged?.(data);
+      setProfileEditing(false);
+      setAvatarFile(null);
+      setAvatarPreview('');
+      setRemoveAvatar(false);
+      setMessage('Profile saved. Your website and app account are now up to date.');
+    } catch (error) {
+      const profileError = error as { code?: string; message?: string };
+      if (profileError.code === '23505' || /username.*unique/i.test(profileError.message ?? '')) {
+        setProfileErrors({ username: 'That username is taken.' });
+      } else {
+        setMessage(profileError.message || 'Couldn’t save your profile. Check your connection and try again.');
+      }
+    } finally {
+      setBusyAction('');
+    }
+  }
+
   function openReport(reportId: string) {
     onOpenReport(reportId);
     onClose();
@@ -182,23 +309,92 @@ export function AccountDialog({
     setMessage('Report closed. Full contribution refunds have been queued.');
   }
 
-  const displayName = profile?.display_name || profile?.username || email.split('@')[0] || 'Litterbugs member';
+  const displayName = getProfileLabel(profile, email);
   const initial = displayName.charAt(0).toUpperCase();
+  const savedAvatarUrl = getProfileAvatarUrl(createClient(), profile);
+  const visibleAvatarUrl = avatarPreview || (removeAvatar ? '' : savedAvatarUrl);
 
   return (
     <ModalShell onClose={onClose} label="Your Litterbugs account" className="account-dialog member-dashboard" closeDisabled={Boolean(busyAction)}>
       <header className="member-dashboard-header">
-        <div className="account-avatar" aria-hidden>{initial || <Icon name="account" />}</div>
-        <div>
+        <div className="account-avatar" aria-hidden>
+          {visibleAvatarUrl ? <Image src={visibleAvatarUrl} alt="" width={64} height={64} unoptimized /> : (initial || <Icon name="account" />)}
+        </div>
+        <div className="member-profile-summary">
           <span className="eyebrow">YOUR LITTERBUGS ACCOUNT</span>
           <h2>{displayName}</h2>
           <p className="member-profile-line">
             {[profile?.username ? `@${profile.username}` : null, profile?.location].filter(Boolean).join(' · ') || email}
           </p>
         </div>
+        {!profileEditing && <button className="secondary-button member-edit-profile" onClick={startProfileEdit}>Edit profile</button>}
       </header>
 
-      {message && <p className={`form-message ${message.includes('sent') ? 'success-message' : 'error-message'}`} role="status">{message}</p>}
+      {message && <p className={`form-message ${message.includes('sent') || message.includes('saved') ? 'success-message' : 'error-message'}`} role="status">{message}</p>}
+
+      {profileEditing && (
+        <section className="member-profile-editor" aria-labelledby="profile-editor-title">
+          <header>
+            <div>
+              <span className="eyebrow">{profile?.profile_completed_at ? 'PROFILE' : 'ONE LAST STEP'}</span>
+              <h3 id="profile-editor-title">{profile?.profile_completed_at ? 'Edit your profile' : 'Finish your profile'}</h3>
+              {!profile?.profile_completed_at && <p>Add a display name so your account is ready on both the website and mobile app.</p>}
+            </div>
+          </header>
+          <form className="member-profile-form" onSubmit={saveProfile}>
+            <div className="member-avatar-editor">
+              <div className="account-avatar account-avatar-large" aria-hidden>
+                {visibleAvatarUrl ? <Image src={visibleAvatarUrl} alt="" width={88} height={88} unoptimized /> : initial}
+              </div>
+              <div className="member-avatar-actions">
+                <label className="secondary-button member-photo-picker">
+                  <span>{avatarFile ? 'Choose another photo' : 'Choose photo'}</span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                    onChange={(event) => chooseAvatar(event.target.files?.[0])}
+                    disabled={Boolean(busyAction)}
+                  />
+                </label>
+                {(visibleAvatarUrl || profile?.avatar_path) && (
+                  <button type="button" className="profile-text-button" onClick={() => { setAvatarFile(null); setAvatarPreview(''); setRemoveAvatar(true); }} disabled={Boolean(busyAction)}>Remove photo</button>
+                )}
+                <small>JPEG, PNG, WebP, HEIC, or HEIF · 5 MB max</small>
+                {profileErrors.avatarFile && <span className="profile-field-error">{profileErrors.avatarFile}</span>}
+              </div>
+            </div>
+
+            <div className="member-profile-fields">
+              <label>Display name
+                <input value={displayNameDraft} onChange={(event) => setDisplayNameDraft(event.target.value)} maxLength={60} autoComplete="name" aria-invalid={Boolean(profileErrors.displayName)} />
+                <small>{displayNameDraft.length}/60</small>
+                {profileErrors.displayName && <span className="profile-field-error">{profileErrors.displayName}</span>}
+              </label>
+              <label>Username <span className="profile-optional">(optional)</span>
+                <span className="profile-username-input"><span aria-hidden>@</span><input value={usernameDraft} onChange={(event) => setUsernameDraft(event.target.value)} maxLength={30} autoCapitalize="none" autoCorrect="off" placeholder="cleanup.friend" aria-invalid={Boolean(profileErrors.username)} /></span>
+                <small>{usernameDraft.length}/30</small>
+                {profileErrors.username && <span className="profile-field-error">{profileErrors.username}</span>}
+              </label>
+              <label className="member-profile-wide-field">Bio <span className="profile-optional">(optional)</span>
+                <textarea value={bioDraft} onChange={(event) => setBioDraft(event.target.value)} maxLength={160} placeholder="Tell your community a little about yourself." aria-invalid={Boolean(profileErrors.bio)} />
+                <small>{bioDraft.length}/160</small>
+                {profileErrors.bio && <span className="profile-field-error">{profileErrors.bio}</span>}
+              </label>
+              <label className="member-profile-wide-field">Location <span className="profile-optional">(optional)</span>
+                <input value={locationDraft} onChange={(event) => setLocationDraft(event.target.value)} maxLength={80} placeholder="Asheville, NC" aria-invalid={Boolean(profileErrors.location)} />
+                <span className="profile-field-helper">This is public. Use a city or region, not a street address.</span>
+                <small>{locationDraft.length}/80</small>
+                {profileErrors.location && <span className="profile-field-error">{profileErrors.location}</span>}
+              </label>
+            </div>
+
+            <div className="member-profile-form-actions">
+              {profile?.profile_completed_at && <button type="button" className="secondary-button" onClick={cancelProfileEdit} disabled={Boolean(busyAction)}>Cancel</button>}
+              <button className="primary-button" disabled={Boolean(busyAction)}>{busyAction === 'profile' ? 'Saving…' : 'Save profile'}</button>
+            </div>
+          </form>
+        </section>
+      )}
 
       {dataLoading ? (
         <div className="member-dashboard-loading"><span className="spinner" /><span>Loading your activity…</span></div>

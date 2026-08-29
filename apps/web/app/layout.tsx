@@ -16,7 +16,11 @@ export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: 'Litterbugs',
   description: 'Report litter and help keep your community clean.',
-  icons: { icon: '/brand/litterbugs-logo.png' },
+  icons: {
+    icon: [{ url: '/brand/litterbugs-favicon-transparent.png', type: 'image/png', sizes: '256x256' }],
+    shortcut: '/brand/litterbugs-favicon-transparent.png',
+    apple: '/brand/litterbugs-favicon-transparent.png',
+  },
 };
 
 export const viewport: Viewport = {

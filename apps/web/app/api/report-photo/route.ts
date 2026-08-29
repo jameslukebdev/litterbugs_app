@@ -24,6 +24,7 @@ export async function GET(request: Request) {
   const photoPath = searchParams.get('path')?.trim() ?? '';
   const adminCaseId = searchParams.get('caseId')?.trim() ?? '';
   const variant = searchParams.get('variant')?.trim() ?? '';
+  const isPublicVariant = variant === 'card' || variant === 'detail';
 
   if (
     !photoPath ||
@@ -31,14 +32,14 @@ export async function GET(request: Request) {
     photoPath.startsWith('/') ||
     photoPath.includes('\0') ||
     photoPath.split('/').includes('..') ||
-    !(variant === 'card' ? isReportCardPhoto(photoPath) : isHeicReportPhoto(photoPath))
+    !(isPublicVariant ? isReportCardPhoto(photoPath) : isHeicReportPhoto(photoPath))
   ) {
     return errorResponse(400, 'Invalid report photo path.');
   }
   if (adminCaseId && !UUID_PATTERN.test(adminCaseId)) {
     return errorResponse(400, 'Invalid administrator case.');
   }
-  if (variant && variant !== 'card') {
+  if (variant && !isPublicVariant) {
     return errorResponse(400, 'Invalid report photo variant.');
   }
 
@@ -87,13 +88,19 @@ export async function GET(request: Request) {
         quality: 0.82,
       }))
       : Buffer.from(sourceBuffer);
-    const cardImage = variant === 'card'
+    const deliveredImage = variant === 'card'
       ? await sharp(browserImage)
         .rotate()
         .resize({ width: 720, height: 405, fit: 'cover', position: 'centre', withoutEnlargement: true })
         .webp({ quality: 76 })
         .toBuffer()
-      : browserImage;
+      : variant === 'detail'
+        ? await sharp(browserImage)
+          .rotate()
+          .resize({ width: 1600, height: 1200, fit: 'inside', withoutEnlargement: true })
+          .webp({ quality: 82 })
+          .toBuffer()
+        : browserImage;
     const secondsUntilExpiration = expiresAt
       ? Math.floor((new Date(expiresAt).getTime() - now.getTime()) / 1000)
       : 0;
@@ -101,14 +108,14 @@ export async function GET(request: Request) {
       ? Math.max(0, Math.min(MAX_CACHE_SECONDS, secondsUntilExpiration))
       : 0;
 
-    return new Response(cardImage, {
+    return new Response(deliveredImage, {
       status: 200,
       headers: {
         'Cache-Control': adminCaseId
           ? 'private, no-store'
           : `public, max-age=${cacheSeconds}, s-maxage=${cacheSeconds}`,
-        'Content-Type': variant === 'card' ? 'image/webp' : 'image/jpeg',
-        'Content-Length': String(cardImage.byteLength),
+        'Content-Type': isPublicVariant ? 'image/webp' : 'image/jpeg',
+        'Content-Length': String(deliveredImage.byteLength),
         'X-Content-Type-Options': 'nosniff',
       },
     });

@@ -14,6 +14,11 @@ export function getReportCardPhotoUrl(path: string): string | null {
   return `/api/report-photo?${new URLSearchParams({ path, variant: 'card' }).toString()}`;
 }
 
+export function getReportDetailPhotoUrl(path: string): string | null {
+  if (!isReportCardPhoto(path)) return null;
+  return `/api/report-photo?${new URLSearchParams({ path, variant: 'detail' }).toString()}`;
+}
+
 export function getWebCompatibleReportPhotoUrl(
   path: string,
   options?: { adminCaseId?: string },

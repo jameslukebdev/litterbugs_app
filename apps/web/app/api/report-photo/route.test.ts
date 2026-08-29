@@ -128,4 +128,40 @@ describe('public report card photos', () => {
     expect(response.headers.get('cache-control')).toMatch(/^public, max-age=/);
     expect(convert).not.toHaveBeenCalled();
   });
+
+  it('serves a bounded cached WebP for the report detail viewer', async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: { expires_at: '2099-01-01T00:00:00.000Z' },
+      error: null,
+    });
+    from.mockReturnValue({
+      select: () => ({
+        contains: () => ({
+          or: () => ({
+            gt: () => ({
+              limit: () => ({ maybeSingle }),
+            }),
+          }),
+        }),
+      }),
+    });
+    download.mockResolvedValueOnce({
+      data: new Blob([new Uint8Array([1, 2, 3])], { type: 'image/jpeg' }),
+      error: null,
+    });
+
+    const response = await GET(new Request(
+      'http://localhost/api/report-photo?path=user%2Freport%2Fphoto.jpg&variant=detail',
+    ));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('image/webp');
+    expect(resize).toHaveBeenCalledWith({
+      width: 1600,
+      height: 1200,
+      fit: 'inside',
+      withoutEnlargement: true,
+    });
+    expect(webp).toHaveBeenCalledWith({ quality: 82 });
+  });
 });

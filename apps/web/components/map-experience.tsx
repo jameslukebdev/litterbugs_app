@@ -17,15 +17,15 @@ import {
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { AccountDialog } from '@/components/account-dialog';
-import { AuthDialog } from '@/components/auth-dialog';
 import { Icon } from '@/components/icon';
+import { PublicAccountAction, type PublicAccountActionHandle } from '@/components/public-account-action';
 import { PublicSiteHeader } from '@/components/public-site-header';
 import { ReportBrowser } from '@/components/report-browser';
 import { canManageReport, realUserId } from '@/lib/report-access';
 import { getBrowserLocation } from '@/lib/geolocation';
 import { ReportDetail } from '@/components/report-detail';
 import { ReportWizard } from '@/components/report-wizard';
+import { readReportPreferences, writeReportPreferences } from '@/lib/report-preferences';
 import { createClient } from '@/lib/supabase/client';
 
 const MAP_TYPES = ['roadmap', 'satellite', 'hybrid', 'terrain'] as const;
@@ -62,10 +62,14 @@ export function MapExperience({
   const mapRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
   const markerGlyphsRef = useRef(new Map<string, HTMLElement>());
+  const accountActionRef = useRef<PublicAccountActionHandle>(null);
   const selectedReportIdRef = useRef<string | null>(null);
   const advancedMarkerRef = useRef<typeof google.maps.marker.AdvancedMarkerElement | null>(null);
   const mapClickRef = useRef<(coordinates: Coordinates) => void>(() => undefined);
   const [reports, setReports] = useState<MappableReport[]>(initialReports.filter(hasReportCoordinates));
+  const [visibleReports, setVisibleReports] = useState<MappableReport[]>(
+    initialReports.filter(hasReportCoordinates).filter(({ cleanup_state }) => cleanup_state === 'available'),
+  );
   const [userId, setUserId] = useState(initialUserId);
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState(
@@ -78,11 +82,14 @@ export function MapExperience({
   const [draftCoordinates, setDraftCoordinates] = useState<Coordinates | null>(null);
   const [editingReport, setEditingReport] = useState<Report | null>(null);
   const [editPhotoUrls, setEditPhotoUrls] = useState<string[]>([]);
-  const [authOpen, setAuthOpen] = useState(false);
-  const [accountOpen, setAccountOpen] = useState(false);
   const [reportListOpen, setReportListOpen] = useState(false);
   const [reportMode, setReportMode] = useState(false);
+  const [previewedReportId, setPreviewedReportId] = useState<string | null>(null);
   const [toast, setToast] = useState('');
+  const [reportPreferences, setReportPreferences] = useState({
+    favorites: new Set<string>(),
+    hidden: new Set<string>(),
+  });
 
   const refreshReports = useCallback(async () => {
     const { data, error } = await createClient()
@@ -102,27 +109,65 @@ export function MapExperience({
       : null);
   }, []);
 
-  useEffect(() => {
-    const supabase = createClient();
-    void supabase.auth.getUser().then(({ data }) => {
-      setUserId(realUserId(data.user));
-    });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      const nextUser = realUserId(session?.user);
-      setUserId(nextUser);
-      router.refresh();
-    });
-    return () => listener.subscription.unsubscribe();
+  const handleUserChange = useCallback((nextUserId: string | null) => {
+    setUserId(nextUserId);
+    const stored = readReportPreferences(nextUserId);
+    setReportPreferences({ favorites: new Set(stored.favorites), hidden: new Set(stored.hidden) });
+    router.refresh();
   }, [router]);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      const stored = readReportPreferences(userId);
+      setReportPreferences({ favorites: new Set(stored.favorites), hidden: new Set(stored.hidden) });
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [userId]);
+
+  function updateReportPreference(kind: 'favorites' | 'hidden', reportId: string, enabled: boolean) {
+    setReportPreferences((current) => {
+      const next = {
+        favorites: new Set(current.favorites),
+        hidden: new Set(current.hidden),
+      };
+      if (enabled) next[kind].add(reportId);
+      else next[kind].delete(reportId);
+      writeReportPreferences(userId, {
+        favorites: Array.from(next.favorites),
+        hidden: Array.from(next.hidden),
+      });
+      return next;
+    });
+    setToast(kind === 'favorites'
+      ? enabled ? 'Report added to favorites.' : 'Report removed from favorites.'
+      : enabled ? 'Report hidden. Use the Hidden filter to restore it.' : 'Report restored to search.');
+  }
 
   useEffect(() => {
     const url = new URL(window.location.href);
     if (url.searchParams.get('stripe_onboarding') !== 'return') return;
     url.searchParams.delete('stripe_onboarding');
     window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
-    const timeout = window.setTimeout(() => setAccountOpen(true), 0);
+    const timeout = window.setTimeout(() => accountActionRef.current?.openAccount(), 0);
     return () => window.clearTimeout(timeout);
   }, []);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const reportId = url.searchParams.get('report');
+    if (!reportId) return;
+    const report = reports.find(({ id }) => id === reportId);
+    if (!report) return;
+    const timeout = window.setTimeout(() => {
+      setSelectedReport(report);
+      setReportListOpen(false);
+      mapRef.current?.panTo({ lat: report.latitude, lng: report.longitude });
+      if ((mapRef.current?.getZoom() ?? 0) < 14) mapRef.current?.setZoom(14);
+      url.searchParams.delete('report');
+      window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [reports]);
 
   useEffect(() => {
     if (!toast) return;
@@ -191,7 +236,7 @@ export function MapExperience({
     if (!mapReady || !map || !AdvancedMarkerElement) return;
     markersRef.current.forEach((marker) => { marker.map = null; });
     markerGlyphsRef.current.clear();
-    markersRef.current = reports.map((report) => {
+    markersRef.current = visibleReports.map((report) => {
       const markerGlyph = document.createElement('span');
       markerGlyph.className = `report-map-marker${selectedReportIdRef.current === report.id ? ' report-map-marker-selected' : ''}`;
       markerGlyph.textContent = markerLabel(report);
@@ -203,25 +248,34 @@ export function MapExperience({
         gmpClickable: true,
       });
       marker.append(markerGlyph);
+      markerGlyph.addEventListener('pointerenter', () => setPreviewedReportId(report.id));
+      markerGlyph.addEventListener('pointerleave', () => {
+        setPreviewedReportId((current) => current === report.id ? null : current);
+      });
       marker.addEventListener('gmp-click', () => {
+        setPreviewedReportId(null);
         setSelectedReport(report);
         setReportListOpen(false);
       });
       return marker;
     });
-  }, [mapReady, reports]);
+  }, [mapReady, visibleReports]);
 
   useEffect(() => {
     selectedReportIdRef.current = selectedReport?.id ?? null;
     markerGlyphsRef.current.forEach((glyph, reportId) => {
       glyph.classList.toggle('report-map-marker-selected', reportId === selectedReport?.id);
+      glyph.classList.toggle(
+        'report-map-marker-previewed',
+        reportId === previewedReportId && reportId !== selectedReport?.id,
+      );
     });
-  }, [selectedReport?.id]);
+  }, [previewedReportId, selectedReport?.id]);
 
   const beginReport = useCallback(async (coordinates: Coordinates) => {
     if (!userId) {
       setToast('Sign in to submit a litter report. You can keep browsing without an account.');
-      setAuthOpen(true);
+      accountActionRef.current?.openAuth();
       return;
     }
     try {
@@ -245,7 +299,7 @@ export function MapExperience({
 
   function toggleReportMode() {
     if (!userId) {
-      setAuthOpen(true);
+      accountActionRef.current?.openAuth();
       return;
     }
     setReportMode((current) => !current);
@@ -287,7 +341,7 @@ export function MapExperience({
     if (!authenticatedUserId) {
       setDraftCoordinates(null);
       setEditingReport(null);
-      setAuthOpen(true);
+      accountActionRef.current?.openAuth();
       return 'Sign in with a real account to save this report.';
     }
 
@@ -384,22 +438,50 @@ export function MapExperience({
       <PublicSiteHeader
         activePath="/"
         action={(
-          <button className={userId ? 'account-button' : 'signin-button'} onClick={() => userId ? setAccountOpen(true) : setAuthOpen(true)}>
-            {userId && <Icon name="account" />}{userId ? 'Account' : 'Sign in'}
-          </button>
+          <div className="map-header-actions">
+            <button
+              type="button"
+              className={`header-report-button${reportMode ? ' header-report-button-active' : ''}`}
+              onClick={toggleReportMode}
+              aria-label={reportMode ? 'Cancel reporting' : 'Report litter'}
+              aria-pressed={reportMode}
+            >
+              {reportMode ? (
+                <span aria-hidden>Cancel</span>
+              ) : (
+                <>
+                  <span className="header-report-long" aria-hidden>Report litter</span>
+                  <span className="header-report-short" aria-hidden>Report</span>
+                </>
+              )}
+            </button>
+            <PublicAccountAction
+              ref={accountActionRef}
+              initialUserId={initialUserId}
+              onOpenReport={openReportById}
+              onUserChange={handleUserChange}
+            />
+          </div>
         )}
       />
 
       <div className="map-workspace">
-        <ReportBrowser reports={reports} open={reportListOpen} onToggle={() => setReportListOpen((open) => !open)} onSelect={openReport} selectedReportId={selectedReport?.id} />
+        <ReportBrowser
+          reports={reports}
+          open={reportListOpen}
+          onToggle={() => setReportListOpen((open) => !open)}
+          onSelect={openReport}
+          onPreviewReport={setPreviewedReportId}
+          onVisibleReportsChange={setVisibleReports}
+          previewedReportId={previewedReportId}
+          selectedReportId={selectedReport?.id}
+          favoriteReportIds={reportPreferences.favorites}
+          hiddenReportIds={reportPreferences.hidden}
+        />
         <section className={`map-stage${reportMode ? ' map-stage-reporting' : ''}`} aria-label="Litterbugs report map">
           <div ref={mapElementRef} className="google-map" />
           {!mapReady && !mapError && <div className="map-loading"><span className="spinner" /><span>Loading map…</span></div>}
           {mapError && <div className="map-error"><Icon name="warning" /><strong>Map unavailable</strong><span>{mapError}</span></div>}
-
-          <button className={`report-litter-button${reportMode ? ' report-litter-button-active' : ''}`} onClick={toggleReportMode} aria-pressed={reportMode}>
-            {reportMode ? 'Cancel' : 'Report litter'}
-          </button>
 
           <div className="zoom-controls" aria-label="Map zoom controls">
             <button onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() ?? 12) + 1)} aria-label="Zoom in"><Icon name="plus" /></button>
@@ -414,11 +496,9 @@ export function MapExperience({
         </section>
       </div>
 
-      {selectedReport && <ReportDetail key={selectedReport.id} report={selectedReport} userId={userId} isOwner={canManageReport(selectedReport, userId)} onRequireSignIn={() => { setSelectedReport(null); setAuthOpen(true); }} onReportChanged={refreshReports} onClose={() => setSelectedReport(null)} onEdit={() => { void editSelectedReport(); }} onDelete={() => { void deleteSelectedReport(); }} />}
+      {selectedReport && <ReportDetail key={selectedReport.id} report={selectedReport} userId={userId} isOwner={canManageReport(selectedReport, userId)} favorite={reportPreferences.favorites.has(selectedReport.id)} hidden={reportPreferences.hidden.has(selectedReport.id)} onFavoriteChange={(favorite) => updateReportPreference('favorites', selectedReport.id, favorite)} onHiddenChange={(hidden) => updateReportPreference('hidden', selectedReport.id, hidden)} onNotify={setToast} onRequireSignIn={() => { setSelectedReport(null); accountActionRef.current?.openAuth(); }} onReportChanged={refreshReports} onClose={() => setSelectedReport(null)} onEdit={() => { void editSelectedReport(); }} onDelete={() => { void deleteSelectedReport(); }} />}
       {draftCoordinates && <ReportWizard initialDraft={{ ...EMPTY_REPORT_DRAFT }} isEditing={false} onClose={() => setDraftCoordinates(null)} onSubmit={saveReport} />}
       {editingReport && <ReportWizard initialDraft={editDraft} isEditing existingPhotoUrls={editPhotoUrls} onClose={() => { setEditingReport(null); setEditPhotoUrls([]); }} onSubmit={saveReport} />}
-      {authOpen && <AuthDialog onClose={() => setAuthOpen(false)} />}
-      {accountOpen && <AccountDialog onClose={() => setAccountOpen(false)} onOpenReport={openReportById} onSignedOut={() => { setAccountOpen(false); setUserId(null); }} />}
     </main>
   );
 }
