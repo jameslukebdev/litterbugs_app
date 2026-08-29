@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { edgeFunctionErrorMessage } from './edgeFunctionError';
 
 export const formatUsd = (cents = 0) => new Intl.NumberFormat(undefined, {
   style: 'currency',
@@ -17,7 +18,7 @@ export async function createCleanupContribution({ reportId, principalAmountCents
   const { data, error } = await supabase.functions.invoke('create-cleanup-contribution', {
     body: { reportId, principalAmountCents, clientRequestId },
   });
-  if (error) throw new Error(data?.error || error.message);
+  if (error) throw new Error(await edgeFunctionErrorMessage(data, error, 'Payment could not be started. Please try again.'));
   if (data?.error) throw new Error(data.error);
   return data;
 }
@@ -26,7 +27,7 @@ export async function loadPayoutStatus() {
   const { data, error } = await supabase.functions.invoke('create-cleaner-onboarding-link', {
     body: { mode: 'status' },
   });
-  if (error) throw new Error(data?.error || error.message);
+  if (error) throw new Error(await edgeFunctionErrorMessage(data, error, 'Payout status could not be loaded. Please try again.'));
   return data;
 }
 
@@ -34,7 +35,11 @@ export async function createPayoutOnboardingLink() {
   const { data, error } = await supabase.functions.invoke('create-cleaner-onboarding-link', {
     body: { mode: 'link', confirmAge18: true },
   });
-  if (error) throw new Error(data?.error || error.message);
+  if (error) throw new Error(await edgeFunctionErrorMessage(
+    data,
+    error,
+    'Payout setup is temporarily unavailable. Please try again later.',
+  ));
   if (!data?.url) throw new Error(data?.error || 'Payout setup is unavailable');
   return data;
 }
@@ -43,7 +48,11 @@ export async function createPayoutDashboardLink() {
   const { data, error } = await supabase.functions.invoke('create-cleaner-onboarding-link', {
     body: { mode: 'dashboard' },
   });
-  if (error) throw new Error(data?.error || error.message);
+  if (error) throw new Error(await edgeFunctionErrorMessage(
+    data,
+    error,
+    'Payout details are temporarily unavailable. Please try again later.',
+  ));
   if (!data?.url) throw new Error(data?.error || 'Payout dashboard is unavailable');
   return data;
 }

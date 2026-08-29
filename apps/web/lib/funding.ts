@@ -39,6 +39,33 @@ export function calculatePlatformFee(principalAmountCents: number) {
   return Math.floor((principalAmountCents + 5) / 10);
 }
 
+export async function edgeFunctionErrorMessage(
+  data: unknown,
+  error: unknown,
+  fallback: string,
+) {
+  if (
+    data
+    && typeof data === 'object'
+    && 'error' in data
+    && typeof data.error === 'string'
+  ) return data.error;
+
+  const context = error && typeof error === 'object' && 'context' in error
+    ? error.context
+    : null;
+  if (context instanceof Response) {
+    try {
+      const payload = await context.clone().json() as { error?: unknown };
+      if (typeof payload.error === 'string') return payload.error;
+    } catch {
+      // Supabase can return a non-JSON response for network or gateway failures.
+    }
+  }
+
+  return fallback;
+}
+
 export async function loadCleanupFeatureFlags(): Promise<CleanupFeatureFlags> {
   const { data, error } = await createClient()
     .from('cleanup_feature_flags')
@@ -58,7 +85,9 @@ export async function createCleanupContribution(
       clientRequestId: crypto.randomUUID(),
     },
   });
-  if (error || data?.error) throw new Error(data?.error || error?.message || 'Payment could not be started.');
+  if (error || data?.error) {
+    throw new Error(await edgeFunctionErrorMessage(data, error, 'Payment could not be started. Please try again.'));
+  }
   return data as ContributionIntent;
 }
 
@@ -66,7 +95,9 @@ export async function loadPayoutStatus(): Promise<PayoutStatus> {
   const { data, error } = await createClient().functions.invoke('create-cleaner-onboarding-link', {
     body: { mode: 'status' },
   });
-  if (error || data?.error) throw new Error(data?.error || error?.message || 'Payout status could not be loaded.');
+  if (error || data?.error) {
+    throw new Error(await edgeFunctionErrorMessage(data, error, 'Payout status could not be loaded. Please try again.'));
+  }
   return data as PayoutStatus;
 }
 
@@ -79,7 +110,11 @@ export async function createPayoutLink(mode: 'link' | 'dashboard') {
     },
   });
   if (error || data?.error || !data?.url) {
-    throw new Error(data?.error || error?.message || 'Payout setup could not be opened.');
+    throw new Error(await edgeFunctionErrorMessage(
+      data,
+      error,
+      'Payout setup is temporarily unavailable. Please try again later.',
+    ));
   }
   return data as PayoutStatus & { url: string };
 }
