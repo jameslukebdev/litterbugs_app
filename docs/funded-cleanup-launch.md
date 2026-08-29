@@ -92,6 +92,31 @@ below remain the financial release boundary.
   associated attestation must use Stripe's legal-entity update process rather
   than being inferred from the connected-account error.
 
+### Safe pause after the controlled charge (2026-08-29)
+
+- PR #67 replaced the raw Supabase transport error in payout setup with the
+  Edge Function's plain-language response on both web and mobile. Production
+  deployment `71t8G5Wvs6LNKYYXFw9YXYZHugSx` was aliased to
+  `https://litterbugs.app`, where the payout dialog was rechecked against the
+  same controlled Stripe activation failure.
+- After the live charge reconciled and Stripe still refused creation of the
+  first live recipient, `payments_enabled` was returned to `false` at
+  2026-08-29 14:59 UTC. `gemini_financial_review_enabled` remains `true`.
+  The existing $5 principal remains assigned to its report; no contribution
+  was refunded, no cleaner payout account exists, and the public web report no
+  longer exposes contribution or payout-onboarding controls.
+- Production `run-financial-maintenance` version 31 continued returning HTTP
+  200 on each one-minute run after the payment pause. The only recent
+  `create-cleaner-onboarding-link` HTTP 500 responses are the documented,
+  controlled activation checks before the pause. The administrator refund and
+  payout failures remain explicitly titled preview fixtures and moved no real
+  money.
+- Do not re-enable `payments_enabled` until Stripe activates live connected-
+  account creation. Then use a controlled window to create one recipient,
+  complete hosted onboarding and return links, claim the existing $5 reward,
+  run the full 48-hour review and first-paid-cleanup check, and reconcile the
+  exact $5 transfer before reopening contributions.
+
 The funded-cleanup launch no longer waits for Apple to finish converting the
 Burrow Base developer account. Apple has not provided a dependable timeline and
 approval could take weeks, so interim iOS builds, physical-device card testing,
