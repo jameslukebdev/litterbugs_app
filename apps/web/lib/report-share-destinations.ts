@@ -6,6 +6,26 @@ export type ReportShareDestinationInput = {
   title: string;
 };
 
+type ReportShareCopyInput = {
+  cleanup_state: string;
+  title: string | null;
+};
+
+export function reportShareCopy(report: ReportShareCopyInput) {
+  const completed = report.cleanup_state === 'completed';
+  const title = report.title?.trim() || 'Litter report';
+
+  return {
+    actionLabel: completed ? 'Share Your Impact' : 'Share',
+    dialogTitle: completed ? 'Share your cleanup impact' : 'Share this cleanup report',
+    eyebrow: completed ? 'Cleanup complete' : 'Cleanup needed',
+    message: completed
+      ? `See the cleanup impact for ${title} on Litterbugs.`
+      : `View ${title} and help clean it up with Litterbugs.`,
+    title,
+  };
+}
+
 export function reportShareImageUrl(shareUrl: string) {
   if (!shareUrl) return '';
   const url = new URL(shareUrl);

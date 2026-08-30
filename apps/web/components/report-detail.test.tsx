@@ -162,7 +162,7 @@ describe('ReportDetail photos', () => {
         onDelete={vi.fn()}
       />,
     );
-    expect(screen.getByRole('button', { name: 'Share' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Share Your Impact' })).toBeTruthy();
   });
 
   it('opens as a modal, focuses close, and closes on Escape', () => {
@@ -255,6 +255,80 @@ describe('ReportDetail photos', () => {
     expect(onNotify).not.toHaveBeenCalled();
   });
 
+  it('uses completed-impact copy in the completed report action, dialog, and native sheet', async () => {
+    const nativeShare = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'share', { configurable: true, value: nativeShare });
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn(() => ({ matches: false })),
+    });
+
+    const { rerender } = render(
+      <ReportDetail
+        report={{ ...report, cleanup_state: 'completed' }}
+        isOwner={false}
+        onClose={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Share Your Impact' }));
+    expect(screen.getByRole('dialog', { name: 'Share your cleanup impact' })).toBeTruthy();
+    expect(screen.getAllByText('Cleanup complete')).toHaveLength(2);
+    fireEvent.click(screen.getByRole('button', { name: 'Close share options' }));
+
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn(() => ({ matches: true })),
+    });
+    rerender(
+      <ReportDetail
+        report={{ ...report, cleanup_state: 'completed' }}
+        isOwner={false}
+        onClose={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Share Your Impact' }));
+
+    await waitFor(() => expect(nativeShare).toHaveBeenCalledWith({
+      title: 'Photo report',
+      text: 'See the cleanup impact for Photo report on Litterbugs.',
+      url: 'http://localhost:3000/reports/report-id',
+    }));
+  });
+
+  it('traps keyboard focus inside the share chooser without including the hidden download link', () => {
+    Object.defineProperty(navigator, 'share', { configurable: true, value: undefined });
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn(() => ({ matches: false })),
+    });
+
+    render(
+      <ReportDetail
+        report={report}
+        isOwner={false}
+        onClose={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Share' }));
+    const shareDialog = screen.getByRole('dialog', { name: 'Share this cleanup report' });
+    const close = screen.getByRole('button', { name: 'Close share options' });
+    const last = screen.getByRole('link', { name: /^X/ });
+
+    close.focus();
+    fireEvent.keyDown(shareDialog, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(last);
+    fireEvent.keyDown(shareDialog, { key: 'Tab' });
+    expect(document.activeElement).toBe(close);
+  });
+
   it('downloads an Instagram story card and copies its prepared caption without opening an undocumented URL', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'share', { configurable: true, value: undefined });
@@ -311,7 +385,7 @@ describe('ReportDetail photos', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));
     await waitFor(() => expect(nativeShare).toHaveBeenCalledWith({
       title: 'Photo report',
-      text: 'View this cleanup report on Litterbugs.',
+      text: 'View Photo report and help clean it up with Litterbugs.',
       url: 'http://localhost:3000/reports/report-id',
     }));
     expect(screen.queryByRole('dialog', { name: 'Share this cleanup report' })).toBeNull();

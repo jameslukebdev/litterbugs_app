@@ -150,3 +150,36 @@ export function createNativeReportShareContent(model, platform) {
     message: formatReportShareMessage(model),
   };
 }
+
+export function reportShareActionLabel(report) {
+  return report?.cleanup_state === 'completed' ? 'Share Your Impact' : 'Share';
+}
+
+export async function shareReportWithSystemSheet({
+  report,
+  impact = null,
+  beforePhotoUrl = null,
+  afterPhotoUrl = null,
+  platform,
+  share,
+  dismissedAction = 'dismissedAction',
+}) {
+  const model = createReportShareModel({
+    report,
+    impact,
+    beforePhotoUrl,
+    afterPhotoUrl,
+  });
+
+  if (!model) return { status: 'unavailable', model: null };
+
+  const result = await share(
+    createNativeReportShareContent(model, platform),
+    { dialogTitle: model.state === 'completed' ? 'Share cleanup impact' : 'Share cleanup report' }
+  );
+
+  return {
+    status: result?.action === dismissedAction ? 'dismissed' : 'shared',
+    model,
+  };
+}

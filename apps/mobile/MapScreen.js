@@ -78,9 +78,9 @@ import {
 } from './lib/funding';
 import { shouldClusterReports } from './lib/mapClustering';
 import {
-  createNativeReportShareContent,
-  createReportShareModel,
   isReportShareable,
+  reportShareActionLabel,
+  shareReportWithSystemSheet,
 } from './lib/reportSharing';
 import * as FileSystem from 'expo-file-system/legacy';
 
@@ -1310,21 +1310,19 @@ useEffect(() => {
   const selectedReportIsShareable = isReportShareable(selectedReport);
 
   const shareSelectedReport = async () => {
-    const model = createReportShareModel({
-      report: selectedReport,
-      impact: completedCleanupImpact,
-      beforePhotoUrl: reportPhotoUrls[0] ?? null,
-      afterPhotoUrl: completedCleanupImpact?.afterPhotoUrls?.[0] ?? null,
-    });
-
-    if (!model || reportShareBusy) return;
+    if (!selectedReportIsShareable || reportShareBusy) return;
 
     setReportShareBusy(true);
     try {
-      await Share.share(
-        createNativeReportShareContent(model, Platform.OS),
-        { dialogTitle: model.state === 'completed' ? 'Share cleanup impact' : 'Share cleanup report' }
-      );
+      await shareReportWithSystemSheet({
+        report: selectedReport,
+        impact: completedCleanupImpact,
+        beforePhotoUrl: reportPhotoUrls[0] ?? null,
+        afterPhotoUrl: completedCleanupImpact?.afterPhotoUrls?.[0] ?? null,
+        platform: Platform.OS,
+        share: Share.share,
+        dismissedAction: Share.dismissedAction,
+      });
     } catch (error) {
       console.log('Report sharing error:', error);
       Alert.alert('Sharing unavailable', 'We couldn’t open the share menu. Please try again.');
@@ -3510,7 +3508,7 @@ const renderReportStep = () => {
             ) : (
               <>
                 <Ionicons name="share-social-outline" size={20} color="#FFFFFF" />
-                <Text style={styles.reportShareButtonText}>Share</Text>
+                <Text style={styles.reportShareButtonText}>{reportShareActionLabel(selectedReport)}</Text>
               </>
             )}
           </TouchableOpacity>

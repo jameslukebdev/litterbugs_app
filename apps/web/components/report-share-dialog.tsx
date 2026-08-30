@@ -9,6 +9,7 @@ import { FiCheck, FiCopy, FiDownload, FiMail, FiShare2 } from 'react-icons/fi';
 
 import { Icon } from '@/components/icon';
 import {
+  reportShareCopy,
   reportShareDestinationUrls,
   reportShareImageFilename,
   reportShareImageUrl,
@@ -24,18 +25,6 @@ type ShareFeedback = {
   message: string;
   tone: 'error' | 'success';
 };
-
-function reportShareCopy(report: ShareableReport) {
-  const completed = report.cleanup_state === 'completed';
-  const title = report.title || 'Litter report';
-  return {
-    title,
-    eyebrow: completed ? 'Cleanup complete' : 'Cleanup needed',
-    message: completed
-      ? `See the cleanup impact for ${title} on Litterbugs.`
-      : `View ${title} and help clean it up with Litterbugs.`,
-  };
-}
 
 export function ReportShareDialog({
   open,
@@ -57,7 +46,7 @@ export function ReportShareDialog({
   const [feedback, setFeedback] = useState<ShareFeedback | null>(null);
   const [shareImageFile, setShareImageFile] = useState<File | null>(null);
   const nativeShareAvailable = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
-  const { title, eyebrow, message } = reportShareCopy(report);
+  const { dialogTitle, title, eyebrow, message } = reportShareCopy(report);
   const shareMessage = `${message}\n\n${shareUrl}`;
   const imageUrl = reportShareImageUrl(shareUrl);
   const imageFilename = reportShareImageFilename(title);
@@ -113,7 +102,7 @@ export function ReportShareDialog({
 
     if (event.key !== 'Tab' || !dialogRef.current) return;
     const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
-      'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      'a[href]:not([hidden]):not([tabindex="-1"]), button:not([disabled]), [tabindex]:not([tabindex="-1"]):not([hidden])',
     ));
     if (!focusable.length) return;
     const first = focusable[0];
@@ -208,7 +197,7 @@ export function ReportShareDialog({
         <header className={styles.header}>
           <div>
             <p className={styles.eyebrow}>Share a Litterbugs report</p>
-            <h2 id="report-share-title">Share this cleanup report</h2>
+            <h2 id="report-share-title">{dialogTitle}</h2>
           </div>
           <button className={styles.close} type="button" onClick={closeDialog} aria-label="Close share options">
             <Icon name="close" />

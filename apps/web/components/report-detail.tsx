@@ -12,6 +12,7 @@ import { Icon } from '@/components/icon';
 import { PayoutSetupAction } from '@/components/payout-setup-action';
 import { ReportShareDialog } from '@/components/report-share-dialog';
 import { isPubliclyShareableReport } from '@/lib/public-report-share-model';
+import { reportShareCopy } from '@/lib/report-share-destinations';
 import { getReportCardPhotoUrl, getReportDetailPhotoUrl, getWebCompatibleReportPhotoUrl } from '@/lib/report-photo';
 import { createClient } from '@/lib/supabase/client';
 
@@ -117,6 +118,7 @@ export function ReportDetail({
   const severity = report.severity ?? 'Medium';
   const hasLitterTypes = Boolean(report.litter_types?.length || report.types);
   const shareable = isPubliclyShareableReport(report);
+  const shareCopy = reportShareCopy(report);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -176,14 +178,13 @@ export function ReportDetail({
 
   async function shareReport() {
     const url = new URL(`/reports/${encodeURIComponent(report.id)}`, window.location.origin);
-    const title = report.title || 'Litter report';
     const prefersNativeShare = typeof navigator.share === 'function'
       && typeof window.matchMedia === 'function'
       && window.matchMedia('(pointer: coarse)').matches;
 
     try {
       if (prefersNativeShare) {
-        await navigator.share({ title, text: `View this cleanup report on Litterbugs.`, url: url.toString() });
+        await navigator.share({ title: shareCopy.title, text: shareCopy.message, url: url.toString() });
         notify('Report shared.');
       } else {
         setShareUrl(url.toString());
@@ -230,7 +231,7 @@ export function ReportDetail({
                 onClick={() => { void shareReport(); }}
               >
                 <Icon name="share" />
-                <span>Share</span>
+                <span>{shareCopy.actionLabel}</span>
               </button>
             )}
             <button type="button" aria-pressed={hidden} onClick={() => onHiddenChange?.(!hidden)}>

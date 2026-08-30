@@ -6,9 +6,10 @@ Litterbugs shares public report URLs using this stable structure:
 https://litterbugs.app/reports/<report-id>
 ```
 
-Only available reports and completed cleanup impact records receive Share actions.
-Pending cleanup states remain unshareable. Shared copy does not contain report
-coordinates or non-public profile fields.
+Only available reports and completed cleanup impact records receive share actions.
+Available reports use **Share**; completed cleanups use **Share Your Impact** and
+completed-state copy. Pending and in-progress cleanup states remain unshareable.
+Shared copy does not contain report coordinates or non-public profile fields.
 
 ## Destination behavior
 
@@ -23,8 +24,9 @@ post or message; Litterbugs never posts automatically.
   prefilled.
 - **X:** X's Web Intent opens a new-post composer with the report message, URL,
   and `#Litterbugs` hashtag prefilled.
-- **Email and text message:** the operating system's email or SMS composer opens
-  with privacy-safe report copy and the public report URL.
+- **Email:** the email composer opens with privacy-safe report copy and the public
+  report URL. Text messaging remains available through the operating system share
+  sheet on devices that expose an SMS destination.
 - **Instagram on desktop web:** Instagram does not provide a documented web
   sharing URL that uploads media or prefills a post for an arbitrary visitor.
   Litterbugs therefore does not open an undocumented Instagram URL. It downloads
@@ -47,6 +49,42 @@ or the iOS `instagram-stories` custom URL scheme, a Facebook App ID, and a local
 image asset. It cannot be implemented by adding a website URL or JavaScript-only
 Expo change. A future targeted native Stories button should be implemented as a
 small native sharing module and tested in a new physical-device build.
+
+## Verification checklist
+
+Run the automated regression checks from the repository root:
+
+```bash
+npm --workspace apps/web test
+npm --workspace apps/web run lint
+npm --workspace apps/web run typecheck
+npm --workspace apps/web run build
+npm --workspace apps/mobile test
+npx --yes expo export --platform ios --platform android --output-dir <temporary-directory>
+```
+
+Then verify the following on a physical iPhone and Android device. Use a public
+available report and a public completed report that contain no private test data.
+
+1. Install the current native build and open it once.
+2. Open an available report. Confirm **Share** appears, opens the native share
+   sheet, can be dismissed, and does not change the report or cleanup state.
+3. Open a completed report. Confirm **Share Your Impact** appears and uses
+   completed-cleanup language in the share preview.
+4. Confirm pending and in-progress reports show no share action.
+5. From the native sheet, exercise Messages, Mail, Copy, and one installed social
+   app. Review the draft without sending it; confirm the public report URL and
+   privacy-safe copy are present and raw coordinates/private profile data are not.
+6. Send one report link to the device from another person or device. With the app
+   installed, tap it and confirm the matching report opens when the platform link
+   association is enabled. Uninstall the app, tap the same link, and confirm the
+   public report page and appropriate store destination remain available.
+7. Reinstall the app and tap the original link again. Confirm the matching report
+   opens. First-install deferred continuation is not supported, as described below.
+8. On the website at desktop and mobile widths, verify Copy Link, Email, WhatsApp,
+   Facebook, Instagram card download, X, and the system share action where the
+   browser exposes Web Share. Cancel every composer and confirm report state is
+   unchanged.
 
 ## App-opening behavior
 
