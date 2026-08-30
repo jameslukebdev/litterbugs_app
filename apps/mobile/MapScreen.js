@@ -77,7 +77,6 @@ import {
   requestGeminiReview,
 } from './lib/funding';
 import { shouldClusterReports } from './lib/mapClustering';
-import { centerMapFromExistingLocationPermission } from './lib/mapLocation';
 import {
   isReportShareable,
   reportShareActionLabel,
@@ -504,22 +503,6 @@ const reportStepPanResponder = PanResponder.create({
   },
 });
 
-
-// Getting the Map Working 
-  useEffect(() => {
-    (async () => {
-      try {
-        const result = await centerMapFromExistingLocationPermission({
-          getForegroundPermissions: Location.getForegroundPermissionsAsync,
-          getCurrentPosition: Location.getCurrentPositionAsync,
-          commitMapRegion,
-        });
-        setLocationPermissionGranted(result.permissionGranted);
-      } catch (e) {
-        console.log('Location error', e);
-      }
-    })();
-  }, [commitMapRegion]);
 
 // Calculate distance between two GPS coordinates using the Haversine formula
 const getDistanceMiles = (pointA, pointB) => {
@@ -2485,7 +2468,7 @@ const renderReportStep = () => {
             if (detailsOpen || isSaving) return;
             onMapPress(e);
           }}          
-          showsUserLocation={locationPermissionGranted}
+          {...(locationPermissionGranted ? { showsUserLocation: true } : {})}
           followsUserLocation={false}
           mapType={mapType}
         >
