@@ -5,7 +5,10 @@ import {
   createReportShareModel,
   formatReportShareMessage,
   isReportShareable,
+  prepareNativeReportShareImage,
+  reportShareImageFilename,
   reportShareActionLabel,
+  shareReportToInstagramStories,
   shareReportWithSystemSheet,
 } from './reportSharing';
 
@@ -43,6 +46,7 @@ describe('report sharing', () => {
 
     expect(model).toMatchObject({
       state: 'active',
+      shareImageUrl: 'https://litterbugs.app/reports/report-1/share-image',
       generalLocation: 'Open Litterbugs to view the report location',
       photos: { before: 'https://example.com/before.jpg', after: null },
       extensions: { funding: null },
@@ -137,6 +141,52 @@ describe('report sharing', () => {
     expect(androidContent.message).toContain(model.reportUrl);
   });
 
+  it('prepares and reuses the privacy-safe branded share image', async () => {
+    const model = createReportShareModel({ report: availableReport });
+    const getInfoAsync = vi.fn()
+      .mockResolvedValueOnce({ exists: false })
+      .mockResolvedValueOnce({ exists: true, size: 2048 });
+    const downloadAsync = vi.fn().mockResolvedValue({
+      uri: 'file:///cache/litterbugs-litter-beside-the-trail.png',
+    });
+
+    const first = await prepareNativeReportShareImage({
+      model,
+      cacheDirectory: 'file:///cache/',
+      getInfoAsync,
+      downloadAsync,
+    });
+    const second = await prepareNativeReportShareImage({
+      model,
+      cacheDirectory: 'file:///cache/',
+      getInfoAsync,
+      downloadAsync,
+    });
+
+    expect(reportShareImageFilename(model)).toBe('litterbugs-litter-beside-the-trail.png');
+    expect(first).toBe('file:///cache/litterbugs-litter-beside-the-trail.png');
+    expect(second).toBe(first);
+    expect(downloadAsync).toHaveBeenCalledTimes(1);
+    expect(downloadAsync).toHaveBeenCalledWith(model.shareImageUrl, first);
+  });
+
+  it('includes the branded card in the general native share sheet', () => {
+    const model = createReportShareModel({ report: availableReport });
+    const content = createNativeReportShareContent(
+      model,
+      'android',
+      'file:///cache/litterbugs-report.png',
+    );
+
+    expect(content).toMatchObject({
+      url: 'file:///cache/litterbugs-report.png',
+      type: 'image/png',
+      useInternalStorage: true,
+      failOnCancel: false,
+    });
+    expect(content.message).toContain(model.reportUrl);
+  });
+
   it('uses the completed-state Share Your Impact label', () => {
     expect(reportShareActionLabel(availableReport)).toBe('Share');
     expect(reportShareActionLabel({ ...availableReport, cleanup_state: 'completed' }))
@@ -164,6 +214,28 @@ describe('report sharing', () => {
       { dialogTitle: 'Share cleanup impact' },
     );
     expect(JSON.stringify(report)).toBe(original);
+  });
+
+  it('opens a prepared Instagram Story with a report link sticker', async () => {
+    const shareSingle = vi.fn().mockResolvedValue({ success: true });
+    const result = await shareReportToInstagramStories({
+      report: availableReport,
+      shareImageUri: 'file:///cache/litterbugs-report.png',
+      shareSingle,
+      instagramStoriesSocial: 'instagramstories',
+    });
+
+    expect(result.status).toBe('shared');
+    expect(shareSingle).toHaveBeenCalledWith(expect.objectContaining({
+      social: 'instagramstories',
+      appId: '1477683410862512',
+      backgroundImage: 'file:///cache/litterbugs-report.png',
+      attributionURL: 'https://litterbugs.app/reports/report-1',
+      linkUrl: 'https://litterbugs.app/reports/report-1',
+      linkText: 'View cleanup report',
+    }));
+    expect(JSON.stringify(shareSingle.mock.calls[0][0])).not.toContain('35.60091');
+    expect(JSON.stringify(shareSingle.mock.calls[0][0])).not.toContain('-82.55404');
   });
 
   it('does not open the system sheet for pending or in-progress reports', async () => {

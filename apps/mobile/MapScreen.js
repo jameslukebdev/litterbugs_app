@@ -18,7 +18,6 @@ import {
   ActivityIndicator,
   AppState,
   Linking,
-  Share,
   useWindowDimensions,
 } from 'react-native';
 import { Marker } from 'react-native-maps';
@@ -27,6 +26,7 @@ import * as Location from 'expo-location';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
+import RNShare from 'react-native-share';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from './lib/supabase'
 import {
@@ -41,6 +41,7 @@ import MapReportSheet, { getMapReportSheetMetrics } from './MapReportSheet';
 import ReporterIdentity from './ReporterIdentity';
 import CompletedCleanupStory from './CompletedCleanupStory';
 import CleanupWaiverModal from './CleanupWaiverModal';
+import ReportShareSheet from './ReportShareSheet';
 import {
   acceptCleanupWaiver,
   acknowledgeCleanupNotifications,
@@ -78,8 +79,11 @@ import {
 } from './lib/funding';
 import { shouldClusterReports } from './lib/mapClustering';
 import {
+  createReportShareModel,
   isReportShareable,
+  prepareNativeReportShareImage,
   reportShareActionLabel,
+  shareReportToInstagramStories,
   shareReportWithSystemSheet,
 } from './lib/reportSharing';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -175,7 +179,8 @@ export default function MapScreen({ route, navigation }) {
   const [completedCleanupImpactLoading, setCompletedCleanupImpactLoading] = useState(false);
   const [completedCleanupImpactError, setCompletedCleanupImpactError] = useState(null);
   const [completedCleanupImpactReloadKey, setCompletedCleanupImpactReloadKey] = useState(0);
-  const [reportShareBusy, setReportShareBusy] = useState(false);
+  const [reportShareSheetOpen, setReportShareSheetOpen] = useState(false);
+  const [reportShareBusyAction, setReportShareBusyAction] = useState(null);
   const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
   const [paymentsEnabled, setPaymentsEnabled] = useState(false);
   const [geminiReviewEnabled, setGeminiReviewEnabled] = useState(false);
@@ -1309,25 +1314,92 @@ useEffect(() => {
   );
   const selectedReportIsShareable = isReportShareable(selectedReport);
 
-  const shareSelectedReport = async () => {
-    if (!selectedReportIsShareable || reportShareBusy) return;
+  useEffect(() => {
+    if (!detailsOpen) setReportShareSheetOpen(false);
+  }, [detailsOpen]);
 
-    setReportShareBusy(true);
+  useEffect(() => {
+    setReportShareSheetOpen(false);
+  }, [selectedReport?.id]);
+
+  const selectedReportShareModel = () => createReportShareModel({
+    report: selectedReport,
+    impact: completedCleanupImpact,
+    beforePhotoUrl: reportPhotoUrls[0] ?? null,
+    afterPhotoUrl: completedCleanupImpact?.afterPhotoUrls?.[0] ?? null,
+  });
+
+  const prepareSelectedReportShareImage = async () => {
+    const model = selectedReportShareModel();
+    if (!model) return null;
+
+    return prepareNativeReportShareImage({
+      model,
+      cacheDirectory: FileSystem.cacheDirectory,
+      getInfoAsync: FileSystem.getInfoAsync,
+      downloadAsync: FileSystem.downloadAsync,
+    });
+  };
+
+  const shareSelectedReport = async () => {
+    if (!selectedReportIsShareable || reportShareBusyAction) return;
+
+    setReportShareBusyAction('system');
     try {
+      let shareImageUri = null;
+      try {
+        shareImageUri = await prepareSelectedReportShareImage();
+      } catch (imageError) {
+        console.log('Report share image unavailable:', imageError);
+      }
+
       await shareReportWithSystemSheet({
         report: selectedReport,
         impact: completedCleanupImpact,
         beforePhotoUrl: reportPhotoUrls[0] ?? null,
         afterPhotoUrl: completedCleanupImpact?.afterPhotoUrls?.[0] ?? null,
         platform: Platform.OS,
-        share: Share.share,
-        dismissedAction: Share.dismissedAction,
+        share: RNShare.open,
+        shareImageUri,
       });
+      setReportShareSheetOpen(false);
     } catch (error) {
       console.log('Report sharing error:', error);
       Alert.alert('Sharing unavailable', 'We couldn’t open the share menu. Please try again.');
     } finally {
-      setReportShareBusy(false);
+      setReportShareBusyAction(null);
+    }
+  };
+
+  const shareSelectedReportToInstagram = async () => {
+    if (!selectedReportIsShareable || reportShareBusyAction) return;
+
+    setReportShareBusyAction('instagram');
+    try {
+      const shareImageUri = await prepareSelectedReportShareImage();
+      if (!shareImageUri) throw new Error('share_image_unavailable');
+
+      await shareReportToInstagramStories({
+        report: selectedReport,
+        impact: completedCleanupImpact,
+        beforePhotoUrl: reportPhotoUrls[0] ?? null,
+        afterPhotoUrl: completedCleanupImpact?.afterPhotoUrls?.[0] ?? null,
+        shareImageUri,
+        shareSingle: RNShare.shareSingle,
+        instagramStoriesSocial: RNShare.Social.INSTAGRAM_STORIES,
+      });
+      setReportShareSheetOpen(false);
+    } catch (error) {
+      console.log('Instagram sharing error:', error);
+      const unavailable = /not installed|activity not found|package/i.test(error?.message || '');
+      Alert.alert(
+        unavailable ? 'Instagram isn’t available' : 'Instagram sharing unavailable',
+        unavailable
+          ? 'Install Instagram or choose More sharing options to send the report another way.'
+          : 'We couldn’t prepare the Instagram Story. Choose More sharing options to keep sharing.'
+      );
+    } finally {
+      setReportShareBusyAction(null);
     }
   };
   const cleanupStatus = cleanupStatusPresentation(
@@ -2772,7 +2844,13 @@ const renderReportStep = () => {
   visible={detailsOpen}
   animationType="slide"
   transparent
-  onRequestClose={() => setDetailsOpen(false)}
+  onRequestClose={() => {
+    if (reportShareSheetOpen && !reportShareBusyAction) {
+      setReportShareSheetOpen(false);
+      return;
+    }
+    if (!reportShareBusyAction) setDetailsOpen(false);
+  }}
 >
   <View style={styles.modalBackdrop}>
     <View style={styles.reportSheet}>
@@ -3496,21 +3574,14 @@ const renderReportStep = () => {
         <View style={styles.reportShareBar}>
           <TouchableOpacity
             style={styles.reportShareButton}
-            onPress={shareSelectedReport}
-            disabled={reportShareBusy}
+            onPress={() => setReportShareSheetOpen(true)}
             accessibilityRole="button"
             accessibilityLabel={selectedReport?.cleanup_state === 'completed'
               ? 'Share completed cleanup'
               : 'Share litter report'}
           >
-            {reportShareBusy ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <>
-                <Ionicons name="share-social-outline" size={20} color="#FFFFFF" />
-                <Text style={styles.reportShareButtonText}>{reportShareActionLabel(selectedReport)}</Text>
-              </>
-            )}
+            <Ionicons name="share-social-outline" size={20} color="#FFFFFF" />
+            <Text style={styles.reportShareButtonText}>{reportShareActionLabel(selectedReport)}</Text>
           </TouchableOpacity>
         </View>
       ) : null}
@@ -3713,6 +3784,18 @@ const renderReportStep = () => {
       </View>
 
     </View>
+
+    <ReportShareSheet
+      visible={reportShareSheetOpen && detailsOpen && selectedReportIsShareable}
+      report={selectedReport}
+      previewPhotoUrl={reportPhotoUrls[0] ?? null}
+      busyAction={reportShareBusyAction}
+      onInstagramStory={shareSelectedReportToInstagram}
+      onSystemShare={shareSelectedReport}
+      onClose={() => {
+        if (!reportShareBusyAction) setReportShareSheetOpen(false);
+      }}
+    />
   </View>
 </Modal>
 
@@ -5138,6 +5221,8 @@ cleanupReleaseActionText: {
 
 reportFooter: {
   position: 'absolute',
+  zIndex: 3,
+  elevation: 3,
   bottom: 0,
   left: 0,
   right: 0,
@@ -5153,6 +5238,8 @@ reportFooter: {
 
 reportShareBar: {
   position: 'absolute',
+  zIndex: 2,
+  elevation: 2,
   left: 0,
   right: 0,
   bottom: 85,

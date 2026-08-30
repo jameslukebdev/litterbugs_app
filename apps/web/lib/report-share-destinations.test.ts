@@ -23,6 +23,8 @@ describe('report share destinations', () => {
     expect(destinations.whatsapp).toMatch(/^https:\/\/wa\.me\/\?text=/);
     expect(destinations.x).toMatch(/^https:\/\/twitter\.com\/intent\/tweet\?text=/);
     expect(destinations.email).toMatch(/^mailto:\?subject=/);
+    expect(destinations.gmail).toMatch(/^https:\/\/mail\.google\.com\/mail\/\?view=cm/);
+    expect(destinations.outlook).toMatch(/^https:\/\/outlook\.office\.com\/mail\/deeplink\/compose\?/);
     expect(destinations.messages).toMatch(/^sms:\?body=/);
 
     expect(Object.values(destinations).join(' ')).not.toContain('35.99');

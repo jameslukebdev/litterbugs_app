@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import type { Report } from '@litterbugs/report-contract';
-import { FiCheck, FiCopy, FiDownload, FiMail, FiShare2 } from 'react-icons/fi';
+import { FiCheck, FiCopy, FiDownload, FiExternalLink, FiMail, FiShare2 } from 'react-icons/fi';
 
 import { Icon } from '@/components/icon';
 import {
@@ -45,6 +45,8 @@ export function ReportShareDialog({
   const downloadLinkRef = useRef<HTMLAnchorElement>(null);
   const [feedback, setFeedback] = useState<ShareFeedback | null>(null);
   const [shareImageFile, setShareImageFile] = useState<File | null>(null);
+  const [emailOptionsOpen, setEmailOptionsOpen] = useState(false);
+  const [instagramPrepared, setInstagramPrepared] = useState(false);
   const nativeShareAvailable = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
   const { dialogTitle, title, eyebrow, message } = reportShareCopy(report);
   const shareMessage = `${message}\n\n${shareUrl}`;
@@ -89,6 +91,8 @@ export function ReportShareDialog({
 
   function closeDialog() {
     setFeedback(null);
+    setEmailOptionsOpen(false);
+    setInstagramPrepared(false);
     onClose();
   }
 
@@ -160,17 +164,27 @@ export function ReportShareDialog({
 
   async function prepareInstagramCard() {
     downloadLinkRef.current?.click();
+    setInstagramPrepared(true);
     try {
       await navigator.clipboard.writeText(shareMessage);
       setFeedback({
-        message: 'Instagram story card downloaded and caption copied. Add the image in Instagram, then paste the caption and review your post.',
+        message: 'Instagram card downloaded and caption copied. Add the image in Instagram, then paste the caption and review your post.',
         tone: 'success',
       });
     } catch {
       setFeedback({
-        message: 'Instagram story card downloaded, but the caption could not be copied. Use Copy link before posting.',
+        message: 'Instagram card downloaded, but the caption could not be copied. Use Copy link before posting.',
         tone: 'error',
       });
+    }
+  }
+
+  async function copyEmailMessage() {
+    try {
+      await navigator.clipboard.writeText(`Subject: ${title} | Litterbugs\n\n${shareMessage}`);
+      setFeedback({ message: 'Email text copied. Paste it into any new email.', tone: 'success' });
+    } catch {
+      setFeedback({ message: 'The email text could not be copied. Choose an email service instead.', tone: 'error' });
     }
   }
 
@@ -235,10 +249,29 @@ export function ReportShareDialog({
               <span>Copy the public report URL</span>
             </span>
           </button>
-          <a className={styles.option} href={destinationUrls.email}>
+          <button
+            className={styles.option}
+            type="button"
+            aria-expanded={emailOptionsOpen}
+            onClick={() => setEmailOptionsOpen((current) => !current)}
+          >
             <span className={`${styles.optionIcon} ${styles.utilityIcon}`} aria-hidden="true"><FiMail /></span>
-            <span className={styles.optionCopy}><strong>Email</strong><span>Open your email app</span></span>
-          </a>
+            <span className={styles.optionCopy}><strong>Email</strong><span>Choose your email service</span></span>
+          </button>
+          {emailOptionsOpen ? (
+            <div className={styles.helperPanel} role="group" aria-label="Email sharing choices">
+              <div className={styles.helperHeading}>
+                <strong>Choose where to compose</strong>
+                <span>Your subject, message, and report link are prepared.</span>
+              </div>
+              <div className={styles.helperActions}>
+                <a href={destinationUrls.email}>Default email app</a>
+                <a href={destinationUrls.gmail} target="_blank" rel="noopener noreferrer">Gmail <FiExternalLink aria-hidden="true" /></a>
+                <a href={destinationUrls.outlook} target="_blank" rel="noopener noreferrer">Outlook <FiExternalLink aria-hidden="true" /></a>
+                <button type="button" onClick={() => { void copyEmailMessage(); }}>Copy email text</button>
+              </div>
+            </div>
+          ) : null}
           <a className={styles.option} href={destinationUrls.whatsapp} target="_blank" rel="noopener noreferrer">
             <span className={`${styles.optionIcon} ${styles.brandIcon}`} aria-hidden="true">
               <img className={styles.brandMark} src="/brand/social/whatsapp-glyph.png" alt="" />
@@ -260,11 +293,28 @@ export function ReportShareDialog({
               <img className={styles.brandMark} src="/brand/social/instagram-glyph.png" alt="" />
             </span>
             <span className={styles.optionCopy}>
-              <strong>Instagram story card</strong>
-              <span>Download the branded image and copy its caption</span>
+              <strong>Prepare for Instagram</strong>
+              <span>Download the branded card and copy its caption</span>
             </span>
             <span className={styles.trailingIcon} aria-hidden="true"><FiDownload /></span>
           </button>
+          {instagramPrepared ? (
+            <div className={styles.helperPanel} role="group" aria-label="Instagram sharing instructions">
+              <div className={styles.helperHeading}>
+                <strong>Your Instagram post is ready</strong>
+                <span>Card downloaded and caption copied.</span>
+              </div>
+              <ol className={styles.steps}>
+                <li>Open Instagram and choose <strong>Create</strong>, then <strong>Post</strong>.</li>
+                <li>Upload the downloaded Litterbugs card.</li>
+                <li>Paste the caption, review it, and share.</li>
+              </ol>
+              <div className={styles.helperActions}>
+                <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer">Open Instagram <FiExternalLink aria-hidden="true" /></a>
+                <button type="button" onClick={() => downloadLinkRef.current?.click()}>Download card again</button>
+              </div>
+            </div>
+          ) : null}
           <a className={styles.option} href={destinationUrls.x} target="_blank" rel="noopener noreferrer">
             <span className={`${styles.optionIcon} ${styles.brandIcon}`} aria-hidden="true">
               <img className={styles.brandMark} src="/brand/social/x-logo.png" alt="" />

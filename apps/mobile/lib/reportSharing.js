@@ -1,4 +1,6 @@
 const PUBLIC_REPORT_BASE_URL = 'https://litterbugs.app/reports';
+export const LITTERBUGS_META_APP_ID = '1477683410862512';
+const REPORT_SHARE_IMAGE_MIME_TYPE = 'image/png';
 
 function cleanText(value) {
   return typeof value === 'string' ? value.trim() : '';
@@ -63,6 +65,7 @@ export function createReportShareModel({
     state: completed ? 'completed' : 'active',
     title: cleanText(report.title) || 'Litter Report',
     reportUrl: `${PUBLIC_REPORT_BASE_URL}/${encodeURIComponent(report.id)}`,
+    shareImageUrl: `${PUBLIC_REPORT_BASE_URL}/${encodeURIComponent(report.id)}/share-image`,
     generalLocation: 'Open Litterbugs to view the report location',
     severity: cleanText(report.severity) || null,
     reportNotes: reportNotes(report) || null,
@@ -85,6 +88,35 @@ export function createReportShareModel({
       funding: null,
     },
   };
+}
+
+export function reportShareImageFilename(model) {
+  const slug = cleanText(model?.title)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48);
+
+  return `litterbugs-${slug || 'cleanup-report'}.png`;
+}
+
+export async function prepareNativeReportShareImage({
+  model,
+  cacheDirectory,
+  getInfoAsync,
+  downloadAsync,
+}) {
+  if (!model?.shareImageUrl || !cacheDirectory || !downloadAsync) return null;
+
+  const destination = `${cacheDirectory.replace(/\/$/, '')}/${reportShareImageFilename(model)}`;
+
+  if (getInfoAsync) {
+    const existing = await getInfoAsync(destination);
+    if (existing?.exists && Number(existing.size) > 0) return destination;
+  }
+
+  const result = await downloadAsync(model.shareImageUrl, destination);
+  return result?.uri || destination;
 }
 
 function impactSummary(impact) {
@@ -132,10 +164,23 @@ export function formatReportShareMessage(model, { includeUrl = true } = {}) {
   return lines.filter(Boolean).join('\n');
 }
 
-export function createNativeReportShareContent(model, platform) {
+export function createNativeReportShareContent(model, platform, shareImageUri = null) {
   const title = model?.state === 'completed'
     ? 'Litterbugs cleanup complete'
     : 'Litterbugs cleanup needed';
+
+  if (shareImageUri) {
+    return {
+      title,
+      subject: title,
+      message: formatReportShareMessage(model),
+      url: shareImageUri,
+      type: REPORT_SHARE_IMAGE_MIME_TYPE,
+      filename: reportShareImageFilename(model),
+      failOnCancel: false,
+      useInternalStorage: true,
+    };
+  }
 
   if (platform === 'ios') {
     return {
@@ -162,6 +207,7 @@ export async function shareReportWithSystemSheet({
   afterPhotoUrl = null,
   platform,
   share,
+  shareImageUri = null,
   dismissedAction = 'dismissedAction',
 }) {
   const model = createReportShareModel({
@@ -174,12 +220,52 @@ export async function shareReportWithSystemSheet({
   if (!model) return { status: 'unavailable', model: null };
 
   const result = await share(
-    createNativeReportShareContent(model, platform),
+    createNativeReportShareContent(model, platform, shareImageUri),
     { dialogTitle: model.state === 'completed' ? 'Share cleanup impact' : 'Share cleanup report' }
   );
 
   return {
-    status: result?.action === dismissedAction ? 'dismissed' : 'shared',
+    status: result?.action === dismissedAction || result?.dismissedAction
+      ? 'dismissed'
+      : 'shared',
+    model,
+  };
+}
+
+export async function shareReportToInstagramStories({
+  report,
+  impact = null,
+  beforePhotoUrl = null,
+  afterPhotoUrl = null,
+  shareImageUri,
+  shareSingle,
+  instagramStoriesSocial,
+  appId = LITTERBUGS_META_APP_ID,
+}) {
+  const model = createReportShareModel({
+    report,
+    impact,
+    beforePhotoUrl,
+    afterPhotoUrl,
+  });
+
+  if (!model || !shareImageUri || !shareSingle || !instagramStoriesSocial) {
+    return { status: 'unavailable', model };
+  }
+
+  const result = await shareSingle({
+    social: instagramStoriesSocial,
+    appId,
+    backgroundImage: shareImageUri,
+    attributionURL: model.reportUrl,
+    linkUrl: model.reportUrl,
+    linkText: model.state === 'completed' ? 'See the cleanup impact' : 'View cleanup report',
+    backgroundTopColor: '#F8F3FA',
+    backgroundBottomColor: '#FFF4EE',
+  });
+
+  return {
+    status: result?.success === false ? 'dismissed' : 'shared',
     model,
   };
 }

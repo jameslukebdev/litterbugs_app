@@ -224,22 +224,30 @@ describe('ReportDetail photos', () => {
 
     const shareDialog = screen.getByRole('dialog', { name: 'Share this cleanup report' });
     expect(shareDialog).toBeTruthy();
-    expect(screen.getByRole('link', { name: /Email/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Email/ })).toBeTruthy();
     expect(screen.getByRole('link', { name: /WhatsApp/ })).toBeTruthy();
     expect(screen.getByRole('link', { name: /Facebook/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Instagram story card/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Prepare for Instagram/ })).toBeTruthy();
     expect(screen.getByRole('link', { name: /^X/ })).toBeTruthy();
 
     expect(screen.getByRole('link', { name: /WhatsApp/ }).querySelector('img')?.getAttribute('src'))
       .toBe('/brand/social/whatsapp-glyph.png');
     expect(screen.getByRole('link', { name: /Facebook/ }).querySelector('img')?.getAttribute('src'))
       .toBe('/brand/social/facebook-logo.png');
-    expect(screen.getByRole('button', { name: /Instagram story card/ }).querySelector('img')?.getAttribute('src'))
+    expect(screen.getByRole('button', { name: /Prepare for Instagram/ }).querySelector('img')?.getAttribute('src'))
       .toBe('/brand/social/instagram-glyph.png');
     expect(screen.getByRole('link', { name: /^X/ }).querySelector('img')?.getAttribute('src'))
       .toBe('/brand/social/x-logo.png');
 
-    expect(screen.getByRole('link', { name: /Email/ }).getAttribute('href')).toMatch(/^mailto:\?subject=/);
+    fireEvent.click(screen.getByRole('button', { name: /Email/ }));
+    expect(screen.getByRole('group', { name: /Email sharing choices/ })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Default email app/ }).getAttribute('href')).toMatch(/^mailto:\?subject=/);
+    expect(screen.getByRole('link', { name: /Gmail/ }).getAttribute('href')).toMatch(/^https:\/\/mail\.google\.com\/mail\//);
+    expect(screen.getByRole('link', { name: /Outlook/ }).getAttribute('href')).toMatch(/^https:\/\/outlook\.office\.com\/mail\/deeplink\/compose/);
+    fireEvent.click(screen.getByRole('button', { name: /Copy email text/ }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    expect(writeText.mock.calls[0][0]).toContain('Subject: Photo report | Litterbugs');
+    expect(writeText.mock.calls[0][0]).toContain('http://localhost:3000/reports/report-id');
     expect(screen.getByRole('link', { name: /WhatsApp/ }).getAttribute('href')).toMatch(/^https:\/\/wa\.me\/\?text=/);
     expect(screen.getByRole('link', { name: /Facebook/ }).getAttribute('href')).toMatch(/^https:\/\/www\.facebook\.com\/dialog\/share\?app_id=/);
     expect(screen.getByRole('link', { name: /^X/ }).getAttribute('href')).toMatch(/^https:\/\/twitter\.com\/intent\/tweet\?text=/);
@@ -249,8 +257,8 @@ describe('ReportDetail photos', () => {
     expect(destinationUrls).not.toContain('-78.9');
 
     fireEvent.click(screen.getByRole('button', { name: /Copy link/ }));
-    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
-    expect(writeText.mock.calls[0][0]).toBe('http://localhost:3000/reports/report-id');
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(2));
+    expect(writeText.mock.calls[1][0]).toBe('http://localhost:3000/reports/report-id');
     expect(screen.getByText('Link copied. Choose a destination or close this window.')).toBeTruthy();
     expect(onNotify).not.toHaveBeenCalled();
   });
@@ -329,7 +337,7 @@ describe('ReportDetail photos', () => {
     expect(document.activeElement).toBe(close);
   });
 
-  it('downloads an Instagram story card and copies its prepared caption without opening an undocumented URL', async () => {
+  it('downloads an Instagram card and copies its prepared caption without opening an undocumented URL', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'share', { configurable: true, value: undefined });
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
@@ -349,8 +357,8 @@ describe('ReportDetail photos', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));
-    const instagramButton = screen.getByRole('button', { name: /Instagram story card/ });
-    expect(instagramButton.textContent).toContain('Download the branded image and copy its caption');
+    const instagramButton = screen.getByRole('button', { name: /Prepare for Instagram/ });
+    expect(instagramButton.textContent).toContain('Download the branded card and copy its caption');
     const downloadLink = document.querySelector<HTMLAnchorElement>('a[download]');
     expect(downloadLink?.getAttribute('href')).toBe('http://localhost:3000/reports/report-id/share-image');
     expect(downloadLink?.getAttribute('download')).toBe('litterbugs-photo-report.png');
@@ -359,7 +367,10 @@ describe('ReportDetail photos', () => {
 
     expect(download).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining('http://localhost:3000/reports/report-id')));
-    expect(screen.getByRole('status').textContent).toContain('Instagram story card downloaded');
+    expect(screen.getByRole('status').textContent).toContain('Instagram card downloaded');
+    expect(screen.getByRole('group', { name: /Instagram sharing instructions/ })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Open Instagram/ }).getAttribute('href'))
+      .toBe('https://www.instagram.com/');
   });
 
   it('uses the native share sheet directly on coarse-pointer devices', async () => {
@@ -415,7 +426,7 @@ describe('ReportDetail photos', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));
     const downloadLink = document.querySelector<HTMLAnchorElement>('a[download]');
     vi.spyOn(downloadLink as HTMLAnchorElement, 'click').mockImplementation(() => undefined);
-    fireEvent.click(screen.getByRole('button', { name: /Instagram story card/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Prepare for Instagram/ }));
 
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
     expect(nativeShare).not.toHaveBeenCalled();

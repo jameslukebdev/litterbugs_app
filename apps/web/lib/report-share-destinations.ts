@@ -48,10 +48,14 @@ export function reportShareImageFilename(title: string) {
 export function reportShareDestinationUrls({ message, shareUrl, title }: ReportShareDestinationInput) {
   const shareMessage = `${message}\n\n${shareUrl}`;
   const encodedMessage = encodeURIComponent(shareMessage);
+  const emailSubject = `${title} | Litterbugs`;
+  const encodedEmailSubject = encodeURIComponent(emailSubject);
   const facebookAppId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID?.trim() || DEFAULT_FACEBOOK_APP_ID;
 
   return {
-    email: `mailto:?subject=${encodeURIComponent(`${title} | Litterbugs`)}&body=${encodedMessage}`,
+    email: `mailto:?subject=${encodedEmailSubject}&body=${encodedMessage}`,
+    gmail: `https://mail.google.com/mail/?view=cm&fs=1&su=${encodedEmailSubject}&body=${encodedMessage}`,
+    outlook: `https://outlook.office.com/mail/deeplink/compose?subject=${encodedEmailSubject}&body=${encodedMessage}`,
     facebook: `https://www.facebook.com/dialog/share?app_id=${encodeURIComponent(facebookAppId)}&display=popup&href=${encodeURIComponent(shareUrl)}&hashtag=${encodeURIComponent('#Litterbugs')}`,
     messages: `sms:?body=${encodedMessage}`,
     whatsapp: `https://wa.me/?text=${encodedMessage}`,

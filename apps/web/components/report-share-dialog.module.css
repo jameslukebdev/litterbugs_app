@@ -229,6 +229,66 @@
 .optionCopy strong { color: #243027; font-size: 14px; }
 .optionCopy > span { color: #68736a; font-size: 11px; line-height: 1.35; }
 
+.helperPanel {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #d8e0da;
+  border-radius: 13px;
+  background: #f7f9f7;
+}
+
+.helperHeading {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.helperHeading strong { color: #243027; font-size: 14px; }
+.helperHeading span { color: #68736a; font-size: 12px; line-height: 1.4; }
+
+.helperActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.helperActions a,
+.helperActions button {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 11px;
+  border: 1px solid #cbd4cd;
+  border-radius: 9px;
+  color: #263129;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.helperActions a:hover,
+.helperActions button:hover { border-color: #9eaaa1; background: #fdfefd; }
+.helperActions svg { width: 14px; height: 14px; }
+
+.steps {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding-left: 20px;
+  color: #536057;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.steps strong { color: #2f3932; }
+
 .footer {
   min-height: 62px;
   display: grid;
@@ -271,6 +331,7 @@
   .options { grid-template-columns: 1fr; padding: 0 20px; }
   .option { min-height: 64px; }
   .primaryOption { grid-column: auto; }
+  .helperActions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .footer { padding-right: 20px; padding-left: 20px; padding-bottom: max(18px, env(safe-area-inset-bottom)); }
 }
 

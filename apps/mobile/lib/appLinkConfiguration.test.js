@@ -93,4 +93,20 @@ describe('app link configuration', () => {
     expect(simulatorProfile.env.IOS_BUNDLE_IDENTIFIER).toBe('com.litterbugs.app');
     expect(simulatorProfile.env.ENABLE_APPLE_PAY).toBe('false');
   });
+
+  it('configures the native Instagram app handoff without adding storage permissions', () => {
+    const configured = configureApp({ config: baseConfig });
+    const sharePlugin = configured.plugins.find((plugin) => (
+      Array.isArray(plugin) && plugin[0] === 'react-native-share'
+    ));
+
+    expect(sharePlugin).toEqual([
+      'react-native-share',
+      {
+        ios: ['instagram', 'instagram-stories'],
+        android: ['com.instagram.android'],
+      },
+    ]);
+    expect(configured.android.permissions).toBeUndefined();
+  });
 });

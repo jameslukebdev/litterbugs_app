@@ -78,6 +78,18 @@ module.exports = ({ config }) => {
       },
     ]);
   }
+  if (!plugins.some((plugin) => (
+    plugin === 'react-native-share'
+    || (Array.isArray(plugin) && plugin[0] === 'react-native-share')
+  ))) {
+    plugins.push([
+      'react-native-share',
+      {
+        ios: ['instagram', 'instagram-stories'],
+        android: ['com.instagram.android'],
+      },
+    ]);
+  }
 
   // EAS evaluates this file once before it loads the selected remote
   // environment. Validate on the worker, where every sensitive build value is
