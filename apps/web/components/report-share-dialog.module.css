@@ -210,10 +210,14 @@
 .trailingIcon {
   width: 18px;
   height: 18px;
+  display: grid;
   flex: none;
+  place-items: center;
   margin-left: auto;
   color: #68736a;
 }
+
+.trailingIcon svg { width: 18px; height: 18px; }
 
 .optionCopy {
   min-width: 0;

@@ -274,7 +274,7 @@ export function ReportShareDialog({
               <strong>Instagram story card</strong>
               <span>Download the branded image and copy its caption</span>
             </span>
-            <FiDownload className={styles.trailingIcon} aria-hidden="true" />
+            <span className={styles.trailingIcon} aria-hidden="true"><FiDownload /></span>
           </button>
           <a className={styles.option} href={destinationUrls.x} target="_blank" rel="noopener noreferrer">
             <span className={`${styles.optionIcon} ${styles.brandIcon}`} aria-hidden="true">
