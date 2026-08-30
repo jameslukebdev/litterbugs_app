@@ -77,6 +77,7 @@ import {
   requestGeminiReview,
 } from './lib/funding';
 import { shouldClusterReports } from './lib/mapClustering';
+import { centerMapFromExistingLocationPermission } from './lib/mapLocation';
 import {
   isReportShareable,
   reportShareActionLabel,
@@ -507,14 +508,10 @@ const reportStepPanResponder = PanResponder.create({
   useEffect(() => {
     (async () => {
       try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') return;
-        const loc = await Location.getCurrentPositionAsync({});
-        commitMapRegion({
-          latitude: loc.coords.latitude,
-          longitude: loc.coords.longitude,
-          latitudeDelta: 0.02,
-          longitudeDelta: 0.02,
+        await centerMapFromExistingLocationPermission({
+          getForegroundPermissions: Location.getForegroundPermissionsAsync,
+          getCurrentPosition: Location.getCurrentPositionAsync,
+          commitMapRegion,
         });
       } catch (e) {
         console.log('Location error', e);
