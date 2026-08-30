@@ -60,7 +60,12 @@ npm --workspace apps/web run lint
 npm --workspace apps/web run typecheck
 npm --workspace apps/web run build
 npm --workspace apps/mobile test
-npx --yes expo export --platform ios --platform android --output-dir <temporary-directory>
+npx expo export:embed --platform ios --dev false --entry-file apps/mobile/index.js \
+  --bundle-output <temporary-directory>/main.jsbundle \
+  --assets-dest <temporary-directory>/ios-assets
+npx expo export:embed --platform android --dev false --entry-file apps/mobile/index.js \
+  --bundle-output <temporary-directory>/index.android.bundle \
+  --assets-dest <temporary-directory>/android-assets
 ```
 
 Then verify the following on a physical iPhone and Android device. Use a public
@@ -93,6 +98,9 @@ available report and a public completed report that contain no private test data
   Asset Links file.
 - React Navigation maps `/reports/:reportId` to the existing Map screen, which
   fetches and opens that report without changing the navigation architecture.
+- Opening the app or a shared report does not request location access. The map
+  requests it only after the person taps a location-dependent action, such as
+  centering on their position or starting a nearby litter report.
 - The report webpage retains a custom-scheme fallback for same-domain Safari
   navigation and sends iOS or Android users to the relevant store when the app
   cannot be opened.
