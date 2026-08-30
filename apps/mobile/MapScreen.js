@@ -177,6 +177,7 @@ export default function MapScreen({ route, navigation }) {
   const [completedCleanupImpactError, setCompletedCleanupImpactError] = useState(null);
   const [completedCleanupImpactReloadKey, setCompletedCleanupImpactReloadKey] = useState(0);
   const [reportShareBusy, setReportShareBusy] = useState(false);
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
   const [paymentsEnabled, setPaymentsEnabled] = useState(false);
   const [geminiReviewEnabled, setGeminiReviewEnabled] = useState(false);
   const [reportFundingFeedback, setReportFundingFeedback] = useState(null);
@@ -508,11 +509,12 @@ const reportStepPanResponder = PanResponder.create({
   useEffect(() => {
     (async () => {
       try {
-        await centerMapFromExistingLocationPermission({
+        const result = await centerMapFromExistingLocationPermission({
           getForegroundPermissions: Location.getForegroundPermissionsAsync,
           getCurrentPosition: Location.getCurrentPositionAsync,
           commitMapRegion,
         });
+        setLocationPermissionGranted(result.permissionGranted);
       } catch (e) {
         console.log('Location error', e);
       }
@@ -565,6 +567,8 @@ const beginReportAtCoordinate = async (coord) => {
       );
       return;
     }
+
+    setLocationPermissionGranted(true);
 
     // Get the user's current GPS location
     const loc = await Location.getCurrentPositionAsync({
@@ -862,6 +866,22 @@ const submitReport = async () => {
 // User Can Center Back to their Location on Map
   const centerOnUser = async () => {
     try {
+      let { status } = await Location.getForegroundPermissionsAsync();
+
+      if (status !== 'granted') {
+        const permissionResult = await Location.requestForegroundPermissionsAsync();
+        status = permissionResult.status;
+      }
+
+      if (status !== 'granted') {
+        Alert.alert(
+          'Location Required',
+          'Allow location access to center the map on your position.'
+        );
+        return;
+      }
+
+      setLocationPermissionGranted(true);
       const loc = await Location.getCurrentPositionAsync({});
       commitMapRegion({
         latitude: loc.coords.latitude,
@@ -2465,7 +2485,7 @@ const renderReportStep = () => {
             if (detailsOpen || isSaving) return;
             onMapPress(e);
           }}          
-          showsUserLocation
+          showsUserLocation={locationPermissionGranted}
           followsUserLocation={false}
           mapType={mapType}
         >

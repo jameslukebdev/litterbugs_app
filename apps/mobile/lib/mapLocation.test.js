@@ -13,7 +13,10 @@ describe('map startup location behavior', () => {
       commitMapRegion,
     });
 
-    expect(result).toEqual({ status: 'skipped' });
+    expect(result).toEqual({
+      status: 'skipped',
+      permissionGranted: false,
+    });
     expect(getCurrentPosition).not.toHaveBeenCalled();
     expect(commitMapRegion).not.toHaveBeenCalled();
   });
@@ -29,7 +32,10 @@ describe('map startup location behavior', () => {
       commitMapRegion,
     });
 
-    expect(result).toEqual({ status: 'centered' });
+    expect(result).toEqual({
+      status: 'centered',
+      permissionGranted: true,
+    });
     expect(commitMapRegion).toHaveBeenCalledWith({
       latitude: 35.9141,
       longitude: -81.5384,

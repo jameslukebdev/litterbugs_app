@@ -4,7 +4,9 @@ export async function centerMapFromExistingLocationPermission({
   commitMapRegion,
 }) {
   const { status } = await getForegroundPermissions();
-  if (status !== 'granted') return { status: 'skipped' };
+  if (status !== 'granted') {
+    return { status: 'skipped', permissionGranted: false };
+  }
 
   const location = await getCurrentPosition({});
   commitMapRegion({
@@ -14,5 +16,5 @@ export async function centerMapFromExistingLocationPermission({
     longitudeDelta: 0.02,
   });
 
-  return { status: 'centered' };
+  return { status: 'centered', permissionGranted: true };
 }
