@@ -49,8 +49,23 @@ export function ReportSocialCard({ report, logoUrl }: { report: PublicReportShar
             ) : null}
           </div>
         )) : (
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 34, color: '#fff', background: completed ? '#2f7d32' : '#d9332f', fontSize: 180, fontWeight: 900 }}>
-            {completed ? '✓' : '!'}
+          <div style={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 26,
+            borderRadius: 34,
+            color: '#526057',
+            background: completed ? '#e3eee5' : '#edf1ee',
+            border: '2px solid rgba(82, 96, 87, .12)',
+          }}>
+            <img src={logoUrl} alt="Litterbugs" width={240} height={156} style={{ objectFit: 'contain' }} />
+            <span style={{ fontSize: 25, fontWeight: 800 }}>
+              Photo not provided
+            </span>
           </div>
         )}
       </div>
