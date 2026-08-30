@@ -172,6 +172,23 @@
 }
 
 .optionIcon svg { width: 20px; height: 20px; }
+.primaryOption {
+  grid-column: 1 / -1;
+  min-height: 64px;
+  border-color: #c9302c;
+  background: #fff8f7;
+}
+
+.primaryOption:hover {
+  border-color: #a92825;
+  background: #fff2f0;
+}
+
+.primaryIcon {
+  color: #fff;
+  background: #c9302c;
+}
+
 .copyIcon,
 .utilityIcon {
   color: #34463a;
@@ -190,6 +207,14 @@
   object-fit: contain;
 }
 
+.trailingIcon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  margin-left: auto;
+  color: #68736a;
+}
+
 .optionCopy {
   min-width: 0;
   display: flex;
@@ -199,7 +224,6 @@
 
 .optionCopy strong { color: #243027; font-size: 14px; }
 .optionCopy > span { color: #68736a; font-size: 11px; line-height: 1.35; }
-.moreOption { grid-column: 1 / -1; }
 
 .footer {
   min-height: 62px;
@@ -242,7 +266,7 @@
   .preview { margin: 0 20px 18px; }
   .options { grid-template-columns: 1fr; padding: 0 20px; }
   .option { min-height: 64px; }
-  .moreOption { grid-column: auto; }
+  .primaryOption { grid-column: auto; }
   .footer { padding-right: 20px; padding-left: 20px; padding-bottom: max(18px, env(safe-area-inset-bottom)); }
 }
 

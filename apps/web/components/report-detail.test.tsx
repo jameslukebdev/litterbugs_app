@@ -225,26 +225,23 @@ describe('ReportDetail photos', () => {
     const shareDialog = screen.getByRole('dialog', { name: 'Share this cleanup report' });
     expect(shareDialog).toBeTruthy();
     expect(screen.getByRole('link', { name: /Email/ })).toBeTruthy();
-    expect(screen.getByRole('link', { name: /Text message/ })).toBeTruthy();
     expect(screen.getByRole('link', { name: /WhatsApp/ })).toBeTruthy();
     expect(screen.getByRole('link', { name: /Facebook/ })).toBeTruthy();
-    expect(screen.getByRole('link', { name: /Instagram/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Instagram story card/ })).toBeTruthy();
     expect(screen.getByRole('link', { name: /^X/ })).toBeTruthy();
 
     expect(screen.getByRole('link', { name: /WhatsApp/ }).querySelector('img')?.getAttribute('src'))
       .toBe('/brand/social/whatsapp-glyph.png');
     expect(screen.getByRole('link', { name: /Facebook/ }).querySelector('img')?.getAttribute('src'))
       .toBe('/brand/social/facebook-logo.png');
-    expect(screen.getByRole('link', { name: /Instagram/ }).querySelector('img')?.getAttribute('src'))
+    expect(screen.getByRole('button', { name: /Instagram story card/ }).querySelector('img')?.getAttribute('src'))
       .toBe('/brand/social/instagram-glyph.png');
     expect(screen.getByRole('link', { name: /^X/ }).querySelector('img')?.getAttribute('src'))
       .toBe('/brand/social/x-logo.png');
 
     expect(screen.getByRole('link', { name: /Email/ }).getAttribute('href')).toMatch(/^mailto:\?subject=/);
-    expect(screen.getByRole('link', { name: /Text message/ }).getAttribute('href')).toMatch(/^sms:\?body=/);
     expect(screen.getByRole('link', { name: /WhatsApp/ }).getAttribute('href')).toMatch(/^https:\/\/wa\.me\/\?text=/);
     expect(screen.getByRole('link', { name: /Facebook/ }).getAttribute('href')).toMatch(/^https:\/\/www\.facebook\.com\/dialog\/share\?app_id=/);
-    expect(screen.getByRole('link', { name: /Instagram/ }).getAttribute('href')).toBe('https://www.instagram.com/create/select/');
     expect(screen.getByRole('link', { name: /^X/ }).getAttribute('href')).toMatch(/^https:\/\/twitter\.com\/intent\/tweet\?text=/);
 
     const destinationUrls = Array.from(shareDialog.querySelectorAll<HTMLAnchorElement>('a')).map(({ href }) => href).join(' ');
@@ -258,7 +255,7 @@ describe('ReportDetail photos', () => {
     expect(onNotify).not.toHaveBeenCalled();
   });
 
-  it('opens Instagram directly with a prepared caption instead of the device share sheet', async () => {
+  it('downloads an Instagram story card and copies its prepared caption without opening an undocumented URL', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'share', { configurable: true, value: undefined });
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
@@ -278,19 +275,17 @@ describe('ReportDetail photos', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));
-    const instagramLink = screen.getByRole('link', { name: /Instagram/ });
-    expect(instagramLink.textContent).toContain('Open Create with a branded image and caption');
-    expect(instagramLink.getAttribute('href')).toBe('https://www.instagram.com/create/select/');
-    expect(instagramLink.getAttribute('target')).toBe('_blank');
+    const instagramButton = screen.getByRole('button', { name: /Instagram story card/ });
+    expect(instagramButton.textContent).toContain('Download the branded image and copy its caption');
     const downloadLink = document.querySelector<HTMLAnchorElement>('a[download]');
     expect(downloadLink?.getAttribute('href')).toBe('http://localhost:3000/reports/report-id/share-image');
     expect(downloadLink?.getAttribute('download')).toBe('litterbugs-photo-report.png');
     const download = vi.spyOn(downloadLink as HTMLAnchorElement, 'click').mockImplementation(() => undefined);
-    fireEvent.click(instagramLink);
+    fireEvent.click(instagramButton);
 
     expect(download).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining('http://localhost:3000/reports/report-id')));
-    expect(screen.getByRole('status').textContent).toContain('Instagram Create is opening');
+    expect(screen.getByRole('status').textContent).toContain('Instagram story card downloaded');
   });
 
   it('uses the native share sheet directly on coarse-pointer devices', async () => {
@@ -323,7 +318,7 @@ describe('ReportDetail photos', () => {
     expect(onNotify).toHaveBeenCalledWith('Report shared.');
   });
 
-  it('keeps Instagram destination-specific even when native sharing is available', async () => {
+  it('keeps the explicit Instagram card download separate from the device share sheet', async () => {
     const nativeShare = vi.fn().mockResolvedValue(undefined);
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'share', { configurable: true, value: nativeShare });
@@ -346,7 +341,7 @@ describe('ReportDetail photos', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));
     const downloadLink = document.querySelector<HTMLAnchorElement>('a[download]');
     vi.spyOn(downloadLink as HTMLAnchorElement, 'click').mockImplementation(() => undefined);
-    fireEvent.click(screen.getByRole('link', { name: /Instagram/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Instagram story card/ }));
 
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
     expect(nativeShare).not.toHaveBeenCalled();
@@ -379,7 +374,7 @@ describe('ReportDetail photos', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));
     await waitFor(() => expect(canShare).toHaveBeenCalledTimes(1));
-    fireEvent.click(screen.getByRole('button', { name: /More apps/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Share with another app/ }));
 
     await waitFor(() => expect(nativeShare).toHaveBeenCalledTimes(1));
     expect(fetchImage).toHaveBeenCalledWith('http://localhost:3000/reports/report-id/share-image');
@@ -409,7 +404,7 @@ describe('ReportDetail photos', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));
-    fireEvent.click(screen.getByRole('button', { name: /More apps/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Share with another app/ }));
 
     await waitFor(() => expect(nativeShare).toHaveBeenCalledTimes(1));
     expect(screen.getByRole('dialog', { name: 'Share this cleanup report' })).toBeTruthy();

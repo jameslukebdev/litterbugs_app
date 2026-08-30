@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import { headers } from 'next/headers';
 
 import { loadPublicReportShare } from '@/lib/public-report-share';
 
@@ -11,6 +12,14 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   const { id } = await params;
   const report = await loadPublicReportShare(id);
   const completed = report?.state === 'completed';
+  const requestHeaders = await headers();
+  const requestHost = requestHeaders.get('x-forwarded-host') || requestHeaders.get('host') || 'litterbugs.app';
+  const requestProtocol = requestHeaders.get('x-forwarded-proto') || (requestHost.startsWith('localhost') ? 'http' : 'https');
+  const logoUrl = `${requestProtocol}://${requestHost}/brand/litterbugs-logo.png`;
+  const logoResponse = await fetch(logoUrl);
+  const logoSource = logoResponse.ok
+    ? await logoResponse.arrayBuffer()
+    : logoUrl;
   const imageUrls = completed
     ? [report?.afterPhotoUrl, report?.beforePhotoUrl].filter((value): value is string => Boolean(value))
     : [report?.beforePhotoUrl].filter((value): value is string => Boolean(value));
@@ -29,16 +38,15 @@ export default async function Image({ params }: { params: Promise<{ id: string }
     }}>
       <div style={{ width: '55%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingRight: 42 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ width: 58, height: 58, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 18, color: '#fff', background: '#b448cf', fontSize: 34, fontWeight: 900 }}>L</div>
+          <img src={logoSource as string} alt="Litterbugs" width={132} height={86} style={{ objectFit: 'contain' }} />
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ color: '#2f7d32', fontSize: 30, fontWeight: 900 }}>Litterbugs</span>
             <span style={{ color: '#5d6b62', fontSize: 17 }}>Community Cleanup</span>
           </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <span style={{ color: completed ? '#2f7d32' : '#b448cf', fontSize: 22, fontWeight: 900, letterSpacing: 1.5 }}>
-            {completed ? '✓ CLEANUP COMPLETE' : 'VOLUNTEER CLEANUP NEEDED'}
+            {completed ? 'CLEANUP COMPLETE' : 'VOLUNTEER CLEANUP NEEDED'}
           </span>
           <span style={{ fontSize: 52, fontWeight: 900, lineHeight: 1.02, letterSpacing: -2 }}>
             {report?.title || 'Litterbugs Report'}
@@ -65,8 +73,8 @@ export default async function Image({ params }: { params: Promise<{ id: string }
             ) : null}
           </div>
         )) : (
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 28, color: '#fff', background: completed ? '#2f7d32' : '#b448cf', fontSize: 120 }}>
-            {completed ? '✓' : '♻'}
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 28, background: completed ? '#dff2e1' : '#f4e1f8' }}>
+            <img src={logoSource as string} alt="Litterbugs" width={250} height={164} style={{ objectFit: 'contain' }} />
           </div>
         )}
       </div>

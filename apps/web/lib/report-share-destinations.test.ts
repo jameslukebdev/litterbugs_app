@@ -19,7 +19,6 @@ describe('report share destinations', () => {
     expect(destinations.facebook).toContain('https://www.facebook.com/dialog/share?');
     expect(destinations.facebook).toContain('app_id=1477683410862512');
     expect(destinations.facebook).toContain('href=https%3A%2F%2Flitterbugs.app%2Freports%2Freport-id');
-    expect(destinations.instagram).toBe('https://www.instagram.com/create/select/');
     expect(destinations.whatsapp).toMatch(/^https:\/\/wa\.me\/\?text=/);
     expect(destinations.x).toMatch(/^https:\/\/twitter\.com\/intent\/tweet\?text=/);
     expect(destinations.email).toMatch(/^mailto:\?subject=/);

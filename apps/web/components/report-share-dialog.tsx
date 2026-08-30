@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import type { Report } from '@litterbugs/report-contract';
-import { FiCheck, FiCopy, FiMail, FiMessageCircle, FiShare2 } from 'react-icons/fi';
+import { FiCheck, FiCopy, FiDownload, FiMail, FiShare2 } from 'react-icons/fi';
 
 import { Icon } from '@/components/icon';
 import {
@@ -169,17 +169,17 @@ export function ReportShareDialog({
     }
   }
 
-  async function prepareInstagramShare() {
+  async function prepareInstagramCard() {
     downloadLinkRef.current?.click();
     try {
       await navigator.clipboard.writeText(shareMessage);
       setFeedback({
-        message: 'Instagram Create is opening. Your branded share image is downloading and the caption is copied—upload the image, then paste the caption.',
+        message: 'Instagram story card downloaded and caption copied. Add the image in Instagram, then paste the caption and review your post.',
         tone: 'success',
       });
     } catch {
       setFeedback({
-        message: 'Instagram Create is opening and your share image is downloading, but the caption could not be copied. Use Copy link before posting.',
+        message: 'Instagram story card downloaded, but the caption could not be copied. Use Copy link before posting.',
         tone: 'error',
       });
     }
@@ -231,6 +231,12 @@ export function ReportShareDialog({
         </article>
 
         <div className={styles.options} aria-label="Sharing destinations">
+          {nativeShareAvailable ? (
+            <button className={`${styles.option} ${styles.primaryOption}`} type="button" onClick={() => { void openNativeShare(); }}>
+              <span className={`${styles.optionIcon} ${styles.primaryIcon}`} aria-hidden="true"><FiShare2 /></span>
+              <span className={styles.optionCopy}><strong>Share with another app</strong><span>Messages, AirDrop, Mail, and installed apps</span></span>
+            </button>
+          ) : null}
           <button className={styles.option} type="button" onClick={() => { void copyLink(); }}>
             <span className={`${styles.optionIcon} ${styles.copyIcon}`} aria-hidden="true">
               {feedback?.message.startsWith('Link copied') ? <FiCheck /> : <FiCopy />}
@@ -244,10 +250,6 @@ export function ReportShareDialog({
             <span className={`${styles.optionIcon} ${styles.utilityIcon}`} aria-hidden="true"><FiMail /></span>
             <span className={styles.optionCopy}><strong>Email</strong><span>Open your email app</span></span>
           </a>
-          <a className={styles.option} href={destinationUrls.messages}>
-            <span className={`${styles.optionIcon} ${styles.utilityIcon}`} aria-hidden="true"><FiMessageCircle /></span>
-            <span className={styles.optionCopy}><strong>Text message</strong><span>Open your default messaging app</span></span>
-          </a>
           <a className={styles.option} href={destinationUrls.whatsapp} target="_blank" rel="noopener noreferrer">
             <span className={`${styles.optionIcon} ${styles.brandIcon}`} aria-hidden="true">
               <img className={styles.brandMark} src="/brand/social/whatsapp-glyph.png" alt="" />
@@ -260,33 +262,26 @@ export function ReportShareDialog({
             </span>
             <span className={styles.optionCopy}><strong>Facebook</strong><span>Start a new post</span></span>
           </a>
-          <a
+          <button
             className={styles.option}
-            href={destinationUrls.instagram}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => { void prepareInstagramShare(); }}
+            type="button"
+            onClick={() => { void prepareInstagramCard(); }}
           >
             <span className={`${styles.optionIcon} ${styles.brandIcon}`} aria-hidden="true">
               <img className={styles.brandMark} src="/brand/social/instagram-glyph.png" alt="" />
             </span>
             <span className={styles.optionCopy}>
-              <strong>Instagram</strong>
-              <span>Open Create with a branded image and caption</span>
+              <strong>Instagram story card</strong>
+              <span>Download the branded image and copy its caption</span>
             </span>
-          </a>
+            <FiDownload className={styles.trailingIcon} aria-hidden="true" />
+          </button>
           <a className={styles.option} href={destinationUrls.x} target="_blank" rel="noopener noreferrer">
             <span className={`${styles.optionIcon} ${styles.brandIcon}`} aria-hidden="true">
               <img className={styles.brandMark} src="/brand/social/x-logo.png" alt="" />
             </span>
             <span className={styles.optionCopy}><strong>X</strong><span>Start a new post</span></span>
           </a>
-          {nativeShareAvailable ? (
-            <button className={`${styles.option} ${styles.moreOption}`} type="button" onClick={() => { void openNativeShare(); }}>
-              <span className={`${styles.optionIcon} ${styles.utilityIcon}`} aria-hidden="true"><FiShare2 /></span>
-              <span className={styles.optionCopy}><strong>More apps</strong><span>AirDrop, Messages, Notes, and installed apps</span></span>
-            </button>
-          ) : null}
         </div>
 
         <div className={styles.footer}>

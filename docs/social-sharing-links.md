@@ -27,11 +27,19 @@ post or message; Litterbugs never posts automatically.
   with privacy-safe report copy and the public report URL.
 - **Instagram on desktop web:** Instagram does not provide a documented web
   sharing URL that uploads media or prefills a post for an arbitrary visitor.
-  Litterbugs opens Instagram Create, downloads a 1080×1350 branded report card,
-  and copies the prepared caption so the user can upload and confirm the post.
-- **Installed apps / More apps:** when Web Share file support is available,
-  Litterbugs includes the branded report card with the report text and URL.
-  Otherwise it shares the text and URL.
+  Litterbugs therefore does not open an undocumented Instagram URL. It downloads
+  a 1080×1350 branded story card and copies the prepared caption, with explicit
+  instructions to add both in Instagram and review the post.
+- **Installed apps:** the primary system share action sends the public URL and
+  privacy-safe text so receiving apps can build their standard rich link preview.
+  From the desktop chooser, **Share with another app** also includes the branded
+  report card when the browser supports Web Share file payloads.
+
+On touch devices, the main Share action opens the operating system share sheet
+immediately. On desktop, the compact chooser keeps Copy Link and Email prominent,
+offers only documented destination composers, and exposes the system share sheet
+when the browser supports it. This follows the current Zillow/Airbnb pattern and
+avoids imitating a platform composer that the web cannot control.
 
 The native Expo app keeps Luke's React Native share-sheet implementation. Meta's
 direct Instagram Stories integration requires native Android implicit intents

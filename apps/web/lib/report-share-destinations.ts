@@ -33,7 +33,6 @@ export function reportShareDestinationUrls({ message, shareUrl, title }: ReportS
   return {
     email: `mailto:?subject=${encodeURIComponent(`${title} | Litterbugs`)}&body=${encodedMessage}`,
     facebook: `https://www.facebook.com/dialog/share?app_id=${encodeURIComponent(facebookAppId)}&display=popup&href=${encodeURIComponent(shareUrl)}&hashtag=${encodeURIComponent('#Litterbugs')}`,
-    instagram: 'https://www.instagram.com/create/select/',
     messages: `sms:?body=${encodedMessage}`,
     whatsapp: `https://wa.me/?text=${encodedMessage}`,
     x: `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}&url=${encodeURIComponent(shareUrl)}&hashtags=Litterbugs`,
