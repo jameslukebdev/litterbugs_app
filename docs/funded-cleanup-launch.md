@@ -155,10 +155,39 @@ below remain the financial release boundary.
   account are active administrator members. Each person must use their own
   authenticator enrollment; Luke's membership does not copy or bypass Grant's
   AAL2 setup.
-- The remaining live financial check is deliberately time-gated: after the
-  unchanged deadline, use a controlled activation window to reconcile one
-  exact $5 transfer to the enabled recipient before deciding whether to reopen
-  public contributions.
+- The final live financial check remained time-gated until the unchanged
+  deadline. Its controlled transfer and reconciliation are recorded below.
+
+### Live payout completion (2026-08-31)
+
+- The unchanged 48-hour deadline elapsed at
+  `2026-08-31T20:19:25.787369Z`. Scheduled maintenance then completed cleanup
+  attempt `a2c41888-3b7e-430e-8246-42730ae979d5` and queued its exact $5
+  reward without attempting a transfer while payments were disabled.
+- A controlled activation produced one expected live-mode failure because the
+  new platform charge was still in Stripe's pending balance. No transfer was
+  created. Payments were disabled immediately, the payout remained completed,
+  and the resulting administrator case was resolved through the audited AAL2
+  retry action.
+- PR #72 added Stripe's documented `source_transaction` behavior for an
+  exact single-charge reward, while rejecting missing, mismatched, or
+  multi-charge source selection. The shared financial suite passed 16 tests,
+  every Edge Function type check passed, and
+  `run-financial-maintenance` version 32 was deployed before the retry.
+- The retry created live transfer `tr_3U9lPQ40KMkUKMFW0DhNnZlm` for exactly
+  500 USD cents to recipient `acct_1U9s3a3nb4PO7rCN`, sourced from charge
+  `ch_3U9lPQ40KMkUKMFW0UBrQUHe`. One signed live
+  `transfer.created` webhook event was processed.
+- Final reconciliation found one transfer audit, one cleaner reward
+  notification, no open payout-failure case, a `paid_out` contribution, a
+  zero-dollar report fund, and no payout error. The two payout attempts are the
+  contained insufficient-balance failure and the successful retry; only one
+  Stripe transfer exists.
+- The controlled activation window ended with
+  `payments_enabled=false` and
+  `gemini_financial_review_enabled=true`. Reopening public contributions and
+  publishing store builds remain explicit release decisions, not incomplete
+  financial implementation work.
 
 The funded-cleanup launch no longer waits for Apple to finish converting the
 Burrow Base developer account. Apple has not provided a dependable timeline and
