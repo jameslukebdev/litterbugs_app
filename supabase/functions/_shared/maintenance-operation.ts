@@ -1,5 +1,10 @@
 type OperationRow = Record<string, unknown>;
 
+type PayoutContribution = {
+  stripe_charge_id: string | null;
+  principal_amount_cents: number;
+};
+
 const isNullComposite = (row: OperationRow) =>
   Object.values(row).every((value) => value === null);
 
@@ -24,4 +29,25 @@ export const claimedOperationRow = <T extends object>(
     throw new Error("Financial operation claim returned a row without an ID");
   }
   return data as T;
+};
+
+export const payoutSourceTransaction = (
+  contributions: PayoutContribution[],
+  rewardAmountCents: number,
+): string | null => {
+  if (
+    contributions.length !== 1 ||
+    !Number.isSafeInteger(rewardAmountCents) ||
+    rewardAmountCents <= 0
+  ) return null;
+
+  const contribution = contributions[0];
+  if (
+    !contribution.stripe_charge_id ||
+    !contribution.stripe_charge_id.startsWith("ch_") ||
+    !Number.isSafeInteger(contribution.principal_amount_cents) ||
+    contribution.principal_amount_cents !== rewardAmountCents
+  ) return null;
+
+  return contribution.stripe_charge_id;
 };
