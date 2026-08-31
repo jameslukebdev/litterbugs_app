@@ -18,6 +18,8 @@ import {
   ActivityIndicator,
   AppState,
   Linking,
+  NativeModules,
+  Share as NativeShare,
   useWindowDimensions,
 } from 'react-native';
 import { Marker } from 'react-native-maps';
@@ -26,7 +28,6 @@ import * as Location from 'expo-location';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import RNShare from 'react-native-share';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from './lib/supabase'
 import {
@@ -87,6 +88,10 @@ import {
   shareReportWithSystemSheet,
 } from './lib/reportSharing';
 import * as FileSystem from 'expo-file-system/legacy';
+
+const installedRNShare = NativeModules.RNShare
+  ? require('react-native-share').default
+  : null;
 
 const MAP_MARKER_TRANSITION_MS = 180;
 
@@ -1359,7 +1364,7 @@ useEffect(() => {
         beforePhotoUrl: reportPhotoUrls[0] ?? null,
         afterPhotoUrl: completedCleanupImpact?.afterPhotoUrls?.[0] ?? null,
         platform: Platform.OS,
-        share: RNShare.open,
+        share: installedRNShare?.open ?? NativeShare.share,
         shareImageUri,
       });
       setReportShareSheetOpen(false);
@@ -1374,6 +1379,14 @@ useEffect(() => {
   const shareSelectedReportToInstagram = async () => {
     if (!selectedReportIsShareable || reportShareBusyAction) return;
 
+    if (!installedRNShare?.shareSingle || !installedRNShare?.Social?.INSTAGRAM_STORIES) {
+      Alert.alert(
+        'App update required',
+        'Direct Instagram Stories sharing needs the next Litterbugs development build. Use More sharing options to share with your current app.'
+      );
+      return;
+    }
+
     setReportShareBusyAction('instagram');
     try {
       const shareImageUri = await prepareSelectedReportShareImage();
@@ -1385,8 +1398,8 @@ useEffect(() => {
         beforePhotoUrl: reportPhotoUrls[0] ?? null,
         afterPhotoUrl: completedCleanupImpact?.afterPhotoUrls?.[0] ?? null,
         shareImageUri,
-        shareSingle: RNShare.shareSingle,
-        instagramStoriesSocial: RNShare.Social.INSTAGRAM_STORIES,
+        shareSingle: installedRNShare.shareSingle,
+        instagramStoriesSocial: installedRNShare.Social.INSTAGRAM_STORIES,
       });
       setReportShareSheetOpen(false);
     } catch (error) {
