@@ -5,7 +5,10 @@ import {
   secureSecretEqual,
   verifyStripeOnboardingState,
 } from "./funded-cleanup.ts";
-import { claimedOperationRow } from "./maintenance-operation.ts";
+import {
+  claimedOperationRow,
+  payoutSourceTransaction,
+} from "./maintenance-operation.ts";
 
 Deno.test("financial operation claims normalize empty database results", () => {
   if (claimedOperationRow([]) !== null) {
@@ -40,6 +43,36 @@ Deno.test("financial operation claims reject ambiguous or malformed rows", () =>
       rejected = true;
     }
     if (!rejected) throw new Error("An unsafe operation result was accepted");
+  }
+});
+
+Deno.test("single-charge payouts can wait on their source transaction", () => {
+  const charge = payoutSourceTransaction([
+    {
+      stripe_charge_id: "ch_cleanup",
+      principal_amount_cents: 500,
+    },
+  ], 500);
+  if (charge !== "ch_cleanup") {
+    throw new Error("The exact source charge was not selected");
+  }
+});
+
+Deno.test("payout source transactions reject ambiguous or mismatched funding", () => {
+  for (
+    const contributions of [
+      [],
+      [
+        { stripe_charge_id: "ch_one", principal_amount_cents: 250 },
+        { stripe_charge_id: "ch_two", principal_amount_cents: 250 },
+      ],
+      [{ stripe_charge_id: "ch_wrong", principal_amount_cents: 499 }],
+      [{ stripe_charge_id: null, principal_amount_cents: 500 }],
+    ]
+  ) {
+    if (payoutSourceTransaction(contributions, 500) !== null) {
+      throw new Error("An unsafe payout source charge was selected");
+    }
   }
 });
 

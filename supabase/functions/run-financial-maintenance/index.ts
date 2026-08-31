@@ -12,7 +12,10 @@ import {
   stripeClient,
 } from "../_shared/funded-cleanup.ts";
 import { geminiRelayConfig } from "../_shared/google-cloud.ts";
-import { claimedOperationRow } from "../_shared/maintenance-operation.ts";
+import {
+  claimedOperationRow,
+  payoutSourceTransaction,
+} from "../_shared/maintenance-operation.ts";
 
 type AiCheck = {
   id: string;
@@ -474,6 +477,17 @@ const processPayout = async (admin: ReturnType<typeof serviceClient>) => {
     throw payoutError;
   }
 
+  const { data: payoutContributions, error: contributionError } = await admin
+    .from("cleanup_contributions")
+    .select("stripe_charge_id, principal_amount_cents")
+    .eq("cleanup_attempt_id", attempt.id)
+    .eq("status", "succeeded");
+  if (contributionError) throw contributionError;
+  const sourceTransaction = payoutSourceTransaction(
+    payoutContributions ?? [],
+    attempt.reward_amount_cents,
+  );
+
   let transfer;
   try {
     transfer = await stripeClient().transfers.create({
@@ -485,6 +499,9 @@ const processPayout = async (admin: ReturnType<typeof serviceClient>) => {
         cleanup_attempt_id: attempt.id,
         report_id: attempt.report_id,
       },
+      ...(sourceTransaction
+        ? { source_transaction: sourceTransaction }
+        : {}),
     }, {
       idempotencyKey: `cleanup-payout-${attempt.id}-${attempt.payout_attempts}`,
     });
