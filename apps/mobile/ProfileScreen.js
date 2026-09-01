@@ -67,7 +67,12 @@ function ActionRow({ label, icon, onPress, destructive = false, busy = false }) 
     >
       <View style={styles.actionCopy}>
         <Ionicons name={icon} size={21} color={destructive ? '#C62828' : '#4E5A61'} />
-        <Text style={[styles.actionText, destructive && styles.destructiveText]}>{label}</Text>
+        <Text
+          style={[styles.actionText, destructive && styles.destructiveText]}
+          numberOfLines={1}
+        >
+          {label}
+        </Text>
       </View>
       {busy ? (
         <ActivityIndicator size="small" color={destructive ? '#C62828' : '#4E5A61'} />
@@ -567,9 +572,11 @@ export default function ProfileScreen({ navigation }) {
       <Text style={styles.sectionTitle}>Account</Text>
       <View style={styles.card}>
         <View style={styles.emailRow}>
-          <View>
+          <View style={styles.emailCopy}>
             <Text style={styles.emailLabel}>Email</Text>
-            <Text style={styles.emailText}>{user.email || 'Managed by your sign-in provider'}</Text>
+            <Text style={styles.emailText} numberOfLines={1} ellipsizeMode="middle">
+              {user.email || 'Managed by your sign-in provider'}
+            </Text>
           </View>
         </View>
         <ActionRow
@@ -673,10 +680,11 @@ const styles = StyleSheet.create({
   completedCleanupReward: { marginTop: 4, color: '#245F2A', fontSize: 13, fontWeight: '800' },
   completedCleanupEmpty: { minHeight: 126, alignItems: 'center', justifyContent: 'center', padding: 20 },
   actionRow: { minHeight: 60, paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E0E3E5', backgroundColor: '#FFFFFF' },
-  actionCopy: { flexDirection: 'row', alignItems: 'center', gap: 11 },
-  actionText: { color: '#30363B', fontSize: 16 },
+  actionCopy: { flex: 1, minWidth: 0, marginRight: 12, flexDirection: 'row', alignItems: 'center', gap: 11 },
+  actionText: { flexShrink: 1, color: '#30363B', fontSize: 16 },
   destructiveText: { color: '#C62828' },
   emailRow: { minHeight: 68, paddingHorizontal: 17, justifyContent: 'center' },
+  emailCopy: { minWidth: 0 },
   emailLabel: { color: '#727B82', fontSize: 12, fontWeight: '700' },
   emailText: { marginTop: 3, color: '#30363B', fontSize: 15 },
   deleteCard: { marginTop: 24 },

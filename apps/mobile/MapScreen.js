@@ -79,6 +79,7 @@ import {
   requestGeminiReview,
 } from './lib/funding';
 import { shouldClusterReports } from './lib/mapClustering';
+import { hasRequiredReportPhoto } from './lib/reportDraft';
 import {
   createReportShareModel,
   isReportShareable,
@@ -381,8 +382,22 @@ const resetReportWizard = () => {
   setIsTransitioning(false);
 };
 
+const hasAttachedReportPhoto = () => (
+  hasRequiredReportPhoto({
+    photoUris: form.photos,
+    existingPhotoPaths: selectedReport?.photo_paths,
+    isEditing,
+  })
+);
+
 // Determines whether the user can move forward from a given step
 const canAdvanceFromStep = (step = reportStep) => {
+  // Every report needs enough visual context for discovery and cleanup review.
+  // Existing photos satisfy the requirement when a report is being edited.
+  if (step === 1) {
+    return hasAttachedReportPhoto();
+  }
+
   // Litter Types are required.
   // Either a preset selection OR something typed in "Other" counts.
   if (step === 2) {
@@ -823,6 +838,15 @@ const reconcileReportAfterBlockedMutation = async (reportId) => {
 // Final submit from Review screen
 const submitReport = async () => {
   if (isSaving) return;
+
+  if (!hasAttachedReportPhoto()) {
+    Alert.alert(
+      'Photo required',
+      'Add at least one clear photo so volunteers can identify the cleanup site.'
+    );
+    jumpToReportStep(1);
+    return;
+  }
 
   setIsSaving(true);
 
@@ -1744,7 +1768,7 @@ const renderReportStep = () => {
       return (
         <View style={styles.wizardStep}>
           <Text style={styles.wizardEyebrow}>
-            OPTIONAL · RECOMMENDED
+            REQUIRED
           </Text>
 
           <Text style={styles.wizardTitle}>
@@ -1752,11 +1776,13 @@ const renderReportStep = () => {
           </Text>
 
           <Text style={styles.wizardDescription}>
-            Photos make the site easier to identify and help show
-            what the area looked like before cleanup.
+            Add at least one clear photo so volunteers can identify the
+            site and see what the area looked like before cleanup.
           </Text>
 
-          {isEditing && form.photos.length === 0 ? (
+          {isEditing
+            && form.photos.length === 0
+            && (selectedReport?.photo_paths?.length ?? 0) > 0 ? (
             <View style={styles.existingPhotoNotice}>
               <Ionicons
                 name="images-outline"
@@ -1819,6 +1845,14 @@ const renderReportStep = () => {
                   isSaving ||
                   form.photos.length >= 3
                 }
+                accessibilityRole="button"
+                accessibilityLabel={
+                  form.photos.length >= 3
+                    ? 'Three report photos added'
+                    : isEditing
+                      ? 'Add a replacement report photo'
+                      : 'Add a report photo'
+                }
               >
                 <View style={styles.wizardPhotoIcon}>
                   <Ionicons
@@ -1856,6 +1890,8 @@ const renderReportStep = () => {
                         onPress={() =>
                           removePhoto(index)
                         }
+                        accessibilityRole="button"
+                        accessibilityLabel={`Remove report photo ${index + 1}`}
                       >
                         <Text style={styles.deletePhotoText}>
                           ✕
@@ -1867,6 +1903,12 @@ const renderReportStep = () => {
               )}
             </>
           )}
+
+          {!hasAttachedReportPhoto() ? (
+            <Text style={styles.requiredHint}>
+              Add at least one photo to continue.
+            </Text>
+          ) : null}
         </View>
       );
 
@@ -1928,6 +1970,9 @@ const renderReportStep = () => {
                         };
                       });
                     }}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: selected }}
+                    accessibilityLabel={`${label} litter type`}
                   >
                     <Ionicons
                       name={icon}
@@ -2028,6 +2073,9 @@ const renderReportStep = () => {
                       severity: level,
                     }))
                   }
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: selected }}
+                  accessibilityLabel={`${level} severity`}
                 >
                   <Ionicons
                     name={icon}
@@ -2138,6 +2186,9 @@ const renderReportStep = () => {
                           };
                         });
                       }}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: selected }}
+                      accessibilityLabel={label}
                     >
                       <Ionicons
                         name={icon}
@@ -2427,6 +2478,9 @@ const renderReportStep = () => {
             ]}
             onPress={submitReport}
             disabled={isSaving}
+            accessibilityRole="button"
+            accessibilityLabel="Submit litter report"
+            accessibilityState={{ disabled: isSaving, busy: isSaving }}
           >
             {isSaving ? (
               <ActivityIndicator color="#fff" />
@@ -2692,6 +2746,8 @@ const renderReportStep = () => {
             style={styles.wizardCloseButton}
             onPress={cancelDraft}
             disabled={isSaving}
+            accessibilityRole="button"
+            accessibilityLabel="Close report form"
           >
             <Ionicons
               name="close"
@@ -2747,6 +2803,8 @@ const renderReportStep = () => {
               isTransitioning ||
               isSaving
             }
+            accessibilityRole="button"
+            accessibilityLabel="Previous report step"
           >
             <Ionicons
               name="arrow-back-circle"
@@ -2793,6 +2851,8 @@ const renderReportStep = () => {
               isTransitioning ||
               isSaving
             }
+            accessibilityRole="button"
+            accessibilityLabel="Next report step"
           >
             <Ionicons
               name="arrow-forward-circle"
