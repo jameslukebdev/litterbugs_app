@@ -994,6 +994,7 @@ export type Database = {
           location: string | null
           profile_completed_at: string | null
           provider_avatar_url: string | null
+          rank_celebrated_through_points: number
           reports_created_count: number
           updated_at: string
           username: string | null
@@ -1007,6 +1008,7 @@ export type Database = {
           location?: string | null
           profile_completed_at?: string | null
           provider_avatar_url?: string | null
+          rank_celebrated_through_points?: number
           reports_created_count?: number
           updated_at?: string
           username?: string | null
@@ -1020,6 +1022,7 @@ export type Database = {
           location?: string | null
           profile_completed_at?: string | null
           provider_avatar_url?: string | null
+          rank_celebrated_through_points?: number
           reports_created_count?: number
           updated_at?: string
           username?: string | null
@@ -1063,6 +1066,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "push_devices_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rank_point_events: {
+        Row: {
+          created_at: string
+          id: string
+          points: number
+          source_id: string
+          source_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          points: number
+          source_id: string
+          source_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          points?: number
+          source_id?: string
+          source_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rank_point_events_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -1261,6 +1299,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      acknowledge_current_rank: { Args: never; Returns: number }
       accept_cleanup_waiver: {
         Args: {
           accepted_guidelines_version: string
@@ -1616,6 +1655,7 @@ export type Database = {
         Args: { target_case_id: string }
         Returns: Json
       }
+      get_rank_points: { Args: { target_user_id: string }; Returns: number }
       is_cleanup_admin: { Args: never; Returns: boolean }
       is_cleanup_admin_member: { Args: never; Returns: boolean }
       is_permanent_user: { Args: never; Returns: boolean }
@@ -2226,3 +2266,4 @@ export type CleanupSubmissionPhoto = Tables<'cleanup_submission_photos'>
 export type CleanupReview = Tables<'cleanup_reviews'>
 export type CleanupWaiverVersion = Tables<'cleanup_waiver_versions'>
 export type CleanupWaiverAcceptance = Tables<'cleanup_waiver_acceptances'>
+export type RankPointEvent = Tables<'rank_point_events'>

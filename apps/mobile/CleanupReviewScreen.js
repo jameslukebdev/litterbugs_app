@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import CompactRankBadge from './CompactRankBadge';
 import ProfileAvatar from './ProfileAvatar';
 import {
   disputePaidCleanup,
@@ -365,6 +366,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
             <ProfileAvatar profile={context.cleaner} size={48} />
             <View style={styles.identityCopy}>
               <Text style={styles.identityName}>{cleanerName}</Text>
+              <CompactRankBadge userId={context.cleaner?.id} />
               {context.cleaner?.username ? (
                 <Text style={styles.identityUsername}>@{context.cleaner.username}</Text>
               ) : null}
