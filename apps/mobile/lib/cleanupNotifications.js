@@ -33,11 +33,11 @@ const CLEANUP_NOTIFICATION_CONTENT = Object.freeze({
   },
   paid_review_started: {
     title: 'Funded cleanup ready for review',
-    message: 'Gemini accepted the photos. You have 48 hours to dispute the cleanup.',
+    message: 'The cleanup photos passed review. You have 48 hours to report a problem.',
   },
   paid_cleanup_disputed: {
     title: 'Cleanup disputed',
-    message: 'The payout is paused while an administrator reviews the cleanup.',
+    message: 'The payout is paused while a Litterbugs team member reviews the cleanup.',
   },
   cleanup_reward_sent: {
     title: 'Cleanup reward sent',
@@ -45,7 +45,7 @@ const CLEANUP_NOTIFICATION_CONTENT = Object.freeze({
   },
   cleanup_payout_failed: {
     title: 'Cleanup reward needs attention',
-    message: 'Your cleanup is approved, but the reward transfer needs administrator review.',
+    message: 'Your cleanup is approved, but a Litterbugs team member needs to review the reward transfer.',
   },
   cleanup_fund_increased: {
     title: 'Cleanup fund increased',

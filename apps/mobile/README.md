@@ -8,7 +8,8 @@ Litterbugs is a community-driven mobile app that allows users to report, view, a
 - ⏱️ Auto-expiring reports
 - 🔐 Email, Google, and Facebook authentication with persistent profiles
 - 👤 Public profiles, report attribution, blocking, and user reporting
-- 🧹 Community cleanup workflow (planned)
+- 🧹 Community cleanup workflow with funded contributions and cleaner payouts
+- 🏅 Profile levels and impact ranking
 
 ## Tech Stack
 - React Native (Expo)
@@ -17,7 +18,7 @@ Litterbugs is a community-driven mobile app that allows users to report, view, a
 - Expo Maps
 
 ## Status
-🚧 Version 2 — in testing
+🚀 Version 2 — release candidate
 
 ## Litterbugs Privacy Policy
 

@@ -15,12 +15,14 @@ describe('public report sharing', () => {
       cancelled_at: null,
       expired_at: null,
       expires_at: '2026-09-01T12:00:00.000Z',
+      is_sample: false,
     };
 
     expect(isPubliclyShareableReport(base, now)).toBe(true);
     expect(isPubliclyShareableReport({ ...base, cleanup_state: 'completed' }, now)).toBe(true);
     expect(isPubliclyShareableReport({ ...base, cleanup_state: 'claimed' }, now)).toBe(false);
     expect(isPubliclyShareableReport({ ...base, expires_at: '2026-08-27T12:00:00.000Z' }, now)).toBe(false);
+    expect(isPubliclyShareableReport({ ...base, cleanup_state: 'completed', is_sample: true }, now)).toBe(false);
   });
 
   it('keeps coordinates private and uses state-specific descriptions', () => {

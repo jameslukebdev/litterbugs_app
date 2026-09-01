@@ -58,12 +58,12 @@ function cleanupStatus(attempt: CleanupAttempt) {
 function cleanupRewardStatus(attempt: CleanupAttempt) {
   if (!attempt.is_paid) return '';
   if (attempt.dispute_status === 'open') return 'Reward paused for dispute review';
-  if (attempt.financial_review_status === 'admin_review') return 'Reward paused for admin review';
+  if (attempt.financial_review_status === 'admin_review') return 'Reward paused for review';
   if (attempt.financial_review_status === 'better_photos') return 'Replacement photos requested';
-  if (attempt.first_paid_admin_status === 'pending') return 'First reward awaiting admin check';
+  if (attempt.first_paid_admin_status === 'pending') return 'First reward is being reviewed';
   if (attempt.financial_review_status === 'passed') return 'Reward in 48-hour dispute window';
-  if (attempt.financial_review_status === 'queued') return 'Photos awaiting automated review';
-  if (attempt.status === 'claimed') return 'Reward frozen for this cleanup';
+  if (attempt.financial_review_status === 'queued') return 'Photos are being reviewed';
+  if (attempt.status === 'claimed') return 'Reward held for this cleanup';
   return attempt.payout_status === 'transferred' ? 'Reward sent' : 'Reward pending';
 }
 
@@ -139,6 +139,7 @@ export function AccountDialog({
           .from('reports')
           .select('*')
           .eq('user_id', user.id)
+          .eq('is_sample', false)
           .or('status.is.null,status.eq.active')
           .gt('expires_at', new Date().toISOString())
           .order('created_at', { ascending: false })
@@ -147,13 +148,14 @@ export function AccountDialog({
           .from('reports')
           .select('*')
           .eq('user_id', user.id)
+          .eq('is_sample', false)
           .eq('renewal_status', 'decision_required')
           .gt('renewal_decision_due_at', new Date().toISOString())
           .order('renewal_decision_due_at', { ascending: true })
           .limit(50),
         supabase
           .from('cleanup_attempts')
-          .select('id, report_id, status, claim_expires_at, completed_at, is_paid, reward_amount_cents, payout_status, approval_method, dispute_status, financial_review_status, first_paid_admin_status, report:reports(id,title,severity,cleanup_state)')
+          .select('id, report_id, status, claim_expires_at, completed_at, is_paid, reward_amount_cents, payout_status, approval_method, dispute_status, financial_review_status, first_paid_admin_status, report:reports(id,title,severity,cleanup_state,is_sample)')
           .eq('cleaner_id', user.id)
           .in('status', ['claimed', 'changes_requested', 'completion_submitted', 'completed'])
           .order('last_activity_at', { ascending: false })
@@ -180,7 +182,8 @@ export function AccountDialog({
       setProfileEditing(Boolean(profileResult.data && !profileResult.data.profile_completed_at));
       setReports(reportsResult.data ?? []);
       setExpiredReports(expiredReportsResult.data ?? []);
-      setCleanups((cleanupResult.data ?? []) as unknown as CleanupAttempt[]);
+      setCleanups((cleanupResult.data ?? [])
+        .filter(({ report }) => !report?.is_sample) as unknown as CleanupAttempt[]);
       setContributions(contributionResult.data ?? []);
       setBlockedAccounts((blockedResult.data ?? []) as unknown as BlockedAccount[]);
       if (profileResult.error || reportsResult.error || expiredReportsResult.error || cleanupResult.error || contributionResult.error || blockedResult.error) {
@@ -628,7 +631,7 @@ export function AccountDialog({
       )}
 
       <section className="member-settings">
-        <div className="member-settings-heading"><span className="eyebrow">ACCOUNT</span><h3>Account settings</h3><p>{email || 'Managed by your sign-in provider'}</p></div>
+        <div className="member-settings-heading"><span className="eyebrow">ACCOUNT</span><h3>Account settings</h3><p>{email || 'Email unavailable for this account'}</p></div>
         <div className="member-setting-links">
           <Link href="/terms"><FiFileText aria-hidden /><span>Terms of use</span><FiExternalLink aria-hidden /></Link>
           <Link href="/privacy"><FiShield aria-hidden /><span>Privacy policy</span><FiExternalLink aria-hidden /></Link>

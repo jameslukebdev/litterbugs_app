@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   createNativeReportShareContent,
@@ -25,7 +25,17 @@ const availableReport = {
   expires_at: '2026-09-01T12:00:00.000Z',
   expired_at: null,
   cancelled_at: null,
+  is_sample: false,
 };
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(now);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('report sharing', () => {
   it('shares only available active reports and completed impact records', () => {
@@ -35,6 +45,7 @@ describe('report sharing', () => {
     expect(isReportShareable({ ...availableReport, cleanup_state: 'completion_submitted' }, now)).toBe(false);
     expect(isReportShareable({ ...availableReport, cleanup_state: 'changes_requested' }, now)).toBe(false);
     expect(isReportShareable({ ...availableReport, expired_at: now.toISOString() }, now)).toBe(false);
+    expect(isReportShareable({ ...availableReport, cleanup_state: 'completed', is_sample: true }, now)).toBe(false);
   });
 
   it('builds branded active-report content with a durable link', () => {
@@ -147,7 +158,7 @@ describe('report sharing', () => {
       .mockResolvedValueOnce({ exists: false })
       .mockResolvedValueOnce({ exists: true, size: 2048 });
     const downloadAsync = vi.fn().mockResolvedValue({
-      uri: 'file:///cache/litterbugs-litter-beside-the-trail.png',
+      uri: 'file:///cache/litterbugs-litter-beside-the-trail-active-report-1.png',
     });
 
     const first = await prepareNativeReportShareImage({
@@ -163,8 +174,8 @@ describe('report sharing', () => {
       downloadAsync,
     });
 
-    expect(reportShareImageFilename(model)).toBe('litterbugs-litter-beside-the-trail.png');
-    expect(first).toBe('file:///cache/litterbugs-litter-beside-the-trail.png');
+    expect(reportShareImageFilename(model)).toBe('litterbugs-litter-beside-the-trail-active-report-1.png');
+    expect(first).toBe('file:///cache/litterbugs-litter-beside-the-trail-active-report-1.png');
     expect(second).toBe(first);
     expect(downloadAsync).toHaveBeenCalledTimes(1);
     expect(downloadAsync).toHaveBeenCalledWith(model.shareImageUrl, first);

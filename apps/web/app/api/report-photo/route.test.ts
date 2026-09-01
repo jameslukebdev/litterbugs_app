@@ -104,10 +104,12 @@ describe('public report card photos', () => {
     });
     from.mockReturnValue({
       select: () => ({
-        contains: () => ({
-          or: () => ({
-            gt: () => ({
-              limit: () => ({ maybeSingle }),
+        eq: () => ({
+          contains: () => ({
+            or: () => ({
+              gt: () => ({
+                limit: () => ({ maybeSingle }),
+              }),
             }),
           }),
         }),
@@ -136,10 +138,12 @@ describe('public report card photos', () => {
     });
     from.mockReturnValue({
       select: () => ({
-        contains: () => ({
-          or: () => ({
-            gt: () => ({
-              limit: () => ({ maybeSingle }),
+        eq: () => ({
+          contains: () => ({
+            or: () => ({
+              gt: () => ({
+                limit: () => ({ maybeSingle }),
+              }),
             }),
           }),
         }),

@@ -95,6 +95,7 @@ export async function loadCurrentUserCleanupSummary(userId) {
   const { data: reports, error: reportsError } = await supabase
     .from('reports')
     .select('id, title, severity, cleanup_state')
+    .eq('is_sample', false)
     .in('id', attempts.map(({ report_id: reportId }) => reportId));
 
   if (reportsError) throw reportsError;
@@ -103,8 +104,10 @@ export async function loadCurrentUserCleanupSummary(userId) {
     (reports ?? []).map((report) => [report.id, report])
   );
 
-  return summarizeCleanupAttempts(attempts.map((attempt) => ({
-    ...attempt,
-    report: reportsById.get(attempt.report_id) ?? null,
-  })));
+  return summarizeCleanupAttempts(attempts
+    .filter((attempt) => reportsById.has(attempt.report_id))
+    .map((attempt) => ({
+      ...attempt,
+      report: reportsById.get(attempt.report_id),
+    })));
 }

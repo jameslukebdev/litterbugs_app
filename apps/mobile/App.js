@@ -30,6 +30,7 @@ import ExpiredReportsScreen from './ExpiredReportsScreen';
 import FundingContributionScreen from './FundingContributionScreen';
 import PayoutSetupScreen from './PayoutSetupScreen';
 import PublicProfileScreen from './PublicProfileScreen';
+import RankCelebrationManager from './RankCelebrationManager';
 import ReportUserScreen from './ReportUserScreen';
 import ResetPasswordScreen from './ResetPasswordScreen';
 import { handleAuthCallbackUrl, PASSWORD_RECOVERY_PATH, signOut } from './lib/auth';
@@ -405,6 +406,7 @@ export default function App() {
             passwordRecovery={passwordRecovery}
             onRecoveryComplete={() => setPasswordRecovery(false)}
           />
+          <RankCelebrationManager />
         </ReportsProvider>
       </ProfileProvider>
     </SessionProvider>

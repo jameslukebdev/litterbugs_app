@@ -95,6 +95,7 @@ export function MapExperience({
     const { data, error } = await createClient()
       .from('reports')
       .select('*')
+      .eq('is_sample', false)
       .or('status.is.null,status.eq.active')
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false });
@@ -345,15 +346,45 @@ export function MapExperience({
       return 'Sign in with a real account to save this report.';
     }
 
+    const uploadReportPhotos = async (reportId: string) => {
+      const paths: string[] = [];
+      for (const [index, photo] of draft.photos.entries()) {
+        const extension = (photo.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+        const path = `${authenticatedUserId}/${reportId}/${Date.now()}-${index}.${extension}`;
+        const { error } = await supabase.storage.from('report_photos').upload(path, photo, {
+          contentType: photo.type || `image/${extension === 'jpg' ? 'jpeg' : extension}`,
+          upsert: false,
+        });
+        if (error) {
+          if (paths.length) await supabase.storage.from('report_photos').remove(paths);
+          return { paths: [] as string[], error: 'One or more photos could not be uploaded. Check your connection and try again.' };
+        }
+        paths.push(path);
+      }
+      return { paths, error: '' };
+    };
+
     if (editingReport) {
+      const existingPhotoPaths = editingReport.photo_paths ?? [];
+      if (!existingPhotoPaths.length && !draft.photos.length) {
+        return 'Add at least one clear photo before saving this report.';
+      }
+      const uploaded = draft.photos.length
+        ? await uploadReportPhotos(editingReport.id)
+        : { paths: [] as string[], error: '' };
+      if (uploaded.error) return uploaded.error;
+      const photoPaths = existingPhotoPaths.length ? existingPhotoPaths : uploaded.paths;
       const { data, error } = await supabase
         .from('reports')
-        .update(reportUpdateFromDraft(draft))
+        .update({ ...reportUpdateFromDraft(draft), photo_paths: photoPaths })
         .eq('id', editingReport.id)
         .eq('user_id', authenticatedUserId)
         .select()
         .single();
-      if (error) return `Save failed: ${error.message}`;
+      if (error) {
+        if (uploaded.paths.length) await supabase.storage.from('report_photos').remove(uploaded.paths);
+        return `Save failed: ${error.message}`;
+      }
       if (!hasReportCoordinates(data)) return 'The saved report is missing its map location.';
       setSelectedReport(data);
       setEditingReport(null);
@@ -364,27 +395,27 @@ export function MapExperience({
     }
 
     if (!draftCoordinates) return 'Choose a location on the map and try again.';
+    if (!draft.photos.length) return 'Add at least one clear photo before saving this report.';
+    const reportId = crypto.randomUUID();
+    const uploaded = await uploadReportPhotos(reportId);
+    if (uploaded.error) return uploaded.error;
     const { data: report, error } = await supabase
       .from('reports')
-      .insert(reportInsertFromDraft(draft, draftCoordinates, authenticatedUserId))
+      .insert({
+        ...reportInsertFromDraft(draft, draftCoordinates, authenticatedUserId),
+        id: reportId,
+        photo_paths: uploaded.paths,
+      })
       .select()
       .single();
-    if (error) return `Save failed: ${error.message}`;
-    if (!hasReportCoordinates(report)) return 'The saved report is missing its map location.';
-
-    const photoPaths: string[] = [];
-    for (const [index, photo] of draft.photos.entries()) {
-      const extension = (photo.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-      const path = `${authenticatedUserId}/${report.id}/${Date.now()}-${index}.${extension}`;
-      const { error: uploadError } = await supabase.storage.from('report_photos').upload(path, photo, {
-        contentType: photo.type || `image/${extension === 'jpg' ? 'jpeg' : extension}`,
-        upsert: false,
-      });
-      if (!uploadError) photoPaths.push(path);
+    if (error) {
+      await supabase.storage.from('report_photos').remove(uploaded.paths);
+      return `Save failed: ${error.message}`;
     }
-
-    if (photoPaths.length) {
-      await supabase.from('reports').update({ photo_paths: photoPaths }).eq('id', report.id).eq('user_id', authenticatedUserId);
+    if (!hasReportCoordinates(report)) {
+      await supabase.from('reports').delete().eq('id', report.id).eq('user_id', authenticatedUserId);
+      await supabase.storage.from('report_photos').remove(uploaded.paths);
+      return 'The saved report is missing its map location.';
     }
     setDraftCoordinates(null);
     await refreshReports();

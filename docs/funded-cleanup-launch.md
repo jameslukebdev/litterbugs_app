@@ -1,11 +1,31 @@
 # Funded cleanup MVP launch checklist
 
 The funded-cleanup code ships in the real Litterbugs app and its linked backend.
-Live Stripe and Gemini credentials are installed in production. Gemini review
-is enabled while live payments remain disabled. This is the production app
-architecture, not a separate QA-only payment app. Provider credentials being
-present does not authorize live charges; the payment flag and launch sequence
-below remain the financial release boundary.
+Live Stripe and Gemini credentials are installed in production. Both Gemini
+review and live card payments are enabled for the release candidate. This is
+the production app architecture, not a separate QA-only payment app. Provider
+credentials being present does not itself authorize a charge; every payment
+still requires an explicit customer checkout.
+
+## Release-candidate activation (2026-09-01)
+
+- `payments_enabled=true` and
+  `gemini_financial_review_enabled=true`. Migration
+  `20260901190000_enable_release_features` records the launch configuration.
+  No customer payment or test charge was created during this activation.
+- The scheduled financial-maintenance and cleanup-notification functions
+  continued returning HTTP 200 after activation.
+- The merged ranking foundation, hardened report-point awards, social sharing,
+  public web app, and anonymous native flows passed the release test suite.
+  iOS and Android native builds both compiled, installed, and were exercised in
+  their simulators. Gemini/Stripe implementation and security tests also pass.
+- The iOS simulator rendered maps correctly. The Android debug build loads live
+  reports but Google Maps rejects its local debug signing certificate; add that
+  certificate/package restriction in Google Cloud before relying on debug-map
+  QA. This is separate from the production signing certificate.
+- Apple Pay remains deliberately disabled until the Apple organization transfer
+  and merchant configuration are complete. Ordinary card PaymentSheet remains
+  the release payment path.
 
 ## Current production state (2026-08-28)
 

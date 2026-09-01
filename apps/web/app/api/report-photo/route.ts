@@ -62,6 +62,7 @@ export async function GET(request: Request) {
       const { data: report, error: reportError } = await supabase
         .from('reports')
         .select('expires_at')
+        .eq('is_sample', false)
         .contains('photo_paths', [photoPath])
         .or('status.is.null,status.eq.active')
         .gt('expires_at', now.toISOString())

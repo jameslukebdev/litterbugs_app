@@ -32,13 +32,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from './lib/supabase'
 import {
   canEditOrDeleteReport,
+  canManageReport,
   isPermanentUser,
   permanentUserId,
 } from './lib/reportAccess';
 import { BOTTOM_NAV_METRICS, getBottomNavClearance } from './lib/navigationLayout';
 import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
-import MapReportSheet, { getMapReportSheetMetrics } from './MapReportSheet';
 import ReporterIdentity from './ReporterIdentity';
 import CompletedCleanupStory from './CompletedCleanupStory';
 import CleanupWaiverModal from './CleanupWaiverModal';
@@ -79,6 +79,7 @@ import {
   requestGeminiReview,
 } from './lib/funding';
 import { shouldClusterReports } from './lib/mapClustering';
+import { hasRequiredReportPhoto } from './lib/reportDraft';
 import {
   createReportShareModel,
   isReportShareable,
@@ -171,7 +172,6 @@ export default function MapScreen({ route, navigation }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [photosLoading, setPhotosLoading] = useState(false);
-  const [mapSheetExpanded, setMapSheetExpanded] = useState(false);
   const [cleanupWaiver, setCleanupWaiver] = useState(null);
   const [cleanupWaiverOpen, setCleanupWaiverOpen] = useState(false);
   const [cleanupWaiverQueued, setCleanupWaiverQueued] = useState(false);
@@ -204,13 +204,9 @@ export default function MapScreen({ route, navigation }) {
   } = useProfile();
   const {
     markers,
-    reportsInSearchRegion,
-    refreshing: reportsRefreshing,
     mapRegion: region,
-    searchRegion,
     setMapRegion: setRegion,
     commitMapRegion,
-    searchMapRegion,
     refreshReports,
     getReportById,
     upsertReport,
@@ -220,12 +216,8 @@ export default function MapScreen({ route, navigation }) {
   const fundingEnabled = paymentsEnabled && geminiReviewEnabled;
   const reportClusteringEnabled = shouldClusterReports(region);
   const insets = useSafeAreaInsets();
-  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const { width: screenWidth } = useWindowDimensions();
   const bottomNavClearance = getBottomNavClearance(insets.bottom);
-  const reportSheetMetrics = getMapReportSheetMetrics(
-    screenHeight,
-    bottomNavClearance
-  );
 
   useEffect(() => {
     let active = true;
@@ -273,12 +265,7 @@ export default function MapScreen({ route, navigation }) {
     selectedReport?.id,
     selectedReport?.user_id,
   ]);
-  const mapControlsBottom = (
-    mapSheetExpanded
-      ? reportSheetMetrics.sheetHeight
-      : reportSheetMetrics.collapsedVisibleHeight
-  )
-    + BOTTOM_NAV_METRICS.mapControlGap;
+  const mapControlsBottom = bottomNavClearance + BOTTOM_NAV_METRICS.mapControlGap;
   // Leave 20px margin on each side of the main report photo
   const reportHeroWidth = Math.max(screenWidth - 40, 280);
 
@@ -395,8 +382,22 @@ const resetReportWizard = () => {
   setIsTransitioning(false);
 };
 
+const hasAttachedReportPhoto = () => (
+  hasRequiredReportPhoto({
+    photoUris: form.photos,
+    existingPhotoPaths: selectedReport?.photo_paths,
+    isEditing,
+  })
+);
+
 // Determines whether the user can move forward from a given step
 const canAdvanceFromStep = (step = reportStep) => {
+  // Every report needs enough visual context for discovery and cleanup review.
+  // Existing photos satisfy the requirement when a report is being edited.
+  if (step === 1) {
+    return hasAttachedReportPhoto();
+  }
+
   // Litter Types are required.
   // Either a preset selection OR something typed in "Other" counts.
   if (step === 2) {
@@ -837,6 +838,15 @@ const reconcileReportAfterBlockedMutation = async (reportId) => {
 // Final submit from Review screen
 const submitReport = async () => {
   if (isSaving) return;
+
+  if (!hasAttachedReportPhoto()) {
+    Alert.alert(
+      'Photo required',
+      'Add at least one clear photo so volunteers can identify the cleanup site.'
+    );
+    jumpToReportStep(1);
+    return;
+  }
 
   setIsSaving(true);
 
@@ -1306,8 +1316,11 @@ useEffect(() => {
 ]);
 
 
-// Checks if User is Owner of Report
-  const isOwner = canEditOrDeleteReport(selectedReport, currentUser);
+  const userOwnsSelectedReport = canManageReport(selectedReport, currentUser);
+  const canEditOrDeleteSelectedReport = canEditOrDeleteReport(
+    selectedReport,
+    currentUser
+  );
   const cleanupEligible = canOfferCleanup(selectedReport, currentUser);
   const currentUserIsCleaner = isCurrentCleaner(
     selectedCleanupAttempt,
@@ -1381,8 +1394,8 @@ useEffect(() => {
 
     if (!installedRNShare?.shareSingle || !installedRNShare?.Social?.INSTAGRAM_STORIES) {
       Alert.alert(
-        'App update required',
-        'Direct Instagram Stories sharing needs the next Litterbugs development build. Use More sharing options to share with your current app.'
+        'Instagram sharing unavailable',
+        'Direct Instagram Stories sharing isn’t available in this app version. Use More sharing options instead.'
       );
       return;
     }
@@ -1755,7 +1768,7 @@ const renderReportStep = () => {
       return (
         <View style={styles.wizardStep}>
           <Text style={styles.wizardEyebrow}>
-            OPTIONAL · RECOMMENDED
+            REQUIRED
           </Text>
 
           <Text style={styles.wizardTitle}>
@@ -1763,11 +1776,13 @@ const renderReportStep = () => {
           </Text>
 
           <Text style={styles.wizardDescription}>
-            Photos make the site easier to identify and help show
-            what the area looked like before cleanup.
+            Add at least one clear photo so volunteers can identify the
+            site and see what the area looked like before cleanup.
           </Text>
 
-          {isEditing && form.photos.length === 0 ? (
+          {isEditing
+            && form.photos.length === 0
+            && (selectedReport?.photo_paths?.length ?? 0) > 0 ? (
             <View style={styles.existingPhotoNotice}>
               <Ionicons
                 name="images-outline"
@@ -1830,6 +1845,14 @@ const renderReportStep = () => {
                   isSaving ||
                   form.photos.length >= 3
                 }
+                accessibilityRole="button"
+                accessibilityLabel={
+                  form.photos.length >= 3
+                    ? 'Three report photos added'
+                    : isEditing
+                      ? 'Add a replacement report photo'
+                      : 'Add a report photo'
+                }
               >
                 <View style={styles.wizardPhotoIcon}>
                   <Ionicons
@@ -1867,6 +1890,8 @@ const renderReportStep = () => {
                         onPress={() =>
                           removePhoto(index)
                         }
+                        accessibilityRole="button"
+                        accessibilityLabel={`Remove report photo ${index + 1}`}
                       >
                         <Text style={styles.deletePhotoText}>
                           ✕
@@ -1878,6 +1903,12 @@ const renderReportStep = () => {
               )}
             </>
           )}
+
+          {!hasAttachedReportPhoto() ? (
+            <Text style={styles.requiredHint}>
+              Add at least one photo to continue.
+            </Text>
+          ) : null}
         </View>
       );
 
@@ -1939,6 +1970,9 @@ const renderReportStep = () => {
                         };
                       });
                     }}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: selected }}
+                    accessibilityLabel={`${label} litter type`}
                   >
                     <Ionicons
                       name={icon}
@@ -2039,6 +2073,9 @@ const renderReportStep = () => {
                       severity: level,
                     }))
                   }
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: selected }}
+                  accessibilityLabel={`${level} severity`}
                 >
                   <Ionicons
                     name={icon}
@@ -2149,6 +2186,9 @@ const renderReportStep = () => {
                           };
                         });
                       }}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: selected }}
+                      accessibilityLabel={label}
                     >
                       <Ionicons
                         name={icon}
@@ -2438,6 +2478,9 @@ const renderReportStep = () => {
             ]}
             onPress={submitReport}
             disabled={isSaving}
+            accessibilityRole="button"
+            accessibilityLabel="Submit litter report"
+            accessibilityState={{ disabled: isSaving, busy: isSaving }}
           >
             {isSaving ? (
               <ActivityIndicator color="#fff" />
@@ -2619,17 +2662,6 @@ const renderReportStep = () => {
         )}
       </ClusteredMapView>
 
-      <TouchableOpacity
-        style={styles.searchAreaButton}
-        onPress={searchMapRegion}
-        activeOpacity={0.78}
-        accessibilityRole="button"
-        accessibilityLabel="Search this map area"
-        accessibilityHint="Updates the nearby report list for the visible map area"
-      >
-        <Text style={styles.searchAreaButtonText}>Search this area</Text>
-      </TouchableOpacity>
-
         {/* Support Button (Patreon) */}
         {/* <TouchableOpacity
           style={styles.supportButton}
@@ -2668,16 +2700,6 @@ const renderReportStep = () => {
       >
         <Ionicons name="layers-outline" size={32} color={getMapTypeColor()} />
       </TouchableOpacity>
-
-      <MapReportSheet
-        reports={reportsInSearchRegion}
-        origin={searchRegion}
-        onReportPress={openReportDetails}
-        bottomClearance={bottomNavClearance}
-        refreshing={reportsRefreshing}
-        onRefresh={() => refreshReports({ showRefresh: true })}
-        onExpandedChange={setMapSheetExpanded}
-      />
 
 {/* Multi-step Report Form */}
 <Modal
@@ -2724,6 +2746,8 @@ const renderReportStep = () => {
             style={styles.wizardCloseButton}
             onPress={cancelDraft}
             disabled={isSaving}
+            accessibilityRole="button"
+            accessibilityLabel="Close report form"
           >
             <Ionicons
               name="close"
@@ -2779,6 +2803,8 @@ const renderReportStep = () => {
               isTransitioning ||
               isSaving
             }
+            accessibilityRole="button"
+            accessibilityLabel="Previous report step"
           >
             <Ionicons
               name="arrow-back-circle"
@@ -2825,6 +2851,8 @@ const renderReportStep = () => {
               isTransitioning ||
               isSaving
             }
+            accessibilityRole="button"
+            accessibilityLabel="Next report step"
           >
             <Ionicons
               name="arrow-forward-circle"
@@ -3349,7 +3377,7 @@ const renderReportStep = () => {
 
 
           {geminiReviewEnabled
-            && isOwner
+            && userOwnsSelectedReport
             && selectedReport?.cleanup_state === 'available'
             && selectedReport?.renewal_status === 'active'
             && selectedReport?.funding_eligibility !== 'eligible' ? (
@@ -3578,6 +3606,23 @@ const renderReportStep = () => {
             </View>
           )}
 
+          {userOwnsSelectedReport && (
+            selectedReport?.funding_locked_at || !canEditOrDeleteSelectedReport
+          ) ? (
+            <View style={styles.ownerReportLockCard}>
+              <Ionicons name="lock-closed-outline" size={20} color="#5F6E62" />
+              <View style={styles.ownerReportLockCopy}>
+                <Text style={styles.ownerReportLockTitle}>Report history is locked</Text>
+                <Text style={styles.ownerReportLockText}>
+                  {selectedReport?.funding_locked_at
+                    || !['available', 'expired', 'cancelled'].includes(selectedReport?.cleanup_state)
+                    ? 'Funding or cleanup activity has started, so this report can no longer be edited or deleted.'
+                    : 'Expired and cancelled reports stay in your history and can no longer be edited or deleted.'}
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
         </View>
 
       </ScrollView>
@@ -3608,7 +3653,7 @@ const renderReportStep = () => {
 
 
         {/* DELETE — signed-in owner only */}
-        {isOwner && !selectedReport?.funding_locked_at && (
+        {canEditOrDeleteSelectedReport && !selectedReport?.funding_locked_at && (
 
           <TouchableOpacity
             style={[
@@ -3698,7 +3743,7 @@ const renderReportStep = () => {
 
 
         {/* EDIT — signed-in owner only */}
-        {isOwner && !selectedReport?.funding_locked_at && (
+        {canEditOrDeleteSelectedReport && !selectedReport?.funding_locked_at && (
 
           <TouchableOpacity
             style={[
@@ -4350,29 +4395,6 @@ wizardDotActive: {
   severityChipTextSelected: {
     color: '#fff',
     fontWeight: '700',
-  },
-  searchAreaButton: {
-    position: 'absolute',
-    top: 18,
-    alignSelf: 'center',
-    minHeight: 48,
-    paddingHorizontal: 24,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.12)',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.16,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  searchAreaButtonText: {
-    color: '#2F7D32',
-    fontSize: 16,
-    fontWeight: '800',
   },
   centerButton: {
     position: 'absolute',
@@ -5225,6 +5247,36 @@ cleanupReleaseActionText: {
   color: '#A33A32',
   fontSize: 15,
   fontWeight: '800',
+},
+
+ownerReportLockCard: {
+  marginHorizontal: 22,
+  marginBottom: 28,
+  padding: 16,
+  flexDirection: 'row',
+  alignItems: 'flex-start',
+  gap: 12,
+  borderWidth: 1,
+  borderColor: '#D8E0D9',
+  borderRadius: 16,
+  backgroundColor: '#F6F8F6',
+},
+
+ownerReportLockCopy: {
+  flex: 1,
+},
+
+ownerReportLockTitle: {
+  color: '#344638',
+  fontSize: 15,
+  fontWeight: '800',
+},
+
+ownerReportLockText: {
+  marginTop: 4,
+  color: '#5F6E62',
+  fontSize: 13,
+  lineHeight: 19,
 },
 
 
