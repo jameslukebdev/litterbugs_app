@@ -2,15 +2,25 @@
 /* eslint-disable @next/next/no-img-element -- The test mock intentionally renders a native image. */
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { EMPTY_REPORT_DRAFT } from '@litterbugs/report-contract';
 
 import { AuthDialog } from './auth-dialog';
-import { ReportWizard } from './report-wizard';
+import { ReportWizard, validateWebReportPhotos } from './report-wizard';
 
 vi.mock('next/image', () => ({
   default: ({ src, alt }: { src: string; alt: string }) => <img src={src} alt={alt} />,
 }));
+
+beforeAll(() => {
+  Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:report-photo') });
+  Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
+});
+
+afterAll(() => {
+  Reflect.deleteProperty(URL, 'createObjectURL');
+  Reflect.deleteProperty(URL, 'revokeObjectURL');
+});
 
 afterEach(cleanup);
 
@@ -44,7 +54,15 @@ describe('web product boundaries', () => {
     expect(screen.getByText('Step 1 of 6')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
     expect(screen.getByText('Step 2 of 6')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    const photoNext = screen.getByRole('button', { name: /next/i }) as HTMLButtonElement;
+    expect(photoNext.disabled).toBe(true);
+    const picker = document.querySelector<HTMLInputElement>('input[type="file"]');
+    expect(picker).toBeTruthy();
+    fireEvent.change(picker!, {
+      target: { files: [new File(['report'], 'report.jpg', { type: 'image/jpeg' })] },
+    });
+    expect(photoNext.disabled).toBe(false);
+    fireEvent.click(photoNext);
     expect(screen.getByText('Step 3 of 6')).toBeTruthy();
 
     const litterNext = screen.getByRole('button', { name: /next/i }) as HTMLButtonElement;
@@ -62,5 +80,15 @@ describe('web product boundaries', () => {
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
     expect(screen.getByText('Step 6 of 6')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Submit report' })).toBeTruthy();
+  });
+
+  it('accepts only launch-safe report photos', () => {
+    expect(validateWebReportPhotos([])).toMatch(/at least one/i);
+    expect(validateWebReportPhotos([
+      new File(['photo'], 'report.heic', { type: '' }),
+    ])).toBe('');
+    expect(validateWebReportPhotos([
+      new File(['not-a-photo'], 'report.pdf', { type: 'application/pdf' }),
+    ])).toMatch(/JPEG, PNG, WebP, HEIC, or HEIF/i);
   });
 });
