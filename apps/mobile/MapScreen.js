@@ -1394,8 +1394,8 @@ useEffect(() => {
 
     if (!installedRNShare?.shareSingle || !installedRNShare?.Social?.INSTAGRAM_STORIES) {
       Alert.alert(
-        'App update required',
-        'Direct Instagram Stories sharing needs the next Litterbugs development build. Use More sharing options to share with your current app.'
+        'Instagram sharing unavailable',
+        'Direct Instagram Stories sharing isn’t available in this app version. Use More sharing options instead.'
       );
       return;
     }
