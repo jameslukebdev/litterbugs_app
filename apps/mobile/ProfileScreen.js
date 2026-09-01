@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ProfileAvatar from './ProfileAvatar';
@@ -26,6 +27,9 @@ import {
 } from './lib/cleanupProfile';
 import { getBottomNavClearance } from './lib/navigationLayout';
 import { useProfile } from './lib/profile';
+import { getRankAsset } from './lib/rankAssets';
+import { getRankForPoints } from './lib/ranking';
+import { loadRanking } from './lib/rankingService';
 import { isPermanentUser } from './lib/reportAccess';
 import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
@@ -178,6 +182,89 @@ function CompletedCleanupRow({ attempt, onPress, divided }) {
   );
 }
 
+function RankingCard({ ranking, loading, error, onRetry }) {
+  if (!ranking) {
+    const showingLoader = loading || !error;
+
+    return (
+      <TouchableOpacity
+        style={styles.rankCard}
+        onPress={error ? onRetry : undefined}
+        disabled={!error}
+        activeOpacity={0.76}
+        accessibilityRole={error ? 'button' : undefined}
+        accessibilityLabel={error ? 'Retry loading rank' : 'Loading rank'}
+      >
+        <View style={styles.rankLoadingStage}>
+          {showingLoader ? (
+            <ActivityIndicator size="large" color="#B448CF" />
+          ) : (
+            <Ionicons name="cloud-offline-outline" size={42} color="#B448CF" />
+          )}
+        </View>
+        <Text style={styles.rankLoadingTitle}>
+          {showingLoader ? 'Loading your rank…' : 'Rank unavailable'}
+        </Text>
+        {error ? <Text style={styles.rankRetryText}>Tap to try again.</Text> : null}
+      </TouchableOpacity>
+    );
+  }
+
+  const rankDefinition = getRankForPoints(ranking.points);
+  const pointsLabel = `${ranking.points.toLocaleString()} ${ranking.points === 1 ? 'point' : 'points'}`;
+  const remainingLabel = `${ranking.pointsRemaining.toLocaleString()} ${ranking.pointsRemaining === 1 ? 'point' : 'points'}`;
+  const progressPercent = Math.round(ranking.progress * 100);
+
+  return (
+    <View style={styles.rankCard}>
+      <Text style={styles.rankEyebrow}>COMMUNITY RANK</Text>
+      <View style={styles.rankArtworkStage}>
+        <Image
+          source={getRankAsset(rankDefinition)}
+          contentFit="contain"
+          transition={120}
+          style={styles.rankArtwork}
+          accessibilityLabel={`${ranking.rank} rank artwork`}
+        />
+      </View>
+      <Text style={styles.rankName}>{ranking.rank}</Text>
+      <Text style={styles.rankPoints}>{pointsLabel}</Text>
+
+      {ranking.nextRank ? (
+        <View style={styles.rankProgressSection}>
+          <View style={styles.rankProgressHeader}>
+            <Text style={styles.rankProgressTitle}>Progress to {ranking.nextRank}</Text>
+            <Text style={styles.rankProgressPercent}>{progressPercent}%</Text>
+          </View>
+          <View
+            style={styles.rankProgressTrack}
+            accessible
+            accessibilityRole="progressbar"
+            accessibilityLabel={`Progress to ${ranking.nextRank}`}
+            accessibilityValue={{ min: 0, max: 100, now: progressPercent }}
+          >
+            <View style={[styles.rankProgressFill, { width: `${progressPercent}%` }]} />
+          </View>
+          <Text style={styles.rankRemaining}>
+            {remainingLabel} until {ranking.nextRank}
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.highestRankBadge}>
+          <Ionicons name="sparkles" size={20} color="#8B2EA2" />
+          <Text style={styles.highestRankText}>Highest Rank Achieved</Text>
+        </View>
+      )}
+
+      {error ? (
+        <TouchableOpacity onPress={onRetry} activeOpacity={0.72} accessibilityRole="button">
+          <Text style={styles.rankRefreshWarning}>Couldn’t refresh rank · Tap to retry</Text>
+        </TouchableOpacity>
+      ) : null}
+    </View>
+  );
+}
+
 function SignedOutProfile({ navigation, bottomPadding }) {
   return (
     <ScrollView contentContainerStyle={[styles.signedOutContent, { paddingBottom: bottomPadding }]}>
@@ -215,6 +302,9 @@ export default function ProfileScreen({ navigation }) {
   const [cleanupSummary, setCleanupSummary] = useState(emptyCleanupSummary);
   const [cleanupsLoading, setCleanupsLoading] = useState(false);
   const [cleanupsError, setCleanupsError] = useState(false);
+  const [ranking, setRanking] = useState(null);
+  const [rankingLoading, setRankingLoading] = useState(false);
+  const [rankingError, setRankingError] = useState(false);
   const [fundingEnabled, setFundingEnabled] = useState(false);
   const [fundingSchemaReady, setFundingSchemaReady] = useState(false);
   const accountBusy = signingOut || deletingAccount;
@@ -245,8 +335,28 @@ export default function ProfileScreen({ navigation }) {
     }
   }, [permanent, user?.id]);
 
+  const refreshRanking = useCallback(async () => {
+    if (!permanent || !user?.id) {
+      setRanking(null);
+      setRankingError(false);
+      return;
+    }
+
+    try {
+      setRankingLoading(true);
+      setRanking(await loadRanking(user.id));
+      setRankingError(false);
+    } catch (error) {
+      console.log('Profile ranking load error:', error);
+      setRankingError(true);
+    } finally {
+      setRankingLoading(false);
+    }
+  }, [permanent, user?.id]);
+
   useFocusEffect(useCallback(() => {
     refreshCleanups();
+    refreshRanking();
     loadCleanupFeatureFlags()
       .then((flags) => {
         setFundingSchemaReady(true);
@@ -258,7 +368,7 @@ export default function ProfileScreen({ navigation }) {
         setFundingSchemaReady(false);
         setFundingEnabled(false);
       });
-  }, [refreshCleanups]));
+  }, [refreshCleanups, refreshRanking]));
 
   if (!permanent) {
     return <SignedOutProfile navigation={navigation} bottomPadding={bottomPadding} />;
@@ -313,6 +423,7 @@ export default function ProfileScreen({ navigation }) {
       refreshProfile(),
       refreshReports({ showRefresh: true }),
       refreshCleanups(),
+      refreshRanking(),
     ]);
   };
 
@@ -321,7 +432,7 @@ export default function ProfileScreen({ navigation }) {
       style={styles.container}
       contentContainerStyle={{ paddingBottom: bottomPadding }}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={loading || cleanupsLoading} onRefresh={refresh} tintColor="#2F7D32" />}
+      refreshControl={<RefreshControl refreshing={loading || cleanupsLoading || rankingLoading} onRefresh={refresh} tintColor="#2F7D32" />}
     >
       <View style={styles.identity}>
         <ProfileAvatar profile={profile} size={104} />
@@ -345,6 +456,13 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.editButtonText}>Edit profile</Text>
         </TouchableOpacity>
       </View>
+
+      <RankingCard
+        ranking={ranking}
+        loading={rankingLoading}
+        error={rankingError}
+        onRetry={refreshRanking}
+      />
 
       <View style={styles.statCard}>
         <Text style={styles.statValue}>{profile?.reports_created_count ?? 0}</Text>
@@ -482,6 +600,25 @@ const styles = StyleSheet.create({
   joined: { marginTop: 10, color: '#7A8288', fontSize: 13 },
   editButton: { minHeight: 44, marginTop: 13, paddingHorizontal: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#2F7D32', borderRadius: 22, backgroundColor: '#FFFFFF' },
   editButtonText: { color: '#2F7D32', fontSize: 15, fontWeight: '800' },
+  rankCard: { marginHorizontal: 16, marginTop: 24, paddingHorizontal: 22, paddingTop: 20, paddingBottom: 22, alignItems: 'center', borderWidth: 1, borderColor: '#E6C8ED', borderRadius: 24, backgroundColor: '#FFFFFF', shadowColor: '#4C1658', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.1, shadowRadius: 18, elevation: 4 },
+  rankEyebrow: { color: '#8B2EA2', fontSize: 12, lineHeight: 16, fontWeight: '900', letterSpacing: 1.5 },
+  rankArtworkStage: { width: 188, height: 188, marginTop: 14, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderWidth: 3, borderColor: '#EAC8F0', borderRadius: 36, backgroundColor: '#FFFFFF' },
+  rankArtwork: { width: '100%', height: '100%' },
+  rankName: { marginTop: 16, color: '#242029', fontSize: 29, lineHeight: 35, fontWeight: '900', textAlign: 'center' },
+  rankPoints: { marginTop: 4, color: '#2F7D32', fontSize: 20, lineHeight: 26, fontWeight: '900' },
+  rankProgressSection: { width: '100%', marginTop: 20 },
+  rankProgressHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  rankProgressTitle: { flex: 1, color: '#4C4450', fontSize: 14, fontWeight: '800' },
+  rankProgressPercent: { color: '#8B2EA2', fontSize: 14, fontWeight: '900' },
+  rankProgressTrack: { height: 13, marginTop: 9, overflow: 'hidden', borderRadius: 7, backgroundColor: '#EEE4F0' },
+  rankProgressFill: { height: '100%', borderRadius: 7, backgroundColor: '#B448CF' },
+  rankRemaining: { marginTop: 10, color: '#625768', fontSize: 14, lineHeight: 20, fontWeight: '700', textAlign: 'center' },
+  highestRankBadge: { minHeight: 48, marginTop: 19, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 24, backgroundColor: '#F3E2F6' },
+  highestRankText: { color: '#75258A', fontSize: 15, fontWeight: '900' },
+  rankLoadingStage: { width: 112, height: 112, marginTop: 4, alignItems: 'center', justifyContent: 'center', borderRadius: 28, backgroundColor: '#F5E7F7' },
+  rankLoadingTitle: { marginTop: 15, color: '#413946', fontSize: 17, fontWeight: '800' },
+  rankRetryText: { marginTop: 5, color: '#8B2EA2', fontSize: 14, fontWeight: '700' },
+  rankRefreshWarning: { marginTop: 15, color: '#8B2EA2', fontSize: 13, fontWeight: '700', textAlign: 'center' },
   statCard: { margin: 20, marginBottom: 2, paddingVertical: 18, alignItems: 'center', borderRadius: 16, backgroundColor: '#FFFFFF' },
   statValue: { color: '#245F2A', fontSize: 28, fontWeight: '800' },
   statLabel: { marginTop: 3, color: '#687178', fontSize: 14, fontWeight: '700' },

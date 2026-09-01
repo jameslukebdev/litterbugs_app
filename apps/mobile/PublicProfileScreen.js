@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import CompactRankBadge from './CompactRankBadge';
 import ProfileAvatar from './ProfileAvatar';
 import ProfileReportList from './ProfileReportList';
 import { PUBLIC_PROFILE_FIELDS, useProfile } from './lib/profile';
@@ -145,6 +146,7 @@ export default function PublicProfileScreen({ navigation, route }) {
       <View style={styles.identity}>
         <ProfileAvatar profile={profile} size={104} />
         <Text style={styles.name}>{profile.display_name}</Text>
+        <CompactRankBadge userId={profile.id} style={styles.rankBadge} />
         {profile.username ? <Text style={styles.username}>@{profile.username}</Text> : null}
         {profile.location ? (
           <View style={styles.locationRow}>
@@ -184,6 +186,7 @@ const styles = StyleSheet.create({
   headerAction: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   identity: { alignItems: 'center', paddingHorizontal: 24, paddingTop: 30 },
   name: { marginTop: 15, color: '#202428', fontSize: 25, fontWeight: '800', textAlign: 'center' },
+  rankBadge: { marginTop: 9, alignSelf: 'center' },
   username: { marginTop: 4, color: '#687178', fontSize: 15 },
   locationRow: { marginTop: 9, flexDirection: 'row', alignItems: 'center', gap: 4 },
   location: { color: '#59636A', fontSize: 14 },

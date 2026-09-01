@@ -1,5 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import CompactRankBadge from './CompactRankBadge';
 import ProfileAvatar from './ProfileAvatar';
 
 export default function ReporterIdentity({ profile, onPress }) {
@@ -28,6 +29,7 @@ export default function ReporterIdentity({ profile, onPress }) {
       <View style={styles.copy}>
         <Text style={styles.label}>Reported by</Text>
         <Text style={styles.name}>{profile.display_name || 'Profile unavailable'}</Text>
+        <CompactRankBadge userId={profile.id} />
         {profile.username ? <Text style={styles.username}>@{profile.username}</Text> : null}
       </View>
     </TouchableOpacity>

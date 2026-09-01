@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 
+import CompactRankBadge from './CompactRankBadge';
 import ProfileAvatar from './ProfileAvatar';
 import {
   cleanupImpactFacts,
@@ -122,6 +123,7 @@ export default function CompletedCleanupStory({
         <View style={styles.cleanerCopy}>
           <Text style={styles.cleanerLabel}>Cleaned by</Text>
           <Text style={styles.cleanerName}>{cleanerName}</Text>
+          <CompactRankBadge userId={impact.cleaner?.id} />
           {impact.cleaner?.username ? (
             <Text style={styles.cleanerUsername}>@{impact.cleaner.username}</Text>
           ) : null}
