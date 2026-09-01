@@ -239,7 +239,7 @@ export function CleanupAction({
       setBagsOrItems('');
       setDurationMinutes('');
       setMessage(attempt.is_paid
-        ? 'Cleanup submitted. Gemini will check the photos before the 48-hour dispute window starts.'
+        ? 'Cleanup submitted. We’ll review the photos before the 48-hour dispute window starts.'
         : 'Cleanup submitted. The reporter has 48 hours to review it.');
       await refreshAttempt();
       await onChanged?.();

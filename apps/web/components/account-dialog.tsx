@@ -58,12 +58,12 @@ function cleanupStatus(attempt: CleanupAttempt) {
 function cleanupRewardStatus(attempt: CleanupAttempt) {
   if (!attempt.is_paid) return '';
   if (attempt.dispute_status === 'open') return 'Reward paused for dispute review';
-  if (attempt.financial_review_status === 'admin_review') return 'Reward paused for admin review';
+  if (attempt.financial_review_status === 'admin_review') return 'Reward paused for review';
   if (attempt.financial_review_status === 'better_photos') return 'Replacement photos requested';
-  if (attempt.first_paid_admin_status === 'pending') return 'First reward awaiting admin check';
+  if (attempt.first_paid_admin_status === 'pending') return 'First reward is being reviewed';
   if (attempt.financial_review_status === 'passed') return 'Reward in 48-hour dispute window';
-  if (attempt.financial_review_status === 'queued') return 'Photos awaiting automated review';
-  if (attempt.status === 'claimed') return 'Reward frozen for this cleanup';
+  if (attempt.financial_review_status === 'queued') return 'Photos are being reviewed';
+  if (attempt.status === 'claimed') return 'Reward held for this cleanup';
   return attempt.payout_status === 'transferred' ? 'Reward sent' : 'Reward pending';
 }
 
@@ -631,7 +631,7 @@ export function AccountDialog({
       )}
 
       <section className="member-settings">
-        <div className="member-settings-heading"><span className="eyebrow">ACCOUNT</span><h3>Account settings</h3><p>{email || 'Managed by your sign-in provider'}</p></div>
+        <div className="member-settings-heading"><span className="eyebrow">ACCOUNT</span><h3>Account settings</h3><p>{email || 'Email unavailable for this account'}</p></div>
         <div className="member-setting-links">
           <Link href="/terms"><FiFileText aria-hidden /><span>Terms of use</span><FiExternalLink aria-hidden /></Link>
           <Link href="/privacy"><FiShield aria-hidden /><span>Privacy policy</span><FiExternalLink aria-hidden /></Link>

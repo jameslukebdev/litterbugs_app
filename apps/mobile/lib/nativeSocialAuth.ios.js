@@ -13,7 +13,7 @@ const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
 let googleConfigured = false;
 
 const requireConfiguration = (value, provider) => {
-  if (!value) throw new Error(`${provider} sign in is not configured for this build.`);
+  if (!value) throw new Error(`${provider} sign in is temporarily unavailable. Please choose another sign-in method.`);
   return value;
 };
 
@@ -45,7 +45,7 @@ const signInWithGoogle = async () => {
 
   const idToken = response.data.idToken;
   if (!idToken) {
-    throw new Error('Google did not return a sign-in token. Please try again.');
+    throw new Error('Google sign-in didn’t finish. Please try again.');
   }
 
   const { accessToken } = await GoogleSignin.getTokens();

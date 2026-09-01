@@ -157,7 +157,7 @@ export function CleanupReviewAction({
       setMessage('Briefly explain what does not look right.');
       return;
     }
-    if (!window.confirm('Submit this dispute for administrator review? The reward will remain frozen.')) return;
+    if (!window.confirm('Submit this dispute for review? The reward will remain paused.')) return;
     setBusy('dispute');
     const { error } = await createClient().rpc('dispute_paid_cleanup', {
       target_cleanup_id: attempt.id,
@@ -170,7 +170,7 @@ export function CleanupReviewAction({
     }
     setOpen(false);
     setAttemptState({ key: queryKey, data: null });
-    setMessage('Dispute submitted. An administrator will review the evidence.');
+    setMessage('Dispute submitted. A Litterbugs team member will review the photos and details.');
     await onChanged?.();
   }
 
@@ -201,7 +201,7 @@ export function CleanupReviewAction({
           </div>
           {attempt.is_paid ? (
             <div className="cleanup-flow-actions">
-              <span className="cleanup-paid-review-note">Gemini starts the 48-hour window. No response is required.</span>
+              <span className="cleanup-paid-review-note">The 48-hour review window begins after the photos pass review. No response is needed unless you see a problem.</span>
               <button className="danger-button" onClick={disputePaidCleanup} disabled={!paidDisputeAvailable || Boolean(busy)}>{paidDisputeAvailable ? (busy === 'dispute' ? 'Submitting…' : 'Dispute cleanup') : 'Dispute unavailable'}</button>
             </div>
           ) : (

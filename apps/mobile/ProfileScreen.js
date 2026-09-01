@@ -94,17 +94,17 @@ function ActiveCleanupRow({ attempt, onPress, divided }) {
   const paidStatus = attempt.dispute_status === 'open'
     ? 'Reward paused for dispute review'
       : attempt.financial_review_status === 'admin_review'
-      ? 'Reward paused for admin review'
+      ? 'Reward paused for review'
       : attempt.financial_review_status === 'better_photos'
         ? 'Replacement photos requested'
       : attempt.first_paid_admin_status === 'pending'
-        ? 'First reward awaiting admin check'
+        ? 'First reward is being reviewed'
         : attempt.financial_review_status === 'passed'
           ? 'Reward in 48-hour dispute window'
           : attempt.financial_review_status === 'queued'
-            ? 'Photos awaiting automated review'
+            ? 'Photos are being reviewed'
             : attempt.status === 'claimed'
-              ? 'Reward frozen for this cleanup'
+              ? 'Reward held for this cleanup'
               : 'Reward pending';
 
   return (
@@ -575,7 +575,7 @@ export default function ProfileScreen({ navigation }) {
           <View style={styles.emailCopy}>
             <Text style={styles.emailLabel}>Email</Text>
             <Text style={styles.emailText} numberOfLines={1} ellipsizeMode="middle">
-              {user.email || 'Managed by your sign-in provider'}
+              {user.email || 'Email unavailable for this account'}
             </Text>
           </View>
         </View>

@@ -161,10 +161,10 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
       const paidMessage = aiDecision?.status === 'better_photos'
         ? aiDecision.summary
         : aiDecision?.status === 'passed'
-          ? 'Gemini accepted the photos. The reporter now has 48 hours to dispute the cleanup; there is no early approval.'
+          ? 'Your photos passed review. The reporter now has 48 hours to dispute the cleanup; there is no early approval.'
           : aiDecision?.status === 'admin_review'
-            ? 'The payout is paused for a lightweight admin review. No action is needed unless Litterbugs contacts you.'
-            : 'Your photos are queued for Gemini review. The 48-hour dispute window starts only after they pass.';
+            ? 'A Litterbugs team member is reviewing the photos. Your payout is paused, and we’ll contact you if we need anything.'
+            : 'Your photos are being reviewed. The 48-hour dispute window starts only after they pass.';
 
       Alert.alert(
         aiDecision?.status === 'better_photos'

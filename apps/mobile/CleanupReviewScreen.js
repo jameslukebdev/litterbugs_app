@@ -291,7 +291,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
     }
     Alert.alert(
       'Dispute this cleanup?',
-      'The payout will remain frozen while an administrator reviews the photos.',
+      'The payout will remain paused while a Litterbugs team member reviews the photos.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -303,7 +303,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
               const nextAttempt = await disputePaidCleanup(context.attempt.id, reason);
               setContext((current) => ({ ...current, attempt: nextAttempt }));
               setMode('review');
-              Alert.alert('Dispute submitted', 'An administrator will review it. The reward remains frozen.');
+              Alert.alert('Dispute submitted', 'A Litterbugs team member will review it. The reward remains paused.');
             } catch (error) {
               Alert.alert('Couldn’t submit dispute', reviewErrorMessage(error));
             } finally {
@@ -393,7 +393,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
             <Text style={styles.financialReward}>Cleaner receives {formatUsd(context.attempt.reward_amount_cents)}</Text>
             <Text style={styles.financialSummary}>
               {context.attempt.financial_review_summary
-                || 'Gemini is checking photo quality, location consistency, and obvious signs of manipulation.'}
+                || 'We’re checking photo quality, location consistency, and obvious signs that the images were altered.'}
             </Text>
             {context.attempt.review_due_at ? (
               <Text style={styles.disputeDeadline}>
@@ -444,7 +444,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
             {context.attempt.dispute_status === 'open' ? (
               <View style={styles.disputeStatusCard}>
                 <Ionicons name="shield-checkmark-outline" size={22} color="#8A6400" />
-                <Text style={styles.disputeStatusText}>Your dispute is awaiting admin review. The reward is frozen.</Text>
+                <Text style={styles.disputeStatusText}>A Litterbugs team member is reviewing your dispute. The reward remains paused.</Text>
               </View>
             ) : context.attempt.financial_review_status === 'passed' && context.attempt.review_due_at ? (
               <>
@@ -457,7 +457,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
             ) : (
               <View style={styles.disputeStatusCard}>
                 <ActivityIndicator color="#8A6400" />
-                <Text style={styles.disputeStatusText}>Automated or admin verification is still in progress. Payout is paused.</Text>
+                <Text style={styles.disputeStatusText}>The cleanup is still being reviewed. The payout is paused.</Text>
               </View>
             )}
           </View>
@@ -469,7 +469,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
               style={[styles.noteInput, errors.note && styles.inputError]}
               value={note}
               onChangeText={(value) => { setNote(value); setErrors({}); }}
-              placeholder="What should the administrator review?"
+              placeholder="What should our team review?"
               multiline
               maxLength={1000}
               textAlignVertical="top"

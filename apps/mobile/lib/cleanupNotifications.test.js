@@ -35,7 +35,7 @@ describe('cleanup notifications', () => {
     expect(cleanupNotificationPresentation([{ event_type: 'cleanup_contribution_refunded' }]).message)
       .toContain('refunded');
     expect(cleanupNotificationPresentation([{ event_type: 'cleanup_payout_failed' }]).message)
-      .toContain('administrator');
+      .toContain('Litterbugs team member');
     expect(cleanupNotificationPresentation([{ event_type: 'report_renewal_due' }]).message)
       .toContain('7 days');
     expect(cleanupNotificationPresentation([{ event_type: 'report_renewed' }]).message)
