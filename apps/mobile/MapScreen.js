@@ -3377,7 +3377,7 @@ const renderReportStep = () => {
 
 
           {geminiReviewEnabled
-            && isOwner
+            && userOwnsSelectedReport
             && selectedReport?.cleanup_state === 'available'
             && selectedReport?.renewal_status === 'active'
             && selectedReport?.funding_eligibility !== 'eligible' ? (
