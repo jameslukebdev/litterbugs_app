@@ -24,6 +24,7 @@ import {
 } from 'react-native';
 import { Marker } from 'react-native-maps';
 import ClusteredMapView from 'react-native-map-clustering';
+import { useIsFocused } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
@@ -137,6 +138,7 @@ const showPermanentAccountRequired = () => {
 
 // State Functions
 export default function MapScreen({ route, navigation }) {
+  const isMapScreenFocused = useIsFocused();
   const REPORT_STEPS = [
     'Title',
     'Photos',
@@ -544,8 +546,12 @@ const getDistanceMiles = (pointA, pointB) => {
 // Reports can only be created near the user's current GPS location
 const beginReportAtCoordinate = async (coord) => {
   try {
+    if (!navigation.isFocused()) return;
+
     // Check whether location permission is available
     let { status } = await Location.getForegroundPermissionsAsync();
+
+    if (!navigation.isFocused()) return;
 
     if (status !== 'granted') {
       const permissionResult =
@@ -553,6 +559,8 @@ const beginReportAtCoordinate = async (coord) => {
 
       status = permissionResult.status;
     }
+
+    if (!navigation.isFocused()) return;
 
     if (status !== 'granted') {
       Alert.alert(
@@ -568,6 +576,10 @@ const beginReportAtCoordinate = async (coord) => {
     const loc = await Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.Balanced,
     });
+
+    // The location request can outlive the user's visit to the map. Do not
+    // open a form or show an alert over another tab after they navigate away.
+    if (!navigation.isFocused()) return;
 
     const userCoord = {
       latitude: loc.coords.latitude,
@@ -605,6 +617,8 @@ const beginReportAtCoordinate = async (coord) => {
   } catch (error) {
     console.log('Report location verification error:', error);
 
+    if (!navigation.isFocused()) return;
+
     Alert.alert(
       'Unable to Verify Location',
       'Litterbugs could not determine your current location. Please try again.'
@@ -624,10 +638,10 @@ const onMapPress = (e) => {
 };
 
 useEffect(() => {
-  if (!currentUserId || !pendingReportCoordinate) return;
+  if (!isMapScreenFocused || !currentUserId || !pendingReportCoordinate) return;
   const coordinate = consumePendingReportCoordinate();
   if (coordinate) beginReportAtCoordinate(coordinate);
-}, [currentUserId, pendingReportCoordinate]);
+}, [currentUserId, isMapScreenFocused, pendingReportCoordinate]);
 
 useEffect(() => navigation.addListener('focus', () => {
   if (!isPermanentUser(currentUser)) setPendingReportCoordinate(null);

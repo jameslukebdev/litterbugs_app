@@ -91,7 +91,7 @@ export default function ReportsScreen({ navigation }) {
   const helperText = locationState === 'ready'
     ? 'Closest to your current location'
     : locationState === 'loading'
-      ? 'Finding reports near you…'
+      ? 'Newest reports while we check your location…'
       : 'Most recent reports · enable location to sort by distance';
 
   const handleReportPress = (report) => {
