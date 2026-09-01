@@ -72,8 +72,20 @@ insert into public.reports (
 
 do $$
 begin
+  if public.get_rank_points('11111111-aaaa-4111-8111-111111111111') <> 0 then
+    raise exception 'Unvalidated report received rank points';
+  end if;
+end;
+$$;
+
+update public.reports
+set funding_eligibility = 'eligible'
+where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1';
+
+do $$
+begin
   if public.get_rank_points('11111111-aaaa-4111-8111-111111111111') <> 1 then
-    raise exception 'First report did not move rank points from zero to one';
+    raise exception 'First validated report did not move rank points from zero to one';
   end if;
 
   begin
@@ -117,11 +129,15 @@ insert into public.reports (
   'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2',
   '11111111-aaaa-4111-8111-111111111111',
   'Rank report two',
-  35,
+  35.01,
   -82,
   '2026-08-02T10:00:00Z',
   now() + interval '30 days'
 );
+
+update public.reports
+set funding_eligibility = 'eligible'
+where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2';
 
 do $$
 begin
@@ -155,7 +171,7 @@ insert into public.reports (
     'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3',
     '11111111-aaaa-4111-8111-111111111111',
     'Rank cleanup report',
-    35,
+    35.02,
     -82,
     '2026-08-03T10:00:00Z',
     now() + interval '30 days'
@@ -164,11 +180,18 @@ insert into public.reports (
     'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4',
     '33333333-cccc-4333-8333-333333333333',
     'Anonymous report receives no points',
-    35,
+    35.03,
     -82,
     '2026-08-04T10:00:00Z',
     now() + interval '30 days'
   );
+
+update public.reports
+set funding_eligibility = 'eligible'
+where id in (
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3',
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4'
+);
 
 do $$
 declare
@@ -189,6 +212,111 @@ begin
   end if;
   if anonymous_event_count <> 0 then
     raise exception 'Anonymous user received report points';
+  end if;
+end;
+$$;
+
+-- A completed location remains eligible for a fresh report, but a nearby
+-- repeat inside seven days does not farm another rank point.
+update public.reports
+set cleanup_state = 'completed'
+where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3';
+
+insert into public.reports (
+  id, user_id, title, latitude, longitude, created_at, expires_at
+) values (
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa5',
+  '11111111-aaaa-4111-8111-111111111111',
+  'Fresh litter at a recently completed location',
+  35.02,
+  -82,
+  '2026-08-06T10:00:00Z',
+  now() + interval '30 days'
+);
+
+update public.reports
+set funding_eligibility = 'eligible'
+where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa5';
+
+do $$
+begin
+  if (
+    select funding_eligibility
+    from public.reports
+    where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa5'
+  ) <> 'eligible' then
+    raise exception 'Completed location was not eligible for reporting again';
+  end if;
+  if public.get_rank_points('11111111-aaaa-4111-8111-111111111111') <> 3 then
+    raise exception 'Recent repeat location unexpectedly earned rank credit';
+  end if;
+end;
+$$;
+
+insert into public.reports (
+  id, user_id, title, latitude, longitude, created_at, expires_at
+) values (
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa6',
+  '11111111-aaaa-4111-8111-111111111111',
+  'Fresh litter after the repeat-point window',
+  35.02,
+  -82,
+  '2026-08-12T10:00:01Z',
+  now() + interval '30 days'
+);
+
+update public.reports
+set funding_eligibility = 'eligible'
+where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa6';
+
+do $$
+begin
+  if public.get_rank_points('11111111-aaaa-4111-8111-111111111111') <> 4 then
+    raise exception 'Eligible repeat location did not earn credit after seven days';
+  end if;
+end;
+$$;
+
+-- Six otherwise valid reports inside one day can create six records, but only
+-- five may add rank credit.
+insert into public.reports (
+  id, user_id, title, latitude, longitude, created_at, expires_at
+)
+select
+  (
+    '30000000-0000-4000-8000-'
+    || lpad(sequence_number::text, 12, '0')
+  )::uuid,
+  '11111111-aaaa-4111-8111-111111111111',
+  format('Daily cap report %s', sequence_number),
+  37 + sequence_number * 0.01,
+  -82,
+  '2026-08-20T10:00:00Z'::timestamptz
+    + (sequence_number || ' minutes')::interval,
+  now() + interval '30 days'
+from generate_series(1, 6) as capped_reports(sequence_number);
+
+do $$
+declare
+  report_id uuid;
+begin
+  for report_id in
+    select id
+    from public.reports
+    where title like 'Daily cap report %'
+    order by created_at
+  loop
+    update public.reports
+    set funding_eligibility = 'eligible'
+    where id = report_id;
+  end loop;
+end;
+$$;
+
+do $$
+begin
+  if public.get_rank_points('11111111-aaaa-4111-8111-111111111111') <> 9 then
+    raise exception 'Rolling report-point cap did not stop the sixth daily award';
   end if;
 end;
 $$;
@@ -264,12 +392,16 @@ select
   )::uuid,
   '22222222-bbbb-4222-8222-222222222222',
   format('Cleaner rank seed report %s', sequence_number),
-  35,
+  36 + sequence_number * 0.01,
   -82,
-  '2026-07-01T10:00:00Z'::timestamptz
-    + (sequence_number || ' minutes')::interval,
+  '2026-04-01T10:00:00Z'::timestamptz
+    + (sequence_number || ' days')::interval * 8,
   now() + interval '30 days'
 from generate_series(1, 10) as rank_seed(sequence_number);
+
+update public.reports
+set funding_eligibility = 'eligible'
+where user_id = '22222222-bbbb-4222-8222-222222222222';
 
 do $$
 begin
@@ -510,7 +642,7 @@ begin
     when insufficient_privilege then null;
   end;
 
-  if public.get_rank_points('11111111-aaaa-4111-8111-111111111111') <> 3 then
+  if public.get_rank_points('11111111-aaaa-4111-8111-111111111111') <> 9 then
     raise exception 'Aggregate-only rank RPC returned the wrong total';
   end if;
 end;
@@ -559,7 +691,7 @@ set local role anon;
 
 do $$
 begin
-  if public.get_rank_points('11111111-aaaa-4111-8111-111111111111') <> 3 then
+  if public.get_rank_points('11111111-aaaa-4111-8111-111111111111') <> 9 then
     raise exception 'Public aggregate rank total is unavailable';
   end if;
 

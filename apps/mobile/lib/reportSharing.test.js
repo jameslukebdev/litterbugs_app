@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   createNativeReportShareContent,
@@ -26,6 +26,15 @@ const availableReport = {
   expired_at: null,
   cancelled_at: null,
 };
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(now);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('report sharing', () => {
   it('shares only available active reports and completed impact records', () => {
