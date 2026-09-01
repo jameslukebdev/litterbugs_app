@@ -95,6 +95,7 @@ export function MapExperience({
     const { data, error } = await createClient()
       .from('reports')
       .select('*')
+      .eq('is_sample', false)
       .or('status.is.null,status.eq.active')
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false });

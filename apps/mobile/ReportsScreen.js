@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Modal,
   StyleSheet,
@@ -7,11 +7,12 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ReportList from './ReportList';
 import { getBottomNavClearance } from './lib/navigationLayout';
-import { useReports } from './lib/reports';
+import { getDistanceMiles, useReports } from './lib/reports';
 
 const FILTERS = ['All', 'High', 'Medium', 'Low'];
 const FILTER_COLORS = Object.freeze({
@@ -24,21 +25,74 @@ export default function ReportsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState('All');
   const [filterOpen, setFilterOpen] = useState(false);
+  const [locationOrigin, setLocationOrigin] = useState(null);
+  const [locationState, setLocationState] = useState('loading');
   const {
-    reportsInSearchRegion,
-    searchRegion,
+    reports,
     refreshing,
     refreshReports,
     error,
   } = useReports();
 
-  const filteredReports = useMemo(() => {
-    if (filter === 'All') return reportsInSearchRegion;
+  useEffect(() => {
+    let active = true;
 
-    return reportsInSearchRegion.filter(
-      ({ severity }) => String(severity).toLowerCase() === filter.toLowerCase()
-    );
-  }, [filter, reportsInSearchRegion]);
+    const loadLocation = async () => {
+      try {
+        let permission = await Location.getForegroundPermissionsAsync();
+        if (permission.status === 'undetermined') {
+          permission = await Location.requestForegroundPermissionsAsync();
+        }
+        if (permission.status !== 'granted') {
+          if (active) setLocationState('unavailable');
+          return;
+        }
+
+        const location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        if (!active) return;
+        setLocationOrigin({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+        setLocationState('ready');
+      } catch (locationError) {
+        if (active) setLocationState('unavailable');
+      }
+    };
+
+    loadLocation();
+    return () => { active = false; };
+  }, []);
+
+  const nearbyReports = useMemo(() => [...reports].sort((left, right) => {
+    if (locationOrigin) {
+      const leftDistance = getDistanceMiles(locationOrigin, left);
+      const rightDistance = getDistanceMiles(locationOrigin, right);
+      if (leftDistance != null && rightDistance != null && leftDistance !== rightDistance) {
+        return leftDistance - rightDistance;
+      }
+      if (leftDistance != null) return -1;
+      if (rightDistance != null) return 1;
+    }
+
+    return new Date(right.created_at || 0).getTime() - new Date(left.created_at || 0).getTime();
+  }), [locationOrigin, reports]);
+
+  const filteredReports = useMemo(() => {
+    return filter === 'All'
+      ? nearbyReports
+      : nearbyReports.filter(
+        ({ severity }) => String(severity).toLowerCase() === filter.toLowerCase()
+      );
+  }, [filter, nearbyReports]);
+
+  const helperText = locationState === 'ready'
+    ? 'Closest to your current location'
+    : locationState === 'loading'
+      ? 'Finding reports near you…'
+      : 'Most recent reports · enable location to sort by distance';
 
   const handleReportPress = (report) => {
     navigation.navigate('Map', { reportId: report.id });
@@ -51,7 +105,7 @@ export default function ReportsScreen({ navigation }) {
           <Text style={styles.count} accessibilityLiveRegion="polite">
             {filteredReports.length} {filteredReports.length === 1 ? 'report' : 'reports'}
           </Text>
-          <Text style={styles.helper}>Showing the latest map search area</Text>
+          <Text style={styles.helper}>{helperText}</Text>
         </View>
 
         <TouchableOpacity
@@ -76,7 +130,7 @@ export default function ReportsScreen({ navigation }) {
 
       <ReportList
         reports={filteredReports}
-        origin={searchRegion}
+        origin={locationOrigin}
         onReportPress={handleReportPress}
         refreshing={refreshing}
         onRefresh={() => refreshReports({ showRefresh: true })}

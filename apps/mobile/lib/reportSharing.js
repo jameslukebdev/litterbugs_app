@@ -40,9 +40,9 @@ function reportNotes(report) {
 }
 
 export function isReportShareable(report, now = new Date()) {
+  if (report?.is_sample || report?.cancelled_at || report?.expired_at) return false;
   if (report?.cleanup_state === 'completed') return true;
   if (report?.cleanup_state !== 'available') return false;
-  if (report?.cancelled_at || report?.expired_at) return false;
   if (!report?.expires_at) return true;
 
   const expiresAt = Date.parse(report.expires_at);
@@ -62,6 +62,7 @@ export function createReportShareModel({
   const attempt = impact?.attempt ?? null;
 
   return {
+    id: String(report.id),
     state: completed ? 'completed' : 'active',
     title: cleanText(report.title) || 'Litter Report',
     reportUrl: `${PUBLIC_REPORT_BASE_URL}/${encodeURIComponent(report.id)}`,
@@ -97,7 +98,9 @@ export function reportShareImageFilename(model) {
     .replace(/^-+|-+$/g, '')
     .slice(0, 48);
 
-  return `litterbugs-${slug || 'cleanup-report'}.png`;
+  const state = model?.state === 'completed' ? 'completed' : 'active';
+  const id = cleanText(model?.id).replace(/[^a-z0-9-]/gi, '').slice(0, 18) || 'report';
+  return `litterbugs-${slug || 'cleanup-report'}-${state}-${id}.png`;
 }
 
 export async function prepareNativeReportShareImage({

@@ -469,6 +469,35 @@ export default function ProfileScreen({ navigation }) {
         <Text style={styles.statLabel}>Reports submitted</Text>
       </View>
 
+      {fundingEnabled ? (
+        <>
+          <Text style={styles.sectionTitle}>Cleanup rewards & payments</Text>
+          <View style={[styles.card, styles.paymentCard]}>
+            <View style={styles.paymentIntro}>
+              <View style={styles.paymentIcon}>
+                <Ionicons name="wallet-outline" size={25} color="#245F2A" />
+              </View>
+              <View style={styles.paymentIntroCopy}>
+                <Text style={styles.paymentIntroTitle}>Manage cleanup money</Text>
+                <Text style={styles.paymentIntroText}>
+                  Connect Stripe to receive cleanup rewards, or review contributions you have made.
+                </Text>
+              </View>
+            </View>
+            <ActionRow
+              label="Set up cleanup payouts"
+              icon="card-outline"
+              onPress={() => navigation.getParent()?.navigate('PayoutSetup')}
+            />
+            <ActionRow
+              label="Contribution history"
+              icon="receipt-outline"
+              onPress={() => navigation.getParent()?.navigate('ContributionHistory')}
+            />
+          </View>
+        </>
+      ) : null}
+
       <Text style={styles.sectionTitle}>My cleanups</Text>
       <View style={styles.cleanupStatsCard}>
         <CleanupStat value={cleanupSummary.counts.completed} label="Completed" />
@@ -555,20 +584,6 @@ export default function ProfileScreen({ navigation }) {
             onPress={() => navigation.getParent()?.navigate('ExpiredReports')}
           />
         ) : null}
-        {fundingEnabled ? (
-          <>
-            <ActionRow
-              label="Cleanup payout setup"
-              icon="wallet-outline"
-              onPress={() => navigation.getParent()?.navigate('PayoutSetup')}
-            />
-            <ActionRow
-              label="Contribution history"
-              icon="receipt-outline"
-              onPress={() => navigation.getParent()?.navigate('ContributionHistory')}
-            />
-          </>
-        ) : null}
         <ActionRow label="Terms of use" icon="document-text-outline" onPress={() => openLitterbugsLink(TERMS_URL)} />
         <ActionRow label="Privacy policy" icon="shield-checkmark-outline" onPress={() => openLitterbugsLink(PRIVACY_URL)} />
         <ActionRow label="Cleanup and reward policy" icon="leaf-outline" onPress={() => openLitterbugsLink(CLEANUP_POLICY_URL)} />
@@ -625,6 +640,12 @@ const styles = StyleSheet.create({
   sectionTitle: { marginHorizontal: 20, marginTop: 27, marginBottom: 9, color: '#30363B', fontSize: 17, fontWeight: '800' },
   subsectionTitle: { marginHorizontal: 20, marginTop: 16, marginBottom: 8, color: '#596168', fontSize: 14, fontWeight: '800' },
   card: { marginHorizontal: 16, overflow: 'hidden', borderRadius: 16, backgroundColor: '#FFFFFF' },
+  paymentCard: { borderWidth: 1, borderColor: '#CFE2D0' },
+  paymentIntro: { minHeight: 102, padding: 17, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F2F8F2' },
+  paymentIcon: { width: 48, height: 48, marginRight: 13, alignItems: 'center', justifyContent: 'center', borderRadius: 24, backgroundColor: '#DDEEDD' },
+  paymentIntroCopy: { flex: 1 },
+  paymentIntroTitle: { color: '#244027', fontSize: 17, fontWeight: '800' },
+  paymentIntroText: { marginTop: 5, color: '#5F6D61', fontSize: 13, lineHeight: 18 },
   cleanupStatsCard: { marginHorizontal: 16, flexDirection: 'row', overflow: 'hidden', borderRadius: 16, backgroundColor: '#FFFFFF' },
   cleanupStat: { flex: 1, minHeight: 86, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   cleanupStatDivider: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: '#DDE2DE' },

@@ -30,6 +30,7 @@ const expiredReport: Report = {
   funding_hold_reason: null,
   funding_locked_at: '2026-07-02T12:00:00.000Z',
   id: 'expired-report-id',
+  is_sample: false,
   latitude: 35.99,
   litter_types: ['Bottles'],
   longitude: -78.9,

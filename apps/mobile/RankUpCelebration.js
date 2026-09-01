@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   skipText: { color: '#75258A', fontSize: 14, fontWeight: '800' },
   eyebrow: { color: '#79517F', fontSize: 11, lineHeight: 15, fontWeight: '900', letterSpacing: 1.4 },
   rankUpTitle: { marginTop: 5, color: '#3A243F', fontSize: 29, lineHeight: 35, fontWeight: '900' },
-  artworkStage: { marginTop: 17, alignItems: 'center', justifyContent: 'center', overflow: 'visible', borderWidth: 3, borderColor: '#E7B8F0', borderRadius: 38, backgroundColor: '#000000' },
+  artworkStage: { marginTop: 17, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderWidth: 3, borderColor: '#E7B8F0', borderRadius: 38, backgroundColor: '#FFFFFF' },
   glow: { position: 'absolute', backgroundColor: '#D96EEE', shadowColor: '#E48FF5', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.95, shadowRadius: 24 },
   artworkLayer: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
   particle: { position: 'absolute', zIndex: 3 },

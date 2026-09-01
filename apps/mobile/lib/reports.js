@@ -61,45 +61,12 @@ export function getDistanceMiles(pointA, pointB) {
   return earthRadiusMiles * c;
 }
 
-export function isReportInRegion(report, region) {
-  if (!region) return true;
-  if (
-    typeof report?.latitude !== 'number'
-    || typeof report?.longitude !== 'number'
-  ) {
-    return false;
-  }
-
-  const latitudeRadius = Math.max(region.latitudeDelta ?? 0, 0.01) / 2;
-  const longitudeRadius = Math.max(region.longitudeDelta ?? 0, 0.01) / 2;
-
-  return (
-    report.latitude >= region.latitude - latitudeRadius
-    && report.latitude <= region.latitude + latitudeRadius
-    && report.longitude >= region.longitude - longitudeRadius
-    && report.longitude <= region.longitude + longitudeRadius
-  );
-}
-
-function sortReportsByDistance(reports, origin) {
-  return [...reports].sort((left, right) => {
-    const leftDistance = getDistanceMiles(origin, left);
-    const rightDistance = getDistanceMiles(origin, right);
-
-    if (leftDistance == null && rightDistance == null) return 0;
-    if (leftDistance == null) return 1;
-    if (rightDistance == null) return -1;
-    return leftDistance - rightDistance;
-  });
-}
-
 export function ReportsProvider({ children }) {
   const [allReports, setAllReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [mapRegion, setMapRegion] = useState(DEFAULT_MAP_REGION);
-  const [searchRegion, setSearchRegion] = useState(DEFAULT_MAP_REGION);
   const photoUrlCache = useRef(new Map());
   const { blockedIds } = useProfile();
 
@@ -111,6 +78,7 @@ export function ReportsProvider({ children }) {
     const { data, error: reportsError } = await supabase
       .from('reports')
       .select(REPORT_SELECT)
+      .eq('is_sample', false)
       .or(completedImpactReportFilter(nowIso));
 
     if (reportsError) {
@@ -134,6 +102,7 @@ export function ReportsProvider({ children }) {
       .from('reports')
       .select(REPORT_SELECT)
       .eq('id', reportId)
+      .eq('is_sample', false)
       .maybeSingle();
 
     if (reportError) throw reportError;
@@ -163,22 +132,9 @@ export function ReportsProvider({ children }) {
     [reports]
   );
 
-  const reportsInSearchRegion = useMemo(
-    () => sortReportsByDistance(
-      reports.filter((report) => isReportInRegion(report, searchRegion)),
-      searchRegion
-    ),
-    [reports, searchRegion]
-  );
-
   const commitMapRegion = useCallback((nextRegion) => {
     setMapRegion(nextRegion);
-    setSearchRegion(nextRegion);
   }, []);
-
-  const searchMapRegion = useCallback(() => {
-    setSearchRegion(mapRegion);
-  }, [mapRegion]);
 
   const upsertReport = useCallback((nextReport) => {
     if (!nextReport?.id) return;
@@ -221,15 +177,12 @@ export function ReportsProvider({ children }) {
   const value = useMemo(() => ({
     reports,
     markers,
-    reportsInSearchRegion,
     loading,
     refreshing,
     error,
     mapRegion,
-    searchRegion,
     setMapRegion,
     commitMapRegion,
-    searchMapRegion,
     refreshReports,
     getReportById,
     upsertReport,
@@ -247,9 +200,6 @@ export function ReportsProvider({ children }) {
     refreshReports,
     removeReport,
     reports,
-    reportsInSearchRegion,
-    searchMapRegion,
-    searchRegion,
     upsertReport,
   ]);
 

@@ -18,6 +18,7 @@ const report: MappableReport = {
   funding_hold_reason: null,
   funding_locked_at: null,
   id: 'report-id',
+  is_sample: false,
   latitude: 36.21,
   litter_types: ['Bottles'],
   longitude: -81.67,

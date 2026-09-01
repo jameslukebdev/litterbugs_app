@@ -52,7 +52,7 @@ export default function CompactRankBadge({ userId, style }) {
 
 const styles = StyleSheet.create({
   badge: { minHeight: 25, marginTop: 4, paddingRight: 9, flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', borderRadius: 13, backgroundColor: '#F3E2F6' },
-  artworkStage: { width: 25, height: 25, marginRight: 6, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderRadius: 8, backgroundColor: '#000000' },
+  artworkStage: { width: 25, height: 25, marginRight: 6, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderRadius: 8, backgroundColor: '#FFFFFF' },
   artwork: { width: 23, height: 23 },
   name: { color: '#75258A', fontSize: 12, lineHeight: 16, fontWeight: '900' },
 });

@@ -33,6 +33,7 @@ const report: Report = {
   funding_hold_reason: null,
   funding_locked_at: null,
   id: 'bdbd817a-b007-4cc3-8668-c648ae170b4a',
+  is_sample: false,
   latitude: 36.2,
   litter_types: ['Bottles'],
   longitude: -81.7,

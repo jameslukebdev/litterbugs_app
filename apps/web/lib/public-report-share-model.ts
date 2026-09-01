@@ -21,10 +21,10 @@ export type PublicReportShareModel = {
   canonicalUrl: string;
 };
 
-export function isPubliclyShareableReport(report: Pick<Report, 'cleanup_state' | 'cancelled_at' | 'expired_at' | 'expires_at'>, now = new Date()) {
+export function isPubliclyShareableReport(report: Pick<Report, 'cleanup_state' | 'cancelled_at' | 'expired_at' | 'expires_at' | 'is_sample'>, now = new Date()) {
+  if (report.is_sample || report.cancelled_at || report.expired_at) return false;
   if (report.cleanup_state === 'completed') return true;
   if (report.cleanup_state !== 'available') return false;
-  if (report.cancelled_at || report.expired_at) return false;
   if (!report.expires_at) return true;
 
   const expiresAt = Date.parse(report.expires_at);

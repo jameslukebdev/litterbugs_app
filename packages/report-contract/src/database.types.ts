@@ -1121,6 +1121,7 @@ export type Database = {
           funding_hold_reason: string | null
           funding_locked_at: string | null
           id: string
+          is_sample: boolean
           latitude: number | null
           litter_types: string[] | null
           longitude: number | null
@@ -1148,6 +1149,7 @@ export type Database = {
           funding_hold_reason?: string | null
           funding_locked_at?: string | null
           id?: string
+          is_sample?: boolean
           latitude?: number | null
           litter_types?: string[] | null
           longitude?: number | null
@@ -1175,6 +1177,7 @@ export type Database = {
           funding_hold_reason?: string | null
           funding_locked_at?: string | null
           id?: string
+          is_sample?: boolean
           latitude?: number | null
           litter_types?: string[] | null
           longitude?: number | null
