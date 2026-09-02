@@ -10,6 +10,9 @@ It does not authorize App Store or Google Play publication.
   authenticator enrollment before the inbox opens.
 - Administrator actions require a fresh AAL2 session; membership alone cannot
   resolve cases.
+- Public support mail uses `support@litterbugs.app`. Cloudflare Email Routing is
+  enabled and the exact-address rule forwards to the previously verified
+  `grant@burrowbase.com` business inbox. The catch-all remains disabled.
 
 ## Primary ownership
 
@@ -44,3 +47,7 @@ It does not authorize App Store or Google Play publication.
 - Grant's administrator access is ready. Luke's membership is ready, but his
   authenticator enrollment still requires Luke to complete the six-digit-code
   step personally.
+- The branded support address, website policies, store-preparation packet, and
+  SMTP sender now use the same company-facing contact. Cloudflare reports the
+  inbound route as enabled and ready; its three MX records, SPF, and DKIM record
+  are published.
