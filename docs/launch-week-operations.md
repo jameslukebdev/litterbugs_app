@@ -35,9 +35,10 @@ It does not authorize App Store or Google Play publication.
 
 ## Launch-state audit on September 1, 2026
 
-- The inbox contains five clearly labeled `[Preview]` seed cases. They are QA
-  examples, not launch-week customer work, and should not be used to judge the
-  live queue.
+- The six clearly labeled `[Preview]` seed cases and their two synthetic action
+  records were removed on September 1 by migration
+  `20260902034200_remove_cleanup_review_preview_cases.sql`. Zero preview cases
+  remain.
 - One open report-safety case came from a non-litter television-screen photo
   submitted during release testing.
 - Grant's administrator access is ready. Luke's membership is ready, but his
