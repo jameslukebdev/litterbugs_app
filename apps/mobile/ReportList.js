@@ -182,6 +182,7 @@ export default function ReportList({
   origin,
   onReportPress,
   contentContainerStyle,
+  emptyTitle = 'No reports nearby',
   emptyMessage = 'No active reports are visible in this area.',
   refreshing = false,
   onRefresh,
@@ -209,7 +210,7 @@ export default function ReportList({
               importantForAccessibility="no"
             />
           </View>
-          <Text style={styles.emptyTitle}>No reports nearby</Text>
+          <Text style={styles.emptyTitle}>{emptyTitle}</Text>
           <Text style={styles.emptyText}>{emptyMessage}</Text>
         </View>
       )}

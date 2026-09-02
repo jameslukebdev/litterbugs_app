@@ -136,6 +136,22 @@ const showPermanentAccountRequired = () => {
   );
 };
 
+const showLocationSettingsAlert = (message) => {
+  Alert.alert(
+    'Location Access Needed',
+    `${message} You can turn location access on in Settings.`,
+    [
+      { text: 'Not now', style: 'cancel' },
+      {
+        text: 'Open Settings',
+        onPress: () => Linking.openSettings().catch((error) => {
+          console.log('Open location settings error:', error);
+        }),
+      },
+    ]
+  );
+};
+
 // State Functions
 export default function MapScreen({ route, navigation }) {
   const isMapScreenFocused = useIsFocused();
@@ -549,22 +565,18 @@ const beginReportAtCoordinate = async (coord) => {
     if (!navigation.isFocused()) return;
 
     // Check whether location permission is available
-    let { status } = await Location.getForegroundPermissionsAsync();
+    let permission = await Location.getForegroundPermissionsAsync();
 
     if (!navigation.isFocused()) return;
 
-    if (status !== 'granted') {
-      const permissionResult =
-        await Location.requestForegroundPermissionsAsync();
-
-      status = permissionResult.status;
+    if (permission.status !== 'granted' && permission.canAskAgain !== false) {
+      permission = await Location.requestForegroundPermissionsAsync();
     }
 
     if (!navigation.isFocused()) return;
 
-    if (status !== 'granted') {
-      Alert.alert(
-        'Location Required',
+    if (permission.status !== 'granted') {
+      showLocationSettingsAlert(
         'Litterbugs needs your location to verify that a report is near you.'
       );
       return;
@@ -883,16 +895,14 @@ const submitReport = async () => {
 // User Can Center Back to their Location on Map
   const centerOnUser = async () => {
     try {
-      let { status } = await Location.getForegroundPermissionsAsync();
+      let permission = await Location.getForegroundPermissionsAsync();
 
-      if (status !== 'granted') {
-        const permissionResult = await Location.requestForegroundPermissionsAsync();
-        status = permissionResult.status;
+      if (permission.status !== 'granted' && permission.canAskAgain !== false) {
+        permission = await Location.requestForegroundPermissionsAsync();
       }
 
-      if (status !== 'granted') {
-        Alert.alert(
-          'Location Required',
+      if (permission.status !== 'granted') {
+        showLocationSettingsAlert(
           'Allow location access to center the map on your position.'
         );
         return;

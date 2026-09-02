@@ -10,6 +10,7 @@ import {
   Alert,
   Image,
   Linking,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -73,7 +74,12 @@ function HomeScreen({ navigation }) {
   const logoSize = Math.min(width * 0.5, height * 0.45, 360);
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.homeContent, { minHeight: height }]}
+      alwaysBounceVertical={false}
+      showsVerticalScrollIndicator={false}
+    >
       <Image
         source={require('./assets/LB_Logo_PNG.png')}
         style={[styles.logo, { width: logoSize, height: logoSize }]}
@@ -100,7 +106,7 @@ function HomeScreen({ navigation }) {
         <Text style={styles.secondaryButtonText}>Sign in or create account</Text>
       </TouchableOpacity>
       <StatusBar hidden={false} />
-    </View>
+    </ScrollView>
   );
 }
 
@@ -115,7 +121,12 @@ function LoadingScreen({ label = 'Loading Litterbugs' }) {
 function ProfileLoadError() {
   const { refreshProfile } = useProfile();
   return (
-    <View style={styles.errorState}>
+    <ScrollView
+      style={styles.errorStateScroll}
+      contentContainerStyle={styles.errorState}
+      alwaysBounceVertical={false}
+      showsVerticalScrollIndicator={false}
+    >
       <Text style={styles.errorTitle}>We couldn’t load your profile</Text>
       <Text style={styles.errorText}>Check your connection and try again.</Text>
       <TouchableOpacity style={styles.primaryButton} onPress={refreshProfile}>
@@ -124,7 +135,7 @@ function ProfileLoadError() {
       <TouchableOpacity style={styles.textButton} onPress={signOut}>
         <Text style={styles.textButtonText}>Sign out</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -422,8 +433,12 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    backgroundColor: '#F5F6F7',
+  },
+  homeContent: {
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 32,
     paddingHorizontal: 24,
     backgroundColor: '#F5F6F7',
   },
@@ -442,6 +457,8 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 390,
     minHeight: 54,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 14,
@@ -453,6 +470,8 @@ const styles = StyleSheet.create({
     maxWidth: 390,
     minHeight: 52,
     marginTop: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -462,10 +481,15 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: { color: '#2E7D32', fontSize: 16, fontWeight: '800' },
   errorState: {
-    flex: 1,
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 32,
     paddingHorizontal: 28,
+    backgroundColor: '#F5F6F7',
+  },
+  errorStateScroll: {
+    flex: 1,
     backgroundColor: '#F5F6F7',
   },
   errorTitle: { color: '#252A2E', fontSize: 22, fontWeight: '800', textAlign: 'center' },

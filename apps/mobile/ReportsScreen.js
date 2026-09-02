@@ -126,7 +126,7 @@ export default function ReportsScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error && reports.length > 0 ? <Text style={styles.error}>{error}</Text> : null}
 
       <ReportList
         reports={filteredReports}
@@ -134,6 +134,10 @@ export default function ReportsScreen({ navigation }) {
         onReportPress={handleReportPress}
         refreshing={refreshing}
         onRefresh={() => refreshReports({ showRefresh: true })}
+        emptyTitle={error ? 'Reports unavailable' : 'No reports nearby'}
+        emptyMessage={error
+          ? 'Check your connection, then pull down to try again.'
+          : 'No active reports are visible in this area.'}
         contentContainerStyle={{
           paddingBottom: getBottomNavClearance(insets.bottom) + 12,
         }}
