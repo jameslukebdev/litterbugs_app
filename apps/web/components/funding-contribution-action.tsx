@@ -165,7 +165,7 @@ export function FundingContributionAction({
           ) : stripe ? (
             <Elements stripe={stripe} options={{
               clientSecret: intent.paymentIntentClientSecret,
-              appearance: { variables: { colorPrimary: '#ff4742', borderRadius: '10px' } },
+              appearance: { variables: { colorPrimary: '#2f7d32', borderRadius: '12px' } },
             }}>
               <ContributionPaymentForm intent={intent} reportId={report.id} onComplete={complete} />
             </Elements>

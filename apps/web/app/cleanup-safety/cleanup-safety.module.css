@@ -1,10 +1,10 @@
 .notice {
   margin: 0;
   padding: 15px 17px;
-  border-left: 4px solid var(--brand-red);
+  border-left: 4px solid var(--green);
   border-radius: 0 10px 10px 0;
   color: #334039;
-  background: var(--brand-red-soft);
+  background: var(--green-soft);
 }
 
 .versions {

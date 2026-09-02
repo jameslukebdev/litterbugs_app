@@ -247,7 +247,7 @@
 .mapLink:focus-visible,
 .primaryAction:focus-visible,
 .secondaryAction:focus-visible {
-  outline: 3px solid rgba(255, 69, 64, .24);
+  outline: 3px solid rgba(47, 125, 50, .24);
   outline-offset: 2px;
 }
 

@@ -21,7 +21,7 @@
 }
 
 .footer a {
-  color: #ff4742;
+  color: var(--green);
   font-weight: 800;
   text-decoration: none;
 }
@@ -32,7 +32,7 @@
 
 .eyebrow {
   display: block;
-  color: #ff4742;
+  color: var(--green);
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.12em;

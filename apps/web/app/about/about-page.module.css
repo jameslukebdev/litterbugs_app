@@ -1,6 +1,6 @@
 .page {
   color: #172019;
-  background: #fff;
+  background: var(--soft);
 }
 
 .hero {
@@ -8,7 +8,7 @@
   min-height: 560px;
   align-items: center;
   padding: 86px 32px 94px;
-  background: #e9f2e9;
+  background: var(--brand-green-tint);
 }
 
 .heroInner,
@@ -27,7 +27,7 @@
 .eyebrow,
 .roleLabel {
   margin: 0 0 18px;
-  color: #c92f2b;
+  color: var(--green-dark);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -76,14 +76,14 @@
 }
 
 .primaryAction {
-  border-color: #d43732;
+  border-color: var(--green);
   color: #fff;
-  background: #d43732;
+  background: var(--green);
 }
 
 .primaryAction:hover {
-  border-color: #b42318;
-  background: #b42318;
+  border-color: var(--green-dark);
+  background: var(--green-dark);
   transform: translateY(-1px);
 }
 
@@ -157,7 +157,7 @@
 .stepNumber {
   display: block;
   margin-bottom: 64px;
-  color: #c92f2b;
+  color: var(--green-dark);
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -194,7 +194,7 @@
 
 .trust .eyebrow,
 .finalCta .eyebrow {
-  color: #ff746e;
+  color: #a9d7ab;
 }
 
 .trust h2 {
@@ -232,7 +232,7 @@
 }
 
 .roles {
-  background: #f6f4ef;
+  background: var(--soft);
 }
 
 .roleGrid {
@@ -269,7 +269,7 @@
 .finalCta {
   padding: 84px 32px 28px;
   color: #fff;
-  background: #d43732;
+  background: var(--green);
 }
 
 .finalCtaInner {
@@ -318,7 +318,7 @@
 .fundingNote a:focus-visible,
 .contact a:focus-visible {
   border-radius: 6px;
-  outline: 3px solid rgba(255, 105, 98, 0.4);
+  outline: 3px solid rgba(47, 125, 50, 0.34);
   outline-offset: 4px;
 }
 
@@ -377,7 +377,7 @@
   .hero {
     min-height: auto;
     padding: 64px 20px 70px;
-    background: #e9f2e9;
+    background: var(--brand-green-tint);
   }
 
   .hero h1 {

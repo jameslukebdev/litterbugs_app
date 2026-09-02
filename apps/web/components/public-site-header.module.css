@@ -5,7 +5,7 @@
   height: 80px;
   border-bottom: 1px solid #d8ddd9;
   background: #fff;
-  font-family: var(--font-inter), Inter, "Adjusted Arial", Tahoma, Geneva, sans-serif;
+  font-family: inherit;
 }
 
 .inner {
@@ -47,7 +47,7 @@
 .navLink:hover,
 .menuTrigger:hover,
 .menuTrigger[aria-expanded='true'] {
-  color: #d43732;
+  color: var(--green-dark);
 }
 
 .navLink[aria-current='page']::after,
@@ -58,7 +58,7 @@
   left: 0;
   height: 2px;
   border-radius: 999px;
-  background: var(--brand-red);
+  background: var(--green);
   content: '';
 }
 
@@ -78,7 +78,7 @@
 .brandLink:focus-visible,
 .menuTrigger:focus-visible {
   border-radius: 5px;
-  outline: 3px solid rgba(255, 69, 64, 0.28);
+  outline: 3px solid rgba(47, 125, 50, 0.28);
   outline-offset: 4px;
 }
 
@@ -122,7 +122,7 @@
 }
 
 .policyLink:hover {
-  background: var(--brand-red-soft);
+  background: var(--green-soft);
 }
 
 .policyLink[aria-current='page'] {
@@ -185,11 +185,11 @@
   .desktopNav { display: none; }
   .mobileMenu { grid-column: 1; justify-self: start; display: block; position: static; }
   .mobileMenu .menuTrigger { min-height: 44px; color: #111116; font-size: 16px; font-weight: 600; }
-  .mobileMenu .menuTrigger[aria-expanded='true'] { color: #d43732; }
+  .mobileMenu .menuTrigger[aria-expanded='true'] { color: var(--green-dark); }
   .mobilePopover { position: absolute; top: 65px; right: 14px; left: 14px; max-height: calc(100dvh - 80px); overflow-y: auto; padding: 10px; }
   .mobilePrimaryLinks { display: grid; grid-template-columns: 1fr; gap: 2px; padding: 0 0 9px; margin-bottom: 2px; border-bottom: 1px solid #e4e8e4; }
   .mobilePrimaryLinks .navLink { min-height: 44px; padding: 7px 10px; border-radius: 8px; }
-  .mobilePrimaryLinks .navLink[aria-current='page'] { color: var(--brand-red-dark); background: var(--brand-red-soft); }
+  .mobilePrimaryLinks .navLink[aria-current='page'] { color: var(--green-dark); background: var(--green-soft); }
   .mobilePrimaryLinks .navLink[aria-current='page']::after { display: none; }
   .brandLink { height: 64px; }
   .brandLink img { height: 50px; max-width: 138px; }
