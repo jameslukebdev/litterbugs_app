@@ -42,5 +42,25 @@ submission was made.
   is present.
 
 The ad hoc IPA is for the registered physical device and cannot be installed in
-the iOS simulator. A separate production-environment simulator build is tracked
-as `add15b91-4218-4e56-8ab4-33b3c567eaf5` for simulator UI smoke testing.
+the iOS simulator.
+
+## iOS production-environment simulator build
+
+- EAS build: `add15b91-4218-4e56-8ab4-33b3c567eaf5`
+- Status: finished
+- Profile/distribution: `production-simulator` / internal
+- Bundle/version: `com.litterbugs.app` / `1.0.0`
+- Archive SHA-256:
+  `2d285b953f0d3d43d75886ca105c861934c42a080f8d0d96fa762811c1e389ad`
+- Installed and cold-launched successfully on an iPhone 17 Pro simulator.
+- The signed-out welcome screen rendered with the current brand, readable text,
+  intact safe-area spacing, and both primary actions visible without clipping.
+- No application crash, unhandled JavaScript error, or fatal React Native error
+  occurred during the smoke check.
+- This simulator-only artifact is not a store submission candidate. The signed
+  internal IPA above remains the production-identity iOS release candidate.
+
+The current Android candidate received the broader navigation smoke because it
+can be exercised completely without a physical Apple device. The iOS simulator
+was shut down immediately after the focused check to avoid unnecessary memory
+pressure.
