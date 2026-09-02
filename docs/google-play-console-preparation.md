@@ -112,6 +112,12 @@ IARC ratings before release. Official reference: [Content rating requirements](h
 
 ## Store-listing assets
 
+The minimum safe listing set is now prepared in
+`release-assets/google-play/`: one 1024 by 500 feature graphic and four 1080 by
+2340 portrait screenshots captured from the current Android internal release
+candidate. The accompanying README records alt text, source build, and privacy
+constraints. Nothing has been uploaded to Play Console.
+
 Capture assets from the final Android release candidate, with no sample or
 private user data visible.
 
@@ -149,7 +155,7 @@ Official reference: [Google Play preview asset requirements](https://support.goo
 - [ ] App-access review credentials prepared if Google cannot review public
   functionality without signing in.
 - [ ] Store description and support contact match the live website.
-- [ ] Final Android screenshots and feature graphic captured.
+- [x] Final Android minimum screenshot set and feature graphic captured locally.
 - [ ] Internal testing track configured only when the owner authorizes a Play
   Console upload.
 - [ ] Internal-track install verifies Maps, Google/Facebook/email sign-in,
