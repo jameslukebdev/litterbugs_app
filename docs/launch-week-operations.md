@@ -51,3 +51,22 @@ It does not authorize App Store or Google Play publication.
   SMTP sender now use the same company-facing contact. Cloudflare reports the
   inbound route as enabled and ready; its three MX records, SPF, and DKIM record
   are published.
+
+## Recheck on September 2, 2026
+
+- Payments and Gemini financial review remain enabled.
+- Both one-minute maintenance schedules are active; the latest 20 recorded runs
+  all succeeded.
+- Every deployed Edge Function is active.
+- Grant remains an active administrator with verified TOTP. Luke remains an
+  active administrator without a verified TOTP factor, so Luke still must
+  complete enrollment personally.
+- Zero `[Preview]` cases remain. The one priority-1 report-safety case remains
+  open for a human funding-eligibility decision.
+- The production Auth password minimum is now eight characters, matching the
+  mobile and website forms. Leaked-password protection requires a Supabase Pro
+  upgrade and remains deferred under the prior launch decision.
+- The production Supabase project is healthy but currently belongs to the Free
+  organization named `jameslukebdev's Org`. Permanent company ownership and any
+  Pro upgrade should be decided deliberately; no billing or project transfer
+  was performed during this audit.

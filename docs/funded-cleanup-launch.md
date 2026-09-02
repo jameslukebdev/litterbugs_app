@@ -238,8 +238,12 @@ policies, function guards, and existing authorization tests:
   anonymous users can read only the accepted final submission after completion.
 - The `pg_net` extension is used by the authenticated maintenance schedule and
   is not a client authorization path.
-- Leaked-password protection is the remaining actionable advisor warning. It
-  requires Supabase Pro and is deferred as a post-launch hardening item.
+- The production Auth minimum was raised from six to eight characters on
+  September 2, matching both clients' existing validation. Leaked-password
+  protection remains the only actionable Auth advisor warning; the Management
+  API rejected activation with HTTP 402 because the production organization is
+  on Supabase Free. Grant previously deferred a Pro upgrade as post-launch
+  hardening rather than a release gate.
 
 ## Required configuration
 
