@@ -15,13 +15,17 @@ import {
 
 WebBrowser.maybeCompleteAuthSession();
 
+const FACEBOOK_LOGIN_ENABLED = process.env.EXPO_PUBLIC_FACEBOOK_LOGIN_ENABLED === 'true';
+
 const PROVIDERS = [
   {
     id: 'google',
     label: 'Continue with Google',
     image: require('./assets/google-g-logo.png'),
   },
-  { id: 'facebook', label: 'Continue with Facebook', icon: 'logo-facebook' },
+  ...(FACEBOOK_LOGIN_ENABLED
+    ? [{ id: 'facebook', label: 'Continue with Facebook', icon: 'logo-facebook' }]
+    : []),
 ];
 
 const cleanAddress = (value) => value.trim().toLowerCase();

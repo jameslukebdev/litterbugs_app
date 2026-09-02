@@ -39,6 +39,13 @@ This proves that the live bridge and provider handoff are wired to the intended
 production identifiers. It does not replace a first-time login by an invited
 tester or Meta's business/provider review.
 
+Public releases keep Facebook sign-in hidden until those account-holder gates
+pass. Internal mobile profiles set `EXPO_PUBLIC_FACEBOOK_LOGIN_ENABLED=true` so
+an invited tester can complete provider review. The public Android profile and
+the live website default the corresponding flag to false; Google and email
+remain available. After approval, enable the public flags and produce a new
+store candidate before release.
+
 ## Account-holder checklist
 
 - [ ] Sign in to the Litterbugs-owned Meta business portfolio.

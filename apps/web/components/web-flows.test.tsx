@@ -25,20 +25,26 @@ afterAll(() => {
 afterEach(cleanup);
 
 describe('web product boundaries', () => {
-  it('offers the current real-account providers and no Apple or Guest mode', () => {
+  it('keeps unapproved Facebook login out of the public release', () => {
     render(<AuthDialog onClose={vi.fn()} />);
 
     expect(screen.queryByRole('button', { name: /continue with apple/i })).toBeNull();
     expect(screen.getByRole('button', { name: /continue with google/i })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /continue with facebook/i })).toBeNull();
+    expect(screen.getByRole('button', { name: /^sign in$/i })).toBeTruthy();
+    expect(screen.getByLabelText('Email address')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /guest/i })).toBeNull();
+  });
+
+  it('keeps Facebook available for invited internal provider testing', () => {
+    render(<AuthDialog onClose={vi.fn()} facebookLoginEnabled />);
+
     expect(screen.getByRole('button', { name: /continue with facebook/i })).toBeTruthy();
     const facebookMark = document.querySelector('.facebook-provider-icon');
     expect(facebookMark?.getAttribute('viewBox')).toBe('0 0 512 512');
     expect(facebookMark?.querySelector('path')?.getAttribute('fill')).toBe('currentColor');
     expect(facebookMark?.querySelector('path')?.getAttribute('fill-rule')).toBe('evenodd');
     expect(document.querySelector('.facebook-provider-icon-frame')).toBeNull();
-    expect(screen.getByRole('button', { name: /^sign in$/i })).toBeTruthy();
-    expect(screen.getByLabelText('Email address')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /guest/i })).toBeNull();
   });
 
   it('keeps the mobile app’s exact six report steps and required gates', () => {
