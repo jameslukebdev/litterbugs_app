@@ -5,6 +5,25 @@ from `a2aec0e131d3ebff9ca6f10e44280fc7e6cb1c1a`, whose additional changes are
 limited to website design and documentation. No App Store or Google Play
 submission was made.
 
+## Android signed store-ready bundle
+
+- EAS build: `ddca736d-60f2-4260-95fe-e502b80747c9`
+- Status: finished
+- Profile/distribution: `production` / store artifact, not uploaded
+- Package/version: `com.litterbugs.app` / `1.0.0` (`9`)
+- Minimum/target SDK: 24 / 36
+- AAB SHA-256:
+  `c158225d62c8d897b01a8de07244f2682e868cdb3bc792d8af70aa0ff9e39ba2`
+- Upload-certificate SHA-1:
+  `79:E6:D2:50:03:74:57:40:DE:02:EB:F9:8F:3A:20:1D:58:85:73:4C`
+- Upload-certificate SHA-256:
+  `2C:0A:31:66:6C:8C:7A:35:04:E9:0D:8E:B8:15:01:67:30:75:40:11:2F:96:90:51:B0:36:AB:13:C1:B0:AA:0E`
+- `bundletool validate` passed and `jarsigner` verified every signed entry.
+- The packaged manifest is not debuggable. `RECORD_AUDIO` and
+  `SYSTEM_ALERT_WINDOW` are absent.
+- The bundle is ready for the future first Play upload after the permanent
+  account owner is chosen. It has not been uploaded or submitted.
+
 ## Android production-identity internal build
 
 - EAS build: `d47cd626-9889-48cd-9560-bec5aba735fa`

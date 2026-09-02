@@ -11,7 +11,7 @@ before saving it in Google Play Console.
 | App name | Litterbugs: Community Cleanup |
 | Package | `com.litterbugs.app` |
 | Version | `1.0.0` |
-| Current build number | `8` |
+| Current build number | `9` |
 | Category | Social, with community cleanup and local discovery |
 | Company | Burrow Base LLC |
 | Privacy policy | `https://litterbugs.app/privacy` |
@@ -145,7 +145,7 @@ Official reference: [Google Play preview asset requirements](https://support.goo
 - [ ] Permanent Play owner and backup administrator chosen.
 - [ ] Production app created once with `com.litterbugs.app`.
 - [ ] Developer identity, contact details, and recovery methods verified.
-- [ ] Current signed production AAB inspected; no store upload yet.
+- [x] Current signed production AAB inspected; no store upload made.
 - [ ] Play App Signing enabled after upload.
 - [ ] Play signing SHA-1 added to the production Maps key.
 - [ ] Privacy and deletion URLs saved and rechecked.
@@ -187,3 +187,25 @@ The only public report visible during this clean-device pass was the August 18
 `Litter Report`. Its database row has no photo paths, so the list correctly
 showed the neutral no-photo state. The report remains untouched until its owner
 confirms whether it was test data.
+
+## Current signed Android bundle
+
+The production AAB finished on September 2, 2026. It is locally inspected and
+ready for the future first Play upload, but it was not uploaded or submitted.
+
+- EAS build: `ddca736d-60f2-4260-95fe-e502b80747c9`
+- Source commit: `cac81c75202f4eaa0eb004480743fe4259dc3d55`
+  (mobile runtime code is unchanged from `1add2e0`)
+- Package/version: `com.litterbugs.app` / `1.0.0` (`9`)
+- Minimum/target SDK: 24 / 36
+- AAB SHA-256:
+  `c158225d62c8d897b01a8de07244f2682e868cdb3bc792d8af70aa0ff9e39ba2`
+- Upload-certificate SHA-1:
+  `79:E6:D2:50:03:74:57:40:DE:02:EB:F9:8F:3A:20:1D:58:85:73:4C`
+- `bundletool validate` passed; `jarsigner` verified the signed bundle entries.
+- The bundle is not debuggable, and its packaged manifest excludes
+  `RECORD_AUDIO` and `SYSTEM_ALERT_WINDOW`.
+
+The Play App Signing certificate remains unavailable until the authorized
+account holder makes the first Play upload and enables Play App Signing. That
+certificate is different from the upload certificate recorded above.
