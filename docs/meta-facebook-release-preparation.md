@@ -24,6 +24,21 @@ Facebook uses Supabase's secure browser OAuth flow. No Meta client token or App
 Secret is packaged in the mobile app. The App Secret remains in Meta and the
 Supabase provider settings.
 
+## Production transport check
+
+On September 1, 2026, the production bridge returned its no-store, framed-deny
+handoff page for an allowlisted Supabase authorization target. The Supabase
+authorization endpoint then returned a 302 to Facebook with:
+
+- Meta application ID `1477683410862512`;
+- callback `https://mvaygkflcjswtwchflrk.supabase.co/auth/v1/callback`;
+- app return target `litterbugs://auth/callback`;
+- requested `email` scope (Facebook includes the public profile baseline).
+
+This proves that the live bridge and provider handoff are wired to the intended
+production identifiers. It does not replace a first-time login by an invited
+tester or Meta's business/provider review.
+
 ## Account-holder checklist
 
 - [ ] Sign in to the Litterbugs-owned Meta business portfolio.
