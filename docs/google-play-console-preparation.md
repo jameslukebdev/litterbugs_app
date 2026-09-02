@@ -11,7 +11,7 @@ before saving it in Google Play Console.
 | App name | Litterbugs: Community Cleanup |
 | Package | `com.litterbugs.app` |
 | Version | `1.0.0` |
-| Current build number | `9` |
+| Current build number | `10` |
 | Category | Social, with community cleanup and local discovery |
 | Company | Burrow Base LLC |
 | Privacy policy | `https://litterbugs.app/privacy` |
@@ -193,18 +193,20 @@ confirms whether it was test data.
 The production AAB finished on September 2, 2026. It is locally inspected and
 ready for the future first Play upload, but it was not uploaded or submitted.
 
-- EAS build: `ddca736d-60f2-4260-95fe-e502b80747c9`
-- Source commit: `cac81c75202f4eaa0eb004480743fe4259dc3d55`
-  (mobile runtime code is unchanged from `1add2e0`)
-- Package/version: `com.litterbugs.app` / `1.0.0` (`9`)
+- EAS build: `fff735c5-7a15-4854-962f-ee0b6e7e0a4a`
+- Source commit: `9cc1440d944d06cde16f035f3423338f5921198f`
+- Package/version: `com.litterbugs.app` / `1.0.0` (`10`)
 - Minimum/target SDK: 24 / 36
 - AAB SHA-256:
-  `c158225d62c8d897b01a8de07244f2682e868cdb3bc792d8af70aa0ff9e39ba2`
+  `b7a50a8c92156a9e6f28785053c50c43295a395786b53f0dd7172d8ccad7dbf5`
 - Upload-certificate SHA-1:
   `79:E6:D2:50:03:74:57:40:DE:02:EB:F9:8F:3A:20:1D:58:85:73:4C`
 - `bundletool validate` passed; `jarsigner` verified the signed bundle entries.
 - The bundle is not debuggable, and its packaged manifest excludes
   `RECORD_AUDIO` and `SYSTEM_ALERT_WINDOW`.
+- Facebook sign-in is excluded from this public bundle until Meta provider
+  review is complete; Google and email remain available. Invited Facebook
+  testing continues through the signed internal profiles.
 
 The Play App Signing certificate remains unavailable until the authorized
 account holder makes the first Play upload and enables Play App Signing. That

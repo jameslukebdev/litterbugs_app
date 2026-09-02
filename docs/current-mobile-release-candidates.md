@@ -1,19 +1,20 @@
 # Current Mobile Release Candidates
 
-These builds contain the mobile fixes from commit `1add2e0`. They were produced
-from `a2aec0e131d3ebff9ca6f10e44280fc7e6cb1c1a`, whose additional changes are
-limited to website design and documentation. No App Store or Google Play
-submission was made.
+These builds contain the completed mobile fixes. The public Android bundle was
+refreshed from `9cc1440d944d06cde16f035f3423338f5921198f`, which keeps Facebook
+sign-in out of public releases until Meta review is complete. Internal mobile
+profiles retain Facebook for invited-provider testing. No App Store or Google
+Play submission was made.
 
 ## Android signed store-ready bundle
 
-- EAS build: `ddca736d-60f2-4260-95fe-e502b80747c9`
+- EAS build: `fff735c5-7a15-4854-962f-ee0b6e7e0a4a`
 - Status: finished
 - Profile/distribution: `production` / store artifact, not uploaded
-- Package/version: `com.litterbugs.app` / `1.0.0` (`9`)
+- Package/version: `com.litterbugs.app` / `1.0.0` (`10`)
 - Minimum/target SDK: 24 / 36
 - AAB SHA-256:
-  `c158225d62c8d897b01a8de07244f2682e868cdb3bc792d8af70aa0ff9e39ba2`
+  `b7a50a8c92156a9e6f28785053c50c43295a395786b53f0dd7172d8ccad7dbf5`
 - Upload-certificate SHA-1:
   `79:E6:D2:50:03:74:57:40:DE:02:EB:F9:8F:3A:20:1D:58:85:73:4C`
 - Upload-certificate SHA-256:
@@ -21,6 +22,8 @@ submission was made.
 - `bundletool validate` passed and `jarsigner` verified every signed entry.
 - The packaged manifest is not debuggable. `RECORD_AUDIO` and
   `SYSTEM_ALERT_WINDOW` are absent.
+- The compiled public bundle contains neither the Facebook provider label nor
+  its release-flag name. Google and email remain the public sign-in choices.
 - The bundle is ready for the future first Play upload after the permanent
   account owner is chosen. It has not been uploaded or submitted.
 
