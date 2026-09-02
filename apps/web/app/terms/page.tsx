@@ -126,7 +126,7 @@ export default function TermsPage() {
         {
           title: 'Governing law and disputes with Litterbugs',
           content: <>
-            <p>Before filing a claim against Burrow Base LLC, you agree to send a written description to <strong>jameslukeb.evj@gmail.com</strong> and allow 30 days for an informal resolution, unless immediate relief is legally necessary. These terms are governed by North Carolina law, without regard to conflict-of-law rules.</p>
+            <p>Before filing a claim against Burrow Base LLC, you agree to send a written description to <strong>support@litterbugs.app</strong> and allow 30 days for an informal resolution, unless immediate relief is legally necessary. These terms are governed by North Carolina law, without regard to conflict-of-law rules.</p>
             <p>Unless applicable law requires otherwise, disputes between you and Burrow Base LLC will be brought individually in the state or federal courts having jurisdiction in North Carolina. Nothing in these terms limits rights that cannot legally be waived, including eligible small-claims or consumer-protection rights.</p>
           </>,
         },
@@ -136,7 +136,7 @@ export default function TermsPage() {
             <p>We may update these terms as the service changes. Material changes will be posted with a new effective date and, when appropriate, require notice or renewed acceptance. Changes to fees, refunds, disputes, or reward calculations apply prospectively and do not retroactively change a completed contribution or reduce a frozen reward, except where required by law or needed to correct an error.</p>
             <p>A click, tap, checkbox, or button press intended to show agreement may serve as your electronic signature. Litterbugs may preserve the accepted version, timestamp, account ID, report or transaction ID, and limited device or network facts reasonably needed to document acceptance, prevent fraud, and maintain an audit record. If Litterbugs discontinues a funded feature, it will resolve active pools, pending refunds, and pending rewards under the Cleanup Policy, provider requirements, and applicable law.</p>
             <p>If a provision is unenforceable, the remaining provisions continue to the extent permitted by law. A failure to enforce a provision is not a waiver. These terms and the policies they incorporate are the entire agreement about the service and may not be assigned by you without our consent.</p>
-            <p>Contact Burrow Base LLC at <strong>jameslukeb.evj@gmail.com</strong>.</p>
+            <p>Contact Burrow Base LLC at <strong>support@litterbugs.app</strong>.</p>
           </>,
         },
       ]}

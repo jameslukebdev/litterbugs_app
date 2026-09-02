@@ -35,4 +35,4 @@ This information is used solely to operate the app and improve community cleanup
 You may browse public reports and profiles without signing in. A permanent account is required to submit reports. You can delete your account or request data removal at any time.
 
 If you have questions about privacy, please contact:
-jameslukeb.evj@gmail.com
+support@litterbugs.app

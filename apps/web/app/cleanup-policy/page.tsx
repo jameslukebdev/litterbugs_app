@@ -102,7 +102,7 @@ export default function CleanupPolicyPage() {
         },
         {
           title: 'Questions',
-          content: <p>For a cleanup, contribution, reward, dispute, or refund question, contact Burrow Base LLC at <strong>jameslukeb.evj@gmail.com</strong>.</p>,
+          content: <p>For a cleanup, contribution, reward, dispute, or refund question, contact Burrow Base LLC at <strong>support@litterbugs.app</strong>.</p>,
         },
       ]}
     />

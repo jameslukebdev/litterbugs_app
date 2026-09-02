@@ -10,7 +10,7 @@ this context are the source of truth.
   company. Use North Carolina and United States law as the recommended drafting
   assumption, but clearly flag governing-law, venue, arbitration, class-action
   waiver, liability-cap, and business-address choices for founder confirmation.
-- Public contact currently used in the drafts: `jameslukeb.evj@gmail.com`.
+- Public contact used in the final product: `support@litterbugs.app`.
 - Litterbugs is a community litter-reporting and real-world cleanup marketplace.
   It is not a charity, donation platform, employer, waste-removal contractor,
   emergency service, environmental regulator, or hazardous-material service.

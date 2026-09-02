@@ -85,7 +85,7 @@ export default function PrivacyPage() {
           title: 'Your choices and privacy requests',
           content: <>
             <p>You may review or update profile information in the app, control device permissions and notifications, block other accounts, and request account deletion from Profile. Account deletion removes the account and identity-linked uploaded photos where permitted. Community report facts may remain after de-identification, and financial, dispute, safety, fraud, tax, and legal records may be retained when required.</p>
-            <p>Depending on where you live and whether an applicable law&apos;s thresholds are met, you may have rights to request access, correction, deletion, or a copy of certain personal information, or to appeal a denied request. Litterbugs does not sell personal information or process it for targeted advertising. Send requests to <strong>jameslukeb.evj@gmail.com</strong>. We may verify your identity before acting.</p>
+            <p>Depending on where you live and whether an applicable law&apos;s thresholds are met, you may have rights to request access, correction, deletion, or a copy of certain personal information, or to appeal a denied request. Litterbugs does not sell personal information or process it for targeted advertising. Send requests to <strong>support@litterbugs.app</strong>. We may verify your identity before acting.</p>
           </>,
         },
         {
@@ -103,7 +103,7 @@ export default function PrivacyPage() {
           title: 'Changes and contact',
           content: <>
             <p>We may update this policy as Litterbugs or applicable requirements change. We will post the updated policy with a new effective date and provide additional notice when appropriate.</p>
-            <p>For privacy questions or requests, contact Burrow Base LLC at <strong>jameslukeb.evj@gmail.com</strong>.</p>
+            <p>For privacy questions or requests, contact Burrow Base LLC at <strong>support@litterbugs.app</strong>.</p>
           </>,
         },
       ]}
