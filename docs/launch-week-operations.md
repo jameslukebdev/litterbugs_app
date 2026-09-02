@@ -55,8 +55,9 @@ It does not authorize App Store or Google Play publication.
 ## Recheck on September 2, 2026
 
 - Payments and Gemini financial review remain enabled.
-- Both one-minute maintenance schedules are active; the latest 20 recorded runs
-  all succeeded.
+- Both one-minute maintenance schedules are active. A fresh 30-minute sample
+  contained 30 of 30 successful financial runs and 30 of 30 successful
+  workflow runs.
 - Every deployed Edge Function is active.
 - Grant remains an active administrator with verified TOTP. Luke remains an
   active administrator without a verified TOTP factor, so Luke still must
@@ -70,3 +71,16 @@ It does not authorize App Store or Google Play publication.
   organization named `jameslukebdev's Org`. Permanent company ownership and any
   Pro upgrade should be decided deliberately; no billing or project transfer
   was performed during this audit.
+- Production records contain one completed live $5 contribution plus its 50-cent
+  platform fee, one transferred $5 cleaner reward, 22 processed live Stripe
+  events, and zero open refund- or payout-failure cases. The completed payment,
+  financial review, first-paid approval, and transfer all agree in the ledger.
+- Gemini has five passed checks, no queued or running checks, and no open
+  Gemini-review case. The latest failed report-photo check correctly routed to
+  the still-open priority-1 report-safety case instead of making a funding
+  decision automatically.
+- The Stripe connector available to Codex is logged into a separate account
+  named `Review Hiker` and cannot retrieve the known Litterbugs production
+  charge. It must not be used for Litterbugs launch support until an account
+  holder reconnects it to the production Stripe platform. This does not change
+  the verified production ledger and webhook evidence above.
