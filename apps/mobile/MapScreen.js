@@ -87,6 +87,7 @@ import {
   reportPhotoPickerOptions,
 } from './lib/reportPhotoSelection';
 import { uploadSecureMedia } from './lib/secureMediaUpload';
+import { preparePhotoForSafetyScan } from './lib/photoSafetyPreparation';
 import {
   reportWithdrawalErrorMessage,
   withdrawOwnReport,
@@ -1130,8 +1131,9 @@ const submitReport = async () => {
       try {
         for (let i = 0; i < photoUris.length; i++) {
           const uri = photoUris[i];
+          const preparedPhoto = await preparePhotoForSafetyScan(uri);
           // Read local file as base64
-          const base64 = await FileSystem.readAsStringAsync(uri, {
+          const base64 = await FileSystem.readAsStringAsync(preparedPhoto.uri, {
             encoding: 'base64',
           });
 
@@ -1142,11 +1144,12 @@ const submitReport = async () => {
           }
 
           // File naming
-          const candidateExt = (uri.split('?')[0].split('.').pop() || 'jpg').toLowerCase();
+          const candidateExt = (preparedPhoto.uri.split('?')[0].split('.').pop() || 'jpg').toLowerCase();
           const fileExt = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'].includes(candidateExt)
             ? candidateExt
             : 'jpg';
-          const mimeType = `image/${['jpg', 'jpeg'].includes(fileExt) ? 'jpeg' : fileExt}`;
+          const mimeType = preparedPhoto.mimeType
+            ?? `image/${['jpg', 'jpeg'].includes(fileExt) ? 'jpeg' : fileExt}`;
           const filePath = await uploadSecureMedia({
             userId,
             kind: 'report',

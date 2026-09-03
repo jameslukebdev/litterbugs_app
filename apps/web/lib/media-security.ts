@@ -7,6 +7,7 @@ import sharp from 'sharp';
 
 export const MEDIA_QUARANTINE_BUCKET = 'media_quarantine';
 export const MEDIA_MAX_SOURCE_BYTES = 5 * 1024 * 1024;
+export const MEDIA_SCANNER_MAX_SOURCE_BYTES = 3_500_000;
 export const MEDIA_MAX_OUTPUT_BYTES = 5 * 1024 * 1024;
 export const MEDIA_MAX_DIMENSION = 12_000;
 export const MEDIA_MAX_PIXELS = 40_000_000;
@@ -202,8 +203,15 @@ export async function requireCleanMalwareScan(
       'Photo safety checking is temporarily unavailable. Please try again shortly.',
     );
   }
-  if (!ALLOWED_MIME_TYPES.has(contentType) || bytes.length < 1 || bytes.length > MEDIA_MAX_SOURCE_BYTES) {
+  if (!ALLOWED_MIME_TYPES.has(contentType) || bytes.length < 1) {
     throw new MediaSecurityError('MEDIA_INVALID_IMAGE', 415, 'Choose a supported image and try again.');
+  }
+  if (bytes.length > MEDIA_SCANNER_MAX_SOURCE_BYTES) {
+    throw new MediaSecurityError(
+      'MEDIA_SCAN_TOO_LARGE',
+      413,
+      'This photo is too large for safety checking. Choose a smaller image.',
+    );
   }
 
   const controller = new AbortController();

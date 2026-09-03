@@ -4,6 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { supabase } from './supabase';
 import { uploadSecureMedia } from './secureMediaUpload';
+import { preparePhotoForSafetyScan } from './photoSafetyPreparation';
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 const ALLOWED_AVATAR_MIME_TYPES = new Set([
@@ -91,18 +92,19 @@ export const showAvatarSourceMenu = ({ onAsset, onRemove, canRemove }) => {
 export const uploadProfileAvatar = async (userId, asset) => {
   if (!userId || !asset?.uri) throw new Error('No profile photo was selected.');
 
-  const info = await FileSystem.getInfoAsync(asset.uri, { size: true });
-  const size = asset.fileSize ?? info.size ?? 0;
+  const preparedPhoto = await preparePhotoForSafetyScan(asset.uri);
+  const info = await FileSystem.getInfoAsync(preparedPhoto.uri, { size: true });
+  const size = preparedPhoto.byteSize ?? info.size ?? 0;
   if (size > MAX_AVATAR_BYTES) {
     throw new Error('Choose an image smaller than 5 MB.');
   }
 
-  const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+  const base64 = await FileSystem.readAsStringAsync(preparedPhoto.uri, {
     encoding: 'base64',
   });
   const bytes = base64ToUint8Array(base64);
-  const detectedContentType = asset.mimeType
-    || (Platform.OS === 'ios' && /\.hei[cf]$/i.test(asset.uri)
+  const detectedContentType = preparedPhoto.mimeType || asset.mimeType
+    || (Platform.OS === 'ios' && /\.hei[cf]$/i.test(preparedPhoto.uri)
       ? 'image/heic'
       : 'image/jpeg');
   const contentType = detectedContentType === 'image/jpg'

@@ -5,6 +5,7 @@ vi.mock('server-only', () => ({}));
 
 import {
   CLOUDMERSIVE_SCAN_ENDPOINT,
+  MEDIA_SCANNER_MAX_SOURCE_BYTES,
   MediaSecurityError,
   detectImageMimeType,
   requireCleanMalwareScan,
@@ -120,6 +121,16 @@ describe('malware scan gate', () => {
       env: enabledEnv,
       fetchImpl: vi.fn(async () => new Response(null, { status: 500 })) as typeof fetch,
     })).rejects.toMatchObject({ code: 'MEDIA_SCAN_UNAVAILABLE' });
+  });
+
+  it('rejects a file above the active scanner plan boundary before calling the provider', async () => {
+    const fetchImpl = vi.fn();
+    await expect(requireCleanMalwareScan(
+      new Uint8Array(MEDIA_SCANNER_MAX_SOURCE_BYTES + 1),
+      'image/jpeg',
+      { env: enabledEnv, fetchImpl: fetchImpl as typeof fetch },
+    )).rejects.toMatchObject({ code: 'MEDIA_SCAN_TOO_LARGE', status: 413 });
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 
   it('aborts one slow provider attempt and fails closed', async () => {

@@ -6,6 +6,7 @@ import type { Database } from '@litterbugs/report-contract';
 import { getSupabaseEnv } from '@/lib/env';
 import {
   MEDIA_MAX_SOURCE_BYTES,
+  MEDIA_SCANNER_MAX_SOURCE_BYTES,
   MEDIA_QUARANTINE_BUCKET,
   MediaSecurityError,
   requireCleanMalwareScan,
@@ -167,6 +168,16 @@ export async function POST(request: Request) {
     }
     const sourceBytes = new Uint8Array(await source.arrayBuffer());
     const sourceMimeType = source.type.toLowerCase();
+
+    if (sourceBytes.length > MEDIA_SCANNER_MAX_SOURCE_BYTES) {
+      await admin.storage.from(MEDIA_QUARANTINE_BUCKET).remove([mediaRequest.quarantinePath]);
+      await finishAttempt('too_large');
+      return errorResponse(
+        413,
+        'MEDIA_SCAN_TOO_LARGE',
+        'This photo is too large for safety checking. Choose a smaller image.',
+      );
+    }
 
     try {
       await requireCleanMalwareScan(sourceBytes, sourceMimeType);

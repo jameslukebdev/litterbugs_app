@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { supabase } from './supabase';
 import { requestGeminiReview } from './funding';
 import { uploadSecureMedia } from './secureMediaUpload';
+import { preparePhotoForSafetyScan } from './photoSafetyPreparation';
 
 export const MAX_CLEANUP_PHOTO_BYTES = 5 * 1024 * 1024;
 
@@ -123,8 +124,14 @@ export async function uploadCleanupSubmission({
   try {
     for (let index = 0; index < photos.length; index += 1) {
       const asset = photos[index];
-      const { mimeType } = await cleanupPhotoMetadata(asset);
-      const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+      const preparedPhoto = await preparePhotoForSafetyScan(asset.uri);
+      const { mimeType: originalMimeType } = await cleanupPhotoMetadata({
+        ...asset,
+        uri: preparedPhoto.uri,
+        fileSize: preparedPhoto.byteSize,
+      });
+      const mimeType = preparedPhoto.mimeType ?? originalMimeType;
+      const base64 = await FileSystem.readAsStringAsync(preparedPhoto.uri, {
         encoding: 'base64',
       });
       const path = await uploadSecureMedia({
