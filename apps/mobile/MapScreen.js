@@ -89,6 +89,11 @@ import {
 import { uploadSecureMedia } from './lib/secureMediaUpload';
 import { preparePhotoForSafetyScan } from './lib/photoSafetyPreparation';
 import {
+  findResponsiveUserLocation,
+  mapRegionsAreEquivalent,
+  userLocationRegion,
+} from './lib/responsiveLocation';
+import {
   reportWithdrawalErrorMessage,
   withdrawOwnReport,
 } from './lib/reportWithdrawal';
@@ -199,6 +204,10 @@ export default function MapScreen({ route, navigation }) {
   const [editingReportId, setEditingReportId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveStage, setSaveStage] = useState('Saving report…');
+  const [photoPreparationStatus, setPhotoPreparationStatus] = useState(null);
+  const [isCentering, setIsCentering] = useState(false);
+  const mapViewRef = useRef(null);
   const [photosLoading, setPhotosLoading] = useState(false);
   const [cleanupWaiver, setCleanupWaiver] = useState(null);
   const [cleanupWaiverOpen, setCleanupWaiverOpen] = useState(false);
@@ -736,6 +745,7 @@ const reconcileReportAfterBlockedMutation = async (reportId) => {
   
     try {
       const userId = permanentUserId(currentUser);
+      setSaveStage(isEditing ? 'Saving report changes…' : 'Saving report details…');
 
       if (!userId) {
         setDraftCoord(null);
@@ -775,7 +785,8 @@ const reconcileReportAfterBlockedMutation = async (reportId) => {
           replacementPhotoPaths = await uploadReportPhotos(
             form.photos,
             editingReportId,
-            userId
+            userId,
+            setSaveStage,
           );
         }
         const previousPhotoPaths = selectedReport?.photo_paths ?? [];
@@ -856,7 +867,8 @@ const reconcileReportAfterBlockedMutation = async (reportId) => {
           photoPaths = await uploadReportPhotos(
             form.photos,
             data.id,
-            userId
+            userId,
+            setSaveStage,
           );
         } catch (photoError) {
           const { error: rollbackError } = await supabase
@@ -870,6 +882,7 @@ const reconcileReportAfterBlockedMutation = async (reportId) => {
       }
   
       if (photoPaths.length > 0) {
+        setSaveStage('Finalizing your report…');
         const { error: photoUpdateError } = await supabase
           .from('reports')
           .update({ photo_paths: photoPaths })
@@ -889,23 +902,17 @@ const reconcileReportAfterBlockedMutation = async (reportId) => {
   
         data.photo_paths = photoPaths;
         if (geminiReviewEnabled) {
-          if (wantsStartingFunding) {
-            try {
-              await requestGeminiReview({ reportId: data.id });
-            } catch (reviewError) {
-              console.log('Report funding photo review deferred:', reviewError);
-            }
-          } else {
-            requestGeminiReview({ reportId: data.id }).catch((reviewError) => {
-              console.log('Report funding photo review deferred:', reviewError);
-            });
-          }
+          requestGeminiReview({ reportId: data.id }).catch((reviewError) => {
+            console.log('Report funding photo review deferred:', reviewError);
+          });
         }
       }
   
       upsertReport({ ...data, reporter: data.reporter || currentProfile });
       if (isEditing) await refreshReports({ showRefresh: false });
-      else await refreshProfile();
+      else refreshProfile().catch((profileError) => {
+        console.log('Profile refresh deferred after report save:', profileError);
+      });
   
       setDraftCoord(null);
       setFormOpen(false);
@@ -965,11 +972,13 @@ const submitReport = async () => {
   }
 
   setIsSaving(true);
+  setSaveStage('Saving report details…');
 
   try {
     await saveReport();
   } finally {
     setIsSaving(false);
+    setSaveStage('Saving report…');
   }
 };
 
@@ -986,6 +995,8 @@ const submitReport = async () => {
 
 // User Can Center Back to their Location on Map
   const centerOnUser = async () => {
+    if (isCentering) return;
+    setIsCentering(true);
     try {
       let permission = await Location.getForegroundPermissionsAsync();
 
@@ -1001,16 +1012,19 @@ const submitReport = async () => {
       }
 
       setLocationPermissionGranted(true);
-      const loc = await Location.getCurrentPositionAsync({});
-      commitMapRegion({
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude,
-        latitudeDelta: 0.02,
-        longitudeDelta: 0.02,
+      await findResponsiveUserLocation({
+        locationApi: Location,
+        onPosition: (position) => {
+          const nextRegion = userLocationRegion(position);
+          mapViewRef.current?.animateToRegion?.(nextRegion, 240);
+          commitMapRegion(nextRegion);
+        },
       });
     } catch (e) {
       console.log('Center error:', e);
-      Alert.alert('Location Error', 'Unable to find your location.');
+      Alert.alert('Location Error', e?.message || 'Unable to find your location.');
+    } finally {
+      setIsCentering(false);
     }
   };
 
@@ -1092,8 +1106,9 @@ const submitReport = async () => {
 
   // Photo upload function
   const pickImage = async () => {
-    if (isSaving) return;
+    if (isSaving || photoPreparationStatus) return;
     console.log('pickImage RUNNING');
+    setPhotoPreparationStatus('Opening your photo library…');
 
     try {
       // PHPicker grants access only to the photos the user selects, so requesting
@@ -1105,14 +1120,24 @@ const submitReport = async () => {
       console.log('RAW picker result:', result);
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
+        const preparedAssets = [];
+        for (let index = 0; index < result.assets.length; index += 1) {
+          setPhotoPreparationStatus(
+            `Preparing photo ${index + 1} of ${result.assets.length}…`,
+          );
+          const prepared = await preparePhotoForSafetyScan(result.assets[index].uri);
+          preparedAssets.push({ uri: prepared.uri });
+        }
         setForm((prev) => ({
           ...prev,
-          photos: mergeReportPhotoUris(prev.photos, result.assets),
+          photos: mergeReportPhotoUris(prev.photos, preparedAssets),
         }));
       }
     } catch (e) {
       console.log('Image picker error:', e);
-      Alert.alert('Error', 'Unable to open the photo library right now.');
+      Alert.alert('Couldn’t add photos', e?.message || 'Unable to open the photo library right now.');
+    } finally {
+      setPhotoPreparationStatus(null);
     }
   };
 
@@ -1125,12 +1150,13 @@ const submitReport = async () => {
     };
 
     // Upload Photos to Supabase, helper function
-    const uploadReportPhotos = async (photoUris, reportId, userId) => {
+    const uploadReportPhotos = async (photoUris, reportId, userId, onProgress = () => {}) => {
       const uploadedPaths = [];
 
       try {
         for (let i = 0; i < photoUris.length; i++) {
           const uri = photoUris[i];
+          onProgress(`Preparing photo ${i + 1} of ${photoUris.length}…`);
           const preparedPhoto = await preparePhotoForSafetyScan(uri);
           // Read local file as base64
           const base64 = await FileSystem.readAsStringAsync(preparedPhoto.uri, {
@@ -1150,6 +1176,7 @@ const submitReport = async () => {
             : 'jpg';
           const mimeType = preparedPhoto.mimeType
             ?? `image/${['jpg', 'jpeg'].includes(fileExt) ? 'jpeg' : fileExt}`;
+          onProgress(`Safety-checking photo ${i + 1} of ${photoUris.length}…`);
           const filePath = await uploadSecureMedia({
             userId,
             kind: 'report',
@@ -2727,12 +2754,16 @@ const renderReportStep = () => {
   return (
     <View style={styles.container}>
         <ClusteredMapView
+          ref={mapViewRef}
           style={StyleSheet.absoluteFill}
           initialRegion={region}
           region={region}
           onRegionChangeComplete={(nextRegion) => {
-            setRegion(nextRegion);
-            refreshReportMarkerSnapshots();
+            setRegion((currentRegion) => {
+              if (mapRegionsAreEquivalent(currentRegion, nextRegion)) return currentRegion;
+              refreshReportMarkerSnapshots();
+              return nextRegion;
+            });
           }}
           maxZoom={14}
           radius={20}
@@ -2894,10 +2925,16 @@ const renderReportStep = () => {
           },
         ]}
         onPress={centerOnUser}
+        disabled={isCentering}
         accessibilityRole="button"
-        accessibilityLabel="Center map on your location"
+        accessibilityLabel={isCentering ? 'Finding your location' : 'Center map on your location'}
+        accessibilityState={{ busy: isCentering, disabled: isCentering }}
       >
-        <Ionicons name="navigate-outline" size={32} color="#42A5F5" />
+        {isCentering ? (
+          <ActivityIndicator color="#1976D2" />
+        ) : (
+          <Ionicons name="navigate-outline" size={32} color="#42A5F5" />
+        )}
       </TouchableOpacity>
 
       {/* Map Type Toggle Button */}
@@ -2928,11 +2965,26 @@ const renderReportStep = () => {
     >
       <View style={styles.wizardSheet}>
 
-        {isSaving && (
+        {(isSaving || photoPreparationStatus) && (
           <View
             style={styles.savingOverlay}
             pointerEvents="auto"
-          />
+            accessibilityRole="progressbar"
+            accessibilityLabel={photoPreparationStatus || saveStage}
+          >
+            <View style={styles.savingCard}>
+              <ActivityIndicator size="large" color="#2F7D32" />
+              <Text style={styles.savingTitle}>
+                {photoPreparationStatus ? 'Getting your photos ready' : 'Creating your report'}
+              </Text>
+              <Text style={styles.savingStatus}>{photoPreparationStatus || saveStage}</Text>
+              <Text style={styles.savingHelper}>
+                {photoPreparationStatus
+                  ? 'Large photos may take a few moments to prepare.'
+                  : 'Keep Litterbugs open while the photos are checked for safety.'}
+              </Text>
+            </View>
+          </View>
         )}
 
 
@@ -2956,7 +3008,7 @@ const renderReportStep = () => {
           <TouchableOpacity
             style={styles.wizardCloseButton}
             onPress={cancelDraft}
-            disabled={isSaving}
+            disabled={isSaving || Boolean(photoPreparationStatus)}
             accessibilityRole="button"
             accessibilityLabel="Close report form"
           >
@@ -5778,8 +5830,48 @@ reportClusterStatusCount: {
 },
 savingOverlay: {
   ...StyleSheet.absoluteFillObject,
-  backgroundColor: 'rgba(255,255,255,0.55)',
+  backgroundColor: 'rgba(255,255,255,0.88)',
   zIndex: 999,
+  alignItems: 'center',
+  justifyContent: 'center',
+  paddingHorizontal: 28,
+},
+savingCard: {
+  width: '100%',
+  maxWidth: 360,
+  alignItems: 'center',
+  paddingHorizontal: 24,
+  paddingVertical: 28,
+  borderRadius: 22,
+  backgroundColor: '#FFFFFF',
+  borderWidth: 1,
+  borderColor: '#D9E8DA',
+  shadowColor: '#000000',
+  shadowOpacity: 0.12,
+  shadowRadius: 12,
+  shadowOffset: { width: 0, height: 5 },
+  elevation: 7,
+},
+savingTitle: {
+  marginTop: 17,
+  color: '#202428',
+  fontSize: 21,
+  fontWeight: '900',
+  textAlign: 'center',
+},
+savingStatus: {
+  marginTop: 9,
+  color: '#2F7D32',
+  fontSize: 16,
+  fontWeight: '800',
+  textAlign: 'center',
+},
+savingHelper: {
+  marginTop: 8,
+  color: '#667078',
+  fontSize: 14,
+  lineHeight: 20,
+  textAlign: 'center',
 },
 
 

@@ -5,7 +5,9 @@ import * as ImageManipulator from 'expo-image-manipulator';
 // margin below that boundary so multipart framing and provider rounding never
 // turn an otherwise valid photo into a delayed scanner rejection.
 export const MEDIA_SCANNER_TARGET_BYTES = 3_250_000;
-export const MEDIA_CLIENT_MAX_SOURCE_BYTES = 5 * 1024 * 1024;
+// Modern phone photos can be larger than the upload limit before compression.
+// Permit a normal camera original here; only the prepared result is uploaded.
+export const MEDIA_CLIENT_MAX_SOURCE_BYTES = 20 * 1024 * 1024;
 
 async function fileSize(uri, fileSystem) {
   const info = await fileSystem.getInfoAsync(uri, { size: true });
@@ -30,7 +32,7 @@ export async function preparePhotoForSafetyScan(
   const originalSize = await fileSize(uri, fileSystem);
   if (originalSize < 1) throw new Error('The selected photo could not be read.');
   if (originalSize > MEDIA_CLIENT_MAX_SOURCE_BYTES) {
-    throw new Error('Choose an image smaller than 5 MB.');
+    throw new Error('Choose an image smaller than 20 MB.');
   }
   if (originalSize <= MEDIA_SCANNER_TARGET_BYTES) {
     return { uri, byteSize: originalSize, mimeType: null, optimized: false };

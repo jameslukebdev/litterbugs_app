@@ -82,7 +82,7 @@ describe('mobile report parity', () => {
     expect(mobileReportPhotoSource).toContain('allowsMultipleSelection: true');
     expect(mobileReportPhotoSource).toContain('selectionLimit: remainingSlots');
     expect(mobileReportPhotoSource).toContain('.slice(0, MAX_REPORT_PHOTOS)');
-    expect(mobileSource).toContain('mergeReportPhotoUris(prev.photos, result.assets)');
+    expect(mobileSource).toContain('mergeReportPhotoUris(prev.photos, preparedAssets)');
     expect(MAX_REPORT_TITLE_LENGTH).toBe(80);
     expect(mobileSource).toContain('maxLength={80}');
     expect(MAX_REPORT_NOTES_LENGTH).toBe(500);

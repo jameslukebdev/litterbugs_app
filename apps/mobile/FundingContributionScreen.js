@@ -32,6 +32,7 @@ import { paymentSheetConfiguration, stripeInitializationConfiguration } from './
 import { evaluatePaymentConfirmation } from './lib/paymentConfirmation';
 import { fundingAvailabilityPresentation } from './lib/fundingAvailability';
 import { useReports } from './lib/reports';
+import { withTimeout } from './lib/asyncTimeout';
 
 export default function FundingContributionScreen({ navigation, route }) {
   const reportId = route?.params?.reportId;
@@ -45,6 +46,7 @@ export default function FundingContributionScreen({ navigation, route }) {
     typeof initialAmount === 'string' && initialAmount.trim() ? initialAmount : '25'
   );
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [paying, setPaying] = useState(false);
   const [receipt, setReceipt] = useState(null);
@@ -54,20 +56,49 @@ export default function FundingContributionScreen({ navigation, route }) {
 
   useEffect(() => {
     let active = true;
-    Promise.all([getReportById(reportId), loadCleanupFeatureFlags()])
+    setLoadError(null);
+    withTimeout(
+      Promise.all([getReportById(reportId), loadCleanupFeatureFlags()]),
+      12_000,
+      'Checking this report is taking longer than expected.',
+    )
       .then(([nextReport, nextFlags]) => {
         if (!active) return;
         setReport(nextReport);
         setFlags(nextFlags);
       })
-      .catch(() => {
-        if (active) Alert.alert('Funding unavailable', 'This report could not be loaded.');
+      .catch((error) => {
+        if (active) setLoadError(error?.message || 'This report could not be loaded.');
       })
       .finally(() => {
         if (active) setLoading(false);
       });
     return () => { active = false; };
   }, [getReportById, reloadKey, reportId]);
+
+  useEffect(() => {
+    const shouldRecheck = fromReportCreation
+      && !loading
+      && !loadError
+      && ['safety_hold', null, undefined].includes(report?.funding_eligibility);
+    if (!shouldRecheck) return undefined;
+
+    let active = true;
+    const interval = setInterval(() => {
+      getReportById(reportId)
+        .then((nextReport) => {
+          if (active) setReport(nextReport);
+        })
+        .catch(() => {
+          // Keep the current, useful status on screen. The manual retry remains available.
+        });
+    }, 5_000);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [fromReportCreation, getReportById, loadError, loading, report?.funding_eligibility, reportId]);
 
   const pay = async () => {
     if (!principalCents || paying) return;
@@ -119,7 +150,37 @@ export default function FundingContributionScreen({ navigation, route }) {
   };
 
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator size="large" color="#2F7D32" /></View>;
+    return (
+      <View style={styles.center} accessibilityLabel="Checking cleanup fund eligibility">
+        <ActivityIndicator size="large" color="#2F7D32" />
+        <Text style={styles.centerTitle}>Finishing your report…</Text>
+        <Text style={styles.centerText}>
+          Your report is saved. We’re checking whether it can accept contributions.
+        </Text>
+      </View>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <View style={styles.center}>
+        <Ionicons name="time-outline" size={44} color="#8A6400" />
+        <Text style={styles.centerTitle}>This is taking longer than expected</Text>
+        <Text style={styles.centerText}>{loadError}</Text>
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={() => {
+            setLoading(true);
+            setReloadKey((value) => value + 1);
+          }}
+        >
+          <Text style={styles.primaryButtonText}>Try again</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.goBack()}>
+          <Text style={styles.secondaryButtonText}>Return to report</Text>
+        </TouchableOpacity>
+      </View>
+    );
   }
 
   if (!flags?.payments_enabled || !flags?.gemini_financial_review_enabled) {
@@ -149,11 +210,33 @@ export default function FundingContributionScreen({ navigation, route }) {
 
   const unavailable = fundingAvailabilityPresentation(report);
   if (unavailable) {
+    const isNewReportFundingStep = fromReportCreation;
+    const isPendingStartingContribution = fromReportCreation
+      && ['safety_hold', null, undefined].includes(report?.funding_eligibility);
     return (
       <View style={styles.center}>
-        <Ionicons name="shield-checkmark-outline" size={44} color="#2F7D32" />
+        <View style={isNewReportFundingStep ? styles.successIcon : null}>
+          <Ionicons
+            name={isNewReportFundingStep ? 'checkmark' : 'shield-checkmark-outline'}
+            size={isNewReportFundingStep ? 38 : 44}
+            color={isNewReportFundingStep ? '#FFFFFF' : '#2F7D32'}
+          />
+        </View>
+        {isNewReportFundingStep ? (
+          <Text style={styles.createdLabel}>REPORT CREATED</Text>
+        ) : null}
         <Text style={styles.centerTitle}>{unavailable.title}</Text>
         <Text style={styles.centerText}>{unavailable.message}</Text>
+        {isNewReportFundingStep && principalCents ? (
+          <View style={styles.savedContributionCard}>
+            <Ionicons name="card-outline" size={22} color="#2F7D32" />
+            <Text style={styles.savedContributionText}>
+              {isPendingStartingContribution
+                ? `Your ${formatUsd(principalCents)} choice is ready on this screen, but you have not been charged. We’ll check again automatically and show Stripe’s secure payment screen after approval.`
+                : `Your ${formatUsd(principalCents)} choice has not been charged. Resolve the issue above, then choose Add funds again to continue securely with Stripe.`}
+            </Text>
+          </View>
+        ) : null}
         <TouchableOpacity
           style={styles.primaryButton}
           onPress={() => {
@@ -239,6 +322,9 @@ const styles = StyleSheet.create({
   centerTitle: { marginTop: 16, color: '#202428', fontSize: 24, fontWeight: '900', textAlign: 'center' },
   centerText: { maxWidth: 360, marginTop: 9, color: '#667078', fontSize: 15, lineHeight: 22, textAlign: 'center' },
   successIcon: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: '#2F7D32' },
+  createdLabel: { marginTop: 16, color: '#2F7D32', fontSize: 12, fontWeight: '900', letterSpacing: 1.2 },
+  savedContributionCard: { maxWidth: 380, marginTop: 20, padding: 16, flexDirection: 'row', alignItems: 'flex-start', gap: 11, borderRadius: 16, backgroundColor: '#E6F2E7' },
+  savedContributionText: { flex: 1, color: '#3F6843', fontSize: 14, lineHeight: 20, fontWeight: '700' },
   eyebrow: { color: '#2F7D32', fontSize: 12, fontWeight: '900', letterSpacing: 1.1 },
   title: { marginTop: 7, color: '#202428', fontSize: 29, fontWeight: '900' },
   reportTitle: { marginTop: 7, color: '#687178', fontSize: 15, fontWeight: '700' },

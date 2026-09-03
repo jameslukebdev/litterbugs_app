@@ -1,6 +1,7 @@
 import * as Crypto from 'expo-crypto';
 
 import { supabase } from './supabase';
+import { withTimeout } from './asyncTimeout';
 
 export const MEDIA_QUARANTINE_BUCKET = 'media_quarantine';
 export const MEDIA_PROCESSING_URL = 'https://litterbugs.app/api/media/process';
@@ -58,14 +59,26 @@ export async function uploadSecureMedia({
       ...(kind !== 'avatar' ? { subjectId } : {}),
       ...(kind === 'cleanup' ? { submissionId, position } : {}),
     };
-    const response = await fetchImpl(MEDIA_PROCESSING_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
+    const controller = new AbortController();
+    let response;
+    try {
+      response = await withTimeout(
+        fetchImpl(MEDIA_PROCESSING_URL, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        }),
+        35_000,
+        'Photo safety checking is taking too long. Please try again.',
+      );
+    } catch (error) {
+      controller.abort();
+      throw error;
+    }
     const payload = await response.json().catch(() => null);
     if (!response.ok) {
       throw new Error(serverMessage(

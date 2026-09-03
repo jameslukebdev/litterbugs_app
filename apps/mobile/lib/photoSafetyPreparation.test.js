@@ -79,9 +79,20 @@ describe('photo safety preparation', () => {
     });
   });
 
-  it('rejects an original that exceeds the app upload boundary', async () => {
-    const deps = dependencies({ 'file://huge.jpg': 5 * 1024 * 1024 + 1 });
+  it('accepts a normal camera original above 5 MB so it can be compressed', async () => {
+    const deps = dependencies(
+      { 'file://camera.jpg': 7_000_000, 'file://prepared.jpg': 2_500_000 },
+      [{ uri: 'file://prepared.jpg', width: 4032, height: 3024 }],
+    );
+    await expect(preparePhotoForSafetyScan('file://camera.jpg', deps)).resolves.toMatchObject({
+      uri: 'file://prepared.jpg',
+      optimized: true,
+    });
+  });
+
+  it('rejects an unusually large original before loading it into memory', async () => {
+    const deps = dependencies({ 'file://huge.jpg': 20 * 1024 * 1024 + 1 });
     await expect(preparePhotoForSafetyScan('file://huge.jpg', deps))
-      .rejects.toThrow('smaller than 5 MB');
+      .rejects.toThrow('smaller than 20 MB');
   });
 });
