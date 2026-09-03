@@ -1,6 +1,7 @@
 const PUBLIC_REPORT_BASE_URL = 'https://litterbugs.app/reports';
 export const LITTERBUGS_META_APP_ID = '1477683410862512';
 const REPORT_SHARE_IMAGE_MIME_TYPE = 'image/png';
+const PNG_SIGNATURE_BASE64 = 'iVBORw0KGgo=';
 
 function cleanText(value) {
   return typeof value === 'string' ? value.trim() : '';
@@ -115,6 +116,7 @@ export async function prepareNativeReportShareImage({
   cacheDirectory,
   deleteAsync,
   getInfoAsync,
+  readAsStringAsync,
   downloadAsync,
   timeoutMs = 20000,
   setTimeoutFn = setTimeout,
@@ -126,7 +128,25 @@ export async function prepareNativeReportShareImage({
 
   if (getInfoAsync) {
     const existing = await getInfoAsync(destination);
-    if (existing?.exists && Number(existing.size) > 0) return destination;
+    if (existing?.exists && Number(existing.size) > 0) {
+      try {
+        const signature = readAsStringAsync
+          ? await readAsStringAsync(destination, {
+            encoding: 'base64',
+            position: 0,
+            length: 8,
+          })
+          : null;
+
+        if (!readAsStringAsync || signature === PNG_SIGNATURE_BASE64) return destination;
+      } catch {
+        // Remove unreadable cache entries and fetch a fresh card below.
+      }
+
+      if (deleteAsync) {
+        await deleteAsync(destination, { idempotent: true }).catch(() => {});
+      }
+    }
   }
 
   let timeoutId;

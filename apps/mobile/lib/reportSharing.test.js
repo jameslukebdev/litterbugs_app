@@ -157,6 +157,7 @@ describe('report sharing', () => {
     const getInfoAsync = vi.fn()
       .mockResolvedValueOnce({ exists: false })
       .mockResolvedValueOnce({ exists: true, size: 2048 });
+    const readAsStringAsync = vi.fn().mockResolvedValue('iVBORw0KGgo=');
     const downloadAsync = vi.fn().mockResolvedValue({
       uri: 'file:///cache/litterbugs-share-v2-litter-beside-the-trail-active-report-1.png',
       status: 200,
@@ -167,12 +168,14 @@ describe('report sharing', () => {
       model,
       cacheDirectory: 'file:///cache/',
       getInfoAsync,
+      readAsStringAsync,
       downloadAsync,
     });
     const second = await prepareNativeReportShareImage({
       model,
       cacheDirectory: 'file:///cache/',
       getInfoAsync,
+      readAsStringAsync,
       downloadAsync,
     });
 
@@ -181,6 +184,34 @@ describe('report sharing', () => {
     expect(second).toBe(first);
     expect(downloadAsync).toHaveBeenCalledTimes(1);
     expect(downloadAsync).toHaveBeenCalledWith(model.shareImageUrl, first);
+    expect(readAsStringAsync).toHaveBeenCalledWith(first, {
+      encoding: 'base64',
+      position: 0,
+      length: 8,
+    });
+  });
+
+  it('replaces a cached file whose bytes are not a PNG', async () => {
+    const model = createReportShareModel({ report: availableReport });
+    const destination = `file:///cache/${reportShareImageFilename(model)}`;
+    const deleteAsync = vi.fn().mockResolvedValue(undefined);
+    const downloadAsync = vi.fn().mockResolvedValue({
+      uri: destination,
+      status: 200,
+      mimeType: 'image/png',
+    });
+
+    await expect(prepareNativeReportShareImage({
+      model,
+      cacheDirectory: 'file:///cache/',
+      deleteAsync,
+      getInfoAsync: vi.fn().mockResolvedValue({ exists: true, size: 8915 }),
+      readAsStringAsync: vi.fn().mockResolvedValue('PCFET0NUWVA='),
+      downloadAsync,
+    })).resolves.toBe(destination);
+
+    expect(deleteAsync).toHaveBeenCalledWith(destination, { idempotent: true });
+    expect(downloadAsync).toHaveBeenCalledWith(model.shareImageUrl, destination);
   });
 
   it('rejects and removes a server error page saved with a PNG filename', async () => {

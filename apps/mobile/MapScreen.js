@@ -1413,6 +1413,7 @@ useEffect(() => {
       cacheDirectory: FileSystem.cacheDirectory,
       deleteAsync: FileSystem.deleteAsync,
       getInfoAsync: FileSystem.getInfoAsync,
+      readAsStringAsync: FileSystem.readAsStringAsync,
       downloadAsync: FileSystem.downloadAsync,
     });
   };
