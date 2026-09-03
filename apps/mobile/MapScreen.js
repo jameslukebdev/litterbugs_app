@@ -18,8 +18,6 @@ import {
   ActivityIndicator,
   AppState,
   Linking,
-  NativeModules,
-  Share as NativeShare,
   useWindowDimensions,
 } from 'react-native';
 import { Marker } from 'react-native-maps';
@@ -30,6 +28,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import RNShare from 'react-native-share';
 import { supabase } from './lib/supabase'
 import {
   canEditOrDeleteReport,
@@ -100,10 +99,6 @@ import {
   shareReportWithSystemSheet,
 } from './lib/reportSharing';
 import * as FileSystem from 'expo-file-system/legacy';
-
-const installedRNShare = NativeModules.RNShare
-  ? require('react-native-share').default
-  : null;
 
 const MAP_MARKER_TRANSITION_MS = 180;
 
@@ -1439,7 +1434,7 @@ useEffect(() => {
         beforePhotoUrl: reportPhotoUrls[0] ?? null,
         afterPhotoUrl: completedCleanupImpact?.afterPhotoUrls?.[0] ?? null,
         platform: Platform.OS,
-        share: installedRNShare?.open ?? NativeShare.share,
+        share: RNShare.open,
         shareImageUri,
       });
       setReportShareSheetOpen(false);
@@ -1454,7 +1449,7 @@ useEffect(() => {
   const shareSelectedReportToInstagram = async () => {
     if (!selectedReportIsShareable || reportShareBusyAction) return;
 
-    if (!installedRNShare?.shareSingle || !installedRNShare?.Social?.INSTAGRAM_STORIES) {
+    if (!RNShare.shareSingle || !RNShare.Social?.INSTAGRAM_STORIES) {
       Alert.alert(
         'Instagram sharing unavailable',
         'Direct Instagram Stories sharing isn’t available in this app version. Use More sharing options instead.'
@@ -1473,8 +1468,8 @@ useEffect(() => {
         beforePhotoUrl: reportPhotoUrls[0] ?? null,
         afterPhotoUrl: completedCleanupImpact?.afterPhotoUrls?.[0] ?? null,
         shareImageUri,
-        shareSingle: installedRNShare.shareSingle,
-        instagramStoriesSocial: installedRNShare.Social.INSTAGRAM_STORIES,
+        shareSingle: RNShare.shareSingle,
+        instagramStoriesSocial: RNShare.Social.INSTAGRAM_STORIES,
       });
       setReportShareSheetOpen(false);
     } catch (error) {
