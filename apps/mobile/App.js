@@ -6,7 +6,6 @@ import {
 } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {
-  ActivityIndicator,
   Alert,
   Image,
   Linking,
@@ -19,6 +18,7 @@ import {
 } from 'react-native';
 
 import AppTabs from './AppTabs';
+import BrandedLoadingState from './BrandedLoadingState';
 import AuthScreen from './AuthScreen';
 import BlockedAccountsScreen from './BlockedAccountsScreen';
 import CompleteProfileScreen from './CompleteProfileScreen';
@@ -111,11 +111,7 @@ function HomeScreen({ navigation }) {
 }
 
 function LoadingScreen({ label = 'Loading Litterbugs' }) {
-  return (
-    <View style={styles.loading} accessibilityLabel={label}>
-      <ActivityIndicator size="large" color="#2F7D32" />
-    </View>
-  );
+  return <BrandedLoadingState title={`${label}…`} message="Getting everything ready for you." />;
 }
 
 function ProfileLoadError() {
@@ -425,12 +421,6 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  loading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F5F6F7',
-  },
   container: {
     flex: 1,
     backgroundColor: '#F5F6F7',

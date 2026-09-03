@@ -117,6 +117,7 @@ export async function uploadCleanupSubmission({
   bagsOrItemsRemoved,
   durationMinutes,
   isPaid = false,
+  onProgress = () => {},
 }) {
   const submissionId = Crypto.randomUUID();
   const uploadedPaths = [];
@@ -124,6 +125,7 @@ export async function uploadCleanupSubmission({
   try {
     for (let index = 0; index < photos.length; index += 1) {
       const asset = photos[index];
+      onProgress({ stage: 'preparing', current: index + 1, total: photos.length });
       const preparedPhoto = await preparePhotoForSafetyScan(asset.uri);
       const { mimeType: originalMimeType } = await cleanupPhotoMetadata({
         ...asset,
@@ -134,6 +136,7 @@ export async function uploadCleanupSubmission({
       const base64 = await FileSystem.readAsStringAsync(preparedPhoto.uri, {
         encoding: 'base64',
       });
+      onProgress({ stage: 'uploading', current: index + 1, total: photos.length });
       const path = await uploadSecureMedia({
         userId,
         kind: 'cleanup',
@@ -146,6 +149,7 @@ export async function uploadCleanupSubmission({
       uploadedPaths.push(path);
     }
 
+    onProgress({ stage: 'saving', current: photos.length, total: photos.length });
     const { data, error: submissionError } = await supabase.rpc(
       'submit_cleanup',
       {
@@ -162,6 +166,7 @@ export async function uploadCleanupSubmission({
     let aiReview = null;
     if (isPaid) {
       try {
+        onProgress({ stage: 'reviewing', current: photos.length, total: photos.length });
         aiReview = await requestGeminiReview({ cleanupId });
       } catch (reviewError) {
         console.log('Funded cleanup review deferred:', reviewError);

@@ -10,9 +10,9 @@
     "newArchEnabled": true,
     "scheme": "litterbugs",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/LB_Logo_PNG.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#F5F6F7"
     },
     "ios": {
       "supportsTablet": true,

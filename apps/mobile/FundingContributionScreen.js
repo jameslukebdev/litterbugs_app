@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -33,6 +32,7 @@ import { evaluatePaymentConfirmation } from './lib/paymentConfirmation';
 import { fundingAvailabilityPresentation } from './lib/fundingAvailability';
 import { useReports } from './lib/reports';
 import { withTimeout } from './lib/asyncTimeout';
+import BrandedLoadingState, { LoadingButtonContent } from './BrandedLoadingState';
 
 export default function FundingContributionScreen({ navigation, route }) {
   const reportId = route?.params?.reportId;
@@ -151,13 +151,10 @@ export default function FundingContributionScreen({ navigation, route }) {
 
   if (loading) {
     return (
-      <View style={styles.center} accessibilityLabel="Checking cleanup fund eligibility">
-        <ActivityIndicator size="large" color="#2F7D32" />
-        <Text style={styles.centerTitle}>Finishing your report…</Text>
-        <Text style={styles.centerText}>
-          Your report is saved. We’re checking whether it can accept contributions.
-        </Text>
-      </View>
+      <BrandedLoadingState
+        title="Finishing your report…"
+        message="Your report is saved. We’re checking whether it can accept contributions."
+      />
     );
   }
 
@@ -308,7 +305,7 @@ export default function FundingContributionScreen({ navigation, route }) {
         ) : null}
 
         <TouchableOpacity style={[styles.primaryButton, (!principalCents || paying || confirmationPending) && styles.disabled]} onPress={pay} disabled={!principalCents || paying || confirmationPending}>
-          {paying ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryButtonText}>{confirmationPending ? 'Payment confirmation pending' : 'Continue to secure payment'}</Text>}
+          {paying ? <LoadingButtonContent label="Opening secure payment…" /> : <Text style={styles.primaryButtonText}>{confirmationPending ? 'Payment confirmation pending' : 'Continue to secure payment'}</Text>}
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>

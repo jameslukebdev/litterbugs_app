@@ -4,6 +4,7 @@ import {
   Alert,
   Keyboard,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -15,6 +16,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import BrandedLoadingState, { LoadingButtonContent } from './BrandedLoadingState';
 
 import {
   chooseCleanupPhotos,
@@ -48,10 +50,39 @@ const submissionErrorMessage = (error) => {
 };
 
 function LoadingState() {
+  return <BrandedLoadingState title="Opening cleanup…" message="Loading the report and your cleanup details." />;
+}
+
+function CleanupPhoto({ photo, index, review = false, onRemove }) {
+  const [loading, setLoading] = useState(true);
   return (
-    <View style={styles.centerState}>
-      <ActivityIndicator size="large" color="#2F7D32" />
-      <Text style={styles.centerText}>Loading cleanup…</Text>
+    <View style={review ? styles.reviewPhotoWrap : styles.photoWrap}>
+      <ExpoImage
+        source={{ uri: photo.uri }}
+        contentFit="cover"
+        cachePolicy="none"
+        transition={160}
+        style={review ? styles.reviewPhoto : styles.photo}
+        onLoadStart={() => setLoading(true)}
+        onLoad={() => setLoading(false)}
+        onError={() => setLoading(false)}
+        accessibilityLabel={`After-cleanup ${review ? 'review ' : ''}photo ${index + 1}`}
+      />
+      {loading ? (
+        <View style={styles.photoLoading} accessibilityLabel={`Loading photo ${index + 1}`}>
+          <ActivityIndicator color="#2F7D32" />
+        </View>
+      ) : null}
+      {!review ? (
+        <TouchableOpacity
+          style={styles.removePhoto}
+          onPress={() => onRemove(index)}
+          accessibilityRole="button"
+          accessibilityLabel={`Remove cleanup photo ${index + 1}`}
+        >
+          <Ionicons name="close" size={18} color="#FFFFFF" />
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }
@@ -72,6 +103,11 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
   const [durationMinutes, setDurationMinutes] = useState('');
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [submissionProgress, setSubmissionProgress] = useState({
+    stage: 'preparing',
+    current: 1,
+    total: 1,
+  });
 
   useEffect(() => {
     let active = true;
@@ -148,11 +184,13 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
 
     try {
       setSubmitting(true);
+      setSubmissionProgress({ stage: 'preparing', current: 1, total: photos.length });
       const result = await uploadCleanupSubmission({
         cleanupId: context.attempt.id,
         userId,
         photos,
         isPaid: context.attempt.is_paid,
+        onProgress: setSubmissionProgress,
         ...validation.normalized,
       });
       await refreshReports({ showRefresh: false });
@@ -218,6 +256,18 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
       timeStyle: 'short',
     })
     : null;
+  const submissionTitle = submissionProgress.stage === 'preparing'
+    ? 'Preparing cleanup photos…'
+    : submissionProgress.stage === 'uploading'
+      ? 'Uploading cleanup photos…'
+      : submissionProgress.stage === 'reviewing'
+        ? 'Reviewing cleanup photos…'
+        : 'Saving your cleanup…';
+  const submissionMessage = ['preparing', 'uploading'].includes(submissionProgress.stage)
+    ? `Photo ${submissionProgress.current} of ${submissionProgress.total}. Keep Litterbugs open while this finishes.`
+    : submissionProgress.stage === 'reviewing'
+      ? 'Running the safety review before the cleanup moves forward.'
+      : 'Finishing the cleanup record for your community.';
 
   return (
     <KeyboardAvoidingView
@@ -225,6 +275,9 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={90}
     >
+      <Modal visible={submitting} animationType="fade" statusBarTranslucent>
+        <BrandedLoadingState title={submissionTitle} message={submissionMessage} />
+      </Modal>
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 24) + 24 }]}
         keyboardShouldPersistTaps="handled"
@@ -267,24 +320,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
               {photos.length > 0 ? (
                 <View style={styles.photoGrid}>
                   {photos.map((photo, index) => (
-                    <View key={`${photo.uri}-${index}`} style={styles.photoWrap}>
-                      <ExpoImage
-                        source={photo.uri}
-                        contentFit="cover"
-                        cachePolicy="none"
-                        transition={120}
-                        style={styles.photo}
-                        accessibilityLabel={`After-cleanup photo ${index + 1}`}
-                      />
-                      <TouchableOpacity
-                        style={styles.removePhoto}
-                        onPress={() => removePhoto(index)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Remove cleanup photo ${index + 1}`}
-                      >
-                        <Ionicons name="close" size={18} color="#FFFFFF" />
-                      </TouchableOpacity>
-                    </View>
+                    <CleanupPhoto key={`${photo.uri}-${index}`} photo={photo} index={index} onRemove={removePhoto} />
                   ))}
                 </View>
               ) : null}
@@ -379,16 +415,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
               <Text style={styles.reviewLabel}>AFTER PHOTOS</Text>
               <View style={styles.photoGrid}>
                 {photos.map((photo, index) => (
-                  <View key={`${photo.uri}-${index}`} style={styles.reviewPhotoWrap}>
-                    <ExpoImage
-                      source={{ uri: photo.uri }}
-                      contentFit="cover"
-                      cachePolicy="none"
-                      transition={120}
-                      style={styles.reviewPhoto}
-                      accessibilityLabel={`After-cleanup review photo ${index + 1}`}
-                    />
-                  </View>
+                  <CleanupPhoto key={`${photo.uri}-${index}`} photo={photo} index={index} review />
                 ))}
               </View>
               {photos.length === 1 ? (
@@ -427,7 +454,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
               disabled={submitting}
             >
               {submitting ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <LoadingButtonContent label="Submitting cleanup…" />
               ) : (
                 <>
                   <Ionicons name="checkmark-circle-outline" size={21} color="#FFFFFF" />
@@ -473,6 +500,7 @@ const styles = StyleSheet.create({
   photoGrid: { marginTop: 14, flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
   photoWrap: { width: '31%', aspectRatio: 1, borderRadius: 13, overflow: 'hidden', backgroundColor: '#E9ECEE' },
   photo: { width: '100%', height: '100%' },
+  photoLoading: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E9ECEE' },
   removePhoto: { position: 'absolute', top: 6, right: 6, width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(30,35,38,0.78)' },
   photoActions: { marginTop: 14, flexDirection: 'row', gap: 10 },
   photoButton: { flex: 1, minHeight: 48, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderWidth: 1, borderColor: '#8FBC92', borderRadius: 13, backgroundColor: '#F6FBF6' },

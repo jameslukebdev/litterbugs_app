@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -13,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { LoadingButtonContent } from './BrandedLoadingState';
 import { useSession } from './lib/session';
 import { supabase } from './lib/supabase';
 
@@ -96,7 +96,7 @@ export default function ReportUserScreen({ navigation, route }) {
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <TouchableOpacity style={[styles.submitButton, submitting && styles.disabled]} onPress={submit} disabled={submitting}>
-          {submitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitText}>Submit report</Text>}
+          {submitting ? <LoadingButtonContent label="Submitting report…" /> : <Text style={styles.submitText}>Submit report</Text>}
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>

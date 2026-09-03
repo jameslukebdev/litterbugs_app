@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { createPayoutDashboardLink, createPayoutOnboardingLink, loadPayoutStatus } from './lib/funding';
+import BrandedLoadingState, { LoadingButtonContent } from './BrandedLoadingState';
 
 const PAYOUT_ONBOARDING_RETURN_URL = 'litterbugs://stripe-onboarding-return';
 
@@ -51,7 +52,7 @@ export default function PayoutSetupScreen() {
     }
   };
 
-  if (loading) return <View style={styles.center}><ActivityIndicator size="large" color="#2F7D32" /></View>;
+  if (loading) return <BrandedLoadingState title="Checking payout setup…" message="Securely checking your Stripe payout status." />;
   const enabled = status?.payoutsEnabled === true;
 
   return (
@@ -88,11 +89,11 @@ export default function PayoutSetupScreen() {
 
       {!enabled ? (
         <TouchableOpacity style={[styles.button, (busy || !eligibleConfirmed) && styles.disabled]} onPress={openSetup} disabled={busy || !eligibleConfirmed}>
-          {busy ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.buttonText}>{status?.onboardingStatus === 'pending' ? 'Continue Stripe setup' : 'Set up with Stripe'}</Text>}
+          {busy ? <LoadingButtonContent label="Opening Stripe…" /> : <Text style={styles.buttonText}>{status?.onboardingStatus === 'pending' ? 'Continue Stripe setup' : 'Set up with Stripe'}</Text>}
         </TouchableOpacity>
       ) : (
         <TouchableOpacity style={styles.secondaryButton} onPress={openSetup} disabled={busy}>
-          <Text style={styles.secondaryText}>Review payout details</Text>
+          {busy ? <LoadingButtonContent label="Opening Stripe…" color="#2F7D32" /> : <Text style={styles.secondaryText}>Review payout details</Text>}
         </TouchableOpacity>
       )}
     </ScrollView>

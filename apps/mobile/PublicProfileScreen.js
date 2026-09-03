@@ -1,6 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
@@ -11,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import CompactRankBadge from './CompactRankBadge';
+import BrandedLoadingState from './BrandedLoadingState';
 import ProfileAvatar from './ProfileAvatar';
 import ProfileReportList from './ProfileReportList';
 import { PUBLIC_PROFILE_FIELDS, useProfile } from './lib/profile';
@@ -115,7 +115,7 @@ export default function PublicProfileScreen({ navigation, route }) {
   }, [blocked, navigation, permanent, profile, profileId, user?.id]);
 
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator size="large" color="#2F7D32" /></View>;
+    return <BrandedLoadingState title="Loading profile…" message="Gathering this member’s community impact." />;
   }
 
   if (missing) {

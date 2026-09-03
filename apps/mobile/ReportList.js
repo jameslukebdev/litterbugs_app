@@ -13,6 +13,7 @@ import { Image as ExpoImage } from 'expo-image';
 
 import { getDistanceMiles, useReports } from './lib/reports';
 import { formatUsd } from './lib/funding';
+import BrandedLoadingState from './BrandedLoadingState';
 
 const SEVERITY = Object.freeze({
   high: { color: '#E53935', icon: 'warning' },
@@ -185,6 +186,7 @@ export default function ReportList({
   emptyTitle = 'No reports nearby',
   emptyMessage = 'No active reports are visible in this area.',
   refreshing = false,
+  initialLoading = false,
   onRefresh,
   scrollEnabled = true,
   style,
@@ -199,7 +201,9 @@ export default function ReportList({
         <ReportListItem report={item} origin={origin} onPress={onReportPress} />
       )}
       ItemSeparatorComponent={() => <View style={styles.divider} />}
-      ListEmptyComponent={(
+      ListEmptyComponent={initialLoading ? (
+        <BrandedLoadingState compact title="Loading nearby reports…" message="Finding active cleanups around you." />
+      ) : (
         <View style={styles.emptyState}>
           <View style={styles.emptyIcon}>
             <Ionicons

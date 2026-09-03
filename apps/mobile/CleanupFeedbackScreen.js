@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,6 +8,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import BrandedLoadingState from './BrandedLoadingState';
 
 import { loadCleanupFeedbackContext } from './lib/cleanupFeedback';
 import { cleanupChangeReasonLabel } from './lib/cleanupReviewValidation';
@@ -70,12 +70,7 @@ export default function CleanupFeedbackScreen({ navigation, route }) {
   }, [cleanupId, userId]);
 
   if (loading) {
-    return (
-      <View style={styles.centerState}>
-        <ActivityIndicator size="large" color="#2F7D32" />
-        <Text style={styles.centerText}>Loading feedback…</Text>
-      </View>
-    );
+    return <BrandedLoadingState title="Loading feedback…" message="Gathering the requested cleanup changes." />;
   }
 
   if (loadError || !context) {

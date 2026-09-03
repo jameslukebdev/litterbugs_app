@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -11,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { LoadingButtonContent } from './BrandedLoadingState';
 import { supabase } from './lib/supabase';
 
 export default function ResetPasswordScreen({ onComplete }) {
@@ -95,7 +95,7 @@ export default function ResetPasswordScreen({ onComplete }) {
           accessibilityRole="button"
           accessibilityLabel="Save new password"
         >
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Save password</Text>}
+          {loading ? <LoadingButtonContent label="Saving password…" /> : <Text style={styles.buttonText}>Save password</Text>}
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>

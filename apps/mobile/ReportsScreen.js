@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Modal,
   StyleSheet,
   Text,
@@ -13,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ReportList from './ReportList';
 import { getBottomNavClearance } from './lib/navigationLayout';
 import { getDistanceMiles, useReports } from './lib/reports';
+import { findResponsiveUserLocation } from './lib/responsiveLocation';
 
 const FILTERS = ['All', 'High', 'Medium', 'Low'];
 const FILTER_COLORS = Object.freeze({
@@ -29,6 +31,7 @@ export default function ReportsScreen({ navigation }) {
   const [locationState, setLocationState] = useState('loading');
   const {
     reports,
+    loading: reportsLoading,
     refreshing,
     refreshReports,
     error,
@@ -48,15 +51,17 @@ export default function ReportsScreen({ navigation }) {
           return;
         }
 
-        const location = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
+        await findResponsiveUserLocation({
+          locationApi: Location,
+          onPosition: (location) => {
+            if (!active) return;
+            setLocationOrigin({
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+            });
+            setLocationState('ready');
+          },
         });
-        if (!active) return;
-        setLocationOrigin({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        });
-        setLocationState('ready');
       } catch (locationError) {
         if (active) setLocationState('unavailable');
       }
@@ -105,7 +110,10 @@ export default function ReportsScreen({ navigation }) {
           <Text style={styles.count} accessibilityLiveRegion="polite">
             {filteredReports.length} {filteredReports.length === 1 ? 'report' : 'reports'}
           </Text>
-          <Text style={styles.helper}>{helperText}</Text>
+          <View style={styles.helperRow}>
+            {locationState === 'loading' ? <ActivityIndicator size="small" color="#2F7D32" /> : null}
+            <Text style={styles.helper}>{helperText}</Text>
+          </View>
         </View>
 
         <TouchableOpacity
@@ -133,6 +141,7 @@ export default function ReportsScreen({ navigation }) {
         origin={locationOrigin}
         onReportPress={handleReportPress}
         refreshing={refreshing}
+        initialLoading={reportsLoading}
         onRefresh={() => refreshReports({ showRefresh: true })}
         emptyTitle={error ? 'Reports unavailable' : 'No reports nearby'}
         emptyMessage={error
@@ -230,10 +239,10 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   helper: {
-    marginTop: 4,
     color: '#727A80',
     fontSize: 14,
   },
+  helperRow: { minHeight: 24, marginTop: 4, flexDirection: 'row', alignItems: 'center', gap: 7 },
   filterButton: {
     minHeight: 44,
     paddingHorizontal: 14,

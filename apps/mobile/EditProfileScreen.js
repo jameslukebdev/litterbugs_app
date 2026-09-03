@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -13,6 +12,7 @@ import {
 } from 'react-native';
 
 import ProfileAvatar from './ProfileAvatar';
+import { LoadingButtonContent } from './BrandedLoadingState';
 import { useProfile } from './lib/profile';
 import {
   removeProfileAvatar,
@@ -126,7 +126,7 @@ export default function EditProfileScreen({ navigation }) {
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.saveButton, saving && styles.disabled]} onPress={save} disabled={saving} accessibilityRole="button" accessibilityLabel="Save profile" accessibilityState={{ busy: saving }}>
-            {saving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.saveText}>Save</Text>}
+            {saving ? <LoadingButtonContent label="Saving profile…" /> : <Text style={styles.saveText}>Save</Text>}
           </TouchableOpacity>
         </View>
       </ScrollView>

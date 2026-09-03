@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
   StyleSheet,
@@ -10,6 +9,7 @@ import {
 } from 'react-native';
 
 import ProfileAvatar from './ProfileAvatar';
+import BrandedLoadingState, { LoadingButtonContent } from './BrandedLoadingState';
 import { PUBLIC_PROFILE_FIELDS, useProfile } from './lib/profile';
 import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
@@ -55,7 +55,7 @@ export default function BlockedAccountsScreen() {
     }
   };
 
-  if (loading) return <View style={styles.center}><ActivityIndicator size="large" color="#2F7D32" /></View>;
+  if (loading) return <BrandedLoadingState title="Loading blocked accounts…" message="Updating your privacy settings." />;
 
   return (
     <FlatList
@@ -70,7 +70,7 @@ export default function BlockedAccountsScreen() {
             {item.blocked?.username ? <Text style={styles.username}>@{item.blocked.username}</Text> : null}
           </View>
           <TouchableOpacity style={styles.unblockButton} onPress={() => unblock(item.blocked_id)} disabled={busyId === item.blocked_id}>
-            {busyId === item.blocked_id ? <ActivityIndicator size="small" color="#2F7D32" /> : <Text style={styles.unblockText}>Unblock</Text>}
+            {busyId === item.blocked_id ? <LoadingButtonContent label="Unblocking…" color="#2F7D32" /> : <Text style={styles.unblockText}>Unblock</Text>}
           </TouchableOpacity>
         </View>
       )}
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   copy: { flex: 1, marginHorizontal: 12 },
   name: { color: '#30363B', fontSize: 16, fontWeight: '800' },
   username: { marginTop: 2, color: '#707980', fontSize: 13 },
-  unblockButton: { minWidth: 78, minHeight: 42, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#2F7D32', borderRadius: 21 },
+  unblockButton: { minWidth: 78, minHeight: 42, paddingHorizontal: 13, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#2F7D32', borderRadius: 21 },
   unblockText: { color: '#2F7D32', fontSize: 14, fontWeight: '800' },
   emptyTitle: { color: '#30363B', fontSize: 20, fontWeight: '800' },
   emptyText: { marginTop: 7, color: '#707980', fontSize: 15 },

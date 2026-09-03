@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import BrandedLoadingState, { LoadingButtonContent } from './BrandedLoadingState';
 
 import CompactRankBadge from './CompactRankBadge';
 import ProfileAvatar from './ProfileAvatar';
@@ -56,12 +57,7 @@ const formatSubmittedAt = (value) => new Date(value).toLocaleString(undefined, {
 });
 
 function LoadingState() {
-  return (
-    <View style={styles.centerState}>
-      <ActivityIndicator size="large" color="#2F7D32" />
-      <Text style={styles.centerText}>Loading cleanup evidence…</Text>
-    </View>
-  );
+  return <BrandedLoadingState title="Loading cleanup evidence…" message="Preparing the before-and-after photos for review." />;
 }
 
 function ReviewPhoto({ title, url, index, count, width }) {
@@ -490,7 +486,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
             />
             {errors.note ? <Text style={styles.error}>{errors.note}</Text> : null}
             <TouchableOpacity style={[styles.requestSubmitButton, submitting && styles.disabled]} onPress={submitPaidDispute} disabled={submitting}>
-              {submitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.requestSubmitText}>Submit dispute</Text>}
+              {submitting ? <LoadingButtonContent label="Submitting dispute…" /> : <Text style={styles.requestSubmitText}>Submit dispute</Text>}
             </TouchableOpacity>
             <TouchableOpacity style={styles.secondaryButton} onPress={() => setMode('review')} disabled={submitting}>
               <Text style={styles.secondaryButtonText}>Cancel</Text>
@@ -574,7 +570,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
               disabled={submitting}
             >
               {submitting ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <LoadingButtonContent label="Sending review…" />
               ) : (
                 <Text style={styles.requestSubmitText}>Send Change Request</Text>
               )}

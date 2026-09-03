@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 
 import CompactRankBadge from './CompactRankBadge';
+import BrandedLoadingState from './BrandedLoadingState';
 import ProfileAvatar from './ProfileAvatar';
 import {
   cleanupImpactFacts,
@@ -71,12 +72,7 @@ export default function CompletedCleanupStory({
   onRetry,
 }) {
   if (loading) {
-    return (
-      <View style={styles.stateCard}>
-        <ActivityIndicator size="large" color="#2F7D32" />
-        <Text style={styles.stateText}>Loading cleanup impact…</Text>
-      </View>
-    );
+    return <BrandedLoadingState compact title="Loading cleanup impact…" message="Preparing this completed cleanup story." />;
   }
 
   if (error || !impact) {

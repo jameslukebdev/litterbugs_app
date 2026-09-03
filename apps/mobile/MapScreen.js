@@ -29,6 +29,7 @@ import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import RNShare from 'react-native-share';
+import BrandedLoadingState, { LoadingButtonContent } from './BrandedLoadingState';
 import { supabase } from './lib/supabase'
 import {
   canEditOrDeleteReport,
@@ -208,6 +209,10 @@ export default function MapScreen({ route, navigation }) {
   const [photoPreparationStatus, setPhotoPreparationStatus] = useState(null);
   const [isCentering, setIsCentering] = useState(false);
   const mapViewRef = useRef(null);
+  const [mapReady, setMapReady] = useState(false);
+  const [mapSurfaceLoaded, setMapSurfaceLoaded] = useState(false);
+  const [showInitialMapLoading, setShowInitialMapLoading] = useState(true);
+  const initialMapLoadingOpacity = useRef(new Animated.Value(1)).current;
   const [photosLoading, setPhotosLoading] = useState(false);
   const [cleanupWaiver, setCleanupWaiver] = useState(null);
   const [cleanupWaiverOpen, setCleanupWaiverOpen] = useState(false);
@@ -246,6 +251,7 @@ export default function MapScreen({ route, navigation }) {
     mapRegion: region,
     setMapRegion: setRegion,
     commitMapRegion,
+    loading: reportsLoading,
     refreshReports,
     getReportById,
     upsertReport,
@@ -257,6 +263,30 @@ export default function MapScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
   const bottomNavClearance = getBottomNavClearance(insets.bottom);
+
+  useEffect(() => {
+    if (!mapReady || mapSurfaceLoaded) return undefined;
+
+    // Apple Maps does not emit onMapLoaded. Keep the branded transition in
+    // place briefly, then use onMapReady as a guarded fallback so startup can
+    // never become trapped behind the loading screen.
+    const fallback = setTimeout(() => setMapSurfaceLoaded(true), 4000);
+    return () => clearTimeout(fallback);
+  }, [mapReady, mapSurfaceLoaded]);
+
+  useEffect(() => {
+    if (!mapSurfaceLoaded || reportsLoading) return undefined;
+
+    const reveal = Animated.timing(initialMapLoadingOpacity, {
+      toValue: 0,
+      duration: 260,
+      useNativeDriver: true,
+    });
+    reveal.start(({ finished }) => {
+      if (finished) setShowInitialMapLoading(false);
+    });
+    return () => reveal.stop();
+  }, [initialMapLoadingOpacity, mapSurfaceLoaded, reportsLoading]);
 
   useEffect(() => {
     let active = true;
@@ -2719,7 +2749,7 @@ const renderReportStep = () => {
             accessibilityState={{ disabled: isSaving, busy: isSaving }}
           >
             {isSaving ? (
-              <ActivityIndicator color="#fff" />
+              <LoadingButtonContent label="Creating report…" />
             ) : (
               <>
                 <Ionicons
@@ -2756,6 +2786,11 @@ const renderReportStep = () => {
         <ClusteredMapView
           ref={mapViewRef}
           style={StyleSheet.absoluteFill}
+          onMapReady={() => setMapReady(true)}
+          onMapLoaded={() => {
+            setMapReady(true);
+            setMapSurfaceLoaded(true);
+          }}
           initialRegion={region}
           region={region}
           onRegionChangeComplete={(nextRegion) => {
@@ -2901,6 +2936,18 @@ const renderReportStep = () => {
           />
         )}
       </ClusteredMapView>
+
+      {showInitialMapLoading ? (
+        <Animated.View
+          style={[styles.initialMapLoading, { opacity: initialMapLoadingOpacity }]}
+          pointerEvents="auto"
+        >
+          <BrandedLoadingState
+            title="Opening the Litterbugs map…"
+            message="Loading nearby cleanup reports and preparing your map."
+          />
+        </Animated.View>
+      ) : null}
 
         {/* Support Button (Patreon) */}
         {/* <TouchableOpacity
@@ -3730,7 +3777,7 @@ const renderReportStep = () => {
                 accessibilityLabel="Clean Up"
               >
                 {cleanupActionBusy ? (
-                  <ActivityIndicator color="#FFFFFF" />
+                  <LoadingButtonContent label="Opening claim…" />
                 ) : (
                   <>
                     <Ionicons name="hand-left-outline" size={21} color="#FFFFFF" />
@@ -3822,7 +3869,7 @@ const renderReportStep = () => {
                     accessibilityLabel="Release Cleanup"
                   >
                     {cleanupActionBusy ? (
-                      <ActivityIndicator color="#A33A32" />
+                      <LoadingButtonContent label="Releasing…" color="#A33A32" />
                     ) : (
                       <>
                         <Ionicons name="return-down-back-outline" size={20} color="#A33A32" />
@@ -4117,6 +4164,11 @@ const renderReportStep = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F5F6F7' },
+  initialMapLoading: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1000,
+    backgroundColor: '#F5F6F7',
+  },
 
   /* ============================= */
 /* Multi-step Report Form        */

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -13,6 +12,7 @@ import {
 } from 'react-native';
 
 import ProfileAvatar from './ProfileAvatar';
+import { LoadingButtonContent } from './BrandedLoadingState';
 import { signOut } from './lib/auth';
 import { useProfile } from './lib/profile';
 import { showAvatarSourceMenu, uploadProfileAvatar } from './lib/profileAvatar';
@@ -100,7 +100,7 @@ export default function CompleteProfileScreen({ navigation }) {
           accessibilityRole="button"
           accessibilityState={{ busy: saving }}
         >
-          {saving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryText}>Continue</Text>}
+          {saving ? <LoadingButtonContent label="Saving profile…" /> : <Text style={styles.primaryText}>Continue</Text>}
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.signOutButton} onPress={signOut} disabled={saving} accessibilityRole="button" accessibilityLabel="Sign out">

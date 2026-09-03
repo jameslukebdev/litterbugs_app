@@ -1,10 +1,11 @@
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatUsd, loadMyContributions } from './lib/funding';
+import BrandedLoadingState from './BrandedLoadingState';
 
 const statusLabel = (status) => ({
   payment_pending: 'Processing',
@@ -47,14 +48,15 @@ export default function ContributionHistoryScreen() {
           <View style={styles.breakdown}><Text style={styles.total}>Total charged</Text><Text style={styles.total}>{formatUsd(item.total_amount_cents)}</Text></View>
         </View>
       ))}
-      {loading && items.length === 0 ? <ActivityIndicator style={styles.loader} color="#2F7D32" /> : null}
+      {loading && items.length === 0 ? (
+        <BrandedLoadingState compact title="Loading contributions…" message="Checking your cleanup fund activity." />
+      ) : null}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   content: { flexGrow: 1, padding: 18, backgroundColor: '#F5F6F7' },
-  loader: { marginTop: 50 },
   error: { padding: 16, color: '#A33A32', textAlign: 'center' },
   empty: { flex: 1, minHeight: 300, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { marginTop: 12, color: '#59636A', fontSize: 17, fontWeight: '800' },

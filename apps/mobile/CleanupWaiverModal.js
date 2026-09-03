@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   Modal,
   ScrollView,
   StyleSheet,
@@ -10,6 +9,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { LoadingButtonContent } from './BrandedLoadingState';
 
 export default function CleanupWaiverModal({
   visible,
@@ -107,7 +108,7 @@ export default function CleanupWaiverModal({
             accessibilityLabel="Accept cleanup acknowledgment and continue"
           >
             {accepting ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <LoadingButtonContent label="Opening claim…" />
             ) : (
               <Text style={styles.acceptButtonText}>Accept and Review Claim</Text>
             )}

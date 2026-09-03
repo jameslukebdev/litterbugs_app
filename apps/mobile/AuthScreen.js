@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 
+import { LoadingButtonContent } from './BrandedLoadingState';
 import {
   resendSignupVerification, sendPasswordRecovery, signInWithEmail,
   signInWithProvider, signUpWithEmail,
@@ -292,7 +293,7 @@ export default function AuthScreen() {
                       {sentReason === 'signup' && (
                         <>
                           <TouchableOpacity style={emailStyles.textButton} onPress={handleResend} disabled={loadingEmail} accessibilityRole="button" accessibilityLabel="Resend verification email">
-                            {loadingEmail ? <ActivityIndicator color="#2F7D32" /> : <Text style={emailStyles.linkText}>Resend verification email</Text>}
+                            {loadingEmail ? <LoadingButtonContent label="Sending…" color="#2F7D32" /> : <Text style={emailStyles.linkText}>Resend verification email</Text>}
                           </TouchableOpacity>
                           <View style={emailStyles.sentLinksRow}>
                             <TouchableOpacity style={emailStyles.sentLinkButton} onPress={() => resetForm('login')} accessibilityRole="button" accessibilityLabel="Sign in instead">
@@ -364,7 +365,7 @@ export default function AuthScreen() {
                       )}
                       {!!formError && <Text style={emailStyles.error}>{formError}</Text>}
                       <TouchableOpacity style={[emailStyles.primaryButton, loadingEmail && styles.disabled]} onPress={handleEmailSubmit} disabled={loadingEmail} accessibilityRole="button" accessibilityLabel={title}>
-                        {loadingEmail ? <ActivityIndicator color="#fff" /> : (
+                        {loadingEmail ? <LoadingButtonContent label={emailMode === 'signup' ? 'Creating account…' : emailMode === 'forgot' ? 'Sending reset link…' : 'Signing in…'} /> : (
                           <Text style={emailStyles.primaryButtonText}>
                             {emailMode === 'signup' ? 'Create account' : emailMode === 'forgot' ? 'Send reset link' : 'Sign in'}
                           </Text>
