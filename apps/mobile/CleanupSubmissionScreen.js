@@ -161,7 +161,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
       const paidMessage = aiDecision?.status === 'better_photos'
         ? aiDecision.summary
         : aiDecision?.status === 'passed'
-          ? 'Your photos passed review. The reporter now has 48 hours to dispute the cleanup; there is no early approval.'
+          ? 'Your photos passed review. The reporter can approve the cleanup now or dispute it within 48 hours.'
           : aiDecision?.status === 'admin_review'
             ? 'A Litterbugs team member is reviewing the photos. Your payout is paused, and we’ll contact you if we need anything.'
             : 'Your photos are being reviewed. The 48-hour dispute window starts only after they pass.';

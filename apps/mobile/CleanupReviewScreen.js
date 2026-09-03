@@ -44,6 +44,9 @@ const reviewErrorMessage = (error) => {
   if (/cleanup_review_evidence_unavailable/i.test(message)) {
     return 'The submitted cleanup evidence could not be loaded.';
   }
+  if (/paid_cleanup_review_not_ready/i.test(message)) {
+    return 'The cleanup must pass its safety and payment review before you can approve it.';
+  }
   return 'Check your connection and try again.';
 };
 
@@ -237,7 +240,9 @@ export default function CleanupReviewScreen({ navigation, route }) {
   const confirmApproval = () => {
     Alert.alert(
       'Approve this cleanup?',
-      'This will mark the litter report as cleaned and preserve it as a completed cleanup.',
+      context?.attempt?.is_paid
+        ? 'This will mark the report as cleaned, end your dispute window, and start the protected reward payout.'
+        : 'This will mark the litter report as cleaned and preserve it as a completed cleanup.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -448,7 +453,15 @@ export default function CleanupReviewScreen({ navigation, route }) {
               </View>
             ) : context.attempt.financial_review_status === 'passed' && context.attempt.review_due_at ? (
               <>
-                <Text style={styles.paidReviewNotice}>No approval is required. If you do nothing, the reward is released after the full 48-hour window.</Text>
+                <Text style={styles.paidReviewNotice}>Approve now if the cleanup looks complete, or dispute it if something is wrong. If you do nothing, it is automatically approved after 48 hours.</Text>
+                <TouchableOpacity
+                  style={[styles.approveButton, submitting && styles.disabled]}
+                  onPress={confirmApproval}
+                  disabled={submitting}
+                >
+                  <Ionicons name="checkmark-circle-outline" size={21} color="#FFFFFF" />
+                  <Text style={styles.approveButtonText}>Approve Cleanup</Text>
+                </TouchableOpacity>
                 <TouchableOpacity style={styles.requestButton} onPress={() => setMode('dispute')} disabled={submitting}>
                   <Ionicons name="flag-outline" size={21} color="#A33A32" />
                   <Text style={styles.requestButtonText}>Dispute cleanup</Text>

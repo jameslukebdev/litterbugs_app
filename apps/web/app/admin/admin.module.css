@@ -49,6 +49,7 @@
 .detail { position: relative; padding: 28px; overflow-y: auto; }
 .detailHeading h2 { margin: 7px 0 5px; font-size: 28px; }
 .detailHeading p { margin: 0; color: #667068; line-height: 22px; }
+.detailHeading .caseIdentity { margin-top: 9px; color: #778079; font-size: 12px; font-weight: 700; }
 .reward { margin-top: 18px; padding: 14px 16px; display: flex; justify-content: space-between; border-radius: 12px; color: #37633b; background: #e8f4e9; }
 .reward strong { color: #245f2a; font-size: 19px; }
 .photoSections { margin-top: 22px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
@@ -61,6 +62,8 @@
 .decisionPanel { margin-top: 22px; padding-top: 22px; border-top: 1px solid #dde3dd; }
 .decisionPanel label, .accessForm label { display: grid; gap: 7px; color: #3f4841; font-size: 14px; font-weight: 800; }
 .decisionPanel textarea { min-height: 110px; padding: 12px; resize: vertical; border: 1px solid #bdc8be; border-radius: 11px; font: inherit; }
+.required { margin-left: 5px; color: #a33a32; font-size: 11px; font-weight: 900; text-transform: uppercase; }
+.decisionHint { margin: 7px 0 0; color: #68716a; font-size: 12px; }
 .actionGrid { margin-top: 13px; display: flex; flex-wrap: wrap; gap: 10px; }
 .primaryButton, .secondaryButton, .dangerButton { min-height: 44px; padding: 0 17px; border-radius: 11px; font-weight: 900; cursor: pointer; }
 .primaryButton { border: 0; color: #fff; background: var(--green); }

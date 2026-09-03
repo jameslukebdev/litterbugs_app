@@ -181,6 +181,27 @@ describe('report sharing', () => {
     expect(downloadAsync).toHaveBeenCalledWith(model.shareImageUrl, first);
   });
 
+  it('stops waiting for a stalled social card so text sharing can continue', async () => {
+    const model = createReportShareModel({ report: availableReport });
+    let timeoutCallback;
+    const pendingDownload = new Promise(() => {});
+
+    await expect(prepareNativeReportShareImage({
+      model,
+      cacheDirectory: 'file:///cache/',
+      downloadAsync: () => pendingDownload,
+      timeoutMs: 25,
+      setTimeoutFn: (callback) => {
+        timeoutCallback = callback;
+        queueMicrotask(callback);
+        return 1;
+      },
+      clearTimeoutFn: vi.fn(),
+    })).rejects.toThrow('report_share_image_timeout');
+
+    expect(timeoutCallback).toBeTypeOf('function');
+  });
+
   it('includes the branded card in the general native share sheet', () => {
     const model = createReportShareModel({ report: availableReport });
     const content = createNativeReportShareContent(

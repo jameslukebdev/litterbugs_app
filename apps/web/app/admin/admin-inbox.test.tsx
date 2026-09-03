@@ -112,13 +112,15 @@ describe('funded cleanup admin inbox', () => {
     );
     expect(screen.getByText(/Compare the reporter’s concern with the complete photo set/i)).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Deny dispute and continue reward process' }));
-    expect(await screen.findByText('Add a short decision reason first.')).toBeTruthy();
+    const decisionButton = screen.getByRole('button', { name: 'Deny dispute and continue reward process' });
+    expect(decisionButton.getAttribute('disabled')).not.toBeNull();
+    expect(screen.getByText('Enter at least 3 characters to enable a decision.')).toBeTruthy();
 
-    fireEvent.change(screen.getByLabelText('Why are you making this decision?'), {
+    fireEvent.change(screen.getByLabelText(/Why are you making this decision/i), {
       target: { value: 'The complete photo set supports the cleanup.' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Deny dispute and continue reward process' }));
+    expect(decisionButton.getAttribute('disabled')).toBeNull();
+    fireEvent.click(decisionButton);
 
     await waitFor(() => expect(confirm).toHaveBeenCalledOnce());
     await waitFor(() => expect(invoke).toHaveBeenCalledWith(
@@ -132,6 +134,6 @@ describe('funded cleanup admin inbox', () => {
     ));
     expect(await screen.findByText(/deny dispute/i)).toBeTruthy();
     expect(screen.getByText(/The complete photo set supports the cleanup/)).toBeTruthy();
-    expect(screen.getByText('Decision recorded.')).toBeTruthy();
+    expect(screen.getByText(/Decision recorded\. The related mobile state has been updated\./i)).toBeTruthy();
   });
 });

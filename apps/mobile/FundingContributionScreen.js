@@ -30,16 +30,22 @@ import {
 import { calculatePlatformFee, parseContributionAmount } from './lib/fundingMath';
 import { paymentSheetConfiguration, stripeInitializationConfiguration } from './lib/paymentConfiguration';
 import { evaluatePaymentConfirmation } from './lib/paymentConfirmation';
+import { fundingAvailabilityPresentation } from './lib/fundingAvailability';
 import { useReports } from './lib/reports';
 
 export default function FundingContributionScreen({ navigation, route }) {
   const reportId = route?.params?.reportId;
+  const fromReportCreation = route?.params?.fromReportCreation === true;
+  const initialAmount = route?.params?.initialAmount;
   const { getReportById, refreshReports } = useReports();
   const insets = useSafeAreaInsets();
   const [report, setReport] = useState(null);
   const [flags, setFlags] = useState(null);
-  const [amount, setAmount] = useState('25');
+  const [amount, setAmount] = useState(
+    typeof initialAmount === 'string' && initialAmount.trim() ? initialAmount : '25'
+  );
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
   const [paying, setPaying] = useState(false);
   const [receipt, setReceipt] = useState(null);
   const [confirmationPending, setConfirmationPending] = useState(false);
@@ -61,7 +67,7 @@ export default function FundingContributionScreen({ navigation, route }) {
         if (active) setLoading(false);
       });
     return () => { active = false; };
-  }, [getReportById, reportId]);
+  }, [getReportById, reloadKey, reportId]);
 
   const pay = async () => {
     if (!principalCents || paying) return;
@@ -141,11 +147,36 @@ export default function FundingContributionScreen({ navigation, route }) {
     );
   }
 
+  const unavailable = fundingAvailabilityPresentation(report);
+  if (unavailable) {
+    return (
+      <View style={styles.center}>
+        <Ionicons name="shield-checkmark-outline" size={44} color="#2F7D32" />
+        <Text style={styles.centerTitle}>{unavailable.title}</Text>
+        <Text style={styles.centerText}>{unavailable.message}</Text>
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={() => {
+            setLoading(true);
+            setReloadKey((value) => value + 1);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Check cleanup fund eligibility again"
+        >
+          <Text style={styles.primaryButtonText}>Check again</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.goBack()}>
+          <Text style={styles.secondaryButtonText}>Return to report</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]} keyboardShouldPersistTaps="handled">
         <Text style={styles.eyebrow}>CLEANUP FUND</Text>
-        <Text style={styles.title}>Help fund this cleanup</Text>
+        <Text style={styles.title}>{fromReportCreation ? 'Start your cleanup fund' : 'Help fund this cleanup'}</Text>
         <Text style={styles.reportTitle}>{report?.title || 'Litter report'}</Text>
 
         <View style={styles.rewardCard}>
@@ -234,5 +265,7 @@ const styles = StyleSheet.create({
   pendingText: { flex: 1, color: '#7A5810', fontSize: 13, lineHeight: 19 },
   primaryButton: { minWidth: 220, minHeight: 54, marginTop: 22, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#2F7D32' },
   primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+  secondaryButton: { minHeight: 48, marginTop: 10, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
+  secondaryButtonText: { color: '#2F7D32', fontSize: 15, fontWeight: '900' },
   disabled: { opacity: 0.55 },
 });

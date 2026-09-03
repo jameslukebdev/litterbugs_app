@@ -24,7 +24,7 @@ type AdminCase = {
 
 type CaseDetail = {
   case: AdminCase & { context?: Record<string, unknown> };
-  report: { title?: string | null; severity?: string | null; funding_eligibility?: string; photo_paths?: string[] | null } | null;
+  report: { title?: string | null; severity?: string | null; funding_eligibility?: string; funding_hold_reason?: string | null; cancelled_at?: string | null; photo_paths?: string[] | null } | null;
   attempt: { reward_amount_cents?: number; financial_review_summary?: string | null; financial_review_status?: string; dispute_reason?: string | null; dispute_status?: string; first_paid_cleanup?: boolean; payout_status?: string } | null;
   contribution: { principal_amount_cents?: number; platform_fee_cents?: number; total_amount_cents?: number; status?: string; failure_code?: string | null } | null;
   cleaner_history: { completed_cleanups?: number; paid_rewards_sent?: number } | null;
@@ -86,6 +86,28 @@ const decisionGuidance: Record<string, string> = {
 
 const money = (cents = 0) => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(cents / 100);
 
+export function adminDecisionSuccessMessage(action: string) {
+  switch (action) {
+    case 'close_and_refund':
+    case 'reject_and_close':
+      return 'Decision recorded. The report is closed and hidden from the mobile map and report lists. Any eligible refunds are queued.';
+    case 'approve_funding':
+      return 'Decision recorded. The report can now accept cleanup fund contributions.';
+    case 'reject_funding':
+      return 'Decision recorded. Funding is blocked for this report.';
+    case 'approve_cleanup':
+      return 'Decision recorded. The cleanup can continue through reporter review and reward processing.';
+    case 'request_better_photos':
+      return 'Decision recorded. The cleaner was asked to provide better photos.';
+    case 'retry_payout':
+      return 'Decision recorded. The payout was queued for another attempt.';
+    case 'retry_refund':
+      return 'Decision recorded. The refund was queued for another attempt.';
+    default:
+      return 'Decision recorded. The related mobile state has been updated.';
+  }
+}
+
 async function invokeAdmin(body: Record<string, unknown>) {
   const { data, error } = await createClient().functions.invoke('admin-cleanup-case', { body });
   if (error || data?.error) throw new Error(data?.error || error?.message || 'Admin request failed');
@@ -123,6 +145,21 @@ export function AdminInbox() {
     [cases, type],
   );
 
+  function changeStatus(nextStatus: 'open' | 'resolved') {
+    setSelected(null);
+    setReason('');
+    setMessage('');
+    setLoading(true);
+    setStatus(nextStatus);
+  }
+
+  function changeType(nextType: string) {
+    setSelected(null);
+    setReason('');
+    setMessage('');
+    setType(nextType);
+  }
+
   async function openCase(item: AdminCase) {
     setDetailLoading(true);
     setMessage('');
@@ -149,7 +186,7 @@ export function AdminInbox() {
       setSelected(detail as CaseDetail);
       const refreshed = await invokeAdmin({ operation: 'list', status });
       setCases(Array.isArray(refreshed.cases) ? refreshed.cases : []);
-      setMessage('Decision recorded.');
+      setMessage(adminDecisionSuccessMessage(action.value));
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Decision failed');
     } finally { setBusy(''); }
@@ -160,10 +197,10 @@ export function AdminInbox() {
       <section className={styles.inbox}>
         <div className={styles.filters}>
           <div className={styles.segmented}>
-            <button className={status === 'open' ? styles.activeFilter : ''} onClick={() => { setLoading(true); setStatus('open'); }}>Open</button>
-            <button className={status === 'resolved' ? styles.activeFilter : ''} onClick={() => { setLoading(true); setStatus('resolved'); }}>Resolved</button>
+            <button className={status === 'open' ? styles.activeFilter : ''} onClick={() => changeStatus('open')}>Open</button>
+            <button className={status === 'resolved' ? styles.activeFilter : ''} onClick={() => changeStatus('resolved')}>Resolved</button>
           </div>
-          <select value={type} onChange={(event) => setType(event.target.value)} aria-label="Filter case type">
+          <select value={type} onChange={(event) => changeType(event.target.value)} aria-label="Filter case type">
             <option value="all">All review types</option>
             {Object.entries(labels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
@@ -192,6 +229,11 @@ export function AdminInbox() {
               <span className={styles.caseType}>{labels[selected.case.case_type] || selected.case.case_type}</span>
               <h2>{selected.report?.title || selected.case.title}</h2>
               <p>{selected.case.summary}</p>
+              <p className={styles.caseIdentity}>
+                Case {selected.case.id.slice(0, 8)}
+                {selected.case.report_id ? ` · Report ${selected.case.report_id.slice(0, 8)}` : ''}
+                {` · Opened ${new Date(selected.case.created_at).toLocaleString()}`}
+              </p>
             </div>
 
             {selected.attempt?.reward_amount_cents ? (
@@ -251,10 +293,11 @@ export function AdminInbox() {
             {selected.case.status === 'open' ? (
               <div className={styles.decisionPanel}>
                 <p>{decisionGuidance[selected.case.case_type]}</p>
-                <label>Why are you making this decision?<textarea value={reason} onChange={(event) => setReason(event.target.value)} maxLength={1000} placeholder="Describe the photos, payment information, or safety facts that support your choice." /></label>
+                <label>Why are you making this decision? <span className={styles.required}>Required</span><textarea value={reason} onChange={(event) => setReason(event.target.value)} maxLength={1000} minLength={3} required aria-required="true" placeholder="Describe the photos, payment information, or safety facts that support your choice." /></label>
+                <p className={styles.decisionHint}>Enter at least 3 characters to enable a decision.</p>
                 <div className={styles.actionGrid}>
                   {(actions[selected.case.case_type] ?? []).map((action) => (
-                    <button key={action.value} className={action.destructive ? styles.dangerButton : styles.primaryButton} onClick={() => void resolve(action)} disabled={Boolean(busy)}>
+                    <button key={action.value} className={action.destructive ? styles.dangerButton : styles.primaryButton} onClick={() => void resolve(action)} disabled={Boolean(busy) || reason.trim().length < 3}>
                       {busy === action.value ? 'Saving…' : action.label}
                     </button>
                   ))}

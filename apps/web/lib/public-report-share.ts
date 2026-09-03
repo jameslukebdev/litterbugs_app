@@ -8,8 +8,7 @@ import {
   type PublicReportShareModel,
 } from '@/lib/public-report-share-model';
 import { createClient } from '@/lib/supabase/server';
-
-const SIGNED_PHOTO_DURATION_SECONDS = 60 * 60;
+import { embedSocialCardPhoto } from '@/lib/social-card-photo';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type CleanupAttempt = Database['public']['Tables']['cleanup_attempts']['Row'];
@@ -34,20 +33,6 @@ function litterTypes(report: Report) {
     ...(report.litter_types ?? []),
     ...(report.types?.trim() ? [report.types.trim()] : []),
   ];
-}
-
-async function signedPhotoUrl(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  bucket: 'report_photos' | 'cleanup_photos',
-  path: string | null | undefined,
-) {
-  if (!path) return null;
-
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .createSignedUrl(path, SIGNED_PHOTO_DURATION_SECONDS);
-
-  return error ? null : data?.signedUrl ?? null;
 }
 
 export async function loadPublicReportShare(reportId: string): Promise<PublicReportShareModel | null> {
@@ -113,8 +98,8 @@ export async function loadPublicReportShare(reportId: string): Promise<PublicRep
   }
 
   const [beforePhotoUrl, afterPhotoUrl] = await Promise.all([
-    signedPhotoUrl(supabase, 'report_photos', report.photo_paths?.[0]),
-    signedPhotoUrl(supabase, 'cleanup_photos', afterPhoto?.storage_path),
+    embedSocialCardPhoto(supabase, 'report_photos', report.photo_paths?.[0]),
+    embedSocialCardPhoto(supabase, 'cleanup_photos', afterPhoto?.storage_path),
   ]);
 
   return {

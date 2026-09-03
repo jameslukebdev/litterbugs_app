@@ -10,7 +10,7 @@ import {
 
 import { supabase } from './supabase';
 import { useProfile } from './profile';
-import { completedImpactReportFilter } from './reportVisibility';
+import { completedImpactReportFilter, isVisibleReport } from './reportVisibility';
 
 export const DEFAULT_MAP_REGION = Object.freeze({
   latitude: 35.6009,
@@ -79,6 +79,7 @@ export function ReportsProvider({ children }) {
       .from('reports')
       .select(REPORT_SELECT)
       .eq('is_sample', false)
+      .is('cancelled_at', null)
       .or(completedImpactReportFilter(nowIso));
 
     if (reportsError) {
@@ -103,6 +104,7 @@ export function ReportsProvider({ children }) {
       .select(REPORT_SELECT)
       .eq('id', reportId)
       .eq('is_sample', false)
+      .is('cancelled_at', null)
       .maybeSingle();
 
     if (reportError) throw reportError;
@@ -140,6 +142,9 @@ export function ReportsProvider({ children }) {
     if (!nextReport?.id) return;
 
     setAllReports((current) => {
+      if (!isVisibleReport(nextReport)) {
+        return current.filter(({ id }) => id !== nextReport.id);
+      }
       const reportIndex = current.findIndex(({ id }) => id === nextReport.id);
       if (reportIndex === -1) return [...current, nextReport];
 

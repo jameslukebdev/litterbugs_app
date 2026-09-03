@@ -79,8 +79,13 @@ import {
   loadReportFundingFeedback,
   requestGeminiReview,
 } from './lib/funding';
+import { calculatePlatformFee, parseContributionAmount } from './lib/fundingMath';
 import { shouldClusterReports } from './lib/mapClustering';
 import { hasRequiredReportPhoto } from './lib/reportDraft';
+import {
+  reportWithdrawalErrorMessage,
+  withdrawOwnReport,
+} from './lib/reportWithdrawal';
 import {
   createReportShareModel,
   isReportShareable,
@@ -181,6 +186,8 @@ export default function MapScreen({ route, navigation }) {
     severity: '',
     selectedNotes: [],
     notes: '',
+    startingFundingChoice: 'none',
+    startingFundingOther: '',
   });
   const [mapType, setMapType] = useState('standard');
   const [selectedReport, setSelectedReport] = useState(null);
@@ -408,6 +415,16 @@ const hasAttachedReportPhoto = () => (
   })
 );
 
+const startingFundingAmount = form.startingFundingChoice === 'other'
+  ? form.startingFundingOther
+  : form.startingFundingChoice;
+const wantsStartingFunding = fundingEnabled
+  && !isEditing
+  && form.startingFundingChoice !== 'none';
+const startingContributionCents = wantsStartingFunding
+  ? parseContributionAmount(startingFundingAmount)
+  : null;
+
 // Determines whether the user can move forward from a given step
 const canAdvanceFromStep = (step = reportStep) => {
   // Every report needs enough visual context for discovery and cleanup review.
@@ -621,6 +638,8 @@ const beginReportAtCoordinate = async (coord) => {
       severity: '',
       selectedNotes: [],
       notes: '',
+      startingFundingChoice: 'none',
+      startingFundingOther: '',
     });
 
     resetReportWizard();
@@ -832,9 +851,17 @@ const reconcileReportAfterBlockedMutation = async (reportId) => {
   
         data.photo_paths = photoPaths;
         if (geminiReviewEnabled) {
-          requestGeminiReview({ reportId: data.id }).catch((reviewError) => {
-            console.log('Report funding photo review deferred:', reviewError);
-          });
+          if (wantsStartingFunding) {
+            try {
+              await requestGeminiReview({ reportId: data.id });
+            } catch (reviewError) {
+              console.log('Report funding photo review deferred:', reviewError);
+            }
+          } else {
+            requestGeminiReview({ reportId: data.id }).catch((reviewError) => {
+              console.log('Report funding photo review deferred:', reviewError);
+            });
+          }
         }
       }
   
@@ -848,10 +875,18 @@ const reconcileReportAfterBlockedMutation = async (reportId) => {
       setEditingReportId(null);
       resetReportWizard();
 
-      Alert.alert(
-        'Report saved',
-        'Thanks for helping keep the community clean!'
-      );
+      if (!isEditing && startingContributionCents) {
+        navigation.getParent()?.navigate('FundingContribution', {
+          reportId: data.id,
+          initialAmount: (startingContributionCents / 100).toFixed(2),
+          fromReportCreation: true,
+        });
+      } else {
+        Alert.alert(
+          'Report saved',
+          'Thanks for helping keep the community clean!'
+        );
+      }
     } catch (e) {
       console.error('Unexpected save error:', e);
       Alert.alert(
@@ -871,6 +906,14 @@ const submitReport = async () => {
       'Add at least one clear photo so volunteers can identify the cleanup site.'
     );
     jumpToReportStep(1);
+    return;
+  }
+
+  if (wantsStartingFunding && !startingContributionCents) {
+    Alert.alert(
+      'Enter a valid contribution',
+      'Choose at least $5 and no more than $5,000, or select Not now.'
+    );
     return;
   }
 
@@ -2494,6 +2537,87 @@ const renderReportStep = () => {
 
           </View>
 
+          {fundingEnabled && !isEditing ? (
+            <View style={styles.startingFundCard}>
+              <View style={styles.startingFundHeading}>
+                <Ionicons name="heart-outline" size={23} color="#2F7D32" />
+                <View style={styles.startingFundHeadingCopy}>
+                  <Text style={styles.startingFundTitle}>Start the cleanup fund</Text>
+                  <Text style={styles.startingFundText}>
+                    Optionally add your own contribution after this report’s photo passes its safety check.
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.startingFundChoices}>
+                {[
+                  { value: 'none', label: 'Not now' },
+                  { value: '5', label: '$5' },
+                  { value: '15', label: '$15' },
+                  { value: '25', label: '$25' },
+                  { value: 'other', label: 'Other' },
+                ].map((choice) => {
+                  const selected = form.startingFundingChoice === choice.value;
+                  return (
+                    <TouchableOpacity
+                      key={choice.value}
+                      style={[
+                        styles.startingFundChoice,
+                        selected && styles.startingFundChoiceSelected,
+                      ]}
+                      onPress={() => setForm((current) => ({
+                        ...current,
+                        startingFundingChoice: choice.value,
+                      }))}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: selected }}
+                      accessibilityLabel={choice.value === 'none'
+                        ? 'Do not start a cleanup fund'
+                        : `Start cleanup fund with ${choice.label}`}
+                    >
+                      <Text style={[
+                        styles.startingFundChoiceText,
+                        selected && styles.startingFundChoiceTextSelected,
+                      ]}>
+                        {choice.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {form.startingFundingChoice === 'other' ? (
+                <View style={styles.startingFundOtherRow}>
+                  <Text style={styles.startingFundDollar}>$</Text>
+                  <TextInput
+                    value={form.startingFundingOther}
+                    onChangeText={(value) => setForm((current) => ({
+                      ...current,
+                      startingFundingOther: value,
+                    }))}
+                    keyboardType="decimal-pad"
+                    placeholder="5.00"
+                    style={styles.startingFundOtherInput}
+                    editable={!isSaving}
+                    accessibilityLabel="Starting cleanup fund amount"
+                  />
+                </View>
+              ) : null}
+
+              {wantsStartingFunding ? (
+                startingContributionCents ? (
+                  <Text style={styles.startingFundTotal}>
+                    Contribution {formatUsd(startingContributionCents)} · Litterbugs fee {formatUsd(calculatePlatformFee(startingContributionCents))} · Total {formatUsd(startingContributionCents + calculatePlatformFee(startingContributionCents))}
+                  </Text>
+                ) : (
+                  <Text style={styles.requiredHint}>Enter an amount from $5 to $5,000.</Text>
+                )
+              ) : (
+                <Text style={styles.startingFundHelper}>You can add funds from the report later.</Text>
+              )}
+            </View>
+          ) : null}
+
 
           <TouchableOpacity
             style={[
@@ -3676,7 +3800,7 @@ const renderReportStep = () => {
       <View style={styles.reportFooter}>
 
 
-        {/* DELETE — signed-in owner only */}
+        {/* WITHDRAW — signed-in owner only */}
         {canEditOrDeleteSelectedReport && !selectedReport?.funding_locked_at && (
 
           <TouchableOpacity
@@ -3687,69 +3811,41 @@ const renderReportStep = () => {
             onPress={() => {
 
               Alert.alert(
-                'Delete report?',
-                'This action cannot be undone.',
+                'Withdraw report?',
+                'This removes the report from the map and report lists. It cannot be undone.',
                 [
                   {
                     text: 'Cancel',
                     style: 'cancel',
                   },
                   {
-                    text: 'Delete',
+                    text: 'Withdraw',
                     style: 'destructive',
 
                     onPress: async () => {
 
-                      const { data: deletedReport, error } = await supabase
-                        .from('reports')
-                        .delete()
-                        .eq(
-                          'id',
-                          selectedReport.id
-                        )
-                        .eq('user_id', currentUserId)
-                        .select('id')
-                        .maybeSingle();
-
-                      if (error) {
+                      try {
+                        await withdrawOwnReport(selectedReport.id);
+                        removeReport(selectedReport.id);
+                        setDetailsOpen(false);
+                        setSelectedReport(null);
                         Alert.alert(
-                          'Delete failed',
-                          error.message
+                          'Report withdrawn',
+                          'The report is no longer visible on the map or in report lists.'
                         );
-
-                        return;
-                      }
-
-                      if (!deletedReport) {
-                        const latestReport = await reconcileReportAfterBlockedMutation(
-                          selectedReport.id
+                      } catch (error) {
+                        Alert.alert(
+                          'Couldn’t withdraw report',
+                          reportWithdrawalErrorMessage(error)
                         );
-
-                        if (latestReport) {
-                          setSelectedReport(latestReport);
-                          Alert.alert(
-                            'Report locked',
-                            'Cleanup activity has started, so this report can no longer be deleted.'
-                          );
-                        } else {
-                          setDetailsOpen(false);
-                          setSelectedReport(null);
-                          Alert.alert('Report unavailable', 'This report was already removed.');
-                        }
-                        return;
                       }
-
-                      removeReport(selectedReport.id);
-
-                      setDetailsOpen(false);
-                      setSelectedReport(null);
                     },
                   },
                 ]
               );
             }}
             accessibilityRole="button"
-            accessibilityLabel="Delete report"
+            accessibilityLabel="Withdraw report"
           >
 
             <Ionicons
@@ -3759,7 +3855,7 @@ const renderReportStep = () => {
             />
 
             <Text style={styles.reportDeleteButtonText}>
-              Delete
+              Withdraw
             </Text>
 
           </TouchableOpacity>
@@ -3797,6 +3893,10 @@ const renderReportStep = () => {
 
                 notes:
                   selectedReport.notes_other || '',
+
+                startingFundingChoice: 'none',
+
+                startingFundingOther: '',
               });
 
 
@@ -4285,6 +4385,113 @@ reviewNotes: {
   fontSize: 15,
   lineHeight: 22,
   color: '#374151',
+},
+
+startingFundCard: {
+  marginBottom: 24,
+  padding: 18,
+  borderRadius: 20,
+  borderWidth: 1,
+  borderColor: '#B7D7BA',
+  backgroundColor: '#F1F8F2',
+},
+
+startingFundHeading: {
+  flexDirection: 'row',
+  alignItems: 'flex-start',
+  gap: 11,
+},
+
+startingFundHeadingCopy: {
+  flex: 1,
+},
+
+startingFundTitle: {
+  color: '#245F2A',
+  fontSize: 17,
+  fontWeight: '900',
+},
+
+startingFundText: {
+  marginTop: 4,
+  color: '#526C55',
+  fontSize: 14,
+  lineHeight: 20,
+},
+
+startingFundChoices: {
+  marginTop: 16,
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  gap: 8,
+},
+
+startingFundChoice: {
+  minHeight: 42,
+  minWidth: 62,
+  paddingHorizontal: 13,
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: 999,
+  borderWidth: 1,
+  borderColor: '#A9B9AA',
+  backgroundColor: '#FFFFFF',
+},
+
+startingFundChoiceSelected: {
+  borderColor: '#2F7D32',
+  backgroundColor: '#2F7D32',
+},
+
+startingFundChoiceText: {
+  color: '#405044',
+  fontSize: 14,
+  fontWeight: '800',
+},
+
+startingFundChoiceTextSelected: {
+  color: '#FFFFFF',
+},
+
+startingFundOtherRow: {
+  minHeight: 52,
+  marginTop: 13,
+  flexDirection: 'row',
+  alignItems: 'center',
+  borderWidth: 1,
+  borderColor: '#9DB29F',
+  borderRadius: 13,
+  backgroundColor: '#FFFFFF',
+},
+
+startingFundDollar: {
+  paddingLeft: 14,
+  color: '#245F2A',
+  fontSize: 21,
+  fontWeight: '900',
+},
+
+startingFundOtherInput: {
+  flex: 1,
+  minHeight: 52,
+  paddingHorizontal: 8,
+  color: '#1F2937',
+  fontSize: 20,
+  fontWeight: '800',
+},
+
+startingFundTotal: {
+  marginTop: 13,
+  color: '#315F35',
+  fontSize: 13,
+  lineHeight: 19,
+  fontWeight: '700',
+},
+
+startingFundHelper: {
+  marginTop: 12,
+  color: '#68756B',
+  fontSize: 13,
 },
 
 wizardSubmitButton: {

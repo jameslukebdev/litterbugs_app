@@ -85,7 +85,7 @@ describe('mobile configuration non-regression', () => {
         env: {
           APP_VARIANT: 'production',
           ENABLE_APPLE_PAY: 'false',
-          EXPO_PUBLIC_FACEBOOK_LOGIN_ENABLED: 'true',
+          EXPO_PUBLIC_FACEBOOK_LOGIN_ENABLED: 'false',
           IOS_BUNDLE_IDENTIFIER: 'com.litterbugs.app',
           ANDROID_PACKAGE_IDENTIFIER: 'com.litterbugs.app',
         },

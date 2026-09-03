@@ -108,6 +108,9 @@ export async function prepareNativeReportShareImage({
   cacheDirectory,
   getInfoAsync,
   downloadAsync,
+  timeoutMs = 8000,
+  setTimeoutFn = setTimeout,
+  clearTimeoutFn = clearTimeout,
 }) {
   if (!model?.shareImageUrl || !cacheDirectory || !downloadAsync) return null;
 
@@ -118,8 +121,21 @@ export async function prepareNativeReportShareImage({
     if (existing?.exists && Number(existing.size) > 0) return destination;
   }
 
-  const result = await downloadAsync(model.shareImageUrl, destination);
-  return result?.uri || destination;
+  let timeoutId;
+  try {
+    const result = await Promise.race([
+      downloadAsync(model.shareImageUrl, destination),
+      new Promise((_, reject) => {
+        timeoutId = setTimeoutFn(
+          () => reject(new Error('report_share_image_timeout')),
+          timeoutMs
+        );
+      }),
+    ]);
+    return result?.uri || destination;
+  } finally {
+    if (timeoutId !== undefined) clearTimeoutFn(timeoutId);
+  }
 }
 
 function impactSummary(impact) {
