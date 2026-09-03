@@ -116,7 +116,7 @@ export async function prepareNativeReportShareImage({
   deleteAsync,
   getInfoAsync,
   downloadAsync,
-  timeoutMs = 8000,
+  timeoutMs = 20000,
   setTimeoutFn = setTimeout,
   clearTimeoutFn = clearTimeout,
 }) {
