@@ -11,7 +11,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const report = await loadPublicReportShare(id);
   if (!report) return new Response('Report not found', { status: 404 });
 
-  return new ImageResponse(
+  const image = new ImageResponse(
     createElement(ReportSocialCard, {
       report,
       logoUrl: new URL('/brand/litterbugs-logo.png', request.url).toString(),
@@ -19,10 +19,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     {
       width: 1080,
       height: 1350,
-      headers: {
-        'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=86400',
-        'Content-Disposition': `inline; filename="litterbugs-${encodeURIComponent(report.id)}.png"`,
-      },
     },
   );
+
+  return new Response(await image.arrayBuffer(), {
+    headers: {
+      'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=86400',
+      'Content-Disposition': `inline; filename="litterbugs-${encodeURIComponent(report.id)}.png"`,
+      'Content-Type': 'image/png',
+    },
+  });
 }

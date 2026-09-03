@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { convert, sharp, rotate, resize, webp, toBuffer } = vi.hoisted(() => ({
+const { convert, sharp, rotate, resize, jpeg, toBuffer } = vi.hoisted(() => ({
   convert: vi.fn(),
   sharp: vi.fn(),
   rotate: vi.fn(),
   resize: vi.fn(),
-  webp: vi.fn(),
+  jpeg: vi.fn(),
   toBuffer: vi.fn(),
 }));
 
@@ -19,8 +19,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   convert.mockResolvedValue(new Uint8Array([4, 5, 6]));
   toBuffer.mockResolvedValue(Buffer.from([7, 8, 9]));
-  webp.mockReturnValue({ toBuffer });
-  resize.mockReturnValue({ webp });
+  jpeg.mockReturnValue({ toBuffer });
+  resize.mockReturnValue({ jpeg });
   rotate.mockReturnValue({ resize });
   sharp.mockReturnValue({ rotate });
 });
@@ -37,7 +37,8 @@ describe('social card photo embedding', () => {
 
     expect(convert).toHaveBeenCalledOnce();
     expect(resize).toHaveBeenCalledWith(expect.objectContaining({ width: 720, height: 720 }));
-    expect(url).toBe('data:image/webp;base64,BwgJ');
+    expect(jpeg).toHaveBeenCalledWith({ quality: 82, mozjpeg: true });
+    expect(url).toBe('data:image/jpeg;base64,BwgJ');
   });
 
   it('falls back to a card without a photo when storage cannot deliver it', async () => {

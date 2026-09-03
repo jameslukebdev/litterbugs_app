@@ -158,7 +158,9 @@ describe('report sharing', () => {
       .mockResolvedValueOnce({ exists: false })
       .mockResolvedValueOnce({ exists: true, size: 2048 });
     const downloadAsync = vi.fn().mockResolvedValue({
-      uri: 'file:///cache/litterbugs-litter-beside-the-trail-active-report-1.png',
+      uri: 'file:///cache/litterbugs-share-v2-litter-beside-the-trail-active-report-1.png',
+      status: 200,
+      mimeType: 'image/png',
     });
 
     const first = await prepareNativeReportShareImage({
@@ -174,11 +176,29 @@ describe('report sharing', () => {
       downloadAsync,
     });
 
-    expect(reportShareImageFilename(model)).toBe('litterbugs-litter-beside-the-trail-active-report-1.png');
-    expect(first).toBe('file:///cache/litterbugs-litter-beside-the-trail-active-report-1.png');
+    expect(reportShareImageFilename(model)).toBe('litterbugs-share-v2-litter-beside-the-trail-active-report-1.png');
+    expect(first).toBe('file:///cache/litterbugs-share-v2-litter-beside-the-trail-active-report-1.png');
     expect(second).toBe(first);
     expect(downloadAsync).toHaveBeenCalledTimes(1);
     expect(downloadAsync).toHaveBeenCalledWith(model.shareImageUrl, first);
+  });
+
+  it('rejects and removes a server error page saved with a PNG filename', async () => {
+    const model = createReportShareModel({ report: availableReport });
+    const deleteAsync = vi.fn().mockResolvedValue(undefined);
+
+    await expect(prepareNativeReportShareImage({
+      model,
+      cacheDirectory: 'file:///cache/',
+      deleteAsync,
+      downloadAsync: vi.fn().mockResolvedValue({
+        uri: 'file:///cache/bad.png',
+        status: 500,
+        mimeType: 'text/html',
+      }),
+    })).rejects.toThrow('report_share_image_invalid_response');
+
+    expect(deleteAsync).toHaveBeenCalledWith('file:///cache/bad.png', { idempotent: true });
   });
 
   it('stops waiting for a stalled social card so text sharing can continue', async () => {

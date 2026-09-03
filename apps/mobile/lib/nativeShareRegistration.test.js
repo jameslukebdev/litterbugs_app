@@ -16,6 +16,7 @@ describe('native sharing registration', () => {
     expect(mapScreenSource).toContain("import RNShare from 'react-native-share';");
     expect(mapScreenSource).toContain('share: RNShare.open');
     expect(mapScreenSource).toContain('shareSingle: RNShare.shareSingle');
+    expect(mapScreenSource).toContain("Linking.canOpenURL('instagram-stories://share')");
     expect(mapScreenSource).not.toContain('NativeModules.RNShare');
     expect(mapScreenSource).not.toContain('NativeShare.share');
   });

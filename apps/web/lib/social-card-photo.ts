@@ -46,10 +46,10 @@ export async function embedSocialCardPhoto(
         position: 'centre',
         withoutEnlargement: true,
       })
-      .webp({ quality: 78 })
+      .jpeg({ quality: 82, mozjpeg: true })
       .toBuffer();
 
-    return `data:image/webp;base64,${cardImage.toString('base64')}`;
+    return `data:image/jpeg;base64,${cardImage.toString('base64')}`;
   } catch {
     return null;
   }

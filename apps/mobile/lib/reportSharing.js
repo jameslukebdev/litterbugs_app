@@ -100,12 +100,20 @@ export function reportShareImageFilename(model) {
 
   const state = model?.state === 'completed' ? 'completed' : 'active';
   const id = cleanText(model?.id).replace(/[^a-z0-9-]/gi, '').slice(0, 18) || 'report';
-  return `litterbugs-${slug || 'cleanup-report'}-${state}-${id}.png`;
+  return `litterbugs-share-v2-${slug || 'cleanup-report'}-${state}-${id}.png`;
+}
+
+function responseHeader(headers, name) {
+  const match = Object.entries(headers ?? {}).find(
+    ([key]) => key.toLowerCase() === name.toLowerCase()
+  );
+  return match?.[1] ?? null;
 }
 
 export async function prepareNativeReportShareImage({
   model,
   cacheDirectory,
+  deleteAsync,
   getInfoAsync,
   downloadAsync,
   timeoutMs = 8000,
@@ -132,6 +140,19 @@ export async function prepareNativeReportShareImage({
         );
       }),
     ]);
+    const mimeType = cleanText(
+      result?.mimeType || responseHeader(result?.headers, 'content-type')
+    ).toLowerCase();
+    const validStatus = Number(result?.status) >= 200 && Number(result?.status) < 300;
+    const validImage = mimeType === REPORT_SHARE_IMAGE_MIME_TYPE;
+
+    if (!validStatus || !validImage) {
+      if (deleteAsync) {
+        await deleteAsync(result?.uri || destination, { idempotent: true }).catch(() => {});
+      }
+      throw new Error('report_share_image_invalid_response');
+    }
+
     return result?.uri || destination;
   } finally {
     if (timeoutId !== undefined) clearTimeoutFn(timeoutId);

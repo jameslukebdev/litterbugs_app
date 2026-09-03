@@ -1411,6 +1411,7 @@ useEffect(() => {
     return prepareNativeReportShareImage({
       model,
       cacheDirectory: FileSystem.cacheDirectory,
+      deleteAsync: FileSystem.deleteAsync,
       getInfoAsync: FileSystem.getInfoAsync,
       downloadAsync: FileSystem.downloadAsync,
     });
@@ -1453,6 +1454,21 @@ useEffect(() => {
       Alert.alert(
         'Instagram sharing unavailable',
         'Direct Instagram Stories sharing isn’t available in this app version. Use More sharing options instead.'
+      );
+      return;
+    }
+
+    let instagramAvailable = false;
+    try {
+      instagramAvailable = await Linking.canOpenURL('instagram-stories://share');
+    } catch (error) {
+      console.log('Instagram availability check error:', error);
+    }
+
+    if (!instagramAvailable) {
+      Alert.alert(
+        'Instagram isn’t available',
+        'Install Instagram or choose More sharing options to send the report another way.'
       );
       return;
     }
