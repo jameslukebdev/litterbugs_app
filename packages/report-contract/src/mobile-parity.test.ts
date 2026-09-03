@@ -22,6 +22,10 @@ const mobileReportsSource = readFileSync(
   new URL('../../../apps/mobile/lib/reports.js', import.meta.url),
   'utf8',
 );
+const mobileReportPhotoSource = readFileSync(
+  new URL('../../../apps/mobile/lib/reportPhotoSelection.js', import.meta.url),
+  'utf8',
+);
 
 function block(pattern: RegExp): string {
   const match = mobileSource.match(pattern);
@@ -74,7 +78,11 @@ describe('mobile report parity', () => {
     expect(MAX_REPORT_DISTANCE_MILES).toBe(10);
     expect(mobileSource).toContain('const MAX_REPORT_DISTANCE_MILES = 10;');
     expect(MAX_REPORT_PHOTOS).toBe(3);
-    expect(mobileSource).toContain('photos: [...prev.photos, uri].slice(0, 3)');
+    expect(mobileReportPhotoSource).toContain('export const MAX_REPORT_PHOTOS = 3;');
+    expect(mobileReportPhotoSource).toContain('allowsMultipleSelection: true');
+    expect(mobileReportPhotoSource).toContain('selectionLimit: remainingSlots');
+    expect(mobileReportPhotoSource).toContain('.slice(0, MAX_REPORT_PHOTOS)');
+    expect(mobileSource).toContain('mergeReportPhotoUris(prev.photos, result.assets)');
     expect(MAX_REPORT_TITLE_LENGTH).toBe(80);
     expect(mobileSource).toContain('maxLength={80}');
     expect(MAX_REPORT_NOTES_LENGTH).toBe(500);

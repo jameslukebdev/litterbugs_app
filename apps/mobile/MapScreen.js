@@ -83,6 +83,11 @@ import { calculatePlatformFee, parseContributionAmount } from './lib/fundingMath
 import { shouldClusterReports } from './lib/mapClustering';
 import { hasRequiredReportPhoto } from './lib/reportDraft';
 import {
+  MAX_REPORT_PHOTOS,
+  mergeReportPhotoUris,
+  reportPhotoPickerOptions,
+} from './lib/reportPhotoSelection';
+import {
   reportWithdrawalErrorMessage,
   withdrawOwnReport,
 } from './lib/reportWithdrawal';
@@ -1045,30 +1050,20 @@ const submitReport = async () => {
   const pickImage = async () => {
     if (isSaving) return;
     console.log('pickImage RUNNING');
-  
-    // 1. Ask for permission
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert(
-        'Permission required',
-        'Please allow photo access in Settings to attach pictures.'
-      );
-      return;
-    }
-  
+
     try {
-      // 2. Open the library with NO options (most compatible)
-      const result = await ImagePicker.launchImageLibraryAsync();
+      // PHPicker grants access only to the photos the user selects, so requesting
+      // full-library permission first is unnecessary and can open a separate
+      // limited-access sheet instead of the report photo picker on iOS.
+      const result = await ImagePicker.launchImageLibraryAsync(
+        reportPhotoPickerOptions(form.photos.length)
+      );
       console.log('RAW picker result:', result);
-  
-      // 3. Handle selection
+
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        const uri = result.assets[0].uri;
-        console.log('Selected URI:', uri);
-  
         setForm((prev) => ({
           ...prev,
-          photos: [...prev.photos, uri].slice(0, 3), // max 3 photos
+          photos: mergeReportPhotoUris(prev.photos, result.assets),
         }));
       }
     } catch (e) {
@@ -1914,11 +1909,11 @@ const renderReportStep = () => {
                 }
                 accessibilityRole="button"
                 accessibilityLabel={
-                  form.photos.length >= 3
+                  form.photos.length >= MAX_REPORT_PHOTOS
                     ? 'Three report photos added'
                     : isEditing
-                      ? 'Add a replacement report photo'
-                      : 'Add a report photo'
+                      ? `Choose up to ${MAX_REPORT_PHOTOS - form.photos.length} replacement photos`
+                      : `Choose up to ${MAX_REPORT_PHOTOS - form.photos.length} report photos`
                 }
               >
                 <View style={styles.wizardPhotoIcon}>
@@ -1930,13 +1925,15 @@ const renderReportStep = () => {
                 </View>
 
                 <Text style={styles.wizardPhotoButtonTitle}>
-                  {form.photos.length >= 3
+                  {form.photos.length >= MAX_REPORT_PHOTOS
                     ? '3 photos added'
-                    : isEditing ? 'Add another replacement' : 'Add a photo'}
+                    : form.photos.length > 0
+                      ? `Add up to ${MAX_REPORT_PHOTOS - form.photos.length} more`
+                      : isEditing ? 'Choose replacement photos' : 'Choose photos'}
                 </Text>
 
                 <Text style={styles.wizardPhotoHelper}>
-                  Up to 3 photos
+                  Select up to 3 at once
                 </Text>
               </TouchableOpacity>
 
