@@ -35,7 +35,7 @@
       "environment": "production",
       "env": {
         "APP_VARIANT": "production",
-        "EXPO_PUBLIC_FACEBOOK_LOGIN_ENABLED": "false",
+        "EXPO_PUBLIC_FACEBOOK_LOGIN_ENABLED": "true",
         "ENABLE_APPLE_PAY": "false",
         "IOS_BUNDLE_IDENTIFIER": "com.litterbugs.app",
         "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app"
@@ -86,7 +86,7 @@
       "environment": "production",
       "env": {
         "APP_VARIANT": "production",
-        "EXPO_PUBLIC_FACEBOOK_LOGIN_ENABLED": "false",
+        "EXPO_PUBLIC_FACEBOOK_LOGIN_ENABLED": "true",
         "ENABLE_APPLE_PAY": "false",
         "ENABLE_IOS_ASSOCIATED_DOMAINS": "false",
         "IOS_BUNDLE_IDENTIFIER": "com.litterbugs.app",
