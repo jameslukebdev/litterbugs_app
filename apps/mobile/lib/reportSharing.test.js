@@ -4,6 +4,7 @@ import {
   createNativeReportShareContent,
   createReportShareModel,
   formatReportShareMessage,
+  isInstagramStoriesAvailable,
   isReportShareable,
   prepareNativeReportShareImage,
   reportShareImageFilename,
@@ -38,6 +39,40 @@ afterEach(() => {
 });
 
 describe('report sharing', () => {
+  it('detects Instagram on Android by its installed package instead of its URL scheme', async () => {
+    const isPackageInstalled = vi.fn().mockResolvedValue({ isInstalled: true });
+    const canOpenURL = vi.fn().mockResolvedValue(false);
+
+    await expect(isInstagramStoriesAvailable({
+      platform: 'android',
+      isPackageInstalled,
+      canOpenURL,
+    })).resolves.toBe(true);
+
+    expect(isPackageInstalled).toHaveBeenCalledWith('com.instagram.android');
+    expect(canOpenURL).not.toHaveBeenCalled();
+  });
+
+  it('reports Instagram missing on Android when its package is not installed', async () => {
+    await expect(isInstagramStoriesAvailable({
+      platform: 'android',
+      isPackageInstalled: vi.fn().mockResolvedValue({ isInstalled: false }),
+      canOpenURL: vi.fn(),
+    })).resolves.toBe(false);
+  });
+
+  it('keeps the Instagram Stories URL-scheme check on iOS', async () => {
+    const canOpenURL = vi.fn().mockResolvedValue(true);
+
+    await expect(isInstagramStoriesAvailable({
+      platform: 'ios',
+      isPackageInstalled: vi.fn(),
+      canOpenURL,
+    })).resolves.toBe(true);
+
+    expect(canOpenURL).toHaveBeenCalledWith('instagram-stories://share');
+  });
+
   it('shares only available active reports and completed impact records', () => {
     expect(isReportShareable(availableReport, now)).toBe(true);
     expect(isReportShareable({ ...availableReport, cleanup_state: 'completed' }, now)).toBe(true);

@@ -50,6 +50,21 @@ export function isReportShareable(report, now = new Date()) {
   return Number.isFinite(expiresAt) && expiresAt > now.getTime();
 }
 
+export async function isInstagramStoriesAvailable({
+  platform,
+  isPackageInstalled,
+  canOpenURL,
+}) {
+  if (platform === 'android') {
+    if (!isPackageInstalled) return false;
+    const result = await isPackageInstalled('com.instagram.android');
+    return Boolean(result?.isInstalled ?? result);
+  }
+
+  if (!canOpenURL) return false;
+  return Boolean(await canOpenURL('instagram-stories://share'));
+}
+
 export function createReportShareModel({
   report,
   impact = null,

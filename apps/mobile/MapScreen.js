@@ -93,6 +93,7 @@ import {
 } from './lib/reportWithdrawal';
 import {
   createReportShareModel,
+  isInstagramStoriesAvailable,
   isReportShareable,
   prepareNativeReportShareImage,
   reportShareActionLabel,
@@ -1459,7 +1460,11 @@ useEffect(() => {
 
     let instagramAvailable = false;
     try {
-      instagramAvailable = await Linking.canOpenURL('instagram-stories://share');
+      instagramAvailable = await isInstagramStoriesAvailable({
+        platform: Platform.OS,
+        isPackageInstalled: RNShare.isPackageInstalled,
+        canOpenURL: Linking.canOpenURL,
+      });
     } catch (error) {
       console.log('Instagram availability check error:', error);
     }

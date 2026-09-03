@@ -17,7 +17,8 @@ describe('native sharing registration', () => {
     expect(mapScreenSource).toContain('share: RNShare.open');
     expect(mapScreenSource).toContain('shareSingle: RNShare.shareSingle');
     expect(mapScreenSource).toContain('readAsStringAsync: FileSystem.readAsStringAsync');
-    expect(mapScreenSource).toContain("Linking.canOpenURL('instagram-stories://share')");
+    expect(mapScreenSource).toContain('isPackageInstalled: RNShare.isPackageInstalled');
+    expect(mapScreenSource).toContain('canOpenURL: Linking.canOpenURL');
     expect(mapScreenSource).not.toContain('NativeModules.RNShare');
     expect(mapScreenSource).not.toContain('NativeShare.share');
   });
