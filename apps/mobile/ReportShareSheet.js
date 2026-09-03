@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   preview: {
-    minHeight: 92,
+    height: 92,
     flexDirection: 'row',
     marginHorizontal: 22,
     marginBottom: 18,
@@ -214,13 +214,13 @@ const styles = StyleSheet.create({
   },
   previewMedia: {
     width: 92,
-    minHeight: 92,
+    height: 92,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
     backgroundColor: '#EAF0EB',
   },
-  previewPhoto: { width: '100%', height: '100%' },
+  previewPhoto: { width: 92, height: 92 },
   previewLogo: { width: 68, height: 54 },
   previewCopy: {
     flex: 1,

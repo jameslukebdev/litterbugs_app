@@ -6,6 +6,10 @@ const mapScreenSource = readFileSync(
   new URL('../MapScreen.js', import.meta.url),
   'utf8'
 );
+const reportShareSheetSource = readFileSync(
+  new URL('../ReportShareSheet.js', import.meta.url),
+  'utf8'
+);
 
 describe('native sharing registration', () => {
   it('uses the New Architecture-compatible react-native-share TurboModule', () => {
@@ -14,5 +18,12 @@ describe('native sharing registration', () => {
     expect(mapScreenSource).toContain('shareSingle: RNShare.shareSingle');
     expect(mapScreenSource).not.toContain('NativeModules.RNShare');
     expect(mapScreenSource).not.toContain('NativeShare.share');
+  });
+
+  it('keeps the report preview card at a bounded height', () => {
+    expect(reportShareSheetSource).toMatch(/preview:\s*\{\s*height: 92,/);
+    expect(reportShareSheetSource).toMatch(/previewMedia:\s*\{[\s\S]*?height: 92,/);
+    expect(reportShareSheetSource).toContain("previewPhoto: { width: 92, height: 92 }");
+    expect(reportShareSheetSource).not.toMatch(/preview(?:Media)?:\s*\{[\s\S]*?minHeight: 92,/);
   });
 });
