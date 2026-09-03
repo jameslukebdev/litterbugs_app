@@ -214,6 +214,8 @@ export default function MapScreen({ route, navigation }) {
   const [reportShareSheetOpen, setReportShareSheetOpen] = useState(false);
   const [reportShareBusyAction, setReportShareBusyAction] = useState(null);
   const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
+  const [reportLocationVerification, setReportLocationVerification] = useState('idle');
+  const reportLocationRequestRef = useRef(0);
   const [paymentsEnabled, setPaymentsEnabled] = useState(false);
   const [geminiReviewEnabled, setGeminiReviewEnabled] = useState(false);
   const [reportFundingFeedback, setReportFundingFeedback] = useState(null);
@@ -580,21 +582,62 @@ const getDistanceMiles = (pointA, pointB) => {
 // Pressing Map opens Litter Form
 // Reports can only be created near the user's current GPS location
 const beginReportAtCoordinate = async (coord) => {
-  try {
-    if (!navigation.isFocused()) return;
+  if (!navigation.isFocused()) return;
 
+  const requestId = reportLocationRequestRef.current + 1;
+  reportLocationRequestRef.current = requestId;
+
+  // Open the workflow immediately so a fresh GPS fix never makes the tap feel
+  // unresponsive. Location verification continues in the background, and the
+  // user cannot advance until the selected coordinate has been approved.
+  setDraftCoord(coord);
+  setForm({
+    title: '',
+    selectedTypes: [],
+    types: '',
+    photos: [],
+    severity: '',
+    selectedNotes: [],
+    notes: '',
+    startingFundingChoice: 'none',
+    startingFundingOther: '',
+  });
+  resetReportWizard();
+  setReportLocationVerification('checking');
+  setFormOpen(true);
+
+  const isCurrentRequest = () => reportLocationRequestRef.current === requestId;
+
+  const closeUnverifiedDraft = () => {
+    if (!isCurrentRequest()) return;
+    setDraftCoord(null);
+    setFormOpen(false);
+    setReportLocationVerification('idle');
+    resetReportWizard();
+  };
+
+  try {
     // Check whether location permission is available
     let permission = await Location.getForegroundPermissionsAsync();
 
-    if (!navigation.isFocused()) return;
+    if (!isCurrentRequest()) return;
+    if (!navigation.isFocused()) {
+      closeUnverifiedDraft();
+      return;
+    }
 
     if (permission.status !== 'granted' && permission.canAskAgain !== false) {
       permission = await Location.requestForegroundPermissionsAsync();
     }
 
-    if (!navigation.isFocused()) return;
+    if (!isCurrentRequest()) return;
+    if (!navigation.isFocused()) {
+      closeUnverifiedDraft();
+      return;
+    }
 
     if (permission.status !== 'granted') {
+      closeUnverifiedDraft();
       showLocationSettingsAlert(
         'Litterbugs needs your location to verify that a report is near you.'
       );
@@ -610,7 +653,11 @@ const beginReportAtCoordinate = async (coord) => {
 
     // The location request can outlive the user's visit to the map. Do not
     // open a form or show an alert over another tab after they navigate away.
-    if (!navigation.isFocused()) return;
+    if (!isCurrentRequest()) return;
+    if (!navigation.isFocused()) {
+      closeUnverifiedDraft();
+      return;
+    }
 
     const userCoord = {
       latitude: loc.coords.latitude,
@@ -622,6 +669,7 @@ const beginReportAtCoordinate = async (coord) => {
 
     // Block reports that are outside the permitted radius
     if (distanceMiles > MAX_REPORT_DISTANCE_MILES) {
+      closeUnverifiedDraft();
       Alert.alert(
         'Report Location Too Far Away',
         `Litterbugs reports can only be created within ${MAX_REPORT_DISTANCE_MILES} miles of your current location. You can still browse and view reports anywhere on the map.`
@@ -629,27 +677,14 @@ const beginReportAtCoordinate = async (coord) => {
       return;
     }
 
-    // Location is valid — continue opening the report form
-    setDraftCoord(coord);
-
-    setForm({
-      title: '',
-      selectedTypes: [],
-      types: '',
-      photos: [],
-      severity: '',
-      selectedNotes: [],
-      notes: '',
-      startingFundingChoice: 'none',
-      startingFundingOther: '',
-    });
-
-    resetReportWizard();
-    setFormOpen(true);
+    // Location is valid — unlock the workflow navigation.
+    setReportLocationVerification('verified');
 
   } catch (error) {
     console.log('Report location verification error:', error);
 
+    if (!isCurrentRequest()) return;
+    closeUnverifiedDraft();
     if (!navigation.isFocused()) return;
 
     Alert.alert(
@@ -873,6 +908,7 @@ const reconcileReportAfterBlockedMutation = async (reportId) => {
   
       setDraftCoord(null);
       setFormOpen(false);
+      setReportLocationVerification('idle');
       setIsEditing(false);
       setEditingReportId(null);
       resetReportWizard();
@@ -902,6 +938,14 @@ const reconcileReportAfterBlockedMutation = async (reportId) => {
 const submitReport = async () => {
   if (isSaving) return;
 
+  if (!isEditing && reportLocationVerification === 'checking') {
+    Alert.alert(
+      'Still verifying location',
+      'Wait a moment while Litterbugs confirms that this report is near you.'
+    );
+    return;
+  }
+
   if (!hasAttachedReportPhoto()) {
     Alert.alert(
       'Photo required',
@@ -930,8 +974,10 @@ const submitReport = async () => {
 
   // Cancel Report
   const cancelDraft = () => {
+    reportLocationRequestRef.current += 1;
     setDraftCoord(null);
     setFormOpen(false);
+    setReportLocationVerification('idle');
     setIsEditing(false);
     setEditingReportId(null);
     resetReportWizard();
@@ -2898,7 +2944,9 @@ const renderReportStep = () => {
             </Text>
 
             <Text style={styles.wizardHeaderStep}>
-              {REPORT_STEPS[reportStep]}
+              {reportLocationVerification === 'checking' && !isEditing
+                ? 'Verifying report location…'
+                : REPORT_STEPS[reportStep]}
             </Text>
           </View>
 
@@ -3005,6 +3053,7 @@ const renderReportStep = () => {
             disabled={
               reportStep ===
                 REPORT_STEPS.length - 1 ||
+              (reportLocationVerification === 'checking' && !isEditing) ||
               !canAdvanceFromStep(
                 reportStep
               ) ||
@@ -3020,6 +3069,7 @@ const renderReportStep = () => {
               color={
                 reportStep ===
                   REPORT_STEPS.length - 1 ||
+                (reportLocationVerification === 'checking' && !isEditing) ||
                 !canAdvanceFromStep(
                   reportStep
                 ) ||
@@ -3917,6 +3967,7 @@ const renderReportStep = () => {
               );
 
               setIsEditing(true);
+              setReportLocationVerification('idle');
 
 
               // Keep original report location
