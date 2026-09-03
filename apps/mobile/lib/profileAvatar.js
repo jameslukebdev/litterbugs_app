@@ -3,6 +3,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
 
 import { supabase } from './supabase';
+import { uploadSecureMedia } from './secureMediaUpload';
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 const ALLOWED_AVATAR_MIME_TYPES = new Set([
@@ -110,14 +111,12 @@ export const uploadProfileAvatar = async (userId, asset) => {
   if (!ALLOWED_AVATAR_MIME_TYPES.has(contentType)) {
     throw new Error('Choose a JPEG, PNG, WebP, HEIC, or HEIF image.');
   }
-  const path = `${userId}/avatar`;
-
-  const { error } = await supabase.storage
-    .from('profile_avatars')
-    .upload(path, bytes, { contentType, upsert: true });
-
-  if (error) throw error;
-  return path;
+  return uploadSecureMedia({
+    userId,
+    kind: 'avatar',
+    bytes,
+    mimeType: contentType,
+  });
 };
 
 export const removeProfileAvatar = async (userId) => {

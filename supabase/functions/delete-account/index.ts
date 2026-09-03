@@ -19,15 +19,24 @@ const jsonResponse = (body: Record<string, unknown>, status = 200) =>
 
 const removeInChunks = async (
   storage: ReturnType<typeof createClient>["storage"],
+  bucket: string,
   paths: string[],
 ) => {
   for (let index = 0; index < paths.length; index += 100) {
     const { error } = await storage
-      .from("report_photos")
+      .from(bucket)
       .remove(paths.slice(index, index + 100));
 
     if (error) throw error;
   }
+};
+
+const isMissingBucketError = (error: unknown) => {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as { statusCode?: unknown; message?: unknown };
+  return (candidate.statusCode === "404" || candidate.statusCode === 404)
+    && typeof candidate.message === "string"
+    && /bucket not found/i.test(candidate.message);
 };
 
 Deno.serve(async (request: Request) => {
@@ -114,7 +123,31 @@ Deno.serve(async (request: Request) => {
     const userPrefix = `${user.id}/`;
     const photoPaths = [...new Set([...attachedPaths, ...nestedPaths])]
       .filter((path) => typeof path === "string" && path.startsWith(userPrefix));
-    await removeInChunks(admin.storage, photoPaths);
+    await removeInChunks(admin.storage, "report_photos", photoPaths);
+
+    const { data: quarantineFolders, error: quarantineFolderError } = await admin.storage
+      .from("media_quarantine")
+      .list(user.id, { limit: 10 });
+    if (quarantineFolderError && !isMissingBucketError(quarantineFolderError)) {
+      throw quarantineFolderError;
+    }
+    const quarantinePaths: string[] = [];
+    for (const entry of quarantineFolders ?? []) {
+      const folder = `${user.id}/${entry.name}`;
+      for (let offset = 0; ; offset += 1000) {
+        const { data: files, error: filesError } = await admin.storage
+          .from("media_quarantine")
+          .list(folder, { limit: 1000, offset });
+        if (filesError) throw filesError;
+        quarantinePaths.push(
+          ...(files ?? [])
+            .filter((file) => Boolean(file.id))
+            .map((file) => `${folder}/${file.name}`),
+        );
+        if ((files?.length ?? 0) < 1000) break;
+      }
+    }
+    await removeInChunks(admin.storage, "media_quarantine", quarantinePaths);
 
     const avatarPath = `${user.id}/avatar`;
     const { error: avatarError } = await admin.storage
@@ -151,6 +184,7 @@ Deno.serve(async (request: Request) => {
       deleted: true,
       anonymizedReports: anonymizedCount ?? 0,
       removedPhotos: photoPaths.length,
+      removedQuarantinedPhotos: quarantinePaths.length,
       removedProfileAvatar: true,
     });
   } catch (error) {

@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { Icon } from '@/components/icon';
 import { ModalShell } from '@/components/modal-shell';
+import { uploadSecureBrowserMedia } from '@/lib/secure-media-upload';
 import { createClient } from '@/lib/supabase/client';
 
 type CleanupAttempt = Database['public']['Tables']['cleanup_attempts']['Row'];
@@ -208,14 +209,15 @@ export function CleanupAction({
 
     try {
       for (const [index, photo] of photos.entries()) {
-        const mimeType = photoMimeType(photo);
-        const extension = mimeType === 'image/jpeg' ? 'jpg' : mimeType.split('/')[1];
-        const path = `${userId}/${attempt.id}/${submissionId}/after-${index + 1}.${extension}`;
-        const { error } = await supabase.storage.from('cleanup_photos').upload(path, photo, {
-          contentType: mimeType,
-          upsert: false,
+        const path = await uploadSecureBrowserMedia({
+          supabase,
+          userId,
+          kind: 'cleanup',
+          file: photo,
+          subjectId: attempt.id,
+          submissionId,
+          position: index + 1,
         });
-        if (error) throw error;
         paths.push(path);
       }
 
@@ -243,9 +245,11 @@ export function CleanupAction({
         : 'Cleanup submitted. The reporter has 48 hours to review it.');
       await refreshAttempt();
       await onChanged?.();
-    } catch {
+    } catch (error) {
       if (paths.length) await supabase.storage.from('cleanup_photos').remove(paths);
-      setSubmissionError('The cleanup could not be submitted. Your report was not changed. Try again.');
+      setSubmissionError(error instanceof Error
+        ? error.message
+        : 'The cleanup could not be submitted. Your report was not changed. Try again.');
     } finally {
       setBusy('');
     }

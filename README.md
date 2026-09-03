@@ -37,7 +37,7 @@ monorepo layout.
 - `npm run mobile:build:android:production` / `npm run mobile:build:ios:production` — build the unchanged production profile when release is authorized
 - `npm run web:dev` — start the website locally
 - `npm run web:build` — build the production website
-- `npm run web:boundaries` — reject archived backend, map, marketplace, Places, or secret-key code in web source/build output
+- `npm run web:boundaries` — reject archived backend, map, marketplace, Places, or client-bundled secret-key code; server credentials are allowlisted only for the guarded media processor
 - `npm run supabase:functions:check` — type-check both correct-project Edge Functions with pinned Deno
 - `npm run auth-bridge:check` — bundle and validate the moved Worker without deploying
 - `npm test` — run workspace tests
@@ -46,3 +46,7 @@ monorepo layout.
 
 See [`docs/web-replacement.md`](docs/web-replacement.md) for environment,
 verification, and cutover requirements.
+
+See [`docs/MEDIA_SECURITY.md`](docs/MEDIA_SECURITY.md) for the quarantine,
+malware scanning, image reconstruction, and coordinated activation runbook for
+all user-uploaded photos.

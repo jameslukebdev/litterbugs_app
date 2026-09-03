@@ -5,6 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { supabase } from './supabase';
 import { requestGeminiReview } from './funding';
+import { uploadSecureMedia } from './secureMediaUpload';
 
 export const MAX_CLEANUP_PHOTO_BYTES = 5 * 1024 * 1024;
 
@@ -15,14 +16,6 @@ const ALLOWED_CLEANUP_MIME_TYPES = new Set([
   'image/heic',
   'image/heif',
 ]);
-
-const MIME_EXTENSIONS = Object.freeze({
-  'image/jpeg': 'jpg',
-  'image/png': 'png',
-  'image/webp': 'webp',
-  'image/heic': 'heic',
-  'image/heif': 'heif',
-});
 
 const base64ToUint8Array = (base64) => {
   const binary = globalThis.atob
@@ -112,7 +105,7 @@ const cleanupPhotoMetadata = async (asset) => {
     throw new Error('Use JPEG, PNG, WebP, HEIC, or HEIF cleanup photos.');
   }
 
-  return { mimeType, extension: MIME_EXTENSIONS[mimeType] };
+  return { mimeType };
 };
 
 export async function uploadCleanupSubmission({
@@ -130,19 +123,19 @@ export async function uploadCleanupSubmission({
   try {
     for (let index = 0; index < photos.length; index += 1) {
       const asset = photos[index];
-      const { mimeType, extension } = await cleanupPhotoMetadata(asset);
+      const { mimeType } = await cleanupPhotoMetadata(asset);
       const base64 = await FileSystem.readAsStringAsync(asset.uri, {
         encoding: 'base64',
       });
-      const path = `${userId}/${cleanupId}/${submissionId}/after-${index + 1}.${extension}`;
-      const { error: uploadError } = await supabase.storage
-        .from('cleanup_photos')
-        .upload(path, base64ToUint8Array(base64), {
-          contentType: mimeType,
-          upsert: false,
-        });
-
-      if (uploadError) throw uploadError;
+      const path = await uploadSecureMedia({
+        userId,
+        kind: 'cleanup',
+        bytes: base64ToUint8Array(base64),
+        mimeType,
+        subjectId: cleanupId,
+        submissionId,
+        position: index + 1,
+      });
       uploadedPaths.push(path);
     }
 

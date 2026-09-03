@@ -86,6 +86,7 @@ import {
   mergeReportPhotoUris,
   reportPhotoPickerOptions,
 } from './lib/reportPhotoSelection';
+import { uploadSecureMedia } from './lib/secureMediaUpload';
 import {
   reportWithdrawalErrorMessage,
   withdrawOwnReport,
@@ -1098,17 +1099,14 @@ const submitReport = async () => {
           const fileExt = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'].includes(candidateExt)
             ? candidateExt
             : 'jpg';
-          const filePath = `${userId}/${reportId}/${Date.now()}-${i}.${fileExt}`;
-
-          // Upload bytes
-          const { error } = await supabase.storage
-            .from('report_photos')
-            .upload(filePath, bytes, {
-              contentType: `image/${['jpg', 'jpeg'].includes(fileExt) ? 'jpeg' : fileExt}`,
-              upsert: false,
-            });
-
-          if (error) throw error;
+          const mimeType = `image/${['jpg', 'jpeg'].includes(fileExt) ? 'jpeg' : fileExt}`;
+          const filePath = await uploadSecureMedia({
+            userId,
+            kind: 'report',
+            bytes,
+            mimeType,
+            subjectId: reportId,
+          });
           uploadedPaths.push(filePath);
         }
         return uploadedPaths;

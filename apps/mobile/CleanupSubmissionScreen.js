@@ -41,7 +41,7 @@ const submissionErrorMessage = (error) => {
   if (/cleanup_submission_(not_allowed|invalid_state)/i.test(message)) {
     return 'This cleanup is no longer available for submission.';
   }
-  if (/cleanup_photo|mime|image|5 MB/i.test(message)) {
+  if (/cleanup_photo|mime|image|photo safety|photo could not|selected photo|5 MB/i.test(message)) {
     return message;
   }
   return 'Check your connection and try submitting again.';

@@ -115,12 +115,12 @@ begin
 end;
 $$;
 
--- Both clients already write uid/report-id/file. User A can upload to that
--- folder and cannot write into User B's folder.
+-- New clients can write candidates only to their own quarantine prefix. Legacy
+-- final-bucket policies remain temporarily for installed-client compatibility.
 insert into storage.objects (bucket_id, name, owner_id)
 values (
-  'report_photos',
-  '11111111-1111-4111-8111-111111111111/report-a/photo.jpg',
+  'media_quarantine',
+  '11111111-1111-4111-8111-111111111111/report/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.jpg',
   '11111111-1111-4111-8111-111111111111'
 );
 
@@ -128,14 +128,17 @@ do $$
 declare
   delete_policy_count integer;
   upload_policy_count integer;
+  quarantine_bucket_count integer;
+  scan_trigger_count integer;
+  scan_function_search_path text;
   expiration_search_path text;
   cleanup_search_path text;
 begin
   begin
     insert into storage.objects (bucket_id, name, owner_id)
     values (
-      'report_photos',
-      '22222222-2222-4222-8222-222222222222/report-b/forbidden.jpg',
+      'media_quarantine',
+      '22222222-2222-4222-8222-222222222222/report/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb.jpg',
       '11111111-1111-4111-8111-111111111111'
     );
     raise exception 'User A inserted into User B storage folder';
@@ -159,12 +162,41 @@ begin
   from pg_policies
   where schemaname = 'storage'
     and tablename = 'objects'
-    and policyname = 'Owners can upload report photos'
+    and policyname = 'Users can upload quarantined media'
     and cmd = 'INSERT'
     and with_check like '%is_permanent_user%';
 
   if upload_policy_count <> 1 then
-    raise exception 'Permanent-owner photo upload policy is missing';
+    raise exception 'Permanent-owner quarantine upload policy is missing';
+  end if;
+
+  select count(*) into quarantine_bucket_count
+  from storage.buckets
+  where id = 'media_quarantine'
+    and not public
+    and file_size_limit = 5242880;
+
+  if quarantine_bucket_count <> 1 then
+    raise exception 'Private bounded media quarantine bucket is missing';
+  end if;
+
+  select count(*) into scan_trigger_count
+  from pg_trigger
+  where tgrelid = 'public.media_scan_attempts'::regclass
+    and tgname = 'enforce_media_scan_hourly_limit'
+    and not tgisinternal;
+
+  if scan_trigger_count <> 1 then
+    raise exception 'Atomic media scan quota trigger is missing';
+  end if;
+
+  select coalesce(array_to_string(proconfig, ','), '')
+  into scan_function_search_path
+  from pg_proc
+  where oid = 'public.enforce_media_scan_hourly_limit()'::regprocedure;
+
+  if scan_function_search_path not like '%search_path=%' then
+    raise exception 'Media scan quota function search_path is not fixed';
   end if;
 
   select coalesce(array_to_string(proconfig, ','), '')

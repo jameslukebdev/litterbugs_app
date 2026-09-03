@@ -26,6 +26,7 @@ import { getBrowserLocation } from '@/lib/geolocation';
 import { ReportDetail } from '@/components/report-detail';
 import { ReportWizard } from '@/components/report-wizard';
 import { readReportPreferences, writeReportPreferences } from '@/lib/report-preferences';
+import { uploadSecureBrowserMedia } from '@/lib/secure-media-upload';
 import { createClient } from '@/lib/supabase/client';
 
 const MAP_TYPES = ['roadmap', 'satellite', 'hybrid', 'terrain'] as const;
@@ -348,18 +349,25 @@ export function MapExperience({
 
     const uploadReportPhotos = async (reportId: string) => {
       const paths: string[] = [];
-      for (const [index, photo] of draft.photos.entries()) {
-        const extension = (photo.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-        const path = `${authenticatedUserId}/${reportId}/${Date.now()}-${index}.${extension}`;
-        const { error } = await supabase.storage.from('report_photos').upload(path, photo, {
-          contentType: photo.type || `image/${extension === 'jpg' ? 'jpeg' : extension}`,
-          upsert: false,
-        });
-        if (error) {
+      for (const photo of draft.photos) {
+        try {
+          const path = await uploadSecureBrowserMedia({
+            supabase,
+            userId: authenticatedUserId,
+            kind: 'report',
+            file: photo,
+            subjectId: reportId,
+          });
+          paths.push(path);
+        } catch (error) {
           if (paths.length) await supabase.storage.from('report_photos').remove(paths);
-          return { paths: [] as string[], error: 'One or more photos could not be uploaded. Check your connection and try again.' };
+          return {
+            paths: [] as string[],
+            error: error instanceof Error
+              ? error.message
+              : 'One or more photos could not be uploaded. Check your connection and try again.',
+          };
         }
-        paths.push(path);
       }
       return { paths, error: '' };
     };
@@ -397,23 +405,39 @@ export function MapExperience({
     if (!draftCoordinates) return 'Choose a location on the map and try again.';
     if (!draft.photos.length) return 'Add at least one clear photo before saving this report.';
     const reportId = crypto.randomUUID();
-    const uploaded = await uploadReportPhotos(reportId);
-    if (uploaded.error) return uploaded.error;
-    const { data: report, error } = await supabase
+    // The media processor verifies that the destination report belongs to the
+    // caller, so create the report row before sending its photos through the
+    // quarantine pipeline. Roll the empty row back if any later step fails.
+    const { data: createdReport, error: createError } = await supabase
       .from('reports')
       .insert({
         ...reportInsertFromDraft(draft, draftCoordinates, authenticatedUserId),
         id: reportId,
-        photo_paths: uploaded.paths,
+        photo_paths: [],
       })
+      .select()
+      .single();
+    if (createError) return `Save failed: ${createError.message}`;
+
+    const uploaded = await uploadReportPhotos(reportId);
+    if (uploaded.error) {
+      await supabase.from('reports').delete().eq('id', reportId).eq('user_id', authenticatedUserId);
+      return uploaded.error;
+    }
+    const { data: report, error } = await supabase
+      .from('reports')
+      .update({ photo_paths: uploaded.paths })
+      .eq('id', reportId)
+      .eq('user_id', authenticatedUserId)
       .select()
       .single();
     if (error) {
       await supabase.storage.from('report_photos').remove(uploaded.paths);
+      await supabase.from('reports').delete().eq('id', reportId).eq('user_id', authenticatedUserId);
       return `Save failed: ${error.message}`;
     }
     if (!hasReportCoordinates(report)) {
-      await supabase.from('reports').delete().eq('id', report.id).eq('user_id', authenticatedUserId);
+      await supabase.from('reports').delete().eq('id', createdReport.id).eq('user_id', authenticatedUserId);
       await supabase.storage.from('report_photos').remove(uploaded.paths);
       return 'The saved report is missing its map location.';
     }

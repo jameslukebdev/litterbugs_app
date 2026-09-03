@@ -16,6 +16,7 @@ import {
   type Profile,
   type ProfileDraftErrors,
 } from '@/lib/profile';
+import { uploadSecureBrowserMedia } from '@/lib/secure-media-upload';
 import { createClient } from '@/lib/supabase/client';
 
 type CleanupAttemptRow = Database['public']['Tables']['cleanup_attempts']['Row'];
@@ -306,12 +307,12 @@ export function AccountDialog({
         if (error) throw error;
       }
       if (avatarFile) {
-        avatarPath = `${userId}/avatar`;
-        const { error } = await supabase.storage.from('profile_avatars').upload(avatarPath, avatarFile, {
-          contentType: avatarFile.type || 'image/jpeg',
-          upsert: true,
+        avatarPath = await uploadSecureBrowserMedia({
+          supabase,
+          userId,
+          kind: 'avatar',
+          file: avatarFile,
         });
-        if (error) throw error;
       }
 
       const { data, error } = await supabase

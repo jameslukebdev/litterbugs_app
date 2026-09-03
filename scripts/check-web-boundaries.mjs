@@ -42,6 +42,12 @@ const forbiddenInProjectSource = [
   ['sk_live_', 'a live Stripe secret key'],
   ['sk_test_', 'a test Stripe secret key'],
 ];
+const serverCredentialNeedles = new Set(['service_role', 'supabase_secret']);
+const serverCredentialSourceAllowlist = new Set([
+  'apps/web/.env.example',
+  'apps/web/app/api/media/process/route.ts',
+  'apps/web/app/api/media/process/route.test.ts',
+]);
 
 function collectFiles(relativeRoot) {
   const absoluteRoot = join(repositoryRoot, relativeRoot);
@@ -77,8 +83,19 @@ function inspect(path, patterns) {
     }
   }
 }
-for (const path of sourceFiles) inspect(path, forbiddenInProjectSource);
-for (const path of buildFiles) inspect(path, forbiddenEverywhere);
+for (const path of sourceFiles) {
+  const relativePath = relative(repositoryRoot, path);
+  const patterns = serverCredentialSourceAllowlist.has(relativePath)
+    ? forbiddenInProjectSource.filter(([needle]) => !serverCredentialNeedles.has(needle))
+    : forbiddenInProjectSource;
+  inspect(path, patterns);
+}
+for (const path of buildFiles) {
+  const relativePath = relative(repositoryRoot, path);
+  inspect(path, relativePath.startsWith('apps/web/.next/static/')
+    ? forbiddenInProjectSource
+    : forbiddenEverywhere);
+}
 
 const webPackage = JSON.parse(readFileSync(join(repositoryRoot, 'apps/web/package.json'), 'utf8'));
 const dependencyNames = Object.keys({
