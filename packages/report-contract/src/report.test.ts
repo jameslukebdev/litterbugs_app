@@ -5,6 +5,7 @@ import {
   getDistanceMiles,
   hasReportCoordinates,
   isWithinReportDistance,
+  requiresRemoteReportConfirmation,
   reportInsertFromDraft,
   validateReportDraft,
 } from './report';
@@ -39,11 +40,18 @@ describe('report contract', () => {
     expect(insert).not.toHaveProperty('funding');
   });
 
-  it('enforces the same ten-mile location boundary', () => {
+  it('allows up to fifty miles and identifies the remote confirmation range', () => {
     const origin = { latitude: 35.994, longitude: -78.8986 };
+    const nearby = { latitude: 36.08, longitude: -78.8986 };
+    const remote = { latitude: 36.55, longitude: -78.8986 };
+    const blocked = { latitude: 36.8, longitude: -78.8986 };
+
     expect(getDistanceMiles(origin, origin)).toBe(0);
-    expect(isWithinReportDistance(origin, { latitude: 36.08, longitude: -78.8986 })).toBe(true);
-    expect(isWithinReportDistance(origin, { latitude: 36.2, longitude: -78.8986 })).toBe(false);
+    expect(isWithinReportDistance(origin, nearby)).toBe(true);
+    expect(requiresRemoteReportConfirmation(origin, nearby)).toBe(false);
+    expect(isWithinReportDistance(origin, remote)).toBe(true);
+    expect(requiresRemoteReportConfirmation(origin, remote)).toBe(true);
+    expect(isWithinReportDistance(origin, blocked)).toBe(false);
   });
 
   it('only exposes reports with complete coordinates to map clients', () => {

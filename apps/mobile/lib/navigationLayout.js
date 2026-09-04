@@ -1,5 +1,5 @@
 export const BOTTOM_NAV_METRICS = Object.freeze({
-  height: 56,
+  height: 58,
   radius: 0,
   horizontalInset: 0,
   bottomGap: 0,
@@ -13,9 +13,8 @@ export const BOTTOM_NAV_METRICS = Object.freeze({
 export const BOTTOM_NAV_COLORS = Object.freeze({
   active: '#2F7D32',
   inactive: '#4B5563',
-  selectedBackground: '#EAF5EA',
   surface: '#FFFFFF',
-  border: 'rgba(0,0,0,0.14)',
+  border: 'rgba(31,35,40,0.16)',
 });
 
 export function getBottomNavBottom(safeAreaBottom = 0) {

@@ -1,6 +1,11 @@
 import { registerRootComponent } from 'expo';
+import * as SplashScreen from 'expo-splash-screen';
 
 import App from './App';
+
+SplashScreen.preventAutoHideAsync().catch((error) => {
+  console.log('Splash screen hold error:', error);
+});
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);
 // It also ensures that whether you load the app in Expo Go or in a native build,

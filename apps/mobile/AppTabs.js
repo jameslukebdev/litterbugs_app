@@ -18,7 +18,7 @@ function MapHeaderLogo() {
   );
 }
 
-export default function AppTabs() {
+export default function AppTabs({ onLaunchReady }) {
   return (
     <Tab.Navigator
         initialRouteName="Map"
@@ -43,14 +43,17 @@ export default function AppTabs() {
         />
         <Tab.Screen
           name="Map"
-          component={MapScreen}
           options={{
             headerTitle: MapHeaderLogo,
             headerStyle: { backgroundColor: '#FFFFFF' },
             headerTitleContainerStyle: styles.mapHeaderTitleContainer,
             tabBarAccessibilityLabel: 'Map',
           }}
-        />
+        >
+          {(screenProps) => (
+            <MapScreen {...screenProps} onLaunchReady={onLaunchReady} />
+          )}
+        </Tab.Screen>
         <Tab.Screen
           name="Profile"
           component={ProfileScreen}

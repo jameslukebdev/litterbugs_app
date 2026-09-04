@@ -1,11 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
 import {
-  AccessibilityInfo,
   ActivityIndicator,
-  Animated,
   Image,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 
@@ -13,88 +11,47 @@ export default function BrandedLoadingState({
   title = 'Loading Litterbugs…',
   message = 'This should only take a moment.',
   compact = false,
+  logoOnly = false,
+  onLogoReady,
+  working = false,
 }) {
-  const pulse = useRef(new Animated.Value(0)).current;
-  const [reduceMotion, setReduceMotion] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
-      if (active) setReduceMotion(enabled);
-    });
-    const subscription = AccessibilityInfo.addEventListener(
-      'reduceMotionChanged',
-      setReduceMotion,
-    );
-    return () => {
-      active = false;
-      subscription.remove();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (reduceMotion) {
-      pulse.stopAnimation();
-      pulse.setValue(1);
-      return undefined;
-    }
-
-    const animation = Animated.loop(Animated.sequence([
-      Animated.timing(pulse, {
-        toValue: 1,
-        duration: 700,
-        useNativeDriver: true,
-      }),
-      Animated.timing(pulse, {
-        toValue: 0,
-        duration: 700,
-        useNativeDriver: true,
-      }),
-    ]));
-    animation.start();
-    return () => animation.stop();
-  }, [pulse, reduceMotion]);
-
-  const animatedStyle = reduceMotion ? null : {
-    opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.72, 1] }),
-    transform: [{
-      scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1.03] }),
-    }],
-  };
+  const { width } = useWindowDimensions();
+  const launchLogoWidth = Math.min(width - 64, 244);
 
   return (
     <View
       style={[styles.container, compact && styles.containerCompact]}
       accessibilityRole="progressbar"
-      accessibilityLabel={`${title} ${message}`}
+      accessibilityLabel={logoOnly ? 'Loading Litterbugs' : `${title} ${message}`}
       accessibilityLiveRegion="polite"
     >
-      <View style={[styles.card, compact && styles.cardCompact]}>
-        <Animated.View style={[styles.logoStage, animatedStyle]}>
+      <View style={[styles.card, compact && styles.cardCompact, logoOnly && styles.logoOnlyCard]}>
+        <View
+          style={[
+            styles.logoStage,
+            logoOnly && {
+              width: launchLogoWidth,
+              height: launchLogoWidth * (433 / 636),
+            },
+          ]}
+        >
           <Image
             source={require('./assets/LB_Logo_PNG.png')}
-            style={styles.logo}
+            style={[styles.logo, logoOnly && styles.launchLogo]}
             resizeMode="contain"
             accessible={false}
+            onLoad={logoOnly ? onLogoReady : undefined}
           />
-        </Animated.View>
-        <View style={styles.progressTrack} accessible={false}>
-          <Animated.View
-            style={[
-              styles.progressBar,
-              reduceMotion ? styles.progressBarReducedMotion : {
-                transform: [
-                  { translateX: pulse.interpolate({ inputRange: [0, 1], outputRange: [-52, 52] }) },
-                  { scaleX: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.78, 1] }) },
-                ],
-              },
-            ]}
-          >
-            <View style={styles.progressDot} />
-          </Animated.View>
         </View>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.message}>{message}</Text>
+        {!logoOnly ? (
+          <>
+            {working ? (
+              <ActivityIndicator style={styles.workingIndicator} size="small" color="#2F7D32" />
+            ) : null}
+            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.message}>{message}</Text>
+          </>
+        ) : null}
       </View>
     </View>
   );
@@ -116,7 +73,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
-    backgroundColor: '#F5F6F7',
+    backgroundColor: '#FFFFFF',
   },
   containerCompact: {
     minHeight: 280,
@@ -141,6 +98,12 @@ const styles = StyleSheet.create({
   cardCompact: {
     paddingVertical: 22,
   },
+  logoOnlyCard: {
+    borderWidth: 0,
+    backgroundColor: '#FFFFFF',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   logoStage: {
     width: 120,
     height: 72,
@@ -148,32 +111,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logo: { width: 112, height: 68 },
-  progressTrack: {
-    width: 180,
-    height: 8,
-    marginTop: 12,
-    overflow: 'hidden',
-    borderRadius: 4,
-    backgroundColor: '#E1E8E2',
-  },
-  progressBar: {
-    alignSelf: 'center',
-    width: 76,
-    height: 8,
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    borderRadius: 4,
-    backgroundColor: '#2F7D32',
-  },
-  progressBarReducedMotion: { width: 98 },
-  progressDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#FFC42E',
-  },
+  launchLogo: { width: '100%', height: '100%' },
+  workingIndicator: { marginTop: 12 },
   title: {
-    marginTop: 14,
+    marginTop: 12,
     color: '#202428',
     fontSize: 20,
     fontWeight: '900',

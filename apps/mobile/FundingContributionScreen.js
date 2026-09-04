@@ -152,6 +152,7 @@ export default function FundingContributionScreen({ navigation, route }) {
   if (loading) {
     return (
       <BrandedLoadingState
+        working
         title="Finishing your report…"
         message="Your report is saved. We’re checking whether it can accept contributions."
       />
@@ -229,7 +230,7 @@ export default function FundingContributionScreen({ navigation, route }) {
             <Ionicons name="card-outline" size={22} color="#2F7D32" />
             <Text style={styles.savedContributionText}>
               {isPendingStartingContribution
-                ? `Your ${formatUsd(principalCents)} choice is ready on this screen, but you have not been charged. We’ll check again automatically and show Stripe’s secure payment screen after approval.`
+                ? `Your ${formatUsd(principalCents)} choice is saved on this screen, but you have not been charged. We’ll check again automatically and show Stripe’s secure payment screen after approval.`
                 : `Your ${formatUsd(principalCents)} choice has not been charged. Resolve the issue above, then choose Add funds again to continue securely with Stripe.`}
             </Text>
           </View>

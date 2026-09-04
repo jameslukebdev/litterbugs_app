@@ -100,7 +100,7 @@ export default function ReportsScreen({ navigation }) {
       : 'Most recent reports · enable location to sort by distance';
 
   const handleReportPress = (report) => {
-    navigation.navigate('Map', { reportId: report.id });
+    navigation.navigate('Map', { reportId: report.id, returnTo: 'Reports' });
   };
 
   return (
@@ -177,9 +177,9 @@ export default function ReportsScreen({ navigation }) {
                 style={styles.filterClose}
                 onPress={() => setFilterOpen(false)}
                 accessibilityRole="button"
-                accessibilityLabel="Close filters"
+                accessibilityLabel="Apply report filters"
               >
-                <Text style={styles.filterCloseText}>Close</Text>
+                <Text style={styles.filterCloseText}>Done</Text>
               </TouchableOpacity>
             </View>
 
@@ -187,7 +187,7 @@ export default function ReportsScreen({ navigation }) {
 
             {FILTERS.map((item) => {
               const selected = filter === item;
-              const color = FILTER_COLORS[item] ?? '#2F7D32';
+              const color = FILTER_COLORS[item] ?? '#7A8389';
 
               return (
                 <TouchableOpacity
@@ -201,7 +201,11 @@ export default function ReportsScreen({ navigation }) {
                   accessibilityState={{ checked: selected }}
                   accessibilityLabel={item === 'All' ? 'All severities' : `${item} severity`}
                 >
-                  <View style={[styles.filterSeverityDot, { backgroundColor: color }]} />
+                  {item === 'All' ? (
+                    <Ionicons name="layers-outline" size={19} color={color} />
+                  ) : (
+                    <View style={[styles.filterSeverityDot, { backgroundColor: color }]} />
+                  )}
                   <Text style={styles.filterRowText}>
                     {item === 'All' ? 'All severities' : `${item} severity`}
                   </Text>

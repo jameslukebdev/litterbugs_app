@@ -165,7 +165,7 @@ export function ReportListItem({ report, origin, onPress }) {
           <Text style={styles.metadata} numberOfLines={1}>{metadata}</Text>
         ) : null}
 
-        <Text style={styles.types} numberOfLines={1}>
+        <Text style={styles.types} numberOfLines={2} ellipsizeMode="tail">
           {getLitterSummary(report)}
         </Text>
         <Text style={styles.reporter} numberOfLines={1}>

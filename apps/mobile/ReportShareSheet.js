@@ -48,7 +48,6 @@ function ShareOption({
 export default function ReportShareSheet({
   busyAction = null,
   onClose,
-  onInstagramStory,
   onSystemShare,
   previewPhotoUrl = null,
   report,
@@ -110,22 +109,13 @@ export default function ReportShareSheet({
 
           <View style={styles.options}>
             <ShareOption
-              accessibilityLabel="Share to Instagram Stories"
-              busy={busyAction === 'instagram'}
-              description="Open a Story draft with the branded report card"
-              icon="logo-instagram"
-              iconColor="#C13584"
-              onPress={onInstagramStory}
-              title="Instagram Stories"
-            />
-            <ShareOption
-              accessibilityLabel="Share with another app"
+              accessibilityLabel="Share report"
               busy={busyAction === 'system'}
-              description="Messages, Mail, Facebook, Instagram posts, and more"
+              description="Choose Instagram, Messages, Mail, Facebook, and more"
               icon="share-social-outline"
-              iconColor="#C9302C"
+              iconColor="#2F7D32"
               onPress={onSystemShare}
-              title="More sharing options"
+              title="Share report"
             />
           </View>
 

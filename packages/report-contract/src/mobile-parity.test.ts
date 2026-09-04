@@ -6,6 +6,7 @@ import {
   FALLBACK_MAP_CENTER,
   LITTER_OPTIONS,
   MAX_REPORT_DISTANCE_MILES,
+  NEARBY_REPORT_DISTANCE_MILES,
   MAX_REPORT_NOTES_LENGTH,
   MAX_REPORT_PHOTOS,
   MAX_REPORT_TITLE_LENGTH,
@@ -24,6 +25,10 @@ const mobileReportsSource = readFileSync(
 );
 const mobileReportPhotoSource = readFileSync(
   new URL('../../../apps/mobile/lib/reportPhotoSelection.js', import.meta.url),
+  'utf8',
+);
+const mobileReportLocationPolicySource = readFileSync(
+  new URL('../../../apps/mobile/lib/reportLocationPolicy.js', import.meta.url),
   'utf8',
 );
 
@@ -75,8 +80,15 @@ describe('mobile report parity', () => {
   });
 
   it('keeps mobile limits aligned and supports bounded report-photo replacement', () => {
-    expect(MAX_REPORT_DISTANCE_MILES).toBe(10);
-    expect(mobileSource).toContain('const MAX_REPORT_DISTANCE_MILES = 10;');
+    expect(NEARBY_REPORT_DISTANCE_MILES).toBe(10);
+    expect(MAX_REPORT_DISTANCE_MILES).toBe(50);
+    expect(mobileReportLocationPolicySource).toContain(
+      'export const NEARBY_REPORT_DISTANCE_MILES = 10'
+    );
+    expect(mobileReportLocationPolicySource).toContain(
+      'export const MAX_REPORT_DISTANCE_MILES = 50'
+    );
+    expect(mobileSource).toContain('MAX_REPORT_DISTANCE_MILES');
     expect(MAX_REPORT_PHOTOS).toBe(3);
     expect(mobileReportPhotoSource).toContain('export const MAX_REPORT_PHOTOS = 3;');
     expect(mobileReportPhotoSource).toContain('allowsMultipleSelection: true');

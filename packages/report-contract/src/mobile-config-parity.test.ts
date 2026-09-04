@@ -35,6 +35,15 @@ describe('mobile configuration non-regression', () => {
       },
     });
     expect(appJson.plugins).toEqual([
+      [
+        'expo-splash-screen',
+        {
+          backgroundColor: '#FFFFFF',
+          image: './assets/LB_Logo_PNG.png',
+          imageWidth: 244,
+          resizeMode: 'contain',
+        },
+      ],
       'expo-secure-store',
       'expo-web-browser',
       'expo-notifications',

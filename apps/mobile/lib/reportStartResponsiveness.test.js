@@ -10,7 +10,7 @@ const mapScreenSource = readFileSync(
 describe('new report workflow responsiveness', () => {
   it('opens the report form before waiting for a fresh GPS position', () => {
     const start = mapScreenSource.indexOf('const beginReportAtCoordinate = async (coord) => {');
-    const end = mapScreenSource.indexOf('\nconst onMapPress =', start);
+    const end = mapScreenSource.indexOf('\nconst openReportLocationPicker =', start);
     const beginReportSource = mapScreenSource.slice(start, end);
 
     expect(start).toBeGreaterThanOrEqual(0);
@@ -22,6 +22,11 @@ describe('new report workflow responsiveness', () => {
     );
     expect(beginReportSource).toContain("setReportLocationVerification('checking')");
     expect(beginReportSource).toContain("setReportLocationVerification('verified')");
+    expect(beginReportSource).toContain("distancePolicy.status === 'remote_confirmation_required'");
+    expect(beginReportSource).toContain("text: 'Use this location'");
+    expect(beginReportSource).toContain("closeUnverifiedDraft({ returnToPlacement: true })");
+    expect(beginReportSource).not.toContain('accept funding');
+    expect(beginReportSource).not.toContain('administrator approval');
   });
 
   it('prevents workflow advancement while the location check is pending', () => {
@@ -29,5 +34,25 @@ describe('new report workflow responsiveness', () => {
       "(reportLocationVerification === 'checking' && !isEditing)"
     );
     expect(mapScreenSource).toContain("reportLocationVerification === 'checking'");
+  });
+
+  it('starts reports from a visible action and confirms the selected location first', () => {
+    expect(mapScreenSource).toContain('accessibilityLabel="Report litter"');
+    expect(mapScreenSource).toContain("setReportPlacementActive(true)");
+    expect(mapScreenSource).toContain('accessibilityLabel="Report this location"');
+    expect(mapScreenSource).toContain(
+      'accessibilityLabel="Back to map without creating a report"'
+    );
+
+    const confirmStart = mapScreenSource.indexOf('const confirmReportLocation = () => {');
+    const confirmEnd = mapScreenSource.indexOf('\nuseEffect(() => {', confirmStart);
+    const confirmSource = mapScreenSource.slice(confirmStart, confirmEnd);
+
+    expect(confirmSource).toContain('beginReportAtCoordinate(coord)');
+  });
+
+  it('does not use an ordinary map tap as the report entry point', () => {
+    expect(mapScreenSource).not.toContain('const onMapPress =');
+    expect(mapScreenSource).not.toContain('onMapPress(e)');
   });
 });

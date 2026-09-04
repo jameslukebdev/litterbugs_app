@@ -39,6 +39,9 @@ export default function FloatingBottomTabBar({
   navigation,
 }) {
   const insets = useSafeAreaInsets();
+  const focusedOptions = descriptors[state.routes[state.index]?.key]?.options ?? {};
+
+  if (focusedOptions.tabBarStyle?.display === 'none') return null;
 
   const renderSlot = (slot) => {
     if (!slot.routeName) {
@@ -103,9 +106,9 @@ export default function FloatingBottomTabBar({
         accessibilityState={{ selected: isFocused }}
       >
         <View style={styles.tabContent}>
-          <View style={[styles.iconBackdrop, isFocused && styles.iconBackdropSelected]}>
+          <View style={styles.iconBackdrop}>
             <Ionicons
-              name={slot.iconName}
+              name={isFocused ? slot.iconName.replace('-outline', '') : slot.iconName}
               size={23}
               color={isFocused ? BOTTOM_NAV_COLORS.active : BOTTOM_NAV_COLORS.inactive}
               accessible={false}
@@ -149,6 +152,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: BOTTOM_NAV_COLORS.border,
     backgroundColor: BOTTOM_NAV_COLORS.surface,
   },
   slot: {
@@ -160,26 +165,23 @@ const styles = StyleSheet.create({
   },
   tabContent: {
     minWidth: 64,
-    minHeight: 48,
+    minHeight: 46,
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconBackdrop: {
-    width: 46,
-    height: 30,
-    borderRadius: 15,
+    width: 38,
+    height: 27,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconBackdropSelected: {
-    backgroundColor: BOTTOM_NAV_COLORS.selectedBackground,
-  },
   label: {
-    marginTop: 1,
+    marginTop: 2,
     color: BOTTOM_NAV_COLORS.inactive,
     fontSize: 10,
     lineHeight: 11,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   labelSelected: {
     color: BOTTOM_NAV_COLORS.active,

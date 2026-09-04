@@ -8,12 +8,13 @@ const readMobileSource = (name) => readFileSync(
 );
 
 describe('mobile loading experience', () => {
-  it('uses a branded animated loader that respects reduced-motion preferences', () => {
+  it('uses a still branded loader and reserves motion for active work', () => {
     const source = readMobileSource('BrandedLoadingState.js');
-    expect(source).toContain('Animated.loop');
-    expect(source).toContain('isReduceMotionEnabled');
-    expect(source).toContain('progressTrack');
-    expect(source).toContain('progressDot');
+    expect(source).not.toContain('Animated.loop');
+    expect(source).not.toContain('progressTrack');
+    expect(source).toContain('logoOnly');
+    expect(source).toContain('working ?');
+    expect(source).toContain('ActivityIndicator');
     expect(source).toContain("accessibilityRole=\"progressbar\"");
   });
 
@@ -32,12 +33,16 @@ describe('mobile loading experience', () => {
   });
 
   it('keeps the branded opening screen visible until the map and reports are ready', () => {
+    const appSource = readMobileSource('App.js');
     const source = readMobileSource('MapScreen.js');
-    expect(source).toContain('Opening the Litterbugs map…');
+    expect(appSource).toContain('launchOverlay');
+    expect(appSource).toContain('SplashScreen.hideAsync()');
+    expect(readMobileSource('index.js')).toContain('SplashScreen.preventAutoHideAsync()');
+    expect(source).toContain('<BrandedLoadingState logoOnly />');
     expect(source).toContain('onMapReady={() => setMapReady(true)}');
     expect(source).toContain('onMapLoaded={() => {');
     expect(source).toContain('if (!mapSurfaceLoaded || reportsLoading) return undefined;');
-    expect(source).toContain('initialMapLoadingOpacity');
+    expect(source).not.toContain('initialMapLoadingOpacity');
   });
 
   it('keeps action context visible while forms and cleanup actions are busy', () => {

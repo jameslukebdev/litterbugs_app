@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import {
   NavigationContainer,
   useNavigationContainerRef,
@@ -105,13 +106,13 @@ function HomeScreen({ navigation }) {
       >
         <Text style={styles.secondaryButtonText}>Sign in or create account</Text>
       </TouchableOpacity>
-      <StatusBar hidden={false} />
+      <StatusBar hidden={false} style="dark" backgroundColor="#FFFFFF" />
     </ScrollView>
   );
 }
 
-function LoadingScreen({ label = 'Loading Litterbugs' }) {
-  return <BrandedLoadingState title={`${label}…`} message="Getting everything ready for you." />;
+function LoadingScreen({ onLogoReady }) {
+  return <BrandedLoadingState logoOnly onLogoReady={onLogoReady} />;
 }
 
 function ProfileLoadError() {
@@ -135,12 +136,27 @@ function ProfileLoadError() {
   );
 }
 
-function AppNavigation({ session, passwordRecovery, onRecoveryComplete }) {
+function AppNavigation({
+  session,
+  passwordRecovery,
+  onLaunchReady,
+  onRecoveryComplete,
+}) {
   const { profile, loading } = useProfile();
   const permanent = isPermanentUser(session?.user);
   const navigationRef = useNavigationContainerRef();
   const pendingNotificationData = useRef(null);
   const handledNotificationId = useRef(null);
+
+  useEffect(() => {
+    const firstDestinationReady = !permanent
+      || passwordRecovery
+      || (!loading && (!profile || !profile.profile_completed_at));
+    if (!firstDestinationReady) return undefined;
+
+    const revealFrame = requestAnimationFrame(onLaunchReady);
+    return () => cancelAnimationFrame(revealFrame);
+  }, [loading, onLaunchReady, passwordRecovery, permanent, profile]);
 
   const openNotificationData = useCallback((data) => {
     const notificationId = data?.notificationId;
@@ -206,7 +222,7 @@ function AppNavigation({ session, passwordRecovery, onRecoveryComplete }) {
     );
   }
 
-  if (permanent && loading && !profile) return <LoadingScreen label="Loading profile" />;
+  if (permanent && loading && !profile) return <LoadingScreen />;
   if (permanent && !loading && !profile) return <ProfileLoadError />;
 
   const initialRouteName = permanent
@@ -239,7 +255,11 @@ function AppNavigation({ session, passwordRecovery, onRecoveryComplete }) {
         screenOptions={{ headerShown: false }}
       >
         <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="App" component={AppTabs} />
+        <Stack.Screen name="App">
+          {(screenProps) => (
+            <AppTabs {...screenProps} onLaunchReady={onLaunchReady} />
+          )}
+        </Stack.Screen>
         <Stack.Screen
           name="Auth"
           component={AuthScreen}
@@ -314,6 +334,20 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [passwordRecovery, setPasswordRecovery] = useState(false);
+  const [launchReady, setLaunchReady] = useState(false);
+  const nativeSplashHidden = useRef(false);
+
+  const markLaunchReady = useCallback(() => {
+    setLaunchReady(true);
+  }, []);
+
+  const hideNativeSplash = useCallback(() => {
+    if (nativeSplashHidden.current) return;
+    nativeSplashHidden.current = true;
+    SplashScreen.hideAsync().catch((error) => {
+      console.log('Splash screen hide error:', error);
+    });
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -402,25 +436,44 @@ export default function App() {
     };
   }, []);
 
-  if (authLoading) return <LoadingScreen />;
-
   return (
-    <SessionProvider session={session}>
-      <ProfileProvider>
-        <ReportsProvider>
-          <AppNavigation
-            session={session}
-            passwordRecovery={passwordRecovery}
-            onRecoveryComplete={() => setPasswordRecovery(false)}
-          />
-          <RankCelebrationManager />
-        </ReportsProvider>
-      </ProfileProvider>
-    </SessionProvider>
+    <View style={styles.appRoot}>
+      <StatusBar style="dark" backgroundColor="#FFFFFF" />
+      {!authLoading ? (
+        <SessionProvider session={session}>
+          <ProfileProvider>
+            <ReportsProvider>
+              <AppNavigation
+                session={session}
+                passwordRecovery={passwordRecovery}
+                onLaunchReady={markLaunchReady}
+                onRecoveryComplete={() => setPasswordRecovery(false)}
+              />
+              <RankCelebrationManager />
+            </ReportsProvider>
+          </ProfileProvider>
+        </SessionProvider>
+      ) : null}
+      {!launchReady ? (
+        <View style={styles.launchOverlay}>
+          <LoadingScreen onLogoReady={hideNativeSplash} />
+        </View>
+      ) : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  appRoot: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  launchOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 10000,
+    backgroundColor: '#FFFFFF',
+    elevation: 10000,
+  },
   container: {
     flex: 1,
     backgroundColor: '#F5F6F7',

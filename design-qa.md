@@ -67,6 +67,47 @@ final result: passed
 
 ---
 
+# Mobile Map Report Location Flow
+
+## Source and implementation
+
+- Product-design decision board: `https://www.figma.com/design/pQUkDqeJV8w5vDsYtKgFwP`
+- Local board reference: `/tmp/litterbugs-map-research-figma/board-full.png`
+- Physical-device normal map capture: `/tmp/litterbugs-after-profile.png`
+- Physical-device location placement capture: `/tmp/litterbugs-final-placement.png`
+- Android test device: Pixel 5, 1080×2340 pixels.
+- State: signed-in mobile map, ordinary browsing and report-location placement.
+
+## Required fidelity surfaces
+
+- Entry point: a persistent, labeled `Report litter` action is visible on the map without instructions or a hidden tap gesture.
+- Map behavior: ordinary map taps and gestures remain dedicated to browsing, panning, and zooming; they no longer unexpectedly start a report.
+- Location placement: selecting `Report litter` opens a distinct mode with a fixed center pin while the map moves beneath it.
+- Confirmation: `Report this location` explicitly confirms the pin position before handing off to the existing report workflow and distance safety validation.
+- Recovery: `Cancel` returns to ordinary map browsing without opening or partially creating a report.
+- Visual system: the flow uses the existing Litterbugs logo, green action color, white surfaces, typography, map, and native icon set.
+
+## Behavioral verification
+
+- Tapped `Report litter` on the installed Android app and observed the location placement mode immediately.
+- Panned the map and confirmed the red pin remained fixed while the map moved beneath it.
+- Cancelled placement and tapped the ordinary map; no report workflow opened.
+- Re-entered placement and selected `Report this location`; the existing 10-mile location validation ran, proving the confirmed coordinate reached the report-start pathway.
+- Mobile tests passed: 31 files, 145 tests.
+- Android export passed and the updated JavaScript bundle loaded through the installed development build.
+- Diff whitespace check passed.
+
+## Findings
+
+- No actionable P0/P1/P2 interaction or visual issue remains in the new map-to-report entry flow.
+- The 10-mile safety alert appeared when the selected map location differed from the phone's reported GPS position. This is the intended existing validation, not a failure of the new placement control.
+
+## Result
+
+final result: passed
+
+---
+
 # Cleanup Opportunity Grid, Navigation Labels, and Favicon
 
 ## Source and implementation

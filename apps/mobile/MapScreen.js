@@ -1,5 +1,5 @@
 // MapScreen.js
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -81,6 +81,10 @@ import {
 } from './lib/funding';
 import { calculatePlatformFee, parseContributionAmount } from './lib/fundingMath';
 import { shouldClusterReports } from './lib/mapClustering';
+import {
+  formatMapFundingLabel,
+  isFundedMapMarker,
+} from './lib/mapFundingMarker';
 import { hasRequiredReportPhoto } from './lib/reportDraft';
 import {
   MAX_REPORT_PHOTOS,
@@ -94,6 +98,12 @@ import {
   mapRegionsAreEquivalent,
   userLocationRegion,
 } from './lib/responsiveLocation';
+import { mapCenterCoordinate } from './lib/reportLocationPlacement';
+import {
+  evaluateReportLocationDistance,
+  MAX_REPORT_DISTANCE_MILES,
+  roundedDistanceLabel,
+} from './lib/reportLocationPolicy';
 import {
   reportWithdrawalErrorMessage,
   withdrawOwnReport,
@@ -110,6 +120,7 @@ import {
 import * as FileSystem from 'expo-file-system/legacy';
 
 const MAP_MARKER_TRANSITION_MS = 180;
+const REPORT_MAP_PIN_COLOR = '#C51F2A';
 
 function MapMarkerTransition({ children, transitionKey }) {
   const opacity = useRef(new Animated.Value(0.72)).current;
@@ -166,8 +177,16 @@ const showLocationSettingsAlert = (message) => {
   );
 };
 
+const formatFriendlyDateTime = (value) => new Date(value).toLocaleString(undefined, {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+
 // State Functions
-export default function MapScreen({ route, navigation }) {
+export default function MapScreen({ route, navigation, onLaunchReady }) {
   const isMapScreenFocused = useIsFocused();
   const REPORT_STEPS = [
     'Title',
@@ -177,11 +196,11 @@ export default function MapScreen({ route, navigation }) {
     'Notes',
     'Review',
   ];
-  const MAX_REPORT_DISTANCE_MILES = 10;
   const [tracksReportMarkers, setTracksReportMarkers] = useState(true);
   const reportMarkerTrackingTimerRef = useRef(null);
-  const reportClusterRef = useRef();
   const [draftCoord, setDraftCoord] = useState(null);
+  const [reportPlacementActive, setReportPlacementActive] = useState(false);
+  const [placementCoordinate, setPlacementCoordinate] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
   const [reportStep, setReportStep] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -212,7 +231,6 @@ export default function MapScreen({ route, navigation }) {
   const [mapReady, setMapReady] = useState(false);
   const [mapSurfaceLoaded, setMapSurfaceLoaded] = useState(false);
   const [showInitialMapLoading, setShowInitialMapLoading] = useState(true);
-  const initialMapLoadingOpacity = useRef(new Animated.Value(1)).current;
   const [photosLoading, setPhotosLoading] = useState(false);
   const [cleanupWaiver, setCleanupWaiver] = useState(null);
   const [cleanupWaiverOpen, setCleanupWaiverOpen] = useState(false);
@@ -264,6 +282,14 @@ export default function MapScreen({ route, navigation }) {
   const { width: screenWidth } = useWindowDimensions();
   const bottomNavClearance = getBottomNavClearance(insets.bottom);
 
+  useLayoutEffect(() => {
+    const immersiveMapState = showInitialMapLoading || reportPlacementActive;
+    navigation.setOptions({
+      headerShown: !immersiveMapState,
+      tabBarStyle: immersiveMapState ? { display: 'none' } : undefined,
+    });
+  }, [navigation, reportPlacementActive, showInitialMapLoading]);
+
   useEffect(() => {
     if (!mapReady || mapSurfaceLoaded) return undefined;
 
@@ -277,16 +303,10 @@ export default function MapScreen({ route, navigation }) {
   useEffect(() => {
     if (!mapSurfaceLoaded || reportsLoading) return undefined;
 
-    const reveal = Animated.timing(initialMapLoadingOpacity, {
-      toValue: 0,
-      duration: 260,
-      useNativeDriver: true,
-    });
-    reveal.start(({ finished }) => {
-      if (finished) setShowInitialMapLoading(false);
-    });
-    return () => reveal.stop();
-  }, [initialMapLoadingOpacity, mapSurfaceLoaded, reportsLoading]);
+    onLaunchReady?.();
+    setShowInitialMapLoading(false);
+    return undefined;
+  }, [mapSurfaceLoaded, onLaunchReady, reportsLoading]);
 
   useEffect(() => {
     let active = true;
@@ -619,7 +639,6 @@ const getDistanceMiles = (pointA, pointB) => {
   return EARTH_RADIUS_MILES * c;
 };
 
-// Pressing Map opens Litter Form
 // Reports can only be created near the user's current GPS location
 const beginReportAtCoordinate = async (coord) => {
   if (!navigation.isFocused()) return;
@@ -648,12 +667,16 @@ const beginReportAtCoordinate = async (coord) => {
 
   const isCurrentRequest = () => reportLocationRequestRef.current === requestId;
 
-  const closeUnverifiedDraft = () => {
+  const closeUnverifiedDraft = ({ returnToPlacement = false } = {}) => {
     if (!isCurrentRequest()) return;
     setDraftCoord(null);
     setFormOpen(false);
     setReportLocationVerification('idle');
     resetReportWizard();
+    if (returnToPlacement) {
+      setPlacementCoordinate(coord);
+      setReportPlacementActive(true);
+    }
   };
 
   try {
@@ -679,7 +702,7 @@ const beginReportAtCoordinate = async (coord) => {
     if (permission.status !== 'granted') {
       closeUnverifiedDraft();
       showLocationSettingsAlert(
-        'Litterbugs needs your location to verify that a report is near you.'
+        'Litterbugs uses your current area to confirm the selected report location.'
       );
       return;
     }
@@ -707,12 +730,46 @@ const beginReportAtCoordinate = async (coord) => {
     // Calculate distance from user to selected report location
     const distanceMiles = getDistanceMiles(userCoord, coord);
 
-    // Block reports that are outside the permitted radius
-    if (distanceMiles > MAX_REPORT_DISTANCE_MILES) {
-      closeUnverifiedDraft();
+    const distancePolicy = evaluateReportLocationDistance(distanceMiles);
+
+    if (distancePolicy.status === 'blocked') {
+      closeUnverifiedDraft({ returnToPlacement: true });
       Alert.alert(
         'Report Location Too Far Away',
-        `Litterbugs reports can only be created within ${MAX_REPORT_DISTANCE_MILES} miles of your current location. You can still browse and view reports anywhere on the map.`
+        `This pin is about ${roundedDistanceLabel(distanceMiles)} from you. Move it within ${MAX_REPORT_DISTANCE_MILES} miles to create a report.`,
+        [{ text: 'Move pin' }]
+      );
+      return;
+    }
+
+    if (distancePolicy.status === 'invalid') {
+      closeUnverifiedDraft({ returnToPlacement: true });
+      Alert.alert(
+        'Unable to Verify Location',
+        'Litterbugs could not compare your location with the report pin. Move the pin and try again.'
+      );
+      return;
+    }
+
+    if (distancePolicy.status === 'remote_confirmation_required') {
+      Alert.alert(
+        'Confirm Report Location',
+        `This pin is about ${roundedDistanceLabel(distanceMiles)} from your current location. Confirm that it marks the correct cleanup site.`,
+        [
+          {
+            text: 'Move pin',
+            style: 'cancel',
+            onPress: () => closeUnverifiedDraft({ returnToPlacement: true }),
+          },
+          {
+            text: 'Use this location',
+            onPress: () => {
+              if (!isCurrentRequest() || !navigation.isFocused()) return;
+              setReportLocationVerification('verified');
+            },
+          },
+        ],
+        { cancelable: false }
       );
       return;
     }
@@ -734,21 +791,53 @@ const beginReportAtCoordinate = async (coord) => {
   }
 };
 
-const onMapPress = (e) => {
-  const coord = e.nativeEvent.coordinate;
+const openReportLocationPicker = () => {
+  const coord = mapCenterCoordinate(region);
+  if (!coord) {
+    Alert.alert('Map location unavailable', 'Move the map and try again.');
+    return;
+  }
+
   if (!isPermanentUser(currentUser)) {
     setPendingReportCoordinate(coord);
     navigation.getParent()?.navigate('Auth');
     return;
   }
 
+  setSelectedReport(null);
+  setDetailsOpen(false);
+  setPlacementCoordinate(coord);
+  setReportPlacementActive(true);
+};
+
+const cancelReportLocationPicker = () => {
+  setReportPlacementActive(false);
+  setPlacementCoordinate(null);
+};
+
+const confirmReportLocation = () => {
+  const coord = placementCoordinate || mapCenterCoordinate(region);
+  if (!coord) {
+    Alert.alert('Map location unavailable', 'Move the map and try again.');
+    return;
+  }
+
+  setReportPlacementActive(false);
+  setPlacementCoordinate(null);
   beginReportAtCoordinate(coord);
 };
 
 useEffect(() => {
   if (!isMapScreenFocused || !currentUserId || !pendingReportCoordinate) return;
   const coordinate = consumePendingReportCoordinate();
-  if (coordinate) beginReportAtCoordinate(coordinate);
+  if (coordinate) {
+    setPlacementCoordinate(coordinate);
+    setReportPlacementActive(true);
+    mapViewRef.current?.animateToRegion?.({
+      ...region,
+      ...coordinate,
+    }, 240);
+  }
 }, [currentUserId, isMapScreenFocused, pendingReportCoordinate]);
 
 useEffect(() => navigation.addListener('focus', () => {
@@ -979,7 +1068,7 @@ const submitReport = async () => {
   if (!isEditing && reportLocationVerification === 'checking') {
     Alert.alert(
       'Still verifying location',
-      'Wait a moment while Litterbugs confirms that this report is near you.'
+      'Wait a moment while Litterbugs confirms the selected report location.'
     );
     return;
   }
@@ -1013,7 +1102,7 @@ const submitReport = async () => {
 };
 
   // Cancel Report
-  const cancelDraft = () => {
+  const discardDraft = () => {
     reportLocationRequestRef.current += 1;
     setDraftCoord(null);
     setFormOpen(false);
@@ -1021,6 +1110,36 @@ const submitReport = async () => {
     setIsEditing(false);
     setEditingReportId(null);
     resetReportWizard();
+  };
+
+  const cancelDraft = () => {
+    const hasDraftContent = isEditing
+      || reportStep > 0
+      || Boolean(form.title?.trim())
+      || Boolean(form.types?.trim())
+      || Boolean(form.notes?.trim())
+      || form.selectedTypes.length > 0
+      || form.selectedNotes.length > 0
+      || form.photos.length > 0
+      || Boolean(form.severity)
+      || form.startingFundingChoice !== 'none'
+      || Boolean(form.startingFundingOther?.trim());
+
+    if (!hasDraftContent) {
+      discardDraft();
+      return;
+    }
+
+    Alert.alert(
+      isEditing ? 'Discard report changes?' : 'Discard this report?',
+      isEditing
+        ? 'Your unsaved changes will be lost.'
+        : 'Your report details and selected photos will be lost.',
+      [
+        { text: 'Keep editing', style: 'cancel' },
+        { text: 'Discard', style: 'destructive', onPress: discardDraft },
+      ],
+    );
   };
 
 // User Can Center Back to their Location on Map
@@ -1138,7 +1257,7 @@ const submitReport = async () => {
   const pickImage = async () => {
     if (isSaving || photoPreparationStatus) return;
     console.log('pickImage RUNNING');
-    setPhotoPreparationStatus('Opening your photo library…');
+    setPhotoPreparationStatus('Opening photo library…');
 
     try {
       // PHPicker grants access only to the photos the user selects, so requesting
@@ -1150,6 +1269,9 @@ const submitReport = async () => {
       console.log('RAW picker result:', result);
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
+        setPhotoPreparationStatus(
+          `Preparing ${result.assets.length} selected ${result.assets.length === 1 ? 'photo' : 'photos'}…`,
+        );
         const preparedAssets = [];
         for (let index = 0; index < result.assets.length; index += 1) {
           setPhotoPreparationStatus(
@@ -1242,58 +1364,6 @@ const submitReport = async () => {
     };
 
 
-// Set available marker icons by severity and active/completed markers by status.
-    const getMarkerStyleByReport = (report) => {
-      const mapTone = cleanupMapTone(report);
-
-      if (mapTone === 'active') {
-        return {
-          bg: '#E0A800',
-          icon: 'time-outline',
-          iconFamily: 'ionicons',
-          statusIcon: null,
-        };
-      }
-
-      if (mapTone === 'completed') {
-        return {
-          bg: '#2F7D32',
-          icon: 'leaf-outline',
-          iconFamily: 'ionicons',
-          statusIcon: 'checkmark',
-        };
-      }
-
-      const severity = (report?.severity || '').toLowerCase();
-      const isLowSeverity = severity === 'low';
-      const icon = isLowSeverity
-        ? 'bottle-soda-outline'
-        : severity === 'high'
-          ? 'warning-outline'
-          : 'trash-outline';
-
-      return {
-        bg: '#D32F2F',
-        icon,
-        iconFamily: isLowSeverity ? 'material-community' : 'ionicons',
-        statusIcon: null,
-      };
-    };
-
-    const getClusterStatusCounts = (clusterId) => {
-      const leaves = reportClusterRef.current?.getLeaves(clusterId, Infinity) || [];
-
-      return leaves.reduce((counts, leaf) => {
-        const [, mapTone] = String(leaf?.properties?.identifier || '').split(':');
-
-        if (mapTone === 'available' || mapTone === 'active' || mapTone === 'completed') {
-          counts[mapTone] += 1;
-        }
-
-        return counts;
-      }, { available: 0, active: 0, completed: 0 });
-    };
-
 const refreshReportMarkerSnapshots = useCallback(() => {
   if (markers.length === 0) return;
 
@@ -1321,6 +1391,15 @@ const openReportDetails = (report) => {
   if (!report) return;
   setSelectedReport(report);
   setDetailsOpen(true);
+};
+
+const closeReportDetails = () => {
+  setDetailsOpen(false);
+  setSelectedReport(null);
+  if (route?.params?.returnTo === 'Reports') {
+    navigation.setParams({ reportId: undefined, returnTo: undefined });
+    navigation.navigate('Reports');
+  }
 };
 
 useEffect(() => {
@@ -1389,26 +1468,39 @@ useEffect(() => {
 
 // Load Photos into Existing Report
 useEffect(() => {
+  let active = true;
+
   const loadPhotoUrls = async () => {
     // Always begin a newly opened report on its first photo
     setReportPhotoIndex(0);
     setPhotosLoading(true);
 
     if (!selectedReport?.photo_paths?.length) {
-      setReportPhotoUrls([]);
-      setPhotosLoading(false);
+      if (active) {
+        setReportPhotoUrls([]);
+        setPhotosLoading(false);
+      }
       return;
     }
 
-    const urls = await Promise.all(
-      selectedReport.photo_paths.map((p) => getSignedPhotoUrl(p))
-    );
-
-    setReportPhotoUrls(urls.filter(Boolean));
-    setPhotosLoading(false);
+    try {
+      const urls = await Promise.all(
+        selectedReport.photo_paths.map((p) => getSignedPhotoUrl(p))
+      );
+      if (active) setReportPhotoUrls(urls.filter(Boolean));
+    } catch (error) {
+      console.log('Report photo loading error:', error);
+      if (active) setReportPhotoUrls([]);
+    } finally {
+      if (active) setPhotosLoading(false);
+    }
   };
 
   loadPhotoUrls();
+
+  return () => {
+    active = false;
+  };
 }, [selectedReport]);
 
 useEffect(() => {
@@ -2794,6 +2886,9 @@ const renderReportStep = () => {
           initialRegion={region}
           region={region}
           onRegionChangeComplete={(nextRegion) => {
+            if (reportPlacementActive) {
+              setPlacementCoordinate(mapCenterCoordinate(nextRegion));
+            }
             setRegion((currentRegion) => {
               if (mapRegionsAreEquivalent(currentRegion, nextRegion)) return currentRegion;
               refreshReportMarkerSnapshots();
@@ -2804,30 +2899,7 @@ const renderReportStep = () => {
           radius={20}
           animationEnabled={false}
           clusteringEnabled={reportClusteringEnabled}
-          superClusterRef={reportClusterRef}
           renderCluster={({ id, geometry, properties, onPress }) => {
-            const statusCounts = getClusterStatusCounts(id);
-            const statusBadges = [
-              {
-                key: 'available',
-                count: statusCounts.available,
-                color: '#D32F2F',
-                icon: 'trash-bin-outline',
-              },
-              {
-                key: 'active',
-                count: statusCounts.active,
-                color: '#9A7000',
-                icon: 'time-outline',
-              },
-              {
-                key: 'completed',
-                count: statusCounts.completed,
-                color: '#2F7D32',
-                icon: 'leaf-outline',
-              },
-            ].filter(({ count }) => count > 0);
-
             return (
               <Marker
                 key={`cluster-${id}`}
@@ -2836,9 +2908,10 @@ const renderReportStep = () => {
                   longitude: geometry.coordinates[0],
                 }}
                 tracksViewChanges={tracksReportMarkers}
-                anchor={{ x: 0.5, y: 0.5 }}
+                anchor={{ x: 0.5, y: 1 }}
                 onPress={(event) => {
                   event?.stopPropagation?.();
+                  if (reportPlacementActive) return;
                   onPress();
                 }}
               >
@@ -2846,43 +2919,28 @@ const renderReportStep = () => {
                   <View style={styles.reportClusterHit}>
                     <View style={styles.reportClusterBubble}>
                       <Text style={styles.reportClusterText}>
-                        {properties.point_count}
+                        {properties.point_count} reports
                       </Text>
                     </View>
-                    <View style={styles.reportClusterStatusRow}>
-                      {statusBadges.map(({ key, count, color, icon }) => (
-                        <View
-                          key={key}
-                          style={[styles.reportClusterStatusBadge, { borderColor: color }]}
-                        >
-                          <Ionicons name={icon} size={11} color={color} />
-                          <Text style={[styles.reportClusterStatusCount, { color }]}>
-                            {count}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
+                    <Ionicons
+                      name="caret-down"
+                      size={13}
+                      color={REPORT_MAP_PIN_COLOR}
+                      style={styles.reportMarkerPinTail}
+                    />
                   </View>
                 </MapMarkerTransition>
               </Marker>
             );
           }}
-          onPress={(e) => {
-            if (detailsOpen || isSaving) return;
-            onMapPress(e);
-          }}          
           {...(locationPermissionGranted ? { showsUserLocation: true } : {})}
           followsUserLocation={false}
           mapType={mapType}
         >
 
         {markers.map((m) => {
-          const {
-            bg,
-            icon,
-            iconFamily,
-            statusIcon,
-          } = getMarkerStyleByReport(m?.report);
+          const fundingLabel = formatMapFundingLabel(m.report?.funded_amount_cents);
+          const funded = isFundedMapMarker(m.report?.funded_amount_cents);
 
           return (
             <Marker
@@ -2890,9 +2948,11 @@ const renderReportStep = () => {
               coordinate={m.coordinate}
               identifier={`report:${cleanupMapTone(m.report)}:${m.id}`}
               tracksViewChanges={tracksReportMarkers}
-              anchor={{ x: 0.5, y: 0.5 }}
+              anchor={{ x: 0.5, y: 1 }}
+              accessibilityLabel={`${fundingLabel} report: ${m.report?.title || 'Litter report'}`}
               onPress={(e) => {
                 e?.stopPropagation?.();
+                if (reportPlacementActive) return;
                 openReportDetails(m.report);
               }}
             >
@@ -2900,25 +2960,28 @@ const renderReportStep = () => {
                 transitionKey={`${reportClusteringEnabled ? 'clustered' : 'direct'}:${m.id}`}
               >
                 <View style={styles.reportMarkerHitLg}>
-                  {fundingEnabled
-                    && selectedReport?.id === m.report?.id
-                    && Number(m.report?.funded_amount_cents) > 0 ? (
-                    <View style={styles.markerRewardBadge}>
-                      <Text style={styles.markerRewardText}>{formatUsd(m.report.funded_amount_cents)}</Text>
-                    </View>
-                  ) : null}
-                  <View style={[styles.reportMarkerIconWrapLg, { backgroundColor: bg }]}>
-                    {iconFamily === 'material-community' ? (
-                      <MaterialCommunityIcons name={icon} size={34} color="#fff" />
+                  <View style={[
+                    styles.markerValuePill,
+                    !funded && styles.markerVolunteerPill,
+                  ]}>
+                    {funded ? (
+                      <Text style={styles.markerValueText}>
+                        {fundingLabel}
+                      </Text>
                     ) : (
-                      <Ionicons name={icon} size={34} color="#fff" />
+                      <Ionicons
+                        name="hand-left-outline"
+                        size={14}
+                        color="#FFFFFF"
+                      />
                     )}
-                    {statusIcon ? (
-                      <View style={styles.reportMarkerStatusBadge}>
-                        <Ionicons name={statusIcon} size={16} color="#374151" />
-                      </View>
-                    ) : null}
                   </View>
+                  <Ionicons
+                    name="caret-down"
+                    size={13}
+                    color={REPORT_MAP_PIN_COLOR}
+                    style={styles.reportMarkerPinTail}
+                  />
                 </View>
               </MapMarkerTransition>
             </Marker>
@@ -2938,15 +3001,59 @@ const renderReportStep = () => {
       </ClusteredMapView>
 
       {showInitialMapLoading ? (
-        <Animated.View
-          style={[styles.initialMapLoading, { opacity: initialMapLoadingOpacity }]}
-          pointerEvents="auto"
-        >
-          <BrandedLoadingState
-            title="Opening the Litterbugs map…"
-            message="Loading nearby cleanup reports and preparing your map."
-          />
-        </Animated.View>
+        <View style={styles.initialMapLoading} pointerEvents="auto">
+          <BrandedLoadingState logoOnly />
+        </View>
+      ) : null}
+
+      {reportPlacementActive ? (
+        <>
+          <View style={[styles.reportPlacementHeader, { paddingTop: insets.top, minHeight: 66 + insets.top }]}>
+            <View style={styles.reportPlacementHeaderSpacer} />
+            <View style={styles.reportPlacementHeaderCopy}>
+              <Text style={styles.reportPlacementTitle}>Choose report location</Text>
+              <Text style={styles.reportPlacementHint}>Move the map beneath the pin</Text>
+            </View>
+            <View style={styles.reportPlacementHeaderSpacer} />
+          </View>
+
+          <View
+            style={[
+              styles.reportPlacementPinArea,
+              { top: 66 + insets.top, bottom: Math.max(insets.bottom, 8) + 116 },
+            ]}
+            pointerEvents="none"
+            accessible={false}
+          >
+            <Ionicons name="location-sharp" size={54} color="#2F7D32" />
+          </View>
+
+          <View
+            style={[
+              styles.reportPlacementFooter,
+              { bottom: 0, paddingBottom: Math.max(insets.bottom, 20) },
+            ]}
+          >
+            <TouchableOpacity
+              style={styles.reportPlacementBack}
+              onPress={cancelReportLocationPicker}
+              accessibilityRole="button"
+              accessibilityLabel="Back to map without creating a report"
+            >
+              <Ionicons name="arrow-back" size={21} color="#2F7D32" />
+              <Text style={styles.reportPlacementBackText}>Back</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.reportPlacementConfirm}
+              onPress={confirmReportLocation}
+              accessibilityRole="button"
+              accessibilityLabel="Report this location"
+            >
+              <Ionicons name="location-outline" size={21} color="#FFFFFF" />
+              <Text style={styles.reportPlacementConfirmText}>Report this location</Text>
+            </TouchableOpacity>
+          </View>
+        </>
       ) : null}
 
         {/* Support Button (Patreon) */}
@@ -2960,15 +3067,35 @@ const renderReportStep = () => {
         </TouchableOpacity> */}
 
 
+      {!reportPlacementActive ? (
+        <TouchableOpacity
+          style={[styles.reportLitterButton, { bottom: mapControlsBottom }]}
+          onPress={openReportLocationPicker}
+          disabled={showInitialMapLoading || formOpen || detailsOpen || isSaving}
+          activeOpacity={0.82}
+          accessibilityRole="button"
+          accessibilityLabel="Report litter"
+          accessibilityHint="Choose the cleanup location on the map"
+          accessibilityState={{
+            disabled: showInitialMapLoading || formOpen || detailsOpen || isSaving,
+          }}
+        >
+          <Ionicons name="add-circle-outline" size={23} color="#FFFFFF" />
+          <Text style={styles.reportLitterButtonText}>Report litter</Text>
+        </TouchableOpacity>
+      ) : null}
+
       {/* Center Me Button */}
       <TouchableOpacity
         style={[
           styles.centerButton,
           {
             bottom:
-              mapControlsBottom +
-              BOTTOM_NAV_METRICS.mapControlSize +
-              BOTTOM_NAV_METRICS.mapControlGap,
+              reportPlacementActive
+                ? Math.max(insets.bottom, 8) + 130
+                : mapControlsBottom +
+                  BOTTOM_NAV_METRICS.mapControlSize +
+                  BOTTOM_NAV_METRICS.mapControlGap,
           },
         ]}
         onPress={centerOnUser}
@@ -2984,15 +3111,16 @@ const renderReportStep = () => {
         )}
       </TouchableOpacity>
 
-      {/* Map Type Toggle Button */}
-      <TouchableOpacity
-        style={[styles.mapTypeButton, { bottom: mapControlsBottom }]}
-        onPress={toggleMapType}
-        accessibilityRole="button"
-        accessibilityLabel="Change map style"
-      >
-        <Ionicons name="layers-outline" size={32} color={getMapTypeColor()} />
-      </TouchableOpacity>
+      {!reportPlacementActive ? (
+        <TouchableOpacity
+          style={[styles.mapTypeButton, { bottom: mapControlsBottom }]}
+          onPress={toggleMapType}
+          accessibilityRole="button"
+          accessibilityLabel="Change map style"
+        >
+          <Ionicons name="layers-outline" size={32} color={getMapTypeColor()} />
+        </TouchableOpacity>
+      ) : null}
 
 {/* Multi-step Report Form */}
 <Modal
@@ -3047,8 +3175,8 @@ const renderReportStep = () => {
 
             <Text style={styles.wizardHeaderStep}>
               {reportLocationVerification === 'checking' && !isEditing
-                ? 'Verifying report location…'
-                : REPORT_STEPS[reportStep]}
+                ? `Step ${reportStep + 1} of ${REPORT_STEPS.length} · Verifying location…`
+                : `Step ${reportStep + 1} of ${REPORT_STEPS.length} · ${REPORT_STEPS[reportStep]}`}
             </Text>
           </View>
 
@@ -3131,20 +3259,25 @@ const renderReportStep = () => {
 
 
           {/* DOTS */}
-          <View style={styles.wizardDots}>
-            {REPORT_STEPS.map(
-              (step, index) => (
-                <View
-                  key={step}
-                  style={[
-                    styles.wizardDot,
+          <View style={styles.wizardProgress}>
+            <Text style={styles.wizardProgressText}>
+              {reportStep + 1} of {REPORT_STEPS.length}
+            </Text>
+            <View style={styles.wizardDots}>
+              {REPORT_STEPS.map(
+                (step, index) => (
+                  <View
+                    key={step}
+                    style={[
+                      styles.wizardDot,
 
-                    index === reportStep &&
-                      styles.wizardDotActive,
-                  ]}
-                />
-              )
-            )}
+                      index === reportStep &&
+                        styles.wizardDotActive,
+                    ]}
+                  />
+                )
+              )}
+            </View>
           </View>
 
 
@@ -3202,7 +3335,7 @@ const renderReportStep = () => {
       setReportShareSheetOpen(false);
       return;
     }
-    if (!reportShareBusyAction) setDetailsOpen(false);
+    if (!reportShareBusyAction) closeReportDetails();
   }}
 >
   <View style={styles.modalBackdrop}>
@@ -3301,9 +3434,7 @@ const renderReportStep = () => {
                   </Text>
 
                   <Text style={styles.reportMetaItemText}>
-                    {new Date(
-                      selectedReport.created_at
-                    ).toLocaleString()}
+                    {formatFriendlyDateTime(selectedReport.created_at)}
                   </Text>
                 </View>
               </View>
@@ -3348,7 +3479,7 @@ const renderReportStep = () => {
                   </Text>
 
                   <Text style={styles.reportMetaItemText}>
-                    {Number(selectedReport.latitude).toFixed(5)}, {Number(selectedReport.longitude).toFixed(5)}
+                    Pinned on the Litterbugs map
                   </Text>
                 </View>
               </View>
@@ -3455,6 +3586,7 @@ const renderReportStep = () => {
                     source={uri}
                     contentFit="cover"
                     cachePolicy="memory-disk"
+                    transition={140}
                     style={{
                       width: reportHeroWidth,
                       height: 355,
@@ -4111,7 +4243,7 @@ const renderReportStep = () => {
             styles.reportFooterButton,
             styles.reportCloseButton,
           ]}
-          onPress={() => setDetailsOpen(false)}
+          onPress={closeReportDetails}
           accessibilityRole="button"
           accessibilityLabel="Close report"
         >
@@ -4137,7 +4269,6 @@ const renderReportStep = () => {
       report={selectedReport}
       previewPhotoUrl={reportPhotoUrls[0] ?? null}
       busyAction={reportShareBusyAction}
-      onInstagramStory={shareSelectedReportToInstagram}
       onSystemShare={shareSelectedReport}
       onClose={() => {
         if (!reportShareBusyAction) setReportShareSheetOpen(false);
@@ -4167,7 +4298,121 @@ const styles = StyleSheet.create({
   initialMapLoading: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 1000,
-    backgroundColor: '#F5F6F7',
+    backgroundColor: '#FFFFFF',
+  },
+  reportLitterButton: {
+    position: 'absolute',
+    left: 20,
+    height: 56,
+    paddingHorizontal: 18,
+    borderRadius: 14,
+    backgroundColor: '#2F7D32',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    shadowColor: '#000000',
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  reportLitterButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  reportPlacementHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 20,
+    minHeight: 66,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.12)',
+  },
+  reportPlacementHeaderCopy: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  reportPlacementHeaderSpacer: {
+    width: 68,
+  },
+  reportPlacementTitle: {
+    color: '#1F2937',
+    fontSize: 17,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  reportPlacementHint: {
+    marginTop: 2,
+    color: '#667085',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  reportPlacementPinArea: {
+    position: 'absolute',
+    top: 66,
+    left: 0,
+    right: 0,
+    zIndex: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reportPlacementFooter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 20,
+    minHeight: 104,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.12)',
+  },
+  reportPlacementBack: {
+    minHeight: 56,
+    paddingHorizontal: 17,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#2F7D32',
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+  },
+  reportPlacementBackText: {
+    color: '#2F7D32',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  reportPlacementConfirm: {
+    flex: 1,
+    minHeight: 56,
+    borderRadius: 14,
+    backgroundColor: '#2F7D32',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 9,
+  },
+  reportPlacementConfirmText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '800',
   },
 
   /* ============================= */
@@ -4709,7 +4954,19 @@ wizardDots: {
   alignItems: 'center',
   justifyContent: 'center',
   gap: 8,
+},
+
+wizardProgress: {
   flex: 1,
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+
+wizardProgressText: {
+  marginBottom: 5,
+  color: '#667085',
+  fontSize: 11,
+  fontWeight: '800',
 },
 
 wizardDot: {
@@ -5773,112 +6030,75 @@ reportCloseButtonText: {
 },
 
 
-// Enlarged marker hit area and status-colored icon wrap.
+// Zillow-style value pins: the label is the marker and the caret anchors its exact spot.
 reportMarkerHitLg: {
-  width: 88,          // was 44
-  height: 88,         // was 44
-  borderRadius: 44,
+  width: 92,
+  height: 36,
   alignItems: 'center',
-  justifyContent: 'center',
+  justifyContent: 'flex-start',
+  paddingTop: 2,
   backgroundColor: 'rgba(0,0,0,0.01)', // keeps touch target reliable
 },
 
-markerRewardBadge: {
-  position: 'absolute',
-  top: -2,
-  zIndex: 2,
-  paddingHorizontal: 8,
-  paddingVertical: 4,
-  borderWidth: 1,
-  borderColor: '#8FBC92',
-  borderRadius: 999,
-  backgroundColor: '#FFFFFF',
-},
-
-markerRewardText: {
-  color: '#245F2A',
-  fontSize: 11,
-  fontWeight: '900',
-},
-
-reportMarkerIconWrapLg: {
-  width: 60,          // was ~30
-  height: 60,         // was ~30
-  borderRadius: 30,
+markerValuePill: {
+  minHeight: 24,
+  minWidth: 42,
+  maxWidth: 88,
+  paddingHorizontal: 7,
+  paddingVertical: 3,
   alignItems: 'center',
   justifyContent: 'center',
-  backgroundColor: '#D32F2F',
-  borderWidth: 3,     // slightly thicker for scale
-  borderColor: '#fff',
-  shadowColor: '#000',
-  shadowOpacity: 0.28,
-  shadowRadius: 7,
-  shadowOffset: { width: 0, height: 3 },
-  elevation: 6,
-},
-reportMarkerStatusBadge: {
-  position: 'absolute',
-  right: -3,
-  bottom: -3,
-  width: 24,
-  height: 24,
   borderRadius: 12,
-  alignItems: 'center',
-  justifyContent: 'center',
-  backgroundColor: '#fff',
-  borderWidth: 2,
-  borderColor: '#374151',
+  backgroundColor: REPORT_MAP_PIN_COLOR,
+  shadowColor: '#000000',
+  shadowOpacity: 0.16,
+  shadowRadius: 3,
+  shadowOffset: { width: 0, height: 1 },
+  elevation: 3,
+},
+markerValueText: {
+  fontSize: 11,
+  fontWeight: '600',
+  letterSpacing: 0,
+  color: '#FFFFFF',
+},
+markerVolunteerPill: {
+  width: 24,
+  minWidth: 24,
+  paddingHorizontal: 0,
+},
+reportMarkerPinTail: {
+  marginTop: -5,
 },
 reportClusterHit: {
-  width: 96,
-  height: 80,
-  borderRadius: 40,
+  width: 92,
+  height: 36,
   alignItems: 'center',
-  justifyContent: 'center',
-  paddingBottom: 12,
+  justifyContent: 'flex-start',
+  paddingTop: 2,
   backgroundColor: 'rgba(0,0,0,0.01)',
 },
 reportClusterBubble: {
-  width: 52,
-  height: 52,
-  borderRadius: 26,
+  minWidth: 52,
+  minHeight: 24,
+  maxWidth: 88,
+  borderRadius: 12,
+  paddingHorizontal: 7,
+  paddingVertical: 3,
   alignItems: 'center',
   justifyContent: 'center',
-  backgroundColor: '#B448CF',
-  borderWidth: 3,
-  borderColor: '#fff',
-  shadowColor: '#000',
-  shadowOpacity: 0.25,
-  shadowRadius: 6,
-  shadowOffset: { width: 0, height: 3 },
-  elevation: 6,
+  backgroundColor: REPORT_MAP_PIN_COLOR,
+  shadowColor: '#000000',
+  shadowOpacity: 0.16,
+  shadowRadius: 3,
+  shadowOffset: { width: 0, height: 1 },
+  elevation: 3,
 },
 reportClusterText: {
-  color: '#fff',
-  fontSize: 17,
-  fontWeight: '800',
-},
-reportClusterStatusRow: {
-  position: 'absolute',
-  bottom: 0,
-  flexDirection: 'row',
-  gap: 3,
-},
-reportClusterStatusBadge: {
-  minWidth: 27,
-  height: 20,
-  borderRadius: 10,
-  paddingHorizontal: 4,
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  backgroundColor: '#fff',
-  borderWidth: 2,
-},
-reportClusterStatusCount: {
-  fontSize: 10,
-  fontWeight: '900',
-  lineHeight: 12,
+  color: '#FFFFFF',
+  fontSize: 11,
+  fontWeight: '600',
+  letterSpacing: 0,
 },
 savingOverlay: {
   ...StyleSheet.absoluteFillObject,

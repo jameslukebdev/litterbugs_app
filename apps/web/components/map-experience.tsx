@@ -4,9 +4,9 @@ import { importLibrary, setOptions } from '@googlemaps/js-api-loader';
 import {
   EMPTY_REPORT_DRAFT,
   FALLBACK_MAP_CENTER,
-  MAX_REPORT_DISTANCE_MILES,
+  NEARBY_REPORT_DISTANCE_MILES,
+  getDistanceMiles,
   hasReportCoordinates,
-  isWithinReportDistance,
   reportInsertFromDraft,
   reportUpdateFromDraft,
   type Coordinates,
@@ -282,14 +282,14 @@ export function MapExperience({
     }
     try {
       const location = await getBrowserLocation();
-      if (!isWithinReportDistance(location, coordinates)) {
-        setToast(`Report location too far away. Reports can only be created within ${MAX_REPORT_DISTANCE_MILES} miles of your current location.`);
+      if (getDistanceMiles(location, coordinates) > NEARBY_REPORT_DISTANCE_MILES) {
+        setToast(`For a location more than ${NEARBY_REPORT_DISTANCE_MILES} miles away, use the Litterbugs mobile app to confirm the pin and complete its location review.`);
         return;
       }
       setDraftCoordinates(coordinates);
       setReportMode(false);
     } catch {
-      setToast('Litterbugs needs your location to verify that a report is near you. Allow location access and try again.');
+      setToast('Litterbugs needs your location to compare it with the selected report pin. Allow location access and try again.');
     }
   }, [userId]);
 

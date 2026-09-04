@@ -9,7 +9,8 @@ export const REPORT_STEPS = [
   'Review',
 ] as const;
 
-export const MAX_REPORT_DISTANCE_MILES = 10;
+export const NEARBY_REPORT_DISTANCE_MILES = 10;
+export const MAX_REPORT_DISTANCE_MILES = 50;
 export const MAX_REPORT_PHOTOS = 3;
 export const MAX_REPORT_TITLE_LENGTH = 80;
 export const MAX_REPORT_NOTES_LENGTH = 500;
@@ -145,4 +146,10 @@ export function getDistanceMiles(pointA: Coordinates, pointB: Coordinates): numb
 
 export function isWithinReportDistance(user: Coordinates, report: Coordinates): boolean {
   return getDistanceMiles(user, report) <= MAX_REPORT_DISTANCE_MILES;
+}
+
+export function requiresRemoteReportConfirmation(user: Coordinates, report: Coordinates): boolean {
+  const distanceMiles = getDistanceMiles(user, report);
+  return distanceMiles > NEARBY_REPORT_DISTANCE_MILES
+    && distanceMiles <= MAX_REPORT_DISTANCE_MILES;
 }

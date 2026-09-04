@@ -12,7 +12,7 @@
     "splash": {
       "image": "./assets/LB_Logo_PNG.png",
       "resizeMode": "contain",
-      "backgroundColor": "#F5F6F7"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": true,
@@ -30,10 +30,27 @@
       },
       "edgeToEdgeEnabled": true
     },
+    "androidStatusBar": {
+      "backgroundColor": "#FFFFFF",
+      "barStyle": "dark-content"
+    },
+    "androidNavigationBar": {
+      "backgroundColor": "#FFFFFF",
+      "barStyle": "dark-content"
+    },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FFFFFF",
+          "image": "./assets/LB_Logo_PNG.png",
+          "imageWidth": 244,
+          "resizeMode": "contain"
+        }
+      ],
       "expo-secure-store",
       "expo-web-browser",
       "expo-notifications",

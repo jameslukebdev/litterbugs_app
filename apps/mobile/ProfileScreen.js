@@ -201,11 +201,11 @@ function RankingCard({ ranking, loading, error, onRetry }) {
         accessibilityLabel={error ? 'Retry loading rank' : 'Loading rank'}
       >
         <View style={styles.rankLoadingStage}>
-          {showingLoader ? (
-            <ActivityIndicator size="large" color="#B448CF" />
-          ) : (
-            <Ionicons name="cloud-offline-outline" size={42} color="#B448CF" />
-          )}
+          <Ionicons
+            name={showingLoader ? 'ribbon-outline' : 'cloud-offline-outline'}
+            size={34}
+            color="#B448CF"
+          />
         </View>
         <Text style={styles.rankLoadingTitle}>
           {showingLoader ? 'Loading your rank…' : 'Rank unavailable'}
@@ -222,18 +222,22 @@ function RankingCard({ ranking, loading, error, onRetry }) {
 
   return (
     <View style={styles.rankCard}>
-      <Text style={styles.rankEyebrow}>COMMUNITY RANK</Text>
-      <View style={styles.rankArtworkStage}>
-        <Image
-          source={getRankAsset(rankDefinition)}
-          contentFit="contain"
-          transition={120}
-          style={styles.rankArtwork}
-          accessibilityLabel={`${ranking.rank} rank artwork`}
-        />
+      <View style={styles.rankSummaryRow}>
+        <View style={styles.rankArtworkStage}>
+          <Image
+            source={getRankAsset(rankDefinition)}
+            contentFit="contain"
+            transition={120}
+            style={styles.rankArtwork}
+            accessibilityLabel={`${ranking.rank} rank artwork`}
+          />
+        </View>
+        <View style={styles.rankSummaryCopy}>
+          <Text style={styles.rankEyebrow}>COMMUNITY RANK</Text>
+          <Text style={styles.rankName}>{ranking.rank}</Text>
+          <Text style={styles.rankPoints}>{pointsLabel}</Text>
+        </View>
       </View>
-      <Text style={styles.rankName}>{ranking.rank}</Text>
-      <Text style={styles.rankPoints}>{pointsLabel}</Text>
 
       {ranking.nextRank ? (
         <View style={styles.rankProgressSection}>
@@ -440,26 +444,36 @@ export default function ProfileScreen({ navigation }) {
       refreshControl={<RefreshControl refreshing={loading || cleanupsLoading || rankingLoading} onRefresh={refresh} tintColor="#2F7D32" />}
     >
       <View style={styles.identity}>
-        <ProfileAvatar profile={profile} size={104} />
-        <Text style={styles.name}>{profile?.display_name || 'Profile unavailable'}</Text>
-        {profile?.username ? <Text style={styles.username}>@{profile.username}</Text> : null}
-        {profile?.location ? (
-          <View style={styles.locationRow}>
-            <Ionicons name="location-outline" size={16} color="#677178" />
-            <Text style={styles.location}>{profile.location}</Text>
+        <View style={styles.identityTop}>
+          <ProfileAvatar profile={profile} size={82} />
+          <View style={styles.identityCopy}>
+            <Text style={styles.name}>{profile?.display_name || 'Profile unavailable'}</Text>
+            {profile?.username ? <Text style={styles.username}>@{profile.username}</Text> : null}
+            {profile?.location ? (
+              <View style={styles.locationRow}>
+                <Ionicons name="location-outline" size={15} color="#677178" />
+                <Text style={styles.location}>{profile.location}</Text>
+              </View>
+            ) : null}
+            <Text style={styles.joined}>
+              Joined {new Date(profile?.created_at || Date.now()).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+            </Text>
           </View>
-        ) : null}
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => navigation.getParent()?.navigate('EditProfile')}
+            accessibilityRole="button"
+            accessibilityLabel="Edit profile"
+          >
+            <Ionicons name="create-outline" size={20} color="#2F7D32" />
+          </TouchableOpacity>
+        </View>
         {profile?.bio ? <Text style={styles.bio}>{profile.bio}</Text> : null}
-        <Text style={styles.joined}>
-          Joined {new Date(profile?.created_at || Date.now()).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
-        </Text>
-        <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => navigation.getParent()?.navigate('EditProfile')}
-          accessibilityRole="button"
-        >
-          <Text style={styles.editButtonText}>Edit profile</Text>
-        </TouchableOpacity>
+      </View>
+
+      <View style={styles.statCard}>
+        <Text style={styles.statValue}>{profile?.reports_created_count ?? 0}</Text>
+        <Text style={styles.statLabel}>Reports submitted</Text>
       </View>
 
       <RankingCard
@@ -468,11 +482,6 @@ export default function ProfileScreen({ navigation }) {
         error={rankingError}
         onRetry={refreshRanking}
       />
-
-      <View style={styles.statCard}>
-        <Text style={styles.statValue}>{profile?.reports_created_count ?? 0}</Text>
-        <Text style={styles.statLabel}>Reports submitted</Text>
-      </View>
 
       {fundingEnabled ? (
         <>
@@ -613,35 +622,39 @@ export default function ProfileScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F5F6F7' },
-  identity: { alignItems: 'center', paddingHorizontal: 24, paddingTop: 30 },
-  name: { marginTop: 15, color: '#202428', fontSize: 25, fontWeight: '800', textAlign: 'center' },
-  username: { marginTop: 4, color: '#687178', fontSize: 15 },
+  identity: { marginHorizontal: 16, marginTop: 18, padding: 18, borderRadius: 20, backgroundColor: '#FFFFFF' },
+  identityTop: { flexDirection: 'row', alignItems: 'center' },
+  identityCopy: { flex: 1, minWidth: 0, marginLeft: 15 },
+  name: { color: '#202428', fontSize: 22, fontWeight: '900' },
+  username: { marginTop: 2, color: '#687178', fontSize: 14 },
   locationRow: { marginTop: 9, flexDirection: 'row', alignItems: 'center', gap: 4 },
   location: { color: '#59636A', fontSize: 14 },
-  bio: { maxWidth: 360, marginTop: 12, color: '#4F5960', fontSize: 15, lineHeight: 22, textAlign: 'center' },
-  joined: { marginTop: 10, color: '#7A8288', fontSize: 13 },
-  editButton: { minHeight: 44, marginTop: 13, paddingHorizontal: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#2F7D32', borderRadius: 22, backgroundColor: '#FFFFFF' },
+  bio: { marginTop: 14, color: '#4F5960', fontSize: 14, lineHeight: 20 },
+  joined: { marginTop: 7, color: '#7A8288', fontSize: 12 },
+  editButton: { width: 44, height: 44, marginLeft: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#C9D8CA', borderRadius: 22, backgroundColor: '#F7FAF7' },
   editButtonText: { color: '#2F7D32', fontSize: 15, fontWeight: '800' },
-  rankCard: { marginHorizontal: 16, marginTop: 24, paddingHorizontal: 22, paddingTop: 20, paddingBottom: 22, alignItems: 'center', borderWidth: 1, borderColor: '#E6C8ED', borderRadius: 24, backgroundColor: '#FFFFFF', shadowColor: '#4C1658', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.1, shadowRadius: 18, elevation: 4 },
+  rankCard: { marginHorizontal: 16, marginTop: 14, padding: 18, borderWidth: 1, borderColor: '#E6C8ED', borderRadius: 20, backgroundColor: '#FFFFFF' },
+  rankSummaryRow: { flexDirection: 'row', alignItems: 'center' },
+  rankSummaryCopy: { flex: 1, minWidth: 0, marginLeft: 16 },
   rankEyebrow: { color: '#8B2EA2', fontSize: 12, lineHeight: 16, fontWeight: '900', letterSpacing: 1.5 },
-  rankArtworkStage: { width: 188, height: 188, marginTop: 14, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderWidth: 3, borderColor: '#EAC8F0', borderRadius: 36, backgroundColor: '#FFFFFF' },
+  rankArtworkStage: { width: 96, height: 96, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderWidth: 2, borderColor: '#EAC8F0', borderRadius: 24, backgroundColor: '#FFFFFF' },
   rankArtwork: { width: '100%', height: '100%' },
-  rankName: { marginTop: 16, color: '#242029', fontSize: 29, lineHeight: 35, fontWeight: '900', textAlign: 'center' },
-  rankPoints: { marginTop: 4, color: '#2F7D32', fontSize: 20, lineHeight: 26, fontWeight: '900' },
-  rankProgressSection: { width: '100%', marginTop: 20 },
+  rankName: { marginTop: 5, color: '#242029', fontSize: 24, lineHeight: 29, fontWeight: '900' },
+  rankPoints: { marginTop: 2, color: '#2F7D32', fontSize: 17, lineHeight: 22, fontWeight: '900' },
+  rankProgressSection: { width: '100%', marginTop: 16 },
   rankProgressHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   rankProgressTitle: { flex: 1, color: '#4C4450', fontSize: 14, fontWeight: '800' },
   rankProgressPercent: { color: '#8B2EA2', fontSize: 14, fontWeight: '900' },
-  rankProgressTrack: { height: 13, marginTop: 9, overflow: 'hidden', borderRadius: 7, backgroundColor: '#EEE4F0' },
+  rankProgressTrack: { height: 10, marginTop: 8, overflow: 'hidden', borderRadius: 5, backgroundColor: '#EEE4F0' },
   rankProgressFill: { height: '100%', borderRadius: 7, backgroundColor: '#B448CF' },
   rankRemaining: { marginTop: 10, color: '#625768', fontSize: 14, lineHeight: 20, fontWeight: '700', textAlign: 'center' },
   highestRankBadge: { minHeight: 48, marginTop: 19, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 24, backgroundColor: '#F3E2F6' },
   highestRankText: { color: '#75258A', fontSize: 15, fontWeight: '900' },
-  rankLoadingStage: { width: 112, height: 112, marginTop: 4, alignItems: 'center', justifyContent: 'center', borderRadius: 28, backgroundColor: '#F5E7F7' },
+  rankLoadingStage: { width: 76, height: 76, alignSelf: 'center', alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: '#F5E7F7' },
   rankLoadingTitle: { marginTop: 15, color: '#413946', fontSize: 17, fontWeight: '800' },
   rankRetryText: { marginTop: 5, color: '#8B2EA2', fontSize: 14, fontWeight: '700' },
   rankRefreshWarning: { marginTop: 15, color: '#8B2EA2', fontSize: 13, fontWeight: '700', textAlign: 'center' },
-  statCard: { margin: 20, marginBottom: 2, paddingVertical: 18, alignItems: 'center', borderRadius: 16, backgroundColor: '#FFFFFF' },
+  statCard: { marginHorizontal: 16, marginTop: 14, paddingVertical: 14, alignItems: 'center', borderRadius: 16, backgroundColor: '#FFFFFF' },
   statValue: { color: '#245F2A', fontSize: 28, fontWeight: '800' },
   statLabel: { marginTop: 3, color: '#687178', fontSize: 14, fontWeight: '700' },
   sectionTitle: { marginHorizontal: 20, marginTop: 27, marginBottom: 9, color: '#30363B', fontSize: 17, fontWeight: '800' },

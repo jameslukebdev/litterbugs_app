@@ -276,7 +276,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
       keyboardVerticalOffset={90}
     >
       <Modal visible={submitting} animationType="fade" statusBarTranslucent>
-        <BrandedLoadingState title={submissionTitle} message={submissionMessage} />
+        <BrandedLoadingState working title={submissionTitle} message={submissionMessage} />
       </Modal>
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 24) + 24 }]}
