@@ -272,6 +272,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     loading: reportsLoading,
     refreshReports,
     getReportById,
+    getReportPhotoUrl,
     upsertReport,
     removeReport,
   } = useReports();
@@ -1350,20 +1351,6 @@ const submitReport = async () => {
       }
     };
     
-    const getSignedPhotoUrl = async (path) => {
-      const { data, error } = await supabase.storage
-        .from('report_photos')
-        .createSignedUrl(path, 60 * 60); // 1 hour
-    
-      if (error) {
-        console.error('Signed URL error:', error);
-        return null;
-      }
-
-      return data.signedUrl;
-    };
-
-
 const refreshReportMarkerSnapshots = useCallback(() => {
   if (markers.length === 0) return;
 
@@ -1389,6 +1376,12 @@ useEffect(() => () => {
 
 const openReportDetails = (report) => {
   if (!report) return;
+  const firstPhotoPath = report.photo_paths?.[0];
+  if (firstPhotoPath) {
+    getReportPhotoUrl(firstPhotoPath).catch((error) => {
+      console.log('Report photo prefetch error:', error);
+    });
+  }
   setSelectedReport(report);
   setDetailsOpen(true);
 };
@@ -1484,10 +1477,21 @@ useEffect(() => {
     }
 
     try {
-      const urls = await Promise.all(
-        selectedReport.photo_paths.map((p) => getSignedPhotoUrl(p))
+      const [firstPath, ...remainingPaths] = selectedReport.photo_paths;
+      const firstUrl = await getReportPhotoUrl(firstPath);
+
+      if (active && firstUrl) {
+        setReportPhotoUrls([firstUrl]);
+        setPhotosLoading(false);
+      }
+
+      const remainingUrls = await Promise.all(
+        remainingPaths.map((path) => getReportPhotoUrl(path))
       );
-      if (active) setReportPhotoUrls(urls.filter(Boolean));
+
+      if (active) {
+        setReportPhotoUrls([firstUrl, ...remainingUrls].filter(Boolean));
+      }
     } catch (error) {
       console.log('Report photo loading error:', error);
       if (active) setReportPhotoUrls([]);
@@ -1501,7 +1505,7 @@ useEffect(() => {
   return () => {
     active = false;
   };
-}, [selectedReport]);
+}, [getReportPhotoUrl, selectedReport]);
 
 useEffect(() => {
   let active = true;
@@ -2889,11 +2893,10 @@ const renderReportStep = () => {
             if (reportPlacementActive) {
               setPlacementCoordinate(mapCenterCoordinate(nextRegion));
             }
-            setRegion((currentRegion) => {
-              if (mapRegionsAreEquivalent(currentRegion, nextRegion)) return currentRegion;
+            if (!mapRegionsAreEquivalent(region, nextRegion)) {
               refreshReportMarkerSnapshots();
-              return nextRegion;
-            });
+              setRegion(nextRegion);
+            }
           }}
           maxZoom={14}
           radius={20}
@@ -3583,7 +3586,10 @@ const renderReportStep = () => {
                 Platform.OS === 'android' ? (
                   <ExpoImage
                     key={`${uri}-${index}`}
-                    source={uri}
+                    source={{
+                      uri,
+                      cacheKey: selectedReport.photo_paths?.[index] ?? uri,
+                    }}
                     contentFit="cover"
                     cachePolicy="memory-disk"
                     transition={140}

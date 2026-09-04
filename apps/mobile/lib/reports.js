@@ -68,6 +68,7 @@ export function ReportsProvider({ children }) {
   const [error, setError] = useState(null);
   const [mapRegion, setMapRegion] = useState(DEFAULT_MAP_REGION);
   const photoUrlCache = useRef(new Map());
+  const photoUrlRequests = useRef(new Map());
   const { blockedIds } = useProfile();
 
   const refreshReports = useCallback(async ({ showRefresh = false } = {}) => {
@@ -165,18 +166,31 @@ export function ReportsProvider({ children }) {
     const cached = photoUrlCache.current.get(path);
     if (cached) return cached;
 
-    const { data, error: photoError } = await supabase.storage
-      .from('report_photos')
-      .createSignedUrl(path, 60 * 60);
+    const pending = photoUrlRequests.current.get(path);
+    if (pending) return pending;
 
-    if (photoError) {
-      console.log('Signed report thumbnail error:', photoError);
-      return null;
+    const request = (async () => {
+      const { data, error: photoError } = await supabase.storage
+        .from('report_photos')
+        .createSignedUrl(path, 60 * 60);
+
+      if (photoError) {
+        console.log('Signed report photo error:', photoError);
+        return null;
+      }
+
+      const signedUrl = data?.signedUrl ?? null;
+      if (signedUrl) photoUrlCache.current.set(path, signedUrl);
+      return signedUrl;
+    })();
+
+    photoUrlRequests.current.set(path, request);
+
+    try {
+      return await request;
+    } finally {
+      photoUrlRequests.current.delete(path);
     }
-
-    const signedUrl = data?.signedUrl ?? null;
-    if (signedUrl) photoUrlCache.current.set(path, signedUrl);
-    return signedUrl;
   }, []);
 
   const value = useMemo(() => ({

@@ -84,7 +84,7 @@ function ReportThumbnail({ report, size }) {
   if (photoUrl) {
     return (
       <ExpoImage
-        source={photoUrl}
+        source={{ uri: photoUrl, cacheKey: photoPath }}
         contentFit="cover"
         cachePolicy="memory-disk"
         style={[styles.thumbnail, { width: size, height: size * 0.86 }]}
