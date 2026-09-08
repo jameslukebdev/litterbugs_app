@@ -3277,7 +3277,11 @@ const renderReportStep = () => {
               {m.labelled || selected ? <View style={[styles.compactMarker, selected && styles.compactMarkerSelected, { minHeight: m.height || 32, width: m.width || 48 }]}>
                 {m.label && tone === 'available' ? <Text numberOfLines={1} style={[styles.compactMarkerText, selected && { color: '#FFFFFF' }]}>{m.label}</Text>
                   : <Ionicons name={icon} size={18} color={selected ? '#FFFFFF' : '#285D38'} />}
-              </View> : <View style={styles.compactMarkerDot} />}
+              </View> : tone === 'completed' || tone === 'active' ? (
+                <View style={styles.compactStatusMarker}>
+                  <Ionicons name={icon} size={14} color="#285D38" />
+                </View>
+              ) : <View style={styles.compactMarkerDot} />}
             </View>
           </Marker>;
         })}
@@ -6181,6 +6185,7 @@ compactMarkerHit: { alignItems: 'center', justifyContent: 'center' },
 compactMarker: { paddingHorizontal: 12, borderRadius: 18, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#92A998', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 3, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
 compactMarkerSelected: { backgroundColor: '#285D38', borderColor: '#FFFFFF' },
 compactMarkerText: { color: '#285D38', fontSize: 14, fontWeight: '700' },
+compactStatusMarker: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#FFFFFF', borderColor: '#92A998', borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 compactMarkerDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#FFFFFF', borderColor: '#285D38', borderWidth: 2 },
 savingOverlay: {
   ...StyleSheet.absoluteFillObject,

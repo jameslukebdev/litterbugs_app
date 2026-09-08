@@ -18,3 +18,8 @@ The map dot was a deliberate collision fallback, but report-ID ordering gave a c
 - Installed on iPhone 17 Pro iOS 26.5. Boone overview shows $6 label and completed dot; tapping opens a chooser with both reports.
 - No payment submitted or Continue-to-payment action invoked. No production data changed. No push to main.
 - Simulator: fee icon sits beside its label without displacing the amount; popup displays all three cost categories and contribution explanation; Got it dismisses. Funding amounts were not edited in this verification.
+
+## Follow-up: retain compact status identity
+The initial priority correction still represented a completed report as a blank dot when its full label did not fit. User feedback showed this was confusing. Compact completed/in-progress markers now retain a 14-point checkmark/clock inside a 22-point neutral circle. Existing minimum 44-point touch targets and nearby-report chooser are unchanged. The available reward retains label priority unless another report is selected.
+
+Verification: 272 tests pass, Release build succeeds, and installed simulator at Boone overview visibly shows both $6 and the compact checkmark. Tapped the completed marker, selected the completed report in the nearby chooser, and verified its Cleanup Complete preview. Returned simulator to the Boone overview. No payments or production data changes.
