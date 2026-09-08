@@ -280,7 +280,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   } = useProfile();
   const {
     markers,
-    searchPlace, clearSearchPlace, selectedMapReportId: previewId, setSelectedMapReportId: setPreviewId,
+    restoredMap, searchPlace, clearSearchPlace, selectedMapReportId: previewId, setSelectedMapReportId: setPreviewId,
     mapRegion: region,
     setMapRegion: setRegion,
     commitMapRegion,
@@ -354,6 +354,11 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   useEffect(() => {
     if (initialLocationRequestStartedRef.current) return undefined;
     initialLocationRequestStartedRef.current = true;
+    if (restoredMap) {
+      setInitialLocationResolved(true);
+      Location.getForegroundPermissionsAsync().then(permission => setLocationPermissionGranted(permission.status === 'granted')).catch(() => {});
+      return undefined;
+    }
     let active = true;
 
     locateAndCenterMap({ showPermissionAlert: false })
@@ -365,7 +370,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     return () => {
       active = false;
     };
-  }, [locateAndCenterMap]);
+  }, [locateAndCenterMap, restoredMap]);
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';

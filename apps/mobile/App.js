@@ -1,3 +1,4 @@
+import { loadDiscoveryMemory, markWelcomeSeen } from './lib/discoveryMemory';
 import { authenticatedActionDestination } from './lib/authIntent';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
@@ -87,12 +88,12 @@ function HomeScreen({ navigation }) {
         style={[styles.logo, { width: logoSize, height: logoSize }]}
         resizeMode="contain"
       />
-      <Text style={styles.title}>Welcome to Litterbugs!</Text>
-      <Text style={styles.subtitle}>Clean your community one report at a time</Text>
+      <Text style={styles.title}>A cleaner community starts here.</Text>
+      <Text style={styles.subtitle}>Report litter, help clean it up, or fund a local cleanup.</Text>
 
       <TouchableOpacity
         style={styles.primaryButton}
-        onPress={() => navigation.navigate('App', { screen: 'Map' })}
+        onPress={async () => { await markWelcomeSeen(); navigation.replace('App', { screen: 'Map' }); }}
         accessibilityRole="button"
         accessibilityLabel="Explore the Map"
       >
@@ -101,7 +102,7 @@ function HomeScreen({ navigation }) {
 
       <TouchableOpacity
         style={styles.secondaryButton}
-        onPress={() => navigation.navigate('Auth')}
+        onPress={async () => { await markWelcomeSeen(); navigation.navigate('Auth'); }}
         accessibilityRole="button"
         accessibilityLabel="Sign in or create account"
       >
@@ -142,6 +143,7 @@ function AppNavigation({
   passwordRecovery,
   onLaunchReady,
   onRecoveryComplete,
+  welcomeSeen,
 }) {
   const { profile, loading, pendingAction, setPendingAction } = useProfile();
   const permanent = isPermanentUser(session?.user);
@@ -236,7 +238,7 @@ function AppNavigation({
 
   const initialRouteName = permanent
     ? profile?.profile_completed_at ? 'App' : 'CompleteProfile'
-    : 'Home';
+    : welcomeSeen ? 'App' : 'Home';
 
   const headerOptions = {
     headerShown: true,
@@ -341,6 +343,8 @@ function AppNavigation({
 }
 
 export default function App() {
+  const [discoveryMemory, setDiscoveryMemory] = useState(null);
+  useEffect(() => { loadDiscoveryMemory().then(setDiscoveryMemory); }, []);
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [passwordRecovery, setPasswordRecovery] = useState(false);
@@ -449,11 +453,12 @@ export default function App() {
   return (
     <View style={styles.appRoot}>
       <StatusBar style="dark" backgroundColor="#FFFFFF" />
-      {!authLoading ? (
+      {!authLoading && discoveryMemory ? (
         <SessionProvider session={session}>
           <ProfileProvider>
-            <ReportsProvider>
+            <ReportsProvider initialDiscovery={discoveryMemory.lastMap}>
               <AppNavigation
+                welcomeSeen={discoveryMemory.welcomeSeen}
                 session={session}
                 passwordRecovery={passwordRecovery}
                 onLaunchReady={markLaunchReady}
@@ -486,17 +491,17 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#F5F6F7',
+    backgroundColor: '#FFFFFF',
   },
   homeContent: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 32,
     paddingHorizontal: 24,
-    backgroundColor: '#F5F6F7',
+    backgroundColor: '#FFFFFF',
   },
   logo: { marginBottom: 12 },
-  title: { color: '#252A2E', fontSize: 28, fontWeight: '800', textAlign: 'center' },
+  title: { maxWidth: 330, color: '#252A2E', fontSize: 30, lineHeight: 36, fontWeight: '800', textAlign: 'center' },
   subtitle: {
     maxWidth: 330,
     marginTop: 10,
@@ -527,23 +532,21 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#2E7D32',
     borderRadius: 14,
     backgroundColor: '#FFFFFF',
   },
-  secondaryButtonText: { color: '#2E7D32', fontSize: 16, fontWeight: '800' },
+  secondaryButtonText: { color: '#496351', fontSize: 16, fontWeight: '600' },
   errorState: {
     flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 32,
     paddingHorizontal: 28,
-    backgroundColor: '#F5F6F7',
+    backgroundColor: '#FFFFFF',
   },
   errorStateScroll: {
     flex: 1,
-    backgroundColor: '#F5F6F7',
+    backgroundColor: '#FFFFFF',
   },
   errorTitle: { color: '#252A2E', fontSize: 22, fontWeight: '800', textAlign: 'center' },
   errorText: { marginVertical: 10, color: '#667078', fontSize: 15, textAlign: 'center' },

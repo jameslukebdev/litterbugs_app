@@ -1,3 +1,4 @@
+import { saveMapMemory } from './discoveryMemory';
 import {
   createContext,
   useCallback,
@@ -63,17 +64,22 @@ export function getDistanceMiles(pointA, pointB) {
   return earthRadiusMiles * c;
 }
 
-export function ReportsProvider({ children }) {
+export function ReportsProvider({ children, initialDiscovery = null }) {
   const [allReports, setAllReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
-  const [mapRegion, setMapRegion] = useState(DEFAULT_MAP_REGION);
+  const [mapRegion, setMapRegion] = useState(initialDiscovery?.region || DEFAULT_MAP_REGION);
   const [filters, setFilters] = useState(DEFAULT_REPORT_FILTERS);
-  const [searchPlace, setSearchPlace] = useState(null);
+  const [searchPlace, setSearchPlace] = useState(initialDiscovery?.place || null);
   const [selectedMapReportId, setSelectedMapReportId] = useState(null);
   const selectSearchPlace = useCallback(place => { setSearchPlace(place); setMapRegion(place.region); setSelectedMapReportId(null); }, []);
   const clearSearchPlace = useCallback(() => { setSearchPlace(null); setSelectedMapReportId(null); }, []);
+  useEffect(() => {
+    if (mapRegion === DEFAULT_MAP_REGION) return;
+    const timer = setTimeout(() => saveMapMemory(mapRegion, searchPlace), 500);
+    return () => clearTimeout(timer);
+  }, [mapRegion, searchPlace]);
   const radiusRef = useRef(filters.radius);
   radiusRef.current = filters.radius;
   const requestSequence = useRef(0);
@@ -221,6 +227,7 @@ export function ReportsProvider({ children }) {
   }, []);
 
   const value = useMemo(() => ({
+    restoredMap: Boolean(initialDiscovery),
     searchPlace, selectSearchPlace, clearSearchPlace, selectedMapReportId, setSelectedMapReportId,
     reports,
     filteredReports, filters, setFilters,

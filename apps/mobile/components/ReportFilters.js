@@ -84,12 +84,12 @@ export default function ReportFilters({ map = false }) {
     >
       <View style={[styles.searchRow, map && styles.mapSearchRow]}>
         {map ? (
-          <Image
+          <View style={styles.logoArea}><Image
             source={require('../assets/LB_Logo_PNG.png')}
             resizeMode="contain"
             style={styles.logo}
             accessibilityLabel="Litterbugs"
-          />
+          /></View>
         ) : null}
         <LocationSearch map={map} />
       </View>
@@ -248,7 +248,8 @@ export default function ReportFilters({ map = false }) {
 const styles = StyleSheet.create({
   header: { backgroundColor: '#FFFFFF', padding: 12, gap: 10 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  logo: { width: 44, height: 44 },
+  logoArea: { width: 48, paddingRight: 8, marginRight: 4, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: '#DDE4DF', alignItems: 'center' },
+  logo: { width: 36, height: 36 },
   search: {
     flex: 1,
     minHeight: 44,
@@ -267,22 +268,22 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   mapSearchRow: {
-    minHeight: 56,
+    minHeight: 52,
     paddingHorizontal: 10,
     gap: 4,
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
+    borderRadius: 14,
     boxShadow: '0 2px 8px rgba(25, 45, 32, 0.12)',
   },
   mapSearch: { backgroundColor: 'transparent', paddingHorizontal: 6 },
-  quickControls: { flexDirection: 'row', gap: 8, alignItems: 'stretch' },
+  quickControls: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
   quickControl: {
-    flex: 1,
+    flexShrink: 1,
     minWidth: 0,
-    minHeight: 46,
+    minHeight: 44,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#D6DED8',
     backgroundColor: '#FFFFFF',

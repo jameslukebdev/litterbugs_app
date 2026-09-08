@@ -56,7 +56,7 @@ export default function LocationSearch({ map }) {
   return <>
     <TouchableOpacity style={[styles.trigger, map && { backgroundColor: 'transparent' }]} accessibilityRole="button" accessibilityLabel={searchPlace ? `Search location: ${searchPlace.label}` : 'Search city or address'} onPress={() => { setText(''); setOpen(true); }}>
       <Ionicons name="search" size={18} color="#667078" />
-      <Text numberOfLines={1} style={[styles.triggerText, !searchPlace && { color: '#68736C' }]}>{searchPlace?.label || 'Search city or address'}</Text>
+      <Text numberOfLines={1} style={[styles.triggerText, !searchPlace && { color: '#68736C' }]}>{searchPlace?.label || 'City or address'}</Text>
     </TouchableOpacity>
     {searchPlace ? <TouchableOpacity style={styles.clear} onPress={clearSearchPlace} accessibilityRole="button" accessibilityLabel="Clear location boundary"><Ionicons name="close-circle" size={21} color="#68736C" /></TouchableOpacity> : null}
     <Modal visible={open} animationType="slide" onRequestClose={close}>
