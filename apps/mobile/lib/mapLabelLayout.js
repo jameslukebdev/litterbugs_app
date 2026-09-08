@@ -1,5 +1,8 @@
 import { cleanupMapTone } from './cleanupEligibility';
 
+export const STATUS_MARKER_SIZE = 28;
+export const STATUS_MARKER_ICON_SIZE = 16;
+
 const statusPriority = (point) => ({ available: 2, active: 1, completed: 0 }[cleanupMapTone(point.report)]);
 
 // Screen-space labels: every report remains a marker, even when its label does not fit.
@@ -9,8 +12,10 @@ export function layoutMapLabels(points, selectedId, fontScale = 1) {
     Number(b.id === selectedId) - Number(a.id === selectedId) ||
     statusPriority(b) - statusPriority(a) || String(a.id).localeCompare(String(b.id)));
   return ordered.map((point) => {
-    const width = Math.max(42, (point.label?.length || 1) * 9 * fontScale + 30);
-    const height = Math.max(32, 20 * fontScale + 12);
+    const tone = cleanupMapTone(point.report);
+    const statusMarker = tone === 'completed' || tone === 'active';
+    const width = statusMarker ? STATUS_MARKER_SIZE : Math.max(42, (point.label?.length || 1) * 9 * fontScale + 30);
+    const height = statusMarker ? STATUS_MARKER_SIZE : Math.max(32, 20 * fontScale + 12);
     const box = { x: point.x, y: point.y, width, height };
     const fits = !labels.some((other) =>
       Math.abs(other.x - box.x) < (other.width + width) / 2 + 10 &&

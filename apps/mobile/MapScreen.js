@@ -1,7 +1,7 @@
 import FeeExplanationLabel from './components/FeeExplanationLabel';
 import MapReportPreview from './components/MapReportPreview';
 import useMapLabels from './lib/useMapLabels';
-import { reportsNearMapTap } from './lib/mapLabelLayout';
+import { reportsNearMapTap, STATUS_MARKER_SIZE, STATUS_MARKER_ICON_SIZE } from './lib/mapLabelLayout';
 import ReportPhotoGallery from './components/ReportPhotoGallery';
 import { saveReportDraft, loadReportDraft, clearReportDraft } from './lib/savedReportDraft';
 import ReportFilters from './components/ReportFilters';
@@ -3259,6 +3259,7 @@ const renderReportStep = () => {
         {mapLabels.map((m) => {
           const selected = m.id === previewId;
           const tone = cleanupMapTone(m.report);
+          const statusMarker = tone === 'completed' || tone === 'active';
           const icon = tone === 'completed' ? 'checkmark' : tone === 'active' ? 'time-outline' : 'leaf-outline';
           return <Marker key={m.id} coordinate={m.coordinate}
             identifier={`report:${tone}:${m.id}`}
@@ -3274,14 +3275,14 @@ const renderReportStep = () => {
               else chooseMapReport(m.report);
             }}>
             <View style={[styles.compactMarkerHit, { width: Math.max(44, m.labelled ? m.width : 44), height: Math.max(44, m.labelled ? m.height : 44) }]}>
-              {m.labelled || selected ? <View style={[styles.compactMarker, selected && styles.compactMarkerSelected, { minHeight: m.height || 32, width: m.width || 48 }]}>
+              {statusMarker ? (
+                <View style={[styles.compactStatusMarker, selected && styles.compactMarkerSelected]}>
+                  <Ionicons name={icon} size={STATUS_MARKER_ICON_SIZE} color={selected ? '#FFFFFF' : '#285D38'} />
+                </View>
+              ) : m.labelled || selected ? <View style={[styles.compactMarker, selected && styles.compactMarkerSelected, { minHeight: m.height || 32, width: m.width || 48 }]}>
                 {m.label && tone === 'available' ? <Text numberOfLines={1} style={[styles.compactMarkerText, selected && { color: '#FFFFFF' }]}>{m.label}</Text>
                   : <Ionicons name={icon} size={18} color={selected ? '#FFFFFF' : '#285D38'} />}
-              </View> : tone === 'completed' || tone === 'active' ? (
-                <View style={styles.compactStatusMarker}>
-                  <Ionicons name={icon} size={14} color="#285D38" />
-                </View>
-              ) : <View style={styles.compactMarkerDot} />}
+              </View> : <View style={styles.compactMarkerDot} />}
             </View>
           </Marker>;
         })}
@@ -6185,7 +6186,7 @@ compactMarkerHit: { alignItems: 'center', justifyContent: 'center' },
 compactMarker: { paddingHorizontal: 12, borderRadius: 18, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#92A998', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 3, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
 compactMarkerSelected: { backgroundColor: '#285D38', borderColor: '#FFFFFF' },
 compactMarkerText: { color: '#285D38', fontSize: 14, fontWeight: '700' },
-compactStatusMarker: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#FFFFFF', borderColor: '#92A998', borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+compactStatusMarker: { width: STATUS_MARKER_SIZE, height: STATUS_MARKER_SIZE, borderRadius: STATUS_MARKER_SIZE / 2, backgroundColor: '#FFFFFF', borderColor: '#92A998', borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 compactMarkerDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#FFFFFF', borderColor: '#285D38', borderWidth: 2 },
 savingOverlay: {
   ...StyleSheet.absoluteFillObject,

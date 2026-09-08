@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { layoutMapLabels, reportsNearMapTap } from './mapLabelLayout';
+import { layoutMapLabels, reportsNearMapTap, STATUS_MARKER_SIZE } from './mapLabelLayout';
 const point = (id, x, y, label = '$6') => ({ id, x, y, label });
 describe('map label collision and discovery', () => {
   it('keeps separated reports labelled and downgrades close labels without dropping reports', () => {
@@ -43,6 +43,19 @@ describe('map label collision and discovery', () => {
   it('allows more labels after zoom separates points and accounts for larger text', () => {
     expect(layoutMapLabels([point('a', 100, 100), point('b', 180, 100)]).every(p => p.labelled)).toBe(true);
     expect(layoutMapLabels([point('a', 100, 100), point('b', 180, 100)], null, 3).filter(p => p.labelled)).toHaveLength(1);
+  });
+  it('keeps status geometry constant across overlap, selection, zoom and text size', () => {
+    for (const cleanup_state of ['completed', 'claimed']) {
+      for (const [x, y, selectedId, fontScale] of [[110, 125, null, 1], [300, 300, null, 1], [110, 125, 'status', 1], [110, 125, null, 3]]) {
+        const result = layoutMapLabels([
+          point('available', 100, 100),
+          { ...point('status', x, y, '$1000'), report: { cleanup_state } },
+        ], selectedId, fontScale);
+        const status = result.find(p => p.id === 'status');
+        expect([status.width, status.height]).toEqual([STATUS_MARKER_SIZE, STATUS_MARKER_SIZE]);
+        expect(result).toHaveLength(2);
+      }
+    }
   });
   it('does not treat missing projections as an overlap', () => {
     expect(reportsNearMapTap([point('a', undefined, undefined), point('b', undefined, undefined)], 'a').map(p => p.id)).toEqual(['a']);
