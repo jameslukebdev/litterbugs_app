@@ -28,3 +28,17 @@ Public simulator flows and automated recovery tests are exercised without creati
 - No production records, payment transactions, payout accounts, or backend configuration changed.
 
 - Final simulator QA found and fixed a gallery null-report crash on dismissal. A rendered-component regression test now covers stale photo URLs during dismissal and subsequent report rendering.
+
+## Map header follow-up
+
+The user’s screenshot exposed a clipped “Completed” control. Replace the horizontally scrolling status row with two fully visible controls: the current cleanup status and Filters. Status choices open as full-width rows in a sheet. The current selection stays visible on both map and list.
+
+Reference lock: [komoot map controls](https://refero.design/screens/54d589c5-8a5f-4da4-adf7-71d299e4dc24) owns the compact floating search/selectors; [komoot radius selector](https://refero.design/screens/4d71d38a-44de-4ffc-a666-a1b0e653aafd) informs moving complete option labels into a selection surface. Airbnb’s filter sheet informs keeping detailed refinements off the map. Retain the existing Litterbugs logo, native typography and green selected states. Remove the edge-to-edge white header background; preserve map visibility between and around controls. Control labels may wrap rather than being clipped at larger text sizes.
+
+## Proposed report markers (research only)
+
+Reference lock: [Airbnb compact price labels](https://refero.design/screens/f0984781-7046-4e76-97e4-391f3c043cf3) and [selected label plus preview card](https://refero.design/screens/ee5fc001-54eb-44fd-b24b-39011aca4f0d) inform compact reward labels, clear selection, and retaining map context. [komoot map results](https://refero.design/screens/c39bb0ed-838c-49e6-a723-280102732ac8) supports a photo-led bottom preview.
+
+Recommend white reward pills with dark green amounts, an equally discoverable leaf marker for volunteer reports, icon-plus-color status cues, and a stronger green selected state. Replace the oversized bottle and detached tiny reward badge. Keep severity in report content rather than making all available reports red. Use simple count clusters that expand on tap. A compact bottom preview should show a photo, title, distance, cleanup status, and clearly labeled cleaner reward; opening full details remains an explicit action. Retain at least 44-point touch targets even when marker visuals shrink. Marker and preview changes are not implemented in this follow-up.
+
+Header verification: Release simulator build succeeded (0 errors, 5 existing warnings); 238 tests passed across 54 files. On iPhone 17 Pro, confirmed full Completed label, complete status sheet, selection shared with Reports, full filter panel, Reset restoring the available report, and return to map. No unhandled JS exception or TypeError appeared in the inspected simulator log window. This is scoped header verification, not complete authenticated/payment regression coverage.

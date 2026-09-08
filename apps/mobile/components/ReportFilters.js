@@ -90,15 +90,29 @@ export default function ReportFilters({ map = false }) {
     }
   };
   const [open, setOpen] = useState(false);
+  const [panel, setPanel] = useState('all');
+  const statusOnly = panel === 'status';
+  const openPanel = (value) => {
+    setPanel(value);
+    setOpen(true);
+  };
+  const statusLabel =
+    filters.status === 'all'
+      ? 'All reports'
+      : groups[0][2].find(([value]) => value === filters.status)?.[1] ||
+        'All reports';
   const insets = useSafeAreaInsets();
   const count = groups.filter(
-    ([key]) => filters[key] !== DEFAULT_REPORT_FILTERS[key],
+    ([key]) => key !== 'status' && filters[key] !== DEFAULT_REPORT_FILTERS[key],
   ).length;
   const choose = (key, value) =>
     setFilters((current) => ({ ...current, [key]: value }));
   return (
-    <View style={styles.header}>
-      <View style={styles.searchRow}>
+    <View
+      style={[styles.header, map && styles.mapHeader]}
+      pointerEvents="box-none"
+    >
+      <View style={[styles.searchRow, map && styles.mapSearchRow]}>
         {map ? (
           <Image
             source={require('../assets/LB_Logo_PNG.png')}
@@ -107,7 +121,7 @@ export default function ReportFilters({ map = false }) {
             accessibilityLabel="Litterbugs"
           />
         ) : null}
-        <View style={styles.search}>
+        <View style={[styles.search, map && styles.mapSearch]}>
           <Ionicons name="search" size={18} color="#667078" />
           <TextInput
             style={styles.input}
@@ -120,37 +134,41 @@ export default function ReportFilters({ map = false }) {
           />
         </View>
       </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.chips}
-      >
+      <View style={styles.quickControls} pointerEvents="box-none">
         <TouchableOpacity
           accessibilityRole="button"
-          onPress={() => setOpen(true)}
-          style={[styles.chip, count > 0 && styles.selected]}
+          accessibilityLabel={`Cleanup status: ${statusLabel}`}
+          accessibilityHint="Choose all, available, in progress, or completed reports"
+          onPress={() => openPanel('status')}
+          style={[
+            styles.quickControl,
+            map && styles.floatingControl,
+            filters.status !== 'all' && styles.selected,
+          ]}
         >
-          <Ionicons name="options-outline" size={18} color="#245F2A" />
-          <Text style={styles.chipText}>
+          <Text style={styles.quickControlText}>{statusLabel}</Text>
+          <Ionicons name="chevron-down" size={16} color="#4F5C63" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={
+            count ? `More filters, ${count} active` : 'More filters'
+          }
+          onPress={() => openPanel('all')}
+          style={[
+            styles.quickControl,
+            map && styles.floatingControl,
+            count > 0 && styles.selected,
+          ]}
+        >
+          <Ionicons name="options-outline" size={18} color="#4F5C63" />
+          <Text style={styles.quickControlText}>
             Filters{count ? ` · ${count}` : ''}
           </Text>
         </TouchableOpacity>
-        {groups[0][2].slice(1).map(([value, label]) => (
-          <TouchableOpacity
-            key={value}
-            accessibilityRole="button"
-            accessibilityState={{ selected: filters.status === value }}
-            style={[styles.chip, filters.status === value && styles.selected]}
-            onPress={() =>
-              choose('status', filters.status === value ? 'all' : value)
-            }
-          >
-            <Text style={styles.chipText}>{label}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      </View>
       <Modal
-        visible={open}
+        visible={Boolean(open)}
         transparent
         animationType="slide"
         onRequestClose={() => setOpen(false)}
@@ -170,83 +188,131 @@ export default function ReportFilters({ map = false }) {
           >
             <View style={styles.sheetHeader}>
               <Text style={styles.title} accessibilityRole="header">
-                Find a cleanup
+                {statusOnly ? 'Cleanup status' : 'Find a cleanup'}
               </Text>
               <TouchableOpacity
                 style={styles.chip}
-                onPress={() => setFilters(DEFAULT_REPORT_FILTERS)}
+                onPress={() =>
+                  statusOnly
+                    ? setOpen(false)
+                    : setFilters(DEFAULT_REPORT_FILTERS)
+                }
                 accessibilityRole="button"
               >
-                <Text style={styles.chipText}>Reset</Text>
+                <Text style={styles.chipText}>
+                  {statusOnly ? 'Done' : 'Reset'}
+                </Text>
               </TouchableOpacity>
             </View>
             <ScrollView keyboardShouldPersistTaps="handled">
-              <Text style={styles.label}>Explore an area</Text>
-              <View style={styles.searchRow}>
-                <TextInput
-                  value={place}
-                  onChangeText={setPlace}
-                  placeholder="City, neighborhood or address"
-                  accessibilityLabel="Search for a location"
-                  style={[
-                    styles.search,
-                    styles.input,
-                    { paddingHorizontal: 12 },
-                  ]}
-                  onSubmitEditing={findPlace}
-                  returnKeyType="search"
-                />
-                <TouchableOpacity
-                  style={styles.chip}
-                  disabled={finding}
-                  onPress={findPlace}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.chipText}>
-                    {finding ? 'Finding…' : 'Go'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              {placeError ? (
-                <Text
-                  accessibilityLiveRegion="polite"
-                  style={{ color: '#B42318', marginTop: 8 }}
-                >
-                  {placeError}
-                </Text>
-              ) : null}
-              {groups.map(([key, label, options]) => (
-                <View key={key}>
-                  <Text style={styles.label}>{label}</Text>
-                  <View style={styles.options}>
-                    {options.map(([value, text]) => (
-                      <TouchableOpacity
-                        key={value}
-                        accessibilityRole="radio"
-                        accessibilityState={{ checked: filters[key] === value }}
-                        style={[
-                          styles.chip,
-                          filters[key] === value && styles.selected,
-                        ]}
-                        onPress={() => choose(key, value)}
-                      >
-                        <Text style={styles.chipText}>{text}</Text>
-                      </TouchableOpacity>
-                    ))}
+              {!statusOnly ? (
+                <>
+                  <Text style={styles.label}>Explore an area</Text>
+                  <View style={styles.searchRow}>
+                    <TextInput
+                      value={place}
+                      onChangeText={setPlace}
+                      placeholder="City, neighborhood or address"
+                      accessibilityLabel="Search for a location"
+                      style={[
+                        styles.search,
+                        styles.input,
+                        { paddingHorizontal: 12 },
+                      ]}
+                      onSubmitEditing={findPlace}
+                      returnKeyType="search"
+                    />
+                    <TouchableOpacity
+                      style={styles.chip}
+                      disabled={finding}
+                      onPress={findPlace}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.chipText}>
+                        {finding ? 'Finding…' : 'Go'}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
-                </View>
-              ))}
+                  {placeError ? (
+                    <Text
+                      accessibilityLiveRegion="polite"
+                      style={{ color: '#B42318', marginTop: 8 }}
+                    >
+                      {placeError}
+                    </Text>
+                  ) : null}
+                </>
+              ) : null}
+              {(statusOnly ? [groups[0]] : groups).map(
+                ([key, label, options]) => (
+                  <View key={key}>
+                    {!statusOnly ? (
+                      <Text style={styles.label}>{label}</Text>
+                    ) : null}
+                    <View
+                      style={statusOnly ? styles.statusOptions : styles.options}
+                    >
+                      {options.map(([value, text]) => (
+                        <TouchableOpacity
+                          key={value}
+                          accessibilityRole="radio"
+                          accessibilityState={{
+                            checked: filters[key] === value,
+                          }}
+                          style={[
+                            statusOnly ? styles.statusOption : styles.chip,
+                            !statusOnly &&
+                              filters[key] === value &&
+                              styles.selected,
+                          ]}
+                          onPress={() => {
+                            choose(key, value);
+                            if (statusOnly) setOpen(false);
+                          }}
+                        >
+                          <Text
+                            style={
+                              statusOnly
+                                ? styles.statusOptionText
+                                : styles.chipText
+                            }
+                          >
+                            {statusOnly && value === 'all'
+                              ? 'All reports'
+                              : text}
+                          </Text>
+                          {statusOnly ? (
+                            <Ionicons
+                              name={
+                                filters[key] === value
+                                  ? 'checkmark-circle'
+                                  : 'ellipse-outline'
+                              }
+                              size={23}
+                              color={
+                                filters[key] === value ? '#2F7D32' : '#BBC4BE'
+                              }
+                            />
+                          ) : null}
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                ),
+              )}
             </ScrollView>
-            <TouchableOpacity
-              style={styles.done}
-              accessibilityRole="button"
-              onPress={() => setOpen(false)}
-            >
-              <Text style={styles.doneText}>
-                Show {filteredReports.length}{' '}
-                {filteredReports.length === 1 ? 'report' : 'reports'}
-              </Text>
-            </TouchableOpacity>
+            {!statusOnly ? (
+              <TouchableOpacity
+                style={styles.done}
+                accessibilityRole="button"
+                onPress={() => setOpen(false)}
+              >
+                <Text style={styles.doneText}>
+                  Show {filteredReports.length}{' '}
+                  {filteredReports.length === 1 ? 'report' : 'reports'}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         </View>
       </Modal>
@@ -256,7 +322,7 @@ export default function ReportFilters({ map = false }) {
 const styles = StyleSheet.create({
   header: { backgroundColor: '#FFFFFF', padding: 12, gap: 10 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  logo: { width: 94, height: 38 },
+  logo: { width: 44, height: 44 },
   search: {
     flex: 1,
     minHeight: 44,
@@ -268,7 +334,63 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   input: { flex: 1, fontSize: 15, color: '#202428', minHeight: 44 },
-  chips: { gap: 8 },
+  mapHeader: {
+    backgroundColor: 'transparent',
+    paddingHorizontal: 16,
+    paddingVertical: 0,
+    gap: 8,
+  },
+  mapSearchRow: {
+    minHeight: 56,
+    paddingHorizontal: 10,
+    gap: 4,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    boxShadow: '0 2px 8px rgba(25, 45, 32, 0.12)',
+  },
+  mapSearch: { backgroundColor: 'transparent', paddingHorizontal: 6 },
+  quickControls: { flexDirection: 'row', gap: 8, alignItems: 'stretch' },
+  quickControl: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 46,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#D6DED8',
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  quickControlText: {
+    flexShrink: 1,
+    color: '#303B34',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  floatingControl: {
+    borderColor: '#FFFFFF',
+    boxShadow: '0 2px 6px rgba(25, 45, 32, 0.10)',
+  },
+  statusOptions: { marginTop: 12 },
+  statusOption: {
+    minHeight: 60,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E1E6E3',
+  },
+  statusOptionText: {
+    flex: 1,
+    color: '#303B34',
+    fontSize: 17,
+    fontWeight: '600',
+  },
   chip: {
     minHeight: 44,
     paddingHorizontal: 13,

@@ -4687,6 +4687,7 @@ const styles = StyleSheet.create({
     height: 34,
   },
   floatingMapInstructionCard: {
+    alignSelf: 'center',
     width: 282,
     minHeight: 54,
     paddingHorizontal: 18,
