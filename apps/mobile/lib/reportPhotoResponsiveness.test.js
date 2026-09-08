@@ -2,10 +2,8 @@ import { readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
-const mapScreenSource = readFileSync(
-  new URL('../MapScreen.js', import.meta.url),
-  'utf8'
-);
+// Integration contract spans the extracted presentation and its owning screen.
+const mapScreenSource = ['../MapScreen.js', '../components/ReportWizardSteps.jsx', '../components/ReportDetailsSheet.jsx', '../styles/MapScreen.styles.js'].map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
 const reportsSource = readFileSync(
   new URL('./reports.js', import.meta.url),
   'utf8'

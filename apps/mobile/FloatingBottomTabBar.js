@@ -102,6 +102,7 @@ export default function FloatingBottomTabBar({
         onPress={onPress}
         onLongPress={onLongPress}
         activeOpacity={0.72}
+        testID={`navigation-${slot.key}`}
         accessibilityRole="tab"
         accessibilityLabel={accessibilityLabel}
         accessibilityState={{ selected: isFocused }}

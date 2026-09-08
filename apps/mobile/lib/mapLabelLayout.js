@@ -1,7 +1,7 @@
 import { cleanupMapTone } from './cleanupEligibility';
 
 export const STATUS_MARKER_SIZE = 28;
-export const STATUS_MARKER_ICON_SIZE = 16;
+export const STATUS_MARKER_ICON_SIZE = 14;
 
 const statusPriority = (point) => ({ available: 2, active: 1, completed: 0 }[cleanupMapTone(point.report)]);
 
@@ -14,8 +14,8 @@ export function layoutMapLabels(points, selectedId, fontScale = 1) {
   return ordered.map((point) => {
     const tone = cleanupMapTone(point.report);
     const statusMarker = tone === 'completed' || tone === 'active';
-    const width = statusMarker ? STATUS_MARKER_SIZE : Math.max(42, (point.label?.length || 1) * 9 * fontScale + 30);
-    const height = statusMarker ? STATUS_MARKER_SIZE : Math.max(32, 20 * fontScale + 12);
+    const width = point.label ? Math.max(48, point.label.length * 9 * fontScale + 28 + (statusMarker ? STATUS_MARKER_ICON_SIZE + 4 : 0)) : STATUS_MARKER_SIZE;
+    const height = point.label ? Math.max(32, 20 * fontScale + 12) : STATUS_MARKER_SIZE;
     const box = { x: point.x, y: point.y, width, height };
     const fits = !labels.some((other) =>
       Math.abs(other.x - box.x) < (other.width + width) / 2 + 10 &&

@@ -1,29 +1,16 @@
-import { useEffect, useState } from 'react';
+import Photo from './ReportPreviewPhoto';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList } from 'react-native';
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { cleanupStatusPresentation } from '../lib/cleanupEligibility';
 import { formatMapFundingLabel } from '../lib/mapFundingMarker';
 
-function Photo({ report, getPhotoUrl }) {
-  const path = report?.photo_paths?.[0];
-  const [photo, setPhoto] = useState(null);
-  useEffect(() => {
-    let active = true;
-    setPhoto(null);
-    if (path) getPhotoUrl(path).then((uri) => { if (active) setPhoto({ path, uri }); }).catch(() => {});
-    return () => { active = false; };
-  }, [path, getPhotoUrl]);
-  return photo?.path === path && photo?.uri ? <Image source={{ uri: photo.uri }} style={styles.photo} contentFit="cover" accessibilityLabel={report.title || 'Report photo'} onError={() => setPhoto(null)} />
-    : <View style={[styles.photo, styles.placeholder]}><Ionicons name="image-outline" size={24} color="#64716A" /><Text style={styles.photoHint}>No photo</Text></View>;
-}
 function Summary({ report }) {
   const status = cleanupStatusPresentation(report);
   const completed = report.cleanup_state === 'completed';
   return <View style={styles.copy}>
     <Text style={styles.title} numberOfLines={2}>{report.title || 'Litter report'}</Text>
     <Text style={styles.status}>{status?.title || 'Available to clean'}</Text>
-    <Text style={styles.reward}>{completed ? 'Cleanup completed' : Number(report.funded_amount_cents) > 0 ? `Cleaner reward ${formatMapFundingLabel(report.funded_amount_cents)}` : 'Volunteer cleanup'}</Text>
+    {!completed ? <Text style={styles.reward}>{Number(report.funded_amount_cents) > 0 ? `Cleaner reward ${formatMapFundingLabel(report.funded_amount_cents)}` : 'Volunteer cleanup'}</Text> : null}
   </View>;
 }
 export default function MapReportPreview({ report, nearby, bottom, insetBottom, getPhotoUrl, onClose, onChoose, onDetails, onCloseNearby, onHeight, distance }) {
@@ -49,8 +36,6 @@ export default function MapReportPreview({ report, nearby, bottom, insetBottom, 
 const styles = StyleSheet.create({
   card: { position: 'absolute', left: 16, right: 16, borderRadius: 20, padding: 14, backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 3 }, elevation: 5 },
   row: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-  photo: { width: 76, height: 86, borderRadius: 12, backgroundColor: '#EDF2EE' },
-  placeholder: { alignItems: 'center', justifyContent: 'center', gap: 4 }, photoHint: { fontSize: 10, color: '#64716A' },
   copy: { flex: 1, gap: 5 }, title: { fontSize: 15, fontWeight: '700', color: '#25382D' }, status: { fontSize: 12, color: '#637067' }, reward: { fontSize: 13, fontWeight: '600', color: '#285D38' },
   close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   action: { minHeight: 44, marginTop: 12, backgroundColor: '#2F7D32', borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }, actionText: { color: 'white', fontSize: 15, fontWeight: '700' },

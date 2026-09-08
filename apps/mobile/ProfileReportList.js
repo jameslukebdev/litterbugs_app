@@ -3,17 +3,17 @@ import { Ionicons } from '@expo/vector-icons';
 
 const severityColor = (severity) => {
   if (String(severity).toLowerCase() === 'high') return '#C62828';
-  if (String(severity).toLowerCase() === 'low') return '#2E7D32';
+  if (String(severity).toLowerCase() === 'low') return '#687178';
   return '#D66A00';
 };
 
-export default function ProfileReportList({ reports, onReportPress }) {
+export default function ProfileReportList({ reports, onReportPress, emptyTitle = "No active reports", emptyText = "Active reports will appear here." }) {
   if (!reports?.length) {
     return (
       <View style={styles.empty}>
         <Ionicons name="map-outline" size={28} color="#6F797F" />
-        <Text style={styles.emptyTitle}>No active reports</Text>
-        <Text style={styles.emptyText}>Active reports will appear here.</Text>
+        <Text style={styles.emptyTitle}>{emptyTitle}</Text>
+        <Text style={styles.emptyText}>{emptyText}</Text>
       </View>
     );
   }

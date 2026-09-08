@@ -2,10 +2,8 @@ import { readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
-const mapScreenSource = readFileSync(
-  new URL('../MapScreen.js', import.meta.url),
-  'utf8'
-);
+// Integration contract spans the extracted presentation and its owning screen.
+const mapScreenSource = ['../MapScreen.js', '../components/ReportWizardSteps.jsx', '../components/ReportDetailsSheet.jsx', '../styles/MapScreen.styles.js'].map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
 const appTabsSource = readFileSync(
   new URL('../AppTabs.js', import.meta.url),
   'utf8'
@@ -88,10 +86,10 @@ describe('new report workflow responsiveness', () => {
 
   it('scrolls lower report fields above the keyboard when focused', () => {
     expect(mapScreenSource).toContain('const reportWizardScrollRef = useRef(null)');
-    expect(mapScreenSource).toContain('const revealBottomReportField = () => {');
-    expect(mapScreenSource).toContain('reportWizardScrollRef.current?.scrollToEnd({ animated: true })');
+    expect(mapScreenSource).toContain('const revealBottomReportField = (event) => {');
+    expect(mapScreenSource).toContain('reportWizardScrollRef.current?.scrollResponderScrollNativeHandleToKeyboard(target, 100, true)');
     expect(mapScreenSource).toContain('ref={reportWizardScrollRef}');
-    expect(mapScreenSource.match(/onFocus=\{revealBottomReportField\}/g)).toHaveLength(3);
+    expect(mapScreenSource.match(/onFocus=\{revealBottomReportField\}/g)).toHaveLength(4);
     expect(mapScreenSource).toContain(
       'reportKeyboardVisible && styles.wizardScrollContentKeyboard'
     );

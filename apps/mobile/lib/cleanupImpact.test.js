@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { cleanupImpactFacts, formatCleanupDate } from './cleanupImpactPresentation';
 
-const mapScreenSource = readFileSync(new URL('../MapScreen.js', import.meta.url), 'utf8');
+const mapScreenSource = ['../MapScreen.js', '../components/ReportDetailsSheet.jsx'].map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
 const completedStorySource = readFileSync(
   new URL('../CompletedCleanupStory.js', import.meta.url),
   'utf8'

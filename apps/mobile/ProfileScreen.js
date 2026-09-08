@@ -33,7 +33,8 @@ import { getRankAsset } from './lib/rankAssets';
 import { getRankForPoints } from './lib/ranking';
 import { loadRanking } from './lib/rankingService';
 import { isPermanentUser } from './lib/reportAccess';
-import { useReports } from './lib/reports';
+import useAccountReports from './lib/useAccountReports';
+import { groupAccountReports } from './lib/accountReports';
 import { useSession } from './lib/session';
 
 const PATREON_URL = 'https://patreon.com/litterbugs?utm_medium=unknown&utm_source=join_link&utm_campaign=creatorshare_creator&utm_content=copyLink';
@@ -316,12 +317,13 @@ export default function ProfileScreen({ navigation, route }) {
   const { user } = useSession();
   const permanent = isPermanentUser(user);
   const { profile, refreshProfile, loading } = useProfile();
-  const { reports, refreshReports } = useReports();
+  const { reports, loading: reportsLoading, error: reportsError, refresh: refreshReports } = useAccountReports(permanent ? user.id : null);
+  const [reportView, setReportView] = useState('active');
   const insets = useSafeAreaInsets();
   const [signingOut, setSigningOut] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [cleanupSummary, setCleanupSummary] = useState(emptyCleanupSummary);
-  const [cleanupsLoading, setCleanupsLoading] = useState(false);
+  const [cleanupsLoading, setCleanupsLoading] = useState(true);
   const [cleanupsError, setCleanupsError] = useState(false);
   const [ranking, setRanking] = useState(null);
   const [rankingLoading, setRankingLoading] = useState(false);
@@ -351,10 +353,7 @@ export default function ProfileScreen({ navigation, route }) {
     });
   }, [navigation, permanent, section]);
 
-  const activeReports = useMemo(
-    () => reports.filter((report) => report.user_id === user?.id),
-    [reports, user?.id]
-  );
+  const reportGroups = useMemo(() => groupAccountReports(reports), [reports]);
 
   const refreshCleanups = useCallback(async () => {
     if (!permanent || !user?.id) {
@@ -484,7 +483,7 @@ export default function ProfileScreen({ navigation, route }) {
   const refresh = async () => {
     await Promise.allSettled([
       refreshProfile(),
-      refreshReports({ showRefresh: true }),
+      refreshReports(),
       refreshCleanups(),
       refreshRanking(),
       ...(fundingEnabled ? [refreshPayoutStatus()] : []),
@@ -496,7 +495,7 @@ export default function ProfileScreen({ navigation, route }) {
       style={styles.container}
       contentContainerStyle={{ paddingBottom: bottomPadding }}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={loading || cleanupsLoading || rankingLoading || payoutStatusLoading} onRefresh={refresh} tintColor="#2F7D32" />}
+      refreshControl={<RefreshControl refreshing={loading || reportsLoading || cleanupsLoading || rankingLoading || payoutStatusLoading} onRefresh={refresh} tintColor="#2F7D32" />}
     >
       {section === 'overview' ? <>
       <View style={styles.identity}>
@@ -582,12 +581,14 @@ export default function ProfileScreen({ navigation, route }) {
       <View style={{ flexDirection: 'row', margin: 16, borderRadius: 14, backgroundColor: '#FFFFFF', padding: 4 }}>
         {[['current', 'Current'], ['history', 'History'], ['reports', 'Reports']].map(([value, label]) => <TouchableOpacity key={value} accessibilityRole="tab" accessibilityState={{ selected: activityView === value }} onPress={() => setActivityView(value)} style={{ flex: 1, minHeight: 48, justifyContent: 'center', alignItems: 'center', padding: 8, borderRadius: 11, backgroundColor: activityView === value ? '#EAF4EC' : '#FFFFFF' }}><Text style={{ color: activityView === value ? '#245F2A' : '#59636A', fontWeight: '700' }}>{label}</Text></TouchableOpacity>)}
       </View>
+      {activityView !== 'reports' ? <>
       <Text style={styles.sectionTitle}>My cleanups</Text>
       <View style={styles.cleanupStatsCard}>
         <CleanupStat value={cleanupSummary.counts.completed} label="Completed" />
         <CleanupStat value={cleanupSummary.counts.awaitingReview} label="Awaiting review" divided />
         <CleanupStat value={cleanupSummary.counts.active} label="Active" divided />
       </View>
+      </> : null}
 
       {activityView === 'current' ? <>
       <Text style={styles.subsectionTitle}>Current cleanups</Text>
@@ -625,7 +626,7 @@ export default function ProfileScreen({ navigation, route }) {
       {activityView === 'history' ? <>
       <Text style={styles.subsectionTitle}>Completed cleanups</Text>
       <View style={styles.card}>
-        {cleanupSummary.completed.length > 0 ? (
+        {cleanupsLoading ? <Text style={{ padding: 20, color: '#687178' }}>Loading completed cleanups…</Text> : cleanupsError ? <ActionRow label="Retry loading completed cleanups" icon="refresh-outline" onPress={refreshCleanups} /> : cleanupSummary.completed.length > 0 ? (
           cleanupSummary.completed.map((attempt, index) => (
             <CompletedCleanupRow
               key={attempt.id}
@@ -645,12 +646,21 @@ export default function ProfileScreen({ navigation, route }) {
 
       </> : null}
       {activityView === 'reports' ? <>
-      <Text style={styles.sectionTitle}>Active reports</Text>
+      <Text style={styles.sectionTitle}>My reports</Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginHorizontal: 16, marginBottom: 12 }}>
+        {[['active', 'Active'], ['completed', 'Completed'], ['closed', 'Closed']].map(([value, label]) => (
+          <TouchableOpacity key={value} accessibilityRole="tab" accessibilityState={{ selected: reportView === value }} onPress={() => setReportView(value)} style={{ minHeight: 44, paddingHorizontal: 14, justifyContent: 'center', borderRadius: 22, backgroundColor: reportView === value ? '#EAF4EC' : '#FFFFFF' }}>
+            <Text style={{ color: '#245F2A', fontWeight: '600' }}>{label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
       <View style={styles.card}>
-        <ProfileReportList
-          reports={activeReports}
+        {reportsLoading ? <Text style={{ padding: 20, color: '#687178' }}>Loading your reports…</Text> : reportsError ? <ActionRow label="Retry loading your reports" icon="refresh-outline" onPress={refreshReports} /> : <ProfileReportList
+          reports={reportGroups[reportView]}
+          emptyTitle={`No ${reportView} reports`}
+          emptyText="Reports you submit appear here, wherever you browse on the map."
           onReportPress={(report) => openReport(report.id)}
-        />
+        />}
       </View>
 
       {fundingSchemaReady ? <View style={[styles.card, { marginTop: 16 }]}><ActionRow label="Expired report decisions" icon="calendar-outline" onPress={() => openScreen('ExpiredReports')} /></View> : null}

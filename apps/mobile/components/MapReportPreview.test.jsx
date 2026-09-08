@@ -25,7 +25,7 @@ describe('map preview states', () => {
   });
   it('does not advertise a completed report as an available reward', () => {
     const html = render({ report: { ...report, cleanup_state: 'completed' } });
-    expect(html).toContain('Cleanup completed');
+    expect(html.match(/Cleanup Complete/g)).toHaveLength(1);
     expect(html).not.toContain('Cleaner reward');
   });
   it('keeps each overlapping report discoverable in the chooser', () => {

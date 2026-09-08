@@ -44,12 +44,12 @@ describe('map label collision and discovery', () => {
     expect(layoutMapLabels([point('a', 100, 100), point('b', 180, 100)]).every(p => p.labelled)).toBe(true);
     expect(layoutMapLabels([point('a', 100, 100), point('b', 180, 100)], null, 3).filter(p => p.labelled)).toHaveLength(1);
   });
-  it('keeps status geometry constant across overlap, selection, zoom and text size', () => {
+  it('keeps unfunded status geometry constant across overlap, selection, zoom and text size', () => {
     for (const cleanup_state of ['completed', 'claimed']) {
       for (const [x, y, selectedId, fontScale] of [[110, 125, null, 1], [300, 300, null, 1], [110, 125, 'status', 1], [110, 125, null, 3]]) {
         const result = layoutMapLabels([
           point('available', 100, 100),
-          { ...point('status', x, y, '$1000'), report: { cleanup_state } },
+          { ...point('status', x, y, null), report: { cleanup_state } },
         ], selectedId, fontScale);
         const status = result.find(p => p.id === 'status');
         expect([status.width, status.height]).toEqual([STATUS_MARKER_SIZE, STATUS_MARKER_SIZE]);
@@ -60,4 +60,17 @@ describe('map label collision and discovery', () => {
   it('does not treat missing projections as an overlap', () => {
     expect(reportsNearMapTap([point('a', undefined, undefined), point('b', undefined, undefined)], 'a').map(p => p.id)).toEqual(['a']);
   });
+});
+
+it('changes funded status label visibility with separation, never the amount', () => {
+  const close = [point('a', 100, 100), { ...point('b', 110, 110, '$25'), report: { cleanup_state: 'claimed', funded_amount_cents: 2500 } }];
+  const far = [close[0], { ...close[1], x: 300, y: 300 }];
+  expect(layoutMapLabels(close).find(p => p.id === 'b').labelled).toBe(false);
+  expect(layoutMapLabels(far).find(p => p.id === 'b').labelled).toBe(true);
+  for (const result of [layoutMapLabels(close), layoutMapLabels(far), layoutMapLabels(close, 'b')]) {
+    const status = result.find(p => p.id === 'b');
+    expect(status.label).toBe('$25');
+    expect(status.report.funded_amount_cents).toBe(2500);
+    expect(status.width).toBeGreaterThan(STATUS_MARKER_SIZE);
+  }
 });

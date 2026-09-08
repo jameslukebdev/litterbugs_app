@@ -18,7 +18,7 @@ import BrandedLoadingState from './BrandedLoadingState';
 const SEVERITY = Object.freeze({
   high: { color: '#E53935', icon: 'warning' },
   medium: { color: '#F57C00', icon: 'warning' },
-  low: { color: '#43A047', icon: 'warning' },
+  low: { color: '#687178', icon: 'information-circle-outline' },
 });
 
 function getSeverity(report) {
@@ -166,7 +166,7 @@ export function ReportListItem({ report, origin, onPress, selected = false }) {
 
         {Number(report?.funded_amount_cents) > 0 ? (
           <View style={styles.rewardPill}>
-            <Text style={styles.rewardText}>Cleaner gets {formatUsd(report.funded_amount_cents)}</Text>
+            <Text style={styles.rewardText}>Cleaner reward {formatUsd(report.funded_amount_cents)}</Text>
           </View>
         ) : null}
 

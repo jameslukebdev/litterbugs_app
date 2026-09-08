@@ -51,7 +51,7 @@ describe('mobile loading experience', () => {
   it('keeps action context visible while forms and cleanup actions are busy', () => {
     expect(readMobileSource('AuthScreen.js')).toContain('Signing in…');
     expect(readMobileSource('CompleteProfileScreen.js')).toContain('Saving profile…');
-    expect(readMobileSource('MapScreen.js')).toContain('Opening claim…');
+    expect(readMobileSource('components/ReportDetailsSheet.jsx')).toContain('Opening claim…');
     expect(readMobileSource('CleanupSubmissionScreen.js')).toContain('Uploading cleanup photos…');
   });
 
