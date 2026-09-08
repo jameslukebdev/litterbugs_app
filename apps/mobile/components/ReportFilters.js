@@ -60,21 +60,15 @@ export default function ReportFilters({ map = false }) {
   const { filters, setFilters, filteredReports, loading } =
     useReports();
   const [open, setOpen] = useState(false);
-  const [panel, setPanel] = useState('all');
-  const statusOnly = panel === 'status';
-  const openPanel = (value) => {
-    setPanel(value);
-    setOpen(true);
-  };
-  const statusLabel =
-    filters.status === 'all'
-      ? 'All reports'
-      : groups[0][2].find(([value]) => value === filters.status)?.[1] ||
-        'All reports';
   const insets = useSafeAreaInsets();
-  const count = groups.filter(
-    ([key]) => key !== 'status' && filters[key] !== DEFAULT_REPORT_FILTERS[key],
-  ).length + (filters.query.trim() ? 1 : 0);
+  const activeFilters = groups
+    .filter(([key]) => filters[key] !== DEFAULT_REPORT_FILTERS[key])
+    .map(([key, , options]) => {
+      const valueLabel = options.find(([value]) => value === filters[key])?.[1];
+      return { key, label: key === 'severity' ? `${valueLabel} severity` : valueLabel };
+    });
+  if (filters.query.trim()) activeFilters.push({ key: 'query', label: `“${filters.query.trim()}”` });
+  const count = activeFilters.length;
   const choose = (key, value) =>
     setFilters((current) => ({ ...current, [key]: value }));
   return (
@@ -82,50 +76,40 @@ export default function ReportFilters({ map = false }) {
       style={[styles.header, map && styles.mapHeader]}
       pointerEvents="box-none"
     >
-      <View style={[styles.searchRow, map && styles.mapSearchRow]}>
-        {map ? (
-          <View style={styles.logoArea}><Image
-            source={require('../assets/LB_Logo_PNG.png')}
-            resizeMode="contain"
-            style={styles.logo}
-            accessibilityLabel="Litterbugs"
-          /></View>
-        ) : null}
-        <LocationSearch map={map} />
-      </View>
-      <View style={styles.quickControls} pointerEvents="box-none">
+      <View style={styles.searchRow}>
+        <View style={[styles.searchSurface, map && styles.mapSearchRow]}>
+          {map ? (
+            <View style={styles.logoArea}>
+              <Image source={require('../assets/LB_Logo_PNG.png')} resizeMode="contain" style={styles.logo} accessibilityLabel="Litterbugs" />
+            </View>
+          ) : null}
+          <LocationSearch map={map} />
+        </View>
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityLabel={`Cleanup status: ${statusLabel}`}
-          accessibilityHint="Choose all, available, in progress, or completed reports"
-          onPress={() => openPanel('status')}
-          style={[
-            styles.quickControl,
-            map && styles.floatingControl,
-            filters.status !== 'all' && styles.selected,
-          ]}
+          accessibilityLabel={count ? `Filters, ${count} active` : 'Filters'}
+          accessibilityHint="Choose cleanup status, reward, distance, severity, and report keywords"
+          onPress={() => setOpen(true)}
+          style={[styles.filterButton, count > 0 && styles.selected]}
         >
-          <Text style={styles.quickControlText}>{statusLabel}</Text>
-          <Ionicons name="chevron-down" size={16} color="#4F5C63" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel={
-            count ? `More filters, ${count} active` : 'More filters'
-          }
-          onPress={() => openPanel('all')}
-          style={[
-            styles.quickControl,
-            map && styles.floatingControl,
-            count > 0 && styles.selected,
-          ]}
-        >
-          <Ionicons name="options-outline" size={18} color="#4F5C63" />
-          <Text style={styles.quickControlText}>
-            Filters{count ? ` · ${count}` : ''}
-          </Text>
+          <Ionicons name="options-outline" size={25} color="#2F7D32" />
+          {count > 0 ? <View style={styles.badge}><Text style={styles.badgeText} maxFontSizeMultiplier={1.3}>{count}</Text></View> : null}
         </TouchableOpacity>
       </View>
+      {count > 0 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.activeFilters} contentContainerStyle={styles.activeFilterContent}>
+          {activeFilters.map(({ key, label }) => (
+            <TouchableOpacity key={key} style={styles.activeChipTarget}
+              accessibilityRole="button" accessibilityLabel={`Remove ${label} filter`}
+              onPress={() => choose(key, DEFAULT_REPORT_FILTERS[key])}>
+              <View style={styles.activeChip}>
+                <Ionicons name="close-circle" size={16} color="#245F2A" />
+                <Text style={styles.chipText} numberOfLines={1}>{label}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      ) : null}
       <Modal
         visible={Boolean(open)}
         transparent
@@ -147,88 +131,37 @@ export default function ReportFilters({ map = false }) {
           >
             <View style={styles.sheetHeader}>
               <Text style={styles.title} accessibilityRole="header">
-                {statusOnly ? 'Cleanup status' : 'Find a cleanup'}
+                Filters
               </Text>
               <TouchableOpacity
                 style={styles.chip}
-                onPress={() =>
-                  statusOnly
-                    ? setOpen(false)
-                    : setFilters(DEFAULT_REPORT_FILTERS)
-                }
+                onPress={() => setFilters(DEFAULT_REPORT_FILTERS)}
                 accessibilityRole="button"
               >
                 <Text style={styles.chipText}>
-                  {statusOnly ? 'Done' : 'Reset'}
+                  Reset
                 </Text>
               </TouchableOpacity>
             </View>
             <ScrollView keyboardShouldPersistTaps="handled">
-              {!statusOnly ? (
-                <>
-                  <Text style={styles.label}>Report keywords</Text>
-                  <TextInput value={filters.query} onChangeText={value => choose('query', value)} placeholder="Search report titles and notes" accessibilityLabel="Report keywords" style={[styles.input, { backgroundColor: '#F1F4F2', borderRadius: 12, paddingHorizontal: 12 }]} clearButtonMode="while-editing" />
-                </>
-              ) : null}
-              {(statusOnly ? [groups[0]] : groups).map(
-                ([key, label, options]) => (
-                  <View key={key}>
-                    {!statusOnly ? (
-                      <Text style={styles.label}>{label}</Text>
-                    ) : null}
-                    <View
-                      style={statusOnly ? styles.statusOptions : styles.options}
-                    >
-                      {options.map(([value, text]) => (
-                        <TouchableOpacity
-                          key={value}
-                          accessibilityRole="radio"
-                          accessibilityState={{
-                            checked: filters[key] === value,
-                          }}
-                          style={[
-                            statusOnly ? styles.statusOption : styles.chip,
-                            !statusOnly &&
-                              filters[key] === value &&
-                              styles.selected,
-                          ]}
-                          onPress={() => {
-                            choose(key, value);
-                            if (statusOnly) setOpen(false);
-                          }}
-                        >
-                          <Text
-                            style={
-                              statusOnly
-                                ? styles.statusOptionText
-                                : styles.chipText
-                            }
-                          >
-                            {statusOnly && value === 'all'
-                              ? 'All reports'
-                              : text}
-                          </Text>
-                          {statusOnly ? (
-                            <Ionicons
-                              name={
-                                filters[key] === value
-                                  ? 'checkmark-circle'
-                                  : 'ellipse-outline'
-                              }
-                              size={23}
-                              color={
-                                filters[key] === value ? '#2F7D32' : '#BBC4BE'
-                              }
-                            />
-                          ) : null}
-                        </TouchableOpacity>
-                      ))}
-                    </View>
+              {groups.map(([key, label, options]) => (
+                <View key={key}>
+                  <Text style={styles.label}>{label}</Text>
+                  <View style={styles.options}>
+                    {options.map(([value, text]) => (
+                      <TouchableOpacity key={value} accessibilityRole="radio"
+                        accessibilityState={{ checked: filters[key] === value }}
+                        style={[styles.chip, filters[key] === value && styles.selected]}
+                        onPress={() => choose(key, value)}>
+                        <Text style={styles.chipText}>{key === 'status' && value === 'all' ? 'All reports' : text}</Text>
+                      </TouchableOpacity>
+                    ))}
                   </View>
-                ),
-              )}
+                </View>
+              ))}
+              <Text style={styles.label}>Report keywords</Text>
+              <TextInput value={filters.query} onChangeText={value => choose('query', value)} placeholder="Search report titles and notes" accessibilityLabel="Report keywords" style={styles.input} clearButtonMode="while-editing" />
             </ScrollView>
-            {!statusOnly ? (
               <TouchableOpacity
                 style={styles.done}
                 accessibilityRole="button"
@@ -238,7 +171,6 @@ export default function ReportFilters({ map = false }) {
                   {loading ? 'Updating reports…' : `Show ${filteredReports.length} ${filteredReports.length === 1 ? 'report' : 'reports'}`}
                 </Text>
               </TouchableOpacity>
-            ) : null}
           </View>
         </View>
       </Modal>
@@ -246,78 +178,21 @@ export default function ReportFilters({ map = false }) {
   );
 }
 const styles = StyleSheet.create({
-  header: { backgroundColor: '#FFFFFF', padding: 12, gap: 10 },
-  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  logoArea: { width: 48, paddingRight: 8, marginRight: 4, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: '#DDE4DF', alignItems: 'center' },
-  logo: { width: 36, height: 36 },
-  search: {
-    flex: 1,
-    minHeight: 44,
-    backgroundColor: '#F1F4F2',
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    gap: 7,
-  },
-  input: { flex: 1, fontSize: 15, color: '#202428', minHeight: 44 },
-  mapHeader: {
-    backgroundColor: 'transparent',
-    paddingHorizontal: 16,
-    paddingVertical: 0,
-    gap: 8,
-  },
-  mapSearchRow: {
-    minHeight: 52,
-    paddingHorizontal: 10,
-    gap: 4,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    boxShadow: '0 2px 8px rgba(25, 45, 32, 0.12)',
-  },
-  mapSearch: { backgroundColor: 'transparent', paddingHorizontal: 6 },
-  quickControls: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
-  quickControl: {
-    flexShrink: 1,
-    minWidth: 0,
-    minHeight: 44,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#D6DED8',
-    backgroundColor: '#FFFFFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  quickControlText: {
-    flexShrink: 1,
-    color: '#303B34',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  floatingControl: {
-    borderColor: '#FFFFFF',
-    boxShadow: '0 2px 6px rgba(25, 45, 32, 0.10)',
-  },
-  statusOptions: { marginTop: 12 },
-  statusOption: {
-    minHeight: 60,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E1E6E3',
-  },
-  statusOptionText: {
-    flex: 1,
-    color: '#303B34',
-    fontSize: 17,
-    fontWeight: '600',
-  },
+  header: { backgroundColor: '#FFFFFF', padding: 12 },
+  activeFilters: { marginTop: 4, flexGrow: 0 },
+  activeFilterContent: { gap: 6, paddingRight: 2 },
+  activeChipTarget: { minHeight: 44, maxWidth: 260, justifyContent: 'center' },
+  activeChip: { minHeight: 32, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 18, borderWidth: 1, borderColor: '#2F7D32', backgroundColor: '#E8F2E9', flexDirection: 'row', alignItems: 'center', gap: 5 },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  searchSurface: { flex: 1, minWidth: 0, minHeight: 52, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F4F2', borderRadius: 16 },
+  logoArea: { width: 40, marginLeft: 4, alignItems: 'center' },
+  logo: { width: 32, height: 32 },
+  input: { fontSize: 15, color: '#202428', minHeight: 48, backgroundColor: '#F1F4F2', borderRadius: 12, paddingHorizontal: 12 },
+  mapHeader: { backgroundColor: 'transparent', paddingHorizontal: 16, paddingVertical: 0 },
+  mapSearchRow: { backgroundColor: '#FFFFFF', boxShadow: '0 2px 8px rgba(25, 45, 32, 0.12)' },
+  filterButton: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D6DED8', boxShadow: '0 2px 6px rgba(25, 45, 32, 0.10)' },
+  badge: { position: 'absolute', top: -3, right: -2, minWidth: 21, minHeight: 21, paddingHorizontal: 4, borderRadius: 12, backgroundColor: '#2F7D32', borderWidth: 2, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
+  badgeText: { fontSize: 11, fontWeight: '700', color: '#FFFFFF' },
   chip: {
     minHeight: 44,
     paddingHorizontal: 13,
@@ -331,7 +206,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   selected: { backgroundColor: '#E8F2E9', borderColor: '#2F7D32' },
-  chipText: { color: '#245F2A', fontSize: 14, fontWeight: '600' },
+  chipText: { flexShrink: 1, color: '#245F2A', fontSize: 14, fontWeight: '600' },
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.3)',

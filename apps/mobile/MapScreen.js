@@ -3420,7 +3420,7 @@ const renderReportStep = () => {
           }}
         >
           <TouchableOpacity
-            style={styles.reportLitterButton}
+            style={[styles.reportLitterButton, reportPlacementActive && { width: 194 }]}
             onPress={reportPlacementActive ? confirmReportLocation : openReportLocationPicker}
             disabled={showInitialMapLoading || formOpen || detailsOpen || isSaving || isCentering}
             activeOpacity={0.82}
@@ -3436,7 +3436,7 @@ const renderReportStep = () => {
           >
             {isCentering ? (
               <View style={styles.reportLitterButtonContent}>
-                <ActivityIndicator size="small" color="#2F7D32" />
+                <ActivityIndicator size="small" color="#FFFFFF" />
                 <Text style={styles.reportLitterButtonText}>Finding you…</Text>
               </View>
             ) : (
@@ -3457,7 +3457,7 @@ const renderReportStep = () => {
                     },
                   ]}
                 >
-                  <Ionicons name="add-circle-outline" size={23} color="#2F7D32" />
+                  <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />
                   <Text style={styles.reportLitterButtonText}>Report Litter</Text>
                 </Animated.View>
                 <Animated.View
@@ -3477,7 +3477,7 @@ const renderReportStep = () => {
                     },
                   ]}
                 >
-                  <Ionicons name="location-outline" size={23} color="#2F7D32" />
+                  <Ionicons name="location-outline" size={20} color="#FFFFFF" />
                   <Text style={styles.reportLitterButtonText}>Use This Location</Text>
                 </Animated.View>
               </View>
@@ -3491,9 +3491,7 @@ const renderReportStep = () => {
         style={[
           styles.centerButton,
           {
-            bottom: mapControlsBottom + (previewReport && !reportPlacementActive ? previewHeight : 0) +
-              (BOTTOM_NAV_METRICS.mapControlSize +
-                BOTTOM_NAV_METRICS.mapControlGap) * 2,
+            bottom: mapControlsBottom + (previewReport && !reportPlacementActive ? previewHeight + 12 : 0) + (reportPlacementActive ? 58 : 0),
           },
         ]}
         onPress={() => { clearSearchPlace(); centerOnUser(); }}
@@ -3505,7 +3503,7 @@ const renderReportStep = () => {
         {isCentering ? (
           <ActivityIndicator color="#2F7D32" />
         ) : (
-          <Ionicons name="navigate-outline" size={32} color="#4F5C63" />
+          <Ionicons name="navigate-outline" size={24} color="#4F5C63" />
         )}
       </TouchableOpacity>
 
@@ -3513,9 +3511,7 @@ const renderReportStep = () => {
         style={[
           styles.mapTypeButton,
           {
-            bottom: mapControlsBottom + (previewReport && !reportPlacementActive ? previewHeight : 0) +
-              BOTTOM_NAV_METRICS.mapControlSize +
-              BOTTOM_NAV_METRICS.mapControlGap,
+            bottom: mapControlsBottom + (previewReport && !reportPlacementActive ? previewHeight + 12 : 0) + (reportPlacementActive ? 58 : 0),
           },
         ]}
         onPress={toggleMapType}
@@ -3523,7 +3519,7 @@ const renderReportStep = () => {
         accessibilityLabel="Change map style"
         accessibilityValue={{ text: mapType }}
       >
-        <Ionicons name="layers-outline" size={32} color={getMapTypeColor()} />
+        <Ionicons name="layers-outline" size={24} color={getMapTypeColor()} />
       </TouchableOpacity>
 
 {!reportPlacementActive && !detailsOpen && !showInitialMapLoading ? <MapReportPreview
@@ -4455,22 +4451,22 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 10,
-    paddingRight: 20,
+    paddingRight: 16,
     alignItems: 'flex-end',
   },
   reportLitterButton: {
-    height: 56,
-    width: 194,
-    paddingHorizontal: 18,
-    borderRadius: 28,
+    height: BOTTOM_NAV_METRICS.mapControlSize,
+    width: 152,
+    paddingHorizontal: 10,
+    borderRadius: 22,
     borderCurve: 'continuous',
     borderWidth: 1,
-    borderColor: 'rgba(47,125,50,0.35)',
-    backgroundColor: '#FFFFFF',
+    borderColor: '#2F7D32',
+    backgroundColor: '#2F7D32',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 6,
     shadowColor: '#000000',
     shadowOpacity: 0.18,
     shadowRadius: 4,
@@ -4487,7 +4483,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 6,
   },
   reportLitterButtonContentOverlay: {
     position: 'absolute',
@@ -4495,20 +4491,20 @@ const styles = StyleSheet.create({
     right: 0,
   },
   reportLitterButtonText: {
-    color: '#2F7D32',
+    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   reportPlacementCloseWrap: {
     position: 'absolute',
-    right: 224,
+    left: 16,
     top: 0,
     zIndex: 2,
   },
   reportPlacementClose: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: BOTTOM_NAV_METRICS.mapControlSize,
+    height: BOTTOM_NAV_METRICS.mapControlSize,
+    borderRadius: 22,
     borderCurve: 'continuous',
     borderWidth: 1,
     borderColor: 'rgba(55,65,81,0.24)',
@@ -5147,11 +5143,11 @@ wizardDotActive: {
   },
   centerButton: {
     position: 'absolute',
-    right: 20,
+    left: 74,
     backgroundColor: '#fff',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: BOTTOM_NAV_METRICS.mapControlSize,
+    height: BOTTOM_NAV_METRICS.mapControlSize,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -5164,11 +5160,11 @@ wizardDotActive: {
   },
   mapTypeButton: {
     position: 'absolute',
-    right: 20,
+    left: 16,
     backgroundColor: '#fff',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: BOTTOM_NAV_METRICS.mapControlSize,
+    height: BOTTOM_NAV_METRICS.mapControlSize,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,

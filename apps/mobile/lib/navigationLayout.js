@@ -7,7 +7,7 @@ export const BOTTOM_NAV_METRICS = Object.freeze({
   maximumWidth: 420,
   contentClearance: 12,
   mapControlGap: 14,
-  mapControlSize: 56,
+  mapControlSize: 44,
 });
 
 export const BOTTOM_NAV_COLORS = Object.freeze({
