@@ -20,9 +20,11 @@ Public simulator flows and automated recovery tests are exercised without creati
 
 ## Results
 
-- Mobile suite: 235 tests passed across 53 files.
+- Mobile suite: 238 tests passed across 54 files.
 - iPhone 17 Pro / iOS 26.5 Release simulator build: succeeded, zero errors. Five native dependency/build warnings remain.
 - Simulator: launch, shared funded filter and result count, list reward accessibility, photo-first report details, visible primary cleanup action, guest authentication gate, and city search exercised.
 - Payments: automated tests cover saved attempt identity across navigation/restart, account isolation, processing/webhook delays, confirmed receipts, refund states, offline recovery, and late responses from older attempts.
 - Drafts: tests cover persisted photo copies, interrupted-copy preservation, account isolation, and autosave/discard ordering.
 - No production records, payment transactions, payout accounts, or backend configuration changed.
+
+- Final simulator QA found and fixed a gallery null-report crash on dismissal. A rendered-component regression test now covers stale photo URLs during dismissal and subsequent report rendering.

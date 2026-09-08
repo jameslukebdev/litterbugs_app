@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -38,6 +38,7 @@ function Photo({ uri, path, width, title }) {
 export default function ReportPhotoGallery({ report, urls, loading, width }) {
   const [index, setIndex] = useState(0);
   useEffect(() => setIndex(0), [report?.id]);
+  if (!report) return null;
   if (loading && !urls.length)
     return (
       <View style={styles.empty}>
