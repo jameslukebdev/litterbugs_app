@@ -1,4 +1,4 @@
-import * as Location from 'expo-location';
+import LocationSearch from './LocationSearch';
 import { useState } from 'react';
 import {
   Image,
@@ -57,38 +57,8 @@ const groups = [
   ],
 ];
 export default function ReportFilters({ map = false }) {
-  const { filters, setFilters, filteredReports, commitMapRegion } =
+  const { filters, setFilters, filteredReports, loading } =
     useReports();
-  const [place, setPlace] = useState('');
-  const [placeError, setPlaceError] = useState(null);
-  const [finding, setFinding] = useState(false);
-  const findPlace = async () => {
-    if (!place.trim() || finding) return;
-    setFinding(true);
-    setPlaceError(null);
-    try {
-      const results = await Location.geocodeAsync(place.trim());
-      if (!results.length) {
-        setPlaceError(
-          'No location found. Try a city and state or a full address.',
-        );
-        return;
-      }
-      commitMapRegion({
-        latitude: results[0].latitude,
-        longitude: results[0].longitude,
-        latitudeDelta: 0.15,
-        longitudeDelta: 0.15,
-      });
-      setOpen(false);
-    } catch {
-      setPlaceError(
-        'Location search is unavailable. Try again or move the map.',
-      );
-    } finally {
-      setFinding(false);
-    }
-  };
   const [open, setOpen] = useState(false);
   const [panel, setPanel] = useState('all');
   const statusOnly = panel === 'status';
@@ -104,7 +74,7 @@ export default function ReportFilters({ map = false }) {
   const insets = useSafeAreaInsets();
   const count = groups.filter(
     ([key]) => key !== 'status' && filters[key] !== DEFAULT_REPORT_FILTERS[key],
-  ).length;
+  ).length + (filters.query.trim() ? 1 : 0);
   const choose = (key, value) =>
     setFilters((current) => ({ ...current, [key]: value }));
   return (
@@ -121,18 +91,7 @@ export default function ReportFilters({ map = false }) {
             accessibilityLabel="Litterbugs"
           />
         ) : null}
-        <View style={[styles.search, map && styles.mapSearch]}>
-          <Ionicons name="search" size={18} color="#667078" />
-          <TextInput
-            style={styles.input}
-            value={filters.query}
-            onChangeText={(value) => choose('query', value)}
-            placeholder="Search reports"
-            accessibilityLabel="Search report titles and notes"
-            returnKeyType="search"
-            clearButtonMode="while-editing"
-          />
-        </View>
+        <LocationSearch map={map} />
       </View>
       <View style={styles.quickControls} pointerEvents="box-none">
         <TouchableOpacity
@@ -207,40 +166,8 @@ export default function ReportFilters({ map = false }) {
             <ScrollView keyboardShouldPersistTaps="handled">
               {!statusOnly ? (
                 <>
-                  <Text style={styles.label}>Explore an area</Text>
-                  <View style={styles.searchRow}>
-                    <TextInput
-                      value={place}
-                      onChangeText={setPlace}
-                      placeholder="City, neighborhood or address"
-                      accessibilityLabel="Search for a location"
-                      style={[
-                        styles.search,
-                        styles.input,
-                        { paddingHorizontal: 12 },
-                      ]}
-                      onSubmitEditing={findPlace}
-                      returnKeyType="search"
-                    />
-                    <TouchableOpacity
-                      style={styles.chip}
-                      disabled={finding}
-                      onPress={findPlace}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.chipText}>
-                        {finding ? 'Finding…' : 'Go'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                  {placeError ? (
-                    <Text
-                      accessibilityLiveRegion="polite"
-                      style={{ color: '#B42318', marginTop: 8 }}
-                    >
-                      {placeError}
-                    </Text>
-                  ) : null}
+                  <Text style={styles.label}>Report keywords</Text>
+                  <TextInput value={filters.query} onChangeText={value => choose('query', value)} placeholder="Search report titles and notes" accessibilityLabel="Report keywords" style={[styles.input, { backgroundColor: '#F1F4F2', borderRadius: 12, paddingHorizontal: 12 }]} clearButtonMode="while-editing" />
                 </>
               ) : null}
               {(statusOnly ? [groups[0]] : groups).map(
@@ -308,8 +235,7 @@ export default function ReportFilters({ map = false }) {
                 onPress={() => setOpen(false)}
               >
                 <Text style={styles.doneText}>
-                  Show {filteredReports.length}{' '}
-                  {filteredReports.length === 1 ? 'report' : 'reports'}
+                  {loading ? 'Updating reports…' : `Show ${filteredReports.length} ${filteredReports.length === 1 ? 'report' : 'reports'}`}
                 </Text>
               </TouchableOpacity>
             ) : null}

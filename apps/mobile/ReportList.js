@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -111,7 +111,7 @@ function ReportThumbnail({ report, size }) {
   );
 }
 
-export function ReportListItem({ report, origin, onPress }) {
+export function ReportListItem({ report, origin, onPress, selected = false }) {
   const { width } = useWindowDimensions();
   const thumbnailSize = Math.min(112, Math.max(94, width * 0.27));
   const severity = getSeverity(report);
@@ -133,7 +133,8 @@ export function ReportListItem({ report, origin, onPress }) {
 
   return (
     <TouchableOpacity
-      style={styles.row}
+      style={[styles.row, selected && { backgroundColor: '#F0F7F1', borderLeftWidth: 3, borderLeftColor: '#2F7D32' }]}
+      accessibilityState={{ selected }}
       onPress={() => onPress?.(report)}
       activeOpacity={0.72}
       accessibilityRole="button"
@@ -188,6 +189,7 @@ export function ReportListItem({ report, origin, onPress }) {
 
 export default function ReportList({
   reports,
+  selectedId,
   origin,
   onReportPress,
   contentContainerStyle,
@@ -199,14 +201,28 @@ export default function ReportList({
   scrollEnabled = true,
   style,
 }) {
+  const listRef = useRef(null);
+  const lastSelected = useRef(null);
+  useEffect(() => {
+    if (!selectedId) { lastSelected.current = null; return; }
+    const index = (reports || []).findIndex(report => report.id === selectedId);
+    if (index < 0 || lastSelected.current === selectedId) return;
+    lastSelected.current = selectedId;
+    listRef.current?.scrollToIndex({ index, animated: false, viewPosition: 0.3 });
+  }, [selectedId, reports]);
   const data = useMemo(() => reports ?? [], [reports]);
 
   return (
     <FlatList
+      ref={listRef}
+      extraData={selectedId}
+      onScrollToIndexFailed={({ averageItemLength, index }) => {
+        listRef.current?.scrollToOffset({ offset: averageItemLength * index, animated: false });
+      }}
       data={data}
       keyExtractor={(report) => String(report.id)}
       renderItem={({ item }) => (
-        <ReportListItem report={item} origin={origin} onPress={onReportPress} />
+        <ReportListItem report={item} origin={origin} onPress={onReportPress} selected={item.id === selectedId} />
       )}
       ItemSeparatorComponent={() => <View style={styles.divider} />}
       ListEmptyComponent={initialLoading ? (

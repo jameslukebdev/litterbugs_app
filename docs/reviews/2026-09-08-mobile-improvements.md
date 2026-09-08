@@ -52,3 +52,21 @@ Implemented native map projection with screen-space label collision checks. Ever
 Verification: 248 tests passed across 56 files, including dense/identical-coordinate layouts, stable allocation, larger text, selected pins, chooser discovery and preview empty/completed states. Release build succeeded with 0 errors and 5 existing native warnings. Simulator exercised launch, one-line $6 pin, selection/photo preview/distance, View report and dismissal, and wider Boone area with separate available/completed markers. Dense and identical-location cases were checked in automated tests; production data here only supplies two public reports. Latest simulator log window contained no TypeError or unhandled JS exceptions.
 
 During QA a preview-distance call hit an older same-named helper without null guards. Fixed by explicitly importing the guarded shared helper under an unambiguous name, verified the corrected bundled call and relaunched successfully. Removed the older com.litterbugs.app simulator installation; retained com.gegibson.litterbugs.qa as the single review build. No production write, deployment or push.
+
+## Shared location search and map/list geography
+
+Approved direction: Zillow-style shared geography and selection, Refero Airbnb compact marker/preview patterns, and komoot compact controls. Keep the existing brand and two top controls. No suggested destinations or recommendation sections.
+
+The user clarified that discovery should cover the relevant surrounding town area rather than exact annexation limits. City search uses state-qualified Census place names, then uses the postal tabulation area containing the town's internal point when that area is broader than the town extent. Boone resolves to the broader 28607 area. Larger town extents remain available when the central postal area is smaller. This is a practical discovery approximation, not Zillow's proprietary region definition or a guaranteed complete postal catchment for every city. The boundary service generalizes geometry before both drawing and filtering, using the identical polygon for both. Thin green outlines retain holes and disconnected pieces without the original municipal detail overload.
+
+Sources:
+- https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Places_CouSub_ConCity_SubMCD/MapServer
+- https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/PUMA_TAD_TAZ_UGA_ZCTA/MapServer
+
+Address search uses native geocoding and explicitly labels its result as a center without a boundary. Boundary fetch errors leave the previous search intact. US boundary data requires connectivity; successfully resolved places are cached for the session.
+
+Map and Reports use the same viewport/boundary intersection on top of the existing shared status, reward, radius, severity and keyword filters. The larger fetch buffer no longer leaks into the visible list. Location and report selection live in the shared provider. List selection is highlighted and a newly selected report is brought into view. Opening list details preserves the map region, and Show on map explicitly centers its report. Search retains its area across map movement until cleared; Re-center restores the full place extent. Center on your location explicitly exits the selected area search. Existing compact markers and overlapping-report chooser remain.
+
+Report text search moved into Filters as Report keywords. Location search appears on both tabs. No backend schema, credentials, production records, payments or deployments changed.
+
+Verification so far: 257 tests passed across 58 files, including polygon holes, disconnected parts, viewport half-spans, date-line handling, boundary/viewport intersection, city disambiguation, service errors and broader postal-area selection. The first Release build succeeded with zero errors and five existing native warnings. Its simulator checks confirmed Boone search, boundary rendering, matching empty result count, nearby report selection, selected list highlight and report details. Final broader-area build and checks follow below. Authenticated/payment end-to-end flows are outside this geographic change's verification scope.

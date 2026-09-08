@@ -9,6 +9,7 @@ import {
 } from 'react';
 
 import { DEFAULT_REPORT_FILTERS, matchesReportFilters } from './reportFilters';
+import { matchesGeography } from './searchGeography';
 import { supabase } from './supabase';
 import { useProfile } from './profile';
 import { completedImpactReportFilter, isVisibleReport } from './reportVisibility';
@@ -69,6 +70,10 @@ export function ReportsProvider({ children }) {
   const [error, setError] = useState(null);
   const [mapRegion, setMapRegion] = useState(DEFAULT_MAP_REGION);
   const [filters, setFilters] = useState(DEFAULT_REPORT_FILTERS);
+  const [searchPlace, setSearchPlace] = useState(null);
+  const [selectedMapReportId, setSelectedMapReportId] = useState(null);
+  const selectSearchPlace = useCallback(place => { setSearchPlace(place); setMapRegion(place.region); setSelectedMapReportId(null); }, []);
+  const clearSearchPlace = useCallback(() => { setSearchPlace(null); setSelectedMapReportId(null); }, []);
   const radiusRef = useRef(filters.radius);
   radiusRef.current = filters.radius;
   const requestSequence = useRef(0);
@@ -138,7 +143,7 @@ export function ReportsProvider({ children }) {
     return allReports.filter((report) => !blocked.has(report.user_id));
   }, [allReports, blockedIds]);
 
-  const filteredReports = useMemo(() => reports.filter((report) => matchesReportFilters(report, filters, mapRegion)), [reports, filters, mapRegion]);
+  const filteredReports = useMemo(() => reports.filter((report) => matchesReportFilters(report, filters, mapRegion) && matchesGeography(report, mapRegion, searchPlace)), [reports, filters, mapRegion, searchPlace]);
 
   const markers = useMemo(
     () => filteredReports
@@ -216,6 +221,7 @@ export function ReportsProvider({ children }) {
   }, []);
 
   const value = useMemo(() => ({
+    searchPlace, selectSearchPlace, clearSearchPlace, selectedMapReportId, setSelectedMapReportId,
     reports,
     filteredReports, filters, setFilters,
     markers,
@@ -231,6 +237,7 @@ export function ReportsProvider({ children }) {
     removeReport,
     getReportPhotoUrl,
   }), [
+    searchPlace, selectSearchPlace, clearSearchPlace, selectedMapReportId,
     filteredReports, filters,
     commitMapRegion,
     error,

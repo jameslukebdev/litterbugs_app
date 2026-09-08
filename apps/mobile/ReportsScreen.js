@@ -23,7 +23,7 @@ export default function ReportsScreen({ navigation }) {
     loading: reportsLoading,
     refreshing,
     refreshReports,
-    error,
+    error, searchPlace, selectedMapReportId, setSelectedMapReportId,
   } = useReports();
 
   useEffect(() => {
@@ -74,13 +74,14 @@ export default function ReportsScreen({ navigation }) {
     return new Date(right.created_at || 0).getTime() - new Date(left.created_at || 0).getTime();
   }), [locationOrigin, reports]);
 
-  const helperText = locationState === 'ready'
+  const helperText = searchPlace ? `${searchPlace.label} · ${searchPlace.geometry ? 'search area' : 'map area'}` : locationState === 'ready'
     ? 'Map area · closest to your current location'
     : locationState === 'loading'
       ? 'Newest reports while we check your location…'
       : 'Most recent reports · enable location to sort by distance';
 
   const handleReportPress = (report) => {
+    setSelectedMapReportId(report.id);
     navigation.navigate('Map', { reportId: report.id, returnTo: 'Reports' });
   };
 
@@ -105,12 +106,13 @@ export default function ReportsScreen({ navigation }) {
 
       <ReportList
         reports={nearbyReports}
+        selectedId={selectedMapReportId}
         origin={locationOrigin}
         onReportPress={handleReportPress}
         refreshing={refreshing}
         initialLoading={reportsLoading}
         onRefresh={() => refreshReports({ showRefresh: true })}
-        emptyTitle={error ? 'Reports unavailable' : 'No reports nearby'}
+        emptyTitle={error ? 'Reports unavailable' : 'No reports in this area'}
         emptyMessage={error
           ? 'Check your connection, then pull down to try again.'
           : 'Try changing your filters or exploring another area on the map.'}

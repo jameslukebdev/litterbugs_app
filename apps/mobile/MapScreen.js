@@ -29,7 +29,8 @@ import {
   TurboModuleRegistry,
   useWindowDimensions,
 } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import { polygonParts } from './lib/searchGeography';
+import MapView, { Marker, Polygon } from 'react-native-maps';
 import { useIsFocused } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
@@ -223,7 +224,6 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const [mapType, setMapType] = useState('standard');
   const [selectedReport, setSelectedReport] = useState(null);
   const [mapUserLocation, setMapUserLocation] = useState(null);
-  const [previewId, setPreviewId] = useState(null);
   const [nearbyIds, setNearbyIds] = useState([]);
   const [previewHeight, setPreviewHeight] = useState(180);
   const [projectionRevision, setProjectionRevision] = useState(0);
@@ -280,6 +280,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   } = useProfile();
   const {
     markers,
+    searchPlace, clearSearchPlace, selectedMapReportId: previewId, setSelectedMapReportId: setPreviewId,
     mapRegion: region,
     setMapRegion: setRegion,
     commitMapRegion,
@@ -1599,6 +1600,7 @@ const openReportDetails = (report) => {
   setCompletedCleanupImpactError(null);
   setCompletedCleanupImpactLoading(openingCompletedReport);
   setSelectedReport(report);
+  setPreviewId(report.id);
   setDetailsOpen(true);
 };
 
@@ -1643,7 +1645,7 @@ useEffect(() => {
 
       const latitude = Number(report.latitude);
       const longitude = Number(report.longitude);
-      if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+      if (route?.params?.returnTo !== 'Reports' && Number.isFinite(latitude) && Number.isFinite(longitude)) {
         commitMapRegion({
           latitude,
           longitude,
@@ -3239,6 +3241,10 @@ const renderReportStep = () => {
           mapType={mapType}
         >
 
+        {polygonParts(searchPlace?.geometry).map(([outer, ...holes], index) => <Polygon key={`${searchPlace.id}:${index}`}
+          coordinates={outer.map(([longitude, latitude]) => ({ latitude, longitude }))}
+          holes={holes.map(ring => ring.map(([longitude, latitude]) => ({ latitude, longitude })))}
+          strokeColor="#2F7D32" accessible={false} importantForAccessibility="no" strokeWidth={1.5} fillColor="rgba(47,125,50,0.035)" tappable={false} />)}
         {mapLabels.map((m) => {
           const selected = m.id === previewId;
           const tone = cleanupMapTone(m.report);
@@ -3289,6 +3295,7 @@ const renderReportStep = () => {
           accessible={false}
         >
           {!reportPlacementActive ? <ReportFilters map /> : null}
+          {searchPlace && !reportPlacementActive && !mapRegionsAreEquivalent(region, searchPlace.region) ? <TouchableOpacity onPress={() => { setPreviewId(null); commitMapRegion(searchPlace.region); }} accessibilityRole="button" accessibilityLabel="Re-center selected search area" style={{ alignSelf: 'center', backgroundColor: '#FFFFFF', borderRadius: 18, paddingHorizontal: 16, minHeight: 44, justifyContent: 'center', marginTop: 8 }}><Text style={{ color: '#285D38', fontWeight: '600' }}>Re-center</Text></TouchableOpacity> : null}
 
           <Animated.View
             pointerEvents="none"
@@ -3473,7 +3480,7 @@ const renderReportStep = () => {
                 BOTTOM_NAV_METRICS.mapControlGap) * 2,
           },
         ]}
-        onPress={centerOnUser}
+        onPress={() => { clearSearchPlace(); centerOnUser(); }}
         disabled={isCentering}
         accessibilityRole="button"
         accessibilityLabel={isCentering ? 'Finding your location' : 'Center map on your location'}
@@ -3737,6 +3744,16 @@ const renderReportStep = () => {
 >
   <View style={styles.modalBackdrop}>
     <View style={styles.reportSheet}>
+
+      {selectedReport && Number.isFinite(selectedReport.latitude) && Number.isFinite(selectedReport.longitude) ? <TouchableOpacity
+        accessibilityRole="button" accessibilityLabel="Show report on map"
+        style={{ position: 'absolute', zIndex: 20, top: insets.top + 12, left: 24, minHeight: 44, paddingHorizontal: 14, borderRadius: 22, backgroundColor: '#FFFFFF', flexDirection: 'row', gap: 6, alignItems: 'center' }}
+        onPress={() => {
+          const report = selectedReport;
+          setDetailsOpen(false); setSelectedReport(null); setPreviewId(report.id);
+          navigation.setParams({ reportId: undefined, returnTo: undefined });
+          commitMapRegion({ ...region, latitude: report.latitude, longitude: report.longitude });
+        }}><Ionicons name="map-outline" size={18} color="#285D38" /><Text style={{ color: '#285D38', fontWeight: '600' }}>Show on map</Text></TouchableOpacity> : null}
 
       <TouchableOpacity onPress={closeReportDetails} accessibilityRole="button" accessibilityLabel="Close report" style={{ position: 'absolute', zIndex: 20, top: insets.top + 12, right: 24, width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="close" size={22} color="#30363B" /></TouchableOpacity>
 
