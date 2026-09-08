@@ -25,3 +25,5 @@ Never automate a contribution, payment, payout, claim, report submission, or rea
 The three-stage form case also requires a local simulator photo. It selects the first PHPicker image, scrolls through Details, reaches Review, and discards its own draft without uploading. The picker can trigger the app's background draft recovery; after a failed run, inspect and clear only the draft created by that run before retrying.
 
 Verified on September 8, 2026: all six cases passed on iPhone 17 Pro across targeted runs; both map cases additionally passed on iPhone 13 mini with extra-extra-extra-large system text. The smaller device was a guest, so signed-in cases were not run there.
+
+The installer also creates the separate `LitterbugsFixtureRegression` scheme. It is deliberately excluded from the normal app suite because it requires the optional LB Fixtures app. See [isolated fixture instructions](../qa/README.md). The fixture scheme adds repeatable marker status/funding/density coverage without reading or changing backend records.

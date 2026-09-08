@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { Marker } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import { cleanupMapTone } from '../lib/cleanupEligibility';
@@ -6,7 +6,9 @@ import { reportsNearMapTap, STATUS_MARKER_SIZE, STATUS_MARKER_ICON_SIZE } from '
 
 export default function ReportMapMarkers({ markers, selectedId, tracksViewChanges, reportPlacementActive, onNearby, onChoose }) {
   return <>
-        {markers.map((m) => {
+        {/* Label allocation changes priority on selection; native annotation order
+            must stay stable or MapKit can remove a moved annotation. */}
+        {[...markers].sort((a, b) => String(a.id).localeCompare(String(b.id))).map((m) => {
           const selected = m.id === selectedId;
           const tone = cleanupMapTone(m.report);
           const statusMarker = tone === 'completed' || tone === 'active';
@@ -15,7 +17,9 @@ export default function ReportMapMarkers({ markers, selectedId, tracksViewChange
             identifier={`report:${tone}:${m.id}`}
             tracksViewChanges={tracksViewChanges}
             anchor={{ x: 0.5, y: 0.5 }}
-            zIndex={selected ? 1000 : m.labelled ? 10 : 1}
+            {...(Platform?.OS === 'ios'
+              ? { annotationZIndex: selected ? 1000 : m.labelled ? 10 : 1 }
+              : { zIndex: selected ? 1000 : m.labelled ? 10 : 1 })}
             accessibilityLabel={`${m.label || 'Volunteer cleanup'}, ${tone}: ${m.report?.title || 'Litter report'}`}
             onPress={(event) => {
               event?.stopPropagation?.();
@@ -24,7 +28,9 @@ export default function ReportMapMarkers({ markers, selectedId, tracksViewChange
               if (nearby.length > 1) onNearby(nearby.map((item) => item.id))
               else onChoose(m.report);
             }}>
-            <View style={[styles.compactMarkerHit, { width: Math.max(44, m.labelled ? m.width : 44), height: Math.max(44, m.labelled ? m.height : 44) }]}>
+            {/* Reserve the label's bounds even when collapsed. Resizing the
+                annotation's host frame can reset its MapKit position in Fabric. */}
+            <View style={[styles.compactMarkerHit, { width: Math.max(44, m.width || 44), height: Math.max(44, m.height || 44) }]}>
               {m.label && (m.labelled || selected) ? (
                 <View style={[styles.compactMarker, selected && styles.compactMarkerSelected, { minHeight: m.height || 32, width: m.width || 48 }]}>
                   {statusMarker ? <Ionicons name={icon} size={STATUS_MARKER_ICON_SIZE} color={selected ? '#FFFFFF' : '#285D38'} /> : null}

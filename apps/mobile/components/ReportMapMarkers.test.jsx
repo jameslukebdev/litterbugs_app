@@ -1,7 +1,7 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
-vi.mock('react-native', () => ({ View: ({children}) => <div>{children}</div>, Text: ({children}) => <span>{children}</span>, StyleSheet: {create: value=>value} }));
+vi.mock('react-native', () => ({ Platform: { OS: 'ios' }, View: ({children}) => <div>{children}</div>, Text: ({children}) => <span>{children}</span>, StyleSheet: {create: value=>value} }));
 vi.mock('react-native-maps', () => ({ Marker: ({children}) => <section>{children}</section> }));
 vi.mock('@expo/vector-icons', () => ({Ionicons: ({name}) => <i data-icon={name} />}));
 import ReportMapMarkers from './ReportMapMarkers';

@@ -72,3 +72,16 @@ index b755f9b..d48e5da 100644
      this.buildDrawingCache();
  
      // Do not create the doublebuffer-bitmap each time. reuse it to save memory.
+diff --git a/node_modules/react-native-maps/ios/AirMaps/AIRMapMarkerManager.m b/node_modules/react-native-maps/ios/AirMaps/AIRMapMarkerManager.m
+index 593c6bd..bb9e14b 100644
+--- a/node_modules/react-native-maps/ios/AirMaps/AIRMapMarkerManager.m
++++ b/node_modules/react-native-maps/ios/AirMaps/AIRMapMarkerManager.m
+@@ -44,6 +44,8 @@ - (UIView *)view
+ RCT_EXPORT_VIEW_PROPERTY(pinColor, UIColor)
+ RCT_EXPORT_VIEW_PROPERTY(draggable, BOOL)
+ RCT_EXPORT_VIEW_PROPERTY(zIndex, NSInteger)
++// Keep annotation layering out of Fabric's reserved zIndex child reordering.
++RCT_REMAP_VIEW_PROPERTY(annotationZIndex, zIndex, NSInteger)
+ RCT_EXPORT_VIEW_PROPERTY(opacity, double)
+ RCT_EXPORT_VIEW_PROPERTY(isPreselected, BOOL)
+ RCT_EXPORT_VIEW_PROPERTY(titleVisibility, NSString)

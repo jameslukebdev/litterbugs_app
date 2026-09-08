@@ -5,6 +5,14 @@ export const STATUS_MARKER_ICON_SIZE = 14;
 
 const statusPriority = (point) => ({ available: 2, active: 1, completed: 0 }[cleanupMapTone(point.report)]);
 
+export function mapMarkerDimensions(label, tone, fontScale = 1) {
+  const statusMarker = tone === 'completed' || tone === 'active';
+  return {
+    width: label ? Math.max(48, label.length * 9 * fontScale + 28 + (statusMarker ? STATUS_MARKER_ICON_SIZE + 4 : 0)) : STATUS_MARKER_SIZE,
+    height: label ? Math.max(32, 20 * fontScale + 12) : STATUS_MARKER_SIZE,
+  };
+}
+
 // Screen-space labels: every report remains a marker, even when its label does not fit.
 export function layoutMapLabels(points, selectedId, fontScale = 1) {
   const labels = [];
@@ -13,9 +21,7 @@ export function layoutMapLabels(points, selectedId, fontScale = 1) {
     statusPriority(b) - statusPriority(a) || String(a.id).localeCompare(String(b.id)));
   return ordered.map((point) => {
     const tone = cleanupMapTone(point.report);
-    const statusMarker = tone === 'completed' || tone === 'active';
-    const width = point.label ? Math.max(48, point.label.length * 9 * fontScale + 28 + (statusMarker ? STATUS_MARKER_ICON_SIZE + 4 : 0)) : STATUS_MARKER_SIZE;
-    const height = point.label ? Math.max(32, 20 * fontScale + 12) : STATUS_MARKER_SIZE;
+    const { width, height } = mapMarkerDimensions(point.label, tone, fontScale);
     const box = { x: point.x, y: point.y, width, height };
     const fits = !labels.some((other) =>
       Math.abs(other.x - box.x) < (other.width + width) / 2 + 10 &&
@@ -30,7 +36,7 @@ export function reportsNearMapTap(points, tappedId) {
   const tapped = points.find((point) => point.id === tappedId);
   if (!tapped) return [];
   return points.filter((point) => point.id === tappedId || (
-    Math.abs(point.x - tapped.x) < (Math.max(44, tapped.labelled ? tapped.width : 12) + Math.max(44, point.labelled ? point.width : 12)) / 2 &&
-    Math.abs(point.y - tapped.y) < (Math.max(44, tapped.labelled ? tapped.height : 12) + Math.max(44, point.labelled ? point.height : 12)) / 2
+    Math.abs(point.x - tapped.x) < (Math.max(44, tapped.width || 44) + Math.max(44, point.width || 44)) / 2 &&
+    Math.abs(point.y - tapped.y) < (Math.max(44, tapped.height || 44) + Math.max(44, point.height || 44)) / 2
   )).sort((a, b) => String(a.id).localeCompare(String(b.id)));
 }
