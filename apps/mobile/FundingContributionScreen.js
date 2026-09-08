@@ -1,3 +1,4 @@
+import { useHeaderHeight } from '@react-navigation/elements';
 import { reconcileContribution } from './lib/reconcileContribution';
 import { useSession } from './lib/session';
 import { supabase } from './lib/supabase';
@@ -59,6 +60,7 @@ export default function FundingContributionScreen({ navigation, route }) {
   const initialAmount = route?.params?.initialAmount;
   const { getReportById, refreshReports } = useReports();
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const [report, setReport] = useState(null);
   const [flags, setFlags] = useState(null);
   const hasInitialAmount = typeof initialAmount === 'string' && initialAmount.trim();
@@ -406,7 +408,7 @@ export default function FundingContributionScreen({ navigation, route }) {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.container} keyboardVerticalOffset={headerHeight} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]} keyboardShouldPersistTaps="handled">
         <Text style={styles.eyebrow}>CLEANUP FUND</Text>
         <Text style={styles.title}>{fromReportCreation ? 'Start your cleanup fund' : 'Help fund this cleanup'}</Text>
@@ -458,10 +460,13 @@ export default function FundingContributionScreen({ navigation, route }) {
           </View>
         ) : null}
 
-        <TouchableOpacity style={[styles.primaryButton, (!principalCents || paying || confirmationPending) && styles.disabled]} onPress={pay} disabled={!principalCents || paying || confirmationPending}>
+      </ScrollView>
+      <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: Math.max(insets.bottom, 12), backgroundColor: '#FFFFFF', borderTopWidth: StyleSheet.hairlineWidth, borderColor: '#DDE2DE' }}>
+        <View style={styles.line}><Text style={styles.totalLabel}>Total</Text><Text style={styles.totalValue}>{principalCents ? formatUsd(principalCents + feeCents) : 'Enter an amount'}</Text></View>
+        <TouchableOpacity style={[styles.primaryButton, { marginTop: 8 }, (!principalCents || paying || confirmationPending) && styles.disabled]} onPress={pay} disabled={!principalCents || paying || confirmationPending}>
           {paying ? <LoadingButtonContent label="Opening secure payment…" /> : <Text style={styles.primaryButtonText}>{confirmationPending ? 'Payment confirmation pending' : 'Continue to secure payment'}</Text>}
         </TouchableOpacity>
-      </ScrollView>
+      </View>
     </KeyboardAvoidingView>
   );
 }

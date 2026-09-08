@@ -3860,6 +3860,11 @@ const renderReportStep = () => {
           </View>
 
           <TouchableOpacity accessibilityRole="button" accessibilityLabel="Get directions to this cleanup" onPress={() => Linking.openURL(`https://maps.apple.com/?daddr=${selectedReport.latitude},${selectedReport.longitude}`).catch(() => Alert.alert('Directions unavailable', 'Please try again.'))} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: '#2F7D32', fontWeight: '700' }}>Get directions ↗</Text></TouchableOpacity>
+
+          <View style={{ marginBottom: 18 }}>
+            <Text style={{ fontSize: 15, color: '#30363B', lineHeight: 22 }}>{[...(selectedReport?.litter_types || []), selectedReport?.types].filter(Boolean).join(' · ')}</Text>
+            {selectedReport?.notes_presets?.length ? <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 21, color: '#805C00' }}>{selectedReport.notes_presets.join(' · ')}</Text> : null}
+          </View>
           {geminiReviewEnabled
             && userOwnsSelectedReport
             && selectedReport?.cleanup_state === 'available'
@@ -3911,77 +3916,10 @@ const renderReportStep = () => {
             } : undefined}
           />
 
-          {/* Report dates */}
-          <View style={styles.reportMetaStack}>
-
-            {selectedReport?.created_at && (
-              <View style={styles.reportMetaItem}>
-                <Ionicons
-                  name="time-outline"
-                  size={17}
-                  color="#667085"
-                />
-
-                <View>
-                  <Text style={styles.reportMetaItemLabel}>
-                    Reported
-                  </Text>
-
-                  <Text style={styles.reportMetaItemText}>
-                    {formatFriendlyDateTime(selectedReport.created_at)}
-                  </Text>
-                </View>
-              </View>
-            )}
-
-            {selectedReport?.expires_at && selectedReport?.cleanup_state !== 'completed' && (
-              <View style={styles.reportMetaItem}>
-                <Ionicons
-                  name="calendar-outline"
-                  size={17}
-                  color="#667085"
-                />
-
-                <View>
-                  <Text style={styles.reportMetaItemLabel}>
-                    Expires
-                  </Text>
-
-                  <Text style={styles.reportMetaItemText}>
-                    {new Date(
-                      selectedReport.expires_at
-                    ).toLocaleDateString()}
-                  </Text>
-                </View>
-              </View>
-            )}
-
-            {selectedReport?.latitude != null
-              && selectedReport?.longitude != null
-              && Number.isFinite(Number(selectedReport.latitude))
-              && Number.isFinite(Number(selectedReport?.longitude)) ? (
-              <View style={styles.reportMetaItem}>
-                <Ionicons
-                  name="location-outline"
-                  size={17}
-                  color="#667085"
-                />
-
-                <View>
-                  <Text style={styles.reportMetaItemLabel}>
-                    Location
-                  </Text>
-
-                  <Text style={styles.reportMetaItemText}>
-                    {Number(selectedReport.latitude).toFixed(4)}, {Number(selectedReport.longitude).toFixed(4)}
-                  </Text>
-                </View>
-              </View>
-            ) : null}
-
-          </View>
-
-
+          <Text style={{ color: '#687178', fontSize: 13, lineHeight: 20, marginTop: 12 }}>
+            {selectedReport?.created_at ? `Reported ${formatFriendlyDateTime(selectedReport.created_at)}` : ''}
+            {selectedReport?.expires_at && selectedReport?.cleanup_state !== 'completed' ? ` · Expires ${new Date(selectedReport.expires_at).toLocaleDateString()}` : ''}
+          </Text>
           {/* Severity */}
           {selectedReport?.severity && (
             <View
@@ -4024,114 +3962,6 @@ const renderReportStep = () => {
         {/* ============================= */}
 
         <View style={styles.reportPostBody}>
-
-
-          {/* Litter Types */}
-          {(
-            selectedReport?.litter_types?.length > 0 ||
-            selectedReport?.types
-          ) && (
-
-            <View style={styles.reportPostSection}>
-
-              <View style={styles.reportSectionHeader}>
-
-                <Ionicons
-                  name="trash-outline"
-                  size={20}
-                  color="#2F7D32"
-                />
-
-                <Text style={styles.reportPostSectionTitle}>
-                  Litter Types
-                </Text>
-
-              </View>
-
-
-              <View style={styles.reportChipRow}>
-
-                {selectedReport?.litter_types?.map((type) => (
-
-                  <View
-                    key={type}
-                    style={[
-                      styles.reportChip,
-                      styles.reportTypeChip,
-                    ]}
-                  >
-                    <Text style={styles.reportChipText}>
-                      {type}
-                    </Text>
-                  </View>
-
-                ))}
-
-
-                {/* User-entered "Other" litter type */}
-                {selectedReport?.types && (
-
-                  <View
-                    style={[
-                      styles.reportChip,
-                      styles.reportOtherTypeChip,
-                    ]}
-                  >
-                    <Text style={styles.reportOtherTypeText}>
-                      {selectedReport.types}
-                    </Text>
-                  </View>
-
-                )}
-
-              </View>
-
-            </View>
-          )}
-
-
-          {/* Notes */}
-          {selectedReport?.notes_presets?.length > 0 && (
-
-            <View style={styles.reportPostSection}>
-
-              <View style={styles.reportSectionHeader}>
-
-                <Ionicons
-                  name="information-circle-outline"
-                  size={21}
-                  color="#1E88E5"
-                />
-
-                <Text style={styles.reportPostSectionTitle}>
-                  Notes
-                </Text>
-
-              </View>
-
-
-              <View style={styles.reportChipRow}>
-
-                {selectedReport.notes_presets.map((note) => (
-
-                  <View
-                    key={note}
-                    style={[
-                      styles.reportChip,
-                      styles.reportNoteChip,
-                    ]}
-                  >
-                    <Text style={styles.reportChipText}>
-                      {note}
-                    </Text>
-                  </View>
-
-                ))}
-
-              </View>
-
-            </View>
-          )}
 
 
           {/* Additional descriptive information */}

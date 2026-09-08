@@ -310,6 +310,7 @@ function SignedOutProfile({ navigation, bottomPadding }) {
 
 export default function ProfileScreen({ navigation, route }) {
   const section = route?.params?.section || 'overview';
+  const [activityView, setActivityView] = useState('current');
   const openScreen = (name, params) => navigation.navigate(name, params);
   const openReport = (reportId) => navigation.navigate('App', { screen: 'Map', params: { reportId } });
   const { user } = useSession();
@@ -338,6 +339,7 @@ export default function ProfileScreen({ navigation, route }) {
       headerRight: permanent && section === 'overview' ? () => (
         <TouchableOpacity
           style={styles.headerEditButton}
+          hitSlop={6}
           onPress={() => navigation.navigate('EditProfile')}
           accessibilityRole="button"
           accessibilityLabel="Edit profile"
@@ -577,6 +579,9 @@ export default function ProfileScreen({ navigation, route }) {
       ) : null}
 
       {section === 'activity' ? <>
+      <View style={{ flexDirection: 'row', margin: 16, borderRadius: 14, backgroundColor: '#FFFFFF', padding: 4 }}>
+        {[['current', 'Current'], ['history', 'History'], ['reports', 'Reports']].map(([value, label]) => <TouchableOpacity key={value} accessibilityRole="tab" accessibilityState={{ selected: activityView === value }} onPress={() => setActivityView(value)} style={{ flex: 1, minHeight: 48, justifyContent: 'center', alignItems: 'center', padding: 8, borderRadius: 11, backgroundColor: activityView === value ? '#EAF4EC' : '#FFFFFF' }}><Text style={{ color: activityView === value ? '#245F2A' : '#59636A', fontWeight: '700' }}>{label}</Text></TouchableOpacity>)}
+      </View>
       <Text style={styles.sectionTitle}>My cleanups</Text>
       <View style={styles.cleanupStatsCard}>
         <CleanupStat value={cleanupSummary.counts.completed} label="Completed" />
@@ -584,6 +589,7 @@ export default function ProfileScreen({ navigation, route }) {
         <CleanupStat value={cleanupSummary.counts.active} label="Active" divided />
       </View>
 
+      {activityView === 'current' ? <>
       <Text style={styles.subsectionTitle}>Current cleanups</Text>
       <View style={[styles.card, styles.activeCleanupCard]}>
         {cleanupsLoading && cleanupSummary.current.length === 0 ? (
@@ -615,6 +621,8 @@ export default function ProfileScreen({ navigation, route }) {
         )}
       </View>
 
+      </> : null}
+      {activityView === 'history' ? <>
       <Text style={styles.subsectionTitle}>Completed cleanups</Text>
       <View style={styles.card}>
         {cleanupSummary.completed.length > 0 ? (
@@ -635,6 +643,8 @@ export default function ProfileScreen({ navigation, route }) {
         )}
       </View>
 
+      </> : null}
+      {activityView === 'reports' ? <>
       <Text style={styles.sectionTitle}>Active reports</Text>
       <View style={styles.card}>
         <ProfileReportList
@@ -644,6 +654,7 @@ export default function ProfileScreen({ navigation, route }) {
       </View>
 
       {fundingSchemaReady ? <View style={[styles.card, { marginTop: 16 }]}><ActionRow label="Expired report decisions" icon="calendar-outline" onPress={() => openScreen('ExpiredReports')} /></View> : null}
+      </> : null}
       </> : null}
 
       {section === 'settings' ? <>
@@ -695,8 +706,8 @@ const styles = StyleSheet.create({
   location: { color: '#59636A', fontSize: 14 },
   bio: { marginTop: 14, paddingHorizontal: 8, color: '#4F5960', fontSize: 14, lineHeight: 20, textAlign: 'center' },
   joined: { marginTop: 7, color: '#7A8288', fontSize: 12 },
-  headerEditButtonContainer: { paddingRight: 14 },
-  headerEditButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#C9D8CA', borderRadius: 20, backgroundColor: '#F7FAF7' },
+  headerEditButtonContainer: { paddingRight: 16, justifyContent: 'center', paddingVertical: 6 },
+  headerEditButton: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   rankCard: { marginHorizontal: 16, marginTop: 14, padding: 18, borderWidth: 1, borderColor: '#E0E5E1', borderRadius: 20, backgroundColor: '#FFFFFF' },
   rankSummaryRow: { flexDirection: 'row', alignItems: 'center' },
   rankSummaryCopy: { flex: 1, minWidth: 0, marginLeft: 16 },

@@ -1,4 +1,4 @@
-import { Alert, Platform } from 'react-native';
+import { ActionSheetIOS, Alert, Linking, Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -44,7 +44,8 @@ const choosePhoto = async (source) => {
       'Permission required',
       source === 'camera'
         ? 'Allow camera access to take a profile photo.'
-        : 'Allow photo access to choose a profile photo.'
+        : 'Allow photo access to choose a profile photo.',
+      [{ text: 'Cancel', style: 'cancel' }, { text: 'Open Settings', onPress: () => Linking.openSettings() }]
     );
     return null;
   }
@@ -86,7 +87,9 @@ export const showAvatarSourceMenu = ({ onAsset, onRemove, canRemove }) => {
   const visibleActions = Platform.OS === 'android' && canRemove
     ? actions.filter(({ style }) => style !== 'cancel')
     : actions;
-  Alert.alert('Profile photo', 'Choose a photo source.', visibleActions, { cancelable: true });
+  if (Platform.OS === 'ios') {
+    ActionSheetIOS.showActionSheetWithOptions({ title: 'Profile photo', options: actions.map(action => action.text), cancelButtonIndex: actions.length - 1, destructiveButtonIndex: canRemove ? actions.length - 2 : undefined }, index => actions[index]?.onPress?.());
+  } else Alert.alert('Profile photo', 'Choose a photo source.', visibleActions, { cancelable: true });
 };
 
 export const uploadProfileAvatar = async (userId, asset) => {

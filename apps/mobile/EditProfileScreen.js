@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useHeaderHeight } from '@react-navigation/elements';
+import { usePreventRemove } from '@react-navigation/native';
+import ProfilePhotoEditor from './components/ProfilePhotoEditor';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -12,11 +15,9 @@ import {
 } from 'react-native';
 
 import ProfileAvatar from './ProfileAvatar';
-import { LoadingButtonContent } from './BrandedLoadingState';
+import { Ionicons } from '@expo/vector-icons';
 import { useProfile } from './lib/profile';
 import {
-  removeProfileAvatar,
-  showAvatarSourceMenu,
   uploadProfileAvatar,
 } from './lib/profileAvatar';
 import { validateProfileDraft } from './lib/profileValidation';
@@ -29,16 +30,32 @@ function FieldError({ children }) {
 
 export default function EditProfileScreen({ navigation }) {
   const { user } = useSession();
+  const headerHeight = useHeaderHeight();
   const { profile, updateProfile } = useProfile();
   const { refreshReports } = useReports();
   const [displayName, setDisplayName] = useState(profile?.display_name || '');
   const [username, setUsername] = useState(profile?.username || '');
   const [bio, setBio] = useState(profile?.bio || '');
   const [location, setLocation] = useState(profile?.location || '');
+  const [photoEditorOpen, setPhotoEditorOpen] = useState(false);
   const [avatarAsset, setAvatarAsset] = useState(null);
   const [removeAvatar, setRemoveAvatar] = useState(false);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [discardAction, setDiscardAction] = useState(null);
+  const dirty = displayName !== (profile?.display_name || '') || username !== (profile?.username || '') || bio !== (profile?.bio || '') || location !== (profile?.location || '') || Boolean(avatarAsset) || removeAvatar;
+  usePreventRemove((dirty || saving) && !saved && !discardAction, ({ data }) => {
+    if (saving) return;
+    Alert.alert('Discard profile changes?', 'Your changes have not been saved.', [
+      { text: 'Keep editing', style: 'cancel' },
+      { text: 'Discard changes', style: 'destructive', onPress: () => setDiscardAction(data.action) },
+    ]);
+  });
+  useEffect(() => {
+    if (discardAction) navigation.dispatch(discardAction);
+    else if (saved) navigation.goBack();
+  }, [discardAction, saved, navigation]);
 
   const save = async () => {
     const validation = validateProfileDraft({ displayName, username, bio, location });
@@ -52,12 +69,11 @@ export default function EditProfileScreen({ navigation }) {
       setErrors({});
       let avatarPath = removeAvatar ? null : profile?.avatar_path ?? null;
 
-      if (removeAvatar && profile?.avatar_path) await removeProfileAvatar(user.id);
       if (avatarAsset) avatarPath = await uploadProfileAvatar(user.id, avatarAsset);
 
-      await updateProfile({ ...validation.values, avatar_path: avatarPath });
-      await refreshReports();
-      navigation.goBack();
+      await updateProfile({ ...validation.values, avatar_path: avatarPath, ...(removeAvatar ? { provider_avatar_url: null } : {}) });
+      await refreshReports().catch(() => {});
+      setSaved(true);
     } catch (saveError) {
       console.log('Profile save error:', saveError);
       if (saveError.code === '23505' || /username.*unique/i.test(saveError.message || '')) {
@@ -70,31 +86,32 @@ export default function EditProfileScreen({ navigation }) {
     }
   };
 
+  useLayoutEffect(() => {
+    navigation.setOptions({ gestureEnabled: !dirty && !saving, headerLeft: () => <TouchableOpacity accessibilityRole="button" accessibilityLabel="Back" disabled={saving} onPress={() => navigation.goBack()} style={{ minWidth: 44, minHeight: 44, justifyContent: 'center' }}><Ionicons name="chevron-back" size={26} color="#2F7D32" /></TouchableOpacity>, headerRight: () => <TouchableOpacity accessibilityRole="button" accessibilityLabel="Save profile" accessibilityState={{ disabled: saving || !dirty, busy: saving }} disabled={saving || !dirty} onPress={save} style={{ minHeight: 44, minWidth: 48, justifyContent: 'center', alignItems: 'flex-end' }}><Text style={{ color: saving || !dirty ? '#929B95' : '#2F7D32', fontSize: 16, fontWeight: '700' }}>{saving ? 'Saving…' : 'Save'}</Text></TouchableOpacity> });
+  }, [navigation, saving, dirty, displayName, username, bio, location, avatarAsset, removeAvatar]);
+
   const setField = (setter, key) => (value) => {
     setter(value);
     if (errors[key]) setErrors((current) => ({ ...current, [key]: undefined }));
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.container} keyboardVerticalOffset={headerHeight} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {photoEditorOpen ? <ProfilePhotoEditor profile={{ ...profile, display_name: displayName }} initialAsset={avatarAsset} initialRemoved={removeAvatar} onCancel={() => setPhotoEditorOpen(false)} onDone={(asset, removed) => { setAvatarAsset(asset); setRemoveAvatar(removed); setPhotoEditorOpen(false); }} /> : null}
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <TouchableOpacity
           style={styles.avatarButton}
-          onPress={() => showAvatarSourceMenu({
-            onAsset: (asset) => { setAvatarAsset(asset); setRemoveAvatar(false); },
-            canRemove: Boolean(avatarAsset || profile?.avatar_path),
-            onRemove: () => { setAvatarAsset(null); setRemoveAvatar(true); },
-          })}
+          onPress={() => setPhotoEditorOpen(true)}
           disabled={saving}
           accessibilityRole="button"
           accessibilityLabel="Change profile photo"
         >
           <ProfileAvatar
-            profile={removeAvatar ? { ...profile, avatar_path: null } : { ...profile, display_name: displayName }}
+            profile={removeAvatar ? { ...profile, avatar_path: null, provider_avatar_url: null } : { ...profile, display_name: displayName }}
             previewUri={avatarAsset?.uri}
             size={104}
           />
-          <Text style={styles.avatarAction}>Change photo</Text>
+          <Text style={styles.avatarAction}>{avatarAsset || (!removeAvatar && (profile?.avatar_path || profile?.provider_avatar_url)) ? 'Change photo' : 'Add photo'}</Text>
         </TouchableOpacity>
 
         <Text style={styles.label}>Display name</Text>
@@ -121,14 +138,6 @@ export default function EditProfileScreen({ navigation }) {
         <Text style={styles.counter}>{location.length}/80</Text>
         <FieldError>{errors.location}</FieldError>
 
-        <View style={styles.actions}>
-          <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.goBack()} disabled={saving} accessibilityRole="button" accessibilityLabel="Cancel profile changes">
-            <Text style={styles.cancelText}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.saveButton, saving && styles.disabled]} onPress={save} disabled={saving} accessibilityRole="button" accessibilityLabel="Save profile" accessibilityState={{ busy: saving }}>
-            {saving ? <LoadingButtonContent label="Saving profile…" /> : <Text style={styles.saveText}>Save</Text>}
-          </TouchableOpacity>
-        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -150,10 +159,4 @@ const styles = StyleSheet.create({
   counter: { marginTop: 5, color: '#7A8288', fontSize: 12, textAlign: 'right' },
   helper: { marginTop: 7, color: '#737C83', fontSize: 13, lineHeight: 18 },
   error: { marginTop: 5, color: '#B42318', fontSize: 13, lineHeight: 18 },
-  actions: { marginTop: 30, flexDirection: 'row', gap: 12 },
-  cancelButton: { flex: 1, minHeight: 52, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#BFC6CA', borderRadius: 13, backgroundColor: '#FFFFFF' },
-  cancelText: { color: '#444C52', fontSize: 16, fontWeight: '800' },
-  saveButton: { flex: 1, minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: '#2F7D32' },
-  saveText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
-  disabled: { opacity: 0.6 },
 });
