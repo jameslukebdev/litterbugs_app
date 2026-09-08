@@ -425,10 +425,10 @@ export default function CleanupReviewScreen({ navigation, route }) {
               </Text>
             </View>
             <View style={styles.metric}>
-              <Text style={styles.infoLabel}>TIME SPENT</Text>
+              <Text style={styles.infoLabel}>WEIGHT REMOVED</Text>
               <Text style={styles.metricValue}>
-                {context.submission.duration_minutes
-                  ? `${context.submission.duration_minutes} min`
+                {context.submission.weight_pounds
+                  ? `${context.submission.weight_pounds} lb`
                   : 'Not provided'}
               </Text>
             </View>

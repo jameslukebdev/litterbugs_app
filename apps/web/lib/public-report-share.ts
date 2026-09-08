@@ -51,7 +51,7 @@ export async function loadPublicReportShare(reportId: string): Promise<PublicRep
   if (!report || !isPubliclyShareableReport(report)) return null;
 
   let attempt: Pick<CleanupAttempt, 'id' | 'cleaner_id' | 'completed_at' | 'final_submission_id'> | null = null;
-  let submission: Pick<CleanupSubmission, 'description' | 'bags_or_items_removed' | 'duration_minutes'> | null = null;
+  let submission: Pick<CleanupSubmission, 'description' | 'bags_or_items_removed' | 'weight_pounds'> | null = null;
   let cleaner: Pick<Profile, 'display_name' | 'username'> | null = null;
   let afterPhoto: Pick<CleanupSubmissionPhoto, 'storage_path'> | null = null;
 
@@ -71,7 +71,7 @@ export async function loadPublicReportShare(reportId: string): Promise<PublicRep
       const [submissionResult, cleanerResult, photoResult] = await Promise.all([
         supabase
           .from('cleanup_submissions')
-          .select('description, bags_or_items_removed, duration_minutes')
+          .select('description, bags_or_items_removed, weight_pounds')
           .eq('id', attempt.final_submission_id)
           .eq('cleanup_attempt_id', attempt.id)
           .maybeSingle(),
@@ -115,7 +115,7 @@ export async function loadPublicReportShare(reportId: string): Promise<PublicRep
     completionDate: attempt?.completed_at ?? null,
     cleanupDescription: submission?.description ?? null,
     bagsOrItemsRemoved: submission?.bags_or_items_removed ?? null,
-    durationMinutes: submission?.duration_minutes ?? null,
+    weightPounds: submission?.weight_pounds ?? null,
     beforePhotoUrl,
     afterPhotoUrl,
     canonicalUrl: `${getSiteUrl()}/reports/${encodeURIComponent(report.id)}`,

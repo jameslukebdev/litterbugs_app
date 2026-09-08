@@ -1,6 +1,6 @@
 export const MAX_CLEANUP_PHOTOS = 3;
 export const MAX_CLEANUP_DESCRIPTION_LENGTH = 500;
-export const MAX_CLEANUP_DURATION_MINUTES = 1440;
+export const MAX_CLEANUP_WEIGHT_POUNDS = 10000;
 
 const parseOptionalInteger = (value, { label, min, max }) => {
   const trimmed = String(value ?? '').trim();
@@ -17,11 +17,26 @@ const parseOptionalInteger = (value, { label, min, max }) => {
   return { value: parsed };
 };
 
+const parseOptionalWeight = (value) => {
+  const trimmed = String(value ?? '').trim();
+  if (!trimmed) return { value: null };
+  if (!/^(?:\d+|\d*\.\d{1,2})$/.test(trimmed)) {
+    return { error: 'Weight removed must be a number with up to two decimal places.' };
+  }
+
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed) || parsed < 0.1 || parsed > MAX_CLEANUP_WEIGHT_POUNDS) {
+    return { error: `Weight removed must be between 0.1 and ${MAX_CLEANUP_WEIGHT_POUNDS.toLocaleString()} pounds.` };
+  }
+
+  return { value: parsed };
+};
+
 export function validateCleanupSubmission({
   photos,
   description,
   bagsOrItemsRemoved,
-  durationMinutes,
+  weightPounds,
 }) {
   const errors = {};
   const photoCount = photos?.length ?? 0;
@@ -44,12 +59,8 @@ export function validateCleanupSubmission({
   });
   if (bags.error) errors.bagsOrItemsRemoved = bags.error;
 
-  const duration = parseOptionalInteger(durationMinutes, {
-    label: 'Cleanup duration',
-    min: 1,
-    max: MAX_CLEANUP_DURATION_MINUTES,
-  });
-  if (duration.error) errors.durationMinutes = duration.error;
+  const weight = parseOptionalWeight(weightPounds);
+  if (weight.error) errors.weightPounds = weight.error;
 
   return {
     valid: Object.keys(errors).length === 0,
@@ -57,7 +68,7 @@ export function validateCleanupSubmission({
     normalized: {
       description: normalizedDescription,
       bagsOrItemsRemoved: bags.value ?? null,
-      durationMinutes: duration.value ?? null,
+      weightPounds: weight.value ?? null,
     },
   };
 }

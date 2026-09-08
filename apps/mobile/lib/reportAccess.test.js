@@ -39,6 +39,8 @@ describe('permanent user identity', () => {
     };
 
     expect(canEditOrDeleteReport(availableReport, owner)).toBe(true);
+    expect(canEditOrDeleteReport({ ...availableReport, latest_attempt_status: 'released' }, owner))
+      .toBe(true);
 
     for (const cleanupState of [
       'claimed',

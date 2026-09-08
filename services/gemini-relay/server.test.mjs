@@ -38,6 +38,13 @@ test("health route is public without exposing the review route", async () => {
   assert.equal(review.status, 401);
 });
 
+test("ordinary roadside reports are not automatically treated as traffic exposure", async () => {
+  const { SYSTEM_INSTRUCTION } = await import('./server.mjs');
+  assert.match(SYSTEM_INSTRUCTION, /Ordinary roadside litter/i);
+  assert.match(SYSTEM_INSTRUCTION, /not traffic exposure by itself/i);
+  assert.match(SYSTEM_INSTRUCTION, /active lane or median/i);
+});
+
 test("rejects unauthorized calls before fetching anything", async () => {
   let fetched = false;
   const handler = createHandler({

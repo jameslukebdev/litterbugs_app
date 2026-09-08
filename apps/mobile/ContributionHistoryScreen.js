@@ -8,24 +8,14 @@ import { formatUsd, loadMyContributions } from './lib/funding';
 import BrandedLoadingState from './BrandedLoadingState';
 
 const statusLabel = (status) => ({
-  payment_pending: 'Processing',
-  succeeded: 'In cleanup fund',
-  refund_pending: 'Refund processing',
-  refund_processing: 'Refund processing',
-  refunded: 'Refunded',
-  failed: 'Not completed',
+  succeeded: 'Cleanup completed',
   paid_out: 'Paid to cleaner',
 }[status] || status);
 
 const statusMessage = (item) => ({
-  payment_pending: 'Stripe is confirming this payment. No action is needed.',
-  succeeded: 'Your contribution is in this report’s cleanup fund.',
-  refund_pending: 'Your full charge is queued for a refund.',
-  refund_processing: 'Stripe is processing your full refund.',
-  refunded: 'Your full charge, including the Litterbugs fee, was refunded.',
-  failed: 'The payment did not complete and was not added to the cleanup fund.',
+  succeeded: 'The cleanup is complete and its cleaner reward is being processed.',
   paid_out: 'This contribution was included in the cleaner’s reward.',
-}[item.status] || 'Contribution status is being updated.');
+}[item.status] || 'This contribution funded a completed cleanup.');
 
 const formatContributionDate = (value) => new Date(value).toLocaleString(undefined, {
   month: 'short',
@@ -57,7 +47,7 @@ export default function ContributionHistoryScreen() {
     >
       {error ? <Text style={styles.error}>Contribution history couldn’t be loaded. Pull down to try again.</Text> : null}
       {!loading && !error && items.length === 0 ? (
-        <View style={styles.empty}><Ionicons name="receipt-outline" size={42} color="#6D777D" /><Text style={styles.emptyTitle}>No contributions yet</Text></View>
+        <View style={styles.empty}><Ionicons name="receipt-outline" size={42} color="#6D777D" /><Text style={styles.emptyTitle}>No completed cleanup contributions yet</Text></View>
       ) : items.map((item) => (
         <View key={item.id} style={styles.card}>
           <View style={styles.line}>
@@ -74,7 +64,7 @@ export default function ContributionHistoryScreen() {
         </View>
       ))}
       {loading && items.length === 0 ? (
-        <BrandedLoadingState compact title="Loading contributions…" message="Checking your cleanup fund activity." />
+        <BrandedLoadingState compact title="Loading contributions…" message="Checking your completed cleanup impact." />
       ) : null}
     </ScrollView>
   );

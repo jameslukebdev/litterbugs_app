@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   findResponsiveUserLocation,
   mapRegionsAreEquivalent,
+  reportLocationRegion,
   userLocationRegion,
 } from './responsiveLocation';
 
@@ -33,6 +34,30 @@ describe('responsive location', () => {
       latitudeDelta: 0.02,
       longitudeDelta: 0.02,
     });
+  });
+
+  it('uses a tighter region for placing a new report', () => {
+    expect(reportLocationRegion(fresh)).toEqual({
+      latitude: 35.2,
+      longitude: -82.2,
+      latitudeDelta: 0.0015,
+      longitudeDelta: 0.0015,
+    });
+  });
+
+  it('supports a higher-accuracy fix for report placement', async () => {
+    const getCurrentPositionAsync = vi.fn().mockResolvedValue(fresh);
+    await findResponsiveUserLocation({
+      locationApi: {
+        Accuracy: { Balanced: 3, High: 4 },
+        getLastKnownPositionAsync: vi.fn().mockResolvedValue(null),
+        getCurrentPositionAsync,
+      },
+      onPosition: vi.fn(),
+      accuracy: 4,
+    });
+
+    expect(getCurrentPositionAsync).toHaveBeenCalledWith({ accuracy: 4 });
   });
 
   it('ignores tiny native map rounding differences', () => {

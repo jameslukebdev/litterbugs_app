@@ -93,8 +93,8 @@ export function createReportShareModel({
       bagsOrItemsRemoved: Number.isFinite(Number(submission?.bags_or_items_removed))
         ? Number(submission.bags_or_items_removed)
         : null,
-      durationMinutes: Number.isFinite(Number(submission?.duration_minutes))
-        ? Number(submission.duration_minutes)
+      weightPounds: Number.isFinite(Number(submission?.weight_pounds))
+        ? Number(submission.weight_pounds)
         : null,
     } : null,
     photos: {
@@ -202,8 +202,8 @@ function impactSummary(impact) {
     const amount = impact.bagsOrItemsRemoved;
     facts.push(`${amount} ${amount === 1 ? 'bag/item' : 'bags/items'} removed`);
   }
-  if (impact.durationMinutes != null) {
-    facts.push(`${impact.durationMinutes} minutes volunteered`);
+  if (impact.weightPounds != null) {
+    facts.push(`${impact.weightPounds} ${impact.weightPounds === 1 ? 'pound' : 'pounds'} removed`);
   }
 
   return facts.join(' · ');
@@ -272,7 +272,7 @@ export function createNativeReportShareContent(model, platform, shareImageUri = 
 }
 
 export function reportShareActionLabel(report) {
-  return report?.cleanup_state === 'completed' ? 'Share Your Impact' : 'Share';
+  return report?.cleanup_state === 'completed' ? 'Share Impact' : 'Share';
 }
 
 export async function shareReportWithSystemSheet({

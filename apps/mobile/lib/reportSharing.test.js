@@ -135,7 +135,7 @@ describe('report sharing', () => {
         submission: {
           description: 'Removed litter from both sides of the trail.',
           bags_or_items_removed: 2,
-          duration_minutes: 35,
+          weight_pounds: 12.5,
         },
       },
       beforePhotoUrl: 'https://example.com/before.jpg',
@@ -145,7 +145,7 @@ describe('report sharing', () => {
 
     expect(message).toContain('Litterbugs · Cleanup complete');
     expect(message).toContain('cleaned by Jordan');
-    expect(message).toContain('2 bags/items removed · 35 minutes volunteered');
+    expect(message).toContain('2 bags/items removed · 12.5 pounds removed');
     expect(model.photos).toEqual({
       before: 'https://example.com/before.jpg',
       after: 'https://example.com/after.jpg',
@@ -168,7 +168,7 @@ describe('report sharing', () => {
       cleanerName: 'a Litterbugs volunteer',
       completionDate: null,
       cleanupDescription: null,
-      impact: { bagsOrItemsRemoved: null, durationMinutes: null },
+      impact: { bagsOrItemsRemoved: null, weightPounds: null },
       photos: { before: null, after: null },
     });
     expect(message).not.toContain('private@example.com');
@@ -305,10 +305,10 @@ describe('report sharing', () => {
     expect(content.message).toContain(model.reportUrl);
   });
 
-  it('uses the completed-state Share Your Impact label', () => {
+  it('uses the completed-state Share Impact label', () => {
     expect(reportShareActionLabel(availableReport)).toBe('Share');
     expect(reportShareActionLabel({ ...availableReport, cleanup_state: 'completed' }))
-      .toBe('Share Your Impact');
+      .toBe('Share Impact');
   });
 
   it('opens the system sheet, reports cancellation, and does not mutate report state', async () => {

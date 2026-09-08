@@ -42,6 +42,12 @@ describe('cleanup notifications', () => {
       .toContain('another 30 days');
     expect(cleanupNotificationPresentation([{ event_type: 'report_funding_photos_needed' }]).message)
       .toContain('Replace');
+    expect(cleanupNotificationPresentation([{ event_type: 'report_funding_review_required' }]).message)
+      .toContain('safety review');
+    expect(cleanupNotificationPresentation([{ event_type: 'report_funding_approved' }]).message)
+      .toContain('Stripe');
+    expect(cleanupNotificationPresentation([{ event_type: 'report_funding_rejected' }]).message)
+      .toContain('cannot accept');
   });
 
   it('routes review and feedback events to dedicated screens', () => {
@@ -87,6 +93,20 @@ describe('cleanup notifications', () => {
     })).toMatchObject({
       name: 'App',
       params: { screen: 'Map', params: { reportId: 'report' } },
+    });
+    expect(cleanupNotificationDestination({
+      event_type: 'report_funding_review_required',
+      report_id: 'report',
+    })).toMatchObject({
+      name: 'FundingContribution',
+      params: { reportId: 'report', fromReportCreation: true },
+    });
+    expect(cleanupNotificationDestination({
+      event_type: 'report_funding_approved',
+      report_id: 'report',
+    })).toMatchObject({
+      name: 'FundingContribution',
+      label: 'Complete Payment',
     });
   });
 

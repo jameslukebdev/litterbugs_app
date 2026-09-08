@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   BOTTOM_NAV_COLORS,
   BOTTOM_NAV_METRICS,
+  getBottomNavBottom,
 } from './lib/navigationLayout';
 
 export const BOTTOM_NAV_SLOTS = Object.freeze([
@@ -105,7 +106,7 @@ export default function FloatingBottomTabBar({
         accessibilityLabel={accessibilityLabel}
         accessibilityState={{ selected: isFocused }}
       >
-        <View style={styles.tabContent}>
+        <View style={[styles.tabContent, isFocused && styles.tabContentSelected]}>
           <View style={styles.iconBackdrop}>
             <Ionicons
               name={isFocused ? slot.iconName.replace('-outline', '') : slot.iconName}
@@ -130,31 +131,42 @@ export default function FloatingBottomTabBar({
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       <View
         style={[
-          styles.bar,
+          styles.barDock,
           {
-            height: BOTTOM_NAV_METRICS.height + insets.bottom,
-            paddingBottom: insets.bottom,
+            bottom: getBottomNavBottom(insets.bottom),
+            paddingHorizontal: BOTTOM_NAV_METRICS.horizontalInset,
           },
         ]}
-        accessibilityRole="tablist"
+        pointerEvents="box-none"
       >
-        {BOTTOM_NAV_SLOTS.map(renderSlot)}
+        <View style={styles.bar} accessibilityRole="tablist">
+          {BOTTOM_NAV_SLOTS.map(renderSlot)}
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  bar: {
+  barDock: {
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 0,
+    alignItems: 'center',
+  },
+  bar: {
+    width: '100%',
+    maxWidth: BOTTOM_NAV_METRICS.maximumWidth,
+    height: BOTTOM_NAV_METRICS.height,
     flexDirection: 'row',
     alignItems: 'center',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: BOTTOM_NAV_COLORS.border,
+    paddingHorizontal: 6,
+    borderWidth: 1,
+    borderColor: BOTTOM_NAV_COLORS.border,
+    borderRadius: BOTTOM_NAV_METRICS.radius,
+    borderCurve: 'continuous',
     backgroundColor: BOTTOM_NAV_COLORS.surface,
+    boxShadow: '0 8px 24px rgba(31, 35, 40, 0.18)',
   },
   slot: {
     flex: 1,
@@ -164,10 +176,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tabContent: {
-    minWidth: 64,
-    minHeight: 46,
+    width: '92%',
+    minHeight: 50,
+    borderRadius: 21,
+    borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  tabContentSelected: {
+    backgroundColor: BOTTOM_NAV_COLORS.activeSurface,
   },
   iconBackdrop: {
     width: 38,

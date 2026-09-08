@@ -8,14 +8,14 @@ import {
 
 describe('web cleanup funding amounts', () => {
   it('accepts the agreed contribution range with at most two decimals', () => {
-    expect(parseContributionAmount('5')).toBe(500);
+    expect(parseContributionAmount('1')).toBe(100);
     expect(parseContributionAmount('25.50')).toBe(2550);
-    expect(parseContributionAmount('5000')).toBe(500_000);
+    expect(parseContributionAmount('1000')).toBe(100_000);
   });
 
   it('rejects out-of-range or ambiguous amounts', () => {
-    expect(parseContributionAmount('4.99')).toBeNull();
-    expect(parseContributionAmount('5000.01')).toBeNull();
+    expect(parseContributionAmount('0.99')).toBeNull();
+    expect(parseContributionAmount('1000.01')).toBeNull();
     expect(parseContributionAmount('25.555')).toBeNull();
     expect(parseContributionAmount('abc')).toBeNull();
   });
@@ -23,7 +23,7 @@ describe('web cleanup funding amounts', () => {
   it('matches the backend half-up 10 percent fee calculation', () => {
     expect(calculatePlatformFee(500)).toBe(50);
     expect(calculatePlatformFee(505)).toBe(51);
-    expect(calculatePlatformFee(500_000)).toBe(50_000);
+    expect(calculatePlatformFee(100_000)).toBe(10_000);
   });
 
   it('shows the Edge Function response instead of Supabase transport language', async () => {

@@ -64,7 +64,9 @@ export default async function SharedReportPage({ params }: Props) {
     report.bagsOrItemsRemoved != null
       ? `${report.bagsOrItemsRemoved} ${report.bagsOrItemsRemoved === 1 ? 'bag/item' : 'bags/items'} removed`
       : null,
-    report.durationMinutes != null ? `${report.durationMinutes} minutes volunteered` : null,
+    report.weightPounds != null
+      ? `${report.weightPounds} ${report.weightPounds === 1 ? 'pound' : 'pounds'} removed`
+      : null,
   ].filter(Boolean);
 
   return (

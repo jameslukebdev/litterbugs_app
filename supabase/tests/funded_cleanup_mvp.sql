@@ -137,6 +137,47 @@ end;
 $$;
 reset role;
 
+-- A direct automated approval must notify the reporter, not only an approval
+-- that first entered administrator review.
+insert into public.reports (
+  id, user_id, title, latitude, longitude, photo_paths, expires_at
+) values (
+  '82000000-0000-4000-8000-000000000014',
+  '81000000-0000-4000-8000-000000000001',
+  'Automatic funding approval notification', 35, -78,
+  array['81000000-0000-4000-8000-000000000001/report/automatic-approval.jpg'],
+  now() + interval '30 days'
+);
+
+select public.record_cleanup_ai_result(
+  (
+    select id from public.cleanup_ai_checks
+    where report_id = '82000000-0000-4000-8000-000000000014'
+      and check_kind = 'report' and status = 'queued'
+    order by created_at desc limit 1
+  ),
+  'passed',
+  'gemini-3.7-flash',
+  array['automatic-approval-photo-hash'],
+  'The report photo is eligible for cleanup funding.',
+  '{}',
+  '{"fixture":true}'::jsonb
+);
+
+do $$
+begin
+  if (
+    select count(*) from public.cleanup_notifications
+    where report_id = '82000000-0000-4000-8000-000000000014'
+      and user_id = '81000000-0000-4000-8000-000000000001'
+      and event_type = 'report_funding_approved'
+      and cleanup_attempt_id is null
+  ) <> 1 then
+    raise exception 'Automatic report funding approval did not notify its reporter exactly once';
+  end if;
+end;
+$$;
+
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '81000000-0000-4000-8000-000000000005', true);
 select set_config(
@@ -1508,6 +1549,33 @@ select public.accept_cleanup_waiver(
   (select waiver_version from public.cleanup_waiver_versions where is_active and retired_at is null limit 1),
   (select guidelines_version from public.cleanup_waiver_versions where is_active and retired_at is null limit 1)
 );
+
+insert into public.reports (
+  id, user_id, title, latitude, longitude, photo_paths, expires_at
+) values (
+  '82000000-0000-4000-8000-000000000012',
+  '81000000-0000-4000-8000-000000000001',
+  'Volunteer claim without payout setup', 35, -78,
+  array['81000000-0000-4000-8000-000000000001/report/volunteer-claim.jpg'],
+  now() + interval '30 days'
+);
+select public.claim_cleanup('82000000-0000-4000-8000-000000000012');
+
+do $$
+begin
+  if not exists (
+    select 1
+    from public.cleanup_attempts
+    where report_id = '82000000-0000-4000-8000-000000000012'
+      and cleaner_id = '81000000-0000-4000-8000-000000000005'
+      and status = 'claimed'
+      and not is_paid
+  ) then
+    raise exception 'Volunteer cleanup incorrectly required payout onboarding';
+  end if;
+end;
+$$;
+
 do $$
 begin
   begin

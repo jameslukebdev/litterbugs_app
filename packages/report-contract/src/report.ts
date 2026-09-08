@@ -14,7 +14,7 @@ export const MAX_REPORT_DISTANCE_MILES = 50;
 export const MAX_REPORT_PHOTOS = 3;
 export const MAX_REPORT_TITLE_LENGTH = 80;
 export const MAX_REPORT_NOTES_LENGTH = 500;
-export const FALLBACK_MAP_CENTER = { latitude: 35.6009, longitude: -82.554 } as const;
+export const FALLBACK_MAP_CENTER = { latitude: 39.8283, longitude: -98.5795 } as const;
 
 export const LITTER_OPTIONS = [
   'Takeout cups',

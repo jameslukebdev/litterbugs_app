@@ -41,7 +41,10 @@ describe('mobile loading experience', () => {
     expect(source).toContain('<BrandedLoadingState logoOnly />');
     expect(source).toContain('onMapReady={() => setMapReady(true)}');
     expect(source).toContain('onMapLoaded={() => {');
-    expect(source).toContain('if (!mapSurfaceLoaded || reportsLoading) return undefined;');
+    expect(source).toContain(
+      'if (!mapSurfaceLoaded || reportsLoading || !initialLocationResolved) return undefined;'
+    );
+    expect(source).toContain('locateAndCenterMap({ showPermissionAlert: false })');
     expect(source).not.toContain('initialMapLoadingOpacity');
   });
 

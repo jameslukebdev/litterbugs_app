@@ -1,4 +1,4 @@
-export const CLEANUP_ACKNOWLEDGMENT_VERSION = 'cleanup-acknowledgment-v2';
+export const CLEANUP_ACKNOWLEDGMENT_VERSION = 'cleanup-acknowledgment-v3';
 export const CLEANUP_GUIDELINES_VERSION = 'cleanup-safety-guidelines-v2';
 export const CLEANUP_ACKNOWLEDGMENT_TITLE = 'Cleanup Safety, Assumption of Risk, and Funded Reward Acknowledgment';
 
@@ -20,12 +20,12 @@ My safety assessment
 Evidence, review, and funded rewards
 • I will submit one to three clear, accurate after photos from the reported location. I will not reuse the report photos or submit manipulated, unrelated, misleading, or fraudulent evidence.
 • Google Gemini performs an initial structured photo review. It may accept the evidence for the next workflow step, request better photos, flag a possible safety or integrity issue, or send the case to an authorized administrator. Gemini does not independently release money or make a final legal, safety, employment, or fraud decision.
-• A funded cleanup has no early payout. After evidence passes, the reporter has 48 hours to dispute. My first paid cleanup and any disputed, ambiguous, unsafe, failed, or suspicious case may require administrator review.
-• The displayed reward is the frozen contribution principal. Payment remains subject to completed evidence review, the dispute window, any required administrator review, financial reconciliation, and Stripe eligibility. Litterbugs or Stripe may delay or withhold a payout when required by law, identity or sanctions rules, provider requirements, fraud controls, disputes, or payment reconciliation.
+• After evidence passes, the reporter has up to 48 hours to approve the cleanup or dispute it. Reporter approval ends the remaining dispute window and allows protected payout processing to begin once every other required review and eligibility check has passed. If the reporter does nothing, the cleanup is automatically approved when the 48-hour window expires. My first paid cleanup and any disputed, ambiguous, unsafe, failed, or suspicious case may require administrator review.
+• The displayed reward is the frozen contribution principal. Payment remains subject to completed evidence review, reporter approval or automatic approval, any required administrator review, financial reconciliation, and Stripe eligibility. Litterbugs or Stripe may delay or withhold a payout when required by law, identity or sanctions rules, provider requirements, fraud controls, disputes, or payment reconciliation.
 • I am responsible for determining and reporting taxes related to rewards. Stripe or Litterbugs may collect tax information and issue required forms.
 
 My agreement
-I have read the current Litterbugs Terms of Use, Privacy Policy, Cleanup and Reward Policy, and the safety rules above. I understand that a reporter may clean their own report but receives no special approval. By checking the box and continuing, I accept this acknowledgment for this cleanup claim and agree to follow it.`;
+I have read the current Litterbugs Terms of Use, Privacy Policy, Cleanup and Reward Policy, and the safety rules above. I understand that a reporter may clean their own report but receives no preferential treatment, and any self-approval remains recorded as such. By checking the box and continuing, I accept this acknowledgment for this cleanup claim and agree to follow it.`;
 
 export const CLEANUP_SAFETY_GUIDELINES = `• Park safely and lawfully before opening Litterbugs. Never use the app while driving.
 • Wear suitable gloves, clothing, footwear, and any other protective equipment the cleanup requires.

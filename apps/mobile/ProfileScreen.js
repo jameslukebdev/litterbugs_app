@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -20,12 +20,13 @@ import ProfileReportList from './ProfileReportList';
 import { deleteCurrentAccount, signOut } from './lib/auth';
 import { loadCurrentUserCleanupSummary } from './lib/cleanup';
 import { cleanupStatusPresentation } from './lib/cleanupEligibility';
-import { formatUsd, loadCleanupFeatureFlags } from './lib/funding';
+import { formatUsd, loadCleanupFeatureFlags, loadPayoutStatus } from './lib/funding';
 import {
   cleanupApprovalLabel,
   emptyCleanupSummary,
 } from './lib/cleanupProfile';
 import { getBottomNavClearance } from './lib/navigationLayout';
+import { payoutConnectionPresentation } from './lib/payoutConnectionPresentation';
 import { useProfile } from './lib/profile';
 import { getRankAsset } from './lib/rankAssets';
 import { getRankForPoints } from './lib/ranking';
@@ -79,6 +80,40 @@ function ActionRow({ label, icon, onPress, destructive = false, busy = false }) 
       ) : (
         <Ionicons name="chevron-forward" size={21} color={destructive ? '#C62828' : '#9AA1A8'} />
       )}
+    </TouchableOpacity>
+  );
+}
+
+function StripeConnectionStatus({ status, loading, error, onRetry }) {
+  const presentation = payoutConnectionPresentation({ status, loading, error });
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.stripeConnectionRow,
+        { backgroundColor: presentation.backgroundColor },
+      ]}
+      onPress={error ? onRetry : undefined}
+      disabled={!error}
+      activeOpacity={0.72}
+      accessible
+      accessibilityRole={error ? 'button' : undefined}
+      accessibilityLabel={presentation.label}
+      accessibilityHint={error ? 'Retries checking your Stripe payout connection' : undefined}
+    >
+      {loading ? (
+        <ActivityIndicator size="small" color={presentation.color} />
+      ) : (
+        <Ionicons name={presentation.icon} size={23} color={presentation.color} />
+      )}
+      <Text style={[styles.stripeConnectionText, { color: presentation.color }]}>
+        {presentation.label}
+      </Text>
+      {presentation.detail ? (
+        <Text style={[styles.stripeConnectionDetail, { color: presentation.color }]}>
+          {presentation.detail}
+        </Text>
+      ) : null}
     </TouchableOpacity>
   );
 }
@@ -316,8 +351,27 @@ export default function ProfileScreen({ navigation }) {
   const [rankingError, setRankingError] = useState(false);
   const [fundingEnabled, setFundingEnabled] = useState(false);
   const [fundingSchemaReady, setFundingSchemaReady] = useState(false);
+  const [payoutStatus, setPayoutStatus] = useState(null);
+  const [payoutStatusLoading, setPayoutStatusLoading] = useState(false);
+  const [payoutStatusError, setPayoutStatusError] = useState(false);
   const accountBusy = signingOut || deletingAccount;
   const bottomPadding = getBottomNavClearance(insets.bottom) + 18;
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: permanent ? () => (
+        <TouchableOpacity
+          style={styles.headerEditButton}
+          onPress={() => navigation.getParent()?.navigate('EditProfile')}
+          accessibilityRole="button"
+          accessibilityLabel="Edit profile"
+        >
+          <Ionicons name="create-outline" size={22} color="#2F7D32" />
+        </TouchableOpacity>
+      ) : undefined,
+      headerRightContainerStyle: styles.headerEditButtonContainer,
+    });
+  }, [navigation, permanent]);
 
   const activeReports = useMemo(
     () => reports.filter((report) => report.user_id === user?.id),
@@ -363,21 +417,43 @@ export default function ProfileScreen({ navigation }) {
     }
   }, [permanent, user?.id]);
 
+  const refreshPayoutStatus = useCallback(async () => {
+    if (!permanent) {
+      setPayoutStatus(null);
+      setPayoutStatusError(false);
+      return;
+    }
+
+    try {
+      setPayoutStatusLoading(true);
+      setPayoutStatus(await loadPayoutStatus());
+      setPayoutStatusError(false);
+    } catch (error) {
+      console.log('Profile payout status load error:', error);
+      setPayoutStatus(null);
+      setPayoutStatusError(true);
+    } finally {
+      setPayoutStatusLoading(false);
+    }
+  }, [permanent]);
+
   useFocusEffect(useCallback(() => {
     refreshCleanups();
     refreshRanking();
     loadCleanupFeatureFlags()
       .then((flags) => {
-        setFundingSchemaReady(true);
-        setFundingEnabled(Boolean(
+        const enabled = Boolean(
           flags.payments_enabled && flags.gemini_financial_review_enabled
-        ));
+        );
+        setFundingSchemaReady(true);
+        setFundingEnabled(enabled);
+        if (enabled) refreshPayoutStatus();
       })
       .catch(() => {
         setFundingSchemaReady(false);
         setFundingEnabled(false);
       });
-  }, [refreshCleanups, refreshRanking]));
+  }, [refreshCleanups, refreshPayoutStatus, refreshRanking]));
 
   if (!permanent) {
     return <SignedOutProfile navigation={navigation} bottomPadding={bottomPadding} />;
@@ -433,6 +509,7 @@ export default function ProfileScreen({ navigation }) {
       refreshReports({ showRefresh: true }),
       refreshCleanups(),
       refreshRanking(),
+      ...(fundingEnabled ? [refreshPayoutStatus()] : []),
     ]);
   };
 
@@ -441,7 +518,7 @@ export default function ProfileScreen({ navigation }) {
       style={styles.container}
       contentContainerStyle={{ paddingBottom: bottomPadding }}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={loading || cleanupsLoading || rankingLoading} onRefresh={refresh} tintColor="#2F7D32" />}
+      refreshControl={<RefreshControl refreshing={loading || cleanupsLoading || rankingLoading || payoutStatusLoading} onRefresh={refresh} tintColor="#2F7D32" />}
     >
       <View style={styles.identity}>
         <View style={styles.identityTop}>
@@ -459,14 +536,6 @@ export default function ProfileScreen({ navigation }) {
               Joined {new Date(profile?.created_at || Date.now()).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
             </Text>
           </View>
-          <TouchableOpacity
-            style={styles.editButton}
-            onPress={() => navigation.getParent()?.navigate('EditProfile')}
-            accessibilityRole="button"
-            accessibilityLabel="Edit profile"
-          >
-            <Ionicons name="create-outline" size={20} color="#2F7D32" />
-          </TouchableOpacity>
         </View>
         {profile?.bio ? <Text style={styles.bio}>{profile.bio}</Text> : null}
       </View>
@@ -498,8 +567,14 @@ export default function ProfileScreen({ navigation }) {
                 </Text>
               </View>
             </View>
+            <StripeConnectionStatus
+              status={payoutStatus}
+              loading={payoutStatusLoading}
+              error={payoutStatusError}
+              onRetry={refreshPayoutStatus}
+            />
             <ActionRow
-              label="Set up cleanup payouts"
+              label={payoutStatus?.payoutsEnabled ? 'Review payout details' : 'Set up cleanup payouts'}
               icon="card-outline"
               onPress={() => navigation.getParent()?.navigate('PayoutSetup')}
             />
@@ -629,10 +704,10 @@ const styles = StyleSheet.create({
   username: { marginTop: 2, color: '#687178', fontSize: 14 },
   locationRow: { marginTop: 9, flexDirection: 'row', alignItems: 'center', gap: 4 },
   location: { color: '#59636A', fontSize: 14 },
-  bio: { marginTop: 14, color: '#4F5960', fontSize: 14, lineHeight: 20 },
+  bio: { marginTop: 14, paddingHorizontal: 8, color: '#4F5960', fontSize: 14, lineHeight: 20, textAlign: 'center' },
   joined: { marginTop: 7, color: '#7A8288', fontSize: 12 },
-  editButton: { width: 44, height: 44, marginLeft: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#C9D8CA', borderRadius: 22, backgroundColor: '#F7FAF7' },
-  editButtonText: { color: '#2F7D32', fontSize: 15, fontWeight: '800' },
+  headerEditButtonContainer: { paddingRight: 14 },
+  headerEditButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#C9D8CA', borderRadius: 20, backgroundColor: '#F7FAF7' },
   rankCard: { marginHorizontal: 16, marginTop: 14, padding: 18, borderWidth: 1, borderColor: '#E6C8ED', borderRadius: 20, backgroundColor: '#FFFFFF' },
   rankSummaryRow: { flexDirection: 'row', alignItems: 'center' },
   rankSummaryCopy: { flex: 1, minWidth: 0, marginLeft: 16 },
@@ -666,6 +741,9 @@ const styles = StyleSheet.create({
   paymentIntroCopy: { flex: 1 },
   paymentIntroTitle: { color: '#244027', fontSize: 17, fontWeight: '800' },
   paymentIntroText: { marginTop: 5, color: '#5F6D61', fontSize: 13, lineHeight: 18 },
+  stripeConnectionRow: { minHeight: 54, paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', gap: 9, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#DDE5DE' },
+  stripeConnectionText: { flex: 1, fontSize: 15, fontWeight: '900' },
+  stripeConnectionDetail: { fontSize: 12, fontWeight: '800' },
   cleanupStatsCard: { marginHorizontal: 16, flexDirection: 'row', overflow: 'hidden', borderRadius: 16, backgroundColor: '#FFFFFF' },
   cleanupStat: { flex: 1, minHeight: 86, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   cleanupStatDivider: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: '#DDE2DE' },

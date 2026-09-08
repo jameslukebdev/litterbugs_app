@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -100,7 +100,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
   const [photos, setPhotos] = useState([]);
   const [description, setDescription] = useState('');
   const [bagsOrItemsRemoved, setBagsOrItemsRemoved] = useState('');
-  const [durationMinutes, setDurationMinutes] = useState('');
+  const [weightPounds, setWeightPounds] = useState('');
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submissionProgress, setSubmissionProgress] = useState({
@@ -108,6 +108,29 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
     current: 1,
     total: 1,
   });
+  const submissionScrollRef = useRef(null);
+  const submissionScrollOffsetRef = useRef(0);
+  const descriptionInputRef = useRef(null);
+  const bagsInputRef = useRef(null);
+  const weightInputRef = useRef(null);
+
+  const revealCleanupEntryField = (inputRef) => {
+    const keyboardAnimationDelay = Platform.OS === 'ios' ? 320 : 120;
+    setTimeout(() => {
+      const keyboardFrame = Keyboard.metrics();
+      if (!keyboardFrame || !inputRef.current) return;
+
+      inputRef.current.measureInWindow((_screenX, screenY, _width, height) => {
+        const overlap = screenY + height + 16 - keyboardFrame.screenY;
+        if (overlap <= 0) return;
+
+        submissionScrollRef.current?.scrollTo({
+          y: Math.max(submissionScrollOffsetRef.current + overlap, 0),
+          animated: true,
+        });
+      });
+    }, keyboardAnimationDelay);
+  };
 
   useEffect(() => {
     let active = true;
@@ -162,7 +185,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
     photos,
     description,
     bagsOrItemsRemoved,
-    durationMinutes,
+    weightPounds,
   });
 
   const continueToReview = () => {
@@ -279,8 +302,14 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
         <BrandedLoadingState working title={submissionTitle} message={submissionMessage} />
       </Modal>
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 24) + 24 }]}
+        ref={submissionScrollRef}
+        contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 16) }]}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+        onScroll={({ nativeEvent }) => {
+          submissionScrollOffsetRef.current = nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.eyebrow}>
@@ -346,6 +375,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
                 <Text style={styles.required}>REQUIRED</Text>
               </View>
               <TextInput
+                ref={descriptionInputRef}
                 style={[styles.descriptionInput, errors.description && styles.inputError]}
                 value={description}
                 onChangeText={(value) => {
@@ -357,6 +387,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
                 maxLength={MAX_CLEANUP_DESCRIPTION_LENGTH}
                 textAlignVertical="top"
                 editable={!submitting}
+                onFocus={() => revealCleanupEntryField(descriptionInputRef)}
                 accessibilityLabel="Cleanup description"
               />
               <Text style={styles.characterCount}>
@@ -372,6 +403,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
                 <View style={styles.numericField}>
                   <Text style={styles.inputLabel}>Bags/items removed</Text>
                   <TextInput
+                    ref={bagsInputRef}
                     style={[styles.numericInput, errors.bagsOrItemsRemoved && styles.inputError]}
                     value={bagsOrItemsRemoved}
                     onChangeText={(value) => {
@@ -382,24 +414,27 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
                     keyboardType="number-pad"
                     maxLength={4}
                     editable={!submitting}
+                    onFocus={() => revealCleanupEntryField(bagsInputRef)}
                   />
                   {errors.bagsOrItemsRemoved ? <Text style={styles.error}>{errors.bagsOrItemsRemoved}</Text> : null}
                 </View>
                 <View style={styles.numericField}>
-                  <Text style={styles.inputLabel}>Duration (minutes)</Text>
+                  <Text style={styles.inputLabel}>Weight removed (lb)</Text>
                   <TextInput
-                    style={[styles.numericInput, errors.durationMinutes && styles.inputError]}
-                    value={durationMinutes}
+                    ref={weightInputRef}
+                    style={[styles.numericInput, errors.weightPounds && styles.inputError]}
+                    value={weightPounds}
                     onChangeText={(value) => {
-                      setDurationMinutes(value);
-                      setErrors((current) => ({ ...current, durationMinutes: undefined }));
+                      setWeightPounds(value);
+                      setErrors((current) => ({ ...current, weightPounds: undefined }));
                     }}
-                    placeholder="35"
-                    keyboardType="number-pad"
-                    maxLength={4}
+                    placeholder="12.5"
+                    keyboardType="decimal-pad"
+                    maxLength={8}
                     editable={!submitting}
+                    onFocus={() => revealCleanupEntryField(weightInputRef)}
                   />
-                  {errors.durationMinutes ? <Text style={styles.error}>{errors.durationMinutes}</Text> : null}
+                  {errors.weightPounds ? <Text style={styles.error}>{errors.weightPounds}</Text> : null}
                 </View>
               </View>
             </View>
@@ -436,9 +471,9 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
                   <Text style={styles.reviewMetricValue}>{normalized.bagsOrItemsRemoved ?? 'Not provided'}</Text>
                 </View>
                 <View style={styles.reviewMetric}>
-                  <Text style={styles.reviewLabel}>DURATION</Text>
+                  <Text style={styles.reviewLabel}>WEIGHT REMOVED</Text>
                   <Text style={styles.reviewMetricValue}>
-                    {normalized.durationMinutes ? `${normalized.durationMinutes} min` : 'Not provided'}
+                    {normalized.weightPounds ? `${normalized.weightPounds} lb` : 'Not provided'}
                   </Text>
                 </View>
               </View>

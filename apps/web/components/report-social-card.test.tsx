@@ -21,7 +21,7 @@ const report: PublicReportShareModel = {
   completionDate: null,
   cleanupDescription: null,
   bagsOrItemsRemoved: null,
-  durationMinutes: null,
+  weightPounds: null,
   canonicalUrl: 'https://litterbugs.app/reports/report-id',
 };
 

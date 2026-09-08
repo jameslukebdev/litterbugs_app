@@ -91,15 +91,19 @@ describe('mobile report parity', () => {
     expect(mobileSource).toContain('MAX_REPORT_DISTANCE_MILES');
     expect(MAX_REPORT_PHOTOS).toBe(3);
     expect(mobileReportPhotoSource).toContain('export const MAX_REPORT_PHOTOS = 3;');
-    expect(mobileReportPhotoSource).toContain('allowsMultipleSelection: true');
-    expect(mobileReportPhotoSource).toContain('selectionLimit: remainingSlots');
+    expect(mobileReportPhotoSource).toContain(
+      'const allowsMultipleSelection = nativePhotoOptimizationAvailable && remainingSlots > 1'
+    );
+    expect(mobileReportPhotoSource).toContain(
+      'selectionLimit: allowsMultipleSelection ? remainingSlots : 1'
+    );
     expect(mobileReportPhotoSource).toContain('.slice(0, MAX_REPORT_PHOTOS)');
     expect(mobileSource).toContain('mergeReportPhotoUris(prev.photos, preparedAssets)');
     expect(MAX_REPORT_TITLE_LENGTH).toBe(80);
     expect(mobileSource).toContain('maxLength={80}');
     expect(MAX_REPORT_NOTES_LENGTH).toBe(500);
     expect(mobileSource).toContain('maxLength={500}');
-    expect(mobileSource).toContain('accessibilityLabel="Replace report photos"');
+    expect(mobileSource).toContain('accessibilityLabel="Choose replacement report photos"');
     expect(mobileSource).toContain('{ photo_paths: replacementPhotoPaths }');
     expect(mobileSource).toContain('bytes.byteLength > 5 * 1024 * 1024');
   });

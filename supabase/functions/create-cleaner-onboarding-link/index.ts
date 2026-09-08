@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import {
   authenticatedUser,
+  configureStripeRecipientAsIndividual,
   corsHeaders,
   createStripeRecipientOnboardingLink,
   jsonResponse,
@@ -71,21 +72,34 @@ Deno.serve(async (request: Request) => {
     let account: StripeRecipientAccount;
     if (existing?.stripe_account_id) {
       account = await retrieveStripeRecipientAccount(existing.stripe_account_id);
+      if (mode === "link") {
+        account = await configureStripeRecipientAsIndividual(
+          account.id,
+          account.identity?.country ?? "us",
+        );
+      }
     } else {
       account = await stripeV2<StripeRecipientAccount>("/core/accounts", {
         method: "POST",
-        headers: { "Idempotency-Key": `litterbugs-cleaner-${user.id}` },
+        headers: { "Idempotency-Key": `litterbugs-cleaner-individual-${user.id}` },
         body: JSON.stringify({
           contact_email: user.email,
           display_name: user.user_metadata?.display_name ?? user.user_metadata?.full_name ?? "Litterbugs cleaner",
           defaults: {
+            profile: {
+              business_url: "https://litterbugs.app/cleanup-policy",
+              product_description: "Individual litter cleanup services coordinated and rewarded through the Litterbugs community cleanup platform.",
+            },
             responsibilities: {
               fees_collector: "application",
               losses_collector: "application",
             },
           },
           dashboard: "express",
-          identity: { country: "us" },
+          identity: {
+            country: "us",
+            entity_type: "individual",
+          },
           configuration: {
             recipient: {
               capabilities: {

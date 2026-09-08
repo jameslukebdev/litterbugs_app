@@ -1,11 +1,11 @@
 export const BOTTOM_NAV_METRICS = Object.freeze({
-  height: 58,
-  radius: 0,
-  horizontalInset: 0,
-  bottomGap: 0,
+  height: 64,
+  radius: 28,
+  horizontalInset: 18,
+  bottomGap: 10,
   minimumSafeInset: 8,
-  maximumWidth: Number.POSITIVE_INFINITY,
-  contentClearance: 8,
+  maximumWidth: 420,
+  contentClearance: 12,
   mapControlGap: 14,
   mapControlSize: 56,
 });
@@ -14,15 +14,17 @@ export const BOTTOM_NAV_COLORS = Object.freeze({
   active: '#2F7D32',
   inactive: '#4B5563',
   surface: '#FFFFFF',
-  border: 'rgba(31,35,40,0.16)',
+  activeSurface: '#EAF5EA',
+  border: 'rgba(47,125,50,0.16)',
 });
 
 export function getBottomNavBottom(safeAreaBottom = 0) {
-  return 0;
+  return Math.max(safeAreaBottom, BOTTOM_NAV_METRICS.minimumSafeInset)
+    + BOTTOM_NAV_METRICS.bottomGap;
 }
 
 export function getBottomNavClearance(safeAreaBottom = 0) {
-  return Math.max(safeAreaBottom, BOTTOM_NAV_METRICS.minimumSafeInset)
+  return getBottomNavBottom(safeAreaBottom)
     + BOTTOM_NAV_METRICS.height
     + BOTTOM_NAV_METRICS.contentClearance;
 }

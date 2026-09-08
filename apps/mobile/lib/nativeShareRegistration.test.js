@@ -12,15 +12,16 @@ const reportShareSheetSource = readFileSync(
 );
 
 describe('native sharing registration', () => {
-  it('uses the New Architecture-compatible react-native-share TurboModule', () => {
-    expect(mapScreenSource).toContain("import RNShare from 'react-native-share';");
-    expect(mapScreenSource).toContain('share: RNShare.open');
-    expect(mapScreenSource).toContain('shareSingle: RNShare.shareSingle');
+  it('loads the share TurboModule only when the installed client provides it', () => {
+    expect(mapScreenSource).toContain("TurboModuleRegistry.get('RNShare')");
+    expect(mapScreenSource).toContain("require('react-native-share').default");
+    expect(mapScreenSource).toContain('share: installedRNShare?.open ?? NativeShare.share');
+    expect(mapScreenSource).toContain('shareSingle: installedRNShare.shareSingle');
     expect(mapScreenSource).toContain('readAsStringAsync: FileSystem.readAsStringAsync');
-    expect(mapScreenSource).toContain('isPackageInstalled: RNShare.isPackageInstalled');
+    expect(mapScreenSource).toContain('isPackageInstalled: installedRNShare.isPackageInstalled');
     expect(mapScreenSource).toContain('canOpenURL: Linking.canOpenURL');
     expect(mapScreenSource).not.toContain('NativeModules.RNShare');
-    expect(mapScreenSource).not.toContain('NativeShare.share');
+    expect(mapScreenSource).not.toContain("import RNShare from 'react-native-share';");
   });
 
   it('keeps the report preview card at a bounded height', () => {

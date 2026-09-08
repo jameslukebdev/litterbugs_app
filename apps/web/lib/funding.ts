@@ -32,7 +32,7 @@ export function parseContributionAmount(value: string) {
   const normalized = value.trim();
   if (!/^\d{1,4}(?:\.\d{1,2})?$/.test(normalized)) return null;
   const cents = Math.round(Number(normalized) * 100);
-  return cents >= 500 && cents <= 500_000 ? cents : null;
+  return cents >= 100 && cents <= 100_000 ? cents : null;
 }
 
 export function calculatePlatformFee(principalAmountCents: number) {

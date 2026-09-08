@@ -149,7 +149,7 @@ export function FundingContributionAction({
             <>
               <label className="funding-amount-label">Contribution amount
                 <span className="funding-amount-input"><b>$</b><input value={amount} onChange={(event) => { setAmount(event.target.value); setMessage(''); }} inputMode="decimal" aria-label="Cleanup fund contribution amount" /></span>
-                <small>Minimum $5 · Maximum $5,000</small>
+                <small>Minimum $1 · Maximum $1,000</small>
               </label>
               {principalAmountCents != null && platformFeeCents != null && (
                 <dl className="funding-summary">
