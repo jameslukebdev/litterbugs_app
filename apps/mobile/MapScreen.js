@@ -1,3 +1,6 @@
+import MapReportPreview from './components/MapReportPreview';
+import useMapLabels from './lib/useMapLabels';
+import { reportsNearMapTap } from './lib/mapLabelLayout';
 import ReportPhotoGallery from './components/ReportPhotoGallery';
 import { saveReportDraft, loadReportDraft, clearReportDraft } from './lib/savedReportDraft';
 import ReportFilters from './components/ReportFilters';
@@ -26,11 +29,10 @@ import {
   TurboModuleRegistry,
   useWindowDimensions,
 } from 'react-native';
-import { Marker } from 'react-native-maps';
-import ClusteredMapView from 'react-native-map-clustering';
+import MapView, { Marker } from 'react-native-maps';
 import { useIsFocused } from '@react-navigation/native';
 import * as Location from 'expo-location';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -44,7 +46,7 @@ import {
 } from './lib/reportAccess';
 import { BOTTOM_NAV_METRICS, getBottomNavClearance } from './lib/navigationLayout';
 import { isCleanupAvailable } from './lib/cleanupEligibility';
-import { useReports } from './lib/reports';
+import { getDistanceMiles as reportDistanceMiles, useReports } from './lib/reports';
 import { useSession } from './lib/session';
 import ReporterIdentity from './ReporterIdentity';
 import CompletedCleanupStory from './CompletedCleanupStory';
@@ -94,16 +96,6 @@ import {
   createPayoutWorkflow,
   isPayoutConnectionReady,
 } from './lib/payoutWorkflowGate';
-import { shouldClusterReports } from './lib/mapClustering';
-import {
-  formatMapFundingLabel,
-  isFundedMapMarker,
-} from './lib/mapFundingMarker';
-import {
-  clusterStatusCounts,
-  REPORT_MARKER_COLORS,
-  reportMarkerPresentation,
-} from './lib/mapMarkerPresentation';
 import { hasRequiredReportPhoto } from './lib/reportDraft';
 import {
   MAX_REPORT_PHOTOS,
@@ -161,40 +153,6 @@ function loadInstalledRNShare() {
 
 const installedRNShare = loadInstalledRNShare();
 
-const MAP_MARKER_TRANSITION_MS = 180;
-
-function MapMarkerTransition({ children, transitionKey }) {
-  const opacity = useRef(new Animated.Value(0.72)).current;
-  const scale = useRef(new Animated.Value(0.94)).current;
-
-  useEffect(() => {
-    opacity.setValue(0.72);
-    scale.setValue(0.94);
-
-    const transition = Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: MAP_MARKER_TRANSITION_MS,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scale, {
-        toValue: 1,
-        duration: MAP_MARKER_TRANSITION_MS,
-        useNativeDriver: true,
-      }),
-    ]);
-
-    transition.start();
-    return () => transition.stop();
-  }, [opacity, scale, transitionKey]);
-
-  return (
-    <Animated.View style={{ opacity, transform: [{ scale }] }}>
-      {children}
-    </Animated.View>
-  );
-}
-
 const showPermanentAccountRequired = () => {
   Alert.alert(
     'Account required',
@@ -239,7 +197,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   ];
   const [tracksReportMarkers, setTracksReportMarkers] = useState(true);
   const reportMarkerTrackingTimerRef = useRef(null);
-  const reportClusterRef = useRef(null);
+
   const [draftCoord, setDraftCoord] = useState(null);
   const [reportPlacementActive, setReportPlacementActive] = useState(false);
   const [placementCoordinate, setPlacementCoordinate] = useState(null);
@@ -264,6 +222,12 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   });
   const [mapType, setMapType] = useState('standard');
   const [selectedReport, setSelectedReport] = useState(null);
+  const [mapUserLocation, setMapUserLocation] = useState(null);
+  const [previewId, setPreviewId] = useState(null);
+  const [nearbyIds, setNearbyIds] = useState([]);
+  const [previewHeight, setPreviewHeight] = useState(180);
+  const [projectionRevision, setProjectionRevision] = useState(0);
+  const [mapSize, setMapSize] = useState({ width: 400, height: 800 });
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [reportPhotoUrls, setReportPhotoUrls] = useState([]);
   const [editingReportId, setEditingReportId] = useState(null);
@@ -338,9 +302,18 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   }, [form, formOpen, isEditing, currentUserId, draftCoord, reportStep, isSaving]);
 
   const fundingEnabled = paymentsEnabled && geminiReviewEnabled;
-  const reportClusteringEnabled = shouldClusterReports(region);
+
   const insets = useSafeAreaInsets();
-  const { width: screenWidth } = useWindowDimensions();
+  const { width: screenWidth, fontScale } = useWindowDimensions();
+  const mapLabels = useMapLabels({ markers, mapRef: mapViewRef, ready: mapReady, region, revision: projectionRevision, size: mapSize, selectedId: previewId, fontScale });
+  const previewReport = markers.find((marker) => marker.id === previewId)?.report;
+  const nearbyReports = nearbyIds.map((id) => markers.find((marker) => marker.id === id)?.report).filter(Boolean);
+  const chooseMapReport = (report) => {
+    setNearbyIds([]);
+    setPreviewId(report.id);
+    const marker = markers.find((item) => item.id === report.id);
+    if (marker) mapViewRef.current?.animateToRegion({ ...region, ...marker.coordinate }, 240);
+  };
   const bottomNavClearance = getBottomNavClearance(insets.bottom);
 
   const locateAndCenterMap = useCallback(async ({
@@ -366,6 +339,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
       locationApi: Location,
       accuracy,
       onPosition: (position) => {
+        setMapUserLocation(position.coords);
         const nextRegion = regionForPosition(position);
         latestRegion = nextRegion;
         mapViewRef.current?.animateToRegion?.(nextRegion, 240);
@@ -1583,11 +1557,6 @@ const submitReport = async () => {
       }
     };
 
-const getClusterStatusCounts = (clusterId) => {
-  const leaves = reportClusterRef.current?.getLeaves(clusterId, Infinity) || [];
-  return clusterStatusCounts(leaves);
-};
-    
 const refreshReportMarkerSnapshots = useCallback(() => {
   if (markers.length === 0) return;
 
@@ -1603,7 +1572,7 @@ const refreshReportMarkerSnapshots = useCallback(() => {
 
 useEffect(() => {
   refreshReportMarkerSnapshots();
-}, [refreshReportMarkerSnapshots]);
+}, [refreshReportMarkerSnapshots, mapLabels]);
 
 useEffect(() => () => {
   if (reportMarkerTrackingTimerRef.current) {
@@ -1613,6 +1582,8 @@ useEffect(() => () => {
 
 const openReportDetails = (report) => {
   if (!report) return;
+  setPreviewId(null);
+  setNearbyIds([]);
   const firstPhotoPath = report.photo_paths?.[0];
   const openingCompletedReport = report.cleanup_state === 'completed';
   if (firstPhotoPath) {
@@ -3235,7 +3206,7 @@ const renderReportStep = () => {
   // Map View . . .
   return (
     <View style={styles.container}>
-        <ClusteredMapView
+        <MapView
           ref={mapViewRef}
           style={StyleSheet.absoluteFill}
           onMapReady={() => setMapReady(true)}
@@ -3246,6 +3217,7 @@ const renderReportStep = () => {
           initialRegion={region}
           region={region}
           onRegionChangeComplete={(nextRegion) => {
+            setProjectionRevision((value) => value + 1);
             if (reportPlacementActive) {
               setPlacementCoordinate(mapCenterCoordinate(nextRegion));
             }
@@ -3254,154 +3226,55 @@ const renderReportStep = () => {
               setRegion(nextRegion);
             }
           }}
-          maxZoom={14}
-          radius={20}
-          animationEnabled={false}
-          clusteringEnabled={reportClusteringEnabled}
-          superClusterRef={reportClusterRef}
-          renderCluster={({ id, geometry, properties, onPress }) => {
-            const statusCounts = getClusterStatusCounts(id);
-            const statusBadges = [
-              {
-                key: 'available',
-                count: statusCounts.available,
-                color: REPORT_MARKER_COLORS.available,
-                icon: 'trash-bin-outline',
-              },
-              {
-                key: 'active',
-                count: statusCounts.active,
-                color: '#9A7000',
-                icon: 'time-outline',
-              },
-              {
-                key: 'completed',
-                count: statusCounts.completed,
-                color: REPORT_MARKER_COLORS.completed,
-                icon: 'leaf-outline',
-              },
-            ].filter(({ count }) => count > 0);
-
-            return (
-              <Marker
-                key={`cluster-${id}`}
-                coordinate={{
-                  latitude: geometry.coordinates[1],
-                  longitude: geometry.coordinates[0],
-                }}
-                tracksViewChanges={tracksReportMarkers}
-                anchor={{ x: 0.5, y: 0.5 }}
-                onPress={(event) => {
-                  event?.stopPropagation?.();
-                  if (reportPlacementActive) return;
-                  onPress();
-                }}
-              >
-                <MapMarkerTransition transitionKey={`cluster-${id}`}>
-                  <View style={styles.reportClusterHit}>
-                    <View style={styles.reportClusterBubble}>
-                      <Text style={styles.reportClusterText}>
-                        {properties.point_count}
-                      </Text>
-                    </View>
-                    <View style={styles.reportClusterStatusRow}>
-                      {statusBadges.map(({ key, count, color, icon }) => (
-                        <View
-                          key={key}
-                          style={[styles.reportClusterStatusBadge, { borderColor: color }]}
-                        >
-                          <Ionicons name={icon} size={11} color={color} />
-                          <Text style={[styles.reportClusterStatusCount, { color }]}>
-                            {count}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                </MapMarkerTransition>
-              </Marker>
-            );
+          onLayout={(event) => setMapSize(event.nativeEvent.layout)}
+          onPress={(event) => {
+            if (event.nativeEvent.action !== 'marker-press') {
+              setPreviewId(null);
+              setNearbyIds([]);
+            }
           }}
           {...(locationPermissionGranted ? { showsUserLocation: true } : {})}
+          onUserLocationChange={(event) => setMapUserLocation(event.nativeEvent.coordinate)}
           followsUserLocation={false}
           mapType={mapType}
         >
 
-        {markers.map((m) => {
-          const fundingLabel = formatMapFundingLabel(m.report?.funded_amount_cents);
-          const funded = isFundedMapMarker(m.report?.funded_amount_cents);
-          const mapTone = cleanupMapTone(m.report);
-          const markerPresentation = reportMarkerPresentation(m.report, mapTone);
-
-          return (
-            <Marker
-              key={m.id}
-              coordinate={m.coordinate}
-              identifier={`report:${mapTone}:${m.id}`}
-              tracksViewChanges={tracksReportMarkers}
-              anchor={{ x: 0.5, y: 0.5 }}
-              accessibilityLabel={`${funded ? `${fundingLabel}, ` : ''}${mapTone} ${m.report?.severity || ''} severity report: ${m.report?.title || 'Litter report'}`}
-              onPress={(e) => {
-                e?.stopPropagation?.();
-                if (reportPlacementActive) return;
-                openReportDetails(m.report);
-              }}
-            >
-              <MapMarkerTransition
-                transitionKey={`${reportClusteringEnabled ? 'clustered' : 'direct'}:${m.id}`}
-              >
-                <View style={styles.reportMarkerHitLg}>
-                  {funded ? (
-                    <View style={styles.markerRewardBadge}>
-                      <Text style={styles.markerRewardText}>{fundingLabel}</Text>
-                    </View>
-                  ) : null}
-                  <View
-                    style={[
-                      styles.reportMarkerIconWrapLg,
-                      { backgroundColor: markerPresentation.backgroundColor },
-                    ]}
-                  >
-                    {markerPresentation.iconFamily === 'material-community' ? (
-                      <MaterialCommunityIcons
-                        name={markerPresentation.icon}
-                        size={34}
-                        color="#FFFFFF"
-                      />
-                    ) : (
-                      <Ionicons
-                        name={markerPresentation.icon}
-                        size={34}
-                        color="#FFFFFF"
-                      />
-                    )}
-                    {markerPresentation.statusIcon ? (
-                      <View style={styles.reportMarkerStatusBadge}>
-                        <Ionicons
-                          name={markerPresentation.statusIcon}
-                          size={16}
-                          color="#374151"
-                        />
-                      </View>
-                    ) : null}
-                  </View>
-                </View>
-              </MapMarkerTransition>
-            </Marker>
-          );
+        {mapLabels.map((m) => {
+          const selected = m.id === previewId;
+          const tone = cleanupMapTone(m.report);
+          const icon = tone === 'completed' ? 'checkmark' : tone === 'active' ? 'time-outline' : 'leaf-outline';
+          return <Marker key={m.id} coordinate={m.coordinate}
+            identifier={`report:${tone}:${m.id}`}
+            tracksViewChanges={tracksReportMarkers}
+            anchor={{ x: 0.5, y: 0.5 }}
+            zIndex={selected ? 1000 : m.labelled ? 10 : 1}
+            accessibilityLabel={`${m.label || 'Volunteer cleanup'}, ${tone}: ${m.report?.title || 'Litter report'}`}
+            onPress={(event) => {
+              event?.stopPropagation?.();
+              if (reportPlacementActive) return;
+              const nearby = reportsNearMapTap(mapLabels, m.id);
+              if (nearby.length > 1) { setPreviewId(null); setNearbyIds(nearby.map((item) => item.id)); }
+              else chooseMapReport(m.report);
+            }}>
+            <View style={[styles.compactMarkerHit, { width: Math.max(44, m.labelled ? m.width : 44), height: Math.max(44, m.labelled ? m.height : 44) }]}>
+              {m.labelled || selected ? <View style={[styles.compactMarker, selected && styles.compactMarkerSelected, { minHeight: m.height || 32, width: m.width || 48 }]}>
+                {m.label && tone === 'available' ? <Text numberOfLines={1} style={[styles.compactMarkerText, selected && { color: '#FFFFFF' }]}>{m.label}</Text>
+                  : <Ionicons name={icon} size={18} color={selected ? '#FFFFFF' : '#285D38'} />}
+              </View> : <View style={styles.compactMarkerDot} />}
+            </View>
+          </Marker>;
         })}
-
 
         {draftCoord && (
           <Marker
             coordinate={draftCoord}
             cluster={false}
-            pinColor="#FFC42E"
+            pinColor="#2F7D32"
             title="Draft report"
             description="Fill the form below to save"
           />
         )}
-      </ClusteredMapView>
+      </MapView>
 
       {showInitialMapLoading ? (
         <View style={styles.initialMapLoading} pointerEvents="auto">
@@ -3457,7 +3330,7 @@ const renderReportStep = () => {
           pointerEvents="none"
           accessible={false}
         >
-          <Ionicons name="location-sharp" size={54} color="#E53935" />
+          <Ionicons name="location-sharp" size={54} color="#2F7D32" />
         </View>
       ) : null}
 
@@ -3473,7 +3346,7 @@ const renderReportStep = () => {
 
 
       <View
-        style={[styles.reportLitterButtonDock, { bottom: mapControlsBottom }]}
+        style={[styles.reportLitterButtonDock, { bottom: mapControlsBottom }, previewReport && !reportPlacementActive && { display: 'none' }]}
         pointerEvents="box-none"
       >
         <Animated.View
@@ -3595,7 +3468,7 @@ const renderReportStep = () => {
         style={[
           styles.centerButton,
           {
-            bottom: mapControlsBottom +
+            bottom: mapControlsBottom + (previewReport && !reportPlacementActive ? previewHeight : 0) +
               (BOTTOM_NAV_METRICS.mapControlSize +
                 BOTTOM_NAV_METRICS.mapControlGap) * 2,
           },
@@ -3617,7 +3490,7 @@ const renderReportStep = () => {
         style={[
           styles.mapTypeButton,
           {
-            bottom: mapControlsBottom +
+            bottom: mapControlsBottom + (previewReport && !reportPlacementActive ? previewHeight : 0) +
               BOTTOM_NAV_METRICS.mapControlSize +
               BOTTOM_NAV_METRICS.mapControlGap,
           },
@@ -3629,6 +3502,15 @@ const renderReportStep = () => {
       >
         <Ionicons name="layers-outline" size={32} color={getMapTypeColor()} />
       </TouchableOpacity>
+
+{!reportPlacementActive && !detailsOpen && !showInitialMapLoading ? <MapReportPreview
+        report={previewReport} nearby={nearbyReports} bottom={mapControlsBottom}
+        insetBottom={insets.bottom} getPhotoUrl={getReportPhotoUrl}
+        onHeight={setPreviewHeight}
+        distance={reportDistanceMiles(mapUserLocation, previewReport)}
+        onClose={() => setPreviewId(null)} onCloseNearby={() => setNearbyIds([])}
+        onChoose={chooseMapReport} onDetails={openReportDetails}
+      /> : null}
 
 {/* Multi-step Report Form */}
 <Modal
@@ -6437,57 +6319,11 @@ reportMarkerStatusBadge: {
   borderWidth: 2,
   borderColor: '#374151',
 },
-reportClusterHit: {
-  width: 96,
-  height: 80,
-  borderRadius: 40,
-  alignItems: 'center',
-  justifyContent: 'center',
-  paddingBottom: 12,
-  backgroundColor: 'rgba(0,0,0,0.01)',
-},
-reportClusterBubble: {
-  width: 52,
-  height: 52,
-  borderRadius: 26,
-  alignItems: 'center',
-  justifyContent: 'center',
-  backgroundColor: '#B448CF',
-  borderWidth: 3,
-  borderColor: '#FFFFFF',
-  shadowColor: '#000000',
-  shadowOpacity: 0.25,
-  shadowRadius: 6,
-  shadowOffset: { width: 0, height: 3 },
-  elevation: 6,
-},
-reportClusterText: {
-  color: '#FFFFFF',
-  fontSize: 17,
-  fontWeight: '800',
-},
-reportClusterStatusRow: {
-  position: 'absolute',
-  bottom: 0,
-  flexDirection: 'row',
-  gap: 3,
-},
-reportClusterStatusBadge: {
-  minWidth: 27,
-  height: 20,
-  borderRadius: 10,
-  paddingHorizontal: 4,
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  backgroundColor: '#FFFFFF',
-  borderWidth: 2,
-},
-reportClusterStatusCount: {
-  fontSize: 10,
-  fontWeight: '900',
-  lineHeight: 12,
-},
+compactMarkerHit: { alignItems: 'center', justifyContent: 'center' },
+compactMarker: { paddingHorizontal: 12, borderRadius: 18, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#92A998', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 3, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
+compactMarkerSelected: { backgroundColor: '#285D38', borderColor: '#FFFFFF' },
+compactMarkerText: { color: '#285D38', fontSize: 14, fontWeight: '700' },
+compactMarkerDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#FFFFFF', borderColor: '#285D38', borderWidth: 2 },
 savingOverlay: {
   ...StyleSheet.absoluteFillObject,
   backgroundColor: 'rgba(255,255,255,0.88)',

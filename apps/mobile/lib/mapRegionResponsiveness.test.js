@@ -12,7 +12,7 @@ describe('map region responsiveness', () => {
     const handlerStart = mapScreenSource.indexOf(
       'onRegionChangeComplete={(nextRegion) => {'
     );
-    const handlerEnd = mapScreenSource.indexOf('\n          maxZoom=', handlerStart);
+    const handlerEnd = mapScreenSource.indexOf('\n          onLayout=', handlerStart);
     const handlerSource = mapScreenSource.slice(handlerStart, handlerEnd);
 
     expect(handlerStart).toBeGreaterThanOrEqual(0);
