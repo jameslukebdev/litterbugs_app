@@ -1,16 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { createPayoutDashboardLink, createPayoutOnboardingLink, loadPayoutStatus } from './lib/funding';
+import {
+  cancelPayoutWorkflow,
+  isPayoutConnectionReady,
+  markPayoutWorkflowReady,
+  payoutWorkflowCopy,
+  waitForPayoutConnection,
+} from './lib/payoutWorkflowGate';
 import BrandedLoadingState, { LoadingButtonContent } from './BrandedLoadingState';
 
 const PAYOUT_ONBOARDING_RETURN_URL = 'litterbugs://stripe-onboarding-return';
 
-export default function PayoutSetupScreen() {
+export default function PayoutSetupScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
+  const workflowToken = route?.params?.workflowToken ?? null;
+  const workflowCopy = payoutWorkflowCopy(route?.params?.workflowKind);
+  const workflowCompletedRef = useRef(false);
+  const connectionSuccessAlertRef = useRef(false);
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -29,6 +40,27 @@ export default function PayoutSetupScreen() {
 
   useEffect(() => { refresh(); }, []);
 
+  useEffect(() => navigation.addListener('beforeRemove', () => {
+    if (workflowToken && !workflowCompletedRef.current) {
+      cancelPayoutWorkflow(workflowToken);
+    }
+  }), [navigation, workflowToken]);
+
+  const completePendingWorkflow = useCallback(() => {
+    if (!workflowToken || workflowCompletedRef.current) return;
+    workflowCompletedRef.current = true;
+    markPayoutWorkflowReady(workflowToken);
+    navigation.goBack();
+  }, [navigation, workflowToken]);
+
+  useEffect(() => {
+    if (
+      status?.payoutsEnabled !== true
+      || connectionSuccessAlertRef.current
+    ) return;
+    completePendingWorkflow();
+  }, [completePendingWorkflow, status?.payoutsEnabled]);
+
   const openSetup = async () => {
     try {
       setBusy(true);
@@ -39,12 +71,41 @@ export default function PayoutSetupScreen() {
         await WebBrowser.openBrowserAsync(link.url, {
           presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
         });
+        await refresh();
       } else {
-        await WebBrowser.openAuthSessionAsync(link.url, PAYOUT_ONBOARDING_RETURN_URL, {
+        const result = await WebBrowser.openAuthSessionAsync(link.url, PAYOUT_ONBOARDING_RETURN_URL, {
           presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
         });
+        if (result.type === 'success') {
+          const nextStatus = await waitForPayoutConnection(loadPayoutStatus);
+          const connected = isPayoutConnectionReady(nextStatus);
+          if (connected) connectionSuccessAlertRef.current = true;
+          setStatus(nextStatus);
+          if (connected) {
+            Alert.alert(
+              'Stripe connected',
+              workflowToken
+                ? 'Your payout account is ready. Continue to return to the litter report and finish claiming the cleanup.'
+                : 'Your payout account is ready to receive cleanup rewards.',
+              [{
+                text: workflowToken ? 'Continue to cleanup' : 'Done',
+                onPress: () => {
+                  connectionSuccessAlertRef.current = false;
+                  completePendingWorkflow();
+                },
+              }],
+              { cancelable: false }
+            );
+          } else {
+            Alert.alert(
+              'Stripe is still confirming your account',
+              'Your information was received. Stay on this screen and try again shortly if Litterbugs does not return to the cleanup automatically.'
+            );
+          }
+        } else {
+          await refresh();
+        }
       }
-      await refresh();
     } catch (error) {
       Alert.alert('Payout setup unavailable', error.message || 'Please try again.');
     } finally {
@@ -60,15 +121,18 @@ export default function PayoutSetupScreen() {
       <View style={[styles.icon, enabled && styles.iconEnabled]}>
         <Ionicons name={enabled ? 'checkmark' : 'wallet-outline'} size={35} color={enabled ? '#FFFFFF' : '#2F7D32'} />
       </View>
-      <Text style={styles.title}>{enabled ? 'Payouts are ready' : 'Set up cleanup payouts'}</Text>
+      <Text style={styles.title}>
+        {enabled ? 'Payouts are ready' : workflowCopy?.title || 'Set up individual payouts'}
+      </Text>
       <Text style={styles.text}>
         {enabled
           ? 'You can claim funded cleanups. Stripe sends rewards to your connected payout account.'
-          : 'Stripe securely verifies your identity and bank details. Litterbugs never stores that information.'}
+          : workflowCopy?.text || 'Set up as an individual cleaner. Stripe securely verifies your identity and bank details, and Litterbugs never stores that information.'}
       </Text>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Before you continue</Text>
+        <View style={styles.row}><Ionicons name="person-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>No business or LLC is required. Litterbugs creates an individual Stripe payout profile for you.</Text></View>
         <View style={styles.row}><Ionicons name="checkmark-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>You must be at least 18 years old.</Text></View>
         <View style={styles.row}><Ionicons name="checkmark-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>Cleanup payouts are currently available to eligible U.S. cleaners.</Text></View>
         <View style={styles.row}><Ionicons name="checkmark-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>Your shown reward is the exact amount Litterbugs transfers.</Text></View>

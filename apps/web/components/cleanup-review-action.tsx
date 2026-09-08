@@ -194,7 +194,7 @@ export function CleanupReviewAction({
             <section className="cleanup-submission-summary">
               <h3>Cleaner’s description</h3>
               <p>{context.submission.description}</p>
-              {(context.submission.bags_or_items_removed != null || context.submission.duration_minutes != null) && <small>{context.submission.bags_or_items_removed != null ? `${context.submission.bags_or_items_removed} bags/items` : ''}{context.submission.bags_or_items_removed != null && context.submission.duration_minutes != null ? ' · ' : ''}{context.submission.duration_minutes != null ? `${context.submission.duration_minutes} minutes` : ''}</small>}
+              {(context.submission.bags_or_items_removed != null || context.submission.weight_pounds != null) && <small>{context.submission.bags_or_items_removed != null ? `${context.submission.bags_or_items_removed} bags/items` : ''}{context.submission.bags_or_items_removed != null && context.submission.weight_pounds != null ? ' · ' : ''}{context.submission.weight_pounds != null ? `${context.submission.weight_pounds} lb removed` : ''}</small>}
             </section>
             <label className="cleanup-review-note">{attempt.is_paid ? 'Why are you disputing this cleanup?' : 'Feedback for the cleaner'}<textarea value={note} maxLength={1000} onChange={(event) => { setNote(event.target.value); setMessage(''); }} placeholder={attempt.is_paid ? 'Explain what does not look right.' : 'Required only when asking for changes.'} /></label>
             {message && <p className="form-message error-message" role="alert">{message}</p>}

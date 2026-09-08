@@ -35,7 +35,7 @@ export async function loadCleanupReviewContext(cleanupId, userId) {
       .maybeSingle(),
     supabase
       .from('cleanup_submissions')
-      .select('id, cleanup_attempt_id, submission_number, submitted_by, description, bags_or_items_removed, duration_minutes, created_at')
+      .select('id, cleanup_attempt_id, submission_number, submitted_by, description, bags_or_items_removed, weight_pounds, created_at')
       .eq('cleanup_attempt_id', attempt.id)
       .order('submission_number', { ascending: false })
       .limit(1)

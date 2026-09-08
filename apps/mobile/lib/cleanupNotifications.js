@@ -67,6 +67,18 @@ const CLEANUP_NOTIFICATION_CONTENT = Object.freeze({
     title: 'Better report photos needed',
     message: 'Replace the original report photos before members can fund this cleanup.',
   },
+  report_funding_review_required: {
+    title: 'Cleanup fund safety review',
+    message: 'Your report needs a quick administrator safety review before funding can begin.',
+  },
+  report_funding_approved: {
+    title: 'Cleanup funding approved',
+    message: 'Your report can now accept funding. Finish your secure Stripe payment.',
+  },
+  report_funding_rejected: {
+    title: 'Cleanup funding unavailable',
+    message: 'Your report was reviewed and cannot accept cleanup funding.',
+  },
 });
 
 export function cleanupNotificationPresentation(notices) {
@@ -117,9 +129,23 @@ export function cleanupNotificationDestination(notification) {
   }
 
   if (
+    eventType === 'report_funding_review_required'
+    || eventType === 'report_funding_approved'
+  ) {
+    return {
+      name: 'FundingContribution',
+      label: eventType === 'report_funding_approved'
+        ? 'Complete Payment'
+        : 'View Safety Review',
+      params: { reportId, fromReportCreation: true },
+    };
+  }
+
+  if (
     eventType === 'cleanup_fund_increased'
     || eventType === 'report_renewed'
     || eventType === 'report_funding_photos_needed'
+    || eventType === 'report_funding_rejected'
   ) {
     return {
       name: 'App',

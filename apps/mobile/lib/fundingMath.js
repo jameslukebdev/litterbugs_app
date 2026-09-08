@@ -1,5 +1,5 @@
-export const MIN_CONTRIBUTION_CENTS = 500;
-export const MAX_CONTRIBUTION_CENTS = 500_000;
+export const MIN_CONTRIBUTION_CENTS = 100;
+export const MAX_CONTRIBUTION_CENTS = 100_000;
 
 export function parseContributionAmount(value) {
   const normalized = String(value ?? '').trim();

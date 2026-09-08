@@ -16,6 +16,6 @@ describe('report withdrawal messages', () => {
 
   it('does not expose an unknown database error', () => {
     expect(reportWithdrawalErrorMessage({ message: 'violates foreign key constraint' }))
-      .toBe('We couldn’t withdraw this report. Check your connection and try again.');
+      .toBe('We couldn’t delete this report. Check your connection and try again.');
   });
 });

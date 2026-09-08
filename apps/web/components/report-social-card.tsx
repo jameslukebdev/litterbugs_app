@@ -11,7 +11,7 @@ export function ReportSocialCard({ report, logoUrl }: { report: PublicReportShar
     ? [
       report.cleanerName ? `Cleaned by ${report.cleanerName}` : null,
       report.bagsOrItemsRemoved != null ? `${report.bagsOrItemsRemoved} bags/items removed` : null,
-      report.durationMinutes != null ? `${report.durationMinutes} minutes volunteered` : null,
+      report.weightPounds != null ? `${report.weightPounds} lb removed` : null,
     ].filter(Boolean)
     : [report.severity ? `${report.severity} priority` : null, report.litterTypes[0] ?? null].filter(Boolean);
 

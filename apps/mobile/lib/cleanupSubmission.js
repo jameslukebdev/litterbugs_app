@@ -5,6 +5,11 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { supabase } from './supabase';
 import { requestGeminiReview } from './funding';
+import { MEDIA_PICKER_COMPRESSION_QUALITY } from './mediaCompression';
+import {
+  CLEANUP_PHOTO_UPLOAD_CONCURRENCY,
+  mapInConcurrentBatches,
+} from './concurrentBatch';
 import { uploadSecureMedia } from './secureMediaUpload';
 import { preparePhotoForSafetyScan } from './photoSafetyPreparation';
 
@@ -46,7 +51,7 @@ export async function chooseCleanupPhotos(source, selectionLimit) {
 
   const options = {
     mediaTypes: ['images'],
-    quality: 0.85,
+    quality: MEDIA_PICKER_COMPRESSION_QUALITY,
     selectionLimit,
     allowsMultipleSelection: source !== 'camera' && selectionLimit > 1,
   };
@@ -115,50 +120,63 @@ export async function uploadCleanupSubmission({
   photos,
   description,
   bagsOrItemsRemoved,
-  durationMinutes,
+  weightPounds,
   isPaid = false,
   onProgress = () => {},
 }) {
   const submissionId = Crypto.randomUUID();
   const uploadedPaths = [];
+  let completedPhotos = 0;
 
   try {
-    for (let index = 0; index < photos.length; index += 1) {
-      const asset = photos[index];
-      onProgress({ stage: 'preparing', current: index + 1, total: photos.length });
-      const preparedPhoto = await preparePhotoForSafetyScan(asset.uri);
-      const { mimeType: originalMimeType } = await cleanupPhotoMetadata({
-        ...asset,
-        uri: preparedPhoto.uri,
-        fileSize: preparedPhoto.byteSize,
-      });
-      const mimeType = preparedPhoto.mimeType ?? originalMimeType;
-      const base64 = await FileSystem.readAsStringAsync(preparedPhoto.uri, {
-        encoding: 'base64',
-      });
-      onProgress({ stage: 'uploading', current: index + 1, total: photos.length });
-      const path = await uploadSecureMedia({
-        userId,
-        kind: 'cleanup',
-        bytes: base64ToUint8Array(base64),
-        mimeType,
-        subjectId: cleanupId,
-        submissionId,
-        position: index + 1,
-      });
-      uploadedPaths.push(path);
-    }
+    onProgress({ stage: 'preparing', current: 1, total: photos.length });
+    await mapInConcurrentBatches(
+      photos,
+      async (asset, index) => {
+        const preparedPhoto = await preparePhotoForSafetyScan(asset.uri);
+        const { mimeType: originalMimeType } = await cleanupPhotoMetadata({
+          ...asset,
+          uri: preparedPhoto.uri,
+          fileSize: preparedPhoto.byteSize,
+        });
+        const mimeType = preparedPhoto.mimeType ?? originalMimeType;
+        const base64 = await FileSystem.readAsStringAsync(preparedPhoto.uri, {
+          encoding: 'base64',
+        });
+        return uploadSecureMedia({
+          userId,
+          kind: 'cleanup',
+          bytes: base64ToUint8Array(base64),
+          mimeType,
+          subjectId: cleanupId,
+          submissionId,
+          position: index + 1,
+        });
+      },
+      {
+        concurrency: CLEANUP_PHOTO_UPLOAD_CONCURRENCY,
+        onFulfilled: (path) => {
+          uploadedPaths.push(path);
+          completedPhotos += 1;
+          onProgress({
+            stage: 'uploading',
+            current: completedPhotos,
+            total: photos.length,
+          });
+        },
+      },
+    );
 
     onProgress({ stage: 'saving', current: photos.length, total: photos.length });
     const { data, error: submissionError } = await supabase.rpc(
-      'submit_cleanup',
+      'submit_cleanup_with_weight',
       {
         target_cleanup_id: cleanupId,
         target_submission_id: submissionId,
         cleanup_description: description,
         cleanup_photo_paths: uploadedPaths,
         cleanup_bags_or_items_removed: bagsOrItemsRemoved,
-        cleanup_duration_minutes: durationMinutes,
+        cleanup_weight_pounds: weightPounds,
       }
     );
 

@@ -16,6 +16,25 @@ const reportListSource = readFileSync(
 );
 
 describe('report photo responsiveness', () => {
+  it('offers both camera and photo-library actions for report evidence', () => {
+    expect(mapScreenSource).toContain('ImagePicker.launchCameraAsync(reportCameraPickerOptions({');
+    expect(mapScreenSource).toContain('nativePhotoOptimizationAvailable: isPhotoOptimizationAvailable()');
+    expect(mapScreenSource).toContain("onPress={() => pickImage('camera')}");
+    expect(mapScreenSource).toContain("onPress={() => pickImage('library')}");
+    expect(mapScreenSource).toContain('>Take photo</Text>');
+    expect(mapScreenSource).toContain('>Choose photos</Text>');
+    expect(mapScreenSource).toContain('Add 1–3 photos of the littered area.');
+    expect(mapScreenSource).toContain(
+      'or surroundings that will help a cleaner find the location.'
+    );
+  });
+
+  it('safety-checks report photos with bounded concurrency and visible progress', () => {
+    expect(mapScreenSource).toContain('REPORT_PHOTO_UPLOAD_CONCURRENCY');
+    expect(mapScreenSource).toContain('mapInConcurrentBatches(');
+    expect(mapScreenSource).toContain('Photo ${completedPhotos} of ${photoUris.length} safety-checked.');
+  });
+
   it('uses the shared signed URL cache when report details open', () => {
     expect(mapScreenSource).toContain('getReportPhotoUrl(firstPhotoPath)');
     expect(mapScreenSource).not.toContain('const getSignedPhotoUrl = async');

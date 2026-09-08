@@ -16,14 +16,14 @@ export function reportWithdrawalErrorMessage(error) {
     return 'This report has funding activity, so it must be closed through the cleanup fund process.';
   }
   if (/cleanup_activity_started/i.test(message)) {
-    return 'Someone has already started this cleanup, so the report can no longer be withdrawn.';
+    return 'Someone has already started this cleanup, so the report can no longer be deleted.';
   }
   if (/report_withdrawal_not_allowed/i.test(message)) {
-    return 'This report is no longer active and cannot be withdrawn.';
+    return 'This report is no longer active and cannot be deleted.';
   }
   if (/report_not_found|withdrawal_not_owned/i.test(message)) {
     return 'This report is no longer available in your account.';
   }
 
-  return 'We couldn’t withdraw this report. Check your connection and try again.';
+  return 'We couldn’t delete this report. Check your connection and try again.';
 }

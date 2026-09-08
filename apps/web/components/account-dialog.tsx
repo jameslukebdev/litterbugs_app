@@ -38,6 +38,9 @@ type CleanupAttempt = Pick<
   report: Pick<Report, 'id' | 'title' | 'severity' | 'cleanup_state'> | null;
 };
 type ContributionRow = Database['public']['Tables']['cleanup_contributions']['Row'];
+type CompletedContribution = ContributionRow & {
+  report: Pick<Report, 'id' | 'title' | 'cleanup_state'> | null;
+};
 type BlockedProfile = Pick<Profile, 'id' | 'display_name' | 'username' | 'provider_avatar_url' | 'avatar_path' | 'updated_at'>;
 type BlockedAccount = {
   blocked_id: string;
@@ -114,7 +117,7 @@ export function AccountDialog({
   const [reports, setReports] = useState<Report[]>([]);
   const [expiredReports, setExpiredReports] = useState<Report[]>([]);
   const [cleanups, setCleanups] = useState<CleanupAttempt[]>([]);
-  const [contributions, setContributions] = useState<ContributionRow[]>([]);
+  const [contributions, setContributions] = useState<CompletedContribution[]>([]);
   const [blockedAccounts, setBlockedAccounts] = useState<BlockedAccount[]>([]);
   const [message, setMessage] = useState('');
   const [busyAction, setBusyAction] = useState('');
@@ -163,7 +166,9 @@ export function AccountDialog({
           .limit(50),
         supabase
           .from('cleanup_contributions')
-          .select('*')
+          .select('*, report:reports!inner(id,title,cleanup_state)')
+          .eq('report.cleanup_state', 'completed')
+          .in('status', ['succeeded', 'paid_out'])
           .order('created_at', { ascending: false })
           .limit(50),
         supabase
@@ -583,7 +588,7 @@ export function AccountDialog({
             </section>
 
             <section className="member-panel member-contributions-panel">
-              <header><div><span className="eyebrow">CLEANUP FUNDS</span><h3>My contributions</h3></div></header>
+              <header><div><span className="eyebrow">CLEANUP FUNDS</span><h3>Completed cleanup contributions</h3></div></header>
               <div className="member-activity-list">
                 {contributions.map((contribution) => (
                   <button key={contribution.id} className="member-activity-row" onClick={() => openReport(contribution.report_id)}>
@@ -595,7 +600,7 @@ export function AccountDialog({
                     <Icon name="chevron-right" />
                   </button>
                 ))}
-                {!contributions.length && <p className="member-empty">Your cleanup contributions will appear here.</p>}
+                {!contributions.length && <p className="member-empty">Contributions will appear here after their cleanups are completed.</p>}
               </div>
             </section>
 

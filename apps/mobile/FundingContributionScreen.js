@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -29,9 +29,18 @@ import {
 import { calculatePlatformFee, parseContributionAmount } from './lib/fundingMath';
 import { paymentSheetConfiguration, stripeInitializationConfiguration } from './lib/paymentConfiguration';
 import { evaluatePaymentConfirmation } from './lib/paymentConfirmation';
-import { fundingAvailabilityPresentation } from './lib/fundingAvailability';
+import {
+  fundingAvailabilityPresentation,
+  fundingReviewCompletionPresentation,
+  shouldRefreshFundingEligibility,
+} from './lib/fundingAvailability';
 import { useReports } from './lib/reports';
 import { withTimeout } from './lib/asyncTimeout';
+import {
+  clearPendingReportFunding,
+  loadPendingReportFunding,
+  savePendingReportFunding,
+} from './lib/pendingReportFunding';
 import BrandedLoadingState, { LoadingButtonContent } from './BrandedLoadingState';
 
 export default function FundingContributionScreen({ navigation, route }) {
@@ -42,17 +51,50 @@ export default function FundingContributionScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const [report, setReport] = useState(null);
   const [flags, setFlags] = useState(null);
-  const [amount, setAmount] = useState(
-    typeof initialAmount === 'string' && initialAmount.trim() ? initialAmount : '25'
-  );
+  const hasInitialAmount = typeof initialAmount === 'string' && initialAmount.trim();
+  const [amount, setAmount] = useState(hasInitialAmount ? initialAmount : '');
+  const [pendingAmountLoaded, setPendingAmountLoaded] = useState(Boolean(hasInitialAmount));
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [paying, setPaying] = useState(false);
   const [receipt, setReceipt] = useState(null);
   const [confirmationPending, setConfirmationPending] = useState(false);
+  const previousFundingEligibility = useRef(null);
+  const fundingEligibilityInitialized = useRef(false);
   const principalCents = useMemo(() => parseContributionAmount(amount), [amount]);
   const feeCents = principalCents == null ? null : calculatePlatformFee(principalCents);
+
+  useEffect(() => {
+    let active = true;
+    if (hasInitialAmount) {
+      savePendingReportFunding(reportId, initialAmount).catch((error) => {
+        console.log('Pending report funding save error:', error);
+      });
+      return undefined;
+    }
+
+    loadPendingReportFunding(reportId)
+      .then((savedAmount) => {
+        if (active) setAmount(savedAmount ?? '25');
+      })
+      .catch((error) => {
+        console.log('Pending report funding load error:', error);
+        if (active) setAmount('25');
+      })
+      .finally(() => {
+        if (active) setPendingAmountLoaded(true);
+      });
+
+    return () => { active = false; };
+  }, [hasInitialAmount, initialAmount, reportId]);
+
+  useEffect(() => {
+    if (!fromReportCreation || !pendingAmountLoaded || !principalCents) return;
+    savePendingReportFunding(reportId, amount).catch((error) => {
+      console.log('Pending report funding update error:', error);
+    });
+  }, [amount, fromReportCreation, pendingAmountLoaded, principalCents, reportId]);
 
   useEffect(() => {
     let active = true;
@@ -80,7 +122,7 @@ export default function FundingContributionScreen({ navigation, route }) {
     const shouldRecheck = fromReportCreation
       && !loading
       && !loadError
-      && ['safety_hold', null, undefined].includes(report?.funding_eligibility);
+      && shouldRefreshFundingEligibility(report);
     if (!shouldRecheck) return undefined;
 
     let active = true;
@@ -99,6 +141,21 @@ export default function FundingContributionScreen({ navigation, route }) {
       clearInterval(interval);
     };
   }, [fromReportCreation, getReportById, loadError, loading, report?.funding_eligibility, reportId]);
+
+  useEffect(() => {
+    if (loading || loadError || !report) return;
+
+    if (fundingEligibilityInitialized.current) {
+      const presentation = fundingReviewCompletionPresentation(
+        previousFundingEligibility.current,
+        report,
+      );
+      if (presentation) Alert.alert(presentation.title, presentation.message);
+    }
+
+    previousFundingEligibility.current = report.funding_eligibility;
+    fundingEligibilityInitialized.current = true;
+  }, [loadError, loading, report]);
 
   const pay = async () => {
     if (!principalCents || paying) return;
@@ -141,6 +198,9 @@ export default function FundingContributionScreen({ navigation, route }) {
       }
 
       setReceipt(intent);
+      clearPendingReportFunding(reportId).catch((error) => {
+        console.log('Pending report funding cleanup error:', error);
+      });
       await refreshReports({ showRefresh: false });
     } catch (error) {
       Alert.alert('Contribution not completed', error.message || 'Please try again.');
@@ -210,7 +270,7 @@ export default function FundingContributionScreen({ navigation, route }) {
   if (unavailable) {
     const isNewReportFundingStep = fromReportCreation;
     const isPendingStartingContribution = fromReportCreation
-      && ['safety_hold', null, undefined].includes(report?.funding_eligibility);
+      && shouldRefreshFundingEligibility(report);
     return (
       <View style={styles.center}>
         <View style={isNewReportFundingStep ? styles.successIcon : null}>
@@ -280,7 +340,7 @@ export default function FundingContributionScreen({ navigation, route }) {
               accessibilityLabel="Cleanup fund contribution amount"
             />
           </View>
-          <Text style={[styles.helper, !principalCents && styles.error]}>Minimum $5 · Maximum $5,000 per contribution</Text>
+          <Text style={[styles.helper, !principalCents && styles.error]}>Minimum $1 · Maximum $1,000 per contribution</Text>
         </View>
 
         {principalCents ? (
@@ -294,7 +354,7 @@ export default function FundingContributionScreen({ navigation, route }) {
         <View style={styles.termsCard}>
           <Ionicons name="information-circle-outline" size={21} color="#52636B" />
           <Text style={styles.termsText}>
-            The first contribution locks the report’s original details. If the report closes or your funds reach Stripe’s holding limit before payout, Litterbugs refunds your full charge, including the 10% fee. Funding freezes once a cleaner claims the report.
+            Stripe charges your selected payment method when you confirm so the cleanup reward is funded and available for a cleaner. Litterbugs pays the cleaner only after an approved cleanup. If the report closes or the funds reach the published holding limit, Litterbugs refunds your full charge, including the 10% fee. Funding freezes once a cleaner claims the report.
           </Text>
         </View>
 

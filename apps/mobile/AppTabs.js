@@ -1,4 +1,4 @@
-import { Image, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import FloatingBottomTabBar from './FloatingBottomTabBar';
@@ -7,16 +7,6 @@ import ProfileScreen from './ProfileScreen';
 import ReportsScreen from './ReportsScreen';
 
 const Tab = createBottomTabNavigator();
-
-function MapHeaderLogo() {
-  return (
-    <Image
-      source={require('./assets/LB_Logo_PNG.png')}
-      style={styles.logo}
-      resizeMode="contain"
-    />
-  );
-}
 
 export default function AppTabs({ onLaunchReady }) {
   return (
@@ -44,9 +34,7 @@ export default function AppTabs({ onLaunchReady }) {
         <Tab.Screen
           name="Map"
           options={{
-            headerTitle: MapHeaderLogo,
-            headerStyle: { backgroundColor: '#FFFFFF' },
-            headerTitleContainerStyle: styles.mapHeaderTitleContainer,
+            headerShown: false,
             tabBarAccessibilityLabel: 'Map',
           }}
         >
@@ -69,13 +57,6 @@ export default function AppTabs({ onLaunchReady }) {
 }
 
 const styles = StyleSheet.create({
-  mapHeaderTitleContainer: {
-    paddingBottom: 6,
-  },
-  logo: {
-    width: 120,
-    height: 40,
-  },
   profileHeaderTitle: {
     color: '#1F2328',
     fontSize: 20,

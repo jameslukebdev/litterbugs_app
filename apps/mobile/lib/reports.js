@@ -13,10 +13,10 @@ import { useProfile } from './profile';
 import { completedImpactReportFilter, isVisibleReport } from './reportVisibility';
 
 export const DEFAULT_MAP_REGION = Object.freeze({
-  latitude: 35.6009,
-  longitude: -82.554,
-  latitudeDelta: 0.08,
-  longitudeDelta: 0.08,
+  latitude: 39.8283,
+  longitude: -98.5795,
+  latitudeDelta: 45,
+  longitudeDelta: 45,
 });
 
 const ReportsContext = createContext(null);

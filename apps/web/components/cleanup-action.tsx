@@ -75,7 +75,7 @@ export function CleanupAction({
   const [photos, setPhotos] = useState<File[]>([]);
   const [description, setDescription] = useState('');
   const [bagsOrItems, setBagsOrItems] = useState('');
-  const [durationMinutes, setDurationMinutes] = useState('');
+  const [weightPounds, setWeightPounds] = useState('');
   const [submissionError, setSubmissionError] = useState('');
 
   async function refreshAttempt() {
@@ -192,14 +192,27 @@ export function CleanupAction({
     return { value: parsed };
   }
 
+  function parseOptionalWeight(value: string) {
+    const trimmed = value.trim();
+    if (!trimmed) return { value: undefined as number | undefined };
+    if (!/^(?:\d+|\d*\.\d{1,2})$/.test(trimmed)) {
+      return { error: 'Weight removed must be a number with up to two decimal places.' };
+    }
+    const parsed = Number(trimmed);
+    if (!Number.isFinite(parsed) || parsed < 0.1 || parsed > 10000) {
+      return { error: 'Weight removed must be between 0.1 and 10,000 pounds.' };
+    }
+    return { value: parsed };
+  }
+
   async function submitCleanup() {
     if (!attempt || !userId) return;
     const evidenceError = validateCleanupEvidence(photos, description);
     if (evidenceError) return setSubmissionError(evidenceError);
     const bags = parseOptionalInteger(bagsOrItems, 'Bags or items removed', 0, 9999);
     if (bags.error) return setSubmissionError(bags.error);
-    const duration = parseOptionalInteger(durationMinutes, 'Cleanup duration', 1, 1440);
-    if (duration.error) return setSubmissionError(duration.error);
+    const weight = parseOptionalWeight(weightPounds);
+    if (weight.error) return setSubmissionError(weight.error);
 
     setBusy('submit');
     setSubmissionError('');
@@ -221,13 +234,13 @@ export function CleanupAction({
         paths.push(path);
       }
 
-      const { error } = await supabase.rpc('submit_cleanup', {
+      const { error } = await supabase.rpc('submit_cleanup_with_weight', {
         target_cleanup_id: attempt.id,
         target_submission_id: submissionId,
         cleanup_description: description.trim(),
         cleanup_photo_paths: paths,
         cleanup_bags_or_items_removed: bags.value,
-        cleanup_duration_minutes: duration.value,
+        cleanup_weight_pounds: weight.value,
       });
       if (error) throw error;
 
@@ -239,7 +252,7 @@ export function CleanupAction({
       setPhotos([]);
       setDescription('');
       setBagsOrItems('');
-      setDurationMinutes('');
+      setWeightPounds('');
       setMessage(attempt.is_paid
         ? 'Cleanup submitted. We’ll review the photos before the 48-hour dispute window starts.'
         : 'Cleanup submitted. The reporter has 48 hours to review it.');
@@ -305,7 +318,7 @@ export function CleanupAction({
             <label>Cleanup description <span>Required</span><textarea value={description} maxLength={500} onChange={(event) => { setDescription(event.target.value); setSubmissionError(''); }} placeholder="Describe what you removed and where you cleaned." /></label>
             <div className="cleanup-number-grid">
               <label>Bags/items removed <span>Optional</span><input inputMode="numeric" value={bagsOrItems} onChange={(event) => setBagsOrItems(event.target.value)} /></label>
-              <label>Minutes spent <span>Optional</span><input inputMode="numeric" value={durationMinutes} onChange={(event) => setDurationMinutes(event.target.value)} /></label>
+              <label>Weight removed (lb) <span>Optional</span><input inputMode="decimal" value={weightPounds} onChange={(event) => setWeightPounds(event.target.value)} /></label>
             </div>
           </div>
           {submissionError && <p className="form-message error-message" role="alert">{submissionError}</p>}

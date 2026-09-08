@@ -39,7 +39,7 @@ export async function loadCompletedCleanupImpact(reportId) {
   const [submissionResult, cleanerResult, photosResult] = await Promise.all([
     supabase
       .from('cleanup_submissions')
-      .select('id, cleanup_attempt_id, description, bags_or_items_removed, duration_minutes, created_at')
+      .select('id, cleanup_attempt_id, description, bags_or_items_removed, weight_pounds, created_at')
       .eq('id', attempt.final_submission_id)
       .eq('cleanup_attempt_id', attempt.id)
       .maybeSingle(),

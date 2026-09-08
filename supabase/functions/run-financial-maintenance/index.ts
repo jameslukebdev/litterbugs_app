@@ -245,7 +245,7 @@ const processAiCheck = async (
 
     const parts: unknown[] = [{
       text: check.check_kind === "report"
-        ? `Review this original litter report for a usable photo, obvious fraud, and cleanup safety. Report metadata: ${
+        ? `Review this original litter report for a usable photo, obvious fraud, and cleanup safety. Ordinary roadside litter beside a usable shoulder, pull-off, parking area, sidewalk, or drainage edge is not traffic_exposure by itself and may pass with usable evidence. Reserve traffic_exposure and admin_review for a visibly high-risk location that appears to require entering an active travel lane or median, has no safe standing or parking area, is on a high-speed controlled-access road, is at a blind curve, or has another specific visible traffic danger. If the photos do not establish whether a suspected roadway location has safe separation, use admin_review. Report metadata: ${
           JSON.stringify({
             title: report.title,
             severity: report.severity,

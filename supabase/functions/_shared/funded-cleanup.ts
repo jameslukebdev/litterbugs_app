@@ -1,6 +1,9 @@
 import { createClient, type User } from "npm:@supabase/supabase-js@2.87.1";
 import Stripe from "npm:stripe@22.5.0";
 
+export const MIN_CLEANUP_CONTRIBUTION_CENTS = 100;
+export const MAX_CLEANUP_CONTRIBUTION_CENTS = 100_000;
+
 export const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, apikey, content-type, stripe-signature, x-financial-maintenance-secret, x-client-info",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -76,7 +79,10 @@ export const stripeV2 = async <T>(path: string, init: RequestInit = {}): Promise
 
 export type StripeRecipientAccount = {
   id: string;
-  identity?: { country?: string | null } | null;
+  identity?: {
+    country?: string | null;
+    entity_type?: "company" | "government_entity" | "individual" | "non_profit" | null;
+  } | null;
   requirements?: {
     entries?: Array<{
       awaiting_action_from?: "user" | "stripe" | null;
@@ -128,6 +134,29 @@ export const retrieveStripeRecipientAccount = (accountId: string) => {
     { method: "GET" },
   );
 };
+
+export const configureStripeRecipientAsIndividual = (
+  accountId: string,
+  country = "us",
+) => stripeV2<StripeRecipientAccount>(
+  `/core/accounts/${encodeURIComponent(accountId)}`,
+  {
+    method: "POST",
+    body: JSON.stringify({
+      identity: {
+        country,
+        entity_type: "individual",
+      },
+      defaults: {
+        profile: {
+          business_url: "https://litterbugs.app/cleanup-policy",
+          product_description: "Individual litter cleanup services coordinated and rewarded through the Litterbugs community cleanup platform.",
+        },
+      },
+      include: ["configuration.recipient", "identity", "requirements"],
+    }),
+  },
+);
 
 export type StripeAccountLink = { url: string; expires_at: string };
 
@@ -238,7 +267,7 @@ export const createStripeRecipientOnboardingLink = async (
         type: "account_onboarding",
         account_onboarding: {
           configurations: ["recipient"],
-          collection_options: { fields: "eventually_due", future_requirements: "include" },
+          collection_options: { fields: "currently_due", future_requirements: "omit" },
           return_url: returnUrl,
           refresh_url: refreshUrl,
         },

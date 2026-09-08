@@ -11,7 +11,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 
 import CompactRankBadge from './CompactRankBadge';
-import BrandedLoadingState from './BrandedLoadingState';
 import ProfileAvatar from './ProfileAvatar';
 import {
   cleanupImpactFacts,
@@ -72,7 +71,7 @@ export default function CompletedCleanupStory({
   onRetry,
 }) {
   if (loading) {
-    return <BrandedLoadingState compact title="Loading cleanup impact…" message="Preparing this completed cleanup story." />;
+    return null;
   }
 
   if (error || !impact) {

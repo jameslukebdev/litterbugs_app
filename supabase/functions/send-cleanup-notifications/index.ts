@@ -119,6 +119,21 @@ const notificationContent = (eventType: string) => {
         title: "Better report photos needed",
         body: "Replace the original report photos before members can fund this cleanup.",
       };
+    case "report_funding_review_required":
+      return {
+        title: "Cleanup fund safety review",
+        body: "Your report needs a quick administrator safety review before funding can begin.",
+      };
+    case "report_funding_approved":
+      return {
+        title: "Cleanup funding approved",
+        body: "Your report can now accept funding. Finish your secure Stripe payment.",
+      };
+    case "report_funding_rejected":
+      return {
+        title: "Cleanup funding unavailable",
+        body: "Your report was reviewed and cannot accept cleanup funding.",
+      };
     default:
       return null;
   }

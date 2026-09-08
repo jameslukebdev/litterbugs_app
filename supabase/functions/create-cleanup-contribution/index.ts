@@ -5,6 +5,8 @@ import {
   errorMessage,
   isUuid,
   jsonResponse,
+  MAX_CLEANUP_CONTRIBUTION_CENTS,
+  MIN_CLEANUP_CONTRIBUTION_CENTS,
   requiredEnv,
   serviceClient,
   stripeClient,
@@ -40,10 +42,10 @@ Deno.serve(async (request: Request) => {
     !isUuid(reportId)
     || !isUuid(clientRequestId)
     || !Number.isInteger(principalAmountCents)
-    || Number(principalAmountCents) < 500
-    || Number(principalAmountCents) > 500_000
+    || Number(principalAmountCents) < MIN_CLEANUP_CONTRIBUTION_CENTS
+    || Number(principalAmountCents) > MAX_CLEANUP_CONTRIBUTION_CENTS
   ) {
-    return jsonResponse({ error: "Enter an amount from $5 to $5,000" }, 400);
+    return jsonResponse({ error: "Enter an amount from $1 to $1,000" }, 400);
   }
 
   const principal = Number(principalAmountCents);

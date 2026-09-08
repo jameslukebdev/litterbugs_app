@@ -40,7 +40,7 @@ export default function TermsPage() {
         {
           title: 'Contributions and the 10% Litterbugs fee',
           content: <>
-            <p>A logged-in member may add between <strong>$5 and $5,000 per transaction</strong> to an active, eligible cleanup report. The reporter does not have to contribute. Before payment, Litterbugs shows the principal added to the cleaner reward, a separate 10% Litterbugs platform fee, and the total charge. For example, a $20 principal contribution has a $2 platform fee and a $22 total charge.</p>
+            <p>A logged-in member may add between <strong>$1 and $1,000 per transaction</strong> to an active, eligible cleanup report. The reporter does not have to contribute. Before payment, Litterbugs shows the principal added to the cleaner reward, a separate 10% Litterbugs platform fee, and the total charge. For example, a $20 principal contribution has a $2 platform fee and a $22 total charge.</p>
             <p>The displayed cleaner reward is the total contribution principal, not the total charged. If an eligible cleanup is approved, the cleaner receives that exact frozen principal. Litterbugs retains the 10% fee and absorbs standard Stripe processing, payout, refund, and chargeback costs. Contributions are not charitable donations and are not represented as tax deductible.</p>
             <p>By confirming a contribution, you authorize Litterbugs and Stripe to charge the selected payment method for the displayed total. A contribution is successful only after the payment is confirmed and reconciled. A pending, failed, canceled, reversed, duplicated, or mismatched payment may be blocked or sent to administrator review.</p>
             <p>A successful contribution remains assigned to the report until paid to an approved cleaner or refunded under the published rules. A contributor cannot cancel, withdraw, or opt out merely because they changed their mind. This does not limit rights that cannot be waived under applicable law or governing payment-network rules.</p>
@@ -63,10 +63,10 @@ export default function TermsPage() {
               <li>Reused report photos, unrelated locations, manipulated evidence, and fraud are prohibited.</li>
               <li>Gemini performs an initial structured photo review and may request better photos or send the case to an administrator. It never releases money.</li>
               <li>A funded cleaner may be asked for better photos twice. A third inconclusive result is escalated to an administrator.</li>
-              <li>After evidence passes, the reporter has 48 hours to dispute. There is no early funded payout.</li>
+              <li>After evidence passes, the reporter has up to 48 hours to approve the cleanup or dispute it. Reporter approval ends the remaining dispute window and allows protected payout processing to begin once every other required review and eligibility check has passed. If the reporter does nothing, the cleanup is automatically approved when the 48-hour window expires.</li>
               <li>The cleaner&apos;s first paid cleanup receives a lightweight administrator check.</li>
             </ul>
-            <p>A reporter may clean their own report and receive the reward, but receives no special treatment or early approval. The same evidence, Gemini, dispute-window, first-paid-cleanup, and administrator rules apply.</p>
+            <p>A reporter may clean their own report and receive the reward, but receives no preferential treatment. The same evidence, Gemini, review-window, first-paid-cleanup, and administrator rules apply, and any self-approval remains recorded as such.</p>
           </>,
         },
         {
@@ -93,7 +93,7 @@ export default function TermsPage() {
         {
           title: 'Cleaner rewards, Stripe, and taxes',
           content: <>
-            <p>After the dispute window and all required reviews, Litterbugs transfers the frozen principal through Stripe Connect. Stripe hosts identity, tax-information, bank, and payout onboarding. Litterbugs does not store full card or bank-account numbers.</p>
+            <p>After reporter approval or automatic approval at the end of the dispute window, and after all required reviews, Litterbugs processes the frozen principal through Stripe Connect. Stripe hosts identity, tax-information, bank, and payout onboarding. Litterbugs does not store full card or bank-account numbers.</p>
             <p>A displayed reward is not guaranteed until the cleanup satisfies the evidence, dispute, administrator, fraud, reconciliation, and Stripe eligibility requirements. Stripe or Litterbugs may delay or withhold a transfer when required by law, sanctions, provider rules, identity requirements, fraud controls, disputes, or financial reconciliation.</p>
             <p>Cleaners are responsible for determining and reporting taxes associated with rewards. Stripe or Litterbugs may collect required tax information and issue required forms.</p>
           </>,

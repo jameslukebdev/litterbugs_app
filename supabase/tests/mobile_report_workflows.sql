@@ -64,6 +64,121 @@ begin
 end;
 $$;
 
+-- An abandoned payment attempt is not collected funding and must not lock an
+-- otherwise available report. Keep the contribution row for audit/idempotency.
+insert into public.reports (
+  id, user_id, title, latitude, longitude, photo_paths, expires_at
+) values (
+  '92000000-0000-4000-8000-000000000004',
+  '91000000-0000-4000-8000-000000000001',
+  'Pending payment owner withdrawal test', 35, -78,
+  array['91000000-0000-4000-8000-000000000001/report/pending-payment.jpg'],
+  now() + interval '30 days'
+);
+
+insert into public.cleanup_contributions (
+  id, report_id, contributor_id, client_request_id,
+  principal_amount_cents, platform_fee_cents, total_amount_cents,
+  status, stripe_payment_intent_id
+) values (
+  '95000000-0000-4000-8000-000000000004',
+  '92000000-0000-4000-8000-000000000004',
+  '91000000-0000-4000-8000-000000000001',
+  '96000000-0000-4000-8000-000000000004',
+  500, 50, 550,
+  'payment_pending', 'pi_owner_withdrawal_pending'
+);
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '91000000-0000-4000-8000-000000000001', true);
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"91000000-0000-4000-8000-000000000001","is_anonymous":false,"aal":"aal1"}',
+  true
+);
+select public.withdraw_own_report('92000000-0000-4000-8000-000000000004');
+reset role;
+
+do $$
+begin
+  if not exists (
+    select 1 from public.reports
+    where id = '92000000-0000-4000-8000-000000000004'
+      and cancelled_at is not null
+      and renewal_status = 'closed'
+  ) then
+    raise exception 'Pending payment attempt kept owner withdrawal locked';
+  end if;
+  if not exists (
+    select 1 from public.cleanup_contributions
+    where id = '95000000-0000-4000-8000-000000000004'
+      and status = 'payment_pending'
+  ) then
+    raise exception 'Owner withdrawal destroyed pending payment audit history';
+  end if;
+end;
+$$;
+
+-- Released cleanup history must not permanently lock an available report.
+insert into public.reports (
+  id, user_id, title, latitude, longitude, photo_paths, expires_at
+) values (
+  '92000000-0000-4000-8000-000000000003',
+  '91000000-0000-4000-8000-000000000001',
+  'Released cleanup owner controls test', 35, -78,
+  array['91000000-0000-4000-8000-000000000001/report/released-owner-controls.jpg'],
+  now() + interval '30 days'
+);
+
+insert into public.cleanup_attempts (
+  id, report_id, cleaner_id, reporter_id, waiver_version, guidelines_version,
+  status, claimed_at, claim_expires_at, released_at
+)
+select
+  '94000000-0000-4000-8000-000000000003',
+  '92000000-0000-4000-8000-000000000003',
+  '91000000-0000-4000-8000-000000000002',
+  '91000000-0000-4000-8000-000000000001',
+  waiver_version, guidelines_version,
+  'released', now() - interval '1 hour', now() + interval '23 hours', now()
+from public.cleanup_waiver_versions
+where is_active and retired_at is null
+limit 1;
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '91000000-0000-4000-8000-000000000001', true);
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"91000000-0000-4000-8000-000000000001","is_anonymous":false,"aal":"aal1"}',
+  true
+);
+update public.reports
+set title = 'Released cleanup report edited by owner'
+where id = '92000000-0000-4000-8000-000000000003';
+select public.withdraw_own_report('92000000-0000-4000-8000-000000000003');
+reset role;
+
+do $$
+begin
+  if not exists (
+    select 1 from public.reports
+    where id = '92000000-0000-4000-8000-000000000003'
+      and title = 'Released cleanup report edited by owner'
+      and cancelled_at is not null
+      and renewal_status = 'closed'
+  ) then
+    raise exception 'Released cleanup history kept owner edit or withdrawal controls locked';
+  end if;
+  if not exists (
+    select 1 from public.cleanup_attempts
+    where id = '94000000-0000-4000-8000-000000000003'
+      and status = 'released'
+  ) then
+    raise exception 'Owner withdrawal destroyed released cleanup history';
+  end if;
+end;
+$$;
+
 -- A funded cleanup that has passed its financial checks can be explicitly
 -- approved by the original reporter before the automatic deadline.
 insert into public.reports (

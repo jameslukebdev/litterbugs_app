@@ -349,7 +349,7 @@ begin
   values (
     'cleanup_photos',
     first_photo_path,
-    '33333333-3333-4333-8333-333333333333'
+    null
   );
 
   perform public.submit_cleanup(

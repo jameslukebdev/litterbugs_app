@@ -19,7 +19,7 @@ export default function CleanupPolicyPage() {
         {
           title: 'Contributions and the displayed reward',
           content: <>
-            <p>A logged-in member may add $5 to $5,000 of principal per transaction to an active, eligible report. Litterbugs adds a separate 10% platform fee and shows the principal, fee, and total before payment. Contributions are not charitable donations and are not represented as tax deductible.</p>
+            <p>A logged-in member may add $1 to $1,000 of principal per transaction to an active, eligible report. Litterbugs adds a separate 10% platform fee and shows the principal, fee, and total before payment. Contributions are not charitable donations and are not represented as tax deductible.</p>
             <p>The cleaner reward shows only the contributed principal. An approved cleaner receives that exact frozen principal. Litterbugs keeps the separate 10% fee and absorbs standard payment, payout, refund, and chargeback costs.</p>
           </>,
         },
@@ -64,9 +64,9 @@ export default function CleanupPolicyPage() {
           </>,
         },
         {
-          title: 'The 48-hour dispute window',
+          title: 'The 48-hour review and dispute window',
           content: <>
-            <p>After the evidence passes, the reporter has 48 hours to dispute. The reporter does not need to approve the cleanup, and there is no early funded payout. An open dispute pauses the reward.</p>
+            <p>After the evidence passes, the reporter has up to 48 hours to approve the cleanup or dispute it. Reporter approval ends the remaining dispute window and allows protected payout processing to begin once every other required review and eligibility check has passed. If the reporter does nothing, the cleanup is automatically approved when the 48-hour window expires. An open dispute pauses the reward.</p>
             <p>An authorized administrator reviews the relevant before and after evidence, Gemini findings, cleaner explanation and history, report, payment state, reporter reason, and audit record. Administrators record a reason for financial and rejection actions.</p>
           </>,
         },
@@ -82,7 +82,7 @@ export default function CleanupPolicyPage() {
         {
           title: 'Cleaner rewards and taxes',
           content: <>
-            <p>After the 48-hour window and all required reviews, Litterbugs transfers the frozen principal through Stripe Connect. The cleaner&apos;s first paid cleanup receives a lightweight administrator check. A displayed reward is not guaranteed until every evidence, dispute, administrator, fraud, reconciliation, and Stripe eligibility requirement is satisfied.</p>
+            <p>After reporter approval or automatic approval at the end of the 48-hour window, and after all required reviews, Litterbugs processes the frozen principal through Stripe Connect. The cleaner&apos;s first paid cleanup receives a lightweight administrator check. A displayed reward is not guaranteed until every evidence, dispute, administrator, fraud, reconciliation, and Stripe eligibility requirement is satisfied.</p>
             <p>Stripe provides hosted identity, tax-information, bank, and payout setup. Stripe or Litterbugs may delay or withhold payment when required by law, sanctions, identity requirements, provider rules, fraud controls, disputes, or reconciliation. Cleaners are responsible for determining and reporting taxes related to rewards.</p>
           </>,
         },

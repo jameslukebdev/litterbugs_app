@@ -33,7 +33,7 @@ this context are the source of truth.
 - Any logged-in member may contribute to an active eligible report; the reporter
   does not need to contribute. Contributors cannot withdraw or opt out merely
   because they changed their mind.
-- Each contribution adds $5.00 to $5,000.00 of principal to the cleanup reward.
+- Each contribution adds $1.00 to $1,000.00 of principal to the cleanup reward.
   Litterbugs charges a separate 10% platform fee, shown before confirmation.
   Example: a $20 principal contribution has a $2 platform fee and a $22 total.
 - The displayed cleaner reward is the total contribution principal, not the
@@ -57,8 +57,11 @@ this context are the source of truth.
 - A successful contribution cannot be refunded solely at a contributor's
   request while its report remains active.
 - When a funded cleanup is claimed, contributions stop and the pool is frozen.
-- After Gemini accepts the evidence, the reporter has 48 hours to dispute. The
-  reporter does not have to approve, and there is no early funded payout.
+- After Gemini accepts the evidence, the reporter has up to 48 hours to approve
+  the cleanup or dispute it. Reporter approval ends the remaining dispute window
+  and allows protected payout processing to begin after every other required
+  review and eligibility check passes. If the reporter does nothing, the cleanup
+  is automatically approved when the 48-hour window expires.
 - An open dispute blocks payout. An authorized administrator reviews the full
   before/after evidence, Gemini findings, cleaner description/history, report,
   payment state, and reporter reason. Denying the dispute lets the normal reward
@@ -82,8 +85,9 @@ this context are the source of truth.
   inconclusive result escalates to an administrator instead of adding unlimited
   retries.
 - The cleaner's first paid cleanup receives a lightweight administrator check.
-- After the 48-hour window and all required reviews, Litterbugs transfers the
-  frozen principal to the cleaner through Stripe Connect standard payouts.
+- After reporter approval or automatic approval at the end of the 48-hour window,
+  and after all required reviews, Litterbugs processes the frozen principal for
+  the cleaner through Stripe Connect standard payouts.
 - Stripe hosts identity, tax-information, bank, and payout onboarding. Litterbugs
   does not store full card or bank-account numbers. Stripe and Litterbugs may
   delay or withhold payouts when required by law, sanctions, fraud controls,
@@ -169,7 +173,7 @@ Produce a coordinated, plain-English production draft set:
    on provisions that genuinely require jurisdiction-specific legal judgment.
 
 The documents must agree with each other and explicitly cover the 10% fee,
-non-charitable contributions, $5-$5,000 contribution range, report renewal,
+non-charitable contributions, $1-$1,000 contribution range, report renewal,
 full-charge refunds, 23-month limit, no contributor opt-out, disputes, paid
 self-cleanups, independent status, cleaner safety/liability, taxes, Stripe
 payouts, Gemini photo processing, human escalation, prohibited evidence, account

@@ -15,7 +15,7 @@ export type PublicReportShareModel = {
   completionDate: string | null;
   cleanupDescription: string | null;
   bagsOrItemsRemoved: number | null;
-  durationMinutes: number | null;
+  weightPounds: number | null;
   beforePhotoUrl: string | null;
   afterPhotoUrl: string | null;
   canonicalUrl: string;
