@@ -1,3 +1,4 @@
+import FeeExplanationLabel from './components/FeeExplanationLabel';
 import { useCallback, useState } from 'react';
 import { Alert, Linking, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -27,7 +28,7 @@ export default function PaymentDetailScreen({ navigation, route }) {
       <Text style={{ marginTop: 12, color: '#687178' }}>{formatContributionDate(item.created_at)}</Text>
       <View style={{ marginVertical: 24, gap: 12 }}>
         <Text>Cleanup contribution: {formatUsd(item.principal_amount_cents)}</Text>
-        <Text>Litterbugs fee: {formatUsd(item.platform_fee_cents)}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><FeeExplanationLabel label="Litterbugs fee" /><Text>{formatUsd(item.platform_fee_cents)}</Text></View>
         {item.refunded_at ? <Text>Refunded: {formatContributionDate(item.refunded_at)}</Text> : null}
       </View>
       {item.report ? action('View cleanup report', () => navigation.navigate('App', { screen: 'Map', params: { reportId: item.report_id } })) : <Text style={{ color: '#687178', lineHeight: 21 }}>The linked report is no longer available. Your payment record remains here.</Text>}

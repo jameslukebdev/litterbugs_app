@@ -1,8 +1,13 @@
+import { cleanupMapTone } from './cleanupEligibility';
+
+const statusPriority = (point) => ({ available: 2, active: 1, completed: 0 }[cleanupMapTone(point.report)]);
+
 // Screen-space labels: every report remains a marker, even when its label does not fit.
 export function layoutMapLabels(points, selectedId, fontScale = 1) {
   const labels = [];
   const ordered = [...points].sort((a, b) =>
-    Number(b.id === selectedId) - Number(a.id === selectedId) || String(a.id).localeCompare(String(b.id)));
+    Number(b.id === selectedId) - Number(a.id === selectedId) ||
+    statusPriority(b) - statusPriority(a) || String(a.id).localeCompare(String(b.id)));
   return ordered.map((point) => {
     const width = Math.max(42, (point.label?.length || 1) * 9 * fontScale + 30);
     const height = Math.max(32, 20 * fontScale + 12);

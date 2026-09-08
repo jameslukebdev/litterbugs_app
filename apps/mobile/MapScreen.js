@@ -1,3 +1,4 @@
+import FeeExplanationLabel from './components/FeeExplanationLabel';
 import MapReportPreview from './components/MapReportPreview';
 import useMapLabels from './lib/useMapLabels';
 import { reportsNearMapTap } from './lib/mapLabelLayout';
@@ -3152,9 +3153,14 @@ const renderReportStep = () => {
 
               {wantsStartingFunding ? (
                 startingContributionCents ? (
-                  <Text style={styles.startingFundTotal}>
-                    Contribution {formatUsd(startingContributionCents)} · Litterbugs fee {formatUsd(calculatePlatformFee(startingContributionCents))} · Total {formatUsd(startingContributionCents + calculatePlatformFee(startingContributionCents))}
-                  </Text>
+                  <View>
+                    <Text style={styles.startingFundTotal}>Contribution {formatUsd(startingContributionCents)}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <FeeExplanationLabel />
+                      <Text>{formatUsd(calculatePlatformFee(startingContributionCents))}</Text>
+                    </View>
+                    <Text style={styles.startingFundTotal}>Total {formatUsd(startingContributionCents + calculatePlatformFee(startingContributionCents))}</Text>
+                  </View>
                 ) : (
                   <Text style={styles.requiredHint}>Enter an amount from $1 to $1,000.</Text>
                 )

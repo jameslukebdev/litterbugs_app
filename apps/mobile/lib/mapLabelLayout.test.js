@@ -17,6 +17,23 @@ describe('map label collision and discovery', () => {
     expect(layoutMapLabels(input)).toEqual(layoutMapLabels([...input].reverse()));
     expect(layoutMapLabels(input)[0].labelled).toBe(true);
   });
+  it('keeps an available reward visible ahead of a nearby completed report', () => {
+    const completed = { ...point('a', 100, 100, null), report: { cleanup_state: 'completed' } };
+    const available = { ...point('b', 110, 125, '$6'), report: { cleanup_state: 'available' } };
+    const result = layoutMapLabels([completed, available]);
+    expect(result.find(p => p.id === 'b').labelled).toBe(true);
+    expect(result.find(p => p.id === 'a').labelled).toBe(false);
+    expect(reportsNearMapTap(result, 'b').map(p => p.id)).toEqual(['a', 'b']);
+    expect(layoutMapLabels([available, completed])).toEqual(result);
+    expect(layoutMapLabels([completed, available], 'a').find(p => p.id === 'a').labelled).toBe(true);
+  });
+  it('prioritizes in-progress work over completed work without removing either report', () => {
+    const result = layoutMapLabels([
+      { ...point('a', 100, 100), report: { cleanup_state: 'completed' } },
+      { ...point('b', 100, 100), report: { cleanup_state: 'claimed' } },
+    ]);
+    expect(result.map(p => [p.id, p.labelled])).toEqual([['b', true], ['a', false]]);
+  });
   it('promotes a selected dot and leaves adjacent reports accessible', () => {
     const result = layoutMapLabels([point('a', 100, 100), point('b', 115, 100)], 'b');
     expect(result.find(p => p.id === 'b').labelled).toBe(true);

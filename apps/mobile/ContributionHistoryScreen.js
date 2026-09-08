@@ -1,3 +1,4 @@
+import FeeExplanationLabel from './components/FeeExplanationLabel';
 import { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -73,7 +74,7 @@ export default function ContributionHistoryScreen({ navigation }) {
           </Text>
           <Text style={styles.statusMessage}>{statusMessage(item)}</Text>
           <Text style={styles.date}>{formatContributionDate(item.created_at)}</Text>
-          <View style={styles.breakdown}><Text style={styles.muted}>Litterbugs fee</Text><Text style={styles.muted}>{formatUsd(item.platform_fee_cents)}</Text></View>
+          <View style={styles.breakdown}><FeeExplanationLabel label="Litterbugs fee" textStyle={styles.muted} /><Text style={styles.muted}>{formatUsd(item.platform_fee_cents)}</Text></View>
           <View style={styles.breakdown}><Text style={styles.total}>{['payment_pending','failed'].includes(item.status) ? 'Attempted total' : item.status === 'refunded' ? 'Original total' : 'Total charged'}</Text><Text style={styles.total}>{formatUsd(item.total_amount_cents)}</Text></View>
           <TouchableOpacity accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }} onPress={() => navigation.navigate('PaymentDetail', { contributionId: item.id })}><Text style={styles.status}>View payment details</Text></TouchableOpacity>
           {item.refunded_at ? <Text style={styles.date}>Refunded {formatContributionDate(item.refunded_at)}</Text> : null}

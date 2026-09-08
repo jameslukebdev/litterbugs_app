@@ -1,3 +1,4 @@
+import FeeExplanationLabel from './components/FeeExplanationLabel';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { reconcileContribution } from './lib/reconcileContribution';
 import { useSession } from './lib/session';
@@ -441,7 +442,7 @@ export default function FundingContributionScreen({ navigation, route }) {
         {principalCents ? (
           <View style={styles.card}>
             <View style={styles.line}><Text style={styles.lineLabel}>Cleanup fund</Text><Text style={styles.lineValue}>{formatUsd(principalCents)}</Text></View>
-            <View style={styles.line}><Text style={styles.lineLabel}>Litterbugs fee (10%)</Text><Text style={styles.lineValue}>{formatUsd(feeCents)}</Text></View>
+            <View style={styles.line}><FeeExplanationLabel textStyle={styles.lineLabel} /><Text style={styles.lineValue}>{formatUsd(feeCents)}</Text></View>
             <View style={[styles.line, styles.totalLine]}><Text style={styles.totalLabel}>Total</Text><Text style={styles.totalValue}>{formatUsd(principalCents + feeCents)}</Text></View>
           </View>
         ) : null}
