@@ -1,3 +1,4 @@
+import ActionRow from './components/NavigationRow';
 import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -55,34 +56,6 @@ const openLitterbugsLink = async (url) => {
     Alert.alert('Can’t open link', 'Unable to open this Litterbugs page on your device.');
   }
 };
-
-function ActionRow({ label, icon, onPress, destructive = false, busy = false }) {
-  return (
-    <TouchableOpacity
-      style={[styles.actionRow, busy && styles.disabled]}
-      onPress={onPress}
-      disabled={busy}
-      activeOpacity={0.72}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-    >
-      <View style={styles.actionCopy}>
-        <Ionicons name={icon} size={21} color={destructive ? '#C62828' : '#4E5A61'} />
-        <Text
-          style={[styles.actionText, destructive && styles.destructiveText]}
-          numberOfLines={1}
-        >
-          {label}
-        </Text>
-      </View>
-      {busy ? (
-        <ActivityIndicator size="small" color={destructive ? '#C62828' : '#4E5A61'} />
-      ) : (
-        <Ionicons name="chevron-forward" size={21} color={destructive ? '#C62828' : '#9AA1A8'} />
-      )}
-    </TouchableOpacity>
-  );
-}
 
 function StripeConnectionStatus({ status, loading, error, onRetry }) {
   const presentation = payoutConnectionPresentation({ status, loading, error });
@@ -152,7 +125,7 @@ function ActiveCleanupRow({ attempt, onPress, divided }) {
       accessibilityHint="Opens the claimed cleanup report on the map"
     >
       <View style={styles.activeCleanupIcon}>
-        <Ionicons name={presentation?.icon || 'time-outline'} size={24} color="#8A6400" />
+        <Ionicons name={presentation?.icon || 'time-outline'} size={24} color="#687178" />
       </View>
       <View style={styles.activeCleanupCopy}>
         <Text style={styles.activeCleanupTitle} numberOfLines={2}>
@@ -167,7 +140,7 @@ function ActiveCleanupRow({ attempt, onPress, divided }) {
         <Text style={styles.activeCleanupDeadline}>{deadline}</Text>
         <Text style={styles.activeCleanupLink}>Return to cleanup</Text>
       </View>
-      <Ionicons name="chevron-forward" size={22} color="#9A7A18" />
+      <Ionicons name="chevron-forward" size={22} color="#687178" />
     </TouchableOpacity>
   );
 }
@@ -239,7 +212,7 @@ function RankingCard({ ranking, loading, error, onRetry }) {
           <Ionicons
             name={showingLoader ? 'ribbon-outline' : 'cloud-offline-outline'}
             size={34}
-            color="#B448CF"
+            color="#2F7D32"
           />
         </View>
         <Text style={styles.rankLoadingTitle}>
@@ -295,7 +268,7 @@ function RankingCard({ ranking, loading, error, onRetry }) {
         </View>
       ) : (
         <View style={styles.highestRankBadge}>
-          <Ionicons name="sparkles" size={20} color="#8B2EA2" />
+          <Ionicons name="sparkles" size={20} color="#52615A" />
           <Text style={styles.highestRankText}>Highest Rank Achieved</Text>
         </View>
       )}
@@ -321,7 +294,7 @@ function SignedOutProfile({ navigation, bottomPadding }) {
       </Text>
       <TouchableOpacity
         style={styles.primaryButton}
-        onPress={() => navigation.getParent()?.navigate('Auth')}
+        onPress={() => navigation.navigate('Auth')}
         accessibilityRole="button"
       >
         <Text style={styles.primaryButtonText}>Sign in or create account</Text>
@@ -335,7 +308,10 @@ function SignedOutProfile({ navigation, bottomPadding }) {
   );
 }
 
-export default function ProfileScreen({ navigation }) {
+export default function ProfileScreen({ navigation, route }) {
+  const section = route?.params?.section || 'overview';
+  const openScreen = (name, params) => navigation.navigate(name, params);
+  const openReport = (reportId) => navigation.navigate('App', { screen: 'Map', params: { reportId } });
   const { user } = useSession();
   const permanent = isPermanentUser(user);
   const { profile, refreshProfile, loading } = useProfile();
@@ -355,14 +331,14 @@ export default function ProfileScreen({ navigation }) {
   const [payoutStatusLoading, setPayoutStatusLoading] = useState(false);
   const [payoutStatusError, setPayoutStatusError] = useState(false);
   const accountBusy = signingOut || deletingAccount;
-  const bottomPadding = getBottomNavClearance(insets.bottom) + 18;
+  const bottomPadding = section === 'overview' ? getBottomNavClearance(insets.bottom) + 18 : insets.bottom + 24;
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerRight: permanent ? () => (
+      headerRight: permanent && section === 'overview' ? () => (
         <TouchableOpacity
           style={styles.headerEditButton}
-          onPress={() => navigation.getParent()?.navigate('EditProfile')}
+          onPress={() => navigation.navigate('EditProfile')}
           accessibilityRole="button"
           accessibilityLabel="Edit profile"
         >
@@ -371,7 +347,7 @@ export default function ProfileScreen({ navigation }) {
       ) : undefined,
       headerRightContainerStyle: styles.headerEditButtonContainer,
     });
-  }, [navigation, permanent]);
+  }, [navigation, permanent, section]);
 
   const activeReports = useMemo(
     () => reports.filter((report) => report.user_id === user?.id),
@@ -438,8 +414,8 @@ export default function ProfileScreen({ navigation }) {
   }, [permanent]);
 
   useFocusEffect(useCallback(() => {
-    refreshCleanups();
-    refreshRanking();
+    if (section !== 'settings') refreshCleanups();
+    if (section === 'overview') refreshRanking();
     loadCleanupFeatureFlags()
       .then((flags) => {
         const enabled = Boolean(
@@ -447,13 +423,13 @@ export default function ProfileScreen({ navigation }) {
         );
         setFundingSchemaReady(true);
         setFundingEnabled(enabled);
-        if (enabled) refreshPayoutStatus();
+        if (enabled && section === 'payments') refreshPayoutStatus();
       })
       .catch(() => {
         setFundingSchemaReady(false);
         setFundingEnabled(false);
       });
-  }, [refreshCleanups, refreshPayoutStatus, refreshRanking]));
+  }, [refreshCleanups, refreshPayoutStatus, refreshRanking, section]));
 
   if (!permanent) {
     return <SignedOutProfile navigation={navigation} bottomPadding={bottomPadding} />;
@@ -520,6 +496,7 @@ export default function ProfileScreen({ navigation }) {
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={loading || cleanupsLoading || rankingLoading || payoutStatusLoading} onRefresh={refresh} tintColor="#2F7D32" />}
     >
+      {section === 'overview' ? <>
       <View style={styles.identity}>
         <View style={styles.identityTop}>
           <ProfileAvatar profile={profile} size={82} />
@@ -540,11 +517,6 @@ export default function ProfileScreen({ navigation }) {
         {profile?.bio ? <Text style={styles.bio}>{profile.bio}</Text> : null}
       </View>
 
-      <View style={styles.statCard}>
-        <Text style={styles.statValue}>{profile?.reports_created_count ?? 0}</Text>
-        <Text style={styles.statLabel}>Reports submitted</Text>
-      </View>
-
       <RankingCard
         ranking={ranking}
         loading={rankingLoading}
@@ -552,9 +524,20 @@ export default function ProfileScreen({ navigation }) {
         onRetry={refreshRanking}
       />
 
-      {fundingEnabled ? (
+      {cleanupSummary.current.length > 0 ? <View style={[styles.card, { marginTop: 16 }]}>
+        <ActionRow label="Continue cleanup" icon="leaf-outline" onPress={() => openReport(cleanupSummary.current[0].report_id)} />
+      </View> : null}
+      <View style={[styles.card, { marginTop: 20 }]}>
+        <ActionRow label="My activity" icon="leaf-outline" onPress={() => openScreen('MyActivity')} />
+        <ActionRow label="Payments" icon="wallet-outline" onPress={() => openScreen('Payments')} />
+        <ActionRow label="Settings" icon="settings-outline" onPress={() => openScreen('Settings')} />
+      </View>
+      <Text style={[styles.statLabel, { textAlign: 'center', marginTop: 18 }]}>{profile?.reports_created_count ?? 0} reports submitted · {cleanupSummary.counts.completed} cleanups completed</Text>
+      </> : null}
+
+      {section === 'payments' ? (
         <>
-          <Text style={styles.sectionTitle}>Cleanup rewards & payments</Text>
+          <Text style={styles.sectionTitle}>Cleanup rewards</Text>
           <View style={[styles.card, styles.paymentCard]}>
             <View style={styles.paymentIntro}>
               <View style={styles.paymentIcon}>
@@ -567,26 +550,33 @@ export default function ProfileScreen({ navigation }) {
                 </Text>
               </View>
             </View>
-            <StripeConnectionStatus
+            {fundingEnabled ? <>
+            {payoutStatusLoading || payoutStatusError || payoutStatus?.payoutsEnabled ? <StripeConnectionStatus
               status={payoutStatus}
               loading={payoutStatusLoading}
               error={payoutStatusError}
               onRetry={refreshPayoutStatus}
-            />
+            /> : null}
             <ActionRow
               label={payoutStatus?.payoutsEnabled ? 'Review payout details' : 'Set up cleanup payouts'}
               icon="card-outline"
-              onPress={() => navigation.getParent()?.navigate('PayoutSetup')}
+              onPress={() => navigation.navigate('PayoutSetup')}
             />
+            </> : <Text style={{ padding: 17, color: '#687178' }}>Payout setup is currently unavailable. Your payment history is still accessible below.</Text>}
             <ActionRow
-              label="Payment activity"
+              label="Contributions & payment history"
               icon="receipt-outline"
-              onPress={() => navigation.getParent()?.navigate('ContributionHistory')}
+              onPress={() => navigation.navigate('ContributionHistory')}
             />
+          </View>
+          <Text style={styles.sectionTitle}>Cleanup earnings</Text>
+          <View style={styles.card}>
+            {cleanupsError ? <ActionRow label="Retry loading earnings" icon="refresh-outline" onPress={refreshCleanups} /> : cleanupsLoading ? <Text style={{ padding: 20, color: '#687178' }}>Loading earnings…</Text> : cleanupSummary.completed.filter(attempt => attempt.is_paid).length ? cleanupSummary.completed.filter(attempt => attempt.is_paid).map((attempt, index) => <CompletedCleanupRow key={attempt.id} attempt={attempt} divided={index > 0} onPress={() => openReport(attempt.report_id)} />) : <Text style={{ padding: 20, color: '#687178', lineHeight: 21 }}>Rewards from your completed paid cleanups will appear here.</Text>}
           </View>
         </>
       ) : null}
 
+      {section === 'activity' ? <>
       <Text style={styles.sectionTitle}>My cleanups</Text>
       <View style={styles.cleanupStatsCard}>
         <CleanupStat value={cleanupSummary.counts.completed} label="Completed" />
@@ -598,12 +588,12 @@ export default function ProfileScreen({ navigation }) {
       <View style={[styles.card, styles.activeCleanupCard]}>
         {cleanupsLoading && cleanupSummary.current.length === 0 ? (
           <View style={styles.activeCleanupEmpty}>
-            <ActivityIndicator color="#8A6400" />
+            <ActivityIndicator color="#687178" />
             <Text style={styles.activeCleanupEmptyText}>Checking your cleanups…</Text>
           </View>
         ) : cleanupsError ? (
           <TouchableOpacity style={styles.activeCleanupEmpty} onPress={refreshCleanups}>
-            <Ionicons name="cloud-offline-outline" size={27} color="#8A6400" />
+            <Ionicons name="cloud-offline-outline" size={27} color="#687178" />
             <Text style={styles.activeCleanupEmptyTitle}>Couldn’t load cleanups</Text>
             <Text style={styles.activeCleanupEmptyText}>Tap to try again.</Text>
           </TouchableOpacity>
@@ -613,7 +603,7 @@ export default function ProfileScreen({ navigation }) {
               key={attempt.id}
               attempt={attempt}
               divided={index > 0}
-              onPress={() => navigation.navigate('Map', { reportId: attempt.report_id })}
+              onPress={() => openReport(attempt.report_id)}
             />
           ))
         ) : (
@@ -633,7 +623,7 @@ export default function ProfileScreen({ navigation }) {
               key={attempt.id}
               attempt={attempt}
               divided={index > 0}
-              onPress={() => navigation.navigate('Map', { reportId: attempt.report_id })}
+              onPress={() => openReport(attempt.report_id)}
             />
           ))
         ) : (
@@ -649,10 +639,14 @@ export default function ProfileScreen({ navigation }) {
       <View style={styles.card}>
         <ProfileReportList
           reports={activeReports}
-          onReportPress={(report) => navigation.navigate('Map', { reportId: report.id })}
+          onReportPress={(report) => openReport(report.id)}
         />
       </View>
 
+      {fundingSchemaReady ? <View style={[styles.card, { marginTop: 16 }]}><ActionRow label="Expired report decisions" icon="calendar-outline" onPress={() => openScreen('ExpiredReports')} /></View> : null}
+      </> : null}
+
+      {section === 'settings' ? <>
       <Text style={styles.sectionTitle}>Account</Text>
       <View style={styles.card}>
         <View style={styles.emailRow}>
@@ -666,15 +660,9 @@ export default function ProfileScreen({ navigation }) {
         <ActionRow
           label="Blocked accounts"
           icon="ban-outline"
-          onPress={() => navigation.getParent()?.navigate('BlockedAccounts')}
+          onPress={() => navigation.navigate('BlockedAccounts')}
         />
-        {fundingSchemaReady ? (
-          <ActionRow
-            label="Expired report decisions"
-            icon="calendar-outline"
-            onPress={() => navigation.getParent()?.navigate('ExpiredReports')}
-          />
-        ) : null}
+        <ActionRow label="Edit profile" icon="person-outline" onPress={() => openScreen('EditProfile')} />
         <ActionRow label="Terms of use" icon="document-text-outline" onPress={() => openLitterbugsLink(TERMS_URL)} />
         <ActionRow label="Privacy policy" icon="shield-checkmark-outline" onPress={() => openLitterbugsLink(PRIVACY_URL)} />
         <ActionRow label="Cleanup and reward policy" icon="leaf-outline" onPress={() => openLitterbugsLink(CLEANUP_POLICY_URL)} />
@@ -691,6 +679,7 @@ export default function ProfileScreen({ navigation }) {
           busy={deletingAccount}
         />
       </View>
+      </> : null}
     </ScrollView>
   );
 }
@@ -708,27 +697,27 @@ const styles = StyleSheet.create({
   joined: { marginTop: 7, color: '#7A8288', fontSize: 12 },
   headerEditButtonContainer: { paddingRight: 14 },
   headerEditButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#C9D8CA', borderRadius: 20, backgroundColor: '#F7FAF7' },
-  rankCard: { marginHorizontal: 16, marginTop: 14, padding: 18, borderWidth: 1, borderColor: '#E6C8ED', borderRadius: 20, backgroundColor: '#FFFFFF' },
+  rankCard: { marginHorizontal: 16, marginTop: 14, padding: 18, borderWidth: 1, borderColor: '#E0E5E1', borderRadius: 20, backgroundColor: '#FFFFFF' },
   rankSummaryRow: { flexDirection: 'row', alignItems: 'center' },
   rankSummaryCopy: { flex: 1, minWidth: 0, marginLeft: 16 },
-  rankEyebrow: { color: '#8B2EA2', fontSize: 12, lineHeight: 16, fontWeight: '900', letterSpacing: 1.5 },
-  rankArtworkStage: { width: 96, height: 96, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderWidth: 2, borderColor: '#EAC8F0', borderRadius: 24, backgroundColor: '#FFFFFF' },
+  rankEyebrow: { color: '#52615A', fontSize: 12, lineHeight: 16, fontWeight: '900', letterSpacing: 1.5 },
+  rankArtworkStage: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderWidth: 2, borderColor: '#E0E5E1', borderRadius: 24, backgroundColor: '#FFFFFF' },
   rankArtwork: { width: '100%', height: '100%' },
-  rankName: { marginTop: 5, color: '#242029', fontSize: 24, lineHeight: 29, fontWeight: '900' },
+  rankName: { marginTop: 5, color: '#242029', fontSize: 20, lineHeight: 25, fontWeight: '900' },
   rankPoints: { marginTop: 2, color: '#2F7D32', fontSize: 17, lineHeight: 22, fontWeight: '900' },
   rankProgressSection: { width: '100%', marginTop: 16 },
   rankProgressHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   rankProgressTitle: { flex: 1, color: '#4C4450', fontSize: 14, fontWeight: '800' },
-  rankProgressPercent: { color: '#8B2EA2', fontSize: 14, fontWeight: '900' },
-  rankProgressTrack: { height: 10, marginTop: 8, overflow: 'hidden', borderRadius: 5, backgroundColor: '#EEE4F0' },
-  rankProgressFill: { height: '100%', borderRadius: 7, backgroundColor: '#B448CF' },
+  rankProgressPercent: { color: '#52615A', fontSize: 14, fontWeight: '900' },
+  rankProgressTrack: { height: 5, marginTop: 8, overflow: 'hidden', borderRadius: 5, backgroundColor: '#EDF1EE' },
+  rankProgressFill: { height: '100%', borderRadius: 7, backgroundColor: '#2F7D32' },
   rankRemaining: { marginTop: 10, color: '#625768', fontSize: 14, lineHeight: 20, fontWeight: '700', textAlign: 'center' },
-  highestRankBadge: { minHeight: 48, marginTop: 19, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 24, backgroundColor: '#F3E2F6' },
-  highestRankText: { color: '#75258A', fontSize: 15, fontWeight: '900' },
-  rankLoadingStage: { width: 76, height: 76, alignSelf: 'center', alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: '#F5E7F7' },
+  highestRankBadge: { minHeight: 48, marginTop: 19, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 24, backgroundColor: '#EDF1EE' },
+  highestRankText: { color: '#52615A', fontSize: 15, fontWeight: '900' },
+  rankLoadingStage: { width: 76, height: 76, alignSelf: 'center', alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: '#EDF1EE' },
   rankLoadingTitle: { marginTop: 15, color: '#413946', fontSize: 17, fontWeight: '800' },
-  rankRetryText: { marginTop: 5, color: '#8B2EA2', fontSize: 14, fontWeight: '700' },
-  rankRefreshWarning: { marginTop: 15, color: '#8B2EA2', fontSize: 13, fontWeight: '700', textAlign: 'center' },
+  rankRetryText: { marginTop: 5, color: '#52615A', fontSize: 14, fontWeight: '700' },
+  rankRefreshWarning: { marginTop: 15, color: '#52615A', fontSize: 13, fontWeight: '700', textAlign: 'center' },
   statCard: { marginHorizontal: 16, marginTop: 14, paddingVertical: 14, alignItems: 'center', borderRadius: 16, backgroundColor: '#FFFFFF' },
   statValue: { color: '#245F2A', fontSize: 28, fontWeight: '800' },
   statLabel: { marginTop: 3, color: '#687178', fontSize: 14, fontWeight: '700' },
@@ -749,15 +738,15 @@ const styles = StyleSheet.create({
   cleanupStatDivider: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: '#DDE2DE' },
   cleanupStatValue: { color: '#245F2A', fontSize: 25, fontWeight: '800' },
   cleanupStatLabel: { minHeight: 34, marginTop: 4, color: '#687178', fontSize: 12, lineHeight: 16, fontWeight: '700', textAlign: 'center' },
-  activeCleanupCard: { borderWidth: 1, borderColor: '#E7CF79', backgroundColor: '#FFF9DD' },
-  activeCleanupRow: { minHeight: 124, padding: 16, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF9DD' },
-  activeCleanupDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E7CF79' },
-  activeCleanupIcon: { width: 46, height: 46, marginRight: 13, borderRadius: 23, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8E9A6' },
+  activeCleanupCard: { borderWidth: 1, borderColor: '#E0E5E1', backgroundColor: '#FFFFFF' },
+  activeCleanupRow: { minHeight: 124, padding: 16, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF' },
+  activeCleanupDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E0E5E1' },
+  activeCleanupIcon: { width: 46, height: 46, marginRight: 13, borderRadius: 23, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F1F4F2' },
   activeCleanupCopy: { flex: 1, marginRight: 8 },
-  activeCleanupTitle: { color: '#4F3A00', fontSize: 16, fontWeight: '800' },
-  activeCleanupStatus: { marginTop: 4, color: '#755900', fontSize: 13, fontWeight: '800' },
+  activeCleanupTitle: { color: '#30363B', fontSize: 16, fontWeight: '800' },
+  activeCleanupStatus: { marginTop: 4, color: '#687178', fontSize: 13, fontWeight: '800' },
   activeCleanupReward: { marginTop: 3, color: '#245F2A', fontSize: 13, fontWeight: '800' },
-  activeCleanupDeadline: { marginTop: 3, color: '#806715', fontSize: 13, lineHeight: 18 },
+  activeCleanupDeadline: { marginTop: 3, color: '#687178', fontSize: 13, lineHeight: 18 },
   activeCleanupLink: { marginTop: 8, color: '#2F7D32', fontSize: 14, fontWeight: '800' },
   activeCleanupEmpty: { minHeight: 126, alignItems: 'center', justifyContent: 'center', padding: 20 },
   activeCleanupEmptyTitle: { marginTop: 8, color: '#4F5960', fontSize: 15, fontWeight: '800' },
@@ -770,16 +759,11 @@ const styles = StyleSheet.create({
   completedCleanupMeta: { marginTop: 5, color: '#687178', fontSize: 13 },
   completedCleanupReward: { marginTop: 4, color: '#245F2A', fontSize: 13, fontWeight: '800' },
   completedCleanupEmpty: { minHeight: 126, alignItems: 'center', justifyContent: 'center', padding: 20 },
-  actionRow: { minHeight: 60, paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E0E3E5', backgroundColor: '#FFFFFF' },
-  actionCopy: { flex: 1, minWidth: 0, marginRight: 12, flexDirection: 'row', alignItems: 'center', gap: 11 },
-  actionText: { flexShrink: 1, color: '#30363B', fontSize: 16 },
-  destructiveText: { color: '#C62828' },
   emailRow: { minHeight: 68, paddingHorizontal: 17, justifyContent: 'center' },
   emailCopy: { minWidth: 0 },
   emailLabel: { color: '#727B82', fontSize: 12, fontWeight: '700' },
   emailText: { marginTop: 3, color: '#30363B', fontSize: 15 },
   deleteCard: { marginTop: 24 },
-  disabled: { opacity: 0.6 },
   signedOutContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, backgroundColor: '#F5F6F7' },
   signedOutIcon: { width: 92, height: 92, borderRadius: 46, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E4EEE5' },
   signedOutTitle: { marginTop: 20, color: '#202428', fontSize: 24, fontWeight: '800', textAlign: 'center' },

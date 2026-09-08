@@ -5,9 +5,10 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatUsd, loadMyContributions } from './lib/funding';
+import PaymentStatus from './components/PaymentStatus';
 import BrandedLoadingState from './BrandedLoadingState';
 
-const statusLabel = (status) => ({
+export const statusLabel = (status) => ({
   payment_pending: 'Payment pending',
   failed: 'Payment failed',
   refund_pending: 'Refund pending',
@@ -17,17 +18,17 @@ const statusLabel = (status) => ({
   paid_out: 'Paid to cleaner',
 }[status] || status);
 
-const statusMessage = (item) => ({
-  payment_pending: 'Payment has not been confirmed. Open the report to check your saved attempt.',
+export const statusMessage = (item) => ({
+  payment_pending: 'Payment has not been confirmed. View payment details for the latest recorded status.',
   failed: 'This payment did not complete.',
   refund_pending: 'A refund has been requested.',
   refund_processing: 'Your refund is being processed.',
   refunded: 'The contribution was refunded.',
   succeeded: 'Your contribution is in the cleanup fund.',
   paid_out: 'This contribution was included in the cleaner’s reward.',
-}[item.status] || 'Open the report for the latest cleanup status.');
+}[item.status] || 'Check payment details for the latest recorded status.');
 
-const formatContributionDate = (value) => new Date(value).toLocaleString(undefined, {
+export const formatContributionDate = (value) => new Date(value).toLocaleString(undefined, {
   month: 'short',
   day: 'numeric',
   year: 'numeric',
@@ -42,6 +43,7 @@ export default function ContributionHistoryScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const load = useCallback(async () => {
+    setLoading(true);
     try {
       setItems(await loadMyContributions());
       setError(false);
@@ -64,7 +66,7 @@ export default function ContributionHistoryScreen({ navigation }) {
         <View key={item.id} style={styles.card}>
           <View style={styles.line}>
             <Text style={styles.amount}>{formatUsd(item.principal_amount_cents)}</Text>
-            <View style={styles.statusPill}><Text style={styles.status}>{statusLabel(item.status)}</Text></View>
+            <PaymentStatus status={item.status} />
           </View>
           <Text style={styles.reportTitle} numberOfLines={2}>
             {item.report?.title || 'Litter cleanup report'}
@@ -73,7 +75,7 @@ export default function ContributionHistoryScreen({ navigation }) {
           <Text style={styles.date}>{formatContributionDate(item.created_at)}</Text>
           <View style={styles.breakdown}><Text style={styles.muted}>Litterbugs fee</Text><Text style={styles.muted}>{formatUsd(item.platform_fee_cents)}</Text></View>
           <View style={styles.breakdown}><Text style={styles.total}>{['payment_pending','failed'].includes(item.status) ? 'Attempted total' : item.status === 'refunded' ? 'Original total' : 'Total charged'}</Text><Text style={styles.total}>{formatUsd(item.total_amount_cents)}</Text></View>
-          <TouchableOpacity accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }} onPress={() => navigation.navigate('App', { screen: 'Map', params: { reportId: item.report_id } })}><Text style={styles.status}>View report</Text></TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }} onPress={() => navigation.navigate('PaymentDetail', { contributionId: item.id })}><Text style={styles.status}>View payment details</Text></TouchableOpacity>
           {item.refunded_at ? <Text style={styles.date}>Refunded {formatContributionDate(item.refunded_at)}</Text> : null}
         </View>
       ))}

@@ -28,9 +28,9 @@ export function payoutConnectionPresentation({ status, loading, error } = {}) {
   }
 
   return {
-    label: 'Stripe not connected',
-    icon: 'close-circle',
-    color: '#C62828',
-    backgroundColor: '#FFF1F1',
+    label: 'Set up payouts',
+    icon: 'wallet-outline',
+    color: '#59636A',
+    backgroundColor: '#F4F6F7',
   };
 }

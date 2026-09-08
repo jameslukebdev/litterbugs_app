@@ -53,6 +53,30 @@ export default function LocationSearch({ map }) {
     } catch { if (seq === sequence.current) setError('Address search is unavailable. Please try again.'); }
     finally { if (seq === sequence.current) { selecting.current = false; setBusy(false); } }
   };
+  const submitSearch = async () => {
+    if (!text.trim() || selecting.current || busy) return;
+    const cities = results.filter(place => !place.region);
+    if (cities.length === 1) return choose(cities[0]);
+    if (cities.length > 1) return;
+    // Search can be pressed before the autocomplete debounce has completed.
+    const seq = ++sequence.current;
+    selecting.current = true; setBusy(true); setError(null);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    try {
+      const found = await searchPlaces(text, { signal: controller.signal });
+      if (seq !== sequence.current) return;
+      selecting.current = false; setBusy(false);
+      if (found.length === 1) await choose(found[0]);
+      else if (found.length > 1) setResults(found);
+      else await findAddress();
+    } catch {
+      if (seq === sequence.current) setError('City search could not load. Try again or search the address.');
+    } finally {
+      clearTimeout(timeout);
+      if (seq === sequence.current) { selecting.current = false; setBusy(false); }
+    }
+  };
   return <>
     <TouchableOpacity style={[styles.trigger, map && { backgroundColor: 'transparent' }]} accessibilityRole="button" accessibilityLabel={searchPlace ? `Search location: ${searchPlace.label}` : 'Search city or address'} onPress={() => { setText(''); setOpen(true); }}>
       <Ionicons name="search" size={18} color="#667078" />
@@ -62,7 +86,7 @@ export default function LocationSearch({ map }) {
     <Modal visible={open} animationType="slide" onRequestClose={close}>
       <View style={[styles.screen, { paddingTop: insets.top + 12, paddingBottom: insets.bottom }]}>
         <View style={styles.row}>
-          <View style={styles.field}><Ionicons name="search" size={20} color="#657169" /><TextInput autoFocus value={text} onChangeText={setText} placeholder="City, state or address" accessibilityLabel="City, state or address" style={styles.input} clearButtonMode="while-editing" returnKeyType="search" onSubmitEditing={findAddress} /></View>
+          <View style={styles.field}><Ionicons name="search" size={20} color="#657169" /><TextInput autoFocus value={text} onChangeText={setText} placeholder="City, state or address" accessibilityLabel="City, state or address" style={styles.input} clearButtonMode="while-editing" returnKeyType="search" onSubmitEditing={submitSearch} /></View>
           <TouchableOpacity onPress={close} style={styles.clear} accessibilityRole="button"><Text style={styles.green}>Cancel</Text></TouchableOpacity>
         </View>
         {busy ? <ActivityIndicator style={{ margin: 20 }} color="#2F7D32" accessibilityLabel="Finding location" /> : null}

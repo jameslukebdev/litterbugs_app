@@ -34,7 +34,7 @@ export async function resolvePlace(place, { signal } = {}) {
   // fragmented annexation limits. Retain the town extent for larger cities.
   const latitude = Number.isFinite(place.latitude) ? place.latitude : townRegion.latitude;
   const longitude = Number.isFinite(place.longitude) ? place.longitude : townRegion.longitude;
-  const postal = await query(1, { geometry: `${longitude},${latitude}`, geometryType: 'esriGeometryPoint', inSR: '4326', spatialRel: 'esriSpatialRelIntersects', outFields: 'GEOID', returnGeometry: 'true', outSR: '4326', f: 'geojson', maxAllowableOffset: '0.0005' }, signal, 'https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/PUMA_TAD_TAZ_UGA_ZCTA/MapServer');
+  const postal = await query(1, { geometry: `${longitude},${latitude}`, geometryType: 'esriGeometryPoint', inSR: '4326', spatialRel: 'esriSpatialRelIntersects', outFields: 'GEOID', returnGeometry: 'true', outSR: '4326', f: 'geojson', maxAllowableOffset: '0.0005' }, signal, 'https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/PUMA_TAD_TAZ_UGA_ZCTA/MapServer').catch(() => ({ features: [] }));
   const area = postal.features?.[0];
   let postalCode = null;
   if (area?.geometry) {

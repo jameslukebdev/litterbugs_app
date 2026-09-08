@@ -1,3 +1,4 @@
+import { DEFAULT_REPORT_FILTERS } from './lib/reportFilters';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -23,7 +24,7 @@ export default function ReportsScreen({ navigation }) {
     loading: reportsLoading,
     refreshing,
     refreshReports,
-    error, searchPlace, selectedMapReportId, setSelectedMapReportId,
+    filters, setFilters, error, searchPlace, selectedMapReportId, setSelectedMapReportId,
   } = useReports();
 
   useEffect(() => {
@@ -112,6 +113,7 @@ export default function ReportsScreen({ navigation }) {
         refreshing={refreshing}
         initialLoading={reportsLoading}
         onRefresh={() => refreshReports({ showRefresh: true })}
+        emptyAction={error ? { label: 'Try again', onPress: () => refreshReports({ showRefresh: true }) } : Object.keys(DEFAULT_REPORT_FILTERS).some(key => filters[key] !== DEFAULT_REPORT_FILTERS[key]) ? { label: 'Clear filters', onPress: () => setFilters({ ...DEFAULT_REPORT_FILTERS }) } : { label: 'Explore the map', onPress: () => navigation.navigate('Map') }}
         emptyTitle={error ? 'Reports unavailable' : 'No reports in this area'}
         emptyMessage={error
           ? 'Check your connection, then pull down to try again.'

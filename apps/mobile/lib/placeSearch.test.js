@@ -27,3 +27,12 @@ it('uses a broader postal area for town discovery and keeps drawing/filtering ge
   expect(result.geometry).toEqual(area);
   expect(result.postalCode).toBe('28607');
 });
+
+it('keeps a usable town boundary when the optional postal lookup fails', async () => {
+  const town = { type: 'Polygon', coordinates: [[[0,0],[1,0],[1,1],[0,1],[0,0]]] };
+  vi.stubGlobal('fetch', vi.fn().mockImplementation(async url => {
+    if (url.includes('ZCTA')) throw new Error('offline');
+    return { ok: true, json: async () => ({ features: [{ geometry: town }] }) };
+  }));
+  expect((await resolvePlace({ id: 'postal-failure', layer: 4, geoid: '3707080' })).geometry).toEqual(town);
+});

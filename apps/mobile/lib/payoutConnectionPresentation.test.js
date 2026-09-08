@@ -19,9 +19,9 @@ describe('Stripe payout connection presentation', () => {
     { onboardingStatus: 'pending', payoutsEnabled: false },
   ])('shows not connected when payouts are not enabled', (status) => {
     expect(payoutConnectionPresentation({ status })).toMatchObject({
-      label: 'Stripe not connected',
-      icon: 'close-circle',
-      color: '#C62828',
+      label: 'Set up payouts',
+      icon: 'wallet-outline',
+      color: '#59636A',
     });
   });
 

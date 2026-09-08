@@ -28,6 +28,8 @@ import CompleteProfileScreen from './CompleteProfileScreen';
 import CleanupFeedbackScreen from './CleanupFeedbackScreen';
 import CleanupSubmissionScreen from './CleanupSubmissionScreen';
 import CleanupReviewScreen from './CleanupReviewScreen';
+import PaymentDetailScreen from './PaymentDetailScreen';
+import ProfileScreen from './ProfileScreen';
 import ContributionHistoryScreen from './ContributionHistoryScreen';
 import EditProfileScreen from './EditProfileScreen';
 import ExpiredReportsScreen from './ExpiredReportsScreen';
@@ -312,6 +314,10 @@ function AppNavigation({
           component={PayoutSetupScreen}
           options={{ ...headerOptions, title: 'Cleanup payouts' }}
         />
+        <Stack.Screen name="PaymentDetail" component={PaymentDetailScreen} options={{ ...headerOptions, title: 'Payment details' }} />
+        <Stack.Screen name="MyActivity" component={ProfileScreen} initialParams={{ section: 'activity' }} options={{ ...headerOptions, title: 'My activity' }} />
+        <Stack.Screen name="Payments" component={ProfileScreen} initialParams={{ section: 'payments' }} options={{ ...headerOptions, title: 'Payments' }} />
+        <Stack.Screen name="Settings" component={ProfileScreen} initialParams={{ section: 'settings' }} options={{ ...headerOptions, title: 'Settings' }} />
         <Stack.Screen
           name="ContributionHistory"
           component={ContributionHistoryScreen}

@@ -117,6 +117,7 @@ const cleanupPhotoMetadata = async (asset) => {
 export async function uploadCleanupSubmission({
   cleanupId,
   userId,
+  submissionId = Crypto.randomUUID(),
   photos,
   description,
   bagsOrItemsRemoved,
@@ -124,7 +125,20 @@ export async function uploadCleanupSubmission({
   isPaid = false,
   onProgress = () => {},
 }) {
-  const submissionId = Crypto.randomUUID();
+  // Reconcile a previous response loss before uploading another set of photos.
+  const findSavedSubmission = async () => {
+    const { data, error } = await supabase.from('cleanup_submissions').select('*').eq('id', submissionId).eq('cleanup_attempt_id', cleanupId).maybeSingle();
+    if (error) throw error;
+    return data;
+  };
+  const recoveredResult = async (submission) => {
+    // A response loss may also have skipped starting the funded review.
+    const aiReview = isPaid ? await requestGeminiReview({ cleanupId }).catch(() => null) : null;
+    return { submission, aiReview };
+  };
+  const existing = await findSavedSubmission();
+  if (existing) return recoveredResult(existing);
+  let saveDispatched = false;
   const uploadedPaths = [];
   let completedPhotos = 0;
 
@@ -168,6 +182,7 @@ export async function uploadCleanupSubmission({
     );
 
     onProgress({ stage: 'saving', current: photos.length, total: photos.length });
+    saveDispatched = true;
     const { data, error: submissionError } = await supabase.rpc(
       'submit_cleanup_with_weight',
       {
@@ -192,6 +207,12 @@ export async function uploadCleanupSubmission({
     }
     return { submission: data, aiReview };
   } catch (error) {
+    if (saveDispatched) {
+      const saved = await findSavedSubmission().catch(() => null);
+      if (saved) return recoveredResult(saved);
+      // A lost response is not proof of rollback. Preserve evidence for reconciliation.
+      throw error;
+    }
     if (uploadedPaths.length > 0) {
       await supabase.storage
         .from('cleanup_photos')

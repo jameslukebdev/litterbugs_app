@@ -193,6 +193,7 @@ export default function ReportList({
   origin,
   onReportPress,
   contentContainerStyle,
+  emptyAction,
   emptyTitle = 'No reports nearby',
   emptyMessage = 'No active reports are visible in this area.',
   refreshing = false,
@@ -240,6 +241,7 @@ export default function ReportList({
           </View>
           <Text style={styles.emptyTitle}>{emptyTitle}</Text>
           <Text style={styles.emptyText}>{emptyMessage}</Text>
+          {emptyAction ? <TouchableOpacity accessibilityRole="button" onPress={emptyAction.onPress} style={{ minHeight: 48, marginTop: 12, justifyContent: 'center' }}><Text style={{ color: '#2F7D32', fontWeight: '700', fontSize: 16 }}>{emptyAction.label}</Text></TouchableOpacity> : null}
         </View>
       )}
       contentContainerStyle={[

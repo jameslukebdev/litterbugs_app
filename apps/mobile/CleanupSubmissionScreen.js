@@ -1,3 +1,5 @@
+import * as Crypto from 'expo-crypto';
+import { loadCleanupDraft, saveCleanupDraft, clearCleanupDraft } from './lib/savedCleanupDraft';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -108,6 +110,53 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
     current: 1,
     total: 1,
   });
+  const [draftReady, setDraftReady] = useState(false);
+  const [draftStatus, setDraftStatus] = useState('');
+  const submissionId = useRef(Crypto.randomUUID());
+  const submitted = useRef(false);
+  const draftOwner = useRef(null);
+  const latestDraft = useRef(null);
+  latestDraft.current = { photos, description, bagsOrItemsRemoved, weightPounds, submissionId: submissionId.current };
+
+  useEffect(() => {
+    let active = true;
+    draftOwner.current = null;
+    setDraftReady(false);
+    submitted.current = false;
+    if (!userId || !cleanupId) return;
+    loadCleanupDraft(userId, cleanupId).then(draft => {
+      if (!active) return;
+      submissionId.current = draft?.submissionId || Crypto.randomUUID();
+      setPhotos([]); setDescription(''); setBagsOrItemsRemoved(''); setWeightPounds('');
+      draftOwner.current = `${userId}:${cleanupId}`;
+      if (draft) {
+        setPhotos(draft.photos); setDescription(draft.description);
+        setBagsOrItemsRemoved(draft.bagsOrItemsRemoved || ''); setWeightPounds(draft.weightPounds || '');
+        if (draft.submissionId) submissionId.current = draft.submissionId;
+        setDraftStatus('Draft restored');
+      }
+    }).catch(() => { if (active) setDraftStatus('Couldn’t restore the saved draft'); })
+      .finally(() => { if (active) setDraftReady(true); });
+    return () => { active = false; };
+  }, [userId, cleanupId]);
+
+  useEffect(() => {
+    if (!draftReady || submitted.current || !userId || !cleanupId || draftOwner.current !== `${userId}:${cleanupId}`) return;
+    let active = true;
+    setDraftStatus('Saving draft…');
+    saveCleanupDraft(userId, cleanupId, latestDraft.current)
+      .then(() => { if (active) setDraftStatus('Draft saved on this device'); })
+      .catch(() => { if (active) setDraftStatus('Draft not saved — keep this screen open and try again'); });
+    return () => { active = false; };
+  }, [draftReady, userId, cleanupId, photos, description, bagsOrItemsRemoved, weightPounds]);
+
+  const saveAndExit = async () => {
+    try {
+      await saveCleanupDraft(userId, cleanupId, latestDraft.current);
+      navigation.goBack();
+    } catch { Alert.alert('Couldn’t save draft', 'Keep this screen open and try again.'); }
+  };
+
   const submissionScrollRef = useRef(null);
   const submissionScrollOffsetRef = useRef(0);
   const descriptionInputRef = useRef(null);
@@ -208,7 +257,9 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
     try {
       setSubmitting(true);
       setSubmissionProgress({ stage: 'preparing', current: 1, total: photos.length });
+      await saveCleanupDraft(userId, cleanupId, latestDraft.current);
       const result = await uploadCleanupSubmission({
+        submissionId: submissionId.current,
         cleanupId: context.attempt.id,
         userId,
         photos,
@@ -216,7 +267,9 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
         onProgress: setSubmissionProgress,
         ...validation.normalized,
       });
-      await refreshReports({ showRefresh: false });
+      submitted.current = true;
+      await clearCleanupDraft(userId, cleanupId).catch(() => {});
+      await refreshReports({ showRefresh: false }).catch(() => {});
 
       const aiDecision = result.aiReview?.ai;
       const paidMessage = aiDecision?.status === 'better_photos'
@@ -255,7 +308,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
     }
   };
 
-  if (loading) return <LoadingState />;
+  if (loading || (!draftReady && userId && cleanupId)) return <LoadingState />;
 
   if (loadError || !context) {
     return (
@@ -312,6 +365,10 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
+        {!submitted.current ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+          <Text accessibilityLiveRegion="polite" style={{ flex: 1, color: '#687178', fontSize: 12 }}>{draftStatus}</Text>
+          <TouchableOpacity accessibilityRole="button" disabled={submitting} onPress={saveAndExit} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: '#2F7D32', fontWeight: '700' }}>Save and exit</Text></TouchableOpacity>
+        </View> : null}
         <Text style={styles.eyebrow}>
           {step === 'form' ? (isCorrection ? 'UPDATE EVIDENCE' : 'CLEANUP EVIDENCE') : 'REVIEW'}
         </Text>

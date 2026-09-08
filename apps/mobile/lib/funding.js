@@ -57,6 +57,14 @@ export async function createPayoutDashboardLink() {
   return data;
 }
 
+export async function loadMyContribution(id) {
+  const { data, error } = await supabase.from('cleanup_contributions')
+    .select('id, report_id, principal_amount_cents, platform_fee_cents, total_amount_cents, status, created_at, refunded_at, report:reports(id,title,cleanup_state,funding_eligibility)')
+    .eq('id', id).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 export async function loadMyContributions() {
   const { data, error } = await supabase
     .from('cleanup_contributions')
