@@ -1,3 +1,4 @@
+import { useProfile } from './lib/profile';
 import { useState } from 'react';
 import {
   ActivityIndicator, Alert, Image, KeyboardAvoidingView, Modal, Platform,
@@ -53,6 +54,7 @@ const getProviderErrorMessage = (error) => {
 };
 
 export default function AuthScreen() {
+  const { pendingAction } = useProfile();
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [emailMode, setEmailMode] = useState('login');
   const [sentReason, setSentReason] = useState('signup');
@@ -246,8 +248,8 @@ export default function AuthScreen() {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <Image source={require('./assets/LB_Logo_PNG.png')} style={styles.logo} resizeMode="contain" />
-        <Text style={styles.title}>Join the Cleanup Movement</Text>
-        <Text style={styles.subtitle}>Sign in to track and share reports.</Text>
+        <Text style={styles.title}>{pendingAction?.kind === 'cleanup' ? 'Sign in to help clean this up' : pendingAction?.kind === 'fund' ? 'Sign in to fund this cleanup' : 'Join the Cleanup Movement'}</Text>
+        <Text style={styles.subtitle}>{pendingAction ? 'Your report is saved here. Sign in or create an account to continue.' : 'Sign in to track and share reports.'}</Text>
 
         <View style={styles.actions}>
           {PROVIDERS.map(renderProviderButton)}
@@ -417,7 +419,7 @@ const styles = StyleSheet.create({
   dividerRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 4 },
   divider: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: '#BCC3CA' },
   dividerText: { marginHorizontal: 12, color: '#777', fontSize: 13 },
-  emailButton: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#E57373', borderRadius: 14, marginTop: 7 },
+  emailButton: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#2F7D32', borderRadius: 14, marginTop: 7 },
   emailText: { color: '#fff', fontSize: 16, fontWeight: '800' },
   disabled: { opacity: 0.58 },
 });

@@ -1,4 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { reconcileContribution } from './lib/reconcileContribution';
+import { useSession } from './lib/session';
+import { supabase } from './lib/supabase';
+import { loadPaymentAttempt, savePaymentAttempt, clearPaymentAttempt } from './lib/contributionRecovery';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -44,6 +48,12 @@ import {
 import BrandedLoadingState, { LoadingButtonContent } from './BrandedLoadingState';
 
 export default function FundingContributionScreen({ navigation, route }) {
+  const { user } = useSession();
+  const [recoveryReady, setRecoveryReady] = useState(false);
+  const [recoveryError, setRecoveryError] = useState(null);
+  const attemptRef = useRef(null);
+  const payLock = useRef(false);
+  const reconciliationRef = useRef(null);
   const reportId = route?.params?.reportId;
   const fromReportCreation = route?.params?.fromReportCreation === true;
   const initialAmount = route?.params?.initialAmount;
@@ -62,8 +72,56 @@ export default function FundingContributionScreen({ navigation, route }) {
   const [confirmationPending, setConfirmationPending] = useState(false);
   const previousFundingEligibility = useRef(null);
   const fundingEligibilityInitialized = useRef(false);
-  const principalCents = useMemo(() => parseContributionAmount(amount), [amount]);
+  const principalCents = attemptRef.current?.principalAmountCents ?? parseContributionAmount(amount);
   const feeCents = principalCents == null ? null : calculatePlatformFee(principalCents);
+
+  const reconcileAttempt = () => {
+    if (reconciliationRef.current) return reconciliationRef.current;
+    const run = async () => {
+    setRecoveryError(null);
+    const attempt = await loadPaymentAttempt(user.id, reportId);
+    attemptRef.current = attempt;
+    if (!attempt) return 'none';
+    setAmount(String(attempt.principalAmountCents / 100));
+    const result = await reconcileContribution({
+      attempt,
+      findContribution: async (requestId) => {
+        const { data, error } = await withTimeout(supabase.from('cleanup_contributions')
+          .select('id,status,principal_amount_cents,total_amount_cents')
+          .eq('contributor_id', user.id).eq('client_request_id', requestId).maybeSingle(), 12000, 'Payment status is taking longer than expected.');
+        if (error) throw error;
+        return data;
+      },
+      retrieveIntent: async (intent) => {
+        await initStripe({ publishableKey: intent.publishableKey, urlScheme: 'litterbugs' });
+        return retrievePaymentIntent(intent.paymentIntentClientSecret);
+      },
+      saveAttempt: (next) => savePaymentAttempt(user.id, reportId, next, { updating: true }),
+      clearAttempt: () => clearPaymentAttempt(user.id, reportId, attempt.clientRequestId),
+    });
+    attemptRef.current = result.attempt;
+    setConfirmationPending(result.attempt?.phase === 'submitted');
+    if (result.state === 'received') {
+      setReceipt({ principalAmountCents: result.contribution.principal_amount_cents, totalAmountCents: result.contribution.total_amount_cents });
+    } else if (result.state === 'refund' || result.state === 'failed') {
+      setRecoveryError(result.state === 'refund' ? 'The previous contribution is being returned. See Payment activity for its status.' : 'Your previous payment did not complete. You can try again.');
+    }
+    return result.state;
+    };
+    reconciliationRef.current = run().finally(() => { reconciliationRef.current = null; });
+    return reconciliationRef.current;
+  };
+  useEffect(() => {
+    let active = true;
+    reconcileAttempt().catch(() => { if (active) setRecoveryError('We couldn’t check your previous payment. Retry before continuing.'); })
+      .finally(() => { if (active) setRecoveryReady(true); });
+    return () => { active = false; };
+  }, [user?.id, reportId]);
+  useEffect(() => {
+    if (!confirmationPending) return undefined;
+    const timer = setInterval(() => reconcileAttempt().catch(() => {}), 5000);
+    return () => clearInterval(timer);
+  }, [confirmationPending, user?.id, reportId]);
 
   useEffect(() => {
     let active = true;
@@ -158,14 +216,27 @@ export default function FundingContributionScreen({ navigation, route }) {
   }, [loadError, loading, report]);
 
   const pay = async () => {
-    if (!principalCents || paying) return;
+    if (!principalCents || payLock.current || !recoveryReady || confirmationPending) return;
+    payLock.current = true;
     try {
       setPaying(true);
-      const intent = await createCleanupContribution({
-        reportId,
-        principalAmountCents: principalCents,
-        clientRequestId: Crypto.randomUUID(),
-      });
+      // Reconcile first, including after navigation or a process restart.
+      const previousState = await reconcileAttempt();
+      if (['received', 'refund', 'failed'].includes(previousState)) return;
+      let attempt = attemptRef.current;
+      if (attempt?.phase === 'submitted') return;
+      if (!attempt) {
+        attempt = { clientRequestId: Crypto.randomUUID(), principalAmountCents: principalCents, createdAt: Date.now(), phase: 'preparing' };
+        await savePaymentAttempt(user.id, reportId, attempt);
+        attemptRef.current = attempt;
+      }
+      if (!attempt.intent && Date.now() - attempt.createdAt > 23 * 60 * 60 * 1000) {
+        throw new Error('This older attempt needs a status check before another payment. Open Payment activity or contact support.');
+      }
+      const intent = attempt.intent || await createCleanupContribution({ reportId, principalAmountCents: attempt.principalAmountCents, clientRequestId: attempt.clientRequestId });
+      attempt = { ...attempt, intent, phase: 'ready' };
+      await savePaymentAttempt(user.id, reportId, attempt, { updating: true });
+      attemptRef.current = attempt;
       const applePayEnabled = Platform.OS === 'ios'
         && Constants.expoConfig?.extra?.stripeApplePayEnabled === true;
       await initStripe(stripeInitializationConfiguration({
@@ -181,9 +252,17 @@ export default function FundingContributionScreen({ navigation, route }) {
         isDevelopment: __DEV__,
       }));
       if (initError) throw new Error(initError.message);
+      // Persist before presenting: termination while Stripe is open must remain recoverable.
+      await savePaymentAttempt(user.id, reportId, { ...attempt, phase: 'submitted' }, { updating: true });
+      attemptRef.current = { ...attempt, phase: 'submitted' };
       const { error: paymentError } = await presentPaymentSheet();
       if (paymentError) {
-        if (paymentError.code === 'Canceled') return;
+        if (paymentError.code === 'Canceled') {
+          await savePaymentAttempt(user.id, reportId, attempt, { updating: true });
+          attemptRef.current = attempt;
+          return;
+        }
+        setConfirmationPending(true);
         throw new Error(paymentError.message);
       }
 
@@ -198,23 +277,27 @@ export default function FundingContributionScreen({ navigation, route }) {
       }
 
       setReceipt(intent);
+      await clearPaymentAttempt(user.id, reportId, attempt.clientRequestId);
+      attemptRef.current = null;
       clearPendingReportFunding(reportId).catch((error) => {
         console.log('Pending report funding cleanup error:', error);
       });
       await refreshReports({ showRefresh: false });
     } catch (error) {
-      Alert.alert('Contribution not completed', error.message || 'Please try again.');
+      if (attemptRef.current?.phase === 'submitted') setConfirmationPending(true);
+      Alert.alert('Check contribution status', error.message || 'Return here to check your payment before trying again.');
     } finally {
+      payLock.current = false;
       setPaying(false);
     }
   };
 
-  if (loading) {
+  if (loading || !recoveryReady) {
     return (
       <BrandedLoadingState
         working
-        title="Finishing your report…"
-        message="Your report is saved. We’re checking whether it can accept contributions."
+        title={fromReportCreation ? "Finishing your report…" : "Checking contribution…"}
+        message="Checking the report and any previous payment attempt."
       />
     );
   }
@@ -265,6 +348,15 @@ export default function FundingContributionScreen({ navigation, route }) {
       </View>
     );
   }
+
+  if (confirmationPending || recoveryError) return <View style={styles.center}>
+    <Ionicons name="time-outline" size={44} color="#2F7D32" />
+    <Text style={styles.centerTitle}>{confirmationPending ? 'Checking your payment' : 'Payment status'}</Text>
+    <Text style={styles.centerText}>{recoveryError || 'Your payment attempt is saved. We’re waiting for confirmation. You can leave this screen and return without starting another charge.'}</Text>
+    <TouchableOpacity style={styles.primaryButton} onPress={() => reconcileAttempt().catch(() => setRecoveryError('Status is still unavailable. Check your connection and retry.'))}><Text style={styles.primaryButtonText}>Refresh status</Text></TouchableOpacity>
+    <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('ContributionHistory')}><Text style={styles.secondaryButtonText}>Payment activity</Text></TouchableOpacity>
+    <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.goBack()}><Text style={styles.secondaryButtonText}>Return to report</Text></TouchableOpacity>
+  </View>;
 
   const unavailable = fundingAvailabilityPresentation(report);
   if (unavailable) {
@@ -331,15 +423,16 @@ export default function FundingContributionScreen({ navigation, route }) {
           <View style={styles.amountRow}>
             <Text style={styles.dollar}>$</Text>
             <TextInput
-              value={amount}
+              value={attemptRef.current ? String(attemptRef.current.principalAmountCents / 100) : amount}
               onChangeText={setAmount}
               keyboardType="decimal-pad"
               placeholder="25.00"
               style={styles.amountInput}
-              editable={!paying}
+              editable={!paying && !attemptRef.current}
               accessibilityLabel="Cleanup fund contribution amount"
             />
           </View>
+          {attemptRef.current ? <Text style={styles.helper}>Continuing your saved payment attempt with the same amount.</Text> : null}
           <Text style={[styles.helper, !principalCents && styles.error]}>Minimum $1 · Maximum $1,000 per contribution</Text>
         </View>
 

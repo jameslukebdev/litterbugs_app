@@ -1,0 +1,321 @@
+import * as Location from 'expo-location';
+import { useState } from 'react';
+import {
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useReports } from '../lib/reports';
+import { DEFAULT_REPORT_FILTERS } from '../lib/reportFilters';
+
+const groups = [
+  [
+    'status',
+    'Cleanup status',
+    [
+      ['all', 'All'],
+      ['available', 'Available'],
+      ['progress', 'In progress'],
+      ['completed', 'Completed'],
+    ],
+  ],
+  [
+    'funding',
+    'Reward',
+    [
+      ['all', 'Any reward'],
+      ['funded', 'Funded'],
+      ['volunteer', 'Volunteer'],
+    ],
+  ],
+  [
+    'radius',
+    'Distance from map center',
+    [
+      [0, 'Any distance'],
+      [5, '5 miles'],
+      [25, '25 miles'],
+      [50, '50 miles'],
+    ],
+  ],
+  [
+    'severity',
+    'Severity',
+    [
+      ['all', 'All'],
+      ['low', 'Low'],
+      ['medium', 'Medium'],
+      ['high', 'High'],
+    ],
+  ],
+];
+export default function ReportFilters({ map = false }) {
+  const { filters, setFilters, filteredReports, commitMapRegion } =
+    useReports();
+  const [place, setPlace] = useState('');
+  const [placeError, setPlaceError] = useState(null);
+  const [finding, setFinding] = useState(false);
+  const findPlace = async () => {
+    if (!place.trim() || finding) return;
+    setFinding(true);
+    setPlaceError(null);
+    try {
+      const results = await Location.geocodeAsync(place.trim());
+      if (!results.length) {
+        setPlaceError(
+          'No location found. Try a city and state or a full address.',
+        );
+        return;
+      }
+      commitMapRegion({
+        latitude: results[0].latitude,
+        longitude: results[0].longitude,
+        latitudeDelta: 0.15,
+        longitudeDelta: 0.15,
+      });
+      setOpen(false);
+    } catch {
+      setPlaceError(
+        'Location search is unavailable. Try again or move the map.',
+      );
+    } finally {
+      setFinding(false);
+    }
+  };
+  const [open, setOpen] = useState(false);
+  const insets = useSafeAreaInsets();
+  const count = groups.filter(
+    ([key]) => filters[key] !== DEFAULT_REPORT_FILTERS[key],
+  ).length;
+  const choose = (key, value) =>
+    setFilters((current) => ({ ...current, [key]: value }));
+  return (
+    <View style={styles.header}>
+      <View style={styles.searchRow}>
+        {map ? (
+          <Image
+            source={require('../assets/LB_Logo_PNG.png')}
+            resizeMode="contain"
+            style={styles.logo}
+            accessibilityLabel="Litterbugs"
+          />
+        ) : null}
+        <View style={styles.search}>
+          <Ionicons name="search" size={18} color="#667078" />
+          <TextInput
+            style={styles.input}
+            value={filters.query}
+            onChangeText={(value) => choose('query', value)}
+            placeholder="Search reports"
+            accessibilityLabel="Search report titles and notes"
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+          />
+        </View>
+      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chips}
+      >
+        <TouchableOpacity
+          accessibilityRole="button"
+          onPress={() => setOpen(true)}
+          style={[styles.chip, count > 0 && styles.selected]}
+        >
+          <Ionicons name="options-outline" size={18} color="#245F2A" />
+          <Text style={styles.chipText}>
+            Filters{count ? ` · ${count}` : ''}
+          </Text>
+        </TouchableOpacity>
+        {groups[0][2].slice(1).map(([value, label]) => (
+          <TouchableOpacity
+            key={value}
+            accessibilityRole="button"
+            accessibilityState={{ selected: filters.status === value }}
+            style={[styles.chip, filters.status === value && styles.selected]}
+            onPress={() =>
+              choose('status', filters.status === value ? 'all' : value)
+            }
+          >
+            <Text style={styles.chipText}>{label}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+      <Modal
+        visible={open}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setOpen(false)}
+      >
+        <View style={styles.backdrop}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            accessible={false}
+            onPress={() => setOpen(false)}
+          />
+          <View
+            style={[
+              styles.sheet,
+              { paddingBottom: Math.max(insets.bottom, 20) },
+            ]}
+            accessibilityViewIsModal
+          >
+            <View style={styles.sheetHeader}>
+              <Text style={styles.title} accessibilityRole="header">
+                Find a cleanup
+              </Text>
+              <TouchableOpacity
+                style={styles.chip}
+                onPress={() => setFilters(DEFAULT_REPORT_FILTERS)}
+                accessibilityRole="button"
+              >
+                <Text style={styles.chipText}>Reset</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView keyboardShouldPersistTaps="handled">
+              <Text style={styles.label}>Explore an area</Text>
+              <View style={styles.searchRow}>
+                <TextInput
+                  value={place}
+                  onChangeText={setPlace}
+                  placeholder="City, neighborhood or address"
+                  accessibilityLabel="Search for a location"
+                  style={[
+                    styles.search,
+                    styles.input,
+                    { paddingHorizontal: 12 },
+                  ]}
+                  onSubmitEditing={findPlace}
+                  returnKeyType="search"
+                />
+                <TouchableOpacity
+                  style={styles.chip}
+                  disabled={finding}
+                  onPress={findPlace}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.chipText}>
+                    {finding ? 'Finding…' : 'Go'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              {placeError ? (
+                <Text
+                  accessibilityLiveRegion="polite"
+                  style={{ color: '#B42318', marginTop: 8 }}
+                >
+                  {placeError}
+                </Text>
+              ) : null}
+              {groups.map(([key, label, options]) => (
+                <View key={key}>
+                  <Text style={styles.label}>{label}</Text>
+                  <View style={styles.options}>
+                    {options.map(([value, text]) => (
+                      <TouchableOpacity
+                        key={value}
+                        accessibilityRole="radio"
+                        accessibilityState={{ checked: filters[key] === value }}
+                        style={[
+                          styles.chip,
+                          filters[key] === value && styles.selected,
+                        ]}
+                        onPress={() => choose(key, value)}
+                      >
+                        <Text style={styles.chipText}>{text}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.done}
+              accessibilityRole="button"
+              onPress={() => setOpen(false)}
+            >
+              <Text style={styles.doneText}>
+                Show {filteredReports.length}{' '}
+                {filteredReports.length === 1 ? 'report' : 'reports'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+const styles = StyleSheet.create({
+  header: { backgroundColor: '#FFFFFF', padding: 12, gap: 10 },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  logo: { width: 94, height: 38 },
+  search: {
+    flex: 1,
+    minHeight: 44,
+    backgroundColor: '#F1F4F2',
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    gap: 7,
+  },
+  input: { flex: 1, fontSize: 15, color: '#202428', minHeight: 44 },
+  chips: { gap: 8 },
+  chip: {
+    minHeight: 44,
+    paddingHorizontal: 13,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: '#D6DED8',
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  selected: { backgroundColor: '#E8F2E9', borderColor: '#2F7D32' },
+  chipText: { color: '#245F2A', fontSize: 14, fontWeight: '600' },
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  title: { fontSize: 24, fontWeight: '800', color: '#202428' },
+  label: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginTop: 22,
+    marginBottom: 10,
+    color: '#30363B',
+  },
+  options: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  done: {
+    backgroundColor: '#2F7D32',
+    minHeight: 52,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 14,
+    marginTop: 24,
+  },
+  doneText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+});

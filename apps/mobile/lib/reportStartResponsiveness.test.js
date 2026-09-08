@@ -13,7 +13,7 @@ const appTabsSource = readFileSync(
 
 describe('new report workflow responsiveness', () => {
   it('opens the report form before waiting for a fresh GPS position', () => {
-    const start = mapScreenSource.indexOf('const beginReportAtCoordinate = async (coord) => {');
+    const start = mapScreenSource.indexOf('const beginReportAtCoordinate = async (coord, savedForm = null) => {');
     const end = mapScreenSource.indexOf('\nconst openReportLocationPicker =', start);
     const beginReportSource = mapScreenSource.slice(start, end);
 
@@ -57,7 +57,7 @@ describe('new report workflow responsiveness', () => {
     );
     expect(mapScreenSource).toContain('headerShown: false');
     expect(mapScreenSource).toContain('styles.floatingMapHeaderArea');
-    expect(mapScreenSource).toContain('styles.floatingMapLogoCard');
+    expect(mapScreenSource).toContain('<ReportFilters map />');
     expect(mapScreenSource).toContain('styles.floatingMapInstructionCard');
     expect(mapScreenSource).toContain('Animated.timing(reportControlTransition');
     expect(mapScreenSource).not.toContain('showInitialMapLoading || reportPlacementActive');

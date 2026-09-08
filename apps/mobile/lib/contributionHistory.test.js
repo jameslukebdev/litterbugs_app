@@ -1,26 +1,17 @@
-import { readFileSync } from 'node:fs';
-
-import { describe, expect, it } from 'vitest';
-
-const fundingSource = readFileSync(new URL('./funding.js', import.meta.url), 'utf8');
-const historySource = readFileSync(new URL('../ContributionHistoryScreen.js', import.meta.url), 'utf8');
-const contributionScreenSource = readFileSync(new URL('../FundingContributionScreen.js', import.meta.url), 'utf8');
-
-describe('completed cleanup contribution history', () => {
-  it('loads only successful contributions attached to completed reports', () => {
-    expect(fundingSource).toContain("report:reports!inner(id,title,cleanup_state,funding_eligibility)");
-    expect(fundingSource).toContain(".eq('report.cleanup_state', 'completed')");
-    expect(fundingSource).toContain(".in('status', ['succeeded', 'paid_out'])");
+import { describe, expect, it, vi } from 'vitest';
+const mocks = vi.hoisted(() => ({ query: {}, from: vi.fn() }));
+vi.mock('./supabase', () => ({ supabase: { from: mocks.from } }));
+import { loadMyContributions } from './funding';
+describe('payment activity', () => {
+  it('keeps pending payments, refunds, failures and completed impact visible', async () => {
+    const rows = ['payment_pending','failed','succeeded','refund_pending','refund_processing','refunded','paid_out'].map((status) => ({id:status,status,report:status==='refunded'?null:{cleanup_state:'available'}}));
+    const query = { select:vi.fn().mockReturnThis(), order:vi.fn().mockReturnThis(), limit:vi.fn().mockResolvedValue({data:rows,error:null}) };
+    mocks.from.mockReturnValue(query);
+    expect(await loadMyContributions()).toEqual(rows);
+    expect(query.select.mock.calls[0][0]).not.toContain('!inner');
   });
-
-  it('does not present abandoned attempts as contribution history', () => {
-    expect(historySource).not.toContain("payment_pending: 'Processing'");
-    expect(historySource).not.toContain("failed: 'Not completed'");
-    expect(historySource).toContain('No completed cleanup contributions yet');
-  });
-
-  it('clearly explains that contributions are charged before cleaner payout', () => {
-    expect(contributionScreenSource).toContain('Stripe charges your selected payment method when you confirm');
-    expect(contributionScreenSource).toContain('pays the cleaner only after an approved cleanup');
+  it('does not turn an unavailable ledger into an empty successful result', async () => {
+    mocks.from.mockReturnValue({ select(){return this;},order(){return this;},limit:async()=>({error:new Error('offline')}) });
+    await expect(loadMyContributions()).rejects.toThrow('offline');
   });
 });

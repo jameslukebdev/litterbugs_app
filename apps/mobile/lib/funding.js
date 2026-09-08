@@ -60,9 +60,7 @@ export async function createPayoutDashboardLink() {
 export async function loadMyContributions() {
   const { data, error } = await supabase
     .from('cleanup_contributions')
-    .select('id, report_id, principal_amount_cents, platform_fee_cents, total_amount_cents, status, created_at, refunded_at, report:reports!inner(id,title,cleanup_state,funding_eligibility)')
-    .eq('report.cleanup_state', 'completed')
-    .in('status', ['succeeded', 'paid_out'])
+    .select('id, report_id, principal_amount_cents, platform_fee_cents, total_amount_cents, status, created_at, refunded_at, report:reports(id,title,cleanup_state,funding_eligibility)')
     .order('created_at', { ascending: false })
     .limit(50);
   if (error) throw error;

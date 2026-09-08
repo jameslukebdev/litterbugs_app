@@ -1,3 +1,4 @@
+import { authenticatedActionDestination } from './lib/authIntent';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -142,7 +143,7 @@ function AppNavigation({
   onLaunchReady,
   onRecoveryComplete,
 }) {
-  const { profile, loading } = useProfile();
+  const { profile, loading, pendingAction, setPendingAction } = useProfile();
   const permanent = isPermanentUser(session?.user);
   const navigationRef = useNavigationContainerRef();
   const pendingNotificationData = useRef(null);
@@ -157,6 +158,14 @@ function AppNavigation({
     const revealFrame = requestAnimationFrame(onLaunchReady);
     return () => cancelAnimationFrame(revealFrame);
   }, [loading, onLaunchReady, passwordRecovery, permanent, profile]);
+
+  const resumePendingAction = useCallback(() => {
+    const destination = authenticatedActionDestination({ permanent, profileComplete: Boolean(profile?.profile_completed_at), intent: pendingAction });
+    if (!destination || !navigationRef.isReady()) return;
+    setPendingAction(null);
+    navigationRef.navigate(destination.name, destination.params);
+  }, [permanent, profile?.profile_completed_at, pendingAction, navigationRef, setPendingAction]);
+  useEffect(() => { resumePendingAction(); }, [resumePendingAction]);
 
   const openNotificationData = useCallback((data) => {
     const notificationId = data?.notificationId;
@@ -244,6 +253,7 @@ function AppNavigation({
       ref={navigationRef}
       linking={navigationLinking}
       onReady={() => {
+        resumePendingAction();
         if (pendingNotificationData.current) {
           openNotificationData(pendingNotificationData.current);
         }
@@ -303,7 +313,7 @@ function AppNavigation({
         <Stack.Screen
           name="ContributionHistory"
           component={ContributionHistoryScreen}
-          options={{ ...headerOptions, title: 'Contributions' }}
+          options={{ ...headerOptions, title: 'Payment activity' }}
         />
         <Stack.Screen
           name="ExpiredReports"

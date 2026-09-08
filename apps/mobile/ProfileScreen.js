@@ -579,7 +579,7 @@ export default function ProfileScreen({ navigation }) {
               onPress={() => navigation.getParent()?.navigate('PayoutSetup')}
             />
             <ActionRow
-              label="Contribution history"
+              label="Payment activity"
               icon="receipt-outline"
               onPress={() => navigation.getParent()?.navigate('ContributionHistory')}
             />

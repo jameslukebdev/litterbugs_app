@@ -53,9 +53,8 @@ describe('report photo responsiveness', () => {
   });
 
   it('uses a stable disk-cache key for signed report images', () => {
-    expect(mapScreenSource).toContain(
-      'cacheKey: selectedReport.photo_paths?.[index] ?? uri'
-    );
+    const gallery = readFileSync(new URL('../components/ReportPhotoGallery.js', import.meta.url), 'utf8');
+    expect(gallery).toContain('cacheKey: path || uri');
     expect(reportListSource).toContain(
       'source={{ uri: photoUrl, cacheKey: photoPath }}'
     );

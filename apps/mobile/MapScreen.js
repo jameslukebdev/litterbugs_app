@@ -1,3 +1,6 @@
+import ReportPhotoGallery from './components/ReportPhotoGallery';
+import { saveReportDraft, loadReportDraft, clearReportDraft } from './lib/savedReportDraft';
+import ReportFilters from './components/ReportFilters';
 // MapScreen.js
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
@@ -40,6 +43,7 @@ import {
   permanentUserId,
 } from './lib/reportAccess';
 import { BOTTOM_NAV_METRICS, getBottomNavClearance } from './lib/navigationLayout';
+import { isCleanupAvailable } from './lib/cleanupEligibility';
 import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
 import ReporterIdentity from './ReporterIdentity';
@@ -255,7 +259,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     severity: '',
     selectedNotes: [],
     notes: '',
-    startingFundingChoice: null,
+    startingFundingChoice: 'none',
     startingFundingOther: '',
   });
   const [mapType, setMapType] = useState('standard');
@@ -299,11 +303,12 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const [payoutGateBusy, setPayoutGateBusy] = useState(false);
   const cleanupNoticeCheckInFlight = useRef(false);
   // Report detail photo carousel
-  const [reportPhotoIndex, setReportPhotoIndex] = useState(0);
+
   const { user: currentUser } = useSession();
   const {
     profile: currentProfile,
     blockedIds,
+    pendingAction, setPendingAction,
     pendingReportCoordinate,
     setPendingReportCoordinate,
     consumePendingReportCoordinate,
@@ -322,6 +327,16 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     removeReport,
   } = useReports();
   const currentUserId = permanentUserId(currentUser);
+  const [draftSaveError, setDraftSaveError] = useState(false);
+  useEffect(() => {
+    if (!formOpen || isEditing || !currentUserId || !draftCoord || isSaving) return undefined;
+    const timer = setTimeout(() => {
+      saveReportDraft(currentUserId, { form, coordinate: draftCoord, step: reportStep })
+        .then(() => setDraftSaveError(false)).catch(() => setDraftSaveError(true));
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [form, formOpen, isEditing, currentUserId, draftCoord, reportStep, isSaving]);
+
   const fundingEnabled = paymentsEnabled && geminiReviewEnabled;
   const reportClusteringEnabled = shouldClusterReports(region);
   const insets = useSafeAreaInsets();
@@ -790,7 +805,7 @@ const getDistanceMiles = (pointA, pointB) => {
 };
 
 // Reports can only be created near the user's current GPS location
-const beginReportAtCoordinate = async (coord) => {
+const beginReportAtCoordinate = async (coord, savedForm = null) => {
   if (!navigation.isFocused()) return;
 
   const requestId = reportLocationRequestRef.current + 1;
@@ -800,7 +815,7 @@ const beginReportAtCoordinate = async (coord) => {
   // unresponsive. Location verification continues in the background, and the
   // user cannot advance until the selected coordinate has been approved.
   setDraftCoord(coord);
-  setForm({
+  setForm(savedForm || {
     title: '',
     selectedTypes: [],
     types: '',
@@ -808,7 +823,7 @@ const beginReportAtCoordinate = async (coord) => {
     severity: '',
     selectedNotes: [],
     notes: '',
-    startingFundingChoice: null,
+    startingFundingChoice: 'none',
     startingFundingOther: '',
   });
   resetReportWizard();
@@ -941,8 +956,21 @@ const beginReportAtCoordinate = async (coord) => {
   }
 };
 
-const openReportLocationPicker = async () => {
+const openReportLocationPicker = async (skipDraft = false) => {
   if (isCentering) return;
+  if (skipDraft !== true && currentUserId) {
+    try {
+      const saved = await loadReportDraft(currentUserId);
+      if (saved) {
+        Alert.alert('Resume your report?', 'Your details and photos are saved on this device. We’ll verify the location again before you submit.', [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Start new', style: 'destructive', onPress: async () => { await clearReportDraft(currentUserId); openReportLocationPicker(true); } },
+          { text: 'Resume draft', onPress: () => beginReportAtCoordinate(saved.coordinate, saved.form) },
+        ]);
+        return;
+      }
+    } catch { Alert.alert('Draft unavailable', 'Your saved report could not be loaded. Please try again.'); return; }
+  }
   setIsCentering(true);
 
   try {
@@ -1221,6 +1249,7 @@ const openPayoutSetupForWorkflow = (action) => {
         }
       }
   
+      if (!isEditing) await clearReportDraft(currentUserId).catch(() => {});
       upsertReport({ ...data, reporter: data.reporter || currentProfile });
       if (isEditing) await refreshReports({ showRefresh: false });
       else refreshProfile().catch((profileError) => {
@@ -1309,6 +1338,7 @@ const submitReport = async () => {
 
   // Cancel Report
   const discardDraft = () => {
+    if (!isEditing && currentUserId) clearReportDraft(currentUserId).catch(() => setDraftSaveError(true));
     reportLocationRequestRef.current += 1;
     setDraftCoord(null);
     setFormOpen(false);
@@ -1343,6 +1373,10 @@ const submitReport = async () => {
         : 'Your report details and selected photos will be lost.',
       [
         { text: 'Keep editing', style: 'cancel' },
+        ...(!isEditing ? [{ text: 'Save for later', onPress: async () => {
+          try { await saveReportDraft(currentUserId, { form, coordinate: draftCoord, step: reportStep }); setFormOpen(false); reportLocationRequestRef.current += 1; }
+          catch { Alert.alert('Draft not saved', 'Keep this screen open and try again.'); }
+        } }] : []),
         { text: 'Discard', style: 'destructive', onPress: discardDraft },
       ],
     );
@@ -1374,20 +1408,7 @@ const submitReport = async () => {
   };
 
 // Icon Changes When Map Type Changes
-  const getMapTypeColor = () => {
-    switch (mapType) {
-      case 'standard':
-        return '#B39DDB'; // light purple
-      case 'satellite':
-        return '#A5D6A7'; // light green
-      case 'hybrid':
-        return '#FBC02D'; // yellow
-      case 'terrain': // Android only
-        return '#66BB6A'; // another green tone
-      default:
-        return '#2F7D32';
-    }
-  };
+  const getMapTypeColor = () => mapType === 'standard' ? '#4F5C63' : '#2F7D32';
 
 
 // Preset Litter Options Users Can Choose From 
@@ -1689,7 +1710,7 @@ useEffect(() => {
 
   const loadPhotoUrls = async () => {
     // Always begin a newly opened report on its first photo
-    setReportPhotoIndex(0);
+
     setPhotosLoading(true);
 
     if (!selectedReport?.photo_paths?.length) {
@@ -1729,7 +1750,7 @@ useEffect(() => {
   return () => {
     active = false;
   };
-}, [getReportPhotoUrl, selectedReport]);
+}, [getReportPhotoUrl, selectedReport?.id, JSON.stringify(selectedReport?.photo_paths)]);
 
 useEffect(() => {
   let active = true;
@@ -1804,6 +1825,7 @@ useEffect(() => {
     currentUser
   );
   const cleanupEligible = canOfferCleanup(selectedReport, currentUser);
+  const cleanupDiscoverable = isCleanupAvailable(selectedReport);
   const currentUserIsCleaner = isCurrentCleaner(
     selectedCleanupAttempt,
     currentUser
@@ -1979,6 +2001,7 @@ useEffect(() => {
     if (!reportId || payoutGateBusy) return;
 
     if (!currentUserId) {
+      setPendingAction({ kind: 'fund', reportId });
       setDetailsOpen(false);
       navigation.getParent()?.navigate('Auth');
       return;
@@ -2055,6 +2078,12 @@ useEffect(() => {
   };
 
   const beginCleanupClaim = async () => {
+    if (!currentUserId && cleanupDiscoverable) {
+      setPendingAction({ kind: 'cleanup', reportId: selectedReport.id });
+      setDetailsOpen(false);
+      navigation.getParent()?.navigate('Auth');
+      return;
+    }
     if (cleanupActionBusy || !cleanupEligible) return;
 
     try {
@@ -3083,7 +3112,7 @@ const renderReportStep = () => {
                 <View style={styles.startingFundHeadingCopy}>
                   <Text style={styles.startingFundTitle}>Start the cleanup fund</Text>
                   <Text style={styles.startingFundText}>
-                    Add funds to incentive litter cleanup, or keep the cleanup volunteer-based.
+                    A reward is optional. You can also add one after publishing.
                   </Text>
                 </View>
               </View>
@@ -3091,11 +3120,7 @@ const renderReportStep = () => {
               <View style={styles.startingFundChoices}>
                 {[
                   { value: 'none', label: 'Volunteer' },
-                  { value: '1', label: '$1' },
-                  { value: '5', label: '$5' },
-                  { value: '15', label: '$15' },
                   { value: '25', label: '$25' },
-                  { value: '100', label: '$100' },
                   { value: 'other', label: 'Other' },
                 ].map((choice) => {
                   const selected = form.startingFundingChoice === choice.value;
@@ -3387,36 +3412,13 @@ const renderReportStep = () => {
       {!showInitialMapLoading ? (
         <View
           style={[styles.floatingMapHeaderArea, { top: insets.top + 10 }]}
-          pointerEvents="none"
+          pointerEvents="box-none"
           accessible={false}
         >
-          <Animated.View
-            style={[
-              styles.floatingMapHeaderCard,
-              styles.floatingMapLogoCard,
-              {
-                opacity: reportControlTransition.interpolate({
-                  inputRange: [0, 0.46],
-                  outputRange: [1, 0],
-                  extrapolate: 'clamp',
-                }),
-                transform: [{
-                  scale: reportControlTransition.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [1, 0.92],
-                  }),
-                }],
-              },
-            ]}
-          >
-            <Image
-              source={require('./assets/LB_Logo_PNG.png')}
-              style={styles.floatingMapLogo}
-              resizeMode="contain"
-            />
-          </Animated.View>
+          {!reportPlacementActive ? <ReportFilters map /> : null}
 
           <Animated.View
+            pointerEvents="none"
             style={[
               styles.floatingMapHeaderCard,
               styles.floatingMapInstructionCard,
@@ -3605,9 +3607,9 @@ const renderReportStep = () => {
         accessibilityState={{ busy: isCentering, disabled: isCentering }}
       >
         {isCentering ? (
-          <ActivityIndicator color="#1976D2" />
+          <ActivityIndicator color="#2F7D32" />
         ) : (
-          <Ionicons name="navigate-outline" size={32} color="#42A5F5" />
+          <Ionicons name="navigate-outline" size={32} color="#4F5C63" />
         )}
       </TouchableOpacity>
 
@@ -3623,6 +3625,7 @@ const renderReportStep = () => {
         onPress={toggleMapType}
         accessibilityRole="button"
         accessibilityLabel="Change map style"
+        accessibilityValue={{ text: mapType }}
       >
         <Ionicons name="layers-outline" size={32} color={getMapTypeColor()} />
       </TouchableOpacity>
@@ -3661,6 +3664,7 @@ const renderReportStep = () => {
         )}
 
 
+        {!isEditing && draftSaveError ? <Text style={{ color: '#B42318', paddingHorizontal: 20 }}>Draft could not be saved. Keep this screen open and try Save for later again.</Text> : null}
         {/* Persistent Header */}
         <View style={styles.wizardHeader}>
 
@@ -3852,6 +3856,8 @@ const renderReportStep = () => {
   <View style={styles.modalBackdrop}>
     <View style={styles.reportSheet}>
 
+      <TouchableOpacity onPress={closeReportDetails} accessibilityRole="button" accessibilityLabel="Close report" style={{ position: 'absolute', zIndex: 20, top: insets.top + 12, right: 24, width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="close" size={22} color="#30363B" /></TouchableOpacity>
+
       {reportDetailsPreparing ? (
         <View
           style={styles.reportDetailsLoadingOverlay}
@@ -3877,6 +3883,7 @@ const renderReportStep = () => {
       ) : null}
 
       <ScrollView
+        style={{ flex: 1, minHeight: 0 }}
         showsVerticalScrollIndicator={false}
         bounces
         contentContainerStyle={[
@@ -3921,11 +3928,69 @@ const renderReportStep = () => {
           </>
         ) : null}
 
+        <ReportPhotoGallery report={selectedReport} urls={reportPhotoUrls} loading={photosLoading} width={reportHeroWidth} />
+
         {/* ============================= */}
         {/* Report Header                 */}
         {/* ============================= */}
 
         <View style={styles.reportPostHeader}>
+
+
+
+          <Text style={styles.reportPostTitle}>
+            {selectedReport?.title || 'Litter Report'}
+          </Text>
+
+          <View style={styles.rewardBadge}>
+            <Ionicons
+              name={Number(selectedReport?.funded_amount_cents) > 0 ? 'cash-outline' : 'heart-outline'}
+              size={18}
+              color="#245F2A"
+            />
+            <Text style={styles.rewardBadgeText}>
+              {Number(selectedReport?.funded_amount_cents) > 0
+                ? `${formatUsd(selectedReport.funded_amount_cents)} Cleanup Reward`
+                : 'Volunteer Opportunity'}
+            </Text>
+          </View>
+
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Get directions to this cleanup" onPress={() => Linking.openURL(`https://maps.apple.com/?daddr=${selectedReport.latitude},${selectedReport.longitude}`).catch(() => Alert.alert('Directions unavailable', 'Please try again.'))} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: '#2F7D32', fontWeight: '700' }}>Get directions ↗</Text></TouchableOpacity>
+          {geminiReviewEnabled
+            && userOwnsSelectedReport
+            && selectedReport?.cleanup_state === 'available'
+            && selectedReport?.renewal_status === 'active'
+            && selectedReport?.funding_eligibility !== 'eligible' ? (
+            <View style={styles.fundingFeedbackCard}>
+              <Ionicons
+                name={selectedReport?.funding_eligibility === 'better_photos'
+                  ? 'camera-outline'
+                  : selectedReport?.funding_eligibility === 'ineligible'
+                    ? 'alert-circle-outline'
+                    : 'time-outline'}
+                size={23}
+                color="#8A5A14"
+              />
+              <View style={styles.fundingCopy}>
+                <Text style={styles.fundingFeedbackTitle}>
+                  {selectedReport?.funding_eligibility === 'better_photos'
+                    ? 'Better photos needed for funding'
+                    : selectedReport?.funding_eligibility === 'safety_hold'
+                      ? 'Funding review needs attention'
+                      : selectedReport?.funding_eligibility === 'ineligible'
+                        ? 'Funding unavailable'
+                        : 'Checking funding eligibility'}
+                </Text>
+                <Text style={styles.fundingFeedbackText}>
+                  {reportFundingFeedback?.user_summary
+                    || selectedReport?.funding_hold_reason
+                    || (selectedReport?.funding_eligibility === 'better_photos'
+                      ? 'Edit this report to replace its original photos.'
+                      : 'Report saved. Volunteers can still help while this check finishes. Return to this report to see the latest review status.')}
+                </Text>
+              </View>
+            </View>
+          ) : null}
 
           <ReporterIdentity
             profile={selectedReport?.reporter}
@@ -3941,23 +4006,6 @@ const renderReportStep = () => {
               }
             } : undefined}
           />
-
-          <Text style={styles.reportPostTitle}>
-            {selectedReport?.title || 'Litter Report'}
-          </Text>
-
-          <View style={styles.rewardBadge}>
-            <Ionicons
-              name={Number(selectedReport?.funded_amount_cents) > 0 ? 'cash-outline' : 'heart-outline'}
-              size={18}
-              color="#FFFFFF"
-            />
-            <Text style={styles.rewardBadgeText}>
-              {Number(selectedReport?.funded_amount_cents) > 0
-                ? `${formatUsd(selectedReport.funded_amount_cents)} Cleanup Reward`
-                : 'Volunteer Opportunity'}
-            </Text>
-          </View>
 
           {/* Report dates */}
           <View style={styles.reportMetaStack}>
@@ -4021,7 +4069,7 @@ const renderReportStep = () => {
                   </Text>
 
                   <Text style={styles.reportMetaItemText}>
-                    Pinned on the Litterbugs map
+                    {Number(selectedReport.latitude).toFixed(4)}, {Number(selectedReport.longitude).toFixed(4)}
                   </Text>
                 </View>
               </View>
@@ -4065,158 +4113,6 @@ const renderReportStep = () => {
           )}
 
         </View>
-
-
-        {/* ============================= */}
-        {/* Main Photo / Carousel         */}
-        {/* ============================= */}
-
-        {selectedReport?.cleanup_state === 'completed' ? (
-          <View style={styles.beforePhotoHeading}>
-            <Ionicons name="images-outline" size={20} color="#667085" />
-            <Text style={styles.beforePhotoHeadingText}>Before cleanup</Text>
-          </View>
-        ) : null}
-
-        {photosLoading ? (
-
-          <View style={styles.reportPhotoLoadingCard}>
-            <ActivityIndicator
-              size="large"
-              color="#66BB6A"
-            />
-
-            <Text style={styles.reportPhotoLoadingText}>
-              Loading photos…
-            </Text>
-          </View>
-
-        ) : reportPhotoUrls.length > 0 ? (
-
-          <View
-            style={[
-              styles.reportPhotoCarousel,
-              {
-                width: reportHeroWidth,
-                ...(Platform.OS === 'android' ? { overflow: 'visible' } : null),
-              },
-            ]}
-          >
-
-            <ScrollView
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              decelerationRate="fast"
-              snapToInterval={reportHeroWidth}
-              onMomentumScrollEnd={(event) => {
-                const offsetX =
-                  event.nativeEvent.contentOffset.x;
-
-                const nextIndex = Math.round(
-                  offsetX / reportHeroWidth
-                );
-
-                setReportPhotoIndex(nextIndex);
-              }}
-            >
-
-              {reportPhotoUrls.map((uri, index) =>
-                Platform.OS === 'android' ? (
-                  <ExpoImage
-                    key={`${uri}-${index}`}
-                    source={{
-                      uri,
-                      cacheKey: selectedReport.photo_paths?.[index] ?? uri,
-                    }}
-                    contentFit="cover"
-                    cachePolicy="memory-disk"
-                    transition={140}
-                    style={{
-                      width: reportHeroWidth,
-                      height: 355,
-                      borderRadius: 22,
-                      backgroundColor: '#E5E7EB',
-                    }}
-                  />
-                ) : (
-                  <Image
-                    key={`${uri}-${index}`}
-                    source={{ uri }}
-                    resizeMode="cover"
-                    style={[
-                      styles.reportHeroImage,
-                      {
-                        width: reportHeroWidth,
-                      },
-                    ]}
-                  />
-                )
-              )}
-
-            </ScrollView>
-
-
-            {/* Instagram-style photo count */}
-            {reportPhotoUrls.length > 1 && (
-              <View style={styles.reportPhotoCounter}>
-                <Text style={styles.reportPhotoCounterText}>
-                  {reportPhotoIndex + 1}/{reportPhotoUrls.length}
-                </Text>
-              </View>
-            )}
-
-          </View>
-
-        ) : (
-
-          /* Graceful layout for reports without photos */
-          <View style={styles.reportNoPhotoCard}>
-
-            <View style={styles.reportNoPhotoIcon}>
-              <Ionicons
-                name="image-outline"
-                size={32}
-                color="#98A2B3"
-              />
-            </View>
-
-            <Text style={styles.reportNoPhotoTitle}>
-              {selectedReport?.cleanup_state === 'completed'
-                ? 'No original photo was provided'
-                : 'No photo added'}
-            </Text>
-
-            <Text style={styles.reportNoPhotoText}>
-              {selectedReport?.cleanup_state === 'completed'
-                ? 'The cleanup impact remains available with its after photos and details.'
-                : 'This report was submitted without a photo.'}
-            </Text>
-
-          </View>
-        )}
-
-
-        {/* Photo pagination dots */}
-        {!photosLoading &&
-          reportPhotoUrls.length > 1 && (
-
-          <View style={styles.reportPhotoDots}>
-
-            {reportPhotoUrls.map((_, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.reportPhotoDot,
-
-                  index === reportPhotoIndex &&
-                    styles.reportPhotoDotActive,
-                ]}
-              />
-            ))}
-
-          </View>
-        )}
 
 
         {/* ============================= */}
@@ -4365,43 +4261,7 @@ const renderReportStep = () => {
           )}
 
 
-          {geminiReviewEnabled
-            && userOwnsSelectedReport
-            && selectedReport?.cleanup_state === 'available'
-            && selectedReport?.renewal_status === 'active'
-            && selectedReport?.funding_eligibility !== 'eligible' ? (
-            <View style={styles.fundingFeedbackCard}>
-              <Ionicons
-                name={selectedReport?.funding_eligibility === 'better_photos'
-                  ? 'camera-outline'
-                  : selectedReport?.funding_eligibility === 'ineligible'
-                    ? 'alert-circle-outline'
-                    : 'time-outline'}
-                size={23}
-                color="#8A5A14"
-              />
-              <View style={styles.fundingCopy}>
-                <Text style={styles.fundingFeedbackTitle}>
-                  {selectedReport?.funding_eligibility === 'better_photos'
-                    ? 'Better photos needed for funding'
-                    : selectedReport?.funding_eligibility === 'safety_hold'
-                      ? 'Funding review needs attention'
-                      : selectedReport?.funding_eligibility === 'ineligible'
-                        ? 'Funding unavailable'
-                        : 'Checking funding eligibility'}
-                </Text>
-                <Text style={styles.fundingFeedbackText}>
-                  {reportFundingFeedback?.user_summary
-                    || selectedReport?.funding_hold_reason
-                    || (selectedReport?.funding_eligibility === 'better_photos'
-                      ? 'Edit this report to replace its original photos.'
-                      : 'The report can still be cleaned by volunteers while this check finishes.')}
-                </Text>
-              </View>
-            </View>
-          ) : null}
-
-          {cleanupEligible ? (
+          {cleanupDiscoverable ? (
             <View style={styles.cleanupEligibilityCard}>
               <View style={styles.cleanupEligibilityHeader}>
                 <View style={styles.cleanupEligibilityIcon}>
@@ -4415,25 +4275,7 @@ const renderReportStep = () => {
                 </View>
               </View>
 
-              <TouchableOpacity
-                style={[
-                  styles.cleanupButton,
-                  cleanupActionBusy && styles.cleanupButtonDisabled,
-                ]}
-                onPress={beginCleanupClaim}
-                disabled={cleanupActionBusy}
-                accessibilityRole="button"
-                accessibilityLabel="Clean Up"
-              >
-                {cleanupActionBusy ? (
-                  <LoadingButtonContent label="Opening claim…" color="#2F7D32" />
-                ) : (
-                  <>
-                    <Ionicons name="hand-left-outline" size={21} color="#2F7D32" />
-                    <Text style={styles.cleanupButtonText}>Clean Up</Text>
-                  </>
-                )}
-              </TouchableOpacity>
+
             </View>
           ) : null}
 
@@ -4588,8 +4430,9 @@ const renderReportStep = () => {
 
       </ScrollView>
 
+      {cleanupDiscoverable ? <TouchableOpacity style={[styles.cleanupButton, { marginHorizontal: 18, marginTop: 8, backgroundColor: '#2F7D32' }]} onPress={beginCleanupClaim} disabled={cleanupActionBusy} accessibilityRole="button">{cleanupActionBusy ? <LoadingButtonContent label="Opening claim…" /> : <Text style={[styles.cleanupButtonText, { color: '#FFFFFF' }]}>Help clean this up</Text>}</TouchableOpacity> : null}
       {selectedReportHasUtilityActions ? (
-        <View style={styles.reportUtilityBar}>
+        <View style={[styles.reportUtilityBar, { paddingBottom: canEditOrDeleteSelectedReport ? 12 : Math.max(insets.bottom, 12) }]}>
           {selectedReportCanOpenFunding ? (
             <TouchableOpacity
               style={[styles.reportUtilityButton, styles.reportFundButton]}
@@ -4618,7 +4461,7 @@ const renderReportStep = () => {
                 ? 'Share completed cleanup'
                 : 'Share litter report'}
             >
-              <Ionicons name="share-social-outline" size={20} color="#A331BC" />
+              <Ionicons name="share-social-outline" size={20} color="#4F5C63" />
               <Text style={styles.reportShareButtonText}>
                 {reportShareActionLabel(selectedReport)}
               </Text>
@@ -4632,7 +4475,7 @@ const renderReportStep = () => {
       {/* Persistent Footer             */}
       {/* ============================= */}
 
-      <View style={styles.reportFooter}>
+      {canEditOrDeleteSelectedReport ? <View style={styles.reportFooter}>
 
 
         {/* DELETE — signed-in owner only */}
@@ -4776,30 +4619,8 @@ const renderReportStep = () => {
         )}
 
 
-        {/* CLOSE — everyone */}
-        <TouchableOpacity
-          style={[
-            styles.reportFooterButton,
-            styles.reportCloseButton,
-          ]}
-          onPress={closeReportDetails}
-          accessibilityRole="button"
-          accessibilityLabel="Close report"
-        >
 
-          <Ionicons
-            name="close-outline"
-            size={20}
-            color="#374151"
-          />
-
-          <Text style={styles.reportCloseButtonText}>
-            Close
-          </Text>
-
-        </TouchableOpacity>
-
-      </View>
+      </View> : null}
 
     </View>
 
@@ -4844,8 +4665,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 12,
-    height: 56,
-    alignItems: 'center',
+    minHeight: 56,
   },
   floatingMapHeaderCard: {
     position: 'absolute',
@@ -5843,11 +5663,11 @@ reportDetailsLoadingText: {
 
 reportPostScrollContent: {
   paddingTop: 72,
-  paddingBottom: 125,
+  paddingBottom: 24,
 },
 
 reportPostScrollContentWithActions: {
-  paddingBottom: 205,
+  paddingBottom: 24,
 },
 
 originalReportDivider: {
@@ -5893,8 +5713,8 @@ reportPostHeader: {
 
 reportPostTitle: {
   marginTop: 14,
-  fontSize: 30,
-  lineHeight: 36,
+  fontSize: 25,
+  lineHeight: 32,
   fontWeight: '800',
   color: '#1F2937',
   marginBottom: 12,
@@ -5909,11 +5729,11 @@ rewardBadge: {
   alignItems: 'center',
   gap: 7,
   borderRadius: 999,
-  backgroundColor: '#2F7D32',
+  backgroundColor: '#E3EEE4',
 },
 
 rewardBadgeText: {
-  color: '#FFFFFF',
+  color: '#245F2A',
   fontSize: 14,
   fontWeight: '900',
 },
@@ -6465,12 +6285,9 @@ ownerReportLockText: {
 /* ============================= */
 
 reportFooter: {
-  position: 'absolute',
   zIndex: 3,
   elevation: 3,
-  bottom: 0,
-  left: 0,
-  right: 0,
+  flexShrink: 0,
   flexDirection: 'row',
   gap: 10,
   paddingHorizontal: 16,
@@ -6480,12 +6297,9 @@ reportFooter: {
 },
 
 reportUtilityBar: {
-  position: 'absolute',
   zIndex: 2,
   elevation: 2,
-  left: 0,
-  right: 0,
-  bottom: 73,
+  flexShrink: 0,
   flexDirection: 'row',
   gap: 10,
   paddingHorizontal: 16,
@@ -6508,7 +6322,7 @@ reportShareButton: {
   minHeight: 50,
   borderRadius: 14,
   borderWidth: 2,
-  borderColor: '#B448CF',
+  borderColor: '#CDD5D0',
   flexDirection: 'row',
   alignItems: 'center',
   justifyContent: 'center',
@@ -6517,7 +6331,7 @@ reportShareButton: {
 },
 
 reportShareButtonText: {
-  color: '#A331BC',
+  color: '#4F5C63',
   fontSize: 15,
   fontWeight: '800',
 },

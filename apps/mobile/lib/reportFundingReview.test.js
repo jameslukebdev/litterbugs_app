@@ -8,16 +8,12 @@ const mapScreenSource = readFileSync(
 );
 
 describe('report review cleanup-fund choices', () => {
-  it('offers volunteer and the approved preset amounts', () => {
+  it('offers a simple volunteer default and optional reward', () => {
     expect(mapScreenSource).toContain(
-      'Add funds to incentive litter cleanup, or keep the cleanup volunteer-based.'
+      'A reward is optional. You can also add one after publishing.'
     );
     expect(mapScreenSource).toContain("{ value: 'none', label: 'Volunteer' }");
-    expect(mapScreenSource).toContain("{ value: '1', label: '$1' }");
-    expect(mapScreenSource).toContain("{ value: '5', label: '$5' }");
-    expect(mapScreenSource).toContain("{ value: '15', label: '$15' }");
     expect(mapScreenSource).toContain("{ value: '25', label: '$25' }");
-    expect(mapScreenSource).toContain("{ value: '100', label: '$100' }");
     expect(mapScreenSource).toContain("{ value: 'other', label: 'Other' }");
   });
 
@@ -29,8 +25,8 @@ describe('report review cleanup-fund choices', () => {
     );
   });
 
-  it('requires an explicit volunteer or reward choice', () => {
-    expect(mapScreenSource).toContain('startingFundingChoice: null');
+  it('defaults to volunteer while validating optional rewards', () => {
+    expect(mapScreenSource).toContain("startingFundingChoice: 'none'");
     expect(mapScreenSource).toContain('Choose Volunteer or select a starting amount.');
     expect(mapScreenSource).toContain("'Choose cleanup funding'");
   });
@@ -42,7 +38,7 @@ describe('report review cleanup-fund choices', () => {
     expect(mapScreenSource).toContain(": 'Volunteer Opportunity'");
 
     const cleanupCard = mapScreenSource.indexOf('style={styles.cleanupEligibilityCard}');
-    const utilityBar = mapScreenSource.indexOf('style={styles.reportUtilityBar}');
+    const utilityBar = mapScreenSource.indexOf('styles.reportUtilityBar,');
     const fundButton = mapScreenSource.indexOf('accessibilityLabel="Fund cleanup"', utilityBar);
     const shareButton = mapScreenSource.indexOf("? 'Share completed cleanup'", fundButton);
     expect(cleanupCard).toBeGreaterThan(-1);

@@ -1,5 +1,6 @@
+import { withTimeout } from './lib/asyncTimeout';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { AppState, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,23 +23,40 @@ export default function PayoutSetupScreen({ navigation, route }) {
   const workflowCopy = payoutWorkflowCopy(route?.params?.workflowKind);
   const workflowCompletedRef = useRef(false);
   const connectionSuccessAlertRef = useRef(false);
+  const [statusError, setStatusError] = useState(false);
+  const [waiting, setWaiting] = useState(false);
+  const refreshBusy = useRef(false);
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [eligibleConfirmed, setEligibleConfirmed] = useState(false);
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
+    if (refreshBusy.current) return;
+    refreshBusy.current = true;
     try {
-      const next = await loadPayoutStatus();
+      const next = await withTimeout(loadPayoutStatus(), 12000, 'Payout status is taking longer than expected.');
       setStatus(next);
+      setStatusError(false);
+      if (next?.payoutsEnabled) setWaiting(false);
     } catch (error) {
-      setStatus({ onboardingStatus: 'not_started', payoutsEnabled: false });
+      setStatusError(true);
     } finally {
+      refreshBusy.current = false;
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => {
+    refresh();
+    const subscription = AppState.addEventListener('change', (state) => { if (state === 'active') refresh(); });
+    return () => subscription.remove();
+  }, [refresh]);
+  useEffect(() => {
+    if (!waiting) return undefined;
+    const timer = setInterval(refresh, 10000);
+    return () => clearInterval(timer);
+  }, [waiting, refresh]);
 
   useEffect(() => navigation.addListener('beforeRemove', () => {
     if (workflowToken && !workflowCompletedRef.current) {
@@ -80,7 +98,7 @@ export default function PayoutSetupScreen({ navigation, route }) {
           const nextStatus = await waitForPayoutConnection(loadPayoutStatus);
           const connected = isPayoutConnectionReady(nextStatus);
           if (connected) connectionSuccessAlertRef.current = true;
-          setStatus(nextStatus);
+          if (nextStatus) setStatus(nextStatus);
           if (connected) {
             Alert.alert(
               'Stripe connected',
@@ -97,6 +115,7 @@ export default function PayoutSetupScreen({ navigation, route }) {
               { cancelable: false }
             );
           } else {
+            setWaiting(true);
             Alert.alert(
               'Stripe is still confirming your account',
               'Your information was received. Stay on this screen and try again shortly if Litterbugs does not return to the cleanup automatically.'
@@ -118,6 +137,7 @@ export default function PayoutSetupScreen({ navigation, route }) {
 
   return (
     <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]}>
+      {statusError || waiting ? <View style={styles.card} accessibilityLiveRegion="polite"><Text style={styles.cardTitle}>{statusError ? 'Payout status unavailable' : 'Waiting for Stripe confirmation'}</Text><Text style={styles.rowText}>{statusError ? 'Your existing setup is unchanged. Retry to check its latest status.' : 'We’re checking automatically. You can return here from your profile at any time.'}</Text><TouchableOpacity style={styles.secondaryButton} onPress={refresh} accessibilityRole="button"><Text style={styles.secondaryText}>Refresh status</Text></TouchableOpacity></View> : null}
       <View style={[styles.icon, enabled && styles.iconEnabled]}>
         <Ionicons name={enabled ? 'checkmark' : 'wallet-outline'} size={35} color={enabled ? '#FFFFFF' : '#2F7D32'} />
       </View>
@@ -152,7 +172,7 @@ export default function PayoutSetupScreen({ navigation, route }) {
       ) : null}
 
       {!enabled ? (
-        <TouchableOpacity style={[styles.button, (busy || !eligibleConfirmed) && styles.disabled]} onPress={openSetup} disabled={busy || !eligibleConfirmed}>
+        <TouchableOpacity style={[styles.button, (busy || !eligibleConfirmed || !status) && styles.disabled]} onPress={openSetup} disabled={busy || !eligibleConfirmed || !status}>
           {busy ? <LoadingButtonContent label="Opening Stripe…" /> : <Text style={styles.buttonText}>{status?.onboardingStatus === 'pending' ? 'Continue Stripe setup' : 'Set up with Stripe'}</Text>}
         </TouchableOpacity>
       ) : (

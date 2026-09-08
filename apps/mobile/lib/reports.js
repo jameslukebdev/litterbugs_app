@@ -8,6 +8,7 @@ import {
   useState,
 } from 'react';
 
+import { DEFAULT_REPORT_FILTERS, matchesReportFilters } from './reportFilters';
 import { supabase } from './supabase';
 import { useProfile } from './profile';
 import { completedImpactReportFilter, isVisibleReport } from './reportVisibility';
@@ -67,6 +68,12 @@ export function ReportsProvider({ children }) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [mapRegion, setMapRegion] = useState(DEFAULT_MAP_REGION);
+  const [filters, setFilters] = useState(DEFAULT_REPORT_FILTERS);
+  const radiusRef = useRef(filters.radius);
+  radiusRef.current = filters.radius;
+  const requestSequence = useRef(0);
+  const regionRef = useRef(mapRegion);
+  regionRef.current = mapRegion;
   const photoUrlCache = useRef(new Map());
   const photoUrlRequests = useRef(new Map());
   const { blockedIds } = useProfile();
@@ -75,29 +82,42 @@ export function ReportsProvider({ children }) {
     if (showRefresh) setRefreshing(true);
     else setLoading(true);
 
-    const nowIso = new Date().toISOString();
-    const { data, error: reportsError } = await supabase
-      .from('reports')
-      .select(REPORT_SELECT)
-      .eq('is_sample', false)
-      .is('cancelled_at', null)
-      .or(completedImpactReportFilter(nowIso));
-
-    if (reportsError) {
-      console.log('loadReports error:', reportsError);
-      setError('Reports could not be loaded. Pull to try again.');
-    } else {
-      setAllReports(data ?? []);
+    const sequence = ++requestSequence.current;
+    try {
+      const area = regionRef.current;
+      const latitudeSpan = Math.max(area.latitudeDelta, radiusRef.current / 69);
+      const longitudeSpan = Math.max(area.longitudeDelta, radiusRef.current / (69 * Math.max(0.01, Math.cos(area.latitude * Math.PI / 180))));
+      const rows = [];
+      // Fetch a bounded area in stable pages; never silently accept the API's row cap.
+      const nowIso = new Date().toISOString();
+      for (let offset = 0; ; offset += 500) {
+        let query = supabase.from('reports').select(REPORT_SELECT)
+          .eq('is_sample', false).is('cancelled_at', null)
+          .or(completedImpactReportFilter(nowIso))
+          .gte('latitude', Math.max(-90, area.latitude - latitudeSpan))
+          .lte('latitude', Math.min(90, area.latitude + latitudeSpan));
+        const west = area.longitude - longitudeSpan;
+        const east = area.longitude + longitudeSpan;
+        if (west >= -180 && east <= 180) query = query.gte('longitude', west).lte('longitude', east);
+        const { data, error: reportsError } = await query.order('id').range(offset, offset + 499);
+        if (sequence !== requestSequence.current) return;
+        if (reportsError) throw reportsError;
+        rows.push(...(data ?? []));
+        if (!data || data.length < 500) break;
+      }
+      setAllReports(rows);
       setError(null);
+    } catch {
+      if (sequence === requestSequence.current) setError('Reports could not be loaded. Pull to try again.');
+    } finally {
+      if (sequence === requestSequence.current) { setLoading(false); setRefreshing(false); }
     }
-
-    setLoading(false);
-    setRefreshing(false);
   }, []);
 
   useEffect(() => {
-    refreshReports();
-  }, [refreshReports]);
+    const timer = setTimeout(() => refreshReports(), 400);
+    return () => { clearTimeout(timer); requestSequence.current += 1; };
+  }, [mapRegion, filters.radius, refreshReports]);
 
   const getReportById = useCallback(async (reportId) => {
     const { data, error: reportError } = await supabase
@@ -118,8 +138,10 @@ export function ReportsProvider({ children }) {
     return allReports.filter((report) => !blocked.has(report.user_id));
   }, [allReports, blockedIds]);
 
+  const filteredReports = useMemo(() => reports.filter((report) => matchesReportFilters(report, filters, mapRegion)), [reports, filters, mapRegion]);
+
   const markers = useMemo(
-    () => reports
+    () => filteredReports
       .filter(
         (report) => typeof report.latitude === 'number'
           && typeof report.longitude === 'number'
@@ -132,7 +154,7 @@ export function ReportsProvider({ children }) {
         },
         report,
       })),
-    [reports]
+    [filteredReports]
   );
 
   const commitMapRegion = useCallback((nextRegion) => {
@@ -159,12 +181,12 @@ export function ReportsProvider({ children }) {
     setAllReports((current) => current.filter(({ id }) => id !== reportId));
   }, []);
 
-  const getReportPhotoUrl = useCallback(async (path) => {
+  const getReportPhotoUrl = useCallback(async (path, { force = false } = {}) => {
     if (!path) return null;
     if (/^https?:\/\//i.test(path)) return path;
 
     const cached = photoUrlCache.current.get(path);
-    if (cached) return cached;
+    if (!force && cached && cached.expiresAt > Date.now()) return cached.url;
 
     const pending = photoUrlRequests.current.get(path);
     if (pending) return pending;
@@ -180,7 +202,7 @@ export function ReportsProvider({ children }) {
       }
 
       const signedUrl = data?.signedUrl ?? null;
-      if (signedUrl) photoUrlCache.current.set(path, signedUrl);
+      if (signedUrl) photoUrlCache.current.set(path, { url: signedUrl, expiresAt: Date.now() + 55 * 60 * 1000 });
       return signedUrl;
     })();
 
@@ -195,6 +217,7 @@ export function ReportsProvider({ children }) {
 
   const value = useMemo(() => ({
     reports,
+    filteredReports, filters, setFilters,
     markers,
     loading,
     refreshing,
@@ -208,6 +231,7 @@ export function ReportsProvider({ children }) {
     removeReport,
     getReportPhotoUrl,
   }), [
+    filteredReports, filters,
     commitMapRegion,
     error,
     getReportById,

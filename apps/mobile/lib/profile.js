@@ -58,6 +58,7 @@ export function ProfileProvider({ children }) {
   const [blockedIds, setBlockedIds] = useState([]);
   const [loading, setLoading] = useState(permanent);
   const [error, setError] = useState(null);
+  const [pendingAction, setPendingAction] = useState(null);
   const [pendingReportCoordinate, setPendingReportCoordinate] = useState(null);
 
   const refreshProfile = useCallback(async () => {
@@ -158,6 +159,7 @@ export function ProfileProvider({ children }) {
     updateProfile,
     blockUser,
     unblockUser,
+    pendingAction, setPendingAction,
     pendingReportCoordinate,
     setPendingReportCoordinate,
     consumePendingReportCoordinate,
@@ -167,6 +169,7 @@ export function ProfileProvider({ children }) {
     consumePendingReportCoordinate,
     error,
     loading,
+    pendingAction, setPendingAction,
     pendingReportCoordinate,
     profile,
     refreshProfile,

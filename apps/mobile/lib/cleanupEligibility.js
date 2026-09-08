@@ -2,6 +2,10 @@ import { isPermanentUser } from './reportAccess';
 
 export function canOfferCleanup(report, user, now = new Date()) {
   if (!isPermanentUser(user)) return false;
+  return isCleanupAvailable(report, now);
+}
+
+export function isCleanupAvailable(report, now = new Date()) {
   if (!report || report.cleanup_state !== 'available') return false;
   if (report.expired_at || report.cancelled_at) return false;
   if (!report.expires_at) return true;

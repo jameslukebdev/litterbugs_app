@@ -55,6 +55,7 @@ function getLitterSummary(report) {
 function ReportThumbnail({ report, size }) {
   const { getReportPhotoUrl } = useReports();
   const photoPath = report?.photo_paths?.[0] ?? null;
+  const [retried, setRetried] = useState(false);
   const [photoUrl, setPhotoUrl] = useState(null);
   const [loading, setLoading] = useState(Boolean(photoPath));
 
@@ -70,11 +71,12 @@ function ReportThumbnail({ report, size }) {
     }
 
     setLoading(true);
+    setRetried(false);
     getReportPhotoUrl(photoPath).then((url) => {
       if (!active) return;
       setPhotoUrl(url);
       setLoading(false);
-    });
+    }).catch(() => { if (active) setLoading(false); });
 
     return () => {
       active = false;
@@ -85,6 +87,11 @@ function ReportThumbnail({ report, size }) {
     return (
       <ExpoImage
         source={{ uri: photoUrl, cacheKey: photoPath }}
+        onError={() => {
+          if (retried) return;
+          setRetried(true);
+          getReportPhotoUrl(photoPath, { force: true }).then((url) => setPhotoUrl(url)).catch(() => setPhotoUrl(null));
+        }}
         contentFit="cover"
         cachePolicy="memory-disk"
         style={[styles.thumbnail, { width: size, height: size * 0.86 }]}
@@ -118,6 +125,7 @@ export function ReportListItem({ report, origin, onPress }) {
   const accessibilityLabel = [
     report?.title || 'Litter report',
     completed ? 'Cleanup complete' : `${severity.label} severity`,
+    report.funded_amount_cents > 0 ? `Cleaner reward ${formatUsd(report.funded_amount_cents)}` : 'Volunteer cleanup',
     metadata,
     getLitterSummary(report),
     `Reported by ${report?.reporter?.display_name || 'Reporter unavailable'}`,
