@@ -63,7 +63,8 @@ final class LitterbugsUIRegression: XCTestCase {
         centerAndZoomOut()
         XCTAssertTrue(funded.waitForExistence(timeout: 10))
         funded.tap()
-        XCTAssertTrue(element("View report").waitForExistence(timeout: 5) || element("Reports here").exists)
+        XCTAssertTrue(element("View report").waitForExistence(timeout: 5))
+        XCTAssertFalse(element("Reports here").exists, "A distinct amount marker must open its card directly")
         shot("marker-selection")
     }
     func testMapReportsFilterSynchronization() throws {

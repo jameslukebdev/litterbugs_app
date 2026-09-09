@@ -5,7 +5,7 @@ describe('map label collision and discovery', () => {
   it('keeps separated reports labelled and downgrades close labels without dropping reports', () => {
     const result = layoutMapLabels([point('a', 100, 100), point('b', 115, 100), point('c', 300, 300)]);
     expect(result.map(p => [p.id, p.labelled])).toEqual([['a', true], ['b', false], ['c', true]]);
-    expect(reportsNearMapTap(result, 'b').map(p => p.id)).toEqual(['a', 'b']);
+    expect(reportsNearMapTap(result, 'b').map(p => p.id)).toEqual(['b']);
   });
   it('makes every identical-coordinate report available through the chooser', () => {
     const result = layoutMapLabels(Array.from({ length: 30 }, (_, i) => point(`report-${i}`, 100, 100)));
@@ -23,7 +23,7 @@ describe('map label collision and discovery', () => {
     const result = layoutMapLabels([completed, available]);
     expect(result.find(p => p.id === 'b').labelled).toBe(true);
     expect(result.find(p => p.id === 'a').labelled).toBe(false);
-    expect(reportsNearMapTap(result, 'b').map(p => p.id)).toEqual(['a', 'b']);
+    expect(reportsNearMapTap(result, 'b').map(p => p.id)).toEqual(['b']);
     expect(layoutMapLabels([available, completed])).toEqual(result);
     expect(layoutMapLabels([completed, available], 'a').find(p => p.id === 'a').labelled).toBe(true);
   });
@@ -38,7 +38,7 @@ describe('map label collision and discovery', () => {
     const result = layoutMapLabels([point('a', 100, 100), point('b', 115, 100)], 'b');
     expect(result.find(p => p.id === 'b').labelled).toBe(true);
     expect(result.find(p => p.id === 'a').labelled).toBe(false);
-    expect(reportsNearMapTap(result, 'b')).toHaveLength(2);
+    expect(reportsNearMapTap(result, 'b')).toHaveLength(1);
   });
   it('allows more labels after zoom separates points and accounts for larger text', () => {
     expect(layoutMapLabels([point('a', 100, 100), point('b', 160, 100)]).every(p => p.labelled)).toBe(true);
@@ -83,4 +83,17 @@ it('changes funded status label visibility with separation, never the amount', (
   expect(selected.filter(p => p.labelled)).toHaveLength(1);
   expect(selected[0].label).toBe('$0');
   expect([selected[0].width,selected[0].height]).toEqual([normal[0].width,normal[0].height]);
+});
+
+it('opens a distinct tapped marker despite overlapping reserved touch bounds', () => {
+  const points = [
+    {...point('funded', 100,100), width: 100, height: 44},
+    {...point('completed', 110,125,'$0'), width: 120, height: 44},
+  ];
+  expect(reportsNearMapTap(points,'funded').map(p => p.id)).toEqual(['funded']);
+  expect(reportsNearMapTap(points,'completed').map(p => p.id)).toEqual(['completed']);
+});
+it('reserves the chooser for nearly indistinguishable map points', () => {
+  const points = [point('a',100,100),point('b',103,104),point('c',107,100)];
+  expect(reportsNearMapTap(points,'a').map(p => p.id)).toEqual(['a','b']);
 });

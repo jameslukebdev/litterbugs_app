@@ -35,12 +35,13 @@ export function layoutMapLabels(points, selectedId, fontScale = 1) {
   });
 }
 
-// Resolve overlapping touch targets explicitly instead of letting native draw order hide reports.
+// Native onPress already identifies the tapped annotation. A generous touch host
+// is not evidence of ambiguity: only nearly coincident map points need a chooser.
+// Six screen points is smaller than a compact marker's visible footprint.
 export function reportsNearMapTap(points, tappedId) {
   const tapped = points.find((point) => point.id === tappedId);
   if (!tapped) return [];
-  return points.filter((point) => point.id === tappedId || (
-    Math.abs(point.x - tapped.x) < (markerHostDimensions(tapped.width || 44, tapped.height || 44).width + markerHostDimensions(point.width || 44, point.height || 44).width) / 2 &&
-    Math.abs(point.y - tapped.y) < (markerHostDimensions(tapped.width || 44, tapped.height || 44).height + markerHostDimensions(point.width || 44, point.height || 44).height) / 2
-  )).sort((a, b) => String(a.id).localeCompare(String(b.id)));
+  return points.filter((point) => point.id === tappedId ||
+    Math.hypot(point.x - tapped.x, point.y - tapped.y) <= 6
+  ).sort((a, b) => String(a.id).localeCompare(String(b.id)));
 }

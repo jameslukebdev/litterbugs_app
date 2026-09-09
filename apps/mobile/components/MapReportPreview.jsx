@@ -19,7 +19,7 @@ export default function MapReportPreview({ report, nearby, bottom, insetBottom, 
       <View style={styles.row}><Photo report={report} getPhotoUrl={getPhotoUrl} /><View style={styles.copy}><Summary report={report} />{Number.isFinite(distance) ? <Text style={styles.status}>{distance < 0.1 ? 'Nearby' : `${distance.toFixed(1)} mi away`}</Text> : null}</View>
         <TouchableOpacity style={styles.close} accessibilityRole="button" accessibilityLabel="Close map preview" onPress={onClose}><Ionicons name="close" size={22} color="#435047" /></TouchableOpacity>
       </View>
-      <TouchableOpacity style={styles.action} accessibilityRole="button" onPress={() => onDetails(report)}><Text style={styles.actionText}>View report</Text><Ionicons name="arrow-forward" size={18} color="white" /></TouchableOpacity>
+      <TouchableOpacity style={styles.action} accessibilityRole="button" accessibilityLabel="View report" onPress={() => onDetails(report)}><Text style={styles.actionText}>View report</Text><Ionicons name="arrow-forward" size={18} color="white" /></TouchableOpacity>
     </View> : null}
     <Modal visible={Boolean(nearby?.length)} transparent animationType="slide" onRequestClose={onCloseNearby}>
       <View style={styles.backdrop}>
