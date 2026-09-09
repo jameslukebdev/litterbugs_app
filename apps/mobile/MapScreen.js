@@ -16,6 +16,7 @@ import { polygonParts } from './lib/searchGeography';
 import MapView, { Marker, Polygon } from 'react-native-maps';
 import { useIsFocused } from '@react-navigation/native';
 import * as Location from 'expo-location';
+import * as Device from 'expo-device';
 import { Ionicons } from '@expo/vector-icons';
 
 import * as ImagePicker from 'expo-image-picker';
@@ -1293,7 +1294,13 @@ const submitReport = async () => {
       await locateAndCenterMap();
     } catch (e) {
       console.log('Center error:', e);
-      Alert.alert('Location Error', e?.message || 'Unable to find your location.');
+      setMapUserLocation(null);
+      Alert.alert(
+        Device.isDevice ? 'Location unavailable' : 'Simulator location unavailable',
+        Device.isDevice
+          ? (e?.message || 'Unable to find your location. Please try again.')
+          : 'The iOS simulator uses a simulated location, not your physical location. Choose Features → Location in Simulator to set a test location, or use Litterbugs on an iPhone to check your actual location.',
+      );
     } finally {
       setIsCentering(false);
     }

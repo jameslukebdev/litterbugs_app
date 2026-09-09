@@ -26,7 +26,10 @@ final class LitterbugsUIRegression: XCTestCase {
     func marker(_ title: String) -> XCUIElement {
         app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch
     }
-    override func tearDown() { shot("end-of-test") }
+    override func tearDown() {
+        shot("end-of-test")
+        if #available(iOS 16.4, *) { XCUIDevice.shared.location = nil }
+    }
     func simulateLocation() {
         if #available(iOS 16.4, *) {
             XCUIDevice.shared.location = XCUILocation(location: CLLocation(coordinate: CLLocationCoordinate2D(latitude: 36.225, longitude: -81.662), altitude: 900, horizontalAccuracy: 5, verticalAccuracy: 5, timestamp: Date()))

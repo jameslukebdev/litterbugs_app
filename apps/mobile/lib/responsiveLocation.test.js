@@ -67,3 +67,30 @@ describe('responsive location', () => {
     expect(mapRegionsAreEquivalent(first, { ...first, latitude: 35.01 })).toBe(false);
   });
 });
+
+it('does not invent a location when the OS supplies no fix', async () => {
+  const onPosition = vi.fn();
+  await expect(findResponsiveUserLocation({
+    locationApi: {
+      Accuracy: { Balanced: 3 },
+      getLastKnownPositionAsync: vi.fn().mockResolvedValue(null),
+      getCurrentPositionAsync: vi.fn(() => new Promise(() => {})),
+    },
+    onPosition,
+    freshLocationTimeoutMs: 1,
+  })).rejects.toThrow('Finding your current location');
+  expect(onPosition).not.toHaveBeenCalled();
+});
+
+it('uses OS recency and accuracy limits before accepting a cached fix', async () => {
+  const getLastKnownPositionAsync = vi.fn().mockResolvedValue(null);
+  await findResponsiveUserLocation({
+    locationApi: {
+      Accuracy: { Balanced: 3 },
+      getLastKnownPositionAsync,
+      getCurrentPositionAsync: vi.fn().mockResolvedValue(fresh),
+    },
+    onPosition: vi.fn(),
+  });
+  expect(getLastKnownPositionAsync).toHaveBeenCalledWith({ maxAge: 300000, requiredAccuracy: 2000 });
+});

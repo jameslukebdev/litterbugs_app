@@ -12,7 +12,7 @@ xcodebuild -workspace Litterbugs.xcworkspace -scheme LitterbugsUIRegression -con
 
 Use a unique result path per run. The app bundle is `com.gegibson.litterbugs.qa`. Tests wait for hittable launch controls and retain screenshots in the result bundle. The generated test runner uses ad-hoc simulator signing so Xcode installs changed test code. If an older unsigned runner was installed, uninstall only `com.gegibson.litterbugs.uiregression.xctrunner` once; never uninstall the user app to reset tests.
 
-The suite sets a fresh, accurate Boone location through XCTest’s native location API on each test. Enable Simulator → I/O → Keyboard → Toggle Software Keyboard before keyboard tests.
+The suite sets a fresh, accurate Boone location through XCTest’s native location API on each test and clears the XCTest location override in teardown. After interrupted runs, also run `xcrun simctl location YOUR_DEVICE_UUID clear` before handing the simulator back. These coordinates are synthetic, never the developer’s physical location. Enable Simulator → I/O → Keyboard → Toggle Software Keyboard before keyboard tests.
 
 Run on a standard iPhone, a smaller iPhone, and with larger system text (`xcrun simctl ui DEVICE content_size extra-extra-extra-large`); restore the original text size afterward.
 
