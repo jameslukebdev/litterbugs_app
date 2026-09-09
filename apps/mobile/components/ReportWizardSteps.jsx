@@ -8,7 +8,7 @@ import { LoadingButtonContent } from '../BrandedLoadingState';
 import styles from '../styles/MapScreen.styles';
 import MapView, { Marker } from 'react-native-maps';
 
-export default function ReportWizardSteps({ form, coordinate, isEditing, reportPhotoUrls, reportStep, selectedReport, pickImage, isSaving, setForm, removePhoto, hasAttachedReportPhoto, goToNextReportStep, LITTER_OPTIONS, revealBottomReportField, NOTES_OPTIONS, jumpToReportStep, fundingEnabled, wantsStartingFunding, startingContributionCents, hasStartingFundingChoice, submitReport }) {
+export default function ReportWizardSteps({ form, coordinate, onChangeLocation, isEditing, reportPhotoUrls, reportStep, selectedReport, pickImage, isSaving, setForm, removePhoto, hasAttachedReportPhoto, goToNextReportStep, LITTER_OPTIONS, revealBottomReportField, NOTES_OPTIONS, jumpToReportStep, fundingEnabled, wantsStartingFunding, startingContributionCents, hasStartingFundingChoice, submitReport }) {
   const reviewPhotos = form.photos.length > 0 ? form.photos : isEditing ? reportPhotoUrls : [];
   switch (reportStep) {
     case 0: return (<View style={styles.wizardStep}>
@@ -484,10 +484,13 @@ export default function ReportWizardSteps({ form, coordinate, isEditing, reportP
 
 
           {coordinate && Number.isFinite(coordinate.latitude) && Number.isFinite(coordinate.longitude) ? <View style={{ marginBottom: 20 }}>
-            <Text style={styles.reviewLabel}>Location confirmed on map</Text>
+            <View style={styles.reviewHeader}>
+              <Text style={styles.reviewLabel}>Report location</Text>
+              {!isEditing ? <TouchableOpacity onPress={onChangeLocation} disabled={isSaving} accessibilityRole="button" accessibilityLabel="Change report location" style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 8 }}><Text style={styles.reviewEdit}>Change</Text></TouchableOpacity> : null}
+            </View>
             <View style={{ height: 120, borderRadius: 12, overflow: 'hidden', marginTop: 8 }} pointerEvents="none">
               <MapView style={{ flex: 1 }} initialRegion={{ ...coordinate, latitudeDelta: 0.008, longitudeDelta: 0.008 }} scrollEnabled={false} zoomEnabled={false} rotateEnabled={false} pitchEnabled={false} accessibilityLabel="Confirmed report location">
-                <Marker coordinate={coordinate} />
+                <Marker coordinate={coordinate} pinColor="#2F7D32" />
               </MapView>
             </View>
           </View> : null}

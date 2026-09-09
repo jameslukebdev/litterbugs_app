@@ -44,7 +44,7 @@ describe('mobile loading experience', () => {
     expect(source).toContain(
       'if (!mapSurfaceLoaded || reportsLoading || !initialLocationResolved) return undefined;'
     );
-    expect(source).toContain('locateAndCenterMap({ showPermissionAlert: false })');
+    expect(source).toContain('locateAndCenterMap({ showPermissionAlert: false, requestPermission: false })');
     expect(source).not.toContain('initialMapLoadingOpacity');
   });
 

@@ -83,15 +83,10 @@ import {
 import {
   findResponsiveUserLocation,
   mapRegionsAreEquivalent,
-  reportLocationRegion,
   userLocationRegion,
 } from './lib/responsiveLocation';
 import { mapCenterCoordinate } from './lib/reportLocationPlacement';
-import {
-  evaluateReportLocationDistance,
-  MAX_REPORT_DISTANCE_MILES,
-  roundedDistanceLabel,
-} from './lib/reportLocationPolicy';
+
 
 import { createReportShareModel, isInstagramStoriesAvailable, isReportShareable, prepareNativeReportShareImage, shareReportToInstagramStories, shareReportWithSystemSheet } from './lib/reportSharing';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -142,6 +137,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
 
   const [draftCoord, setDraftCoord] = useState(null);
   const [reportPlacementActive, setReportPlacementActive] = useState(false);
+  const editingDraftLocationRef = useRef(false);
   const [placementCoordinate, setPlacementCoordinate] = useState(null);
   const reportControlTransition = useRef(new Animated.Value(0)).current;
   const [formOpen, setFormOpen] = useState(false);
@@ -199,8 +195,6 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const [reportShareSheetOpen, setReportShareSheetOpen] = useState(false);
   const [reportShareBusyAction, setReportShareBusyAction] = useState(null);
   const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
-  const [reportLocationVerification, setReportLocationVerification] = useState('idle');
-  const reportLocationRequestRef = useRef(0);
   const [paymentsEnabled, setPaymentsEnabled] = useState(false);
   const [geminiReviewEnabled, setGeminiReviewEnabled] = useState(false);
   const [reportFundingFeedback, setReportFundingFeedback] = useState(null);
@@ -260,13 +254,14 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
 
   const locateAndCenterMap = useCallback(async ({
     showPermissionAlert = true,
+    requestPermission = true,
     permissionMessage = 'Allow location access to center the map on your position.',
     regionForPosition = userLocationRegion,
     accuracy = Location.Accuracy.Balanced,
   } = {}) => {
     let permission = await Location.getForegroundPermissionsAsync();
 
-    if (permission.status !== 'granted' && permission.canAskAgain !== false) {
+    if (requestPermission && permission.status !== 'granted' && permission.canAskAgain !== false) {
       permission = await Location.requestForegroundPermissionsAsync();
     }
 
@@ -302,7 +297,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     }
     let active = true;
 
-    locateAndCenterMap({ showPermissionAlert: false })
+    locateAndCenterMap({ showPermissionAlert: false, requestPermission: false })
       .catch((error) => console.log('Initial map location error:', error))
       .finally(() => {
         if (active) setInitialLocationResolved(true);
@@ -677,190 +672,32 @@ const reportStepPanResponder = PanResponder.create({
 });
 
 
-// Calculate distance between two GPS coordinates using the Haversine formula
-const getDistanceMiles = (pointA, pointB) => {
-  const EARTH_RADIUS_MILES = 3958.8;
-
-  const toRadians = (degrees) => degrees * (Math.PI / 180);
-
-  const lat1 = toRadians(pointA.latitude);
-  const lon1 = toRadians(pointA.longitude);
-  const lat2 = toRadians(pointB.latitude);
-  const lon2 = toRadians(pointB.longitude);
-
-  const deltaLat = lat2 - lat1;
-  const deltaLon = lon2 - lon1;
-
-  const a =
-    Math.sin(deltaLat / 2) ** 2 +
-    Math.cos(lat1) *
-      Math.cos(lat2) *
-      Math.sin(deltaLon / 2) ** 2;
-
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  return EARTH_RADIUS_MILES * c;
-};
-
-// Reports can only be created near the user's current GPS location
-const beginReportAtCoordinate = async (coord, savedForm = null) => {
+// The user confirms a map pin; device GPS is optional and is never the
+// authority for where litter was observed.
+const beginReportAtCoordinate = (coord, savedForm = null) => {
   if (!navigation.isFocused()) return;
-
-  const requestId = reportLocationRequestRef.current + 1;
-  reportLocationRequestRef.current = requestId;
-
-  // Open the workflow immediately so a fresh GPS fix never makes the tap feel
-  // unresponsive. Location verification continues in the background, and the
-  // user cannot advance until the selected coordinate has been approved.
-  setDraftCoord(coord);
+  const selectedCoordinate = mapCenterCoordinate(coord);
+  if (!selectedCoordinate) {
+    Alert.alert('Map location unavailable', 'Choose a report location on the map and try again.');
+    return;
+  }
+  editingDraftLocationRef.current = false;
+  setDraftCoord(selectedCoordinate);
   setForm(savedForm || {
-    title: '',
-    selectedTypes: [],
-    types: '',
-    photos: [],
-    severity: '',
-    selectedNotes: [],
-    notes: '',
-    startingFundingChoice: 'none',
-    startingFundingOther: '',
+    title: '', selectedTypes: [], types: '', photos: [], severity: '',
+    selectedNotes: [], notes: '', startingFundingChoice: 'none', startingFundingOther: '',
   });
   resetReportWizard();
-  setReportLocationVerification('checking');
   setFormOpen(true);
-
-  const isCurrentRequest = () => reportLocationRequestRef.current === requestId;
-
-  const closeUnverifiedDraft = ({ returnToPlacement = false } = {}) => {
-    if (!isCurrentRequest()) return;
-    setDraftCoord(null);
-    setFormOpen(false);
-    setReportLocationVerification('idle');
-    resetReportWizard();
-    if (returnToPlacement) {
-      setPlacementCoordinate(coord);
-      setReportPlacementActive(true);
-    }
-  };
-
-  try {
-    // Check whether location permission is available
-    let permission = await Location.getForegroundPermissionsAsync();
-
-    if (!isCurrentRequest()) return;
-    if (!navigation.isFocused()) {
-      closeUnverifiedDraft();
-      return;
-    }
-
-    if (permission.status !== 'granted' && permission.canAskAgain !== false) {
-      permission = await Location.requestForegroundPermissionsAsync();
-    }
-
-    if (!isCurrentRequest()) return;
-    if (!navigation.isFocused()) {
-      closeUnverifiedDraft();
-      return;
-    }
-
-    if (permission.status !== 'granted') {
-      closeUnverifiedDraft();
-      showLocationSettingsAlert(
-        'Litterbugs uses your current area to confirm the selected report location.'
-      );
-      return;
-    }
-
-    setLocationPermissionGranted(true);
-
-    // Get the user's current GPS location
-    const loc = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Balanced,
-    });
-
-    // The location request can outlive the user's visit to the map. Do not
-    // open a form or show an alert over another tab after they navigate away.
-    if (!isCurrentRequest()) return;
-    if (!navigation.isFocused()) {
-      closeUnverifiedDraft();
-      return;
-    }
-
-    const userCoord = {
-      latitude: loc.coords.latitude,
-      longitude: loc.coords.longitude,
-    };
-
-    // Calculate distance from user to selected report location
-    const distanceMiles = getDistanceMiles(userCoord, coord);
-
-    const distancePolicy = evaluateReportLocationDistance(distanceMiles);
-
-    if (distancePolicy.status === 'blocked') {
-      closeUnverifiedDraft({ returnToPlacement: true });
-      Alert.alert(
-        'Report Location Too Far Away',
-        `This pin is about ${roundedDistanceLabel(distanceMiles)} from you. Move it within ${MAX_REPORT_DISTANCE_MILES} miles to create a report.`,
-        [{ text: 'Move pin' }]
-      );
-      return;
-    }
-
-    if (distancePolicy.status === 'invalid') {
-      closeUnverifiedDraft({ returnToPlacement: true });
-      Alert.alert(
-        'Unable to Verify Location',
-        'Litterbugs could not compare your location with the report pin. Move the pin and try again.'
-      );
-      return;
-    }
-
-    if (distancePolicy.status === 'remote_confirmation_required') {
-      Alert.alert(
-        'Confirm Report Location',
-        `This pin is about ${roundedDistanceLabel(distanceMiles)} from your current location. Confirm that it marks the correct cleanup site.`,
-        [
-          {
-            text: 'Move pin',
-            style: 'cancel',
-            onPress: () => closeUnverifiedDraft({ returnToPlacement: true }),
-          },
-          {
-            text: 'Use this location',
-            onPress: () => {
-              if (!isCurrentRequest() || !navigation.isFocused()) return;
-              setReportLocationVerification('verified');
-            },
-          },
-        ],
-        { cancelable: false }
-      );
-      return;
-    }
-
-    // Location is valid — unlock the workflow navigation.
-    setReportLocationVerification('verified');
-
-  } catch (error) {
-    console.log('Report location verification error:', error);
-
-    if (!isCurrentRequest()) return;
-    closeUnverifiedDraft();
-    if (!navigation.isFocused()) return;
-
-    Alert.alert(
-      'Unable to Verify Location',
-      'Litterbugs could not determine your current location. Please try again.'
-    );
-  }
 };
 
 const openReportLocationPicker = async (skipDraft = false) => {
-  if (isCentering) return;
+  editingDraftLocationRef.current = false;
   if (skipDraft !== true && currentUserId) {
     try {
       const saved = await loadReportDraft(currentUserId);
       if (saved) {
-        Alert.alert('Resume your report?', 'Your details and photos are saved on this device. We’ll verify the location again before you submit.', [
+        Alert.alert('Resume your report?', 'Your details and photos are saved on this device. Your chosen report location is saved with your draft.', [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Start new', style: 'destructive', onPress: async () => { await clearReportDraft(currentUserId); openReportLocationPicker(true); } },
           { text: 'Resume draft', onPress: () => beginReportAtCoordinate(saved.coordinate, saved.form) },
@@ -869,38 +706,41 @@ const openReportLocationPicker = async (skipDraft = false) => {
       }
     } catch { Alert.alert('Draft unavailable', 'Your saved report could not be loaded. Please try again.'); return; }
   }
-  setIsCentering(true);
-
-  try {
-    const reportRegion = await locateAndCenterMap({
-      permissionMessage: 'Litterbugs uses your current location to place a new litter report accurately.',
-      regionForPosition: reportLocationRegion,
-      accuracy: Location.Accuracy.High,
-    });
-    const coord = mapCenterCoordinate(reportRegion);
-    if (!coord) return;
-
-    if (!isPermanentUser(currentUser)) {
-      setPendingReportCoordinate(coord);
-      navigation.getParent()?.navigate('Auth');
-      return;
-    }
-
-    setSelectedReport(null);
-    setDetailsOpen(false);
-    setPlacementCoordinate(coord);
-    setReportPlacementActive(true);
-  } catch (error) {
-    console.log('Report location start error:', error);
-    Alert.alert('Location Error', error?.message || 'Unable to find your location.');
-  } finally {
-    setIsCentering(false);
+  if (!navigation.isFocused()) return;
+  const coord = mapCenterCoordinate(region);
+  if (!coord) {
+    Alert.alert('Map location unavailable', 'Move the map and try again.');
+    return;
   }
+  if (!isPermanentUser(currentUser)) {
+    setPendingReportCoordinate(coord);
+    navigation.getParent()?.navigate('Auth');
+    return;
+  }
+  setSelectedReport(null);
+  setDetailsOpen(false);
+  setPreviewId(null);
+  setPlacementCoordinate(coord);
+  setReportPlacementActive(true);
+};
+
+const changeDraftLocation = () => {
+  editingDraftLocationRef.current = true;
+  setFormOpen(false);
+  setPlacementCoordinate(draftCoord);
+  setReportPlacementActive(true);
+  const nextRegion = { ...region, ...draftCoord };
+  commitMapRegion(nextRegion);
+  mapViewRef.current?.animateToRegion(nextRegion, 240);
 };
 
 const cancelReportLocationPicker = () => {
   setReportPlacementActive(false);
   setPlacementCoordinate(null);
+  if (editingDraftLocationRef.current) {
+    editingDraftLocationRef.current = false;
+    setFormOpen(true);
+  }
 };
 
 const confirmReportLocation = () => {
@@ -912,7 +752,13 @@ const confirmReportLocation = () => {
 
   setReportPlacementActive(false);
   setPlacementCoordinate(null);
-  beginReportAtCoordinate(coord);
+  if (editingDraftLocationRef.current) {
+    editingDraftLocationRef.current = false;
+    setDraftCoord(coord);
+    setFormOpen(true);
+  } else {
+    beginReportAtCoordinate(coord);
+  }
 };
 
 useEffect(() => {
@@ -1156,8 +1002,7 @@ const openPayoutSetupForWorkflow = (action) => {
   
       setDraftCoord(null);
       setFormOpen(false);
-      setReportLocationVerification('idle');
-      setIsEditing(false);
+        setIsEditing(false);
       setEditingReportId(null);
       resetReportWizard();
 
@@ -1189,14 +1034,6 @@ const openPayoutSetupForWorkflow = (action) => {
 // Final submit from Review screen
 const submitReport = async () => {
   if (isSaving) return;
-
-  if (!isEditing && reportLocationVerification === 'checking') {
-    Alert.alert(
-      'Still verifying location',
-      'Wait a moment while Litterbugs confirms the selected report location.'
-    );
-    return;
-  }
 
   if (!hasAttachedReportPhoto()) {
     Alert.alert(
@@ -1243,10 +1080,8 @@ const submitReport = async () => {
   // Cancel Report
   const discardDraft = () => {
     if (!isEditing && currentUserId) clearReportDraft(currentUserId).catch(() => setDraftSaveError(true));
-    reportLocationRequestRef.current += 1;
     setDraftCoord(null);
     setFormOpen(false);
-    setReportLocationVerification('idle');
     setIsEditing(false);
     setEditingReportId(null);
     resetReportWizard();
@@ -1262,7 +1097,7 @@ const submitReport = async () => {
       || form.selectedNotes.length > 0
       || form.photos.length > 0
       || Boolean(form.severity)
-      || Boolean(form.startingFundingChoice)
+      || Boolean(form.startingFundingChoice && form.startingFundingChoice !== 'none')
       || Boolean(form.startingFundingOther?.trim());
 
     if (!hasDraftContent) {
@@ -1278,7 +1113,7 @@ const submitReport = async () => {
       [
         { text: 'Keep editing', style: 'cancel' },
         ...(!isEditing ? [{ text: 'Save for later', onPress: async () => {
-          try { await saveReportDraft(currentUserId, { form, coordinate: draftCoord, step: reportStep }); setFormOpen(false); reportLocationRequestRef.current += 1; }
+          try { await saveReportDraft(currentUserId, { form, coordinate: draftCoord, step: reportStep }); setFormOpen(false); }
           catch { Alert.alert('Draft not saved', 'Keep this screen open and try again.'); }
         } }] : []),
         { text: 'Discard', style: 'destructive', onPress: discardDraft },
@@ -2360,7 +2195,7 @@ const revealBottomReportField = (event) => {
             ]}
           >
             <Text style={styles.floatingMapInstructionTitle}>Choose report location</Text>
-            <Text style={styles.floatingMapInstructionHint}>Move the map beneath the pin</Text>
+            <Text style={styles.floatingMapInstructionHint}>Move the map beneath the pin to mark the litter. Zoom in for a precise spot.</Text>
           </Animated.View>
         </View>
       ) : null}
@@ -2371,7 +2206,8 @@ const revealBottomReportField = (event) => {
           pointerEvents="none"
           accessible={false}
         >
-          <Ionicons name="location-sharp" size={54} color="#2F7D32" />
+          <Ionicons name="location-sharp" size={54} color="#2F7D32" style={{ transform: [{ translateY: -24 }] }} />
+          <View style={{ position: 'absolute', width: 7, height: 7, borderRadius: 4, backgroundColor: '#245F2A', borderWidth: 1, borderColor: '#FFFFFF' }} />
         </View>
       ) : null}
 
@@ -2440,24 +2276,17 @@ const revealBottomReportField = (event) => {
           <TouchableOpacity
             style={[styles.reportLitterButton, { width: reportPlacementActive ? Math.min(screenWidth - 100, 194 + 120 * (fontScale - 1)) : Math.max(152, Math.min(screenWidth - 148, 44 + 108 * fontScale)) }]}
             onPress={reportPlacementActive ? confirmReportLocation : openReportLocationPicker}
-            disabled={showInitialMapLoading || formOpen || detailsOpen || isSaving || isCentering}
+            disabled={showInitialMapLoading || formOpen || detailsOpen || isSaving}
             activeOpacity={0.82}
             accessibilityRole="button"
             accessibilityLabel={reportPlacementActive ? 'Use this location' : 'Report litter'}
             accessibilityHint={reportPlacementActive
-              ? 'Uses the location beneath the red pin for this report'
-              : 'Centers on your location, then lets you confirm the cleanup site'}
+              ? 'Uses the location beneath the green pin for this report'
+              : 'Places a pin at the map center so you can choose the cleanup site'}
             accessibilityState={{
-              busy: isCentering,
-              disabled: showInitialMapLoading || formOpen || detailsOpen || isSaving || isCentering,
+              disabled: showInitialMapLoading || formOpen || detailsOpen || isSaving,
             }}
           >
-            {isCentering ? (
-              <View style={styles.reportLitterButtonContent}>
-                <ActivityIndicator size="small" color="#FFFFFF" />
-                <Text style={styles.reportLitterButtonText}>Finding you…</Text>
-              </View>
-            ) : (
               <View style={styles.reportLitterButtonContentFrame}>
                 <Animated.View
                   style={[
@@ -2499,7 +2328,6 @@ const revealBottomReportField = (event) => {
                   <Text style={styles.reportLitterButtonText}>Use This Location</Text>
                 </Animated.View>
               </View>
-            )}
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -2595,9 +2423,7 @@ const revealBottomReportField = (event) => {
             </Text>
 
             <Text style={styles.wizardHeaderStep}>
-              {reportLocationVerification === 'checking' && !isEditing
-                ? `Step ${reportStep + 1} of ${REPORT_STEPS.length} · Verifying location…`
-                : `Step ${reportStep + 1} of ${REPORT_STEPS.length} · ${REPORT_STEPS[reportStep]}`}
+              {`Step ${reportStep + 1} of ${REPORT_STEPS.length} · ${REPORT_STEPS[reportStep]}`}
             </Text>
           </View>
 
@@ -2656,6 +2482,7 @@ const revealBottomReportField = (event) => {
             >
               <View style={styles.wizardDismissArea}>
                 <ReportWizardSteps
+                  onChangeLocation={changeDraftLocation}
                   coordinate={isEditing ? selectedReport : draftCoord}
                   form={form}
                   isEditing={isEditing}
@@ -2744,7 +2571,6 @@ const revealBottomReportField = (event) => {
             disabled={
               reportStep ===
                 REPORT_STEPS.length - 1 ||
-              (reportLocationVerification === 'checking' && !isEditing) ||
               !canAdvanceFromStep(
                 reportStep
               ) ||
@@ -2760,7 +2586,6 @@ const revealBottomReportField = (event) => {
               color={
                 reportStep ===
                   REPORT_STEPS.length - 1 ||
-                (reportLocationVerification === 'checking' && !isEditing) ||
                 !canAdvanceFromStep(
                   reportStep
                 ) ||
@@ -2784,7 +2609,7 @@ const revealBottomReportField = (event) => {
 {/* ============================= */}
 
 <ReportDetailsSheet state={{ detailsOpen, reportShareSheetOpen, reportShareBusyAction, selectedReport, insets, region, reportDetailsPreparing, selectedReportHasUtilityActions, completedCleanupImpact, completedCleanupImpactLoading, completedCleanupImpactError, reportHeroWidth, currentUserId, reportPhotoUrls, photosLoading, geminiReviewEnabled, userOwnsSelectedReport, reportFundingFeedback, cleanupDiscoverable, cleanupStatus, currentUserIsCleaner, selectedCleanupAttempt, cleanupAttemptLoading, cleanupActionBusy, canEditOrDeleteSelectedReport, selectedReportCanOpenFunding, payoutGateBusy, selectedReportIsShareable }}
-  actions={{ setReportShareSheetOpen, closeReportDetails, setDetailsOpen, setSelectedReport, setPreviewId, navigation, commitMapRegion, setCompletedCleanupImpact, setCompletedCleanupImpactError, setCompletedCleanupImpactLoading, setCompletedCleanupImpactReloadKey, openCleanupNavigation, openCleanupSubmission, confirmCleanupRelease, openCleanupFeedback, openCleanupReview, beginCleanupClaim, openFundingContribution, removeReport, setForm, setEditingReportId, setIsEditing, setReportLocationVerification, setDraftCoord, resetReportWizard, setFormOpen, shareSelectedReport }} />
+  actions={{ setReportShareSheetOpen, closeReportDetails, setDetailsOpen, setSelectedReport, setPreviewId, navigation, commitMapRegion, setCompletedCleanupImpact, setCompletedCleanupImpactError, setCompletedCleanupImpactLoading, setCompletedCleanupImpactReloadKey, openCleanupNavigation, openCleanupSubmission, confirmCleanupRelease, openCleanupFeedback, openCleanupReview, beginCleanupClaim, openFundingContribution, removeReport, setForm, setEditingReportId, setIsEditing, setDraftCoord, resetReportWizard, setFormOpen, shareSelectedReport }} />
 
 <CleanupWaiverModal
   visible={cleanupWaiverOpen}

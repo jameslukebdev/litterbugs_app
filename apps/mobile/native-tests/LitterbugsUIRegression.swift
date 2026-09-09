@@ -6,7 +6,7 @@ final class LitterbugsUIRegression: XCTestCase {
     let app = XCUIApplication(bundleIdentifier: "com.gegibson.litterbugs.qa")
     override func setUpWithError() throws {
         continueAfterFailure = false
-        simulateLocation()
+        if !name.contains("WithoutLocation") { simulateLocation() }
         app.launch()
         if app.buttons["Explore the Map"].waitForExistence(timeout: 2) { app.buttons["Explore the Map"].tap() }
         waitForHittable(app.buttons["Report litter"])
@@ -170,6 +170,24 @@ final class LitterbugsUIRegression: XCTestCase {
         XCTAssertTrue(edit.waitForExistence(timeout: 5))
         tab("map").tap()
     }
+    func testReportPinWithoutLocation() throws {
+        if #available(iOS 16.4, *) { XCUIDevice.shared.location = nil }
+        app.buttons["Report litter"].tap()
+        if app.alerts["Resume your report?"].waitForExistence(timeout: 1) {
+            app.alerts.buttons["Cancel"].tap()
+            throw XCTSkip("Preserving an existing user draft.")
+        }
+        XCTAssertTrue(app.buttons["Use this location"].waitForExistence(timeout: 3), "Report pin must not wait for GPS")
+        shot("report-pin-without-location")
+        app.buttons["Use this location"].tap()
+        XCTAssertTrue(app.buttons["Choose up to 3 report photos"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.alerts["Location Error"].exists)
+        shot("report-photos-without-location")
+        app.buttons["Close report form"].tap()
+        if app.alerts.buttons["Discard"].exists { app.alerts.buttons["Discard"].tap() }
+        XCTAssertTrue(app.buttons["Report litter"].waitForExistence(timeout: 5))
+    }
+
     func testThreeStageReportReviewWithoutPublishing() throws {
         simulateLocation(); app.buttons["Report litter"].tap()
         if app.alerts["Resume your report?"].waitForExistence(timeout: 2) {
@@ -200,6 +218,13 @@ final class LitterbugsUIRegression: XCTestCase {
         XCTAssertTrue(element("Step 3 of 3 · Review").waitForExistence(timeout: 5))
         XCTAssertTrue(element("Review your report").isHittable, "Each stage must open at the top, not inherit the previous scroll offset")
         shot("report-review")
+        app.buttons["Change report location"].tap()
+        XCTAssertTrue(app.buttons["Use this location"].waitForExistence(timeout: 5))
+        app.maps.firstMatch.swipeLeft(velocity: .slow)
+        app.buttons["Use this location"].tap()
+        XCTAssertTrue(element("Step 3 of 3 · Review").waitForExistence(timeout: 5))
+        XCTAssertTrue(element("Review your report").exists)
+        shot("report-review-after-pin-change")
         app.buttons["Close report form"].tap(); app.alerts.buttons["Discard"].tap()
     }
     func testLocalDraftRecoveryWithoutPublishing() throws {
