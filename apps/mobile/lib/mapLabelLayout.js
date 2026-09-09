@@ -3,7 +3,7 @@ import { cleanupMapTone } from './cleanupEligibility';
 export const STATUS_MARKER_SIZE = 20;
 export const STATUS_MARKER_ICON_SIZE = 11;
 
-export const SELECTED_MARKER_SCALE = 1.2;
+export const SELECTED_MARKER_SCALE = 1.5;
 export const markerHostDimensions = (width, height) => ({ width: Math.max(44, Math.ceil(width * SELECTED_MARKER_SCALE)), height: Math.max(44, Math.ceil(height * SELECTED_MARKER_SCALE)) });
 
 const statusPriority = (point) => ({ available: 2, active: 1, completed: 0 }[cleanupMapTone(point.report)]);

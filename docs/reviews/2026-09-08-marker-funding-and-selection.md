@@ -22,3 +22,7 @@ Only iPhone 17 Pro is left running. The smaller QA simulator was shut down at th
 - The first overlap run exposed a native priority tie: MapKit boosts its tapped annotation by 999, so a different report chosen in the overlap list could cover the app-selected label. Raising app-selection priority to 2000 resolved the collision. The final screenshot confirms the selected check/$48 label is unobstructed and centered.
 - Final Release simulator build succeeded and was installed as the normal `com.gegibson.litterbugs.qa` app on iPhone 17 Pro. The fixture process was terminated; the smaller simulator remains shut down. No backend or financial mutations were performed.
 - This pass used iPhone 17 Pro; smaller-device/larger-text coverage from the preceding iteration was not rerun after these sizing changes.
+
+## Selection enlargement follow-up
+
+Following the user's 9:29 PM Zillow screenshot, increased the selected scale from 1.2 to 1.5 (50% larger than the default marker). The shared scale also reserves native host space and adjusts selected-label collision bounds. All 287 JS tests and the actual iPhone 17 Pro zoom/pan/direct-card selection test pass. Manual computer use verified the enlarged $6 remains centered and its card opens directly. Left that selection visible in the normal app.
