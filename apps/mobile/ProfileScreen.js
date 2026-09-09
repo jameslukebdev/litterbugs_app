@@ -148,9 +148,11 @@ function ActiveCleanupRow({ attempt, onPress, divided }) {
 
 function CleanupStat({ value, label, divided }) {
   return (
-    <View style={[styles.cleanupStat, divided && styles.cleanupStatDivider]}>
-      <Text style={styles.cleanupStatValue}>{value}</Text>
-      <Text style={styles.cleanupStatLabel}>{label}</Text>
+    <View testID={`cleanup-stat-${label}`} style={[styles.cleanupStat, divided && styles.cleanupStatDivider]}>
+      <Text testID={`cleanup-value-${label}`} style={styles.cleanupStatValue}>{value}</Text>
+      <View style={styles.cleanupStatLabelContainer}>
+        <Text testID={`cleanup-label-${label}`} style={styles.cleanupStatLabel}>{label}</Text>
+      </View>
     </View>
   );
 }
@@ -716,8 +718,8 @@ const styles = StyleSheet.create({
   location: { color: '#59636A', fontSize: 14 },
   bio: { marginTop: 14, paddingHorizontal: 8, color: '#4F5960', fontSize: 14, lineHeight: 20, textAlign: 'center' },
   joined: { marginTop: 7, color: '#7A8288', fontSize: 12 },
-  headerEditButtonContainer: { paddingRight: 16, justifyContent: 'center', paddingVertical: 6 },
-  headerEditButton: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
+  headerEditButtonContainer: { paddingRight: 16, justifyContent: 'flex-end' },
+  headerEditButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   rankCard: { marginHorizontal: 16, marginTop: 14, padding: 18, borderWidth: 1, borderColor: '#E0E5E1', borderRadius: 20, backgroundColor: '#FFFFFF' },
   rankSummaryRow: { flexDirection: 'row', alignItems: 'center' },
   rankSummaryCopy: { flex: 1, minWidth: 0, marginLeft: 16 },
@@ -755,10 +757,11 @@ const styles = StyleSheet.create({
   stripeConnectionText: { flex: 1, fontSize: 15, fontWeight: '900' },
   stripeConnectionDetail: { fontSize: 12, fontWeight: '800' },
   cleanupStatsCard: { marginHorizontal: 16, flexDirection: 'row', overflow: 'hidden', borderRadius: 16, backgroundColor: '#FFFFFF' },
-  cleanupStat: { flex: 1, minHeight: 86, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  cleanupStat: { flex: 1, minHeight: 86, alignItems: 'center', paddingHorizontal: 6, paddingVertical: 16 },
   cleanupStatDivider: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: '#DDE2DE' },
   cleanupStatValue: { color: '#245F2A', fontSize: 25, fontWeight: '800' },
-  cleanupStatLabel: { minHeight: 34, marginTop: 4, color: '#687178', fontSize: 12, lineHeight: 16, fontWeight: '700', textAlign: 'center' },
+  cleanupStatLabelContainer: { flexGrow: 1, marginTop: 4, justifyContent: 'center', alignSelf: 'stretch' },
+  cleanupStatLabel: { color: '#687178', fontSize: 12, lineHeight: 16, fontWeight: '700', textAlign: 'center' },
   activeCleanupCard: { borderWidth: 1, borderColor: '#E0E5E1', backgroundColor: '#FFFFFF' },
   activeCleanupRow: { minHeight: 124, padding: 16, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF' },
   activeCleanupDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E0E5E1' },

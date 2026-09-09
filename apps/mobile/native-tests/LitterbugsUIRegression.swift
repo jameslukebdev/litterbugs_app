@@ -108,6 +108,29 @@ final class LitterbugsUIRegression: XCTestCase {
         shot("personal-reports-after-pan")
         app.navigationBars.buttons.firstMatch.tap(); tab("map").tap()
     }
+    func testProfileHeaderAndCleanupStatsAlignment() throws {
+        tab("profile").tap()
+        let edit = app.buttons["Edit profile"]
+        guard edit.waitForExistence(timeout: 8) else { throw XCTSkip("Requires an already signed-in QA account.") }
+        XCTAssertGreaterThanOrEqual(edit.frame.width, 44)
+        XCTAssertEqual(app.frame.maxX - edit.frame.maxX, 16, accuracy: 3)
+        shot("profile-header-alignment")
+        app.buttons["My activity"].tap()
+        let labels = ["Completed", "Awaiting review", "Active"]
+        let firstValue = app.staticTexts["cleanup-value-Completed"]
+        XCTAssertTrue(firstValue.waitForExistence(timeout: 10))
+        for label in labels {
+            let cell = app.otherElements["cleanup-stat-" + label]
+            let value = app.staticTexts["cleanup-value-" + label]
+            let caption = app.staticTexts["cleanup-label-" + label]
+            XCTAssertTrue(caption.waitForExistence(timeout: 10))
+            XCTAssertEqual(value.frame.midX, cell.frame.midX, accuracy: 2)
+            XCTAssertEqual(value.frame.minY, firstValue.frame.minY, accuracy: 2)
+            XCTAssertEqual(caption.frame.midX, cell.frame.midX, accuracy: 2)
+            XCTAssertEqual((value.frame.minY + caption.frame.maxY) / 2, cell.frame.midY, accuracy: 3)
+        }
+        shot("cleanup-stats-alignment")
+    }
     func testProfileSaveVisibilityKeyboardAndBackProtection() throws {
         tab("profile").tap()
         let edit = app.buttons["Edit profile"]

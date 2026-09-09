@@ -1,24 +1,26 @@
 import { DEFAULT_REPORT_FILTERS } from './lib/reportFilters';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  Linking,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
-import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ReportFilters from './components/ReportFilters';
 import ReportList from './ReportList';
 import { getBottomNavClearance } from './lib/navigationLayout';
 import { getDistanceMiles, useReports } from './lib/reports';
-import { findResponsiveUserLocation } from './lib/responsiveLocation';
+import useReportsLocation from './lib/useReportsLocation';
+import { reportsLocationPresentation } from './lib/reportsLocation';
 
 export default function ReportsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
-  const [locationOrigin, setLocationOrigin] = useState(null);
-  const [locationState, setLocationState] = useState('loading');
+  const { origin: locationOrigin, status: locationState, refresh: refreshLocation } = useReportsLocation();
   const {
     filteredReports: reports,
     loading: reportsLoading,
@@ -26,40 +28,6 @@ export default function ReportsScreen({ navigation }) {
     refreshReports,
     filters, setFilters, error, searchPlace, selectedMapReportId, setSelectedMapReportId,
   } = useReports();
-
-  useEffect(() => {
-    let active = true;
-
-    const loadLocation = async () => {
-      try {
-        let permission = await Location.getForegroundPermissionsAsync();
-        if (permission.status === 'undetermined') {
-          permission = await Location.requestForegroundPermissionsAsync();
-        }
-        if (permission.status !== 'granted') {
-          if (active) setLocationState('unavailable');
-          return;
-        }
-
-        await findResponsiveUserLocation({
-          locationApi: Location,
-          onPosition: (location) => {
-            if (!active) return;
-            setLocationOrigin({
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude,
-            });
-            setLocationState('ready');
-          },
-        });
-      } catch (locationError) {
-        if (active) setLocationState('unavailable');
-      }
-    };
-
-    loadLocation();
-    return () => { active = false; };
-  }, []);
 
   const nearbyReports = useMemo(() => [...reports].sort((left, right) => {
     if (locationOrigin) {
@@ -75,11 +43,16 @@ export default function ReportsScreen({ navigation }) {
     return new Date(right.created_at || 0).getTime() - new Date(left.created_at || 0).getTime();
   }), [locationOrigin, reports]);
 
-  const helperText = searchPlace ? `${searchPlace.label} · ${searchPlace.geometry ? 'search area' : 'map area'}` : locationState === 'ready'
-    ? 'Map area · closest to your current location'
-    : locationState === 'loading'
-      ? 'Newest reports while we check your location…'
-      : 'Most recent reports · enable location to sort by distance';
+  const locationPresentation = reportsLocationPresentation(locationState);
+  const areaText = searchPlace ? `${searchPlace.label} · ${searchPlace.geometry ? 'search area' : 'map area'}` : 'Map area';
+  const handleLocationAction = async () => {
+    if (locationState === 'denied') {
+      try { await Linking.openSettings(); }
+      catch { Alert.alert('Location settings', 'Open your device settings and allow location access for Litterbugs.'); }
+    } else {
+      refreshLocation({ requestPermission: locationState === 'permission-needed' });
+    }
+  };
 
   const handleReportPress = (report) => {
     setSelectedMapReportId(report.id);
@@ -91,12 +64,16 @@ export default function ReportsScreen({ navigation }) {
       <View style={styles.summary}>
         <View style={styles.summaryCopy}>
           <Text style={styles.count} accessibilityLiveRegion="polite">
-            {nearbyReports.length} {nearbyReports.length === 1 ? 'report' : 'reports'}
+            {reportsLoading && reports.length === 0 ? 'Loading reports…' : `${nearbyReports.length} ${nearbyReports.length === 1 ? 'report' : 'reports'}`}
           </Text>
+          <Text style={styles.area}>{areaText}</Text>
           <View style={styles.helperRow}>
             {locationState === 'loading' ? <ActivityIndicator size="small" color="#2F7D32" /> : null}
-            <Text style={styles.helper}>{helperText}</Text>
+            <Text style={styles.helper}>{locationPresentation.text}</Text>
           </View>
+          {locationPresentation.action ? <TouchableOpacity accessibilityRole="button" onPress={handleLocationAction} style={styles.locationAction}>
+            <Text style={styles.locationActionText}>{locationPresentation.action}</Text>
+          </TouchableOpacity> : null}
         </View>
 
 
@@ -112,7 +89,7 @@ export default function ReportsScreen({ navigation }) {
         onReportPress={handleReportPress}
         refreshing={refreshing}
         initialLoading={reportsLoading}
-        onRefresh={() => refreshReports({ showRefresh: true })}
+        onRefresh={() => { refreshLocation(); refreshReports({ showRefresh: true }); }}
         emptyAction={error ? { label: 'Try again', onPress: () => refreshReports({ showRefresh: true }) } : Object.keys(DEFAULT_REPORT_FILTERS).some(key => filters[key] !== DEFAULT_REPORT_FILTERS[key]) ? { label: 'Clear filters', onPress: () => setFilters({ ...DEFAULT_REPORT_FILTERS }) } : { label: 'Explore the map', onPress: () => navigation.navigate('Map') }}
         emptyTitle={error ? 'Reports unavailable' : 'No reports in this area'}
         emptyMessage={error
@@ -150,9 +127,13 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   helper: {
+    flex: 1,
     color: '#727A80',
     fontSize: 14,
   },
+  area: { color: '#515B61', fontSize: 14, marginTop: 4 },
+  locationAction: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' },
+  locationActionText: { color: '#2F7D32', fontSize: 14, fontWeight: '700' },
   helperRow: { minHeight: 24, marginTop: 4, flexDirection: 'row', alignItems: 'center', gap: 7 },
   error: {
     paddingHorizontal: 18,
