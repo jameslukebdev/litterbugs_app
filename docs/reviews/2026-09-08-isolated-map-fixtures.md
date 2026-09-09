@@ -36,3 +36,7 @@ Screenshot review then caught expanded labels appearing at the map corner. Marke
 - Both actual-application map cases were rerun after the fixes and passed: Map/Reports synchronization and marker zoom/pan/selection. Existing account/profile/wizard tests remain separately available.
 - Screenshot review verified the completed $48 selection is centered at the report's real map position and drawn above coincident markers. Earlier failed runs exposed the ordering, crash and frame-position issues described above; all final runs passed without skips.
 - Smaller-device text size restored. Only local builds/fixture state changed; no backend report/profile/financial mutation and no production push.
+
+## User-facing closure check
+
+Returned the iPhone 17 Pro simulator to the normal Litterbugs app after the fixture run. A manual computer-use check confirmed two discovery reports, a Completed filter reducing Reports to one, the same removable green Completed chip and single completed marker on Map, and chip removal restoring the unfiltered map. The normal entry point registers `App` and has no fixture imports. No further layout change was needed in this final check. The six approved UI/code recommendations are complete within the validation limits above; backend publication and financial end-to-end tests remain separate work.
