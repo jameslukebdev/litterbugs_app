@@ -1,3 +1,4 @@
+import { applyHistoryCursor, historyPage, HISTORY_PAGE_SIZE } from './historyPagination';
 import { supabase } from './supabase';
 import { edgeFunctionErrorMessage } from './edgeFunctionError';
 
@@ -57,22 +58,25 @@ export async function createPayoutDashboardLink() {
   return data;
 }
 
-export async function loadMyContribution(id) {
+export async function loadMyContribution(id, userId) {
+  if (!id || !userId) return null;
   const { data, error } = await supabase.from('cleanup_contributions')
     .select('id, report_id, principal_amount_cents, platform_fee_cents, total_amount_cents, status, created_at, refunded_at, report:reports(id,title,cleanup_state,funding_eligibility)')
-    .eq('id', id).maybeSingle();
+    .eq('id', id).eq('contributor_id', userId).maybeSingle();
   if (error) throw error;
   return data;
 }
 
-export async function loadMyContributions() {
-  const { data, error } = await supabase
-    .from('cleanup_contributions')
-    .select('id, report_id, principal_amount_cents, platform_fee_cents, total_amount_cents, status, created_at, refunded_at, report:reports(id,title,cleanup_state,funding_eligibility)')
-    .order('created_at', { ascending: false })
-    .limit(50);
+export async function loadMyContributions({ userId, cursor = null, completedOnly = false } = {}) {
+  if (!userId) return historyPage();
+  let query = supabase.from('cleanup_contributions')
+    .select(`id, report_id, principal_amount_cents, platform_fee_cents, total_amount_cents, status, created_at, refunded_at, report:reports${completedOnly ? '!inner' : ''}(id,title,cleanup_state,funding_eligibility)`)
+    .eq('contributor_id', userId);
+  if (completedOnly) query = query.eq('report.cleanup_state', 'completed').in('status', ['succeeded', 'paid_out']);
+  query = applyHistoryCursor(query, cursor);
+  const { data, error } = await query.order('created_at', { ascending: false }).order('id', { ascending: false }).limit(HISTORY_PAGE_SIZE + 1);
   if (error) throw error;
-  return data ?? [];
+  return historyPage(data ?? []);
 }
 
 export async function loadReportFundingFeedback(reportId) {

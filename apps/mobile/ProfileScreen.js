@@ -12,7 +12,8 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import useFocusedResource from './lib/useFocusedResource';
+import PointsExplanation from './components/PointsExplanation';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -324,17 +325,16 @@ export default function ProfileScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const [signingOut, setSigningOut] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
-  const [cleanupSummary, setCleanupSummary] = useState(emptyCleanupSummary);
-  const [cleanupsLoading, setCleanupsLoading] = useState(true);
-  const [cleanupsError, setCleanupsError] = useState(false);
-  const [ranking, setRanking] = useState(null);
-  const [rankingLoading, setRankingLoading] = useState(false);
-  const [rankingError, setRankingError] = useState(false);
-  const [fundingEnabled, setFundingEnabled] = useState(false);
-  const [fundingSchemaReady, setFundingSchemaReady] = useState(false);
-  const [payoutStatus, setPayoutStatus] = useState(null);
-  const [payoutStatusLoading, setPayoutStatusLoading] = useState(false);
-  const [payoutStatusError, setPayoutStatusError] = useState(false);
+  const cleanups = useFocusedResource(useCallback(() => loadCurrentUserCleanupSummary(user.id), [user?.id]), { enabled: permanent && section !== 'settings' });
+  const rankingResource = useFocusedResource(useCallback(() => loadRanking(user.id), [user?.id]), { enabled: permanent && section === 'overview' });
+  const flags = useFocusedResource(useCallback(() => loadCleanupFeatureFlags(), [user?.id]), { enabled: permanent });
+  const fundingSchemaReady = flags.hasLoaded && !flags.error;
+  const fundingEnabled = fundingSchemaReady && Boolean(flags.data?.payments_enabled && flags.data?.gemini_financial_review_enabled);
+  const payout = useFocusedResource(useCallback(() => loadPayoutStatus(), [user?.id]), { enabled: permanent && section === 'payments' && fundingEnabled });
+  const cleanupSummary = cleanups.data ?? emptyCleanupSummary();
+  const { loading: cleanupsLoading, error: cleanupsError, refresh: refreshCleanups } = cleanups;
+  const { data: ranking, loading: rankingLoading, error: rankingError, refresh: refreshRanking } = rankingResource;
+  const { data: payoutStatus, loading: payoutStatusLoading, error: payoutStatusError, refresh: refreshPayoutStatus } = payout;
   const accountBusy = signingOut || deletingAccount;
   const bottomPadding = section === 'overview' ? getBottomNavClearance(insets.bottom) + 18 : insets.bottom + 24;
 
@@ -356,83 +356,6 @@ export default function ProfileScreen({ navigation, route }) {
   }, [navigation, permanent, section]);
 
   const reportGroups = useMemo(() => groupAccountReports(reports), [reports]);
-
-  const refreshCleanups = useCallback(async () => {
-    if (!permanent || !user?.id) {
-      setCleanupSummary(emptyCleanupSummary());
-      setCleanupsError(false);
-      return;
-    }
-
-    try {
-      setCleanupsLoading(true);
-      const summary = await loadCurrentUserCleanupSummary(user.id);
-      setCleanupSummary(summary);
-      setCleanupsError(false);
-    } catch (error) {
-      console.log('Profile cleanup load error:', error);
-      setCleanupsError(true);
-    } finally {
-      setCleanupsLoading(false);
-    }
-  }, [permanent, user?.id]);
-
-  const refreshRanking = useCallback(async () => {
-    if (!permanent || !user?.id) {
-      setRanking(null);
-      setRankingError(false);
-      return;
-    }
-
-    try {
-      setRankingLoading(true);
-      setRanking(await loadRanking(user.id));
-      setRankingError(false);
-    } catch (error) {
-      console.log('Profile ranking load error:', error);
-      setRankingError(true);
-    } finally {
-      setRankingLoading(false);
-    }
-  }, [permanent, user?.id]);
-
-  const refreshPayoutStatus = useCallback(async () => {
-    if (!permanent) {
-      setPayoutStatus(null);
-      setPayoutStatusError(false);
-      return;
-    }
-
-    try {
-      setPayoutStatusLoading(true);
-      setPayoutStatus(await loadPayoutStatus());
-      setPayoutStatusError(false);
-    } catch (error) {
-      console.log('Profile payout status load error:', error);
-      setPayoutStatus(null);
-      setPayoutStatusError(true);
-    } finally {
-      setPayoutStatusLoading(false);
-    }
-  }, [permanent]);
-
-  useFocusEffect(useCallback(() => {
-    if (section !== 'settings') refreshCleanups();
-    if (section === 'overview') refreshRanking();
-    loadCleanupFeatureFlags()
-      .then((flags) => {
-        const enabled = Boolean(
-          flags.payments_enabled && flags.gemini_financial_review_enabled
-        );
-        setFundingSchemaReady(true);
-        setFundingEnabled(enabled);
-        if (enabled && section === 'payments') refreshPayoutStatus();
-      })
-      .catch(() => {
-        setFundingSchemaReady(false);
-        setFundingEnabled(false);
-      });
-  }, [refreshCleanups, refreshPayoutStatus, refreshRanking, section]));
 
   if (!permanent) {
     return <SignedOutProfile navigation={navigation} bottomPadding={bottomPadding} />;
@@ -488,6 +411,7 @@ export default function ProfileScreen({ navigation, route }) {
       refreshReports(),
       refreshCleanups(),
       refreshRanking(),
+      flags.refresh(),
       ...(fundingEnabled ? [refreshPayoutStatus()] : []),
     ]);
   };
@@ -497,7 +421,7 @@ export default function ProfileScreen({ navigation, route }) {
       style={styles.container}
       contentContainerStyle={{ paddingBottom: bottomPadding }}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={loading || reportsLoading || cleanupsLoading || rankingLoading || payoutStatusLoading} onRefresh={refresh} tintColor="#2F7D32" />}
+      refreshControl={<RefreshControl refreshing={loading || reportsLoading || cleanupsLoading || rankingLoading || flags.loading || payoutStatusLoading} onRefresh={refresh} tintColor="#2F7D32" />}
     >
       {section === 'overview' ? <>
       <View style={styles.identity}>
@@ -527,6 +451,8 @@ export default function ProfileScreen({ navigation, route }) {
         onRetry={refreshRanking}
       />
 
+      <PointsExplanation ranking={ranking} />
+
       {cleanupSummary.current.length > 0 ? <View style={[styles.card, { marginTop: 16 }]}>
         <ActionRow label="Continue cleanup" icon="leaf-outline" onPress={() => openReport(cleanupSummary.current[0].report_id)} />
       </View> : null}
@@ -553,7 +479,7 @@ export default function ProfileScreen({ navigation, route }) {
                 </Text>
               </View>
             </View>
-            {fundingEnabled ? <>
+            {flags.loading ? <Text style={{ padding: 17, color: '#687178' }}>Checking payout availability…</Text> : flags.error ? <ActionRow label="Retry payout availability" icon="refresh-outline" onPress={flags.refresh} /> : fundingEnabled ? <>
             {payoutStatusLoading || payoutStatusError || payoutStatus?.payoutsEnabled ? <StripeConnectionStatus
               status={payoutStatus}
               loading={payoutStatusLoading}

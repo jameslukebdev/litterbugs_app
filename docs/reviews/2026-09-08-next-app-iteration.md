@@ -24,6 +24,8 @@ Refero screenshots were visually inspected. Their behaviors inform UI presentati
 
 ## Next recommendations, in priority order
 
+All four recommendations below were subsequently implemented; see [account history and recovery verification](2026-09-08-account-history-and-recovery.md). The findings below describe the pre-change audit.
+
 ### 1. Make other members' report activity reliable
 
 `apps/mobile/PublicProfileScreen.js:54` derives “Active reports” from the shared geographic map collection and filters only by author. Changing the map area can change the displayed activity, and completed reports can appear under “Active reports.” This is separate from **My reports**, which already has an independent account query.

@@ -1,6 +1,6 @@
 import * as Crypto from 'expo-crypto';
 import { loadCleanupDraft, saveCleanupDraft, clearCleanupDraft } from './lib/savedCleanupDraft';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -30,6 +30,8 @@ import {
   MAX_CLEANUP_PHOTOS,
   validateCleanupSubmission,
 } from './lib/cleanupSubmissionValidation';
+import useFocusedResource from './lib/useFocusedResource';
+import { cleanupLoadErrorPresentation } from './lib/cleanupLoadError';
 import { permanentUserId } from './lib/reportAccess';
 import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
@@ -95,9 +97,11 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
   const userId = permanentUserId(user);
   const { refreshReports } = useReports();
   const insets = useSafeAreaInsets();
-  const [context, setContext] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(null);
+  const contextResource = useFocusedResource(useCallback(() => {
+    if (!cleanupId || !userId) throw new Error('cleanup_submission_not_allowed');
+    return loadCleanupSubmissionContext(cleanupId, userId);
+  }, [cleanupId, userId]));
+  const { data: context, loading, error: loadError } = contextResource;
   const [step, setStep] = useState('form');
   const [photos, setPhotos] = useState([]);
   const [description, setDescription] = useState('');
@@ -112,6 +116,8 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
   });
   const [draftReady, setDraftReady] = useState(false);
   const [draftStatus, setDraftStatus] = useState('');
+  const [draftLoadError, setDraftLoadError] = useState(false);
+  const [draftRestoreAttempt, setDraftRestoreAttempt] = useState(0);
   const submissionId = useRef(Crypto.randomUUID());
   const submitted = useRef(false);
   const draftOwner = useRef(null);
@@ -122,6 +128,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
     let active = true;
     draftOwner.current = null;
     setDraftReady(false);
+    setDraftLoadError(false);
     submitted.current = false;
     if (!userId || !cleanupId) return;
     loadCleanupDraft(userId, cleanupId).then(draft => {
@@ -135,10 +142,10 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
         if (draft.submissionId) submissionId.current = draft.submissionId;
         setDraftStatus('Draft restored');
       }
-    }).catch(() => { if (active) setDraftStatus('Couldn’t restore the saved draft'); })
+    }).catch(() => { if (active) { setDraftLoadError(true); setDraftStatus('Couldn’t restore the saved draft'); } })
       .finally(() => { if (active) setDraftReady(true); });
     return () => { active = false; };
-  }, [userId, cleanupId]);
+  }, [userId, cleanupId, draftRestoreAttempt]);
 
   useEffect(() => {
     if (!draftReady || submitted.current || !userId || !cleanupId || draftOwner.current !== `${userId}:${cleanupId}`) return;
@@ -180,32 +187,6 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
       });
     }, keyboardAnimationDelay);
   };
-
-  useEffect(() => {
-    let active = true;
-
-    if (!cleanupId || !userId) {
-      setLoadError('This cleanup could not be opened.');
-      setLoading(false);
-      return undefined;
-    }
-
-    loadCleanupSubmissionContext(cleanupId, userId)
-      .then((nextContext) => {
-        if (active) setContext(nextContext);
-      })
-      .catch((error) => {
-        console.log('Cleanup submission context error:', error);
-        if (active) setLoadError(submissionErrorMessage(error));
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [cleanupId, userId]);
 
   const addPhotos = async (source) => {
     if (submitting || photos.length >= MAX_CLEANUP_PHOTOS) return;
@@ -311,17 +292,26 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
   if (loading || (!draftReady && userId && cleanupId)) return <LoadingState />;
 
   if (loadError || !context) {
+    const recovery = cleanupLoadErrorPresentation(loadError);
     return (
       <View style={styles.centerState}>
         <Ionicons name="alert-circle-outline" size={44} color="#A33A32" />
         <Text style={styles.centerTitle}>Cleanup unavailable</Text>
-        <Text style={styles.centerText}>{loadError}</Text>
+        <Text style={styles.centerText}>{recovery.message}</Text>
+        {recovery.retryable ? <TouchableOpacity accessibilityRole="button" style={styles.primaryButton} onPress={contextResource.refresh}><Text style={styles.primaryButtonText}>Retry cleanup</Text></TouchableOpacity> : null}
         <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.goBack()}>
           <Text style={styles.secondaryButtonText}>Go back</Text>
         </TouchableOpacity>
       </View>
     );
   }
+
+  if (draftLoadError) return <View style={styles.centerState}>
+    <Text style={styles.centerTitle}>Couldn’t restore your draft</Text>
+    <Text style={styles.centerText}>Retry before adding evidence so your saved draft is not replaced.</Text>
+    <TouchableOpacity accessibilityRole="button" style={styles.primaryButton} onPress={() => setDraftRestoreAttempt(attempt => attempt + 1)}><Text style={styles.primaryButtonText}>Retry saved draft</Text></TouchableOpacity>
+    <TouchableOpacity accessibilityRole="button" style={styles.secondaryButton} onPress={() => navigation.goBack()}><Text style={styles.secondaryButtonText}>Go back</Text></TouchableOpacity>
+  </View>;
 
   const reportTitle = context.report?.title || 'Litter cleanup';
   const normalized = currentValidation().normalized;

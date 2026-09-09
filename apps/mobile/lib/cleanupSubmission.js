@@ -76,6 +76,9 @@ export async function loadCleanupSubmissionContext(cleanupId, userId) {
   if (!['claimed', 'changes_requested'].includes(attempt.status)) {
     throw new Error('cleanup_submission_invalid_state');
   }
+  if (attempt.status === 'claimed' && (!attempt.claim_expires_at || Date.parse(attempt.claim_expires_at) <= Date.now())) {
+    throw new Error('cleanup_claim_expired');
+  }
   if (
     attempt.status === 'changes_requested'
     && (!attempt.correction_due_at || Date.parse(attempt.correction_due_at) <= Date.now())
@@ -90,6 +93,7 @@ export async function loadCleanupSubmissionContext(cleanupId, userId) {
     .maybeSingle();
 
   if (reportError) throw reportError;
+  if (!report) throw new Error('cleanup_submission_not_allowed');
   return { attempt, report };
 }
 

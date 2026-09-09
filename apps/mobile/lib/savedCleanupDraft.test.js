@@ -3,11 +3,12 @@ const m = vi.hoisted(() => ({
   storage: new Map(),
   files: new Set(['file://source.jpg']),
   copyFails: false,
+  readFails: false,
 }));
 vi.mock('@react-native-async-storage/async-storage', () => ({
   default: {
     setItem: async (k, v) => m.storage.set(k, v),
-    getItem: async (k) => m.storage.get(k),
+    getItem: async (k) => { if (m.readFails) throw Error('read interrupted'); return m.storage.get(k); },
     removeItem: async (k) => m.storage.delete(k),
   },
 }));
@@ -40,6 +41,7 @@ describe('durable report drafts', () => {
     m.storage.clear();
     m.files = new Set(['file://source.jpg']);
     m.copyFails = false;
+    m.readFails = false;
   });
   it('retains evidence after temporary picker photos disappear', async () => {
     await saveCleanupDraft('alice', 'cleanup-1', draft);
@@ -69,5 +71,15 @@ describe('durable report drafts', () => {
     const discard = clearCleanupDraft('alice', 'cleanup-1');
     await Promise.all([save, discard]);
     expect(await loadCleanupDraft('alice', 'cleanup-1')).toBeNull();
+  });
+  it('restores the same evidence after a failed read is retried', async () => {
+    await saveCleanupDraft('alice', 'cleanup-1', draft);
+    m.readFails = true;
+    await expect(loadCleanupDraft('alice', 'cleanup-1')).rejects.toThrow('read interrupted');
+    m.readFails = false;
+    const restored = await loadCleanupDraft('alice', 'cleanup-1');
+    expect(restored.description).toBe(draft.description);
+    expect(restored.photos).toHaveLength(1);
+    expect(restored.submissionId).toBe('stable-id');
   });
 });

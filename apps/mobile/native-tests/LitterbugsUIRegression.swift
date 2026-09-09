@@ -131,6 +131,25 @@ final class LitterbugsUIRegression: XCTestCase {
         }
         shot("cleanup-stats-alignment")
     }
+    func testPointsExplanationAndPaymentHistory() throws {
+        tab("profile").tap()
+        let points = app.buttons["How points work"]
+        guard app.buttons["Edit profile"].waitForExistence(timeout: 10) else { throw XCTSkip("Requires an already signed-in QA account.") }
+        XCTAssertTrue(points.waitForExistence(timeout: 5))
+        points.tap()
+        XCTAssertTrue(element("Validated report · +1 point").waitForExistence(timeout: 5))
+        XCTAssertTrue(element("Completed cleanup · +3 points").exists)
+        XCTAssertTrue(app.buttons["Close points explanation"].isHittable)
+        shot("points-explanation")
+        app.buttons["Close points explanation"].tap()
+        app.buttons["Payments"].tap()
+        let history = app.buttons["Contributions & payment history"]
+        XCTAssertTrue(history.waitForExistence(timeout: 10)); history.tap()
+        XCTAssertTrue(app.buttons["All payments"].waitForExistence(timeout: 10))
+        app.buttons["Completed impact"].tap()
+        XCTAssertTrue(app.buttons["Completed impact"].isSelected)
+        shot("payment-history-completed-filter")
+    }
     func testProfileSaveVisibilityKeyboardAndBackProtection() throws {
         tab("profile").tap()
         let edit = app.buttons["Edit profile"]

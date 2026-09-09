@@ -1,24 +1,22 @@
 import FeeExplanationLabel from './components/FeeExplanationLabel';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { Alert, Linking, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import useFocusedResource from './lib/useFocusedResource';
+import { useSession } from './lib/session';
+import BrandedLoadingState from './BrandedLoadingState';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatUsd, loadMyContribution } from './lib/funding';
 import PaymentStatus from './components/PaymentStatus';
-import { statusMessage, formatContributionDate } from './ContributionHistoryScreen';
+import { statusMessage, formatContributionDate } from './lib/contributionPresentation';
 
 export default function PaymentDetailScreen({ navigation, route }) {
-  const [item, setItem] = useState(null), [loading, setLoading] = useState(true), [error, setError] = useState(false);
+  const { user } = useSession();
+  const contributionId = route.params?.contributionId;
+  const { data: item, loading, error, refresh: load } = useFocusedResource(useCallback(() => loadMyContribution(contributionId, user?.id), [contributionId, user?.id]), { enabled: Boolean(user?.id && contributionId) });
   const insets = useSafeAreaInsets();
-  const load = useCallback(async () => {
-    setLoading(true);
-    try { setItem(await loadMyContribution(route.params.contributionId)); setError(false); }
-    catch { setError(true); }
-    finally { setLoading(false); }
-  }, [route.params.contributionId]);
-  useFocusEffect(useCallback(() => { load(); }, [load]));
   const action = (label, onPress, disabled = false) => <TouchableOpacity disabled={disabled} accessibilityRole="button" onPress={onPress} style={{ minHeight: 52, justifyContent: 'center', opacity: disabled ? 0.5 : 1 }}><Text style={{ color: '#2F7D32', fontSize: 16, fontWeight: '700' }}>{label}</Text></TouchableOpacity>;
   return <ScrollView style={{ backgroundColor: '#FFFFFF' }} contentContainerStyle={{ flexGrow: 1, padding: 20, paddingBottom: insets.bottom + 24 }}>
+    {loading && !item ? <BrandedLoadingState compact title="Loading payment…" message="Checking the latest recorded status." /> : null}
     {error ? <Text style={{ color: '#B42318', marginBottom: 16 }}>Couldn’t refresh this payment. Try again.</Text> : null}
     {item ? <>
       <PaymentStatus status={item.status} />

@@ -1,7 +1,8 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useLayoutEffect, useState } from 'react';
 import {
   Alert,
   ScrollView,
+  RefreshControl,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -13,11 +14,12 @@ import CompactRankBadge from './CompactRankBadge';
 import BrandedLoadingState from './BrandedLoadingState';
 import ProfileAvatar from './ProfileAvatar';
 import ProfileReportList from './ProfileReportList';
-import { PUBLIC_PROFILE_FIELDS, useProfile } from './lib/profile';
+import { useProfile } from './lib/profile';
 import { isPermanentUser } from './lib/reportAccess';
 import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
-import { supabase } from './lib/supabase';
+import { loadPublicMember, loadPublicMemberReports } from './lib/publicMember';
+import useFocusedResource from './lib/useFocusedResource';
 
 export default function PublicProfileScreen({ navigation, route }) {
   const profileId = route.params?.profileId;
@@ -25,36 +27,12 @@ export default function PublicProfileScreen({ navigation, route }) {
   const { user } = useSession();
   const permanent = isPermanentUser(user);
   const { blockedIds, blockUser } = useProfile();
-  const { reports, refreshReports } = useReports();
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [missing, setMissing] = useState(false);
+  const { refreshReports } = useReports();
+  const [view, setView] = useState('active');
   const blocked = blockedIds.includes(profileId);
-
-  useEffect(() => {
-    let active = true;
-    const load = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(PUBLIC_PROFILE_FIELDS)
-        .eq('id', profileId)
-        .maybeSingle();
-
-      if (!active) return;
-      if (error) console.log('Public profile load error:', error);
-      setProfile(data ?? null);
-      setMissing(Boolean(error || !data));
-      setLoading(false);
-    };
-    load();
-    return () => { active = false; };
-  }, [profileId]);
-
-  const activeReports = useMemo(
-    () => reports.filter((report) => report.user_id === profileId),
-    [profileId, reports]
-  );
+  const member = useFocusedResource(useCallback(() => loadPublicMember(profileId), [profileId, user?.id]), { enabled: Boolean(profileId) && !blocked });
+  const profile = member.data;
+  const activity = useFocusedResource(useCallback(cursor => loadPublicMemberReports({ profileId, view, cursor }), [profileId, view, user?.id]), { paged: true, enabled: Boolean(profile) && !blocked });
 
   const confirmBlock = () => {
     Alert.alert(
@@ -114,20 +92,6 @@ export default function PublicProfileScreen({ navigation, route }) {
     });
   }, [blocked, navigation, permanent, profile, profileId, user?.id]);
 
-  if (loading) {
-    return <BrandedLoadingState title="Loading profile…" message="Gathering this member’s community impact." />;
-  }
-
-  if (missing) {
-    return (
-      <View style={styles.center}>
-        <Ionicons name="person-outline" size={48} color="#7A848A" />
-        <Text style={styles.stateTitle}>Profile unavailable</Text>
-        <Text style={styles.stateText}>This reporter no longer has a public profile.</Text>
-      </View>
-    );
-  }
-
   if (blocked) {
     return (
       <View style={styles.center}>
@@ -141,8 +105,20 @@ export default function PublicProfileScreen({ navigation, route }) {
     );
   }
 
+  if (member.loading && !profile) return <BrandedLoadingState title="Loading profile…" message="Gathering this member’s community impact." />;
+  if (member.error && !profile) return <View style={styles.center}>
+    <Text style={styles.stateTitle}>Couldn’t load this profile</Text>
+    <Text style={styles.stateText}>Check your connection and try again.</Text>
+    <TouchableOpacity accessibilityRole="button" style={styles.manageButton} onPress={member.refresh}><Text style={styles.manageText}>Retry profile</Text></TouchableOpacity>
+  </View>;
+  if (!profile) return <View style={styles.center}>
+    <Text style={styles.stateTitle}>Profile unavailable</Text>
+    <Text style={styles.stateText}>This profile is not available to view.</Text>
+  </View>;
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={member.loading || activity.loading} onRefresh={() => { member.refresh(); activity.refresh(); }} />}>
+      {member.error ? <Text style={styles.stateText}>Couldn’t refresh this profile. Pull down to try again.</Text> : null}
       <View style={styles.identity}>
         <ProfileAvatar profile={profile} size={104} />
         <Text style={styles.name}>{profile.display_name}</Text>
@@ -165,21 +141,32 @@ export default function PublicProfileScreen({ navigation, route }) {
         <Text style={styles.statLabel}>Reports submitted</Text>
       </View>
 
-      <Text style={styles.sectionTitle}>Active reports</Text>
+      <Text style={styles.sectionTitle}>Reports</Text>
+      <View style={styles.tabs}>
+        {['active', 'completed'].map(value => <TouchableOpacity key={value} accessibilityRole="tab" accessibilityState={{ selected: view === value }} onPress={() => setView(value)} style={[styles.tab, view === value && styles.selectedTab]}><Text style={styles.tabText}>{value === 'active' ? 'Active reports' : 'Completed reports'}</Text></TouchableOpacity>)}
+      </View>
       <View style={styles.card}>
-        <ProfileReportList
-          reports={activeReports}
-          onReportPress={(report) => navigation.navigate('App', {
-            screen: 'Map',
-            params: { reportId: report.id },
-          })}
-        />
+        {activity.error ? <View style={styles.notice}><Text>Couldn’t refresh these reports.</Text><TouchableOpacity accessibilityRole="button" style={styles.retry} onPress={activity.refresh}><Text style={styles.tabText}>Retry reports</Text></TouchableOpacity></View> : null}
+        {activity.loading && !activity.data.length ? <BrandedLoadingState compact title="Loading reports…" /> : activity.data.length || !activity.error ? <ProfileReportList
+          reports={activity.data}
+          emptyTitle={view === 'completed' ? 'No completed reports' : 'No active reports'}
+          emptyText={view === 'completed' ? 'Completed cleanups reported by this member will appear here.' : 'This member’s available and in-progress reports will appear here.'}
+          onReportPress={report => navigation.navigate('App', { screen: 'Map', params: { reportId: report.id } })}
+        /> : null}
+        {activity.moreError ? <Text style={styles.notice}>Couldn’t load older reports. Your current list is still available.</Text> : null}
+        {activity.nextCursor ? <TouchableOpacity disabled={activity.loading || activity.loadingMore} accessibilityRole="button" style={styles.retry} onPress={activity.loadMore}><Text style={styles.tabText}>{activity.loadingMore ? 'Loading older reports…' : activity.moreError ? 'Retry older reports' : 'Load older reports'}</Text></TouchableOpacity> : null}
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  tabs: { flexDirection: 'row', margin: 16, gap: 8 },
+  tab: { flex: 1, padding: 12, minHeight: 44, justifyContent: 'center', alignItems: 'center', borderRadius: 14, backgroundColor: '#FFFFFF' },
+  selectedTab: { backgroundColor: '#EAF4EC' },
+  tabText: { color: '#245F2A', fontWeight: '700', textAlign: 'center' },
+  notice: { padding: 16, color: '#687178' },
+  retry: { minHeight: 44, padding: 12, justifyContent: 'center', alignItems: 'center' },
   container: { flex: 1, backgroundColor: '#F5F6F7' },
   content: { paddingBottom: 36 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30, backgroundColor: '#F5F6F7' },
