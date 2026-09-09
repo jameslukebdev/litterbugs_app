@@ -28,8 +28,18 @@ final class LitterbugsFixtureRegression: XCTestCase {
         XCTAssertTrue(marker("$125.50, active: Awaiting review funded").exists)
         XCTAssertTrue(marker("$1,000, active: Changes requested funded").exists)
         XCTAssertTrue(marker("$48, completed: Completed funded").exists)
-        XCTAssertTrue(marker("Volunteer cleanup, completed: Completed volunteer").exists)
+        XCTAssertTrue(marker("$0, completed: Completed volunteer").exists)
+        XCTAssertTrue(marker("$0, available: Available volunteer").exists)
+        XCTAssertTrue(marker("$0, active: In progress volunteer").exists)
         shot("all-status-and-funding-combinations")
+        let zero = marker("$0, available: Available volunteer")
+        let original = zero.frame
+        zero.tap()
+        XCTAssertTrue(app.buttons["Close fixture preview"].waitForExistence(timeout: 5))
+        XCTAssertEqual(zero.frame.midX, original.midX, accuracy: 2)
+        XCTAssertEqual(zero.frame.midY, original.midY, accuracy: 2)
+        shot("selected-zero-funding-enlargement")
+        app.buttons["Close fixture preview"].tap()
         app.buttons["Status In progress"].tap(); waitForCount(6)
         app.buttons["Funding Funded"].tap(); waitForCount(3)
         app.buttons["Toggle fixture reports"].tap()
@@ -39,7 +49,7 @@ final class LitterbugsFixtureRegression: XCTestCase {
         app.buttons["Status Completed"].tap(); waitForCount(1)
         XCTAssertTrue(marker("$48, completed: Completed funded").exists)
         app.buttons["Funding Volunteer"].tap(); waitForCount(1)
-        XCTAssertTrue(marker("Volunteer cleanup, completed: Completed volunteer").exists)
+        XCTAssertTrue(marker("$0, completed: Completed volunteer").exists)
         XCTAssertFalse(marker("$48, completed: Completed funded").exists)
     }
     func testDensityZoomAndOverlappingSelection() {

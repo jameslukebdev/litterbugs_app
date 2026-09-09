@@ -10,7 +10,7 @@ function Summary({ report }) {
   return <View style={styles.copy}>
     <Text style={styles.title} numberOfLines={2}>{report.title || 'Litter report'}</Text>
     <Text style={styles.status}>{status?.title || 'Available to clean'}</Text>
-    {!completed ? <Text style={styles.reward}>{Number(report.funded_amount_cents) > 0 ? `Cleaner reward ${formatMapFundingLabel(report.funded_amount_cents)}` : 'Volunteer cleanup'}</Text> : null}
+    {!completed ? <Text style={styles.reward}>{Number(report.funded_amount_cents) > 0 ? `Cleaner reward ${formatMapFundingLabel(report.funded_amount_cents)}` : '$0 in pool · No donations yet'}</Text> : null}
   </View>;
 }
 export default function MapReportPreview({ report, nearby, bottom, insetBottom, getPhotoUrl, onClose, onChoose, onDetails, onCloseNearby, onHeight, distance }) {

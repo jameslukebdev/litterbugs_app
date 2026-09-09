@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { formatMapFundingLabel, isFundedMapMarker } from './mapFundingMarker';
 
 describe('map funding marker', () => {
-  it('uses a plain volunteer label when no money has been added', () => {
-    expect(formatMapFundingLabel(0)).toBe('Volunteer');
+  it('shows an explicit zero when no money has been added', () => {
+    expect(formatMapFundingLabel(0)).toBe('$0');
     expect(isFundedMapMarker(0)).toBe(false);
   });
 

@@ -14,9 +14,9 @@ describe('report marker meaning', () => {
       expect(html.indexOf('data-icon')).toBeLessThan(html.indexOf('$25'));
     }
   });
-  it('uses a leaf for an unfunded available cleanup without inventing a zero-dollar reward', () => {
-    const html=render('available',null);
-    expect(html).toContain('leaf-outline'); expect(html).not.toContain('$');
+  it('shows zero funding explicitly without a leaf', () => {
+    const html=render('available','$0');
+    expect(html).not.toContain('leaf-outline'); expect(html).toContain('$0');
   });
   it('keeps the state icon when a funded label is crowded and reveals the amount on selection', () => {
     expect(render('claimed','$25',false)).toContain('time-outline');

@@ -2,25 +2,27 @@ import { View, Text, StyleSheet, Platform } from 'react-native';
 import { Marker } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import { cleanupMapTone } from '../lib/cleanupEligibility';
-import { reportsNearMapTap, STATUS_MARKER_SIZE, STATUS_MARKER_ICON_SIZE } from '../lib/mapLabelLayout';
+import { reportsNearMapTap, STATUS_MARKER_SIZE, STATUS_MARKER_ICON_SIZE, SELECTED_MARKER_SCALE, markerHostDimensions } from '../lib/mapLabelLayout';
 
 export default function ReportMapMarkers({ markers, selectedId, tracksViewChanges, reportPlacementActive, onNearby, onChoose }) {
   return <>
         {/* Label allocation changes priority on selection; native annotation order
             must stay stable or MapKit can remove a moved annotation. */}
         {[...markers].sort((a, b) => String(a.id).localeCompare(String(b.id))).map((m) => {
+          // MapKit adds 999 to its tapped annotation. App selection must also
+          // win when the overlap chooser selects a different report.
           const selected = m.id === selectedId;
           const tone = cleanupMapTone(m.report);
           const statusMarker = tone === 'completed' || tone === 'active';
-          const icon = tone === 'completed' ? 'checkmark' : tone === 'active' ? 'time-outline' : 'leaf-outline';
+          const icon = tone === 'completed' ? 'checkmark' : tone === 'active' ? 'time-outline' : 'ellipse-outline';
           return <Marker key={m.id} coordinate={m.coordinate}
             identifier={`report:${tone}:${m.id}`}
             tracksViewChanges={tracksViewChanges}
             anchor={{ x: 0.5, y: 0.5 }}
             {...(Platform?.OS === 'ios'
-              ? { annotationZIndex: selected ? 1000 : m.labelled ? 10 : 1 }
-              : { zIndex: selected ? 1000 : m.labelled ? 10 : 1 })}
-            accessibilityLabel={`${m.label || 'Volunteer cleanup'}, ${tone}: ${m.report?.title || 'Litter report'}`}
+              ? { annotationZIndex: selected ? 2000 : m.labelled ? 10 : 1 }
+              : { zIndex: selected ? 2000 : m.labelled ? 10 : 1 })}
+            accessibilityLabel={`${m.label || '$0'}, ${tone}: ${m.report?.title || 'Litter report'}`}
             onPress={(event) => {
               event?.stopPropagation?.();
               if (reportPlacementActive) return;
@@ -30,9 +32,9 @@ export default function ReportMapMarkers({ markers, selectedId, tracksViewChange
             }}>
             {/* Reserve the label's bounds even when collapsed. Resizing the
                 annotation's host frame can reset its MapKit position in Fabric. */}
-            <View style={[styles.compactMarkerHit, { width: Math.max(44, m.width || 44), height: Math.max(44, m.height || 44) }]}>
+            <View style={[styles.compactMarkerHit, markerHostDimensions(m.width || 44, m.height || 44)]}>
               {m.label && (m.labelled || selected) ? (
-                <View style={[styles.compactMarker, selected && styles.compactMarkerSelected, { minHeight: m.height || 32, width: m.width || 48 }]}>
+                <View style={[styles.compactMarker, selected && styles.compactMarkerSelected, { minHeight: m.height || 24, width: m.width || 34 }]}>
                   {statusMarker ? <Ionicons name={icon} size={STATUS_MARKER_ICON_SIZE} color={selected ? '#FFFFFF' : '#285D38'} /> : null}
                   <Text numberOfLines={1} style={[styles.compactMarkerText, selected && { color: '#FFFFFF' }]}>{m.label}</Text>
                 </View>
@@ -49,9 +51,9 @@ export default function ReportMapMarkers({ markers, selectedId, tracksViewChange
 }
 const styles = StyleSheet.create({
 compactMarkerHit: { alignItems: 'center', justifyContent: 'center' },
-compactMarker: { flexDirection: 'row', gap: 4, paddingHorizontal: 12, borderRadius: 18, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#92A998', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 3, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
-compactMarkerSelected: { backgroundColor: '#285D38', borderColor: '#FFFFFF' },
-compactMarkerText: { color: '#285D38', fontSize: 14, fontWeight: '700' },
+compactMarker: { flexDirection: 'row', gap: 3, paddingHorizontal: 6, borderRadius: 18, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#92A998', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 3, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
+compactMarkerSelected: { backgroundColor: '#285D38', borderColor: '#FFFFFF', transform: [{ scale: SELECTED_MARKER_SCALE }] },
+compactMarkerText: { color: '#285D38', fontSize: 13, fontWeight: '700' },
 compactStatusMarker: { width: STATUS_MARKER_SIZE, height: STATUS_MARKER_SIZE, borderRadius: STATUS_MARKER_SIZE / 2, backgroundColor: '#FFFFFF', borderColor: '#92A998', borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-compactMarkerDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#FFFFFF', borderColor: '#285D38', borderWidth: 2 },
+compactMarkerDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#FFFFFF', borderColor: '#285D38', borderWidth: 2 },
 });

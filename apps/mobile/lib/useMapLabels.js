@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { layoutMapLabels, mapMarkerDimensions } from './mapLabelLayout';
 import { cleanupMapTone } from './cleanupEligibility';
-import { formatMapFundingLabel, isFundedMapMarker } from './mapFundingMarker';
+import { formatMapFundingLabel } from './mapFundingMarker';
 
 export default function useMapLabels({ markers, mapRef, ready, region, revision, size, selectedId, fontScale }) {
   const [positions, setPositions] = useState([]);
@@ -22,8 +22,7 @@ export default function useMapLabels({ markers, mapRef, ready, region, revision,
     const byId = new Map(positions.map((point) => [point.id, point]));
     const points = markers.map((marker) => ({
       ...marker, ...byId.get(marker.id),
-      label: isFundedMapMarker(marker.report?.funded_amount_cents)
-        ? formatMapFundingLabel(marker.report.funded_amount_cents) : null,
+      label: formatMapFundingLabel(marker.report?.funded_amount_cents),
     }));
     const projected = points.filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
     const visible = projected.filter((point) => point.x > -70 && point.y > -70 && point.x < size.width + 70 && point.y < size.height + 70);

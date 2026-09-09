@@ -41,8 +41,8 @@ describe('map label collision and discovery', () => {
     expect(reportsNearMapTap(result, 'b')).toHaveLength(2);
   });
   it('allows more labels after zoom separates points and accounts for larger text', () => {
-    expect(layoutMapLabels([point('a', 100, 100), point('b', 180, 100)]).every(p => p.labelled)).toBe(true);
-    expect(layoutMapLabels([point('a', 100, 100), point('b', 180, 100)], null, 3).filter(p => p.labelled)).toHaveLength(1);
+    expect(layoutMapLabels([point('a', 100, 100), point('b', 160, 100)]).every(p => p.labelled)).toBe(true);
+    expect(layoutMapLabels([point('a', 100, 100), point('b', 160, 100)], null, 3).filter(p => p.labelled)).toHaveLength(1);
   });
   it('keeps unfunded status geometry constant across overlap, selection, zoom and text size', () => {
     for (const cleanup_state of ['completed', 'claimed']) {
@@ -73,4 +73,14 @@ it('changes funded status label visibility with separation, never the amount', (
     expect(status.report.funded_amount_cents).toBe(2500);
     expect(status.width).toBeGreaterThan(STATUS_MARKER_SIZE);
   }
+});
+
+ it('reserves selection space without resizing the native host or changing funding', () => {
+  const input = [point('a',100,100,'$0'), point('b',141,100,'$6')];
+  const normal = layoutMapLabels(input);
+  const selected = layoutMapLabels(input,'a');
+  expect(normal.filter(p => p.labelled)).toHaveLength(2);
+  expect(selected.filter(p => p.labelled)).toHaveLength(1);
+  expect(selected[0].label).toBe('$0');
+  expect([selected[0].width,selected[0].height]).toEqual([normal[0].width,normal[0].height]);
 });

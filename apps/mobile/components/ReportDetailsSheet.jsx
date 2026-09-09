@@ -135,7 +135,7 @@ export default function ReportDetailsSheet({ state, actions }) {
             <Text style={styles.rewardBadgeText}>
               {Number(selectedReport?.funded_amount_cents) > 0
                 ? `Cleaner reward ${formatUsd(selectedReport.funded_amount_cents)}`
-                : 'Volunteer Opportunity'}
+                : '$0 in pool · No donations yet'}
             </Text>
           </View>
 

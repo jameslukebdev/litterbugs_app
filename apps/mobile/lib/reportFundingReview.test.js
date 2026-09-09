@@ -33,7 +33,7 @@ describe('report review cleanup-fund choices', () => {
     expect(mapScreenSource).toContain(
       '? `Cleaner reward ${formatUsd(selectedReport.funded_amount_cents)}`'
     );
-    expect(mapScreenSource).toContain(": 'Volunteer Opportunity'");
+    expect(mapScreenSource).toContain(": '$0 in pool · No donations yet'");
 
     const cleanupCard = mapScreenSource.indexOf('style={styles.cleanupEligibilityCard}');
     const utilityBar = mapScreenSource.indexOf('styles.reportUtilityBar,');
