@@ -7,7 +7,7 @@ import BrandedLoadingState from './BrandedLoadingState';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatUsd, loadMyContribution } from './lib/funding';
 import PaymentStatus from './components/PaymentStatus';
-import { statusMessage, formatContributionDate } from './lib/contributionPresentation';
+import { statusMessage, paymentDisplayStatus, formatContributionDate } from './lib/contributionPresentation';
 
 export default function PaymentDetailScreen({ navigation, route }) {
   const { user } = useSession();
@@ -19,14 +19,15 @@ export default function PaymentDetailScreen({ navigation, route }) {
     {loading && !item ? <BrandedLoadingState compact title="Loading payment…" message="Checking the latest recorded status." /> : null}
     {error ? <Text style={{ color: '#B42318', marginBottom: 16 }}>Couldn’t refresh this payment. Try again.</Text> : null}
     {item ? <>
-      <PaymentStatus status={item.status} />
+      <PaymentStatus status={paymentDisplayStatus(item)} />
       <Text style={{ fontSize: 32, fontWeight: '800', marginTop: 20 }}>{formatUsd(item.total_amount_cents)}</Text>
       <Text style={{ color: '#687178', marginTop: 4 }}>{['payment_pending', 'failed'].includes(item.status) ? 'Attempted total' : item.status === 'refunded' ? 'Original total' : 'Total charged'}</Text>
       <Text style={{ marginTop: 20, fontSize: 16, lineHeight: 23 }}>{statusMessage(item).replace('View payment details for the latest recorded status.', 'Refresh below to check the latest recorded status.')}</Text>
+      {item.checkedAt ? <Text style={{ marginTop: 12, color: '#687178' }}>Verified with Stripe {formatContributionDate(item.checkedAt)}</Text> : null}
       <Text style={{ marginTop: 12, color: '#687178' }}>{formatContributionDate(item.created_at)}</Text>
       <View style={{ marginVertical: 24, gap: 12 }}>
         <Text>Cleanup contribution: {formatUsd(item.principal_amount_cents)}</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><FeeExplanationLabel label="Litterbugs fee" /><Text>{formatUsd(item.platform_fee_cents)}</Text></View>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignItems: 'center', justifyContent: 'space-between' }}><FeeExplanationLabel label="Litterbugs fee" /><Text>{formatUsd(item.platform_fee_cents)}</Text></View>
         {item.refunded_at ? <Text>Refunded: {formatContributionDate(item.refunded_at)}</Text> : null}
       </View>
       {item.report ? action('View cleanup report', () => navigation.navigate('App', { screen: 'Map', params: { reportId: item.report_id } })) : <Text style={{ color: '#687178', lineHeight: 21 }}>The linked report is no longer available. Your payment record remains here.</Text>}

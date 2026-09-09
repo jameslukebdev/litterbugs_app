@@ -1,10 +1,10 @@
 import FeeExplanationLabel from './components/FeeExplanationLabel';
 import { useCallback, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { RefreshControl, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import useFocusedResource from './lib/useFocusedResource';
 import { useSession } from './lib/session';
-import { statusMessage, formatContributionDate } from './lib/contributionPresentation';
+import { statusMessage, paymentDisplayStatus, formatContributionDate } from './lib/contributionPresentation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatUsd, loadMyContributions } from './lib/funding';
@@ -19,19 +19,23 @@ export default function ContributionHistoryScreen({ navigation }) {
   const { data: items, loading, error, refresh: load } = history;
 
   return (
-    <ScrollView
+    <FlatList
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]}
       refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor="#2F7D32" />}
-    >
+      data={items}
+      keyExtractor={item => item.id}
+      ListHeaderComponent={<>
       <View style={[styles.line, { marginBottom: 18, gap: 12 }]}>{[[false,'All payments'],[true,'Completed impact']].map(([value,label]) => <TouchableOpacity key={label} accessibilityRole="button" accessibilityState={{selected:completedOnly===value}} onPress={() => setCompletedOnly(value)} style={[styles.statusPill,{minHeight:44,backgroundColor:completedOnly===value?'#E3EEE4':'#FFFFFF'}]}><Text style={styles.status}>{label}</Text></TouchableOpacity>)}</View>
       {error ? <View><Text style={styles.error}>Couldn’t refresh payment history.</Text><TouchableOpacity accessibilityRole="button" style={styles.more} onPress={load}><Text style={styles.status}>Retry payment history</Text></TouchableOpacity></View> : null}
       {!loading && !error && items.length === 0 ? (
         <View style={styles.empty}><Ionicons name="receipt-outline" size={42} color="#6D777D" /><Text style={styles.emptyTitle}>{completedOnly ? 'No completed impact yet' : 'No payments yet'}</Text><Text style={styles.emptyCopy}>{completedOnly ? 'Contributions to completed cleanups will appear here.' : 'Your contributions and payment attempts will appear here.'}</Text></View>
-      ) : items.map((item) => (
+      ) : null}
+      </>}
+      renderItem={({ item }) => (
         <View key={item.id} style={styles.card}>
           <View style={styles.line}>
             <Text style={styles.amount}>{formatUsd(item.principal_amount_cents)}</Text>
-            <PaymentStatus status={item.status} />
+            <PaymentStatus status={paymentDisplayStatus(item)} />
           </View>
           <Text style={styles.reportTitle} numberOfLines={2}>
             {item.report?.title || 'Litter cleanup report'}
@@ -43,13 +47,15 @@ export default function ContributionHistoryScreen({ navigation }) {
           <TouchableOpacity accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }} onPress={() => navigation.navigate('PaymentDetail', { contributionId: item.id })}><Text style={styles.status}>View payment details</Text></TouchableOpacity>
           {item.refunded_at ? <Text style={styles.date}>Refunded {formatContributionDate(item.refunded_at)}</Text> : null}
         </View>
-      ))}
+      )}
+      ListFooterComponent={<>
       {loading && items.length === 0 ? (
         <BrandedLoadingState compact title="Loading contributions…" message="Checking payment and refund status." />
       ) : null}
       {history.moreError ? <Text style={styles.error}>Couldn’t load older payments. Your current history is still available.</Text> : null}
       {history.nextCursor ? <TouchableOpacity accessibilityRole="button" disabled={loading || history.loadingMore} style={styles.more} onPress={history.loadMore}><Text style={styles.status}>{history.loadingMore ? 'Loading older payments…' : history.moreError ? 'Retry older payments' : 'Load older payments'}</Text></TouchableOpacity> : null}
-    </ScrollView>
+      </>}
+    />
   );
 }
 
@@ -61,7 +67,7 @@ const styles = StyleSheet.create({
   empty: { flex: 1, minHeight: 300, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { marginTop: 12, color: '#59636A', fontSize: 17, fontWeight: '800' },
   card: { marginBottom: 13, padding: 17, borderRadius: 16, backgroundColor: '#FFFFFF' },
-  line: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  line: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignItems: 'center', justifyContent: 'space-between' },
   amount: { color: '#245F2A', fontSize: 22, fontWeight: '900' },
   statusPill: { minHeight: 30, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: '#EDF5EE' },
   status: { color: '#315F35', fontSize: 12, fontWeight: '900' },

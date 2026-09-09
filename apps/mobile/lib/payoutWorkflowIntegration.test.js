@@ -9,7 +9,7 @@ const contributionFunctionSource = readFileSync(
   'utf8',
 );
 const claimMigrationSource = readFileSync(
-  new URL('../../../supabase/migrations/20260907162045_require_stripe_only_for_funded_cleanup_claims.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20260907162230_require_stripe_only_for_funded_cleanup_claims.sql', import.meta.url),
   'utf8',
 );
 

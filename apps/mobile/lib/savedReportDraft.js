@@ -1,3 +1,4 @@
+import { resumableReportStep } from './reportWizard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -46,12 +47,14 @@ export function loadReportDraft(userId) {
     const photos = [];
     for (const uri of draft.form.photos || [])
       if ((await FileSystem.getInfoAsync(uri)).exists) photos.push(uri);
-    return { ...draft, form: { ...draft.form, photos } };
+    const restored = { ...draft, form: { ...draft.form, photos }, missingPhotoCount: (draft.form.photos || []).length - photos.length };
+    return { ...restored, step: resumableReportStep(restored) };
   });
 }
 export function clearReportDraft(userId) {
   return enqueue(async () => {
     await AsyncStorage.removeItem(key(userId));
+    await AsyncStorage.removeItem(`litterbugs.report-submission.${userId}`);
     await FileSystem.deleteAsync(
       `${FileSystem.documentDirectory}report-drafts/${userId}/`,
       { idempotent: true },

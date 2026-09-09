@@ -1,3 +1,4 @@
+import RemotePhoto from './RemotePhoto';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -6,39 +7,16 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { useReports } from '../lib/reports';
 function Photo({ uri, path, width, title }) {
   const { getReportPhotoUrl } = useReports();
-  const [source, setSource] = useState(uri);
-  const [retried, setRetried] = useState(false);
-  useEffect(() => {
-    setSource(uri);
-    setRetried(false);
-  }, [uri]);
-  return (
-    <Image
-      source={{ uri: source, cacheKey: path || uri }}
-      contentFit="cover"
-      cachePolicy="memory-disk"
-      style={{ width, height: 280, backgroundColor: '#E5E7EB' }}
-      accessibilityLabel={`Litter reported: ${title || 'cleanup location'}`}
-      onError={() => {
-        if (retried || !path) return;
-        setRetried(true);
-        getReportPhotoUrl(path, { force: true })
-          .then((url) => {
-            if (url) setSource(url);
-          })
-          .catch(() => {});
-      }}
-    />
-  );
+  return <RemotePhoto path={path} uri={uri} getUrl={getReportPhotoUrl} label={`Litter reported: ${title || 'cleanup location'}`} style={{ width, height: 280 }} />;
 }
 export default function ReportPhotoGallery({ report, urls, loading, width }) {
   const [index, setIndex] = useState(0);
   useEffect(() => setIndex(0), [report?.id]);
   if (!report) return null;
+  const photoCount = report.photo_paths?.length || urls.length;
   if (loading && !urls.length)
     return (
       <View style={styles.empty}>
@@ -46,7 +24,7 @@ export default function ReportPhotoGallery({ report, urls, loading, width }) {
         <Text>Loading photos…</Text>
       </View>
     );
-  if (!urls.length)
+  if (!urls.length && !report.photo_paths?.length)
     return (
       <View style={styles.empty}>
         <Text style={styles.caption}>Photo unavailable</Text>
@@ -64,20 +42,20 @@ export default function ReportPhotoGallery({ report, urls, loading, width }) {
           setIndex(Math.round(event.nativeEvent.contentOffset.x / width))
         }
       >
-        {urls.map((uri, i) => (
+        {(report.photo_paths?.length ? report.photo_paths : urls).map((path, i) => (
           <Photo
-            key={report.photo_paths?.[i] || uri}
-            uri={uri}
+            key={report.photo_paths?.[i] || path}
+            uri={urls[i]}
             path={report.photo_paths?.[i]}
             width={width}
             title={report.title}
           />
         ))}
       </ScrollView>
-      {urls.length > 1 ? (
+      {photoCount > 1 ? (
         <View style={styles.counter}>
           <Text style={styles.counterText}>
-            {index + 1} / {urls.length}
+            {index + 1} / {photoCount}
           </Text>
         </View>
       ) : null}

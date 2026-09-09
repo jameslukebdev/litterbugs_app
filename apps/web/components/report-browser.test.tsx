@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ReportBrowser } from './report-browser';
 
 const report: MappableReport = {
+  is_published: true,
   cancelled_at: null,
   cleanup_state: 'available',
   created_at: '2026-08-26T00:15:00.000Z',

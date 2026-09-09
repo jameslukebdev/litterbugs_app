@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import useFocusedResource from './lib/useFocusedResource';
+import { useCallback, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -19,34 +20,22 @@ export default function BlockedAccountsScreen() {
   const { user } = useSession();
   const { unblockUser } = useProfile();
   const { refreshReports } = useReports();
-  const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('user_blocks')
+  const resource = useFocusedResource(useCallback(async () => {
+    const { data, error } = await supabase.from('user_blocks')
       .select(`blocked_id, blocked:profiles!user_blocks_blocked_id_fkey(${PUBLIC_PROFILE_FIELDS})`)
-      .eq('blocker_id', user.id)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.log('Blocked accounts load error:', error);
-      Alert.alert('Couldn’t load blocked accounts', 'Check your connection and try again.');
-    } else {
-      setRows(data ?? []);
-    }
-    setLoading(false);
-  }, [user.id]);
-
-  useEffect(() => { load(); }, [load]);
+      .eq('blocker_id', user.id).order('created_at', { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+  }, [user?.id]), { enabled: Boolean(user?.id) });
+  const { loading, error, refresh: load } = resource;
+  const rows = resource.data ?? [];
 
   const unblock = async (profileId) => {
     try {
       setBusyId(profileId);
       await unblockUser(profileId);
-      setRows((current) => current.filter(({ blocked_id }) => blocked_id !== profileId));
+      await load();
       await refreshReports();
     } catch (error) {
       Alert.alert('Couldn’t unblock account', 'Check your connection and try again.');
@@ -55,11 +44,14 @@ export default function BlockedAccountsScreen() {
     }
   };
 
-  if (loading) return <BrandedLoadingState title="Loading blocked accounts…" message="Updating your privacy settings." />;
+  if (loading && !rows.length) return <BrandedLoadingState title="Loading blocked accounts…" message="Updating your privacy settings." />;
 
   return (
     <FlatList
       data={rows}
+      refreshing={loading}
+      onRefresh={load}
+      ListHeaderComponent={error ? <TouchableOpacity accessibilityRole="button" onPress={load} style={{ padding: 16, minHeight: 44 }}><Text>Couldn’t load blocked accounts. Tap to retry.</Text></TouchableOpacity> : null}
       keyExtractor={({ blocked_id }) => blocked_id}
       contentContainerStyle={[styles.content, rows.length === 0 && styles.emptyContent]}
       renderItem={({ item }) => (
@@ -69,17 +61,17 @@ export default function BlockedAccountsScreen() {
             <Text style={styles.name}>{item.blocked?.display_name || 'Profile unavailable'}</Text>
             {item.blocked?.username ? <Text style={styles.username}>@{item.blocked.username}</Text> : null}
           </View>
-          <TouchableOpacity style={styles.unblockButton} onPress={() => unblock(item.blocked_id)} disabled={busyId === item.blocked_id}>
+          <TouchableOpacity style={styles.unblockButton} onPress={() => unblock(item.blocked_id)} disabled={Boolean(busyId)}>
             {busyId === item.blocked_id ? <LoadingButtonContent label="Unblocking…" color="#2F7D32" /> : <Text style={styles.unblockText}>Unblock</Text>}
           </TouchableOpacity>
         </View>
       )}
-      ListEmptyComponent={(
+      ListEmptyComponent={!error ? (
         <View style={styles.center}>
           <Text style={styles.emptyTitle}>No blocked accounts</Text>
           <Text style={styles.emptyText}>Accounts you block will appear here.</Text>
         </View>
-      )}
+      ) : null}
     />
   );
 }

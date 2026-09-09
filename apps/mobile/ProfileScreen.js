@@ -1,3 +1,4 @@
+import { loadReportDraft } from './lib/savedReportDraft';
 import ActionRow from './components/NavigationRow';
 import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import {
@@ -10,6 +11,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import useFocusedResource from './lib/useFocusedResource';
@@ -313,6 +315,7 @@ function SignedOutProfile({ navigation, bottomPadding }) {
 }
 
 export default function ProfileScreen({ navigation, route }) {
+  const { fontScale } = useWindowDimensions();
   const section = route?.params?.section || 'overview';
   const [activityView, setActivityView] = useState('current');
   const openScreen = (name, params) => navigation.navigate(name, params);
@@ -335,6 +338,7 @@ export default function ProfileScreen({ navigation, route }) {
   const { loading: cleanupsLoading, error: cleanupsError, refresh: refreshCleanups } = cleanups;
   const { data: ranking, loading: rankingLoading, error: rankingError, refresh: refreshRanking } = rankingResource;
   const { data: payoutStatus, loading: payoutStatusLoading, error: payoutStatusError, refresh: refreshPayoutStatus } = payout;
+  const savedDraft = useFocusedResource(useCallback(() => loadReportDraft(user.id), [user?.id]), { enabled: permanent && section === 'activity' });
   const accountBusy = signingOut || deletingAccount;
   const bottomPadding = section === 'overview' ? getBottomNavClearance(insets.bottom) + 18 : insets.bottom + 24;
 
@@ -425,9 +429,9 @@ export default function ProfileScreen({ navigation, route }) {
     >
       {section === 'overview' ? <>
       <View style={styles.identity}>
-        <View style={styles.identityTop}>
+        <View style={[styles.identityTop, fontScale > 1.5 && { flexDirection: 'column', alignItems: 'stretch', gap: 12 }]}>
           <ProfileAvatar profile={profile} size={82} />
-          <View style={styles.identityCopy}>
+          <View style={[styles.identityCopy, fontScale > 1.5 && { marginLeft: 0 }]}>
             <Text style={styles.name}>{profile?.display_name || 'Profile unavailable'}</Text>
             {profile?.username ? <Text style={styles.username}>@{profile.username}</Text> : null}
             {profile?.location ? (
@@ -506,8 +510,10 @@ export default function ProfileScreen({ navigation, route }) {
       ) : null}
 
       {section === 'activity' ? <>
-      <View style={{ flexDirection: 'row', margin: 16, borderRadius: 14, backgroundColor: '#FFFFFF', padding: 4 }}>
-        {[['current', 'Current'], ['history', 'History'], ['reports', 'Reports']].map(([value, label]) => <TouchableOpacity key={value} accessibilityRole="tab" accessibilityState={{ selected: activityView === value }} onPress={() => setActivityView(value)} style={{ flex: 1, minHeight: 48, justifyContent: 'center', alignItems: 'center', padding: 8, borderRadius: 11, backgroundColor: activityView === value ? '#EAF4EC' : '#FFFFFF' }}><Text style={{ color: activityView === value ? '#245F2A' : '#59636A', fontWeight: '700' }}>{label}</Text></TouchableOpacity>)}
+      {savedDraft.data ? <View style={styles.card}><ActionRow label="Continue draft" icon="create-outline" onPress={() => navigation.navigate('App', { screen: 'Map', params: { resumeDraft: Date.now() } })} /><Text style={{ padding: 16, color: '#687178' }}>Saved {new Date(savedDraft.data.savedAt).toLocaleString()}</Text></View> : null}
+      {savedDraft.error ? <ActionRow label="Retry loading your draft" icon="refresh-outline" onPress={savedDraft.refresh} /> : null}
+      <View style={{ flexDirection: fontScale > 1.5 ? 'column' : 'row', margin: 16, borderRadius: 14, backgroundColor: '#FFFFFF', padding: 4 }}>
+        {[['current', 'Current cleanups'], ['history', 'Cleanup history'], ['reports', 'My reports']].map(([value, label]) => <TouchableOpacity key={value} accessibilityRole="tab" accessibilityState={{ selected: activityView === value }} onPress={() => setActivityView(value)} style={{ flex: 1, minHeight: 48, justifyContent: 'center', alignItems: 'center', padding: 8, borderRadius: 11, backgroundColor: activityView === value ? '#EAF4EC' : '#FFFFFF' }}><Text style={{ color: activityView === value ? '#245F2A' : '#59636A', fontWeight: '700' }}>{label}</Text></TouchableOpacity>)}
       </View>
       {activityView !== 'reports' ? <>
       <Text style={styles.sectionTitle}>My cleanups</Text>
@@ -546,6 +552,7 @@ export default function ProfileScreen({ navigation, route }) {
             <Ionicons name="leaf-outline" size={27} color="#6F797F" />
             <Text style={styles.activeCleanupEmptyTitle}>No active cleanups</Text>
             <Text style={styles.activeCleanupEmptyText}>Claimed and awaiting-review cleanups will appear here.</Text>
+            <ActionRow label="Browse reports" icon="map-outline" onPress={() => navigation.navigate('App', { screen: 'Map' })} />
           </View>
         )}
       </View>

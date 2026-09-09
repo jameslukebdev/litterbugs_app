@@ -13,7 +13,7 @@ export async function loadPublicMemberReports({ profileId, view = 'active', curs
   if (!profileId) return historyPage();
   let query = supabase.from('reports')
     .select('id,user_id,title,severity,cleanup_state,created_at')
-    .eq('user_id', profileId).eq('is_sample', false).is('cancelled_at', null);
+    .eq('user_id', profileId).eq('is_sample', false).eq('is_published', true).is('cancelled_at', null);
   if (view === 'completed') query = query.eq('cleanup_state', 'completed');
   else query = query.in('cleanup_state', ['available', 'claimed', 'completion_submitted', 'changes_requested'])
     .is('expired_at', null).or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`);

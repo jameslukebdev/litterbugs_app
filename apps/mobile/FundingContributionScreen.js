@@ -49,7 +49,13 @@ import {
 } from './lib/pendingReportFunding';
 import BrandedLoadingState, { LoadingButtonContent } from './BrandedLoadingState';
 
-export default function FundingContributionScreen({ navigation, route }) {
+export default function FundingContributionScreen(props) {
+  const { user } = useSession();
+  return <FundingContributionController key={`${user?.id ?? "guest"}:${props.route?.params?.reportId}`} {...props} />;
+}
+function FundingContributionController({ navigation, route }) {
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const { user } = useSession();
   const [recoveryReady, setRecoveryReady] = useState(false);
   const [recoveryError, setRecoveryError] = useState(null);
@@ -83,6 +89,7 @@ export default function FundingContributionScreen({ navigation, route }) {
     const run = async () => {
     setRecoveryError(null);
     const attempt = await loadPaymentAttempt(user.id, reportId);
+    if (!mounted.current) return 'obsolete';
     attemptRef.current = attempt;
     if (!attempt) return 'none';
     setAmount(String(attempt.principalAmountCents / 100));
@@ -102,6 +109,7 @@ export default function FundingContributionScreen({ navigation, route }) {
       saveAttempt: (next) => savePaymentAttempt(user.id, reportId, next, { updating: true }),
       clearAttempt: () => clearPaymentAttempt(user.id, reportId, attempt.clientRequestId),
     });
+    if (!mounted.current) return 'obsolete';
     attemptRef.current = result.attempt;
     setConfirmationPending(result.attempt?.phase === 'submitted');
     if (result.state === 'received') {
@@ -225,7 +233,7 @@ export default function FundingContributionScreen({ navigation, route }) {
       setPaying(true);
       // Reconcile first, including after navigation or a process restart.
       const previousState = await reconcileAttempt();
-      if (['received', 'refund', 'failed'].includes(previousState)) return;
+      if (!mounted.current || ['obsolete', 'received', 'refund', 'failed'].includes(previousState)) return;
       let attempt = attemptRef.current;
       if (attempt?.phase === 'submitted') return;
       if (!attempt) {
@@ -240,6 +248,7 @@ export default function FundingContributionScreen({ navigation, route }) {
       attempt = { ...attempt, intent, phase: 'ready' };
       await savePaymentAttempt(user.id, reportId, attempt, { updating: true });
       attemptRef.current = attempt;
+      if (!mounted.current) return;
       const applePayEnabled = Platform.OS === 'ios'
         && Constants.expoConfig?.extra?.stripeApplePayEnabled === true;
       await initStripe(stripeInitializationConfiguration({
@@ -248,6 +257,7 @@ export default function FundingContributionScreen({ navigation, route }) {
         applePayEnabled,
         merchantIdentifier: Constants.expoConfig?.extra?.stripeAppleMerchantIdentifier,
       }));
+      if (!mounted.current) return;
       const { error: initError } = await initPaymentSheet(paymentSheetConfiguration({
         paymentIntentClientSecret: intent.paymentIntentClientSecret,
         platform: Platform.OS,
@@ -255,9 +265,11 @@ export default function FundingContributionScreen({ navigation, route }) {
         isDevelopment: __DEV__,
       }));
       if (initError) throw new Error(initError.message);
+      if (!mounted.current) return;
       // Persist before presenting: termination while Stripe is open must remain recoverable.
       await savePaymentAttempt(user.id, reportId, { ...attempt, phase: 'submitted' }, { updating: true });
       attemptRef.current = { ...attempt, phase: 'submitted' };
+      if (!mounted.current) return;
       const { error: paymentError } = await presentPaymentSheet();
       if (paymentError) {
         if (paymentError.code === 'Canceled') {
@@ -288,6 +300,7 @@ export default function FundingContributionScreen({ navigation, route }) {
       await refreshReports({ showRefresh: false });
     } catch (error) {
       if (attemptRef.current?.phase === 'submitted') setConfirmationPending(true);
+      if (!mounted.current) return;
       Alert.alert('Check contribution status', error.message || 'Return here to check your payment before trying again.');
     } finally {
       payLock.current = false;

@@ -19,6 +19,7 @@ vi.mock('@/components/payout-setup-action', () => ({
 }));
 
 const expiredReport: Report = {
+  is_published: true,
   cancelled_at: null,
   cleanup_state: 'available',
   created_at: '2026-07-01T12:00:00.000Z',

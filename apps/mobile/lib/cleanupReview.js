@@ -3,7 +3,7 @@ import { supabase } from './supabase';
 
 const SIGNED_PHOTO_DURATION_SECONDS = 60 * 60;
 
-const createSignedPhotoUrl = async (bucket, path) => {
+export const createSignedPhotoUrl = async (bucket, path) => {
   const { data, error } = await supabase.storage
     .from(bucket)
     .createSignedUrl(path, SIGNED_PHOTO_DURATION_SECONDS);
@@ -83,8 +83,10 @@ export async function loadCleanupReviewContext(cleanupId, userId) {
     report: reportResult.data,
     submission: submissionResult.data,
     cleaner: cleanerResult.data ?? null,
-    beforePhotoUrls: beforePhotoUrls.filter(Boolean),
-    afterPhotoUrls: afterPhotoUrls.filter(Boolean),
+    beforePhotoPaths: reportResult.data.photo_paths ?? [],
+    afterPhotoPaths: photoRecords.map(photo => photo.storage_path),
+    beforePhotoUrls: beforePhotoUrls,
+    afterPhotoUrls: afterPhotoUrls,
   };
 }
 

@@ -1,3 +1,4 @@
+import { projectMapPoints } from './mapWorkBudget';
 import { useEffect, useMemo, useState } from 'react';
 import { layoutMapLabels, mapMarkerDimensions } from './mapLabelLayout';
 import { cleanupMapTone } from './cleanupEligibility';
@@ -9,13 +10,8 @@ export default function useMapLabels({ markers, mapRef, ready, region, revision,
     let active = true;
     if (!ready || !mapRef.current) return undefined;
     // Native projection accounts for map pitch, rotation and the actual viewport.
-    Promise.all(markers.map(async (marker) => {
-      try {
-        const point = await mapRef.current.pointForCoordinate(marker.coordinate);
-        if (!Number.isFinite(point?.x) || !Number.isFinite(point?.y)) return null;
-        return { id: marker.id, ...point };
-      } catch { return null; }
-    })).then((points) => { if (active) setPositions(points.filter(Boolean)); });
+    projectMapPoints(markers, coordinate => mapRef.current.pointForCoordinate(coordinate), () => active)
+      .then(points => { if (active) setPositions(points); });
     return () => { active = false; };
   }, [markers, mapRef, ready, region, revision, size.width, size.height]);
   return useMemo(() => {

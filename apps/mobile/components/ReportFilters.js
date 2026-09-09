@@ -1,3 +1,4 @@
+import { mapLimitMessage } from '../lib/mapWorkBudget';
 import LocationSearch from './LocationSearch';
 import { useState } from 'react';
 import {
@@ -57,7 +58,7 @@ const groups = [
   ],
 ];
 export default function ReportFilters({ map = false }) {
-  const { filters, setFilters, filteredReports, loading } =
+  const { filters, setFilters, filteredReports, loading, truncated } =
     useReports();
   const [open, setOpen] = useState(false);
   const insets = useSafeAreaInsets();
@@ -96,6 +97,7 @@ export default function ReportFilters({ map = false }) {
           {count > 0 ? <View style={styles.badge}><Text style={styles.badgeText} maxFontSizeMultiplier={1.3}>{count}</Text></View> : null}
         </TouchableOpacity>
       </View>
+      {truncated ? <Text style={{ padding: 10, color: '#435047', backgroundColor: '#FFFFFF', borderRadius: 12 }}>{mapLimitMessage(truncated)}</Text> : null}
       {count > 0 ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.activeFilters} contentContainerStyle={styles.activeFilterContent}>
           {activeFilters.map(({ key, label }) => (
@@ -104,7 +106,7 @@ export default function ReportFilters({ map = false }) {
               onPress={() => choose(key, DEFAULT_REPORT_FILTERS[key])}>
               <View style={styles.activeChip}>
                 <Ionicons name="close-circle" size={16} color="#245F2A" />
-                <Text style={styles.chipText} numberOfLines={1}>{label}</Text>
+                <Text style={styles.chipText} >{label}</Text>
               </View>
             </TouchableOpacity>
           ))}

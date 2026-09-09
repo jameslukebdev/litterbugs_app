@@ -639,7 +639,7 @@ wizardFooter: {
 
 wizardArrowButton: {
   width: 52,
-  height: 52,
+  minHeight: 52,
   alignItems: 'center',
   justifyContent: 'center',
 },

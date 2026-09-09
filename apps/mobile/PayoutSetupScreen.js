@@ -1,3 +1,4 @@
+import { useSession } from './lib/session';
 import { withTimeout } from './lib/asyncTimeout';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -17,7 +18,13 @@ import BrandedLoadingState, { LoadingButtonContent } from './BrandedLoadingState
 
 const PAYOUT_ONBOARDING_RETURN_URL = 'litterbugs://stripe-onboarding-return';
 
-export default function PayoutSetupScreen({ navigation, route }) {
+export default function PayoutSetupScreen(props) {
+  const { user } = useSession();
+  return <PayoutSetupController key={`${user?.id ?? "guest"}:${props.route?.params?.workflowToken ?? "overview"}`} {...props} />;
+}
+function PayoutSetupController({ navigation, route }) {
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const insets = useSafeAreaInsets();
   const workflowToken = route?.params?.workflowToken ?? null;
   const workflowCopy = payoutWorkflowCopy(route?.params?.workflowKind);
@@ -36,6 +43,7 @@ export default function PayoutSetupScreen({ navigation, route }) {
     refreshBusy.current = true;
     try {
       const next = await withTimeout(loadPayoutStatus(), 12000, 'Payout status is taking longer than expected.');
+      if (!mounted.current) return;
       setStatus(next);
       setStatusError(false);
       if (next?.payoutsEnabled) setWaiting(false);
@@ -65,7 +73,7 @@ export default function PayoutSetupScreen({ navigation, route }) {
   }), [navigation, workflowToken]);
 
   const completePendingWorkflow = useCallback(() => {
-    if (!workflowToken || workflowCompletedRef.current) return;
+    if (!mounted.current || !workflowToken || workflowCompletedRef.current) return;
     workflowCompletedRef.current = true;
     markPayoutWorkflowReady(workflowToken);
     navigation.goBack();
@@ -85,6 +93,7 @@ export default function PayoutSetupScreen({ navigation, route }) {
       const link = status?.payoutsEnabled
         ? await createPayoutDashboardLink()
         : await createPayoutOnboardingLink();
+      if (!mounted.current) return;
       if (status?.payoutsEnabled) {
         await WebBrowser.openBrowserAsync(link.url, {
           presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
@@ -94,8 +103,10 @@ export default function PayoutSetupScreen({ navigation, route }) {
         const result = await WebBrowser.openAuthSessionAsync(link.url, PAYOUT_ONBOARDING_RETURN_URL, {
           presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
         });
+        if (!mounted.current) return;
         if (result.type === 'success') {
           const nextStatus = await waitForPayoutConnection(loadPayoutStatus);
+          if (!mounted.current) return;
           const connected = isPayoutConnectionReady(nextStatus);
           if (connected) connectionSuccessAlertRef.current = true;
           if (nextStatus) setStatus(nextStatus);

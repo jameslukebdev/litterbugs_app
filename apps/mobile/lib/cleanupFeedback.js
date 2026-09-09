@@ -15,6 +15,8 @@ export async function loadCleanupFeedbackContext(cleanupId, userId) {
     throw new Error('cleanup_feedback_invalid_state');
   }
 
+  if (!attempt.correction_due_at || Date.parse(attempt.correction_due_at) <= Date.now()) throw new Error('cleanup_feedback_expired');
+
   const [reportResult, reviewResult] = await Promise.all([
     supabase
       .from('reports')

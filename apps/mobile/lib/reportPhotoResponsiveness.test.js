@@ -50,11 +50,9 @@ describe('report photo responsiveness', () => {
     expect(remainingPhotosStart).toBeGreaterThan(firstPhotoReady);
   });
 
-  it('uses a stable disk-cache key for signed report images', () => {
+  it('uses the shared photo lifecycle for gallery and report list', () => {
     const gallery = readFileSync(new URL('../components/ReportPhotoGallery.jsx', import.meta.url), 'utf8');
-    expect(gallery).toContain('cacheKey: path || uri');
-    expect(reportListSource).toContain(
-      'source={{ uri: photoUrl, cacheKey: photoPath }}'
-    );
+    expect(gallery).toContain('<RemotePhoto');
+    expect(reportListSource).toContain('<RemotePhoto');
   });
 });

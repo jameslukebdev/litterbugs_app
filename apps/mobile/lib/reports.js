@@ -1,3 +1,4 @@
+import { MAP_REPORT_LIMIT } from './mapWorkBudget';
 import { saveMapMemory } from './discoveryMemory';
 import {
   createContext,
@@ -65,6 +66,8 @@ export function getDistanceMiles(pointA, pointB) {
 }
 
 export function ReportsProvider({ children, initialDiscovery = null }) {
+  const [truncated, setTruncated] = useState(false);
+  const requestAbort = useRef(null);
   const [allReports, setAllReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -93,6 +96,9 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
     if (showRefresh) setRefreshing(true);
     else setLoading(true);
 
+    requestAbort.current?.abort();
+    const controller = new AbortController();
+    requestAbort.current = controller;
     const sequence = ++requestSequence.current;
     try {
       const area = regionRef.current;
@@ -101,22 +107,23 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
       const rows = [];
       // Fetch a bounded area in stable pages; never silently accept the API's row cap.
       const nowIso = new Date().toISOString();
-      for (let offset = 0; ; offset += 500) {
+      for (let offset = 0; offset <= MAP_REPORT_LIMIT; offset += 500) {
         let query = supabase.from('reports').select(REPORT_SELECT)
-          .eq('is_sample', false).is('cancelled_at', null)
+          .eq('is_sample', false).eq('is_published', true).is('cancelled_at', null)
           .or(completedImpactReportFilter(nowIso))
           .gte('latitude', Math.max(-90, area.latitude - latitudeSpan))
           .lte('latitude', Math.min(90, area.latitude + latitudeSpan));
         const west = area.longitude - longitudeSpan;
         const east = area.longitude + longitudeSpan;
         if (west >= -180 && east <= 180) query = query.gte('longitude', west).lte('longitude', east);
-        const { data, error: reportsError } = await query.order('id').range(offset, offset + 499);
+        const { data, error: reportsError } = await query.order('id').range(offset, Math.min(offset + 499, MAP_REPORT_LIMIT)).abortSignal(controller.signal);
         if (sequence !== requestSequence.current) return;
         if (reportsError) throw reportsError;
         rows.push(...(data ?? []));
         if (!data || data.length < 500) break;
       }
-      setAllReports(rows);
+      setTruncated(rows.length > MAP_REPORT_LIMIT);
+      setAllReports(rows.slice(0, MAP_REPORT_LIMIT));
       setError(null);
     } catch {
       if (sequence === requestSequence.current) setError('Reports could not be loaded. Pull to try again.');
@@ -127,7 +134,7 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
 
   useEffect(() => {
     const timer = setTimeout(() => refreshReports(), 400);
-    return () => { clearTimeout(timer); requestSequence.current += 1; };
+    return () => { clearTimeout(timer); requestSequence.current += 1; requestAbort.current?.abort(); };
   }, [mapRegion, filters.radius, refreshReports]);
 
   const getReportById = useCallback(async (reportId) => {
@@ -135,7 +142,7 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
       .from('reports')
       .select(REPORT_SELECT)
       .eq('id', reportId)
-      .eq('is_sample', false)
+      .eq('is_sample', false).eq('is_published', true)
       .is('cancelled_at', null)
       .maybeSingle();
 
@@ -230,7 +237,7 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
     restoredMap: Boolean(initialDiscovery),
     searchPlace, selectSearchPlace, clearSearchPlace, selectedMapReportId, setSelectedMapReportId,
     reports,
-    filteredReports, filters, setFilters,
+    filteredReports, filters, setFilters, truncated,
     markers,
     loading,
     refreshing,
@@ -245,7 +252,7 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
     getReportPhotoUrl,
   }), [
     searchPlace, selectSearchPlace, clearSearchPlace, selectedMapReportId,
-    filteredReports, filters,
+    filteredReports, filters, truncated,
     commitMapRegion,
     error,
     getReportById,

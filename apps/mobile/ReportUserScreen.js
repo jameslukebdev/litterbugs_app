@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -33,7 +33,18 @@ export default function ReportUserScreen({ navigation, route }) {
   const [submitting, setSubmitting] = useState(false);
   const reportedUserId = route.params?.profileId;
 
+  const submitLock = useRef(false);
+  const sent = useRef(false);
+  useEffect(() => navigation.addListener('beforeRemove', event => {
+    if (sent.current || !details.trim()) return;
+    event.preventDefault();
+    Alert.alert('Discard this report?', 'Your explanation has not been submitted.', [
+      { text: 'Keep editing', style: 'cancel' },
+      { text: 'Discard', style: 'destructive', onPress: () => navigation.dispatch(event.data.action) },
+    ]);
+  }), [navigation, details]);
   const submit = async () => {
+    if (submitLock.current || sent.current) return;
     if (!reason) {
       setError('Choose a reason.');
       return;
@@ -44,6 +55,7 @@ export default function ReportUserScreen({ navigation, route }) {
     }
 
     try {
+      submitLock.current = true;
       setSubmitting(true);
       setError('');
       const { error: reportError } = await supabase
@@ -57,6 +69,7 @@ export default function ReportUserScreen({ navigation, route }) {
         });
 
       if (reportError) throw reportError;
+      sent.current = true;
       Alert.alert('Report received', 'Thank you. Your report was submitted for review.', [
         { text: 'Done', onPress: () => navigation.goBack() },
       ]);
@@ -64,6 +77,7 @@ export default function ReportUserScreen({ navigation, route }) {
       console.log('Moderation report error:', submitError);
       setError('We couldn’t submit your report. Check your connection and try again.');
     } finally {
+      submitLock.current = false;
       setSubmitting(false);
     }
   };
@@ -86,13 +100,13 @@ export default function ReportUserScreen({ navigation, route }) {
           })}
         </View>
 
-        {reason === 'other' ? (
+        {(
           <>
-            <Text style={styles.label}>Details</Text>
+            <Text style={styles.label}>What happened?{reason === 'other' ? ' (required)' : ' (optional)'}</Text>
             <TextInput value={details} onChangeText={(value) => { setDetails(value); setError(''); }} maxLength={500} multiline textAlignVertical="top" style={styles.input} placeholder="Tell us what happened." />
             <Text style={styles.counter}>{details.length}/500</Text>
           </>
-        ) : null}
+        )}
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <TouchableOpacity style={[styles.submitButton, submitting && styles.disabled]} onPress={submit} disabled={submitting}>
@@ -110,7 +124,7 @@ const styles = StyleSheet.create({
   subtitle: { marginTop: 8, color: '#6C757C', fontSize: 14, lineHeight: 20 },
   reasons: { marginTop: 22, overflow: 'hidden', borderRadius: 15, backgroundColor: '#FFFFFF' },
   reasonRow: { minHeight: 58, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#E0E3E5' },
-  reasonText: { color: '#30363B', fontSize: 16 },
+  reasonText: { flex: 1, paddingVertical: 12, color: '#30363B', fontSize: 16 },
   label: { marginTop: 22, marginBottom: 7, color: '#333A3F', fontSize: 14, fontWeight: '800' },
   input: { minHeight: 130, padding: 14, borderWidth: 1, borderColor: '#CBD1D5', borderRadius: 12, backgroundColor: '#FFFFFF', fontSize: 16 },
   counter: { marginTop: 5, color: '#7A8288', fontSize: 12, textAlign: 'right' },

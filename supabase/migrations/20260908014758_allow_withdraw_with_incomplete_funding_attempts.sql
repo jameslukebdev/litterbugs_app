@@ -91,3 +91,4 @@ grant execute on function public.withdraw_own_report(uuid) to authenticated;
 
 comment on function public.withdraw_own_report(uuid) is
   'Soft-withdraws an available owner report when no active/completed cleanup or collected contribution exists; unsuccessful cleanup and payment-attempt history is preserved.';
+;

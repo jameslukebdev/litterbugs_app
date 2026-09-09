@@ -10,7 +10,7 @@ describe('personal report collection', () => {
   it('loads all owned pages without any geographic query', async () => {
     m.calls = []; m.pages = [{ data: Array.from({length: 500}, (_, i) => ({id: i})) }, { data: [{id: 'last'}] }];
     expect(await loadAccountReports('alice')).toHaveLength(501);
-    expect(m.calls).toEqual([['user_id', 'alice'], ['is_sample', false], ['user_id', 'alice'], ['is_sample', false]]);
+    expect(m.calls).toEqual([['user_id', 'alice'], ['is_sample', false], ['is_published', true], ['user_id', 'alice'], ['is_sample', false], ['is_published', true]]);
   });
   it('propagates errors instead of pretending there are no reports', async () => {
     m.pages = [{ error: Error('offline') }];

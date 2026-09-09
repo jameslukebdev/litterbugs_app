@@ -20,6 +20,7 @@ export default async function HomePage() {
         .from('reports')
         .select('*')
         .eq('is_sample', false)
+          .eq('is_published', true)
         .or('status.is.null,status.eq.active')
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false }),

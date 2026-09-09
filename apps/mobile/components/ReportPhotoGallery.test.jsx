@@ -6,6 +6,7 @@ vi.mock('react-native', async () => {
   const Container = ({ children }) => createElement('div', null, children);
   return { View: Container, Text: Container, ScrollView: Container, ActivityIndicator: () => null, StyleSheet: { create: (value) => value } };
 });
+vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 vi.mock('expo-image', async () => {
   const { createElement } = await import('react');
   return { Image: ({ accessibilityLabel }) => createElement('span', null, accessibilityLabel) };

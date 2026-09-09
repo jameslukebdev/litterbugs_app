@@ -44,6 +44,7 @@ export async function loadPublicReportShare(reportId: string): Promise<PublicRep
     .select('*')
     .eq('id', reportId)
     .eq('is_sample', false)
+          .eq('is_published', true)
     .maybeSingle();
 
   if (reportError) throw reportError;

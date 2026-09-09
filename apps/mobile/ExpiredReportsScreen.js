@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import useFocusedResource from './lib/useFocusedResource';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { closeExpiredReport, formatUsd, loadMyExpiredReports, renewExpiredReport } from './lib/funding';
@@ -13,21 +13,10 @@ export default function ExpiredReportsScreen() {
   const { user } = useSession();
   const { refreshReports } = useReports();
   const insets = useSafeAreaInsets();
-  const [reports, setReports] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
-
-  const load = useCallback(async () => {
-    if (!user?.id) return;
-    try {
-      setReports(await loadMyExpiredReports(user.id));
-    } catch {
-      Alert.alert('Couldn’t load expired reports', 'Pull down to try again.');
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.id]);
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  const resource = useFocusedResource(useCallback(() => loadMyExpiredReports(user.id), [user?.id]), { enabled: Boolean(user?.id) });
+  const { loading, error, refresh: load } = resource;
+  const reports = resource.data ?? [];
 
   const renew = async (report) => {
     try {
@@ -70,17 +59,18 @@ export default function ExpiredReportsScreen() {
       {loading && reports.length === 0 ? (
         <BrandedLoadingState compact title="Checking expired reports…" message="Looking for reports that need your decision." />
       ) : null}
-      {!loading && reports.length === 0 ? (
+      {error ? <TouchableOpacity accessibilityRole="button" onPress={load} style={styles.closeButton}><Text>Couldn’t load reports. Tap to retry.</Text></TouchableOpacity> : null}
+      {!loading && !error && reports.length === 0 ? (
         <View style={styles.empty}><Ionicons name="checkmark-circle-outline" size={38} color="#6D777D" /><Text style={styles.emptyTitle}>Nothing needs a decision</Text></View>
       ) : reports.map((report) => (
         <View key={report.id} style={styles.card}>
           <Text style={styles.reportTitle}>{report.title || 'Litter report'}</Text>
           <Text style={styles.meta}>Cleanup reward: {formatUsd(report.funded_amount_cents)}</Text>
           <Text style={styles.meta}>Decide by {new Date(report.renewal_decision_due_at).toLocaleString()}</Text>
-          <TouchableOpacity style={styles.renewButton} onPress={() => renew(report)} disabled={busyId === report.id}>
+          <TouchableOpacity style={styles.renewButton} onPress={() => renew(report)} disabled={Boolean(busyId)}>
             {busyId === report.id ? <LoadingButtonContent label="Renewing…" /> : <Text style={styles.renewText}>Renew for 30 days</Text>}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.closeButton} onPress={() => close(report)} disabled={busyId === report.id}>
+          <TouchableOpacity style={styles.closeButton} onPress={() => close(report)} disabled={Boolean(busyId)}>
             {busyId === report.id ? <LoadingButtonContent label="Updating…" color="#A33A32" /> : <Text style={styles.closeText}>Close and refund</Text>}
           </TouchableOpacity>
         </View>

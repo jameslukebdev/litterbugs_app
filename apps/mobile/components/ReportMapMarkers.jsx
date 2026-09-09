@@ -30,13 +30,14 @@ export default function ReportMapMarkers({ markers, selectedId, tracksViewChange
               if (nearby.length > 1) onNearby(nearby.map((item) => item.id))
               else onChoose(m.report);
             }}>
-            {/* Reserve the label's bounds even when collapsed. Resizing the
+            {/* Text uses the same system fontScale as the measured bounds, avoiding
+                a second native font-metrics scale. Reserve bounds even when collapsed. Resizing the
                 annotation's host frame can reset its MapKit position in Fabric. */}
             <View style={[styles.compactMarkerHit, markerHostDimensions(m.width || 44, m.height || 44)]}>
               {m.label && (m.labelled || selected) ? (
                 <View style={[styles.compactMarker, selected && styles.compactMarkerSelected, { minHeight: m.height || 24, width: m.width || 34 }]}>
                   {statusMarker ? <Ionicons name={icon} size={STATUS_MARKER_ICON_SIZE} color={selected ? '#FFFFFF' : '#285D38'} /> : null}
-                  <Text numberOfLines={1} style={[styles.compactMarkerText, selected && { color: '#FFFFFF' }]}>{m.label}</Text>
+                  <Text allowFontScaling={false} numberOfLines={1} style={[styles.compactMarkerText, { fontSize: m.fontSize || 13 }, selected && { color: '#FFFFFF' }]}>{m.label}</Text>
                 </View>
               ) : statusMarker || m.labelled || selected ? (
                 <View style={[styles.compactStatusMarker, selected && styles.compactMarkerSelected]}>

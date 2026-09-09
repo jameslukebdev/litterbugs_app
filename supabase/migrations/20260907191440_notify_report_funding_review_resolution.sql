@@ -147,3 +147,4 @@ create trigger reports_notify_funding_resolution
 after update of funding_eligibility on public.reports
 for each row
 execute function private.notify_report_funding_resolution();
+;

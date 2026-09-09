@@ -39,3 +39,4 @@ revoke all on function private.notify_report_funding_resolution()
 
 comment on function private.notify_report_funding_resolution() is
   'Creates one report-owner notification when automated or administrator review reaches a final funding decision.';
+;

@@ -2,6 +2,7 @@ import { useCallback, useLayoutEffect, useState } from 'react';
 import {
   Alert,
   ScrollView,
+  FlatList,
   RefreshControl,
   StyleSheet,
   Text,
@@ -117,7 +118,7 @@ export default function PublicProfileScreen({ navigation, route }) {
   </View>;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={member.loading || activity.loading} onRefresh={() => { member.refresh(); activity.refresh(); }} />}>
+    <FlatList data={activity.data} keyExtractor={report => report.id} renderItem={({ item }) => <ProfileReportList reports={[item]} onReportPress={report => navigation.navigate('App', { screen: 'Map', params: { reportId: report.id } })} />} style={styles.container} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={member.loading || activity.loading} onRefresh={() => { member.refresh(); activity.refresh(); }} />} ListHeaderComponent={<>
       {member.error ? <Text style={styles.stateText}>Couldn’t refresh this profile. Pull down to try again.</Text> : null}
       <View style={styles.identity}>
         <ProfileAvatar profile={profile} size={104} />
@@ -145,18 +146,14 @@ export default function PublicProfileScreen({ navigation, route }) {
       <View style={styles.tabs}>
         {['active', 'completed'].map(value => <TouchableOpacity key={value} accessibilityRole="tab" accessibilityState={{ selected: view === value }} onPress={() => setView(value)} style={[styles.tab, view === value && styles.selectedTab]}><Text style={styles.tabText}>{value === 'active' ? 'Active reports' : 'Completed reports'}</Text></TouchableOpacity>)}
       </View>
-      <View style={styles.card}>
-        {activity.error ? <View style={styles.notice}><Text>Couldn’t refresh these reports.</Text><TouchableOpacity accessibilityRole="button" style={styles.retry} onPress={activity.refresh}><Text style={styles.tabText}>Retry reports</Text></TouchableOpacity></View> : null}
-        {activity.loading && !activity.data.length ? <BrandedLoadingState compact title="Loading reports…" /> : activity.data.length || !activity.error ? <ProfileReportList
-          reports={activity.data}
-          emptyTitle={view === 'completed' ? 'No completed reports' : 'No active reports'}
-          emptyText={view === 'completed' ? 'Completed cleanups reported by this member will appear here.' : 'This member’s available and in-progress reports will appear here.'}
-          onReportPress={report => navigation.navigate('App', { screen: 'Map', params: { reportId: report.id } })}
-        /> : null}
+      {activity.error ? <TouchableOpacity accessibilityRole="button" style={styles.retry} onPress={activity.refresh}><Text>Couldn’t refresh these reports. Retry.</Text></TouchableOpacity> : null}
+      </>}
+      ListEmptyComponent={activity.loading ? <BrandedLoadingState compact title="Loading reports…" /> : !activity.error ? <ProfileReportList reports={[]} emptyTitle={view === 'completed' ? 'No completed reports' : 'No active reports'} /> : null}
+      ListFooterComponent={<>
         {activity.moreError ? <Text style={styles.notice}>Couldn’t load older reports. Your current list is still available.</Text> : null}
         {activity.nextCursor ? <TouchableOpacity disabled={activity.loading || activity.loadingMore} accessibilityRole="button" style={styles.retry} onPress={activity.loadMore}><Text style={styles.tabText}>{activity.loadingMore ? 'Loading older reports…' : activity.moreError ? 'Retry older reports' : 'Load older reports'}</Text></TouchableOpacity> : null}
-      </View>
-    </ScrollView>
+      </>}
+    />
   );
 }
 

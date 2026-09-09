@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -50,6 +51,7 @@ export default function ResetPasswordScreen({ onComplete }) {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingVertical: 24 }} keyboardShouldPersistTaps="handled">
       <View style={styles.card}>
         <Ionicons name="key-outline" size={38} color="#2F7D32" />
         <Text style={styles.title}>Choose a new password</Text>
@@ -98,6 +100,7 @@ export default function ResetPasswordScreen({ onComplete }) {
           {loading ? <LoadingButtonContent label="Saving password…" /> : <Text style={styles.buttonText}>Save password</Text>}
         </TouchableOpacity>
       </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }

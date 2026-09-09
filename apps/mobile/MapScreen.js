@@ -1,3 +1,4 @@
+import { publishReportDraft, clearReportSubmission } from './lib/reportSubmissionStore';
 import ReportDetailsSheet from './components/ReportDetailsSheet';
 import { canAdvanceReportStep } from './lib/reportWizard';
 import styles from './styles/MapScreen.styles';
@@ -169,6 +170,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const [reportPhotoUrls, setReportPhotoUrls] = useState([]);
   const [editingReportId, setEditingReportId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const submissionLock = useRef(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStage, setSaveStage] = useState('Saving report…');
   const [photoPreparationStatus, setPhotoPreparationStatus] = useState(null);
@@ -674,7 +676,7 @@ const reportStepPanResponder = PanResponder.create({
 
 // The user confirms a map pin; device GPS is optional and is never the
 // authority for where litter was observed.
-const beginReportAtCoordinate = (coord, savedForm = null) => {
+const beginReportAtCoordinate = (coord, savedForm = null, savedStep = 0, missingPhotoCount = 0) => {
   if (!navigation.isFocused()) return;
   const selectedCoordinate = mapCenterCoordinate(coord);
   if (!selectedCoordinate) {
@@ -688,8 +690,18 @@ const beginReportAtCoordinate = (coord, savedForm = null) => {
     selectedNotes: [], notes: '', startingFundingChoice: 'none', startingFundingOther: '',
   });
   resetReportWizard();
+  setReportStep(savedStep);
+  if (missingPhotoCount) Alert.alert('Add your photo again', 'A saved photo is no longer on this device. Your other answers have been kept.');
   setFormOpen(true);
 };
+
+useEffect(() => {
+  if (!route?.params?.resumeDraft || !navigation.isFocused()) return;
+  navigation.setParams({ resumeDraft: undefined });
+  loadReportDraft(currentUserId).then(saved => {
+    if (saved && navigation.isFocused()) beginReportAtCoordinate(saved.coordinate, saved.form, saved.step, saved.missingPhotoCount);
+  }).catch(() => Alert.alert('Draft unavailable', 'Please try opening your draft again.'));
+}, [route?.params?.resumeDraft, currentUserId, navigation]);
 
 const openReportLocationPicker = async (skipDraft = false) => {
   editingDraftLocationRef.current = false;
@@ -700,7 +712,7 @@ const openReportLocationPicker = async (skipDraft = false) => {
         Alert.alert('Resume your report?', 'Your details and photos are saved on this device. Your chosen report location is saved with your draft.', [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Start new', style: 'destructive', onPress: async () => { await clearReportDraft(currentUserId); openReportLocationPicker(true); } },
-          { text: 'Resume draft', onPress: () => beginReportAtCoordinate(saved.coordinate, saved.form) },
+          { text: 'Resume draft', onPress: () => beginReportAtCoordinate(saved.coordinate, saved.form, saved.step, saved.missingPhotoCount) },
         ]);
         return;
       }
@@ -906,11 +918,7 @@ const openPayoutSetupForWorkflow = (action) => {
           }
         }
       } else {
-        ({ data, error } = await supabase
-          .from('reports')
-          .insert(createPayload)
-          .select()
-          .single());
+        data = await publishReportDraft({ userId, payload: createPayload, form, coordinate: draftCoord, upload: uploadReportPhotos, onProgress: setSaveStage });
       }
   
       if (error) {
@@ -944,56 +952,11 @@ const openPayoutSetupForWorkflow = (action) => {
         return;
       }
   
-      // Edited report replacements are handled with the report update above.
-      let photoPaths = [];
-      if (!isEditing && form.photos?.length > 0) {
-        try {
-          photoPaths = await uploadReportPhotos(
-            form.photos,
-            data.id,
-            userId,
-            setSaveStage,
-          );
-        } catch (photoError) {
-          const { error: rollbackError } = await supabase
-            .from('reports')
-            .delete()
-            .eq('id', data.id)
-            .eq('user_id', userId);
-          if (rollbackError) console.log('Empty report rollback failed:', rollbackError);
-          throw photoError;
-        }
+      if (!isEditing) {
+        if (geminiReviewEnabled) refreshReportAfterFundingReview(data.id, 'Report photo review deferred:');
+        await clearReportDraft(currentUserId).catch(error => console.log('Published draft cleanup deferred:', error));
+        await clearReportSubmission(currentUserId).catch(error => console.log('Published submission cleanup deferred:', error));
       }
-  
-      if (photoPaths.length > 0) {
-        setSaveStage('Finalizing your report…');
-        const { error: photoUpdateError } = await supabase
-          .from('reports')
-          .update({ photo_paths: photoPaths })
-          .eq('id', data.id)
-          .eq('user_id', userId);
-
-        if (photoUpdateError) {
-          await supabase.storage.from('report_photos').remove(photoPaths);
-          const { error: rollbackError } = await supabase
-            .from('reports')
-            .delete()
-            .eq('id', data.id)
-            .eq('user_id', userId);
-          if (rollbackError) console.log('Report photo rollback failed:', rollbackError);
-          throw photoUpdateError;
-        }
-  
-        data.photo_paths = photoPaths;
-        if (geminiReviewEnabled) {
-          refreshReportAfterFundingReview(
-            data.id,
-            'Report funding photo review deferred:',
-          );
-        }
-      }
-  
-      if (!isEditing) await clearReportDraft(currentUserId).catch(() => {});
       upsertReport({ ...data, reporter: data.reporter || currentProfile });
       if (isEditing) await refreshReports({ showRefresh: false });
       else refreshProfile().catch((profileError) => {
@@ -1025,15 +988,15 @@ const openPayoutSetupForWorkflow = (action) => {
     } catch (e) {
       console.error('Unexpected save error:', e);
       Alert.alert(
-        'Couldn’t save report',
-        e?.message || 'Something went wrong saving your report.'
+        'Couldn’t finish saving report',
+        isEditing ? e?.message || 'Please try again.' : `${e?.message || 'The upload was interrupted.'} Your answers remain here. Try submitting again to continue.`
       );
     }
   };
   
 // Final submit from Review screen
 const submitReport = async () => {
-  if (isSaving) return;
+  if (isSaving || submissionLock.current) return;
 
   if (!hasAttachedReportPhoto()) {
     Alert.alert(
@@ -1066,12 +1029,14 @@ const submitReport = async () => {
     return;
   }
 
+  submissionLock.current = true;
   setIsSaving(true);
   setSaveStage('Saving report details…');
 
   try {
     await saveReport();
   } finally {
+    submissionLock.current = false;
     setIsSaving(false);
     setSaveStage('Saving report…');
   }
@@ -2230,6 +2195,7 @@ const revealBottomReportField = (event) => {
           pointerEvents={reportPlacementActive ? 'auto' : 'none'}
           style={[
             styles.reportPlacementCloseWrap,
+            fontScale > 1.5 && { bottom: 90 * fontScale },
             {
               opacity: reportControlTransition,
               transform: [
@@ -2274,7 +2240,7 @@ const revealBottomReportField = (event) => {
           }}
         >
           <TouchableOpacity
-            style={[styles.reportLitterButton, { width: reportPlacementActive ? Math.min(screenWidth - 100, 194 + 120 * (fontScale - 1)) : Math.max(152, Math.min(screenWidth - 148, 44 + 108 * fontScale)) }]}
+            style={[styles.reportLitterButton, { width: fontScale > 1.5 ? screenWidth - 32 : reportPlacementActive ? Math.min(screenWidth - 100, 194 + 120 * (fontScale - 1)) : Math.max(152, Math.min(screenWidth - 148, 44 + 108 * fontScale)), height: fontScale > 1.5 ? undefined : BOTTOM_NAV_METRICS.mapControlSize, minHeight: 44, paddingVertical: fontScale > 1.5 ? 12 : 0 }]}
             onPress={reportPlacementActive ? confirmReportLocation : openReportLocationPicker}
             disabled={showInitialMapLoading || formOpen || detailsOpen || isSaving}
             activeOpacity={0.82}
@@ -2287,47 +2253,8 @@ const revealBottomReportField = (event) => {
               disabled: showInitialMapLoading || formOpen || detailsOpen || isSaving,
             }}
           >
-              <View style={styles.reportLitterButtonContentFrame}>
-                <Animated.View
-                  style={[
-                    styles.reportLitterButtonContent,
-                    {
-                      opacity: reportControlTransition.interpolate({
-                        inputRange: [0, 0.42],
-                        outputRange: [1, 0],
-                        extrapolate: 'clamp',
-                      }),
-                      transform: [{ translateY: reportControlTransition.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0, -5],
-                      }) }],
-                    },
-                  ]}
-                >
-                  <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />
-                  <Text style={styles.reportLitterButtonText}>Report Litter</Text>
-                </Animated.View>
-                <Animated.View
-                  style={[
-                    styles.reportLitterButtonContent,
-                    styles.reportLitterButtonContentOverlay,
-                    {
-                      opacity: reportControlTransition.interpolate({
-                        inputRange: [0.58, 1],
-                        outputRange: [0, 1],
-                        extrapolate: 'clamp',
-                      }),
-                      transform: [{ translateY: reportControlTransition.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [5, 0],
-                      }) }],
-                    },
-                  ]}
-                >
-                  <Ionicons name="location-outline" size={20} color="#FFFFFF" />
-                  <Text style={styles.reportLitterButtonText}>Use This Location</Text>
-                </Animated.View>
-              </View>
+              <Ionicons name={reportPlacementActive ? 'location-outline' : 'add-circle-outline'} size={20} color="#FFFFFF" />
+              <Text style={[styles.reportLitterButtonText, { flexShrink: 1, textAlign: 'center' }]}>{reportPlacementActive ? 'Use This Location' : 'Report Litter'}</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -2337,7 +2264,7 @@ const revealBottomReportField = (event) => {
         style={[
           styles.centerButton,
           {
-            bottom: mapControlsBottom + (previewReport && !reportPlacementActive ? previewHeight + 12 : 0) + (reportPlacementActive ? 58 : 0),
+            bottom: mapControlsBottom + (previewReport && !reportPlacementActive ? previewHeight + 12 : 0) + (fontScale > 1.5 ? 90 * fontScale : reportPlacementActive ? 58 : 0),
           },
         ]}
         onPress={() => { clearSearchPlace(); centerOnUser(); }}
@@ -2357,7 +2284,7 @@ const revealBottomReportField = (event) => {
         style={[
           styles.mapTypeButton,
           {
-            bottom: mapControlsBottom + (previewReport && !reportPlacementActive ? previewHeight + 12 : 0) + (reportPlacementActive ? 58 : 0),
+            bottom: mapControlsBottom + (previewReport && !reportPlacementActive ? previewHeight + 12 : 0) + (fontScale > 1.5 ? 90 * fontScale : reportPlacementActive ? 58 : 0),
           },
         ]}
         onPress={toggleMapType}
@@ -2566,7 +2493,7 @@ const revealBottomReportField = (event) => {
 
           {/* RIGHT */}
           <TouchableOpacity
-            style={styles.wizardArrowButton}
+            style={[styles.wizardArrowButton, { width: 'auto', flex: 1, padding: 8 }]}
             onPress={goToNextReportStep}
             disabled={
               reportStep ===
@@ -2580,21 +2507,7 @@ const revealBottomReportField = (event) => {
             accessibilityRole="button"
             accessibilityLabel="Next report step"
           >
-            <Ionicons
-              name="arrow-forward-circle"
-              size={39}
-              color={
-                reportStep ===
-                  REPORT_STEPS.length - 1 ||
-                !canAdvanceFromStep(
-                  reportStep
-                ) ||
-                isTransitioning ||
-                isSaving
-                  ? '#D1D5DB'
-                  : '#2F7D32'
-              }
-            />
+            <Text style={{ color: canAdvanceFromStep(reportStep) && !isSaving ? '#2F7D32' : '#687178', fontWeight: '700', textAlign: 'center' }}>{reportStep === 0 ? 'Next: Details' : reportStep === 1 ? 'Next: Review' : 'Review'}</Text>
           </TouchableOpacity>
 
           </View>

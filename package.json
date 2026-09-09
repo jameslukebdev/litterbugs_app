@@ -21,7 +21,7 @@
     "mobile:build:ios:production": "cd apps/mobile && npx eas-cli build --platform ios --profile production",
     "auth-bridge:check": "wrangler deploy --dry-run --config services/auth-bridge/wrangler.jsonc",
     "gemini-relay:test": "node --test services/gemini-relay/server.test.mjs",
-    "supabase:functions:check": "npx --yes deno@2.5.4 check --config supabase/functions/deno.json --lock supabase/functions/deno.lock --frozen supabase/functions/delete-account/index.ts supabase/functions/cleanup-report-photos/index.ts supabase/functions/send-cleanup-notifications/index.ts supabase/functions/create-cleanup-contribution/index.ts supabase/functions/create-cleaner-onboarding-link/index.ts supabase/functions/stripe-onboarding-redirect/index.ts supabase/functions/stripe-webhook/index.ts supabase/functions/admin-cleanup-case/index.ts supabase/functions/run-financial-maintenance/index.ts",
+    "supabase:functions:check": "npx --yes deno@2.5.4 check --config supabase/functions/deno.json --lock supabase/functions/deno.lock --frozen supabase/functions/delete-account/index.ts supabase/functions/cleanup-report-photos/index.ts supabase/functions/send-cleanup-notifications/index.ts supabase/functions/create-cleanup-contribution/index.ts supabase/functions/create-cleaner-onboarding-link/index.ts supabase/functions/stripe-onboarding-redirect/index.ts supabase/functions/stripe-webhook/index.ts supabase/functions/admin-cleanup-case/index.ts supabase/functions/run-financial-maintenance/index.ts supabase/functions/check-contribution-status/index.ts",
     "supabase:functions:test": "npx --yes deno@2.5.4 test --allow-env --config supabase/functions/deno.json --lock supabase/functions/deno.lock --frozen supabase/functions/_shared/funded-cleanup.test.ts",
     "web:dev": "npm run dev --workspace @litterbugs/web",
     "web:build": "npm run build --workspace @litterbugs/web",
@@ -31,9 +31,12 @@
     "web:boundaries": "node scripts/check-web-boundaries.mjs",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "check": "npm run typecheck && npm test && npm run web:lint && npm run web:build && npm run web:boundaries && npm run supabase:functions:check && npm run supabase:functions:test && npm run gemini-relay:test && npm run auth-bridge:check"
+    "check": "npm run typecheck && npm test && npm run web:lint && npm run web:build && npm run web:boundaries && npm run supabase:functions:check && npm run supabase:functions:test && npm run gemini-relay:test && npm run auth-bridge:check",
+    "mobile:check-source": "node scripts/check-mobile-source.mjs",
+    "mobile:test:native": "python3 scripts/run-mobile-native-regression.py"
   },
   "devDependencies": {
+    "eslint": "9.39.2",
     "patch-package": "8.0.1",
     "wrangler": "4.125.0"
   }

@@ -1,4 +1,7 @@
-import { useEffect, useState } from 'react';
+import RemotePhoto from './components/RemotePhoto';
+import { createSignedPhotoUrl } from './lib/cleanupReview';
+import { useCallback, useEffect, useState } from 'react';
+import useFocusedResource from './lib/useFocusedResource';
 import {
   ActivityIndicator,
   Alert,
@@ -60,68 +63,15 @@ function LoadingState() {
   return <BrandedLoadingState title="Loading cleanup evidence…" message="Preparing the before-and-after photos for review." />;
 }
 
-function ReviewPhoto({ title, url, index, count, width }) {
-  const [loading, setLoading] = useState(true);
-  const [failed, setFailed] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
-
-  return (
-    <View style={[styles.photoViewer, { width }]}>
-      {!failed ? (
-        <ExpoImage
-          key={`${url}-${retryCount}`}
-          source={url}
-          contentFit="cover"
-          cachePolicy="memory-disk"
-          transition={180}
-          style={styles.photo}
-          onLoadStart={() => {
-            setLoading(true);
-            setFailed(false);
-          }}
-          onLoad={() => setLoading(false)}
-          onError={() => {
-            setLoading(false);
-            setFailed(true);
-          }}
-          accessibilityLabel={`${title} photo ${index + 1}`}
-        />
-      ) : null}
-
-      {loading ? (
-        <View style={styles.photoOverlay}>
-          <ActivityIndicator color="#2F7D32" />
-          <Text style={styles.photoStatusText}>Loading photo…</Text>
-        </View>
-      ) : null}
-
-      {failed ? (
-        <View style={styles.photoOverlay}>
-          <Ionicons name="image-outline" size={32} color="#7A848A" />
-          <Text style={styles.photoStatusText}>Photo couldn’t load.</Text>
-          <TouchableOpacity
-            style={styles.photoRetryButton}
-            onPress={() => {
-              setFailed(false);
-              setLoading(true);
-              setRetryCount((current) => current + 1);
-            }}
-          >
-            <Text style={styles.photoRetryText}>Try again</Text>
-          </TouchableOpacity>
-        </View>
-      ) : null}
-
-      {count > 1 ? (
-        <View style={styles.photoCountBadge}>
-          <Text style={styles.photoCountText}>{index + 1} / {count}</Text>
-        </View>
-      ) : null}
-    </View>
-  );
+function ReviewPhoto({ title, url, path, bucket, index, count, width }) {
+  const getUrl = useCallback(path => createSignedPhotoUrl(bucket, path), [bucket]);
+  return <View style={[styles.photoViewer, { width }]}>
+    <RemotePhoto path={path} uri={url} getUrl={getUrl} label={`${title} photo ${index + 1}`} style={styles.photo} />
+    {count > 1 ? <View style={styles.photoCountBadge}><Text style={styles.photoCountText}>{index + 1} / {count}</Text></View> : null}
+  </View>;
 }
 
-function PhotoSection({ title, urls, emptyText, width }) {
+function PhotoSection({ title, urls, paths = [], bucket, emptyText, width }) {
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -137,6 +87,8 @@ function PhotoSection({ title, urls, emptyText, width }) {
               key={`${title}-${index}`}
               title={title}
               url={url}
+              path={paths[index]}
+              bucket={bucket}
               index={index}
               count={urls.length}
               width={width}
@@ -160,40 +112,18 @@ export default function CleanupReviewScreen({ navigation, route }) {
   const { refreshReports } = useReports();
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
-  const [context, setContext] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(null);
   const [mode, setMode] = useState('review');
   const [selectedReasons, setSelectedReasons] = useState([]);
   const [note, setNote] = useState('');
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    let active = true;
+  const resource = useFocusedResource(useCallback(() => loadCleanupReviewContext(cleanupId, userId), [cleanupId, userId]), { enabled: Boolean(cleanupId && userId) });
+  const { data: context, loading, error: contextError, refresh: retryContext } = resource;
+  const loadError = contextError ? reviewErrorMessage(contextError) : null;
 
-    if (!cleanupId || !userId) {
-      setLoadError('This cleanup review could not be opened.');
-      setLoading(false);
-      return undefined;
-    }
 
-    loadCleanupReviewContext(cleanupId, userId)
-      .then((nextContext) => {
-        if (active) setContext(nextContext);
-      })
-      .catch((error) => {
-        console.log('Cleanup review context error:', error);
-        if (active) setLoadError(reviewErrorMessage(error));
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [cleanupId, userId]);
+  useEffect(() => { setMode('review'); setSelectedReasons([]); setNote(''); setErrors({}); }, [cleanupId, userId]);
 
   const viewReport = () => {
     navigation.navigate('App', {
@@ -301,8 +231,8 @@ export default function CleanupReviewScreen({ navigation, route }) {
           onPress: async () => {
             try {
               setSubmitting(true);
-              const nextAttempt = await disputePaidCleanup(context.attempt.id, reason);
-              setContext((current) => ({ ...current, attempt: nextAttempt }));
+              await disputePaidCleanup(context.attempt.id, reason);
+              await retryContext();
               setMode('review');
               Alert.alert('Dispute submitted', 'A Litterbugs team member will review it. The reward remains paused.');
             } catch (error) {
@@ -324,6 +254,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
         <Ionicons name="alert-circle-outline" size={44} color="#A33A32" />
         <Text style={styles.centerTitle}>Review unavailable</Text>
         <Text style={styles.centerText}>{loadError}</Text>
+        <TouchableOpacity accessibilityRole="button" style={styles.secondaryButton} onPress={retryContext}><Text style={styles.secondaryButtonText}>Retry</Text></TouchableOpacity>
         <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.goBack()}>
           <Text style={styles.secondaryButtonText}>Go back</Text>
         </TouchableOpacity>
@@ -384,6 +315,8 @@ export default function CleanupReviewScreen({ navigation, route }) {
         <PhotoSection
           title="Before"
           urls={context.beforePhotoUrls}
+          paths={context.beforePhotoPaths}
+          bucket="report_photos"
           emptyText="No original photo was provided."
           width={photoViewerWidth}
         />
@@ -408,6 +341,8 @@ export default function CleanupReviewScreen({ navigation, route }) {
         <PhotoSection
           title="After"
           urls={context.afterPhotoUrls}
+          paths={context.afterPhotoPaths}
+          bucket="cleanup_photos"
           emptyText="The submitted after photos are unavailable."
           width={photoViewerWidth}
         />

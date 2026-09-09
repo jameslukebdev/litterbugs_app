@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canAdvanceReportStep } from './reportWizard';
+import { canAdvanceReportStep, resumableReportStep } from './reportWizard';
 const form = { photos: [], selectedTypes: [], types: '', severity: '' };
 describe('three-stage report flow', () => {
   it('requires photo evidence before details while title stays optional', () => {
@@ -12,4 +12,12 @@ describe('three-stage report flow', () => {
     expect(canAdvanceReportStep(1, { form: { ...form, severity: 'Low' } })).toBe(false);
     expect(canAdvanceReportStep(1, { form: { ...form, types: 'Foam', severity: 'Low' } })).toBe(true);
   });
+});
+
+it('resumes the saved stage only when its required evidence still exists', () => {
+  const draft = { step: 2, form: { photos: ['photo'], selectedTypes: ['Plastic'], severity: 'Low' } };
+  expect(resumableReportStep(draft)).toBe(2);
+  expect(resumableReportStep({ ...draft, form: { ...draft.form, photos: [] } })).toBe(0);
+  expect(resumableReportStep({ ...draft, form: { ...draft.form, severity: '' } })).toBe(1);
+  expect(resumableReportStep({ ...draft, step: 1 })).toBe(1);
 });

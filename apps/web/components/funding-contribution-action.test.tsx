@@ -22,6 +22,7 @@ vi.mock('@stripe/react-stripe-js', () => ({
 }));
 
 const report: Report = {
+  is_published: true,
   cancelled_at: null,
   cleanup_state: 'available',
   created_at: '2026-08-28T12:00:00.000Z',

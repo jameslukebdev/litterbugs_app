@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import { searchPlaces, resolvePlace } from '../lib/placeSearch';
 import { useReports } from '../lib/reports';
 
 export default function LocationSearch({ map }) {
+  const { fontScale } = useWindowDimensions();
   const { searchPlace, selectSearchPlace, clearSearchPlace } = useReports();
   const [open, setOpen] = useState(false), [text, setText] = useState('');
   const [results, setResults] = useState([]), [busy, setBusy] = useState(false), [error, setError] = useState(null);
@@ -80,7 +81,7 @@ export default function LocationSearch({ map }) {
   return <>
     <TouchableOpacity style={[styles.trigger, map && { backgroundColor: 'transparent' }]} accessibilityRole="button" accessibilityLabel={searchPlace ? `Search location: ${searchPlace.label}` : 'Search city or address'} onPress={() => { setText(''); setOpen(true); }}>
       <Ionicons name="search" size={18} color="#667078" />
-      <Text numberOfLines={1} style={[styles.triggerText, !searchPlace && { color: '#68736C' }]}>{searchPlace?.label || 'City or address'}</Text>
+      <Text numberOfLines={1} style={[styles.triggerText, !searchPlace && { color: '#68736C' }]}>{searchPlace?.label || (fontScale > 1.5 ? 'Search' : 'City or address')}</Text>
     </TouchableOpacity>
     {searchPlace ? <TouchableOpacity style={styles.clear} onPress={clearSearchPlace} accessibilityRole="button" accessibilityLabel="Clear location boundary"><Ionicons name="close-circle" size={21} color="#68736C" /></TouchableOpacity> : null}
     <Modal visible={open} animationType="slide" onRequestClose={close}>

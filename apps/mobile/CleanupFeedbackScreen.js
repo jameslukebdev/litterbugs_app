@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import useFocusedResource from './lib/useFocusedResource';
 import {
   ScrollView,
   StyleSheet,
@@ -25,6 +26,7 @@ const formatDateTime = (value) => {
 
 const feedbackErrorMessage = (error) => {
   const message = error?.message ?? '';
+  if (/cleanup_feedback_expired/i.test(message)) return 'The time to update this cleanup has ended. View the report for its current status.';
   if (/cleanup_feedback_not_allowed/i.test(message)) {
     return 'Only the assigned cleaner can review this feedback.';
   }
@@ -39,35 +41,11 @@ export default function CleanupFeedbackScreen({ navigation, route }) {
   const { user } = useSession();
   const userId = permanentUserId(user);
   const insets = useSafeAreaInsets();
-  const [context, setContext] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(null);
 
-  useEffect(() => {
-    let active = true;
+  const resource = useFocusedResource(useCallback(() => loadCleanupFeedbackContext(cleanupId, userId), [cleanupId, userId]), { enabled: Boolean(cleanupId && userId) });
+  const { data: context, loading, error: contextError, refresh: retryContext } = resource;
+  const loadError = contextError ? feedbackErrorMessage(contextError) : null;
 
-    if (!cleanupId || !userId) {
-      setLoadError('This cleanup feedback could not be opened.');
-      setLoading(false);
-      return undefined;
-    }
-
-    loadCleanupFeedbackContext(cleanupId, userId)
-      .then((nextContext) => {
-        if (active) setContext(nextContext);
-      })
-      .catch((error) => {
-        console.log('Cleanup feedback context error:', error);
-        if (active) setLoadError(feedbackErrorMessage(error));
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [cleanupId, userId]);
 
   if (loading) {
     return <BrandedLoadingState title="Loading feedback…" message="Gathering the requested cleanup changes." />;
@@ -79,6 +57,7 @@ export default function CleanupFeedbackScreen({ navigation, route }) {
         <Ionicons name="alert-circle-outline" size={44} color="#A33A32" />
         <Text style={styles.centerTitle}>Feedback unavailable</Text>
         <Text style={styles.centerText}>{loadError}</Text>
+        <TouchableOpacity accessibilityRole="button" style={styles.secondaryButton} onPress={retryContext}><Text style={styles.secondaryButtonText}>Retry</Text></TouchableOpacity>
         <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.goBack()}>
           <Text style={styles.secondaryButtonText}>Go back</Text>
         </TouchableOpacity>
@@ -86,10 +65,10 @@ export default function CleanupFeedbackScreen({ navigation, route }) {
     );
   }
 
-  const updateSubmission = () => navigation.replace('CleanupSubmission', {
-    cleanupId: context.attempt.id,
-    reportId: context.attempt.report_id,
-  });
+  const updateSubmission = () => {
+    if (Date.parse(context.attempt.correction_due_at) <= Date.now()) return retryContext();
+    navigation.replace('CleanupSubmission', { cleanupId: context.attempt.id, reportId: context.attempt.report_id });
+  };
   const viewReport = () => navigation.navigate('App', {
     screen: 'Map',
     params: { reportId: context.attempt.report_id },

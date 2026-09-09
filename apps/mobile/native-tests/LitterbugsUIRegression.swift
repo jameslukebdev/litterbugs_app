@@ -94,7 +94,7 @@ final class LitterbugsUIRegression: XCTestCase {
     func testMyReportsRemainIndependentOfMap() throws {
         tab("profile").tap()
         guard app.buttons["My activity"].waitForExistence(timeout: 8) else { throw XCTSkip("Requires an already signed-in QA account.") }
-        app.buttons["My activity"].tap(); element("Reports").tap()
+        app.buttons["My activity"].tap(); element("My reports").tap()
         let rows = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Open '"))
         if !rows.firstMatch.waitForExistence(timeout: 2) { XCTAssertTrue(element("No active reports").waitForExistence(timeout: 10)) }
         let before = rows.allElementsBoundByIndex.map { $0.label }.sorted()
@@ -102,7 +102,7 @@ final class LitterbugsUIRegression: XCTestCase {
         app.navigationBars.buttons.firstMatch.tap()
         tab("map").tap()
         for _ in 0..<4 { app.maps.firstMatch.swipeLeft(velocity: .slow) }
-        tab("profile").tap(); app.buttons["My activity"].tap(); element("Reports").tap()
+        tab("profile").tap(); app.buttons["My activity"].tap(); element("My reports").tap()
         if !rows.firstMatch.waitForExistence(timeout: 2) { XCTAssertTrue(element("No active reports").waitForExistence(timeout: 10)) }
         XCTAssertEqual(rows.allElementsBoundByIndex.map { $0.label }.sorted(), before)
         shot("personal-reports-after-pan")
@@ -170,6 +170,17 @@ final class LitterbugsUIRegression: XCTestCase {
         XCTAssertTrue(edit.waitForExistence(timeout: 5))
         tab("map").tap()
     }
+    func testLargeTextMapControlsWithoutLocation() throws {
+        let report = app.buttons["Report litter"]
+        waitForHittable(report)
+        XCTAssertGreaterThan(report.frame.height, 75, "Run this case with accessibility-extra-extra-extra-large text")
+        XCTAssertGreaterThan(report.frame.width, app.frame.width * 0.8)
+        XCTAssertTrue(app.frame.contains(report.frame))
+        XCTAssertTrue(app.buttons["Center map on your location"].isHittable)
+        XCTAssertFalse(report.frame.intersects(app.buttons["Center map on your location"].frame))
+        shot("largest-text-map-controls")
+    }
+
     func testReportPinWithoutLocation() throws {
         if #available(iOS 16.4, *) { XCUIDevice.shared.location = nil }
         app.buttons["Report litter"].tap()

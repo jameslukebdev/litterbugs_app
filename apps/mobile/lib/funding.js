@@ -58,12 +58,18 @@ export async function createPayoutDashboardLink() {
   return data;
 }
 
-export async function loadMyContribution(id, userId) {
+export async function loadMyContribution(id, userId, { verify = true } = {}) {
   if (!id || !userId) return null;
   const { data, error } = await supabase.from('cleanup_contributions')
     .select('id, report_id, principal_amount_cents, platform_fee_cents, total_amount_cents, status, created_at, refunded_at, report:reports(id,title,cleanup_state,funding_eligibility)')
     .eq('id', id).eq('contributor_id', userId).maybeSingle();
   if (error) throw error;
+  if (data?.status === 'payment_pending' && verify) {
+    const { data: verification, error: verificationError } = await supabase.functions.invoke('check-contribution-status', { body: { contributionId: id } });
+    if (verificationError || verification?.error) return { ...data, verificationUnavailable: true };
+    const latest = await loadMyContribution(id, userId, { verify: false });
+    return { ...(latest || data), providerState: verification.providerState, checkedAt: verification.checkedAt };
+  }
   return data;
 }
 

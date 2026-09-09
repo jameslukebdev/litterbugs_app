@@ -1,3 +1,4 @@
+import RemotePhoto from './components/RemotePhoto';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -54,61 +55,7 @@ function getLitterSummary(report) {
 
 function ReportThumbnail({ report, size }) {
   const { getReportPhotoUrl } = useReports();
-  const photoPath = report?.photo_paths?.[0] ?? null;
-  const [retried, setRetried] = useState(false);
-  const [photoUrl, setPhotoUrl] = useState(null);
-  const [loading, setLoading] = useState(Boolean(photoPath));
-
-  useEffect(() => {
-    let active = true;
-
-    if (!photoPath) {
-      setPhotoUrl(null);
-      setLoading(false);
-      return () => {
-        active = false;
-      };
-    }
-
-    setLoading(true);
-    setRetried(false);
-    getReportPhotoUrl(photoPath).then((url) => {
-      if (!active) return;
-      setPhotoUrl(url);
-      setLoading(false);
-    }).catch(() => { if (active) setLoading(false); });
-
-    return () => {
-      active = false;
-    };
-  }, [getReportPhotoUrl, photoPath]);
-
-  if (photoUrl) {
-    return (
-      <ExpoImage
-        source={{ uri: photoUrl, cacheKey: photoPath }}
-        onError={() => {
-          if (retried) return;
-          setRetried(true);
-          getReportPhotoUrl(photoPath, { force: true }).then((url) => setPhotoUrl(url)).catch(() => setPhotoUrl(null));
-        }}
-        contentFit="cover"
-        cachePolicy="memory-disk"
-        style={[styles.thumbnail, { width: size, height: size * 0.86 }]}
-        accessibilityLabel={`Photo for ${report?.title || 'litter report'}`}
-      />
-    );
-  }
-
-  return (
-    <View style={[styles.thumbnailPlaceholder, { width: size, height: size * 0.86 }]}>
-      {loading ? (
-        <ActivityIndicator size="small" color="#2F7D32" />
-      ) : (
-        <Ionicons name="image-outline" size={30} color="#879098" />
-      )}
-    </View>
-  );
+  return <RemotePhoto path={report?.photo_paths?.[0]} getUrl={getReportPhotoUrl} label={`Photo for ${report?.title || 'litter report'}`} style={[styles.thumbnail, { width: size, height: size * 0.86 }]} />;
 }
 
 export function ReportListItem({ report, origin, onPress, selected = false }) {

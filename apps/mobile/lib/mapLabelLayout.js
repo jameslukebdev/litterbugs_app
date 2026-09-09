@@ -11,7 +11,8 @@ const statusPriority = (point) => ({ available: 2, active: 1, completed: 0 }[cle
 export function mapMarkerDimensions(label, tone, fontScale = 1) {
   const statusMarker = tone === 'completed' || tone === 'active';
   return {
-    width: label ? Math.max(34, label.length * 8 * fontScale + 14 + (statusMarker ? STATUS_MARKER_ICON_SIZE + 3 : 0)) : STATUS_MARKER_SIZE,
+    fontSize: 13 * fontScale,
+    width: label ? Math.max(34, label.length * 8.5 * fontScale + 14 + (statusMarker ? STATUS_MARKER_ICON_SIZE + 3 : 0)) : STATUS_MARKER_SIZE,
     height: label ? Math.max(24, 18 * fontScale + 6) : STATUS_MARKER_SIZE,
   };
 }
@@ -24,14 +25,14 @@ export function layoutMapLabels(points, selectedId, fontScale = 1) {
     statusPriority(b) - statusPriority(a) || String(a.id).localeCompare(String(b.id)));
   return ordered.map((point) => {
     const tone = cleanupMapTone(point.report);
-    const { width, height } = mapMarkerDimensions(point.label, tone, fontScale);
+    const { width, height, fontSize } = mapMarkerDimensions(point.label, tone, fontScale);
     const scale = point.id === selectedId ? SELECTED_MARKER_SCALE : 1;
     const box = { x: point.x, y: point.y, width: width * scale, height: height * scale };
     const fits = !labels.some((other) =>
       Math.abs(other.x - box.x) < (other.width + box.width) / 2 + 6 &&
       Math.abs(other.y - box.y) < (other.height + box.height) / 2 + 6);
     if (fits || point.id === selectedId) labels.push(box);
-    return { ...point, labelled: fits || point.id === selectedId, width, height };
+    return { ...point, labelled: fits || point.id === selectedId, width, height, fontSize };
   });
 }
 

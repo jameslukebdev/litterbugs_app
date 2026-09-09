@@ -1,4 +1,5 @@
-import { StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StyleSheet, useWindowDimensions } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import FloatingBottomTabBar from './FloatingBottomTabBar';
@@ -9,6 +10,8 @@ import ReportsScreen from './ReportsScreen';
 const Tab = createBottomTabNavigator();
 
 export default function AppTabs({ onLaunchReady }) {
+  const { fontScale } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
         initialRouteName="Map"
@@ -26,7 +29,7 @@ export default function AppTabs({ onLaunchReady }) {
           component={ReportsScreen}
           options={{
             title: 'Reports nearby',
-            headerStyle: { backgroundColor: '#FFFFFF' },
+            headerStyle: { backgroundColor: '#FFFFFF', height: insets.top + Math.max(56, 34 * fontScale + 24) },
             headerTitleStyle: styles.profileHeaderTitle,
             tabBarAccessibilityLabel: 'Reports',
           }}
@@ -47,7 +50,7 @@ export default function AppTabs({ onLaunchReady }) {
           component={ProfileScreen}
           options={{
             title: 'Profile',
-            headerStyle: { backgroundColor: '#FFFFFF' },
+            headerStyle: { backgroundColor: '#FFFFFF', height: insets.top + Math.max(56, 34 * fontScale + 24) },
             headerTitleStyle: styles.profileHeaderTitle,
             tabBarAccessibilityLabel: 'Profile',
           }}

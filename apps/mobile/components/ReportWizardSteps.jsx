@@ -149,8 +149,8 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
           )}
 
           {!hasAttachedReportPhoto() ? (
-            <Text style={styles.requiredHint}>
-              Add at least one photo to continue.
+            <Text style={[styles.requiredHint, { color: '#687178', marginBottom: 16 }]}>
+              Add at least one clear photo of the litter.
             </Text>
           ) : null}
 <Text style={styles.reviewLabel}>Title (optional)</Text>
@@ -271,7 +271,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
           />
 
           {!(form.selectedTypes?.length || form.types?.trim()) && (
-            <Text style={styles.requiredHint}>
+            <Text style={[styles.requiredHint, { color: '#687178', marginBottom: 16 }]}>
               Select at least one litter type to continue.
             </Text>
           )}
@@ -361,7 +361,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
           </View>
 
           {!form.severity && (
-            <Text style={styles.requiredHint}>
+            <Text style={[styles.requiredHint, { color: '#687178', marginBottom: 16 }]}>
               Choose a severity level to continue.
             </Text>
           )}
@@ -779,10 +779,10 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                     <Text style={styles.startingFundTotal}>Total {formatUsd(startingContributionCents + calculatePlatformFee(startingContributionCents))}</Text>
                   </View>
                 ) : (
-                  <Text style={styles.requiredHint}>Enter an amount from $1 to $1,000.</Text>
+                  <Text style={[styles.requiredHint, { color: '#687178', marginBottom: 16 }]}>Enter an amount from $1 to $1,000.</Text>
                 )
               ) : !hasStartingFundingChoice ? (
-                <Text style={styles.requiredHint}>Choose Volunteer or select a starting amount.</Text>
+                <Text style={[styles.requiredHint, { color: '#687178', marginBottom: 16 }]}>Choose Volunteer or select a starting amount.</Text>
               ) : (
                 <Text style={styles.startingFundHelper}>You can add funds from the report later.</Text>
               )}
