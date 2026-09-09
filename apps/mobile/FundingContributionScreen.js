@@ -1,3 +1,4 @@
+import { userMessage } from './lib/userMessage';
 import FeeExplanationLabel from './components/FeeExplanationLabel';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { reconcileContribution } from './lib/reconcileContribution';
@@ -179,7 +180,7 @@ function FundingContributionController({ navigation, route }) {
         setFlags(nextFlags);
       })
       .catch((error) => {
-        if (active) setLoadError(error?.message || 'This report could not be loaded.');
+        if (active) setLoadError(userMessage(error, 'We couldn’t update your contribution. View payment history before paying again.'));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -242,7 +243,7 @@ function FundingContributionController({ navigation, route }) {
         attemptRef.current = attempt;
       }
       if (!attempt.intent && Date.now() - attempt.createdAt > 23 * 60 * 60 * 1000) {
-        throw new Error('This older attempt needs a status check before another payment. Open Payment activity or contact support.');
+        throw new Error('We haven’t confirmed your previous payment. Open payment history or get help before paying again.');
       }
       const intent = attempt.intent || await createCleanupContribution({ reportId, principalAmountCents: attempt.principalAmountCents, clientRequestId: attempt.clientRequestId });
       attempt = { ...attempt, intent, phase: 'ready' };
@@ -301,7 +302,7 @@ function FundingContributionController({ navigation, route }) {
     } catch (error) {
       if (attemptRef.current?.phase === 'submitted') setConfirmationPending(true);
       if (!mounted.current) return;
-      Alert.alert('Check contribution status', error.message || 'Return here to check your payment before trying again.');
+      Alert.alert('Check contribution status', userMessage(error, 'We couldn’t update your contribution. View payment history before paying again.'));
     } finally {
       payLock.current = false;
       setPaying(false);
@@ -312,7 +313,7 @@ function FundingContributionController({ navigation, route }) {
     return (
       <BrandedLoadingState
         working
-        title={fromReportCreation ? "Finishing your report…" : "Checking contribution…"}
+        title={fromReportCreation ? "Report posted" : "Checking contribution…"}
         message="Checking the report and any previous payment attempt."
       />
     );
@@ -398,7 +399,7 @@ function FundingContributionController({ navigation, route }) {
             <Ionicons name="card-outline" size={22} color="#2F7D32" />
             <Text style={styles.savedContributionText}>
               {isPendingStartingContribution
-                ? `Your ${formatUsd(principalCents)} choice is saved on this screen, but you have not been charged. We’ll check again automatically and show Stripe’s secure payment screen after approval.`
+                ? `Your ${formatUsd(principalCents)} choice is saved on this screen, but you have not been charged. We’ll update this page when funding is ready. You can then choose Continue to payment.`
                 : `Your ${formatUsd(principalCents)} choice has not been charged. Resolve the issue above, then choose Add funds again to continue securely with Stripe.`}
             </Text>
           </View>
@@ -429,7 +430,7 @@ function FundingContributionController({ navigation, route }) {
         <Text style={styles.reportTitle}>{report?.title || 'Litter report'}</Text>
 
         <View style={styles.rewardCard}>
-          <Text style={styles.rewardLabel}>Cleaner currently receives</Text>
+          <Text style={styles.rewardLabel}>Current cleanup reward</Text>
           <Text style={styles.rewardValue}>{formatUsd(report?.funded_amount_cents)}</Text>
           <Text style={styles.rewardText}>Your contribution adds directly to this reward.</Text>
         </View>
@@ -470,7 +471,7 @@ function FundingContributionController({ navigation, route }) {
         {confirmationPending ? (
           <View style={styles.pendingCard}>
             <Ionicons name="time-outline" size={21} color="#7A5810" />
-            <Text style={styles.pendingText}>Stripe is confirming your payment. Return to the report and refresh it shortly. Do not submit it again.</Text>
+            <Text style={styles.pendingText}>Your payment is being confirmed. You can return to the report while we check. Please don’t pay again.</Text>
           </View>
         ) : null}
 

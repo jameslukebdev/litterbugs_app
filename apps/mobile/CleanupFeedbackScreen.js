@@ -47,11 +47,11 @@ export default function CleanupFeedbackScreen({ navigation, route }) {
   const loadError = contextError ? feedbackErrorMessage(contextError) : null;
 
 
-  if (loading) {
+  if (loading && !context) {
     return <BrandedLoadingState title="Loading feedback…" message="Gathering the requested cleanup changes." />;
   }
 
-  if (loadError || !context) {
+  if (!context) {
     return (
       <View style={styles.centerState}>
         <Ionicons name="alert-circle-outline" size={44} color="#A33A32" />
@@ -114,7 +114,7 @@ export default function CleanupFeedbackScreen({ navigation, route }) {
       <View style={styles.historyNotice}>
         <Ionicons name="documents-outline" size={21} color="#536068" />
         <Text style={styles.historyText}>
-          Your earlier evidence and this review remain in the cleanup history. Resubmitting creates a new revision.
+          Your earlier evidence and this review remain in the cleanup history. Your earlier photos and feedback will stay in the cleanup history.
         </Text>
       </View>
 

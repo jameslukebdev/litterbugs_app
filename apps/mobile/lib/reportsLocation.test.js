@@ -84,3 +84,15 @@ describe('Reports location recovery', () => {
     expect(locate).not.toHaveBeenCalled();
   });
 });
+
+it('keeps ordering stable while refreshing a previously resolved location', async () => {
+  const publish = vi.fn();
+  const location = api();
+  const loader = createReportsLocationLoader(location, publish, async ({ onPosition }) => onPosition(position, { cached: false }));
+  await loader.refresh(); publish.mockClear();
+  await loader.refresh();
+  expect(publish.mock.calls[0][0]).toEqual({ status: 'loading', origin: position.coords });
+  location.getForegroundPermissionsAsync.mockResolvedValue({ status: 'denied', canAskAgain: false });
+  await loader.refresh();
+  expect(publish).toHaveBeenLastCalledWith({ status: 'denied', origin: null });
+});

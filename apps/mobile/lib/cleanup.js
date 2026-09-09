@@ -82,32 +82,36 @@ export async function acknowledgeCleanupNotifications(notificationIds) {
 }
 
 export async function loadCurrentUserCleanupSummary(userId) {
-  const { data: attempts, error: attemptsError } = await supabase
+  const attempts = [];
+  for (let offset = 0; ; offset += 500) {
+    const { data, error } = await supabase
     .from('cleanup_attempts')
     .select('id, report_id, status, claimed_at, claim_expires_at, correction_due_at, latest_submitted_at, completed_at, approval_method, is_self_cleanup, is_paid, reward_amount_cents, financial_review_status, first_paid_admin_status, dispute_status, payout_status, last_activity_at')
     .eq('cleaner_id', userId)
     .in('status', ['claimed', 'completion_submitted', 'changes_requested', 'completed'])
-    .order('last_activity_at', { ascending: false });
+    .order('last_activity_at', { ascending: false }).order('id').range(offset, offset + 499);
+    if (error) throw error;
+    attempts.push(...(data || []));
+    if (!data || data.length < 500) break;
+  }
 
-  if (attemptsError) throw attemptsError;
   if (!attempts?.length) return summarizeCleanupAttempts();
 
-  const { data: reports, error: reportsError } = await supabase
-    .from('reports')
-    .select('id, title, severity, cleanup_state')
-    .eq('is_sample', false)
-    .in('id', attempts.map(({ report_id: reportId }) => reportId));
-
-  if (reportsError) throw reportsError;
+  const reports = [];
+  const ids = [...new Set(attempts.map(attempt => attempt.report_id).filter(Boolean))];
+  for (let offset = 0; offset < ids.length; offset += 100) {
+    const { data, error } = await supabase.from('reports').select('id,title,severity,cleanup_state').eq('is_sample', false).in('id', ids.slice(offset, offset + 100));
+    if (error) throw error;
+    reports.push(...(data || []));
+  }
 
   const reportsById = new Map(
     (reports ?? []).map((report) => [report.id, report])
   );
 
   return summarizeCleanupAttempts(attempts
-    .filter((attempt) => reportsById.has(attempt.report_id))
     .map((attempt) => ({
       ...attempt,
-      report: reportsById.get(attempt.report_id),
+      report: reportsById.get(attempt.report_id) || { id: attempt.report_id, title: 'Original report unavailable', cleanup_state: attempt.status },
     })));
 }

@@ -4,8 +4,6 @@ import { LegalPage } from '@/components/legal-page';
 import {
   CLEANUP_ACKNOWLEDGMENT,
   CLEANUP_ACKNOWLEDGMENT_TITLE,
-  CLEANUP_ACKNOWLEDGMENT_VERSION,
-  CLEANUP_GUIDELINES_VERSION,
   CLEANUP_RELEASE,
   CLEANUP_SAFETY_GUIDELINES,
 } from '@/lib/cleanup-safety-document';
@@ -24,7 +22,7 @@ export default function CleanupSafetyPage() {
       eyebrow="CLEANUP SAFETY & RELEASE"
       title="Safety and cleanup acknowledgment"
       summary="A public reference copy of the safety rules, assumption of risk, release, and funded reward acknowledgment shown before a cleanup claim."
-      effectiveDate="August 27, 2026"
+      effectiveDate="September 9, 2026"
       sections={[
         {
           title: 'Before every cleanup claim',
@@ -34,9 +32,8 @@ export default function CleanupSafetyPage() {
               the Litterbugs app presents the active text and requires a separate, unchecked affirmative
               checkbox. The acceptance record identifies the exact versions accepted for that claim.
             </p>
-            <div className={styles.versions} aria-label="Published cleanup document versions">
-              <div><span>Acknowledgment version</span><strong>{CLEANUP_ACKNOWLEDGMENT_VERSION}</strong></div>
-              <div><span>Safety version</span><strong>{CLEANUP_GUIDELINES_VERSION}</strong></div>
+            <div className={styles.versions} aria-label="Document update date">
+              <div><span>Updated</span><strong>September 9, 2026</strong></div>
             </div>
           </>,
         },

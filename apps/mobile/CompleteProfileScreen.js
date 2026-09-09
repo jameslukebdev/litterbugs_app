@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { userMessage } from './lib/userMessage';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -49,7 +50,7 @@ export default function CompleteProfileScreen({ navigation }) {
       navigation.replace('App', { screen: 'Map' });
     } catch (saveError) {
       console.log('Complete profile error:', saveError);
-      setError(saveError.message || 'Your profile could not be saved. Try again.');
+      setError(userMessage(saveError, 'Your profile could not be saved. Try again.'));
     } finally {
       setSaving(false);
     }
@@ -103,7 +104,7 @@ export default function CompleteProfileScreen({ navigation }) {
           {saving ? <LoadingButtonContent label="Saving profile…" /> : <Text style={styles.primaryText}>Continue</Text>}
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.signOutButton} onPress={signOut} disabled={saving} accessibilityRole="button" accessibilityLabel="Sign out">
+        <TouchableOpacity style={styles.signOutButton} onPress={async () => { try { const result = await signOut(); if (result.error) throw result.error; } catch { setError('Couldn’t sign out. Check your connection and try again.'); } }} disabled={saving} accessibilityRole="button" accessibilityLabel="Sign out">
           <Text style={styles.signOutText}>Sign out</Text>
         </TouchableOpacity>
       </ScrollView>

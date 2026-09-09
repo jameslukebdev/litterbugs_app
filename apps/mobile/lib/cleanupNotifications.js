@@ -41,7 +41,7 @@ const CLEANUP_NOTIFICATION_CONTENT = Object.freeze({
   },
   cleanup_reward_sent: {
     title: 'Cleanup reward sent',
-    message: 'Your cleanup reward was transferred to your Stripe account.',
+    message: 'Your cleanup reward was sent to your payout account.',
   },
   cleanup_payout_failed: {
     title: 'Cleanup reward needs attention',
@@ -73,7 +73,7 @@ const CLEANUP_NOTIFICATION_CONTENT = Object.freeze({
   },
   report_funding_approved: {
     title: 'Cleanup funding approved',
-    message: 'Your report can now accept funding. Finish your secure Stripe payment.',
+    message: 'Your report can now accept contributions. Open it when you’re ready to add funds.',
   },
   report_funding_rejected: {
     title: 'Cleanup funding unavailable',

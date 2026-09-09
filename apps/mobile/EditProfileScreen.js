@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 
+import { userMessage } from './lib/userMessage';
 import ProfileAvatar from './ProfileAvatar';
 import { Ionicons } from '@expo/vector-icons';
 import { useProfile } from './lib/profile';
@@ -79,7 +80,7 @@ export default function EditProfileScreen({ navigation }) {
       if (saveError.code === '23505' || /username.*unique/i.test(saveError.message || '')) {
         setErrors({ username: 'That username is taken.' });
       } else {
-        Alert.alert('Couldn’t save profile', saveError.message || 'Check your connection and try again.');
+        Alert.alert('Couldn’t save profile', userMessage(saveError, 'Your changes haven’t been saved. Please try again.'));
       }
     } finally {
       setSaving(false);

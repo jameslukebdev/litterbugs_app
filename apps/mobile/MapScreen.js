@@ -1,3 +1,4 @@
+import { userMessage } from './lib/userMessage';
 import { publishReportDraft, clearReportSubmission } from './lib/reportSubmissionStore';
 import ReportDetailsSheet from './components/ReportDetailsSheet';
 import { canAdvanceReportStep } from './lib/reportWizard';
@@ -132,6 +133,15 @@ const showLocationSettingsAlert = (message) => {
 // State Functions
 export default function MapScreen({ route, navigation, onLaunchReady }) {
   const isMapScreenFocused = useIsFocused();
+  const reopenReportOnFocus = useRef(false);
+  const [reportOpenRevision, setReportOpenRevision] = useState(0);
+  useEffect(() => {
+    if (isMapScreenFocused && reopenReportOnFocus.current) {
+      reopenReportOnFocus.current = false;
+      setDetailsOpen(true);
+      setReportOpenRevision(value => value + 1);
+    }
+  }, [isMapScreenFocused]);
   const REPORT_STEPS = ['Photos', 'Details', 'Review'];
   const [tracksReportMarkers, setTracksReportMarkers] = useState(true);
   const reportMarkerTrackingTimerRef = useRef(null);
@@ -817,7 +827,7 @@ const refreshReportAfterFundingReview = (reportId, logLabel) => {
 const openPayoutSetupForWorkflow = (action) => {
   const parentNavigation = navigation.getParent();
   if (!parentNavigation) {
-    Alert.alert('Stripe setup unavailable', 'Please try again from the Profile screen.');
+    Alert.alert('Payout setup unavailable', 'Please try again from the Profile screen.');
     return false;
   }
 
@@ -948,7 +958,7 @@ const openPayoutSetupForWorkflow = (action) => {
           return;
         }
 
-        Alert.alert('Save failed', error.message);
+        Alert.alert('Couldn’t save report', userMessage(error, 'Your report hasn’t been saved. Please try again.'));
         return;
       }
   
@@ -989,7 +999,7 @@ const openPayoutSetupForWorkflow = (action) => {
       console.error('Unexpected save error:', e);
       Alert.alert(
         'Couldn’t finish saving report',
-        isEditing ? e?.message || 'Please try again.' : `${e?.message || 'The upload was interrupted.'} Your answers remain here. Try submitting again to continue.`
+        isEditing ? userMessage(e, 'Your changes haven’t been saved. Please try again.') : `${userMessage(e, 'The upload was interrupted.')} Your answers remain here. Try submitting again to continue.`
       );
     }
   };
@@ -1016,7 +1026,7 @@ const submitReport = async () => {
   if (!hasStartingFundingChoice) {
     Alert.alert(
       'Choose cleanup funding',
-      'Select Volunteer or choose a starting cleanup reward.'
+      'Select Not now or choose a starting cleanup reward.'
     );
     return;
   }
@@ -1024,7 +1034,7 @@ const submitReport = async () => {
   if (wantsStartingFunding && !startingContributionCents) {
     Alert.alert(
       'Enter a valid contribution',
-      'Choose at least $1 and no more than $1,000, or select Volunteer.'
+      'Choose at least $1 and no more than $1,000, or select Not now.'
     );
     return;
   }
@@ -1318,6 +1328,7 @@ useEffect(() => () => {
 
 const openReportDetails = (report) => {
   if (!report) return;
+  setReportOpenRevision(value => value + 1);
   setPreviewId(null);
   setNearbyIds([]);
   const firstPhotoPath = report.photo_paths?.[0];
@@ -1458,7 +1469,7 @@ useEffect(() => {
   return () => {
     active = false;
   };
-}, [getReportPhotoUrl, selectedReport?.id, JSON.stringify(selectedReport?.photo_paths)]);
+}, [getReportPhotoUrl, selectedReport?.id, JSON.stringify(selectedReport?.photo_paths), reportOpenRevision]);
 
 useEffect(() => {
   let active = true;
@@ -1485,7 +1496,7 @@ useEffect(() => {
   return () => {
     active = false;
   };
-}, [currentUserId, selectedReport?.cleanup_state, selectedReport?.id]);
+}, [currentUserId, selectedReport?.cleanup_state, selectedReport?.id, reportOpenRevision]);
 
 useEffect(() => {
   let active = true;
@@ -1522,6 +1533,7 @@ useEffect(() => {
   };
 }, [
   completedCleanupImpactReloadKey,
+  reportOpenRevision,
   selectedReport?.cleanup_state,
   selectedReport?.id,
 ]);
@@ -1544,6 +1556,7 @@ useEffect(() => {
   );
   const selectedReportIsShareable = isReportShareable(selectedReport);
   const selectedReportCanOpenFunding = fundingEnabled
+    && isCleanupAvailable(selectedReport)
     && selectedReport?.cleanup_state === 'available'
     && selectedReport?.renewal_status === 'active';
   const selectedReportHasUtilityActions = selectedReportCanOpenFunding
@@ -1715,6 +1728,7 @@ useEffect(() => {
       return;
     }
 
+    reopenReportOnFocus.current = true;
     setDetailsOpen(false);
     navigation.getParent()?.navigate('FundingContribution', { reportId });
   };
@@ -1891,7 +1905,7 @@ useEffect(() => {
 
     resume().catch((error) => {
       if (active) {
-        Alert.alert('Unable to continue', error?.message || 'Please try again.');
+        Alert.alert('Unable to continue', userMessage(error, 'Please reopen the cleanup and try again.'));
       }
     });
 
@@ -2527,6 +2541,7 @@ const revealBottomReportField = (event) => {
 <CleanupWaiverModal
   visible={cleanupWaiverOpen}
   waiver={cleanupWaiver}
+  report={selectedReport}
   accepting={cleanupActionBusy}
   onAccept={acceptWaiverAndContinue}
   onClose={() => {

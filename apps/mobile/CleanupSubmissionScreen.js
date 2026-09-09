@@ -1,8 +1,10 @@
+import { usePreventRemove } from '@react-navigation/native';
 import * as Crypto from 'expo-crypto';
 import { loadCleanupDraft, saveCleanupDraft, clearCleanupDraft } from './lib/savedCleanupDraft';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  AppState,
   Alert,
   Keyboard,
   KeyboardAvoidingView,
@@ -114,6 +116,8 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
     current: 1,
     total: 1,
   });
+  const [exitAction, setExitAction] = useState(null);
+  const [missingPhotoCount, setMissingPhotoCount] = useState(0);
   const [draftReady, setDraftReady] = useState(false);
   const [draftStatus, setDraftStatus] = useState('');
   const [draftLoadError, setDraftLoadError] = useState(false);
@@ -136,6 +140,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
       submissionId.current = draft?.submissionId || Crypto.randomUUID();
       setPhotos([]); setDescription(''); setBagsOrItemsRemoved(''); setWeightPounds('');
       draftOwner.current = `${userId}:${cleanupId}`;
+      setMissingPhotoCount(draft?.missingPhotoCount || 0);
       if (draft) {
         setPhotos(draft.photos); setDescription(draft.description);
         setBagsOrItemsRemoved(draft.bagsOrItemsRemoved || ''); setWeightPounds(draft.weightPounds || '');
@@ -150,12 +155,27 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
   useEffect(() => {
     if (!draftReady || submitted.current || !userId || !cleanupId || draftOwner.current !== `${userId}:${cleanupId}`) return;
     let active = true;
-    setDraftStatus('Saving draft…');
-    saveCleanupDraft(userId, cleanupId, latestDraft.current)
+    const timer = setTimeout(() => saveCleanupDraft(userId, cleanupId, latestDraft.current)
       .then(() => { if (active) setDraftStatus('Draft saved on this device'); })
-      .catch(() => { if (active) setDraftStatus('Draft not saved — keep this screen open and try again'); });
-    return () => { active = false; };
+      .catch(() => { if (active) setDraftStatus('Draft not saved — keep this screen open and try again'); }), 500);
+    return () => { active = false; clearTimeout(timer); };
   }, [draftReady, userId, cleanupId, photos, description, bagsOrItemsRemoved, weightPounds]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', state => {
+      if (state !== 'active' && draftReady && !submitted.current && draftOwner.current === `${userId}:${cleanupId}`) {
+        saveCleanupDraft(userId, cleanupId, latestDraft.current).catch(() => setDraftStatus('Draft not saved — keep this screen open and try again'));
+      }
+    });
+    return () => subscription.remove();
+  }, [draftReady, userId, cleanupId]);
+
+  usePreventRemove(draftReady && !submitted.current && Boolean(photos.length || description || bagsOrItemsRemoved || weightPounds) && !exitAction, ({ data }) => {
+    saveCleanupDraft(userId, cleanupId, latestDraft.current)
+      .then(() => setExitAction(data.action))
+      .catch(() => Alert.alert('Couldn’t save draft', 'Keep this screen open and try again.'));
+  });
+  useEffect(() => { if (exitAction) navigation.dispatch(exitAction); }, [exitAction, navigation]);
 
   const saveAndExit = async () => {
     try {
@@ -289,7 +309,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
     }
   };
 
-  if (loading || (!draftReady && userId && cleanupId)) return <LoadingState />;
+  if ((loading && !context) || (!draftReady && userId && cleanupId)) return <LoadingState />;
 
   if (loadError || !context) {
     const recovery = cleanupLoadErrorPresentation(loadError);
@@ -356,6 +376,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
         showsVerticalScrollIndicator={false}
       >
         {!submitted.current ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+          {missingPhotoCount > 0 ? <Text style={{ color: '#8A6400', marginBottom: 8 }}>{missingPhotoCount} saved {missingPhotoCount === 1 ? 'photo is' : 'photos are'} no longer on this device. Add replacement photos before submitting. Your other answers were kept.</Text> : null}
           <Text accessibilityLiveRegion="polite" style={{ flex: 1, color: '#687178', fontSize: 12 }}>{draftStatus}</Text>
           <TouchableOpacity accessibilityRole="button" disabled={submitting} onPress={saveAndExit} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: '#2F7D32', fontWeight: '700' }}>Save and exit</Text></TouchableOpacity>
         </View> : null}
@@ -527,7 +548,9 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
             </View>
 
             <Text style={styles.reviewNotice}>
-              After submission, the original reporter has 48 hours to review the cleanup before automatic approval.
+              {context.attempt.is_paid
+                ? 'Your photos are checked first. Once they pass, the reporter has 48 hours to review your cleanup. Any required team review must also finish before a reward is sent.'
+                : 'After submission, the reporter has 48 hours to review your cleanup before automatic approval.'}
             </Text>
 
             <TouchableOpacity

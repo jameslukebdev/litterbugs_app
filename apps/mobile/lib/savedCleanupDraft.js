@@ -26,7 +26,7 @@ export function loadCleanupDraft(userId, cleanupId) {
     if (!Array.isArray(draft?.photos) || typeof draft.description !== 'string') return null;
     const photos = [];
     for (const photo of draft.photos) if (typeof photo?.uri === 'string' && (await FileSystem.getInfoAsync(photo.uri)).exists) photos.push(photo);
-    return { ...draft, photos };
+    return { ...draft, photos, missingPhotoCount: draft.photos.length - photos.length };
   });
 }
 export function clearCleanupDraft(userId, cleanupId) {

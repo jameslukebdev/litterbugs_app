@@ -1,10 +1,13 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { usePreventRemove } from '@react-navigation/native';
 import RemotePhoto from './components/RemotePhoto';
 import { createSignedPhotoUrl } from './lib/cleanupReview';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import useFocusedResource from './lib/useFocusedResource';
 import {
   ActivityIndicator,
   Alert,
+  AppState,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -123,7 +126,54 @@ export default function CleanupReviewScreen({ navigation, route }) {
   const loadError = contextError ? reviewErrorMessage(contextError) : null;
 
 
-  useEffect(() => { setMode('review'); setSelectedReasons([]); setNote(''); setErrors({}); }, [cleanupId, userId]);
+  const [reviewDraftReady, setReviewDraftReady] = useState(false);
+  const [reviewDraftError, setReviewDraftError] = useState(null);
+  const [exitAction, setExitAction] = useState(null);
+  const latestReview = useRef(null);
+  const reviewKey = context?.submission?.id && userId ? `cleanup-review:${userId}:${cleanupId}:${context.submission.id}` : null;
+  latestReview.current = { mode, selectedReasons, note };
+  useEffect(() => {
+    let active = true;
+    setReviewDraftReady(false); setReviewDraftError(null); setMode('review'); setSelectedReasons([]); setNote(''); setErrors({});
+    if (!reviewKey) return;
+    AsyncStorage.getItem(reviewKey).then(raw => {
+      if (!active) return;
+      const saved = raw ? JSON.parse(raw) : null;
+      if (saved) { setMode(saved.mode || 'review'); setSelectedReasons(Array.isArray(saved.selectedReasons) ? saved.selectedReasons : []); setNote(saved.note || ''); }
+      setReviewDraftReady(true);
+    }).catch(() => { if (active) setReviewDraftError('Your saved feedback couldn’t be restored. Reopen this page to try again.'); });
+    return () => { active = false; };
+  }, [reviewKey]);
+  useEffect(() => {
+    if (!reviewDraftReady || !reviewKey) return;
+    const timer = setTimeout(() => AsyncStorage.setItem(reviewKey, JSON.stringify(latestReview.current))
+      .catch(() => setReviewDraftError('Your feedback hasn’t been saved. Keep this screen open and try again.')), 500);
+    return () => clearTimeout(timer);
+  }, [reviewDraftReady, reviewKey, mode, selectedReasons, note]);
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', state => {
+      if (state !== 'active' && reviewDraftReady && reviewKey) {
+        AsyncStorage.setItem(reviewKey, JSON.stringify(latestReview.current))
+          .catch(() => setReviewDraftError('Your feedback hasn’t been saved. Keep this screen open and try again.'));
+      }
+    });
+    return () => subscription.remove();
+  }, [reviewDraftReady, reviewKey]);
+  usePreventRemove((Boolean(note.trim() || selectedReasons.length) || submitting) && !exitAction, ({ data }) => {
+    if (submitting) return;
+    Alert.alert('Save your feedback?', 'You can return to finish reviewing this cleanup later.', [
+      { text: 'Keep editing', style: 'cancel' },
+      { text: 'Save and leave', onPress: async () => {
+        try { await AsyncStorage.setItem(reviewKey, JSON.stringify(latestReview.current)); setExitAction(data.action); }
+        catch { setReviewDraftError('Your feedback hasn’t been saved. Keep this screen open and try again.'); }
+      } },
+    ]);
+  });
+  useEffect(() => { if (exitAction) navigation.dispatch(exitAction); }, [exitAction, navigation]);
+  const clearReviewDraft = async () => {
+    await AsyncStorage.removeItem(reviewKey).catch(() => {});
+    setNote(''); setSelectedReasons([]); setMode('review');
+  };
 
   const viewReport = () => {
     navigation.navigate('App', {
@@ -133,7 +183,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
   };
 
   const completeReview = async ({ decision, reasons = null, reviewerNote = null }) => {
-    if (submitting || !context) return;
+    if (submitting || !context || loading || contextError || !reviewDraftReady) return;
 
     try {
       setSubmitting(true);
@@ -144,13 +194,14 @@ export default function CleanupReviewScreen({ navigation, route }) {
         reasons,
         note: reviewerNote,
       });
+      await clearReviewDraft();
       await refreshReports({ showRefresh: false });
 
       const completed = reviewedAttempt.status === 'completed';
       Alert.alert(
         completed ? 'Cleanup complete' : 'Changes requested',
         completed
-          ? 'This cleanup is now preserved as a completed community impact record.'
+          ? 'Cleanup approved. Thank you for helping.'
           : 'The cleaner can now submit updated cleanup evidence.',
         [{ text: 'View report', onPress: viewReport }],
         { cancelable: false }
@@ -215,6 +266,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
   };
 
   const submitPaidDispute = () => {
+    if (submitting || loading || contextError || !reviewDraftReady) return;
     const reason = note.trim();
     if (reason.length < 3) {
       setErrors({ note: 'Briefly explain what does not look right.' });
@@ -232,6 +284,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
             try {
               setSubmitting(true);
               await disputePaidCleanup(context.attempt.id, reason);
+              await clearReviewDraft();
               await retryContext();
               setMode('review');
               Alert.alert('Dispute submitted', 'A Litterbugs team member will review it. The reward remains paused.');
@@ -246,9 +299,9 @@ export default function CleanupReviewScreen({ navigation, route }) {
     );
   };
 
-  if (loading) return <LoadingState />;
+  if (loading && !context) return <LoadingState />;
 
-  if (loadError || !context) {
+  if (!context) {
     return (
       <View style={styles.centerState}>
         <Ionicons name="alert-circle-outline" size={44} color="#A33A32" />
@@ -279,6 +332,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {reviewDraftError || loadError ? <Text accessibilityRole="alert" style={{ color: '#B42318', padding: 16 }}>{reviewDraftError || 'Couldn’t update this cleanup. Refresh before sending your review.'}</Text> : null}
         <Text style={styles.eyebrow}>REPORTER REVIEW</Text>
         <Text style={styles.title}>Review cleanup evidence</Text>
         <Text style={styles.reportTitle}>{context.report.title || 'Litter cleanup'}</Text>
@@ -409,7 +463,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
           <View style={styles.changeSection}>
             <Text style={styles.sectionTitle}>Explain the dispute</Text>
             <Text style={styles.helper}>Describe what looks incomplete, unsafe, or inconsistent with the original report.</Text>
-            <TextInput
+            <TextInput editable={reviewDraftReady && !submitting}
               style={[styles.noteInput, errors.note && styles.inputError]}
               value={note}
               onChangeText={(value) => { setNote(value); setErrors({}); }}

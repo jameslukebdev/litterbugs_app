@@ -19,7 +19,7 @@ describe('map preview states', () => {
   });
   it('distinguishes a cleaner reward from a contribution amount', () => {
     const html = render({ report, distance: 0.4 });
-    expect(html).toContain('Cleaner reward $6');
+    expect(html).toContain('Cleanup reward $6.00');
     expect(html).toContain('0.4 mi away');
     expect(html).toContain('View report');
   });

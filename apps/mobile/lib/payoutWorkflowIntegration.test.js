@@ -30,7 +30,7 @@ describe('Stripe-gated cleanup workflows', () => {
     expect(payoutSetupSource).toContain("status?.payoutsEnabled !== true");
     expect(payoutSetupSource).toContain('markPayoutWorkflowReady(workflowToken);');
     expect(payoutSetupSource).toContain('cancelPayoutWorkflow(workflowToken);');
-    expect(payoutSetupSource).toContain("'Stripe connected'");
+    expect(payoutSetupSource).toContain("'Ready to receive cleanup rewards'");
     expect(payoutSetupSource).toContain("'Continue to cleanup'");
   });
 

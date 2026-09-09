@@ -1,8 +1,8 @@
 import { DEFAULT_REPORT_FILTERS } from './lib/reportFilters';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
+  AppState,
   Linking,
   StyleSheet,
   Text,
@@ -16,11 +16,13 @@ import ReportList from './ReportList';
 import { getBottomNavClearance } from './lib/navigationLayout';
 import { getDistanceMiles, useReports } from './lib/reports';
 import useReportsLocation from './lib/useReportsLocation';
-import { reportsLocationPresentation } from './lib/reportsLocation';
+
 
 export default function ReportsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
-  const { origin: locationOrigin, status: locationState, refresh: refreshLocation } = useReportsLocation();
+  const [sort, setSort] = useState('newest');
+  const { origin, status: locationState, refresh: refreshLocation } = useReportsLocation({ enabled: false });
+  const locationOrigin = sort === 'closest' ? origin : null;
   const {
     filteredReports: reports,
     loading: reportsLoading,
@@ -43,16 +45,18 @@ export default function ReportsScreen({ navigation }) {
     return new Date(right.created_at || 0).getTime() - new Date(left.created_at || 0).getTime();
   }), [locationOrigin, reports]);
 
-  const locationPresentation = reportsLocationPresentation(locationState);
+
   const areaText = searchPlace ? `${searchPlace.label} · ${searchPlace.geometry ? 'search area' : 'map area'}` : 'Map area';
-  const handleLocationAction = async () => {
-    if (locationState === 'denied') {
-      try { await Linking.openSettings(); }
-      catch { Alert.alert('Location settings', 'Open your device settings and allow location access for Litterbugs.'); }
-    } else {
-      refreshLocation({ requestPermission: locationState === 'permission-needed' });
-    }
-  };
+  const chooseSort = () => Alert.alert('Sort reports', 'Choose how reports in this area are ordered.', [
+    { text: 'Newest first', onPress: () => setSort('newest') },
+    { text: 'Closest to me', onPress: () => { setSort('closest'); refreshLocation({ requestPermission: true }); } },
+    { text: 'Cancel', style: 'cancel' },
+  ]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', state => { if (state === 'active' && sort === 'closest') refreshLocation(); });
+    return () => subscription.remove();
+  }, [sort, refreshLocation]);
 
   const handleReportPress = (report) => {
     setSelectedMapReportId(report.id);
@@ -61,25 +65,23 @@ export default function ReportsScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+      <ReportFilters />
       <View style={styles.summary}>
         <View style={styles.summaryCopy}>
           <Text style={styles.count} accessibilityLiveRegion="polite">
             {reportsLoading && reports.length === 0 ? 'Loading reports…' : `${nearbyReports.length} ${nearbyReports.length === 1 ? 'report' : 'reports'}`}
           </Text>
           <Text style={styles.area}>{areaText}</Text>
-          <View style={styles.helperRow}>
-            {locationState === 'loading' ? <ActivityIndicator size="small" color="#2F7D32" /> : null}
-            <Text style={styles.helper}>{locationPresentation.text}</Text>
-          </View>
-          {locationPresentation.action ? <TouchableOpacity accessibilityRole="button" onPress={handleLocationAction} style={styles.locationAction}>
-            <Text style={styles.locationActionText}>{locationPresentation.action}</Text>
-          </TouchableOpacity> : null}
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Sort reports" onPress={chooseSort} style={styles.locationAction}>
+            <Text style={styles.locationActionText}>{locationOrigin ? 'Closest to me' : 'Newest first'} ▾</Text>
+          </TouchableOpacity>
+          {sort === 'closest' && locationState === 'denied' ? <TouchableOpacity accessibilityRole="button" onPress={() => Linking.openSettings().catch(() => Alert.alert('Location settings', 'Allow location access in your device settings.'))} style={styles.locationAction}><Text style={styles.locationActionText}>Allow location in Settings</Text></TouchableOpacity> : null}
+          {sort === 'closest' && !origin ? <Text style={styles.helper}>{locationState === 'loading' ? 'Finding your location…' : 'Location unavailable. Showing newest first.'}</Text> : null}
         </View>
 
 
       </View>
 
-      <ReportFilters />
       {error && reports.length > 0 ? <Text style={styles.error}>{error}</Text> : null}
 
       <ReportList
@@ -89,7 +91,7 @@ export default function ReportsScreen({ navigation }) {
         onReportPress={handleReportPress}
         refreshing={refreshing}
         initialLoading={reportsLoading}
-        onRefresh={() => { refreshLocation(); refreshReports({ showRefresh: true }); }}
+        onRefresh={() => { if (sort === 'closest') refreshLocation(); refreshReports({ showRefresh: true }); }}
         emptyAction={error ? { label: 'Try again', onPress: () => refreshReports({ showRefresh: true }) } : Object.keys(DEFAULT_REPORT_FILTERS).some(key => filters[key] !== DEFAULT_REPORT_FILTERS[key]) ? { label: 'Clear filters', onPress: () => setFilters({ ...DEFAULT_REPORT_FILTERS }) } : { label: 'Explore the map', onPress: () => navigation.navigate('Map') }}
         emptyTitle={error ? 'Reports unavailable' : 'No reports in this area'}
         emptyMessage={error
@@ -113,7 +115,7 @@ const styles = StyleSheet.create({
   },
   summary: {
     paddingHorizontal: 18,
-    paddingVertical: 18,
+    paddingVertical: 8,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -123,7 +125,7 @@ const styles = StyleSheet.create({
   },
   count: {
     color: '#171A1D',
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: '800',
   },
   helper: {

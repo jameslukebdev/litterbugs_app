@@ -1,7 +1,8 @@
+import { openSupport } from './lib/support';
 import { useProfile } from './lib/profile';
 import { useState } from 'react';
 import {
-  ActivityIndicator, Alert, Image, KeyboardAvoidingView, Modal, Platform,
+  ActivityIndicator, Alert, Image, KeyboardAvoidingView, Linking, Modal, Platform,
   ScrollView, StyleSheet, Text, TextInput, TouchableOpacity,
   TouchableWithoutFeedback, View,
 } from 'react-native';
@@ -263,6 +264,12 @@ export default function AuthScreen() {
             <Text style={styles.emailText}>Continue with Email</Text>
           </TouchableOpacity>
         </View>
+        <View style={{ marginTop: 20, alignItems: 'center', maxWidth: 420 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' }}>
+            {['Terms', 'Privacy'].map(label => <TouchableOpacity key={label} accessibilityRole="link" onPress={() => Linking.openURL(`https://litterbugs.app/${label === 'Terms' ? 'terms' : 'privacy'}`).catch(() => Alert.alert('Couldn’t open page', 'Visit litterbugs.app for our terms and privacy policy.'))} style={{ minHeight: 44, paddingHorizontal: 14, justifyContent: 'center' }}><Text style={{ color: '#526259' }}>{label}</Text></TouchableOpacity>)}
+          </View>
+          <TouchableOpacity accessibilityRole="button" onPress={() => openSupport()} style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 12 }}><Text style={{ color: '#2F7D32', fontWeight: '600' }}>Get help signing in</Text></TouchableOpacity>
+        </View>
       </ScrollView>
 
       <StatusBar hidden={false} />
@@ -307,7 +314,7 @@ export default function AuthScreen() {
                           </View>
                         </>
                       )}
-                      {!!formError && <Text style={emailStyles.error}>{formError}</Text>}
+                      {!!formError && <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={emailStyles.error}>{formError}</Text>}
                       <TouchableOpacity style={emailStyles.primaryButton} onPress={closeEmail} accessibilityRole="button" accessibilityLabel="Done">
                         <Text style={emailStyles.primaryButtonText}>Done</Text>
                       </TouchableOpacity>
@@ -340,14 +347,14 @@ export default function AuthScreen() {
                           <Text style={emailStyles.label}>Password</Text>
                           <View style={emailStyles.passwordRow}>
                             <TextInput
-                              value={password} onChangeText={setPassword} placeholder="At least 8 characters"
+                              value={password} onChangeText={setPassword} placeholder={emailMode === 'signup' ? 'At least 8 characters' : 'Your password'}
                               autoCapitalize="none" autoCorrect={false} secureTextEntry={!showPassword}
                               textContentType={emailMode === 'signup' ? 'newPassword' : 'password'}
                               autoComplete={emailMode === 'signup' ? 'new-password' : 'current-password'}
                               style={emailStyles.passwordInput} returnKeyType="done"
                               onSubmitEditing={handleEmailSubmit} accessibilityLabel="Password"
                             />
-                            <TouchableOpacity onPress={() => setShowPassword((visible) => !visible)} style={emailStyles.eyeButton} accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}>
+                            <TouchableOpacity onPress={() => setShowPassword((visible) => !visible)} style={emailStyles.eyeButton} accessibilityRole="button" accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}>
                               <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={22} color="#666" />
                             </TouchableOpacity>
                           </View>
@@ -365,7 +372,7 @@ export default function AuthScreen() {
                           <Text style={emailStyles.linkText}>Forgot password?</Text>
                         </TouchableOpacity>
                       )}
-                      {!!formError && <Text style={emailStyles.error}>{formError}</Text>}
+                      {!!formError && <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={emailStyles.error}>{formError}</Text>}
                       <TouchableOpacity style={[emailStyles.primaryButton, loadingEmail && styles.disabled]} onPress={handleEmailSubmit} disabled={loadingEmail} accessibilityRole="button" accessibilityLabel={title}>
                         {loadingEmail ? <LoadingButtonContent label={emailMode === 'signup' ? 'Creating account…' : emailMode === 'forgot' ? 'Sending reset link…' : 'Signing in…'} /> : (
                           <Text style={emailStyles.primaryButtonText}>

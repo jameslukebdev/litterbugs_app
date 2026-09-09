@@ -1,3 +1,4 @@
+import { reportPresentation } from '../lib/reportPresentation';
 import { Modal, View, Text, TouchableOpacity, ActivityIndicator, ScrollView, Linking, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CompletedCleanupStory from '../CompletedCleanupStory';
@@ -42,7 +43,7 @@ export default function ReportDetailsSheet({ state, actions }) {
 
       <TouchableOpacity onPress={closeReportDetails} accessibilityRole="button" accessibilityLabel="Close report" style={{ position: 'absolute', zIndex: 20, top: insets.top + 12, right: 24, width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="close" size={22} color="#30363B" /></TouchableOpacity>
 
-      {reportDetailsPreparing ? (
+      {reportDetailsPreparing && !selectedReport ? (
         <View
           style={styles.reportDetailsLoadingOverlay}
           accessibilityRole="progressbar"
@@ -50,7 +51,7 @@ export default function ReportDetailsSheet({ state, actions }) {
           accessibilityLiveRegion="polite"
         >
           <TouchableOpacity
-            style={styles.reportDetailsLoadingClose}
+            style={[styles.reportDetailsLoadingClose, { top: insets.top + 12 }]}
             onPress={closeReportDetails}
             accessibilityRole="button"
             accessibilityLabel="Close report"
@@ -126,18 +127,16 @@ export default function ReportDetailsSheet({ state, actions }) {
             {selectedReport?.title || 'Litter Report'}
           </Text>
 
-          <View style={styles.rewardBadge}>
+          {selectedReport?.cleanup_state !== 'completed' ? <View style={styles.rewardBadge}>
             <Ionicons
               name={Number(selectedReport?.funded_amount_cents) > 0 ? 'cash-outline' : 'heart-outline'}
               size={18}
               color="#245F2A"
             />
             <Text style={styles.rewardBadgeText}>
-              {Number(selectedReport?.funded_amount_cents) > 0
-                ? `Cleaner reward ${formatUsd(selectedReport.funded_amount_cents)}`
-                : '$0 in pool · No donations yet'}
+              {reportPresentation(selectedReport).funding}
             </Text>
-          </View>
+          </View> : null}
 
           <TouchableOpacity accessibilityRole="button" accessibilityLabel="Get directions to this cleanup" onPress={() => Linking.openURL(`https://maps.apple.com/?daddr=${selectedReport.latitude},${selectedReport.longitude}`).catch(() => Alert.alert('Directions unavailable', 'Please try again.'))} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: '#2F7D32', fontWeight: '700' }}>Get directions ↗</Text></TouchableOpacity>
 

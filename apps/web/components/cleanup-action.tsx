@@ -286,11 +286,12 @@ export function CleanupAction({
       {waiverOpen && waiver && (
         <ModalShell onClose={() => setWaiverOpen(false)} label="Cleanup safety and funded reward acknowledgment" className="cleanup-flow-dialog cleanup-waiver-dialog" closeDisabled={busy === 'claim'}>
           <span className="eyebrow">CLEANUP SAFETY</span>
-          <h2>{waiver.title}</h2>
+          <h2>Cleanup safety and agreement</h2>
           <div className="cleanup-waiver-scroll">
             <p className="cleanup-legal-copy">{waiver.body}</p>
             {waiver.guidelines_body && <section className="cleanup-guidelines-card"><h3>Cleanup safety guidelines</h3><p>{waiver.guidelines_body}</p></section>}
             {waiver.release_body && <section className="cleanup-release-card"><h3>Assumption of risk and release</h3><p>{waiver.release_body}</p></section>}
+            <p>Updated {new Date(waiver.published_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</p>
             <label className="cleanup-acknowledgment">
               <input type="checkbox" checked={waiverAccepted} onChange={(event) => setWaiverAccepted(event.target.checked)} />
               <span>I confirm I am 18 or older. I have read and accept the safety guidelines, funded reward acknowledgment, assumption of risk, and release for this claim.</span>

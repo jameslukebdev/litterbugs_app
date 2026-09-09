@@ -1,3 +1,4 @@
+import { userMessage } from './lib/userMessage';
 import { useSession } from './lib/session';
 import { withTimeout } from './lib/asyncTimeout';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -112,7 +113,7 @@ function PayoutSetupController({ navigation, route }) {
           if (nextStatus) setStatus(nextStatus);
           if (connected) {
             Alert.alert(
-              'Stripe connected',
+              'Ready to receive cleanup rewards',
               workflowToken
                 ? 'Your payout account is ready. Continue to return to the litter report and finish claiming the cleanup.'
                 : 'Your payout account is ready to receive cleanup rewards.',
@@ -128,7 +129,7 @@ function PayoutSetupController({ navigation, route }) {
           } else {
             setWaiting(true);
             Alert.alert(
-              'Stripe is still confirming your account',
+              'Your payout details are being reviewed',
               'Your information was received. Stay on this screen and try again shortly if Litterbugs does not return to the cleanup automatically.'
             );
           }
@@ -137,18 +138,18 @@ function PayoutSetupController({ navigation, route }) {
         }
       }
     } catch (error) {
-      Alert.alert('Payout setup unavailable', error.message || 'Please try again.');
+      Alert.alert('Payout setup unavailable', userMessage(error, 'Payout setup is unavailable. Please try again.'));
     } finally {
       setBusy(false);
     }
   };
 
-  if (loading) return <BrandedLoadingState title="Checking payout setup…" message="Securely checking your Stripe payout status." />;
+  if (loading && !status) return <BrandedLoadingState title="Checking payout setup…" message="" />;
   const enabled = status?.payoutsEnabled === true;
 
   return (
     <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]}>
-      {statusError || waiting ? <View style={styles.card} accessibilityLiveRegion="polite"><Text style={styles.cardTitle}>{statusError ? 'Payout status unavailable' : 'Waiting for Stripe confirmation'}</Text><Text style={styles.rowText}>{statusError ? 'Your existing setup is unchanged. Retry to check its latest status.' : 'We’re checking automatically. You can return here from your profile at any time.'}</Text><TouchableOpacity style={styles.secondaryButton} onPress={refresh} accessibilityRole="button"><Text style={styles.secondaryText}>Refresh status</Text></TouchableOpacity></View> : null}
+      {statusError || waiting ? <View style={styles.card} accessibilityLiveRegion="polite"><Text style={styles.cardTitle}>{statusError ? 'Payout status unavailable' : 'Payout setup in review'}</Text><Text style={styles.rowText}>{statusError ? 'Your existing setup is unchanged. Retry to check its latest status.' : 'We’re checking automatically. You can return here from your profile at any time.'}</Text><TouchableOpacity style={styles.secondaryButton} onPress={refresh} accessibilityRole="button"><Text style={styles.secondaryText}>Refresh status</Text></TouchableOpacity></View> : null}
       <View style={[styles.icon, enabled && styles.iconEnabled]}>
         <Ionicons name={enabled ? 'checkmark' : 'wallet-outline'} size={35} color={enabled ? '#FFFFFF' : '#2F7D32'} />
       </View>

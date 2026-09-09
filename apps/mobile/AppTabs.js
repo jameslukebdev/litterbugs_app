@@ -28,7 +28,7 @@ export default function AppTabs({ onLaunchReady }) {
           name="Reports"
           component={ReportsScreen}
           options={{
-            title: 'Reports nearby',
+            title: 'Reports',
             headerStyle: { backgroundColor: '#FFFFFF', height: insets.top + Math.max(56, 34 * fontScale + 24) },
             headerTitleStyle: styles.profileHeaderTitle,
             tabBarAccessibilityLabel: 'Reports',

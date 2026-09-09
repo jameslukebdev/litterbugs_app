@@ -22,12 +22,13 @@ export default function PointsExplanation({ ranking }) {
             <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close points explanation" onPress={() => setVisible(false)} style={styles.close}><Ionicons name="close" size={24} color="#30363B" /></TouchableOpacity>
           </View>
           <ScrollView contentContainerStyle={styles.content}>
-            <Text style={styles.copy}>Community points recognize your reporting and cleanup activity. Donations do not earn points.</Text>
+            <Text style={styles.copy}>Community points recognize your reporting and cleanup activity over time. Contributions do not earn points.</Text>
             {POINTS_RULES.map(rule => <View key={rule.title} style={styles.rule}>
               <Text style={styles.ruleTitle}>{rule.title} · {rule.award}</Text>
               <Text style={styles.copy}>{rule.detail}</Text>
             </View>)}
             <Text style={styles.copy}>{POINTS_LIMITS}</Text>
+            <Text style={styles.copy}>Your rank reflects points earned over time. My reports counts the reports currently shown in your account.</Text>
             <Text style={styles.section}>Your next milestone</Text>
             <Text style={styles.copy}>{!ranking ? 'Your profile shows your current rank once it finishes loading.' : ranking.nextRank ? `${ranking.pointsRemaining} ${ranking.pointsRemaining === 1 ? 'point' : 'points'} to ${ranking.nextRank} (${ranking.nextRankAt} total points). The progress bar measures progress from your current rank to the next.` : 'You’ve reached Dragonfly, the highest current rank. You can keep earning points.'}</Text>
             <Text style={styles.section}>Community ranks</Text>

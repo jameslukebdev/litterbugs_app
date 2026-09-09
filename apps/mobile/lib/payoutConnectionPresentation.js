@@ -1,7 +1,7 @@
 export function payoutConnectionPresentation({ status, loading, error } = {}) {
-  if (loading) {
+  if (loading && !status) {
     return {
-      label: 'Checking Stripe connection…',
+      label: 'Updating payout details…',
       icon: null,
       color: '#687178',
       backgroundColor: '#F4F6F7',
@@ -10,7 +10,7 @@ export function payoutConnectionPresentation({ status, loading, error } = {}) {
 
   if (error) {
     return {
-      label: 'Stripe status unavailable',
+      label: 'Couldn’t update payout details',
       detail: 'Tap to try again',
       icon: 'alert-circle-outline',
       color: '#8A6400',
@@ -20,7 +20,7 @@ export function payoutConnectionPresentation({ status, loading, error } = {}) {
 
   if (status?.payoutsEnabled === true) {
     return {
-      label: 'Stripe connected',
+      label: 'Ready to receive cleanup rewards',
       icon: 'checkmark-circle',
       color: '#2F7D32',
       backgroundColor: '#EEF7EF',

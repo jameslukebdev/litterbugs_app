@@ -13,12 +13,12 @@ export default function PrivacyPage() {
       activePath="/privacy"
       eyebrow="LITTERBUGS PRIVACY"
       title="Privacy policy"
-      summary="This policy explains how Burrow Base LLC collects, uses, shares, and protects information when operating Litterbugs."
-      effectiveDate="August 27, 2026"
+      summary="This policy explains how Litterbugs collects, uses, shares, and protects information when providing our services."
+      effectiveDate="September 9, 2026"
       sections={[
         {
           title: 'Scope and responsible company',
-          content: <p>This Privacy Policy applies to Litterbugs websites, mobile applications, reports, cleanup funding, rewards, support, and administrator review operated by Burrow Base LLC. It does not control the independent privacy practices of Stripe, Google, Apple, payment networks, or other services you choose to use.</p>,
+          content: <p>This Privacy Policy applies to Litterbugs websites, mobile applications, reports, cleanup funding, rewards, support, and administrator review provided by Litterbugs. It does not control the independent privacy practices of Stripe, Google, Apple, payment networks, or other services you choose to use.</p>,
         },
         {
           title: 'Information you provide',
@@ -52,6 +52,7 @@ export default function PrivacyPage() {
           title: 'Photos, locations, and Gemini review',
           content: <>
             <p>Report and cleanup photos may contain personal information, and report locations may be approximate or precise. Avoid photographing faces, license plates, private documents, homes beyond what is necessary, or other unrelated personal information.</p>
+            <p>Uploaded photos are sent to Cloudmersive to scan for malicious files before they are accepted. The mobile app asks permission before uploading photos for external checks; permission for future uploads can be withdrawn in Settings. Withdrawing permission does not delete previously submitted photos or completed reviews.</p>
             <p>Eligible photos may be provided through short-lived private references to a dedicated Google Cloud relay for paid Google Gemini review. Gemini may assess clarity, scene consistency, cleanup progress, duplicate or manipulated evidence, and possible hazards, then return structured findings to Litterbugs. Litterbugs does not opt into voluntary model-data sharing for this production workflow.</p>
             <p>Gemini does not independently release money. Litterbugs validates its result, and authorized administrators may view the relevant report, photos, reasons, and payment state to override or resolve an ambiguous, disputed, unsafe, or suspicious case. AI output may be inaccurate.</p>
           </>,
@@ -103,7 +104,7 @@ export default function PrivacyPage() {
           title: 'Changes and contact',
           content: <>
             <p>We may update this policy as Litterbugs or applicable requirements change. We will post the updated policy with a new effective date and provide additional notice when appropriate.</p>
-            <p>For privacy questions or requests, contact Burrow Base LLC at <strong>support@litterbugs.app</strong>.</p>
+            <p>For privacy questions or requests, contact Litterbugs at <strong>support@litterbugs.app</strong>.</p>
           </>,
         },
       ]}

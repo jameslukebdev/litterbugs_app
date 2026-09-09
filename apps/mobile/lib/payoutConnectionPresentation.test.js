@@ -7,7 +7,7 @@ describe('Stripe payout connection presentation', () => {
     expect(payoutConnectionPresentation({
       status: { onboardingStatus: 'complete', payoutsEnabled: true },
     })).toMatchObject({
-      label: 'Stripe connected',
+      label: 'Ready to receive cleanup rewards',
       icon: 'checkmark-circle',
       color: '#2F7D32',
     });
@@ -27,10 +27,12 @@ describe('Stripe payout connection presentation', () => {
 
   it('does not mistake loading or request failures for disconnection', () => {
     expect(payoutConnectionPresentation({ loading: true }).label)
-      .toBe('Checking Stripe connection…');
+      .toBe('Updating payout details…');
     expect(payoutConnectionPresentation({ error: true })).toMatchObject({
-      label: 'Stripe status unavailable',
+      label: 'Couldn’t update payout details',
       detail: 'Tap to try again',
     });
   });
 });
+
+it('retains known payout status during background refresh', () => { expect(payoutConnectionPresentation({ loading: true, status: { payoutsEnabled: true } }).label).toBe('Ready to receive cleanup rewards'); });

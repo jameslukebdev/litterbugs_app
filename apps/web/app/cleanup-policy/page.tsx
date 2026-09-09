@@ -14,7 +14,7 @@ export default function CleanupPolicyPage() {
       eyebrow="CLEANUP, FUNDING & SAFETY"
       title="Cleanup and reward policy"
       summary="The plain-language rules for contributions, report pools, safe participation, evidence review, disputes, refunds, and cleaner rewards."
-      effectiveDate="August 27, 2026"
+      effectiveDate="September 9, 2026"
       sections={[
         {
           title: 'Contributions and the displayed reward',
@@ -96,13 +96,13 @@ export default function CleanupPolicyPage() {
         {
           title: 'Independent participation and responsibility',
           content: <>
-            <p>Cleaners choose whether, when, and how to attempt a cleanup within the claim and evidence rules. They are independent participants, not employees or agents of Litterbugs or Burrow Base LLC. They supply their own transportation, tools, protective equipment, and disposal arrangements and are responsible for following applicable laws and property rules.</p>
+            <p>Cleaners choose whether, when, and how to attempt a cleanup within the claim and evidence rules. They are independent participants, not employees or agents of Litterbugs. They supply their own transportation, tools, protective equipment, and disposal arrangements and are responsible for following applicable laws and property rules.</p>
             <p>Cleanup activity has real-world risks. The pre-claim acknowledgment explains the assumption of risk and release that applies to voluntary participation. Do not attempt any cleanup that is unsafe, unlawful, requires specialized training, or is beyond your ability.</p>
           </>,
         },
         {
           title: 'Questions',
-          content: <p>For a cleanup, contribution, reward, dispute, or refund question, contact Burrow Base LLC at <strong>support@litterbugs.app</strong>.</p>,
+          content: <p>For a cleanup, contribution, reward, dispute, or refund question, contact Litterbugs at <strong>support@litterbugs.app</strong>.</p>,
         },
       ]}
     />

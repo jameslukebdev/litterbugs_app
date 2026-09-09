@@ -37,7 +37,7 @@ export function cleanupStatusPresentation(
         title: 'Cleanup in Progress',
         description: currentUserIsCleaner
           ? 'You claimed this cleanup.'
-          : 'Another volunteer has claimed this report.',
+          : 'A cleaner has claimed this report.',
         icon: 'time-outline',
         tone: 'active',
         showClaimActions: currentUserIsCleaner,
@@ -67,7 +67,7 @@ export function cleanupStatusPresentation(
     case 'completed':
       return {
         title: 'Cleanup Complete',
-        description: 'This cleanup was approved and is preserved as a community impact record.',
+        description: 'Cleanup approved. Thank you for helping.',
         icon: 'checkmark-circle-outline',
         tone: 'completed',
         showClaimActions: false,
@@ -103,7 +103,7 @@ export function cleanupActionMessage(error) {
     return 'Cleanup participation is temporarily unavailable.';
   }
   if (/cleanup_requires_permanent_account|cleanup_profile_required/i.test(message)) {
-    return 'Sign in with a permanent account before joining a cleanup.';
+    return 'Sign in to join this cleanup.';
   }
   if (/cleanup_not_cleaner/i.test(message)) {
     return 'Only the cleaner who claimed this report can release it.';

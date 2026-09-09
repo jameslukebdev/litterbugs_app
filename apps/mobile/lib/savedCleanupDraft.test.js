@@ -82,4 +82,13 @@ describe('durable report drafts', () => {
     expect(restored.photos).toHaveLength(1);
     expect(restored.submissionId).toBe('stable-id');
   });
+  it('explains missing evidence while keeping answers and the submission identity', async () => {
+    await saveCleanupDraft('alice', 'cleanup-1', draft);
+    m.files.clear();
+    const restored = await loadCleanupDraft('alice', 'cleanup-1');
+    expect(restored.missingPhotoCount).toBe(1);
+    expect(restored.photos).toEqual([]);
+    expect(restored.description).toBe(draft.description);
+    expect(restored.submissionId).toBe(draft.submissionId);
+  });
 });

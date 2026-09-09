@@ -22,6 +22,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ProfileAvatar from './ProfileAvatar';
 import ProfileReportList from './ProfileReportList';
 import { deleteCurrentAccount, signOut } from './lib/auth';
+import { openSupport } from './lib/support';
+import { reviewPhotoPermission } from './lib/photoReviewConsent';
 import { loadCurrentUserCleanupSummary } from './lib/cleanup';
 import { cleanupStatusPresentation } from './lib/cleanupEligibility';
 import { formatUsd, loadCleanupFeatureFlags, loadPayoutStatus } from './lib/funding';
@@ -166,10 +168,10 @@ function CompletedCleanupRow({ attempt, onPress, divided }) {
     : 'Date unavailable';
   const payoutStatus = {
     blocked: 'Awaiting release',
-    pending: 'Transfer queued',
-    processing: 'Transfer processing',
+    pending: 'Reward pending',
+    processing: 'Sending reward',
     transferred: 'Reward sent',
-    failed: 'Transfer needs attention',
+    failed: 'Reward needs attention',
   }[attempt.payout_status] || 'Payout status unavailable';
 
   return (
@@ -214,17 +216,19 @@ function RankingCard({ ranking, loading, error, onRetry }) {
         accessibilityRole={error ? 'button' : undefined}
         accessibilityLabel={error ? 'Retry loading rank' : 'Loading rank'}
       >
-        <View style={styles.rankLoadingStage}>
-          <Ionicons
-            name={showingLoader ? 'ribbon-outline' : 'cloud-offline-outline'}
-            size={34}
-            color="#2F7D32"
-          />
+        <View style={styles.rankSummaryRow}>
+          <View style={styles.rankArtworkStage}><Ionicons name={showingLoader ? 'ribbon-outline' : 'cloud-offline-outline'} size={34} color="#2F7D32" /></View>
+          <View style={styles.rankSummaryCopy}>
+            <Text style={styles.rankEyebrow}>COMMUNITY RANK</Text>
+            <Text style={styles.rankName}>{showingLoader ? 'Loading…' : 'Unavailable'}</Text>
+            <Text style={styles.rankPoints}>—</Text>
+          </View>
         </View>
-        <Text style={styles.rankLoadingTitle}>
-          {showingLoader ? 'Loading your rank…' : 'Rank unavailable'}
-        </Text>
-        {error ? <Text style={styles.rankRetryText}>Tap to try again.</Text> : null}
+        <View style={styles.rankProgressSection}>
+          <View style={styles.rankProgressHeader}><Text style={styles.rankProgressTitle}>{error ? 'Tap to try again' : 'Your progress'}</Text><Text style={styles.rankProgressPercent}>—</Text></View>
+          <View style={styles.rankProgressTrack} />
+          <Text style={styles.rankRemaining}>{error ? 'Couldn’t load your rank' : 'Loading your rank…'}</Text>
+        </View>
       </TouchableOpacity>
     );
   }
@@ -306,7 +310,8 @@ function SignedOutProfile({ navigation, bottomPadding }) {
         <Text style={styles.primaryButtonText}>Sign in or create account</Text>
       </TouchableOpacity>
       <View style={styles.signedOutSupport}>
-        <ActionRow label="Support Litterbugs" icon="heart-outline" onPress={openPatreon} />
+        <ActionRow label="Get help" icon="help-circle-outline" onPress={() => openSupport()} />
+        <ActionRow label="Support us on Patreon" icon="heart-outline" onPress={openPatreon} />
         <ActionRow label="Terms of use" icon="document-text-outline" onPress={() => openLitterbugsLink(TERMS_URL)} />
         <ActionRow label="Privacy policy" icon="shield-checkmark-outline" onPress={() => openLitterbugsLink(PRIVACY_URL)} />
       </View>
@@ -318,22 +323,23 @@ export default function ProfileScreen({ navigation, route }) {
   const { fontScale } = useWindowDimensions();
   const section = route?.params?.section || 'overview';
   const [activityView, setActivityView] = useState('current');
+  const [pullRefreshing, setPullRefreshing] = useState(false);
   const openScreen = (name, params) => navigation.navigate(name, params);
   const openReport = (reportId) => navigation.navigate('App', { screen: 'Map', params: { reportId } });
   const { user } = useSession();
   const permanent = isPermanentUser(user);
   const { profile, refreshProfile, loading } = useProfile();
-  const { reports, loading: reportsLoading, error: reportsError, refresh: refreshReports } = useAccountReports(permanent ? user.id : null);
+  const { reports, loading: reportsLoading, error: reportsError, hasLoaded: reportsHaveLoaded, refresh: refreshReports } = useAccountReports(permanent ? user.id : null);
   const [reportView, setReportView] = useState('active');
   const insets = useSafeAreaInsets();
   const [signingOut, setSigningOut] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
-  const cleanups = useFocusedResource(useCallback(() => loadCurrentUserCleanupSummary(user.id), [user?.id]), { enabled: permanent && section !== 'settings' });
-  const rankingResource = useFocusedResource(useCallback(() => loadRanking(user.id), [user?.id]), { enabled: permanent && section === 'overview' });
-  const flags = useFocusedResource(useCallback(() => loadCleanupFeatureFlags(), [user?.id]), { enabled: permanent });
-  const fundingSchemaReady = flags.hasLoaded && !flags.error;
+  const cleanups = useFocusedResource(useCallback(() => loadCurrentUserCleanupSummary(user.id), [user?.id]), { enabled: permanent && section !== 'settings', cacheKey: `cleanups:${user?.id}` });
+  const rankingResource = useFocusedResource(useCallback(() => loadRanking(user.id), [user?.id]), { enabled: permanent && section === 'overview', cacheKey: `rank:${user?.id}` });
+  const flags = useFocusedResource(useCallback(() => loadCleanupFeatureFlags(), [user?.id]), { enabled: permanent, cacheKey: `funding-flags:${user?.id}` });
+  const fundingSchemaReady = flags.hasLoaded;
   const fundingEnabled = fundingSchemaReady && Boolean(flags.data?.payments_enabled && flags.data?.gemini_financial_review_enabled);
-  const payout = useFocusedResource(useCallback(() => loadPayoutStatus(), [user?.id]), { enabled: permanent && section === 'payments' && fundingEnabled });
+  const payout = useFocusedResource(useCallback(() => loadPayoutStatus(), [user?.id]), { enabled: permanent && section === 'payments' && fundingEnabled, cacheKey: `payout:${user?.id}` });
   const cleanupSummary = cleanups.data ?? emptyCleanupSummary();
   const { loading: cleanupsLoading, error: cleanupsError, refresh: refreshCleanups } = cleanups;
   const { data: ranking, loading: rankingLoading, error: rankingError, refresh: refreshRanking } = rankingResource;
@@ -374,10 +380,13 @@ export default function ProfileScreen({ navigation, route }) {
         style: 'destructive',
         onPress: async () => {
           setSigningOut(true);
-          const { error } = await signOut();
-          if (error) {
-            setSigningOut(false);
+          try {
+            const { error } = await signOut();
+            if (error) throw error;
+          } catch {
             Alert.alert('Couldn’t sign out', 'Check your connection and try again.');
+          } finally {
+            setSigningOut(false);
           }
         },
       },
@@ -399,7 +408,17 @@ export default function ProfileScreen({ navigation, route }) {
               setDeletingAccount(true);
               await deleteCurrentAccount();
             } catch (error) {
-              Alert.alert('Couldn’t delete account', 'Check your connection and try again.');
+              if (error?.code === 'PAYOUT_PENDING') {
+                Alert.alert('A reward is still being sent', 'Contact us for help completing your account deletion.', [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Get help', onPress: () => openSupport() },
+                ]);
+              } else {
+                Alert.alert('Couldn’t delete account', 'Please try again or contact support for help.', [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Get help', onPress: () => openSupport() },
+                ]);
+              }
             } finally {
               setDeletingAccount(false);
             }
@@ -410,6 +429,7 @@ export default function ProfileScreen({ navigation, route }) {
   };
 
   const refresh = async () => {
+    setPullRefreshing(true);
     await Promise.allSettled([
       refreshProfile(),
       refreshReports(),
@@ -418,6 +438,7 @@ export default function ProfileScreen({ navigation, route }) {
       flags.refresh(),
       ...(fundingEnabled ? [refreshPayoutStatus()] : []),
     ]);
+    setPullRefreshing(false);
   };
 
   return (
@@ -425,7 +446,7 @@ export default function ProfileScreen({ navigation, route }) {
       style={styles.container}
       contentContainerStyle={{ paddingBottom: bottomPadding }}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={loading || reportsLoading || cleanupsLoading || rankingLoading || flags.loading || payoutStatusLoading} onRefresh={refresh} tintColor="#2F7D32" />}
+      refreshControl={<RefreshControl refreshing={pullRefreshing} onRefresh={refresh} tintColor="#2F7D32" />}
     >
       {section === 'overview' ? <>
       <View style={styles.identity}>
@@ -465,7 +486,7 @@ export default function ProfileScreen({ navigation, route }) {
         <ActionRow label="Payments" icon="wallet-outline" onPress={() => openScreen('Payments')} />
         <ActionRow label="Settings" icon="settings-outline" onPress={() => openScreen('Settings')} />
       </View>
-      <Text style={[styles.statLabel, { textAlign: 'center', marginTop: 18 }]}>{profile?.reports_created_count ?? 0} reports submitted · {cleanupSummary.counts.completed} cleanups completed</Text>
+      <Text style={[styles.statLabel, { textAlign: 'center', marginTop: 18 }]}>{reportsError && !reportsHaveLoaded ? 'Reports unavailable' : !reportsHaveLoaded ? 'Reports …' : `${reports.length} reports`} · {cleanups.hasLoaded ? `${cleanupSummary.counts.completed} cleanups completed` : cleanupsError ? 'Cleanups unavailable' : 'Cleanups …'}</Text>
       </> : null}
 
       {section === 'payments' ? (
@@ -479,17 +500,17 @@ export default function ProfileScreen({ navigation, route }) {
               <View style={styles.paymentIntroCopy}>
                 <Text style={styles.paymentIntroTitle}>Manage cleanup money</Text>
                 <Text style={styles.paymentIntroText}>
-                  Connect Stripe to receive cleanup rewards, or review contributions you have made.
+                  Receive cleanup rewards and view your contributions.
                 </Text>
               </View>
             </View>
-            {flags.loading ? <Text style={{ padding: 17, color: '#687178' }}>Checking payout availability…</Text> : flags.error ? <ActionRow label="Retry payout availability" icon="refresh-outline" onPress={flags.refresh} /> : fundingEnabled ? <>
-            {payoutStatusLoading || payoutStatusError || payoutStatus?.payoutsEnabled ? <StripeConnectionStatus
+            {flags.loading && !flags.hasLoaded ? <Text style={{ padding: 17, color: '#687178' }}>Loading payout details…</Text> : flags.error ? <ActionRow label="Retry payout availability" icon="refresh-outline" onPress={flags.refresh} /> : fundingEnabled ? <>
+            {<StripeConnectionStatus
               status={payoutStatus}
-              loading={payoutStatusLoading}
+              loading={payoutStatusLoading && !payoutStatus}
               error={payoutStatusError}
               onRetry={refreshPayoutStatus}
-            /> : null}
+            />}
             <ActionRow
               label={payoutStatus?.payoutsEnabled ? 'Review payout details' : 'Set up cleanup payouts'}
               icon="card-outline"
@@ -504,7 +525,7 @@ export default function ProfileScreen({ navigation, route }) {
           </View>
           <Text style={styles.sectionTitle}>Cleanup earnings</Text>
           <View style={styles.card}>
-            {cleanupsError ? <ActionRow label="Retry loading earnings" icon="refresh-outline" onPress={refreshCleanups} /> : cleanupsLoading ? <Text style={{ padding: 20, color: '#687178' }}>Loading earnings…</Text> : cleanupSummary.completed.filter(attempt => attempt.is_paid).length ? cleanupSummary.completed.filter(attempt => attempt.is_paid).map((attempt, index) => <CompletedCleanupRow key={attempt.id} attempt={attempt} divided={index > 0} onPress={() => openReport(attempt.report_id)} />) : <Text style={{ padding: 20, color: '#687178', lineHeight: 21 }}>Rewards from your completed paid cleanups will appear here.</Text>}
+            {cleanupsError && !cleanups.hasLoaded ? <ActionRow label="Retry loading earnings" icon="refresh-outline" onPress={refreshCleanups} /> : cleanupsLoading && !cleanups.hasLoaded ? <Text style={{ padding: 20, color: '#687178' }}>Loading earnings…</Text> : cleanupSummary.completed.filter(attempt => attempt.is_paid).length ? cleanupSummary.completed.filter(attempt => attempt.is_paid).map((attempt, index) => <CompletedCleanupRow key={attempt.id} attempt={attempt} divided={index > 0} onPress={() => openReport(attempt.report_id)} />) : <Text style={{ padding: 20, color: '#687178', lineHeight: 21 }}>Rewards from your completed paid cleanups will appear here.</Text>}
           </View>
         </>
       ) : null}
@@ -516,14 +537,15 @@ export default function ProfileScreen({ navigation, route }) {
         {[['current', 'Current cleanups'], ['history', 'Cleanup history'], ['reports', 'My reports']].map(([value, label]) => <TouchableOpacity key={value} accessibilityRole="tab" accessibilityState={{ selected: activityView === value }} onPress={() => setActivityView(value)} style={{ flex: 1, minHeight: 48, justifyContent: 'center', alignItems: 'center', padding: 8, borderRadius: 11, backgroundColor: activityView === value ? '#EAF4EC' : '#FFFFFF' }}><Text style={{ color: activityView === value ? '#245F2A' : '#59636A', fontWeight: '700' }}>{label}</Text></TouchableOpacity>)}
       </View>
       {activityView !== 'reports' ? <>
-      <Text style={styles.sectionTitle}>My cleanups</Text>
+      <Text style={styles.sectionTitle}>Cleanups you performed</Text>
       <View style={styles.cleanupStatsCard}>
-        <CleanupStat value={cleanupSummary.counts.completed} label="Completed" />
-        <CleanupStat value={cleanupSummary.counts.awaitingReview} label="Awaiting review" divided />
-        <CleanupStat value={cleanupSummary.counts.active} label="Active" divided />
+        <CleanupStat value={cleanups.hasLoaded ? cleanupSummary.counts.completed : '—'} label="Completed" />
+        <CleanupStat value={cleanups.hasLoaded ? cleanupSummary.counts.awaitingReview : '—'} label="Awaiting review" divided />
+        <CleanupStat value={cleanups.hasLoaded ? cleanupSummary.counts.active : '—'} label="Active" divided />
       </View>
       </> : null}
 
+      {cleanupsError && cleanups.hasLoaded ? <ActionRow label="Couldn’t update cleanups. Try again" icon="refresh-outline" onPress={refreshCleanups} /> : null}
       {activityView === 'current' ? <>
       <Text style={styles.subsectionTitle}>Current cleanups</Text>
       <View style={[styles.card, styles.activeCleanupCard]}>
@@ -532,7 +554,7 @@ export default function ProfileScreen({ navigation, route }) {
             <ActivityIndicator color="#687178" />
             <Text style={styles.activeCleanupEmptyText}>Checking your cleanups…</Text>
           </View>
-        ) : cleanupsError ? (
+        ) : cleanupsError && !cleanups.hasLoaded ? (
           <TouchableOpacity style={styles.activeCleanupEmpty} onPress={refreshCleanups}>
             <Ionicons name="cloud-offline-outline" size={27} color="#687178" />
             <Text style={styles.activeCleanupEmptyTitle}>Couldn’t load cleanups</Text>
@@ -561,7 +583,7 @@ export default function ProfileScreen({ navigation, route }) {
       {activityView === 'history' ? <>
       <Text style={styles.subsectionTitle}>Completed cleanups</Text>
       <View style={styles.card}>
-        {cleanupsLoading ? <Text style={{ padding: 20, color: '#687178' }}>Loading completed cleanups…</Text> : cleanupsError ? <ActionRow label="Retry loading completed cleanups" icon="refresh-outline" onPress={refreshCleanups} /> : cleanupSummary.completed.length > 0 ? (
+        {cleanupsLoading && !cleanups.hasLoaded ? <Text style={{ padding: 20, color: '#687178' }}>Loading completed cleanups…</Text> : cleanupsError && !cleanups.hasLoaded ? <ActionRow label="Retry loading completed cleanups" icon="refresh-outline" onPress={refreshCleanups} /> : cleanupSummary.completed.length > 0 ? (
           cleanupSummary.completed.map((attempt, index) => (
             <CompletedCleanupRow
               key={attempt.id}
@@ -582,15 +604,16 @@ export default function ProfileScreen({ navigation, route }) {
       </> : null}
       {activityView === 'reports' ? <>
       <Text style={styles.sectionTitle}>My reports</Text>
+      {reportsError && reportsHaveLoaded ? <ActionRow label="Couldn’t update reports. Try again" icon="refresh-outline" onPress={refreshReports} /> : null}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginHorizontal: 16, marginBottom: 12 }}>
         {[['active', 'Active'], ['completed', 'Completed'], ['closed', 'Closed']].map(([value, label]) => (
           <TouchableOpacity key={value} accessibilityRole="tab" accessibilityState={{ selected: reportView === value }} onPress={() => setReportView(value)} style={{ minHeight: 44, paddingHorizontal: 14, justifyContent: 'center', borderRadius: 22, backgroundColor: reportView === value ? '#EAF4EC' : '#FFFFFF' }}>
-            <Text style={{ color: '#245F2A', fontWeight: '600' }}>{label}</Text>
+            <Text style={{ color: '#245F2A', fontWeight: '600' }}>{label} ({reportsError && !reportsHaveLoaded ? '—' : !reportsHaveLoaded ? '…' : reportGroups[value].length})</Text>
           </TouchableOpacity>
         ))}
       </View>
       <View style={styles.card}>
-        {reportsLoading ? <Text style={{ padding: 20, color: '#687178' }}>Loading your reports…</Text> : reportsError ? <ActionRow label="Retry loading your reports" icon="refresh-outline" onPress={refreshReports} /> : <ProfileReportList
+        {reportsLoading && !reportsHaveLoaded ? <Text style={{ padding: 20, color: '#687178' }}>Loading your reports…</Text> : reportsError && !reportsHaveLoaded ? <ActionRow label="Retry loading your reports" icon="refresh-outline" onPress={refreshReports} /> : <ProfileReportList
           reports={reportGroups[reportView]}
           emptyTitle={`No ${reportView} reports`}
           emptyText="Reports you submit appear here, wherever you browse on the map."
@@ -598,7 +621,7 @@ export default function ProfileScreen({ navigation, route }) {
         />}
       </View>
 
-      {fundingSchemaReady ? <View style={[styles.card, { marginTop: 16 }]}><ActionRow label="Expired report decisions" icon="calendar-outline" onPress={() => openScreen('ExpiredReports')} /></View> : null}
+      {fundingSchemaReady ? <View style={[styles.card, { marginTop: 16 }]}><ActionRow label="Reports needing attention" icon="calendar-outline" onPress={() => openScreen('ExpiredReports')} /></View> : null}
       </> : null}
       </> : null}
 
@@ -621,8 +644,10 @@ export default function ProfileScreen({ navigation, route }) {
         <ActionRow label="Edit profile" icon="person-outline" onPress={() => openScreen('EditProfile')} />
         <ActionRow label="Terms of use" icon="document-text-outline" onPress={() => openLitterbugsLink(TERMS_URL)} />
         <ActionRow label="Privacy policy" icon="shield-checkmark-outline" onPress={() => openLitterbugsLink(PRIVACY_URL)} />
+        <ActionRow label="Photo review permissions" icon="images-outline" onPress={() => reviewPhotoPermission(user.id)} />
         <ActionRow label="Cleanup and reward policy" icon="leaf-outline" onPress={() => openLitterbugsLink(CLEANUP_POLICY_URL)} />
-        <ActionRow label="Support Litterbugs" icon="heart-outline" onPress={openPatreon} />
+        <ActionRow label="Get help" icon="help-circle-outline" onPress={() => openSupport()} />
+        <ActionRow label="Support us on Patreon" icon="heart-outline" onPress={openPatreon} />
         <ActionRow label={signingOut ? 'Signing out…' : 'Sign out'} icon="log-out-outline" onPress={handleSignOut} busy={signingOut} />
       </View>
 

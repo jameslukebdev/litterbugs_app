@@ -1,3 +1,4 @@
+import { listStorageTree } from "../_shared/storage-tree.ts";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.87.1";
 
@@ -83,7 +84,12 @@ Deno.serve(async (request: Request) => {
       "prepare_funded_cleanup_account_deletion",
       { target_user_id: user.id },
     );
-    if (financialCleanupError) throw financialCleanupError;
+    if (financialCleanupError) {
+      if (financialCleanupError.message?.includes("cleanup_payout_must_finish_before_account_deletion")) {
+        return jsonResponse({ code: "PAYOUT_PENDING", error: "A cleanup reward is still being sent. Please contact support for help completing your account deletion." }, 409);
+      }
+      throw financialCleanupError;
+    }
 
     const { data: reports, error: reportsError } = await admin
       .from("reports")
@@ -95,57 +101,24 @@ Deno.serve(async (request: Request) => {
       Array.isArray(report.photo_paths) ? report.photo_paths : []
     );
 
-    const { data: reportFolders, error: folderError } = await admin.storage
-      .from("report_photos")
-      .list(user.id, { limit: 1000 });
-    if (folderError) throw folderError;
-
-    const nestedPaths: string[] = [];
-    for (const entry of reportFolders ?? []) {
-      if (entry.id) {
-        nestedPaths.push(`${user.id}/${entry.name}`);
-        continue;
-      }
-
-      const reportFolder = `${user.id}/${entry.name}`;
-      const { data: files, error: filesError } = await admin.storage
-        .from("report_photos")
-        .list(reportFolder, { limit: 1000 });
-      if (filesError) throw filesError;
-
-      nestedPaths.push(
-        ...(files ?? [])
-          .filter((file) => Boolean(file.id))
-          .map((file) => `${reportFolder}/${file.name}`),
-      );
-    }
+    const nestedPaths = await listStorageTree(
+      (path, options) => admin.storage.from("report_photos").list(path, options),
+      user.id,
+    );
 
     const userPrefix = `${user.id}/`;
     const photoPaths = [...new Set([...attachedPaths, ...nestedPaths])]
       .filter((path) => typeof path === "string" && path.startsWith(userPrefix));
     await removeInChunks(admin.storage, "report_photos", photoPaths);
 
-    const { data: quarantineFolders, error: quarantineFolderError } = await admin.storage
-      .from("media_quarantine")
-      .list(user.id, { limit: 10 });
-    if (quarantineFolderError && !isMissingBucketError(quarantineFolderError)) {
-      throw quarantineFolderError;
-    }
-    const quarantinePaths: string[] = [];
-    for (const entry of quarantineFolders ?? []) {
-      const folder = `${user.id}/${entry.name}`;
-      for (let offset = 0; ; offset += 1000) {
-        const { data: files, error: filesError } = await admin.storage
-          .from("media_quarantine")
-          .list(folder, { limit: 1000, offset });
-        if (filesError) throw filesError;
-        quarantinePaths.push(
-          ...(files ?? [])
-            .filter((file) => Boolean(file.id))
-            .map((file) => `${folder}/${file.name}`),
-        );
-        if ((files?.length ?? 0) < 1000) break;
-      }
+    let quarantinePaths: string[] = [];
+    try {
+      quarantinePaths = await listStorageTree(
+        (path, options) => admin.storage.from("media_quarantine").list(path, options),
+        user.id,
+      );
+    } catch (error) {
+      if (!isMissingBucketError(error)) throw error;
     }
     await removeInChunks(admin.storage, "media_quarantine", quarantinePaths);
 

@@ -1,5 +1,7 @@
 # Current Mobile Release Candidates
 
+> September 9 readiness update: the signed artifacts below predate the September 8–9 workflow and polish changes. They are historical evidence, not candidates for submitting the current app. See [the pre-submission audit](reviews/2026-09-09-prestore-audit.md) for current verification and release gates. No new App Store submission has been made.
+
 These builds contain the completed mobile fixes. The public Android bundle was
 refreshed from `9cc1440d944d06cde16f035f3423338f5921198f`, which keeps Facebook
 sign-in out of public releases until Meta review is complete. Internal mobile

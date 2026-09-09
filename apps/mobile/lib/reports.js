@@ -1,4 +1,4 @@
-import { MAP_REPORT_LIMIT } from './mapWorkBudget';
+import { loadDiscoveryReports, REPORT_SELECT } from './discoveryReports';
 import { saveMapMemory } from './discoveryMemory';
 import {
   createContext,
@@ -14,7 +14,7 @@ import { DEFAULT_REPORT_FILTERS, matchesReportFilters } from './reportFilters';
 import { matchesGeography } from './searchGeography';
 import { supabase } from './supabase';
 import { useProfile } from './profile';
-import { completedImpactReportFilter, isVisibleReport } from './reportVisibility';
+import { isVisibleReport } from './reportVisibility';
 
 export const DEFAULT_MAP_REGION = Object.freeze({
   latitude: 39.8283,
@@ -25,17 +25,7 @@ export const DEFAULT_MAP_REGION = Object.freeze({
 
 const ReportsContext = createContext(null);
 
-const REPORT_SELECT = `
-  *,
-  reporter:profiles!reports_user_id_fkey(
-    id,
-    display_name,
-    username,
-    provider_avatar_url,
-    avatar_path,
-    updated_at
-  )
-`;
+
 
 export function getDistanceMiles(pointA, pointB) {
   if (!pointA || !pointB) return null;
@@ -83,14 +73,14 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
     const timer = setTimeout(() => saveMapMemory(mapRegion, searchPlace), 500);
     return () => clearTimeout(timer);
   }, [mapRegion, searchPlace]);
-  const radiusRef = useRef(filters.radius);
-  radiusRef.current = filters.radius;
   const requestSequence = useRef(0);
   const regionRef = useRef(mapRegion);
   regionRef.current = mapRegion;
   const photoUrlCache = useRef(new Map());
   const photoUrlRequests = useRef(new Map());
   const { blockedIds } = useProfile();
+  const discoveryRef = useRef(null);
+  discoveryRef.current = { filters, searchPlace, blockedIds };
 
   const refreshReports = useCallback(async ({ showRefresh = false } = {}) => {
     if (showRefresh) setRefreshing(true);
@@ -101,29 +91,10 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
     requestAbort.current = controller;
     const sequence = ++requestSequence.current;
     try {
-      const area = regionRef.current;
-      const latitudeSpan = Math.max(area.latitudeDelta, radiusRef.current / 69);
-      const longitudeSpan = Math.max(area.longitudeDelta, radiusRef.current / (69 * Math.max(0.01, Math.cos(area.latitude * Math.PI / 180))));
-      const rows = [];
-      // Fetch a bounded area in stable pages; never silently accept the API's row cap.
-      const nowIso = new Date().toISOString();
-      for (let offset = 0; offset <= MAP_REPORT_LIMIT; offset += 500) {
-        let query = supabase.from('reports').select(REPORT_SELECT)
-          .eq('is_sample', false).eq('is_published', true).is('cancelled_at', null)
-          .or(completedImpactReportFilter(nowIso))
-          .gte('latitude', Math.max(-90, area.latitude - latitudeSpan))
-          .lte('latitude', Math.min(90, area.latitude + latitudeSpan));
-        const west = area.longitude - longitudeSpan;
-        const east = area.longitude + longitudeSpan;
-        if (west >= -180 && east <= 180) query = query.gte('longitude', west).lte('longitude', east);
-        const { data, error: reportsError } = await query.order('id').range(offset, Math.min(offset + 499, MAP_REPORT_LIMIT)).abortSignal(controller.signal);
-        if (sequence !== requestSequence.current) return;
-        if (reportsError) throw reportsError;
-        rows.push(...(data ?? []));
-        if (!data || data.length < 500) break;
-      }
-      setTruncated(rows.length > MAP_REPORT_LIMIT);
-      setAllReports(rows.slice(0, MAP_REPORT_LIMIT));
+      const result = await loadDiscoveryReports({ area: regionRef.current, ...discoveryRef.current, signal: controller.signal });
+      if (sequence !== requestSequence.current) return;
+      setTruncated(result.truncated);
+      setAllReports(result.reports);
       setError(null);
     } catch {
       if (sequence === requestSequence.current) setError('Reports could not be loaded. Pull to try again.');
@@ -135,7 +106,7 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
   useEffect(() => {
     const timer = setTimeout(() => refreshReports(), 400);
     return () => { clearTimeout(timer); requestSequence.current += 1; requestAbort.current?.abort(); };
-  }, [mapRegion, filters.radius, refreshReports]);
+  }, [mapRegion, filters, searchPlace, blockedIds, refreshReports]);
 
   const getReportById = useCallback(async (reportId) => {
     const { data, error: reportError } = await supabase
@@ -143,7 +114,6 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
       .select(REPORT_SELECT)
       .eq('id', reportId)
       .eq('is_sample', false).eq('is_published', true)
-      .is('cancelled_at', null)
       .maybeSingle();
 
     if (reportError) throw reportError;

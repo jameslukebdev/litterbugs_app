@@ -1,3 +1,4 @@
+import { savePaymentVerification, withPaymentVerification } from './paymentVerification';
 import { applyHistoryCursor, historyPage, HISTORY_PAGE_SIZE } from './historyPagination';
 import { supabase } from './supabase';
 import { edgeFunctionErrorMessage } from './edgeFunctionError';
@@ -66,11 +67,12 @@ export async function loadMyContribution(id, userId, { verify = true } = {}) {
   if (error) throw error;
   if (data?.status === 'payment_pending' && verify) {
     const { data: verification, error: verificationError } = await supabase.functions.invoke('check-contribution-status', { body: { contributionId: id } });
-    if (verificationError || verification?.error) return { ...data, verificationUnavailable: true };
+    if (verificationError || verification?.error) return { ...await withPaymentVerification(userId, data), verificationUnavailable: true };
+    await savePaymentVerification(userId, data, verification);
     const latest = await loadMyContribution(id, userId, { verify: false });
     return { ...(latest || data), providerState: verification.providerState, checkedAt: verification.checkedAt };
   }
-  return data;
+  return withPaymentVerification(userId, data);
 }
 
 export async function loadMyContributions({ userId, cursor = null, completedOnly = false } = {}) {
@@ -82,7 +84,7 @@ export async function loadMyContributions({ userId, cursor = null, completedOnly
   query = applyHistoryCursor(query, cursor);
   const { data, error } = await query.order('created_at', { ascending: false }).order('id', { ascending: false }).limit(HISTORY_PAGE_SIZE + 1);
   if (error) throw error;
-  return historyPage(data ?? []);
+  return historyPage(await Promise.all((data ?? []).map(item => withPaymentVerification(userId, item))));
 }
 
 export async function loadReportFundingFeedback(reportId) {

@@ -1,16 +1,15 @@
 import Photo from './ReportPreviewPhoto';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { cleanupStatusPresentation } from '../lib/cleanupEligibility';
-import { formatMapFundingLabel } from '../lib/mapFundingMarker';
+import { reportPresentation } from '../lib/reportPresentation';
 
 function Summary({ report }) {
-  const status = cleanupStatusPresentation(report);
+  const presentation = reportPresentation(report);
   const completed = report.cleanup_state === 'completed';
   return <View style={styles.copy}>
     <Text style={styles.title} numberOfLines={2}>{report.title || 'Litter report'}</Text>
-    <Text style={styles.status}>{status?.title || 'Available to clean'}</Text>
-    {!completed ? <Text style={styles.reward}>{Number(report.funded_amount_cents) > 0 ? `Cleaner reward ${formatMapFundingLabel(report.funded_amount_cents)}` : '$0 in pool · No donations yet'}</Text> : null}
+    <Text style={styles.status}>{presentation.status}</Text>
+    {!completed ? <Text style={styles.reward}>{presentation.funding}</Text> : null}
   </View>;
 }
 export default function MapReportPreview({ report, nearby, bottom, insetBottom, getPhotoUrl, onClose, onChoose, onDetails, onCloseNearby, onHeight, distance }) {

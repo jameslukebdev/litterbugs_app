@@ -1,3 +1,4 @@
+import { userMessage } from './lib/userMessage';
 import { useCallback, useState } from 'react';
 import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,7 +25,7 @@ export default function ExpiredReportsScreen() {
       await renewExpiredReport(report.id);
       await Promise.all([load(), refreshReports({ showRefresh: false })]);
     } catch (error) {
-      Alert.alert('Couldn’t renew report', error.message || 'Please try again.');
+      Alert.alert('Couldn’t renew report', userMessage(error, 'This report may have changed. Refresh and try again.'));
     } finally { setBusyId(null); }
   };
 
@@ -42,7 +43,7 @@ export default function ExpiredReportsScreen() {
             await closeExpiredReport(report.id);
             await Promise.all([load(), refreshReports({ showRefresh: false })]);
           } catch (error) {
-            Alert.alert('Couldn’t close report', error.message || 'Please try again.');
+            Alert.alert('Couldn’t close report', userMessage(error, 'This report may have changed. Refresh and try again.'));
           } finally { setBusyId(null); }
         },
       },

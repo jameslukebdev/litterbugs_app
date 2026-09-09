@@ -49,7 +49,7 @@ describe('cleanup eligibility', () => {
   it('maps secure backend transition failures to useful messages', () => {
     expect(cleanupActionMessage({ message: 'This cleanup was just claimed' })).toContain('just claimed');
     expect(cleanupActionMessage({ message: 'cleanup_waiver_outdated' })).toContain('changed');
-    expect(cleanupActionMessage({ message: 'cleanup_requires_permanent_account' })).toContain('permanent account');
+    expect(cleanupActionMessage({ message: 'cleanup_requires_permanent_account' })).toContain('Sign in');
     expect(cleanupActionMessage({ message: 'cleanup_not_cleaner' })).toContain('Only the cleaner');
   });
 

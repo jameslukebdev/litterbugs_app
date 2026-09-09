@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { upload, remove, getSession, randomUUID } = vi.hoisted(() => ({
+const { upload, remove, getSession, randomUUID, requirePhotoReviewConsent } = vi.hoisted(() => ({
+  requirePhotoReviewConsent: vi.fn(),
   upload: vi.fn(),
   remove: vi.fn(),
   getSession: vi.fn(),
   randomUUID: vi.fn(),
 }));
 
+vi.mock('./photoReviewConsent', () => ({ requirePhotoReviewConsent }));
 vi.mock('expo-crypto', () => ({ randomUUID }));
 vi.mock('./supabase', () => ({
   supabase: {
@@ -20,6 +22,7 @@ import { MEDIA_PROCESSING_URL, uploadSecureMedia } from './secureMediaUpload';
 describe('secure mobile media upload', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    requirePhotoReviewConsent.mockResolvedValue(undefined);
     randomUUID.mockReturnValue('33333333-3333-4333-8333-333333333333');
     upload.mockResolvedValue({ error: null });
     remove.mockResolvedValue({ error: null });
@@ -27,6 +30,14 @@ describe('secure mobile media upload', () => {
       data: { session: { access_token: 'signed-user-token' } },
       error: null,
     });
+  });
+
+  it('sends no photo bytes when review permission is declined', async () => {
+    requirePhotoReviewConsent.mockRejectedValue(new Error('Declined'));
+    const fetchImpl = vi.fn();
+    await expect(uploadSecureMedia({ userId: 'owner', kind: 'report', bytes: new Uint8Array([1]), mimeType: 'image/jpeg', subjectId: 'report', fetchImpl })).rejects.toThrow('Declined');
+    expect(upload).not.toHaveBeenCalled();
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 
   it('uploads only to quarantine before requesting a server-checked destination', async () => {

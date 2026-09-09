@@ -86,7 +86,7 @@ export default function ReportUserScreen({ navigation, route }) {
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>Why are you reporting {route.params?.displayName || 'this user'}?</Text>
-        <Text style={styles.subtitle}>Your report is private and will enter the moderation queue.</Text>
+        <Text style={styles.subtitle}>Your report is private and will be reviewed by our team.</Text>
 
         <View style={styles.reasons}>
           {REASONS.map(([value, label]) => {

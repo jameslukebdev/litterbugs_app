@@ -4,12 +4,17 @@ import { findResponsiveUserLocation } from './responsiveLocation';
 // after leaving the screen, revoking permission, or starting another request.
 export function createReportsLocationLoader(locationApi, onChange, locate = findResponsiveUserLocation) {
   let sequence = 0;
+  let lastOrigin = null;
   return {
     cancel() { sequence += 1; },
     async refresh({ requestPermission = false } = {}) {
       const request = ++sequence;
       const current = () => request === sequence;
-      const publish = (status, origin = null) => { if (current()) onChange({ status, origin }); };
+      const publish = (status, origin = null) => {
+        if (!current()) return;
+        if (status !== 'loading') lastOrigin = origin;
+        onChange({ status, origin: status === 'loading' ? lastOrigin : origin });
+      };
       publish('loading');
       try {
         let permission = await locationApi.getForegroundPermissionsAsync();

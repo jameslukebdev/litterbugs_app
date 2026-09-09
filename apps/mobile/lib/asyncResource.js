@@ -18,7 +18,7 @@ export function createAsyncResource(load, { paged = false, enabled = true } = {}
       publish({
         data: append ? [...new Map([...state.data, ...data].map(item => [item.id, item])).values()] : data,
         nextCursor: paged ? result.nextCursor : null,
-        loading: false, loadingMore: false, hasLoaded: true,
+        loading: false, loadingMore: false, hasLoaded: true, updatedAt: Date.now(),
       });
     } catch (error) {
       if (request === sequence) publish({ [append ? 'moreError' : 'error']: error, loading: false, loadingMore: false });

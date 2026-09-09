@@ -1,8 +1,12 @@
+import { loadDiscoveryReports } from '../lib/discoveryReports';
+import { useProfile } from '../lib/profile';
 import { mapLimitMessage } from '../lib/mapWorkBudget';
 import LocationSearch from './LocationSearch';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Image,
+  KeyboardAvoidingView,
+  Platform,
   Modal,
   ScrollView,
   StyleSheet,
@@ -33,7 +37,7 @@ const groups = [
     [
       ['all', 'Any reward'],
       ['funded', 'Funded'],
-      ['volunteer', 'Volunteer'],
+      ['volunteer', 'No funds yet'],
     ],
   ],
   [
@@ -58,9 +62,24 @@ const groups = [
   ],
 ];
 export default function ReportFilters({ map = false }) {
-  const { filters, setFilters, filteredReports, loading, truncated } =
+  const { filters, setFilters, filteredReports, loading, truncated, mapRegion, searchPlace } =
     useReports();
   const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(filters);
+  const { blockedIds } = useProfile();
+  const [preview, setPreview] = useState(null);
+  const draftChanged = Object.keys(filters).some(key => filters[key] !== draft[key]);
+  useEffect(() => {
+    if (!open || !draftChanged) { setPreview(null); return; }
+    const controller = new AbortController();
+    setPreview(null);
+    const timer = setTimeout(() => loadDiscoveryReports({ area: mapRegion, filters: draft, searchPlace, blockedIds, signal: controller.signal })
+      .then(result => { if (!controller.signal.aborted) setPreview({ count: result.reports.length, truncated: result.truncated }); })
+      .catch(() => {}), 300);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [open, draftChanged, draft, mapRegion, searchPlace, blockedIds]);
+  const displayCount = draftChanged ? preview?.count : filteredReports.length;
+  const displayTruncated = draftChanged ? preview?.truncated : truncated;
   const insets = useSafeAreaInsets();
   const activeFilters = groups
     .filter(([key]) => filters[key] !== DEFAULT_REPORT_FILTERS[key])
@@ -90,7 +109,7 @@ export default function ReportFilters({ map = false }) {
           accessibilityRole="button"
           accessibilityLabel={count ? `Filters, ${count} active` : 'Filters'}
           accessibilityHint="Choose cleanup status, reward, distance, severity, and report keywords"
-          onPress={() => setOpen(true)}
+          onPress={() => { setDraft({ ...filters }); setOpen(true); }}
           style={[styles.filterButton, count > 0 && styles.selected]}
         >
           <Ionicons name="options-outline" size={25} color="#2F7D32" />
@@ -118,7 +137,7 @@ export default function ReportFilters({ map = false }) {
         animationType="slide"
         onRequestClose={() => setOpen(false)}
       >
-        <View style={styles.backdrop}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.backdrop}>
           <TouchableOpacity
             style={StyleSheet.absoluteFill}
             accessible={false}
@@ -137,13 +156,14 @@ export default function ReportFilters({ map = false }) {
               </Text>
               <TouchableOpacity
                 style={styles.chip}
-                onPress={() => setFilters(DEFAULT_REPORT_FILTERS)}
+                onPress={() => setDraft({ ...DEFAULT_REPORT_FILTERS })}
                 accessibilityRole="button"
               >
                 <Text style={styles.chipText}>
                   Reset
                 </Text>
               </TouchableOpacity>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close filters without applying" onPress={() => setOpen(false)} style={styles.chip}><Ionicons name="close" size={24} color="#245F2A" /></TouchableOpacity>
             </View>
             <ScrollView keyboardShouldPersistTaps="handled">
               {groups.map(([key, label, options]) => (
@@ -152,9 +172,9 @@ export default function ReportFilters({ map = false }) {
                   <View style={styles.options}>
                     {options.map(([value, text]) => (
                       <TouchableOpacity key={value} accessibilityRole="radio"
-                        accessibilityState={{ checked: filters[key] === value }}
-                        style={[styles.chip, filters[key] === value && styles.selected]}
-                        onPress={() => choose(key, value)}>
+                        accessibilityState={{ checked: draft[key] === value }}
+                        style={[styles.chip, draft[key] === value && styles.selected]}
+                        onPress={() => setDraft(current => ({ ...current, [key]: value }))}>
                         <Text style={styles.chipText}>{key === 'status' && value === 'all' ? 'All reports' : text}</Text>
                       </TouchableOpacity>
                     ))}
@@ -162,19 +182,19 @@ export default function ReportFilters({ map = false }) {
                 </View>
               ))}
               <Text style={styles.label}>Report keywords</Text>
-              <TextInput value={filters.query} onChangeText={value => choose('query', value)} placeholder="Search report titles and notes" accessibilityLabel="Report keywords" style={styles.input} clearButtonMode="while-editing" />
+              <TextInput value={draft.query} onChangeText={value => setDraft(current => ({ ...current, query: value }))} placeholder="Search report titles and notes" accessibilityLabel="Report keywords" style={styles.input} clearButtonMode="while-editing" />
             </ScrollView>
               <TouchableOpacity
                 style={styles.done}
                 accessibilityRole="button"
-                onPress={() => setOpen(false)}
+                onPress={() => { setFilters(draft); setOpen(false); }}
               >
                 <Text style={styles.doneText}>
-                  {loading ? 'Updating reports…' : `Show ${filteredReports.length} ${filteredReports.length === 1 ? 'report' : 'reports'}`}
+                  {displayCount == null || (!draftChanged && loading) ? 'Show reports' : `Show ${displayCount}${displayTruncated ? '+' : ''} ${displayCount === 1 ? 'report' : 'reports'}`}
                 </Text>
               </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );

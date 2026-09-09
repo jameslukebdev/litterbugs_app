@@ -12,6 +12,7 @@ import PaymentStatus from './components/PaymentStatus';
 import BrandedLoadingState from './BrandedLoadingState';
 
 export default function ContributionHistoryScreen({ navigation }) {
+  const [pullRefreshing, setPullRefreshing] = useState(false);
   const [completedOnly, setCompletedOnly] = useState(false);
   const insets = useSafeAreaInsets();
   const { user } = useSession();
@@ -21,14 +22,14 @@ export default function ContributionHistoryScreen({ navigation }) {
   return (
     <FlatList
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]}
-      refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor="#2F7D32" />}
+      refreshControl={<RefreshControl refreshing={pullRefreshing} onRefresh={async () => { setPullRefreshing(true); await load(); setPullRefreshing(false); }} tintColor="#2F7D32" />}
       data={items}
       keyExtractor={item => item.id}
       ListHeaderComponent={<>
       <View style={[styles.line, { marginBottom: 18, gap: 12 }]}>{[[false,'All payments'],[true,'Completed impact']].map(([value,label]) => <TouchableOpacity key={label} accessibilityRole="button" accessibilityState={{selected:completedOnly===value}} onPress={() => setCompletedOnly(value)} style={[styles.statusPill,{minHeight:44,backgroundColor:completedOnly===value?'#E3EEE4':'#FFFFFF'}]}><Text style={styles.status}>{label}</Text></TouchableOpacity>)}</View>
       {error ? <View><Text style={styles.error}>Couldn’t refresh payment history.</Text><TouchableOpacity accessibilityRole="button" style={styles.more} onPress={load}><Text style={styles.status}>Retry payment history</Text></TouchableOpacity></View> : null}
       {!loading && !error && items.length === 0 ? (
-        <View style={styles.empty}><Ionicons name="receipt-outline" size={42} color="#6D777D" /><Text style={styles.emptyTitle}>{completedOnly ? 'No completed impact yet' : 'No payments yet'}</Text><Text style={styles.emptyCopy}>{completedOnly ? 'Contributions to completed cleanups will appear here.' : 'Your contributions and payment attempts will appear here.'}</Text></View>
+        <View style={styles.empty}><Ionicons name="receipt-outline" size={42} color="#6D777D" /><Text style={styles.emptyTitle}>{completedOnly ? 'No completed impact yet' : 'No payments yet'}</Text><Text style={styles.emptyCopy}>{completedOnly ? 'Contributions to completed cleanups will appear here.' : 'Your contributions and unfinished payments will appear here.'}</Text></View>
       ) : null}
       </>}
       renderItem={({ item }) => (
@@ -43,14 +44,14 @@ export default function ContributionHistoryScreen({ navigation }) {
           <Text style={styles.statusMessage}>{statusMessage(item)}</Text>
           <Text style={styles.date}>{formatContributionDate(item.created_at)}</Text>
           <View style={styles.breakdown}><FeeExplanationLabel label="Litterbugs fee" textStyle={styles.muted} /><Text style={styles.muted}>{formatUsd(item.platform_fee_cents)}</Text></View>
-          <View style={styles.breakdown}><Text style={styles.total}>{['payment_pending','failed'].includes(item.status) ? 'Attempted total' : item.status === 'refunded' ? 'Original total' : 'Total charged'}</Text><Text style={styles.total}>{formatUsd(item.total_amount_cents)}</Text></View>
+          <View style={styles.breakdown}><Text style={styles.total}>{['payment_pending','failed'].includes(item.status) ? 'Payment amount' : item.status === 'refunded' ? 'Original total' : 'Total charged'}</Text><Text style={styles.total}>{formatUsd(item.total_amount_cents)}</Text></View>
           <TouchableOpacity accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }} onPress={() => navigation.navigate('PaymentDetail', { contributionId: item.id })}><Text style={styles.status}>View payment details</Text></TouchableOpacity>
           {item.refunded_at ? <Text style={styles.date}>Refunded {formatContributionDate(item.refunded_at)}</Text> : null}
         </View>
       )}
       ListFooterComponent={<>
       {loading && items.length === 0 ? (
-        <BrandedLoadingState compact title="Loading contributions…" message="Checking payment and refund status." />
+        <BrandedLoadingState compact title="Loading payment history…" />
       ) : null}
       {history.moreError ? <Text style={styles.error}>Couldn’t load older payments. Your current history is still available.</Text> : null}
       {history.nextCursor ? <TouchableOpacity accessibilityRole="button" disabled={loading || history.loadingMore} style={styles.more} onPress={history.loadMore}><Text style={styles.status}>{history.loadingMore ? 'Loading older payments…' : history.moreError ? 'Retry older payments' : 'Load older payments'}</Text></TouchableOpacity> : null}

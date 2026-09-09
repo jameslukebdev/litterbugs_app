@@ -10,7 +10,7 @@ describe('report review cleanup-fund choices', () => {
     expect(mapScreenSource).toContain(
       'A reward is optional. You can also add one after publishing.'
     );
-    expect(mapScreenSource).toContain("{ value: 'none', label: 'Volunteer' }");
+    expect(mapScreenSource).toContain("{ value: 'none', label: 'Not now' }");
     expect(mapScreenSource).toContain("{ value: '25', label: '$25' }");
     expect(mapScreenSource).toContain("{ value: 'other', label: 'Other' }");
   });
@@ -19,21 +19,18 @@ describe('report review cleanup-fund choices', () => {
     expect(mapScreenSource).toContain('placeholder="1.00"');
     expect(mapScreenSource).toContain('Enter an amount from $1 to $1,000.');
     expect(mapScreenSource).toContain(
-      'Choose at least $1 and no more than $1,000, or select Volunteer.'
+      'Choose at least $1 and no more than $1,000, or select Not now.'
     );
   });
 
   it('defaults to volunteer while validating optional rewards', () => {
     expect(mapScreenSource).toContain("startingFundingChoice: 'none'");
-    expect(mapScreenSource).toContain('Choose Volunteer or select a starting amount.');
+    expect(mapScreenSource).toContain('Choose Not now or select a starting amount.');
     expect(mapScreenSource).toContain("'Choose cleanup funding'");
   });
 
   it('shows the current reward and separates cleanup from utility actions', () => {
-    expect(mapScreenSource).toContain(
-      '? `Cleaner reward ${formatUsd(selectedReport.funded_amount_cents)}`'
-    );
-    expect(mapScreenSource).toContain(": '$0 in pool · No donations yet'");
+    expect(mapScreenSource).toContain('reportPresentation(selectedReport).funding');
 
     const cleanupCard = mapScreenSource.indexOf('style={styles.cleanupEligibilityCard}');
     const utilityBar = mapScreenSource.indexOf('styles.reportUtilityBar,');
@@ -47,10 +44,10 @@ describe('report review cleanup-fund choices', () => {
 
   it('keeps Fund available for active volunteer opportunities', () => {
     expect(mapScreenSource).toContain(
-      "const selectedReportCanOpenFunding = fundingEnabled\n    && selectedReport?.cleanup_state === 'available'\n    && selectedReport?.renewal_status === 'active';"
+      "const selectedReportCanOpenFunding = fundingEnabled\n    && isCleanupAvailable(selectedReport)\n    && selectedReport?.cleanup_state === 'available'\n    && selectedReport?.renewal_status === 'active';"
     );
     expect(mapScreenSource).not.toContain(
-      "const selectedReportCanOpenFunding = fundingEnabled\n    && selectedReport?.cleanup_state === 'available'\n    && selectedReport?.renewal_status === 'active'\n    && selectedReport?.funding_eligibility === 'eligible';"
+      "const selectedReportCanOpenFunding = fundingEnabled\n    && isCleanupAvailable(selectedReport)\n    && selectedReport?.cleanup_state === 'available'\n    && selectedReport?.renewal_status === 'active'\n    && selectedReport?.funding_eligibility === 'eligible';"
     );
   });
 

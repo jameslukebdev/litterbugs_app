@@ -10,11 +10,14 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { reportPresentation } from './lib/reportPresentation';
+
 import { LoadingButtonContent } from './BrandedLoadingState';
 
 export default function CleanupWaiverModal({
   visible,
   waiver,
+  report,
   accepting,
   onAccept,
   onClose,
@@ -37,7 +40,7 @@ export default function CleanupWaiverModal({
         <View style={styles.header}>
           <View style={styles.headerCopy}>
             <Text style={styles.eyebrow}>CLEANUP SAFETY</Text>
-            <Text style={styles.title}>{waiver?.title ?? 'Cleanup acknowledgment'}</Text>
+            <Text style={styles.title}>Cleanup safety and agreement</Text>
           </View>
           <TouchableOpacity
             style={styles.closeButton}
@@ -55,6 +58,11 @@ export default function CleanupWaiverModal({
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
+          {report ? <View style={styles.guidelinesCard}>
+            <Text style={styles.guidelinesTitle}>{report.title || 'This cleanup'}</Text>
+            <Text style={styles.guidelinesBody}>{reportPresentation(report).funding}{'\n'}You’ll have 24 hours to finish and submit 1–3 after photos. Only continue if the location is safe to clean.{Number(report.funded_amount_cents) > 0 ? '\nPayout setup is required before reserving a funded cleanup. Your reward is paid after approval.' : '\nThere is currently no funded reward.'}</Text>
+            <Text style={styles.guidelinesBody}>Reading this acknowledgment does not reserve the cleanup. You’ll confirm your claim afterward.</Text>
+          </View> : null}
           <Text style={styles.body}>{waiver?.body ?? ''}</Text>
 
           {waiver?.guidelines_body ? (
@@ -71,12 +79,9 @@ export default function CleanupWaiverModal({
             </View>
           ) : null}
 
-          <View style={styles.versionCard}>
-            <Text style={styles.versionLabel}>Waiver version</Text>
-            <Text style={styles.versionValue}>{waiver?.waiver_version}</Text>
-            <Text style={[styles.versionLabel, styles.versionSpacing]}>Safety guidelines version</Text>
-            <Text style={styles.versionValue}>{waiver?.guidelines_version}</Text>
-          </View>
+          {waiver?.published_at && Number.isFinite(Date.parse(waiver.published_at)) ? <Text style={{ color: '#687178', fontSize: 13, marginVertical: 12 }}>
+            Updated {new Date(waiver.published_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+          </Text> : null}
 
           <TouchableOpacity
             style={styles.acknowledgmentRow}

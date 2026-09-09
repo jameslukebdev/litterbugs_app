@@ -29,7 +29,7 @@ describe('cleanup notifications', () => {
     expect(cleanupNotificationPresentation([{ event_type: 'paid_cleanup_disputed' }]).message)
       .toContain('paused');
     expect(cleanupNotificationPresentation([{ event_type: 'cleanup_reward_sent' }]).message)
-      .toContain('transferred');
+      .toContain('sent to your payout account');
     expect(cleanupNotificationPresentation([{ event_type: 'cleanup_fund_increased' }]).message)
       .toContain('added money');
     expect(cleanupNotificationPresentation([{ event_type: 'cleanup_contribution_refunded' }]).message)
@@ -45,7 +45,7 @@ describe('cleanup notifications', () => {
     expect(cleanupNotificationPresentation([{ event_type: 'report_funding_review_required' }]).message)
       .toContain('safety review');
     expect(cleanupNotificationPresentation([{ event_type: 'report_funding_approved' }]).message)
-      .toContain('Stripe');
+      .toContain('can now accept contributions');
     expect(cleanupNotificationPresentation([{ event_type: 'report_funding_rejected' }]).message)
       .toContain('cannot accept');
   });

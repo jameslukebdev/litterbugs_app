@@ -91,6 +91,73 @@ final class LitterbugsUIRegression: XCTestCase {
         app.buttons["Remove Completed filter"].tap()
         XCTAssertTrue(marker("$6, available:").waitForExistence(timeout: 10))
     }
+    func testReportFundingBackReopensDetails() throws {
+        centerAndZoomOut()
+        let funded = marker("$6, available:")
+        XCTAssertTrue(funded.waitForExistence(timeout: 15)); funded.tap()
+        element("View report").tap()
+        for _ in 0..<2 {
+            let fund = app.buttons["Fund cleanup"]
+            waitForHittable(fund); fund.tap()
+            XCTAssertTrue(element("Current cleanup reward").waitForExistence(timeout: 15), app.debugDescription)
+            app.navigationBars.buttons.firstMatch.tap()
+            waitForHittable(app.buttons["Fund cleanup"])
+            XCTAssertFalse(element("Loading report…").exists)
+            shot("fund-back-selected-report")
+        }
+    }
+    func testWaiverUsesReadableDocumentLabels() throws {
+        centerAndZoomOut()
+        let funded = marker("$6, available:")
+        XCTAssertTrue(funded.waitForExistence(timeout: 15)); funded.tap()
+        element("View report").tap()
+        let cleanup = app.buttons["Help clean this up"]
+        waitForHittable(cleanup); cleanup.tap()
+        XCTAssertTrue(element("Cleanup safety and agreement").waitForExistence(timeout: 15))
+        XCTAssertFalse(marker("Burrow Base").exists)
+        XCTAssertFalse(marker("cleanup-acknowledgment-v").exists)
+        XCTAssertFalse(marker("cleanup-safety-guidelines-v").exists)
+        let date = element("Updated September 9, 2026")
+        XCTAssertTrue(date.exists)
+        for _ in 0..<12 {
+            if date.isHittable { break }
+            app.scrollViews.firstMatch.swipeUp()
+        }
+        XCTAssertTrue(date.isHittable, "The document date and acknowledgment must be reachable")
+        XCTAssertFalse(app.buttons["Accept cleanup acknowledgment and continue"].isEnabled)
+        shot("waiver-readable-date-no-company-name")
+        app.buttons["Close cleanup acknowledgment"].tap()
+        waitForHittable(app.buttons["Fund cleanup"])
+    }
+    func testFiltersCancelPreservesResults() throws {
+        centerAndZoomOut(); tab("reports").tap()
+        let original = marker("Litter at corner of Howard’s Creek Road near C&T")
+        XCTAssertTrue(original.waitForExistence(timeout: 15))
+        app.buttons["Filters"].tap(); element("Completed").tap()
+        app.buttons["Close filters without applying"].tap()
+        XCTAssertTrue(original.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["Remove Completed filter"].exists)
+        XCTAssertFalse(app.buttons["Open settings"].exists)
+        shot("filters-cancel-keeps-results")
+    }
+    func testSettingsHelpAndPhotoPermission() throws {
+        tab("profile").tap()
+        guard app.buttons["Settings"].waitForExistence(timeout: 10) else { throw XCTSkip("Requires an already signed-in QA account.") }
+        app.buttons["Settings"].tap()
+        let permissions = app.buttons["Photo review permissions"]
+        for _ in 0..<8 { if permissions.isHittable { break }; app.scrollViews.firstMatch.swipeUp() }
+        waitForHittable(permissions); permissions.tap()
+        XCTAssertTrue(app.alerts["Photo review permissions"].waitForExistence(timeout: 5))
+        XCTAssertTrue(marker("Cloudmersive").exists)
+        XCTAssertTrue(marker("Google Gemini").exists)
+        app.alerts.buttons["Done"].tap()
+        let help = app.buttons["Get help"]
+        for _ in 0..<8 { if help.isHittable { break }; app.scrollViews.firstMatch.swipeUp() }
+        waitForHittable(help)
+        XCTAssertTrue(app.buttons["Support us on Patreon"].exists)
+        shot("settings-help-photo-permissions")
+        // Do not open Mail, withdraw consent, sign out, or delete this account.
+    }
     func testMyReportsRemainIndependentOfMap() throws {
         tab("profile").tap()
         guard app.buttons["My activity"].waitForExistence(timeout: 8) else { throw XCTSkip("Requires an already signed-in QA account.") }

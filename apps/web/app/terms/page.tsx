@@ -14,12 +14,12 @@ export default function TermsPage() {
       eyebrow="LITTERBUGS TERMS"
       title="Terms of use"
       summary="These terms govern Litterbugs accounts, community reports, cleanup funding, cleaner rewards, safety, reviews, disputes, and refunds."
-      effectiveDate="August 27, 2026"
+      effectiveDate="September 9, 2026"
       sections={[
         {
           title: 'Agreement and who may use Litterbugs',
           content: <>
-            <p>These Terms of Use form an agreement between you and Burrow Base LLC, the operator of Litterbugs. By creating an account or using Litterbugs, you agree to these terms, the Privacy Policy, and the Cleanup, Contribution, Reward, Dispute, and Refund Policy. If you do not agree, do not use the service.</p>
+            <p>These Terms of Use form an agreement between you and Litterbugs. By creating an account or using Litterbugs, you agree to these terms, the Privacy Policy, and the Cleanup, Contribution, Reward, Dispute, and Refund Policy. If you do not agree, do not use the service.</p>
             <p>You must be at least 13 years old to create an account and, if you are under the age of legal majority where you live, have permission from a parent or legal guardian. You must provide accurate information, keep your account secure, and use Litterbugs lawfully. A permanent Litterbugs account is required to report litter, contribute money, claim a cleanup, dispute a cleanup, or receive a reward. You must be at least 18 years old to claim any cleanup. Funded cleaners must also be in the United States and satisfy Stripe&apos;s identity, eligibility, tax-information, and payout requirements.</p>
           </>,
         },
@@ -73,7 +73,7 @@ export default function TermsPage() {
           title: 'Safety, assumption of risk, and independent participation',
           content: <>
             <p>Claiming and performing a cleanup is voluntary. Before every claim, you must review and accept the current Cleanup Safety, Assumption of Risk, and Funded Reward Acknowledgment. You decide whether conditions are safe, supply your own transportation, tools, protective equipment, and disposal arrangements, and must stop when a condition is unsafe or beyond your ability.</p>
-            <p>Cleaners are independent participants, not employees, agents, partners, joint venturers, or representatives of Litterbugs or Burrow Base LLC. Rewards are conditional marketplace payments for approved results, not wages, salary, hourly compensation, or a promise of recurring work. Litterbugs does not control how a cleaner performs physical work. To the fullest extent permitted by law, you assume the risks identified in the acknowledgment and release the Litterbugs parties from claims arising from your voluntary participation, including claims based on ordinary negligence. This does not release gross negligence, reckless or willful misconduct, or liability that cannot lawfully be waived.</p>
+            <p>Cleaners are independent participants, not employees, agents, partners, joint venturers, or representatives of Litterbugs. Rewards are conditional marketplace payments for approved results, not wages, salary, hourly compensation, or a promise of recurring work. Litterbugs does not control how a cleaner performs physical work. To the fullest extent permitted by law, you assume the risks identified in the acknowledgment and release the Litterbugs parties from claims arising from your voluntary participation, including claims based on ordinary negligence. This does not release gross negligence, reckless or willful misconduct, or liability that cannot lawfully be waived.</p>
           </>,
         },
         {
@@ -115,19 +115,19 @@ export default function TermsPage() {
         {
           title: 'Disclaimers and limits of liability',
           content: <>
-            <p>To the fullest extent permitted by law, Litterbugs is provided “as is” and “as available.” Burrow Base LLC disclaims implied warranties of merchantability, fitness for a particular purpose, title, and noninfringement. We do not promise uninterrupted operation, accurate user content, a safe cleanup site, a successful cleanup, or a particular AI or administrator outcome.</p>
-            <p>To the fullest extent permitted by law, Burrow Base LLC and the Litterbugs parties will not be liable for indirect, incidental, special, consequential, exemplary, or punitive damages, lost profits, lost data, or losses arising from user content, site conditions, voluntary cleanups, another user, or a third-party provider. Any liability that cannot be excluded is limited to the greater of $100 or the platform fees you paid to Litterbugs during the 12 months before the event giving rise to the claim. These limits do not reduce a valid refund owed under the Cleanup and Reward Policy or an approved cleaner reward that Litterbugs is obligated to transfer. They do not apply to gross negligence, reckless or intentional misconduct, or liability that cannot legally be limited. The separate claim-specific release addresses injury, death, property damage, and other losses connected to real-world cleanup activity.</p>
+            <p>To the fullest extent permitted by law, Litterbugs is provided “as is” and “as available.” Litterbugs disclaims implied warranties of merchantability, fitness for a particular purpose, title, and noninfringement. We do not promise uninterrupted operation, accurate user content, a safe cleanup site, a successful cleanup, or a particular AI or administrator outcome.</p>
+            <p>To the fullest extent permitted by law, Litterbugs and its associated parties will not be liable for indirect, incidental, special, consequential, exemplary, or punitive damages, lost profits, lost data, or losses arising from user content, site conditions, voluntary cleanups, another user, or a third-party provider. Any liability that cannot be excluded is limited to the greater of $100 or the platform fees you paid to Litterbugs during the 12 months before the event giving rise to the claim. These limits do not reduce a valid refund owed under the Cleanup and Reward Policy or an approved cleaner reward that Litterbugs is obligated to transfer. They do not apply to gross negligence, reckless or intentional misconduct, or liability that cannot legally be limited. The separate claim-specific release addresses injury, death, property damage, and other losses connected to real-world cleanup activity.</p>
           </>,
         },
         {
           title: 'Indemnity',
-          content: <p>To the fullest extent permitted by law, you agree to indemnify and hold harmless Burrow Base LLC and the Litterbugs parties from third-party claims, losses, and reasonable costs arising from your unlawful, fraudulent, reckless, or intentional conduct; trespass or unlawful disposal; handling of prohibited hazardous material; infringing content; material violation of these terms; or misuse of another person&apos;s account, payment method, identity, or work. This does not require you to indemnify a party for its own negligence or misconduct where prohibited by law.</p>,
+          content: <p>To the fullest extent permitted by law, you agree to indemnify and hold harmless Litterbugs and its associated parties from third-party claims, losses, and reasonable costs arising from your unlawful, fraudulent, reckless, or intentional conduct; trespass or unlawful disposal; handling of prohibited hazardous material; infringing content; material violation of these terms; or misuse of another person&apos;s account, payment method, identity, or work. This does not require you to indemnify a party for its own negligence or misconduct where prohibited by law.</p>,
         },
         {
           title: 'Governing law and disputes with Litterbugs',
           content: <>
-            <p>Before filing a claim against Burrow Base LLC, you agree to send a written description to <strong>support@litterbugs.app</strong> and allow 30 days for an informal resolution, unless immediate relief is legally necessary. These terms are governed by North Carolina law, without regard to conflict-of-law rules.</p>
-            <p>Unless applicable law requires otherwise, disputes between you and Burrow Base LLC will be brought individually in the state or federal courts having jurisdiction in North Carolina. Nothing in these terms limits rights that cannot legally be waived, including eligible small-claims or consumer-protection rights.</p>
+            <p>Before filing a claim against Litterbugs, you agree to send a written description to <strong>support@litterbugs.app</strong> and allow 30 days for an informal resolution, unless immediate relief is legally necessary. These terms are governed by North Carolina law, without regard to conflict-of-law rules.</p>
+            <p>Unless applicable law requires otherwise, disputes between you and Litterbugs will be brought individually in the state or federal courts having jurisdiction in North Carolina. Nothing in these terms limits rights that cannot legally be waived, including eligible small-claims or consumer-protection rights.</p>
           </>,
         },
         {
@@ -136,7 +136,7 @@ export default function TermsPage() {
             <p>We may update these terms as the service changes. Material changes will be posted with a new effective date and, when appropriate, require notice or renewed acceptance. Changes to fees, refunds, disputes, or reward calculations apply prospectively and do not retroactively change a completed contribution or reduce a frozen reward, except where required by law or needed to correct an error.</p>
             <p>A click, tap, checkbox, or button press intended to show agreement may serve as your electronic signature. Litterbugs may preserve the accepted version, timestamp, account ID, report or transaction ID, and limited device or network facts reasonably needed to document acceptance, prevent fraud, and maintain an audit record. If Litterbugs discontinues a funded feature, it will resolve active pools, pending refunds, and pending rewards under the Cleanup Policy, provider requirements, and applicable law.</p>
             <p>If a provision is unenforceable, the remaining provisions continue to the extent permitted by law. A failure to enforce a provision is not a waiver. These terms and the policies they incorporate are the entire agreement about the service and may not be assigned by you without our consent.</p>
-            <p>Contact Burrow Base LLC at <strong>support@litterbugs.app</strong>.</p>
+            <p>Contact Litterbugs at <strong>support@litterbugs.app</strong>.</p>
           </>,
         },
       ]}

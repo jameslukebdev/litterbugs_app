@@ -138,8 +138,8 @@ export default function PublicProfileScreen({ navigation, route }) {
       </View>
 
       <View style={styles.statCard}>
-        <Text style={styles.statValue}>{profile.reports_created_count ?? 0}</Text>
-        <Text style={styles.statLabel}>Reports submitted</Text>
+        <Text style={styles.statValue}>{profile.visible_report_count ?? '—'}</Text>
+        <Text style={styles.statLabel}>Reports on this profile</Text>
       </View>
 
       <Text style={styles.sectionTitle}>Reports</Text>

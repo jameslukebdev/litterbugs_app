@@ -715,7 +715,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
 
               <View style={styles.startingFundChoices}>
                 {[
-                  { value: 'none', label: 'Volunteer' },
+                  { value: 'none', label: 'Not now' },
                   { value: '25', label: '$25' },
                   { value: 'other', label: 'Other' },
                 ].map((choice) => {
@@ -734,7 +734,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                       accessibilityRole="radio"
                       accessibilityState={{ checked: selected }}
                       accessibilityLabel={choice.value === 'none'
-                        ? 'Keep this cleanup volunteer-based'
+                        ? 'Post without adding funds'
                         : `Start cleanup fund with ${choice.label}`}
                     >
                       <Text style={[
@@ -782,7 +782,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                   <Text style={[styles.requiredHint, { color: '#687178', marginBottom: 16 }]}>Enter an amount from $1 to $1,000.</Text>
                 )
               ) : !hasStartingFundingChoice ? (
-                <Text style={[styles.requiredHint, { color: '#687178', marginBottom: 16 }]}>Choose Volunteer or select a starting amount.</Text>
+                <Text style={[styles.requiredHint, { color: '#687178', marginBottom: 16 }]}>Choose Not now or select a starting amount.</Text>
               ) : (
                 <Text style={styles.startingFundHelper}>You can add funds from the report later.</Text>
               )}

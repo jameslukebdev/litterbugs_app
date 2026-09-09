@@ -1,3 +1,4 @@
+import { reportPresentation } from './lib/reportPresentation';
 import RemotePhoto from './components/RemotePhoto';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -13,7 +14,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 
 import { getDistanceMiles, useReports } from './lib/reports';
-import { formatUsd } from './lib/funding';
 import BrandedLoadingState from './BrandedLoadingState';
 
 const SEVERITY = Object.freeze({
@@ -62,6 +62,7 @@ export function ReportListItem({ report, origin, onPress, selected = false }) {
   const { width } = useWindowDimensions();
   const thumbnailSize = Math.min(112, Math.max(94, width * 0.27));
   const severity = getSeverity(report);
+  const presentation = reportPresentation(report);
   const completed = report?.cleanup_state === 'completed';
   const distance = getDistanceMiles(origin, report);
   const relativeTime = getRelativeTime(report?.created_at);
@@ -72,7 +73,7 @@ export function ReportListItem({ report, origin, onPress, selected = false }) {
   const accessibilityLabel = [
     report?.title || 'Litter report',
     completed ? 'Cleanup complete' : `${severity.label} severity`,
-    report.funded_amount_cents > 0 ? `Cleaner reward ${formatUsd(report.funded_amount_cents)}` : 'Volunteer cleanup',
+    presentation.funding,
     metadata,
     getLitterSummary(report),
     `Reported by ${report?.reporter?.display_name || 'Reporter unavailable'}`,
@@ -111,11 +112,8 @@ export function ReportListItem({ report, origin, onPress, selected = false }) {
           {report?.title || 'Litter Report'}
         </Text>
 
-        {Number(report?.funded_amount_cents) > 0 ? (
-          <View style={styles.rewardPill}>
-            <Text style={styles.rewardText}>Cleaner reward {formatUsd(report.funded_amount_cents)}</Text>
-          </View>
-        ) : null}
+        {!completed && report.cleanup_state !== 'available' ? <Text style={styles.metadata}>{presentation.status}</Text> : null}
+        {!completed ? <View style={styles.rewardPill}><Text style={styles.rewardText}>{presentation.funding}</Text></View> : null}
 
         {metadata ? (
           <Text style={styles.metadata} numberOfLines={1}>{metadata}</Text>

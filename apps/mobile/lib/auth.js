@@ -162,7 +162,11 @@ export const deleteCurrentAccount = async () => {
     body: { confirmation: 'DELETE' },
   });
 
-  if (error) throw error;
+  if (error) {
+    const detail = await error.context?.json?.().catch(() => null);
+    if (detail?.code === 'PAYOUT_PENDING') error.code = 'PAYOUT_PENDING';
+    throw error;
+  }
   if (!data?.deleted) throw new Error('Account deletion did not complete.');
 
   await Promise.allSettled([clearNativeProviderSessions()]);
