@@ -55,10 +55,22 @@ Final local Android QA APK: `artifacts/release-acceptance-2026-09-10/litterbugs-
 
 Final builds installed successfully on both physical phones. Pixel returned to its live map; the default Google location/toolbar controls were absent after marker selection. On the final iPhone build, the share-preview tree retained its readable privacy sentence and no longer exposed the shield glyph.
 
+## Signed Android build and physical iPhone density follow-up
+
+Built the final source at `ae59d05` as a signed production-identity AAB: `artifacts/release-acceptance-2026-09-10/litterbugs-ae59d05-v11.aab`, SHA-256 `ffcb9f3202287a37f8f36df858da20a386906521c398a7856083ef61f9a328ad`. Package `com.litterbugs.app`, version 1.0.0/code 11 (local review number, not newly reserved in EAS). Contains armeabi-v7a, arm64-v8a, x86 and x86_64. Minimum Android SDK 24, target 36; not debuggable; no RECORD_AUDIO or SYSTEM_ALERT_WINDOW permission. The bundled Firebase configuration selects the production client in `litterbugs-notifications`.
+
+`bundletool validate`, signed APK generation and `apksigner verify` succeeded with the existing upload certificate SHA-256 `2C:0A:31:66:6C:8C:7A:35:04:E9:0D:8E:B8:15:01:67:30:75:40:11:2F:96:90:51:B0:36:AB:13:C1:B0:AA:0E`. `jarsigner` reported “jar verified” with self-signed/no-timestamp and ZIP-stream-order warnings; the resulting APK signature also verified independently. No store upload. Temporary downloaded signing material and password files were removed afterward.
+
+Installed APK splits generated from this exact AAB on the API 36 emulator. Android reported `litterbugs.app: verified`. Both warm and cold unqualified HTTPS report intents opened the production app and rendered the expected title, $6 reward and 1/3 photo counter. Production Google login opened Google's Litterbugs-branded sign-in page; closing the browser returned to the app with its Google button enabled. No account credentials were entered, so this establishes provider launch/cancellation, not a completed non-admin public-account login. Physical Pixel checkout cancellation is documented above; the production emulator remains a guest.
+
+For the iPhone 6s, built the existing synthetic fixture entry directly with device signing. Temporarily installed that test entry under the QA identity after saving the normal signed app; did not modify the simulator-only builder or publish fixture records. The fixture dependency graph excludes application providers and blocks fetch/XHR/WebSocket. All ten status/reward combinations rendered. The crowded scenario retained 80 reports while two zoom steps and a drag increased expanded amount labels from 2 to 4 to 12. Ten coincident reports opened a ten-item chooser; selecting Completed funded rendered its green checkmark/$48 marker at the same center as the prior $6 marker. Screenshots are in the acceptance artifacts directory.
+
+The full native accessibility-tree request stalled WDA on the 80-marker scene. Restarting the automation service restored control; direct coordinate gestures and device screenshots completed the checks without an app restart. This is a testing-tool limitation observed in that scene, not proof that an ordinary user gesture froze the app. No full-tree count or performance benchmark is claimed for the iPhone. The normal signed QA app was reinstalled afterward; this density evidence covers 80 reports, not an unlimited city-scale load.
+
 ## Remaining work
 
-- Build and validate a newly signed production Android bundle from the final source, retaining all supported ABIs; recheck production report links/provider returns. The older signed bundle predates these changes.
-- Full spoken TalkBack/VoiceOver acceptance remains unverified; dense physical iOS behavior is not established by this Android harness.
+- A completed public, non-admin provider login on final production identities still needs an available test account. Launch/cancellation and report-link return have been verified.
+- Full spoken TalkBack/VoiceOver acceptance remains unverified.
 - Real Android push delivery and tap navigation remain blocked by Google organization policy and missing administrator permission, as detailed in the release follow-up. Registration alone is not delivery. Apple/Meta account setup remains deferred.
 
 No money spent, social posts/messages sent, reports published, cleanups claimed/approved/disputed, or profile edits saved during this follow-up. Opening and canceling checkout can create an unpaid payment attempt; it does not establish a charge.
