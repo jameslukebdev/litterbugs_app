@@ -381,7 +381,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
           <TouchableOpacity accessibilityRole="button" disabled={submitting} onPress={saveAndExit} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: '#2F7D32', fontWeight: '700' }}>Save and exit</Text></TouchableOpacity>
         </View> : null}
         <Text style={styles.eyebrow}>
-          {step === 'form' ? (isCorrection ? 'UPDATE EVIDENCE' : 'CLEANUP EVIDENCE') : 'REVIEW'}
+          {step === 'form' ? (isCorrection ? 'UPDATE EVIDENCE' : 'STEP 1 OF 2 · CLEANUP DETAILS') : 'STEP 2 OF 2 · REVIEW'}
         </Text>
         <Text style={styles.title}>
           {step === 'form'
@@ -408,7 +408,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>After photos</Text>
-                <Text style={styles.required}>REQUIRED · {photos.length}/{MAX_CLEANUP_PHOTOS}</Text>
+                <Text style={styles.required}>Required · {photos.length}/{MAX_CLEANUP_PHOTOS}</Text>
               </View>
               <Text style={styles.helper}>
                 Add 1–3 photos. When appropriate, include another angle to clearly show the completed cleanup.
@@ -440,9 +440,9 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Cleanup description</Text>
-                <Text style={styles.required}>REQUIRED</Text>
+                <Text style={styles.required}>Required</Text>
               </View>
-              <TextInput
+              <TextInput selectionColor="#2F7D32"
                 ref={descriptionInputRef}
                 style={[styles.descriptionInput, errors.description && styles.inputError]}
                 value={description}
@@ -470,7 +470,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
               <View style={styles.numericRow}>
                 <View style={styles.numericField}>
                   <Text style={styles.inputLabel}>Bags/items removed</Text>
-                  <TextInput
+                  <TextInput selectionColor="#2F7D32"
                     ref={bagsInputRef}
                     style={[styles.numericInput, errors.bagsOrItemsRemoved && styles.inputError]}
                     value={bagsOrItemsRemoved}
@@ -488,7 +488,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
                 </View>
                 <View style={styles.numericField}>
                   <Text style={styles.inputLabel}>Weight removed (lb)</Text>
-                  <TextInput
+                  <TextInput selectionColor="#2F7D32"
                     ref={weightInputRef}
                     style={[styles.numericInput, errors.weightPounds && styles.inputError]}
                     value={weightPounds}
@@ -584,52 +584,52 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F6F7' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   content: { padding: 20 },
-  centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: '#F5F6F7' },
-  centerTitle: { marginTop: 14, color: '#30363B', fontSize: 22, fontWeight: '800' },
+  centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: '#FFFFFF' },
+  centerTitle: { marginTop: 14, color: '#30363B', fontSize: 22, fontWeight: '600' },
   centerText: { maxWidth: 340, marginTop: 9, color: '#677178', fontSize: 15, lineHeight: 22, textAlign: 'center' },
-  eyebrow: { color: '#2F7D32', fontSize: 12, fontWeight: '900', letterSpacing: 1.2 },
-  title: { marginTop: 7, color: '#202428', fontSize: 28, fontWeight: '900' },
+  eyebrow: { color: '#2F7D32', fontSize: 12, fontWeight: '600', letterSpacing: 1.2 },
+  title: { marginTop: 7, color: '#202428', fontSize: 24, lineHeight: 31, fontWeight: '600' },
   reportTitle: { marginTop: 7, color: '#687178', fontSize: 15, fontWeight: '700' },
   correctionNotice: { marginTop: 18, padding: 14, flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: 14, backgroundColor: '#FFF9DD' },
   correctionNoticeCopy: { flex: 1 },
-  correctionNoticeTitle: { color: '#755900', fontSize: 14, fontWeight: '900' },
+  correctionNoticeTitle: { color: '#755900', fontSize: 14, fontWeight: '600' },
   correctionNoticeText: { marginTop: 3, color: '#755900', fontSize: 13, lineHeight: 18 },
-  feedbackLink: { marginTop: 7, color: '#2F7D32', fontSize: 13, fontWeight: '900' },
-  section: { marginTop: 22, padding: 17, borderRadius: 18, backgroundColor: '#FFFFFF' },
+  feedbackLink: { marginTop: 7, color: '#2F7D32', fontSize: 13, fontWeight: '600' },
+  section: { marginTop: 22, padding: 16, borderWidth: 1, borderColor: '#E2EAE3', borderRadius: 16, backgroundColor: '#FFFFFF' },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
-  sectionTitle: { flex: 1, color: '#30363B', fontSize: 18, fontWeight: '800' },
-  required: { color: '#2F7D32', fontSize: 11, fontWeight: '900' },
+  sectionTitle: { flex: 1, color: '#30363B', fontSize: 17, lineHeight: 23, fontWeight: '600' },
+  required: { color: '#2F7D32', fontSize: 11, fontWeight: '600' },
   helper: { marginTop: 7, color: '#6D767D', fontSize: 14, lineHeight: 20 },
   photoGrid: { marginTop: 14, flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
   photoWrap: { width: '31%', aspectRatio: 1, borderRadius: 13, overflow: 'hidden', backgroundColor: '#E9ECEE' },
   photo: { width: '100%', height: '100%' },
   photoLoading: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E9ECEE' },
-  removePhoto: { position: 'absolute', top: 6, right: 6, width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(30,35,38,0.78)' },
+  removePhoto: { position: 'absolute', top: 2, right: 2, width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(30,35,38,0.78)' },
   photoActions: { marginTop: 14, flexDirection: 'row', gap: 10 },
   photoButton: { flex: 1, minHeight: 48, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderWidth: 1, borderColor: '#8FBC92', borderRadius: 13, backgroundColor: '#F6FBF6' },
-  photoButtonText: { color: '#2F7D32', fontSize: 14, fontWeight: '800' },
-  descriptionInput: { minHeight: 132, marginTop: 14, padding: 14, borderWidth: 1, borderColor: '#CED4D7', borderRadius: 13, color: '#202428', fontSize: 16, lineHeight: 22, backgroundColor: '#FFFFFF' },
+  photoButtonText: { color: '#2F7D32', fontSize: 14, fontWeight: '600' },
+  descriptionInput: { minHeight: 132, marginTop: 14, padding: 14, borderWidth: 1, borderColor: '#DCE4DE', borderRadius: 13, color: '#202428', fontSize: 16, lineHeight: 22, backgroundColor: '#FFFFFF' },
   characterCount: { marginTop: 5, color: '#8A9297', fontSize: 12, textAlign: 'right' },
   numericRow: { marginTop: 14, flexDirection: 'row', gap: 12 },
   numericField: { flex: 1 },
   inputLabel: { color: '#59636A', fontSize: 13, fontWeight: '700' },
-  numericInput: { minHeight: 50, marginTop: 7, paddingHorizontal: 13, borderWidth: 1, borderColor: '#CED4D7', borderRadius: 12, color: '#202428', fontSize: 16, backgroundColor: '#FFFFFF' },
+  numericInput: { minHeight: 50, marginTop: 7, paddingHorizontal: 13, borderWidth: 1, borderColor: '#DCE4DE', borderRadius: 12, color: '#202428', fontSize: 16, backgroundColor: '#FFFFFF' },
   inputError: { borderColor: '#C94F45' },
   error: { marginTop: 7, color: '#B63D34', fontSize: 13, lineHeight: 18 },
   primaryButton: { minHeight: 54, marginTop: 22, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, backgroundColor: '#2F7D32' },
-  primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+  primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
   secondaryButton: { minHeight: 50, marginTop: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#98B79A', borderRadius: 14, backgroundColor: '#FFFFFF' },
-  secondaryButtonText: { color: '#2F7D32', fontSize: 15, fontWeight: '800' },
-  reviewCard: { marginTop: 22, padding: 18, borderRadius: 18, backgroundColor: '#FFFFFF' },
-  reviewLabel: { marginTop: 16, color: '#6D767D', fontSize: 11, fontWeight: '900', letterSpacing: 0.8 },
+  secondaryButtonText: { color: '#2F7D32', fontSize: 15, fontWeight: '600' },
+  reviewCard: { marginTop: 22, padding: 16, borderWidth: 1, borderColor: '#E2EAE3', borderRadius: 16, backgroundColor: '#FFFFFF' },
+  reviewLabel: { marginTop: 16, color: '#6D767D', fontSize: 11, fontWeight: '600', letterSpacing: 0.8 },
   reviewPhotoWrap: { width: '31%', aspectRatio: 1, overflow: 'hidden', borderRadius: 12, backgroundColor: '#E9ECEE' },
   reviewPhoto: { width: '100%', height: '100%' },
   reviewText: { marginTop: 7, color: '#30363B', fontSize: 16, lineHeight: 23 },
   reviewMetrics: { flexDirection: 'row', gap: 12 },
   reviewMetric: { flex: 1 },
-  reviewMetricValue: { marginTop: 5, color: '#30363B', fontSize: 15, fontWeight: '800' },
+  reviewMetricValue: { marginTop: 5, color: '#30363B', fontSize: 15, fontWeight: '600' },
   encouragement: { marginTop: 13, padding: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderRadius: 12, backgroundColor: '#FFF9DD' },
   encouragementText: { flex: 1, color: '#755900', fontSize: 13, lineHeight: 18 },
   reviewNotice: { marginTop: 17, paddingHorizontal: 5, color: '#667078', fontSize: 14, lineHeight: 20, textAlign: 'center' },

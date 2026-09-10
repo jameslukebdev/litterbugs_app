@@ -24,10 +24,10 @@ describe('native sharing registration', () => {
     expect(mapScreenSource).not.toContain("import RNShare from 'react-native-share';");
   });
 
-  it('keeps the report preview card at a bounded height', () => {
-    expect(reportShareSheetSource).toMatch(/preview:\s*\{\s*height: 92,/);
-    expect(reportShareSheetSource).toMatch(/previewMedia:\s*\{[\s\S]*?height: 92,/);
-    expect(reportShareSheetSource).toContain("previewPhoto: { width: 92, height: 92 }");
-    expect(reportShareSheetSource).not.toMatch(/preview(?:Media)?:\s*\{[\s\S]*?minHeight: 92,/);
+  it('keeps the photo bounded while allowing the preview text to grow', () => {
+    expect(reportShareSheetSource).toMatch(/preview:\s*\{\s*minHeight: 104,/);
+    expect(reportShareSheetSource).toMatch(/previewMedia:\s*\{[\s\S]*?height: 88,/);
+    expect(reportShareSheetSource).toContain("previewPhoto: { width: 88, height: 88 }");
+    expect(reportShareSheetSource).toContain('style={styles.previewTitle} numberOfLines={2}');
   });
 });

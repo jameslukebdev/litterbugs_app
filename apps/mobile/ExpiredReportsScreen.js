@@ -52,17 +52,18 @@ export default function ExpiredReportsScreen() {
 
   return (
     <ScrollView
+      style={{ backgroundColor: '#FFFFFF' }}
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]}
       refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor="#2F7D32" />}
     >
       <Text style={styles.title}>Renew or close reports</Text>
-      <Text style={styles.subtitle}>Expired reports stay here for 7 days. Renewing starts a fresh 30-day period and keeps the cleanup fund attached.</Text>
+      <View style={styles.explanation}><Ionicons name="calendar-outline" size={20} color="#49704D" /><Text style={styles.subtitle}>Expired reports stay here for 7 days. Renewing starts a fresh 30-day period and keeps the cleanup fund attached.</Text></View>
       {loading && reports.length === 0 ? (
         <BrandedLoadingState compact title="Checking expired reports…" message="Looking for reports that need your decision." />
       ) : null}
       {error ? <TouchableOpacity accessibilityRole="button" onPress={load} style={styles.closeButton}><Text>Couldn’t load reports. Tap to retry.</Text></TouchableOpacity> : null}
       {!loading && !error && reports.length === 0 ? (
-        <View style={styles.empty}><Ionicons name="checkmark-circle-outline" size={38} color="#6D777D" /><Text style={styles.emptyTitle}>Nothing needs a decision</Text></View>
+        <View style={styles.empty}><View style={styles.emptyIcon}><Ionicons name="checkmark-circle-outline" size={28} color="#49704D" /></View><Text style={styles.emptyTitle}>Nothing needs a decision</Text><Text style={styles.emptyText}>Reports that need renewal will appear here.</Text></View>
       ) : reports.map((report) => (
         <View key={report.id} style={styles.card}>
           <Text style={styles.reportTitle}>{report.title || 'Litter report'}</Text>
@@ -81,16 +82,19 @@ export default function ExpiredReportsScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { flexGrow: 1, padding: 20, backgroundColor: '#F5F6F7' },
-  title: { color: '#202428', fontSize: 27, fontWeight: '900' },
-  subtitle: { marginTop: 8, color: '#667078', fontSize: 15, lineHeight: 22 },
-  empty: { flex: 1, minHeight: 300, alignItems: 'center', justifyContent: 'center' },
-  emptyTitle: { marginTop: 12, color: '#59636A', fontSize: 17, fontWeight: '800' },
-  card: { marginTop: 17, padding: 18, borderRadius: 17, backgroundColor: '#FFFFFF' },
-  reportTitle: { color: '#30363B', fontSize: 18, fontWeight: '900' },
+  content: { flexGrow: 1, padding: 20, backgroundColor: '#FFFFFF' },
+  title: { color: '#26332B', fontSize: 24, lineHeight: 30, fontWeight: '600' },
+  explanation: { marginTop: 14, padding: 14, borderRadius: 13, backgroundColor: '#F4F8F4', flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  subtitle: { flex: 1, color: '#637167', fontSize: 14, lineHeight: 21 },
+  empty: { minHeight: 240, marginTop: 24, padding: 20, alignItems: 'center', justifyContent: 'center' },
+  emptyIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#EFF5EF', alignItems: 'center', justifyContent: 'center' },
+  emptyText: { marginTop: 7, color: '#6D7970', fontSize: 14, lineHeight: 21, textAlign: 'center' },
+  emptyTitle: { marginTop: 14, color: '#303B34', fontSize: 17, lineHeight: 23, fontWeight: '600' },
+  card: { marginTop: 17, padding: 18, borderRadius: 16, borderWidth: 1, borderColor: '#E0E8E1', backgroundColor: '#FFFFFF' },
+  reportTitle: { color: '#30363B', fontSize: 17, lineHeight: 23, fontWeight: '600' },
   meta: { marginTop: 7, color: '#667078', fontSize: 14 },
   renewButton: { minHeight: 48, marginTop: 17, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#2F7D32' },
-  renewText: { color: '#FFFFFF', fontSize: 15, fontWeight: '900' },
+  renewText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
   closeButton: { minHeight: 46, marginTop: 9, alignItems: 'center', justifyContent: 'center' },
-  closeText: { color: '#A33A32', fontSize: 15, fontWeight: '800' },
+  closeText: { color: '#A33A32', fontSize: 15, fontWeight: '600' },
 });

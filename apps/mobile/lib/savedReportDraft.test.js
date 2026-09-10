@@ -37,12 +37,12 @@ const draft = {
   form: { title: 'Bottles', photos: ['file://source.jpg'] },
   step: 2,
 };
-describe('durable report drafts', () => {
-  beforeEach(() => {
+beforeEach(() => {
     m.storage.clear();
     m.files = new Set(['file://source.jpg']);
     m.copyFails = false;
   });
+describe('durable report drafts', () => {
   it('retains evidence after temporary picker photos disappear', async () => {
     await saveReportDraft('alice', draft);
     m.files.delete('file://source.jpg');
@@ -70,4 +70,34 @@ describe('durable report drafts', () => {
     await Promise.all([save, discard]);
     expect(await loadReportDraft('alice')).toBeNull();
   });
+});
+
+it('stores relative photo paths and resolves them in the current container', async () => {
+  await saveReportDraft('alice', draft);
+  const stored = JSON.parse(m.storage.get('litterbugs.report-draft.alice'));
+  expect(stored.form.photos).toEqual(['report-drafts/alice/photo-hash.jpg']);
+  const restored = await loadReportDraft('alice');
+  expect(restored.form.photos).toEqual(['file://documents/report-drafts/alice/photo-hash.jpg']);
+});
+
+it('recovers old absolute paths after an iOS container relocation', async () => {
+  m.files.add('file://documents/report-drafts/alice/old-photo.jpg');
+  m.storage.set('litterbugs.report-draft.alice', JSON.stringify({
+    ...draft, form: { ...draft.form, photos: ['file:///old-container/Documents/report-drafts/alice/old-photo.jpg'] },
+  }));
+  const restored = await loadReportDraft('alice');
+  expect(restored.missingPhotoCount).toBe(0);
+  expect(restored.form.photos).toEqual(['file://documents/report-drafts/alice/old-photo.jpg']);
+  await saveReportDraft('alice', restored);
+  expect(JSON.parse(m.storage.get('litterbugs.report-draft.alice')).form.photos).toEqual(['report-drafts/alice/old-photo.jpg']);
+});
+
+it('still reports genuinely missing photos without losing the other answers', async () => {
+  m.storage.set('litterbugs.report-draft.alice', JSON.stringify({
+    ...draft, form: { ...draft.form, photos: ['report-drafts/alice/missing.jpg'] },
+  }));
+  const restored = await loadReportDraft('alice');
+  expect(restored.missingPhotoCount).toBe(1);
+  expect(restored.form.title).toBe('Bottles');
+  expect(restored.step).toBe(0);
 });

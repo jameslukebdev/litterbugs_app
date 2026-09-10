@@ -257,6 +257,115 @@ wizardDisabled: {
 
 /* Photos */
 
+optionalFieldHeading: {
+  flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 8, marginBottom: 10,
+},
+reportReviewRow: {
+  flexDirection: 'row', alignItems: 'center', gap: 12,
+  paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#E8ECE9',
+},
+reportReviewCopy: { flex: 1, gap: 6 },
+reportReviewLabel: { fontSize: 14, fontWeight: '500', color: '#667078' },
+reportReviewTitle: { fontSize: 20, fontWeight: '700', color: '#26312B', lineHeight: 26 },
+reportReviewValue: { fontSize: 16, color: '#374151', lineHeight: 23 },
+reportReviewEditButton: {
+  minWidth: 44, minHeight: 44, justifyContent: 'center', alignItems: 'flex-end',
+},
+reportReviewHeader: {
+  flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 44,
+},
+reportReviewMediaSection: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#E8ECE9' },
+reportReviewPhotos: { flexDirection: 'row', gap: 10 },
+reportReviewPhoto: {
+  width: '31%',
+  aspectRatio: 1,
+  borderRadius: 12,
+  resizeMode: 'contain',
+  backgroundColor: '#F5F6F7',
+},
+reportReviewMap: { height: 112, borderRadius: 12, overflow: 'hidden' },
+wizardDetailsInput: {
+  minHeight: 80,
+  textAlignVertical: 'top',
+  paddingTop: 14,
+  paddingBottom: 14,
+},
+optionalStepHeading: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  alignItems: 'baseline',
+  columnGap: 10,
+  rowGap: 4,
+  marginBottom: 16,
+},
+optionalStepLabel: { fontSize: 14, fontWeight: '500', color: '#667078' },
+litterTileSection: { marginBottom: 24 },
+litterTileGrid: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  justifyContent: 'space-between',
+  rowGap: 8,
+},
+litterTile: {
+  width: '48.5%',
+  minHeight: 56,
+  paddingHorizontal: 10,
+  paddingVertical: 10,
+  flexDirection: 'row',
+  alignItems: 'center',
+  borderWidth: 1,
+  borderColor: '#DCE2DE',
+  borderRadius: 12,
+  backgroundColor: '#FFFFFF',
+},
+litterTileSelected: {
+  borderColor: '#2F7D32',
+  backgroundColor: '#EAF4EC',
+},
+litterTileIcon: { marginRight: 8 },
+litterTileText: { flex: 1, fontSize: 14, lineHeight: 19, fontWeight: '500', color: '#374151' },
+litterTileTextSelected: { color: '#245F2A', fontWeight: '600' },
+reportPhotoStage: {
+  height: 236,
+  flexDirection: 'row',
+  gap: 12,
+  marginBottom: 20,
+},
+reportPhotoMain: { flex: 2 },
+reportPhotoSide: { flex: 1, gap: 12 },
+reportPhotoSlot: {
+  flex: 1,
+  borderRadius: 16,
+  backgroundColor: '#F1F4F2',
+  overflow: 'hidden',
+  borderWidth: 1,
+  borderColor: '#DDE5DF',
+},
+reportPhotoPreview: { width: '100%', height: '100%', resizeMode: 'cover' },
+reportPhotoEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+reportPhotoRemove: {
+  position: 'absolute', top: 0, right: 0,
+  width: 44, height: 44,
+  alignItems: 'center', justifyContent: 'center',
+  backgroundColor: 'rgba(0,0,0,0.3)',
+  borderBottomLeftRadius: 16,
+},
+reportTitleLabel: {
+  color: '#374151', fontSize: 16, fontWeight: '600', marginBottom: 10,
+},
+photoPreparationSlot: {
+  height: 36,
+  justifyContent: 'center',
+},
+photoPreparationInline: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 8,
+},
+photoPreparationText: {
+  color: '#667078',
+  fontSize: 13,
+},
 wizardPhotoActions: {
   width: '100%',
   flexDirection: 'row',
@@ -347,35 +456,38 @@ keepExistingPhotosText: {
 /* Severity */
 
 wizardSeverityList: {
-  gap: 14,
+  gap: 16,
+  marginTop: 8,
 },
-
 wizardSeverityOption: {
-  minHeight: 56,
-  borderRadius: 18,
-  borderWidth: 1.5,
-  borderColor: '#D1D5DB',
-  backgroundColor: '#F9FAFB',
+  minHeight: 100,
+  borderRadius: 16,
+  borderWidth: 1,
+  borderColor: '#DCE2DE',
+  backgroundColor: '#FFFFFF',
   flexDirection: 'row',
   alignItems: 'center',
-  paddingHorizontal: 20,
-  gap: 14,
+  paddingHorizontal: 18,
+  paddingVertical: 20,
+  gap: 16,
 },
-
 wizardSeveritySelected: {
-  borderColor: '#66BB6A',
-  backgroundColor: '#F1F8E9',
+  borderColor: '#2F7D32',
+  backgroundColor: '#EAF4EC',
 },
-
+wizardSeverityCopy: { flex: 1, gap: 6 },
 wizardSeverityText: {
-  flex: 1,
   fontSize: 18,
   fontWeight: '700',
   color: '#374151',
 },
-
+wizardSeverityDescription: {
+  fontSize: 14,
+  lineHeight: 20,
+  color: '#667078',
+},
 wizardSeverityTextSelected: {
-  color: '#2F7D32',
+  color: '#245F2A',
 },
 
 wizardRadio: {
@@ -498,28 +610,30 @@ reviewNotes: {
 },
 
 startingFundCard: {
+  marginTop: 8,
   marginBottom: 24,
-  padding: 18,
-  borderRadius: 20,
-  borderWidth: 1,
-  borderColor: '#B7D7BA',
-  backgroundColor: '#F1F8F2',
+  paddingVertical: 16,
 },
 
 startingFundHeading: {
   flexDirection: 'row',
   alignItems: 'flex-start',
-  gap: 11,
+  gap: 10,
 },
 
 startingFundHeadingCopy: {
   flex: 1,
+  flexDirection: 'row',
+  alignItems: 'baseline',
+  flexWrap: 'wrap',
+  columnGap: 10,
+  rowGap: 4,
 },
 
 startingFundTitle: {
-  color: '#245F2A',
+  color: '#26332C',
   fontSize: 17,
-  fontWeight: '900',
+  fontWeight: '700',
 },
 
 startingFundText: {
@@ -532,53 +646,55 @@ startingFundText: {
 startingFundChoices: {
   marginTop: 16,
   flexDirection: 'row',
-  flexWrap: 'wrap',
   gap: 8,
 },
 
 startingFundChoice: {
-  minHeight: 42,
-  minWidth: 62,
-  paddingHorizontal: 13,
+  flex: 1,
+  minHeight: 52,
+  paddingHorizontal: 4,
+  paddingVertical: 10,
   alignItems: 'center',
   justifyContent: 'center',
-  borderRadius: 999,
+  borderRadius: 12,
   borderWidth: 1,
-  borderColor: '#A9B9AA',
+  borderColor: '#DCE2DE',
   backgroundColor: '#FFFFFF',
 },
 
 startingFundChoiceSelected: {
   borderColor: '#2F7D32',
-  backgroundColor: '#2F7D32',
+  backgroundColor: '#EBF4EC',
 },
 
 startingFundChoiceText: {
   color: '#405044',
   fontSize: 14,
-  fontWeight: '800',
+  fontWeight: '600',
 },
 
 startingFundChoiceTextSelected: {
-  color: '#FFFFFF',
+  color: '#2F7D32',
+  fontWeight: '800',
+},
+
+startingFundCustom: {
+  marginTop: 20,
 },
 
 startingFundOtherRow: {
   minHeight: 52,
-  marginTop: 13,
   flexDirection: 'row',
   alignItems: 'center',
-  borderWidth: 1,
-  borderColor: '#9DB29F',
-  borderRadius: 13,
-  backgroundColor: '#FFFFFF',
+  borderRadius: 12,
+  backgroundColor: '#F5F6F7',
 },
 
 startingFundDollar: {
   paddingLeft: 14,
-  color: '#245F2A',
-  fontSize: 21,
-  fontWeight: '900',
+  color: '#405044',
+  fontSize: 18,
+  fontWeight: '600',
 },
 
 startingFundOtherInput: {
@@ -586,15 +702,36 @@ startingFundOtherInput: {
   minHeight: 52,
   paddingHorizontal: 8,
   color: '#1F2937',
-  fontSize: 20,
-  fontWeight: '800',
+  fontSize: 18,
+  fontWeight: '600',
+},
+
+startingFundSummary: {
+  marginTop: 20,
+  gap: 12,
+},
+
+startingFundSummaryRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 12,
+},
+
+startingFundSummaryText: {
+  color: '#52605A',
+  fontSize: 14,
+},
+
+startingFundTotalRow: {
+  borderTopWidth: 1,
+  borderTopColor: '#E5EAE6',
+  paddingTop: 12,
 },
 
 startingFundTotal: {
-  marginTop: 13,
-  color: '#315F35',
-  fontSize: 13,
-  lineHeight: 19,
+  color: '#26332C',
+  fontSize: 16,
   fontWeight: '700',
 },
 
@@ -751,7 +888,7 @@ wizardDotActive: {
   },
   centerButton: {
     position: 'absolute',
-    left: 74,
+    right: 16,
     backgroundColor: '#fff',
     width: BOTTOM_NAV_METRICS.mapControlSize,
     height: BOTTOM_NAV_METRICS.mapControlSize,
@@ -768,7 +905,7 @@ wizardDotActive: {
   },
   mapTypeButton: {
     position: 'absolute',
-    left: 16,
+    right: 16,
     backgroundColor: '#fff',
     width: BOTTOM_NAV_METRICS.mapControlSize,
     height: BOTTOM_NAV_METRICS.mapControlSize,
@@ -1021,28 +1158,11 @@ reportPostScrollContentWithActions: {
 },
 
 originalReportDivider: {
-  paddingHorizontal: 22,
-  paddingTop: 25,
-  paddingBottom: 22,
-  borderTopWidth: StyleSheet.hairlineWidth,
-  borderTopColor: '#C9D8CB',
-  backgroundColor: '#FFFFFF',
+  paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
+  flexDirection: 'row', alignItems: 'center', gap: 8,
+  borderTopWidth: 1, borderTopColor: '#E8ECE9', backgroundColor: '#FFFFFF',
 },
-
-originalReportEyebrow: {
-  color: '#6B776D',
-  fontSize: 11,
-  letterSpacing: 1.05,
-  fontWeight: '800',
-},
-
-originalReportTitle: {
-  marginTop: 5,
-  color: '#263129',
-  fontSize: 23,
-  lineHeight: 29,
-  fontWeight: '900',
-},
+originalReportTitle: { color: '#1F3922', fontSize: 18, lineHeight: 24, fontWeight: '600' },
 
 originalReportText: {
   marginTop: 7,
@@ -1056,23 +1176,99 @@ originalReportText: {
 /* Header                        */
 /* ============================= */
 
+reportRewardDirectionsRow: {
+  flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: 16, rowGap: 10, marginBottom: 20,
+},
+reportRewardSummary: { flexGrow: 1, flexShrink: 1, gap: 3 },
+reportRewardAmount: { fontSize: 25, lineHeight: 30, fontWeight: '700', color: '#202625' },
+reportRewardCaption: { fontSize: 12, lineHeight: 17, color: '#687178' },
+reportDirectionsButton: {
+  flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7,
+  minHeight: 44, paddingHorizontal: 12, paddingVertical: 10,
+  borderWidth: 1, borderColor: '#DCE3DE', borderRadius: 12, backgroundColor: '#FFFFFF',
+},
+reportDirectionsButtonText: { fontSize: 14, fontWeight: '600', color: '#2F7D32' },
+reportDetailFacts: {
+  gap: 12, paddingBottom: 20,
+},
+reportDetailFactRow: {
+  flexDirection: 'row', alignItems: 'flex-start', gap: 10,
+},
+reportDetailFactText: {
+  flex: 1, fontSize: 15, lineHeight: 22, color: '#3E4842',
+},
+reportDetailDirections: {
+  flex: 1, fontSize: 14, lineHeight: 22, fontWeight: '600', color: '#2F7D32',
+},
+reportDetailReporter: {
+  borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#E8ECE9', paddingVertical: 16,
+},
+reportDetailDates: {
+  paddingTop: 16, gap: 12,
+},
+reportDetailMetadataRow: {
+  flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16,
+},
+reportDetailMetadataLabel: {
+  color: '#687178', fontSize: 13, lineHeight: 19, flexShrink: 0,
+},
+reportDetailMetadataValue: {
+  color: '#3E4842', fontSize: 13, lineHeight: 19, flexShrink: 1, textAlign: 'right',
+},
+reportDetailSeverityBadge: {
+  flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10,
+  paddingVertical: 5, borderRadius: 999, backgroundColor: '#EAF3EA', flexShrink: 1,
+},
+reportDetailSeverityMedium: { backgroundColor: '#FFF3DA' },
+reportDetailSeverityHigh: { backgroundColor: '#FBEAEA' },
+reportDetailSeverityValue: {
+  color: '#2F7D32', fontSize: 13, lineHeight: 18, fontWeight: '600', flexShrink: 1,
+},
+completedReportToolbar: { backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E8ECE9', flexShrink: 0 },
+reportPhotoControl: {
+  position: 'absolute', zIndex: 20, minHeight: 44, borderRadius: 22,
+  backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center',
+  borderWidth: 1, borderColor: '#E9EDE9', shadowColor: '#18251D',
+  shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.14, shadowRadius: 5, elevation: 4,
+},
+reportPhotoMapControl: { left: 32, paddingHorizontal: 12, flexDirection: 'row', gap: 7, maxWidth: '65%' },
+reportPhotoCloseControl: { right: 32, width: 44 },
+reportPhotoControlText: { color: '#303A34', fontSize: 13, lineHeight: 18, fontWeight: '600', flexShrink: 1 },
+reportDetailActionFooter: {
+  flexShrink: 0, backgroundColor: '#FFFFFF', borderTopWidth: 1,
+  borderTopColor: '#E8ECE9', paddingHorizontal: 20, paddingTop: 12,
+},
+reportDetailPrimaryAction: {
+  marginHorizontal: 0, marginTop: 0, minHeight: 52, borderRadius: 12,
+  paddingHorizontal: 36, paddingVertical: 12, backgroundColor: '#2F7D32', borderWidth: 0,
+},
+reportDetailClaimSpinner: {
+  position: 'absolute', right: 10, top: 0, bottom: 0, width: 20, justifyContent: 'center', alignItems: 'center',
+},
+reportDetailUtilityRow: {
+  paddingHorizontal: 0, paddingTop: 8, paddingBottom: 0, gap: 10,
+  elevation: 0,
+},
+reportDetailSecondaryAction: {
+  borderWidth: 1, borderColor: '#E3E8E5', backgroundColor: '#FFFFFF', minHeight: 44, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 8, gap: 7,
+},
 reportPostHeader: {
-  paddingHorizontal: 22,
+  paddingHorizontal: 20,
   paddingBottom: 22,
 },
 
 reportPostTitle: {
-  marginTop: 14,
-  fontSize: 25,
-  lineHeight: 32,
-  fontWeight: '800',
+  marginTop: 4,
+  fontSize: 24,
+  lineHeight: 30,
+  fontWeight: '700',
   color: '#1F2937',
   marginBottom: 12,
 },
 
 rewardBadge: {
   alignSelf: 'flex-start',
-  marginBottom: 18,
+  marginBottom: 12,
   paddingHorizontal: 12,
   paddingVertical: 8,
   flexDirection: 'row',
@@ -1364,41 +1560,25 @@ reportDetailsText: {
 },
 
 fundingFeedbackCard: {
-  marginBottom: 18,
-  padding: 17,
-  flexDirection: 'row',
-  alignItems: 'flex-start',
-  gap: 11,
-  borderWidth: 1,
-  borderColor: '#E5C58B',
-  borderRadius: 18,
-  backgroundColor: '#FFF8E8',
+  marginBottom: 18, padding: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 10,
+  borderLeftWidth: 3, borderLeftColor: '#D6A34B', borderRadius: 12, backgroundColor: '#FFF9ED',
 },
-
-fundingFeedbackTitle: {
-  color: '#754B13',
-  fontSize: 15,
-  fontWeight: '900',
-},
-
-fundingFeedbackText: {
-  marginTop: 5,
-  color: '#765C34',
-  fontSize: 14,
-  lineHeight: 20,
-},
+fundingFeedbackTitle: { color: '#754B13', fontSize: 14, lineHeight: 20, fontWeight: '600' },
+fundingFeedbackText: { marginTop: 5, color: '#765C34', fontSize: 13, lineHeight: 19 },
+fundingFeedbackActions: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 18, marginTop: 2, marginBottom: -6 },
+fundingFeedbackAction: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 5 },
+fundingFeedbackActionText: { color: '#754B13', fontSize: 13, fontWeight: '600' },
 
 fundingCopy: {
   flex: 1,
 },
 
 cleanupEligibilityCard: {
-  marginBottom: 28,
-  padding: 18,
-  borderWidth: 1,
-  borderColor: '#C8D8C9',
-  borderRadius: 18,
-  backgroundColor: '#F4FAF4',
+  marginBottom: 20,
+  paddingTop: 16,
+  paddingBottom: 4,
+  borderTopWidth: 1,
+  borderTopColor: '#E8ECE9',
 },
 
 cleanupEligibilityHeader: {
@@ -1408,12 +1588,9 @@ cleanupEligibilityHeader: {
 },
 
 cleanupEligibilityIcon: {
-  width: 46,
-  height: 46,
-  borderRadius: 23,
+  width: 24,
+  paddingTop: 1,
   alignItems: 'center',
-  justifyContent: 'center',
-  backgroundColor: '#E3F1E4',
 },
 
 cleanupEligibilityCopy: {
@@ -1421,16 +1598,17 @@ cleanupEligibilityCopy: {
 },
 
 cleanupEligibilityTitle: {
-  color: '#244A27',
-  fontSize: 18,
-  fontWeight: '800',
+  color: '#303A34',
+  fontSize: 15,
+  lineHeight: 21,
+  fontWeight: '600',
 },
 
 cleanupEligibilityText: {
-  marginTop: 5,
-  color: '#537056',
-  fontSize: 14,
-  lineHeight: 20,
+  marginTop: 4,
+  color: '#687178',
+  fontSize: 13,
+  lineHeight: 19,
 },
 
 cleanupButton: {
@@ -1634,6 +1812,15 @@ ownerReportLockText: {
 /* Persistent footer             */
 /* ============================= */
 
+reportOwnerMenuOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 50, elevation: 20 },
+reportOwnerMenuBackdrop: { ...StyleSheet.absoluteFillObject },
+reportOwnerMenu: { position: 'absolute', right: 20, width: 220, maxWidth: '90%', backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1, borderColor: '#E2E7E3', shadowColor: '#17251C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.16, shadowRadius: 12, elevation: 22 },
+reportOwnerMenuItem: { minHeight: 52, paddingHorizontal: 16, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', gap: 12 },
+reportOwnerMenuText: { flexShrink: 1, color: '#303A34', fontSize: 15, lineHeight: 21, fontWeight: '500' },
+reportOwnerMenuDivider: { height: 1, backgroundColor: '#E8ECE9', marginHorizontal: 14 },
+reportOwnerFooter: { flexShrink: 0, backgroundColor: '#FFFFFF', paddingHorizontal: 20, paddingTop: 4 },
+reportManageButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+reportManageText: { color: '#4F5C63', fontSize: 14, fontWeight: '500' },
 reportFooter: {
   zIndex: 3,
   elevation: 3,

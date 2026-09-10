@@ -58,7 +58,7 @@ export default function ReportShareSheet({
   const title = report?.title?.trim() || 'Litter Report';
   const litterType = report?.litter_types?.[0] || report?.types || null;
   const details = [
-    report?.severity ? `${report.severity} priority` : null,
+    report?.severity ? `${report.severity} severity` : null,
     litterType,
   ].filter(Boolean).join(' · ');
   const busy = Boolean(busyAction);
@@ -69,15 +69,14 @@ export default function ReportShareSheet({
     <View
       style={styles.backdrop}
       accessibilityViewIsModal
-      accessibilityLabel={completed ? 'Share your cleanup impact' : 'Share this cleanup report'}
+      accessibilityLabel={completed ? 'Share cleanup' : 'Share report'}
     >
       <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 18) }]}>
           <View style={styles.handle} />
           <View style={styles.header}>
             <View style={styles.headerCopy}>
-              <Text style={styles.eyebrow}>Share a Litterbugs report</Text>
               <Text style={styles.heading}>
-                {completed ? 'Share your cleanup impact' : 'Share this cleanup report'}
+                {completed ? 'Share cleanup' : 'Share report'}
               </Text>
             </View>
             <TouchableOpacity
@@ -102,7 +101,7 @@ export default function ReportShareSheet({
             </View>
             <View style={styles.previewCopy}>
               <Text style={styles.previewEyebrow}>{completed ? 'Cleanup complete' : 'Cleanup needed'}</Text>
-              <Text style={styles.previewTitle} numberOfLines={1}>{title}</Text>
+              <Text style={styles.previewTitle} numberOfLines={2}>{title}</Text>
               {details ? <Text style={styles.previewDetails} numberOfLines={1}>{details}</Text> : null}
             </View>
           </View>
@@ -111,18 +110,18 @@ export default function ReportShareSheet({
             <ShareOption
               accessibilityLabel="Share report"
               busy={busyAction === 'system'}
-              description="Choose Instagram, Messages, Mail, Facebook, and more"
-              icon="share-social-outline"
+              description="Messages, Mail, and more"
+              icon="share-outline"
               iconColor="#2F7D32"
               onPress={onSystemShare}
-              title="Share report"
+              title="Choose where to share"
             />
           </View>
 
           <View style={styles.privacyRow}>
             <Ionicons name="shield-checkmark-outline" size={16} color="#617066" />
             <Text style={styles.privacyText}>
-              Shared cards omit exact coordinates and private account details.
+              Exact coordinates and private account details stay off the shared card.
             </Text>
           </View>
       </View>
@@ -134,7 +133,7 @@ const styles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(13, 22, 16, 0.58)',
+    backgroundColor: 'rgba(13, 22, 16, 0.42)',
     zIndex: 50,
   },
   sheet: {
@@ -158,77 +157,66 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: 16,
-    paddingHorizontal: 22,
+    paddingHorizontal: 20,
     paddingTop: 18,
     paddingBottom: 16,
   },
   headerCopy: { flex: 1 },
-  eyebrow: {
-    marginBottom: 5,
-    color: '#C9302C',
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1.05,
-    textTransform: 'uppercase',
-  },
   heading: {
     color: '#182019',
-    fontSize: 23,
-    fontWeight: '800',
+    fontSize: 22,
+    fontWeight: '700',
     lineHeight: 28,
     letterSpacing: -0.45,
   },
   closeButton: {
-    width: 42,
-    height: 42,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#D7DED8',
-    borderRadius: 21,
-    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    backgroundColor: '#F3F5F4',
   },
   preview: {
-    height: 92,
+    minHeight: 104,
+    alignItems: 'center',
     flexDirection: 'row',
-    marginHorizontal: 22,
+    marginHorizontal: 20,
     marginBottom: 18,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#DFE5E0',
-    borderRadius: 15,
-    backgroundColor: '#F5F7F5',
+    borderRadius: 0,
+    backgroundColor: '#FFFFFF',
   },
   previewMedia: {
-    width: 92,
-    height: 92,
+    width: 88,
+    height: 88,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
     backgroundColor: '#EAF0EB',
   },
-  previewPhoto: { width: 92, height: 92 },
+  previewPhoto: { width: 88, height: 88 },
   previewLogo: { width: 68, height: 54 },
   previewCopy: {
     flex: 1,
     justifyContent: 'center',
     gap: 3,
-    paddingHorizontal: 15,
-    paddingVertical: 13,
+    paddingLeft: 14,
+    paddingVertical: 8,
   },
   previewEyebrow: {
     color: '#667268',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: '400',
   },
-  previewTitle: { color: '#182019', fontSize: 16, fontWeight: '800' },
+  previewTitle: { color: '#263129', fontSize: 16, lineHeight: 21, fontWeight: '600' },
   previewDetails: { color: '#5C675E', fontSize: 12 },
-  options: { gap: 10, paddingHorizontal: 22 },
+  options: { gap: 10, paddingHorizontal: 20 },
   option: {
     minHeight: 70,
     flexDirection: 'row',
@@ -250,14 +238,14 @@ const styles = StyleSheet.create({
     borderRadius: 13,
   },
   optionCopy: { flex: 1, gap: 2 },
-  optionTitle: { color: '#243027', fontSize: 15, fontWeight: '800' },
+  optionTitle: { color: '#243027', fontSize: 15, lineHeight: 21, fontWeight: '600' },
   optionDescription: { color: '#68736A', fontSize: 12, lineHeight: 16 },
   privacyRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
     marginTop: 18,
-    marginHorizontal: 22,
+    marginHorizontal: 20,
     paddingTop: 14,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#E2E7E3',

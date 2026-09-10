@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 
 import ProfileAvatar from './ProfileAvatar';
-import { LoadingButtonContent } from './BrandedLoadingState';
+import SteadyButtonContent from './components/SteadyButtonContent';
 import { signOut } from './lib/auth';
 import { useProfile } from './lib/profile';
 import { showAvatarSourceMenu, uploadProfileAvatar } from './lib/profileAvatar';
@@ -30,6 +30,7 @@ export default function CompleteProfileScreen({ navigation }) {
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
+    if (saving) return;
     const cleanName = displayName.trim();
     if (!cleanName) {
       setError('Enter the name you want people to see.');
@@ -63,7 +64,7 @@ export default function CompleteProfileScreen({ navigation }) {
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>How should neighbors know you?</Text>
-        <Text style={styles.subtitle}>A display name is required. A profile photo is optional.</Text>
+        <Text style={styles.subtitle}>Choose the name your community will see on your reports and cleanups. You can add a photo now or later.</Text>
 
         <TouchableOpacity
           style={styles.avatarButton}
@@ -76,12 +77,14 @@ export default function CompleteProfileScreen({ navigation }) {
           accessibilityRole="button"
           accessibilityLabel="Add profile photo"
         >
-          <ProfileAvatar profile={{ ...profile, display_name: displayName }} previewUri={avatarAsset?.uri} size={104} />
+          <ProfileAvatar profile={{ ...profile, display_name: displayName }} previewUri={avatarAsset?.uri} size={80} />
           <Text style={styles.avatarAction}>{avatarAsset ? 'Change photo' : 'Add photo'}</Text>
         </TouchableOpacity>
 
         <Text style={styles.label}>Display name</Text>
         <TextInput
+          editable={!saving}
+          selectionColor="#2F7D32"
           value={displayName}
           onChangeText={(value) => { setDisplayName(value); setError(''); }}
           placeholder="Your name"
@@ -101,7 +104,7 @@ export default function CompleteProfileScreen({ navigation }) {
           accessibilityRole="button"
           accessibilityState={{ busy: saving }}
         >
-          {saving ? <LoadingButtonContent label="Saving profile…" /> : <Text style={styles.primaryText}>Continue</Text>}
+          <SteadyButtonContent label="Continue" busy={saving} busyLabel="Saving profile…" />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.signOutButton} onPress={async () => { try { const result = await signOut(); if (result.error) throw result.error; } catch { setError('Couldn’t sign out. Check your connection and try again.'); } }} disabled={saving} accessibilityRole="button" accessibilityLabel="Sign out">
@@ -113,20 +116,20 @@ export default function CompleteProfileScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F6F7' },
-  content: { flexGrow: 1, padding: 24, alignItems: 'center' },
-  title: { marginTop: 18, color: '#202428', fontSize: 25, fontWeight: '800', textAlign: 'center' },
-  subtitle: { maxWidth: 340, marginTop: 9, color: '#6C757C', fontSize: 15, lineHeight: 22, textAlign: 'center' },
-  avatarButton: { alignItems: 'center', marginVertical: 28 },
-  avatarAction: { marginTop: 9, color: '#2F7D32', fontSize: 15, fontWeight: '800' },
-  label: { width: '100%', maxWidth: 420, marginBottom: 7, color: '#333A3F', fontSize: 14, fontWeight: '800' },
-  input: { width: '100%', maxWidth: 420, minHeight: 52, paddingHorizontal: 14, borderWidth: 1, borderColor: '#CBD1D5', borderRadius: 12, backgroundColor: '#FFFFFF', fontSize: 16 },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  content: { flexGrow: 1, padding: 20, alignItems: 'stretch' },
+  title: { marginTop: 18, color: '#202428', fontSize: 24, lineHeight: 31, fontWeight: '600' },
+  subtitle: { maxWidth: 340, marginTop: 9, color: '#6C757C', fontSize: 15, lineHeight: 22 },
+  avatarButton: { flexDirection: 'row', gap: 16, alignItems: 'center', padding: 16, borderWidth: 1, borderColor: '#E2EAE3', borderRadius: 16, backgroundColor: '#F4F8F4', marginVertical: 24 },
+  avatarAction: { marginTop: 9, color: '#2F7D32', fontSize: 15, fontWeight: '600' },
+  label: { width: '100%', maxWidth: 420, marginBottom: 7, color: '#333A3F', fontSize: 14, fontWeight: '600' },
+  input: { width: '100%', maxWidth: 420, minHeight: 52, paddingHorizontal: 14, borderWidth: 1, borderColor: '#DCE4DE', borderRadius: 12, backgroundColor: '#FFFFFF', fontSize: 16 },
   inputError: { borderColor: '#B42318' },
   counter: { width: '100%', maxWidth: 420, marginTop: 5, color: '#7A8288', fontSize: 12, textAlign: 'right' },
   error: { width: '100%', maxWidth: 420, marginTop: 6, color: '#B42318', fontSize: 14 },
   primaryButton: { width: '100%', maxWidth: 420, minHeight: 54, marginTop: 24, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#2F7D32' },
-  primaryText: { color: '#FFFFFF', fontSize: 17, fontWeight: '800' },
-  signOutButton: { minHeight: 48, justifyContent: 'center', marginTop: 8 },
+  primaryText: { color: '#FFFFFF', fontSize: 17, fontWeight: '600' },
+  signOutButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
   signOutText: { color: '#626C73', fontSize: 15, fontWeight: '700' },
   disabled: { opacity: 0.6 },
 });

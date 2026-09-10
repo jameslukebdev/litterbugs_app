@@ -1,4 +1,5 @@
 export const DEFAULT_REPORT_FILTERS = Object.freeze({
+  favoritesOnly: false,
   status: 'all',
   funding: 'all',
   severity: 'all',
@@ -20,7 +21,8 @@ export function distanceMiles(a, b) {
       Math.sin(rad(b.longitude - a.longitude) / 2) ** 2;
   return 7917.6 * Math.asin(Math.sqrt(Math.min(1, n)));
 }
-export function matchesReportFilters(report, filters, origin) {
+export function matchesReportFilters(report, filters, origin, favoriteIds = []) {
+  if (filters.favoritesOnly && !favoriteIds.includes(report.id)) return false;
   const state = report.cleanup_state;
   if (filters.status === 'available' && state !== 'available') return false;
   if (

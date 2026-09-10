@@ -2,7 +2,6 @@ import * as Crypto from 'expo-crypto';
 
 import { supabase } from './supabase';
 import { withTimeout } from './asyncTimeout';
-import { requirePhotoReviewConsent } from './photoReviewConsent';
 
 export const MEDIA_QUARANTINE_BUCKET = 'media_quarantine';
 export const MEDIA_PROCESSING_URL = 'https://litterbugs.app/api/media/process';
@@ -38,7 +37,6 @@ export async function uploadSecureMedia({
   if (!(bytes instanceof Uint8Array) || bytes.byteLength < 1 || bytes.byteLength > MEDIA_MAX_SOURCE_BYTES) {
     throw new Error('Choose an image smaller than 5 MB.');
   }
-  await requirePhotoReviewConsent(userId);
   const quarantinePath = `${userId}/${kind}/${Crypto.randomUUID()}.${extension}`;
   const { error: uploadError } = await supabase.storage
     .from(MEDIA_QUARANTINE_BUCKET)

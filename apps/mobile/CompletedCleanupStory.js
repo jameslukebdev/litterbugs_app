@@ -101,7 +101,6 @@ export default function CompletedCleanupStory({
           <Ionicons name="checkmark" size={25} color="#FFFFFF" />
         </View>
         <View style={styles.completionCopy}>
-          <Text style={styles.eyebrow}>COMMUNITY IMPACT</Text>
           <Text style={styles.completionTitle}>Cleanup Complete</Text>
         </View>
       </View>
@@ -114,11 +113,11 @@ export default function CompletedCleanupStory({
         accessibilityRole={impact.cleaner?.id && onCleanerPress ? 'button' : undefined}
         accessibilityLabel={`Cleaned by ${cleanerName}`}
       >
-        <ProfileAvatar profile={impact.cleaner} size={52} />
+        <ProfileAvatar profile={impact.cleaner} size={48} />
         <View style={styles.cleanerCopy}>
           <Text style={styles.cleanerLabel}>Cleaned by</Text>
           <Text style={styles.cleanerName}>{cleanerName}</Text>
-          <CompactRankBadge userId={impact.cleaner?.id} />
+          <CompactRankBadge userId={impact.cleaner?.id} appearance="plain" />
           {impact.cleaner?.username ? (
             <Text style={styles.cleanerUsername}>@{impact.cleaner.username}</Text>
           ) : null}
@@ -177,9 +176,12 @@ export default function CompletedCleanupStory({
       {facts.length > 0 ? (
         <View style={styles.factsRow}>
           {facts.map((fact) => (
-            <View key={fact.label} style={styles.factCard}>
-              <Ionicons name={fact.icon} size={21} color="#2F7D32" />
-              <Text style={styles.factText}>{fact.label}</Text>
+            <View key={fact.label} style={styles.factCard} accessible accessibilityLabel={fact.label}>
+              <View style={styles.factValueRow}>
+                <Text style={styles.factValue}>{fact.value}</Text>
+                <Ionicons name={fact.icon} size={20} color="#63796A" />
+              </View>
+              <Text style={styles.factText}>{fact.caption}</Text>
             </View>
           ))}
         </View>
@@ -194,19 +196,17 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 24,
     gap: 18,
-    backgroundColor: '#F5FAF5',
+    backgroundColor: '#FFFFFF',
   },
   completionBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 20,
-    backgroundColor: '#E0F2E1',
+    paddingVertical: 2,
   },
   completionIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#2F7D32',
@@ -219,21 +219,20 @@ const styles = StyleSheet.create({
     color: '#4D7551',
     fontSize: 11,
     letterSpacing: 1.1,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   completionTitle: {
-    marginTop: 3,
     color: '#17451C',
     fontSize: 24,
     lineHeight: 29,
-    fontWeight: '900',
+    fontWeight: '600',
   },
   cleanerRow: {
     minHeight: 70,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
-    borderRadius: 18,
+    paddingVertical: 16,
+    borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#E8ECE9',
     backgroundColor: '#FFFFFF',
   },
   cleanerCopy: {
@@ -243,13 +242,14 @@ const styles = StyleSheet.create({
   cleanerLabel: {
     color: '#647168',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '500',
   },
   cleanerName: {
     marginTop: 2,
     color: '#1E2820',
-    fontSize: 17,
-    fontWeight: '800',
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: '600',
   },
   cleanerUsername: {
     marginTop: 1,
@@ -259,21 +259,22 @@ const styles = StyleSheet.create({
   cleanupDateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: 0,
   },
   cleanupDateCopy: {
     marginLeft: 10,
+    flex: 1,
   },
   cleanupDateLabel: {
     color: '#617066',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '500',
   },
   cleanupDateText: {
     marginTop: 2,
     color: '#263128',
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '500',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -283,15 +284,15 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: '#1F3922',
     fontSize: 18,
-    fontWeight: '900',
+    fontWeight: '600',
   },
   photoScroll: {
-    borderRadius: 22,
+    borderRadius: 16,
   },
   photoFrame: {
-    height: 380,
+    height: 300,
     overflow: 'hidden',
-    borderRadius: 22,
+    borderRadius: 16,
     backgroundColor: '#DDE5DE',
   },
   photo: {
@@ -312,7 +313,7 @@ const styles = StyleSheet.create({
   },
   emptyPhotos: {
     minHeight: 180,
-    borderRadius: 22,
+    borderRadius: 16,
   },
   photoUnavailableText: {
     marginTop: 9,
@@ -333,19 +334,17 @@ const styles = StyleSheet.create({
   photoCountText: {
     color: '#FFFFFF',
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   descriptionCard: {
-    padding: 17,
-    borderRadius: 18,
+    paddingVertical: 16,
+    borderBottomWidth: 1, borderBottomColor: '#E8ECE9',
     backgroundColor: '#FFFFFF',
   },
   descriptionLabel: {
     color: '#537057',
-    fontSize: 12,
-    letterSpacing: 0.4,
-    fontWeight: '800',
-    textTransform: 'uppercase',
+    fontSize: 15,
+    fontWeight: '600',
   },
   descriptionText: {
     marginTop: 8,
@@ -359,36 +358,26 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   factCard: {
-    minWidth: '46%',
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    borderRadius: 16,
-    backgroundColor: '#E5F1E6',
+    minWidth: '46%', flex: 1, padding: 16, borderRadius: 14,
+    backgroundColor: '#F3F7F3',
   },
-  factText: {
-    flex: 1,
-    marginLeft: 9,
-    color: '#315B35',
-    fontSize: 14,
-    lineHeight: 19,
-    fontWeight: '800',
-  },
+  factValueRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  factValue: { flexShrink: 1, color: '#245F2A', fontSize: 26, lineHeight: 32, fontWeight: '700' },
+  factText: { marginTop: 5, color: '#637067', fontSize: 13, lineHeight: 19, fontWeight: '400' },
   stateCard: {
     minHeight: 200,
     alignItems: 'center',
     justifyContent: 'center',
     margin: 20,
     padding: 24,
-    borderRadius: 22,
+    borderRadius: 16,
     backgroundColor: '#F0F6F0',
   },
   stateTitle: {
     marginTop: 12,
     color: '#283229',
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   stateText: {
     marginTop: 9,
@@ -407,6 +396,6 @@ const styles = StyleSheet.create({
   retryButtonText: {
     color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '600',
   },
 });

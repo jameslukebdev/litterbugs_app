@@ -5,13 +5,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RANKS } from '../lib/ranking';
 import { POINTS_RULES, POINTS_LIMITS } from '../lib/pointsExplanation';
 
-export default function PointsExplanation({ ranking }) {
+export default function PointsExplanation({ ranking, appearance }) {
   const [visible, setVisible] = useState(false);
   const insets = useSafeAreaInsets();
   return <>
-    <TouchableOpacity accessibilityRole="button" accessibilityLabel="How points work" style={styles.trigger} onPress={() => setVisible(true)}>
+    <TouchableOpacity accessibilityRole="button" accessibilityLabel="How points work" style={[styles.trigger, appearance === 'row' && styles.rowTrigger]} onPress={() => setVisible(true)}>
       <Ionicons name="help-circle-outline" size={18} color="#245F2A" />
-      <Text style={styles.action}>How points work</Text>
+      <Text style={[styles.action, appearance === 'row' && styles.rowAction]}>How points work</Text>
+      {appearance === 'row' ? <Ionicons name="chevron-forward" size={16} color="#7A867D" /> : null}
     </TouchableOpacity>
     <Modal visible={visible} transparent animationType="slide" onRequestClose={() => setVisible(false)}>
       <View style={styles.overlay}>
@@ -40,6 +41,8 @@ export default function PointsExplanation({ ranking }) {
   </>;
 }
 const styles = StyleSheet.create({
+  rowTrigger: { alignSelf: 'stretch', minHeight: 46, paddingHorizontal: 16, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#DDE9DE', backgroundColor: '#FFFFFF', gap: 8 },
+  rowAction: { flex: 1, fontSize: 13, fontWeight: '500' },
   trigger: { minHeight: 44, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16 },
   action: { color: '#245F2A', fontWeight: '700', fontSize: 14 },
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' },

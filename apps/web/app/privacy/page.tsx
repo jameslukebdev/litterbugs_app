@@ -52,7 +52,7 @@ export default function PrivacyPage() {
           title: 'Photos, locations, and Gemini review',
           content: <>
             <p>Report and cleanup photos may contain personal information, and report locations may be approximate or precise. Avoid photographing faces, license plates, private documents, homes beyond what is necessary, or other unrelated personal information.</p>
-            <p>Uploaded photos are sent to Cloudmersive to scan for malicious files before they are accepted. The mobile app asks permission before uploading photos for external checks; permission for future uploads can be withdrawn in Settings. Withdrawing permission does not delete previously submitted photos or completed reviews.</p>
+            <p>Uploaded photos are sent to Cloudmersive to scan for malicious files before they are accepted. These checks happen automatically when you submit photos.</p>
             <p>Eligible photos may be provided through short-lived private references to a dedicated Google Cloud relay for paid Google Gemini review. Gemini may assess clarity, scene consistency, cleanup progress, duplicate or manipulated evidence, and possible hazards, then return structured findings to Litterbugs. Litterbugs does not opt into voluntary model-data sharing for this production workflow.</p>
             <p>Gemini does not independently release money. Litterbugs validates its result, and authorized administrators may view the relevant report, photos, reasons, and payment state to override or resolve an ambiguous, disputed, unsafe, or suspicious case. AI output may be inaccurate.</p>
           </>,

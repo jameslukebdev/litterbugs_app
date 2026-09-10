@@ -2,11 +2,13 @@ import { userMessage } from './lib/userMessage';
 import FeeExplanationLabel from './components/FeeExplanationLabel';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { reconcileContribution } from './lib/reconcileContribution';
+import { replaceUnpaidContribution } from './lib/replaceUnpaidContribution';
 import { useSession } from './lib/session';
 import { supabase } from './lib/supabase';
 import { loadPaymentAttempt, savePaymentAttempt, clearPaymentAttempt } from './lib/contributionRecovery';
 import { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -48,7 +50,10 @@ import {
   loadPendingReportFunding,
   savePendingReportFunding,
 } from './lib/pendingReportFunding';
-import BrandedLoadingState, { LoadingButtonContent } from './BrandedLoadingState';
+import FundingAvailabilityNotice from './components/FundingAvailabilityNotice';
+import SteadyButtonContent from './components/SteadyButtonContent';
+import { canEditOrDeleteReport } from './lib/reportAccess';
+import { useIsFocused } from '@react-navigation/native';
 
 export default function FundingContributionScreen(props) {
   const { user } = useSession();
@@ -77,15 +82,26 @@ function FundingContributionController({ navigation, route }) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const isFocused = useIsFocused();
   const [paying, setPaying] = useState(false);
+  const [showPaymentSpinner, setShowPaymentSpinner] = useState(false);
+  useEffect(() => {
+    if (!paying) {
+      setShowPaymentSpinner(false);
+      return;
+    }
+    const timer = setTimeout(() => setShowPaymentSpinner(true), 400);
+    return () => clearTimeout(timer);
+  }, [paying]);
   const [receipt, setReceipt] = useState(null);
   const [confirmationPending, setConfirmationPending] = useState(false);
   const previousFundingEligibility = useRef(null);
   const fundingEligibilityInitialized = useRef(false);
-  const principalCents = attemptRef.current?.principalAmountCents ?? parseContributionAmount(amount);
+  const principalCents = parseContributionAmount(amount);
   const feeCents = principalCents == null ? null : calculatePlatformFee(principalCents);
 
-  const reconcileAttempt = () => {
+  const reconcileAttempt = ({ preserveAmount = false } = {}) => {
     if (reconciliationRef.current) return reconciliationRef.current;
     const run = async () => {
     setRecoveryError(null);
@@ -93,7 +109,7 @@ function FundingContributionController({ navigation, route }) {
     if (!mounted.current) return 'obsolete';
     attemptRef.current = attempt;
     if (!attempt) return 'none';
-    setAmount(String(attempt.principalAmountCents / 100));
+    if (!preserveAmount) setAmount(String(attempt.principalAmountCents / 100));
     const result = await reconcileContribution({
       attempt,
       findContribution: async (requestId) => {
@@ -146,11 +162,11 @@ function FundingContributionController({ navigation, route }) {
 
     loadPendingReportFunding(reportId)
       .then((savedAmount) => {
-        if (active) setAmount(savedAmount ?? '25');
+        if (active && !attemptRef.current) setAmount(savedAmount ?? '25');
       })
       .catch((error) => {
         console.log('Pending report funding load error:', error);
-        if (active) setAmount('25');
+        if (active && !attemptRef.current) setAmount('25');
       })
       .finally(() => {
         if (active) setPendingAmountLoaded(true);
@@ -167,7 +183,9 @@ function FundingContributionController({ navigation, route }) {
   }, [amount, fromReportCreation, pendingAmountLoaded, principalCents, reportId]);
 
   useEffect(() => {
+    if (!isFocused) return undefined;
     let active = true;
+    setRefreshing(true);
     setLoadError(null);
     withTimeout(
       Promise.all([getReportById(reportId), loadCleanupFeatureFlags()]),
@@ -183,13 +201,13 @@ function FundingContributionController({ navigation, route }) {
         if (active) setLoadError(userMessage(error, 'We couldn’t update your contribution. View payment history before paying again.'));
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (active) { setLoading(false); setRefreshing(false); }
       });
     return () => { active = false; };
-  }, [getReportById, reloadKey, reportId]);
+  }, [getReportById, reloadKey, reportId, isFocused]);
 
   useEffect(() => {
-    const shouldRecheck = fromReportCreation
+    const shouldRecheck = isFocused
       && !loading
       && !loadError
       && shouldRefreshFundingEligibility(report);
@@ -210,7 +228,7 @@ function FundingContributionController({ navigation, route }) {
       active = false;
       clearInterval(interval);
     };
-  }, [fromReportCreation, getReportById, loadError, loading, report?.funding_eligibility, reportId]);
+  }, [isFocused, getReportById, loadError, loading, report?.funding_eligibility, reportId]);
 
   useEffect(() => {
     if (loading || loadError || !report) return;
@@ -233,10 +251,21 @@ function FundingContributionController({ navigation, route }) {
     try {
       setPaying(true);
       // Reconcile first, including after navigation or a process restart.
-      const previousState = await reconcileAttempt();
+      const previousState = await reconcileAttempt({ preserveAmount: true });
       if (!mounted.current || ['obsolete', 'received', 'refund', 'failed'].includes(previousState)) return;
       let attempt = attemptRef.current;
       if (attempt?.phase === 'submitted') return;
+      attempt = await replaceUnpaidContribution({
+        attempt,
+        principalCents,
+        retrieveIntent: async (savedIntent) => {
+          await initStripe({ publishableKey: savedIntent.publishableKey, urlScheme: 'litterbugs' });
+          return retrievePaymentIntent(savedIntent.paymentIntentClientSecret);
+        },
+        clearAttempt: (requestId) => clearPaymentAttempt(user.id, reportId, requestId),
+      });
+      if (!mounted.current) return;
+      attemptRef.current = attempt;
       if (!attempt) {
         attempt = { clientRequestId: Crypto.randomUUID(), principalAmountCents: principalCents, createdAt: Date.now(), phase: 'preparing' };
         await savePaymentAttempt(user.id, reportId, attempt);
@@ -311,15 +340,15 @@ function FundingContributionController({ navigation, route }) {
 
   if (loading || !recoveryReady) {
     return (
-      <BrandedLoadingState
-        working
-        title={fromReportCreation ? "Report posted" : "Checking contribution…"}
-        message="Checking the report and any previous payment attempt."
-      />
+      <View style={[styles.container, { padding: 20, paddingTop: 28 }]}>
+        <Text style={styles.title}>Cleanup fund</Text>
+        <Text style={styles.reportTitle}>Review the report and your contribution before continuing.</Text>
+        <View style={{ height: 104, marginTop: 24, borderRadius: 14, backgroundColor: '#F0F6F0' }} accessibilityLabel="Checking contribution availability" accessibilityRole="progressbar" />
+      </View>
     );
   }
 
-  if (loadError) {
+  if (loadError && !report) {
     return (
       <View style={styles.center}>
         <Ionicons name="time-outline" size={44} color="#8A6400" />
@@ -327,12 +356,12 @@ function FundingContributionController({ navigation, route }) {
         <Text style={styles.centerText}>{loadError}</Text>
         <TouchableOpacity
           style={styles.primaryButton}
+          disabled={refreshing}
           onPress={() => {
-            setLoading(true);
             setReloadKey((value) => value + 1);
           }}
         >
-          <Text style={styles.primaryButtonText}>Try again</Text>
+          <SteadyButtonContent label="Try again" busy={refreshing} busyLabel="Refreshing contribution availability" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.goBack()}>
           <Text style={styles.secondaryButtonText}>Return to report</Text>
@@ -377,87 +406,78 @@ function FundingContributionController({ navigation, route }) {
 
   const unavailable = fundingAvailabilityPresentation(report);
   if (unavailable) {
-    const isNewReportFundingStep = fromReportCreation;
-    const isPendingStartingContribution = fromReportCreation
-      && shouldRefreshFundingEligibility(report);
-    return (
-      <View style={styles.center}>
-        <View style={isNewReportFundingStep ? styles.successIcon : null}>
-          <Ionicons
-            name={isNewReportFundingStep ? 'checkmark' : 'shield-checkmark-outline'}
-            size={isNewReportFundingStep ? 38 : 44}
-            color={isNewReportFundingStep ? '#FFFFFF' : '#2F7D32'}
-          />
-        </View>
-        {isNewReportFundingStep ? (
-          <Text style={styles.createdLabel}>REPORT CREATED</Text>
-        ) : null}
-        <Text style={styles.centerTitle}>{unavailable.title}</Text>
-        <Text style={styles.centerText}>{unavailable.message}</Text>
-        {isNewReportFundingStep && principalCents ? (
-          <View style={styles.savedContributionCard}>
-            <Ionicons name="card-outline" size={22} color="#2F7D32" />
-            <Text style={styles.savedContributionText}>
-              {isPendingStartingContribution
-                ? `Your ${formatUsd(principalCents)} choice is saved on this screen, but you have not been charged. We’ll update this page when funding is ready. You can then choose Continue to payment.`
-                : `Your ${formatUsd(principalCents)} choice has not been charged. Resolve the issue above, then choose Add funds again to continue securely with Stripe.`}
-            </Text>
-          </View>
-        ) : null}
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={() => {
-            setLoading(true);
-            setReloadKey((value) => value + 1);
-          }}
-          accessibilityRole="button"
-          accessibilityLabel="Check cleanup fund eligibility again"
-        >
-          <Text style={styles.primaryButtonText}>Check again</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.secondaryButtonText}>Return to report</Text>
-        </TouchableOpacity>
-      </View>
-    );
+    const needsPhotos = report?.funding_eligibility === 'better_photos';
+    const canEditPhotos = needsPhotos && canEditOrDeleteReport(report, user) && !report?.funding_locked_at;
+    return <FundingAvailabilityNotice
+      title={unavailable.title}
+      message={unavailable.message}
+      needsPhotos={needsPhotos}
+      canEditPhotos={canEditPhotos}
+      pending={shouldRefreshFundingEligibility(report)}
+      reportTitle={report?.title}
+      savedAmount={fromReportCreation && principalCents ? formatUsd(principalCents) : null}
+      refreshing={refreshing}
+      refreshError={loadError}
+      bottomInset={insets.bottom}
+      onEditPhotos={() => navigation.popTo('App', { screen: 'Map', params: { reportId, editPhotos: true } })}
+      onRefresh={() => { if (!refreshing) setReloadKey(value => value + 1); }}
+      onReturn={() => navigation.goBack()}
+    />;
   }
 
   return (
     <KeyboardAvoidingView style={styles.container} keyboardVerticalOffset={headerHeight} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]} keyboardShouldPersistTaps="handled">
-        <Text style={styles.eyebrow}>CLEANUP FUND</Text>
         <Text style={styles.title}>{fromReportCreation ? 'Start your cleanup fund' : 'Help fund this cleanup'}</Text>
         <Text style={styles.reportTitle}>{report?.title || 'Litter report'}</Text>
 
         <View style={styles.rewardCard}>
-          <Text style={styles.rewardLabel}>Current cleanup reward</Text>
-          <Text style={styles.rewardValue}>{formatUsd(report?.funded_amount_cents)}</Text>
-          <Text style={styles.rewardText}>Your contribution adds directly to this reward.</Text>
+          <View style={styles.rewardSummary}>
+            <Text style={styles.rewardLabel}>Current cleanup reward</Text>
+            <Text style={styles.rewardValue}>{formatUsd(report?.funded_amount_cents)}</Text>
+          </View>
+          <Text style={styles.rewardText}>Your contribution adds to this reward.</Text>
         </View>
 
         <View style={styles.card}>
           <Text style={styles.label}>Contribution amount</Text>
+          <View style={styles.amountPresets}>
+            {['5', '25', '50'].map((preset) => {
+              const selected = principalCents === Number(preset) * 100;
+              return (
+                <TouchableOpacity
+                  key={preset}
+                  style={[styles.amountPreset, selected && styles.amountPresetSelected]}
+                  onPress={() => setAmount(preset)}
+                  disabled={paying || confirmationPending}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Contribute $${preset}`}
+                  accessibilityState={{ selected, disabled: paying || confirmationPending }}
+                >
+                  <Text style={[styles.amountPresetText, selected && styles.amountPresetTextSelected]}>${preset}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
           <View style={styles.amountRow}>
             <Text style={styles.dollar}>$</Text>
             <TextInput
-              value={attemptRef.current ? String(attemptRef.current.principalAmountCents / 100) : amount}
+              value={amount}
               onChangeText={setAmount}
               keyboardType="decimal-pad"
               placeholder="25.00"
               style={styles.amountInput}
-              editable={!paying && !attemptRef.current}
+              editable={!paying && !confirmationPending}
               accessibilityLabel="Cleanup fund contribution amount"
             />
           </View>
-          {attemptRef.current ? <Text style={styles.helper}>Continuing your saved payment attempt with the same amount.</Text> : null}
-          <Text style={[styles.helper, !principalCents && styles.error]}>Minimum $1 · Maximum $1,000 per contribution</Text>
+          <Text style={[styles.helper, amount.trim() && !principalCents ? styles.error : null]}>Minimum $1 · Maximum $1,000 per contribution</Text>
         </View>
 
         {principalCents ? (
           <View style={styles.card}>
             <View style={styles.line}><Text style={styles.lineLabel}>Cleanup fund</Text><Text style={styles.lineValue}>{formatUsd(principalCents)}</Text></View>
             <View style={styles.line}><FeeExplanationLabel textStyle={styles.lineLabel} /><Text style={styles.lineValue}>{formatUsd(feeCents)}</Text></View>
-            <View style={[styles.line, styles.totalLine]}><Text style={styles.totalLabel}>Total</Text><Text style={styles.totalValue}>{formatUsd(principalCents + feeCents)}</Text></View>
           </View>
         ) : null}
 
@@ -478,16 +498,33 @@ function FundingContributionController({ navigation, route }) {
       </ScrollView>
       <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: Math.max(insets.bottom, 12), backgroundColor: '#FFFFFF', borderTopWidth: StyleSheet.hairlineWidth, borderColor: '#DDE2DE' }}>
         <View style={styles.line}><Text style={styles.totalLabel}>Total</Text><Text style={styles.totalValue}>{principalCents ? formatUsd(principalCents + feeCents) : 'Enter an amount'}</Text></View>
-        <TouchableOpacity style={[styles.primaryButton, { marginTop: 8 }, (!principalCents || paying || confirmationPending) && styles.disabled]} onPress={pay} disabled={!principalCents || paying || confirmationPending}>
-          {paying ? <LoadingButtonContent label="Opening secure payment…" /> : <Text style={styles.primaryButtonText}>{confirmationPending ? 'Payment confirmation pending' : 'Continue to secure payment'}</Text>}
+        <TouchableOpacity
+          style={[styles.primaryButton, styles.paymentButton, (!principalCents || confirmationPending) && styles.disabled]}
+          activeOpacity={1}
+          onPress={pay}
+          disabled={!principalCents || paying || confirmationPending}
+          accessibilityRole="button"
+          accessibilityState={{ busy: paying, disabled: !principalCents || paying || confirmationPending }}
+          accessibilityLabel={paying ? 'Opening secure payment' : confirmationPending ? 'Payment confirmation pending' : 'Continue to payment'}
+        >
+          <Text style={styles.primaryButtonText}>{confirmationPending ? 'Payment confirmation pending' : 'Continue to payment'}</Text>
+          {paying && showPaymentSpinner ? (
+            <View style={styles.paymentSpinner} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            </View>
+          ) : null}
         </TouchableOpacity>
+        <View style={styles.paymentTrustRow}>
+          <Ionicons name="lock-closed-outline" size={12} color="#687178" />
+          <Text style={styles.paymentTrustText}>Secure checkout by Stripe</Text>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F6F7' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   content: { padding: 20 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: '#F5F6F7' },
   centerTitle: { marginTop: 16, color: '#202428', fontSize: 24, fontWeight: '900', textAlign: 'center' },
@@ -497,31 +534,41 @@ const styles = StyleSheet.create({
   savedContributionCard: { maxWidth: 380, marginTop: 20, padding: 16, flexDirection: 'row', alignItems: 'flex-start', gap: 11, borderRadius: 16, backgroundColor: '#E6F2E7' },
   savedContributionText: { flex: 1, color: '#3F6843', fontSize: 14, lineHeight: 20, fontWeight: '700' },
   eyebrow: { color: '#2F7D32', fontSize: 12, fontWeight: '900', letterSpacing: 1.1 },
-  title: { marginTop: 7, color: '#202428', fontSize: 29, fontWeight: '900' },
-  reportTitle: { marginTop: 7, color: '#687178', fontSize: 15, fontWeight: '700' },
-  rewardCard: { marginTop: 22, padding: 20, borderRadius: 18, backgroundColor: '#E6F2E7' },
-  rewardLabel: { color: '#3F6843', fontSize: 13, fontWeight: '800' },
-  rewardValue: { marginTop: 4, color: '#245F2A', fontSize: 34, fontWeight: '900' },
-  rewardText: { marginTop: 5, color: '#526C55', fontSize: 14 },
-  card: { marginTop: 16, padding: 18, borderRadius: 17, backgroundColor: '#FFFFFF' },
-  label: { color: '#30363B', fontSize: 15, fontWeight: '800' },
+  title: { color: '#202428', fontSize: 26, lineHeight: 32, fontWeight: '700' },
+  reportTitle: { marginTop: 8, color: '#687178', fontSize: 14, lineHeight: 20, fontWeight: '400' },
+  rewardCard: { marginTop: 20, padding: 16, borderRadius: 14, backgroundColor: '#F0F6F0' },
+  rewardSummary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  rewardLabel: { flexShrink: 1, color: '#3F6843', fontSize: 13, lineHeight: 18, fontWeight: '500' },
+  rewardValue: { color: '#245F2A', fontSize: 25, lineHeight: 31, fontWeight: '700' },
+  rewardText: { marginTop: 6, color: '#526C55', fontSize: 12, lineHeight: 18 },
+  card: { marginTop: 24, padding: 0, backgroundColor: '#FFFFFF' },
+  label: { color: '#30363B', fontSize: 15, fontWeight: '600' },
+  amountPresets: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  amountPreset: { flex: 1, minHeight: 48, padding: 10, borderRadius: 12, borderWidth: 1, borderColor: '#DCE3DE', alignItems: 'center', justifyContent: 'center' },
+  amountPresetSelected: { backgroundColor: '#EAF3EA', borderColor: '#2F7D32' },
+  amountPresetText: { color: '#3E4842', fontSize: 16, fontWeight: '600' },
+  amountPresetTextSelected: { color: '#2F7D32' },
   amountRow: { marginTop: 12, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#B8C2B9', borderRadius: 13, backgroundColor: '#FBFCFB' },
-  dollar: { paddingLeft: 15, color: '#30363B', fontSize: 24, fontWeight: '800' },
-  amountInput: { flex: 1, minHeight: 56, paddingHorizontal: 8, color: '#202428', fontSize: 24, fontWeight: '800' },
+  dollar: { paddingLeft: 15, color: '#30363B', fontSize: 24, fontWeight: '600' },
+  amountInput: { flex: 1, minHeight: 56, paddingHorizontal: 8, color: '#202428', fontSize: 24, fontWeight: '600' },
   helper: { marginTop: 8, color: '#737D83', fontSize: 13 },
   error: { color: '#A33A32' },
   line: { minHeight: 38, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   lineLabel: { color: '#59636A', fontSize: 15 },
   lineValue: { color: '#30363B', fontSize: 15, fontWeight: '700' },
   totalLine: { marginTop: 8, paddingTop: 13, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#CDD3CF' },
-  totalLabel: { color: '#202428', fontSize: 17, fontWeight: '900' },
-  totalValue: { color: '#202428', fontSize: 18, fontWeight: '900' },
-  termsCard: { marginTop: 16, padding: 15, flexDirection: 'row', gap: 10, borderRadius: 14, backgroundColor: '#EAF0F2' },
+  totalLabel: { color: '#202428', fontSize: 17, fontWeight: '600' },
+  totalValue: { color: '#202428', fontSize: 18, fontWeight: '700' },
+  termsCard: { marginTop: 20, paddingTop: 16, flexDirection: 'row', gap: 10, borderTopWidth: 1, borderTopColor: '#E8ECE9' },
   termsText: { flex: 1, color: '#52636B', fontSize: 13, lineHeight: 19 },
   pendingCard: { marginTop: 16, padding: 15, flexDirection: 'row', gap: 10, borderRadius: 14, backgroundColor: '#FFF4D6' },
   pendingText: { flex: 1, color: '#7A5810', fontSize: 13, lineHeight: 19 },
   primaryButton: { minWidth: 220, minHeight: 54, marginTop: 22, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#2F7D32' },
-  primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+  paymentTrustRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 5, marginTop: 9 },
+  paymentTrustText: { color: '#687178', fontSize: 12, lineHeight: 17 },
+  paymentButton: { marginTop: 8, paddingHorizontal: 36, paddingVertical: 12 },
+  paymentSpinner: { position: 'absolute', right: 10, top: 0, bottom: 0, width: 20, justifyContent: 'center', alignItems: 'center' },
+  primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
   secondaryButton: { minHeight: 48, marginTop: 10, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
   secondaryButtonText: { color: '#2F7D32', fontSize: 15, fontWeight: '900' },
   disabled: { opacity: 0.55 },

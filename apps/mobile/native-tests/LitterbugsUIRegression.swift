@@ -43,6 +43,27 @@ final class LitterbugsUIRegression: XCTestCase {
         // A full-screen pinch can begin on the floating toolbar or bottom tabs.
         for _ in 0..<4 { app.maps.firstMatch.tap(withNumberOfTaps: 1, numberOfTouches: 2) }
     }
+    func testFundingPhotoRecovery() throws {
+        tab("profile").tap()
+        guard app.buttons["My activity"].waitForExistence(timeout: 10) else { throw XCTSkip("Requires an already signed-in QA account.") }
+        app.buttons["My activity"].tap()
+        element("My reports").tap()
+        let ownReport = app.buttons.matching(NSPredicate(format: "label ==[c] 'Open Litter Report'")).firstMatch
+        guard ownReport.waitForExistence(timeout: 10) else { throw XCTSkip("Requires the owner's photo-review QA report.") }
+        ownReport.tap()
+        let fund = app.buttons["Fund cleanup"]
+        waitForHittable(fund); fund.tap()
+        XCTAssertTrue(element("Better photos are needed first").waitForExistence(timeout: 15), app.debugDescription)
+        XCTAssertFalse(app.buttons["Check cleanup fund eligibility again"].exists)
+        let edit = app.buttons["Edit photos"]
+        waitForHittable(edit)
+        shot("cleanup-fund-edit-photos")
+        edit.tap()
+        XCTAssertTrue(app.buttons["Choose replacement report photos"].waitForExistence(timeout: 15), app.debugDescription)
+        shot("funding-opens-photo-editor")
+        app.buttons["Close report form"].tap()
+        if app.alerts.buttons["Discard"].exists { app.alerts.buttons["Discard"].tap() }
+    }
     func testMarkerZoomSelectionAndPan() throws {
         centerAndZoomOut()
         let completed = marker("completed: Trash on Castle Ford")
@@ -66,7 +87,7 @@ final class LitterbugsUIRegression: XCTestCase {
         centerAndZoomOut()
         XCTAssertTrue(funded.waitForExistence(timeout: 10))
         funded.tap()
-        XCTAssertTrue(element("View report").waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'View report, photo 1'")).firstMatch.waitForExistence(timeout: 5))
         XCTAssertFalse(element("Reports here").exists, "A distinct amount marker must open its card directly")
         shot("marker-selection")
     }
@@ -95,7 +116,7 @@ final class LitterbugsUIRegression: XCTestCase {
         centerAndZoomOut()
         let funded = marker("$6, available:")
         XCTAssertTrue(funded.waitForExistence(timeout: 15)); funded.tap()
-        element("View report").tap()
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'View report, photo 1'")).firstMatch.tap()
         for _ in 0..<2 {
             let fund = app.buttons["Fund cleanup"]
             waitForHittable(fund); fund.tap()
@@ -110,7 +131,7 @@ final class LitterbugsUIRegression: XCTestCase {
         centerAndZoomOut()
         let funded = marker("$6, available:")
         XCTAssertTrue(funded.waitForExistence(timeout: 15)); funded.tap()
-        element("View report").tap()
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'View report, photo 1'")).firstMatch.tap()
         let cleanup = app.buttons["Help clean this up"]
         waitForHittable(cleanup); cleanup.tap()
         XCTAssertTrue(element("Cleanup safety and agreement").waitForExistence(timeout: 15))
@@ -140,23 +161,23 @@ final class LitterbugsUIRegression: XCTestCase {
         XCTAssertFalse(app.buttons["Open settings"].exists)
         shot("filters-cancel-keeps-results")
     }
-    func testSettingsHelpAndPhotoPermission() throws {
+    func testSettingsHelpAndPhotoInformation() throws {
         tab("profile").tap()
         guard app.buttons["Settings"].waitForExistence(timeout: 10) else { throw XCTSkip("Requires an already signed-in QA account.") }
         app.buttons["Settings"].tap()
-        let permissions = app.buttons["Photo review permissions"]
+        let permissions = app.buttons["About photo review"]
         for _ in 0..<8 { if permissions.isHittable { break }; app.scrollViews.firstMatch.swipeUp() }
         waitForHittable(permissions); permissions.tap()
-        XCTAssertTrue(app.alerts["Photo review permissions"].waitForExistence(timeout: 5))
+        XCTAssertTrue(element("How your photos are reviewed").waitForExistence(timeout: 5))
         XCTAssertTrue(marker("Cloudmersive").exists)
         XCTAssertTrue(marker("Google Gemini").exists)
-        app.alerts.buttons["Done"].tap()
+        app.navigationBars.buttons.firstMatch.tap()
         let help = app.buttons["Get help"]
         for _ in 0..<8 { if help.isHittable { break }; app.scrollViews.firstMatch.swipeUp() }
         waitForHittable(help)
-        XCTAssertTrue(app.buttons["Support us on Patreon"].exists)
-        shot("settings-help-photo-permissions")
-        // Do not open Mail, withdraw consent, sign out, or delete this account.
+        XCTAssertTrue(app.buttons["Support Litterbugs"].exists)
+        shot("settings-help-photo-information")
+        // Do not open Mail, sign out, or delete this account.
     }
     func testMyReportsRemainIndependentOfMap() throws {
         tab("profile").tap()
@@ -210,11 +231,11 @@ final class LitterbugsUIRegression: XCTestCase {
         shot("points-explanation")
         app.buttons["Close points explanation"].tap()
         app.buttons["Payments"].tap()
-        let history = app.buttons["Contributions & payment history"]
+        let history = app.buttons["Your contributions & payments"]
         XCTAssertTrue(history.waitForExistence(timeout: 10)); history.tap()
-        XCTAssertTrue(app.buttons["All payments"].waitForExistence(timeout: 10))
-        app.buttons["Completed impact"].tap()
-        XCTAssertTrue(app.buttons["Completed impact"].isSelected)
+        XCTAssertTrue(element("All payments").waitForExistence(timeout: 10))
+        element("Completed impact").tap()
+        XCTAssertTrue(element("Completed impact").isSelected)
         shot("payment-history-completed-filter")
     }
     func testProfileSaveVisibilityKeyboardAndBackProtection() throws {
@@ -266,7 +287,7 @@ final class LitterbugsUIRegression: XCTestCase {
         XCTAssertTrue(app.buttons["Report litter"].waitForExistence(timeout: 5))
     }
 
-    func testThreeStageReportReviewWithoutPublishing() throws {
+    func testFiveStageReportReviewWithoutPublishing() throws {
         simulateLocation(); app.buttons["Report litter"].tap()
         if app.alerts["Resume your report?"].waitForExistence(timeout: 2) {
             app.alerts.buttons["Cancel"].tap()
@@ -286,22 +307,25 @@ final class LitterbugsUIRegression: XCTestCase {
         let next = app.buttons["Next report step"]
         waitForHittable(next); next.tap()
         element("Cans litter type").tap()
+        next.tap()
         let severity = element("Low severity")
         for _ in 0..<5 {
             if severity.isHittable { break }
             app.scrollViews.firstMatch.swipeUp(velocity: .slow)
         }
-        XCTAssertTrue(severity.isHittable); severity.tap(); shot("report-details")
+        XCTAssertTrue(severity.isHittable); severity.tap(); shot("report-severity")
         next.tap()
-        XCTAssertTrue(element("Step 3 of 3 · Review").waitForExistence(timeout: 5))
-        XCTAssertTrue(element("Review your report").isHittable, "Each stage must open at the top, not inherit the previous scroll offset")
+        XCTAssertTrue(element("Site conditions").waitForExistence(timeout: 5))
+        next.tap()
+        XCTAssertTrue(element("5 of 5").waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Edit report photos"].isHittable, "Each stage must open at the top, not inherit the previous scroll offset")
         shot("report-review")
         app.buttons["Change report location"].tap()
         XCTAssertTrue(app.buttons["Use this location"].waitForExistence(timeout: 5))
         app.maps.firstMatch.swipeLeft(velocity: .slow)
         app.buttons["Use this location"].tap()
-        XCTAssertTrue(element("Step 3 of 3 · Review").waitForExistence(timeout: 5))
-        XCTAssertTrue(element("Review your report").exists)
+        XCTAssertTrue(element("5 of 5").waitForExistence(timeout: 5))
+        XCTAssertTrue(element("Review report").exists)
         shot("report-review-after-pin-change")
         app.buttons["Close report form"].tap(); app.alerts.buttons["Discard"].tap()
     }

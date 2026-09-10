@@ -1,3 +1,4 @@
+import SteadyButtonContent from './components/SteadyButtonContent';
 import { openSupport } from './lib/support';
 import { useProfile } from './lib/profile';
 import { useState } from 'react';
@@ -10,7 +11,6 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 
-import { LoadingButtonContent } from './BrandedLoadingState';
 import {
   resendSignupVerification, sendPasswordRecovery, signInWithEmail,
   signInWithProvider, signUpWithEmail,
@@ -302,7 +302,7 @@ export default function AuthScreen() {
                       {sentReason === 'signup' && (
                         <>
                           <TouchableOpacity style={emailStyles.textButton} onPress={handleResend} disabled={loadingEmail} accessibilityRole="button" accessibilityLabel="Resend verification email">
-                            {loadingEmail ? <LoadingButtonContent label="Sending…" color="#2F7D32" /> : <Text style={emailStyles.linkText}>Resend verification email</Text>}
+                            <SteadyButtonContent label="Resend verification email" busy={loadingEmail} busyLabel="Sending…" color="#2F7D32" />
                           </TouchableOpacity>
                           <View style={emailStyles.sentLinksRow}>
                             <TouchableOpacity style={emailStyles.sentLinkButton} onPress={() => resetForm('login')} accessibilityRole="button" accessibilityLabel="Sign in instead">
@@ -336,6 +336,7 @@ export default function AuthScreen() {
 
                       <Text style={emailStyles.label}>Email</Text>
                       <TextInput
+                        editable={!loadingEmail} selectionColor="#2F7D32"
                         value={email} onChangeText={setEmail} placeholder="you@example.com"
                         autoCapitalize="none" autoCorrect={false} keyboardType="email-address"
                         textContentType="emailAddress" autoComplete="email" style={emailStyles.input}
@@ -347,6 +348,7 @@ export default function AuthScreen() {
                           <Text style={emailStyles.label}>Password</Text>
                           <View style={emailStyles.passwordRow}>
                             <TextInput
+                              editable={!loadingEmail} selectionColor="#2F7D32"
                               value={password} onChangeText={setPassword} placeholder={emailMode === 'signup' ? 'At least 8 characters' : 'Your password'}
                               autoCapitalize="none" autoCorrect={false} secureTextEntry={!showPassword}
                               textContentType={emailMode === 'signup' ? 'newPassword' : 'password'}
@@ -374,11 +376,9 @@ export default function AuthScreen() {
                       )}
                       {!!formError && <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={emailStyles.error}>{formError}</Text>}
                       <TouchableOpacity style={[emailStyles.primaryButton, loadingEmail && styles.disabled]} onPress={handleEmailSubmit} disabled={loadingEmail} accessibilityRole="button" accessibilityLabel={title}>
-                        {loadingEmail ? <LoadingButtonContent label={emailMode === 'signup' ? 'Creating account…' : emailMode === 'forgot' ? 'Sending reset link…' : 'Signing in…'} /> : (
-                          <Text style={emailStyles.primaryButtonText}>
-                            {emailMode === 'signup' ? 'Create account' : emailMode === 'forgot' ? 'Send reset link' : 'Sign in'}
-                          </Text>
-                        )}
+                        <SteadyButtonContent busy={loadingEmail}
+                          label={emailMode === 'signup' ? 'Create account' : emailMode === 'forgot' ? 'Send reset link' : 'Sign in'}
+                          busyLabel={emailMode === 'signup' ? 'Creating account…' : emailMode === 'forgot' ? 'Sending reset link…' : 'Signing in…'} />
                       </TouchableOpacity>
                       <View style={emailStyles.switchRow}>
                         <Text style={emailStyles.switchText}>
@@ -408,10 +408,10 @@ export default function AuthScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F6F7' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   content: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 24 },
-  logo: { width: 145, height: 145, marginBottom: 8 },
-  title: { fontSize: 23, fontWeight: '800', color: '#333', marginBottom: 6, textAlign: 'center' },
+  logo: { width: 112, height: 112, marginBottom: 8 },
+  title: { fontSize: 24, lineHeight: 31, fontWeight: '600', color: '#333', marginBottom: 6, textAlign: 'center' },
   subtitle: { fontSize: 15, color: '#666', marginBottom: 22, textAlign: 'center' },
   actions: { width: '100%', maxWidth: 420 },
   providerButton: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: '#D8DDE2', borderRadius: 14, marginBottom: 11 },
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
   divider: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: '#BCC3CA' },
   dividerText: { marginHorizontal: 12, color: '#777', fontSize: 13 },
   emailButton: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#2F7D32', borderRadius: 14, marginTop: 7 },
-  emailText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  emailText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   disabled: { opacity: 0.58 },
 });
 
@@ -440,24 +440,24 @@ const emailStyles = StyleSheet.create({
   headingRow: { flexDirection: 'row', alignItems: 'flex-start' },
   headingCopy: { flex: 1 },
   closeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginTop: -8, marginRight: -10 },
-  title: { fontSize: 22, fontWeight: '800', color: '#333' },
+  title: { fontSize: 22, fontWeight: '600', color: '#333' },
   subtitle: { fontSize: 14, lineHeight: 20, color: '#666', marginTop: 5, marginBottom: 10 },
   label: { fontSize: 14, fontWeight: '700', color: '#333', marginBottom: 7, marginTop: 11 },
-  input: { minHeight: 50, backgroundColor: '#FAFBFC', borderWidth: 1, borderColor: '#D8DDE2', borderRadius: 12, paddingHorizontal: 14 },
-  passwordRow: { minHeight: 50, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FAFBFC', borderWidth: 1, borderColor: '#D8DDE2', borderRadius: 12 },
+  input: { minHeight: 50, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D8DDE2', borderRadius: 12, paddingHorizontal: 14 },
+  passwordRow: { minHeight: 50, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D8DDE2', borderRadius: 12 },
   passwordInput: { flex: 1, paddingHorizontal: 14 },
   eyeButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   forgotButton: { minHeight: 44, alignSelf: 'flex-end', justifyContent: 'center' },
-  linkText: { color: '#2F7D32', fontSize: 14, fontWeight: '800' },
+  linkText: { color: '#2F7D32', fontSize: 14, fontWeight: '600' },
   error: { color: '#B42318', fontSize: 14, lineHeight: 20, marginTop: 9 },
   primaryButton: { minHeight: 52, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#2F7D32', marginTop: 14, width: '100%' },
-  primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   switchRow: { minHeight: 46, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 6 },
   switchText: { color: '#666', fontSize: 14 },
   switchLinkButton: { minHeight: 44, justifyContent: 'center' },
-  switchLink: { color: '#2F7D32', fontSize: 14, fontWeight: '800' },
+  switchLink: { color: '#2F7D32', fontSize: 14, fontWeight: '600' },
   sentContent: { alignItems: 'center', paddingTop: 4 },
-  sentTitle: { fontSize: 22, fontWeight: '800', color: '#333', marginTop: 12 },
+  sentTitle: { fontSize: 22, fontWeight: '600', color: '#333', marginTop: 12 },
   sentText: { fontSize: 15, lineHeight: 22, color: '#5C6670', textAlign: 'center', marginTop: 8 },
   textButton: { minHeight: 44, justifyContent: 'center', marginTop: 5 },
   sentLinksRow: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', columnGap: 18 },

@@ -23,6 +23,7 @@ import {
 import AppTabs from './AppTabs';
 import BrandedLoadingState from './BrandedLoadingState';
 import AuthScreen from './AuthScreen';
+import SettingsInfoScreen from './SettingsInfoScreen';
 import BlockedAccountsScreen from './BlockedAccountsScreen';
 import CompleteProfileScreen from './CompleteProfileScreen';
 import CleanupFeedbackScreen from './CleanupFeedbackScreen';
@@ -317,6 +318,7 @@ function AppNavigation({
         <Stack.Screen name="PaymentDetail" component={PaymentDetailScreen} options={{ ...headerOptions, title: 'Payment details' }} />
         <Stack.Screen name="MyActivity" component={ProfileScreen} initialParams={{ section: 'activity' }} options={{ ...headerOptions, title: 'My activity' }} />
         <Stack.Screen name="Payments" component={ProfileScreen} initialParams={{ section: 'payments' }} options={{ ...headerOptions, title: 'Payments' }} />
+        <Stack.Screen name="SettingsInfo" component={SettingsInfoScreen} options={{ ...headerOptions, title: 'Settings' }} />
         <Stack.Screen name="Settings" component={ProfileScreen} initialParams={{ section: 'settings' }} options={{ ...headerOptions, title: 'Settings' }} />
         <Stack.Screen
           name="ContributionHistory"

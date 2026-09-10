@@ -1,3 +1,5 @@
+import RemotePhoto from './components/RemotePhoto';
+import { useReports } from './lib/reports';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -8,6 +10,7 @@ const severityColor = (severity) => {
 };
 
 export default function ProfileReportList({ reports, onReportPress, emptyTitle = "No active reports", emptyText = "Active reports will appear here." }) {
+  const { getReportPhotoUrl } = useReports();
   if (!reports?.length) {
     return (
       <View style={styles.empty}>
@@ -27,6 +30,7 @@ export default function ProfileReportList({ reports, onReportPress, emptyTitle =
       accessibilityRole="button"
       accessibilityLabel={`Open ${report.title || 'litter report'}`}
     >
+      <RemotePhoto path={report.photo_paths?.[0]} getUrl={getReportPhotoUrl} label={`Photo for ${report.title || 'litter report'}`} style={styles.photo} />
       <View style={styles.copy}>
         <Text style={styles.title} numberOfLines={2}>{report.title || 'Litter Report'}</Text>
         <Text style={[styles.severity, { color: severityColor(report.severity) }]}>
@@ -36,12 +40,13 @@ export default function ProfileReportList({ reports, onReportPress, emptyTitle =
           <Text style={styles.date}>{new Date(report.created_at).toLocaleDateString()}</Text>
         ) : null}
       </View>
-      <Ionicons name="chevron-forward" size={22} color="#9AA1A8" />
+      <Ionicons name="chevron-forward" size={18} color="#8B9690" />
     </TouchableOpacity>
   ));
 }
 
 const styles = StyleSheet.create({
+  photo: { width: 64, height: 64, borderRadius: 12, marginRight: 12 },
   row: {
     minHeight: 82,
     paddingHorizontal: 18,
@@ -55,16 +60,16 @@ const styles = StyleSheet.create({
     borderTopColor: '#DDE1E3',
   },
   copy: { flex: 1, marginRight: 8 },
-  title: { color: '#202428', fontSize: 16, fontWeight: '800' },
-  severity: { marginTop: 5, fontSize: 13, fontWeight: '700' },
+  title: { color: '#202428', fontSize: 16, lineHeight: 22, fontWeight: '600' },
+  severity: { marginTop: 5, fontSize: 12, fontWeight: '500' },
   date: { marginTop: 3, color: '#747D84', fontSize: 13 },
   empty: {
-    minHeight: 150,
+    minHeight: 200,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
     backgroundColor: '#FFFFFF',
   },
-  emptyTitle: { marginTop: 10, color: '#30363B', fontSize: 16, fontWeight: '800' },
-  emptyText: { marginTop: 5, color: '#747D84', fontSize: 14 },
+  emptyTitle: { marginTop: 10, color: '#30363B', fontSize: 16, lineHeight: 22, fontWeight: '600' },
+  emptyText: { marginTop: 5, color: '#747D84', fontSize: 14, lineHeight: 21, textAlign: 'center' },
 });

@@ -31,6 +31,6 @@ describe('individual Stripe payout onboarding', () => {
 
   it('tells cleaners that no business is required', () => {
     expect(payoutScreenSource).toContain('No business or LLC is required.');
-    expect(payoutScreenSource).toContain('individual Stripe payout profile');
+    expect(payoutScreenSource).toContain('personal payout account with Stripe');
   });
 });

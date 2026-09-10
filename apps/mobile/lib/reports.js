@@ -1,3 +1,6 @@
+import { loadReportFavorites, saveReportFavorites, toggleFavoriteId } from './reportFavorites';
+import { useSession } from './session';
+import { Alert } from 'react-native';
 import { loadDiscoveryReports, REPORT_SELECT } from './discoveryReports';
 import { saveMapMemory } from './discoveryMemory';
 import {
@@ -56,6 +59,34 @@ export function getDistanceMiles(pointA, pointB) {
 }
 
 export function ReportsProvider({ children, initialDiscovery = null }) {
+  const { user } = useSession();
+  const favoriteOwner = user?.id || 'guest';
+  const [favoriteState, setFavoriteState] = useState({ owner: null, ids: [] });
+  const favoriteIds = useMemo(() => favoriteState.owner === favoriteOwner ? favoriteState.ids : [], [favoriteState, favoriteOwner]);
+  const favoritesReady = favoriteState.owner === favoriteOwner;
+  const favoriteRef = useRef({ owner: null, ids: [] });
+  favoriteRef.current = { owner: favoriteOwner, ids: favoriteIds };
+  useEffect(() => {
+    let active = true;
+    loadReportFavorites(favoriteOwner).then(ids => {
+      if (active) setFavoriteState({ owner: favoriteOwner, ids });
+    }).catch(() => { if (active) Alert.alert('Favorites unavailable', 'Please reopen the app to try again.'); });
+    return () => { active = false; };
+  }, [favoriteOwner]);
+  const toggleFavorite = useCallback(async (id) => {
+    if (!favoritesReady || !id) return;
+    const previous = favoriteRef.current.ids;
+    const next = toggleFavoriteId(previous, id);
+    favoriteRef.current = { owner: favoriteOwner, ids: next };
+    setFavoriteState({ owner: favoriteOwner, ids: next });
+    try { await saveReportFavorites(favoriteOwner, next); }
+    catch {
+      if (favoriteRef.current.owner === favoriteOwner && favoriteRef.current.ids === next) {
+        setFavoriteState({ owner: favoriteOwner, ids: previous });
+      }
+      Alert.alert('Favorite not saved', 'Please try again.');
+    }
+  }, [favoriteOwner, favoritesReady]);
   const [truncated, setTruncated] = useState(false);
   const requestAbort = useRef(null);
   const [allReports, setAllReports] = useState([]);
@@ -80,7 +111,7 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
   const photoUrlRequests = useRef(new Map());
   const { blockedIds } = useProfile();
   const discoveryRef = useRef(null);
-  discoveryRef.current = { filters, searchPlace, blockedIds };
+  discoveryRef.current = { filters, searchPlace, blockedIds, favoriteIds };
 
   const refreshReports = useCallback(async ({ showRefresh = false } = {}) => {
     if (showRefresh) setRefreshing(true);
@@ -106,7 +137,7 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
   useEffect(() => {
     const timer = setTimeout(() => refreshReports(), 400);
     return () => { clearTimeout(timer); requestSequence.current += 1; requestAbort.current?.abort(); };
-  }, [mapRegion, filters, searchPlace, blockedIds, refreshReports]);
+  }, [mapRegion, filters, searchPlace, blockedIds, refreshReports, filters.favoritesOnly ? favoriteIds : null]);
 
   const getReportById = useCallback(async (reportId) => {
     const { data, error: reportError } = await supabase
@@ -126,7 +157,7 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
     return allReports.filter((report) => !blocked.has(report.user_id));
   }, [allReports, blockedIds]);
 
-  const filteredReports = useMemo(() => reports.filter((report) => matchesReportFilters(report, filters, mapRegion) && matchesGeography(report, mapRegion, searchPlace)), [reports, filters, mapRegion, searchPlace]);
+  const filteredReports = useMemo(() => reports.filter((report) => matchesReportFilters(report, filters, mapRegion, favoriteIds) && matchesGeography(report, mapRegion, searchPlace)), [reports, filters, mapRegion, searchPlace, favoriteIds]);
 
   const markers = useMemo(
     () => filteredReports
@@ -204,6 +235,7 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
   }, []);
 
   const value = useMemo(() => ({
+    favoriteIds, toggleFavorite, favoritesReady,
     restoredMap: Boolean(initialDiscovery),
     searchPlace, selectSearchPlace, clearSearchPlace, selectedMapReportId, setSelectedMapReportId,
     reports,
@@ -221,6 +253,7 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
     removeReport,
     getReportPhotoUrl,
   }), [
+    favoriteIds, toggleFavorite, favoritesReady,
     searchPlace, selectSearchPlace, clearSearchPlace, selectedMapReportId,
     filteredReports, filters, truncated,
     commitMapRegion,

@@ -1,7 +1,7 @@
 import { userMessage } from './lib/userMessage';
 import { publishReportDraft, clearReportSubmission } from './lib/reportSubmissionStore';
 import ReportDetailsSheet from './components/ReportDetailsSheet';
-import { canAdvanceReportStep } from './lib/reportWizard';
+import { canAdvanceReportStep, nextReportStep } from './lib/reportWizard';
 import styles from './styles/MapScreen.styles';
 import ReportWizardSteps from './components/ReportWizardSteps';
 
@@ -136,13 +136,13 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const reopenReportOnFocus = useRef(false);
   const [reportOpenRevision, setReportOpenRevision] = useState(0);
   useEffect(() => {
-    if (isMapScreenFocused && reopenReportOnFocus.current) {
+    if (isMapScreenFocused && reopenReportOnFocus.current && !route?.params?.editPhotos) {
       reopenReportOnFocus.current = false;
       setDetailsOpen(true);
       setReportOpenRevision(value => value + 1);
     }
-  }, [isMapScreenFocused]);
-  const REPORT_STEPS = ['Photos', 'Details', 'Review'];
+  }, [isMapScreenFocused, route?.params?.editPhotos]);
+  const REPORT_STEPS = ['Photos', 'Type of litter', 'Severity', 'Site conditions', 'Review'];
   const [tracksReportMarkers, setTracksReportMarkers] = useState(true);
   const reportMarkerTrackingTimerRef = useRef(null);
 
@@ -154,6 +154,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const [formOpen, setFormOpen] = useState(false);
   const [reportKeyboardVisible, setReportKeyboardVisible] = useState(false);
   const [reportStep, setReportStep] = useState(0);
+  const [returnToReview, setReturnToReview] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const reportWizardScrollRef = useRef(null);
   const stepTranslateX = useRef(new Animated.Value(0)).current;
@@ -184,6 +185,14 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const [isSaving, setIsSaving] = useState(false);
   const [saveStage, setSaveStage] = useState('Saving report…');
   const [photoPreparationStatus, setPhotoPreparationStatus] = useState(null);
+  const [showPhotoPreparation, setShowPhotoPreparation] = useState(false);
+  const isPreparingPhotos = Boolean(photoPreparationStatus?.startsWith('Preparing'));
+  useEffect(() => {
+    setShowPhotoPreparation(false);
+    if (!isPreparingPhotos) return undefined;
+    const timer = setTimeout(() => setShowPhotoPreparation(true), 400);
+    return () => clearTimeout(timer);
+  }, [isPreparingPhotos]);
   const [isCentering, setIsCentering] = useState(false);
   const mapViewRef = useRef(null);
   const [mapReady, setMapReady] = useState(false);
@@ -226,6 +235,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     refreshProfile,
   } = useProfile();
   const {
+    favoriteIds, toggleFavorite, favoritesReady,
     markers,
     restoredMap, searchPlace, clearSearchPlace, selectedMapReportId: previewId, setSelectedMapReportId: setPreviewId,
     mapRegion: region,
@@ -554,6 +564,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
 // =============================
 
 const resetReportWizard = () => {
+  setReturnToReview(false);
   setReportStep(0);
   stepTranslateX.setValue(0);
   stepOpacity.setValue(1);
@@ -636,14 +647,21 @@ const transitionToReportStep = (nextStep, direction) => {
 };
 
 const goToNextReportStep = () => {
+  if (photoPreparationStatus || isTransitioning) return;
   if (reportStep >= REPORT_STEPS.length - 1) return;
 
   if (!canAdvanceFromStep(reportStep)) return;
 
-  transitionToReportStep(reportStep + 1, 1);
+  const nextStep = nextReportStep(reportStep, {
+    form, isEditing, existingPhotoPaths: selectedReport?.photo_paths,
+  }, returnToReview);
+  if (nextStep === REPORT_STEPS.length - 1) setReturnToReview(false);
+  transitionToReportStep(nextStep, nextStep > reportStep ? 1 : -1);
 };
 
 const goToPreviousReportStep = () => {
+  if (isTransitioning || photoPreparationStatus) return;
+  setReturnToReview(false);
   if (reportStep <= 0) return;
 
   transitionToReportStep(reportStep - 1, -1);
@@ -651,7 +669,8 @@ const goToPreviousReportStep = () => {
 
 // Used by the Edit buttons on the review screen
 const jumpToReportStep = (step) => {
-  if (step === reportStep) return;
+  if (step === reportStep || isTransitioning) return;
+  if (reportStep === REPORT_STEPS.length - 1) setReturnToReview(true);
 
   transitionToReportStep(
     step,
@@ -847,7 +866,7 @@ const openPayoutSetupForWorkflow = (action) => {
 // Save Report Function
   const saveReport = async () => {
     if (!draftCoord && !isEditing) return;
-  
+
     try {
       const userId = permanentUserId(currentUser);
       setSaveStage(isEditing ? 'Saving report changes…' : 'Saving report details…');
@@ -860,7 +879,7 @@ const openPayoutSetupForWorkflow = (action) => {
         showPermanentAccountRequired();
         return;
       }
-  
+
       const createPayload = {
         title: form.title?.trim() || 'Litter Report',
         litter_types: form.selectedTypes?.length ? form.selectedTypes : null,
@@ -872,18 +891,18 @@ const openPayoutSetupForWorkflow = (action) => {
         longitude: draftCoord.longitude,
         user_id: userId,
       };
-  
+
       const updatePayload = {
         title: form.title?.trim() || 'Litter Report',
         litter_types: form.selectedTypes?.length ? form.selectedTypes : null,
-        types: form.types?.trim() || null, 
+        types: form.types?.trim() || null,
         notes_presets: form.selectedNotes?.length ? form.selectedNotes : null,
         notes_other: form.notes?.trim() || null,
         severity: form.severity || null,
       };
-  
+
       let data, error;
-  
+
       if (isEditing && editingReportId) {
         let replacementPhotoPaths = [];
         if (form.photos?.length > 0) {
@@ -930,7 +949,7 @@ const openPayoutSetupForWorkflow = (action) => {
       } else {
         data = await publishReportDraft({ userId, payload: createPayload, form, coordinate: draftCoord, upload: uploadReportPhotos, onProgress: setSaveStage });
       }
-  
+
       if (error) {
         if (
           isEditing
@@ -961,7 +980,7 @@ const openPayoutSetupForWorkflow = (action) => {
         Alert.alert('Couldn’t save report', userMessage(error, 'Your report hasn’t been saved. Please try again.'));
         return;
       }
-  
+
       if (!isEditing) {
         if (geminiReviewEnabled) refreshReportAfterFundingReview(data.id, 'Report photo review deferred:');
         await clearReportDraft(currentUserId).catch(error => console.log('Published draft cleanup deferred:', error));
@@ -972,7 +991,7 @@ const openPayoutSetupForWorkflow = (action) => {
       else refreshProfile().catch((profileError) => {
         console.log('Profile refresh deferred after report save:', profileError);
       });
-  
+
       setDraftCoord(null);
       setFormOpen(false);
         setIsEditing(false);
@@ -1003,7 +1022,7 @@ const openPayoutSetupForWorkflow = (action) => {
       );
     }
   };
-  
+
 // Final submit from Review screen
 const submitReport = async () => {
   if (isSaving || submissionLock.current) return;
@@ -1018,8 +1037,14 @@ const submitReport = async () => {
   }
 
   if (!canAdvanceFromStep(1)) {
-    Alert.alert('Report details required', 'Choose at least one litter type and a severity level.');
+    Alert.alert('Litter type required', 'Choose at least one litter type.');
     jumpToReportStep(1);
+    return;
+  }
+
+  if (!canAdvanceFromStep(2)) {
+    Alert.alert('Severity required', 'Choose a severity level.');
+    jumpToReportStep(2);
     return;
   }
 
@@ -1116,7 +1141,7 @@ const submitReport = async () => {
     }
   };
 
-// Can Change Map Type - Sattelite, Ect 
+// Can Change Map Type - Sattelite, Ect
   const toggleMapType = () => {
     setMapType((prev) => {
       if (prev === 'standard') return 'satellite';
@@ -1131,7 +1156,7 @@ const submitReport = async () => {
   const getMapTypeColor = () => mapType === 'standard' ? '#4F5C63' : '#2F7D32';
 
 
-// Preset Litter Options Users Can Choose From 
+// Preset Litter Options Users Can Choose From
   const LITTER_OPTIONS = [
     { label: 'Takeout cups', icon: 'cafe-outline' },
     { label: 'Bottles', icon: 'water-outline' },
@@ -1167,7 +1192,7 @@ const submitReport = async () => {
     { label: 'Hard to access',   icon: 'warning-outline' },
     { label: 'Use Caution',      icon: 'warning-outline' },
   ];
-  
+
 
 // Helper Function for Photo Uploads
   const base64ToUint8Array = (base64) => {
@@ -1177,7 +1202,7 @@ const submitReport = async () => {
     for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
     return bytes;
   };
-  
+
 
   // Photo upload function
   const pickImage = async (source = 'library') => {
@@ -1350,9 +1375,29 @@ const openReportDetails = (report) => {
   setDetailsOpen(true);
 };
 
+const editReportPhotos = (report) => {
+  if (!canEditOrDeleteReport(report, currentUser) || report.funding_locked_at) return false;
+  reopenReportOnFocus.current = false;
+  setSelectedReport(report);
+  setForm({
+    title: report.title || '', selectedTypes: report.litter_types || [],
+    types: report.types || '', photos: [], severity: report.severity || '',
+    selectedNotes: report.notes_presets || [], notes: report.notes_other || '',
+    startingFundingChoice: 'none', startingFundingOther: '',
+  });
+  setEditingReportId(report.id);
+  setIsEditing(true);
+  setDraftCoord({ latitude: report.latitude, longitude: report.longitude });
+  resetReportWizard();
+  setDetailsOpen(false);
+  setFormOpen(true);
+  return true;
+};
+
 const closeReportDetails = () => {
   setDetailsOpen(false);
   setSelectedReport(null);
+  setPreviewId(null);
   if (route?.params?.returnTo === 'Reports') {
     navigation.setParams({ reportId: undefined, returnTo: undefined });
     navigation.navigate('Reports');
@@ -1378,8 +1423,10 @@ useEffect(() => {
     );
 
     try {
-      const report = requestedMarker?.report
-        ?? await getReportById(requestedReportId);
+      // Recheck ownership and locks before an edit requested from another page.
+      const report = route?.params?.editPhotos
+        ? await getReportById(requestedReportId)
+        : requestedMarker?.report ?? await getReportById(requestedReportId);
 
       if (!active) return;
 
@@ -1400,8 +1447,8 @@ useEffect(() => {
         });
       }
 
-      openReportDetails(report);
-      navigation.setParams({ reportId: undefined });
+      if (!route?.params?.editPhotos || !editReportPhotos(report)) openReportDetails(report);
+      navigation.setParams({ reportId: undefined, editPhotos: undefined });
     } catch (error) {
       console.log('Requested report load error:', error);
       if (active) {
@@ -1421,6 +1468,7 @@ useEffect(() => {
   markers,
   navigation,
   route?.params?.reportId,
+  route?.params?.editPhotos,
 ]);
 
 // Load Photos into Existing Report
@@ -1622,6 +1670,18 @@ useEffect(() => {
       readAsStringAsync: FileSystem.readAsStringAsync,
       downloadAsync: FileSystem.downloadAsync,
     });
+  };
+
+  const shareMapReport = async (report) => {
+    if (!isReportShareable(report) || reportShareBusyAction) return;
+    setReportShareBusyAction('system');
+    try {
+      await shareReportWithSystemSheet({ report, platform: Platform.OS, share: NativeShare.share });
+    } catch (error) {
+      Alert.alert('Sharing unavailable', 'We couldn’t open the share menu. Please try again.');
+    } finally {
+      setReportShareBusyAction(null);
+    }
   };
 
   const shareSelectedReport = async () => {
@@ -2185,8 +2245,8 @@ const revealBottomReportField = (event) => {
           pointerEvents="none"
           accessible={false}
         >
-          <Ionicons name="location-sharp" size={54} color="#2F7D32" style={{ transform: [{ translateY: -24 }] }} />
-          <View style={{ position: 'absolute', width: 7, height: 7, borderRadius: 4, backgroundColor: '#245F2A', borderWidth: 1, borderColor: '#FFFFFF' }} />
+          <Ionicons name="location-sharp" size={54} color="#C53232" style={{ transform: [{ translateY: -24 }] }} />
+          <View style={{ position: 'absolute', width: 7, height: 7, borderRadius: 4, backgroundColor: '#C53232', borderWidth: 1, borderColor: '#FFFFFF' }} />
         </View>
       ) : null}
 
@@ -2261,7 +2321,7 @@ const revealBottomReportField = (event) => {
             accessibilityRole="button"
             accessibilityLabel={reportPlacementActive ? 'Use this location' : 'Report litter'}
             accessibilityHint={reportPlacementActive
-              ? 'Uses the location beneath the green pin for this report'
+              ? 'Uses the location beneath the red pin for this report'
               : 'Places a pin at the map center so you can choose the cleanup site'}
             accessibilityState={{
               disabled: showInitialMapLoading || formOpen || detailsOpen || isSaving,
@@ -2278,7 +2338,7 @@ const revealBottomReportField = (event) => {
         style={[
           styles.centerButton,
           {
-            bottom: mapControlsBottom + (previewReport && !reportPlacementActive ? previewHeight + 12 : 0) + (fontScale > 1.5 ? 90 * fontScale : reportPlacementActive ? 58 : 0),
+            bottom: mapControlsBottom + (previewReport && !reportPlacementActive ? previewHeight + 12 : fontScale > 1.5 ? 90 * fontScale : 58),
           },
         ]}
         onPress={() => { clearSearchPlace(); centerOnUser(); }}
@@ -2298,7 +2358,7 @@ const revealBottomReportField = (event) => {
         style={[
           styles.mapTypeButton,
           {
-            bottom: mapControlsBottom + (previewReport && !reportPlacementActive ? previewHeight + 12 : 0) + (fontScale > 1.5 ? 90 * fontScale : reportPlacementActive ? 58 : 0),
+            bottom: mapControlsBottom + (previewReport && !reportPlacementActive ? previewHeight + 12 : fontScale > 1.5 ? 90 * fontScale : 58) + BOTTOM_NAV_METRICS.mapControlSize + 10,
           },
         ]}
         onPress={toggleMapType}
@@ -2313,9 +2373,14 @@ const revealBottomReportField = (event) => {
         report={previewReport} nearby={nearbyReports} bottom={mapControlsBottom}
         insetBottom={insets.bottom} getPhotoUrl={getReportPhotoUrl}
         onHeight={setPreviewHeight}
+        isFavorite={favoriteIds.includes(previewReport?.id)} onFavorite={toggleFavorite} favoritesReady={favoritesReady}
         distance={reportDistanceMiles(mapUserLocation, previewReport)}
         onClose={() => setPreviewId(null)} onCloseNearby={() => setNearbyIds([])}
         onChoose={chooseMapReport} onDetails={openReportDetails}
+        canFund={fundingEnabled && isCleanupAvailable(previewReport) && previewReport?.renewal_status === 'active' && previewReport?.funding_eligibility === 'eligible'}
+        canShare={isReportShareable(previewReport)}
+        onShare={shareMapReport}
+        onFund={(report) => { setSelectedReport(report); openFundingContribution({ reportId: report.id }); }}
       /> : null}
 
 {/* Multi-step Report Form */}
@@ -2329,24 +2394,20 @@ const revealBottomReportField = (event) => {
     <View style={styles.wizardKeyboardView}>
       <View style={styles.wizardSheet}>
 
-        {(isSaving || photoPreparationStatus) && (
+        {isSaving && (
           <View
             style={styles.savingOverlay}
             pointerEvents="auto"
             accessibilityRole="progressbar"
-            accessibilityLabel={photoPreparationStatus || saveStage}
+            accessibilityLabel={saveStage}
           >
             <View style={styles.savingCard}>
               <ActivityIndicator size="large" color="#2F7D32" />
               <Text style={styles.savingTitle}>
-                {photoPreparationStatus ? 'Getting your photos ready' : 'Creating your report'}
+                Creating your report
               </Text>
-              <Text style={styles.savingStatus}>{photoPreparationStatus || saveStage}</Text>
-              <Text style={styles.savingHelper}>
-                {photoPreparationStatus
-                  ? 'Large photos may take a few moments to prepare.'
-                  : 'Keep Litterbugs open while the photos are checked for safety.'}
-              </Text>
+              <Text style={styles.savingStatus}>{saveStage}</Text>
+
             </View>
           </View>
         )}
@@ -2358,14 +2419,12 @@ const revealBottomReportField = (event) => {
 
           <View style={{ flex: 1 }}>
             <Text style={styles.wizardHeaderTitle}>
-              {isEditing
-                ? 'Edit Litter Report'
-                : 'New Litter Report'}
+              {reportStep === 4
+                ? 'Review report'
+                : isEditing ? 'Edit Litter Report' : 'New Litter Report'}
             </Text>
 
-            <Text style={styles.wizardHeaderStep}>
-              {`Step ${reportStep + 1} of ${REPORT_STEPS.length} · ${REPORT_STEPS[reportStep]}`}
-            </Text>
+
           </View>
 
           <TouchableOpacity
@@ -2431,7 +2490,8 @@ const revealBottomReportField = (event) => {
                   reportStep={reportStep}
                   selectedReport={selectedReport}
                   pickImage={pickImage}
-                  isSaving={isSaving}
+                  isSaving={isSaving || Boolean(photoPreparationStatus)}
+                  showPhotoPreparation={showPhotoPreparation && isPreparingPhotos}
                   setForm={setForm}
                   removePhoto={removePhoto}
                   hasAttachedReportPhoto={hasAttachedReportPhoto}
@@ -2505,24 +2565,19 @@ const revealBottomReportField = (event) => {
           </View>
 
 
-          {/* RIGHT */}
-          <TouchableOpacity
-            style={[styles.wizardArrowButton, { width: 'auto', flex: 1, padding: 8 }]}
-            onPress={goToNextReportStep}
-            disabled={
-              reportStep ===
-                REPORT_STEPS.length - 1 ||
-              !canAdvanceFromStep(
-                reportStep
-              ) ||
-              isTransitioning ||
-              isSaving
-            }
-            accessibilityRole="button"
-            accessibilityLabel="Next report step"
-          >
-            <Text style={{ color: canAdvanceFromStep(reportStep) && !isSaving ? '#2F7D32' : '#687178', fontWeight: '700', textAlign: 'center' }}>{reportStep === 0 ? 'Next: Details' : reportStep === 1 ? 'Next: Review' : 'Review'}</Text>
-          </TouchableOpacity>
+          {/* Keep the footer balanced, with no forward action on the final step. */}
+          {reportStep < REPORT_STEPS.length - 1 ? (
+            <TouchableOpacity
+              style={styles.wizardArrowButton}
+              onPress={goToNextReportStep}
+              disabled={!canAdvanceFromStep(reportStep) || isTransitioning || isSaving || Boolean(photoPreparationStatus)}
+              accessibilityRole="button"
+              accessibilityLabel={returnToReview ? "Return to review" : "Next report step"}
+            >
+              <Ionicons name="arrow-forward-circle" size={39}
+                color={!canAdvanceFromStep(reportStep) || isTransitioning || isSaving || Boolean(photoPreparationStatus) ? '#D1D5DB' : '#4B5563'} />
+            </TouchableOpacity>
+          ) : <View style={styles.wizardArrowButton} accessible={false} />}
 
           </View>
         )}
@@ -2536,7 +2591,7 @@ const revealBottomReportField = (event) => {
 {/* ============================= */}
 
 <ReportDetailsSheet state={{ detailsOpen, reportShareSheetOpen, reportShareBusyAction, selectedReport, insets, region, reportDetailsPreparing, selectedReportHasUtilityActions, completedCleanupImpact, completedCleanupImpactLoading, completedCleanupImpactError, reportHeroWidth, currentUserId, reportPhotoUrls, photosLoading, geminiReviewEnabled, userOwnsSelectedReport, reportFundingFeedback, cleanupDiscoverable, cleanupStatus, currentUserIsCleaner, selectedCleanupAttempt, cleanupAttemptLoading, cleanupActionBusy, canEditOrDeleteSelectedReport, selectedReportCanOpenFunding, payoutGateBusy, selectedReportIsShareable }}
-  actions={{ setReportShareSheetOpen, closeReportDetails, setDetailsOpen, setSelectedReport, setPreviewId, navigation, commitMapRegion, setCompletedCleanupImpact, setCompletedCleanupImpactError, setCompletedCleanupImpactLoading, setCompletedCleanupImpactReloadKey, openCleanupNavigation, openCleanupSubmission, confirmCleanupRelease, openCleanupFeedback, openCleanupReview, beginCleanupClaim, openFundingContribution, removeReport, setForm, setEditingReportId, setIsEditing, setDraftCoord, resetReportWizard, setFormOpen, shareSelectedReport }} />
+  actions={{ setReportShareSheetOpen, closeReportDetails, setDetailsOpen, setSelectedReport, setPreviewId, navigation, commitMapRegion, setCompletedCleanupImpact, setCompletedCleanupImpactError, setCompletedCleanupImpactLoading, setCompletedCleanupImpactReloadKey, openCleanupNavigation, openCleanupSubmission, confirmCleanupRelease, openCleanupFeedback, openCleanupReview, beginCleanupClaim, openFundingContribution, removeReport, setForm, setEditingReportId, setIsEditing, setDraftCoord, resetReportWizard, setFormOpen, shareSelectedReport, editReportPhotos }} />
 
 <CleanupWaiverModal
   visible={cleanupWaiverOpen}

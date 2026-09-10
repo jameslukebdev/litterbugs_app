@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Modal,
   ScrollView,
   StyleSheet,
@@ -12,7 +13,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { reportPresentation } from './lib/reportPresentation';
 
-import { LoadingButtonContent } from './BrandedLoadingState';
 
 export default function CleanupWaiverModal({
   visible,
@@ -39,7 +39,6 @@ export default function CleanupWaiverModal({
       <View style={styles.container}>
         <View style={styles.header}>
           <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>CLEANUP SAFETY</Text>
             <Text style={styles.title}>Cleanup safety and agreement</Text>
           </View>
           <TouchableOpacity
@@ -56,12 +55,29 @@ export default function CleanupWaiverModal({
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator
         >
-          {report ? <View style={styles.guidelinesCard}>
-            <Text style={styles.guidelinesTitle}>{report.title || 'This cleanup'}</Text>
-            <Text style={styles.guidelinesBody}>{reportPresentation(report).funding}{'\n'}You’ll have 24 hours to finish and submit 1–3 after photos. Only continue if the location is safe to clean.{Number(report.funded_amount_cents) > 0 ? '\nPayout setup is required before reserving a funded cleanup. Your reward is paid after approval.' : '\nThere is currently no funded reward.'}</Text>
-            <Text style={styles.guidelinesBody}>Reading this acknowledgment does not reserve the cleanup. You’ll confirm your claim afterward.</Text>
+          {report ? <View style={styles.reportSummary}>
+            <Text style={styles.reportTitle}>{report.title || 'This cleanup'}</Text>
+            <View style={styles.summaryRow}>
+              <Ionicons name="cash-outline" size={20} color="#687178" />
+              <Text style={styles.summaryText}>{reportPresentation(report).funding}</Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Ionicons name="time-outline" size={20} color="#687178" />
+              <Text style={styles.summaryText}>You’ll have 24 hours to finish and submit 1–3 after photos.</Text>
+            </View>
+            {Number(report.funded_amount_cents) > 0 ? (
+              <View style={styles.summaryRow}>
+                <Ionicons name="wallet-outline" size={20} color="#687178" />
+                <Text style={styles.summaryText}>Payout setup is required before reserving a funded cleanup. Your reward is paid after approval.</Text>
+              </View>
+            ) : <Text style={styles.summaryText}>There is currently no funded reward.</Text>}
+            <View style={styles.safetyNotice}>
+              <Ionicons name="warning-outline" size={18} color="#805900" />
+              <Text style={styles.safetyNoticeText}>Only continue if the location is safe to clean.</Text>
+            </View>
+            <Text style={styles.claimNote}>Reading this acknowledgment does not reserve the cleanup. You’ll confirm your claim afterward.</Text>
           </View> : null}
           <Text style={styles.body}>{waiver?.body ?? ''}</Text>
 
@@ -105,18 +121,17 @@ export default function CleanupWaiverModal({
           <TouchableOpacity
             style={[
               styles.acceptButton,
-              (!acknowledged || accepting) && styles.acceptButtonDisabled,
+              !acknowledged && styles.acceptButtonDisabled,
             ]}
+            activeOpacity={1}
             onPress={onAccept}
             disabled={!acknowledged || accepting}
             accessibilityRole="button"
             accessibilityLabel="Accept cleanup acknowledgment and continue"
+            accessibilityState={{ busy: accepting, disabled: !acknowledged || accepting }}
           >
-            {accepting ? (
-              <LoadingButtonContent label="Opening claim…" />
-            ) : (
-              <Text style={styles.acceptButtonText}>Accept and Review Claim</Text>
-            )}
+            <Text style={styles.acceptButtonText}>Accept and review claim</Text>
+            {accepting ? <View style={styles.acceptSpinner} pointerEvents="none"><ActivityIndicator size="small" color="#FFFFFF" /></View> : null}
           </TouchableOpacity>
         </View>
       </View>
@@ -127,36 +142,43 @@ export default function CleanupWaiverModal({
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
   header: {
-    minHeight: 88,
+    minHeight: 76,
     paddingHorizontal: 20,
     paddingVertical: 16,
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#DDE1E3',
   },
   headerCopy: { flex: 1, paddingRight: 12 },
   eyebrow: { color: '#9A6700', fontSize: 12, fontWeight: '800', letterSpacing: 0.7 },
-  title: { marginTop: 5, color: '#1F2937', fontSize: 22, lineHeight: 28, fontWeight: '800' },
-  closeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  title: { color: '#1F2937', fontSize: 22, lineHeight: 28, fontWeight: '700' },
+  closeButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F3F5F4', alignItems: 'center', justifyContent: 'center' },
   scroll: { flex: 1 },
   content: { padding: 20, paddingBottom: 34 },
+  reportSummary: { paddingBottom: 22, marginBottom: 24, borderBottomWidth: 1, borderBottomColor: '#E8ECE9' },
+  reportTitle: { color: '#303A34', fontSize: 16, lineHeight: 22, fontWeight: '600', marginBottom: 16 },
+  summaryRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 12 },
+  summaryText: { flex: 1, color: '#4F5C63', fontSize: 14, lineHeight: 21 },
+  safetyNotice: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, padding: 12, borderRadius: 10, backgroundColor: '#FFF7E5' },
+  safetyNoticeText: { flex: 1, color: '#805900', fontSize: 13, lineHeight: 19, fontWeight: '500' },
+  claimNote: { marginTop: 14, color: '#687178', fontSize: 13, lineHeight: 19 },
   body: { color: '#30363B', fontSize: 16, lineHeight: 25 },
   guidelinesCard: {
     marginTop: 24,
     padding: 16,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#E2C87A',
-    backgroundColor: '#FFF9E8',
+    borderColor: '#E2E7E3',
+    backgroundColor: '#F7F9F7',
   },
-  guidelinesTitle: { color: '#6F4E00', fontSize: 16, lineHeight: 22, fontWeight: '800' },
-  guidelinesBody: { marginTop: 8, color: '#4A3B1F', fontSize: 15, lineHeight: 23 },
+  guidelinesTitle: { color: '#303A34', fontSize: 17, lineHeight: 23, fontWeight: '400' },
+  guidelinesBody: { marginTop: 10, color: '#30363B', fontSize: 15, lineHeight: 23 },
   releaseCard: {
     marginTop: 20,
     padding: 16,
     borderRadius: 14,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '#A23A2A',
     backgroundColor: '#FFF4F1',
   },
@@ -164,10 +186,9 @@ const styles = StyleSheet.create({
     color: '#7C2418',
     fontSize: 16,
     lineHeight: 22,
-    fontWeight: '900',
-    textTransform: 'uppercase',
+    fontWeight: '700',
   },
-  releaseBody: { marginTop: 8, color: '#49251F', fontSize: 15, lineHeight: 23, fontWeight: '600' },
+  releaseBody: { marginTop: 8, color: '#49251F', fontSize: 15, lineHeight: 23, fontWeight: '400' },
   versionCard: { marginTop: 24, padding: 15, borderRadius: 14, backgroundColor: '#F5F6F7' },
   versionLabel: { color: '#6B7379', fontSize: 12, fontWeight: '800', textTransform: 'uppercase' },
   versionValue: { marginTop: 4, color: '#30363B', fontSize: 14, fontWeight: '700' },
@@ -183,7 +204,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: '#F4FAF4',
   },
-  acknowledgmentText: { flex: 1, color: '#244A27', fontSize: 15, lineHeight: 22, fontWeight: '700' },
+  acknowledgmentText: { flex: 1, color: '#244A27', fontSize: 15, lineHeight: 22, fontWeight: '500' },
   footer: {
     paddingHorizontal: 20,
     paddingTop: 14,
@@ -193,11 +214,14 @@ const styles = StyleSheet.create({
   },
   acceptButton: {
     minHeight: 54,
+    paddingHorizontal: 36,
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 14,
     backgroundColor: '#2F7D32',
   },
   acceptButtonDisabled: { opacity: 0.45 },
-  acceptButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
+  acceptButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  acceptSpinner: { position: 'absolute', right: 10, top: 0, bottom: 0, justifyContent: 'center' },
 });

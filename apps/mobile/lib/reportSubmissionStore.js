@@ -15,7 +15,7 @@ async function publishReportDraftRequest({ userId, payload, form, coordinate, up
   }
   const previous = journal;
   {
-    await saveReportDraft(userId, { form, coordinate, step: 2 });
+    await saveReportDraft(userId, { form, coordinate, step: 4 });
     const saved = await loadReportDraft(userId);
     journal = { id: previous?.id || Crypto.randomUUID(), payload, photos: saved.form.photos, paths: JSON.stringify(previous?.photos) === JSON.stringify(saved.form.photos) ? previous.paths : [] };
   }

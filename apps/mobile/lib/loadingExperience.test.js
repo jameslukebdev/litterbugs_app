@@ -23,13 +23,22 @@ describe('mobile loading experience', () => {
       'App.js',
       'ReportList.js',
       'PublicProfileScreen.js',
-      'FundingContributionScreen.js',
-      'PayoutSetupScreen.js',
       'CleanupSubmissionScreen.js',
       'CleanupReviewScreen.js',
     ].forEach((fileName) => {
       expect(readMobileSource(fileName)).toContain('BrandedLoadingState');
     });
+  });
+
+  it('keeps payout setup on the page and delays busy indicators', () => {
+    const source = readMobileSource('PayoutSetupScreen.js');
+    expect(source).not.toContain('return <BrandedLoadingState');
+    expect(source).toContain('setTimeout(() => setShowBusy(true), 400)');
+    expect(source).toContain('Set up payouts');
+    expect(source).not.toContain('Checking payout details…');
+    expect(source).not.toContain("status?.onboardingStatus === 'pending'");
+    expect(source).toContain('busy || loading || statusError || !status');
+    expect(source).not.toContain('Opening Stripe');
   });
 
   it('keeps the branded opening screen visible until the map and reports are ready', () => {
@@ -51,7 +60,10 @@ describe('mobile loading experience', () => {
   it('keeps action context visible while forms and cleanup actions are busy', () => {
     expect(readMobileSource('AuthScreen.js')).toContain('Signing in…');
     expect(readMobileSource('CompleteProfileScreen.js')).toContain('Saving profile…');
-    expect(readMobileSource('components/ReportDetailsSheet.jsx')).toContain('Opening claim…');
+    const reportDetails = readMobileSource('components/ReportDetailsSheet.jsx');
+    expect(reportDetails).toContain('>Help clean this up</Text>');
+    expect(reportDetails).not.toContain('Opening claim…');
+    expect(reportDetails).toContain('busy: cleanupActionBusy');
     expect(readMobileSource('CleanupSubmissionScreen.js')).toContain('Uploading cleanup photos…');
   });
 

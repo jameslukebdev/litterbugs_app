@@ -16,8 +16,8 @@ describe('completed cleanup impact presentation', () => {
       bags_or_items_removed: 2,
       weight_pounds: 12.5,
     })).toEqual([
-      { icon: 'bag-handle-outline', label: '2 bags/items removed' },
-      { icon: 'scale-outline', label: '12.5 pounds removed' },
+      { icon: 'bag-handle-outline', value: '2', caption: 'bags/items removed', label: '2 bags/items removed' },
+      { icon: 'scale-outline', value: '12.5', caption: 'pounds removed', label: '12.5 pounds removed' },
     ]);
   });
 

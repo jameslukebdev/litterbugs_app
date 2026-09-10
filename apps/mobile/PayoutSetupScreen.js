@@ -2,7 +2,7 @@ import { userMessage } from './lib/userMessage';
 import { useSession } from './lib/session';
 import { withTimeout } from './lib/asyncTimeout';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { AppState, ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,7 +15,7 @@ import {
   payoutWorkflowCopy,
   waitForPayoutConnection,
 } from './lib/payoutWorkflowGate';
-import BrandedLoadingState, { LoadingButtonContent } from './BrandedLoadingState';
+
 
 const PAYOUT_ONBOARDING_RETURN_URL = 'litterbugs://stripe-onboarding-return';
 
@@ -37,6 +37,13 @@ function PayoutSetupController({ navigation, route }) {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [showBusy, setShowBusy] = useState(false);
+  useEffect(() => {
+    setShowBusy(false);
+    if (!busy) return;
+    const timer = setTimeout(() => setShowBusy(true), 400);
+    return () => clearTimeout(timer);
+  }, [busy]);
   const [eligibleConfirmed, setEligibleConfirmed] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -89,6 +96,7 @@ function PayoutSetupController({ navigation, route }) {
   }, [completePendingWorkflow, status?.payoutsEnabled]);
 
   const openSetup = async () => {
+    if (busy || loading || statusError || !status || (!status.payoutsEnabled && !eligibleConfirmed)) return;
     try {
       setBusy(true);
       const link = status?.payoutsEnabled
@@ -144,27 +152,28 @@ function PayoutSetupController({ navigation, route }) {
     }
   };
 
-  if (loading && !status) return <BrandedLoadingState title="Checking payout setup…" message="" />;
+
   const enabled = status?.payoutsEnabled === true;
 
   return (
-    <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]}>
+    <ScrollView style={{ backgroundColor: '#FFFFFF' }} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]}>
       {statusError || waiting ? <View style={styles.card} accessibilityLiveRegion="polite"><Text style={styles.cardTitle}>{statusError ? 'Payout status unavailable' : 'Payout setup in review'}</Text><Text style={styles.rowText}>{statusError ? 'Your existing setup is unchanged. Retry to check its latest status.' : 'We’re checking automatically. You can return here from your profile at any time.'}</Text><TouchableOpacity style={styles.secondaryButton} onPress={refresh} accessibilityRole="button"><Text style={styles.secondaryText}>Refresh status</Text></TouchableOpacity></View> : null}
       <View style={[styles.icon, enabled && styles.iconEnabled]}>
         <Ionicons name={enabled ? 'checkmark' : 'wallet-outline'} size={35} color={enabled ? '#FFFFFF' : '#2F7D32'} />
       </View>
       <Text style={styles.title}>
-        {enabled ? 'Payouts are ready' : workflowCopy?.title || 'Set up individual payouts'}
+        {enabled ? 'Payouts are ready' : workflowCopy?.title || 'Receive cleanup rewards'}
       </Text>
       <Text style={styles.text}>
         {enabled
           ? 'You can claim funded cleanups. Stripe sends rewards to your connected payout account.'
-          : workflowCopy?.text || 'Set up as an individual cleaner. Stripe securely verifies your identity and bank details, and Litterbugs never stores that information.'}
+          : workflowCopy?.text || 'Set up as an individual cleaner. Our payment provider, Stripe, securely verifies your identity and bank details, and Litterbugs never stores that information.'}
       </Text>
 
+      <View style={styles.statusCheck} />
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Before you continue</Text>
-        <View style={styles.row}><Ionicons name="person-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>No business or LLC is required. Litterbugs creates an individual Stripe payout profile for you.</Text></View>
+        <View style={styles.row}><Ionicons name="person-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>No business or LLC is required. You’ll set up a personal payout account with Stripe.</Text></View>
         <View style={styles.row}><Ionicons name="checkmark-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>You must be at least 18 years old.</Text></View>
         <View style={styles.row}><Ionicons name="checkmark-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>Cleanup payouts are currently available to eligible U.S. cleaners.</Text></View>
         <View style={styles.row}><Ionicons name="checkmark-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>Your shown reward is the exact amount Litterbugs transfers.</Text></View>
@@ -173,6 +182,7 @@ function PayoutSetupController({ navigation, route }) {
 
       {!enabled ? (
         <TouchableOpacity
+          disabled={busy || loading || statusError}
           style={styles.confirmRow}
           onPress={() => setEligibleConfirmed((value) => !value)}
           accessibilityRole="checkbox"
@@ -183,35 +193,44 @@ function PayoutSetupController({ navigation, route }) {
         </TouchableOpacity>
       ) : null}
 
-      {!enabled ? (
-        <TouchableOpacity style={[styles.button, (busy || !eligibleConfirmed || !status) && styles.disabled]} onPress={openSetup} disabled={busy || !eligibleConfirmed || !status}>
-          {busy ? <LoadingButtonContent label="Opening Stripe…" /> : <Text style={styles.buttonText}>{status?.onboardingStatus === 'pending' ? 'Continue Stripe setup' : 'Set up with Stripe'}</Text>}
-        </TouchableOpacity>
-      ) : (
-        <TouchableOpacity style={styles.secondaryButton} onPress={openSetup} disabled={busy}>
-          {busy ? <LoadingButtonContent label="Opening Stripe…" color="#2F7D32" /> : <Text style={styles.secondaryText}>Review payout details</Text>}
-        </TouchableOpacity>
-      )}
+      <TouchableOpacity
+        style={[enabled ? styles.secondaryButton : styles.button, (!status || loading || statusError || (!enabled && !eligibleConfirmed)) && styles.disabled]}
+        onPress={openSetup}
+        activeOpacity={1}
+        accessibilityRole="button"
+        accessibilityState={{ busy, disabled: busy || loading || statusError || !status || (!enabled && !eligibleConfirmed) }}
+        disabled={busy || loading || statusError || !status || (!enabled && !eligibleConfirmed)}
+      >
+        <Text style={enabled ? styles.secondaryText : styles.buttonText}>{enabled ? 'Review payout details' : 'Set up payouts'}</Text>
+        {showBusy ? <ActivityIndicator size="small" color={enabled ? '#2F7D32' : '#FFFFFF'} style={styles.buttonSpinner} /> : null}
+      </TouchableOpacity>
+      <View style={styles.trustRow}><Ionicons name="lock-closed-outline" size={13} color="#6C786F" /><Text style={styles.trustText}>Secure verification and payouts by Stripe</Text></View>
+
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F5F6F7' },
-  content: { flexGrow: 1, alignItems: 'center', padding: 24, backgroundColor: '#F5F6F7' },
-  icon: { width: 76, height: 76, marginTop: 18, borderRadius: 38, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E3EEE4' },
+  content: { flexGrow: 1, alignItems: 'stretch', padding: 20, backgroundColor: '#FFFFFF' },
+  icon: { width: 52, height: 52, marginTop: 0, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E3EEE4' },
   iconEnabled: { backgroundColor: '#2F7D32' },
-  title: { marginTop: 19, color: '#202428', fontSize: 27, fontWeight: '900', textAlign: 'center' },
-  text: { maxWidth: 380, marginTop: 10, color: '#667078', fontSize: 15, lineHeight: 22, textAlign: 'center' },
-  card: { width: '100%', maxWidth: 420, marginTop: 26, padding: 18, borderRadius: 17, backgroundColor: '#FFFFFF' },
-  cardTitle: { color: '#30363B', fontSize: 17, fontWeight: '900' },
-  row: { marginTop: 14, flexDirection: 'row', alignItems: 'flex-start', gap: 9 },
+  title: { marginTop: 14, color: '#26332B', fontSize: 24, lineHeight: 30, fontWeight: '600' },
+  text: { marginTop: 8, color: '#66736A', fontSize: 14, lineHeight: 21 },
+  card: { width: '100%', maxWidth: 420, marginTop: 0, padding: 16, borderRadius: 14, backgroundColor: '#F5F8F5', borderWidth: 1, borderColor: '#E1EAE2' },
+  cardTitle: { color: '#30363B', fontSize: 17, fontWeight: '600' },
+  row: { marginTop: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 9 },
   rowText: { flex: 1, color: '#59636A', fontSize: 14, lineHeight: 20 },
   confirmRow: { width: '100%', maxWidth: 420, marginTop: 18, flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   confirmText: { flex: 1, color: '#4F5C63', fontSize: 14, lineHeight: 20 },
+  buttonSpinner: { position: 'absolute', right: 12 },
+  statusCheck: { minHeight: 24, justifyContent: 'center' },
+  statusCheckText: { color: '#68776D', fontSize: 12 },
+  trustRow: { marginTop: 10, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 5 },
+  trustText: { color: '#6C786F', fontSize: 12, lineHeight: 18 },
   button: { width: '100%', maxWidth: 420, minHeight: 54, marginTop: 22, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#2F7D32' },
-  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
   secondaryButton: { minHeight: 52, marginTop: 22, paddingHorizontal: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#2F7D32', borderRadius: 14 },
-  secondaryText: { color: '#2F7D32', fontSize: 16, fontWeight: '900' },
+  secondaryText: { color: '#2F7D32', fontSize: 16, fontWeight: '600' },
   disabled: { opacity: 0.6 },
 });

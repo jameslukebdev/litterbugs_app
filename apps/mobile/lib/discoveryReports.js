@@ -16,7 +16,7 @@ export const REPORT_SELECT = `
   )
 `;
 
-export async function loadDiscoveryReports({ area, filters, searchPlace, blockedIds = [], signal }) {
+export async function loadDiscoveryReports({ area, filters, searchPlace, blockedIds = [], favoriteIds = [], signal }) {
       const latitudeSpan = Math.max(area.latitudeDelta, filters.radius / 69);
       const longitudeSpan = Math.max(area.longitudeDelta, filters.radius / (69 * Math.max(0.01, Math.cos(area.latitude * Math.PI / 180))));
       const blocked = new Set(blockedIds);
@@ -41,5 +41,5 @@ export async function loadDiscoveryReports({ area, filters, searchPlace, blocked
         if (signal?.aborted) throw new Error('Obsolete discovery request');
         if (reportsError) throw reportsError;
         return data || [];
-      }, report => !blocked.has(report.user_id) && matchesReportFilters(report, filters, area) && matchesGeography(report, area, searchPlace), { limit: MAP_REPORT_LIMIT });
+      }, report => !blocked.has(report.user_id) && matchesReportFilters(report, filters, area, favoriteIds) && matchesGeography(report, area, searchPlace), { limit: MAP_REPORT_LIMIT });
 }

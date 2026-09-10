@@ -21,10 +21,15 @@ describe('report photo responsiveness', () => {
     expect(mapScreenSource).toContain("onPress={() => pickImage('library')}");
     expect(mapScreenSource).toContain('>Take photo</Text>');
     expect(mapScreenSource).toContain('>Choose photos</Text>');
-    expect(mapScreenSource).toContain('Add 1–3 photos of the littered area.');
-    expect(mapScreenSource).toContain(
-      'or surroundings that will help a cleaner find the location.'
-    );
+  });
+
+  it('keeps photo preparation inline and delays feedback for fast operations', () => {
+    expect(mapScreenSource).not.toContain('{(isSaving || photoPreparationStatus) && (');
+    expect(mapScreenSource).toContain('setTimeout(() => setShowPhotoPreparation(true), 400)');
+    expect(mapScreenSource).toContain('return () => clearTimeout(timer)');
+    expect(mapScreenSource).toContain('showPhotoPreparation={showPhotoPreparation && isPreparingPhotos}');
+    expect(mapScreenSource).toContain('style={styles.photoPreparationSlot}');
+    expect(mapScreenSource).toContain('if (photoPreparationStatus || isTransitioning) return;');
   });
 
   it('safety-checks report photos with bounded concurrency and visible progress', () => {

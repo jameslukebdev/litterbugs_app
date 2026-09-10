@@ -22,7 +22,7 @@ Profile and draft tests require an already signed-in QA account. The suite does 
 
 Never automate a contribution, payment, payout, claim, report submission, or real profile save against the connected backend. Those need a separate isolated backend fixture environment. The suite does not provide end-to-end payment or report-publication coverage.
 
-The three-stage form case also requires a local simulator photo. It selects the first PHPicker image, scrolls through Details, reaches Review, and discards its own draft without uploading. The picker can trigger the app's background draft recovery; after a failed run, inspect and clear only the draft created by that run before retrying.
+The five-stage form case also requires a local simulator photo. It selects the first PHPicker image, advances through litter type, severity, and optional site conditions, reaches Review, and discards its own draft without uploading. The picker can trigger the app's background draft recovery; after a failed run, inspect and clear only the draft created by that run before retrying.
 
 Verified on September 8, 2026: all six cases passed on iPhone 17 Pro across targeted runs; both map cases additionally passed on iPhone 13 mini with extra-extra-extra-large system text. The smaller device was a guest, so signed-in cases were not run there.
 
@@ -41,3 +41,9 @@ npm run mobile:test:native -- --device YOUR_DEVICE_UUID --suite fixtures
 The largest-text test is separate from the ordinary smoke suite. The runner uses the largest accessibility category, restores the previous category, clears synthetic location on exit, and rejects failed or skipped coverage. Fixture builds must first be refreshed using `qa/build_simulator.py`. Boot only the intended simulator. Keep software keyboard enabled for form tests. A missing account, user draft, or unavailable QA record blocks the corresponding smoke coverage; do not treat its skip as a release pass.
 
 `npm run mobile:check-source` additionally checks JSX and undefined identifiers, which mobile JavaScript unit mocks can miss.
+
+## September 10 refresh checks
+
+Funding photo recovery opens the owner’s existing better-photos report through My activity, so coverage does not depend on the last map viewport. It opens the photo editor and exits without changing photos or publishing. Card checks use the photo carousel’s accessible action; payment tabs use their tab role; photo information opens its dedicated Settings page.
+
+Simulator keyboard preferences may be overridden per device. If a focused field shows a cursor but no keyboard, use I/O → Keyboard → Toggle Software Keyboard while the field is focused. The keyboard recovery case must actually show the keyboard and type, save, reopen and discard its own local draft; a hidden offscreen keyboard does not count as a pass.

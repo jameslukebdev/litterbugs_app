@@ -10,6 +10,8 @@ export function cleanupImpactFacts(submission) {
   ) {
     facts.push({
       icon: 'bag-handle-outline',
+      value: String(bagsRemoved),
+      caption: `${bagsRemoved === 1 ? 'bag/item' : 'bags/items'} removed`,
       label: `${bagsRemoved} ${bagsRemoved === 1 ? 'bag/item' : 'bags/items'} removed`,
     });
   }
@@ -21,6 +23,8 @@ export function cleanupImpactFacts(submission) {
   ) {
     facts.push({
       icon: 'scale-outline',
+      value: String(weightPounds),
+      caption: `${weightPounds === 1 ? 'pound' : 'pounds'} removed`,
       label: `${weightPounds} ${weightPounds === 1 ? 'pound' : 'pounds'} removed`,
     });
   }

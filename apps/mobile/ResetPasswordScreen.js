@@ -11,10 +11,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { LoadingButtonContent } from './BrandedLoadingState';
+import SteadyButtonContent from './components/SteadyButtonContent';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from './lib/supabase';
 
 export default function ResetPasswordScreen({ onComplete }) {
+  const insets = useSafeAreaInsets();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -22,6 +24,7 @@ export default function ResetPasswordScreen({ onComplete }) {
   const [message, setMessage] = useState('');
 
   const updatePassword = async () => {
+    if (loading) return;
     setMessage('');
 
     if (password.length < 8) {
@@ -51,15 +54,15 @@ export default function ResetPasswordScreen({ onComplete }) {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingVertical: 24 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }} keyboardShouldPersistTaps="handled">
       <View style={styles.card}>
         <Ionicons name="key-outline" size={38} color="#2F7D32" />
         <Text style={styles.title}>Choose a new password</Text>
-        <Text style={styles.subtitle}>Enter a new password for your Litterbugs account.</Text>
+        <Text style={styles.subtitle}>Use at least 8 characters. Choose a password you don’t use for another account.</Text>
 
         <Text style={styles.label}>New password</Text>
         <View style={styles.passwordRow}>
-          <TextInput
+          <TextInput editable={!loading} selectionColor="#2F7D32"
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
@@ -78,7 +81,7 @@ export default function ResetPasswordScreen({ onComplete }) {
         </View>
 
         <Text style={styles.label}>Confirm new password</Text>
-        <TextInput
+        <TextInput editable={!loading} selectionColor="#2F7D32"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry={!showPassword}
@@ -88,7 +91,7 @@ export default function ResetPasswordScreen({ onComplete }) {
           accessibilityLabel="Confirm new password"
         />
 
-        {!!message && <Text style={styles.message}>{message}</Text>}
+        {!!message && <Text accessibilityRole="alert" style={styles.message}>{message}</Text>}
 
         <TouchableOpacity
           style={[styles.button, loading && styles.buttonDisabled]}
@@ -97,7 +100,7 @@ export default function ResetPasswordScreen({ onComplete }) {
           accessibilityRole="button"
           accessibilityLabel="Save new password"
         >
-          {loading ? <LoadingButtonContent label="Saving password…" /> : <Text style={styles.buttonText}>Save password</Text>}
+          <SteadyButtonContent label="Save password" busy={loading} busyLabel="Saving password…" />
         </TouchableOpacity>
       </View>
       </ScrollView>
@@ -109,20 +112,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    backgroundColor: '#F5F6F7',
-    padding: 24,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
   },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
-  title: { fontSize: 24, fontWeight: '800', color: '#333', marginTop: 16 },
+  card: { backgroundColor: '#FFFFFF', width: '100%', maxWidth: 480, alignSelf: 'center' },
+  title: { fontSize: 24, lineHeight: 31, fontWeight: '600', color: '#333', marginTop: 16 },
   subtitle: { fontSize: 15, lineHeight: 21, color: '#666', marginTop: 8, marginBottom: 16 },
   label: { fontSize: 14, fontWeight: '700', color: '#333', marginTop: 12, marginBottom: 7 },
   input: {
@@ -131,7 +125,7 @@ const styles = StyleSheet.create({
     borderColor: '#D8DDE2',
     borderRadius: 12,
     paddingHorizontal: 14,
-    backgroundColor: '#FAFBFC',
+    backgroundColor: '#FFFFFF',
   },
   passwordRow: {
     minHeight: 50,
@@ -140,7 +134,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#D8DDE2',
     borderRadius: 12,
-    backgroundColor: '#FAFBFC',
+    backgroundColor: '#FFFFFF',
   },
   passwordInput: { flex: 1, paddingHorizontal: 14 },
   eyeButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
@@ -154,5 +148,5 @@ const styles = StyleSheet.create({
     backgroundColor: '#2F7D32',
   },
   buttonDisabled: { opacity: 0.65 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });

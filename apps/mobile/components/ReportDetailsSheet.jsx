@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { reportPresentation } from '../lib/reportPresentation';
 import { Modal, View, Text, TouchableOpacity, ActivityIndicator, ScrollView, Linking, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,12 +16,67 @@ const formatFriendlyDateTime = value => new Date(value).toLocaleString(undefined
 // The map owns report operations; this component owns the detail presentation.
 export default function ReportDetailsSheet({ state, actions }) {
   const { detailsOpen, reportShareSheetOpen, reportShareBusyAction, selectedReport, insets, region, reportDetailsPreparing, selectedReportHasUtilityActions, completedCleanupImpact, completedCleanupImpactLoading, completedCleanupImpactError, reportHeroWidth, currentUserId, reportPhotoUrls, photosLoading, geminiReviewEnabled, userOwnsSelectedReport, reportFundingFeedback, cleanupDiscoverable, cleanupStatus, currentUserIsCleaner, selectedCleanupAttempt, cleanupAttemptLoading, cleanupActionBusy, canEditOrDeleteSelectedReport, selectedReportCanOpenFunding, payoutGateBusy, selectedReportIsShareable } = state;
-  const { setReportShareSheetOpen, closeReportDetails, setDetailsOpen, setSelectedReport, setPreviewId, navigation, commitMapRegion, setCompletedCleanupImpact, setCompletedCleanupImpactError, setCompletedCleanupImpactLoading, setCompletedCleanupImpactReloadKey, openCleanupNavigation, openCleanupSubmission, confirmCleanupRelease, openCleanupFeedback, openCleanupReview, beginCleanupClaim, openFundingContribution, removeReport, setForm, setEditingReportId, setIsEditing, setDraftCoord, resetReportWizard, setFormOpen, shareSelectedReport } = actions;
+  const { setReportShareSheetOpen, closeReportDetails, setDetailsOpen, setSelectedReport, setPreviewId, navigation, commitMapRegion, setCompletedCleanupImpact, setCompletedCleanupImpactError, setCompletedCleanupImpactLoading, setCompletedCleanupImpactReloadKey, openCleanupNavigation, openCleanupSubmission, confirmCleanupRelease, openCleanupFeedback, openCleanupReview, beginCleanupClaim, openFundingContribution, removeReport, setForm, setEditingReportId, setIsEditing, setDraftCoord, resetReportWizard, setFormOpen, shareSelectedReport, editReportPhotos } = actions;
+  const editSelectedReport = () => editReportPhotos(selectedReport);
+  const confirmDeleteReport = () => {
+
+              Alert.alert(
+                'Delete report?',
+                'This removes the report from the map and report lists. It cannot be undone.',
+                [
+                  {
+                    text: 'Cancel',
+                    style: 'cancel',
+                  },
+                  {
+                    text: 'Delete',
+                    style: 'destructive',
+
+                    onPress: async () => {
+
+                      try {
+                        await withdrawOwnReport(selectedReport.id);
+                        removeReport(selectedReport.id);
+                        setDetailsOpen(false);
+                        setSelectedReport(null);
+                        Alert.alert(
+                          'Report deleted',
+                          'The report is no longer visible on the map or in report lists.'
+                        );
+                      } catch (error) {
+                        Alert.alert(
+                          'Couldn’t delete report',
+                          reportWithdrawalErrorMessage(error)
+                        );
+                      }
+                    },
+                  },
+                ]
+              );
+  };
+  const [ownerMenuOpen, setOwnerMenuOpen] = useState(false);
+  useEffect(() => { setOwnerMenuOpen(false); }, [detailsOpen, selectedReport?.id]);
+  const showOwnerActions = () => {
+    if (!canEditOrDeleteSelectedReport || selectedReport?.funding_locked_at) return;
+    setOwnerMenuOpen(value => !value);
+  };
+  const [feedbackExpanded, setFeedbackExpanded] = useState(false);
+  useEffect(() => { setFeedbackExpanded(false); }, [detailsOpen, selectedReport?.id, reportFundingFeedback?.user_summary, selectedReport?.funding_eligibility]);
+  const [showClaimSpinner, setShowClaimSpinner] = useState(false);
+  useEffect(() => {
+    if (!cleanupActionBusy || !detailsOpen) {
+      setShowClaimSpinner(false);
+      return;
+    }
+    const timer = setTimeout(() => setShowClaimSpinner(true), 400);
+    return () => clearTimeout(timer);
+  }, [cleanupActionBusy, detailsOpen]);
   return (<Modal
   visible={detailsOpen}
   animationType="slide"
   transparent
   onRequestClose={() => {
+    if (ownerMenuOpen) { setOwnerMenuOpen(false); return; }
     if (reportShareSheetOpen && !reportShareBusyAction) {
       setReportShareSheetOpen(false);
       return;
@@ -33,15 +89,15 @@ export default function ReportDetailsSheet({ state, actions }) {
 
       {selectedReport && Number.isFinite(selectedReport.latitude) && Number.isFinite(selectedReport.longitude) ? <TouchableOpacity
         accessibilityRole="button" accessibilityLabel="Show report on map"
-        style={{ position: 'absolute', zIndex: 20, top: insets.top + 12, left: 24, minHeight: 44, paddingHorizontal: 14, borderRadius: 22, backgroundColor: '#FFFFFF', flexDirection: 'row', gap: 6, alignItems: 'center' }}
+        style={[styles.reportPhotoControl, styles.reportPhotoMapControl, { top: insets.top + 20 }]}
         onPress={() => {
           const report = selectedReport;
-          setDetailsOpen(false); setSelectedReport(null); setPreviewId(report.id);
+          setDetailsOpen(false); setSelectedReport(null); setPreviewId(null);
           navigation.setParams({ reportId: undefined, returnTo: undefined });
           commitMapRegion({ ...region, latitude: report.latitude, longitude: report.longitude });
-        }}><Ionicons name="map-outline" size={18} color="#285D38" /><Text style={{ color: '#285D38', fontWeight: '600' }}>Show on map</Text></TouchableOpacity> : null}
+        }}><Ionicons name="map-outline" size={18} color="#285D38" /><Text style={styles.reportPhotoControlText}>Show on map</Text></TouchableOpacity> : null}
 
-      <TouchableOpacity onPress={closeReportDetails} accessibilityRole="button" accessibilityLabel="Close report" style={{ position: 'absolute', zIndex: 20, top: insets.top + 12, right: 24, width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="close" size={22} color="#30363B" /></TouchableOpacity>
+      <TouchableOpacity onPress={closeReportDetails} accessibilityRole="button" accessibilityLabel="Close report" style={[styles.reportPhotoControl, styles.reportPhotoCloseControl, { top: insets.top + 20 }]}><Ionicons name="close" size={20} color="#30363B" /></TouchableOpacity>
 
       {reportDetailsPreparing && !selectedReport ? (
         <View
@@ -67,12 +123,14 @@ export default function ReportDetailsSheet({ state, actions }) {
         </View>
       ) : null}
 
+      {selectedReport?.cleanup_state === 'completed' ? <View style={[styles.completedReportToolbar, { height: insets.top + 76 }]} /> : null}
       <ScrollView
         style={{ flex: 1, minHeight: 0 }}
         showsVerticalScrollIndicator={false}
         bounces
         contentContainerStyle={[
           styles.reportPostScrollContent,
+          selectedReport?.cleanup_state === 'completed' && { paddingTop: 0 },
           selectedReportHasUtilityActions && styles.reportPostScrollContentWithActions,
         ]}
       >
@@ -104,11 +162,8 @@ export default function ReportDetailsSheet({ state, actions }) {
             />
 
             <View style={styles.originalReportDivider}>
-              <Text style={styles.originalReportEyebrow}>BEFORE THE CLEANUP</Text>
-              <Text style={styles.originalReportTitle}>Original litter report</Text>
-              <Text style={styles.originalReportText}>
-                See what was reported at this location before the volunteer cleanup.
-              </Text>
+              <Ionicons name="images-outline" size={21} color="#2F7D32" />
+              <Text style={styles.originalReportTitle}>Before cleanup</Text>
             </View>
           </>
         ) : null}
@@ -127,22 +182,33 @@ export default function ReportDetailsSheet({ state, actions }) {
             {selectedReport?.title || 'Litter Report'}
           </Text>
 
-          {selectedReport?.cleanup_state !== 'completed' ? <View style={styles.rewardBadge}>
-            <Ionicons
-              name={Number(selectedReport?.funded_amount_cents) > 0 ? 'cash-outline' : 'heart-outline'}
-              size={18}
-              color="#245F2A"
-            />
-            <Text style={styles.rewardBadgeText}>
-              {reportPresentation(selectedReport).funding}
-            </Text>
-          </View> : null}
-
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Get directions to this cleanup" onPress={() => Linking.openURL(`https://maps.apple.com/?daddr=${selectedReport.latitude},${selectedReport.longitude}`).catch(() => Alert.alert('Directions unavailable', 'Please try again.'))} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: '#2F7D32', fontWeight: '700' }}>Get directions ↗</Text></TouchableOpacity>
-
-          <View style={{ marginBottom: 18 }}>
-            <Text style={{ fontSize: 15, color: '#30363B', lineHeight: 22 }}>{[...(selectedReport?.litter_types || []), selectedReport?.types].filter(Boolean).join(' · ')}</Text>
-            {selectedReport?.notes_presets?.length ? <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 21, color: '#805C00' }}>{selectedReport.notes_presets.join(' · ')}</Text> : null}
+          <View style={styles.reportRewardDirectionsRow}>
+            {selectedReport?.cleanup_state !== 'completed' ? (
+              <View style={styles.reportRewardSummary}>
+                <Text style={styles.reportRewardAmount}>{Number(selectedReport?.funded_amount_cents) > 0 ? formatUsd(Number(selectedReport.funded_amount_cents)) : 'No funds yet'}</Text>
+                <Text style={styles.reportRewardCaption}>Cleanup reward</Text>
+              </View>
+            ) : null}
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Get directions to this cleanup"
+              onPress={() => Linking.openURL(`https://maps.apple.com/?daddr=${selectedReport.latitude},${selectedReport.longitude}`).catch(() => Alert.alert('Directions unavailable', 'Please try again.'))}
+              style={styles.reportDirectionsButton}>
+              <Ionicons name="navigate-outline" size={18} color="#2F7D32" />
+              <Text style={styles.reportDirectionsButtonText}>Directions</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.reportDetailFacts}>
+            {[...(selectedReport?.litter_types || []), selectedReport?.types].filter(Boolean).length ? (
+              <View style={styles.reportDetailFactRow}>
+                <Ionicons name="trash-outline" size={20} color="#637067" />
+                <Text style={styles.reportDetailFactText}>{[...(selectedReport?.litter_types || []), selectedReport?.types].filter(Boolean).join(' · ')}</Text>
+              </View>
+            ) : null}
+            {selectedReport?.notes_presets?.length ? (
+              <View style={styles.reportDetailFactRow}>
+                <Ionicons name="location-outline" size={20} color="#637067" />
+                <Text style={styles.reportDetailFactText}>{selectedReport.notes_presets.join(' · ')}</Text>
+              </View>
+            ) : null}
           </View>
           {geminiReviewEnabled
             && userOwnsSelectedReport
@@ -169,17 +235,31 @@ export default function ReportDetailsSheet({ state, actions }) {
                         ? 'Funding unavailable'
                         : 'Checking funding eligibility'}
                 </Text>
-                <Text style={styles.fundingFeedbackText}>
+                {selectedReport?.funding_eligibility === 'better_photos' ? <Text style={styles.fundingFeedbackText}>Add clear photos showing the reported litter.</Text> : null}
+                {selectedReport?.funding_eligibility !== 'better_photos' || feedbackExpanded ? <Text style={styles.fundingFeedbackText}>
                   {reportFundingFeedback?.user_summary
                     || selectedReport?.funding_hold_reason
                     || (selectedReport?.funding_eligibility === 'better_photos'
                       ? 'Edit this report to replace its original photos.'
                       : 'Report saved. Volunteers can still help while this check finishes. Return to this report to see the latest review status.')}
-                </Text>
+                </Text> : null}
+                {selectedReport?.funding_eligibility === 'better_photos' ? (
+                  <View style={styles.fundingFeedbackActions}>
+                    <TouchableOpacity style={styles.fundingFeedbackAction} onPress={() => setFeedbackExpanded(value => !value)} accessibilityRole="button" accessibilityState={{ expanded: feedbackExpanded }}>
+                      <Text style={styles.fundingFeedbackActionText}>{feedbackExpanded ? 'Hide details' : 'View details'}</Text>
+                      <Ionicons name={feedbackExpanded ? 'chevron-up' : 'chevron-down'} size={14} color="#754B13" />
+                    </TouchableOpacity>
+                    {canEditOrDeleteSelectedReport && !selectedReport?.funding_locked_at ? <TouchableOpacity style={styles.fundingFeedbackAction} onPress={editSelectedReport} accessibilityRole="button" accessibilityLabel="Edit report photos">
+                      <Ionicons name="camera-outline" size={16} color="#754B13" />
+                      <Text style={styles.fundingFeedbackActionText}>Edit photos</Text>
+                    </TouchableOpacity> : null}
+                  </View>
+                ) : null}
               </View>
             </View>
           ) : null}
 
+          <View style={styles.reportDetailReporter}>
           <ReporterIdentity
             profile={selectedReport?.reporter}
             onPress={selectedReport?.reporter?.id ? () => {
@@ -195,43 +275,44 @@ export default function ReportDetailsSheet({ state, actions }) {
             } : undefined}
           />
 
-          <Text style={{ color: '#687178', fontSize: 13, lineHeight: 20, marginTop: 12 }}>
-            {selectedReport?.created_at ? `Reported ${formatFriendlyDateTime(selectedReport.created_at)}` : ''}
-            {selectedReport?.expires_at && selectedReport?.cleanup_state !== 'completed' ? ` · Expires ${new Date(selectedReport.expires_at).toLocaleDateString()}` : ''}
-          </Text>
-          {/* Severity */}
-          {selectedReport?.severity && (
-            <View
-              style={[
-                styles.reportSeverityPill,
-
-                selectedReport.severity === 'Low' &&
-                  styles.severityLow,
-
-                selectedReport.severity === 'Medium' &&
-                  styles.severityMedium,
-
-                selectedReport.severity === 'High' &&
-                  styles.severityHigh,
-              ]}
-            >
-              <Ionicons
-                name={
-                  selectedReport.severity === 'High'
-                    ? 'warning-outline'
-                    : selectedReport.severity === 'Low'
-                      ? 'leaf-outline'
-                      : 'trash-outline'
-                }
-                size={17}
-                color="#FFFFFF"
-              />
-
-              <Text style={styles.reportSeverityText}>
-                {selectedReport.severity} Severity
-              </Text>
-            </View>
-          )}
+          </View>
+          <View style={styles.reportDetailDates}>
+            {selectedReport?.created_at ? (
+              <View style={styles.reportDetailMetadataRow}>
+                <Text style={styles.reportDetailMetadataLabel}>Reported</Text>
+                <Text style={styles.reportDetailMetadataValue}>{formatFriendlyDateTime(selectedReport.created_at)}</Text>
+              </View>
+            ) : null}
+            {selectedReport?.expires_at && selectedReport?.cleanup_state !== 'completed' ? (
+              <View style={styles.reportDetailMetadataRow}>
+                <Text style={styles.reportDetailMetadataLabel}>Expires</Text>
+                <Text style={styles.reportDetailMetadataValue}>
+                  {new Date(selectedReport.expires_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                </Text>
+              </View>
+            ) : null}
+            {selectedReport?.severity ? (
+              <View style={styles.reportDetailMetadataRow}>
+                <Text style={styles.reportDetailMetadataLabel}>Severity</Text>
+                <View style={[
+                  styles.reportDetailSeverityBadge,
+                  selectedReport.severity === 'Medium' && styles.reportDetailSeverityMedium,
+                  selectedReport.severity === 'High' && styles.reportDetailSeverityHigh,
+                ]}>
+                  <Ionicons
+                    name={selectedReport.severity === 'High' ? 'warning-outline' : selectedReport.severity === 'Low' ? 'leaf-outline' : 'trash-outline'}
+                    size={16}
+                    color={selectedReport.severity === 'High' ? '#9B3030' : selectedReport.severity === 'Medium' ? '#805900' : '#2F7D32'}
+                  />
+                  <Text style={[
+                    styles.reportDetailSeverityValue,
+                    selectedReport.severity === 'Medium' && { color: '#805900' },
+                    selectedReport.severity === 'High' && { color: '#9B3030' },
+                  ]}>{selectedReport.severity}</Text>
+                </View>
+              </View>
+            ) : null}
+          </View>
 
         </View>
 
@@ -278,12 +359,12 @@ export default function ReportDetailsSheet({ state, actions }) {
             <View style={styles.cleanupEligibilityCard}>
               <View style={styles.cleanupEligibilityHeader}>
                 <View style={styles.cleanupEligibilityIcon}>
-                  <Ionicons name="leaf-outline" size={24} color="#2F7D32" />
+                  <Ionicons name="time-outline" size={22} color="#687178" />
                 </View>
                 <View style={styles.cleanupEligibilityCopy}>
-                  <Text style={styles.cleanupEligibilityTitle}>Ready to clean this up?</Text>
+                  <Text style={styles.cleanupEligibilityTitle}>24-hour cleanup claim</Text>
                   <Text style={styles.cleanupEligibilityText}>
-                    Claim this report for 24 hours. Review and accept the current safety acknowledgment before every claim.
+                    Review and accept the safety acknowledgment each time you claim a report.
                   </Text>
                 </View>
               </View>
@@ -443,12 +524,30 @@ export default function ReportDetailsSheet({ state, actions }) {
 
       </ScrollView>
 
-      {cleanupDiscoverable ? <TouchableOpacity style={[styles.cleanupButton, { marginHorizontal: 18, marginTop: 8, backgroundColor: '#2F7D32' }]} onPress={beginCleanupClaim} disabled={cleanupActionBusy} accessibilityRole="button">{cleanupActionBusy ? <LoadingButtonContent label="Opening claim…" /> : <Text style={[styles.cleanupButtonText, { color: '#FFFFFF' }]}>Help clean this up</Text>}</TouchableOpacity> : null}
+      {cleanupDiscoverable || selectedReportHasUtilityActions ? <View style={[styles.reportDetailActionFooter, { paddingBottom: canEditOrDeleteSelectedReport && !selectedReport?.funding_locked_at ? 4 : Math.max(insets.bottom, 12) }]}>
+      {cleanupDiscoverable ? (
+        <TouchableOpacity
+          style={[styles.cleanupButton, styles.reportDetailPrimaryAction]}
+          activeOpacity={1}
+          onPress={beginCleanupClaim}
+          disabled={cleanupActionBusy}
+          accessibilityRole="button"
+          accessibilityLabel="Help clean this up"
+          accessibilityState={{ busy: cleanupActionBusy, disabled: cleanupActionBusy }}
+        >
+          <Text style={[styles.cleanupButtonText, { color: '#FFFFFF' }]}>Help clean this up</Text>
+          {cleanupActionBusy && showClaimSpinner ? (
+            <View style={styles.reportDetailClaimSpinner} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            </View>
+          ) : null}
+        </TouchableOpacity>
+      ) : null}
       {selectedReportHasUtilityActions ? (
-        <View style={[styles.reportUtilityBar, { paddingBottom: canEditOrDeleteSelectedReport ? 12 : Math.max(insets.bottom, 12) }]}>
+        <View style={[styles.reportUtilityBar, styles.reportDetailUtilityRow]}>
           {selectedReportCanOpenFunding ? (
             <TouchableOpacity
-              style={[styles.reportUtilityButton, styles.reportFundButton]}
+              style={[styles.reportUtilityButton, styles.reportFundButton, styles.reportDetailSecondaryAction]}
               onPress={() => openFundingContribution({ reportId: selectedReport.id })}
               disabled={payoutGateBusy}
               accessibilityRole="button"
@@ -458,8 +557,8 @@ export default function ReportDetailsSheet({ state, actions }) {
                 <LoadingButtonContent label="Checking Stripe…" color="#2F7D32" />
               ) : (
                 <>
-                  <Ionicons name="cash-outline" size={20} color="#2F7D32" />
-                  <Text style={styles.reportFundButtonText}>Fund</Text>
+                  <Ionicons name="cash-outline" size={18} color="#4F5C63" />
+                  <Text style={[styles.reportFundButtonText, { color: '#4F5C63', fontWeight: '600' }]}>Fund</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -467,15 +566,15 @@ export default function ReportDetailsSheet({ state, actions }) {
 
           {selectedReportIsShareable ? (
             <TouchableOpacity
-              style={[styles.reportUtilityButton, styles.reportShareButton]}
+              style={[styles.reportUtilityButton, styles.reportShareButton, styles.reportDetailSecondaryAction]}
               onPress={() => setReportShareSheetOpen(true)}
               accessibilityRole="button"
               accessibilityLabel={selectedReport?.cleanup_state === 'completed'
                 ? 'Share completed cleanup'
                 : 'Share litter report'}
             >
-              <Ionicons name="share-social-outline" size={20} color="#4F5C63" />
-              <Text style={styles.reportShareButtonText}>
+              <Ionicons name="share-outline" size={18} color="#4F5C63" />
+              <Text style={[styles.reportShareButtonText, { color: '#4F5C63', fontWeight: '600' }]}>
                 {reportShareActionLabel(selectedReport)}
               </Text>
             </TouchableOpacity>
@@ -484,156 +583,38 @@ export default function ReportDetailsSheet({ state, actions }) {
       ) : null}
 
 
+      </View> : null}
+
       {/* ============================= */}
       {/* Persistent Footer             */}
       {/* ============================= */}
 
-      {canEditOrDeleteSelectedReport ? <View style={styles.reportFooter}>
-
-
-        {/* DELETE — signed-in owner only */}
-        {canEditOrDeleteSelectedReport && !selectedReport?.funding_locked_at && (
-
-          <TouchableOpacity
-            style={[
-              styles.reportFooterButton,
-              styles.reportDeleteButton,
-            ]}
-            onPress={() => {
-
-              Alert.alert(
-                'Delete report?',
-                'This removes the report from the map and report lists. It cannot be undone.',
-                [
-                  {
-                    text: 'Cancel',
-                    style: 'cancel',
-                  },
-                  {
-                    text: 'Delete',
-                    style: 'destructive',
-
-                    onPress: async () => {
-
-                      try {
-                        await withdrawOwnReport(selectedReport.id);
-                        removeReport(selectedReport.id);
-                        setDetailsOpen(false);
-                        setSelectedReport(null);
-                        Alert.alert(
-                          'Report deleted',
-                          'The report is no longer visible on the map or in report lists.'
-                        );
-                      } catch (error) {
-                        Alert.alert(
-                          'Couldn’t delete report',
-                          reportWithdrawalErrorMessage(error)
-                        );
-                      }
-                    },
-                  },
-                ]
-              );
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Delete report"
-          >
-
-            <Ionicons
-              name="trash-outline"
-              size={19}
-              color="#C94747"
-            />
-
-            <Text style={styles.reportDeleteButtonText}>
-              Delete
-            </Text>
-
+      {canEditOrDeleteSelectedReport && !selectedReport?.funding_locked_at ? (
+        <View style={[styles.reportOwnerFooter, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+          <TouchableOpacity style={styles.reportManageButton} onPress={showOwnerActions} accessibilityRole="button" accessibilityLabel="Manage your report" accessibilityState={{ expanded: ownerMenuOpen }}>
+            <Ionicons name="options-outline" size={18} color="#687178" />
+            <Text style={styles.reportManageText}>Manage report</Text>
+            <Ionicons name="chevron-up" size={15} color="#687178" />
           </TouchableOpacity>
-        )}
+        </View>
+      ) : null}
 
-
-        {/* EDIT — signed-in owner only */}
-        {canEditOrDeleteSelectedReport && !selectedReport?.funding_locked_at && (
-
-          <TouchableOpacity
-            style={[
-              styles.reportFooterButton,
-              styles.reportEditButton,
-            ]}
-            onPress={() => {
-
-              setForm({
-                title:
-                  selectedReport.title || '',
-
-                selectedTypes:
-                  selectedReport.litter_types || [],
-
-                types:
-                  selectedReport.types || '',
-
-                // Empty means keep the current photos unless replacements are chosen.
-                photos: [],
-
-                severity:
-                  selectedReport.severity || '',
-
-                selectedNotes:
-                  selectedReport.notes_presets || [],
-
-                notes:
-                  selectedReport.notes_other || '',
-
-                startingFundingChoice: 'none',
-
-                startingFundingOther: '',
-              });
-
-
-              setEditingReportId(
-                selectedReport.id
-              );
-
-              setIsEditing(true);
-
-
-              // Keep original report location
-              setDraftCoord({
-                latitude:
-                  selectedReport.latitude,
-
-                longitude:
-                  selectedReport.longitude,
-              });
-
-
-              resetReportWizard();
-
-              setDetailsOpen(false);
-              setFormOpen(true);
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Edit report"
-          >
-
-            <Ionicons
-              name="create-outline"
-              size={19}
-              color="#2F7D32"
-            />
-
-            <Text style={styles.reportEditButtonText}>
-              Edit
-            </Text>
-
-          </TouchableOpacity>
-        )}
-
-
-
-      </View> : null}
-
+      {ownerMenuOpen && canEditOrDeleteSelectedReport && !selectedReport?.funding_locked_at ? (
+        <View style={styles.reportOwnerMenuOverlay} accessibilityViewIsModal onAccessibilityEscape={() => setOwnerMenuOpen(false)}>
+          <TouchableOpacity style={styles.reportOwnerMenuBackdrop} activeOpacity={1} onPress={() => setOwnerMenuOpen(false)} accessibilityRole="button" accessibilityLabel="Dismiss report menu" />
+          <View style={[styles.reportOwnerMenu, { bottom: Math.max(insets.bottom, 12) + 52 }]}>
+            <TouchableOpacity style={styles.reportOwnerMenuItem} onPress={() => { setOwnerMenuOpen(false); editSelectedReport(); }} accessibilityRole="button" accessibilityLabel="Edit report">
+              <Ionicons name="create-outline" size={20} color="#2F7D32" />
+              <Text style={styles.reportOwnerMenuText}>Edit report</Text>
+            </TouchableOpacity>
+            <View style={styles.reportOwnerMenuDivider} />
+            <TouchableOpacity style={styles.reportOwnerMenuItem} onPress={() => { setOwnerMenuOpen(false); confirmDeleteReport(); }} accessibilityRole="button" accessibilityLabel="Delete report">
+              <Ionicons name="trash-outline" size={20} color="#B23B3B" />
+              <Text style={[styles.reportOwnerMenuText, { color: '#B23B3B' }]}>Delete report</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : null}
     </View>
 
     <ReportShareSheet

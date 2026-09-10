@@ -1,5 +1,7 @@
 # Pre-submission audit and user-testing readiness
 
+> Historical audit: the sections below record successive September 9 states, including a temporary rollback. They are not the final merge inventory. See [September 10 merge verification](2026-09-10-merge-verification.md) for the final scope and current evidence. The explicit photo-consent gate described in the original findings was subsequently removed at the owner’s request; automatic photo review remains. App Store readiness is still a separate release decision.
+
 September 9, 2026. Scope: current iOS user journeys, usability, recovery, accessibility, backend boundaries, and App Store preparation. Baseline `eff18cf` plus the September 9 working-tree changes. This is not an App Store submission or certification.
 
 ## Decision
@@ -122,3 +124,15 @@ Record device/OS/build, task completion, where help was needed, exact expected/a
 ## Simulator handoff
 
 Restored the normal iPhone 17 Pro QA app (`com.gegibson.litterbugs.qa`, version 1.0.0/build 1) with the final Release bundle, standard text size, denied location permission, and cleared synthetic GPS. The small iPhone and iPad audit simulators were shut down. The existing personal account and draft were preserved.
+
+## Later update: automatic photo review
+
+At the owner's request on September 9, the mobile upload permission dialog and stored consent gate were removed. Uploads now proceed directly to the existing quarantine and server safety checks. Settings provides optional “About photo review” information rather than a permission switch. The privacy-page source was updated to describe automatic checks; that source edit has not yet been deployed. Earlier consent test results above describe the audited build before this update.
+
+The explicit third-party AI permission item from Apple section 5.1.2 remains a release consideration; removing the dialog does not resolve that submission requirement. An optional information item is not explicit consent.
+
+Verification of this update: 332 mobile tests passed; source validation checked 140 modules with zero errors. Six tests for the removed consent behavior were removed. Existing upload tests still cover quarantine, processing failures and unsupported media. No report was published to verify this change.
+
+## Local scope after Luke-email rollback
+
+The owner discarded the Luke-email UI iteration, retaining only: smoother All payments/Completed impact loading, location/map-style controls on the right, and a red center pin during report placement. The earlier photo-permission-popup removal remains. All other map-marker, preview-action, report-card and wizard redesign changes were reverted. No changes were pushed to main. The retained version passes 332 mobile tests and source validation, and its simulator Release build succeeded. Normal simulator text size was restored.

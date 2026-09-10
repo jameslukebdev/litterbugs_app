@@ -1,4 +1,4 @@
-import { View, Text, TextInput, Image, TouchableOpacity, Keyboard } from 'react-native';
+import { View, Text, TextInput, Image, TouchableOpacity, Keyboard, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MAX_REPORT_PHOTOS } from '../lib/reportPhotoSelection';
 import { formatUsd } from '../lib/funding';
@@ -8,22 +8,38 @@ import { LoadingButtonContent } from '../BrandedLoadingState';
 import styles from '../styles/MapScreen.styles';
 import MapView, { Marker } from 'react-native-maps';
 
-export default function ReportWizardSteps({ form, coordinate, onChangeLocation, isEditing, reportPhotoUrls, reportStep, selectedReport, pickImage, isSaving, setForm, removePhoto, hasAttachedReportPhoto, goToNextReportStep, LITTER_OPTIONS, revealBottomReportField, NOTES_OPTIONS, jumpToReportStep, fundingEnabled, wantsStartingFunding, startingContributionCents, hasStartingFundingChoice, submitReport }) {
+export default function ReportWizardSteps({ form, coordinate, onChangeLocation, isEditing, reportPhotoUrls, reportStep, selectedReport, pickImage, isSaving, showPhotoPreparation, setForm, removePhoto, hasAttachedReportPhoto, goToNextReportStep, LITTER_OPTIONS, revealBottomReportField, NOTES_OPTIONS, jumpToReportStep, fundingEnabled, wantsStartingFunding, startingContributionCents, hasStartingFundingChoice, submitReport }) {
   const reviewPhotos = form.photos.length > 0 ? form.photos : isEditing ? reportPhotoUrls : [];
+  const renderPhotoSlot = (index) => {
+    const uri = form.photos[index];
+    return (
+      <View key={index} style={styles.reportPhotoSlot}>
+        {uri ? (
+          <>
+            <Image source={{ uri }} style={styles.reportPhotoPreview} accessibilityLabel={`Report photo ${index + 1}`} />
+            <TouchableOpacity style={styles.reportPhotoRemove} onPress={() => removePhoto(index)}
+              disabled={isSaving} accessibilityRole="button" accessibilityLabel={`Remove report photo ${index + 1}`}>
+              <Ionicons name="close-circle" size={26} color="#FFFFFF" />
+            </TouchableOpacity>
+          </>
+        ) : (
+          <TouchableOpacity style={styles.reportPhotoEmpty} onPress={() => pickImage('library')}
+            disabled={isSaving} accessibilityRole="button" accessibilityLabel={`Add report photo ${index + 1}`}>
+            <Ionicons name={index === 0 ? 'images-outline' : 'add'} size={index === 0 ? 44 : 28} color="#718078" />
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
   switch (reportStep) {
     case 0: return (<View style={styles.wizardStep}>
-          <Text style={styles.wizardEyebrow}>
-            REQUIRED
-          </Text>
+
 
           <Text style={styles.wizardTitle}>
             Add photos
           </Text>
 
-          <Text style={styles.wizardDescription}>
-            Add 1–3 photos of the littered area. Include nearby landmarks
-            or surroundings that will help a cleaner find the location.
-          </Text>
+
 
           {isEditing
             && form.photos.length === 0
@@ -39,9 +55,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                 Existing photos will stay attached
               </Text>
 
-              <Text style={styles.existingPhotoText}>
-                Keep these photos, or choose a new set below. Saving a new set replaces all existing report photos.
-              </Text>
+
 
               {reportPhotoUrls.length > 0 && (
                 <View style={styles.wizardPhotoGrid}>
@@ -83,7 +97,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
               {isEditing ? (
                 <View style={styles.replacementPhotoNotice}>
                   <Text style={styles.existingPhotoTitle}>New photo set selected</Text>
-                  <Text style={styles.existingPhotoText}>These photos will replace the existing set when you save.</Text>
+
                   <TouchableOpacity
                     onPress={() => setForm((prev) => ({ ...prev, photos: [] }))}
                     disabled={isSaving}
@@ -92,12 +106,16 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                   </TouchableOpacity>
                 </View>
               ) : null}
-              {form.photos.length < MAX_REPORT_PHOTOS ? (
+              <View style={styles.reportPhotoStage}>
+                <View style={styles.reportPhotoMain}>{renderPhotoSlot(0)}</View>
+                <View style={styles.reportPhotoSide}>{renderPhotoSlot(1)}{renderPhotoSlot(2)}</View>
+              </View>
+              {(
                 <View style={styles.wizardPhotoActions}>
                   <TouchableOpacity
                     style={styles.wizardPhotoActionButton}
                     onPress={() => pickImage('camera')}
-                    disabled={isSaving}
+                    disabled={isSaving || form.photos.length >= MAX_REPORT_PHOTOS}
                     accessibilityRole="button"
                     accessibilityLabel="Take litter report photo"
                   >
@@ -107,7 +125,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                   <TouchableOpacity
                     style={styles.wizardPhotoActionButton}
                     onPress={() => pickImage('library')}
-                    disabled={isSaving}
+                    disabled={isSaving || form.photos.length >= MAX_REPORT_PHOTOS}
                     accessibilityRole="button"
                     accessibilityLabel={`Choose up to ${MAX_REPORT_PHOTOS - form.photos.length} report photos`}
                   >
@@ -115,45 +133,24 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                     <Text style={styles.wizardPhotoActionText}>Choose photos</Text>
                   </TouchableOpacity>
                 </View>
-              ) : null}
-
-              {form.photos.length > 0 && (
-                <View style={styles.wizardPhotoGrid}>
-                  {form.photos.map((uri, index) => (
-                    <View
-                      key={`${uri}-${index}`}
-                      style={styles.wizardPhotoContainer}
-                    >
-                      <Image
-                        source={{ uri }}
-                        style={styles.wizardPhotoThumb}
-                      />
-
-                      <TouchableOpacity
-                        style={styles.deletePhotoButton}
-                        onPress={() =>
-                          removePhoto(index)
-                        }
-                        accessibilityRole="button"
-                        accessibilityLabel={`Remove report photo ${index + 1}`}
-                      >
-                        <Text style={styles.deletePhotoText}>
-                          ✕
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </View>
               )}
+
             </>
           )}
 
-          {!hasAttachedReportPhoto() ? (
-            <Text style={[styles.requiredHint, { color: '#687178', marginBottom: 16 }]}>
-              Add at least one clear photo of the litter.
-            </Text>
-          ) : null}
-<Text style={styles.reviewLabel}>Title (optional)</Text>
+
+<View style={styles.photoPreparationSlot}>
+  {showPhotoPreparation ? (
+    <View style={styles.photoPreparationInline} accessibilityRole="progressbar" accessibilityLabel="Getting photos ready">
+      <ActivityIndicator size="small" color="#2F7D32" />
+      <Text style={styles.photoPreparationText}>Getting photos ready…</Text>
+    </View>
+  ) : null}
+</View>
+<View style={styles.optionalFieldHeading}>
+  <Text style={[styles.reportTitleLabel, { marginBottom: 0 }]}>Title</Text>
+  <Text style={styles.optionalStepLabel}>Optional</Text>
+</View>
 <TextInput
             style={styles.input}
             placeholder="Litter Report" accessibilityLabel="Report title (optional)"
@@ -171,22 +168,17 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
             onSubmitEditing={goToNextReportStep}
           />
 </View>);
-    case 1: return (<><View style={styles.wizardStep}>
-          <Text style={styles.wizardEyebrow}>
-            REQUIRED
-          </Text>
+    case 1: return (<View style={styles.wizardStep}>
+
 
           <Text style={styles.wizardTitle}>
-            What kind of litter did you find?
+            Type of litter
           </Text>
 
-          <Text style={styles.wizardDescription}>
-            Select all that apply. You can also type something
-            that isn't listed.
-          </Text>
 
-          <View style={styles.typeBox}>
-            <View style={styles.typeChipRow}>
+
+          <View style={styles.litterTileSection}>
+            <View style={styles.litterTileGrid}>
               {LITTER_OPTIONS.map(({ label, icon }) => {
                 const selected =
                   form.selectedTypes?.includes(label);
@@ -195,9 +187,9 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                   <TouchableOpacity
                     key={label}
                     style={[
-                      styles.typeChip,
+                      styles.litterTile,
                       selected &&
-                        styles.typeChipSelected,
+                        styles.litterTileSelected,
                     ]}
                     onPress={() => {
                       setForm((prev) => {
@@ -223,24 +215,25 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                         };
                       });
                     }}
+                    disabled={isSaving}
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: selected }}
                     accessibilityLabel={`${label} litter type`}
                   >
                     <Ionicons
-                      name={icon}
-                      size={17}
+                      name={selected ? 'checkmark-circle' : icon}
+                      size={20}
                       color={
-                        selected ? '#fff' : '#555'
+                        selected ? '#2F7D32' : '#667078'
                       }
-                      style={styles.typeChipIcon}
+                      style={styles.litterTileIcon}
                     />
 
                     <Text
                       style={[
-                        styles.typeChipText,
+                        styles.litterTileText,
                         selected &&
-                          styles.typeChipTextSelected,
+                          styles.litterTileTextSelected,
                       ]}
                     >
                       {label}
@@ -256,7 +249,10 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
           </Text>
 
           <TextInput
-            style={styles.input}
+            style={[styles.input, styles.wizardDetailsInput]}
+            multiline
+            editable={!isSaving}
+            accessibilityLabel="Other litter types"
             placeholder="Mattress, appliances, or another type"
             value={form.types}
             onFocus={revealBottomReportField}
@@ -270,113 +266,52 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
             }
           />
 
-          {!(form.selectedTypes?.length || form.types?.trim()) && (
-            <Text style={[styles.requiredHint, { color: '#687178', marginBottom: 16 }]}>
-              Select at least one litter type to continue.
-            </Text>
-          )}
-        </View><View style={styles.wizardDetailSection}>
-          <Text style={styles.wizardSectionTitle}>
-            Severity
-          </Text>
 
-          <Text style={styles.wizardDescription}>
-            Choose the level that best matches what you saw.
-          </Text>
-
-          <View style={styles.wizardSeverityList}>
-            {[
-              {
-                level: 'Low',
-                icon: 'leaf-outline',
-              },
-              {
-                level: 'Medium',
-                icon: 'trash-outline',
-              },
-              {
-                level: 'High',
-                icon: 'warning-outline',
-              },
-            ].map(({ level, icon }) => {
-              const selected =
-                form.severity === level;
-
-              return (
-                <TouchableOpacity
-                  key={level}
-                  style={[
-                    styles.wizardSeverityOption,
-                    selected &&
-                      styles.wizardSeveritySelected,
-                  ]}
-                  onPress={() =>
-                    setForm((prev) => ({
-                      ...prev,
-                      severity: level,
-                    }))
-                  }
-                  accessibilityRole="radio"
-                  accessibilityState={{ checked: selected }}
-                  accessibilityLabel={`${level} severity`}
-                >
-                  <Ionicons
-                    name={icon}
-                    size={27}
-                    color={
-                      selected
-                        ? '#2F7D32'
-                        : '#667085'
-                    }
-                  />
-
-                  <Text
-                    style={[
-                      styles.wizardSeverityText,
-                      selected &&
-                        styles.wizardSeverityTextSelected,
-                    ]}
-                  >
-                    {level}
-                  </Text>
-
-                  <View
-                    style={[
-                      styles.wizardRadio,
-                      selected &&
-                        styles.wizardRadioSelected,
-                    ]}
-                  >
-                    {selected && (
-                      <View
-                        style={
-                          styles.wizardRadioInner
-                        }
-                      />
-                    )}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
+        </View>);
+    case 2: return (
+      <View style={styles.wizardStep}>
+        <Text style={styles.wizardTitle}>Severity</Text>
+        <View style={styles.wizardSeverityList}>
+          {[
+            { level: 'Low', icon: 'leaf-outline', description: 'A few items' },
+            { level: 'Medium', icon: 'trash-outline', description: 'A noticeable buildup' },
+            { level: 'High', icon: 'layers-outline', description: 'A large amount' },
+          ].map(({ level, icon, description }) => {
+            const selected = form.severity === level;
+            return (
+              <TouchableOpacity
+                key={level}
+                style={[styles.wizardSeverityOption, selected && styles.wizardSeveritySelected]}
+                onPress={() => setForm((prev) => ({ ...prev, severity: level }))}
+                disabled={isSaving}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: selected }}
+                accessibilityLabel={`${level} severity`}
+                accessibilityHint={description}
+              >
+                <Ionicons name={icon} size={32} color={selected ? '#2F7D32' : '#667078'} />
+                <View style={styles.wizardSeverityCopy}>
+                  <Text style={[styles.wizardSeverityText, selected && styles.wizardSeverityTextSelected]}>{level}</Text>
+                  <Text style={styles.wizardSeverityDescription}>{description}</Text>
+                </View>
+                <Ionicons name={selected ? 'checkmark-circle' : 'ellipse-outline'} size={26}
+                  color={selected ? '#2F7D32' : '#C8D0CA'} />
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+    );
+    case 3: return (<View style={styles.wizardStep}>
+          <View style={styles.optionalStepHeading}>
+            <Text style={[styles.wizardTitle, { marginBottom: 0 }]}>Site conditions</Text>
+            <Text style={styles.optionalStepLabel}>Optional</Text>
           </View>
 
-          {!form.severity && (
-            <Text style={[styles.requiredHint, { color: '#687178', marginBottom: 16 }]}>
-              Choose a severity level to continue.
-            </Text>
-          )}
-        </View><View style={styles.wizardDetailSection}>
-          <Text style={styles.wizardSectionTitle}>
-            Site conditions (optional)
-          </Text>
 
-          <Text style={styles.wizardDescription}>
-            Add details that could help someone safely find and
-            understand the site.
-          </Text>
 
-          <View style={styles.notesBox}>
-            <View style={styles.notesChipRow}>
+          <View style={styles.litterTileSection}>
+            <View style={styles.litterTileGrid}>
               {NOTES_OPTIONS.map(
                 ({ label, icon }) => {
                   const selected =
@@ -388,9 +323,9 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                     <TouchableOpacity
                       key={label}
                       style={[
-                        styles.notesChip,
+                        styles.litterTile,
                         selected &&
-                          styles.notesChipSelected,
+                          styles.litterTileSelected,
                       ]}
                       onPress={() => {
                         setForm((prev) => {
@@ -416,31 +351,32 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                           };
                         });
                       }}
+                      disabled={isSaving}
                       accessibilityRole="checkbox"
                       accessibilityState={{ checked: selected }}
                       accessibilityLabel={label}
                     >
                       <Ionicons
-                        name={icon}
-                        size={17}
+                        name={selected ? 'checkmark-circle' : icon}
+                        size={20}
                         color={
                           selected
-                            ? '#fff'
-                            : '#555'
+                            ? '#2F7D32'
+                            : '#667078'
                         }
                         style={
-                          styles.notesChipIcon
+                          styles.litterTileIcon
                         }
                       />
 
                       <Text
                         style={[
-                          styles.notesChipText,
+                          styles.litterTileText,
                           selected &&
-                            styles.notesChipTextSelected,
+                            styles.litterTileTextSelected,
                         ]}
                       >
-                        {label}
+                        {label === 'In Public Park' ? 'In public park' : label === 'Use Caution' ? 'Use caution' : label}
                       </Text>
                     </TouchableOpacity>
                   );
@@ -450,11 +386,14 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
           </View>
 
           <Text style={styles.wizardFieldLabel}>
-            Other
+            Extra details
           </Text>
 
           <TextInput
-            style={styles.input}
+            style={[styles.input, styles.wizardDetailsInput]}
+            multiline
+            editable={!isSaving}
+            accessibilityLabel="Extra site details (optional)"
             placeholder="Add any extra details"
             value={form.notes}
             onFocus={revealBottomReportField}
@@ -468,238 +407,82 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
             }
             maxLength={500}
           />
-        </View></>);
-    case 2: return (<View style={styles.wizardStep}>
-          <Text style={styles.wizardEyebrow}>
-            FINAL STEP
-          </Text>
-
-          <Text style={styles.wizardTitle}>
-            Review your report
-          </Text>
-
-          <Text style={styles.wizardDescription}>
-            Make sure everything looks right before you submit it.
-          </Text>
-
-
-          {coordinate && Number.isFinite(coordinate.latitude) && Number.isFinite(coordinate.longitude) ? <View style={{ marginBottom: 20 }}>
-            <View style={styles.reviewHeader}>
-              <Text style={styles.reviewLabel}>Report location</Text>
-              {!isEditing ? <TouchableOpacity onPress={onChangeLocation} disabled={isSaving} accessibilityRole="button" accessibilityLabel="Change report location" style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 8 }}><Text style={styles.reviewEdit}>Change</Text></TouchableOpacity> : null}
+        </View>);
+    case 4: return (<View style={styles.wizardStep}>
+          {form.title?.trim() ? (
+          <View style={styles.reportReviewRow}>
+            <View style={styles.reportReviewCopy}>
+              <Text style={styles.reportReviewLabel}>Title</Text>
+              <Text style={styles.reportReviewTitle}>{form.title.trim()}</Text>
             </View>
-            <View style={{ height: 120, borderRadius: 12, overflow: 'hidden', marginTop: 8 }} pointerEvents="none">
-              <MapView style={{ flex: 1 }} initialRegion={{ ...coordinate, latitudeDelta: 0.008, longitudeDelta: 0.008 }} scrollEnabled={false} zoomEnabled={false} rotateEnabled={false} pitchEnabled={false} accessibilityLabel="Confirmed report location">
-                <Marker coordinate={coordinate} pinColor="#2F7D32" />
-              </MapView>
+            <TouchableOpacity style={styles.reportReviewEditButton} onPress={() => jumpToReportStep(0)}
+              disabled={isSaving} accessibilityRole="button" accessibilityLabel="Edit report title">
+              <Text style={styles.reviewEdit}>Edit</Text>
+            </TouchableOpacity>
+          </View>
+          ) : (
+            <TouchableOpacity style={{ alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' }}
+              onPress={() => jumpToReportStep(0)} disabled={isSaving}
+              accessibilityRole="button" accessibilityLabel="Add a report title">
+              <Text style={styles.reviewEdit}>Add a title</Text>
+            </TouchableOpacity>
+          )}
+
+          <View style={styles.reportReviewMediaSection}>
+            <View style={styles.reportReviewHeader}>
+              <Text style={styles.reportReviewLabel}>Photos</Text>
+              <TouchableOpacity style={styles.reportReviewEditButton} onPress={() => jumpToReportStep(0)}
+                disabled={isSaving} accessibilityRole="button" accessibilityLabel="Edit report photos">
+                <Text style={styles.reviewEdit}>Edit</Text>
+              </TouchableOpacity>
             </View>
-          </View> : null}
-          <View style={styles.reviewCard}>
-
-            {/* TITLE */}
-            <View style={styles.reviewSection}>
-              <View style={styles.reviewHeader}>
-                <Text style={styles.reviewLabel}>
-                  Title
-                </Text>
-
-                <TouchableOpacity
-                  onPress={() =>
-                    jumpToReportStep(0)
-                  }
-                >
-                  <Text style={styles.reviewEdit}>
-                    Edit
-                  </Text>
-                </TouchableOpacity>
+            {reviewPhotos.length > 0 ? (
+              <View style={styles.reportReviewPhotos}>
+                {reviewPhotos.map((uri, index) => (
+                  <Image key={`${uri}-${index}`} source={{ uri }} style={styles.reportReviewPhoto}
+                    accessibilityLabel={`Report photo ${index + 1}`} />
+                ))}
               </View>
+            ) : <Text style={styles.reviewMuted}>No photos added</Text>}
+          </View>
 
-              <Text style={styles.reviewValue}>
-                {form.title?.trim() ||
-                  'Litter Report'}
-              </Text>
-            </View>
-
-
-            <View style={styles.reviewDivider} />
-
-
-            {/* PHOTOS */}
-            <View style={styles.reviewSection}>
-              <View style={styles.reviewHeader}>
-                <Text style={styles.reviewLabel}>
-                  Photos
-                </Text>
-
-                <TouchableOpacity
-                  onPress={() =>
-                    jumpToReportStep(0)
-                  }
-                >
-                  <Text style={styles.reviewEdit}>
-                    Edit
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {reviewPhotos.length > 0 ? (
-                <View style={styles.reviewPhotoRow}>
-                  {reviewPhotos.map(
-                    (uri, index) => (
-                      <Image
-                        key={`${uri}-${index}`}
-                        source={{ uri }}
-                        style={styles.reviewPhoto}
-                      />
-                    )
-                  )}
-                </View>
-              ) : (
-                <Text style={styles.reviewMuted}>
-                  No photos added
-                </Text>
-              )}
-            </View>
-
-
-            <View style={styles.reviewDivider} />
-
-
-            {/* LITTER TYPES */}
-            <View style={styles.reviewSection}>
-              <View style={styles.reviewHeader}>
-                <Text style={styles.reviewLabel}>
-                  Litter Types
-                </Text>
-
-                <TouchableOpacity
-                  onPress={() =>
-                    jumpToReportStep(1)
-                  }
-                >
-                  <Text style={styles.reviewEdit}>
-                    Edit
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.reviewChipRow}>
-                {form.selectedTypes.map(
-                  (type) => (
-                    <View
-                      key={type}
-                      style={styles.reviewTypeChip}
-                    >
-                      <Text
-                        style={
-                          styles.reviewChipText
-                        }
-                      >
-                        {type}
-                      </Text>
-                    </View>
-                  )
-                )}
-
-                {form.types?.trim() ? (
-                  <View
-                    style={styles.reviewTypeChip}
-                  >
-                    <Text
-                      style={styles.reviewChipText}
-                    >
-                      {form.types.trim()}
-                    </Text>
-                  </View>
+          {coordinate && Number.isFinite(coordinate.latitude) && Number.isFinite(coordinate.longitude) ? (
+            <View style={styles.reportReviewMediaSection}>
+              <View style={styles.reportReviewHeader}>
+                <Text style={styles.reportReviewLabel}>Location</Text>
+                {!isEditing ? (
+                  <TouchableOpacity onPress={onChangeLocation} disabled={isSaving} accessibilityRole="button"
+                    accessibilityLabel="Change report location" style={styles.reportReviewEditButton}>
+                    <Text style={styles.reviewEdit}>Edit</Text>
+                  </TouchableOpacity>
                 ) : null}
               </View>
-            </View>
-
-
-            <View style={styles.reviewDivider} />
-
-
-            {/* SEVERITY */}
-            <View style={styles.reviewSection}>
-              <View style={styles.reviewHeader}>
-                <Text style={styles.reviewLabel}>
-                  Severity
-                </Text>
-
-                <TouchableOpacity
-                  onPress={() =>
-                    jumpToReportStep(1)
-                  }
-                >
-                  <Text style={styles.reviewEdit}>
-                    Edit
-                  </Text>
-                </TouchableOpacity>
+              <View style={styles.reportReviewMap} pointerEvents="none">
+                <MapView style={{ flex: 1 }} initialRegion={{ ...coordinate, latitudeDelta: 0.008, longitudeDelta: 0.008 }}
+                  scrollEnabled={false} zoomEnabled={false} rotateEnabled={false} pitchEnabled={false}
+                  accessibilityLabel="Confirmed report location">
+                  <Marker coordinate={coordinate} pinColor="#C53232" />
+                </MapView>
               </View>
-
-              <Text style={styles.reviewValue}>
-                {form.severity}
-              </Text>
             </View>
+          ) : null}
 
-
-            <View style={styles.reviewDivider} />
-
-
-            {/* NOTES */}
-            <View style={styles.reviewSection}>
-              <View style={styles.reviewHeader}>
-                <Text style={styles.reviewLabel}>
-                  Notes
-                </Text>
-
-                <TouchableOpacity
-                  onPress={() =>
-                    jumpToReportStep(1)
-                  }
-                >
-                  <Text style={styles.reviewEdit}>
-                    Edit
-                  </Text>
-                </TouchableOpacity>
+          {[
+            { label: 'Type of litter', step: 1, value: [...(form.selectedTypes || []), form.types?.trim()].filter(Boolean).join(', ') },
+            { label: 'Severity', step: 2, value: form.severity },
+            { label: 'Site conditions', step: 3, value: [...(form.selectedNotes || []), form.notes?.trim()].filter(Boolean).join(', ') || 'None added' },
+          ].map(({ label, step, value }) => (
+            <View key={label} style={styles.reportReviewRow}>
+              <View style={styles.reportReviewCopy}>
+                <Text style={styles.reportReviewLabel}>{label}</Text>
+                <Text style={styles.reportReviewValue}>{value}</Text>
               </View>
-
-              {form.selectedNotes.length > 0 && (
-                <View style={styles.reviewChipRow}>
-                  {form.selectedNotes.map(
-                    (note) => (
-                      <View
-                        key={note}
-                        style={
-                          styles.reviewNoteChip
-                        }
-                      >
-                        <Text
-                          style={
-                            styles.reviewChipText
-                          }
-                        >
-                          {note}
-                        </Text>
-                      </View>
-                    )
-                  )}
-                </View>
-              )}
-
-              {form.notes?.trim() ? (
-                <Text style={styles.reviewNotes}>
-                  {form.notes.trim()}
-                </Text>
-              ) : form.selectedNotes.length ===
-                0 ? (
-                <Text style={styles.reviewMuted}>
-                  No additional notes
-                </Text>
-              ) : null}
+              <TouchableOpacity style={styles.reportReviewEditButton} onPress={() => jumpToReportStep(step)}
+                disabled={isSaving} accessibilityRole="button" accessibilityLabel={`Edit ${label.toLowerCase()}`}>
+                <Text style={styles.reviewEdit}>Edit</Text>
+              </TouchableOpacity>
             </View>
-
-          </View>
+          ))}
 
           {fundingEnabled && !isEditing ? (
             <View style={styles.startingFundCard}>
@@ -707,15 +490,14 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                 <Ionicons name="heart-outline" size={23} color="#2F7D32" />
                 <View style={styles.startingFundHeadingCopy}>
                   <Text style={styles.startingFundTitle}>Start the cleanup fund</Text>
-                  <Text style={styles.startingFundText}>
-                    A reward is optional. You can also add one after publishing.
-                  </Text>
+                  <Text style={styles.optionalStepLabel}>Optional</Text>
                 </View>
               </View>
 
               <View style={styles.startingFundChoices}>
                 {[
                   { value: 'none', label: 'Not now' },
+                  { value: '5', label: '$5' },
                   { value: '25', label: '$25' },
                   { value: 'other', label: 'Other' },
                 ].map((choice) => {
@@ -732,10 +514,12 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                         startingFundingChoice: choice.value,
                       }))}
                       accessibilityRole="radio"
-                      accessibilityState={{ checked: selected }}
+                      disabled={isSaving}
+                      accessibilityState={{ checked: selected, disabled: isSaving }}
                       accessibilityLabel={choice.value === 'none'
                         ? 'Post without adding funds'
-                        : `Start cleanup fund with ${choice.label}`}
+                        : choice.value === 'other' ? 'Enter a custom cleanup fund amount'
+                          : `Start cleanup fund with ${choice.label}`}
                     >
                       <Text style={[
                         styles.startingFundChoiceText,
@@ -749,7 +533,9 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
               </View>
 
               {form.startingFundingChoice === 'other' ? (
-                <View style={styles.startingFundOtherRow}>
+                <View style={styles.startingFundCustom}>
+                  <Text style={styles.reportTitleLabel}>Amount</Text>
+                  <View style={styles.startingFundOtherRow}>
                   <Text style={styles.startingFundDollar}>$</Text>
                   <TextInput
                     value={form.startingFundingOther}
@@ -765,26 +551,33 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                     editable={!isSaving}
                     accessibilityLabel="Starting cleanup fund amount"
                   />
+                  </View>
                 </View>
               ) : null}
 
               {wantsStartingFunding ? (
                 startingContributionCents ? (
-                  <View>
-                    <Text style={styles.startingFundTotal}>Contribution {formatUsd(startingContributionCents)}</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <FeeExplanationLabel />
-                      <Text>{formatUsd(calculatePlatformFee(startingContributionCents))}</Text>
+                  <View style={styles.startingFundSummary}>
+                    <View style={styles.startingFundSummaryRow}>
+                      <Text style={styles.startingFundSummaryText}>Contribution</Text>
+                      <Text style={styles.startingFundSummaryText}>{formatUsd(startingContributionCents)}</Text>
                     </View>
-                    <Text style={styles.startingFundTotal}>Total {formatUsd(startingContributionCents + calculatePlatformFee(startingContributionCents))}</Text>
+                    <View style={styles.startingFundSummaryRow}>
+                      <FeeExplanationLabel />
+                      <Text style={styles.startingFundSummaryText}>{formatUsd(calculatePlatformFee(startingContributionCents))}</Text>
+                    </View>
+                    <View style={[styles.startingFundSummaryRow, styles.startingFundTotalRow]}>
+                      <Text style={styles.startingFundTotal}>Total</Text>
+                      <Text style={styles.startingFundTotal}>{formatUsd(startingContributionCents + calculatePlatformFee(startingContributionCents))}</Text>
+                    </View>
                   </View>
                 ) : (
-                  <Text style={[styles.requiredHint, { color: '#687178', marginBottom: 16 }]}>Enter an amount from $1 to $1,000.</Text>
+                  null
                 )
               ) : !hasStartingFundingChoice ? (
-                <Text style={[styles.requiredHint, { color: '#687178', marginBottom: 16 }]}>Choose Not now or select a starting amount.</Text>
+                null
               ) : (
-                <Text style={styles.startingFundHelper}>You can add funds from the report later.</Text>
+                null
               )}
             </View>
           ) : null}
