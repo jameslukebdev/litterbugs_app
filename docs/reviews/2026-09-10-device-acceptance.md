@@ -69,7 +69,7 @@ The full native accessibility-tree request stalled WDA on the 80-marker scene. R
 
 ## Remaining work
 
-- A completed public, non-admin provider login on final production identities still needs an available test account. Launch/cancellation and report-link return have been verified.
+- Fresh Google browser sign-in on the production Android identity completed with the existing Grant account; see the follow-up below. Separate Apple/Meta release acceptance remains deferred.
 - Full spoken TalkBack/VoiceOver acceptance remains unverified.
 - Apple/Meta account setup remains deferred. Android push delivery and report navigation passed in the completion below.
 
@@ -83,3 +83,22 @@ Applied the authorized service-account-key exception only to `litterbugs-notific
 Sent one clearly labeled test notification to Grant's registered physical Pixel while the app was in the background. Expo accepted ticket `01a08ceb-1de9-7685-a42c-afdb1ffd37f5`; its delivery receipt returned `status: ok`. Tapping the device's “Litterbugs test” notification opened report `ce154938-f7c9-40d9-99bc-4a5d43710aa0`, showing “Litter at corner of Howard’s Creek Road near C&T”, $6.00 cleanup reward and photo 1/3. This proves delivery and tap navigation on the current physical Android QA build; the production credential is configured but production-device push was not separately exercised.
 
 Evidence: ignored acceptance artifacts `pixel-push-ticket.json`, `pixel-push-receipt.json`, `pixel-push-report.xml` and `pixel-push-report.png`. No push token or private key is included. No application code changed during this completion, so the already-passing regression suite was not repeated. The full spoken accessibility journey and completed public provider login remain the outstanding acceptance items above.
+
+
+## Production login and local Maps build correction — September 10 afternoon
+
+The initially parked Google request expired before completion. Supabase's callback log explicitly reported `OAuth state has expired` at 20:08:45 UTC and redirected the error to the website. The saved redirect allow list already contained `litterbugs://auth/callback`; no authentication settings were changed. A fresh request reused Google's signed-in account, returned through Android's app chooser to `com.litterbugs.app`, and resumed the intended cleanup funding screen. The $25 contribution/$2.50 fee/$27.50 total appeared; no payment was started. This completes production Android existing-account sign-in/return coverage, not a new-user signup or Apple/Meta check.
+
+The user's flashing loading circle/map observation occurred on the website opened by the expired request. Do not attribute it to the native app without native reproduction. Subsequent native launch inspection identified a separate local artifact defect: the earlier `ae59d05` signed AAB contained the QA Maps key, which is not authorized for the production upload certificate. Earlier report-link checks proved report routing, not successful map-tile authorization. That AAB is superseded and must not be distributed.
+
+Corrected the local native manifest and staging environment to use the existing production Maps key. No key permissions, billing settings, app source, or minimum device support changed. New all-ABI Release artifacts (same code 11, not submitted):
+
+- `artifacts/release-acceptance-2026-09-10/litterbugs-production-maps-corrected-v11.aab`, SHA-256 `2a0bd26b0408753717f0fa793f343f14c6180d01aaf76aa53f2639b21b4941d0`.
+- `artifacts/release-acceptance-2026-09-10/litterbugs-production-maps-corrected-v11.apk`, SHA-256 `78939aa45e5d472fc853dbfc91757e7b6cb29ee348077e3f0c974d677499731b`.
+
+Added `scripts/check-android-release-map.py`. For every locally staged release, decode the **finished** APK/AAB manifest, then run the checker with `--manifest`, `--env-file` pointing to the intended EAS environment export, and `--package`. Do not supply the prebuild source manifest. The corrected APK passes; the previous decoded AAB manifest fails, reproducing and catching this mix-up without printing either key. Google service authorization and visible map tiles still require the targeted installed-build check; this guard establishes configuration agreement, not network service health.
+
+
+Corrected installed-build acceptance: the production APK installed in place with the existing upload certificate (`79e6d25003745740de02ebf98f3a201d5885734c`). Native Google Maps rendered roads, place labels and the $6 report marker. Opening Profile showed Grant Gibson, confirming the existing session survived installation and relaunch. Returned to Map. Both the final APK and AAB decoded manifests pass the new environment guard; `bundletool validate` passed on the corrected AAB. This supersedes the previous artifact's map acceptance. The installed emulator app is the corrected native production build, not the website.
+
+The native launch recording shows the branded logo, with Android's masked native splash changing to the full logo; no flashing loading circle was established. Recording ended before map reveal, so it does not prove a smooth complete launch transition. The subsequent map screenshot establishes tile rendering only. Keep the user's initial website spinner/jump observation distinct from proven native app behavior. Evidence: `production-corrected-map.png`, `production-profile-persisted.xml`, `production-login.xml`, and `production-corrected-launch.mp4` in the ignored acceptance artifacts. No app animation was changed based only on the website observation.
