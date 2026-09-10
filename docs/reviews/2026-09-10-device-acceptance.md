@@ -71,6 +71,15 @@ The full native accessibility-tree request stalled WDA on the 80-marker scene. R
 
 - A completed public, non-admin provider login on final production identities still needs an available test account. Launch/cancellation and report-link return have been verified.
 - Full spoken TalkBack/VoiceOver acceptance remains unverified.
-- Real Android push delivery and tap navigation remain blocked by Google organization policy and missing administrator permission, as detailed in the release follow-up. Registration alone is not delivery. Apple/Meta account setup remains deferred.
+- Apple/Meta account setup remains deferred. Android push delivery and report navigation passed in the completion below.
 
 No money spent, social posts/messages sent, reports published, cleanups claimed/approved/disputed, or profile edits saved during this follow-up. Opening and canceling checkout can create an unpaid payment attempt; it does not establish a charge.
+
+
+## Android notification completion — September 10, 4:04 p.m. EDT
+
+Applied the authorized service-account-key exception only to `litterbugs-notifications`. A temporary, time-limited organization policy administrator grant was removed immediately after saving the project policy. Created the Expo messaging credential and assigned the same credential to both `com.litterbugs.app.qa` and production `com.litterbugs.app` in EAS. No billing was enabled. The local private-key copy was removed after assignment; the active credential remains with Google/Expo for delivery.
+
+Sent one clearly labeled test notification to Grant's registered physical Pixel while the app was in the background. Expo accepted ticket `01a08ceb-1de9-7685-a42c-afdb1ffd37f5`; its delivery receipt returned `status: ok`. Tapping the device's “Litterbugs test” notification opened report `ce154938-f7c9-40d9-99bc-4a5d43710aa0`, showing “Litter at corner of Howard’s Creek Road near C&T”, $6.00 cleanup reward and photo 1/3. This proves delivery and tap navigation on the current physical Android QA build; the production credential is configured but production-device push was not separately exercised.
+
+Evidence: ignored acceptance artifacts `pixel-push-ticket.json`, `pixel-push-receipt.json`, `pixel-push-report.xml` and `pixel-push-report.png`. No push token or private key is included. No application code changed during this completion, so the already-passing regression suite was not repeated. The full spoken accessibility journey and completed public provider login remain the outstanding acceptance items above.
