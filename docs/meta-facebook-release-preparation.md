@@ -83,13 +83,26 @@ public users can log in.
 
 ## September 10 physical Android login check
 
-On the connected Pixel 5, the QA app was signed out, then Profile → Sign in or
-create account → Continue with Facebook opened Facebook for app ID
-`1477683410862512`, using the expected Supabase callback and app return URL.
-Facebook recognized Grant E Gibson and, after Continue, requested the account
-password. The account holder must finish this directly on the phone. No password
-was entered by the agent. Return to Litterbugs and authenticated profile loading
-remain unverified; reaching Facebook alone is not a passing login test.
+The physical Pixel 5 completed Facebook login after the account holder entered
+credentials directly on the phone. The first callback opened an older installed
+Expo development client (`com.litterbugs.app`) instead of the QA candidate
+(`com.litterbugs.app.qa`): both register `litterbugs://`. Android activity state
+confirmed the old app's DevLauncherActivity was foreground.
+
+Temporarily disabled the older package with Android's disable-user setting;
+its installation and data remain intact. Retried the current QA app's Facebook
+button, selected Continue as Grant, and observed the callback return to the QA
+app, account loading, and authenticated Profile → Settings. The profile showed
+Grant Gibson and the signed-in email was `gegibson@icloud.com`, distinct from
+the previously tested Google account `grant@burrowbase.com`. No accounts were
+merged. This proves existing administrator-account Facebook login on physical
+Android. It does not prove first-time non-role access or an iOS Facebook run.
+
+Keep the old development copy disabled while testing this candidate. To restore
+it later, use `adb shell pm enable com.litterbugs.app`; ensure only the intended
+build handles the shared callback before repeating OAuth. No app code change
+was required for this device installation conflict. The Meta app remains
+unpublished; public release review and separate tester coverage remain pending.
 
 ## Verification evidence to retain
 

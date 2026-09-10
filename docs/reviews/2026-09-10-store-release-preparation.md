@@ -134,13 +134,17 @@ business-verification prerequisite. The app remains unpublished. No app was
 deleted, no app identifiers were changed, and no identity submission was
 completed by the agent.
 
-On the physical Pixel 5, signed out of the QA app and opened Profile → Sign in
-or create account → Continue with Facebook. The browser reached Facebook for
-app ID `1477683410862512` with the expected Supabase callback and
-`litterbugs://auth/callback` return target. Facebook recognized Grant E Gibson;
-Continue led to a password prompt. Account-holder completion on the phone is
-pending. Authenticated return to Litterbugs is **not yet verified**. The live
-website offers Google/email only; the mobile Facebook button is enabled.
+Physical Pixel Facebook login **passed** after resolving a conflicting older
+installation. The account holder completed Facebook authentication, but the
+shared `litterbugs://` callback initially opened the old `com.litterbugs.app`
+Expo development launcher. Temporarily disabled that package without deleting
+its data. Retried Facebook from `com.litterbugs.app.qa`, continued as Grant,
+and verified return to the app plus authenticated Profile → Settings showing
+Grant Gibson / `gegibson@icloud.com`. The earlier Google account used
+`grant@burrowbase.com`; no accounts were merged. Existing administrator-account
+Android login is verified; first-time separate tester and iOS Facebook coverage
+are not implied. Meta remains unpublished. See the Meta preparation packet for
+the device restoration command and remaining public-release coverage.
 
 Chrome's gray overlay was cleared by restarting Chrome with tabs restored;
 a subsequent screenshot confirmed normal colors and no debugging banner.
