@@ -1,5 +1,7 @@
 # Release and device follow-up — September 10, 2026
 
+> Completion update: the [device acceptance record](2026-09-10-device-acceptance.md) supersedes the historical blockers and build status below. The current QA builds were installed on both physical phones; Android and iPhone dense-marker scenarios were exercised; the final signed Android bundle and report links were verified. The project-only Google policy exception and Expo credentials are configured, and one real notification reached the Pixel and opened the correct report. No notification administrator action remains. Full spoken accessibility, completed public production login, and deferred Apple/Meta release work remain outstanding.
+
 ## Main and verification
 
 Fast-forwarded `codex/confirmed-iphone-audit-fixes` into `main` and pushed `21e1207e4dd8fcc38b423ad111f4217044130644`. The base already included Luke's latest reviewed UI work. No conflicting or newer remote changes were found. This supersedes the earlier audit documents' unmerged-branch status.
