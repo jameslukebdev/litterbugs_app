@@ -140,3 +140,11 @@ with Burrow Base and inventory any other processors receiving Meta-derived
 account data before submission; obtain account-holder confirmation for the
 historical disclosure/policy questions. No pre-filled answer was changed during
 this inspection.
+
+Meta's Test User Accounts screen offered creation of one simulated Facebook
+account. Requested one adult English-US account without automatic app
+authorization to preserve first-time consent coverage. The dialog returned no
+success or error, and the account list remained empty after returning to it.
+No simulated account or usable credentials were obtained. Do not claim separate
+tester coverage; use a real accepted tester or resolve Meta's test-account
+creation before that check can pass. The request was not repeatedly submitted.
