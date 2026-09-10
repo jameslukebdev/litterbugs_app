@@ -152,3 +152,27 @@ The unused Android emulator was shut down; ADB confirmed only the Pixel.
 iOS Simulator received a targeted shutdown after a device reappeared booted.
 Memory pressure reported 47% free at that check. Use additional simulators only
 as needed and close unused ones, per the user's updated instruction.
+
+## Provider disclosure clarification — September 10 evening
+
+Native Apple sign-in now exists in the code and the independent QA build opens
+Apple's consent sheet; the earlier absence is superseded by the
+[login completion record](2026-09-10-login-completion.md). Neither completed
+Apple authentication nor production signing is established yet.
+
+Google's current [iOS disclosure guidance](https://developers.google.com/identity/sign-in/ios/app-privacy)
+identifies user identifiers and IP addresses used to estimate general location
+for fraud prevention. Its [profile documentation](https://developers.google.com/identity/sign-in/ios/people)
+covers name, email and profile picture. Include those configured flows in the
+account-linked disclosure assessment; do not copy every possible Google
+manifest category (such as phone number) without evidence of collection.
+
+The installed Stripe SDK README and [Stripe's source documentation](https://github.com/stripe/stripe-ios)
+confirm SDK collection for product improvement and fraud prevention, and state
+it is not used for advertising. Therefore a blanket “no analytics collection”
+answer would be inaccurate even though no separate mobile analytics dependency
+was found in the mobile manifest or app libraries. Payment details go directly
+to Stripe; that does not mean they are outside the app's disclosure assessment.
+The linked Stripe privacy-details support page was unavailable to the web reader;
+its detailed category mapping remains to be reconciled with the final archive.
+No live privacy answers were saved or published.

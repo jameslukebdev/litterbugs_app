@@ -115,3 +115,28 @@ unpublished; public release review and separate tester coverage remain pending.
 
 Never capture or commit the App Secret, access tokens, identity documents, or
 recovery codes.
+
+## Unpublished review draft — September 10 evening
+
+Submission `1477683437529176` is **Not submitted**, requesting only `email`
+and `public_profile`. Meta offers a simulator build upload instead of reviewing
+the older App Store app. Selected that option and saved reviewer instructions
+for Profile → Sign in or create account → Continue with Facebook → Profile /
+account settings. The draft explicitly identifies browser OAuth through Supabase
+and says no payment is needed for login testing. Facebook Login is marked Yes.
+The draft remains incomplete and no submission or publication was triggered.
+
+A current universal simulator Release build (arm64 and x86_64) is being prepared
+locally with two build workers, without booting a simulator. This provides a
+review-artifact route independent of Luke's Apple signing. Artifact compilation,
+launch verification, packaging and upload remain pending.
+
+The pre-filled data-handling page lists Supabase, Inc. as processor, Grant Gibson
+as responsible controller, United States, no national-security disclosures in
+the previous 12 months, and none of the listed government-request policies.
+These are **historical answers, not newly verified facts**. Do not submit them
+as current truth or infer company history from code. Reconcile the controller
+with Burrow Base and inventory any other processors receiving Meta-derived
+account data before submission; obtain account-holder confirmation for the
+historical disclosure/policy questions. No pre-filled answer was changed during
+this inspection.
