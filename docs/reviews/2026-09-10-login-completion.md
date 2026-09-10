@@ -158,3 +158,34 @@ Build log: `/tmp/lb-apple-login-iphone-build.log` (`BUILD SUCCEEDED`).
 Install log: `/tmp/lb-apple-iphone-install.log` (100% Installed package).
 No simulator is booted; memory pressure reports 65% free. Build and credential
 CLI processes have completed; no repeated regression suites were run.
+
+## Meta simulator review artifact — 18:33 checkpoint
+
+Prepared a Release simulator build of the current functional source (`a306268`;
+subsequent commits are documentation). The first build disabled code signing,
+which caused SecureStore entitlement errors and prevented OAuth from starting.
+This was a simulator packaging failure. Rebuilt using Xcode's local ad hoc
+signing, Grant's team `RLXNU225W4`, and generated simulator entitlements. The
+corrected build succeeded and includes both arm64 and x86_64. Its simulated
+application identifier is `RLXNU225W4.com.gegibson.litterbugs.qa`.
+
+Installed and launched the corrected artifact on the iPhone 13 mini simulator.
+Live report markers loaded. Profile → Sign in or create account → Continue with
+Facebook opened the iOS authentication consent prompt and then Facebook's login
+page. The new process had no matching SecureStore entitlement errors in the
+focused log check. No credentials were entered: this verifies the handoff, not
+completed Facebook authentication or a separate tester's access.
+
+Attached `litterbugs-qa-a306268-ios-simulator.zip` to Meta review draft
+`1477683437529176`; the UI showed one file, 38 MB, with the expected filename.
+The app remains unpublished, and the review was not submitted. Archive:
+`artifacts/meta-review/litterbugs-qa-a306268-ios-simulator.zip` (git-ignored).
+SHA-256: `71ac34dd2a0de41a95e9e02eaf6f731496eb9af8caa0b256f39463046024e9a9`.
+Build log: `/tmp/lb-meta-review-simulator-signing.log`.
+
+Restored the simulator's standard text size after the earlier accessibility
+audit, then shut down the sole booted simulator. Memory pressure reported 59%
+free. No further broad regression tests were run. Physical iPhone completion,
+separate tester credentials, and the unresolved Meta data-handling answers
+remain pending. All next steps assume no assistance from Luke; the artifact is
+independent of his signing credentials and is not an App Store release build.

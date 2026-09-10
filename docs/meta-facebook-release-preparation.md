@@ -170,3 +170,14 @@ saving an incomplete entry; the processor record still needs a supported country
 scope for this merchant's Stripe services before Meta submission. The account
 holder was separately asked to confirm the current controller and historical
 government-request answers.
+
+### Simulator attachment completed — September 10, 18:33
+
+The unpublished review draft now shows the attached universal simulator archive
+`litterbugs-qa-a306268-ios-simulator.zip` (38 MB). The corrected locally signed
+build loaded report data and reached Facebook's login page from the app. It
+does not depend on Luke's signing access. See the login completion checkpoint
+for its SHA-256 and packaging correction. No credentials were entered and no
+review was submitted; independent tester access and accurate data-handling
+answers remain prerequisites. The older App Store build is still not the
+selected review method.
