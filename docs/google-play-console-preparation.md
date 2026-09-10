@@ -11,7 +11,7 @@ before saving it in Google Play Console.
 | App name | Litterbugs: Community Cleanup |
 | Package | `com.litterbugs.app` |
 | Version | `1.0.0` |
-| Current build number | `10` |
+| Current local review build number | `11` (not uploaded or reserved in Play) |
 | Category | Social, with community cleanup and local discovery |
 | Company | Burrow Base LLC |
 | Privacy policy | `https://litterbugs.app/privacy` |
@@ -24,13 +24,12 @@ and support contact.
 
 ## Ownership decision — required before console setup
 
-Choose the permanent Play developer account before creating the production
-app. Prefer a Burrow Base LLC-controlled organization account with at least two
-trusted administrators over an individual's personal account. Record the final
-choice here:
+The existing Burrow Base organization account is accessible. A Litterbugs entry
+was prepared but not created; the user requested checks only and no publication.
+The account-holder declarations remain unchecked. Account details:
 
-- Permanent owner: **not chosen**
-- Primary administrator: **not chosen**
+- Permanent owner: **Burrow Base organization account `6493490019570582000`, confirmed September 10**
+- Signed-in account: **grant@burrowbase.com** (administrator roster not audited)
 - Backup administrator: **not chosen**
 - Recovery email and phone confirmed: **not confirmed**
 
@@ -57,7 +56,7 @@ and live privacy policy. In the console, include data handled by service
 providers on the app's behalf. Do not mark data as sold or used for third-party
 behavioral advertising.
 
-| Play data type | Collected | Shared | Primary purposes |
+| Play data type | Collected | Recipients (not the Play “Shared” answer) | Primary purposes |
 | --- | --- | --- | --- |
 | Name and email address | Yes | Service providers | Account management, authentication, support, safety |
 | User IDs | Yes | Service providers | Account management, app operation, fraud prevention |
@@ -67,6 +66,13 @@ behavioral advertising.
 | Purchase history and transaction information | Yes | Stripe and app service providers | Contributions, refunds, rewards, accounting, fraud prevention |
 | Device or other identifiers | Yes | Notification and app service providers | Push notifications, authentication, security, reliability |
 | App interactions and diagnostics | Yes | App service providers | App operation, security, troubleshooting, improvement |
+
+Do not copy the recipients column into Play’s “Shared” answer. Processing by
+service providers solely on our behalf can qualify for an exception, as can
+reasonably expected user-initiated sharing. Independent SDK uses require their
+own assessment. Stripe SDK payment-information and interaction declarations,
+and Google Sign-In SDK declarations, need review against the final binary.
+See the [September 10 account checks](reviews/2026-09-10-store-release-preparation.md).
 
 Security and control answers supported by the current implementation:
 

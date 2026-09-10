@@ -39,12 +39,18 @@ This proves that the live bridge and provider handoff are wired to the intended
 production identifiers. It does not replace a first-time login by an invited
 tester or Meta's business/provider review.
 
-Public releases keep Facebook sign-in hidden until those account-holder gates
-pass. Internal mobile profiles set `EXPO_PUBLIC_FACEBOOK_LOGIN_ENABLED=true` so
-an invited tester can complete provider review. The public Android profile and
-the live website default the corresponding flag to false; Google and email
-remain available. After approval, enable the public flags and produce a new
-store candidate before release.
+September 10 source check: **all current mobile EAS profiles enable Facebook
+login**, including production. The older statement that public mobile builds
+hide the button was incorrect. Meta remains unpublished and its business
+portfolio is unverified. An administrator login therefore does not establish
+public-user access. Do not publish the Meta app during the current checks.
+
+The callback matches the configured Supabase endpoint. Meta records 29 email
+and 31 public_profile API test calls, with both permissions “Ready for testing.”
+Its old deletion-instructions URL returned HTTP 404. On September 10 it was
+changed to `https://auth.litterbugs.app/delete-account`, verified in Chrome;
+Meta confirmed “Changes saved.” No deletion request was sent. Full account findings are in the
+[September 10 record](reviews/2026-09-10-store-release-preparation.md).
 
 ## Account-holder checklist
 
