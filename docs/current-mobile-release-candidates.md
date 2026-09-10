@@ -1,5 +1,7 @@
 # Current Mobile Release Candidates
 
+> September 10 follow-up: `main` now includes the confirmed iPhone and Pixel fixes through `21e1207`. A new signed Android review bundle and rebuilt iPhone simulator were checked; the new bundle is **not ready for store submission** and predates the final Firebase configuration/Profile placeholder follow-up. See [release follow-up](reviews/2026-09-10-release-follow-up.md) for current artifacts, notification setup, and remaining gates. The older “store-ready” statements below are historical.
+
 > September 9 readiness update: the signed artifacts below predate the September 8–9 workflow and polish changes. They are historical evidence, not candidates for submitting the current app. See [the pre-submission audit](reviews/2026-09-09-prestore-audit.md) for current verification and release gates. No new App Store submission has been made.
 
 These builds contain the completed mobile fixes. The public Android bundle was

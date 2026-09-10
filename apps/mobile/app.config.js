@@ -178,6 +178,11 @@ module.exports = ({ config }) => {
     android: {
       ...config.android,
       package: androidPackage,
+      ...(shouldConfigureAndroid ? {
+        googleServicesFile: androidPackage === 'com.litterbugs.app'
+          ? './firebase/google-services.production.json'
+          : './firebase/google-services.qa.json',
+      } : {}),
       ...(androidBlockedPermissions ? {
         blockedPermissions: [...new Set(androidBlockedPermissions)],
       } : {}),

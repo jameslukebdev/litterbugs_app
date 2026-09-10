@@ -1,5 +1,7 @@
 # Physical Android UX audit — September 10, 2026
 
+> Subsequent work: the fix branch was fast-forwarded into `main` and pushed. See the [release follow-up](2026-09-10-release-follow-up.md) for signed builds, notification registration and the additional Profile loading correction. Branch/merge status at the end of this original audit is historical.
+
 ## Device and installation
 
 Pixel 5, Android 14, USB-authorized physical control using ADB and UI Automator, including two-finger gestures. The old `com.litterbugs.app` (1.0.0, version code 10, September 3 update) was preserved with its data. It opens an Expo development-server launcher rather than a standalone bundled app. Installed the current standalone arm64 Release as **Litterbugs QA**, `com.litterbugs.app.qa`, alongside it. No minimum OS requirement changed (Android minimum SDK 24).

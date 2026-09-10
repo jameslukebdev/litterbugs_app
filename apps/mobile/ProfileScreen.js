@@ -212,8 +212,8 @@ function RankingCard({ ranking, loading, error, onRetry }) {
           <View style={styles.rankSummaryCopy}>
             <Text style={styles.rankEyebrow}>Community rank</Text>
             <Text style={styles.rankName}>{showingLoader ? 'Loading…' : 'Unavailable'}</Text>
-            <Text style={styles.rankPoints}>—</Text>
           </View>
+          <Text style={styles.rankPoints}>—</Text>
         </View>
         <View style={styles.rankProgressSection}>
           <View style={styles.rankProgressHeader}><Text style={styles.rankProgressTitle}>{error ? 'Tap to try again' : 'Your progress'}</Text><Text style={styles.rankProgressPercent}>—</Text></View>
