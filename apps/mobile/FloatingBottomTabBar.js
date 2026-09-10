@@ -4,6 +4,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -40,6 +41,10 @@ export default function FloatingBottomTabBar({
   navigation,
 }) {
   const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
+  // Apply the existing compact-label cap explicitly: Android can retain stale
+  // native text metrics when system scaling changes while this bar is mounted.
+  const labelScale = Math.min(fontScale, 1.2);
   const focusedOptions = descriptors[state.routes[state.index]?.key]?.options ?? {};
 
   if (focusedOptions.tabBarStyle?.display === 'none') return null;
@@ -118,8 +123,8 @@ export default function FloatingBottomTabBar({
             />
           </View>
           <Text
-            style={[styles.label, isFocused && styles.labelSelected]}
-            maxFontSizeMultiplier={1.2}
+            style={[styles.label, { fontSize: 10 * labelScale, lineHeight: 13 * labelScale }, isFocused && styles.labelSelected]}
+            allowFontScaling={false}
           >
             {slot.label}
           </Text>

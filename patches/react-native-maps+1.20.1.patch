@@ -1,5 +1,5 @@
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapMarker.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapMarker.java
-index b755f9b..d48e5da 100644
+index b755f9b..df002f6 100644
 --- a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapMarker.java
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapMarker.java
 @@ -9,6 +9,7 @@ import android.graphics.drawable.Animatable;
@@ -10,10 +10,38 @@ index b755f9b..d48e5da 100644
  import android.widget.LinearLayout;
  import android.animation.ObjectAnimator;
  import android.util.Property;
-@@ -521,9 +522,61 @@ public class MapMarker extends MapFeature {
+@@ -50,6 +51,7 @@ public class MapMarker extends MapFeature {
+
+   private LatLng position;
+   private String title;
++  private String markerContentDescription;
+   private String snippet;
+
+   private boolean anchorIsSet;
+@@ -171,6 +173,11 @@ public class MapMarker extends MapFeature {
+     return this.identifier;
+   }
+
++  public void setMarkerContentDescription(String description) {
++    markerContentDescription = description;
++    // Google Maps reads this immutable option when the marker is added.
++  }
++
+   public void setTitle(String title) {
+     this.title = title;
+     if (marker != null) {
+@@ -477,6 +484,7 @@ public class MapMarker extends MapFeature {
+     if (anchorIsSet) options.anchor(anchorX, anchorY);
+     if (calloutAnchorIsSet) options.infoWindowAnchor(calloutAnchorX, calloutAnchorY);
+     options.title(title);
++    options.contentDescription(markerContentDescription);
+     options.snippet(snippet);
+     options.rotation(rotation);
+     options.flat(flat);
+@@ -521,9 +529,61 @@ public class MapMarker extends MapFeature {
      mLastBitmapCreated = null;
    }
- 
+
 +  /**
 +   * Expand bitmap bounds using sizes already produced by RN layout. Do not call {@link
 +   * View#measure} on Catalyst/Fabric views because those views must be measured by React Native.
@@ -70,8 +98,35 @@ index b755f9b..d48e5da 100644
 +    }
 +
      this.buildDrawingCache();
- 
+
      // Do not create the doublebuffer-bitmap each time. reuse it to save memory.
+diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapMarkerManager.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapMarkerManager.java
+index 8cf3d72..0836665 100644
+--- a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapMarkerManager.java
++++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapMarkerManager.java
+@@ -272,6 +272,7 @@ public class MapMarkerManager extends ViewGroupManager<MapMarker> {
+     @ReactProp(name = "accessibilityLabel")
+     public void setAccessibilityLabel(MapMarker view, @Nullable String accessibilityLabel) {
+         view.setTag(R.id.accessibility_label, accessibilityLabel);
++        view.setMarkerContentDescription(accessibilityLabel);
+     }
+
+     @Override
+diff --git a/node_modules/react-native-maps/ios/AirMaps/AIRMapMarker.m b/node_modules/react-native-maps/ios/AirMaps/AIRMapMarker.m
+index 8c17ac7..43a8816 100644
+--- a/node_modules/react-native-maps/ios/AirMaps/AIRMapMarker.m
++++ b/node_modules/react-native-maps/ios/AirMaps/AIRMapMarker.m
+@@ -263,8 +263,8 @@ - (void)_handleTap:(UITapGestureRecognizer *)recognizer {
+         }
+     }
+
+-    // the actual marker got clicked
+-    CGPoint touchPointReal = [recognizer locationInView:self.calloutView];
++    // Report touch coordinates in the same space as pointForCoordinate.
++    CGPoint touchPointReal = [recognizer locationInView:self.map];
+     id event = @{
+                  @"action": @"marker-press",
+                  @"id": marker.identifier ?: @"unknown",
 diff --git a/node_modules/react-native-maps/ios/AirMaps/AIRMapMarkerManager.m b/node_modules/react-native-maps/ios/AirMaps/AIRMapMarkerManager.m
 index 593c6bd..bb9e14b 100644
 --- a/node_modules/react-native-maps/ios/AirMaps/AIRMapMarkerManager.m
@@ -85,14 +140,3 @@ index 593c6bd..bb9e14b 100644
  RCT_EXPORT_VIEW_PROPERTY(opacity, double)
  RCT_EXPORT_VIEW_PROPERTY(isPreselected, BOOL)
  RCT_EXPORT_VIEW_PROPERTY(titleVisibility, NSString)
-diff --git a/node_modules/react-native-maps/ios/AirMaps/AIRMapMarker.m b/node_modules/react-native-maps/ios/AirMaps/AIRMapMarker.m
---- a/node_modules/react-native-maps/ios/AirMaps/AIRMapMarker.m
-+++ b/node_modules/react-native-maps/ios/AirMaps/AIRMapMarker.m
-@@ -266,5 +266,5 @@
--    // the actual marker got clicked
--    CGPoint touchPointReal = [recognizer locationInView:self.calloutView];
-+    // Report touch coordinates in the same space as pointForCoordinate.
-+    CGPoint touchPointReal = [recognizer locationInView:self.map];
-     id event = @{
-                  @"action": @"marker-press",
-                  @"id": marker.identifier ?: @"unknown",

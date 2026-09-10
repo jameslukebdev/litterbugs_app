@@ -1,5 +1,7 @@
 # Final app audit for user testing — September 10, 2026
 
+> Follow-up: the [physical Pixel 5 Android audit](2026-09-10-physical-android-audit.md) now covers a real Android install, signed-in journeys, gestures, sharing and additional accessibility fixes. Its coverage supersedes the physical-Android gap below; remaining release limits still apply.
+
 ## Outcome and scope
 
 This pass closes the remaining ordinary UX walkthrough gaps with five additional recovery fixes. It builds on the full physical iPhone audit, the map/loading follow-up, and the documented August financial and authentication acceptance runs. The build is a candidate for controlled user testing, not a claim of exhaustive bug freedom or store-release certification.

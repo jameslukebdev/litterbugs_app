@@ -15,7 +15,12 @@ export default function ReportMapMarkers({ markers, selectedId, tracksViewChange
           const tone = cleanupMapTone(m.report);
           const statusMarker = tone === 'completed' || tone === 'active';
           const icon = tone === 'completed' ? 'checkmark' : tone === 'active' ? 'time-outline' : 'ellipse-outline';
-          return <Marker key={m.id} coordinate={m.coordinate}
+          const accessibilityLabel = `${m.label || '$0'}, ${tone}: ${m.report?.title || 'Litter report'}`;
+          // Android's native content description is a creation-only option.
+          // Replace only when spoken report information changes, never on pan,
+          // zoom, selection, or label allocation. Preserve MapKit identity.
+          const markerKey = Platform?.OS === 'android' ? `${m.id}:${accessibilityLabel}` : m.id;
+          return <Marker key={markerKey} coordinate={m.coordinate}
             style={Platform?.OS === 'android' ? markerHostDimensions(m.width || 44, m.height || 44) : undefined}
             identifier={`report:${tone}:${m.id}`}
             tracksViewChanges={tracksViewChanges}
@@ -23,7 +28,7 @@ export default function ReportMapMarkers({ markers, selectedId, tracksViewChange
             {...(Platform?.OS === 'ios'
               ? { annotationZIndex: selected ? 2000 : m.labelled ? 10 : 1 }
               : { zIndex: selected ? 2000 : m.labelled ? 10 : 1 })}
-            accessibilityLabel={`${m.label || '$0'}, ${tone}: ${m.report?.title || 'Litter report'}`}
+            accessibilityLabel={accessibilityLabel}
             onPress={(event) => {
               event?.stopPropagation?.();
               if (reportPlacementActive) return;

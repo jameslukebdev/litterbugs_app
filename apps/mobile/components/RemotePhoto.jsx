@@ -31,9 +31,11 @@ function PhotoRequest({ path, uri, getUrl, style, label = 'Report photo' }) {
   }, [attempt]);
   const frame = [{ backgroundColor: '#EDF2EE', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }, style];
   if (!path && !uri) return <View style={frame}><Ionicons name="image-outline" size={24} color="#64716A" /><Text>No photo</Text></View>;
-  if (!result) return <View style={frame} accessibilityRole="progressbar" accessibilityLabel="Loading report photo" />;
+  if (!result) return <View key="loading" style={frame} accessibilityRole="progressbar" accessibilityLabel="Loading report photo" />;
   if (result.error) return <TouchableOpacity style={frame} accessibilityRole="button" accessibilityLabel="Retry report photo" onPress={() => { setResult(null); setAttempt(value => value + 1); }}><Ionicons name="refresh-outline" size={22} color="#64716A" /><Text style={{ fontSize: 12, color: '#64716A', textAlign: 'center' }}>Retry photo</Text></TouchableOpacity>;
-  return <View style={frame}>
+  // A distinct host prevents Android from retaining the old progress label
+  // when it reuses the loading View for the finished photo.
+  return <View key="loaded" style={frame}>
     <Image key={attempt} source={{ uri: result.uri, cacheKey: path || result.uri }}
       style={StyleSheet.absoluteFill} contentFit="cover" transition={180}
       cachePolicy="memory-disk" recyclingKey={path || result.uri}
