@@ -54,7 +54,7 @@ to another account, so linking new sign-in methods is not an existing-account
 merge. A duplicate-account migration needs ownership proof for both accounts,
 relationship/financial inventory and reconciliation, with no silent deletion or
 loss of history. No accounts have been linked or merged in this checkpoint.
-Implementation of connected sign-in settings and duplicate handling is pending.
+Connected sign-in settings and duplicate handling are implemented below. A successful fresh-provider link and any existing-account migration remain unverified.
 
 Primary research:
 - https://supabase.com/docs/guides/auth/auth-identity-linking
@@ -90,8 +90,7 @@ account deletion is implemented.
 
 Enabled `security_manual_linking_enabled` in the existing Supabase project with
 a single-field configuration update (HTTP 200); a fresh read confirmed true.
-Apple provider remains disabled; its current configured audience is
-`com.litterbugs.app`. No provider secret was changed. Focused validation now
+At that checkpoint Apple was disabled; the native Apple setup below supersedes that state. No provider secret was changed. Focused validation now
 passes 14 tests across credential exchange, account invariants and provider
 presence. Source validation passed at 154 modules before the final provider
 presence guard; native visual/provider conflict validation is pending.
@@ -126,3 +125,36 @@ modules, zero errors. No broad completed regression suites were repeated.
 Prepared `docs/apple-account-support-draft.md` for a possible Apple inquiry;
 it has not been sent. No Apple transfer, store publication, account merge,
 financial transaction, or social post occurred.
+
+## Native iPhone and independent notification setup — 17:58 checkpoint
+
+The Release build succeeded and was installed on the physical iPhone 6s without
+clearing app data. Bundle `com.gegibson.litterbugs.qa` is signed by Grant team
+`RLXNU225W4`. The Apple-enabled sign-in page displays all three provider buttons
+at 52 points high, with 11-point gaps. Continue with Apple opens the native
+Apple ID consent sheet. It uses the Apple ID already on the phone (Sarah's),
+and requires the account holder's Touch ID. No Apple account was created or
+linked by the agent. The account holder has been asked to complete the prompt.
+Facebook remains pending its password step; the unfinished Facebook sheet was
+cancelled before installing this build.
+
+A fresh Supabase management read confirms Apple enabled, with audiences
+`com.litterbugs.app,com.gegibson.litterbugs.qa`, and manual linking enabled.
+The production audience is preserved. Native token exchange still requires
+completion on the phone; opening the Apple consent sheet does not prove login.
+
+Created APNs key `DM8K47R2TZ`, Litterbugs Notifications, under Grant's team.
+It is **Sandbox, Topic Specific, com.gegibson.litterbugs.qa only**. Its private
+file is stored outside the repository with owner-only permissions. EAS confirmed
+assignment to `@litterbugs-community-cleanup/litterbugs-partner` /
+`com.gegibson.litterbugs.qa`. Luke's existing key was neither selected nor changed.
+This key supports the currently development-signed device build. It does **not**
+cover production/Ad Hoc APNs: a production-scoped credential must be configured
+for a later distribution build. End-to-end delivery and notification-tap routing
+are pending authenticated registration on the iPhone. No push was sent at this
+checkpoint, and no store or Meta publication occurred.
+
+Build log: `/tmp/lb-apple-login-iphone-build.log` (`BUILD SUCCEEDED`).
+Install log: `/tmp/lb-apple-iphone-install.log` (100% Installed package).
+No simulator is booted; memory pressure reports 65% free. Build and credential
+CLI processes have completed; no repeated regression suites were run.
