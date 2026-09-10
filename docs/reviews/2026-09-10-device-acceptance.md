@@ -70,7 +70,7 @@ The full native accessibility-tree request stalled WDA on the 80-marker scene. R
 ## Remaining work
 
 - Fresh Google browser sign-in on the production Android identity completed with the existing Grant account; see the follow-up below. Separate Apple/Meta release acceptance remains deferred.
-- Full spoken TalkBack/VoiceOver acceptance remains unverified.
+- Full spoken TalkBack/VoiceOver acceptance was explicitly removed from this debugging pass by the user. It remains unverified and is not a blocker for this pass.
 - Apple/Meta account setup remains deferred. Android push delivery and report navigation passed in the completion below.
 
 No money spent, social posts/messages sent, reports published, cleanups claimed/approved/disputed, or profile edits saved during this follow-up. Opening and canceling checkout can create an unpaid payment attempt; it does not establish a charge.
@@ -105,3 +105,13 @@ The native launch recording shows the branded logo, with Android's masked native
 
 
 Complete native launch follow-up: a subsequent 45-second recording includes the missing map reveal. At one-second frame sampling, the branded loader remains until approximately 26 seconds, then the map appears at the retained camera with its $6 marker; place labels populate afterward. No loading-circle flash or camera jump was reproduced in this run. This is a slow emulator launch observation, not a cross-device startup benchmark or proof that subsecond flicker is absent. The video is `production-complete-native-launch.mp4`; a sampled contact sheet is `production-complete-native-launch.png`. No new app animation fix is claimed.
+
+
+Scope update: the user explicitly said to skip the human VoiceOver/TalkBack walkthrough and move on. Do not reopen that task or treat it as unfinished work in this debugging pass. Historical accessibility limitations above remain evidence limits, not claims of passing spoken acceptance.
+
+
+## Debugging pass closure
+
+Physical Pixel startup comparison: one cold QA launch reached the fully rendered map approximately three seconds after the native splash appeared. The recording includes a setup interval on the Android home screen before the launch; that interval is excluded. The initial activity command addressed the wrong namespace and did not launch an app; the resolved QA launcher was then used. No loading-circle flash or camera jump appeared in the sampled sequence, and the $6 marker and map remained visible. This physical observation does not reproduce the approximately 26-second emulator delay and is not an all-device benchmark. Artifacts: `pixel-startup-comparison.mp4` and `pixel-startup-comparison.png`.
+
+This debugging pass is complete for controlled user testing: confirmed app fixes are merged on main; both physical platforms received the current QA source; financial and sharing flows were checked within the no-charge/no-publication limits; map/clustering and image loading findings were addressed; Android notifications and production Google return were verified; the local production Maps artifact was corrected and guarded. The user explicitly waived the human spoken accessibility walkthrough. Apple/Meta account work and store submission remain deferred, and no claim of universal device compatibility or exhaustive bug freedom is made. The website spinner seen following an expired OAuth request was not reproduced as a native app defect.
