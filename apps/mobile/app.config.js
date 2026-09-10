@@ -47,7 +47,9 @@ module.exports = ({ config }) => {
   if (stripeApplePayEnabled && !stripeAppleMerchantIdentifier) {
     throw new Error('STRIPE_APPLE_MERCHANT_IDENTIFIER is required when ENABLE_APPLE_PAY=true.');
   }
+  const appleSignInEnabled = process.env.EXPO_PUBLIC_APPLE_SIGN_IN_ENABLED === 'true';
   const plugins = [...(config.plugins || [])];
+  if (appleSignInEnabled && shouldConfigureIos) plugins.push('expo-apple-authentication');
   if (!plugins.some((plugin) => (
     plugin === 'expo-build-properties'
     || (Array.isArray(plugin) && plugin[0] === 'expo-build-properties')
@@ -173,6 +175,7 @@ module.exports = ({ config }) => {
     ios: {
       ...config.ios,
       bundleIdentifier: iosBundleIdentifier,
+      ...(appleSignInEnabled ? { usesAppleSignIn: true } : {}),
       ...(associatedDomains ? { associatedDomains } : {}),
     },
     android: {

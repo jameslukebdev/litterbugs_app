@@ -1,5 +1,7 @@
 import 'react-native-get-random-values';
 import * as Crypto from 'expo-crypto';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { createAppleSignIn } from './appleSignIn';
 import {
   GoogleSignin,
   isCancelledResponse,
@@ -60,7 +62,13 @@ const signInWithGoogle = async () => {
   return { cancelled: false };
 };
 
+const signInWithApple = createAppleSignIn({
+  apple: AppleAuthentication, auth: supabase.auth, createNonce,
+  hashNonce: (nonce) => Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, nonce),
+});
+
 const nativeSignIn = {
+  apple: signInWithApple,
   google: signInWithGoogle,
 };
 

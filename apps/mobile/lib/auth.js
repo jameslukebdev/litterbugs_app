@@ -7,7 +7,7 @@ import {
 } from './nativeSocialAuth';
 import { unregisterCurrentPushDevice } from './pushNotifications';
 
-/** @typedef {'google' | 'facebook'} AuthProvider */
+/** @typedef {'google' | 'facebook' | 'apple'} AuthProvider */
 
 export const AUTH_CALLBACK_PATH = 'auth/callback';
 export const PASSWORD_RECOVERY_PATH = 'auth/reset-password';
@@ -137,7 +137,7 @@ const signInWithBrowserProvider = async (provider) => {
 export const signInWithProvider = async (provider) => {
   // Keep Google on its polished native flow. Facebook uses secure browser
   // OAuth because Litterbugs needs identity only, not Meta's native SDK.
-  if (provider === 'google') {
+  if (provider === 'google' || provider === 'apple') {
     const nativeResult = await signInWithNativeProvider(provider);
     if (nativeResult) return nativeResult;
   }

@@ -1,3 +1,4 @@
+import AppleSignInButton from './components/AppleSignInButton';
 import SteadyButtonContent from './components/SteadyButtonContent';
 import { openSupport } from './lib/support';
 import { useProfile } from './lib/profile';
@@ -253,6 +254,7 @@ export default function AuthScreen() {
         <Text style={styles.subtitle}>{pendingAction ? 'Sign in or create an account to continue with this cleanup.' : 'Sign in to track and share reports.'}</Text>
 
         <View style={styles.actions}>
+          <AppleSignInButton onPress={() => handleProvider('apple')} disabled={Boolean(loadingProvider)} loading={loadingProvider === 'apple'} />
           {PROVIDERS.map(renderProviderButton)}
           <View style={styles.dividerRow}>
             <View style={styles.divider} />
