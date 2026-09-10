@@ -63,9 +63,10 @@ behavioral advertising.
 | Approximate and precise location | Yes, when used or submitted | Google Maps and app service providers | Map discovery, report creation, safety and fraud review |
 | Photos | Yes, when selected or captured | Storage and eligible Gemini review providers | Reports, cleanup evidence, profile, safety and fraud review |
 | Other user-generated content | Yes | Service providers; selected report content can be public | Reports, disputes, support, app operation |
+| User payment information | Yes, when entered in the payment sheet | Stripe/payment networks | Payment functionality and fraud prevention; full card details are not stored by Litterbugs |
 | Purchase history and transaction information | Yes | Stripe and app service providers | Contributions, refunds, rewards, accounting, fraud prevention |
-| Device or other identifiers | Yes | Notification and app service providers | Push notifications, authentication, security, reliability |
-| App interactions and diagnostics | Yes | App service providers | App operation, security, troubleshooting, improvement |
+| Device or other identifiers | Yes | Notification, Google Maps and app service providers | Push notifications, authentication, security, reliability, SDK usage/improvement |
+| App interactions and diagnostics | Yes | Stripe, Google Maps and app service providers | App operation, security, analytics, troubleshooting, improvement |
 
 Do not copy the recipients column into Play’s “Shared” answer. Processing by
 service providers solely on our behalf can qualify for an exception, as can

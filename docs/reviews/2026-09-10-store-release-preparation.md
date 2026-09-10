@@ -173,8 +173,7 @@ it is not used for advertising. Therefore a blanket â€œno analytics collectionâ€
 answer would be inaccurate even though no separate mobile analytics dependency
 was found in the mobile manifest or app libraries. Payment details go directly
 to Stripe; that does not mean they are outside the app's disclosure assessment.
-The linked Stripe privacy-details support page was unavailable to the web reader;
-its detailed category mapping remains to be reconciled with the final archive.
+The original Stripe support URL redirects to the mobile SDK privacy-details page; the browser verification and mapping below supersede the earlier web-reader failure.
 No live privacy answers were saved or published.
 
 Installed Stripe version is 24.19.0. Its `STPAnalyticsClient.swift` and
@@ -185,3 +184,39 @@ configuration and provider disclosures for final answers. Current server source
 explicitly sends receipt email on contribution creation and account email/name
 on Stripe cleaner onboarding; both can originate from social sign-in. Include
 that recipient flow in both store and Meta disclosure preparation.
+
+## Stripe disclosure answers resolved against official guidance
+
+Opened [Stripe Mobile SDK Privacy Details](https://support.stripe.com/questions/stripe-mobile-sdk-privacy-details)
+in the browser. For the current PaymentSheet integration, prepare these Apple
+answers:
+
+| Data type | Collected / use | Linked to identity | Tracking |
+| --- | --- | --- | --- |
+| Payment information | Yes; app functionality through the in-app payment sheet | Yes for Litterbugs' account-associated contributions; the PaymentIntent includes contributor ID and receipt email | No advertising tracking identified in this flow |
+| Contact information: email/name | Yes; account and payment/onboarding functionality | Yes; source passes account email/name to Stripe | No advertising tracking identified in this flow |
+| User ID | Yes; account functionality and contributor/recipient references | Yes | No advertising tracking identified in this flow |
+| Product interaction | Yes; app functionality and analytics, including fraud prevention | Yes; Stripe states these events may be linked | No; Stripe explicitly rules out tracking for these events |
+
+Stripe's current article covers device/OS analytics, default fraud-prevention
+collection and possible card-issuer data transfer during 3DS2. Do not treat a
+simulator traffic sample as a substitute for these disclosures. The app does
+not currently supply a Stripe Customer ID or customer ephemeral key to
+PaymentSheet; the account linkage above comes from the actual server-side
+contribution/recipient association, not an invented Customer integration.
+
+These answers describe configured SDK use and are prepared for the final
+store form, not saved to the live label. They do not imply optional wallet,
+bank or identity features are all exercised on every payment.
+
+## Android map disclosure clarification
+
+[Google's Maps SDK guidance](https://developers.google.com/maps/documentation/android-sdk/play-data-disclosure)
+identifies SDK/device metadata, crash information, IP addresses, pseudonymous
+SDK identifiers, and map camera interaction events. The app uses camera APIs for
+panning/zooming and region animation, so the Play draft includes app interactions,
+diagnostics and device identifiers as well as user-submitted location. Provider
+improvement purposes must be included; these categories are not limited to push
+notifications. The dependency defaults to Maps SDK 18.2.0; Google's page describes
+the latest SDK, so do not use it as evidence that the installed version has every
+newer field. Current and older published guidance agree on the categories above.
