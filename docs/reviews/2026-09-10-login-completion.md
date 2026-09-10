@@ -13,8 +13,8 @@ push completed work to main. This work is in progress.
   phone-control service is usable; no simulator was started.
 - A separate tester account has been requested; none has been supplied yet.
 - Production Apple signing remains tied to Luke's team DB39U76V6Q and the
-  existing com.litterbugs.app. Requested access to Certificates, Identifiers &
-  Profiles. Do not replace the bundle ID or transfer the app implicitly.
+  existing com.litterbugs.app. The user says to assume Luke will not assist. Do not rely on a new invitation
+  from him, replace the bundle ID, or initiate a transfer implicitly.
 - APNs delivery and final store disclosures remain incomplete.
 
 ## Apple sign-in implementation checkpoint
@@ -62,3 +62,18 @@ Primary research:
 - https://firebase.google.com/docs/auth/web/account-linking
 - https://supabase.com/docs/guides/auth/social-login/auth-apple
 - https://docs.expo.dev/versions/v54.0.0/sdk/apple-authentication/
+
+## Ownership constraint — no dependence on Luke
+
+User explicitly instructs us to assume Luke will not help. Continue native
+implementation and testing under Grant's existing team. Inventory existing
+production signing access/credentials available to Grant before declaring the
+old listing maintainable. Apple requires the transferring Account Holder to
+initiate its normal app transfer; App Store Connect access alone is insufficient.
+If current access cannot maintain the existing listing, prepare an Apple Support
+ownership-resolution request and a separate-app fallback for review. Do not send
+messages, assert legal ownership, publish a replacement, or promise existing
+users can update to a different bundle identity. Any fallback must explain user
+migration, listing/review continuity, Apple identities, and notification changes.
+
+Source: https://developer.apple.com/help/app-store-connect/transfer-an-app/initiate-an-app-transfer
