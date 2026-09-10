@@ -129,7 +129,7 @@ export default function ReportShareSheet({
           </View>
 
           <View style={styles.privacyRow}>
-            <Ionicons name="shield-checkmark-outline" size={16} color="#617066" />
+            <Ionicons name="shield-checkmark-outline" size={16} color="#617066" accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
             <Text style={styles.privacyText}>
               Exact coordinates and private account details stay off the shared card.
             </Text>

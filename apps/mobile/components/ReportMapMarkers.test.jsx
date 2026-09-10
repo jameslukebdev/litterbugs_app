@@ -5,6 +5,7 @@ const platform = vi.hoisted(() => ({ OS: 'ios' }));
 vi.mock('react-native', () => ({ Platform: platform, View: ({children}) => <div>{children}</div>, Text: ({children}) => <span>{children}</span>, StyleSheet: {create: value=>value} }));
 vi.mock('react-native-maps', () => ({ Marker: ({children}) => <section>{children}</section> }));
 vi.mock('@expo/vector-icons', () => ({Ionicons: ({name}) => <i data-icon={name} />}));
+vi.mock('./AndroidReportMarker', () => ({ default: ({ children }) => <section>{children}</section> }));
 import ReportMapMarkers from './ReportMapMarkers';
 const render = (cleanup_state, label, labelled=true, selectedId=null) => renderToStaticMarkup(<ReportMapMarkers markers={[{id:'a',label,labelled,width:80,height:32,coordinate:{latitude:36,longitude:-81},report:{cleanup_state}}]} selectedId={selectedId} />);
 afterEach(() => { platform.OS = 'ios'; });

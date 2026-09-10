@@ -2168,6 +2168,8 @@ const revealBottomReportField = () => {
           {...(locationPermissionGranted ? { showsUserLocation: true } : {})}
           onUserLocationChange={(event) => setMapUserLocation(event.nativeEvent.coordinate)}
           followsUserLocation={false}
+          showsMyLocationButton={false}
+          toolbarEnabled={false}
           mapType={mapType}
         >
 

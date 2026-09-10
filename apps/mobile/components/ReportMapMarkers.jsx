@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { Marker } from 'react-native-maps';
+import AndroidReportMarker from './AndroidReportMarker';
 import { Ionicons } from '@expo/vector-icons';
 import { cleanupMapTone } from '../lib/cleanupEligibility';
 import { reportsNearMapTap, STATUS_MARKER_SIZE, STATUS_MARKER_ICON_SIZE, SELECTED_MARKER_SCALE, markerHostDimensions } from '../lib/mapLabelLayout';
@@ -20,7 +21,9 @@ export default function ReportMapMarkers({ markers, selectedId, tracksViewChange
           // Replace only when spoken report information changes, never on pan,
           // zoom, selection, or label allocation. Preserve MapKit identity.
           const markerKey = Platform?.OS === 'android' ? `${m.id}:${accessibilityLabel}` : m.id;
-          return <Marker key={markerKey} coordinate={m.coordinate}
+          const MarkerComponent = Platform?.OS === 'android' ? AndroidReportMarker : Marker;
+          return <MarkerComponent key={markerKey} coordinate={m.coordinate}
+            {...(Platform?.OS === 'android' ? { snapshotKey: `${m.label}:${m.labelled}:${selected}:${tone}:${m.width}:${m.height}:${m.fontSize}` } : {})}
             style={Platform?.OS === 'android' ? markerHostDimensions(m.width || 44, m.height || 44) : undefined}
             identifier={`report:${tone}:${m.id}`}
             tracksViewChanges={tracksViewChanges}
@@ -52,7 +55,7 @@ export default function ReportMapMarkers({ markers, selectedId, tracksViewChange
               ) : <View style={styles.compactMarkerDot} />}
 
             </View>
-          </Marker>;
+          </MarkerComponent>;
         })}
   </>;
 }

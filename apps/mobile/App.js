@@ -249,6 +249,7 @@ function AppNavigation({
     headerShadowVisible: false,
     headerTintColor: '#2F7D32',
     headerStyle: { backgroundColor: '#FFFFFF' },
+    headerBackTitle: 'Back',
     headerBackTitleVisible: false,
     headerBackButtonDisplayMode: 'minimal',
   };

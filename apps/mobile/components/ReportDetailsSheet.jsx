@@ -204,13 +204,13 @@ export default function ReportDetailsSheet({ state, actions }) {
           <View style={styles.reportDetailFacts}>
             {[...(selectedReport?.litter_types || []), selectedReport?.types].filter(Boolean).length ? (
               <View style={styles.reportDetailFactRow}>
-                <Ionicons name="trash-outline" size={20} color="#637067" />
+                <Ionicons name="trash-outline" size={20} color="#637067" accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
                 <Text style={styles.reportDetailFactText}>{[...(selectedReport?.litter_types || []), selectedReport?.types].filter(Boolean).join(' · ')}</Text>
               </View>
             ) : null}
             {selectedReport?.notes_presets?.length ? (
               <View style={styles.reportDetailFactRow}>
-                <Ionicons name="location-outline" size={20} color="#637067" />
+                <Ionicons name="location-outline" size={20} color="#637067" accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
                 <Text style={styles.reportDetailFactText}>{selectedReport.notes_presets.join(' · ')}</Text>
               </View>
             ) : null}

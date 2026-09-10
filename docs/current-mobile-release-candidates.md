@@ -1,5 +1,7 @@
 # Current Mobile Release Candidates
 
+> September 10 physical-device acceptance: the connected Pixel 5 and iPhone 6s received current Release QA builds. Dense Android marker redraw, duplicate map controls and accessibility-label corrections are documented in [device acceptance](reviews/2026-09-10-device-acceptance.md). These QA builds do not replace a newly signed production bundle or the remaining notification, screen-reader and provider acceptance gates.
+
 > September 10 follow-up: `main` now includes the confirmed iPhone and Pixel fixes through `21e1207`. A new signed Android review bundle and rebuilt iPhone simulator were checked; the new bundle is **not ready for store submission** and predates the final Firebase configuration/Profile placeholder follow-up. See [release follow-up](reviews/2026-09-10-release-follow-up.md) for current artifacts, notification setup, and remaining gates. The older “store-ready” statements below are historical.
 
 > September 9 readiness update: the signed artifacts below predate the September 8–9 workflow and polish changes. They are historical evidence, not candidates for submitting the current app. See [the pre-submission audit](reviews/2026-09-09-prestore-audit.md) for current verification and release gates. No new App Store submission has been made.
