@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-const m = vi.hoisted(() => ({ pages: [], calls: [] }));
+const m = vi.hoisted(() => ({ pages: [], calls: [], selects: [] }));
 vi.mock('./supabase', () => ({ supabase: { from: () => {
-  const chain = { select: () => chain, eq: (...args) => { m.calls.push(args); return chain; }, order: () => chain,
+  const chain = { select: fields => { m.selects.push(fields); return chain; }, eq: (...args) => { m.calls.push(args); return chain; }, order: () => chain,
     range: async () => m.pages.shift() };
   return chain;
 } } }));
@@ -10,6 +10,7 @@ describe('personal report collection', () => {
   it('loads all owned pages without any geographic query', async () => {
     m.calls = []; m.pages = [{ data: Array.from({length: 500}, (_, i) => ({id: i})) }, { data: [{id: 'last'}] }];
     expect(await loadAccountReports('alice')).toHaveLength(501);
+    expect(m.selects.every(fields => fields.split(',').includes('photo_paths'))).toBe(true);
     expect(m.calls).toEqual([['user_id', 'alice'], ['is_sample', false], ['is_published', true], ['user_id', 'alice'], ['is_sample', false], ['is_published', true]]);
   });
   it('propagates errors instead of pretending there are no reports', async () => {

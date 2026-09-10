@@ -153,6 +153,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const reportControlTransition = useRef(new Animated.Value(0)).current;
   const [formOpen, setFormOpen] = useState(false);
   const [reportKeyboardVisible, setReportKeyboardVisible] = useState(false);
+  const [reportKeyboardHeight, setReportKeyboardHeight] = useState(0);
   const [reportStep, setReportStep] = useState(0);
   const [returnToReview, setReturnToReview] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -335,11 +336,11 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
     const showSubscription = Keyboard.addListener(
       showEvent,
-      () => setReportKeyboardVisible(true)
+      event => { setReportKeyboardVisible(true); setReportKeyboardHeight(Platform.OS === 'ios' ? event.endCoordinates.height : 0); }
     );
     const hideSubscription = Keyboard.addListener(
       hideEvent,
-      () => setReportKeyboardVisible(false)
+      () => { setReportKeyboardVisible(false); setReportKeyboardHeight(0); }
     );
 
     return () => {
@@ -754,6 +755,7 @@ const openReportLocationPicker = async (skipDraft = false) => {
     return;
   }
   if (!isPermanentUser(currentUser)) {
+    setPendingAction(null);
     setPendingReportCoordinate(coord);
     navigation.getParent()?.navigate('Auth');
     return;
@@ -816,8 +818,8 @@ useEffect(() => {
 }, [currentUserId, isMapScreenFocused, pendingReportCoordinate]);
 
 useEffect(() => navigation.addListener('focus', () => {
-  if (!isPermanentUser(currentUser)) setPendingReportCoordinate(null);
-}), [currentUser, navigation, setPendingReportCoordinate]);
+  if (!isPermanentUser(currentUser)) { setPendingReportCoordinate(null); setPendingAction(null); }
+}), [currentUser, navigation, setPendingReportCoordinate, setPendingAction]);
 
 const reconcileReportAfterBlockedMutation = async (reportId) => {
   try {
@@ -1703,7 +1705,7 @@ useEffect(() => {
         afterPhotoUrl: completedCleanupImpact?.afterPhotoUrls?.[0] ?? null,
         platform: Platform.OS,
         share: installedRNShare?.open ?? NativeShare.share,
-        shareImageUri,
+        shareImageUri: installedRNShare ? shareImageUri : null,
       });
       setReportShareSheetOpen(false);
     } catch (error) {
@@ -1720,7 +1722,7 @@ useEffect(() => {
     if (!installedRNShare?.shareSingle || !installedRNShare.Social?.INSTAGRAM_STORIES) {
       Alert.alert(
         'Instagram sharing unavailable',
-        'Direct Instagram Stories sharing isn’t available in this app version. Use More sharing options instead.'
+        'We couldn’t open Instagram Stories. You can still send this report with “Choose where to share”.'
       );
       return;
     }
@@ -1730,7 +1732,7 @@ useEffect(() => {
       instagramAvailable = await isInstagramStoriesAvailable({
         platform: Platform.OS,
         isPackageInstalled: installedRNShare.isPackageInstalled,
-        canOpenURL: Linking.canOpenURL,
+        canOpenURL: url => Linking.canOpenURL(url),
       });
     } catch (error) {
       console.log('Instagram availability check error:', error);
@@ -1739,7 +1741,7 @@ useEffect(() => {
     if (!instagramAvailable) {
       Alert.alert(
         'Instagram isn’t available',
-        'Install Instagram or choose More sharing options to send the report another way.'
+        'Instagram isn’t available on this phone. Try “Choose where to share” to send the report another way.'
       );
       return;
     }
@@ -1765,8 +1767,8 @@ useEffect(() => {
       Alert.alert(
         unavailable ? 'Instagram isn’t available' : 'Instagram sharing unavailable',
         unavailable
-          ? 'Install Instagram or choose More sharing options to send the report another way.'
-          : 'We couldn’t prepare the Instagram Story. Choose More sharing options to keep sharing.'
+          ? 'Instagram isn’t available on this phone. Try “Choose where to share” to send the report another way.'
+          : 'We couldn’t prepare your Story. Please try again, or use “Choose where to share”.'
       );
     } finally {
       setReportShareBusyAction(null);
@@ -1782,6 +1784,7 @@ useEffect(() => {
     if (!reportId || payoutGateBusy) return;
 
     if (!currentUserId) {
+      setPendingReportCoordinate(null);
       setPendingAction({ kind: 'fund', reportId });
       setDetailsOpen(false);
       navigation.getParent()?.navigate('Auth');
@@ -1861,6 +1864,7 @@ useEffect(() => {
 
   const beginCleanupClaim = async () => {
     if (!currentUserId && cleanupDiscoverable) {
+      setPendingReportCoordinate(null);
       setPendingAction({ kind: 'cleanup', reportId: selectedReport.id });
       setDetailsOpen(false);
       navigation.getParent()?.navigate('Auth');
@@ -2120,11 +2124,10 @@ useEffect(() => {
 // Report Form Step Content
 // =============================
 
-const revealBottomReportField = (event) => {
-  const target = event.nativeEvent.target;
+const revealBottomReportField = () => {
   const keyboardAnimationDelay = Platform.OS === 'ios' ? 320 : 120;
   setTimeout(() => {
-    reportWizardScrollRef.current?.scrollResponderScrollNativeHandleToKeyboard(target, 100, true);
+    reportWizardScrollRef.current?.scrollToEnd({ animated: true });
   }, keyboardAnimationDelay);
 };
 
@@ -2469,11 +2472,11 @@ const revealBottomReportField = (event) => {
             ref={reportWizardScrollRef}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
-            automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+            automaticallyAdjustKeyboardInsets={false}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[
               styles.wizardScrollContent,
-              reportKeyboardVisible && styles.wizardScrollContentKeyboard,
+              reportKeyboardVisible && { paddingBottom: reportKeyboardHeight + 32 },
             ]}
           >
             <TouchableWithoutFeedback
@@ -2591,7 +2594,7 @@ const revealBottomReportField = (event) => {
 {/* ============================= */}
 
 <ReportDetailsSheet state={{ detailsOpen, reportShareSheetOpen, reportShareBusyAction, selectedReport, insets, region, reportDetailsPreparing, selectedReportHasUtilityActions, completedCleanupImpact, completedCleanupImpactLoading, completedCleanupImpactError, reportHeroWidth, currentUserId, reportPhotoUrls, photosLoading, geminiReviewEnabled, userOwnsSelectedReport, reportFundingFeedback, cleanupDiscoverable, cleanupStatus, currentUserIsCleaner, selectedCleanupAttempt, cleanupAttemptLoading, cleanupActionBusy, canEditOrDeleteSelectedReport, selectedReportCanOpenFunding, payoutGateBusy, selectedReportIsShareable }}
-  actions={{ setReportShareSheetOpen, closeReportDetails, setDetailsOpen, setSelectedReport, setPreviewId, navigation, commitMapRegion, setCompletedCleanupImpact, setCompletedCleanupImpactError, setCompletedCleanupImpactLoading, setCompletedCleanupImpactReloadKey, openCleanupNavigation, openCleanupSubmission, confirmCleanupRelease, openCleanupFeedback, openCleanupReview, beginCleanupClaim, openFundingContribution, removeReport, setForm, setEditingReportId, setIsEditing, setDraftCoord, resetReportWizard, setFormOpen, shareSelectedReport, editReportPhotos }} />
+  actions={{ setReportShareSheetOpen, closeReportDetails, setDetailsOpen, setSelectedReport, setPreviewId, navigation, commitMapRegion, setCompletedCleanupImpact, setCompletedCleanupImpactError, setCompletedCleanupImpactLoading, setCompletedCleanupImpactReloadKey, openCleanupNavigation, openCleanupSubmission, confirmCleanupRelease, openCleanupFeedback, openCleanupReview, beginCleanupClaim, openFundingContribution, removeReport, setForm, setEditingReportId, setIsEditing, setDraftCoord, resetReportWizard, setFormOpen, shareSelectedReport, shareSelectedReportToInstagram, editReportPhotos }} />
 
 <CleanupWaiverModal
   visible={cleanupWaiverOpen}

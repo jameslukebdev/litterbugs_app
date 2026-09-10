@@ -106,6 +106,7 @@ export async function loadPublicReportShare(reportId: string): Promise<PublicRep
   return {
     id: report.id,
     state: report.cleanup_state as 'available' | 'completed',
+    rewardCents: report.cleanup_state === 'available' && report.funding_eligibility === 'eligible' ? Math.max(0, report.funded_amount_cents || 0) : 0,
     title: report.title?.trim() || 'Litter Report',
     generalLocation: 'Exact location shown only in Litterbugs',
     severity: report.severity,

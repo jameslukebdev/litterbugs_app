@@ -80,6 +80,7 @@ export function createReportShareModel({
   return {
     id: String(report.id),
     state: completed ? 'completed' : 'active',
+    rewardCents: !completed && report.funding_eligibility === 'eligible' ? Math.max(0, Number(report.funded_amount_cents) || 0) : 0,
     title: cleanText(report.title) || 'Litter Report',
     reportUrl: `${PUBLIC_REPORT_BASE_URL}/${encodeURIComponent(report.id)}`,
     shareImageUrl: `${PUBLIC_REPORT_BASE_URL}/${encodeURIComponent(report.id)}/share-image`,
@@ -116,7 +117,7 @@ export function reportShareImageFilename(model) {
 
   const state = model?.state === 'completed' ? 'completed' : 'active';
   const id = cleanText(model?.id).replace(/[^a-z0-9-]/gi, '').slice(0, 18) || 'report';
-  return `litterbugs-share-v2-${slug || 'cleanup-report'}-${state}-${id}.png`;
+  return `litterbugs-share-v3-${model?.rewardCents || 0}-${slug || 'cleanup-report'}-${state}-${id}.png`;
 }
 
 function responseHeader(headers, name) {
@@ -223,7 +224,9 @@ export function formatReportShareMessage(model, { includeUrl = true } = {}) {
     ]
     : [
       'Litterbugs · Cleanup needed',
-      `“${model.title}” needs a volunteer cleanup.`,
+      model.rewardCents > 0
+        ? `“${model.title}” has a $${(model.rewardCents / 100).toFixed(2)} cleanup reward. See the report for details.`
+        : `“${model.title}” needs a volunteer cleanup.`,
       `Location: ${model.generalLocation}`,
       model.severity ? `Severity: ${model.severity}` : null,
       model.reportNotes ? `Details: ${model.reportNotes}` : null,
@@ -248,7 +251,8 @@ export function createNativeReportShareContent(model, platform, shareImageUri = 
     return {
       title,
       subject: title,
-      message: formatReportShareMessage(model),
+      // Instagram's iOS extension rejects an image plus a separate text item.
+      ...(platform === 'ios' ? {} : { message: formatReportShareMessage(model) }),
       url: shareImageUri,
       type: REPORT_SHARE_IMAGE_MIME_TYPE,
       filename: reportShareImageFilename(model),

@@ -644,7 +644,7 @@ export function AccountDialog({
           <Link href="/terms"><FiFileText aria-hidden /><span>Terms of use</span><FiExternalLink aria-hidden /></Link>
           <Link href="/privacy"><FiShield aria-hidden /><span>Privacy policy</span><FiExternalLink aria-hidden /></Link>
           <Link href="/cleanup-policy"><FiCheckCircle aria-hidden /><span>Cleanup &amp; reward policy</span><FiExternalLink aria-hidden /></Link>
-          <a href="https://patreon.com/litterbugs?utm_medium=unknown&utm_source=join_link&utm_campaign=creatorshare_creator&utm_content=copyLink" target="_blank" rel="noopener noreferrer"><FiHeart aria-hidden /><span>Support Litterbugs</span><FiExternalLink aria-hidden /></a>
+          <Link href="/support"><FiHeart aria-hidden /><span>Support Litterbugs</span><FiExternalLink aria-hidden /></Link>
         </div>
         <div className="account-actions member-account-actions">
           <PayoutSetupAction />

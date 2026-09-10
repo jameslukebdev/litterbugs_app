@@ -194,7 +194,7 @@ describe('report sharing', () => {
       .mockResolvedValueOnce({ exists: true, size: 2048 });
     const readAsStringAsync = vi.fn().mockResolvedValue('iVBORw0KGgo=');
     const downloadAsync = vi.fn().mockResolvedValue({
-      uri: 'file:///cache/litterbugs-share-v2-litter-beside-the-trail-active-report-1.png',
+      uri: 'file:///cache/litterbugs-share-v3-0-litter-beside-the-trail-active-report-1.png',
       status: 200,
       mimeType: 'image/png',
     });
@@ -214,8 +214,8 @@ describe('report sharing', () => {
       downloadAsync,
     });
 
-    expect(reportShareImageFilename(model)).toBe('litterbugs-share-v2-litter-beside-the-trail-active-report-1.png');
-    expect(first).toBe('file:///cache/litterbugs-share-v2-litter-beside-the-trail-active-report-1.png');
+    expect(reportShareImageFilename(model)).toBe('litterbugs-share-v3-0-litter-beside-the-trail-active-report-1.png');
+    expect(first).toBe('file:///cache/litterbugs-share-v3-0-litter-beside-the-trail-active-report-1.png');
     expect(second).toBe(first);
     expect(downloadAsync).toHaveBeenCalledTimes(1);
     expect(downloadAsync).toHaveBeenCalledWith(model.shareImageUrl, first);
@@ -370,4 +370,32 @@ describe('report sharing', () => {
 
     expect(share).not.toHaveBeenCalled();
   });
+});
+
+
+describe('physical iOS sharing regressions', () => {
+  it('shares one image item to iOS extensions, while Android keeps its caption', () => {
+    const model = createReportShareModel({ report: availableReport });
+    const ios = createNativeReportShareContent(model, 'ios', 'file:///card.png');
+    expect(ios.url).toBe('file:///card.png');
+    expect(ios.type).toBe('image/png');
+    expect(ios).not.toHaveProperty('message');
+    expect(createNativeReportShareContent(model, 'android', 'file:///card.png').message).toContain(model.reportUrl);
+  });
+  it('describes eligible funded reports accurately without offering rewards for ineligible reports', () => {
+    const report = { ...availableReport, funded_amount_cents: 600, funding_eligibility: 'eligible' };
+    const funded = formatReportShareMessage(createReportShareModel({ report }));
+    expect(funded).toContain('$6.00 cleanup reward');
+    expect(funded).not.toContain('volunteer cleanup');
+    expect(formatReportShareMessage(createReportShareModel({ report: { ...report, funding_eligibility: 'needs_better_photos' } }))).not.toContain('$6.00');
+    expect(formatReportShareMessage(createReportShareModel({ report: { ...report, funded_amount_cents: 0 } }))).toContain('volunteer cleanup');
+  });
+});
+
+
+it('refreshes cached share cards when the cleanup reward changes', () => {
+  const report = { ...availableReport, funding_eligibility: 'eligible', funded_amount_cents: 600 };
+  const before = createReportShareModel({ report });
+  const after = createReportShareModel({ report: { ...report, funded_amount_cents: 1600 } });
+  expect(reportShareImageFilename(before)).not.toBe(reportShareImageFilename(after));
 });

@@ -8,7 +8,7 @@ import { PublicAccountAction } from '@/components/public-account-action';
 
 import styles from './public-site-header.module.css';
 
-export type PublicPath = '/' | '/about' | '/cleanup-policy' | '/cleanup-safety' | '/privacy' | '/terms';
+export type PublicPath = '/' | '/support' | '/about' | '/cleanup-policy' | '/cleanup-safety' | '/privacy' | '/terms';
 
 const policyLinks: { href: PublicPath; label: string; description: string }[] = [
   { href: '/cleanup-policy', label: 'Cleanup policy', description: 'Funding, rewards, disputes, and refunds' },

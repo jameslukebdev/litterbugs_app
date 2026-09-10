@@ -51,17 +51,17 @@ describe('new report workflow responsiveness', () => {
     expect(mapScreenSource).toContain('setReportKeyboardVisible(false)');
     expect(mapScreenSource).toContain('!reportKeyboardVisible && (');
     expect(mapScreenSource).toContain('onPress={Keyboard.dismiss}');
-    expect(mapScreenSource).toContain('automaticallyAdjustKeyboardInsets={Platform.OS === \'ios\'}');
+    expect(mapScreenSource).toContain('automaticallyAdjustKeyboardInsets={false}');
   });
 
   it('scrolls lower report fields above the keyboard when focused', () => {
     expect(mapScreenSource).toContain('const reportWizardScrollRef = useRef(null)');
-    expect(mapScreenSource).toContain('const revealBottomReportField = (event) => {');
-    expect(mapScreenSource).toContain('reportWizardScrollRef.current?.scrollResponderScrollNativeHandleToKeyboard(target, 100, true)');
+    expect(mapScreenSource).toContain('const revealBottomReportField = () => {');
+    expect(mapScreenSource).toContain('reportWizardScrollRef.current?.scrollToEnd({ animated: true })');
     expect(mapScreenSource).toContain('ref={reportWizardScrollRef}');
     expect(mapScreenSource.match(/onFocus=\{revealBottomReportField\}/g)).toHaveLength(4);
     expect(mapScreenSource).toContain(
-      'reportKeyboardVisible && styles.wizardScrollContentKeyboard'
+      'reportKeyboardVisible && { paddingBottom: reportKeyboardHeight + 32 }'
     );
     expect(mapScreenSource).toContain('wizardScrollContentKeyboard: {');
   });

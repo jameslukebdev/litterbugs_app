@@ -6,7 +6,7 @@ export async function loadAccountReports(userId) {
   const rows = [];
   for (let offset = 0; ; offset += 500) {
     const { data, error } = await supabase.from('reports')
-      .select('id,user_id,title,severity,cleanup_state,created_at,expires_at,expired_at,cancelled_at')
+      .select('id,user_id,title,severity,photo_paths,cleanup_state,created_at,expires_at,expired_at,cancelled_at')
       .eq('user_id', userId).eq('is_sample', false).eq('is_published', true)
       .order('created_at', { ascending: false }).order('id')
       .range(offset, offset + 499);

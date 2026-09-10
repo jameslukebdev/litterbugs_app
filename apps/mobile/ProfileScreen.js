@@ -53,8 +53,6 @@ const openLitterbugsLink = async (url) => {
   }
 };
 
-const openPatreon = () => openLitterbugsLink('https://patreon.com/litterbugs');
-
 function StripeConnectionStatus({ status, loading, error, onRetry }) {
   const presentation = payoutConnectionPresentation({ status, loading, error });
   if (loading && !status) return <View style={[styles.stripeConnectionRow, { backgroundColor: '#F4F6F7' }]} />;
@@ -304,7 +302,7 @@ function SignedOutProfile({ navigation, bottomPadding }) {
       </TouchableOpacity>
       <View style={styles.signedOutSupport}>
         <ActionRow label="Get help" icon="help-circle-outline" onPress={() => openSupport()} />
-        <ActionRow label="Support us on Patreon" icon="heart-outline" onPress={openPatreon} />
+        <ActionRow label="Support Litterbugs" icon="heart-outline" onPress={() => navigation.navigate('SettingsInfo', { topic: 'support' })} />
         <ActionRow label="Terms of use" icon="document-text-outline" onPress={() => openLitterbugsLink(TERMS_URL)} />
         <ActionRow label="Privacy policy" icon="shield-checkmark-outline" onPress={() => openLitterbugsLink(PRIVACY_URL)} />
       </View>

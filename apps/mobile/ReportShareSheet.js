@@ -49,6 +49,7 @@ export default function ReportShareSheet({
   busyAction = null,
   onClose,
   onSystemShare,
+  onInstagramStory,
   previewPhotoUrl = null,
   report,
   visible,
@@ -108,8 +109,17 @@ export default function ReportShareSheet({
 
           <View style={styles.options}>
             <ShareOption
+              accessibilityLabel="Share to Instagram Stories"
+              busy={busy}
+              description="Open a Story draft with the report card"
+              icon="logo-instagram"
+              iconColor="#C13584"
+              onPress={onInstagramStory}
+              title="Instagram Stories"
+            />
+            <ShareOption
               accessibilityLabel="Share report"
-              busy={busyAction === 'system'}
+              busy={busy}
               description="Messages, Mail, and more"
               icon="share-outline"
               iconColor="#2F7D32"

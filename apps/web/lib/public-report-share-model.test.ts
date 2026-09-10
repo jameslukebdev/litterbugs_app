@@ -38,3 +38,12 @@ describe('public report sharing', () => {
     expect(publicReportShareDescription({ ...model, state: 'available' })).not.toMatch(/35\.600|-82\.554/);
   });
 });
+
+
+it('describes funded, unfunded, and completed shares without confusing their rewards', () => {
+  const report = { title: 'Creek cleanup', state: 'available', rewardCents: 600 } as PublicReportShareModel;
+  expect(publicReportShareDescription(report)).toContain('$6.00 cleanup reward');
+  expect(publicReportShareDescription(report)).not.toContain('volunteer cleanup');
+  expect(publicReportShareDescription({ ...report, rewardCents: 0 })).toContain('volunteer cleanup');
+  expect(publicReportShareDescription({ ...report, state: 'completed' })).not.toContain('cleanup reward');
+});

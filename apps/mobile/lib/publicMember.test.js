@@ -13,6 +13,7 @@ it('loads author activity independently of discovery, separates completed and ex
   expect((await loadPublicMemberReports({ profileId: 'author', view: 'completed' })).items.map(row => row.id)).toEqual([historyId(0)]);
   for (const url of fixture.requests) {
     expect(url.searchParams.get('user_id')).toBe('eq.author');
+    expect(url.searchParams.get('select').split(',')).toContain('photo_paths');
     expect([...url.searchParams.keys()].some(key => ['latitude', 'longitude'].includes(key))).toBe(false);
   }
 });

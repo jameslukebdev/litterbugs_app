@@ -250,7 +250,7 @@ export default function AuthScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <Image source={require('./assets/LB_Logo_PNG.png')} style={styles.logo} resizeMode="contain" />
         <Text style={styles.title}>{pendingAction?.kind === 'cleanup' ? 'Sign in to help clean this up' : pendingAction?.kind === 'fund' ? 'Sign in to fund this cleanup' : 'Join the Cleanup Movement'}</Text>
-        <Text style={styles.subtitle}>{pendingAction ? 'Your report is saved here. Sign in or create an account to continue.' : 'Sign in to track and share reports.'}</Text>
+        <Text style={styles.subtitle}>{pendingAction ? 'Sign in or create an account to continue with this cleanup.' : 'Sign in to track and share reports.'}</Text>
 
         <View style={styles.actions}>
           {PROVIDERS.map(renderProviderButton)}

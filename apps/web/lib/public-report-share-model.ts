@@ -6,6 +6,7 @@ export type PublicReportShareModel = {
   id: string;
   state: PublicReportShareState;
   title: string;
+  rewardCents?: number;
   generalLocation: string;
   severity: string | null;
   notes: string | null;
@@ -35,6 +36,10 @@ export function publicReportShareDescription(report: PublicReportShareModel) {
   if (report.state === 'completed') {
     const cleaner = report.cleanerName ? ` by ${report.cleanerName}` : '';
     return `${report.title} was cleaned${cleaner}. See the before-and-after community impact story on Litterbugs.`;
+  }
+
+  if (report.rewardCents && report.rewardCents > 0) {
+    return `${report.title} has a $${(report.rewardCents / 100).toFixed(2)} cleanup reward. See the report in Litterbugs for details.`;
   }
 
   return `${report.title} needs a volunteer cleanup. Open the litter report in Litterbugs to view its location.`;

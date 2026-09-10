@@ -13,7 +13,7 @@ export function ReportSocialCard({ report, logoUrl }: { report: PublicReportShar
       report.bagsOrItemsRemoved != null ? `${report.bagsOrItemsRemoved} bags/items removed` : null,
       report.weightPounds != null ? `${report.weightPounds} lb removed` : null,
     ].filter(Boolean)
-    : [report.severity ? `${report.severity} priority` : null, report.litterTypes[0] ?? null].filter(Boolean);
+    : [report.rewardCents ? `$${(report.rewardCents / 100).toFixed(2)} cleanup reward` : null, report.severity ? `${report.severity} severity` : null, report.litterTypes[0] ?? null].filter(Boolean);
 
   return (
     <div style={{

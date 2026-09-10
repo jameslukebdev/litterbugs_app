@@ -1,8 +1,7 @@
-import { useLayoutEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useLayoutEffect } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as WebBrowser from 'expo-web-browser';
 import Constants from 'expo-constants';
 import { openSupport } from './lib/support';
 
@@ -26,8 +25,12 @@ const pages = {
   },
   support: {
     title: 'Support Litterbugs', icon: 'heart-outline', heading: 'Help our community grow',
-    description: 'If you’d like to support Litterbugs, you can visit our Patreon page to explore the available options.',
-    sections: [['Your choice', 'Supporting us on Patreon is optional. Review the membership details and pricing on Patreon before deciding.']],
+    description: 'Every report, cleanup, and shared story helps bring us closer to cleaner neighborhoods.',
+    sections: [
+      ['Spot litter', 'Your photos and local knowledge can help a neighbor find a place that needs care.'],
+      ['Lend a hand', 'Find a nearby cleanup that feels right for you. Every little bit makes a difference.'],
+      ['Spread the word', 'Share a report or a completed cleanup to help more people get involved.'],
+    ],
   },
 };
 
@@ -35,17 +38,7 @@ export default function SettingsInfoScreen({ navigation, route }) {
   const topic = pages[route.params?.topic] ? route.params.topic : 'help';
   const page = pages[topic];
   const insets = useSafeAreaInsets();
-  const [busy, setBusy] = useState(false);
   useLayoutEffect(() => navigation.setOptions({ title: page.title }), [navigation, page.title]);
-  const openPatreon = async () => {
-    if (busy) return;
-    setBusy(true);
-    try {
-      await WebBrowser.openBrowserAsync('https://patreon.com/litterbugs', { toolbarColor: '#FFFFFF', controlsColor: '#2F7D32', presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET });
-    } catch {
-      Alert.alert('Couldn’t open Patreon', 'Please try again. You can also visit patreon.com/litterbugs in your browser.');
-    } finally { setBusy(false); }
-  };
   return (
     <ScrollView style={styles.screen} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}>
       <View style={styles.icon}><Ionicons name={page.icon} size={26} color="#2F7D32" /></View>
@@ -67,8 +60,7 @@ export default function SettingsInfoScreen({ navigation, route }) {
         <Text style={styles.note}>Litterbugs · Version {Constants.expoConfig?.version || 'unavailable'}</Text>
       </> : null}
       {topic === 'support' ? <>
-        <TouchableOpacity style={styles.button} accessibilityRole="button" accessibilityState={{ busy, disabled: busy }} disabled={busy} onPress={openPatreon}><Text style={styles.buttonText}>Visit our Patreon</Text><Ionicons name="open-outline" size={18} color="#FFFFFF" /></TouchableOpacity>
-        <Text style={styles.note}>Opens patreon.com</Text>
+        <TouchableOpacity style={styles.button} accessibilityRole="button" onPress={() => navigation.popTo('App', { screen: 'Map' })}><Text style={styles.buttonText}>Explore nearby cleanups</Text><Ionicons name="map-outline" size={18} color="#FFFFFF" /></TouchableOpacity>
       </> : null}
     </ScrollView>
   );
