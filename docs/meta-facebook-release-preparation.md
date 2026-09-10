@@ -159,3 +159,14 @@ to Stripe Connect. For Facebook-created accounts these fields may be derived
 from Meta. Include Stripe in the processor assessment rather than declaring
 that Supabase is the only recipient. These findings came from source inspection;
 no contribution, payment, or cleaner account was created to test them.
+
+The Meta processor editor also requires **all processing countries, including
+remote access locations**. Stripe's [current processor/affiliate page](https://stripe.com/legal/service-providers)
+identifies its US entity as Stripe, LLC (conversion effective January 3, 2026),
+and lists global affiliates whose involvement depends on region and service.
+Do not enter the obsolete Stripe, Inc. name or assert US-only processing merely
+from the merchant's US address. The add-processor dialog was cancelled without
+saving an incomplete entry; the processor record still needs a supported country
+scope for this merchant's Stripe services before Meta submission. The account
+holder was separately asked to confirm the current controller and historical
+government-request answers.
