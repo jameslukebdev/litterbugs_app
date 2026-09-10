@@ -334,6 +334,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
         showsVerticalScrollIndicator={false}
       >
         {reviewDraftError || loadError ? <Text accessibilityRole="alert" style={{ color: '#B42318', padding: 16 }}>{reviewDraftError || 'Couldn’t update this cleanup. Refresh before sending your review.'}</Text> : null}
+        {loadError ? <TouchableOpacity accessibilityRole="button" disabled={loading} style={styles.secondaryButton} onPress={retryContext}><Text style={styles.secondaryButtonText}>{loading ? 'Updating…' : 'Try again'}</Text></TouchableOpacity> : null}
         <Text style={styles.eyebrow}>REPORTER REVIEW</Text>
         <Text style={styles.title}>Review this cleanup</Text>
         <Text style={styles.reportTitle}>{context.report.title || 'Litter cleanup'}</Text>

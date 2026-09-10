@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { usePreventRemove } from '@react-navigation/native';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -35,14 +36,15 @@ export default function ReportUserScreen({ navigation, route }) {
 
   const submitLock = useRef(false);
   const sent = useRef(false);
-  useEffect(() => navigation.addListener('beforeRemove', event => {
-    if (sent.current || !details.trim()) return;
-    event.preventDefault();
+  const [discardAction, setDiscardAction] = useState(null);
+  usePreventRemove(!sent.current && !discardAction && (submitting || Boolean(reason || details.trim())), ({ data }) => {
+    if (submitting) return;
     Alert.alert('Discard this report?', 'Your explanation has not been submitted.', [
       { text: 'Keep editing', style: 'cancel' },
-      { text: 'Discard', style: 'destructive', onPress: () => navigation.dispatch(event.data.action) },
+      { text: 'Discard', style: 'destructive', onPress: () => setDiscardAction(data.action) },
     ]);
-  }), [navigation, details]);
+  });
+  useEffect(() => { if (discardAction) navigation.dispatch(discardAction); }, [discardAction, navigation]);
   const submit = async () => {
     if (submitLock.current || sent.current) return;
     if (!reason) {

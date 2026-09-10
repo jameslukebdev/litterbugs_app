@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import useFocusedResource from './lib/useFocusedResource';
 import {
   ScrollView,
@@ -66,6 +66,7 @@ export default function CleanupFeedbackScreen({ navigation, route }) {
   }
 
   const updateSubmission = () => {
+    if (loading || contextError) return;
     if (Date.parse(context.attempt.correction_due_at) <= Date.now()) return retryContext();
     navigation.replace('CleanupSubmission', { cleanupId: context.attempt.id, reportId: context.attempt.report_id });
   };
@@ -80,6 +81,14 @@ export default function CleanupFeedbackScreen({ navigation, route }) {
       contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 24) + 24 }]}
       showsVerticalScrollIndicator={false}
     >
+      {loadError ? (
+        <View>
+          <Text accessibilityRole="alert" style={styles.errorText}>{loadError}</Text>
+          <TouchableOpacity accessibilityRole="button" style={styles.secondaryButton} onPress={retryContext}>
+            <Text style={styles.secondaryButtonText}>Try again</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
       <View style={styles.statusIcon}>
         <Ionicons name="refresh-circle-outline" size={36} color="#8A6400" />
       </View>
@@ -118,7 +127,7 @@ export default function CleanupFeedbackScreen({ navigation, route }) {
         </Text>
       </View>
 
-      <TouchableOpacity style={styles.primaryButton} onPress={updateSubmission}>
+      <TouchableOpacity accessibilityRole="button" disabled={loading || Boolean(contextError)} style={[styles.primaryButton, (loading || contextError) && { opacity: 0.5 }]} onPress={updateSubmission}>
         <Ionicons name="camera-outline" size={21} color="#FFFFFF" />
         <Text style={styles.primaryButtonText}>Update submission</Text>
       </TouchableOpacity>
@@ -131,6 +140,7 @@ export default function CleanupFeedbackScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
+  errorText: { color: '#B42318', fontSize: 15, lineHeight: 22 },
   content: { padding: 20 },
   centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: '#FFFFFF' },
   centerTitle: { marginTop: 14, color: '#30363B', fontSize: 22, fontWeight: '600' },

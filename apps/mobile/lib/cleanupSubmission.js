@@ -1,4 +1,4 @@
-import { Alert, Platform } from 'react-native';
+import { Alert, Linking, Platform } from 'react-native';
 import * as Crypto from 'expo-crypto';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
@@ -44,7 +44,13 @@ export async function chooseCleanupPhotos(source, selectionLimit) {
       'Permission required',
       source === 'camera'
         ? 'Allow camera access to take after-cleanup photos.'
-        : 'Allow photo access to choose after-cleanup photos.'
+        : 'Allow photo access to choose after-cleanup photos.',
+      [
+        { text: 'Not now', style: 'cancel' },
+        { text: 'Open Settings', onPress: () => Linking.openSettings().catch(() => {
+          Alert.alert('App permissions', 'You can allow access in your device’s Settings.');
+        }) },
+      ]
     );
     return [];
   }

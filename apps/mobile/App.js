@@ -228,6 +228,7 @@ function AppNavigation({
   if (passwordRecovery && permanent) {
     return (
       <ResetPasswordScreen
+        onCancel={onRecoveryComplete}
         onComplete={() => {
           onRecoveryComplete();
           Alert.alert('Password updated', 'Your new password is ready to use.');

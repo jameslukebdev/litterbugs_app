@@ -15,7 +15,7 @@ import SteadyButtonContent from './components/SteadyButtonContent';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from './lib/supabase';
 
-export default function ResetPasswordScreen({ onComplete }) {
+export default function ResetPasswordScreen({ onComplete, onCancel }) {
   const insets = useSafeAreaInsets();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -102,6 +102,9 @@ export default function ResetPasswordScreen({ onComplete }) {
         >
           <SteadyButtonContent label="Save password" busy={loading} busyLabel="Saving password…" />
         </TouchableOpacity>
+        {onCancel ? <TouchableOpacity accessibilityRole="button" disabled={loading} onPress={onCancel} style={styles.cancelButton}>
+          <Text style={styles.cancelText}>Not now</Text>
+        </TouchableOpacity> : null}
       </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -148,5 +151,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2F7D32',
   },
   buttonDisabled: { opacity: 0.65 },
+  cancelButton: { minHeight: 48, marginTop: 8, alignItems: 'center', justifyContent: 'center' },
+  cancelText: { color: '#2F7D32', fontSize: 16, fontWeight: '600' },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });
