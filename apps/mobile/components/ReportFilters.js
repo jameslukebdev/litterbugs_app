@@ -15,6 +15,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -64,6 +65,7 @@ const groups = [
   ],
 ];
 export default function ReportFilters({ map = false }) {
+  const { fontScale } = useWindowDimensions();
   const { favoriteIds, filters, setFilters, filteredReports, loading, truncated, mapRegion, searchPlace } =
     useReports();
   const [open, setOpen] = useState(false);
@@ -183,16 +185,16 @@ export default function ReportFilters({ map = false }) {
               <View style={styles.filterSection}><Text style={styles.label}>Report keywords</Text>
               <TextInput value={draft.query} onChangeText={value => setDraft(current => ({ ...current, query: value }))} placeholder="Search report titles and notes" accessibilityLabel="Report keywords" style={styles.input} clearButtonMode="while-editing" /></View>
             </ScrollView>
-            <View style={styles.filterFooter}>
+            <View style={[styles.filterFooter, fontScale > 1.5 && { flexDirection: 'column', alignItems: 'stretch', gap: 8 }]}>
               <TouchableOpacity style={styles.resetButton} onPress={() => setDraft({ ...DEFAULT_REPORT_FILTERS })} accessibilityRole="button" accessibilityLabel="Reset all filters">
                 <Text style={styles.resetText}>Reset</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.done}
+                style={[styles.done, fontScale > 1.5 && { flex: 0, paddingVertical: 10 }]}
                 accessibilityRole="button"
                 onPress={() => { setFilters(draft); setOpen(false); }}
               >
-                <Text style={styles.doneText}>
+                <Text style={[styles.doneText, { textAlign: 'center' }]}>
                   {displayCount == null || (!draftChanged && loading) ? 'Show reports' : `Show ${displayCount}${displayTruncated ? '+' : ''} ${displayCount === 1 ? 'report' : 'reports'}`}
                 </Text>
               </TouchableOpacity>

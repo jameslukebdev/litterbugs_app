@@ -7,6 +7,7 @@ import ReportWizardSteps from './components/ReportWizardSteps';
 
 import MapReportPreview from './components/MapReportPreview';
 import useMapLabels from './lib/useMapLabels';
+import { resolveReportPhotoUrls } from './lib/reportPhotoUrls';
 import ReportMapMarkers from './components/ReportMapMarkers';
 
 import { saveReportDraft, loadReportDraft, clearReportDraft } from './lib/savedReportDraft';
@@ -243,6 +244,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     setMapRegion: setRegion,
     commitMapRegion,
     loading: reportsLoading,
+    error: reportsError,
     refreshReports,
     getReportById,
     getReportPhotoUrl,
@@ -1491,20 +1493,15 @@ useEffect(() => {
     }
 
     try {
-      const [firstPath, ...remainingPaths] = selectedReport.photo_paths;
-      const firstUrl = await getReportPhotoUrl(firstPath);
-
-      if (active && firstUrl) {
-        setReportPhotoUrls([firstUrl]);
-        setPhotosLoading(false);
-      }
-
-      const remainingUrls = await Promise.all(
-        remainingPaths.map((path) => getReportPhotoUrl(path))
-      );
+      const urls = await resolveReportPhotoUrls(selectedReport.photo_paths, getReportPhotoUrl, firstUrl => {
+        if (active) {
+          setReportPhotoUrls([firstUrl]);
+          setPhotosLoading(false);
+        }
+      });
 
       if (active) {
-        setReportPhotoUrls([firstUrl, ...remainingUrls].filter(Boolean));
+        setReportPhotoUrls(urls);
       }
     } catch (error) {
       console.log('Report photo loading error:', error);
@@ -2206,6 +2203,11 @@ const revealBottomReportField = () => {
           accessible={false}
         >
           {!reportPlacementActive ? <ReportFilters map /> : null}
+          {reportsError && !reportPlacementActive ? <TouchableOpacity
+            accessibilityRole="button" onPress={() => refreshReports({ showRefresh: true })}
+            style={{ backgroundColor: '#FFFFFF', borderRadius: 14, padding: 12, marginTop: 8 }}>
+            <Text style={{ color: '#37463D', fontWeight: '600' }}>Reports couldn’t refresh. Tap to try again.</Text>
+          </TouchableOpacity> : null}
           {searchPlace && !reportPlacementActive && !mapRegionsAreEquivalent(region, searchPlace.region) ? <TouchableOpacity onPress={() => { setPreviewId(null); commitMapRegion(searchPlace.region); }} accessibilityRole="button" accessibilityLabel="Re-center selected search area" style={{ alignSelf: 'center', backgroundColor: '#FFFFFF', borderRadius: 18, paddingHorizontal: 16, minHeight: 44, justifyContent: 'center', marginTop: 8 }}><Text style={{ color: '#285D38', fontWeight: '600' }}>Re-center</Text></TouchableOpacity> : null}
 
           <Animated.View

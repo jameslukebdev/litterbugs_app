@@ -85,3 +85,14 @@ index 593c6bd..bb9e14b 100644
  RCT_EXPORT_VIEW_PROPERTY(opacity, double)
  RCT_EXPORT_VIEW_PROPERTY(isPreselected, BOOL)
  RCT_EXPORT_VIEW_PROPERTY(titleVisibility, NSString)
+diff --git a/node_modules/react-native-maps/ios/AirMaps/AIRMapMarker.m b/node_modules/react-native-maps/ios/AirMaps/AIRMapMarker.m
+--- a/node_modules/react-native-maps/ios/AirMaps/AIRMapMarker.m
++++ b/node_modules/react-native-maps/ios/AirMaps/AIRMapMarker.m
+@@ -266,5 +266,5 @@
+-    // the actual marker got clicked
+-    CGPoint touchPointReal = [recognizer locationInView:self.calloutView];
++    // Report touch coordinates in the same space as pointForCoordinate.
++    CGPoint touchPointReal = [recognizer locationInView:self.map];
+     id event = @{
+                  @"action": @"marker-press",
+                  @"id": marker.identifier ?: @"unknown",

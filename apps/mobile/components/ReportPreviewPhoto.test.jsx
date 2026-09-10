@@ -11,11 +11,35 @@ vi.mock('react-native', () => ({
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 vi.mock('expo-image', () => ({ Image: ({ source, onError }) => <img src={source.uri} onError={onError} /> }));
 import ReportPreviewPhoto from './ReportPreviewPhoto';
+import RemotePhoto from './RemotePhoto';
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 let root, host;
 afterEach(async () => { if(root) await act(() => root.unmount()); host?.remove(); });
 async function mount(props) { host=document.createElement('div');document.body.append(host);root=createRoot(host);await act(() => root.render(<ReportPreviewPhoto {...props} />)); }
 describe('preview photo request states', () => {
+  it('accepts a late URL hint and ignores a failing older request', async () => {
+    let reject;
+    const getUrl = vi.fn(() => new Promise((resolve, fail) => { reject = fail; }));
+    host=document.createElement('div'); document.body.append(host); root=createRoot(host);
+    await act(() => root.render(<RemotePhoto path="a" getUrl={getUrl} />));
+    await act(() => root.render(<RemotePhoto path="a" uri="https://example.test/recovered.jpg" getUrl={getUrl} />));
+    await act(() => reject(Error('offline')));
+    expect(host.querySelector('img').src).toBe('https://example.test/recovered.jpg');
+    await act(() => host.querySelector('img').dispatchEvent(new Event('error')));
+    await act(() => root.render(<RemotePhoto path="a" uri="https://example.test/refreshed.jpg" getUrl={getUrl} />));
+    expect(host.querySelector('img').src).toBe('https://example.test/refreshed.jpg');
+  });
+  it('keeps a loaded native image mounted when a later URL hint or resolver arrives', async () => {
+    const getUrl = vi.fn().mockResolvedValue('https://example.test/a.jpg');
+    host=document.createElement('div'); document.body.append(host); root=createRoot(host);
+    await act(() => root.render(<RemotePhoto path="a" getUrl={getUrl} />));
+    const image = host.querySelector('img');
+    const replacementResolver = vi.fn(() => new Promise(() => {}));
+    await act(() => root.render(<RemotePhoto path="a" uri="https://example.test/a.jpg" getUrl={replacementResolver} />));
+    expect(host.querySelector('img')).toBe(image);
+    expect(replacementResolver).not.toHaveBeenCalled();
+    expect(host.querySelector('[aria-label="Loading report photo"]')).toBeNull();
+  });
   it('shows loading until resolution, not a false empty state', async () => {
     let resolve; const getPhotoUrl=vi.fn(() => new Promise(r=>resolve=r));
     await mount({report:{photo_paths:['a']},getPhotoUrl});

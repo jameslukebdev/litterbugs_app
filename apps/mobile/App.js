@@ -372,6 +372,12 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // A warm launch can remove the React loading logo before its onLoad fires.
+    // The native splash must still leave once the destination is ready.
+    if (launchReady) hideNativeSplash();
+  }, [launchReady, hideNativeSplash]);
+
+  useEffect(() => {
     let mounted = true;
 
     const normalizeSession = (nextSession) => {

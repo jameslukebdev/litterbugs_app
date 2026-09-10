@@ -19,7 +19,9 @@ describe('native sharing registration', () => {
     expect(mapScreenSource).toContain('shareSingle: installedRNShare.shareSingle');
     expect(mapScreenSource).toContain('readAsStringAsync: FileSystem.readAsStringAsync');
     expect(mapScreenSource).toContain('isPackageInstalled: installedRNShare.isPackageInstalled');
-    expect(mapScreenSource).toContain('canOpenURL: Linking.canOpenURL');
+    // Linking.canOpenURL uses its receiver; the adapter must preserve it.
+    expect(mapScreenSource).toContain('canOpenURL: url => Linking.canOpenURL(url)');
+    expect(mapScreenSource).not.toContain('canOpenURL: Linking.canOpenURL');
     expect(mapScreenSource).not.toContain('NativeModules.RNShare');
     expect(mapScreenSource).not.toContain("import RNShare from 'react-native-share';");
   });

@@ -46,13 +46,8 @@ describe('report photo responsiveness', () => {
   });
 
   it('reveals the first photo before waiting for the remaining photos', () => {
-    const firstPhotoReady = mapScreenSource.indexOf('setReportPhotoUrls([firstUrl])');
-    const remainingPhotosStart = mapScreenSource.indexOf(
-      'const remainingUrls = await Promise.all('
-    );
-
-    expect(firstPhotoReady).toBeGreaterThanOrEqual(0);
-    expect(remainingPhotosStart).toBeGreaterThan(firstPhotoReady);
+    expect(mapScreenSource).toContain('resolveReportPhotoUrls(selectedReport.photo_paths, getReportPhotoUrl, firstUrl =>');
+    expect(mapScreenSource).toContain('setReportPhotoUrls([firstUrl])');
   });
 
   it('uses the shared photo lifecycle for gallery and report list', () => {

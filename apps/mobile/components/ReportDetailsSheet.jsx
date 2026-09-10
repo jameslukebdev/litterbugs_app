@@ -134,7 +134,12 @@ export default function ReportDetailsSheet({ state, actions }) {
           selectedReportHasUtilityActions && styles.reportPostScrollContentWithActions,
         ]}
       >
-
+        {selectedReport?.cleanup_state === 'completed' && completedCleanupImpactLoading && !completedCleanupImpact ? (
+          <View accessibilityRole="progressbar" accessibilityLabel="Loading cleanup" style={{ minHeight: 220, backgroundColor: '#EDF2EE', borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator color="#2F7D32" />
+            <Text style={{ marginTop: 12, color: '#64716A' }}>Loading cleanup…</Text>
+          </View>
+        ) : <>
         {selectedReport?.cleanup_state === 'completed' ? (
           <>
             <CompletedCleanupStory
@@ -522,6 +527,7 @@ export default function ReportDetailsSheet({ state, actions }) {
 
         </View>
 
+        </>}
       </ScrollView>
 
       {cleanupDiscoverable || selectedReportHasUtilityActions ? <View style={[styles.reportDetailActionFooter, { paddingBottom: canEditOrDeleteSelectedReport && !selectedReport?.funding_locked_at ? 4 : Math.max(insets.bottom, 12) }]}>

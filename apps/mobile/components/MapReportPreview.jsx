@@ -17,6 +17,7 @@ function Summary({ report }) {
   </View>;
 }
 function FloatingCard({ report, bottom, getPhotoUrl, onClose, onDetails, onHeight, distance, onFund, onShare, canFund, canShare, isFavorite, onFavorite, favoritesReady }) {
+  const { height } = useWindowDimensions();
   const [width, setWidth] = useState(0);
   const [page, setPage] = useState(0);
   const photos = report.photo_paths?.length ? report.photo_paths : [null];
@@ -30,6 +31,7 @@ function FloatingCard({ report, bottom, getPhotoUrl, onClose, onDetails, onHeigh
     { text: 'Close preview', icon: 'close-circle-outline', onPress: onClose },
   ];
   return <View onLayout={event => onHeight?.(event.nativeEvent.layout.height)} style={[styles.card, amount > 0 && styles.fundedCard, { bottom }]}>
+    <ScrollView style={{ maxHeight: Math.min(height * 0.55, Math.max(160, height - bottom - 112)) }} bounces={false} nestedScrollEnabled>
     <View style={styles.hero} onLayout={event => setWidth(event.nativeEvent.layout.width)}>
       <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={event => width && setPage(Math.round(event.nativeEvent.contentOffset.x / width))}>
@@ -54,17 +56,18 @@ function FloatingCard({ report, bottom, getPhotoUrl, onClose, onDetails, onHeigh
       </View> : null}
     </View>
     <ReportCardDetails report={report} distance={distance} onPress={onDetails} options={<ReportCardMenu actions={actions} />} />
+    </ScrollView>
   </View>;
 }
 export default function MapReportPreview({ report, nearby, bottom, insetBottom, getPhotoUrl, onClose, onChoose, onDetails, onCloseNearby, onHeight, distance, onFund, onShare, canFund = false, canShare = false, isFavorite = false, onFavorite, favoritesReady = false }) {
+  const { fontScale } = useWindowDimensions();
   return <>
     {report ? <FloatingCard key={report.id} {...{ report, bottom, getPhotoUrl, onClose, onDetails, onHeight, distance, onFund, onShare, canFund, canShare, isFavorite, onFavorite, favoritesReady }} /> : null}
     <Modal visible={Boolean(nearby?.length)} transparent animationType="slide" onRequestClose={onCloseNearby}>
       <View style={styles.backdrop}>
         <TouchableOpacity style={StyleSheet.absoluteFill} accessible={false} onPress={onCloseNearby} />
-        <View style={[styles.sheet, { paddingBottom: Math.max(insetBottom, 16) }]}>
+        <View style={[styles.sheet, { paddingBottom: Math.max(insetBottom, 16), maxHeight: fontScale > 1.5 ? '90%' : '65%' }]}>
           <View style={styles.sheetHeader}><Text style={styles.heading} accessibilityRole="header">Reports here</Text><TouchableOpacity style={styles.close} accessibilityRole="button" accessibilityLabel="Close nearby reports" onPress={onCloseNearby}><Ionicons name="close" size={22} color="#435047" /></TouchableOpacity></View>
-          <Text style={styles.hint}>Choose a cleanup to preview on the map.</Text>
           <FlatList data={nearby || []} keyExtractor={(item) => String(item.id)} renderItem={({ item }) => <TouchableOpacity accessibilityRole="button" accessibilityLabel={item.title || 'Preview report'} style={styles.result} onPress={() => onChoose(item)}><Photo report={item} getPhotoUrl={getPhotoUrl} /><Summary report={item} /><Ionicons name="chevron-forward" size={18} color="#435047" /></TouchableOpacity>} />
         </View>
       </View>
@@ -94,5 +97,5 @@ const styles = StyleSheet.create({
   distance: { fontSize: 13, color: '#637067' },
   creator: { fontSize: 12, color: '#637067', lineHeight: 17 },
   backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.25)' }, sheet: { maxHeight: '65%', backgroundColor: 'white', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 18 },
-  sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, heading: { fontSize: 22, fontWeight: '700', color: '#25382D' }, hint: { fontSize: 14, color: '#637067', marginBottom: 14 }, result: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#DFE6E0' },
+  sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, heading: { flex: 1, fontSize: 22, fontWeight: '700', color: '#25382D' }, result: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#DFE6E0' },
 });

@@ -1,11 +1,48 @@
 import { describe, expect, it } from 'vitest';
-import { layoutMapLabels, reportsNearMapTap, STATUS_MARKER_SIZE } from './mapLabelLayout';
+import { layoutMapLabels, layoutProjectedMapLabels, reportsNearMapTap, STATUS_MARKER_SIZE } from './mapLabelLayout';
 const point = (id, x, y, label = '$6') => ({ id, x, y, label });
+describe('native marker retention across camera projections', () => {
+  const size = { width: 375, height: 667 };
+  it('retains every annotation while panning out and back across the viewport edge', () => {
+    const report = { id: 'a', funded_amount_cents: 600 };
+    let dimensions;
+    for (const x of [100, -69, -71, -400, -71, -69, 100]) {
+      const result = layoutProjectedMapLabels([{ ...point('a', x, 200), report }], size);
+      expect(result).toHaveLength(1);
+      expect(result[0].report).toBe(report);
+      expect(result[0].label).toBe('$6');
+      expect(result[0].labelled).toBe(x > -70);
+      const current = [result[0].width, result[0].height];
+      if (dimensions) expect(current).toEqual(dimensions);
+      dimensions = current;
+    }
+  });
+  it('keeps failed and pending projections available without inventing overlaps', () => {
+    const result = layoutProjectedMapLabels([
+      point('a', undefined, undefined), point('b', 100, NaN), point('c', 100, 100),
+    ], size);
+    expect(result.map(p => p.id)).toEqual(['a', 'b', 'c']);
+    expect(result.map(p => p.labelled)).toEqual([false, false, true]);
+    expect(reportsNearMapTap(result, 'a').map(p => p.id)).toEqual(['a']);
+  });
+  it('does not let a stale offscreen projection suppress an on-screen label', () => {
+    const result = layoutProjectedMapLabels([point('a', -71, 100), point('b', -50, 100)], size);
+    expect(result.map(p => [p.id, p.labelled])).toEqual([['a', false], ['b', true]]);
+  });
+  it('preserves native child order when selection changes label priority', () => {
+    const input = [point('a', 100, 100), point('b', 102, 100)];
+    for (const selected of [null, 'b', 'a', null]) {
+      const result = layoutProjectedMapLabels(input, size, selected);
+      expect(result.map(p => p.id)).toEqual(['a', 'b']);
+      expect(reportsNearMapTap(result, 'a').map(p => p.id)).toEqual(['a', 'b']);
+    }
+  });
+});
 describe('map label collision and discovery', () => {
   it('keeps separated reports labelled and downgrades close labels without dropping reports', () => {
     const result = layoutMapLabels([point('a', 100, 100), point('b', 115, 100), point('c', 300, 300)]);
     expect(result.map(p => [p.id, p.labelled])).toEqual([['a', true], ['b', false], ['c', true]]);
-    expect(reportsNearMapTap(result, 'b').map(p => p.id)).toEqual(['b']);
+    expect(reportsNearMapTap(result, 'b').map(p => p.id)).toEqual(['a', 'b']);
   });
   it('makes every identical-coordinate report available through the chooser', () => {
     const result = layoutMapLabels(Array.from({ length: 30 }, (_, i) => point(`report-${i}`, 100, 100)));
@@ -38,7 +75,7 @@ describe('map label collision and discovery', () => {
     const result = layoutMapLabels([point('a', 100, 100), point('b', 115, 100)], 'b');
     expect(result.find(p => p.id === 'b').labelled).toBe(true);
     expect(result.find(p => p.id === 'a').labelled).toBe(false);
-    expect(reportsNearMapTap(result, 'b')).toHaveLength(1);
+    expect(reportsNearMapTap(result, 'b')).toHaveLength(2);
   });
   it('allows more labels after zoom separates points and accounts for larger text', () => {
     expect(layoutMapLabels([point('a', 100, 100), point('b', 160, 100)]).every(p => p.labelled)).toBe(true);
@@ -94,6 +131,21 @@ it('opens a distinct tapped marker despite overlapping reserved touch bounds', (
   expect(reportsNearMapTap(points,'completed').map(p => p.id)).toEqual(['completed']);
 });
 it('reserves the chooser for nearly indistinguishable map points', () => {
-  const points = [point('a',100,100),point('b',103,104),point('c',107,100)];
+  const points = [point('a',100,100),point('b',103,104),point('c',111,100)];
   expect(reportsNearMapTap(points,'a').map(p => p.id)).toEqual(['a','b']);
+});
+
+it('makes a report covered by an accessibility-size label reachable from either tap', () => {
+  const input = [point('a', 100, 100, '$0'), point('b', 100, 135, '$6')];
+  const normal = layoutMapLabels(input);
+  expect(reportsNearMapTap(normal, 'a').map(p => p.id)).toEqual(['a']);
+  const large = layoutMapLabels(input, null, 3.12);
+  expect(large.find(p => p.id === 'b').labelled).toBe(false);
+  for (const id of ['a', 'b']) expect(reportsNearMapTap(large, id).map(p => p.id)).toEqual(['a', 'b']);
+});
+
+it('uses the visible touch position when another annotation host intercepted it', () => {
+  const points = layoutMapLabels([point('a', 100, 100, '$0'), point('b', 100, 140, '$6')], null, 3.12);
+  expect(reportsNearMapTap(points, 'a', { x: 100, y: 140 }).map(p => p.id)).toEqual(['b']);
+  expect(reportsNearMapTap(points, 'b', { x: 100, y: 100 }).map(p => p.id)).toEqual(['a']);
 });

@@ -26,7 +26,14 @@ export default function CompactRankBadge({ userId, style, appearance = 'badge' }
     return () => { active = false; };
   }, [userId]);
 
-  if (!ranking) return null;
+  if (!userId) return null;
+  if (!ranking) return (
+    <View style={[styles.badge, appearance === 'plain' && styles.plainBadge, style, { opacity: 0 }]}
+      pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <View style={[styles.artworkStage, appearance === 'plain' && styles.plainArtworkStage]} />
+      <Text style={[styles.name, appearance === 'plain' && styles.plainName]}>Community rank</Text>
+    </View>
+  );
 
   const rankDefinition = getRankForPoints(ranking.points);
 

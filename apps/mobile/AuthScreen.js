@@ -278,7 +278,7 @@ export default function AuthScreen() {
           <View style={emailStyles.backdrop}>
             <KeyboardAvoidingView
               behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-              keyboardVerticalOffset={Platform.OS === 'ios' ? -36 : 0}
+              keyboardVerticalOffset={0}
               style={emailStyles.kav}
             >
               <TouchableWithoutFeedback accessible={false}>

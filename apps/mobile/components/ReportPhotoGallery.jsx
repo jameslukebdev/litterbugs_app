@@ -17,7 +17,7 @@ export default function ReportPhotoGallery({ report, urls, loading, width }) {
   useEffect(() => setIndex(0), [report?.id]);
   if (!report) return null;
   const photoCount = report.photo_paths?.length || urls.length;
-  if (loading && !urls.length)
+  if (loading && !urls.length && !report.photo_paths?.length)
     return (
       <View style={[styles.empty, { width, alignSelf: 'center' }]}>
         <ActivityIndicator color="#2F7D32" />
