@@ -10,8 +10,8 @@ an account holder.
 | --- | --- |
 | Meta app | Litterbugs Community Cleanup |
 | App ID | `1477683410862512` |
-| Business portfolio | Litterbugs Community Cleanup |
-| Portfolio ID | `863596096684215` |
+| Business portfolio | Burrow Base (verified August 15, 2026) |
+| Portfolio ID | `4302410929978959` |
 | Current full-access administrator | Grant E Gibson |
 | Production iOS bundle | `com.litterbugs.app` |
 | Production Android package | `com.litterbugs.app` |
@@ -41,9 +41,9 @@ tester or Meta's business/provider review.
 
 September 10 source check: **all current mobile EAS profiles enable Facebook
 login**, including production. The older statement that public mobile builds
-hide the button was incorrect. Meta remains unpublished and its business
-portfolio is unverified. An administrator login therefore does not establish
-public-user access. Do not publish the Meta app during the current checks.
+hide the button was incorrect. Meta remains unpublished. Its existing app is now connected to the verified
+Burrow Base portfolio; the Developer Verification page confirms Verified.
+An administrator login does not establish public-user access. Do not publish the Meta app during the current checks.
 
 The callback matches the configured Supabase endpoint. Meta records 29 email
 and 31 public_profile API test calls, with both permissions “Ready for testing.”
@@ -54,14 +54,14 @@ Meta confirmed “Changes saved.” No deletion request was sent. Full account f
 
 ## Account-holder checklist
 
-- [ ] Sign in to the Litterbugs-owned Meta business portfolio.
+- [x] Locate the existing verified Burrow Base business portfolio.
 - [ ] Confirm Burrow Base LLC's legal name, address, phone, domain, and business
   documents are accurate and controlled by the company.
-- [ ] Complete any business-verification request shown by Meta.
+- [x] Confirm the app inherits the existing verified Burrow Base business association.
 - [ ] Confirm at least two trusted people have appropriate business access and
   strong two-factor authentication.
-- [ ] Confirm the Meta app remains in portfolio `863596096684215` and is not
-  attached to an unrelated business.
+- [x] Connect the existing Meta app to verified portfolio `4302410929978959`,
+  replacing the unverified duplicate portfolio `863596096684215`.
 - [ ] Confirm the production iOS bundle, Android package, App Store ID, website
   domain, privacy URL, deletion instructions, app icon, and category all match
   the public Litterbugs product.
@@ -80,6 +80,16 @@ Meta confirmed “Changes saved.” No deletion request was sent. Full account f
 While the Meta app is unpublished, real accounts must have an accepted role or
 tester invitation. A successful login by an administrator does not prove that
 public users can log in.
+
+## September 10 physical Android login check
+
+On the connected Pixel 5, the QA app was signed out, then Profile → Sign in or
+create account → Continue with Facebook opened Facebook for app ID
+`1477683410862512`, using the expected Supabase callback and app return URL.
+Facebook recognized Grant E Gibson and, after Continue, requested the account
+password. The account holder must finish this directly on the phone. No password
+was entered by the agent. Return to Litterbugs and authenticated profile loading
+remain unverified; reaching Facebook alone is not a passing login test.
 
 ## Verification evidence to retain
 

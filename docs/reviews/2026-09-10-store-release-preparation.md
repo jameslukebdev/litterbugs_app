@@ -117,3 +117,34 @@ See the [prior audit](2026-09-09-prestore-audit.md) and
 [Apple review guidelines](https://developer.apple.com/app-store/review/guidelines/),
 sections 1.2, 4.8 and 5.1.2. These are release gates, not a reason to repeat the
 completed map, loading, sharing and financial UI regression pass.
+
+
+## Corrected Meta business association and device test
+
+The user correctly reported prior verification. **Burrow Base** portfolio
+`4302410929978959` shows **Verified, August 15, 2026**. Retirement Lists is a
+separate product under that business and was not modified. The Litterbugs
+portfolio `863596096684215` was an unverified duplicate association.
+
+The existing Litterbugs app `1477683410862512` was removed from that duplicate
+portfolio and connected to verified Burrow Base. Meta automatically approved
+because the signed-in user administers the app. The app's Developer Verification
+page explicitly shows **Burrow Base — Verified**. This supersedes the earlier
+business-verification prerequisite. The app remains unpublished. No app was
+deleted, no app identifiers were changed, and no identity submission was
+completed by the agent.
+
+On the physical Pixel 5, signed out of the QA app and opened Profile → Sign in
+or create account → Continue with Facebook. The browser reached Facebook for
+app ID `1477683410862512` with the expected Supabase callback and
+`litterbugs://auth/callback` return target. Facebook recognized Grant E Gibson;
+Continue led to a password prompt. Account-holder completion on the phone is
+pending. Authenticated return to Litterbugs is **not yet verified**. The live
+website offers Google/email only; the mobile Facebook button is enabled.
+
+Chrome's gray overlay was cleared by restarting Chrome with tabs restored;
+a subsequent screenshot confirmed normal colors and no debugging banner.
+The unused Android emulator was shut down; ADB confirmed only the Pixel.
+iOS Simulator received a targeted shutdown after a device reappeared booted.
+Memory pressure reported 47% free at that check. Use additional simulators only
+as needed and close unused ones, per the user's updated instruction.
