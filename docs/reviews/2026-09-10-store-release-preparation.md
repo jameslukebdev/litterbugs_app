@@ -176,3 +176,12 @@ to Stripe; that does not mean they are outside the app's disclosure assessment.
 The linked Stripe privacy-details support page was unavailable to the web reader;
 its detailed category mapping remains to be reconciled with the final archive.
 No live privacy answers were saved or published.
+
+Installed Stripe version is 24.19.0. Its `STPAnalyticsClient.swift` and
+`AnalyticsClientV2.swift` target Stripe analytics endpoints and suppress analytics
+in simulator/test environments. Consequently, simulator-only traffic cannot
+establish the absence of production SDK analytics. Use the physical-device
+configuration and provider disclosures for final answers. Current server source
+explicitly sends receipt email on contribution creation and account email/name
+on Stripe cleaner onboarding; both can originate from social sign-in. Include
+that recipient flow in both store and Meta disclosure preparation.

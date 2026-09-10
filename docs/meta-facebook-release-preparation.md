@@ -148,3 +148,14 @@ success or error, and the account list remained empty after returning to it.
 No simulated account or usable credentials were obtained. Do not claim separate
 tester coverage; use a real accepted tester or resolve Meta's test-account
 creation before that check can pass. The request was not repeatedly submitted.
+
+### Additional processor evidence from current source
+
+The Supabase-only pre-filled processor list is incomplete for accounts that
+use financial features: `create-cleanup-contribution/index.ts:84` sends
+`user.email` to Stripe as receipt email, and
+`create-cleaner-onboarding-link/index.ts:86` sends account email and profile name
+to Stripe Connect. For Facebook-created accounts these fields may be derived
+from Meta. Include Stripe in the processor assessment rather than declaring
+that Supabase is the only recipient. These findings came from source inspection;
+no contribution, payment, or cleaner account was created to test them.
