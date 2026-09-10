@@ -1,6 +1,7 @@
 import * as WebBrowser from 'expo-web-browser';
 
 import { supabase } from './supabase';
+import { connectIdentity } from './identityLinking';
 import {
   clearNativeProviderSessions,
   signInWithNativeProvider,
@@ -15,6 +16,8 @@ const APP_SCHEME = 'litterbugs';
 const AUTH_BRIDGE_URL = 'https://auth.litterbugs.app/start';
 
 const handledCallbackUrls = new Set();
+let browserAuthInProgress = false;
+export const isBrowserAuthInProgress = () => browserAuthInProgress;
 
 const createAppUrl = (path) => `${APP_SCHEME}://${path}`;
 
@@ -52,7 +55,9 @@ export const handleAuthCallbackUrl = async (url) => {
 
   try {
     if (callbackError) {
-      throw new Error(callbackError.replace(/\+/g, ' '));
+      const error = new Error(callbackError.replace(/\+/g, ' '));
+      error.code = params.get('error_code') || params.get('error');
+      throw error;
     }
 
     let error;
@@ -75,7 +80,7 @@ export const handleAuthCallbackUrl = async (url) => {
 
     return { handled: true, type };
   } catch (error) {
-    handledCallbackUrls.delete(url);
+    if (!callbackError) handledCallbackUrls.delete(url);
     throw error;
   }
 };
@@ -102,9 +107,9 @@ export const sendPasswordRecovery = (email) =>
     redirectTo: getPasswordRecoveryUrl(),
   });
 
-const signInWithBrowserProvider = async (provider) => {
+const signInWithBrowserProvider = async (provider, mode = 'signIn') => {
   const redirectTo = getAuthRedirectUrl();
-  const { data, error } = await supabase.auth.signInWithOAuth({
+  const { data, error } = await (mode === 'link' ? supabase.auth.linkIdentity.bind(supabase.auth) : supabase.auth.signInWithOAuth.bind(supabase.auth))({
     provider,
     options: {
       redirectTo,
@@ -119,14 +124,17 @@ const signInWithBrowserProvider = async (provider) => {
     ? `${AUTH_BRIDGE_URL}?target=${encodeURIComponent(data.url)}`
     : data.url;
 
-  const result = await WebBrowser.openAuthSessionAsync(launchUrl, redirectTo, {
-    showInRecents: true,
-  });
-
-  if (result.type !== 'success' || !result.url) return { cancelled: true };
-
-  await handleAuthCallbackUrl(result.url);
-  return { cancelled: false };
+  browserAuthInProgress = true;
+  try {
+    const result = await WebBrowser.openAuthSessionAsync(launchUrl, redirectTo, {
+      showInRecents: true,
+    });
+    if (result.type !== 'success' || !result.url) return { cancelled: true };
+    await handleAuthCallbackUrl(result.url);
+    return { cancelled: false };
+  } finally {
+    browserAuthInProgress = false;
+  }
 };
 
 /**
@@ -144,6 +152,19 @@ export const signInWithProvider = async (provider) => {
 
   return signInWithBrowserProvider(provider);
 };
+
+export const connectSignInMethod = (provider) => connectIdentity({
+  auth: supabase.auth,
+  provider,
+  connect: async () => {
+    if (provider === 'google' || provider === 'apple') {
+      const nativeResult = await signInWithNativeProvider(provider, 'link');
+      if (nativeResult) return nativeResult;
+      if (provider === 'apple') throw new Error('Apple sign-in is unavailable on this device.');
+    }
+    return signInWithBrowserProvider(provider, 'link');
+  },
+});
 
 export const signOut = async () => {
   await Promise.race([

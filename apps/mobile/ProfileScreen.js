@@ -642,6 +642,7 @@ export default function ProfileScreen({ navigation, route }) {
         <Text style={styles.settingsHeading}>Your account</Text>
         <View style={styles.settingsGroup}>
           <ActionRow appearance="profile" divided label="Edit profile" icon="person-outline" onPress={() => openScreen('EditProfile')} />
+          <ActionRow appearance="profile" divided label="Sign-in methods" icon="key-outline" onPress={() => openScreen('SignInMethods')} />
           <ActionRow appearance="profile" label="Blocked accounts" icon="ban-outline" onPress={() => openScreen('BlockedAccounts')} />
         </View>
         <Text style={styles.settingsHeading}>Help & community</Text>

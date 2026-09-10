@@ -23,6 +23,7 @@ import {
 import AppTabs from './AppTabs';
 import BrandedLoadingState from './BrandedLoadingState';
 import AuthScreen from './AuthScreen';
+import SignInMethodsScreen from './SignInMethodsScreen';
 import SettingsInfoScreen from './SettingsInfoScreen';
 import BlockedAccountsScreen from './BlockedAccountsScreen';
 import CompleteProfileScreen from './CompleteProfileScreen';
@@ -40,7 +41,7 @@ import PublicProfileScreen from './PublicProfileScreen';
 import RankCelebrationManager from './RankCelebrationManager';
 import ReportUserScreen from './ReportUserScreen';
 import ResetPasswordScreen from './ResetPasswordScreen';
-import { handleAuthCallbackUrl, PASSWORD_RECOVERY_PATH, signOut } from './lib/auth';
+import { handleAuthCallbackUrl, isBrowserAuthInProgress, AUTH_CALLBACK_PATH, PASSWORD_RECOVERY_PATH, signOut } from './lib/auth';
 import { acknowledgeCleanupNotifications } from './lib/cleanup';
 import { cleanupNotificationDestination } from './lib/cleanupNotifications';
 import { ProfileProvider, useProfile } from './lib/profile';
@@ -320,6 +321,7 @@ function AppNavigation({
         <Stack.Screen name="PaymentDetail" component={PaymentDetailScreen} options={{ ...headerOptions, title: 'Payment details' }} />
         <Stack.Screen name="MyActivity" component={ProfileScreen} initialParams={{ section: 'activity' }} options={{ ...headerOptions, title: 'My activity' }} />
         <Stack.Screen name="Payments" component={ProfileScreen} initialParams={{ section: 'payments' }} options={{ ...headerOptions, title: 'Payments' }} />
+        <Stack.Screen name="SignInMethods" component={SignInMethodsScreen} options={{ ...headerOptions, title: 'Sign-in methods' }} />
         <Stack.Screen name="SettingsInfo" component={SettingsInfoScreen} options={{ ...headerOptions, title: 'Settings' }} />
         <Stack.Screen name="Settings" component={ProfileScreen} initialParams={{ section: 'settings' }} options={{ ...headerOptions, title: 'Settings' }} />
         <Stack.Screen
@@ -405,6 +407,9 @@ export default function App() {
 
     const processAuthUrl = async (url) => {
       if (!url) return;
+      // The active browser flow owns its callback and user feedback. Cold-start
+      // and password-recovery links still use the global listener.
+      if (isBrowserAuthInProgress() && url.startsWith(`litterbugs://${AUTH_CALLBACK_PATH}`)) return;
       try {
         const result = await handleAuthCallbackUrl(url);
         if (

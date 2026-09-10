@@ -77,3 +77,52 @@ users can update to a different bundle identity. Any fallback must explain user
 migration, listing/review continuity, Apple identities, and notification changes.
 
 Source: https://developer.apple.com/help/app-store-connect/transfer-an-app/initiate-an-app-transfer
+
+## Connected sign-in implementation checkpoint
+
+Added Settings → Sign-in methods. Existing providers are shown as Connected;
+Google and Facebook can be attached through authenticated provider flows, and
+Apple uses the gated native control. A successful link must retain the original
+user ID and return the selected provider in the refreshed identity list.
+Cancellation is quiet. Already-used identities explain that the accounts remain
+separate and offer the existing support route; no automatic data migration or
+account deletion is implemented.
+
+Enabled `security_manual_linking_enabled` in the existing Supabase project with
+a single-field configuration update (HTTP 200); a fresh read confirmed true.
+Apple provider remains disabled; its current configured audience is
+`com.litterbugs.app`. No provider secret was changed. Focused validation now
+passes 14 tests across credential exchange, account invariants and provider
+presence. Source validation passed at 154 modules before the final provider
+presence guard; native visual/provider conflict validation is pending.
+
+Local signing inventory: only Grant's Apple Development identity is available.
+The existing QA provisioning profile for `com.gegibson.litterbugs.qa`, team
+RLXNU225W4, includes `aps-environment=development` and Apple sign-in `Default`,
+and expires August 30, 2027. This enables an independent QA path under Grant's
+team; it does not grant production signing for Luke's existing App Store app.
+
+### Physical Pixel verification
+
+Built and installed QA version-code 12 without clearing app data. Inspected
+Settings → Sign-in methods on the phone: Email and Facebook connected, Google
+available to connect. Selected the already-used grant@burrowbase.com Google
+identity from the iCloud-email account. Supabase rejected the conflict; no
+identity or data was moved.
+
+The first device run exposed duplicate error handling: the screen displayed a
+generic error and the global callback listener then displayed an expired-link
+message. Fixed active browser callback ownership and retained provider error
+codes. Rebuilt and reinstalled; the same conflict now produces one clear
+already-used-account message and returns to the unchanged provider list after
+OK. A fresh successful new-provider link remains unverified.
+
+Reserved provider-list space during loading. On the final Pixel build, the
+account-help paragraph remained at y=1400 and its button at y=1566 in both
+loading and loaded states. Initial screen screenshot was inspected for readable
+spacing and hierarchy. Focused tests: 16 pass in four files; source check: 154
+modules, zero errors. No broad completed regression suites were repeated.
+
+Prepared `docs/apple-account-support-draft.md` for a possible Apple inquiry;
+it has not been sent. No Apple transfer, store publication, account merge,
+financial transaction, or social post occurred.

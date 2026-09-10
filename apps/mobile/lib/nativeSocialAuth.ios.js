@@ -34,7 +34,7 @@ const createNonce = () => Array.from(
   (byte) => byte.toString(16).padStart(2, '0')
 ).join('');
 
-const signInWithGoogle = async () => {
+const signInWithGoogle = async (mode = 'signIn') => {
   configureGoogle();
 
   const nonce = createNonce();
@@ -51,7 +51,7 @@ const signInWithGoogle = async () => {
   }
 
   const { accessToken } = await GoogleSignin.getTokens();
-  const { error } = await supabase.auth.signInWithIdToken({
+  const { error } = await (mode === 'link' ? supabase.auth.linkIdentity.bind(supabase.auth) : supabase.auth.signInWithIdToken.bind(supabase.auth))({
     provider: 'google',
     token: idToken,
     access_token: accessToken,
@@ -62,18 +62,23 @@ const signInWithGoogle = async () => {
   return { cancelled: false };
 };
 
-const signInWithApple = createAppleSignIn({
-  apple: AppleAuthentication, auth: supabase.auth, createNonce,
+const signInWithApple = (mode = 'signIn') => createAppleSignIn({
+  apple: AppleAuthentication,
+  auth: mode === 'link' ? {
+    signInWithIdToken: (credentials) => supabase.auth.linkIdentity(credentials),
+    updateUser: async () => ({}),
+  } : supabase.auth,
+  createNonce,
   hashNonce: (nonce) => Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, nonce),
-});
+})();
 
 const nativeSignIn = {
   apple: signInWithApple,
   google: signInWithGoogle,
 };
 
-export const signInWithNativeProvider = async (provider) =>
-  nativeSignIn[provider]?.() ?? null;
+export const signInWithNativeProvider = async (provider, mode = 'signIn') =>
+  nativeSignIn[provider]?.(mode) ?? null;
 
 export const clearNativeProviderSessions = async () => {
   if (!GOOGLE_WEB_CLIENT_ID || !GOOGLE_IOS_CLIENT_ID) return;
