@@ -56,8 +56,19 @@ test evidence. Apple's [account-deletion guidance](https://developer.apple.com/s
 calls for Sign in with Apple token revocation, with the flow described in
 [TN3194](https://developer.apple.com/documentation/technotes/tn3194-handling-account-deletions-and-revoking-tokens-for-sign-in-with-apple).
 An external-provider walkthrough requires a disposable provider account; the
-owner has been asked for one. Grant's existing Facebook sign-in was restored
+owner was asked for one. Grant's existing Facebook sign-in was restored
 after the disposable email-account test; no personal account was deleted.
+
+The owner subsequently supplied and explicitly identified a Google test
+account. Before deletion, its user ID
+`050260c5-3712-48fe-a855-6518c640ccce` had both email and google identities,
+zero public reports, and the iPhone Sign-in methods screen showed both
+connected. Deletion through Settings and its confirmation returned the iPhone
+to browsing. Exact post-checks found zero matching Auth users, identities,
+sessions and profiles; the separate owner's iCloud-linked account remained.
+This verifies deletion of linked Litterbugs sign-in records. It does not claim
+deletion of the Google account or revocation of the external Google grant.
+The separate Apple revocation implementation gap remains open.
 
 ## Moderation
 
