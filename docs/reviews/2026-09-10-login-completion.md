@@ -205,3 +205,27 @@ The account holder has been asked to approve it. No simulator or rebuild was
 started. iPhone push registration remains absent for the new Apple test account;
 profile completion and notification delivery/tap testing are next after control
 is restored. Facebook completion and separate tester coverage remain pending.
+
+## Physical iPhone Facebook login completed — September 11, 09:43
+
+The account holder entered the password and completed Facebook authenticator
+verification. The original browser attempt, left open through the verification
+and intervening work, returned to litterbugs.app without completing a backend
+sign-in. Session expiry is a hypothesis, not a confirmed root cause.
+
+Cancelled that browser sheet and started one fresh Facebook login from the QA
+app. Facebook reused the verified session, displayed Continue as Grant, and
+returned successfully to the native app. Profile showed Grant Gibson, joined
+August 2026. Read-only backend evidence recorded the existing iCloud-email
+Facebook account's last_sign_in_at as 2026-09-11 13:43:19.117491 UTC, with its
+Facebook identity intact. No account was merged or relinked. This passes
+administrator Facebook login on the physical iPhone 6s, complementing the
+completed Pixel administrator test. Separate tester/first-time consent coverage
+remains unverified.
+
+Apple native authentication and sandbox iPhone push delivery/tap navigation also
+passed today; see the September 11 UX follow-up. Production signing/APNs and
+final store disclosures remain distinct pending release requirements. Meta is
+still an unpublished, unsubmitted review draft under verified Burrow Base;
+controller/history answers, processor-country clarification and separate tester
+coverage remain pending. No store or Meta publication was performed.
