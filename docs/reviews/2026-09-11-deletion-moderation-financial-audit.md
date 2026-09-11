@@ -138,6 +138,27 @@ Litterbugs sandbox. No live transaction or production credential change occurred
 
 ## User-testing handoff
 
+### Remaining native payment exercise: local preparation
+
+A separate Colima profile, litterbugs-audit, is capped at 2 CPUs and 4 GiB.
+The scratch Supabase project is at
+`/Users/grantgibson/Library/Caches/litterbugs-payment-audit`, with API port
+62321 and database port 62322. It contains schema only; outbound production
+notification/photo-cleanup URLs were replaced with a disabled local-test host.
+No live credentials or customer data were copied into this database.
+
+During preparation, an existing default-Colima SSH forward occupied the first
+chosen database port (55322). A schema import reached the unrelated local
+retirement-launch-local database and stopped at its existing profiles table.
+Recovery removed the 22 empty imported tables and 81 imported functions in one
+transaction with RESTRICT dependency checks, preserving the existing profiles
+table and its two rows. Its table comment was restored to the source value
+(NULL). No production database was written by this schema-import operation.
+The Litterbugs schema was subsequently loaded successfully with a single
+transaction directly into the explicitly named test container. Further test
+operations must verify the API target and use the explicit container for SQL.
+The native payment exercise itself is not yet complete.
+
 Use [the short tester checklist](../user-testing-checklist.md) and
 [known issues](../user-testing-known-issues.md). These describe supervised
 usability testing, not a store-release or all-transactions certification.
