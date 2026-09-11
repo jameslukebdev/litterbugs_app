@@ -107,7 +107,7 @@ Fresh provider decline testing passed in the existing Litterbugs sandbox
 insufficient-funds test card returned “Your card has insufficient funds.”
 Test PaymentIntent: `pi_3UEXViKUBoEpySr61nv5OJka`. No real card, customer, email,
 or saved payment method was used. This verifies the provider decline only;
-the full native checkout decline-and-retry exercise remains pending.
+the subsequent full native checkout exercise is recorded below.
 
 The August 28 native acceptance section records that sandbox credentials were
 installed before live credentials. Current create-cleanup-contribution returns
@@ -138,7 +138,7 @@ Litterbugs sandbox. No live transaction or production credential change occurred
 
 ## User-testing handoff
 
-### Remaining native payment exercise: local preparation
+### Native payment exercise: isolated environment
 
 A separate Colima profile, litterbugs-audit, is capped at 2 CPUs and 4 GiB.
 The scratch Supabase project is at
@@ -157,7 +157,42 @@ table and its two rows. Its table comment was restored to the source value
 The Litterbugs schema was subsequently loaded successfully with a single
 transaction directly into the explicitly named test container. Further test
 operations must verify the API target and use the explicit container for SQL.
-The native payment exercise itself is not yet complete.
+The native payment exercise subsequently passed on the physical iPhone 6s
+(iOS 15.8.2), using a QA Release build targeting the isolated backend. The
+current create-cleanup-contribution, check-contribution-status and
+stripe-webhook functions ran against the copied schema. A disposable local
+account and report were seeded; photo eligibility was set explicitly for this
+payment-only fixture. This is not an additional AI/photo-review test.
+
+The phone's PaymentSheet displayed TEST. A $5 contribution plus 50-cent fee
+using Stripe's insufficient-funds card showed “Your card has insufficient
+funds.” The real webhook marked the local contribution failed. Replacing the
+card in the same sheet with Stripe's successful test card completed the same
+PaymentIntent, `pi_3UEYuWKUBoEpySr61x3Iab7F`. The app displayed “Contribution
+received,” $5 added and $5.50 total. Stripe confirmed livemode=false, one failed
+charge attempt and one successful charge. The local ledger contained one
+succeeded contribution (500 principal / 550 total), the report's fund was 500,
+and exactly one contribution_succeeded audit entry existed. Both failure and
+success events were recorded as test events. The returned report showed $5.
+No real payment or public report was created.
+
+Evidence retained locally: `/tmp/lb-native-payment-evidence.json`,
+`/tmp/lb-native-payment-decline.png`, and `/tmp/lb-native-payment-receipt.png`.
+This covers native decline/retry with real Stripe webhook delivery to an
+isolated backend; it does not certify current production webhook settings,
+Android decline/retry, or a phone-level network interruption. Earlier documented
+successful native transactions and focused interruption tests remain credited.
+
+Minor UX finding: adding funds to one's own report also showed the foreground
+“Cleanup fund increased” notification above the receipt. Dismissing it worked,
+and the receipt and report balances remained correct; suppressing this redundant
+self-action notification is a follow-up polish item.
+
+After the exercise, the regular QA build was reinstalled and launched to the
+map. The local test session was revoked, the Stripe listener and local function
+server stopped, and the audit VM shut down to release its 4 GiB allocation.
+Temporary sandbox key/environment files and the disposable login credentials
+were removed. Production credentials and store listings were not changed.
 
 Use [the short tester checklist](../user-testing-checklist.md) and
 [known issues](../user-testing-known-issues.md). These describe supervised
