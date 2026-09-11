@@ -189,3 +189,19 @@ free. No further broad regression tests were run. Physical iPhone completion,
 separate tester credentials, and the unresolved Meta data-handling answers
 remain pending. All next steps assume no assistance from Luke; the artifact is
 independent of his signing credentials and is not an App Store release build.
+
+## Apple authentication completed — September 11, 09:03 checkpoint
+
+The account holder completed Touch ID. The physical iPhone now displays the
+Complete your profile screen. A read-only backend check confirms a successful
+Apple sign-in at 12:59:32 UTC, an Apple identity, and retained Apple name
+metadata. This verifies native Apple token exchange on the Grant-signed QA
+build. The public display name remains a separate onboarding choice.
+
+The Pixel 5 is reconnected and authorized over USB. The iPhone control service
+had stopped overnight; the installed current runner was located and started.
+iOS now requires a separate Touch ID approval labeled Enable UI Automation.
+The account holder has been asked to approve it. No simulator or rebuild was
+started. iPhone push registration remains absent for the new Apple test account;
+profile completion and notification delivery/tap testing are next after control
+is restored. Facebook completion and separate tester coverage remain pending.
