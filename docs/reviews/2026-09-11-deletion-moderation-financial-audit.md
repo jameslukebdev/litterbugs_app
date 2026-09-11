@@ -48,6 +48,17 @@ entries and image/share caches need a separate retention assessment; the draft
 fix does not claim to erase every device cache. Real funded-record retention
 was not re-exercised by these empty financial fixture accounts.
 
+Provider follow-up: source inspection confirms that appleSignIn.js exchanges
+only the identity token with Supabase. It does not retain/exchange Apple's
+authorization code for a revocable token; delete-account has no provider
+revocation request. This is a confirmed implementation gap, not merely missing
+test evidence. Apple's [account-deletion guidance](https://developer.apple.com/support/offering-account-deletion-in-your-app/)
+calls for Sign in with Apple token revocation, with the flow described in
+[TN3194](https://developer.apple.com/documentation/technotes/tn3194-handling-account-deletions-and-revoking-tokens-for-sign-in-with-apple).
+An external-provider walkthrough requires a disposable provider account; the
+owner has been asked for one. Grant's existing Facebook sign-in was restored
+after the disposable email-account test; no personal account was deleted.
+
 ## Moderation
 
 Fresh disposable member requests verified: legitimate intake reaches the
@@ -86,6 +97,13 @@ insufficient-funds test card returned “Your card has insufficient funds.”
 Test PaymentIntent: `pi_3UEXViKUBoEpySr61nv5OJka`. No real card, customer, email,
 or saved payment method was used. This verifies the provider decline only;
 the full native checkout decline-and-retry exercise remains pending.
+
+The August 28 native acceptance section records that sandbox credentials were
+installed before live credentials. Current create-cleanup-contribution returns
+the server's STRIPE_PUBLISHABLE_KEY, so selecting the dashboard sandbox cannot
+switch native checkout. Fresh native decline/retry needs an isolated backend
+with matching test keys and webhook handling; changing the shared live secrets
+is not an acceptable substitute.
 
 The connected Stripe MCP is live
 and is not the Litterbugs sandbox, so it was used read-only. The account holder

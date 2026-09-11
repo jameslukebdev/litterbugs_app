@@ -6,7 +6,7 @@ accounts for destructive tests.
 | Item | Current state | Testing guidance |
 | --- | --- | --- |
 | Saved drafts after account deletion | Fix on main; disposable-account iPhone saved-report deletion passed; cleanup-draft and interrupted-cleanup storage checks pass | Use the updated build; device walkthrough used a text-only draft |
-| Connected sign-in permissions after deletion | Account/session removal passed for a disposable email account; external provider authorization revocation remains unverified | Do not use a personal social account for deletion testing |
+| Connected sign-in permissions after deletion | Email-account removal passed; Apple token revocation is missing from the current implementation; external-provider deletion walkthrough needs a disposable provider account | Do not use a personal social account for deletion testing; track Apple revocation before release |
 | Moderation response | Private intake/access controls passed; no administrator alert or app queue verified | Facilitator must watch the private queue; do not promise automatic review |
 | Inappropriate content prevention | Malware scanning and cleanup AI are not a verified offensive-content filter | Use harmless test content; broad unsupervised testing is not ready |
 | Payment failures | Existing successful sandbox transactions credited; local recovery checks and fresh Stripe insufficient-funds decline pass; full native decline/retry pending | Test cards only in the verified sandbox; no real charges |
