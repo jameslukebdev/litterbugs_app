@@ -169,3 +169,50 @@ unchanged by v14; those completed field checks were not repeated.
 
 No simulator was booted; memory pressure reported 54% free during the build.
 No extra phone data was deleted and no purchases or social posts were made.
+
+## Live share-image delivery and Android report controls — September 11, 10:11
+
+The physical Pixel v14 opened the native Android share sheet, but its thumbnail
+was the older card design. Vercel's latest production deployment was from the
+previous day; pushing main had not deployed the September 11 changes. Cancelled
+the chooser without selecting a destination. The user then disconnected the
+Pixel and authorized continuing with the iPhone/emulators.
+
+Staged committed source on Vercel with domain promotion disabled. Actual PNG
+output showed the new layout but a missing logo: the renderer fetched the logo
+from its protected deployment hostname. Replaced hostname-dependent logo fetches
+with a cached local PNG data URI in both portrait sharing and Open Graph routes.
+The final staged PNG includes the complete logo, filled photo, $6.00 reward,
+all four litter types and destination. TypeScript passed.
+
+Native share files also had no expiration, so a valid old PNG could survive
+indefinitely. Added a five-minute freshness limit using Expo FileSystem's
+documented epoch-seconds modificationTime. Expired, missing-date or future-dated
+entries download again; fresh validated PNGs remain reusable. The 24 focused
+sharing tests passed, including three new freshness cases and existing PNG/error
+handling coverage. This does not change stored reports or financial values.
+
+For the user's new Android layout request, moved active-report Show on map and
+Close controls inside the photo with a minimum 12dp top inset. Retained completed
+report toolbar and iOS placement. Two existing completed-report loading tests
+passed after updating the React Native platform mock. Built QA v16 successfully
+and installed it on the sole API 36 emulator. Visual inspection confirmed the
+buttons at y=231 versus photo y=198, rather than the Pixel's earlier y=191 above
+the photo edge. The physical Pixel was already disconnected; do not claim v16
+is installed on it.
+
+Deployment dpl_8EF2ECCpcgS6MTCsx9vpbP4osd5X, from commit 291f084, built in 35s
+and was promoted to the existing litterbugs-web production site. The public
+share-image route returned HTTP 200 image/png. Its SHA-256 exactly matched the
+visually inspected staged image:
+`a6d0ef0de3408ae9dfa520551ed0d40d46b28e43524c10ba018976f23f553a62`.
+Native emulator Share then displayed the new reward-emphasized image thumbnail
+and share text in Android's chooser. Cancelled without posting/sending. The
+15-minute deployment error-log query returned no logs; this is a bounded check,
+not proof of long-term monitoring or absence of all errors.
+
+Evidence is retained locally in artifacts/android-ux-2026-09-11: report controls
+before/after, final emulator chooser, and live card. The emulator was shut down
+after acceptance. No mobile app-store release occurred. iPhone verification of
+the latest sharing/cache changes and separate-person Facebook sign-in remain
+pending, alongside production store signing/privacy gates.
