@@ -142,3 +142,30 @@ inspected its 390px preview. A renderer error from an undefined CSS maxWidth
 was caught by actual PNG rendering and fixed with explicit numeric bounds;
 all seven preview cases then rendered successfully. Final TypeScript passed.
 The production font loader successfully loaded both bundled local font files.
+
+## Physical Pixel keyboard and launch acceptance — September 11, 10:00
+
+Tested the installed QA v13 on the physical Pixel 5. Extra site details stayed
+entirely above the keyboard with three lines of text and the cursor visible.
+Other litter types stayed above the keyboard with a wrapping two-line entry.
+Restored both fields to their observed pre-test values (Extra details: `Tl`;
+Other: empty), then chose Save for later. No report was submitted. Screenshots
+are retained locally in `artifacts/android-ux-2026-09-11/` as
+`extra-details-verified.png` and `other-verified.png`.
+
+One cold-launch recording confirmed the native logo was no longer circle-cropped,
+but exposed a size mismatch: the 128dp native logo faded into a 244dp React logo.
+Matched the Android logo-only loading state to the native 128dp width, retaining
+244dp on iOS. Built QA version 14 successfully (36 seconds), installed over v13
+without clearing data, and recorded the changed launch once. The frame sequence
+shows the complete logo at consistent size through the native/React handoff,
+then the map. No enlargement/double-sized logo remains in that recording.
+This is evidence for this Pixel/build, not a claim covering every Android model.
+
+The v14 build also includes the latest v6 share-image cache naming. It does not
+by itself prove that the redesigned web share-image route is deployed or that
+the new card has passed native sharing acceptance. Existing keyboard code was
+unchanged by v14; those completed field checks were not repeated.
+
+No simulator was booted; memory pressure reported 54% free during the build.
+No extra phone data was deleted and no purchases or social posts were made.

@@ -1,6 +1,7 @@
 import {
   ActivityIndicator,
   Image,
+  Platform,
   StyleSheet,
   Text,
   useWindowDimensions,
@@ -16,7 +17,8 @@ export default function BrandedLoadingState({
   working = false,
 }) {
   const { width } = useWindowDimensions();
-  const launchLogoWidth = Math.min(width - 64, 244);
+  // Match the native splash dimensions so its fade does not resize the logo.
+  const launchLogoWidth = Math.min(width - 64, Platform.OS === 'android' ? 128 : 244);
 
   return (
     <View

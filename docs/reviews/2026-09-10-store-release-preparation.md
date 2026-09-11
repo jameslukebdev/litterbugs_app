@@ -1,5 +1,30 @@
 # Store account checks — September 10, 2026
 
+## Current checkpoint — September 11
+
+The dated sections below are historical evidence, not the current release state.
+Native Apple sign-in and sandbox push delivery/tap navigation passed on the
+physical iPhone QA build. Administrator Facebook login passed on both physical
+phones. Accounts remain separate unless a signed-in user explicitly links a
+provider; no account merge was performed.
+
+Meta app 1477683410862512 is now **Published**, following the account holder's
+explicit September 11 authorization. It belongs to verified Burrow Base; the
+review draft's responsible entity is Burrow Base LLC. Meta confirmed the app is
+available to the public. Separate non-administrator login remains unverified.
+See [the login completion record](2026-09-10-login-completion.md) for evidence.
+
+Apple App Store and Google Play publication remain unauthorized. The remaining
+store gates are production Apple signing/APNs access, a current production
+archive and provider disclosure assessment, and the uncreated Play app's
+account-holder declarations/signing setup. The version-code 11 bundle mentioned
+below predates September 11 fixes and must not be treated as the latest release
+candidate. Current device builds are QA artifacts, not store-ready proof.
+
+The privacy mappings below remain prepared answers rather than published store
+disclosures. Do not mark the release goal complete from QA authentication or
+Meta publication alone.
+
 User instruction: continue checks; do not publish. No store submission, upload,
 app transfer, Meta publication, legal certification, or public privacy-label
 change was performed. One broken Meta settings link was corrected and saved.
