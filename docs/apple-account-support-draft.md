@@ -1,7 +1,11 @@
-# Apple Developer Support request — draft only
+# Apple Developer Support request — sent September 11, 2026
 
-Not sent. This request asks Apple for the available process; it does not claim a
-transfer has occurred or authorize a replacement listing.
+Sent after the account holder explicitly authorized sending the inquiry without
+waiting on the reply. Apple Developer Support confirmed receipt through its
+Account Access email form, case **102959897494**. The inquiry below asks for the
+available process; it does not claim a transfer has occurred or authorize a
+replacement listing. Apple correspondence is not a blocker for continuing app
+debugging. No account transfer or store release was requested.
 
 Subject: Options to maintain Litterbugs with existing App Store Connect access
 

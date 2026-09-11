@@ -255,3 +255,22 @@ business creation occurred. Separate non-administrator Facebook login still
 needs an actual tester account to verify end-to-end public access. Production
 Apple signing/push and final store privacy disclosures remain separate pending
 requirements; successful Meta publication does not close those items.
+
+## User-directed continuation — September 11
+
+The account holder accepted the existing Facebook administrator tests on both
+phones plus published Meta status as sufficient to move forward. Separate-user
+login remains unverified coverage, but is no longer a blocker for this debugging
+pass. Do not repeat the completed logins or require another tester to continue.
+
+The account holder authorized sending the prepared Apple inquiry and explicitly
+said not to wait for its response. Submitted the approved text through Apple
+Developer Support's Account Access email form; Apple confirmed receipt with
+case ID 102959897494. See the sent inquiry record. Production signing/access is
+still a future store-release issue, not a reason to stall current debugging.
+No transfer, replacement listing or store publication was performed.
+
+The reconnected Pixel was detected and authorized. Its installed QA version was
+14; installing the already-built and emulator-tested QA v16 returned Success.
+The device became unavailable for UI control afterward, so this records install
+success rather than a repeated physical acceptance test. App data was preserved.
