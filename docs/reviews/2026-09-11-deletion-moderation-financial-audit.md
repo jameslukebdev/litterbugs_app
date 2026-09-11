@@ -1,5 +1,22 @@
 # Deletion, moderation and payment recovery — September 11
 
+## Final owner scope decision — supersedes historical outstanding items below
+
+Grant explicitly removed Apple authorization-revocation credential setup and
+integration verification, and separate-user Facebook login testing, from this
+debugging pass's requirements. He cannot access Luke's Apple developer account
+and has no other Facebook login, with no way to provide either resource.
+These are accepted exclusions, not pending owner actions or completion gates.
+Do not repeatedly request access, retry these tasks or mark this pass blocked
+on them unless Grant explicitly changes the scope.
+
+Automatic Apple grant revocation remains unconfigured and separate-user Facebook
+login remains unverified; neither is reported as passed. The completed moderation,
+administrator alerts, own-report funding notification fix, Android decline/retry,
+and physical-phone interrupted checkout satisfy the remaining debugging scope.
+Earlier references to these two items as required, deferred or outstanding are
+historical and superseded by this decision. Store release tasks remain separate.
+
 ## Account deletion
 
 A fresh hosted test used two disposable confirmed-email accounts, with harmless
