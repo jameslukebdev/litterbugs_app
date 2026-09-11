@@ -58,4 +58,19 @@ describe('interrupted checkout reconciliation', () => {
     expect((await reconcileContribution(deps)).state).toBe('refund');
     expect(deps.retrieveIntent).not.toHaveBeenCalled();
   });
+  it('preserves the original attempt when Stripe retrieval itself rejects', async () => {
+    const deps = setup('payment_pending');
+    deps.retrieveIntent.mockRejectedValue(Error('connection lost'));
+    await expect(reconcileContribution(deps)).rejects.toThrow('connection lost');
+    expect(deps.clearAttempt).not.toHaveBeenCalled();
+    expect(deps.saveAttempt).not.toHaveBeenCalled();
+    expect(attempt.phase).toBe('submitted');
+  });
+  it('does not return a retryable attempt when the recovery write fails', async () => {
+    const deps = setup('payment_pending', 'RequiresPaymentMethod');
+    deps.saveAttempt.mockRejectedValue(Error('storage unavailable'));
+    await expect(reconcileContribution(deps)).rejects.toThrow('storage unavailable');
+    expect(deps.clearAttempt).not.toHaveBeenCalled();
+    expect(attempt.phase).toBe('submitted');
+  });
 });

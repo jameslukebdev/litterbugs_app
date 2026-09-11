@@ -1,4 +1,5 @@
 import { loadDiscoveryMemory, markWelcomeSeen } from './lib/discoveryMemory';
+import { retryDeletedAccountDataCleanup } from './lib/deletedAccountData';
 import { authenticatedActionDestination } from './lib/authIntent';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
@@ -438,6 +439,7 @@ export default function App() {
     });
 
     const restoreSession = async () => {
+      await retryDeletedAccountDataCleanup().catch(() => {});
       const [sessionResult, initialUrlResult] = await Promise.allSettled([
         supabase.auth.getSession(),
         Linking.getInitialURL(),

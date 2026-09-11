@@ -1,0 +1,86 @@
+# Deletion, moderation and payment recovery — September 11
+
+## Account deletion
+
+A fresh hosted test used two disposable confirmed-email accounts, with harmless
+private PNG fixtures in report_photos, media_quarantine and profile_avatars.
+No public report, cleanup claim or financial record was created.
+
+- An unconfirmed request returned 400 and retained the account.
+- Confirmed deletion removed one report photo, one quarantined photo and the
+  avatar, deleted the Auth user, and rejected the old access-token user lookup
+  and refresh token.
+- A supplied different user_id did not redirect deletion away from the caller.
+  The other fixture account and its files remained intact.
+- Cleanup removed the second fixture. Exact post-checks found zero target Auth
+  users, identities, sessions and Storage objects for both UUIDs.
+
+Fixture UUIDs: 36b028a5-7e2a-426e-bf80-22f45f0e48be and
+fa1e1927-540d-4e73-a0ae-467853d105dd. Temporary runner:
+`/tmp/lb-delete-audit-sept11.cjs`; credentials were read into process memory,
+not written to the report or committed.
+
+Confirmed local bug: server deletion previously signed out without clearing
+saved report/cleanup drafts. The mobile fix clears the deleted account's draft
+files, report journal, favorites, review drafts and payment-check cache after
+server success. It waits for pending draft/favorite writes, keeps another
+account's data and device preferences, and journals interrupted cleanup for
+retry on app launch. Failed server deletion preserves drafts. Device cleanup
+failure is described separately from successful server deletion.
+
+Limits: this hosted test used email identities; it does not prove revocation
+of external Apple/Google/Facebook grants. Current native cleanup signs Google
+out, but is not external authorization revocation. SecureStore payment-attempt
+entries and image/share caches need a separate retention assessment; the draft
+fix does not claim to erase every device cache. Real funded-record retention
+was not re-exercised by these empty financial fixture accounts.
+
+## Moderation
+
+Fresh disposable member requests verified: legitimate intake reaches the
+private queue with pending status, members cannot read the queue or resolve its
+status, spoofed reporter IDs fail, and Other without details fails. The queue is
+accessible with server administrator credentials. All fixture reports/accounts
+were removed; the exact post-check found zero remaining target users/intake rows.
+
+Fixture UUIDs: 96531b03-3e9e-4fe2-b53a-b8dd9b02aec7 and
+be0c753a-4afb-4600-bc94-7b99f28d1dff. No actual inappropriate content was uploaded.
+
+Confirmed gaps: the current source has only the mobile insertion path for
+user_moderation_reports, and the deployed table has no trigger. No app-based
+administrator queue or automatic alert was established. Database intake alone
+does not demonstrate someone will review it. Cloudmersive malware scanning and
+Gemini cleanup/funding triage do not establish a pre-publication filter for
+offensive photos/text. An assigned reviewer and a review/removal workflow remain
+necessary before broad unsupervised testing; none were invented or certified.
+
+## Financial recovery
+
+Credited existing August 28 sandbox card success on iPhone, Android and web,
+plus documented refund/payout/idempotency evidence in funded-cleanup-launch.md.
+No successful payment was repeated merely to reproduce historical coverage.
+
+Added the two missing local interruption cases: Stripe retrieval rejects during
+recovery, and persisting the retryable attempt fails. Both preserve the original
+attempt and do not clear its identity. The focused deletion/payment run passed
+41 tests across seven files. Draft/storage suites separately passed 15 tests
+across three files. Mobile source validation passed 155 modules before the last
+test-only additions.
+
+Fresh provider decline testing passed in the existing Litterbugs sandbox
+`acct_1U2HaBKUBoEpySr6`. A $5.50 simulated Dashboard payment using Stripe's
+insufficient-funds test card returned “Your card has insufficient funds.”
+Test PaymentIntent: `pi_3UEXViKUBoEpySr61nv5OJka`. No real card, customer, email,
+or saved payment method was used. This verifies the provider decline only;
+the full native checkout decline-and-retry exercise remains pending.
+
+The connected Stripe MCP is live
+and is not the Litterbugs sandbox, so it was used read-only. The account holder
+authorized using their Stripe access; the browser exposes the existing
+Litterbugs sandbox. No live transaction or production credential change occurred.
+
+## User-testing handoff
+
+Use [the short tester checklist](../user-testing-checklist.md) and
+[known issues](../user-testing-known-issues.md). These describe supervised
+usability testing, not a store-release or all-transactions certification.

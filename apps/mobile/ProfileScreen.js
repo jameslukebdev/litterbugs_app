@@ -398,7 +398,10 @@ export default function ProfileScreen({ navigation, route }) {
           onPress: async () => {
             try {
               setDeletingAccount(true);
-              await deleteCurrentAccount();
+              const result = await deleteCurrentAccount();
+              if (result.localCleanupPending) {
+                Alert.alert('Your account has been deleted', 'Some saved drafts could not be removed from this phone. Reopen Litterbugs to try again, or contact us for help.');
+              }
             } catch (error) {
               if (error?.code === 'PAYOUT_PENDING') {
                 Alert.alert('A reward is still being sent', 'Contact us for help completing your account deletion.', [

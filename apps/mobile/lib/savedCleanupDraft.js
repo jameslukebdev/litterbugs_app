@@ -4,6 +4,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 const key = (userId, cleanupId) => `litterbugs.cleanup-draft.${userId}.${cleanupId}`;
 const directory = (userId, cleanupId) => `${FileSystem.documentDirectory}cleanup-drafts/${userId}/${cleanupId}/`;
 let queue = Promise.resolve();
+export const waitForCleanupDraftWrites = () => queue.catch(() => {});
 const enqueue = work => { const result = queue.catch(() => {}).then(work); queue = result; return result; };
 export function saveCleanupDraft(userId, cleanupId, draft) {
   return enqueue(async () => {

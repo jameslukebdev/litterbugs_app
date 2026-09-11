@@ -19,6 +19,7 @@ function draftPhotoUri(userId, uri) {
 }
 // Serialize copies/writes/deletes so closing a wizard cannot resurrect a discarded draft.
 let queue = Promise.resolve();
+export const waitForReportDraftWrites = () => queue.catch(() => {});
 const enqueue = (work) => {
   const result = queue.catch(() => {}).then(work);
   queue = result;

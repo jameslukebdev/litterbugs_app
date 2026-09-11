@@ -7,6 +7,7 @@ import {
   signInWithNativeProvider,
 } from './nativeSocialAuth';
 import { unregisterCurrentPushDevice } from './pushNotifications';
+import { clearDeletedAccountData } from './deletedAccountData';
 
 /** @typedef {'google' | 'facebook' | 'apple'} AuthProvider */
 
@@ -179,6 +180,9 @@ export const signOut = async () => {
 };
 
 export const deleteCurrentAccount = async () => {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+  if (!userId) throw new Error('Please sign in again to delete your account.');
   const { data, error } = await supabase.functions.invoke('delete-account', {
     body: { confirmation: 'DELETE' },
   });
@@ -190,9 +194,12 @@ export const deleteCurrentAccount = async () => {
   }
   if (!data?.deleted) throw new Error('Account deletion did not complete.');
 
+  let localCleanupPending = false;
+  try { await clearDeletedAccountData(userId); }
+  catch { localCleanupPending = true; }
   await Promise.allSettled([clearNativeProviderSessions()]);
   const { error: signOutError } = await supabase.auth.signOut({ scope: 'local' });
   if (signOutError) throw signOutError;
 
-  return data;
+  return { ...data, localCleanupPending };
 };
