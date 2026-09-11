@@ -4,6 +4,7 @@ vi.mock('expo-web-browser', () => ({ openAuthSessionAsync: mocks.open }));
 vi.mock('./supabase', () => ({ supabase: { auth: { signInWithOAuth: mocks.oauth } } }));
 vi.mock('./nativeSocialAuth', () => ({ signInWithNativeProvider: async () => null, clearNativeProviderSessions: async () => {} }));
 vi.mock('./pushNotifications', () => ({ unregisterCurrentPushDevice: async () => {} }));
+vi.mock('./deletedAccountData', () => ({ clearDeletedAccountData: async () => {} }));
 beforeEach(() => { vi.resetModules();vi.clearAllMocks();mocks.oauth.mockResolvedValue({ data: { url: 'https://facebook.com/login' } }); });
 describe('browser callback ownership', () => {
   it('preserves provider error codes and suppresses a second delivery of the same rejected callback', async () => {

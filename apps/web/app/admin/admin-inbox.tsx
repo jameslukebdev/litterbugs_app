@@ -32,9 +32,11 @@ type CaseDetail = {
   ai_checks: Array<{ id: string; status: string; user_summary: string | null; reason_codes: string[]; created_at: string }>;
   actions: Array<{ id: string; action: string; reason: string; created_at: string }>;
   photos?: { before?: string[]; after?: string[] };
+  moderation_avatar_url?: string | null;
 };
 
 const labels: Record<string, string> = {
+  user_moderation: 'Community report',
   report_safety: 'Report safety',
   gemini_review: 'Photo review',
   first_paid_cleanup: 'First paid cleanup',
@@ -50,6 +52,11 @@ const priorityLabels: Record<number, string> = {
 };
 
 const actions: Record<string, Array<{ value: string; label: string; destructive?: boolean }>> = {
+  user_moderation: [
+    { value: 'dismiss_report', label: 'No violation found' },
+    { value: 'remove_report', label: 'Remove litter report', destructive: true },
+    { value: 'clear_profile', label: 'Clear public profile content', destructive: true },
+  ],
   report_safety: [
     { value: 'approve_funding', label: 'Allow funding' },
     { value: 'reject_funding', label: 'Block funding for this report', destructive: true },
@@ -76,6 +83,7 @@ const actions: Record<string, Array<{ value: string; label: string; destructive?
 };
 
 const decisionGuidance: Record<string, string> = {
+  user_moderation: 'Review the concern and evidence before deciding. Removing a litter report hides it from the community and queues eligible refunds. Clearing a profile removes its public name, photo and description; it does not delete the account.',
   report_safety: 'Allow funding only when the report appears safe for an ordinary community cleanup. Blocking prevents contributions; closing also starts any required refunds.',
   gemini_review: 'Compare the location and cleanup evidence. Approval begins the 48-hour reporter dispute window; rejection reopens the report for another cleaner.',
   first_paid_cleanup: 'Confirm the first paid cleanup is credible before allowing its reward process to continue.',
@@ -88,6 +96,9 @@ const money = (cents = 0) => new Intl.NumberFormat(undefined, { style: 'currency
 
 export function adminDecisionSuccessMessage(action: string) {
   switch (action) {
+    case 'dismiss_report': return 'Decision recorded. No content was removed.';
+    case 'remove_report': return 'Decision recorded. The litter report is hidden from the community. Any existing cleanup activity remains available for team review.';
+    case 'clear_profile': return 'Decision recorded. The public profile content was cleared.';
     case 'close_and_refund':
     case 'reject_and_close':
       return 'Decision recorded. The report is closed and hidden from the mobile map and report lists. Any eligible refunds are queued.';
@@ -124,6 +135,7 @@ export function AdminInbox() {
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState('');
   const [message, setMessage] = useState('');
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -138,7 +150,7 @@ export function AdminInbox() {
         if (active) setLoading(false);
       });
     return () => { active = false; };
-  }, [status]);
+  }, [status, refreshVersion]);
 
   const visibleCases = useMemo(
     () => cases.filter((item) => type === 'all' || item.case_type === type),
@@ -146,6 +158,7 @@ export function AdminInbox() {
   );
 
   function changeStatus(nextStatus: 'open' | 'resolved') {
+    if (nextStatus === status) return;
     setSelected(null);
     setReason('');
     setMessage('');
@@ -193,6 +206,8 @@ export function AdminInbox() {
   }
 
   return (
+    <>
+    <ModerationAlertPreferences />
     <div className={styles.workspace}>
       <section className={styles.inbox}>
         <div className={styles.filters}>
@@ -204,6 +219,10 @@ export function AdminInbox() {
             <option value="all">All review types</option>
             {Object.entries(labels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
+          <button className={styles.secondaryButton} disabled={loading || Boolean(busy)} onClick={() => {
+            setLoading(true);
+            setRefreshVersion((value) => value + 1);
+          }}>Refresh inbox</button>
         </div>
 
         {loading ? <p className={styles.empty}>Loading inbox…</p> : null}
@@ -235,6 +254,18 @@ export function AdminInbox() {
                 {` · Opened ${new Date(selected.case.created_at).toLocaleString()}`}
               </p>
             </div>
+
+            {selected.case.case_type === 'user_moderation' ? (
+              <div className={styles.summaryCard}>
+                <h3>Member’s concern</h3>
+                <p>{typeof selected.case.context?.details === 'string' ? selected.case.context.details : 'No additional details were provided.'}</p>
+                <ModerationProfile profile={selected.case.context?.reported_profile} />
+                {selected.moderation_avatar_url ? <div className={styles.photoGrid}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={selected.moderation_avatar_url} alt="Reported profile photo" />
+                </div> : null}
+              </div>
+            ) : null}
 
             {selected.attempt?.reward_amount_cents ? (
               <div className={styles.reward}>Cleaner reward <strong>{money(selected.attempt.reward_amount_cents)}</strong></div>
@@ -296,7 +327,7 @@ export function AdminInbox() {
                 <label>Why are you making this decision? <span className={styles.required}>Required</span><textarea value={reason} onChange={(event) => setReason(event.target.value)} maxLength={1000} minLength={3} required aria-required="true" placeholder="Describe the photos, payment information, or safety facts that support your choice." /></label>
                 <p className={styles.decisionHint}>Enter at least 3 characters to enable a decision.</p>
                 <div className={styles.actionGrid}>
-                  {(actions[selected.case.case_type] ?? []).map((action) => (
+                  {(actions[selected.case.case_type] ?? []).filter((action) => action.value !== 'remove_report' || Boolean(selected.report)).map((action) => (
                     <button key={action.value} className={action.destructive ? styles.dangerButton : styles.primaryButton} onClick={() => void resolve(action)} disabled={Boolean(busy) || reason.trim().length < 3}>
                       {busy === action.value ? 'Saving…' : action.label}
                     </button>
@@ -314,6 +345,7 @@ export function AdminInbox() {
         {message && <p className={message.includes('recorded') ? styles.success : styles.error} role="status">{message}</p>}
       </section>
     </div>
+    </>
   );
 }
 
@@ -345,4 +377,39 @@ function EvidencePhotos({
       </div>
     </div>
   );
+}
+
+function ModerationProfile({ profile }: { profile: unknown }) {
+  if (!profile || typeof profile !== 'object') return null;
+  const value = profile as Record<string, unknown>;
+  return <><h3>Reported profile</h3>
+    <p>{typeof value.display_name === 'string' ? value.display_name : 'Community member'}
+      {typeof value.username === 'string' ? ` · @${value.username}` : ''}</p>
+    {typeof value.bio === 'string' ? <p>{value.bio}</p> : null}
+  </>;
+}
+
+function ModerationAlertPreferences() {
+  const [preference, setPreference] = useState<{ enabled: boolean; devices: number } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    let active = true;
+    invokeAdmin({ operation: 'alertPreferences' }).then((data) => {
+      if (active && typeof data?.enabled === 'boolean') setPreference(data);
+    }).catch(() => { if (active) setError('Alert settings are unavailable right now.'); });
+    return () => { active = false; };
+  }, []);
+  async function change(enabled: boolean) {
+    setBusy(true); setError('');
+    try { setPreference(await invokeAdmin({ operation: 'alertPreferences', enabled })); }
+    catch { setError('Your alert preference could not be saved. Please try again.'); }
+    finally { setBusy(false); }
+  }
+  return <section className={styles.alertPreferences} aria-label="Community report alerts">
+    <label><input type="checkbox" checked={preference?.enabled ?? false} disabled={!preference || busy}
+      onChange={(event) => void change(event.target.checked)} /> Notify me about new community reports</label>
+    <p>{preference?.devices ? 'Alerts arrive in the Litterbugs app on your signed-in devices.' : 'Phone alerts will be available once notifications are enabled for this admin account.'}</p>
+    {error ? <p role="status">{error}</p> : null}
+  </section>;
 }

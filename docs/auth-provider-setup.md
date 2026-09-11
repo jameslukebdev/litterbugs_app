@@ -226,3 +226,34 @@ network. Rebuild only after native dependencies or native configuration change.
 
 No authentication change is ready for merge until the current checklist in
 `docs/auth-test-checklist.md` passes and the partner approves the branch.
+
+## Apple authorization revocation (implementation pending deployment)
+
+The native Apple adapter now forwards the one-time authorization code after a
+successful Supabase sign-in or identity link. `store-apple-authorization` verifies
+both Apple identity tokens against Apple's keys and the authenticated Supabase
+Apple subject, exchanges the code, and stores an encrypted refresh token in a
+private table. Application clients cannot read or write that table/RPC directly.
+
+Required server-only secrets, never `EXPO_PUBLIC_` values:
+
+- `APPLE_SIGN_IN_CLIENTS`: JSON array of objects containing `clientId`, `teamId`,
+  `keyId`, and the PKCS#8 `privateKey` for that exact Sign in with Apple client.
+- `APPLE_TOKEN_ENCRYPTION_KEY`: a stable base64url-encoded 32-byte random key.
+  Preserve this key while tokens exist; replacing it without re-encryption makes
+  queued revocations unreadable.
+
+QA and production clients require their own matching Apple team configuration.
+The QA signing/APNs key cannot stand in for production Sign in with Apple access.
+Configuration and real Apple revocation remain unverified; Grant's only Apple
+account must not be deleted for testing.
+
+Apply the token-storage migration before deploying the functions. Account deletion
+queues available credentials and attempts revocation. The existing authenticated
+internal maintenance schedule retries one queued authorization per run, with
+backoff. Successful revocation deletes the ciphertext. The auth-user deletion
+trigger also queues credentials when users are removed through another admin path.
+If an older account has no saved credential, deletion still completes and the app
+shows a friendly Apple Account link for removing the remaining authorization.
+
+Reference: Apple's [TN3194 account deletion and token revocation guidance](https://developer.apple.com/documentation/technotes/tn3194-handling-account-deletions-and-revoking-tokens-for-sign-in-with-apple).

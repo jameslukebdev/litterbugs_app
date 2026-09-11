@@ -1,6 +1,7 @@
 import { loadDiscoveryMemory, markWelcomeSeen } from './lib/discoveryMemory';
 import { retryDeletedAccountDataCleanup } from './lib/deletedAccountData';
 import { authenticatedActionDestination } from './lib/authIntent';
+import { watchNativeProviderAuthorization } from './lib/nativeSocialAuth';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -187,7 +188,11 @@ function AppNavigation({
 
     handledNotificationId.current = notificationId ?? null;
     pendingNotificationData.current = null;
-    navigationRef.navigate(destination.name, destination.params);
+    if (destination.url) {
+      Linking.openURL(destination.url).catch(() => Alert.alert('Couldn’t open the inbox', 'Visit litterbugs.app/admin to review community reports.'));
+    } else {
+      navigationRef.navigate(destination.name, destination.params);
+    }
     if (notificationId) {
       acknowledgeCleanupNotifications([notificationId]).catch((error) => {
         console.log('Cleanup notification acknowledgment error:', error);
@@ -363,6 +368,11 @@ export default function App() {
   const [passwordRecovery, setPasswordRecovery] = useState(false);
   const [launchReady, setLaunchReady] = useState(false);
   const nativeSplashHidden = useRef(false);
+
+  useEffect(() => {
+    if (!session?.access_token) return;
+    return watchNativeProviderAuthorization();
+  }, [session?.access_token]);
 
   const markLaunchReady = useCallback(() => {
     setLaunchReady(true);

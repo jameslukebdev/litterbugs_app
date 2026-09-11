@@ -399,7 +399,14 @@ export default function ProfileScreen({ navigation, route }) {
             try {
               setDeletingAccount(true);
               const result = await deleteCurrentAccount();
-              if (result.localCleanupPending) {
+              if (result.appleManualRevocationRequired) {
+                Alert.alert('Your account has been deleted',
+                  'You can also remove Litterbugs from Sign in with Apple in your Apple Account settings.'
+                  + (result.localCleanupPending ? ' Some saved drafts still need to be cleared; reopen Litterbugs to try again.' : ''), [
+                    { text: 'Done', style: 'cancel' },
+                    { text: 'Apple Account', onPress: () => WebBrowser.openBrowserAsync('https://account.apple.com/account/manage').catch(() => null) },
+                  ]);
+              } else if (result.localCleanupPending) {
                 Alert.alert('Your account has been deleted', 'Some saved drafts could not be removed from this phone. Reopen Litterbugs to try again, or contact us for help.');
               }
             } catch (error) {

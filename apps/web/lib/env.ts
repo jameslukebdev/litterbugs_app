@@ -10,8 +10,11 @@ export function getSupabaseEnv() {
     throw new Error('Missing the public Supabase URL or publishable key.');
   }
 
-  const projectRef = new URL(url).hostname.split('.')[0];
-  if (projectRef !== EXPECTED_PROJECT_REF) {
+  const endpoint = new URL(url);
+  const projectRef = endpoint.hostname.split('.')[0];
+  const localDevelopment = process.env.NODE_ENV === 'development'
+    && ['localhost', '127.0.0.1', '[::1]'].includes(endpoint.hostname);
+  if (projectRef !== EXPECTED_PROJECT_REF && !localDevelopment) {
     throw new Error(`Refusing to connect the website to Supabase project ${projectRef}.`);
   }
 

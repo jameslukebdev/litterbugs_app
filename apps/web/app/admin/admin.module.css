@@ -55,7 +55,7 @@
 .photoSections { margin-top: 22px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 .photoSections h3, .summaryCard h3, .history h3 { margin: 0 0 9px; font-size: 15px; }
 .photoGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.photoGrid img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 11px; background: #e6e9e6; }
+.photoGrid img { width: 100%; aspect-ratio: 4 / 3; object-fit: contain; border-radius: 11px; background: #e6e9e6; }
 .summaryCard, .history { margin-top: 18px; padding: 16px; border: 1px solid #e0e5e0; border-radius: 13px; }
 .summaryCard p, .history p { margin: 0; color: #59635b; line-height: 22px; }
 .history p + p { margin-top: 9px; }
@@ -100,3 +100,8 @@
   .caseList { max-height: 390px; }
   .photoSections { grid-template-columns: 1fr; }
 }
+
+.alertPreferences { max-width: 1440px; margin: 0 auto 20px; padding: 16px; border: 1px solid #dce2dc; border-radius: 12px; background: #fff; }
+.alertPreferences label { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.alertPreferences input { width: 20px; height: 20px; accent-color: var(--green); }
+.alertPreferences p { margin: 8px 0 0 30px; color: #68716a; font-size: 14px; line-height: 1.5; }

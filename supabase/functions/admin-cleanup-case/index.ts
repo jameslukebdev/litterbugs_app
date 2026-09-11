@@ -23,6 +23,7 @@ Deno.serve(async (request: Request) => {
     caseId?: unknown;
     action?: unknown;
     reason?: unknown;
+    enabled?: unknown;
   } = {};
   try {
     body = await request.json();
@@ -32,6 +33,15 @@ Deno.serve(async (request: Request) => {
 
   const client = userClient(request);
   try {
+    if (body.operation === "alertPreferences") {
+      if (body.enabled !== undefined && typeof body.enabled !== "boolean") return jsonResponse({ error: "Invalid alert preference" }, 400);
+      const { data, error } = await client.rpc("moderation_alert_preferences", { enabled: body.enabled ?? null });
+      if (error) throw error;
+      const { count, error: deviceError } = await admin.from("push_devices")
+        .select("id", { count: "exact", head: true }).eq("user_id", user.id).is("disabled_at", null);
+      if (deviceError) throw deviceError;
+      return jsonResponse({ enabled: data, devices: count ?? 0 });
+    }
     if (body.operation === "list") {
       const status = body.status === "resolved" ? "resolved" : "open";
       const { data, error } = await client.rpc("list_cleanup_admin_cases", {
@@ -69,8 +79,19 @@ Deno.serve(async (request: Request) => {
           ? admin.storage.from("cleanup_photos").createSignedUrls(cleanupPaths, 60 * 30)
           : Promise.resolve({ data: [] }),
       ]);
+      const context = (detail.case as { context?: Record<string, unknown> } | null)?.context;
+      const reportedProfile = context?.reported_profile as { id?: string; avatar_path?: string; provider_avatar_url?: string } | undefined;
+      let moderationAvatarUrl: string | null = null;
+      if (reportedProfile?.id && reportedProfile.avatar_path === `${reportedProfile.id}/avatar`) {
+        const { data: avatar } = await admin.storage.from("profile_avatars")
+          .createSignedUrl(reportedProfile.avatar_path, 60 * 30);
+        moderationAvatarUrl = avatar?.signedUrl ?? null;
+      } else if (reportedProfile?.provider_avatar_url?.startsWith("https://")) {
+        moderationAvatarUrl = reportedProfile.provider_avatar_url;
+      }
       return jsonResponse({
         ...detail,
+        moderation_avatar_url: moderationAvatarUrl,
         photos: {
           before: (reportUrls ?? []).map(({ signedUrl }) => signedUrl).filter(Boolean),
           after: (cleanupUrls ?? []).map(({ signedUrl }) => signedUrl).filter(Boolean),
@@ -84,7 +105,8 @@ Deno.serve(async (request: Request) => {
       && typeof body.action === "string"
       && typeof body.reason === "string"
     ) {
-      const { data, error } = await client.rpc("resolve_cleanup_admin_case", {
+      const { data, error } = await client.rpc(["dismiss_report", "remove_report", "clear_profile"].includes(body.action)
+        ? "resolve_moderation_case" : "resolve_cleanup_admin_case", {
         target_case_id: body.caseId,
         target_action: body.action,
         target_reason: body.reason,

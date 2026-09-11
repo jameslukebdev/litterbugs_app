@@ -15,7 +15,7 @@ export default async function AdminPage() {
       <header className={styles.header}>
         <div>
           <span className={styles.eyebrow}>LITTERBUGS OPERATIONS</span>
-          <h1>Cleanup review inbox</h1>
+          <h1>Community & cleanup review</h1>
         </div>
         <Link href="/">Return to map</Link>
       </header>

@@ -97,6 +97,10 @@ describe('funded cleanup admin inbox', () => {
     expect(screen.getByText('Park entrance cleanup')).toBeTruthy();
     expect(screen.getByText('Urgent')).toBeTruthy();
     expect(screen.getByText('Normal')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+    expect(screen.queryByText('Loading inbox…')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh inbox' }));
+    await waitFor(() => expect(screen.queryByText('Loading inbox…')).toBeNull());
 
     fireEvent.change(screen.getByLabelText('Filter case type'), { target: { value: 'dispute' } });
     expect(screen.getByText('Creek trail litter')).toBeTruthy();
@@ -135,5 +139,21 @@ describe('funded cleanup admin inbox', () => {
     expect(await screen.findByText(/deny dispute/i)).toBeTruthy();
     expect(screen.getByText(/The complete photo set supports the cleanup/)).toBeTruthy();
     expect(screen.getByText(/Decision recorded\. The related mobile state has been updated\./i)).toBeTruthy();
+  });
+});
+
+describe('community moderation in the existing inbox', () => {
+  it('shows a profile-only concern without offering to remove an unrelated report', async () => {
+    const item = { ...openCases[0], id: 'moderation-1', case_type: 'user_moderation', title: 'Community report', report_id: null, report_title: null };
+    invoke.mockImplementation(async (_name, { body }) => ({ error: null, data: body.operation === 'list' ? { cases: [item] } : {
+      ...openDetail, case: { ...item, context: { details: 'Please review this profile.', reported_profile: { display_name: 'Test member', bio: 'Profile being reviewed' } } },
+      report: null, attempt: null, photos: {},
+    } }));
+    render(<AdminInbox />);
+    fireEvent.click(await screen.findByRole('button', { name: /Community report/ }));
+    expect(await screen.findByText('Please review this profile.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Remove litter report' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Clear public profile content' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByText('Profile being reviewed')).toBeTruthy();
   });
 });

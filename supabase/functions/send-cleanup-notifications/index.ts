@@ -7,7 +7,7 @@ type CleanupPushDelivery = {
   push_device_id: string;
   expo_push_token: string;
   event_type: string;
-  report_id: string;
+  report_id: string | null;
   cleanup_attempt_id: string | null;
   review_id: string | null;
   submission_id: string | null;
@@ -34,6 +34,8 @@ const jsonResponse = (body: Record<string, unknown>, status = 200) =>
 
 const notificationContent = (eventType: string) => {
   switch (eventType) {
+    case "admin_moderation_needed":
+      return { title: "Community report needs review", body: "A member sent a concern to the Litterbugs team. Open your admin inbox to review it." };
     case "report_claimed":
       return {
         title: "Report claimed",

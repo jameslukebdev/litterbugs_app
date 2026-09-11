@@ -1,12 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createAppleSignIn } from './appleSignIn';
 
-const setup = () => {
+const setup = (saveAuthorization) => {
   const apple = { isAvailableAsync: vi.fn().mockResolvedValue(true),
     AppleAuthenticationScope: { FULL_NAME: 0, EMAIL: 1 },
     signInAsync: vi.fn().mockResolvedValue({ identityToken: 'apple-token', fullName: { givenName: 'Test', familyName: 'Person' } }) };
   const auth = { signInWithIdToken: vi.fn().mockResolvedValue({ data: { user: { user_metadata: {} } }, error: null }), updateUser: vi.fn().mockResolvedValue({ error: null }) };
-  return { apple, auth, signIn: createAppleSignIn({ apple, auth, createNonce: () => 'raw-nonce', hashNonce: async () => 'hashed-nonce' }) };
+  return { apple, auth, signIn: createAppleSignIn({ apple, auth, saveAuthorization, createNonce: () => 'raw-nonce', hashNonce: async () => 'hashed-nonce' }) };
 };
 describe('Apple credential exchange', () => {
   it('binds the Apple token to the original nonce and preserves the first consent name', async () => {
@@ -51,4 +51,23 @@ describe('Apple credential exchange', () => {
     await expect(signIn()).rejects.toThrow('isn’t available');
     expect(apple.signInAsync).not.toHaveBeenCalled();
   });
+});
+
+it('saves Apple authorization only after the app accepts the identity', async () => {
+  const save = vi.fn().mockResolvedValue({ saved: true });
+  const { signIn, apple, auth } = setup(save);
+  apple.signInAsync.mockResolvedValue({ identityToken: 'id-token', authorizationCode: 'one-use-code' });
+  await signIn();
+  expect(save).toHaveBeenCalledWith({ identityToken: 'id-token', authorizationCode: 'one-use-code' });
+  expect(auth.signInWithIdToken.mock.invocationCallOrder[0]).toBeLessThan(save.mock.invocationCallOrder[0]);
+  save.mockClear();
+  auth.signInWithIdToken.mockResolvedValue({ error: new Error('identity rejected') });
+  await expect(signIn()).rejects.toThrow('identity rejected');
+  expect(save).not.toHaveBeenCalled();
+});
+it('keeps a completed Apple login usable when authorization storage is unavailable', async () => {
+  const save = vi.fn().mockRejectedValue(new Error('offline'));
+  const { signIn, apple } = setup(save);
+  apple.signInAsync.mockResolvedValue({ identityToken: 'id-token', authorizationCode: 'one-use-code' });
+  expect(await signIn()).toEqual({ cancelled: false });
 });

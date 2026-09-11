@@ -1,4 +1,8 @@
 const CLEANUP_NOTIFICATION_CONTENT = Object.freeze({
+  admin_moderation_needed: {
+    title: 'Community report needs review',
+    message: 'A member sent a concern to the Litterbugs team. Review it in your admin inbox.',
+  },
   report_claimed: {
     title: 'Report claimed',
     message: 'Your litter report has been claimed for cleanup.',
@@ -101,6 +105,10 @@ export function cleanupNotificationDestination(notification) {
   const eventType = notification?.event_type ?? notification?.eventType;
   const reportId = notification?.report_id ?? notification?.reportId;
   const cleanupId = notification?.cleanup_attempt_id ?? notification?.cleanupId;
+
+  if (eventType === 'admin_moderation_needed') {
+    return { url: 'https://litterbugs.app/admin', label: 'Open admin inbox' };
+  }
 
   if (!reportId) return null;
 

@@ -2,6 +2,8 @@ import 'react-native-get-random-values';
 import * as Crypto from 'expo-crypto';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { createAppleSignIn } from './appleSignIn';
+import { checkAppleCredentialState } from './appleCredentialState';
+import { AppState } from 'react-native';
 import {
   GoogleSignin,
   isCancelledResponse,
@@ -69,6 +71,7 @@ const signInWithApple = (mode = 'signIn') => createAppleSignIn({
     updateUser: async () => ({}),
   } : supabase.auth,
   createNonce,
+  saveAuthorization: (body) => supabase.functions.invoke('store-apple-authorization', { body }),
   hashNonce: (nonce) => Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, nonce),
 })();
 
@@ -84,4 +87,13 @@ export const clearNativeProviderSessions = async () => {
   if (!GOOGLE_WEB_CLIENT_ID || !GOOGLE_IOS_CLIENT_ID) return;
   configureGoogle();
   await GoogleSignin.signOut();
+};
+
+export const watchNativeProviderAuthorization = () => {
+  let active = true;
+  const check = () => checkAppleCredentialState({ apple: AppleAuthentication, auth: supabase.auth, isActive: () => active });
+  const revoked = AppleAuthentication.addRevokeListener(check);
+  const foreground = AppState.addEventListener('change', (state) => { if (state === 'active') void check(); });
+  void check();
+  return () => { active = false; revoked.remove(); foreground.remove(); };
 };

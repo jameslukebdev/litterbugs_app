@@ -22,19 +22,24 @@ export function AdminAccess({ state }: { state: Exclude<AdminAccessState, 'autho
 
   useEffect(() => {
     if (state !== 'mfa_required') return;
+    let active = true;
     const supabase = createClient();
     void supabase.auth.mfa.listFactors().then(async ({ data, error }) => {
+      if (!active) return;
       if (error) return setMessage('Multi-factor setup could not be loaded.');
       const verified = data.totp.find((factor) => factor.status === 'verified');
       if (verified) return setFactorId(verified.id);
       for (const incomplete of data.totp) {
         await supabase.auth.mfa.unenroll({ factorId: incomplete.id });
+        if (!active) return;
       }
       const { data: enrolled, error: enrollError } = await supabase.auth.mfa.enroll({
         factorType: 'totp',
         friendlyName: 'Litterbugs admin',
       });
+      if (!active) return;
       if (enrollError) return setMessage('Multi-factor setup could not be started.');
+      setMessage('');
       setFactorId(enrolled.id);
       setEnrollment({
         id: enrolled.id,
@@ -42,6 +47,7 @@ export function AdminAccess({ state }: { state: Exclude<AdminAccessState, 'autho
         secret: enrolled.totp.secret,
       });
     });
+    return () => { active = false; };
   }, [state]);
 
   async function signIn(event: React.FormEvent<HTMLFormElement>) {
@@ -100,7 +106,7 @@ export function AdminAccess({ state }: { state: Exclude<AdminAccessState, 'autho
     return (
       <section className={styles.accessCard}>
         <h2>Verify with your authenticator</h2>
-        <p>Admin reviews require a fresh AAL2 session.</p>
+        <p>Enter the code from your authenticator app to open the review inbox.</p>
         {enrollment ? (
           <div className={styles.enrollment}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -121,7 +127,7 @@ export function AdminAccess({ state }: { state: Exclude<AdminAccessState, 'autho
   return (
     <section className={styles.accessCard}>
       <h2>Admin sign in</h2>
-      <p>Use the permanent Litterbugs admin account. Multi-factor verification follows.</p>
+      <p>Sign in with your Litterbugs administrator account. You’ll then confirm a code from your authenticator app.</p>
       <button className={styles.googleButton} type="button" onClick={signInWithGoogle} disabled={busy}>
         {busy ? 'Opening Google…' : 'Continue with Google'}
       </button>

@@ -118,3 +118,13 @@ describe('cleanup notifications', () => {
     expect(cleanupStateFromNotification({ event_type: 'claim_expired' })).toBe('available');
   });
 });
+
+describe('administrator moderation alerts', () => {
+  it('opens the existing admin inbox even for a profile-only concern', () => {
+    expect(cleanupNotificationDestination({ event_type: 'admin_moderation_needed' })).toEqual({
+      url: 'https://litterbugs.app/admin', label: 'Open admin inbox',
+    });
+    expect(cleanupNotificationPresentation([{ event_type: 'admin_moderation_needed' }]).title)
+      .toBe('Community report needs review');
+  });
+});

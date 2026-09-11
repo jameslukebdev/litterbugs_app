@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { processAppleRevocation } from "../_shared/apple-revocation.ts";
 import {
   authenticatedUser,
   corsHeaders,
@@ -602,6 +603,12 @@ Deno.serve(async (request: Request) => {
 
   const results: Record<string, unknown> = {};
   try {
+    if (internal) {
+      results.appleRevocation = await processAppleRevocation(admin).catch(() => {
+        console.error('Apple revocation queue is temporarily unavailable');
+        return { pending: true };
+      });
+    }
     const { data: flags, error: flagsError } = await admin.from(
       "cleanup_feature_flags",
     )

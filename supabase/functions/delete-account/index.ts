@@ -1,4 +1,5 @@
 import { listStorageTree } from "../_shared/storage-tree.ts";
+import { processAppleRevocation } from "../_shared/apple-revocation.ts";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.87.1";
 
@@ -141,6 +142,13 @@ Deno.serve(async (request: Request) => {
       .eq("user_id", user.id);
     if (anonymizeError) throw anonymizeError;
 
+    const { data: appleTokens, error: appleQueueError } = await admin.rpc('request_apple_revocation', { target_owner: user.id });
+    if (appleQueueError) throw appleQueueError;
+    const appleConnected = user.identities?.some((identity) => identity.provider === 'apple') === true;
+    // Queue first so a provider outage cannot discard the credential or prevent
+    // deletion. The existing internal maintenance worker retries safely.
+    if (appleTokens > 0) await processAppleRevocation(admin, user.id).catch(() => null);
+
     const { error: profileError } = await admin
       .from("profiles")
       .delete()
@@ -159,6 +167,7 @@ Deno.serve(async (request: Request) => {
       removedPhotos: photoPaths.length,
       removedQuarantinedPhotos: quarantinePaths.length,
       removedProfileAvatar: true,
+      appleManualRevocationRequired: appleConnected && !(appleTokens > 0),
     });
   } catch (error) {
     console.error("Account deletion failed", error);

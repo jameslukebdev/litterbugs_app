@@ -42,6 +42,7 @@ describe('mobile configuration non-regression', () => {
           image: './assets/LB_Logo_PNG.png',
           imageWidth: 244,
           resizeMode: 'contain',
+          android: { imageWidth: 128 },
         },
       ],
       'expo-secure-store',

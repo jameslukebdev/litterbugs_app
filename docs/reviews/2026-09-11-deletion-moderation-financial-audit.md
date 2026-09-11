@@ -197,3 +197,145 @@ were removed. Production credentials and store listings were not changed.
 Use [the short tester checklist](../user-testing-checklist.md) and
 [known issues](../user-testing-known-issues.md). These describe supervised
 usability testing, not a store-release or all-transactions certification.
+
+## Moderation implementation follow-up — local verification
+
+The existing `/admin` now includes community reports, reported profile details,
+removal/dismissal decisions, opt-in administrator alerts, and an explicit inbox
+refresh. It retains the existing Litterbugs layout and MFA access gate. Reference
+lock: existing app styling is primary; Refero Intercom inbox
+`495176c6-5e39-47e1-ad06-004cf611bada` informed the queue/detail separation.
+Evidence images use contain rather than crop so reviewers see the complete photo.
+
+Local SQL verification in `supabase/tests/moderation_admin_workflow.sql` passed:
+member intake creates a case; ordinary users and administrators without MFA cannot
+remove it; report removal hides it from anonymous readers and owner edits and queues
+eligible refunds; completed profiles can be cleared without deleting the account;
+profile-only concerns support dismissal and alerts; opting out suppresses alerts;
+deleting the source intake scrubs copied profile context from the review case.
+
+Browser walkthrough used a disposable local reviewer with real local Supabase
+password sign-in and authenticator verification. Alert preferences persisted,
+the concern and photo displayed, the reason was required, and confirmed removal
+resolved the case with visible decision history. This did not remove production
+content. Local-only signed photo URLs were translated from the container hostname
+to localhost for this walkthrough; production function source is unchanged by
+that translation. No real money or push delivery was used in this check.
+
+The walkthrough also found and fixed duplicate authenticator enrollment during
+React development remounts and an inbox loading state that could remain stuck
+when pressing the already-selected Open tab. User-facing authenticator language
+now avoids internal authentication terminology.
+
+Deployment, real administrator-device alert delivery, Apple authorization
+revocation, Android payment decline/retry, physical-phone interrupted checkout,
+and separate-user Facebook coverage remain outstanding. These local results
+are not a claim that those remaining requirements passed.
+
+### Apple implementation follow-up — not yet configured or deployed
+
+Added native authorization-code capture, Apple token verification/exchange,
+AES-GCM encrypted private storage, deletion-triggered revocation queuing,
+immediate revocation attempt, and bounded retries through the existing internal
+maintenance worker. Apple client configuration is exact per audience/team: a QA
+key cannot silently substitute for production. Legacy accounts without saved
+credentials receive an Apple Account link after deletion, following TN3194.
+
+Four server tests passed using generated signing keys and intercepted Apple HTTP
+requests: audience/subject binding, client-secret signing, encrypted owner/client
+binding and tamper detection, and correct revoke request with failure preservation.
+The local SQL test passed for service-only access, no revocation of active users,
+credential survival after deletion, single-worker leasing, retry retention, and
+credential removal after success. Mobile Apple/deletion/notification tests passed
+(18 tests across three suites). The three changed server entrypoints passed
+Deno checking. These checks did not contact Apple's revoke endpoint or delete the
+owner's Apple account.
+
+Still required: configure the correct Apple Sign in key(s), integration-test the
+new endpoint and retry worker, final migration/advisor review, deploy in dependency
+order, install the updated client, and complete outstanding device/payment/login
+coverage. Native Apple revocation notification handling also needs review.
+
+Native Apple revocation handling is now implemented: check on signed-in startup,
+foreground return, and Apple's revoke event. Confirmed revoked/not-found states
+end only the matching session; a newer login or unavailable check is preserved.
+Four focused tests passed, and the mobile source check passed for 156 modules.
+Real-device revocation remains untested to protect the owner's only Apple account.
+
+Android checkout continuation: one emulator was started with a requested 1.5 GiB cap (the emulator raised its guest allocation to 2.5 GiB); the current client
+is being built in `/tmp/lb-android-map-audit` against the isolated local backend
+at emulator host `10.0.2.2:62321`. Cleartext transport is enabled only in that
+throwaway native test build. Java 17 and the installed Android SDK are explicitly
+selected for the build. No production native project settings were changed.
+
+Android checkout reached native Stripe TEST mode ($5.50), but card input hit an
+ANR in `PaymentSheetActivity`. The captured main thread was waiting in Android's
+hardware frame renderer, and the emulator log explicitly reported a forced
+software graphics fallback from host memory pressure. Evidence: `/tmp/lb-android-checkout-anr-detail.txt`
+and `/tmp/lb-android-checkout-emulator.log`. This is not yet established as an app
+defect; a cold boot with explicit host graphics is the next verification step.
+No successful payment occurred in this attempt.
+
+### Android native decline/retry passed
+
+Cold boot with `-gpu host` eliminated the observed emulator input/rendering stall.
+The same QA app then completed native card entry and payment normally. This is
+an emulator configuration finding, not evidence requiring a production app change.
+
+On Android API 36, Stripe TEST checkout for report
+`94000000-0000-4000-8000-000000000001` displayed the insufficient-funds message for
+card ending 9995. Replacing it with Stripe's successful 4242 test card completed
+**the same PaymentIntent `pi_3UEZwXKUBoEpySr61zQEJX86`**. Stripe's API verified
+`livemode=false`, `status=succeeded`, and `amount_received=550`. The isolated
+ledger contains one succeeded contribution (principal 500, total 550). The app
+showed “Contribution received” with the correct $5/$5.50 amounts. No redundant
+own-report `cleanup_fund_increased` notice was created or displayed.
+
+Evidence: `/tmp/lb-android-decline.png`, `/tmp/lb-android-retry-receipt.png`, and
+`/tmp/lb-android-payment-evidence.json`. The earlier emulator restart also retained
+the unfinished $5 checkout and resumed the same payment. This is useful Android
+recovery evidence, but does not substitute for the requested interruption check
+on a physical phone.
+
+### Physical iPhone interrupted checkout passed
+
+On the physical iPhone 6s (iOS 15.8.2), the isolated QA build opened Stripe TEST
+checkout for report `94000000-0000-4000-8000-000000000002` with a $5 contribution
+and $5.50 total. The app was terminated while the payment sheet was open, before
+payment confirmation, then relaunched. Opening the report through My activity
+and Fund cleanup retained the $5 amount and resumed the same PaymentIntent
+`pi_3UEaGfKUBoEpySr61hEMUGxR`. Completing with Stripe's test card showed
+“Contribution received” with the correct amounts. Stripe API verification returned
+`livemode=false`, `status=succeeded`, and `amount_received=550`. The local ledger
+has exactly one succeeded contribution and the report fund is 500 cents.
+
+Evidence: `/tmp/lb-iphone-interrupted-payment-evidence.json` and
+`/tmp/lb-iphone-interrupted-payment-receipt.png`. This covers force-quit before
+confirmation, not force-quit after the charge but before webhook acknowledgement.
+The disposable local reviewer was used; the owner's Apple account was untouched.
+
+### Server rollout and final checks
+
+The full `npm run check` passed after correcting the callback test's missing
+account-storage mock and updating the configuration parity expectation for the
+already-shipped Android splash sizing fix. Two additional Apple worker tests
+passed (22 server tests total): an empty queue is untouched, missing configuration
+or a provider failure retains the retry, and only a successful revoke completes it.
+These tests intercept Apple requests and do not revoke any real account.
+
+All three new migrations applied in order against the pre-change schema inside
+an isolated transaction, then rolled back to preserve local fixtures. The local
+security advisor reported no warnings. Production dry-run selected exactly those
+three migrations; they were applied successfully to `mvaygkflcjswtwchflrk`.
+Updated admin-cleanup-case, send-cleanup-notifications, store-apple-authorization,
+delete-account and run-financial-maintenance functions deployed successfully.
+Unauthenticated probes of the four authenticated endpoints returned 401.
+
+Production advisors still report existing public privileged functions, pg_net's
+schema, anonymous-access policy notices, and disabled leaked-password protection.
+The new Apple and moderation RPC wrappers were not flagged as exposed privileged
+functions. The storage evidence policy requires the existing administrator check;
+it is not an unrestricted evidence grant. This is not a claim of a warning-free
+production project. Apple credentials and actual revocation, real administrator
+push delivery, updated client installation and separate-user Facebook coverage
+remain incomplete. Web UI rollout is tracked separately from this server rollout.

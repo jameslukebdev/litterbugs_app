@@ -508,10 +508,9 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
               { text: 'Later', style: 'cancel' },
               {
                 text: destination.label,
-                onPress: () => navigation.getParent()?.navigate(
-                  destination.name,
-                  destination.params
-                ),
+                onPress: () => destination.url
+                  ? Linking.openURL(destination.url).catch(() => Alert.alert('Couldn’t open the inbox', 'Visit litterbugs.app/admin to review community reports.'))
+                  : navigation.getParent()?.navigate(destination.name, destination.params),
               },
             ]
             : [{ text: 'OK' }]

@@ -65,3 +65,9 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/check-contribution-status/index.ts"
 # JWT and permanent-account checks are performed by authenticatedUser.
+
+[functions.store-apple-authorization]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/store-apple-authorization/index.ts"
+# Validates the live Supabase user and both Apple identity tokens server-side.
