@@ -339,3 +339,23 @@ it is not an unrestricted evidence grant. This is not a claim of a warning-free
 production project. Apple credentials and actual revocation, real administrator
 push delivery, updated client installation and separate-user Facebook coverage
 remain incomplete. Web UI rollout is tracked separately from this server rollout.
+
+### Web and iPhone rollout
+
+Main commit `6144913` was pushed. Vercel deployment
+`https://litterbugs-6f9t0tr9j-grant-9890s-projects.vercel.app` completed and aliased
+`litterbugs.app`; the live admin page renders the new Community & cleanup review
+heading and authenticator sign-in guidance. Production administrator sign-in was
+requested to finish the private queue and alert walkthrough.
+
+The current iPhone QA client was bundled, signed and installed on the physical
+iPhone 6s, then opened successfully. The first bundle retained an old Metro
+sandbox transform; a clean-cache rebuild corrected it. Byte-level checks confirmed
+the production Supabase URL and configured public key and absence of the sandbox
+URL before final installation. The final native transport settings prohibit
+arbitrary loads. The owner's Apple account was not changed or deleted.
+
+Payment test cleanup: three disposable local reviewer sessions were removed,
+the local function server and Stripe forwarding process stopped, the dedicated
+litterbugs-audit VM shut down, and the temporary Stripe credential file and
+listener log removed. The unrelated default VM was left alone.

@@ -227,7 +227,7 @@ network. Rebuild only after native dependencies or native configuration change.
 No authentication change is ready for merge until the current checklist in
 `docs/auth-test-checklist.md` passes and the partner approves the branch.
 
-## Apple authorization revocation (implementation pending deployment)
+## Apple authorization revocation (server deployed; configuration pending)
 
 The native Apple adapter now forwards the one-time authorization code after a
 successful Supabase sign-in or identity link. `store-apple-authorization` verifies
