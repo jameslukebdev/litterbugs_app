@@ -105,6 +105,21 @@ switch native checkout. Fresh native decline/retry needs an isolated backend
 with matching test keys and webhook handling; changing the shared live secrets
 is not an acceptable substitute.
 
+Additional sandbox integration check: imported the production mobile
+reconcileContribution module and retrieved the existing declined PaymentIntent
+above from Stripe. Its real status was requires_payment_method with
+insufficient_funds. Reconciliation returned the original attempt as ready,
+without clearing it. Confirming that same intent with Stripe's documented
+pm_card_visa test method succeeded (livemode=false); no second PaymentIntent
+was created. Reconciliation then kept the attempt submitted/pending while the
+supplied ledger status remained payment_pending, rather than showing a receipt
+or opening another retry. One focused integration test passed. The ledger
+dependency was simulated; this does not certify native PaymentSheet or hosted
+webhook delivery. No email/customer or live payment was used. Evidence:
+`/tmp/lb-sandbox-recovery-evidence.json`; temporary runner archived at
+`/tmp/lb-sandboxRecovery.audit.test.js` to avoid rerunning provider mutations in
+the default unit suite. Test credentials remain outside the repository.
+
 The connected Stripe MCP is live
 and is not the Litterbugs sandbox, so it was used read-only. The account holder
 authorized using their Stripe access; the browser exposes the existing

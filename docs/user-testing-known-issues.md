@@ -9,7 +9,7 @@ accounts for destructive tests.
 | Connected sign-in permissions after deletion | Email-account removal passed; Apple token revocation is missing from the current implementation; external-provider deletion walkthrough needs a disposable provider account | Do not use a personal social account for deletion testing; track Apple revocation before release |
 | Moderation response | Private intake/access controls passed; no administrator alert or app queue verified | Facilitator must watch the private queue; do not promise automatic review |
 | Inappropriate content prevention | Malware scanning and cleanup AI are not a verified offensive-content filter | Use harmless test content; broad unsupervised testing is not ready |
-| Payment failures | Existing successful sandbox transactions credited; local recovery checks and fresh Stripe insufficient-funds decline pass; full native decline/retry pending | Test cards only in the verified sandbox; no real charges |
+| Payment failures | Existing transactions credited; production recovery module passed real Stripe decline/same-payment retry and delayed-ledger receipt hold; native checkout and hosted webhook not exercised by that check | Test cards only in the verified sandbox; no real charges |
 | Store setup | Production Apple access, store disclosures and release are deferred | Test builds are not public store releases |
 | Separate-user Facebook login | Deferred by owner; administrator login passed on both phones | Record as unverified coverage, not a confirmed failure |
 
