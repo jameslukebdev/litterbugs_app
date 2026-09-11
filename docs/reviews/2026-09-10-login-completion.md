@@ -229,3 +229,29 @@ final store disclosures remain distinct pending release requirements. Meta is
 still an unpublished, unsubmitted review draft under verified Burrow Base;
 controller/history answers, processor-country clarification and separate tester
 coverage remain pending. No store or Meta publication was performed.
+
+## Meta publication completed — September 11
+
+The account holder approved the Litterbugs business information. In the existing
+review draft 1477683437529176, changed the data controller from Grant Gibson to
+Burrow Base LLC; the form displayed Auto-saved and the updated field value.
+The approved historical answers were already selected: no national-security
+disclosures in the past 12 months and none of the listed public-authority
+request procedures. Processor-country details remain unresolved; no speculative
+countries were entered and that review draft was not submitted.
+
+After the account holder separately authorized publishing the Meta connection,
+opened the existing app's Publish panel. It reported all required app settings
+complete. Published app 1477683410862512, Litterbugs Community Cleanup, under
+the existing Burrow Base portfolio. Meta returned the explicit confirmation:
+"Your app was successfully published" and "Your app is now available for the
+public to use." The status changed to Published with an Unpublish control.
+This supersedes earlier unpublished-state notes. No additional review submission
+was necessary for this publication action; this does not assert that the draft
+received review approval or that every permission has advanced access.
+
+No Apple App Store or Google Play release, social post, purchase, or separate
+business creation occurred. Separate non-administrator Facebook login still
+needs an actual tester account to verify end-to-end public access. Production
+Apple signing/push and final store privacy disclosures remain separate pending
+requirements; successful Meta publication does not close those items.
