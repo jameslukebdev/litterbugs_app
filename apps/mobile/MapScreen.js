@@ -338,7 +338,11 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
     const showSubscription = Keyboard.addListener(
       showEvent,
-      event => { setReportKeyboardVisible(true); setReportKeyboardHeight(Platform.OS === 'ios' ? event.endCoordinates.height : 0); }
+      event => {
+        setReportKeyboardVisible(true);
+        // The transparent report modal stays full height on Android too.
+        setReportKeyboardHeight(event.endCoordinates.height);
+      }
     );
     const hideSubscription = Keyboard.addListener(
       hideEvent,
@@ -2477,6 +2481,13 @@ const revealBottomReportField = () => {
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
             automaticallyAdjustKeyboardInsets={false}
+            onContentSizeChange={() => {
+              // Focus can fire before the keyboard opens and before its inset
+              // is laid out. Reveal the field again using the final content size.
+              if (reportKeyboardVisible) {
+                reportWizardScrollRef.current?.scrollToEnd({ animated: true });
+              }
+            }}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[
               styles.wizardScrollContent,
