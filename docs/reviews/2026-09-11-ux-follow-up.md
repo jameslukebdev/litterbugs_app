@@ -216,3 +216,35 @@ before/after, final emulator chooser, and live card. The emulator was shut down
 after acceptance. No mobile app-store release occurred. iPhone verification of
 the latest sharing/cache changes and separate-person Facebook sign-in remain
 pending, alongside production store signing/privacy gates.
+
+## Physical iPhone sharing acceptance — September 11, 10:20
+
+Built current main for the physical iPhone 6s using the existing Grant-signed
+QA identity com.gegibson.litterbugs.qa. Xcode reported BUILD SUCCEEDED and
+ios-deploy reported 100% Installed package; no app data was cleared. Opened the
+Howard's Creek report from its map marker. Native Share opened iOS's chooser
+with the new v6 PNG attachment (2 MB) and its redesigned thumbnail. Closed the
+chooser without selecting a destination.
+
+Separately exercised Share to Instagram Stories. Instagram opened its Story
+editor with the full redesigned card: complete logo, filled original report
+photo, $6.00 reward, all four litter types, title and litterbugs.app destination.
+All content was visible above Instagram's publishing controls. This confirms
+the actual handoff to Instagram, not merely canOpenURL or an installed-app check.
+No Your story, Close Friends or publish/next control was pressed. Closed the
+editor, selected Discard in its Discard media confirmation, and returned to
+Litterbugs. No social post or saved Instagram draft was created.
+
+WDA's Instagram accessibility snapshot timed out, but the screenshot showed the
+editor; subsequent coordinate taps completed and the discard dialog was visually
+verified. Did not restart the runner or repeat sharing because of the observation
+timeout. Local evidence: artifacts/iphone-sharing-2026-09-11/. Existing completed
+authentication/push checks were not repeated. Memory pressure reported 47% free,
+with no simulator/emulator booted.
+
+Latest sharing is now verified on physical iPhone and Android emulator. Physical
+Pixel v14 previously verified generic sharing with the old server image; it was
+disconnected before the later card/cache/control updates and still needs the
+new build when reconnected. The final separate Facebook tester request remains
+pending the account holder's response. Production signing and final store
+disclosures remain distinct release gates.
