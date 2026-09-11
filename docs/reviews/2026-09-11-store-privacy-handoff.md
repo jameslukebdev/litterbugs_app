@@ -16,7 +16,7 @@ account holder's direction; support case 102959897494 does not block debugging.
 | Report descriptions, conditions and disputes | Other user content | Other user-generated content | Functionality and safety; linked to the submitting account |
 | Submitted report coordinates | Precise location | Precise location | Map/report functionality; linked to account when submitted. Manual placement also supplies location; it is not exempt merely because GPS permission is denied |
 | Contributions, refunds and rewards | Purchase history; assess other financial information for payout records | Purchase history; assess other financial information for payout records | Payment functionality and fraud prevention; account-linked |
-| In-app Stripe PaymentSheet | Payment information | User payment information | Payment functionality; include provider collection even though Litterbugs does not store full card numbers |
+| In-app Stripe PaymentSheet | Payment information | Assess the payment-service exception below before selecting User payment information | Payment functionality; Apple and Play have different disclosure definitions |
 | Push registration | Device ID and user ID | Device or other IDs | Notification functionality; installation ID and token registered to the signed-in account |
 | Stripe SDK interaction events | Product interaction | App interactions | Functionality and analytics/fraud prevention; provider guidance says these may be linked |
 | Google Maps SDK on Android | Assess iOS separately; do not copy Android-only collection | App interactions, diagnostics, device or other IDs; assess approximate location from IP | Maps functionality and provider improvement; see the version-specific qualification in the source record |
@@ -80,6 +80,34 @@ The following narrower questions are resolved from current source:
   certify every provider's transport/retention behavior from the policy alone.
 
 ## Release handoff
+
+### Provider research clarification
+
+Google Play's payment FAQ permits excluding payment-service-only data when the
+app never accesses it and the provider collects it directly under its own terms.
+Therefore the earlier unconditional Play payment-information selection was too
+broad. Confirm that exception for the configured Stripe integration before
+submission; retained transaction history remains in scope. Google also requires
+optional collection to be optional for every applicable user/version. These are
+form definitions, not changes to app behavior.
+[Google Play Data Safety](https://support.google.com/googleplay/android-developer/answer/10787469).
+
+Google Maps documents uses to improve Google's services as well as map SDK
+operation. The proposed Play answer is **Shared** for applicable identifiers,
+diagnostics and camera interactions used for Google's own improvement purposes,
+unless the governing terms establish processing solely on Litterbugs' behalf.
+This is an interpretation of the documented purpose and Play's service-provider
+definition, not an explicit selection supplied by Google for this app. Retain
+the installed-version qualification above.
+[Maps SDK disclosure guidance](https://developers.google.com/maps/documentation/android-sdk/play-data-disclosure).
+
+Expo documents HTTPS connections to Apple/Google and temporary notification
+content retention in memory/queues for delivery. That supports the push-service
+transport assessment, but does not prove the app's own stored notification/token
+records are ephemeral or establish all-app encryption.
+[Expo push FAQ](https://docs.expo.dev/push-notifications/faq/).
+
+### Submission boundaries
 
 Use the existing Apple app `6757313862`, bundle `com.litterbugs.app`; do not
 create a replacement listing. The tested Grant-team QA binary establishes
