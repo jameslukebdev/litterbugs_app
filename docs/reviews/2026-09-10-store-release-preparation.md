@@ -25,6 +25,14 @@ The privacy mappings below remain prepared answers rather than published store
 disclosures. Do not mark the release goal complete from QA authentication or
 Meta publication alone.
 
+The [September 11 privacy handoff](2026-09-11-store-privacy-handoff.md)
+consolidates supported answers and identifies the remaining form decisions.
+The user has deferred production Apple access resolution and accepted separate
+Facebook tester coverage as unverified but nonblocking for debugging. The Apple
+inquiry was sent as case 102959897494; do not wait for it to continue other work.
+
+## Historical September 10 checkpoint
+
 User instruction: continue checks; do not publish. No store submission, upload,
 app transfer, Meta publication, legal certification, or public privacy-label
 change was performed. One broken Meta settings link was corrected and saved.
