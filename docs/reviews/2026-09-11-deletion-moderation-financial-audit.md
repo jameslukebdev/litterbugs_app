@@ -359,3 +359,15 @@ Payment test cleanup: three disposable local reviewer sessions were removed,
 the local function server and Stripe forwarding process stopped, the dedicated
 litterbugs-audit VM shut down, and the temporary Stripe credential file and
 listener log removed. The unrelated default VM was left alone.
+
+### Remaining access dependencies
+
+Production secret-name inspection confirmed no Apple settings were present. A
+new 32-byte encryption key was generated and stored as APPLE_TOKEN_ENCRYPTION_KEY
+in Supabase; no existing key was overwritten, and the temporary input file was
+removed. APPLE_SIGN_IN_CLIENTS is still missing, so automatic Apple authorization
+revocation is not operational yet. This requires the matching Apple client/team
+credential; the owner's only Apple account remains protected from deletion tests.
+The requested administrator browser tab was closed before an authenticated review
+was available. Real administrator alert delivery and separate-user Facebook
+coverage remain unverified.

@@ -245,7 +245,8 @@ Required server-only secrets, never `EXPO_PUBLIC_` values:
 
 QA and production clients require their own matching Apple team configuration.
 The QA signing/APNs key cannot stand in for production Sign in with Apple access.
-Configuration and real Apple revocation remain unverified; Grant's only Apple
+The server encryption secret is configured; `APPLE_SIGN_IN_CLIENTS` remains
+absent. Real Apple revocation remains unverified; Grant's only Apple
 account must not be deleted for testing.
 
 Apply the token-storage migration before deploying the functions. Account deletion
