@@ -28,6 +28,11 @@ account's data and device preferences, and journals interrupted cleanup for
 retry on app launch. Failed server deletion preserves drafts. Device cleanup
 failure is described separately from successful server deletion.
 
+The updated QA iPhone Release build succeeded, installed on the connected
+iPhone 6s without clearing its data, and launched successfully to the map.
+This is installation/startup evidence, not yet a disposable-account deletion
+walkthrough on the device.
+
 Limits: this hosted test used email identities; it does not prove revocation
 of external Apple/Google/Facebook grants. Current native cleanup signs Google
 out, but is not external authorization revocation. SecureStore payment-attempt
