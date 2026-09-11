@@ -371,3 +371,19 @@ credential; the owner's only Apple account remains protected from deletion tests
 The requested administrator browser tab was closed before an authenticated review
 was available. Real administrator alert delivery and separate-user Facebook
 coverage remain unverified.
+
+### Authenticated production moderation walkthrough
+
+Google sign-in and the owner's authenticator verification opened the production
+admin inbox. Alert preference was enabled. Existing case evidence and findings
+loaded; decision buttons stayed disabled without a reason. The Community report
+filter correctly showed no matching open cases. No production report was removed
+or financial decision submitted. The page reported no registered notification
+device for this administrator account.
+
+The connected iPhone control session was restored. Its Google chooser contained
+only the Gmail account, so the administrator's grant@burrowbase.com sign-in is
+required before real administrator push delivery can be tested. The phone was
+left on Google's sign-in page and the owner was asked to finish that sign-in.
+Apple developer changes remain deferred following the owner's clarification
+that the published app belongs to Luke's developer account.
