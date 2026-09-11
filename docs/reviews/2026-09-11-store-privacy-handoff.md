@@ -36,6 +36,27 @@ linked data from tracking. [Apple privacy details](https://developer.apple.com/a
 
 ## Form-specific decisions still required before submission
 
+The following narrower questions are resolved from current source:
+
+- **Saved report drafts:** `savedReportDraft.js` writes text/coordinates to
+  AsyncStorage and copies photos into the app's Documents directory. That save
+  operation itself does not upload them. `MapScreen.js` calls the photo upload
+  path when publishing or updating the report. Distinguish local drafts from
+  submitted content; this does not establish that map SDK activity is local.
+- **Notification registration:** `pushNotifications.js` returns before obtaining
+  an Expo token or registering the installation when permission is denied.
+  Push-specific token registration is optional. The store's combined Device ID
+  category may still be required because other SDKs collect identifiers.
+- **Payment configuration:** `paymentConfiguration.js` enables PaymentSheet
+  payment information and conditionally Apple Pay/Google Pay, without supplying
+  a Stripe Customer ID, customer ephemeral key or default billing details.
+  Those omissions do not establish that the payment sheet collects no billing
+  information; the provider can request details during payment.
+- **Payout onboarding:** `PayoutSetupScreen.js` opens the returned provider URL
+  through the system browser/authentication session. Full identity or bank
+  documents entered there are not evidence that the app receives those fields.
+  The app's returned payout state and identifiers must still be disclosed.
+
 - **Play shared versus collected:** classify each recipient's use. A processor
   may qualify for the service-provider sharing exception; independent provider
   uses need a separate assessment. Neither a blanket Shared Yes nor a blanket
