@@ -430,3 +430,15 @@ Evidence: `/tmp/lb-admin-alert-confirmed.png` and
 `/tmp/lb-admin-link-destination.png` (local temporary screenshots).
 Apple credential configuration remains deferred; separate-user Facebook remains
 unverified. No Apple/Google store publication, real charge or social post occurred.
+
+### Legacy self-funding alert cleanup
+
+After the owner requested remaining recommended work, a targeted production
+query found one unread `cleanup_fund_increased` notification whose recipient
+matched its contribution's contributor. Existing delivery rows for self-funding
+notices were already accepted (two); none were pending or retrying.
+The single unread notice was acknowledged by setting `read_at`, preserving the
+notification, contribution, receipt and ledger records. The post-change query
+confirmed zero matching unread notices. The deployed insert trigger continues
+to prevent new redundant self-funding notices. No simulator, rebuild, payment
+or repeated checkout test was needed for this data-only cleanup.
