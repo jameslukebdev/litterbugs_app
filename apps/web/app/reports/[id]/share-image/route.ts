@@ -2,6 +2,7 @@ import { createElement } from 'react';
 import { ImageResponse } from 'next/og';
 
 import { ReportSocialCard } from '@/components/report-social-card';
+import { loadSocialCardFonts } from '@/lib/social-card-fonts';
 import { loadPublicReportShare } from '@/lib/public-report-share';
 
 export const runtime = 'nodejs';
@@ -19,6 +20,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     {
       width: 1080,
       height: 1350,
+      fonts: await loadSocialCardFonts(),
     },
   );
 

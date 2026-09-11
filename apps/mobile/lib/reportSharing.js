@@ -117,7 +117,7 @@ export function reportShareImageFilename(model) {
 
   const state = model?.state === 'completed' ? 'completed' : 'active';
   const id = cleanText(model?.id).replace(/[^a-z0-9-]/gi, '').slice(0, 18) || 'report';
-  return `litterbugs-share-v5-${model?.rewardCents || 0}-${slug || 'cleanup-report'}-${state}-${id}.png`;
+  return `litterbugs-share-v6-${model?.rewardCents || 0}-${slug || 'cleanup-report'}-${state}-${id}.png`;
 }
 
 function responseHeader(headers, name) {

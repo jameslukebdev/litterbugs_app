@@ -28,6 +28,14 @@ const report: PublicReportShareModel = {
 afterEach(cleanup);
 
 describe('ReportSocialCard', () => {
+  it('invites a volunteer cleanup instead of displaying a zero reward', () => {
+    render(<ReportSocialCard report={{ ...report, rewardCents: 0, litterTypes: ['Cans', 'Plastic bags'] }} logoUrl="/logo.png" />);
+    expect(screen.getByText('Volunteer cleanup')).toBeTruthy();
+    expect(screen.getByText('Cans · Plastic bags')).toBeTruthy();
+    expect(screen.queryByText(/\$0/)).toBeNull();
+    expect(screen.queryByText(/cleanup reward/i)).toBeNull();
+  });
+
   it('uses the real brand asset and a neutral message when no photo is available', () => {
     render(<ReportSocialCard report={report} logoUrl="https://litterbugs.app/brand/litterbugs-logo.png" />);
 
@@ -40,7 +48,7 @@ describe('ReportSocialCard', () => {
     render(<ReportSocialCard report={{ ...report, state: 'completed', afterPhotoUrl: '/after.jpg', rewardCents: 600 }} logoUrl="/logo.png" />);
     expect(screen.getByRole('img', { name: 'After' }).getAttribute('src')).toBe('/after.jpg');
     expect(screen.queryByText('Before')).toBeNull();
-    expect(screen.queryByText(/cleanup reward/)).toBeNull();
+    expect(screen.queryByText(/cleanup reward/i)).toBeNull();
   });
 
   it('presents completed photos in chronological order', () => {
@@ -54,7 +62,7 @@ describe('ReportSocialCard', () => {
     const excerpt = screen.getByText(/^A long cleanup report description/).textContent!;
     expect(excerpt.length).toBeLessThanOrEqual(100);
     expect(excerpt.endsWith('…')).toBe(true);
-    expect(screen.getByText('$6.00 cleanup reward')).toBeTruthy();
+    expect(screen.getByText('$6.00')).toBeTruthy();
     expect(screen.queryByText(/Private/)).toBeNull();
   });
 });
