@@ -30,8 +30,16 @@ failure is described separately from successful server deletion.
 
 The updated QA iPhone Release build succeeded, installed on the connected
 iPhone 6s without clearing its data, and launched successfully to the map.
-This is installation/startup evidence, not yet a disposable-account deletion
-walkthrough on the device.
+The device walkthrough then used disposable account
+`9823b362-2183-47f3-8072-fe0a116a3774`: signed in with email, entered a harmless
+report title, chose Save for later, and confirmed the Resume your report prompt.
+The account's Documents/report-drafts folder existed before deletion. Deletion
+through Settings and its confirmation returned the app to signed-out browsing.
+The folder was absent afterward, and an exact hosted query returned zero Auth
+users, identities and sessions for this UUID. No report was published. This
+device draft had no photo; photo removal is covered by the hosted fixtures
+above, while cleanup-draft files and interrupted cleanup are covered by the
+focused storage tests. External-provider grant revocation remains unverified.
 
 Limits: this hosted test used email identities; it does not prove revocation
 of external Apple/Google/Facebook grants. Current native cleanup signs Google
