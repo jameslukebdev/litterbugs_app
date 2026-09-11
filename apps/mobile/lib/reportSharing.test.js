@@ -194,7 +194,7 @@ describe('report sharing', () => {
       .mockResolvedValueOnce({ exists: true, size: 2048 });
     const readAsStringAsync = vi.fn().mockResolvedValue('iVBORw0KGgo=');
     const downloadAsync = vi.fn().mockResolvedValue({
-      uri: 'file:///cache/litterbugs-share-v3-0-litter-beside-the-trail-active-report-1.png',
+      uri: 'file:///cache/litterbugs-share-v4-0-litter-beside-the-trail-active-report-1.png',
       status: 200,
       mimeType: 'image/png',
     });
@@ -214,8 +214,8 @@ describe('report sharing', () => {
       downloadAsync,
     });
 
-    expect(reportShareImageFilename(model)).toBe('litterbugs-share-v3-0-litter-beside-the-trail-active-report-1.png');
-    expect(first).toBe('file:///cache/litterbugs-share-v3-0-litter-beside-the-trail-active-report-1.png');
+    expect(reportShareImageFilename(model)).toBe('litterbugs-share-v4-0-litter-beside-the-trail-active-report-1.png');
+    expect(first).toBe('file:///cache/litterbugs-share-v4-0-litter-beside-the-trail-active-report-1.png');
     expect(second).toBe(first);
     expect(downloadAsync).toHaveBeenCalledTimes(1);
     expect(downloadAsync).toHaveBeenCalledWith(model.shareImageUrl, first);

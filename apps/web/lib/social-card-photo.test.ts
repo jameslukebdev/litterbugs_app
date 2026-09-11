@@ -36,7 +36,7 @@ describe('social card photo embedding', () => {
     const url = await embedSocialCardPhoto(client, 'report_photos', 'owner/report/photo.heic');
 
     expect(convert).toHaveBeenCalledOnce();
-    expect(resize).toHaveBeenCalledWith(expect.objectContaining({ width: 720, height: 720 }));
+    expect(resize).toHaveBeenCalledWith(expect.objectContaining({ width: 1080, height: 1080, fit: 'inside' }));
     expect(jpeg).toHaveBeenCalledWith({ quality: 82, mozjpeg: true });
     expect(url).toBe('data:image/jpeg;base64,BwgJ');
   });

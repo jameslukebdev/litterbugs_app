@@ -2,18 +2,27 @@
 
 import type { PublicReportShareModel } from '@/lib/public-report-share-model';
 
+function cardExcerpt(value: string, limit: number) {
+  const text = value.trim().replace(/\s+/g, ' ');
+  if (text.length <= limit) return text;
+  const prefix = text.slice(0, limit - 1);
+  const wordEnd = prefix.lastIndexOf(' ');
+  return `${wordEnd > limit * 0.7 ? prefix.slice(0, wordEnd) : prefix}…`;
+}
+
 export function ReportSocialCard({ report, logoUrl }: { report: PublicReportShareModel; logoUrl: string }) {
   const completed = report.state === 'completed';
-  const imageUrls = completed
-    ? [report.afterPhotoUrl, report.beforePhotoUrl].filter((value): value is string => Boolean(value))
-    : [report.beforePhotoUrl].filter((value): value is string => Boolean(value));
+  const title = cardExcerpt(report.title || 'Community cleanup', 100);
+  const photos = (completed
+    ? [{ url: report.beforePhotoUrl, label: 'Before' }, { url: report.afterPhotoUrl, label: 'After' }]
+    : [{ url: report.beforePhotoUrl, label: 'Reported site' }]).filter(photo => Boolean(photo.url));
   const details = completed
     ? [
-      report.cleanerName ? `Cleaned by ${report.cleanerName}` : null,
+      report.cleanerName ? `Cleaned by ${cardExcerpt(report.cleanerName, 32)}` : null,
       report.bagsOrItemsRemoved != null ? `${report.bagsOrItemsRemoved} bags/items removed` : null,
       report.weightPounds != null ? `${report.weightPounds} lb removed` : null,
     ].filter(Boolean)
-    : [report.rewardCents ? `$${(report.rewardCents / 100).toFixed(2)} cleanup reward` : null, report.severity ? `${report.severity} severity` : null, report.litterTypes[0] ?? null].filter(Boolean);
+    : [report.rewardCents ? `$${(report.rewardCents / 100).toFixed(2)} cleanup reward` : null, report.severity ? `${report.severity} severity` : null, report.litterTypes[0] ? cardExcerpt(report.litterTypes[0], 32) : null].filter(Boolean);
 
   return (
     <div style={{
@@ -22,29 +31,26 @@ export function ReportSocialCard({ report, logoUrl }: { report: PublicReportShar
       display: 'flex',
       flexDirection: 'column',
       color: '#17201a',
-      background: completed
-        ? 'linear-gradient(155deg, #dff2e1 0%, #f8fbf8 58%, #e6d8ef 100%)'
-        : 'linear-gradient(155deg, #f5e5f8 0%, #fff 56%, #fde7dd 100%)',
+      background: '#FFFFFF',
       fontFamily: 'Arial, sans-serif',
-      padding: 64,
+      padding: 48,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', height: 100, flexShrink: 0, alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-          <img src={logoUrl} alt="Litterbugs" width={160} height={104} style={{ objectFit: 'contain' }} />
+          <img src={logoUrl} alt="Litterbugs" width={128} height={100} style={{ objectFit: 'contain' }} />
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ color: '#637168', fontSize: 22 }}>Community cleanup</span>
+            <span style={{ color: '#637168', fontSize: 24 }}>Small actions. Cleaner places.</span>
           </div>
         </div>
-        <span style={{ color: '#69766d', fontSize: 20, fontWeight: 800 }}>litterbugs.app</span>
       </div>
 
-      <div style={{ height: 690, display: 'flex', gap: 12, marginTop: 50 }}>
-        {imageUrls.length ? imageUrls.map((url, index) => (
-          <div key={url} style={{ position: 'relative', flex: 1, display: 'flex', overflow: 'hidden', borderRadius: 34, background: '#dfe7e0', boxShadow: '0 24px 60px rgba(23, 32, 26, .18)' }}>
-            <img src={url} alt="" width="100%" height="100%" style={{ objectFit: 'cover' }} />
+      <div style={{ height: 580, flexShrink: 0, display: 'flex', gap: 12, marginTop: 28 }}>
+        {photos.length ? photos.map(photo => (
+          <div key={photo.label} style={{ position: 'relative', flex: 1, minWidth: 0, display: 'flex', overflow: 'hidden', borderRadius: 24, background: '#EEF3EE' }}>
+            <img src={photo.url!} alt={photo.label} width="100%" height="100%" style={{ objectFit: 'contain' }} />
             {completed ? (
-              <span style={{ position: 'absolute', left: 20, bottom: 20, padding: '10px 16px', borderRadius: 999, color: '#17201a', background: 'rgba(255,255,255,.94)', fontSize: 18, fontWeight: 900 }}>
-                {index === 0 && report.afterPhotoUrl ? 'AFTER' : 'BEFORE'}
+              <span style={{ position: 'absolute', left: 16, top: 16, padding: '10px 16px', borderRadius: 12, color: photo.label === 'After' ? '#FFFFFF' : '#17201a', background: photo.label === 'After' ? '#2F7D32' : '#FFFFFF', fontSize: 22, fontWeight: 700 }}>
+                {photo.label}
               </span>
             ) : null}
           </div>
@@ -57,10 +63,9 @@ export function ReportSocialCard({ report, logoUrl }: { report: PublicReportShar
             alignItems: 'center',
             justifyContent: 'center',
             gap: 26,
-            borderRadius: 34,
+            borderRadius: 24,
             color: '#526057',
-            background: completed ? '#e3eee5' : '#edf1ee',
-            border: '2px solid rgba(82, 96, 87, .12)',
+            background: '#EEF3EE',
           }}>
             <img src={logoUrl} alt="Litterbugs" width={240} height={156} style={{ objectFit: 'contain' }} />
             <span style={{ fontSize: 25, fontWeight: 800 }}>
@@ -70,25 +75,26 @@ export function ReportSocialCard({ report, logoUrl }: { report: PublicReportShar
         )}
       </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 22 }}>
-        <span style={{ color: completed ? '#2f7d32' : '#d9332f', fontSize: 26, fontWeight: 900, letterSpacing: 2 }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 22, paddingTop: 24, paddingBottom: 24 }}>
+        <span style={{ color: '#2F7D32', fontSize: 26, fontWeight: 700, letterSpacing: 1.5 }}>
           {completed ? 'CLEANUP COMPLETE' : 'CLEANUP NEEDED'}
         </span>
-        <span style={{ fontSize: 68, fontWeight: 900, lineHeight: 1.02, letterSpacing: -3 }}>
-          {report.title}
+        <span style={{ fontSize: title.length > 60 ? 48 : 60, fontWeight: 700, lineHeight: 1.12, letterSpacing: -1.5, overflowWrap: 'anywhere' }}>
+          {title}
         </span>
         {details.length ? (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
             {details.map((detail) => (
-              <span key={detail} style={{ padding: '12px 18px', borderRadius: 999, color: '#334038', background: 'rgba(255,255,255,.82)', fontSize: 22, fontWeight: 800 }}>
+              <span key={detail} style={{ padding: '10px 14px', borderRadius: 12, color: '#334038', background: '#EEF3EE', fontSize: 24, fontWeight: 700 }}>
                 {detail}
               </span>
             ))}
           </div>
         ) : null}
-        <span style={{ color: '#526057', fontSize: 26, lineHeight: 1.35 }}>
-          {completed ? 'See the community impact and help keep the momentum going.' : 'View the report and help your community clean it up.'}
-        </span>
+      </div>
+      <div style={{ display: 'flex', flexShrink: 0, height: 80, alignItems: 'center', justifyContent: 'space-between', borderTop: '2px solid #E3E9E3' }}>
+        <span style={{ color: '#2F7D32', fontSize: 26, fontWeight: 700 }}>{completed ? 'See the difference' : 'View the report. Make a difference.'}</span>
+        <span style={{ fontSize: 25, fontWeight: 700 }}>litterbugs.app</span>
       </div>
     </div>
   );

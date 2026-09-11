@@ -40,10 +40,9 @@ export async function embedSocialCardPhoto(
     const cardImage = await sharp(browserImage)
       .rotate()
       .resize({
-        width: 720,
-        height: 720,
-        fit: 'cover',
-        position: 'centre',
+        width: 1080,
+        height: 1080,
+        fit: 'inside',
         withoutEnlargement: true,
       })
       .jpeg({ quality: 82, mozjpeg: true })
