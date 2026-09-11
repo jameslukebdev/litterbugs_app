@@ -368,9 +368,9 @@ in Supabase; no existing key was overwritten, and the temporary input file was
 removed. APPLE_SIGN_IN_CLIENTS is still missing, so automatic Apple authorization
 revocation is not operational yet. This requires the matching Apple client/team
 credential; the owner's only Apple account remains protected from deletion tests.
-The requested administrator browser tab was closed before an authenticated review
-was available. Real administrator alert delivery and separate-user Facebook
-coverage remain unverified.
+At this stage an authenticated browser session was not yet available. The
+subsequent walkthrough and alert results below supersede that limitation.
+Separate-user Facebook coverage remains unverified.
 
 ### Authenticated production moderation walkthrough
 
@@ -387,3 +387,29 @@ required before real administrator push delivery can be tested. The phone was
 left on Google's sign-in page and the owner was asked to finish that sign-in.
 Apple developer changes remain deferred following the owner's clarification
 that the published app belongs to Luke's developer account.
+
+### Production administrator alert and decision completed
+
+The owner completed grant@burrowbase.com sign-in on the physical iPhone 6s.
+The admin page then confirmed a registered notification device. One clearly
+labeled administrator-only test case was created, with no member concern,
+public report, profile change or payment attached. Only Grant received its alert.
+
+Delivery was accepted on its first attempt and the Expo/APNs receipt returned
+`ok`. The native app displayed the administrator alert with an Open admin inbox
+button. That button opened the correct Community & cleanup review sign-in page
+in Safari. Safari has a separate authenticated session from the native app;
+no additional mobile browser sign-in was needed to verify this destination.
+Background notification-banner appearance was not visually verified.
+
+The authenticated desktop admin page dismissed test case
+`f4b7822a-87c2-4a76-8439-c1e95bd6eae2` using No violation found, with the reason
+"Authorized notification-delivery test completed. No member concern or content
+violation." The UI confirmed "Decision recorded. No content was removed," and
+the database audit history contains the corresponding `dismiss_report` action.
+The test is retained in audit history rather than deleted.
+
+Evidence: `/tmp/lb-admin-alert-confirmed.png` and
+`/tmp/lb-admin-link-destination.png` (local temporary screenshots).
+Apple credential configuration remains deferred; separate-user Facebook remains
+unverified. No Apple/Google store publication, real charge or social post occurred.
