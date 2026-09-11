@@ -70,3 +70,23 @@ This proves the installed QA app's sandbox APNs delivery, not production APNs.
 Android QA build 13 installed successfully and preserves the existing saved
 report draft. Its keyboard/splash changes are awaiting physical acceptance;
 Pixel interaction was paused when the user switched to another app.
+
+## User-directed share-card revision — September 11, 09:30
+
+The user rejected the empty side panels and requested removal of the tagline.
+This supersedes the earlier contain-style rendering decision above. Revisited
+Refero's Komoot photo detail screen (full screenshot as well as metadata), using
+its filled image frame and close photo/title grouping. Retain the existing
+Literal-derived white/green brand direction and Train Fitness fact grouping.
+
+Decision ledger: the user owns tagline removal and tighter image fit; Komoot
+informs the filled frame; the existing brand owns logo, green status and white
+canvas. Move status beside the logo, enlarge the photo area from 580 to 740 px,
+use a centered cover crop, and compact the title/details and footer. Original
+uploads remain unchanged and photo preprocessing retains aspect ratio. The crop
+applies only inside the generated portrait share card. Native cache version is
+now v5 so updated builds discard the earlier design.
+
+Rendered the same six PNG cases again and inspected the real report, long title,
+and completed pair: no empty side panels, no tagline, clear status, readable
+reward/details, and intact footer. No photo content was synthesized or changed.

@@ -38,16 +38,17 @@ export function ReportSocialCard({ report, logoUrl }: { report: PublicReportShar
       <div style={{ display: 'flex', height: 100, flexShrink: 0, alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
           <img src={logoUrl} alt="Litterbugs" width={128} height={100} style={{ objectFit: 'contain' }} />
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ color: '#637168', fontSize: 24 }}>Small actions. Cleaner places.</span>
-          </div>
+
         </div>
+        <span style={{ color: '#2F7D32', fontSize: 26, fontWeight: 700, letterSpacing: 1.5 }}>
+          {completed ? 'CLEANUP COMPLETE' : 'CLEANUP NEEDED'}
+        </span>
       </div>
 
-      <div style={{ height: 580, flexShrink: 0, display: 'flex', gap: 12, marginTop: 28 }}>
+      <div style={{ height: 740, flexShrink: 0, display: 'flex', gap: 12, marginTop: 20 }}>
         {photos.length ? photos.map(photo => (
           <div key={photo.label} style={{ position: 'relative', flex: 1, minWidth: 0, display: 'flex', overflow: 'hidden', borderRadius: 24, background: '#EEF3EE' }}>
-            <img src={photo.url!} alt={photo.label} width="100%" height="100%" style={{ objectFit: 'contain' }} />
+            <img src={photo.url!} alt={photo.label} width="100%" height="100%" style={{ objectFit: 'cover', objectPosition: 'center' }} />
             {completed ? (
               <span style={{ position: 'absolute', left: 16, top: 16, padding: '10px 16px', borderRadius: 12, color: photo.label === 'After' ? '#FFFFFF' : '#17201a', background: photo.label === 'After' ? '#2F7D32' : '#FFFFFF', fontSize: 22, fontWeight: 700 }}>
                 {photo.label}
@@ -75,11 +76,8 @@ export function ReportSocialCard({ report, logoUrl }: { report: PublicReportShar
         )}
       </div>
 
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 22, paddingTop: 24, paddingBottom: 24 }}>
-        <span style={{ color: '#2F7D32', fontSize: 26, fontWeight: 700, letterSpacing: 1.5 }}>
-          {completed ? 'CLEANUP COMPLETE' : 'CLEANUP NEEDED'}
-        </span>
-        <span style={{ fontSize: title.length > 60 ? 48 : 60, fontWeight: 700, lineHeight: 1.12, letterSpacing: -1.5, overflowWrap: 'anywhere' }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 18, paddingTop: 16, paddingBottom: 16 }}>
+        <span style={{ fontSize: title.length > 60 ? 46 : 52, fontWeight: 700, lineHeight: 1.12, letterSpacing: -1.5, overflowWrap: 'anywhere' }}>
           {title}
         </span>
         {details.length ? (
@@ -92,7 +90,7 @@ export function ReportSocialCard({ report, logoUrl }: { report: PublicReportShar
           </div>
         ) : null}
       </div>
-      <div style={{ display: 'flex', flexShrink: 0, height: 80, alignItems: 'center', justifyContent: 'space-between', borderTop: '2px solid #E3E9E3' }}>
+      <div style={{ display: 'flex', flexShrink: 0, height: 64, alignItems: 'center', justifyContent: 'space-between', borderTop: '2px solid #E3E9E3' }}>
         <span style={{ color: '#2F7D32', fontSize: 26, fontWeight: 700 }}>{completed ? 'See the difference' : 'View the report. Make a difference.'}</span>
         <span style={{ fontSize: 25, fontWeight: 700 }}>litterbugs.app</span>
       </div>
