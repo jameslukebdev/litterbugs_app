@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { reportPresentation } from '../lib/reportPresentation';
-import { Modal, View, Text, TouchableOpacity, ActivityIndicator, ScrollView, Linking, Alert } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, ActivityIndicator, ScrollView, Linking, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CompletedCleanupStory from '../CompletedCleanupStory';
 import ReportPhotoGallery from './ReportPhotoGallery';
@@ -55,6 +55,10 @@ export default function ReportDetailsSheet({ state, actions }) {
               );
   };
   const [ownerMenuOpen, setOwnerMenuOpen] = useState(false);
+  // Active Android reports start the photo at 72dp; inset its controls by 12dp.
+  const reportControlsTop = Platform.OS === 'android' && selectedReport?.cleanup_state !== 'completed'
+    ? Math.max(insets.top + 20, 84)
+    : insets.top + 20;
   useEffect(() => { setOwnerMenuOpen(false); }, [detailsOpen, selectedReport?.id]);
   const showOwnerActions = () => {
     if (!canEditOrDeleteSelectedReport || selectedReport?.funding_locked_at) return;
@@ -89,7 +93,7 @@ export default function ReportDetailsSheet({ state, actions }) {
 
       {selectedReport && Number.isFinite(selectedReport.latitude) && Number.isFinite(selectedReport.longitude) ? <TouchableOpacity
         accessibilityRole="button" accessibilityLabel="Show report on map"
-        style={[styles.reportPhotoControl, styles.reportPhotoMapControl, { top: insets.top + 20 }]}
+        style={[styles.reportPhotoControl, styles.reportPhotoMapControl, { top: reportControlsTop }]}
         onPress={() => {
           const report = selectedReport;
           setDetailsOpen(false); setSelectedReport(null); setPreviewId(null);
@@ -97,7 +101,7 @@ export default function ReportDetailsSheet({ state, actions }) {
           commitMapRegion({ ...region, latitude: report.latitude, longitude: report.longitude });
         }}><Ionicons name="map-outline" size={18} color="#285D38" /><Text style={styles.reportPhotoControlText}>Show on map</Text></TouchableOpacity> : null}
 
-      <TouchableOpacity onPress={closeReportDetails} accessibilityRole="button" accessibilityLabel="Close report" style={[styles.reportPhotoControl, styles.reportPhotoCloseControl, { top: insets.top + 20 }]}><Ionicons name="close" size={20} color="#30363B" /></TouchableOpacity>
+      <TouchableOpacity onPress={closeReportDetails} accessibilityRole="button" accessibilityLabel="Close report" style={[styles.reportPhotoControl, styles.reportPhotoCloseControl, { top: reportControlsTop }]}><Ionicons name="close" size={20} color="#30363B" /></TouchableOpacity>
 
       {reportDetailsPreparing && !selectedReport ? (
         <View

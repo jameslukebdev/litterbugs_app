@@ -2,6 +2,7 @@ const PUBLIC_REPORT_BASE_URL = 'https://litterbugs.app/reports';
 export const LITTERBUGS_META_APP_ID = '1477683410862512';
 const REPORT_SHARE_IMAGE_MIME_TYPE = 'image/png';
 const PNG_SIGNATURE_BASE64 = 'iVBORw0KGgo=';
+const SHARE_IMAGE_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
 
 function cleanText(value) {
   return typeof value === 'string' ? value.trim() : '';
@@ -135,6 +136,7 @@ export async function prepareNativeReportShareImage({
   readAsStringAsync,
   downloadAsync,
   timeoutMs = 20000,
+  nowMs = Date.now(),
   setTimeoutFn = setTimeout,
   clearTimeoutFn = clearTimeout,
 }) {
@@ -145,8 +147,10 @@ export async function prepareNativeReportShareImage({
   if (getInfoAsync) {
     const existing = await getInfoAsync(destination);
     if (existing?.exists && Number(existing.size) > 0) {
+      const ageMs = nowMs - Number(existing.modificationTime) * 1000;
+      const fresh = Number.isFinite(ageMs) && ageMs >= 0 && ageMs < SHARE_IMAGE_CACHE_MAX_AGE_MS;
       try {
-        const signature = readAsStringAsync
+        const signature = fresh && readAsStringAsync
           ? await readAsStringAsync(destination, {
             encoding: 'base64',
             position: 0,
@@ -154,7 +158,7 @@ export async function prepareNativeReportShareImage({
           })
           : null;
 
-        if (!readAsStringAsync || signature === PNG_SIGNATURE_BASE64) return destination;
+        if (fresh && (!readAsStringAsync || signature === PNG_SIGNATURE_BASE64)) return destination;
       } catch {
         // Remove unreadable cache entries and fetch a fresh card below.
       }

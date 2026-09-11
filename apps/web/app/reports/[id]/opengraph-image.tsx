@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
-import { headers } from 'next/headers';
 
 import { loadPublicReportShare } from '@/lib/public-report-share';
+import { loadSocialCardLogo } from '@/lib/social-card-logo';
 
 export const alt = 'Litterbugs community cleanup report';
 export const size = { width: 1200, height: 630 };
@@ -12,14 +12,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   const { id } = await params;
   const report = await loadPublicReportShare(id);
   const completed = report?.state === 'completed';
-  const requestHeaders = await headers();
-  const requestHost = requestHeaders.get('x-forwarded-host') || requestHeaders.get('host') || 'litterbugs.app';
-  const requestProtocol = requestHeaders.get('x-forwarded-proto') || (requestHost.startsWith('localhost') ? 'http' : 'https');
-  const logoUrl = `${requestProtocol}://${requestHost}/brand/litterbugs-logo.png`;
-  const logoResponse = await fetch(logoUrl);
-  const logoSource = logoResponse.ok
-    ? await logoResponse.arrayBuffer()
-    : logoUrl;
+  const logoSource = await loadSocialCardLogo();
   const imageUrls = completed
     ? [report?.afterPhotoUrl, report?.beforePhotoUrl].filter((value): value is string => Boolean(value))
     : [report?.beforePhotoUrl].filter((value): value is string => Boolean(value));

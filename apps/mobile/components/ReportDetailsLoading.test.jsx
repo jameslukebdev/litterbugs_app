@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 vi.mock('react-native', () => {
   const Box = ({ children, accessibilityLabel }) => <div aria-label={accessibilityLabel}>{children}</div>;
-  return { Modal: Box, View: Box, Text: Box, TouchableOpacity: Box, ScrollView: Box, ActivityIndicator: () => null, Linking: {}, Alert: {} };
+  return { Modal: Box, View: Box, Text: Box, TouchableOpacity: Box, ScrollView: Box, ActivityIndicator: () => null, Linking: {}, Alert: {}, Platform: { OS: 'android' } };
 });
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 vi.mock('../styles/MapScreen.styles', () => ({ default: {} }));

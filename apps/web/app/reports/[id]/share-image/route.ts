@@ -3,11 +3,12 @@ import { ImageResponse } from 'next/og';
 
 import { ReportSocialCard } from '@/components/report-social-card';
 import { loadSocialCardFonts } from '@/lib/social-card-fonts';
+import { loadSocialCardLogo } from '@/lib/social-card-logo';
 import { loadPublicReportShare } from '@/lib/public-report-share';
 
 export const runtime = 'nodejs';
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const report = await loadPublicReportShare(id);
   if (!report) return new Response('Report not found', { status: 404 });
@@ -15,7 +16,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const image = new ImageResponse(
     createElement(ReportSocialCard, {
       report,
-      logoUrl: new URL('/brand/litterbugs-logo.png', request.url).toString(),
+      logoUrl: await loadSocialCardLogo(),
     }),
     {
       width: 1080,

@@ -191,7 +191,7 @@ describe('report sharing', () => {
     const model = createReportShareModel({ report: availableReport });
     const getInfoAsync = vi.fn()
       .mockResolvedValueOnce({ exists: false })
-      .mockResolvedValueOnce({ exists: true, size: 2048 });
+      .mockResolvedValueOnce({ exists: true, size: 2048, modificationTime: Date.now() / 1000 });
     const readAsStringAsync = vi.fn().mockResolvedValue('iVBORw0KGgo=');
     const downloadAsync = vi.fn().mockResolvedValue({
       uri: 'file:///cache/litterbugs-share-v6-0-litter-beside-the-trail-active-report-1.png',
@@ -240,13 +240,35 @@ describe('report sharing', () => {
       model,
       cacheDirectory: 'file:///cache/',
       deleteAsync,
-      getInfoAsync: vi.fn().mockResolvedValue({ exists: true, size: 8915 }),
+      getInfoAsync: vi.fn().mockResolvedValue({ exists: true, size: 8915, modificationTime: Date.now() / 1000 }),
       readAsStringAsync: vi.fn().mockResolvedValue('PCFET0NUWVA='),
       downloadAsync,
     })).resolves.toBe(destination);
 
     expect(deleteAsync).toHaveBeenCalledWith(destination, { idempotent: true });
     expect(downloadAsync).toHaveBeenCalledWith(model.shareImageUrl, destination);
+  });
+
+  it.each([700, undefined, 1001])('refreshes an outdated or undated PNG cache entry (%s)', async (modificationTime) => {
+    const model = createReportShareModel({ report: availableReport });
+    const destination = `file:///cache/${reportShareImageFilename(model)}`;
+    const downloadAsync = vi.fn().mockResolvedValue({ uri: destination, status: 200, mimeType: 'image/png' });
+    const deleteAsync = vi.fn().mockResolvedValue(undefined);
+    const readAsStringAsync = vi.fn().mockResolvedValue('iVBORw0KGgo=');
+
+    await expect(prepareNativeReportShareImage({
+      model,
+      cacheDirectory: 'file:///cache/',
+      nowMs: 1000000,
+      getInfoAsync: vi.fn().mockResolvedValue({ exists: true, size: 2048, modificationTime }),
+      readAsStringAsync,
+      downloadAsync,
+      deleteAsync,
+    })).resolves.toBe(destination);
+
+    expect(deleteAsync).toHaveBeenCalledWith(destination, { idempotent: true });
+    expect(downloadAsync).toHaveBeenCalledWith(model.shareImageUrl, destination);
+    expect(readAsStringAsync).not.toHaveBeenCalled();
   });
 
   it('rejects and removes a server error page saved with a PNG filename', async () => {
