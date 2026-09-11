@@ -109,6 +109,23 @@ records are ephemeral or establish all-app encryption.
 
 ### Submission boundaries
 
+Installed dependency evidence, checked September 11:
+
+| Component | Evidence | Disclosure consequence |
+| --- | --- | --- |
+| iOS Google Sign-In | Podfile.lock: 9.2.0 | Use this native version, not only the React Native wrapper version |
+| iOS Stripe | Podfile.lock: 24.19.0 | Matches the provider assessment in the source record |
+| Android Stripe | Wrapper 0.50.3 declares native `21.22.+` | Resolve the exact native version from the eventual release dependency graph; this is a range, not an exact installed-version claim |
+| Android FCM | Expo Notifications declares firebase-messaging 24.0.1 | Include Firebase Installations dependency collection; notification permission alone is not a whole-SDK collection switch |
+| iOS transport | Info.plist: arbitrary loads false, local networking true | Supports restricted remote transport configuration; not proof of every provider endpoint |
+
+Firebase's disclosure guide explicitly includes the transitive Installations
+SDK in FCM's assessment. Its optional Analytics/BigQuery features must not be
+assumed enabled merely because notifications work. No FCM auto-init override
+was found in the inspected app and Expo Notifications manifests; the permission
+check documented above proves only that Litterbugs skips its own Expo/account
+registration on denial. [Firebase Android disclosure guide](https://firebase.google.com/docs/android/play-data-disclosure).
+
 Use the existing Apple app `6757313862`, bundle `com.litterbugs.app`; do not
 create a replacement listing. The tested Grant-team QA binary establishes
 native Apple login and sandbox push, not production signing or APNs. Google
