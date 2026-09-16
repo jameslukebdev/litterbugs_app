@@ -6,9 +6,7 @@ import styles from './styles/MapScreen.styles';
 import ReportWizardSteps from './components/ReportWizardSteps';
 
 import MapReportPreview from './components/MapReportPreview';
-import useMapLabels from './lib/useMapLabels';
 import { resolveReportPhotoUrls } from './lib/reportPhotoUrls';
-import ReportMapMarkers from './components/ReportMapMarkers';
 
 import { saveReportDraft, loadReportDraft, clearReportDraft } from './lib/savedReportDraft';
 import ReportFilters from './components/ReportFilters';
@@ -16,7 +14,8 @@ import ReportFilters from './components/ReportFilters';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Platform, Alert, Keyboard, Animated, Easing, PanResponder, ScrollView, TouchableWithoutFeedback, ActivityIndicator, AppState, Linking, Share as NativeShare, TurboModuleRegistry, useWindowDimensions } from 'react-native';
 import { polygonParts } from './lib/searchGeography';
-import MapView, { Marker, Polygon } from 'react-native-maps';
+import { Marker, Polygon } from 'react-native-maps';
+import ClusteredMapView from 'react-native-map-clustering';
 import { useIsFocused } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import * as Device from 'expo-device';
@@ -72,6 +71,7 @@ import {
   isPayoutConnectionReady,
 } from './lib/payoutWorkflowGate';
 import { hasRequiredReportPhoto } from './lib/reportDraft';
+import { normalizeReportTitle } from './lib/reportTitle';
 import { mergeReportPhotoUris, reportCameraPickerOptions, reportPhotoPickerOptions } from './lib/reportPhotoSelection';
 import { uploadSecureMedia } from './lib/secureMediaUpload';
 import {
@@ -86,9 +86,17 @@ import {
 import {
   findResponsiveUserLocation,
   mapRegionsAreEquivalent,
+  reportLocationRegion,
   userLocationRegion,
 } from './lib/responsiveLocation';
 import { mapCenterCoordinate } from './lib/reportLocationPlacement';
+import { shouldClusterReports } from './lib/mapClustering';
+import { formatMapFundingLabel } from './lib/mapFundingMarker';
+import {
+  clusterStatusCounts,
+  REPORT_MARKER_COLORS,
+  reportMarkerPresentation,
+} from './lib/mapMarkerPresentation';
 
 
 import { createReportShareModel, isInstagramStoriesAvailable, isReportShareable, prepareNativeReportShareImage, shareReportToInstagramStories, shareReportWithSystemSheet } from './lib/reportSharing';
@@ -106,6 +114,34 @@ function loadInstalledRNShare() {
 }
 
 const installedRNShare = loadInstalledRNShare();
+
+const MAP_MARKER_TRANSITION_MS = 180;
+
+function MapMarkerTransition({ children, transitionKey }) {
+  const opacity = useRef(new Animated.Value(0.72)).current;
+  const scale = useRef(new Animated.Value(0.94)).current;
+
+  useEffect(() => {
+    opacity.setValue(0.72);
+    scale.setValue(0.94);
+    const transition = Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: MAP_MARKER_TRANSITION_MS,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scale, {
+        toValue: 1,
+        duration: MAP_MARKER_TRANSITION_MS,
+        useNativeDriver: true,
+      }),
+    ]);
+    transition.start();
+    return () => transition.stop();
+  }, [opacity, scale, transitionKey]);
+
+  return <Animated.View style={{ opacity, transform: [{ scale }] }}>{children}</Animated.View>;
+}
 
 const showPermanentAccountRequired = () => {
   Alert.alert(
@@ -146,6 +182,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const REPORT_STEPS = ['Photos', 'Type of litter', 'Severity', 'Site conditions', 'Review'];
   const [tracksReportMarkers, setTracksReportMarkers] = useState(true);
   const reportMarkerTrackingTimerRef = useRef(null);
+  const reportClusterRef = useRef(null);
 
   const [draftCoord, setDraftCoord] = useState(null);
   const [reportPlacementActive, setReportPlacementActive] = useState(false);
@@ -161,6 +198,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const reportWizardScrollRef = useRef(null);
   const stepTranslateX = useRef(new Animated.Value(0)).current;
   const stepOpacity = useRef(new Animated.Value(1)).current;
+  const pendingReportTransitionDirectionRef = useRef(null);
   const [form, setForm] = useState({
     title: '',
     selectedTypes: [],
@@ -176,9 +214,6 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const [selectedReport, setSelectedReport] = useState(null);
   const [mapUserLocation, setMapUserLocation] = useState(null);
   const [nearbyIds, setNearbyIds] = useState([]);
-  const [previewHeight, setPreviewHeight] = useState(180);
-  const [projectionRevision, setProjectionRevision] = useState(0);
-  const [mapSize, setMapSize] = useState({ width: 400, height: 800 });
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [reportPhotoUrls, setReportPhotoUrls] = useState([]);
   const [editingReportId, setEditingReportId] = useState(null);
@@ -196,6 +231,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     return () => clearTimeout(timer);
   }, [isPreparingPhotos]);
   const [isCentering, setIsCentering] = useState(false);
+  const [isLocatingReportLocation, setIsLocatingReportLocation] = useState(false);
   const mapViewRef = useRef(null);
   const [mapReady, setMapReady] = useState(false);
   const [mapSurfaceLoaded, setMapSurfaceLoaded] = useState(false);
@@ -266,8 +302,17 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
 
   const insets = useSafeAreaInsets();
   const { width: screenWidth, fontScale } = useWindowDimensions();
-  const mapLabels = useMapLabels({ markers, mapRef: mapViewRef, ready: mapReady, region, revision: projectionRevision, size: mapSize, selectedId: previewId, fontScale });
+  const reportClusteringEnabled = shouldClusterReports(region);
   const previewReport = markers.find((marker) => marker.id === previewId)?.report;
+  const [previewControlsHidden, setPreviewControlsHidden] = useState(Boolean(previewReport));
+  useEffect(() => {
+    if (previewReport) {
+      setPreviewControlsHidden(true);
+      return undefined;
+    }
+    const timer = setTimeout(() => setPreviewControlsHidden(false), 180);
+    return () => clearTimeout(timer);
+  }, [previewReport]);
   const nearbyReports = nearbyIds.map((id) => markers.find((marker) => marker.id === id)?.report).filter(Boolean);
   const chooseMapReport = (report) => {
     setNearbyIds([]);
@@ -283,6 +328,8 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     permissionMessage = 'Allow location access to center the map on your position.',
     regionForPosition = userLocationRegion,
     accuracy = Location.Accuracy.Balanced,
+    freshLocationTimeoutMs = 8_000,
+    animateOnPosition = true,
   } = {}) => {
     let permission = await Location.getForegroundPermissionsAsync();
 
@@ -304,9 +351,12 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
         setMapUserLocation(position.coords);
         const nextRegion = regionForPosition(position);
         latestRegion = nextRegion;
-        mapViewRef.current?.animateToRegion?.(nextRegion, 240);
-        commitMapRegion(nextRegion);
+        if (animateOnPosition) {
+          mapViewRef.current?.animateToRegion?.(nextRegion, 240);
+          commitMapRegion(nextRegion);
+        }
       },
+      freshLocationTimeoutMs,
     });
 
     return latestRegion ?? regionForPosition(result.location);
@@ -448,6 +498,11 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     selectedReport?.user_id,
   ]);
   const mapControlsBottom = bottomNavClearance + BOTTOM_NAV_METRICS.mapControlGap;
+  const reportControlWidth = fontScale > 1.5
+    ? screenWidth - 32
+    : reportPlacementActive || isLocatingReportLocation
+      ? Math.min(screenWidth - 100, 194 + 120 * (fontScale - 1))
+      : Math.max(152, Math.min(screenWidth - 148, 44 + 108 * fontScale));
   // Leave 20px margin on each side of the main report photo
   const reportHeroWidth = Math.max(screenWidth - 40, 280);
 
@@ -603,6 +658,30 @@ const startingContributionCents = wantsStartingFunding
 const canAdvanceFromStep = (step = reportStep) => canAdvanceReportStep(step, { form, isEditing, existingPhotoPaths: selectedReport?.photo_paths });
 
 // Animate between report screens
+useLayoutEffect(() => {
+  const direction = pendingReportTransitionDirectionRef.current;
+  if (!direction) return undefined;
+  pendingReportTransitionDirectionRef.current = null;
+
+  const incomingTransition = Animated.parallel([
+    Animated.timing(stepTranslateX, {
+      toValue: 0,
+      duration: 190,
+      useNativeDriver: true,
+    }),
+    Animated.timing(stepOpacity, {
+      toValue: 1,
+      duration: 170,
+      useNativeDriver: true,
+    }),
+  ]);
+
+  incomingTransition.start(() => {
+    setIsTransitioning(false);
+  });
+  return () => incomingTransition.stop();
+}, [reportStep, stepOpacity, stepTranslateX]);
+
 const transitionToReportStep = (nextStep, direction) => {
   if (
     isTransitioning ||
@@ -629,26 +708,10 @@ const transitionToReportStep = (nextStep, direction) => {
       useNativeDriver: true,
     }),
   ]).start(() => {
-    setReportStep(nextStep);
-
     // Position incoming screen on opposite side
     stepTranslateX.setValue(direction > 0 ? 80 : -80);
-
-    // Slide new screen in
-    Animated.parallel([
-      Animated.timing(stepTranslateX, {
-        toValue: 0,
-        duration: 190,
-        useNativeDriver: true,
-      }),
-      Animated.timing(stepOpacity, {
-        toValue: 1,
-        duration: 170,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setIsTransitioning(false);
-    });
+    pendingReportTransitionDirectionRef.current = direction;
+    setReportStep(nextStep);
   });
 };
 
@@ -754,20 +817,53 @@ const openReportLocationPicker = async (skipDraft = false) => {
     } catch { Alert.alert('Draft unavailable', 'Your saved report could not be loaded. Please try again.'); return; }
   }
   if (!navigation.isFocused()) return;
-  const coord = mapCenterCoordinate(region);
-  if (!coord) {
+  const initialCoordinate = mapCenterCoordinate(region);
+  if (!initialCoordinate) {
     Alert.alert('Map location unavailable', 'Move the map and try again.');
     return;
   }
   if (!isPermanentUser(currentUser)) {
     setPendingAction(null);
-    setPendingReportCoordinate(coord);
+    setPendingReportCoordinate(initialCoordinate);
     navigation.getParent()?.navigate('Auth');
+    return;
+  }
+
+  let placementRegion = mapUserLocation
+    ? reportLocationRegion({ coords: mapUserLocation })
+    : region;
+  if (!mapUserLocation) {
+    setIsLocatingReportLocation(true);
+    try {
+      const locatedRegion = await locateAndCenterMap({
+        permissionMessage: 'Allow location access to begin a report near your current position.',
+        regionForPosition: reportLocationRegion,
+        accuracy: Location.Accuracy.Balanced,
+        freshLocationTimeoutMs: 4_000,
+        animateOnPosition: false,
+      });
+      if (locatedRegion) placementRegion = locatedRegion;
+    } catch (error) {
+      console.log('Report location centering error:', error);
+      Alert.alert(
+        'Current location unavailable',
+        'You can still move the map beneath the pin to choose the litter location.',
+      );
+    } finally {
+      setIsLocatingReportLocation(false);
+    }
+  }
+  if (!navigation.isFocused()) return;
+  const coord = mapCenterCoordinate(placementRegion);
+  if (!coord) {
+    Alert.alert('Map location unavailable', 'Move the map and try again.');
     return;
   }
   setSelectedReport(null);
   setDetailsOpen(false);
   setPreviewId(null);
+  mapViewRef.current?.animateToRegion?.(placementRegion, 280);
+  commitMapRegion(placementRegion);
   setPlacementCoordinate(coord);
   setReportPlacementActive(true);
 };
@@ -888,7 +984,7 @@ const openPayoutSetupForWorkflow = (action) => {
       }
 
       const createPayload = {
-        title: form.title?.trim() || 'Litter Report',
+        title: normalizeReportTitle(form.title),
         litter_types: form.selectedTypes?.length ? form.selectedTypes : null,
         types: form.types?.trim() || null,
         notes_presets: form.selectedNotes?.length ? form.selectedNotes : null,
@@ -900,7 +996,7 @@ const openPayoutSetupForWorkflow = (action) => {
       };
 
       const updatePayload = {
-        title: form.title?.trim() || 'Litter Report',
+        title: normalizeReportTitle(form.title),
         litter_types: form.selectedTypes?.length ? form.selectedTypes : null,
         types: form.types?.trim() || null,
         notes_presets: form.selectedNotes?.length ? form.selectedNotes : null,
@@ -1058,7 +1154,7 @@ const submitReport = async () => {
   if (!hasStartingFundingChoice) {
     Alert.alert(
       'Choose cleanup funding',
-      'Select Not now or choose a starting cleanup reward.'
+      'Select Volunteer or choose a starting cleanup reward.'
     );
     return;
   }
@@ -1066,7 +1162,7 @@ const submitReport = async () => {
   if (wantsStartingFunding && !startingContributionCents) {
     Alert.alert(
       'Enter a valid contribution',
-      'Choose at least $1 and no more than $1,000, or select Not now.'
+      'Choose at least $1 and no more than $1,000, or select Volunteer.'
     );
     return;
   }
@@ -1160,7 +1256,11 @@ const submitReport = async () => {
   };
 
 // Icon Changes When Map Type Changes
-  const getMapTypeColor = () => mapType === 'standard' ? '#4F5C63' : '#2F7D32';
+  const getMapTypeColor = () => {
+    if (mapType === 'satellite') return '#2F7D32';
+    if (mapType === 'hybrid') return '#9333B8';
+    return '#E6B800';
+  };
 
 
 // Preset Litter Options Users Can Choose From
@@ -1350,13 +1450,18 @@ const refreshReportMarkerSnapshots = useCallback(() => {
 
 useEffect(() => {
   refreshReportMarkerSnapshots();
-}, [refreshReportMarkerSnapshots, mapLabels]);
+}, [refreshReportMarkerSnapshots, reportClusteringEnabled]);
 
 useEffect(() => () => {
   if (reportMarkerTrackingTimerRef.current) {
     clearTimeout(reportMarkerTrackingTimerRef.current);
   }
 }, []);
+
+const getClusterStatusCounts = (clusterId) => {
+  const leaves = reportClusterRef.current?.getLeaves(clusterId, Infinity) || [];
+  return clusterStatusCounts(leaves);
+};
 
 const openReportDetails = (report) => {
   if (!report) return;
@@ -2140,7 +2245,7 @@ const revealBottomReportField = () => {
   // Map View . . .
   return (
     <View style={styles.container}>
-        <MapView
+        <ClusteredMapView
           ref={mapViewRef}
           testID="discovery-map"
           style={StyleSheet.absoluteFill}
@@ -2152,7 +2257,6 @@ const revealBottomReportField = () => {
           initialRegion={region}
           region={region}
           onRegionChangeComplete={(nextRegion) => {
-            setProjectionRevision((value) => value + 1);
             if (reportPlacementActive) {
               setPlacementCoordinate(mapCenterCoordinate(nextRegion));
             }
@@ -2161,7 +2265,54 @@ const revealBottomReportField = () => {
               setRegion(nextRegion);
             }
           }}
-          onLayout={(event) => setMapSize(event.nativeEvent.layout)}
+          maxZoom={14}
+          radius={20}
+          animationEnabled={false}
+          clusteringEnabled={reportClusteringEnabled}
+          superClusterRef={reportClusterRef}
+          renderCluster={({ id, geometry, properties, onPress }) => {
+            const statusCounts = getClusterStatusCounts(id);
+            const statusBadges = [
+              { key: 'available', count: statusCounts.available, color: REPORT_MARKER_COLORS.availableAccent },
+              { key: 'active', count: statusCounts.active, color: REPORT_MARKER_COLORS.activeAccent },
+              { key: 'completed', count: statusCounts.completed, color: REPORT_MARKER_COLORS.completedAccent },
+            ];
+            return (
+              <Marker
+                key={`cluster-${id}`}
+                coordinate={{
+                  latitude: geometry.coordinates[1],
+                  longitude: geometry.coordinates[0],
+                }}
+                tracksViewChanges={Platform.OS === 'ios' ? true : tracksReportMarkers}
+                anchor={{ x: 0.5, y: 0.5 }}
+                accessibilityLabel={`${properties.point_count} reports: ${statusCounts.available} available, ${statusCounts.active} in progress, ${statusCounts.completed} completed`}
+                onPress={(event) => {
+                  event?.stopPropagation?.();
+                  if (reportPlacementActive) return;
+                  setPreviewId(null);
+                  setNearbyIds([]);
+                  onPress();
+                }}
+              >
+                <MapMarkerTransition transitionKey={`cluster-${id}`}>
+                  <View collapsable={false} style={styles.reportClusterHit}>
+                    <View style={styles.reportClusterBubble}>
+                      <Text style={styles.reportClusterText}>{properties.point_count}</Text>
+                    </View>
+                    <View style={styles.reportClusterStatusRow}>
+                      {statusBadges.map(({ key, count, color }) => (
+                        <View key={key} style={[styles.reportClusterStatusBadge, { borderColor: color }]}>
+                          <View style={[styles.reportClusterStatusDot, { backgroundColor: color }]} />
+                          <Text style={[styles.reportClusterStatusCount, { color }]}>{count}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                </MapMarkerTransition>
+              </Marker>
+            );
+          }}
           onPress={(event) => {
             if (event.nativeEvent.action !== 'marker-press') {
               setPreviewId(null);
@@ -2180,9 +2331,53 @@ const revealBottomReportField = () => {
           coordinates={outer.map(([longitude, latitude]) => ({ latitude, longitude }))}
           holes={holes.map(ring => ring.map(([longitude, latitude]) => ({ latitude, longitude })))}
           strokeColor="#2F7D32" accessible={false} importantForAccessibility="no" strokeWidth={1.5} fillColor="rgba(47,125,50,0.035)" tappable={false} />)}
-        <ReportMapMarkers markers={mapLabels} selectedId={previewId} tracksViewChanges={tracksReportMarkers}
-          reportPlacementActive={reportPlacementActive} onChoose={chooseMapReport}
-          onNearby={(ids) => { setPreviewId(null); setNearbyIds(ids); }} />
+        {markers.map((marker) => {
+          const tone = reportMarkerPresentation(marker.report);
+          const fundingLabel = formatMapFundingLabel(marker.report?.funded_amount_cents);
+          return (
+            <Marker
+              key={marker.id}
+              coordinate={marker.coordinate}
+              identifier={`report:${tone.key}:${marker.id}`}
+              tracksViewChanges={Platform.OS === 'ios' ? true : tracksReportMarkers}
+              anchor={{ x: 0.5, y: 0.5 }}
+              accessibilityLabel={`${tone.accessibilityLabel}${tone.key === 'available' ? `, ${fundingLabel}` : ''}: ${marker.report?.title || 'Litter report'}`}
+              onPress={(event) => {
+                event?.stopPropagation?.();
+                if (reportPlacementActive) return;
+                chooseMapReport(marker.report);
+              }}
+            >
+              <MapMarkerTransition transitionKey={`${reportClusteringEnabled ? 'clustered' : 'direct'}:${marker.id}:${tone.key}`}>
+                <View collapsable={false} style={styles.reportMarkerHitLg}>
+                  <View style={[
+                    styles.reportMarkerIconWrapLg,
+                    { backgroundColor: tone.backgroundColor, borderColor: tone.borderColor },
+                  ]}>
+                    {tone.key === 'available' ? (
+                      <Text
+                        allowFontScaling={false}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.68}
+                        numberOfLines={1}
+                        style={[styles.reportMarkerAmount, { color: tone.foregroundColor }]}
+                      >
+                        {fundingLabel}
+                      </Text>
+                    ) : (
+                      <Ionicons name={tone.icon} size={31} color={tone.foregroundColor} />
+                    )}
+                    {tone.statusIcon ? (
+                      <View style={[styles.reportMarkerStatusBadge, { borderColor: tone.borderColor }]}>
+                        <Ionicons name={tone.statusIcon} size={15} color={tone.foregroundColor} />
+                      </View>
+                    ) : null}
+                  </View>
+                </View>
+              </MapMarkerTransition>
+            </Marker>
+          );
+        })}
 
         {draftCoord && (
           <Marker
@@ -2193,7 +2388,7 @@ const revealBottomReportField = () => {
             description="Fill the form below to save"
           />
         )}
-      </MapView>
+      </ClusteredMapView>
 
       {showInitialMapLoading ? (
         <View style={styles.initialMapLoading} pointerEvents="auto">
@@ -2243,8 +2438,7 @@ const revealBottomReportField = () => {
               },
             ]}
           >
-            <Text style={styles.floatingMapInstructionTitle}>Choose report location</Text>
-            <Text style={styles.floatingMapInstructionHint}>Move the map beneath the pin to mark the litter. Zoom in for a precise spot.</Text>
+            <Text style={styles.floatingMapInstructionTitle}>Choose Report Location</Text>
           </Animated.View>
         </View>
       ) : null}
@@ -2272,14 +2466,16 @@ const revealBottomReportField = () => {
 
 
       <View
-        style={[styles.reportLitterButtonDock, { bottom: mapControlsBottom }, previewReport && !reportPlacementActive && { display: 'none' }]}
+        style={[styles.reportLitterButtonDock, { bottom: mapControlsBottom }, previewControlsHidden && !reportPlacementActive && { display: 'none' }]}
         pointerEvents="box-none"
       >
         <Animated.View
           pointerEvents={reportPlacementActive ? 'auto' : 'none'}
           style={[
             styles.reportPlacementCloseWrap,
-            fontScale > 1.5 && { bottom: 90 * fontScale },
+            fontScale > 1.5
+              ? { left: 16, bottom: 90 * fontScale }
+              : { right: reportControlWidth + 26 },
             {
               opacity: reportControlTransition,
               transform: [
@@ -2324,31 +2520,41 @@ const revealBottomReportField = () => {
           }}
         >
           <TouchableOpacity
-            style={[styles.reportLitterButton, { width: fontScale > 1.5 ? screenWidth - 32 : reportPlacementActive ? Math.min(screenWidth - 100, 194 + 120 * (fontScale - 1)) : Math.max(152, Math.min(screenWidth - 148, 44 + 108 * fontScale)), height: fontScale > 1.5 ? undefined : BOTTOM_NAV_METRICS.mapControlSize, minHeight: 44, paddingVertical: fontScale > 1.5 ? 12 : 0 }]}
+            style={[styles.reportLitterButton, { width: reportControlWidth, height: fontScale > 1.5 ? undefined : BOTTOM_NAV_METRICS.mapControlSize, minHeight: 44, paddingVertical: fontScale > 1.5 ? 12 : 0 }]}
             onPress={reportPlacementActive ? confirmReportLocation : openReportLocationPicker}
-            disabled={showInitialMapLoading || formOpen || detailsOpen || isSaving}
+            disabled={showInitialMapLoading || formOpen || detailsOpen || isSaving || isLocatingReportLocation}
             activeOpacity={0.82}
             accessibilityRole="button"
-            accessibilityLabel={reportPlacementActive ? 'Use this location' : 'Report litter'}
+            accessibilityLabel={isLocatingReportLocation ? 'Finding user location' : reportPlacementActive ? 'Use this location' : 'Report litter'}
             accessibilityHint={reportPlacementActive
               ? 'Uses the location beneath the red pin for this report'
               : 'Places a pin at the map center so you can choose the cleanup site'}
             accessibilityState={{
-              disabled: showInitialMapLoading || formOpen || detailsOpen || isSaving,
+              busy: isLocatingReportLocation,
+              disabled: showInitialMapLoading || formOpen || detailsOpen || isSaving || isLocatingReportLocation,
             }}
           >
-              <Ionicons name={reportPlacementActive ? 'location-outline' : 'add-circle-outline'} size={20} color="#FFFFFF" />
-              <Text style={[styles.reportLitterButtonText, { flexShrink: 1, textAlign: 'center' }]}>{reportPlacementActive ? 'Use This Location' : 'Report Litter'}</Text>
+              {isLocatingReportLocation ? (
+                <>
+                  <ActivityIndicator size="small" color="#2F7D32" />
+                  <Text style={[styles.reportLitterButtonText, { flexShrink: 1, textAlign: 'center' }]}>Finding User Location</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name={reportPlacementActive ? 'location-outline' : 'add-circle-outline'} size={22} color="#2F7D32" />
+                  <Text style={[styles.reportLitterButtonText, { flexShrink: 1, textAlign: 'center' }]}>{reportPlacementActive ? 'Use This Location' : 'Report Litter'}</Text>
+                </>
+              )}
           </TouchableOpacity>
         </Animated.View>
       </View>
 
       {/* Center Me Button */}
-      <TouchableOpacity
+      {!previewControlsHidden ? <TouchableOpacity
         style={[
           styles.centerButton,
           {
-            bottom: mapControlsBottom + (previewReport && !reportPlacementActive ? previewHeight + 12 : fontScale > 1.5 ? 90 * fontScale : 58),
+            bottom: mapControlsBottom + (fontScale > 1.5 ? 90 * fontScale : 58),
           },
         ]}
         onPress={() => { clearSearchPlace(); centerOnUser(); }}
@@ -2358,17 +2564,17 @@ const revealBottomReportField = () => {
         accessibilityState={{ busy: isCentering, disabled: isCentering }}
       >
         {isCentering ? (
-          <ActivityIndicator color="#2F7D32" />
+          <ActivityIndicator color="#2F80ED" />
         ) : (
-          <Ionicons name="navigate-outline" size={24} color="#4F5C63" />
+          <Ionicons name="navigate-outline" size={27} color="#2F80ED" />
         )}
-      </TouchableOpacity>
+      </TouchableOpacity> : null}
 
-      <TouchableOpacity
+      {!previewControlsHidden ? <TouchableOpacity
         style={[
           styles.mapTypeButton,
           {
-            bottom: mapControlsBottom + (previewReport && !reportPlacementActive ? previewHeight + 12 : fontScale > 1.5 ? 90 * fontScale : 58) + BOTTOM_NAV_METRICS.mapControlSize + 10,
+            bottom: mapControlsBottom + (fontScale > 1.5 ? 90 * fontScale : 58) + BOTTOM_NAV_METRICS.mapControlSize + 10,
           },
         ]}
         onPress={toggleMapType}
@@ -2376,13 +2582,12 @@ const revealBottomReportField = () => {
         accessibilityLabel="Change map style"
         accessibilityValue={{ text: mapType }}
       >
-        <Ionicons name="layers-outline" size={24} color={getMapTypeColor()} />
-      </TouchableOpacity>
+        <Ionicons name="layers-outline" size={27} color={getMapTypeColor()} />
+      </TouchableOpacity> : null}
 
 {!reportPlacementActive && !detailsOpen && !showInitialMapLoading ? <MapReportPreview
         report={previewReport} nearby={nearbyReports} bottom={mapControlsBottom}
         insetBottom={insets.bottom} getPhotoUrl={getReportPhotoUrl}
-        onHeight={setPreviewHeight}
         isFavorite={favoriteIds.includes(previewReport?.id)} onFavorite={toggleFavorite} favoritesReady={favoritesReady}
         distance={reportDistanceMiles(mapUserLocation, previewReport)}
         onClose={() => setPreviewId(null)} onCloseNearby={() => setNearbyIds([])}
@@ -2512,7 +2717,6 @@ const revealBottomReportField = () => {
                   setForm={setForm}
                   removePhoto={removePhoto}
                   hasAttachedReportPhoto={hasAttachedReportPhoto}
-                  goToNextReportStep={goToNextReportStep}
                   LITTER_OPTIONS={LITTER_OPTIONS}
                   revealBottomReportField={revealBottomReportField}
                   NOTES_OPTIONS={NOTES_OPTIONS}

@@ -7,6 +7,6 @@ export function reportPresentation(report) {
   return {
     status: lifecycle?.title || (report?.cancelled_at ? 'Report closed' : report?.expired_at ? 'Report expired' : 'Available for cleanup'),
     icon: lifecycle?.icon || 'ellipse-outline',
-    funding: completed ? 'Cleanup approved' : amount > 0 ? `Cleanup reward ${formatUsd(amount)}` : 'No funds yet',
+    funding: amount < 1 ? 'Volunteer' : completed ? 'Cleanup approved' : `Cleanup reward ${formatUsd(amount)}`,
   };
 }

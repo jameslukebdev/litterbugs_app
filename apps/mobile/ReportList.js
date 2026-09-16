@@ -1,14 +1,13 @@
 import ReportCardDetails from './components/ReportCardDetails';
 import ReportCardMenu from './components/ReportCardMenu';
+import ReportPreviewHero from './components/ReportPreviewHero';
 import { isReportShareable, shareReportWithSystemSheet } from './lib/reportSharing';
-import RemotePhoto from './components/RemotePhoto';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import {
   FlatList,
   Alert,
   Platform,
   Share,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -19,88 +18,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { getDistanceMiles, useReports } from './lib/reports';
 import BrandedLoadingState from './BrandedLoadingState';
 
-const SEVERITY = Object.freeze({
-  high: { color: '#E53935', icon: 'warning' },
-  medium: { color: '#F57C00', icon: 'warning' },
-  low: { color: '#687178', icon: 'information-circle-outline' },
-});
-
-function getSeverity(report) {
-  const key = String(report?.severity ?? 'medium').toLowerCase();
-  const style = SEVERITY[key] ?? SEVERITY.medium;
-  const label = key.charAt(0).toUpperCase() + key.slice(1);
-
-  return { ...style, label };
-}
-
-function ReportPhotos({ report, onPress, severity, completed }) {
-  const { getReportPhotoUrl, favoriteIds, toggleFavorite, favoritesReady } = useReports();
-  const [width, setWidth] = useState(0);
-  const [index, setIndex] = useState(0);
-  const paths = (report?.photo_paths || []).filter(Boolean);
-  const photoKey = JSON.stringify(paths);
-  useEffect(() => setIndex(0), [report?.id, photoKey, width]);
-  return (
-    <View style={styles.thumbnail} onLayout={event => setWidth(event.nativeEvent.layout.width)}>
-      {width > 0 ? (
-        <ScrollView
-          key={`${report?.id}:${photoKey}:${width}`}
-          horizontal
-          pagingEnabled
-          directionalLockEnabled
-          scrollEnabled={paths.length > 1}
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={event => setIndex(Math.max(0, Math.min(paths.length - 1, Math.round(event.nativeEvent.contentOffset.x / width))))}
-        >
-          {(paths.length ? paths : [null]).map((path, i) => (
-            <TouchableOpacity
-              key={`${path || 'empty'}:${i}`}
-              onPress={() => onPress?.(report)}
-              activeOpacity={0.9}
-              accessibilityRole="button"
-              accessibilityLabel={`Photo ${i + 1} of ${Math.max(paths.length, 1)} for ${report?.title || 'litter report'}`}
-              accessibilityHint="Opens report details"
-            >
-              <RemotePhoto path={path} getUrl={getReportPhotoUrl} label={`Photo for ${report?.title || 'litter report'}`} style={{ width, height: 160 }} />
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      ) : null}
-        <View pointerEvents="none" style={styles.severityOverlay}>
-          <Ionicons
-            name={completed ? 'checkmark-circle' : severity.icon}
-            size={15}
-            color={completed ? '#2F7D32' : severity.color}
-          />
-          <Text
-            style={[
-              styles.severityText,
-              { color: completed ? '#2F7D32' : severity.color },
-            ]}
-          >
-            {completed ? 'Cleanup complete' : `${severity.label} severity`}
-          </Text>
-        </View>
-      <TouchableOpacity style={styles.favorite} accessibilityRole="button" accessibilityLabel={favoriteIds.includes(report.id) ? 'Remove from favorites' : 'Add to favorites'} accessibilityState={{ selected: favoriteIds.includes(report.id), disabled: !favoritesReady }} disabled={!favoritesReady} onPress={() => toggleFavorite(report.id)}>
-        <Ionicons name={favoriteIds.includes(report.id) ? 'heart' : 'heart-outline'} size={26} color="#FFFFFF" style={styles.heart} />
-      </TouchableOpacity>
-      {paths.length > 1 ? (
-        <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-          <View style={styles.photoDots}>{paths.map((path, i) => <View key={`${path}:${i}`} style={[styles.photoDot, i === index && styles.photoDotActive]} />)}</View>
-        <View style={styles.photoCounter}>
-          <Text style={styles.photoCounterText}>{index + 1} / {paths.length}</Text>
-        </View>
-        </View>
-      ) : null}
-    </View>
-  );
-}
-
 export function ReportListItem({ report, origin, onPress, selected = false }) {
-  const severity = getSeverity(report);
-  const completed = report?.cleanup_state === 'completed';
   const distance = getDistanceMiles(origin, report);
-  const { favoriteIds, toggleFavorite, favoritesReady } = useReports();
+  const { favoriteIds, toggleFavorite, favoritesReady, getReportPhotoUrl } = useReports();
   const isFavorite = favoriteIds.includes(report.id);
   const actions = [
     ...(isReportShareable(report) ? [{ text: 'Share report', icon: 'share-outline', onPress: async () => {
@@ -111,12 +31,25 @@ export function ReportListItem({ report, origin, onPress, selected = false }) {
   ];
 
   return (
-    <View
-      style={[styles.row, selected && { backgroundColor: '#F0F7F1', borderColor: '#2F7D32' }]}
-    >
-      <ReportPhotos report={report} onPress={onPress} severity={severity} completed={completed} />
+    <View style={styles.rowShadow}>
+      <View
+        style={[
+          styles.row,
+          report?.cleanup_state === 'completed' && styles.completedRow,
+          selected && styles.selectedRow,
+        ]}
+      >
+        <ReportPreviewHero
+          report={report}
+          getPhotoUrl={getReportPhotoUrl}
+          onPress={onPress}
+          isFavorite={isFavorite}
+          onFavorite={toggleFavorite}
+          favoritesReady={favoritesReady}
+        />
 
-      <ReportCardDetails report={report} distance={distance} onPress={onPress} selected={selected} options={<ReportCardMenu actions={actions} />} />
+        <ReportCardDetails preview report={report} distance={distance} onPress={onPress} selected={selected} options={<ReportCardMenu actions={actions} />} />
+      </View>
     </View>
   );
 }
@@ -192,53 +125,26 @@ export default function ReportList({
 }
 
 const styles = StyleSheet.create({
-  row: {
+  rowShadow: {
     marginVertical: 10,
     marginHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#29402D',
+    shadowOpacity: 0.1,
+    shadowRadius: 9,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
+  },
+  row: {
     borderWidth: 1,
-    borderColor: '#E4EAE5',
+    borderColor: '#DDEBDD',
     borderRadius: 20,
     overflow: 'hidden',
     backgroundColor: '#FFFFFF',
   },
-  thumbnail: {
-    width: '100%',
-    height: 160,
-    backgroundColor: '#E7EAEC',
-  },
-  favorite: { position: 'absolute', right: 6, top: 4, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  heart: { textShadowColor: 'rgba(0,0,0,0.55)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
-  photoDots: { position: 'absolute', bottom: 15, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 5 },
-  photoDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.5)' },
-  photoDotActive: { backgroundColor: '#FFFFFF' },
-  photoCounter: {
-    position: 'absolute',
-    right: 10,
-    bottom: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-  },
-  photoCounterText: { color: '#FFFFFF', fontSize: 12, fontWeight: '600' },
-  severityOverlay: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    maxWidth: '70%',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  severityText: {
-    fontSize: 12,
-    lineHeight: 17,
-    fontWeight: '500',
-  },
+  completedRow: { backgroundColor: '#F0F7F1', borderColor: '#66BB6A' },
+  selectedRow: { borderColor: '#66BB6A' },
   emptyContent: {
     flexGrow: 1,
   },

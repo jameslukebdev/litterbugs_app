@@ -52,7 +52,10 @@ describe('report photo responsiveness', () => {
 
   it('uses the shared photo lifecycle for gallery and report list', () => {
     const gallery = readFileSync(new URL('../components/ReportPhotoGallery.jsx', import.meta.url), 'utf8');
+    const previewHero = readFileSync(new URL('../components/ReportPreviewHero.jsx', import.meta.url), 'utf8');
     expect(gallery).toContain('<RemotePhoto');
-    expect(reportListSource).toContain('<RemotePhoto');
+    expect(reportListSource).toContain('<ReportPreviewHero');
+    expect(previewHero).toContain('<RemotePhoto');
+    expect(previewHero).toContain('report?.photo_paths?.[0]');
   });
 });

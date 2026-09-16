@@ -21,6 +21,27 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReports } from '../lib/reports';
 import { DEFAULT_REPORT_FILTERS } from '../lib/reportFilters';
+import { getLitterSelectionColors } from '../lib/litterSelectionColors';
+import { getSeveritySelectionColors } from '../lib/severitySelectionColors';
+
+const STATUS_FILTER_COLORS = Object.freeze({
+  all: getLitterSelectionColors(1),
+  available: getLitterSelectionColors(3),
+  progress: getLitterSelectionColors(2),
+  completed: getLitterSelectionColors(0),
+});
+
+function filterChoiceColors(key, value, optionIndex) {
+  if (key === 'status') return STATUS_FILTER_COLORS[value];
+  if (key === 'radius') return getLitterSelectionColors(optionIndex);
+  if (key === 'severity') {
+    if (value === 'all') {
+      return { backgroundColor: '#FFF7F8', borderColor: '#F8DADD', foregroundColor: '#982D38' };
+    }
+    return getSeveritySelectionColors(Math.max(0, ['low', 'medium', 'high'].indexOf(value)));
+  }
+  return null;
+}
 
 const groups = [
   ['favoritesOnly', 'Favorites', [[false, 'All reports'], [true, 'Favorites only']]],
@@ -40,7 +61,7 @@ const groups = [
     [
       ['all', 'Any reward'],
       ['funded', 'Funded'],
-      ['volunteer', 'No funds yet'],
+      ['volunteer', 'Volunteer'],
     ],
   ],
   [
@@ -100,13 +121,18 @@ export default function ReportFilters({ map = false }) {
       style={[styles.header, map && styles.mapHeader]}
       pointerEvents="box-none"
     >
-      <View style={styles.searchRow}>
+      <View style={[styles.searchRow, map && styles.mapSearchShell]}>
+        {map ? (
+          <View style={styles.mapLogoCard} pointerEvents="none">
+            <Image
+              source={require('../assets/LB_Logo_PNG.png')}
+              resizeMode="contain"
+              style={styles.mapLogo}
+              accessibilityLabel="Litterbugs"
+            />
+          </View>
+        ) : null}
         <View style={[styles.searchSurface, map && styles.mapSearchRow]}>
-          {map ? (
-            <View style={styles.logoArea}>
-              <Image source={require('../assets/LB_Logo_PNG.png')} resizeMode="contain" style={styles.logo} accessibilityLabel="Litterbugs" />
-            </View>
-          ) : null}
           <LocationSearch map={map} />
         </View>
         <TouchableOpacity
@@ -114,7 +140,7 @@ export default function ReportFilters({ map = false }) {
           accessibilityLabel={count ? `Filters, ${count} active` : 'Filters'}
           accessibilityHint="Choose cleanup status, reward, distance, severity, and report keywords"
           onPress={() => { setDraft({ ...filters }); setOpen(true); }}
-          style={[styles.filterButton, count > 0 && styles.selected]}
+          style={[styles.filterButton, map && styles.mapFilterButton, count > 0 && styles.selected]}
         >
           <Ionicons name="options-outline" size={25} color="#2F7D32" />
           {count > 0 ? <View style={styles.badge}><Text style={styles.badgeText} maxFontSizeMultiplier={1.3}>{count}</Text></View> : null}
@@ -171,14 +197,31 @@ export default function ReportFilters({ map = false }) {
                 ) : <View key={key} style={styles.filterSection}>
                   <Text style={styles.label}>{label}</Text>
                   <View style={styles.options}>
-                    {options.map(([value, text]) => (
-                      <TouchableOpacity key={value} accessibilityRole="radio"
-                        accessibilityState={{ checked: draft[key] === value }}
-                        style={[styles.choice, (key === 'status' || key === 'radius') ? styles.gridChoice : styles.inlineChoice, draft[key] === value && styles.selected]}
-                        onPress={() => setDraft(current => ({ ...current, [key]: value }))}>
-                        <Text style={[styles.choiceText, draft[key] === value && styles.choiceTextSelected]}>{key === 'status' && value === 'all' ? 'All reports' : text}</Text>
-                      </TouchableOpacity>
-                    ))}
+                    {options.map(([value, text], optionIndex) => {
+                      const optionColors = filterChoiceColors(key, value, optionIndex);
+                      const selected = draft[key] === value;
+                      return (
+                        <TouchableOpacity key={value} accessibilityRole="radio"
+                          accessibilityState={{ checked: selected }}
+                          style={[
+                            styles.choice,
+                            (key === 'status' || key === 'radius') ? styles.gridChoice : styles.inlineChoice,
+                            selected && optionColors && {
+                              backgroundColor: optionColors.backgroundColor,
+                              borderColor: optionColors.borderColor,
+                            },
+                            selected && (optionColors ? styles.coloredChoiceSelected : styles.selected),
+                          ]}
+                          onPress={() => setDraft(current => ({ ...current, [key]: value }))}>
+                          <Text style={[
+                            styles.choiceText,
+                            selected && optionColors && { color: optionColors.foregroundColor },
+                            selected && !optionColors && styles.choiceTextSelected,
+                            selected && optionColors && styles.coloredChoiceTextSelected,
+                          ]}>{key === 'status' && value === 'all' ? 'All reports' : text}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
                 </View>
               ))}
@@ -213,11 +256,13 @@ const styles = StyleSheet.create({
   activeChip: { minHeight: 32, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 18, borderWidth: 1, borderColor: '#2F7D32', backgroundColor: '#E8F2E9', flexDirection: 'row', alignItems: 'center', gap: 5 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   searchSurface: { flex: 1, minWidth: 0, minHeight: 52, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F4F2', borderRadius: 16 },
-  logoArea: { width: 40, marginLeft: 4, alignItems: 'center' },
-  logo: { width: 32, height: 32 },
   input: { fontSize: 15, color: '#202428', minHeight: 48, backgroundColor: '#F1F4F2', borderRadius: 12, paddingHorizontal: 12 },
   mapHeader: { backgroundColor: 'transparent', paddingHorizontal: 16, paddingVertical: 0 },
-  mapSearchRow: { backgroundColor: '#FFFFFF', boxShadow: '0 2px 8px rgba(25, 45, 32, 0.12)' },
+  mapSearchShell: { minHeight: 58, gap: 0, paddingHorizontal: 3, paddingVertical: 3, borderRadius: 29, borderCurve: 'continuous', borderWidth: 1, borderColor: '#D6DED8', backgroundColor: '#FFFFFF', boxShadow: '0 3px 10px rgba(25, 45, 32, 0.14)' },
+  mapLogoCard: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
+  mapLogo: { width: 42, height: 30 },
+  mapSearchRow: { backgroundColor: 'transparent', boxShadow: 'none' },
+  mapFilterButton: { borderWidth: 0, backgroundColor: 'transparent', boxShadow: 'none', shadowOpacity: 0, elevation: 0 },
   filterButton: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D6DED8', boxShadow: '0 2px 6px rgba(25, 45, 32, 0.10)' },
   badge: { position: 'absolute', top: -3, right: -2, minWidth: 21, minHeight: 21, paddingHorizontal: 4, borderRadius: 12, backgroundColor: '#2F7D32', borderWidth: 2, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
   badgeText: { fontSize: 11, fontWeight: '700', color: '#FFFFFF' },
@@ -271,16 +316,18 @@ const styles = StyleSheet.create({
   inlineChoice: { flex: 1 },
   choiceText: { color: '#4F5C63', fontSize: 14, lineHeight: 20, textAlign: 'center', fontWeight: '500' },
   choiceTextSelected: { color: '#245F2A', fontWeight: '600' },
+  coloredChoiceSelected: { borderWidth: 2 },
+  coloredChoiceTextSelected: { fontWeight: '800' },
   filterFooter: { paddingHorizontal: 20, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#E8ECE9', flexDirection: 'row', alignItems: 'center', gap: 20 },
   resetButton: { minHeight: 48, paddingHorizontal: 6, justifyContent: 'center' },
   resetText: { color: '#303A34', fontSize: 15, fontWeight: '600', textDecorationLine: 'underline' },
   done: {
     flex: 1,
-    backgroundColor: '#2F7D32',
+    backgroundColor: '#A5D6A7',
     minHeight: 52,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 14,
   },
-  doneText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  doneText: { color: '#17451C', fontSize: 16, fontWeight: '800' },
 });

@@ -10,7 +10,7 @@ import {
 import { useReports } from '../lib/reports';
 function Photo({ uri, path, width, title }) {
   const { getReportPhotoUrl } = useReports();
-  return <RemotePhoto path={path} uri={uri} getUrl={getReportPhotoUrl} label={`Litter reported: ${title || 'cleanup location'}`} style={{ width, height: 280 }} />;
+  return <RemotePhoto path={path} uri={uri} getUrl={getReportPhotoUrl} label={`Litter reported: ${title || 'cleanup location'}`} style={{ width, height: 355 }} />;
 }
 export default function ReportPhotoGallery({ report, urls, loading, width }) {
   const [index, setIndex] = useState(0);
@@ -32,6 +32,7 @@ export default function ReportPhotoGallery({ report, urls, loading, width }) {
       </View>
     );
   return (
+    <>
     <View style={[styles.frame, { width }]}>
       <ScrollView
         key={report?.id}
@@ -60,23 +61,30 @@ export default function ReportPhotoGallery({ report, urls, loading, width }) {
         </View>
       ) : null}
     </View>
+    {photoCount > 1 ? (
+      <View style={styles.dots} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        {Array.from({ length: photoCount }, (_, photoIndex) => (
+          <View key={photoIndex} style={[styles.dot, photoIndex === index && styles.dotActive]} />
+        ))}
+      </View>
+    ) : null}
+    </>
   );
 }
 const styles = StyleSheet.create({
   frame: {
     alignSelf: 'center',
-    borderRadius: 18,
+    borderRadius: 22,
     overflow: 'hidden',
     backgroundColor: '#F1F4F2',
-    marginBottom: 14,
   },
   empty: {
-    height: 280,
+    height: 260,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
     backgroundColor: '#F1F4F2',
-    borderRadius: 18,
+    borderRadius: 22,
     marginBottom: 14,
   },
   counter: {
@@ -89,5 +97,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   counterText: { color: '#FFFFFF', fontSize: 12, fontWeight: '600' },
+  dots: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    marginTop: 13,
+    marginBottom: 4,
+  },
+  dot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#D1D5DB' },
+  dotActive: { width: 9, height: 9, borderRadius: 4.5, backgroundColor: '#2F7D32' },
   caption: { padding: 10, fontWeight: '600', color: '#4F5C63' },
 });

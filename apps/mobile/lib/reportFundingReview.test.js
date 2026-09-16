@@ -7,8 +7,10 @@ const mapScreenSource = ['../MapScreen.js', '../components/ReportWizardSteps.jsx
 
 describe('report review cleanup-fund choices', () => {
   it('offers a simple volunteer default and optional reward', () => {
-    expect(mapScreenSource).toContain("{ value: 'none', label: 'Not now' }");
+    expect(mapScreenSource).toContain("{ value: 'none', label: 'Volunteer' }");
+    expect(mapScreenSource).toContain("{ value: '1', label: '$1' }");
     expect(mapScreenSource).toContain("{ value: '5', label: '$5' }");
+    expect(mapScreenSource).toContain("{ value: '10', label: '$10' }");
     expect(mapScreenSource).toContain("{ value: '25', label: '$25' }");
     expect(mapScreenSource).toContain("{ value: 'other', label: 'Other' }");
   });
@@ -16,7 +18,7 @@ describe('report review cleanup-fund choices', () => {
   it('enforces the custom $1 to $1,000 range', () => {
     expect(mapScreenSource).toContain('placeholder="1.00"');
     expect(mapScreenSource).toContain(
-      'Choose at least $1 and no more than $1,000, or select Not now.'
+      'Choose at least $1 and no more than $1,000, or select Volunteer.'
     );
   });
 
@@ -27,8 +29,8 @@ describe('report review cleanup-fund choices', () => {
 
   it('shows the current reward and separates cleanup from utility actions', () => {
     expect(mapScreenSource).toContain('formatUsd(Number(selectedReport.funded_amount_cents))');
-    expect(mapScreenSource).toContain('style={styles.reportRewardCaption}>Cleanup reward');
-    expect(mapScreenSource).toContain('style={styles.reportDirectionsButton}');
+    expect(mapScreenSource).toContain('Cleanup Reward`');
+    expect(mapScreenSource).toContain("'Volunteer Opportunity'");
 
     const cleanupCard = mapScreenSource.indexOf('style={styles.cleanupEligibilityCard}');
     const utilityBar = mapScreenSource.indexOf('styles.reportUtilityBar,');

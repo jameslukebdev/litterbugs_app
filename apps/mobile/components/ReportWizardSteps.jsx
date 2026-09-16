@@ -5,10 +5,18 @@ import { formatUsd } from '../lib/funding';
 import { calculatePlatformFee } from '../lib/fundingMath';
 import FeeExplanationLabel from './FeeExplanationLabel';
 import { LoadingButtonContent } from '../BrandedLoadingState';
+import { getLitterSelectionColors } from '../lib/litterSelectionColors';
+import { getSeveritySelectionColors } from '../lib/severitySelectionColors';
 import styles from '../styles/MapScreen.styles';
 import MapView, { Marker } from 'react-native-maps';
 
-export default function ReportWizardSteps({ form, coordinate, onChangeLocation, isEditing, reportPhotoUrls, reportStep, selectedReport, pickImage, isSaving, showPhotoPreparation, setForm, removePhoto, hasAttachedReportPhoto, goToNextReportStep, LITTER_OPTIONS, revealBottomReportField, NOTES_OPTIONS, jumpToReportStep, fundingEnabled, wantsStartingFunding, startingContributionCents, hasStartingFundingChoice, submitReport }) {
+const SEVERITY_OPTIONS = [
+  { level: 'Low', icon: 'leaf-outline', description: 'A few items' },
+  { level: 'Medium', icon: 'trash-outline', description: 'A noticeable buildup' },
+  { level: 'High', icon: 'layers-outline', description: 'A large amount' },
+];
+
+export default function ReportWizardSteps({ form, coordinate, onChangeLocation, isEditing, reportPhotoUrls, reportStep, selectedReport, pickImage, isSaving, showPhotoPreparation, setForm, removePhoto, hasAttachedReportPhoto, LITTER_OPTIONS, revealBottomReportField, NOTES_OPTIONS, jumpToReportStep, fundingEnabled, wantsStartingFunding, startingContributionCents, hasStartingFundingChoice, submitReport }) {
   const reviewPhotos = form.photos.length > 0 ? form.photos : isEditing ? reportPhotoUrls : [];
   const renderPhotoSlot = (index) => {
     const uri = form.photos[index];
@@ -164,8 +172,8 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
             }
             editable={!isSaving}
             maxLength={80}
-            returnKeyType="next"
-            onSubmitEditing={goToNextReportStep}
+            returnKeyType="done"
+            onSubmitEditing={Keyboard.dismiss}
           />
 </View>);
     case 1: return (<View style={styles.wizardStep}>
@@ -179,9 +187,10 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
 
           <View style={styles.litterTileSection}>
             <View style={styles.litterTileGrid}>
-              {LITTER_OPTIONS.map(({ label, icon }) => {
+              {LITTER_OPTIONS.map(({ label, icon }, optionIndex) => {
                 const selected =
                   form.selectedTypes?.includes(label);
+                const selectionColors = getLitterSelectionColors(optionIndex);
 
                 return (
                   <TouchableOpacity
@@ -190,6 +199,10 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                       styles.litterTile,
                       selected &&
                         styles.litterTileSelected,
+                      selected && {
+                        backgroundColor: selectionColors.backgroundColor,
+                        borderColor: selectionColors.borderColor,
+                      },
                     ]}
                     onPress={() => {
                       setForm((prev) => {
@@ -224,7 +237,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                       name={selected ? 'checkmark-circle' : icon}
                       size={20}
                       color={
-                        selected ? '#2F7D32' : '#667078'
+                        selected ? selectionColors.foregroundColor : '#667078'
                       }
                       style={styles.litterTileIcon}
                     />
@@ -234,6 +247,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                         styles.litterTileText,
                         selected &&
                           styles.litterTileTextSelected,
+                        selected && { color: selectionColors.foregroundColor },
                       ]}
                     >
                       {label}
@@ -249,14 +263,14 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
           </Text>
 
           <TextInput
-            style={[styles.input, styles.wizardDetailsInput]}
-            multiline
+            style={[styles.input, styles.wizardSingleLineDetailsInput]}
             editable={!isSaving}
             accessibilityLabel="Other litter types"
             placeholder="Mattress, appliances, or another type"
             value={form.types}
             onFocus={revealBottomReportField}
             returnKeyType="done"
+            blurOnSubmit
             onSubmitEditing={Keyboard.dismiss}
             onChangeText={(text) =>
               setForm((prev) => ({
@@ -272,16 +286,20 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
       <View style={styles.wizardStep}>
         <Text style={styles.wizardTitle}>Severity</Text>
         <View style={styles.wizardSeverityList}>
-          {[
-            { level: 'Low', icon: 'leaf-outline', description: 'A few items' },
-            { level: 'Medium', icon: 'trash-outline', description: 'A noticeable buildup' },
-            { level: 'High', icon: 'layers-outline', description: 'A large amount' },
-          ].map(({ level, icon, description }) => {
+          {SEVERITY_OPTIONS.map(({ level, icon, description }, severityIndex) => {
             const selected = form.severity === level;
+            const selectionColors = getSeveritySelectionColors(severityIndex);
             return (
               <TouchableOpacity
                 key={level}
-                style={[styles.wizardSeverityOption, selected && styles.wizardSeveritySelected]}
+                style={[
+                  styles.wizardSeverityOption,
+                  selected && styles.wizardSeveritySelected,
+                  selected && {
+                    backgroundColor: selectionColors.backgroundColor,
+                    borderColor: selectionColors.borderColor,
+                  },
+                ]}
                 onPress={() => setForm((prev) => ({ ...prev, severity: level }))}
                 disabled={isSaving}
                 accessibilityRole="radio"
@@ -289,13 +307,20 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                 accessibilityLabel={`${level} severity`}
                 accessibilityHint={description}
               >
-                <Ionicons name={icon} size={32} color={selected ? '#2F7D32' : '#667078'} />
+                <Ionicons name={icon} size={32} color={selected ? selectionColors.foregroundColor : '#667078'} />
                 <View style={styles.wizardSeverityCopy}>
-                  <Text style={[styles.wizardSeverityText, selected && styles.wizardSeverityTextSelected]}>{level}</Text>
-                  <Text style={styles.wizardSeverityDescription}>{description}</Text>
+                  <Text style={[
+                    styles.wizardSeverityText,
+                    selected && styles.wizardSeverityTextSelected,
+                    selected && { color: selectionColors.foregroundColor },
+                  ]}>{level}</Text>
+                  <Text style={[
+                    styles.wizardSeverityDescription,
+                    selected && { color: selectionColors.secondaryColor },
+                  ]}>{description}</Text>
                 </View>
                 <Ionicons name={selected ? 'checkmark-circle' : 'ellipse-outline'} size={26}
-                  color={selected ? '#2F7D32' : '#C8D0CA'} />
+                  color={selected ? selectionColors.foregroundColor : '#C8D0CA'} />
               </TouchableOpacity>
             );
           })}
@@ -313,11 +338,12 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
           <View style={styles.litterTileSection}>
             <View style={styles.litterTileGrid}>
               {NOTES_OPTIONS.map(
-                ({ label, icon }) => {
+                ({ label, icon }, optionIndex) => {
                   const selected =
                     form.selectedNotes?.includes(
                       label
                     );
+                  const selectionColors = getLitterSelectionColors(optionIndex);
 
                   return (
                     <TouchableOpacity
@@ -326,6 +352,10 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                         styles.litterTile,
                         selected &&
                           styles.litterTileSelected,
+                        selected && {
+                          backgroundColor: selectionColors.backgroundColor,
+                          borderColor: selectionColors.borderColor,
+                        },
                       ]}
                       onPress={() => {
                         setForm((prev) => {
@@ -361,7 +391,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                         size={20}
                         color={
                           selected
-                            ? '#2F7D32'
+                            ? selectionColors.foregroundColor
                             : '#667078'
                         }
                         style={
@@ -374,6 +404,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                           styles.litterTileText,
                           selected &&
                             styles.litterTileTextSelected,
+                          selected && { color: selectionColors.foregroundColor },
                         ]}
                       >
                         {label === 'In Public Park' ? 'In public park' : label === 'Use Caution' ? 'Use caution' : label}
@@ -390,14 +421,14 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
           </Text>
 
           <TextInput
-            style={[styles.input, styles.wizardDetailsInput]}
-            multiline
+            style={[styles.input, styles.wizardSingleLineDetailsInput]}
             editable={!isSaving}
             accessibilityLabel="Extra site details (optional)"
             placeholder="Add any extra details"
             value={form.notes}
             onFocus={revealBottomReportField}
             returnKeyType="done"
+            blurOnSubmit
             onSubmitEditing={Keyboard.dismiss}
             onChangeText={(text) =>
               setForm((prev) => ({
@@ -467,27 +498,100 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
             </View>
           ) : null}
 
-          {[
-            { label: 'Type of litter', step: 1, value: [...(form.selectedTypes || []), form.types?.trim()].filter(Boolean).join(', ') },
-            { label: 'Severity', step: 2, value: form.severity },
-            { label: 'Site conditions', step: 3, value: [...(form.selectedNotes || []), form.notes?.trim()].filter(Boolean).join(', ') || 'None added' },
-          ].map(({ label, step, value }) => (
-            <View key={label} style={styles.reportReviewRow}>
-              <View style={styles.reportReviewCopy}>
-                <Text style={styles.reportReviewLabel}>{label}</Text>
-                <Text style={styles.reportReviewValue}>{value}</Text>
+          <View style={styles.reportReviewRow}>
+            <View style={styles.reportReviewCopy}>
+              <Text style={styles.reportReviewLabel}>Type of litter</Text>
+              <View style={styles.reportReviewChipList}>
+                {(form.selectedTypes || []).map((label) => {
+                  const option = LITTER_OPTIONS.find((item) => item.label === label);
+                  return (
+                    <View key={label} style={[styles.reportReviewChip, styles.reportReviewLitterChip]}>
+                      <Ionicons name={option?.icon || 'trash-outline'} size={17} color="#2F7D32" />
+                      <Text style={[styles.reportReviewChipText, styles.reportReviewLitterChipText]}>{label}</Text>
+                    </View>
+                  );
+                })}
+                {form.types?.trim() ? (
+                  <View style={[styles.reportReviewChip, styles.reportReviewLitterChip]}>
+                    <Ionicons name="create-outline" size={17} color="#2F7D32" />
+                    <Text style={[styles.reportReviewChipText, styles.reportReviewLitterChipText]}>{form.types.trim()}</Text>
+                  </View>
+                ) : null}
               </View>
-              <TouchableOpacity style={styles.reportReviewEditButton} onPress={() => jumpToReportStep(step)}
-                disabled={isSaving} accessibilityRole="button" accessibilityLabel={`Edit ${label.toLowerCase()}`}>
-                <Text style={styles.reviewEdit}>Edit</Text>
-              </TouchableOpacity>
             </View>
-          ))}
+            <TouchableOpacity style={styles.reportReviewEditButton} onPress={() => jumpToReportStep(1)}
+              disabled={isSaving} accessibilityRole="button" accessibilityLabel="Edit type of litter">
+              <Text style={styles.reviewEdit}>Edit</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.reportReviewRow}>
+            <View style={styles.reportReviewCopy}>
+              <Text style={styles.reportReviewLabel}>Severity</Text>
+              {(() => {
+                const severityIndex = Math.max(0, SEVERITY_OPTIONS.findIndex(({ level }) => level === form.severity));
+                const severityOption = SEVERITY_OPTIONS[severityIndex];
+                const selectionColors = getSeveritySelectionColors(severityIndex);
+                return (
+                  <View style={[
+                    styles.reportReviewSeverityChip,
+                    {
+                      backgroundColor: selectionColors.backgroundColor,
+                      borderColor: selectionColors.borderColor,
+                    },
+                  ]}>
+                    <Ionicons name={severityOption.icon} size={19} color={selectionColors.foregroundColor} />
+                    <Text style={[styles.reportReviewSeverityText, { color: selectionColors.foregroundColor }]}>
+                      {form.severity}
+                    </Text>
+                  </View>
+                );
+              })()}
+            </View>
+            <TouchableOpacity style={styles.reportReviewEditButton} onPress={() => jumpToReportStep(2)}
+              disabled={isSaving} accessibilityRole="button" accessibilityLabel="Edit severity">
+              <Text style={styles.reviewEdit}>Edit</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.reportReviewRow}>
+            <View style={styles.reportReviewCopy}>
+              <Text style={styles.reportReviewLabel}>Site conditions</Text>
+              {(form.selectedNotes || []).length > 0 || form.notes?.trim() ? (
+                <View style={styles.reportReviewChipList}>
+                  {(form.selectedNotes || []).map((label) => {
+                    const option = NOTES_OPTIONS.find((item) => item.label === label);
+                    const displayLabel = label === 'In Public Park'
+                      ? 'In public park'
+                      : label === 'Use Caution' ? 'Use caution' : label;
+                    return (
+                      <View key={label} style={[styles.reportReviewChip, styles.reportReviewConditionChip]}>
+                        <Ionicons name={option?.icon || 'information-circle-outline'} size={17} color="#2E6E9E" />
+                        <Text style={[styles.reportReviewChipText, styles.reportReviewConditionChipText]}>{displayLabel}</Text>
+                      </View>
+                    );
+                  })}
+                  {form.notes?.trim() ? (
+                    <View style={[styles.reportReviewChip, styles.reportReviewConditionChip]}>
+                      <Ionicons name="document-text-outline" size={17} color="#2E6E9E" />
+                      <Text style={[styles.reportReviewChipText, styles.reportReviewConditionChipText]}>{form.notes.trim()}</Text>
+                    </View>
+                  ) : null}
+                </View>
+              ) : (
+                <Text style={styles.reviewMuted}>None added</Text>
+              )}
+            </View>
+            <TouchableOpacity style={styles.reportReviewEditButton} onPress={() => jumpToReportStep(3)}
+              disabled={isSaving} accessibilityRole="button" accessibilityLabel="Edit site conditions">
+              <Text style={styles.reviewEdit}>Edit</Text>
+            </TouchableOpacity>
+          </View>
 
           {fundingEnabled && !isEditing ? (
             <View style={styles.startingFundCard}>
               <View style={styles.startingFundHeading}>
-                <Ionicons name="heart-outline" size={23} color="#2F7D32" />
+                <Ionicons name="heart" size={23} color="#E13B3B" />
                 <View style={styles.startingFundHeadingCopy}>
                   <Text style={styles.startingFundTitle}>Start the cleanup fund</Text>
                   <Text style={styles.optionalStepLabel}>Optional</Text>
@@ -496,8 +600,10 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
 
               <View style={styles.startingFundChoices}>
                 {[
-                  { value: 'none', label: 'Not now' },
+                  { value: 'none', label: 'Volunteer' },
+                  { value: '1', label: '$1' },
                   { value: '5', label: '$5' },
+                  { value: '10', label: '$10' },
                   { value: '25', label: '$25' },
                   { value: 'other', label: 'Other' },
                 ].map((choice) => {

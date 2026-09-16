@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import { reportPresentation } from './reportPresentation';
-it.each(['available','claimed','completion_submitted','changes_requested'])('explains zero funds for %s without implying permanent volunteer status', cleanup_state => {
-  expect(reportPresentation({ cleanup_state, funded_amount_cents: 0 }).funding).toBe('No funds yet');
+it.each(['available','claimed','completion_submitted','changes_requested'])('labels zero-funded %s reports as volunteer opportunities', cleanup_state => {
+  expect(reportPresentation({ cleanup_state, funded_amount_cents: 0 }).funding).toBe('Volunteer');
   expect(reportPresentation({ cleanup_state, funded_amount_cents: 600 }).funding).toBe('Cleanup reward $6.00');
 });
 it('does not advertise available money on completed reports', () => {

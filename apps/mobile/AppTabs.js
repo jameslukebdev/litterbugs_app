@@ -1,5 +1,5 @@
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { StyleSheet, useWindowDimensions } from 'react-native';
+import { Image, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import FloatingBottomTabBar from './FloatingBottomTabBar';
@@ -29,6 +29,16 @@ export default function AppTabs({ onLaunchReady }) {
           component={ReportsScreen}
           options={{
             title: 'Reports',
+            headerLeft: () => (
+              <View style={styles.headerLogoArea} pointerEvents="none">
+                <Image
+                  source={require('./assets/LB_Logo_PNG.png')}
+                  resizeMode="contain"
+                  style={styles.headerLogo}
+                  accessible={false}
+                />
+              </View>
+            ),
             headerStyle: { backgroundColor: '#FFFFFF', height: insets.top + Math.max(56, 34 * fontScale + 24) },
             headerTitleStyle: styles.profileHeaderTitle,
             tabBarAccessibilityLabel: 'Reports',
@@ -50,6 +60,16 @@ export default function AppTabs({ onLaunchReady }) {
           component={ProfileScreen}
           options={{
             title: 'Profile',
+            headerLeft: () => (
+              <View style={styles.headerLogoArea} pointerEvents="none">
+                <Image
+                  source={require('./assets/LB_Logo_PNG.png')}
+                  resizeMode="contain"
+                  style={styles.headerLogo}
+                  accessible={false}
+                />
+              </View>
+            ),
             headerStyle: { backgroundColor: '#FFFFFF', height: insets.top + Math.max(56, 34 * fontScale + 24) },
             headerTitleStyle: styles.profileHeaderTitle,
             tabBarAccessibilityLabel: 'Profile',
@@ -60,6 +80,17 @@ export default function AppTabs({ onLaunchReady }) {
 }
 
 const styles = StyleSheet.create({
+  headerLogoArea: {
+    width: 52,
+    height: 44,
+    marginLeft: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerLogo: {
+    width: 42,
+    height: 34,
+  },
   profileHeaderTitle: {
     color: '#1F2328',
     fontSize: 20,

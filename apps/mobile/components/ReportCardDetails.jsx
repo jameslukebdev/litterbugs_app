@@ -1,6 +1,9 @@
 import { Text, View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import CompactRankBadge from '../CompactRankBadge';
+import ProfileAvatar from '../ProfileAvatar';
 import { reportPresentation } from '../lib/reportPresentation';
+import { getSeveritySelectionColors } from '../lib/severitySelectionColors';
 function getRelativeTime(value) {
   const timestamp = new Date(value).getTime();
   if (!Number.isFinite(timestamp)) return null;
@@ -25,12 +28,20 @@ function getLitterSummary(report) {
 }
 
 
-export default function ReportCardDetails({ report, distance, onPress, selected = false, options }) {
+export default function ReportCardDetails({ report, distance, onPress, selected = false, options, preview = false }) {
   const severity = { label: String(report?.severity || 'medium') };
+  const normalizedSeverity = severity.label.charAt(0).toUpperCase() + severity.label.slice(1).toLowerCase();
+  const severityIndex = Math.max(0, ['Low', 'Medium', 'High'].indexOf(normalizedSeverity));
+  const severityColors = getSeveritySelectionColors(severityIndex);
   const presentation = reportPresentation(report);
   const completed = report?.cleanup_state === 'completed';
   const reporter = report.reporter?.display_name?.trim() || (report.reporter?.username ? `@${report.reporter.username}` : 'Reporter unavailable');
-  const funding = completed ? `Cleanup fund total ${new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(Math.max(0, Number(report.funded_amount_cents) || 0) / 100)}` : presentation.funding;
+  const fundedAmount = Math.max(0, Number(report.funded_amount_cents) || 0);
+  const funding = fundedAmount < 1
+    ? 'Volunteer'
+    : completed
+      ? `Cleanup fund total ${new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(fundedAmount / 100)}`
+      : presentation.funding;
 
   const relativeTime = getRelativeTime(report?.created_at);
   const metadata = [
@@ -59,23 +70,55 @@ export default function ReportCardDetails({ report, distance, onPress, selected 
       >
 
 
-        <Text style={styles.title} numberOfLines={2}>
+        <Text style={[styles.title, preview && styles.previewTitle]} numberOfLines={2}>
           {report?.title || 'Litter Report'}
         </Text>
 
-        {!completed && report.cleanup_state !== 'available' ? <Text style={styles.metadata}>{presentation.status}</Text> : null}
+        {!preview && !completed && report.cleanup_state !== 'available' ? <Text style={styles.metadata}>{presentation.status}</Text> : null}
         <View style={styles.rewardMetadataRow}>
-          <View style={styles.rewardPill}><Text style={styles.rewardText}>{funding}</Text></View>
+          <View style={[styles.rewardPill, preview && styles.previewRewardPill]}>
+            <Text style={[styles.rewardText, preview && styles.previewRewardText]}>{funding}</Text>
+          </View>
           {metadata ? <Text style={styles.inlineMetadata}>{metadata}</Text> : null}
         </View>
-        <View style={styles.detailRow}>
-          <Ionicons name="trash-outline" size={15} color="#6C737A" />
-          <Text style={styles.types} numberOfLines={2} ellipsizeMode="tail">{getLitterSummary(report)}</Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Ionicons name="person-outline" size={15} color="#657169" />
-          <Text style={styles.reporter} numberOfLines={1}>By {reporter}</Text>
-        </View>
+        {preview ? (
+          <View style={[
+            styles.previewSeverity,
+            {
+              backgroundColor: severityColors.backgroundColor,
+              borderColor: severityColors.borderColor,
+            },
+          ]}>
+            <Ionicons
+              name={normalizedSeverity === 'High' ? 'warning-outline' : normalizedSeverity === 'Low' ? 'leaf-outline' : 'trash-outline'}
+              size={13}
+              color={severityColors.foregroundColor}
+            />
+            <Text style={[styles.previewSeverityText, { color: severityColors.foregroundColor }]}>
+              {normalizedSeverity} severity
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.detailRow}>
+            <Ionicons name="trash-outline" size={15} color="#6C737A" />
+            <Text style={styles.types} numberOfLines={2} ellipsizeMode="tail">{getLitterSummary(report)}</Text>
+          </View>
+        )}
+        {preview ? (
+          <View style={styles.previewReporterCard}>
+            <ProfileAvatar profile={report.reporter} size={34} />
+            <View style={styles.previewReporterCopy}>
+              <Text style={styles.previewReporterLabel}>Reported by</Text>
+              <Text style={styles.previewReporterName} numberOfLines={1}>{reporter}</Text>
+            </View>
+            <CompactRankBadge userId={report.reporter?.id} />
+          </View>
+        ) : (
+          <View style={styles.detailRow}>
+            <Ionicons name="person-outline" size={15} color="#657169" />
+            <Text style={styles.reporter} numberOfLines={1}>By {reporter}</Text>
+          </View>
+        )}
       </TouchableOpacity>
       {options}
       </View>
@@ -100,6 +143,7 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     fontWeight: '600',
   },
+  previewTitle: { fontSize: 18, lineHeight: 23, fontWeight: '800' },
   rewardPill: {
     alignSelf: 'flex-start',
     paddingHorizontal: 8,
@@ -108,10 +152,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#E3F1E4',
   },
   rewardText: {
-    color: '#245F2A',
+    color: '#4A9F50',
     fontSize: 12,
     fontWeight: '600',
   },
+  previewRewardPill: { paddingHorizontal: 10, paddingVertical: 5 },
+  previewRewardText: { fontSize: 14, lineHeight: 18, fontWeight: '800' },
   rewardMetadataRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -141,4 +187,31 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     fontWeight: '500',
   },
+  previewSeverity: {
+    alignSelf: 'flex-start',
+    marginTop: 7,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  previewSeverityText: { fontSize: 10, lineHeight: 14, fontWeight: '800' },
+  previewReporterCard: {
+    marginTop: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#DDEBDD',
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  previewReporterCopy: { flex: 1, minWidth: 0 },
+  previewReporterLabel: { color: '#777F86', fontSize: 10, lineHeight: 13 },
+  previewReporterName: { marginTop: 1, color: '#202428', fontSize: 13, lineHeight: 17, fontWeight: '700' },
 });

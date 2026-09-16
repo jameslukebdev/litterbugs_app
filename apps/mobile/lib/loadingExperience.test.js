@@ -61,7 +61,7 @@ describe('mobile loading experience', () => {
     expect(readMobileSource('AuthScreen.js')).toContain('Signing in…');
     expect(readMobileSource('CompleteProfileScreen.js')).toContain('Saving profile…');
     const reportDetails = readMobileSource('components/ReportDetailsSheet.jsx');
-    expect(reportDetails).toContain('>Help clean this up</Text>');
+    expect(reportDetails).toContain('>Claim Cleanup</Text>');
     expect(reportDetails).not.toContain('Opening claim…');
     expect(reportDetails).toContain('busy: cleanupActionBusy');
     expect(readMobileSource('CleanupSubmissionScreen.js')).toContain('Uploading cleanup photos…');

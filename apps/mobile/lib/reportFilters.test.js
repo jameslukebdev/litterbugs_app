@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_REPORT_FILTERS as defaults,
@@ -12,6 +13,7 @@ const report = {
   latitude: 36,
   longitude: -81,
 };
+const filterSource = readFileSync(new URL('../components/ReportFilters.js', import.meta.url), 'utf8');
 describe('shared map and list filtering', () => {
   it('combines status, funding, severity and text rather than overriding earlier filters', () => {
     const filters = {
@@ -79,5 +81,13 @@ describe('shared map and list filtering', () => {
         null,
       ),
     ).toBe(true);
+  });
+  it('uses the established brand palettes in the filter sheet', () => {
+    expect(filterSource).toContain('STATUS_FILTER_COLORS');
+    expect(filterSource).toContain("if (key === 'radius') return getLitterSelectionColors(optionIndex)");
+    expect(filterSource).toContain("if (key === 'severity')");
+    expect(filterSource).toContain('selected && optionColors && {');
+    expect(filterSource).toContain("backgroundColor: '#A5D6A7'");
+    expect(filterSource).toContain("['volunteer', 'Volunteer']");
   });
 });

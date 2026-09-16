@@ -12,8 +12,12 @@ const appTabsSource = readFileSync(
 describe('new report workflow responsiveness', () => {
   it('starts reports from a visible action and confirms the selected location first', () => {
     expect(mapScreenSource).toContain(
-      "accessibilityLabel={reportPlacementActive ? 'Use this location' : 'Report litter'}"
+      "accessibilityLabel={isLocatingReportLocation ? 'Finding user location'"
     );
+    expect(mapScreenSource).toContain('Finding User Location');
+    expect(mapScreenSource).toContain('mapUserLocation\n    ? reportLocationRegion');
+    expect(mapScreenSource).toContain('freshLocationTimeoutMs: 4_000');
+    expect(mapScreenSource).toContain('animateOnPosition: false');
     expect(mapScreenSource).toContain('styles.reportLitterButtonDock');
     expect(mapScreenSource).toContain("alignItems: 'flex-end'");
     expect(mapScreenSource).toContain('accessibilityLabel="Change map style"');
@@ -30,7 +34,7 @@ describe('new report workflow responsiveness', () => {
     expect(mapScreenSource).toContain('Animated.timing(reportControlTransition');
     expect(mapScreenSource).not.toContain('showInitialMapLoading || reportPlacementActive');
     expect(appTabsSource).toContain('headerShown: false');
-    expect(mapScreenSource).toContain('Move the map beneath the pin');
+    expect(mapScreenSource).toContain('Choose Report Location');
 
     const confirmStart = mapScreenSource.indexOf('const confirmReportLocation = () => {');
     const confirmEnd = mapScreenSource.indexOf('\nuseEffect(() => {', confirmStart);
@@ -54,6 +58,12 @@ describe('new report workflow responsiveness', () => {
     expect(mapScreenSource).toContain('automaticallyAdjustKeyboardInsets={false}');
   });
 
+  it('waits for the next report step to render before animating it into view', () => {
+    expect(mapScreenSource).toContain('const pendingReportTransitionDirectionRef = useRef(null)');
+    expect(mapScreenSource).toContain('pendingReportTransitionDirectionRef.current = direction');
+    expect(mapScreenSource).toContain('}, [reportStep, stepOpacity, stepTranslateX]);');
+  });
+
   it('scrolls lower report fields above the keyboard when focused', () => {
     expect(mapScreenSource).toContain('const reportWizardScrollRef = useRef(null)');
     expect(mapScreenSource).toContain('const revealBottomReportField = () => {');
@@ -66,9 +76,9 @@ describe('new report workflow responsiveness', () => {
     expect(mapScreenSource).toContain('wizardScrollContentKeyboard: {');
   });
 
-  it('uses matching single-line submit behavior for both Other fields', () => {
-    expect(mapScreenSource.match(/returnKeyType="done"/g)).toHaveLength(2);
-    expect(mapScreenSource.match(/onSubmitEditing=\{Keyboard\.dismiss\}/g)).toHaveLength(2);
+  it('dismisses the keyboard from the title and both Other fields without advancing', () => {
+    expect(mapScreenSource.match(/returnKeyType="done"/g)).toHaveLength(3);
+    expect(mapScreenSource.match(/onSubmitEditing=\{Keyboard\.dismiss\}/g)).toHaveLength(3);
     expect(mapScreenSource).not.toContain('styles.wizardNotesInput');
     expect(mapScreenSource).not.toContain('wizardNotesInput: {');
   });

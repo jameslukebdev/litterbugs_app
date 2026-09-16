@@ -485,7 +485,7 @@ export default function ProfileScreen({ navigation, route }) {
       <PointsExplanation ranking={ranking} appearance="row" />
       </View>
 
-      {cleanupSummary.current.length > 0 ? <View style={[styles.card, { marginTop: 16 }]}>
+      {cleanupSummary.current.length > 0 ? <View style={[styles.card, styles.continueCleanupCard]}>
         <ActionRow label="Continue cleanup" icon="leaf-outline" onPress={() => openReport(cleanupSummary.current[0].report_id)} />
       </View> : null}
       <View style={[styles.card, styles.overviewActions]}>
@@ -696,12 +696,40 @@ const styles = StyleSheet.create({
   browseReportsText: { color: '#2F7D32', fontSize: 14, fontWeight: '600' },
   overviewContainer: { backgroundColor: '#FFFFFF' },
   overviewActions: { marginHorizontal: 20, marginTop: 18, borderRadius: 14, borderWidth: 1, borderColor: '#E6EBE7' },
+  continueCleanupCard: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: '#DDEBDD',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#29402D',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
   overviewStats: { marginHorizontal: 20, marginTop: 16, flexDirection: 'row', paddingVertical: 14, borderRadius: 14, backgroundColor: '#F4F7F4', borderWidth: 1, borderColor: '#E7EDE7' },
   overviewStat: { flex: 1, justifyContent: 'center', paddingHorizontal: 16 },
   overviewStatDivider: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: '#E3E9E4' },
   overviewStatValue: { fontSize: 25, lineHeight: 31, fontWeight: '600', color: '#2B5132', fontVariant: ['tabular-nums'] },
   overviewStatLabel: { marginTop: 2, fontSize: 12, lineHeight: 18, color: '#606F64', fontWeight: '500' },
-  identity: { marginHorizontal: 20, paddingTop: 20, paddingBottom: 20, backgroundColor: '#FFFFFF' },
+  identity: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: '#DDEBDD',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#29402D',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
   identityAvatar: { padding: 3, borderWidth: 1, borderColor: '#DCE7DD', borderRadius: 40, alignSelf: 'flex-start', backgroundColor: '#FFFFFF' },
   identityTop: { flexDirection: 'row', alignItems: 'center' },
   identityCopy: { flex: 1, minWidth: 0, marginLeft: 16 },

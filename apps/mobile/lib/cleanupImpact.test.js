@@ -48,4 +48,13 @@ describe('completed cleanup impact presentation', () => {
     expect(mapScreenSource).toContain('Loading completed report…');
     expect(completedStorySource).not.toContain('BrandedLoadingState');
   });
+
+  it('places the cleanup date after the completed cleanup photos', () => {
+    expect(completedStorySource.indexOf('styles.photoScroll')).toBeLessThan(
+      completedStorySource.indexOf('styles.cleanupDateRow')
+    );
+    expect(mapScreenSource).not.toContain('completedReportToolbar');
+    expect(mapScreenSource).not.toContain('See what was reported at this location');
+    expect(mapScreenSource).not.toContain('Pinned on the Litterbugs map');
+  });
 });

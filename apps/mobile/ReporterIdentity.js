@@ -30,7 +30,7 @@ export default function ReporterIdentity({ profile, onPress }) {
       <View style={styles.copy}>
         <Text style={styles.label}>Reported by</Text>
         <Text style={styles.name}>{profile.display_name || 'Profile unavailable'}</Text>
-        <View style={styles.rankSlot}><CompactRankBadge userId={profile.id} appearance="plain" /></View>
+        <View style={styles.rankSlot}><CompactRankBadge userId={profile.id} appearance="profileCard" /></View>
         {profile.username ? <Text style={styles.username}>@{profile.username}</Text> : null}
       </View>
       {onPress ? <Ionicons name="chevron-forward" size={18} color="#7B8580" /> : null}
@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     fontWeight: '600',
   },
-  rankSlot: { minHeight: 24, marginTop: 3 },
+  rankSlot: { minHeight: 32, marginTop: 4 },
   username: {
     marginTop: 1,
     color: '#687178',

@@ -64,11 +64,11 @@ export default StyleSheet.create({
     height: BOTTOM_NAV_METRICS.mapControlSize,
     width: 152,
     paddingHorizontal: 10,
-    borderRadius: 22,
+    borderRadius: 25,
     borderCurve: 'continuous',
     borderWidth: 1,
     borderColor: '#2F7D32',
-    backgroundColor: '#2F7D32',
+    backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -97,20 +97,19 @@ export default StyleSheet.create({
     right: 0,
   },
   reportLitterButtonText: {
-    color: '#FFFFFF',
+    color: '#2F7D32',
     fontSize: 16,
     fontWeight: '700',
   },
   reportPlacementCloseWrap: {
     position: 'absolute',
-    left: 16,
     top: 0,
     zIndex: 2,
   },
   reportPlacementClose: {
     width: BOTTOM_NAV_METRICS.mapControlSize,
     height: BOTTOM_NAV_METRICS.mapControlSize,
-    borderRadius: 22,
+    borderRadius: 25,
     borderCurve: 'continuous',
     borderWidth: 1,
     borderColor: 'rgba(55,65,81,0.24)',
@@ -265,9 +264,57 @@ reportReviewRow: {
   paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#E8ECE9',
 },
 reportReviewCopy: { flex: 1, gap: 6 },
-reportReviewLabel: { fontSize: 14, fontWeight: '500', color: '#667078' },
+reportReviewLabel: { fontSize: 16, fontWeight: '700', color: '#4D5952' },
 reportReviewTitle: { fontSize: 20, fontWeight: '700', color: '#26312B', lineHeight: 26 },
 reportReviewValue: { fontSize: 16, color: '#374151', lineHeight: 23 },
+reportReviewChipList: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  gap: 8,
+},
+reportReviewChip: {
+  maxWidth: '100%',
+  minHeight: 34,
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 6,
+  paddingHorizontal: 11,
+  paddingVertical: 7,
+  borderRadius: 17,
+  borderWidth: 1,
+},
+reportReviewChipText: {
+  flexShrink: 1,
+  fontSize: 14,
+  lineHeight: 18,
+  fontWeight: '600',
+},
+reportReviewLitterChip: {
+  backgroundColor: '#EAF4EC',
+  borderColor: '#B9D9BD',
+},
+reportReviewLitterChipText: { color: '#245F2A' },
+reportReviewConditionChip: {
+  backgroundColor: '#E8F3FC',
+  borderColor: '#B8D8F0',
+},
+reportReviewConditionChipText: { color: '#2E6E9E' },
+reportReviewSeverityChip: {
+  alignSelf: 'flex-start',
+  minHeight: 38,
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 8,
+  paddingHorizontal: 13,
+  paddingVertical: 8,
+  borderRadius: 19,
+  borderWidth: 1,
+},
+reportReviewSeverityText: {
+  fontSize: 15,
+  lineHeight: 20,
+  fontWeight: '700',
+},
 reportReviewEditButton: {
   minWidth: 44, minHeight: 44, justifyContent: 'center', alignItems: 'flex-end',
 },
@@ -289,6 +336,11 @@ wizardDetailsInput: {
   textAlignVertical: 'top',
   paddingTop: 14,
   paddingBottom: 14,
+},
+wizardSingleLineDetailsInput: {
+  minHeight: 52,
+  textAlignVertical: 'center',
+  paddingVertical: 14,
 },
 optionalStepHeading: {
   flexDirection: 'row',
@@ -319,12 +371,11 @@ litterTile: {
   backgroundColor: '#FFFFFF',
 },
 litterTileSelected: {
-  borderColor: '#2F7D32',
-  backgroundColor: '#EAF4EC',
+  borderWidth: 2,
 },
 litterTileIcon: { marginRight: 8 },
 litterTileText: { flex: 1, fontSize: 14, lineHeight: 19, fontWeight: '500', color: '#374151' },
-litterTileTextSelected: { color: '#245F2A', fontWeight: '600' },
+litterTileTextSelected: { fontWeight: '700' },
 reportPhotoStage: {
   height: 236,
   flexDirection: 'row',
@@ -472,8 +523,7 @@ wizardSeverityOption: {
   gap: 16,
 },
 wizardSeveritySelected: {
-  borderColor: '#2F7D32',
-  backgroundColor: '#EAF4EC',
+  borderWidth: 2,
 },
 wizardSeverityCopy: { flex: 1, gap: 6 },
 wizardSeverityText: {
@@ -487,7 +537,7 @@ wizardSeverityDescription: {
   color: '#667078',
 },
 wizardSeverityTextSelected: {
-  color: '#245F2A',
+  fontWeight: '800',
 },
 
 wizardRadio: {
@@ -646,11 +696,14 @@ startingFundText: {
 startingFundChoices: {
   marginTop: 16,
   flexDirection: 'row',
+  flexWrap: 'wrap',
+  justifyContent: 'space-between',
+  rowGap: 8,
   gap: 8,
 },
 
 startingFundChoice: {
-  flex: 1,
+  width: '31.5%',
   minHeight: 52,
   paddingHorizontal: 4,
   paddingVertical: 10,
@@ -892,7 +945,7 @@ wizardDotActive: {
     backgroundColor: '#fff',
     width: BOTTOM_NAV_METRICS.mapControlSize,
     height: BOTTOM_NAV_METRICS.mapControlSize,
-    borderRadius: 22,
+    borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -909,7 +962,7 @@ wizardDotActive: {
     backgroundColor: '#fff',
     width: BOTTOM_NAV_METRICS.mapControlSize,
     height: BOTTOM_NAV_METRICS.mapControlSize,
-    borderRadius: 22,
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
@@ -1158,11 +1211,26 @@ reportPostScrollContentWithActions: {
 },
 
 originalReportDivider: {
-  paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
-  flexDirection: 'row', alignItems: 'center', gap: 8,
-  borderTopWidth: 1, borderTopColor: '#E8ECE9', backgroundColor: '#FFFFFF',
+  paddingHorizontal: 22,
+  paddingTop: 32,
+  paddingBottom: 22,
+  borderTopWidth: 6,
+  borderTopColor: '#FFFFFF',
+  backgroundColor: '#FFFFFF',
 },
-originalReportTitle: { color: '#1F3922', fontSize: 18, lineHeight: 24, fontWeight: '600' },
+originalReportEyebrow: {
+  color: '#6B776D',
+  fontSize: 11,
+  letterSpacing: 1.05,
+  fontWeight: '800',
+},
+originalReportTitle: {
+  marginTop: 5,
+  color: '#263129',
+  fontSize: 23,
+  lineHeight: 29,
+  fontWeight: '900',
+},
 
 originalReportText: {
   marginTop: 7,
@@ -1240,7 +1308,7 @@ reportDetailActionFooter: {
 },
 reportDetailPrimaryAction: {
   marginHorizontal: 0, marginTop: 0, minHeight: 52, borderRadius: 12,
-  paddingHorizontal: 36, paddingVertical: 12, backgroundColor: '#2F7D32', borderWidth: 0,
+  paddingHorizontal: 36, paddingVertical: 12, backgroundColor: '#66BB6A', borderWidth: 0,
 },
 reportDetailClaimSpinner: {
   position: 'absolute', right: 10, top: 0, bottom: 0, width: 20, justifyContent: 'center', alignItems: 'center',
@@ -1253,33 +1321,61 @@ reportDetailSecondaryAction: {
   borderWidth: 1, borderColor: '#E3E8E5', backgroundColor: '#FFFFFF', minHeight: 44, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 8, gap: 7,
 },
 reportPostHeader: {
-  paddingHorizontal: 20,
+  paddingHorizontal: 22,
+  paddingTop: 20,
   paddingBottom: 22,
+  backgroundColor: '#F5FAF5',
+},
+
+reportPostHeaderRegular: {
+  paddingBottom: 12,
+},
+
+reportPostHeaderCompleted: {
+  paddingBottom: 10,
+},
+
+reportIdentityCard: {
+  paddingHorizontal: 10,
+  paddingVertical: 8,
+  borderRadius: 22,
+  borderWidth: 1,
+  borderColor: '#DDEBDD',
+  backgroundColor: '#FFFFFF',
+  shadowColor: '#29402D',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.06,
+  shadowRadius: 6,
+  elevation: 2,
 },
 
 reportPostTitle: {
-  marginTop: 4,
-  fontSize: 24,
-  lineHeight: 30,
-  fontWeight: '700',
+  marginTop: 14,
+  fontSize: 30,
+  lineHeight: 36,
+  fontWeight: '800',
   color: '#1F2937',
   marginBottom: 12,
 },
 
+reportPostTitleRegular: {
+  marginTop: 0,
+},
+
 rewardBadge: {
   alignSelf: 'flex-start',
-  marginBottom: 12,
+  marginBottom: 18,
   paddingHorizontal: 12,
   paddingVertical: 8,
   flexDirection: 'row',
   alignItems: 'center',
   gap: 7,
   borderRadius: 999,
-  backgroundColor: '#E3EEE4',
+  backgroundColor: '#66BB6A',
 },
 
 rewardBadgeText: {
-  color: '#245F2A',
+  color: '#FFFFFF',
   fontSize: 14,
   fontWeight: '900',
 },
@@ -1287,6 +1383,38 @@ rewardBadgeText: {
 reportMetaStack: {
   gap: 11,
   marginBottom: 18,
+  padding: 16,
+  borderRadius: 18,
+  borderWidth: 1,
+  borderColor: '#DDEBDD',
+  backgroundColor: '#FFFFFF',
+},
+
+reportMetaStackCompact: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  columnGap: 18,
+  rowGap: 10,
+  marginBottom: 8,
+  paddingHorizontal: 13,
+  paddingVertical: 11,
+},
+
+reportMetaStackCompleted: {
+  marginBottom: 6,
+},
+
+reportMetaStackBelowPhoto: {
+  marginHorizontal: 22,
+  marginTop: 16,
+},
+
+reportMetaStackAfterSeverity: {
+  marginTop: 0,
+},
+
+reportFeedbackBelowPhoto: {
+  marginHorizontal: 22,
 },
 
 reportMetaItem: {
@@ -1314,7 +1442,9 @@ beforePhotoHeading: {
   alignItems: 'center',
   gap: 8,
   paddingHorizontal: 22,
+  paddingTop: 12,
   paddingBottom: 12,
+  backgroundColor: '#FFFFFF',
 },
 
 beforePhotoHeadingText: {
@@ -1336,6 +1466,14 @@ reportSeverityPill: {
   paddingHorizontal: 14,
   paddingVertical: 8,
   borderRadius: 999,
+  borderWidth: 1,
+  marginBottom: 14,
+},
+
+reportSeverityBelowPhoto: {
+  marginHorizontal: 22,
+  marginTop: 16,
+  marginBottom: 10,
 },
 
 severityLow: {
@@ -1482,8 +1620,33 @@ reportPostBody: {
   paddingTop: 30,
 },
 
+reportPostBodyRegular: {
+  paddingTop: 15,
+},
+
 reportPostSection: {
   marginBottom: 28,
+},
+
+reportInfoCard: {
+  padding: 17,
+  borderRadius: 18,
+  borderWidth: 1,
+},
+
+reportLitterInfoCard: {
+  borderColor: '#CFE3D1',
+  backgroundColor: '#F1F8F2',
+},
+
+reportConditionsInfoCard: {
+  borderColor: '#C9E0F1',
+  backgroundColor: '#EFF7FD',
+},
+
+reportDetailsInfoCard: {
+  borderColor: '#E1E4E8',
+  backgroundColor: '#F7F8FA',
 },
 
 reportSectionHeader: {
@@ -1509,6 +1672,9 @@ reportChipRow: {
 },
 
 reportChip: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 6,
   paddingHorizontal: 13,
   paddingVertical: 8,
   borderRadius: 999,
@@ -1641,7 +1807,7 @@ reportFundButton: {
 },
 
 reportFundButtonText: {
-  color: '#2F7D32',
+  color: '#66BB6A',
   fontSize: 15,
   fontWeight: '800',
 },
@@ -1732,7 +1898,7 @@ cleanupActionButton: {
 },
 
 cleanupNavigateButton: {
-  backgroundColor: '#2F7D32',
+  backgroundColor: '#66BB6A',
 },
 
 cleanupCompleteButton: {
@@ -1868,7 +2034,7 @@ reportShareButton: {
 },
 
 reportShareButtonText: {
-  color: '#4F5C63',
+  color: '#B448CF',
   fontSize: 15,
   fontWeight: '800',
 },
@@ -1953,12 +2119,19 @@ reportMarkerIconWrapLg: {
   alignItems: 'center',
   justifyContent: 'center',
   borderWidth: 3,
-  borderColor: '#FFFFFF',
   shadowColor: '#000000',
   shadowOpacity: 0.28,
   shadowRadius: 7,
   shadowOffset: { width: 0, height: 3 },
   elevation: 6,
+},
+reportMarkerAmount: {
+  width: 48,
+  paddingHorizontal: 2,
+  fontSize: 17,
+  fontWeight: '900',
+  textAlign: 'center',
+  fontVariant: ['tabular-nums'],
 },
 reportMarkerStatusBadge: {
   position: 'absolute',
@@ -1972,6 +2145,65 @@ reportMarkerStatusBadge: {
   backgroundColor: '#FFFFFF',
   borderWidth: 2,
   borderColor: '#374151',
+},
+reportClusterHit: {
+  width: 96,
+  height: 80,
+  borderRadius: 40,
+  alignItems: 'center',
+  justifyContent: 'center',
+  paddingBottom: 12,
+  backgroundColor: 'rgba(0,0,0,0.01)',
+},
+reportClusterBubble: {
+  width: 52,
+  height: 52,
+  borderRadius: 26,
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: '#F3E2F7',
+  borderWidth: 3,
+  borderColor: '#B448CF',
+  shadowColor: '#000000',
+  shadowOpacity: 0.25,
+  shadowRadius: 6,
+  shadowOffset: { width: 0, height: 3 },
+  elevation: 6,
+},
+reportClusterText: {
+  color: '#8E2AA8',
+  fontSize: 17,
+  fontWeight: '800',
+  fontVariant: ['tabular-nums'],
+},
+reportClusterStatusRow: {
+  position: 'absolute',
+  bottom: 0,
+  flexDirection: 'row',
+  gap: 3,
+},
+reportClusterStatusBadge: {
+  minWidth: 27,
+  height: 20,
+  borderRadius: 10,
+  paddingHorizontal: 4,
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 2,
+  backgroundColor: '#FFFFFF',
+  borderWidth: 2,
+},
+reportClusterStatusDot: {
+  width: 6,
+  height: 6,
+  borderRadius: 3,
+},
+reportClusterStatusCount: {
+  fontSize: 10,
+  fontWeight: '900',
+  lineHeight: 12,
+  fontVariant: ['tabular-nums'],
 },
 savingOverlay: {
   ...StyleSheet.absoluteFillObject,
