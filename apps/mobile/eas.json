@@ -86,6 +86,7 @@
       "environment": "production",
       "env": {
         "APP_VARIANT": "production",
+        "EXPO_PUBLIC_APPLE_SIGN_IN_ENABLED": "true",
         "EXPO_PUBLIC_FACEBOOK_LOGIN_ENABLED": "true",
         "ENABLE_APPLE_PAY": "false",
         "ENABLE_IOS_ASSOCIATED_DOMAINS": "false",
@@ -93,6 +94,13 @@
         "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app"
       },
       "autoIncrement": true
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "6757313862"
+      }
     }
   }
 }
