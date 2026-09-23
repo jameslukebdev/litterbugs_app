@@ -164,8 +164,9 @@ same fresh 50-mile validation as its publication path. Shared parity tests again
 check exact mobile stage labels/order. `docs/web-replacement.md` was corrected
 to describe current steps, distance, authentication scope, and parity limits.
 
-Validation: all 125 web tests passed, followed by a fourth map-publication test
-for switching to no contribution during recovery (all four map tests passed).
+Validation: all 126 web tests passed, including four map-publication tests
+covering distance, no-contribution, selected-amount recovery, and switching to
+no contribution during recovery.
 All 14 shared tests, web typecheck/lint, production build, and source/build
 boundary checks passed. A temporary local Vite fixture rendered the production
 wizard and contribution components with fake responses at 1280×900 and 390×844.
@@ -178,6 +179,15 @@ used backend credentials, published reports, or moved money.
 Screenshots: `/tmp/litterbugs-web-report-alignment/review-390.png` and
 `/tmp/litterbugs-web-report-alignment/funding-1280.png`. Temporary fixture assets
 are not included in the app or deployment.
+
+Vercel deployment `dpl_EZQcRhe58D9pcG9iPT2inhNJhFyY` built successfully and was
+promoted to `https://litterbugs.app`. The separate deployment URL is
+`https://litterbugs-8ch8dndzr-grant-9890s-projects.vercel.app`. A protected
+deployment read verified the page title/map/report action before promotion.
+After promotion, fresh Chrome contexts at 1280×900 and 390×844 opened the live
+page and verified Report litter opens the sign-in dialog, with no console
+warnings/errors. This is public-shell verification, not an authenticated live
+publication/payment test.
 
 This is not complete website parity. Existing-photo replacement, draft/pin-change
 behavior, and other Luke Version 2 surfaces still need a systematic comparison.
