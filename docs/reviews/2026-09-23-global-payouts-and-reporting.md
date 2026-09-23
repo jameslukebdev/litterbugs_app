@@ -58,7 +58,8 @@ https://github.com/jameslukebdev/litterbugs_app/pull/76 .
   type checks, lint, web build, boundaries, relay tests, and auth-bridge dry run.
   Subsequent publication-retry refinements passed web typecheck/build and lint.
   Desktop Chrome local safety/policy navigation passed with screenshots and no
-  console warnings/errors. Native share extensions and new app build unverified.
+  console warnings/errors. Native build and simulator results are recorded
+  below; destination-app share-link behavior remains unverified.
 - Native production builds dispatched using existing frozen signing credentials:
   Android `f042ea68-087d-4e6b-90cf-6c88879ed0a0` (version code 11) and iOS
   `e0c2a650-281d-4d95-a2f8-691a3df4c4c8` (build 10), both app version 2.0.0.
@@ -81,9 +82,9 @@ https://github.com/jameslukebdev/litterbugs_app/pull/76 .
   their report flows: the first exceeded its initial map-ready wait; the second
   reached the sign-in screen because this simulator lacks a signed-in QA account.
   The result is `/tmp/litterbugs-sep23-native-reporting.xcresult` (0 passed,
-  2 failed, 0 skipped). This is not passing native evidence. Restore a valid QA
-  session and investigate cold-start readiness before rerunning these cases.
-  Physical share-extension verification also remains outstanding.
+  2 failed, 0 skipped). This is not passing native evidence. The subsequent
+  signed-in simulator runs below resolved these setup failures. Physical
+  share-extension verification remains outstanding.
 - Follow-up native checks on the existing signed-in iPhone 17 Pro QA simulator
   passed: report pin/photo-step entry without GPS; saved draft recovery after
   relaunch; the five-stage report review including changing its location; and
@@ -104,7 +105,61 @@ https://github.com/jameslukebdev/litterbugs_app/pull/76 .
   that this message includes the report URL.
 - Installable Android production-internal build dispatched with frozen existing
   signing credentials: `ed6a6d17-8a32-4f7d-9f84-d9d32899939c`. This provides an
-  APK for device verification without a Play submission. Completion pending.
+  APK for device verification without a Play submission. Build completed and
+  signature verification passed. Package `com.litterbugs.app`, version 2.0.0/code
+  11, matches the existing production signing certificate. APK SHA-256:
+  `7b3c1eaf9d5be2f7f84c4703600307064314dceb17122c36b7b84cbc0b2e63c9`.
+  Download: https://expo.dev/artifacts/eas/igNDOcxPlb-Fd6EDqIdwN1d9gRnUI35W2N_qUzTNN4c.apk .
+  Installed successfully with `adb install -r` on `Litterbugs_API_36`. Before and
+  after package-manager records retain app ID 10213, CE/DE data-directory inodes
+  557421/401752, and first-install time September 1. Version changed from 1.0.0
+  to 2.0.0 without uninstalling or clearing storage. This is update-integrity
+  evidence, not proof that the saved login or interactive flows work.
+- The existing Android emulator installation uses the production certificate
+  `2C:0A:31:66:6C:8C:7A:35:04:E9:0D:8E:B8:15:01:67:30:75:40:11:2F:96:90:51:B0:36:AB:13:C1:B0:AA:0E`.
+  The live `/.well-known/assetlinks.json` lists that same certificate and package;
+  Android's package manager reports `litterbugs.app: verified` before and after
+  the update. This proves domain association, not successful report navigation
+  in the new build. The desktop UI tool does not expose the Android emulator, so
+  interactive Android checks remain separate from package/update verification.
+  The owner has been given the concrete EAS installation link and asked about
+  physical Android test availability; no response is recorded yet.
+
+## Remaining mobile device checks
+
+Use the installable build above for Android. These checks are not a request to
+submit to either app store. Preserve existing app data and any user drafts.
+
+- On both platforms, verify the review screen shows **No contribution now** and
+  explains that others can still fund the report. Choosing it must not open a
+  contribution screen or create a payment. Exercise publication only with an
+  authorized test report or an isolated backend; do not create fake public litter.
+- Verify denied GPS prevents publication, a pin beyond 50 miles is rejected,
+  and a valid nearby report can publish with one to three photos. The unit and
+  SQL checks cover these rules; physical-device publication is not yet verified.
+- Share a report to an installed destination app and inspect its composer for
+  the clickable report URL before sending. Cancel the composer. General image
+  sharing and Instagram Stories are different paths and need separate results.
+- Open the shared HTTPS report URL. Android domain verification is confirmed;
+  actual navigation to the intended report remains a device check. On iOS the
+  production build currently opens the website because associated domains are
+  disabled. Do not change Luke's unavailable Apple account as a workaround.
+- On an appropriately authorized test account, check first acceptance versus
+  repeat acceptance for the current agreement versions, and the short safety
+  confirmation on every cleanup. Automated checks must not accept legal terms
+  or create a live claim. Existing iOS coverage verifies readable v4 presentation
+  and disabled acceptance while unchecked.
+
+## Website alignment findings for the next phase
+
+Read-only comparison confirms the website still has six report stages (a separate
+Title stage), while Luke's mobile flow has five with an optional title on Photos.
+The web draft and wizard also lack the mobile starting-contribution choice and
+post-publication funding handoff. These remain implementation work; the shared
+parity tests currently cover persisted option sets and evidence limits, not full
+workflow parity. Both clients have the new GPS publication and versioned agreement
+changes. `docs/web-replacement.md` still describes older step/boundary/auth
+behavior and needs reconciliation with verified current behavior in that phase.
 
 ## Stripe account review
 
