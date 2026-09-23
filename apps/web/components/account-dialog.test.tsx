@@ -6,13 +6,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AccountDialog } from './account-dialog';
 
-const { blockDelete, blockedRows, rpc, profileUpdate, reportQueryNumber } = vi.hoisted(() => ({
+const { blockDelete, blockedRows, rpc, profileUpdate, reportQueryNumber, invoke, clearDraft, signOut } = vi.hoisted(() => ({
+  invoke: vi.fn(),
+  clearDraft: vi.fn(),
+  signOut: vi.fn(),
   blockDelete: vi.fn(),
   blockedRows: { value: [] as unknown[] },
   rpc: vi.fn(async () => ({ data: null, error: null })),
   profileUpdate: vi.fn(),
   reportQueryNumber: { value: 0 },
 }));
+
+vi.mock('@/lib/saved-report-draft', () => ({ clearPublishedReport: clearDraft }));
 
 vi.mock('@/components/payout-setup-action', () => ({
   PayoutSetupAction: () => null,
@@ -70,9 +75,9 @@ vi.mock('@/lib/supabase/client', () => ({
     auth: {
       getUser: vi.fn(async () => ({ data: { user: { id: 'member-id', email: 'member@example.com' } } })),
       resetPasswordForEmail: vi.fn(async () => ({ error: null })),
-      signOut: vi.fn(async () => ({ error: null })),
+      signOut,
     },
-    functions: { invoke: vi.fn(async () => ({ data: null, error: null })) },
+    functions: { invoke },
     from: (table: string) => {
       if (table === 'profiles') return query({
         data: {
@@ -123,6 +128,11 @@ vi.mock('@/lib/supabase/client', () => ({
 }));
 
 beforeEach(() => {
+  invoke.mockReset().mockResolvedValue({ data: null, error: null });
+  clearDraft.mockReset().mockResolvedValue(undefined);
+  signOut.mockReset().mockResolvedValue({ error: null });
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
+  vi.spyOn(window, 'alert').mockImplementation(() => {});
   blockDelete.mockClear();
   blockedRows.value = [];
   reportQueryNumber.value = 0;
@@ -206,5 +216,46 @@ describe('AccountDialog expired report decisions', () => {
       target_report_id: expiredReport.id,
     }));
     expect(await screen.findByText(/full contribution refunds have been queued/i)).toBeTruthy();
+  });
+});
+
+
+describe('saved report cleanup after account deletion', () => {
+  async function account() {
+    const onSignedOut = vi.fn();
+    render(<AccountDialog onClose={vi.fn()} onSignedOut={onSignedOut} onOpenReport={vi.fn()} />);
+    await screen.findByText('Member');
+    return onSignedOut;
+  }
+  it('clears only the deleted account’s draft and journal after confirmed deletion', async () => {
+    invoke.mockResolvedValue({ data: { deleted: true }, error: null });
+    const onSignedOut = await account();
+    fireEvent.click(screen.getByRole('button', { name: 'Delete account' }));
+    await waitFor(() => expect(onSignedOut).toHaveBeenCalled());
+    expect(clearDraft).toHaveBeenCalledExactlyOnceWith('member-id');
+    expect(clearDraft.mock.invocationCallOrder[0]).toBeGreaterThan(invoke.mock.invocationCallOrder[0]);
+    expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
+  });
+  it('preserves local photos when account deletion fails', async () => {
+    invoke.mockResolvedValue({ data: null, error: new Error('Network failure') });
+    const onSignedOut = await account();
+    fireEvent.click(screen.getByRole('button', { name: 'Delete account' }));
+    await screen.findByText(/Couldn’t delete account/);
+    expect(clearDraft).not.toHaveBeenCalled();expect(onSignedOut).not.toHaveBeenCalled();
+  });
+  it('reports failed local cleanup without claiming the deleted account still exists', async () => {
+    invoke.mockResolvedValue({ data: { deleted: true }, error: null });
+    clearDraft.mockRejectedValue(new Error('Browser storage unavailable'));
+    const onSignedOut = await account();
+    fireEvent.click(screen.getByRole('button', { name: 'Delete account' }));
+    await waitFor(() => expect(onSignedOut).toHaveBeenCalled());
+    expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('Your account was deleted'));
+    expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
+  });
+  it('retains drafts on ordinary sign-out', async () => {
+    const onSignedOut = await account();
+    fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+    await waitFor(() => expect(onSignedOut).toHaveBeenCalled());
+    expect(clearDraft).not.toHaveBeenCalled();expect(invoke).not.toHaveBeenCalled();
   });
 });

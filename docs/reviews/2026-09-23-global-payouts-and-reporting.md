@@ -277,6 +277,20 @@ fresh public Chrome checks reached sign-in at desktop/phone widths without
 console errors. Prior `dpl_GWPE4vg984zzYxQLtL59PFUWRVD1` remains for rollback.
 Fresh origin/main remains Luke’s `5cc45c4` and is still an ancestor of this branch.
 
+### Account deletion and local draft cleanup — September 23
+
+The browser account-deletion flow now removes that account's draft photos and
+publication journal after confirmed server deletion. Failed account deletion
+preserves both; ordinary sign-out also preserves drafts. A real local-storage
+cleanup failure reports that the account was deleted and explains how to clear
+remaining browser site data, rather than implying deletion itself failed.
+
+Eight focused AccountDialog tests passed, including confirmed deletion, failed
+deletion, local cleanup failure, and ordinary sign-out. Typecheck, lint,
+production build, and 398-file boundary checks passed. The atomic, account-scoped
+IndexedDB deletion operation had already passed real-browser tests in the prior
+draft-recovery slice. No live account was deleted for this verification.
+
 ## Stripe account review
 
 Correct Litterbugs account: `acct_1U2HZe40KMkUKMFW`. The installed Stripe
