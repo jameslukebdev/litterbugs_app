@@ -208,6 +208,10 @@ were clean and no live reports, photos, or payments were changed. The first
 fixture run found a macOS `/tmp` versus `/private/tmp` serving-path issue; fixing
 the temporary fixture allowlist resolved it without changing application code.
 Screenshot: `/tmp/litterbugs-web-report-alignment/edit-photos-390.png`.
+Photo replacement is deployed in `dpl_Hw4beL2oih6T8yFAF5M8sBVXhSJD`, promoted
+to litterbugs.app after its build and protected-page checks. Fresh public Chrome
+checks at both widths again reached the sign-in prompt with clean consoles.
+The replacement interaction used local fake responses; no live report was edited.
 
 This is not complete website parity. Draft/pin-change behavior and other Luke
 Version 2 surfaces still need a systematic comparison.
