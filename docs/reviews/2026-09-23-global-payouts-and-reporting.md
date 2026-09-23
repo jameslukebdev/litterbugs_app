@@ -69,6 +69,10 @@ https://github.com/jameslukebdev/litterbugs_app/pull/76 .
   11, minimum SDK 24 and target SDK 36. Android SHA-256:
   `9d16059b6d6e5d53ab3aa48fc18c35d61d5b977b8d1dbd724ba0440cc2078ba4`.
   No store submission made.
+  The Android manifest also matches the actual EAS production Maps key (checked
+  without printing it; temporary environment file removed). The iOS entitlements
+  retain Luke's team `DB39U76V6Q`, Apple sign-in, and production push. Associated
+  domains remain absent, as in Luke's configuration.
 - Mobile submission integration checks now cover permission denial before any
   upload, a second GPS fix after upload, private-photo recovery after a failed
   final distance check, and recovery of a published report after a lost response.
@@ -80,6 +84,27 @@ https://github.com/jameslukebdev/litterbugs_app/pull/76 .
   2 failed, 0 skipped). This is not passing native evidence. Restore a valid QA
   session and investigate cold-start readiness before rerunning these cases.
   Physical share-extension verification also remains outstanding.
+- Follow-up native checks on the existing signed-in iPhone 17 Pro QA simulator
+  passed: report pin/photo-step entry without GPS; saved draft recovery after
+  relaunch; the five-stage report review including changing its location; and
+  readable agreement v4 with reachable date/checkbox and disabled acceptance
+  until checked. Result bundles are `/tmp/litterbugs-sep23-native-qa-session.xcresult`
+  (2 passed), `/tmp/litterbugs-sep23-native-review.xcresult` (1 passed), and
+  `/tmp/litterbugs-sep23-native-waiver-current-ui.xcresult` (1 passed), all with
+  zero failures/skips. The waiver test was updated for Luke's current Reports
+  cards and Claim Cleanup label rather than changing his interface. An existing
+  QA notification was dismissed with Later. The simulator-only location grant
+  used for the waiver test was restored to its original denied setting, and
+  synthetic location was cleared. No report was published or cleanup claimed;
+  the full agreement was not accepted during this verification.
+- The native iOS share sheet opens with the report card image. Simulator share
+  destinations cannot establish Messages/Instagram link behavior; preserve
+  that outstanding physical-device check. The pinned native sharing library
+  adds the supplied message as a separate activity item, and mobile tests verify
+  that this message includes the report URL.
+- Installable Android production-internal build dispatched with frozen existing
+  signing credentials: `ed6a6d17-8a32-4f7d-9f84-d9d32899939c`. This provides an
+  APK for device verification without a Play submission. Completion pending.
 
 ## Stripe account review
 
