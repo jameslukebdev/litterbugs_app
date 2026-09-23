@@ -25,6 +25,10 @@ Fetched Luke's latest work and fast-forwarded from f8c84cb to 5cc45c4. His two
 September 16 commits prepare Version 2/TestFlight and restore the app icon.
 Working branch: `codex/global-payouts-and-reporting-fixes`.
 Luke's release configuration and app icon are preserved.
+Fresh remote verification after creating the PR still found `origin/main` at
+`5cc45c4`, an ancestor of this branch. App configuration, EAS profiles, and app
+assets have no diff against Luke's tip. Draft PR:
+https://github.com/jameslukebdev/litterbugs_app/pull/76 .
 
 ## Implementation status
 
@@ -58,14 +62,24 @@ Luke's release configuration and app icon are preserved.
 - Native production builds dispatched using existing frozen signing credentials:
   Android `f042ea68-087d-4e6b-90cf-6c88879ed0a0` (version code 11) and iOS
   `e0c2a650-281d-4d95-a2f8-691a3df4c4c8` (build 10), both app version 2.0.0.
-  iOS finished successfully; Android remained in progress at 22:08 UTC September
-  23. No store submission made.
+  Both finished successfully. Downloaded iOS artifact confirms bundle
+  `com.litterbugs.app`, version 2.0.0/build 10, and passes strict code-signature
+  verification. Android bundle passes bundletool validation and JAR signature
+  verification; its manifest confirms `com.litterbugs.app`, version 2.0.0/code
+  11, minimum SDK 24 and target SDK 36. Android SHA-256:
+  `9d16059b6d6e5d53ab3aa48fc18c35d61d5b977b8d1dbd724ba0440cc2078ba4`.
+  No store submission made.
 - Mobile submission integration checks now cover permission denial before any
   upload, a second GPS fix after upload, private-photo recovery after a failed
   final distance check, and recovery of a published report after a lost response.
-  All 40 focused reporting, sharing, and waiver tests passed. A native simulator
-  report-pin and saved-draft recovery run is in progress; this does not replace
-  physical share-extension verification.
+  All 40 focused reporting, sharing, and waiver tests passed. Native simulator
+  compilation succeeded, but both requested UI tests failed before reaching
+  their report flows: the first exceeded its initial map-ready wait; the second
+  reached the sign-in screen because this simulator lacks a signed-in QA account.
+  The result is `/tmp/litterbugs-sep23-native-reporting.xcresult` (0 passed,
+  2 failed, 0 skipped). This is not passing native evidence. Restore a valid QA
+  session and investigate cold-start readiness before rerunning these cases.
+  Physical share-extension verification also remains outstanding.
 
 ## Stripe account review
 
