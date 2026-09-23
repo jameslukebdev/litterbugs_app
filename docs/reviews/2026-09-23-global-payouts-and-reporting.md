@@ -241,6 +241,13 @@ The map in this fixture is simulated; actual map state transitions are covered
 by component tests. Fresh remote main remains Luke's `5cc45c4`, an ancestor of
 this branch. His mobile configuration/assets were not changed in this slice.
 
+Deployed commit `ee02655` as `dpl_GWPE4vg984zzYxQLtL59PFUWRVD1`, checked
+the separate deployment, then promoted to litterbugs.app. Fresh public Chrome
+checks at desktop/phone widths reached the sign-in prompt without console errors.
+Prior deployment `dpl_Hw4beL2oih6T8yFAF5M8sBVXhSJD` remains available for rollback.
+Stripe support recheck still showed only the 22:33 UTC escalation confirmation;
+no country eligibility or funding approval has arrived.
+
 ## Stripe account review
 
 Correct Litterbugs account: `acct_1U2HZe40KMkUKMFW`. The installed Stripe
