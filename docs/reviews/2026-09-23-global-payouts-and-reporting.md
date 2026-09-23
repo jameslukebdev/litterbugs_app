@@ -291,6 +291,20 @@ production build, and 398-file boundary checks passed. The atomic, account-scope
 IndexedDB deletion operation had already passed real-browser tests in the prior
 draft-recovery slice. No live account was deleted for this verification.
 
+Commit `2348aa7` deployed as `dpl_HBWUqWYN6U8CsVGTNh85CnG7j9F1`, verified
+at its separate URL, then promoted to litterbugs.app. Fresh desktop/phone-width
+public sign-in checks passed without console errors. Previous deployment
+`dpl_4NJpb1qfJqHHRpVPgoTvTjUzPpVw` remains available for rollback.
+
+Next confirmed website parity gap: mobile `components/ReportFilters.js` exposes
+combinable cleanup status (including Completed), reward, map-center distance
+(5/25/50 miles), severity, favorites, and query filters. Web
+`components/report-browser.tsx` currently offers mutually exclusive quick filters
+and sorting, without equivalent distance, severity filtering, or text/place
+search. Mobile uses `loadDiscoveryReports` for bounded discovery; a website
+implementation must verify retrieval scope as well as local list filtering.
+
+
 ## Stripe account review
 
 Correct Litterbugs account: `acct_1U2HZe40KMkUKMFW`. The installed Stripe
