@@ -9,6 +9,7 @@ import {
   MAX_REPORT_PHOTOS,
   MAX_REPORT_TITLE_LENGTH,
   NOTE_OPTIONS,
+  REPORT_STEPS,
   SEVERITY_LEVELS,
 } from './report';
 
@@ -43,6 +44,9 @@ function quotedValues(source: string, key?: string): string[] {
 }
 
 describe('mobile report parity', () => {
+  it('keeps the five report stages aligned with Luke’s mobile flow', () => {
+    expect([...REPORT_STEPS]).toEqual(quotedValues(block(/const REPORT_STEPS = \[([^\]]+)\]/)));
+  });
   it('keeps the web fallback map center aligned with mobile', () => {
     const fallbackMatch = mobileReportsSource.match(
       /export const DEFAULT_MAP_REGION = Object\.freeze\(\{([\s\S]*?)\}\);/,

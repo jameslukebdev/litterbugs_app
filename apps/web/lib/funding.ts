@@ -74,6 +74,15 @@ export async function loadCleanupFeatureFlags(): Promise<CleanupFeatureFlags> {
   return Object.fromEntries((data ?? []).map(({ name, enabled }) => [name, enabled]));
 }
 
+export async function requestReportPhotoReview(reportId: string) {
+  const { data, error } = await createClient().functions.invoke('run-financial-maintenance', {
+    body: { reportId },
+  });
+  if (error || data?.error) {
+    throw new Error(await edgeFunctionErrorMessage(data, error, 'Photo review could not be refreshed.'));
+  }
+}
+
 export async function createCleanupContribution(
   reportId: string,
   principalAmountCents: number,

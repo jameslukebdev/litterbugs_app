@@ -4,8 +4,6 @@ import { importLibrary, setOptions } from '@googlemaps/js-api-loader';
 import {
   EMPTY_REPORT_DRAFT,
   FALLBACK_MAP_CENTER,
-  NEARBY_REPORT_DISTANCE_MILES,
-  getDistanceMiles,
   hasReportCoordinates,
   reportInsertFromDraft,
   reportUpdateFromDraft,
@@ -25,6 +23,8 @@ import { canManageReport, realUserId } from '@/lib/report-access';
 import { getBrowserLocation, requireReportLocation } from '@/lib/geolocation';
 import { ReportDetail } from '@/components/report-detail';
 import { ReportWizard } from '@/components/report-wizard';
+import { FundingContributionAction } from '@/components/funding-contribution-action';
+import { loadCleanupFeatureFlags, requestReportPhotoReview } from '@/lib/funding';
 import { readReportPreferences, writeReportPreferences } from '@/lib/report-preferences';
 import { uploadSecureBrowserMedia } from '@/lib/secure-media-upload';
 import { createClient } from '@/lib/supabase/client';
@@ -88,6 +88,16 @@ export function MapExperience({
   const [reportMode, setReportMode] = useState(false);
   const [previewedReportId, setPreviewedReportId] = useState<string | null>(null);
   const [toast, setToast] = useState('');
+  const [fundingEnabled, setFundingEnabled] = useState(false);
+  const [reportFunding, setReportFunding] = useState<{ report: Report; amountCents: number } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadCleanupFeatureFlags().then(flags => {
+      if (!cancelled) setFundingEnabled(Boolean(flags.payments_enabled && flags.gemini_financial_review_enabled));
+    }).catch(() => undefined);
+    return () => { cancelled = true; };
+  }, []);
   const [reportPreferences, setReportPreferences] = useState({
     favorites: new Set<string>(),
     hidden: new Set<string>(),
@@ -108,6 +118,7 @@ export function MapExperience({
     }
     const nextReports = (data ?? []).filter(hasReportCoordinates);
     setReports(nextReports);
+    setReportFunding(current => current ? { ...current, report: nextReports.find(({ id }) => id === current.report.id) ?? current.report } : null);
     setSelectedReport((current) => current
       ? nextReports.find(({ id }) => id === current.id) ?? current
       : null);
@@ -115,6 +126,7 @@ export function MapExperience({
 
   const handleUserChange = useCallback((nextUserId: string | null) => {
     setUserId(nextUserId);
+    setReportFunding(null);
     const stored = readReportPreferences(nextUserId);
     setReportPreferences({ favorites: new Set(stored.favorites), hidden: new Set(stored.hidden) });
     router.refresh();
@@ -283,15 +295,11 @@ export function MapExperience({
       return;
     }
     try {
-      const location = await getBrowserLocation();
-      if (getDistanceMiles(location, coordinates) > NEARBY_REPORT_DISTANCE_MILES) {
-        setToast(`For a location more than ${NEARBY_REPORT_DISTANCE_MILES} miles away, use the Litterbugs mobile app to confirm the pin and complete its location review.`);
-        return;
-      }
+      await requireReportLocation(coordinates);
       setDraftCoordinates(coordinates);
       setReportMode(false);
-    } catch {
-      setToast('Litterbugs needs your location to compare it with the selected report pin. Allow location access and try again.');
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : 'Allow location access and try again.');
     }
   }, [userId]);
 
@@ -337,7 +345,21 @@ export function MapExperience({
     if (report) openReport(report);
   }
 
-  async function saveReport(draft: ReportDraft) {
+  async function refreshFundingReview(reportId: string) {
+    try { await requestReportPhotoReview(reportId); }
+    finally { await refreshReports(); }
+  }
+
+  function finishPublication(report: Report, contributionCents: number | null) {
+    pendingPublication.current = null;
+    setDraftCoordinates(null);
+    if (contributionCents != null) setReportFunding({ report, amountCents: contributionCents });
+    setToast('Report saved. Thanks for helping keep the community clean!');
+    void refreshReports();
+    if (fundingEnabled) void refreshFundingReview(report.id).catch(() => undefined);
+  }
+
+  async function saveReport(draft: ReportDraft, startingContributionCents: number | null) {
     const supabase = createClient();
     const { data: authData } = await supabase.auth.getUser();
     const user = authData.user;
@@ -412,10 +434,7 @@ export function MapExperience({
         .select('*').eq('id', pending.reportId).eq('user_id', authenticatedUserId).maybeSingle();
       if (readError) return 'We are still checking whether your report was published. Check your connection and try again.';
       if (previous?.is_published) {
-        pendingPublication.current = null;
-        setDraftCoordinates(null);
-        await refreshReports();
-        setToast('Your report was published successfully.');
+        finishPublication(previous, startingContributionCents);
         return null;
       }
       if (previous && hasReportCoordinates(previous)) {
@@ -424,7 +443,7 @@ export function MapExperience({
         let origin;
         try { origin = await requireReportLocation(previous); }
         catch (error) { return error instanceof Error ? error.message : 'Your current location is required.'; }
-        const { error: retryError } = await supabase.rpc('publish_report', {
+        const { data: retriedReport, error: retryError } = await supabase.rpc('publish_report', {
           target_report_id: pending.reportId,
           target_photo_paths: pending.paths,
           current_latitude: origin.latitude,
@@ -432,10 +451,7 @@ export function MapExperience({
           location_captured_at: origin.capturedAt,
         });
         if (retryError) return 'Your report has not been confirmed yet. Check your connection and try again.';
-        pendingPublication.current = null;
-        setDraftCoordinates(null);
-        await refreshReports();
-        setToast('Your report was published successfully.');
+        finishPublication(retriedReport, startingContributionCents);
         return null;
       }
       pendingPublication.current = null;
@@ -488,10 +504,7 @@ export function MapExperience({
       await supabase.storage.from('report_photos').remove(uploaded.paths);
       return 'The saved report is missing its map location.';
     }
-    pendingPublication.current = null;
-    setDraftCoordinates(null);
-    await refreshReports();
-    setToast('Report saved. Thanks for helping keep the community clean!');
+    finishPublication(report, startingContributionCents);
     return null;
   }
 
@@ -601,7 +614,8 @@ export function MapExperience({
       </div>
 
       {selectedReport && <ReportDetail key={selectedReport.id} report={selectedReport} userId={userId} isOwner={canManageReport(selectedReport, userId)} favorite={reportPreferences.favorites.has(selectedReport.id)} hidden={reportPreferences.hidden.has(selectedReport.id)} onFavoriteChange={(favorite) => updateReportPreference('favorites', selectedReport.id, favorite)} onHiddenChange={(hidden) => updateReportPreference('hidden', selectedReport.id, hidden)} onNotify={setToast} onRequireSignIn={() => { setSelectedReport(null); accountActionRef.current?.openAuth(); }} onReportChanged={refreshReports} onClose={() => setSelectedReport(null)} onEdit={() => { void editSelectedReport(); }} onDelete={() => { void deleteSelectedReport(); }} />}
-      {draftCoordinates && <ReportWizard initialDraft={{ ...EMPTY_REPORT_DRAFT }} isEditing={false} onClose={() => setDraftCoordinates(null)} onSubmit={saveReport} />}
+      {draftCoordinates && <ReportWizard initialDraft={{ ...EMPTY_REPORT_DRAFT }} isEditing={false} fundingEnabled={fundingEnabled} onClose={() => setDraftCoordinates(null)} onSubmit={saveReport} />}
+      {reportFunding && <FundingContributionAction key={reportFunding.report.id} report={reportFunding.report} userId={userId} initialAmountCents={reportFunding.amountCents} startOpen onDismiss={() => setReportFunding(null)} onChanged={refreshReports} onRefreshFunding={() => refreshFundingReview(reportFunding.report.id)} />}
       {editingReport && <ReportWizard initialDraft={editDraft} isEditing existingPhotoUrls={editPhotoUrls} onClose={() => { setEditingReport(null); setEditPhotoUrls([]); }} onSubmit={saveReport} />}
     </main>
   );

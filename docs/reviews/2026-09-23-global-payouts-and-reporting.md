@@ -152,14 +152,36 @@ submit to either app store. Preserve existing app data and any user drafts.
 
 ## Website alignment findings for the next phase
 
-Read-only comparison confirms the website still has six report stages (a separate
-Title stage), while Luke's mobile flow has five with an optional title on Photos.
-The web draft and wizard also lack the mobile starting-contribution choice and
-post-publication funding handoff. These remain implementation work; the shared
-parity tests currently cover persisted option sets and evidence limits, not full
-workflow parity. Both clients have the new GPS publication and versioned agreement
-changes. `docs/web-replacement.md` still describes older step/boundary/auth
-behavior and needs reconciliation with verified current behavior in that phase.
+The next phase now aligns the report form with Luke's five-stage mobile flow,
+including the optional title on Photos, direct returns from Review edits, and
+the optional starting contribution. No contribution is the default. Selecting
+an amount carries it into a separate, eligibility-gated payment dialog; neither
+publishing nor opening that dialog creates a payment. Retries honor the latest
+funding choice, including switching to no contribution after a lost response.
+
+The web's older ten-mile entry gate was also found and removed. It now uses the
+same fresh 50-mile validation as its publication path. Shared parity tests again
+check exact mobile stage labels/order. `docs/web-replacement.md` was corrected
+to describe current steps, distance, authentication scope, and parity limits.
+
+Validation: all 125 web tests passed, followed by a fourth map-publication test
+for switching to no contribution during recovery (all four map tests passed).
+All 14 shared tests, web typecheck/lint, production build, and source/build
+boundary checks passed. A temporary local Vite fixture rendered the production
+wizard and contribution components with fake responses at 1280×900 and 390×844.
+Playwright used installed Chrome because the Browser plugin is not available;
+the Playwright-bundled Chromium executable was absent. The real form interactions
+passed with no runtime/console errors or horizontal overflow. Selected $5 reached
+the payment dialog as $5.00 plus $0.50 fee; no-contribution reached confirmation
+without a payment dialog. Both created zero payment requests. The fixture never
+used backend credentials, published reports, or moved money.
+Screenshots: `/tmp/litterbugs-web-report-alignment/review-390.png` and
+`/tmp/litterbugs-web-report-alignment/funding-1280.png`. Temporary fixture assets
+are not included in the app or deployment.
+
+This is not complete website parity. Existing-photo replacement, draft/pin-change
+behavior, and other Luke Version 2 surfaces still need a systematic comparison.
+Physical native verification and strict GPS rollout gates remain unchanged.
 
 ## Stripe account review
 
@@ -176,6 +198,8 @@ movement. James escalated to the specialist team by email under case
 The 21:55 UTC acknowledgment email and chat transcript confirm the specialist
 review is pending and request no owner action at this time. Gmail message ID:
 `1a0d043d201a62a4`.
+A later 22:33 UTC email, message `1a0d06771efdc320`, reconfirms escalation to the
+specialist team. It provides no eligibility decision or implementation answers.
 
 All 120 target countries appear across published Global Payouts bank-destination
 documentation and release notes. The current account picker exposes 101 of those

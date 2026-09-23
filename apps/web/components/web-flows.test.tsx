@@ -47,7 +47,7 @@ describe('web product boundaries', () => {
     expect(document.querySelector('.facebook-provider-icon-frame')).toBeNull();
   });
 
-  it('keeps the mobile app’s exact six report steps and required gates', () => {
+  it('keeps the mobile app’s five report steps and required gates', () => {
     render(
       <ReportWizard
         initialDraft={{ ...EMPTY_REPORT_DRAFT }}
@@ -57,9 +57,8 @@ describe('web product boundaries', () => {
       />,
     );
 
-    expect(screen.getByText('Step 1 of 6')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /next/i }));
-    expect(screen.getByText('Step 2 of 6')).toBeTruthy();
+    expect(screen.getByText('Step 1 of 5')).toBeTruthy();
+    expect(screen.getByLabelText('Report title (optional)')).toBeTruthy();
     const photoNext = screen.getByRole('button', { name: /next/i }) as HTMLButtonElement;
     expect(photoNext.disabled).toBe(true);
     const picker = document.querySelector<HTMLInputElement>('input[type="file"]');
@@ -69,7 +68,7 @@ describe('web product boundaries', () => {
     });
     expect(photoNext.disabled).toBe(false);
     fireEvent.click(photoNext);
-    expect(screen.getByText('Step 3 of 6')).toBeTruthy();
+    expect(screen.getByText('Step 2 of 5')).toBeTruthy();
 
     const litterNext = screen.getByRole('button', { name: /next/i }) as HTMLButtonElement;
     expect(litterNext.disabled).toBe(true);
@@ -77,14 +76,14 @@ describe('web product boundaries', () => {
     expect(litterNext.disabled).toBe(false);
     fireEvent.click(litterNext);
 
-    expect(screen.getByText('Step 4 of 6')).toBeTruthy();
+    expect(screen.getByText('Step 3 of 5')).toBeTruthy();
     const severityNext = screen.getByRole('button', { name: /next/i }) as HTMLButtonElement;
     expect(severityNext.disabled).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: /Medium/ }));
     fireEvent.click(severityNext);
-    expect(screen.getByText('Step 5 of 6')).toBeTruthy();
+    expect(screen.getByText('Step 4 of 5')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
-    expect(screen.getByText('Step 6 of 6')).toBeTruthy();
+    expect(screen.getByText('Step 5 of 5')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Submit report' })).toBeTruthy();
   });
 
@@ -96,5 +95,52 @@ describe('web product boundaries', () => {
     expect(validateWebReportPhotos([
       new File(['not-a-photo'], 'report.pdf', { type: 'application/pdf' }),
     ])).toMatch(/JPEG, PNG, WebP, HEIC, or HEIF/i);
+  });
+});
+
+describe('report creation funding choice', () => {
+  const photo = new File(['report'], 'report.jpg', { type: 'image/jpeg' });
+  function review(onSubmit = vi.fn(async () => null), fundingEnabled = true) {
+    render(<ReportWizard initialDraft={{ ...EMPTY_REPORT_DRAFT, photos: [photo], selectedTypes: ['Bottles'], severity: 'Low' }} isEditing={false} fundingEnabled={fundingEnabled} onClose={vi.fn()} onSubmit={onSubmit} />);
+    for (let step = 0; step < 4; step++) fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    return onSubmit;
+  }
+
+  it('defaults to no contribution and submits no amount', () => {
+    const onSubmit = review();
+    expect(screen.getByRole('button', { name: 'No contribution now' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByText('Post without paying. Others can still contribute to this cleanup.')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Submit report' }));
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ photos: [photo] }), null);
+  });
+
+  it('preserves the chosen amount through a review edit and passes exact cents', () => {
+    const onSubmit = review();
+    fireEvent.click(screen.getByRole('button', { name: '$5' }));
+    expect(screen.getByText('$5.50')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Edit title' }));
+    fireEvent.change(screen.getByLabelText('Report title (optional)'), { target: { value: 'Country road bottles' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Back to review' }));
+    expect(screen.getByText('Step 5 of 5')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '$5' }).getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: 'Submit report' }));
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ title: 'Country road bottles' }), 500);
+  });
+
+  it('rejects an invalid custom amount and lets the user switch back to no contribution', () => {
+    const onSubmit = review();
+    fireEvent.click(screen.getByRole('button', { name: 'Other' }));
+    fireEvent.change(screen.getByLabelText('Starting contribution amount ($)'), { target: { value: '1001' } });
+    expect((screen.getByRole('button', { name: 'Submit report' }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'No contribution now' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Submit report' }));
+    expect(onSubmit).toHaveBeenCalledWith(expect.anything(), null);
+  });
+
+  it('does not offer funding when the feature is disabled', () => {
+    const onSubmit = review(vi.fn(async () => null), false);
+    expect(screen.queryByRole('button', { name: 'No contribution now' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Submit report' }));
+    expect(onSubmit).toHaveBeenCalledWith(expect.anything(), null);
   });
 });

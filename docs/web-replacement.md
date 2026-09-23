@@ -14,10 +14,16 @@ The new website lives in `apps/web` and connects only to Supabase project
   the object belongs to an active, unexpired report; stored objects and mobile
   behavior remain unchanged.
 - A signed-out prompt before report creation; there is no web Guest mode.
-- Email/password, Google, and Facebook authentication. Apple remains absent
-  until the production App ID transfer and provider setup are complete.
-- The same Title, Photos, Litter Types, Severity, Notes, and Review report steps.
-- The same ten-mile creation boundary and maximum of three photos.
+- Email/password and Google authentication. Facebook is separately gated for
+  invited provider testing; Apple web sign-in is not exposed.
+- Five mobile-aligned stages: Photos (including optional title), Type of litter,
+  Severity, Site conditions, and Review. Review edits return directly to Review.
+- Fresh current GPS within fifty miles to start and publish a report, with a
+  maximum of three photos. The earlier ten-mile web-only entry gate is removed.
+- Optional starting contribution defaults to **No contribution now**. Selecting
+  an amount opens a separate contribution screen after publication, preserving
+  the chosen amount. Photo eligibility and explicit payment confirmation still
+  apply; publication itself never creates a payment.
 - Owner-only editing and deletion.
 - Feature-gated funded-cleanup card contributions through Stripe's Payment
   Element, using the same principal, 10% fee, full-refund rule, PaymentIntent,
@@ -38,11 +44,11 @@ PaymentIntent client secret after the authenticated Edge Function creates the
 ledger entry. Secret Stripe keys and service-role credentials never enter the
 website environment.
 
-The shared contract has an automated parity gate that reads the mechanically
-moved `apps/mobile/MapScreen.js` source. It fails if the web contract drifts
-from mobile's exact step order, preset labels, severity levels, limits,
-ten-mile boundary, or current edit-photo behavior. Anonymous Supabase claims
-are rejected on both the server-rendered and browser write boundaries.
+The shared contract has automated parity checks for the five-stage order,
+preset labels, severity levels, and evidence limits. These checks do not prove
+complete feature parity. In particular, mobile supports replacing existing
+report photos while the website still preserves them during editing. Anonymous
+Supabase claims are rejected on server-rendered and browser write boundaries.
 
 ## Environment
 
@@ -75,11 +81,12 @@ web URLs. Its fallback Site URL is `https://litterbugs.app`; mobile signup,
 recovery, and OAuth continue to provide their unchanged explicit
 `litterbugs://` destinations.
 
-Apple sign-in is not exposed in the current mobile or web UI. After the
-production `com.litterbugs.app` App ID transfers to Grant's Apple team, Apple
-web login will require a separate Service ID with the production domain and
-Supabase callback registered. That later project must be explicitly tested
-before exposing the provider and must not change mobile behavior incidentally.
+Mobile Apple sign-in uses Luke's existing production configuration. Apple web
+login is separate provider work requiring a Service ID with the production
+domain and Supabase callback registered. Luke's developer account is unavailable
+to Grant; do not change Grant's Apple settings as a substitute or treat an App ID
+transfer as part of this debugging task. Web setup must be explicitly tested
+before exposing that provider.
 
 Enable the Google Maps JavaScript API on the intended Google Cloud project and
 create a JavaScript map ID plus a browser-only key restricted to:

@@ -1,11 +1,10 @@
 import type { Report, ReportInsert, ReportUpdate } from './database.types';
 
 export const REPORT_STEPS = [
-  'Title',
   'Photos',
-  'Litter Types',
+  'Type of litter',
   'Severity',
-  'Notes',
+  'Site conditions',
   'Review',
 ] as const;
 
