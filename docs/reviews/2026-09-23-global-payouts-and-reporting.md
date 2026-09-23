@@ -352,7 +352,7 @@ replace the latest result. GPS centering is no longer canceled by report refresh
 Shared-report links fetch their specific report when absent from the initial
 500-row page, independent of current map/filter results.
 
-Validation: all web tests, typecheck, lint, build, and the 402-file boundary check
+Validation: all 166 web tests, typecheck, lint, build, and the 402-file boundary check
 passed. Tests cover later-page matching, truncation, dateline bounds, combined
 filters, unavailable distance origins, stale-result suppression, and out-of-page
 shared links. Actual rendered controls at 1280×900 and 390×844 reduced four local
@@ -366,6 +366,13 @@ A read-only run of the production retrieval module returned the same six
 uncanceled reports and no truncation. No report writes, claims, or payments were
 performed. City/address search and geographic boundaries are still pending;
 report-text search does not claim to provide place search.
+
+Commit `769594b` deployed as `dpl_7sCud2RjGVypeUsXaXyjG3onDWHX`, verified at
+its separate URL, then promoted to litterbugs.app. Fresh public Chrome sessions
+at both widths opened the filter controls and issued actual high-severity
+map-area queries, which returned HTTP 200 with clean consoles and no horizontal
+overflow. Prior `dpl_BNaBdmyTXSkfy52PiGd9dsGFmwPJ` remains for rollback.
+Remote main was fetched before commit and remains an ancestor of this branch.
 
 ## Stripe account review
 
