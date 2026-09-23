@@ -336,6 +336,37 @@ rows under the old query and 6 under the new query: all 10 omitted rows had
 was changed. The previous deployment `dpl_HBWUqWYN6U8CsVGTNh85CnG7j9F1`
 remains available for rollback.
 
+### Combined website discovery filters — September 23
+
+Added composable status, reward, severity, report-title/notes text, favorites,
+hidden-report, and 5/25/50-mile map-center distance controls. Existing quick
+filters remain available; Reset clears all constraints. Expanded phone controls
+scroll within the report panel and can collapse to reveal results.
+
+Discovery now retrieves stable 500-row pages within the current map bounds,
+including wrapped longitude bounds. Status/reward/severity are applied in the
+query; text, distance, and saved-report matching happen before the 1,000-match
+rendering limit. Full non-matching pages do not terminate the search. Truncation
+is explicit. Map/filter changes abort old requests, and stale responses cannot
+replace the latest result. GPS centering is no longer canceled by report refresh.
+Shared-report links fetch their specific report when absent from the initial
+500-row page, independent of current map/filter results.
+
+Validation: all web tests, typecheck, lint, build, and the 402-file boundary check
+passed. Tests cover later-page matching, truncation, dateline bounds, combined
+filters, unavailable distance origins, stale-result suppression, and out-of-page
+shared links. Actual rendered controls at 1280×900 and 390×844 reduced four local
+reports to the expected single nearby funded high-severity title match, with
+clean consoles and no horizontal overflow. A Playwright exact-label selector
+initially timed out on a wrapped select label; matching its label prefix resolved
+the fixture selector without changing product behavior. A TypeScript closure
+narrowing issue was corrected before the final checks.
+
+A read-only run of the production retrieval module returned the same six
+uncanceled reports and no truncation. No report writes, claims, or payments were
+performed. City/address search and geographic boundaries are still pending;
+report-text search does not claim to provide place search.
+
 ## Stripe account review
 
 Correct Litterbugs account: `acct_1U2HZe40KMkUKMFW`. The installed Stripe

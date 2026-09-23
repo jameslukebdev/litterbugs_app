@@ -29,7 +29,8 @@ import { loadCleanupFeatureFlags, requestReportPhotoReview } from '@/lib/funding
 import { readReportPreferences, writeReportPreferences } from '@/lib/report-preferences';
 import { uploadSecureBrowserMedia } from '@/lib/secure-media-upload';
 import { saveReportEdit } from '@/lib/save-report-edit';
-import { reportDiscoveryWindow } from '@/lib/report-visibility';
+import { isDiscoverableReport } from '@/lib/report-visibility';
+import { DEFAULT_DISCOVERY_FILTERS, loadDiscoveryReports, type DiscoveryArea, type DiscoveryFilters } from '@/lib/report-discovery';
 import { createClient } from '@/lib/supabase/client';
 
 const MAP_TYPES = ['roadmap', 'satellite', 'hybrid', 'terrain'] as const;
@@ -63,6 +64,7 @@ export function MapExperience({
 }) {
   const router = useRouter();
   const mapElementRef = useRef<HTMLDivElement>(null);
+  const initialMapReports = useRef(initialReports.filter(hasReportCoordinates));
   const mapRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
   const markerGlyphsRef = useRef(new Map<string, HTMLElement>());
@@ -76,6 +78,12 @@ export function MapExperience({
   );
   const [userId, setUserId] = useState(initialUserId);
   const [mapReady, setMapReady] = useState(false);
+  const [discoveryArea, setDiscoveryArea] = useState<DiscoveryArea | null>(null);
+  const [discoveryFilters, setDiscoveryFilters] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
+  const [discoveryLoading, setDiscoveryLoading] = useState(false);
+  const [discoveryTruncated, setDiscoveryTruncated] = useState(false);
+  const [discoveryError, setDiscoveryError] = useState('');
+  const discoveryRequest = useRef<AbortController | null>(null);
   const [mapError, setMapError] = useState(
     googleMapsKey && googleMapsMapId
       ? ''
@@ -109,26 +117,33 @@ export function MapExperience({
   });
 
   const refreshReports = useCallback(async () => {
-    const { data, error } = await createClient()
-      .from('reports')
-      .select('*')
-      .eq('is_sample', false)
-          .eq('is_published', true)
-      .is('cancelled_at', null)
-      .is('expired_at', null)
-      .or(reportDiscoveryWindow())
-      .order('created_at', { ascending: false });
-    if (error) {
-      setToast('Reports could not be refreshed. Check your connection and try again.');
-      return;
+    discoveryRequest.current?.abort();
+    const controller = new AbortController();
+    discoveryRequest.current = controller;
+    setDiscoveryLoading(true);
+    setDiscoveryError('');
+    try {
+      const result = await loadDiscoveryReports(createClient(), { filters: discoveryFilters, area: discoveryArea, favorites: reportPreferences.favorites, hidden: reportPreferences.hidden, signal: controller.signal });
+      if (controller.signal.aborted) return;
+      const nextReports = result.reports;
+      setReports(nextReports);
+      setDiscoveryTruncated(result.truncated);
+      setReportFunding(current => current ? { ...current, report: nextReports.find(({ id }) => id === current.report.id) ?? current.report } : null);
+      setSelectedReport(current => current ? nextReports.find(({ id }) => id === current.id) ?? current : null);
+    } catch {
+      if (!controller.signal.aborted) setDiscoveryError('Reports could not be refreshed. Check your connection and move the map or try another filter.');
+    } finally {
+      if (!controller.signal.aborted) setDiscoveryLoading(false);
     }
-    const nextReports = (data ?? []).filter(hasReportCoordinates);
-    setReports(nextReports);
-    setReportFunding(current => current ? { ...current, report: nextReports.find(({ id }) => id === current.report.id) ?? current.report } : null);
-    setSelectedReport((current) => current
-      ? nextReports.find(({ id }) => id === current.id) ?? current
-      : null);
-  }, []);
+  }, [discoveryArea, discoveryFilters, reportPreferences]);
+
+  useEffect(() => {
+    if (!discoveryArea) return;
+    const timer = window.setTimeout(() => { void refreshReports(); }, 250);
+    return () => { window.clearTimeout(timer); discoveryRequest.current?.abort(); };
+  }, [discoveryArea, refreshReports]);
+
+  useEffect(() => () => discoveryRequest.current?.abort(), []);
 
   const handleUserChange = useCallback((nextUserId: string | null) => {
     setUserId(nextUserId);
@@ -182,19 +197,28 @@ export function MapExperience({
 
   useEffect(() => {
     const url = new URL(window.location.href);
-    const reportId = url.searchParams.get('report');
+    const reportId = url.searchParams.get('report') ?? '';
     if (!reportId) return;
-    const report = reports.find(({ id }) => id === reportId);
-    if (!report) return;
-    const timeout = window.setTimeout(() => {
+    let cancelled = false;
+    async function openLinkedReport() {
+      let report = reports.find(({ id }) => id === reportId);
+      if (!report) {
+        const { data, error } = await createClient().from('reports').select('*').eq('id', reportId).eq('is_published', true).maybeSingle();
+        if (cancelled) return;
+        if (error) { setToast('The shared report could not be loaded. Please try opening its link again.'); return; }
+        if (data && hasReportCoordinates(data) && isDiscoverableReport(data)) report = data;
+      } else await Promise.resolve();
+      if (cancelled) return;
+      url.searchParams.delete('report');
+      window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+      if (!report) { setToast('This report is no longer available.'); return; }
       setSelectedReport(report);
       setReportListOpen(false);
       mapRef.current?.panTo({ lat: report.latitude, lng: report.longitude });
       if ((mapRef.current?.getZoom() ?? 0) < 14) mapRef.current?.setZoom(14);
-      url.searchParams.delete('report');
-      window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
-    }, 0);
-    return () => window.clearTimeout(timeout);
+    }
+    void openLinkedReport().catch(() => { if (!cancelled) setToast('The shared report could not be loaded. Please try opening its link again.'); });
+    return () => { cancelled = true; };
   }, [reports]);
 
   useEffect(() => {
@@ -232,6 +256,13 @@ export function MapExperience({
         map.addListener('click', (event: google.maps.MapMouseEvent) => {
           if (event.latLng) mapClickRef.current({ latitude: event.latLng.lat(), longitude: event.latLng.lng() });
         });
+        map.addListener('idle', () => {
+          const bounds = map.getBounds()?.toJSON();
+          const center = map.getCenter();
+          if (!bounds || !center) return;
+          const area = { ...bounds, latitude: center.lat(), longitude: center.lng() };
+          setDiscoveryArea(current => current && Object.keys(area).every(key => current[key as keyof DiscoveryArea] === area[key as keyof DiscoveryArea]) ? current : area);
+        });
         mapRef.current = map;
         setMapReady(true);
         void getBrowserLocation().then((location) => {
@@ -240,14 +271,15 @@ export function MapExperience({
             map.setZoom(14);
           }
         }).catch(() => {
-          if (cancelled || !reports.length) return;
-          if (reports.length === 1) {
-            map.panTo({ lat: reports[0].latitude, lng: reports[0].longitude });
+          const seedReports = initialMapReports.current;
+          if (cancelled || !seedReports.length) return;
+          if (seedReports.length === 1) {
+            map.panTo({ lat: seedReports[0].latitude, lng: seedReports[0].longitude });
             map.setZoom(14);
             return;
           }
           const bounds = new google.maps.LatLngBounds();
-          reports.forEach((report) => bounds.extend({ lat: report.latitude, lng: report.longitude }));
+          seedReports.forEach((report) => bounds.extend({ lat: report.latitude, lng: report.longitude }));
           map.fitBounds(bounds, 90);
         });
       } catch {
@@ -256,7 +288,7 @@ export function MapExperience({
     }
     void startMap();
     return () => { cancelled = true; };
-  }, [googleMapsKey, googleMapsMapId, reports]);
+  }, [googleMapsKey, googleMapsMapId]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -641,6 +673,11 @@ export function MapExperience({
       <div className="map-workspace">
         <ReportBrowser
           reports={reports}
+          mapCenter={discoveryArea}
+          onDiscoveryFiltersChange={setDiscoveryFilters}
+          loading={discoveryLoading}
+          truncated={discoveryTruncated}
+          discoveryError={discoveryError}
           open={reportListOpen}
           onToggle={() => setReportListOpen((open) => !open)}
           onSelect={openReport}

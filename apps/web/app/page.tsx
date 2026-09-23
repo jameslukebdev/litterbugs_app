@@ -25,7 +25,7 @@ export default async function HomePage() {
         .is('cancelled_at', null)
         .is('expired_at', null)
         .or(reportDiscoveryWindow())
-        .order('created_at', { ascending: false }),
+        .order('created_at', { ascending: false }).order('id').limit(500),
     ]);
 
     userId = realUserIdFromClaims(claimsData?.claims);

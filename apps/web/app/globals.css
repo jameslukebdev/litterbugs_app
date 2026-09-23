@@ -561,3 +561,14 @@ button.member-activity-row:hover { background: var(--green-soft); }
 }
 
 .draft-recovery-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+
+.discovery-filter-details { margin-top: 14px; }
+.discovery-filter-details summary { cursor: pointer; font-weight: 700; padding: 8px 0; }
+.discovery-filter-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 10px 0; }
+.discovery-filter-fields label { display: grid; gap: 6px; min-width: 0; font-size: 12px; color: var(--muted); }
+.discovery-filter-fields input, .discovery-filter-fields select { width: 100%; min-width: 0; min-height: 44px; padding: 8px; border: 1px solid #cfd8d0; border-radius: 10px; background: #fff; color: var(--ink); font: inherit; }
+.discovery-query { grid-column: 1 / -1; }
+.discovery-status { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+.discovery-status:empty { display: none; }
+
+.report-browser-header:has(.discovery-filter-details[open]) { max-height: min(62dvh, 600px); overflow-y: auto; }

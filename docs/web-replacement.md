@@ -8,6 +8,10 @@ The new website lives in `apps/web` and connects only to Supabase project
 - Public browsing of unexpired reports and completed cleanup history with exact
   coordinates. Canceled, explicitly expired, sample, and unpublished reports
   remain excluded. Completed photos remain viewable after the old deadline.
+- Combined report-title/notes search, cleanup status, reward, severity, favorites,
+  hidden reports, and 5/25/50-mile distance from the map center. Discovery uses
+  stable pages within the visible map bounds and a visible 1,000-match limit.
+  City/address search remains a separate parity item.
 - Google Maps JavaScript API with location centering and roadmap, satellite,
   hybrid, and terrain controls.
 - Mobile-style report details with signed private photo URLs, types, severity,
