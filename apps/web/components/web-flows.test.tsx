@@ -171,3 +171,30 @@ it('allows keeping stored photos when their temporary previews cannot load', () 
   expect(hasRequiredWebReportPhoto({ photos: [], existingPhotoUrls: [], existingPhotoCount: 2, isEditing: true })).toBe(true);
   expect(hasRequiredWebReportPhoto({ photos: [], existingPhotoUrls: [], existingPhotoCount: 2, isEditing: false })).toBe(false);
 });
+
+it('retains the review stage, photos, title and custom funding choice while changing the pin', () => {
+  const photo = new File(['photo'], 'report.jpg', { type: 'image/jpeg' });
+  const initialDraft = { ...EMPTY_REPORT_DRAFT, title: 'Country road', photos: [photo], selectedTypes: ['Bottles'], severity: 'Low' as const };
+  const onSubmit = vi.fn(async () => null);
+  const onChangeLocation = vi.fn();
+  const base = { initialDraft, isEditing: false, fundingEnabled: true, onClose: vi.fn(), onSubmit, onChangeLocation };
+  const { rerender } = render(<ReportWizard {...base} coordinates={{ latitude: 36, longitude: -81 }} />);
+  for (let step = 0; step < 4; step++) fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Other' }));
+  fireEvent.change(screen.getByLabelText('Starting contribution amount ($)'), { target: { value: '12.34' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Change report location' }));
+  expect(onChangeLocation).toHaveBeenCalledTimes(1);
+  vi.mocked(URL.revokeObjectURL).mockClear();
+  rerender(<ReportWizard {...base} coordinates={{ latitude: 36, longitude: -81 }} selectingLocation />);
+  expect(screen.queryByRole('dialog')).toBeNull();
+  expect(document.body.style.overflow).not.toBe('hidden');
+  expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+  rerender(<ReportWizard {...base} coordinates={{ latitude: 36.1, longitude: -81.1 }} />);
+  expect(screen.getByText('Step 5 of 5')).toBeTruthy();
+  expect(screen.getByText('36.10000, -81.10000')).toBeTruthy();
+  expect(screen.getByText('Country road')).toBeTruthy();
+  expect(screen.getByAltText('Report photo 1')).toBeTruthy();
+  expect((screen.getByLabelText('Starting contribution amount ($)') as HTMLInputElement).value).toBe('12.34');
+  fireEvent.click(screen.getByRole('button', { name: 'Submit report' }));
+  expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ photos: [photo], title: 'Country road' }), 1234);
+});

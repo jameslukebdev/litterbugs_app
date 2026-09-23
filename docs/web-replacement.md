@@ -18,8 +18,9 @@ The new website lives in `apps/web` and connects only to Supabase project
   invited provider testing; Apple web sign-in is not exposed.
 - Five mobile-aligned stages: Photos (including optional title), Type of litter,
   Severity, Site conditions, and Review. Review edits return directly to Review.
-- Fresh current GPS within fifty miles to start and publish a report, with a
-  maximum of three photos. The earlier ten-mile web-only entry gate is removed.
+- Draft preparation and pin changes do not require GPS. Publication requires
+  fresh current GPS within fifty miles before upload and again before publishing,
+  with a maximum of three photos. The earlier ten-mile entry gate is removed.
 - Optional starting contribution defaults to **No contribution now**. Selecting
   an amount opens a separate contribution screen after publication, preserving
   the chosen amount. Photo eligibility and explicit payment confirmation still
@@ -49,7 +50,8 @@ website environment.
 The shared contract has automated parity checks for the five-stage order,
 preset labels, severity levels, and evidence limits. These checks do not prove
 complete feature parity. Photo replacement is now available in both clients;
-web draft recovery and pin changes still need alignment. Anonymous
+pin changes preserve in-memory drafts and the selected contribution. Persistent
+web draft recovery still needs alignment. Anonymous
 Supabase claims are rejected on server-rendered and browser write boundaries.
 
 ## Environment

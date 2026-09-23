@@ -217,6 +217,30 @@ This is not complete website parity. Draft/pin-change behavior and other Luke
 Version 2 surfaces still need a systematic comparison.
 Physical native verification and strict GPS rollout gates remain unchanged.
 
+### Website draft location alignment — September 23
+
+The Review screen now shows the selected coordinates and can reopen map selection
+without unmounting the draft. Photos, title, stage, and contribution survive a new
+pin or cancellation back to the previous pin. A marker identifies the previous
+point. An account change clears the draft. Pin changes are unavailable while a
+publication response is uncertain, so recovery cannot display a different pin
+from the already-created report.
+
+Matched Luke's mobile distinction: preparing a draft and changing its location
+work without GPS; publication still requires fresh current GPS within 50 miles
+before upload and again before the publication RPC. GPS denial and distant pins
+block submission before upload. Persistent browser draft recovery remains open.
+
+Validation: 137 web tests passed, including pin replacement/cancellation, denied
+GPS, distance enforcement, uncertain-publication recovery, and preserved real
+wizard fields/files/custom contribution. Typecheck, lint, production build, and
+395-file boundary checks passed. Actual form components rendered in local Chrome
+at 1280×900 and 390×844 preserved details and contribution after changing/canceling
+location; no console errors, overflow, backend writes, or payment requests.
+The map in this fixture is simulated; actual map state transitions are covered
+by component tests. Fresh remote main remains Luke's `5cc45c4`, an ancestor of
+this branch. His mobile configuration/assets were not changed in this slice.
+
 ## Stripe account review
 
 Correct Litterbugs account: `acct_1U2HZe40KMkUKMFW`. The installed Stripe

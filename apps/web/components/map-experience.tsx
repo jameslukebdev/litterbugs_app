@@ -81,7 +81,9 @@ export function MapExperience({
   const [mapTypeIndex, setMapTypeIndex] = useState(0);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [draftCoordinates, setDraftCoordinates] = useState<Coordinates | null>(null);
+  const [selectingDraftLocation, setSelectingDraftLocation] = useState(false);
   const pendingPublication = useRef<{ userId: string; reportId: string; paths: string[] } | null>(null);
+  const [publicationUncertain, setPublicationUncertain] = useState(false);
   const [editingReport, setEditingReport] = useState<Report | null>(null);
   const [editPhotoUrls, setEditPhotoUrls] = useState<string[]>([]);
   const [reportListOpen, setReportListOpen] = useState(false);
@@ -127,6 +129,12 @@ export function MapExperience({
   const handleUserChange = useCallback((nextUserId: string | null) => {
     setUserId(nextUserId);
     setReportFunding(null);
+    setPublicationUncertain(false);
+    setDraftCoordinates(null);
+    setSelectingDraftLocation(false);
+    setReportMode(false);
+    setEditingReport(null);
+    setEditPhotoUrls([]);
     const stored = readReportPreferences(nextUserId);
     setReportPreferences({ favorites: new Set(stored.favorites), hidden: new Set(stored.hidden) });
     router.refresh();
@@ -288,19 +296,16 @@ export function MapExperience({
     });
   }, [previewedReportId, selectedReport?.id]);
 
-  const beginReport = useCallback(async (coordinates: Coordinates) => {
+  const beginReport = useCallback((coordinates: Coordinates) => {
     if (!userId) {
       setToast('Sign in to submit a litter report. You can keep browsing without an account.');
       accountActionRef.current?.openAuth();
       return;
     }
-    try {
-      await requireReportLocation(coordinates);
-      setDraftCoordinates(coordinates);
-      setReportMode(false);
-    } catch (error) {
-      setToast(error instanceof Error ? error.message : 'Allow location access and try again.');
-    }
+    setDraftCoordinates(coordinates);
+    setSelectingDraftLocation(false);
+    setReportMode(false);
+    setToast('');
   }, [userId]);
 
   useEffect(() => {
@@ -314,8 +319,32 @@ export function MapExperience({
       accountActionRef.current?.openAuth();
       return;
     }
+    if (selectingDraftLocation) {
+      setSelectingDraftLocation(false);
+      setReportMode(false);
+      setToast('');
+      return;
+    }
     setReportMode((current) => !current);
   }
+
+  function changeDraftLocation() {
+    if (!draftCoordinates || pendingPublication.current) return;
+    setSelectingDraftLocation(true);
+    setReportMode(true);
+    mapRef.current?.panTo({ lat: draftCoordinates.latitude, lng: draftCoordinates.longitude });
+  }
+
+  useEffect(() => {
+    const AdvancedMarkerElement = advancedMarkerRef.current;
+    if (!selectingDraftLocation || !draftCoordinates || !mapRef.current || !AdvancedMarkerElement) return;
+    const marker = new AdvancedMarkerElement({
+      map: mapRef.current,
+      position: { lat: draftCoordinates.latitude, lng: draftCoordinates.longitude },
+      title: 'Current draft location',
+    });
+    return () => { marker.map = null; };
+  }, [draftCoordinates, selectingDraftLocation]);
 
   async function centerOnUser() {
     try {
@@ -352,6 +381,7 @@ export function MapExperience({
 
   function finishPublication(report: Report, contributionCents: number | null) {
     pendingPublication.current = null;
+    setPublicationUncertain(false);
     setDraftCoordinates(null);
     if (contributionCents != null) setReportFunding({ report, amountCents: contributionCents });
     setToast('Report saved. Thanks for helping keep the community clean!');
@@ -451,6 +481,7 @@ export function MapExperience({
         return null;
       }
       pendingPublication.current = null;
+      setPublicationUncertain(false);
     }
     if (!draft.photos.length) return 'Add at least one clear photo before saving this report.';
     try { await requireReportLocation(draftCoordinates); }
@@ -484,6 +515,7 @@ export function MapExperience({
       return error instanceof Error ? error.message : 'Your current location is required to post.';
     }
     pendingPublication.current = { userId: authenticatedUserId, reportId, paths: uploaded.paths };
+    setPublicationUncertain(true);
     const { data: report, error } = await supabase.rpc('publish_report', {
       target_report_id: reportId,
       target_photo_paths: uploaded.paths,
@@ -555,11 +587,11 @@ export function MapExperience({
               type="button"
               className={`header-report-button${reportMode ? ' header-report-button-active' : ''}`}
               onClick={toggleReportMode}
-              aria-label={reportMode ? 'Cancel reporting' : 'Report litter'}
+              aria-label={selectingDraftLocation ? 'Keep previous report location' : reportMode ? 'Cancel reporting' : 'Report litter'}
               aria-pressed={reportMode}
             >
               {reportMode ? (
-                <span aria-hidden>Cancel</span>
+                <span aria-hidden>{selectingDraftLocation ? 'Keep location' : 'Cancel'}</span>
               ) : (
                 <>
                   <span className="header-report-long" aria-hidden>Report litter</span>
@@ -605,12 +637,12 @@ export function MapExperience({
             <button onClick={centerOnUser} aria-label="Center map on your location" title="My location"><Icon name="location" /></button>
           </div>
 
-          {(initialError || toast) && <div className={`toast ${initialError && !toast ? 'toast-warning' : ''}`} role="status">{toast || 'Some reports could not be loaded. The map is still available.'}</div>}
+          {(initialError || toast || selectingDraftLocation) && <div className={`toast ${initialError && !toast ? 'toast-warning' : ''}`} role="status">{toast || (selectingDraftLocation ? 'Choose a new spot on the map. Your report details and photos are kept.' : 'Some reports could not be loaded. The map is still available.')}</div>}
         </section>
       </div>
 
       {selectedReport && <ReportDetail key={selectedReport.id} report={selectedReport} userId={userId} isOwner={canManageReport(selectedReport, userId)} favorite={reportPreferences.favorites.has(selectedReport.id)} hidden={reportPreferences.hidden.has(selectedReport.id)} onFavoriteChange={(favorite) => updateReportPreference('favorites', selectedReport.id, favorite)} onHiddenChange={(hidden) => updateReportPreference('hidden', selectedReport.id, hidden)} onNotify={setToast} onRequireSignIn={() => { setSelectedReport(null); accountActionRef.current?.openAuth(); }} onReportChanged={refreshReports} onClose={() => setSelectedReport(null)} onEdit={() => { void editSelectedReport(); }} onDelete={() => { void deleteSelectedReport(); }} />}
-      {draftCoordinates && <ReportWizard initialDraft={{ ...EMPTY_REPORT_DRAFT }} isEditing={false} fundingEnabled={fundingEnabled} onClose={() => setDraftCoordinates(null)} onSubmit={saveReport} />}
+      {draftCoordinates && <ReportWizard initialDraft={{ ...EMPTY_REPORT_DRAFT }} isEditing={false} fundingEnabled={fundingEnabled} coordinates={draftCoordinates} selectingLocation={selectingDraftLocation} onChangeLocation={publicationUncertain ? undefined : changeDraftLocation} onClose={() => setDraftCoordinates(null)} onSubmit={saveReport} />}
       {reportFunding && <FundingContributionAction key={reportFunding.report.id} report={reportFunding.report} userId={userId} initialAmountCents={reportFunding.amountCents} startOpen onDismiss={() => setReportFunding(null)} onChanged={refreshReports} onRefreshFunding={() => refreshFundingReview(reportFunding.report.id)} />}
       {editingReport && <ReportWizard initialDraft={editDraft} isEditing existingPhotoCount={editingReport.photo_paths?.length ?? 0} existingPhotoUrls={editPhotoUrls} onClose={() => { setEditingReport(null); setEditPhotoUrls([]); }} onSubmit={saveReport} />}
     </main>

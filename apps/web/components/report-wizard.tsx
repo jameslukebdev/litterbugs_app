@@ -13,6 +13,7 @@ import {
   SEVERITY_LEVELS,
   validateReportDraft,
   type ReportDraft,
+  type Coordinates,
 } from '@litterbugs/report-contract';
 
 import { Icon } from '@/components/icon';
@@ -66,6 +67,9 @@ export function ReportWizard({
   existingPhotoUrls = [],
   existingPhotoCount = existingPhotoUrls.length,
   fundingEnabled = false,
+  coordinates,
+  selectingLocation = false,
+  onChangeLocation,
   onClose,
   onSubmit,
 }: {
@@ -74,6 +78,9 @@ export function ReportWizard({
   existingPhotoUrls?: string[];
   existingPhotoCount?: number;
   fundingEnabled?: boolean;
+  coordinates?: Coordinates;
+  selectingLocation?: boolean;
+  onChangeLocation?: () => void;
   onClose: () => void;
   onSubmit: (draft: ReportDraft, startingContributionCents: number | null) => Promise<string | null>;
 }) {
@@ -151,6 +158,10 @@ export function ReportWizard({
     }
   }
 
+  // Keep the wizard mounted while choosing a new pin, so Files, stage, and
+  // contribution choice survive. Unmount just its modal to release scroll lock.
+  if (selectingLocation) return null;
+
   return (
     <ModalShell onClose={onClose} label={isEditing ? 'Edit litter report' : 'Create litter report'} className="report-wizard" closeDisabled={saving}>
       <header className="wizard-header">
@@ -220,6 +231,7 @@ export function ReportWizard({
           <h3>Review your report</h3>
           <p>Make sure everything looks right before you submit it.</p>
           <div className="review-card">
+            {coordinates && <section className="review-row"><div className="review-row-header"><h4>Location</h4>{!isEditing && onChangeLocation && <button onClick={onChangeLocation} aria-label="Change report location">Change</button>}</div><div className="review-row-content"><span>{coordinates.latitude.toFixed(5)}, {coordinates.longitude.toFixed(5)}</span><p>Selected on the map.</p></div></section>}
             <ReviewRow label="Title" onEdit={() => editStep(0)}><strong>{draft.title.trim() || 'Litter Report'}</strong></ReviewRow>
             <ReviewRow label="Photos" onEdit={() => editStep(0)}>{previewUrls.length ? <><div className="review-photos">{previewUrls.map((url, index) => <img src={url} alt={`Report photo ${index + 1}`} key={url} />)}</div>{isEditing && existingPhotoCount > 0 && <p>These photos replace the current set when saved.</p>}</> : existingPhotoCount ? <span>{existingPhotoCount} existing photo{existingPhotoCount === 1 ? '' : 's'}</span> : <span>No photos added</span>}</ReviewRow>
             <ReviewRow label="Litter Types" onEdit={() => editStep(1)}><div className="chip-row">{draft.selectedTypes.map((type) => <span className="detail-chip type-chip" key={type}>{type}</span>)}{draft.types.trim() && <span className="detail-chip other-chip">{draft.types.trim()}</span>}</div></ReviewRow>
