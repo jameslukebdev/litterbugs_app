@@ -5,13 +5,15 @@ The new website lives in `apps/web` and connects only to Supabase project
 
 ## Implemented product surface
 
-- Public browsing of active, unexpired reports with exact coordinates.
+- Public browsing of unexpired reports and completed cleanup history with exact
+  coordinates. Canceled, explicitly expired, sample, and unpublished reports
+  remain excluded. Completed photos remain viewable after the old deadline.
 - Google Maps JavaScript API with location centering and roadmap, satellite,
   hybrid, and terrain controls.
 - Mobile-style report details with signed private photo URLs, types, severity,
   notes, reported date, and expiration date. Mobile-created HEIC/HEIF objects
   are converted to cached JPEG responses by a web-only endpoint after it proves
-  the object belongs to an active, unexpired report; stored objects and mobile
+  the object belongs to a discoverable report; stored objects and mobile
   behavior remain unchanged.
 - A signed-out prompt before report creation; there is no web Guest mode.
 - Email/password and Google authentication. Facebook is separately gated for

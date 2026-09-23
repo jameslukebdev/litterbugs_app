@@ -305,6 +305,29 @@ search. Mobile uses `loadDiscoveryReports` for bounded discovery; a website
 implementation must verify retrieval scope as well as local list filtering.
 
 
+### Completed website cleanup history — September 23
+
+The website's initial and refreshed report queries now retain completed cleanups
+after their original expiration date, matching mobile cleanup history. Added a
+Completed list filter and included completion-submitted/changes-requested states
+in In progress. Completed cards/details omit the old deadline and describe the
+amount as a funded cleanup rather than an available reward.
+
+The photo endpoint applies the same discovery window and explicitly requires
+published, non-sample, non-canceled, non-expired records before downloading.
+Completed history images retain the existing one-hour maximum public cache;
+administrator evidence remains privately authorized and uncached. No service
+credentials or permissions changed.
+
+All 159 web tests, typecheck, lint, build, and 400-file boundary checks passed.
+Rendered production list components at desktop/phone widths showed completed
+history with appropriate labels, no old deadline, no horizontal overflow, and
+clean consoles. Production read-only lookup found zero completed reports with a
+past expiration date, so that exact edge case is verified with fixtures and
+endpoint tests rather than a live example. The broader discovery pagination,
+combined filters, text/place search, and distance controls remain open.
+Stripe support still shows only the specialist escalation acknowledgment.
+
 ## Stripe account review
 
 Correct Litterbugs account: `acct_1U2HZe40KMkUKMFW`. The installed Stripe

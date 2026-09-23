@@ -294,11 +294,11 @@ export function ReportDetail({
                 <div className="report-summary-line">
                   <span className={`report-detail-severity report-detail-severity-${severity.toLowerCase()}`}><span />{severity}</span>
                   {report.created_at && <span>{formatDate(report.created_at)}</span>}
-                  {report.expires_at && <span>Expires {formatDate(report.expires_at)}</span>}
+                  {report.cleanup_state !== 'completed' && report.expires_at && <span>Expires {formatDate(report.expires_at)}</span>}
                 </div>
                 <div className="report-status-row">
                   <span>{cleanupStatusLabel(report.cleanup_state)}</span>
-                  {report.funded_amount_cents > 0 && <strong>{formatUsd(report.funded_amount_cents)} reward</strong>}
+                  {report.funded_amount_cents > 0 && <strong>{formatUsd(report.funded_amount_cents)} {report.cleanup_state === 'completed' ? 'funded cleanup' : 'reward'}</strong>}
                 </div>
               </header>
 

@@ -14,7 +14,7 @@ const formatUsd = (cents: number) => new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 }).format(cents / 100);
 
-type ReportFilter = 'available' | 'rewarded' | 'volunteer' | 'claimed' | 'all' | 'favorites' | 'hidden';
+type ReportFilter = 'available' | 'rewarded' | 'volunteer' | 'claimed' | 'completed' | 'all' | 'favorites' | 'hidden';
 type ReportSort = 'newest' | 'reward-high' | 'severity';
 
 const FILTERS: { value: ReportFilter; label: string }[] = [
@@ -22,6 +22,7 @@ const FILTERS: { value: ReportFilter; label: string }[] = [
   { value: 'rewarded', label: 'Rewarded' },
   { value: 'volunteer', label: 'Volunteer' },
   { value: 'claimed', label: 'In progress' },
+  { value: 'completed', label: 'Completed' },
   { value: 'all', label: 'All reports' },
 ];
 
@@ -46,6 +47,7 @@ function workflowStatus(report: MappableReport) {
 }
 
 function rewardLabel(report: MappableReport) {
+  if (report.cleanup_state === 'completed') return report.funded_amount_cents > 0 ? `${formatUsd(report.funded_amount_cents)} funded cleanup` : 'Volunteer cleanup completed';
   return report.funded_amount_cents > 0
     ? `${formatUsd(report.funded_amount_cents)} reward`
     : 'Volunteer cleanup';
@@ -73,7 +75,8 @@ function matchesFilter(
   if (hiddenReportIds.has(report.id)) return false;
   if (filter === 'favorites') return favoriteReportIds.has(report.id);
   if (filter === 'all') return true;
-  if (filter === 'claimed') return report.cleanup_state === 'claimed';
+  if (filter === 'completed') return report.cleanup_state === 'completed';
+  if (filter === 'claimed') return ['claimed', 'completion_submitted', 'changes_requested'].includes(report.cleanup_state ?? '');
   if (filter === 'rewarded') return report.cleanup_state === 'available' && report.funded_amount_cents > 0;
   if (filter === 'volunteer') return report.cleanup_state === 'available' && report.funded_amount_cents === 0;
   return report.cleanup_state === 'available';
@@ -83,6 +86,7 @@ function resultsHeading(count: number, filter: ReportFilter) {
   if (filter === 'favorites') return `${count} favorite report${count === 1 ? '' : 's'}`;
   if (filter === 'hidden') return `${count} hidden report${count === 1 ? '' : 's'}`;
   if (filter === 'all') return `${count} litter report${count === 1 ? '' : 's'}`;
+  if (filter === 'completed') return `${count} completed cleanup${count === 1 ? '' : 's'}`;
   if (filter === 'claimed') return `${count} cleanup${count === 1 ? '' : 's'} in progress`;
   return `${count} cleanup opportunit${count === 1 ? 'y' : 'ies'}`;
 }
@@ -97,6 +101,7 @@ function reportDate(createdAt: string | null) {
 }
 
 function reportTiming(report: MappableReport) {
+  if (report.cleanup_state === 'completed') return 'Cleanup complete';
   if (report.expires_at) return `Ends ${reportDate(report.expires_at)}`;
   if (report.created_at) return `Reported ${reportDate(report.created_at)}`;
   return '';

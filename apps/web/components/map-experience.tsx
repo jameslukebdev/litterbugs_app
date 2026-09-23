@@ -29,6 +29,7 @@ import { loadCleanupFeatureFlags, requestReportPhotoReview } from '@/lib/funding
 import { readReportPreferences, writeReportPreferences } from '@/lib/report-preferences';
 import { uploadSecureBrowserMedia } from '@/lib/secure-media-upload';
 import { saveReportEdit } from '@/lib/save-report-edit';
+import { reportDiscoveryWindow } from '@/lib/report-visibility';
 import { createClient } from '@/lib/supabase/client';
 
 const MAP_TYPES = ['roadmap', 'satellite', 'hybrid', 'terrain'] as const;
@@ -113,8 +114,9 @@ export function MapExperience({
       .select('*')
       .eq('is_sample', false)
           .eq('is_published', true)
-      .or('status.is.null,status.eq.active')
-      .gt('expires_at', new Date().toISOString())
+      .is('cancelled_at', null)
+      .is('expired_at', null)
+      .or(reportDiscoveryWindow())
       .order('created_at', { ascending: false });
     if (error) {
       setToast('Reports could not be refreshed. Check your connection and try again.');

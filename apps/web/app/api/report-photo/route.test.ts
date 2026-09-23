@@ -96,25 +96,33 @@ describe('administrator report photo compatibility route', () => {
   });
 });
 
+function mockPublicReport(overrides: Record<string, unknown> = {}) {
+  const chain = {
+    select: vi.fn(() => chain), eq: vi.fn(() => chain), is: vi.fn(() => chain), contains: vi.fn(() => chain), or: vi.fn(() => chain), limit: vi.fn(() => chain),
+    maybeSingle: vi.fn(async () => ({ data: { expires_at: '2099-01-01T00:00:00.000Z', cleanup_state: 'available', is_published: true, is_sample: false, cancelled_at: null, expired_at: null, ...overrides }, error: null })),
+  };
+  from.mockReturnValue(chain);return chain;
+}
+
 describe('public report card photos', () => {
+  it('serves completed history after the old expiration, with publication and cancellation gates', async () => {
+    const query = mockPublicReport({ cleanup_state: 'completed', expires_at: '2020-01-01' });
+    const response = await GET(new Request('http://localhost/api/report-photo?path=user/report/photo.jpg&variant=card'));
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('public, max-age=3600, s-maxage=3600');
+    expect(query.eq).toHaveBeenCalledWith('is_published', true);
+    expect(query.is).toHaveBeenCalledWith('cancelled_at', null);
+    expect(query.is).toHaveBeenCalledWith('expired_at', null);
+    expect(query.or).toHaveBeenCalledWith(expect.stringContaining('cleanup_state.eq.completed,expires_at.gt.'));
+  });
+  it.each([{ is_published: false }, { cancelled_at: '2020-01-01' }, { expired_at: '2020-01-01' }, { is_sample: true }])('does not download excluded completed evidence: %j', async overrides => {
+    mockPublicReport({ cleanup_state: 'completed', ...overrides });
+    const response = await GET(new Request('http://localhost/api/report-photo?path=user/report/photo.jpg&variant=card'));
+    expect(response.status).toBe(404);expect(download).not.toHaveBeenCalled();
+  });
+
   it('serves a small cached WebP thumbnail without HEIC conversion for a browser image', async () => {
-    const maybeSingle = vi.fn().mockResolvedValue({
-      data: { expires_at: '2099-01-01T00:00:00.000Z' },
-      error: null,
-    });
-    from.mockReturnValue({
-      select: () => ({
-        eq: () => ({
-          contains: () => ({
-            or: () => ({
-              gt: () => ({
-                limit: () => ({ maybeSingle }),
-              }),
-            }),
-          }),
-        }),
-      }),
-    });
+    mockPublicReport();
     download.mockResolvedValueOnce({
       data: new Blob([new Uint8Array([1, 2, 3])], { type: 'image/png' }),
       error: null,
@@ -132,23 +140,7 @@ describe('public report card photos', () => {
   });
 
   it('serves a bounded cached WebP for the report detail viewer', async () => {
-    const maybeSingle = vi.fn().mockResolvedValue({
-      data: { expires_at: '2099-01-01T00:00:00.000Z' },
-      error: null,
-    });
-    from.mockReturnValue({
-      select: () => ({
-        eq: () => ({
-          contains: () => ({
-            or: () => ({
-              gt: () => ({
-                limit: () => ({ maybeSingle }),
-              }),
-            }),
-          }),
-        }),
-      }),
-    });
+    mockPublicReport();
     download.mockResolvedValueOnce({
       data: new Blob([new Uint8Array([1, 2, 3])], { type: 'image/jpeg' }),
       error: null,

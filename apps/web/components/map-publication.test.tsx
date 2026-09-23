@@ -49,7 +49,7 @@ vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({
   auth: { getUser: async () => ({ data: { user: { id: 'test-user', is_anonymous: false } } }) },
   from: () => {
     const chain = {
-      select: () => chain, eq: () => chain, or: () => chain, gt: () => chain, order: () => chain,
+      select: () => chain, eq: () => chain, is: () => chain, or: () => chain, gt: () => chain, order: () => chain,
       insert: (value: unknown) => { state.inserts(value); return chain; },
       single: async () => ({ data: report(), error: null }),
       maybeSingle: async () => ({ data: report(), error: null }),

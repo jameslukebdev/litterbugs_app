@@ -176,3 +176,19 @@ describe('ReportBrowser', () => {
     expect(onVisibleReportsChange).toHaveBeenCalled();
   });
 });
+
+
+it('shows completed cleanups without presenting their old expiration as an upcoming deadline', () => {
+  render(<ReportBrowser reports={[{ ...report, cleanup_state: 'completed', expires_at: '2020-01-01T00:00:00Z' }]} open onToggle={vi.fn()} onSelect={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Completed' }));
+  expect(screen.getByRole('heading', { name: '1 completed cleanup' })).toBeTruthy();
+  expect(screen.getByText('Cleanup complete')).toBeTruthy();
+  expect(screen.getByText('$125 funded cleanup')).toBeTruthy();
+  expect(screen.queryByText(/Ends /)).toBeNull();
+});
+it('includes photos-under-review and changes-requested cleanups in progress', () => {
+  render(<ReportBrowser reports={[{ ...report, cleanup_state: 'completion_submitted' }, { ...report, id: 'changes', title: 'Changes cleanup', cleanup_state: 'changes_requested' }]} open onToggle={vi.fn()} onSelect={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: 'In progress' }));
+  expect(screen.getByRole('heading', { name: '2 cleanups in progress' })).toBeTruthy();
+  expect(screen.getByText('Changes cleanup')).toBeTruthy();
+});
