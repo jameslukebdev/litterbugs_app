@@ -21,6 +21,8 @@ import { ReportBrowser } from '@/components/report-browser';
 import { canManageReport, realUserId } from '@/lib/report-access';
 import { getBrowserLocation, requireReportLocation } from '@/lib/geolocation';
 import { ReportDetail } from '@/components/report-detail';
+import { ResumableReportWizard } from '@/components/resumable-report-wizard';
+import { clearPublishedReport, clearReportPublication, loadReportPublication, saveReportPublication, type ReportPublicationJournal } from '@/lib/saved-report-draft';
 import { ReportWizard } from '@/components/report-wizard';
 import { FundingContributionAction } from '@/components/funding-contribution-action';
 import { loadCleanupFeatureFlags, requestReportPhotoReview } from '@/lib/funding';
@@ -379,7 +381,19 @@ export function MapExperience({
     finally { await refreshReports(); }
   }
 
-  function finishPublication(report: Report, contributionCents: number | null) {
+  const restorePublication = useCallback((journal: ReportPublicationJournal | undefined) => {
+    pendingPublication.current = journal ?? null;
+    setPublicationUncertain(Boolean(journal));
+  }, []);
+
+  async function finishPublication(report: Report, contributionCents: number | null) {
+    // Clear both atomically: if cleanup fails, recovery still checks the same
+    // published report rather than creating a duplicate.
+    try {
+      if (report.user_id) {
+        await clearPublishedReport(report.user_id);
+      }
+    } catch { /* Keep the recovery journal when local cleanup is unavailable. */ }
     pendingPublication.current = null;
     setPublicationUncertain(false);
     setDraftCoordinates(null);
@@ -454,13 +468,18 @@ export function MapExperience({
 
     if (!draftCoordinates) return 'Choose a location on the map and try again.';
     // A lost publication response must be resolved before retrying with a new ID.
-    const pending = pendingPublication.current;
+    let pending = pendingPublication.current;
+    if (!pending || pending.userId !== authenticatedUserId) {
+      try { pending = await loadReportPublication(authenticatedUserId) ?? null; }
+      catch { return 'Your previous submission could not be checked. Please try again.'; }
+      pendingPublication.current = pending;
+    }
     if (pending?.userId === authenticatedUserId) {
       const { data: previous, error: readError } = await supabase.from('reports')
         .select('*').eq('id', pending.reportId).eq('user_id', authenticatedUserId).maybeSingle();
       if (readError) return 'We are still checking whether your report was published. Check your connection and try again.';
       if (previous?.is_published) {
-        finishPublication(previous, startingContributionCents);
+        await finishPublication(previous, startingContributionCents);
         return null;
       }
       if (previous && hasReportCoordinates(previous)) {
@@ -469,6 +488,8 @@ export function MapExperience({
         let origin;
         try { origin = await requireReportLocation(previous); }
         catch (error) { return error instanceof Error ? error.message : 'Your current location is required.'; }
+        try { await saveReportPublication(pending); }
+        catch { return 'Your browser could not save the submission recovery record. Please try again.'; }
         const { data: retriedReport, error: retryError } = await supabase.rpc('publish_report', {
           target_report_id: pending.reportId,
           target_photo_paths: pending.paths,
@@ -477,9 +498,10 @@ export function MapExperience({
           location_captured_at: origin.capturedAt,
         });
         if (retryError) return 'Your report has not been confirmed yet. Check your connection and try again.';
-        finishPublication(retriedReport, startingContributionCents);
+        await finishPublication(retriedReport, startingContributionCents);
         return null;
       }
+      await clearReportPublication(authenticatedUserId);
       pendingPublication.current = null;
       setPublicationUncertain(false);
     }
@@ -516,6 +538,10 @@ export function MapExperience({
     }
     pendingPublication.current = { userId: authenticatedUserId, reportId, paths: uploaded.paths };
     setPublicationUncertain(true);
+    try { await saveReportPublication(pendingPublication.current); }
+    catch {
+      return 'Your browser could not save the submission recovery record. Keep this draft open and try again.';
+    }
     const { data: report, error } = await supabase.rpc('publish_report', {
       target_report_id: reportId,
       target_photo_paths: uploaded.paths,
@@ -532,7 +558,7 @@ export function MapExperience({
       await supabase.storage.from('report_photos').remove(uploaded.paths);
       return 'The saved report is missing its map location.';
     }
-    finishPublication(report, startingContributionCents);
+    await finishPublication(report, startingContributionCents);
     return null;
   }
 
@@ -642,7 +668,7 @@ export function MapExperience({
       </div>
 
       {selectedReport && <ReportDetail key={selectedReport.id} report={selectedReport} userId={userId} isOwner={canManageReport(selectedReport, userId)} favorite={reportPreferences.favorites.has(selectedReport.id)} hidden={reportPreferences.hidden.has(selectedReport.id)} onFavoriteChange={(favorite) => updateReportPreference('favorites', selectedReport.id, favorite)} onHiddenChange={(hidden) => updateReportPreference('hidden', selectedReport.id, hidden)} onNotify={setToast} onRequireSignIn={() => { setSelectedReport(null); accountActionRef.current?.openAuth(); }} onReportChanged={refreshReports} onClose={() => setSelectedReport(null)} onEdit={() => { void editSelectedReport(); }} onDelete={() => { void deleteSelectedReport(); }} />}
-      {draftCoordinates && <ReportWizard initialDraft={{ ...EMPTY_REPORT_DRAFT }} isEditing={false} fundingEnabled={fundingEnabled} coordinates={draftCoordinates} selectingLocation={selectingDraftLocation} onChangeLocation={publicationUncertain ? undefined : changeDraftLocation} onClose={() => setDraftCoordinates(null)} onSubmit={saveReport} />}
+      {draftCoordinates && userId && <ResumableReportWizard key={userId} userId={userId} onCoordinatesChange={setDraftCoordinates} onRestorePublication={restorePublication} fundingEnabled={fundingEnabled} coordinates={draftCoordinates} selectingLocation={selectingDraftLocation} onChangeLocation={publicationUncertain ? undefined : changeDraftLocation} onClose={() => setDraftCoordinates(null)} onSubmit={saveReport} />}
       {reportFunding && <FundingContributionAction key={reportFunding.report.id} report={reportFunding.report} userId={userId} initialAmountCents={reportFunding.amountCents} startOpen onDismiss={() => setReportFunding(null)} onChanged={refreshReports} onRefreshFunding={() => refreshFundingReview(reportFunding.report.id)} />}
       {editingReport && <ReportWizard initialDraft={editDraft} isEditing existingPhotoCount={editingReport.photo_paths?.length ?? 0} existingPhotoUrls={editPhotoUrls} onClose={() => { setEditingReport(null); setEditPhotoUrls([]); }} onSubmit={saveReport} />}
     </main>

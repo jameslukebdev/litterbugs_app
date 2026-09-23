@@ -13,6 +13,7 @@ const state = vi.hoisted(() => ({
   upload: vi.fn(),
   review: vi.fn(),
   saveResult: vi.fn(),
+  journal: undefined as { userId: string; reportId: string; paths: string[] } | undefined,
 }));
 const report = () => ({ id: 'test-report', title: 'Test bottles', latitude: 0.5, longitude: 0, user_id: 'test-user', is_published: state.published, photo_paths: ['test-user/test-report/photo.jpg'], cleanup_state: 'available', funding_eligibility: 'eligible', renewal_status: 'active' });
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
@@ -27,11 +28,17 @@ vi.mock('@/components/public-site-header', () => ({ PublicSiteHeader: ({ action 
 vi.mock('@/components/public-account-action', () => ({ PublicAccountAction: () => null }));
 vi.mock('@/components/report-browser', () => ({ ReportBrowser: () => null }));
 vi.mock('@/components/report-detail', () => ({ ReportDetail: () => null }));
-vi.mock('@/components/report-wizard', () => ({ ReportWizard: ({ onSubmit, onChangeLocation, selectingLocation, coordinates }: { onSubmit: (draft: ReportDraft, amount: number | null) => Promise<unknown>; onChangeLocation?: () => void; selectingLocation: boolean; coordinates: { latitude: number } }) => {
+vi.mock('@/components/resumable-report-wizard', () => ({ ResumableReportWizard: ({ onSubmit, onChangeLocation, selectingLocation, coordinates }: { onSubmit: (draft: ReportDraft, amount: number | null) => Promise<unknown>; onChangeLocation?: () => void; selectingLocation: boolean; coordinates: { latitude: number } }) => {
   const draft = { ...EMPTY_REPORT_DRAFT, photos: [new File(['photo'], 'photo.jpg', { type: 'image/jpeg' })], selectedTypes: ['Bottles'], severity: 'Low' as const };
   if (selectingLocation) return null;
   return <div role="dialog" aria-label="Report form"><output aria-label="Selected latitude">{coordinates.latitude}</output><button disabled={!onChangeLocation} onClick={onChangeLocation}>Change report location</button><button onClick={() => void onSubmit(draft, null).then(state.saveResult)}>Post without funds</button><button onClick={() => void onSubmit(draft, 500).then(state.saveResult)}>Post with $5</button></div>;
 } }));
+vi.mock('@/lib/saved-report-draft', () => ({
+  loadReportPublication: async () => state.journal,
+  saveReportPublication: async (journal: typeof state.journal) => { state.journal = journal; },
+  clearReportPublication: async () => { state.journal = undefined; },
+  clearPublishedReport: async () => { state.journal = undefined; },
+}));
 vi.mock('@/components/funding-contribution-action', () => ({ FundingContributionAction: ({ initialAmountCents }: { initialAmountCents: number }) => <output aria-label="Funding handoff">{initialAmountCents}</output> }));
 vi.mock('@/lib/secure-media-upload', () => ({ uploadSecureBrowserMedia: (...args: unknown[]) => state.upload(...args) }));
 vi.mock('@/lib/funding', () => ({
@@ -58,7 +65,7 @@ vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({
 }) }));
 
 beforeEach(() => {
-  vi.clearAllMocks(); state.click = null; state.published = false; state.lostResponse = false;
+  vi.clearAllMocks(); state.journal = undefined; state.click = null; state.published = false; state.lostResponse = false;
   state.upload.mockResolvedValue('test-user/test-report/photo.jpg');
   state.review.mockResolvedValue(undefined);
   Object.defineProperty(navigator, 'geolocation', { configurable: true, value: {
@@ -74,6 +81,22 @@ async function choosePin(latitude = 0.5) {
 }
 
 describe('map publication and funding handoff', () => {
+  it('recovers a published report after a full map remount without another upload or insert', async () => {
+    state.lostResponse = true;
+    await choosePin();
+    fireEvent.click(await screen.findByRole('button', { name: 'Post with $5' }));
+    await waitFor(() => expect(state.saveResult).toHaveBeenCalled());
+    expect(state.journal).toBeTruthy();
+    cleanup();
+    await choosePin();
+    fireEvent.click(await screen.findByRole('button', { name: 'Post with $5' }));
+    await waitFor(() => expect(screen.getByLabelText('Funding handoff').textContent).toBe('500'));
+    expect(state.upload).toHaveBeenCalledTimes(1);
+    expect(state.inserts).toHaveBeenCalledTimes(1);
+    expect(state.publish).toHaveBeenCalledTimes(1);
+    expect(state.journal).toBeUndefined();
+  });
+
   it('allows a pin about 35 miles away and publishes without opening funding when no contribution is chosen', async () => {
     await choosePin();
     fireEvent.click(await screen.findByRole('button', { name: 'Post without funds' }));

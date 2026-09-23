@@ -16,6 +16,8 @@ import {
   type Coordinates,
 } from '@litterbugs/report-contract';
 
+import type { ReportWizardSnapshot } from '@/lib/saved-report-draft';
+
 import { Icon } from '@/components/icon';
 import { ModalShell } from '@/components/modal-shell';
 import { calculatePlatformFee, formatUsd, parseContributionAmount } from '@/lib/funding';
@@ -63,6 +65,9 @@ export function validateWebReportPhotos(photos: File[]) {
 
 export function ReportWizard({
   initialDraft,
+  initialState,
+  onStateChange,
+  draftSaveMessage,
   isEditing,
   existingPhotoUrls = [],
   existingPhotoCount = existingPhotoUrls.length,
@@ -74,6 +79,9 @@ export function ReportWizard({
   onSubmit,
 }: {
   initialDraft: ReportDraft;
+  initialState?: ReportWizardSnapshot;
+  draftSaveMessage?: string;
+  onStateChange?: (snapshot: ReportWizardSnapshot) => void;
   isEditing: boolean;
   existingPhotoUrls?: string[];
   existingPhotoCount?: number;
@@ -84,13 +92,13 @@ export function ReportWizard({
   onClose: () => void;
   onSubmit: (draft: ReportDraft, startingContributionCents: number | null) => Promise<string | null>;
 }) {
-  const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState<ReportDraft>(initialDraft);
+  const [step, setStep] = useState(initialState?.step ?? 0);
+  const [draft, setDraft] = useState<ReportDraft>(initialState?.draft ?? initialDraft);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [returnToReview, setReturnToReview] = useState(false);
-  const [fundingChoice, setFundingChoice] = useState('none');
-  const [customAmount, setCustomAmount] = useState('');
+  const [fundingChoice, setFundingChoice] = useState(initialState?.fundingChoice ?? 'none');
+  const [customAmount, setCustomAmount] = useState(initialState?.customAmount ?? '');
   const wantsFunding = fundingEnabled && !isEditing && fundingChoice !== 'none';
   const contributionCents = wantsFunding
     ? parseContributionAmount(fundingChoice === 'other' ? customAmount : fundingChoice)
@@ -98,6 +106,8 @@ export function ReportWizard({
   const previewUrls = useMemo(() => draft.photos.map((photo) => URL.createObjectURL(photo)), [draft.photos]);
 
   useEffect(() => () => previewUrls.forEach((url) => URL.revokeObjectURL(url)), [previewUrls]);
+
+  useEffect(() => { onStateChange?.({ draft, step, fundingChoice, customAmount }); }, [draft, step, fundingChoice, customAmount, onStateChange]);
 
   const errors = validateReportDraft(draft);
   const hasRequiredPhoto = hasRequiredWebReportPhoto({ photos: draft.photos, existingPhotoUrls, existingPhotoCount, isEditing });
@@ -170,6 +180,7 @@ export function ReportWizard({
         <div className="wizard-progress"><span style={{ width: `${((step + 1) / REPORT_STEPS.length) * 100}%` }} /></div>
       </header>
 
+      {draftSaveMessage && <p role="alert" className="form-error">{draftSaveMessage}</p>}
       <div className="wizard-content" key={step}><fieldset className="wizard-fields" disabled={saving}>
         {step === 0 && <section className="wizard-step">
           <span className="step-required">REQUIRED</span>

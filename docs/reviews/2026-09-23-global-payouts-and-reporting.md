@@ -248,6 +248,29 @@ Prior deployment `dpl_Hw4beL2oih6T8yFAF5M8sBVXhSJD` remains available for rollba
 Stripe support recheck still showed only the 22:33 UTC escalation confirmation;
 no country eligibility or funding approval has arrived.
 
+### Persistent website drafts — September 23
+
+Added account-scoped IndexedDB storage for File bytes, form fields, stage, pin,
+and contribution choice. Report entry checks for an existing local draft after
+choosing a map point, then offers Resume, Start new, or Cancel. Closing the form
+offers Save for later, Keep editing, or Discard. Storage failure is explicit and
+keeps the form open. Drafts do not sync across browsers or devices.
+
+The publication recovery journal is now durable and saved before the RPC. A
+remounted map checks the original report before uploading or inserting again.
+Uncertain submissions cannot be discarded or replaced with a new draft. Successful
+publication clears the draft and journal in one IndexedDB transaction. Serialized
+writes/deletes prevent an older autosave from resurrecting a discarded draft.
+
+Validation: 143 web tests; web typecheck, lint, production build, and 398-file
+boundary check passed. Real Chrome at 1280×900 and 390×844 verified reload with an
+open draft, byte-for-byte photo recovery, Review stage, contribution, changed pin,
+account isolation, Save for later, Discard, journal persistence, and atomic cleanup.
+A browser fixture run initially timed out waiting for the first photo step during
+the local development session; direct inspection and a fresh full run passed at
+both sizes. No backend reports or payments were created. Mock-based failure tests
+cover unavailable storage, failed saves, and uncertain-publication discard guards.
+
 ## Stripe account review
 
 Correct Litterbugs account: `acct_1U2HZe40KMkUKMFW`. The installed Stripe

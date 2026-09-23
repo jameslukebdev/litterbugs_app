@@ -559,3 +559,5 @@ button.member-activity-row:hover { background: var(--green-soft); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+.draft-recovery-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }

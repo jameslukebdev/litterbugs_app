@@ -50,8 +50,12 @@ website environment.
 The shared contract has automated parity checks for the five-stage order,
 preset labels, severity levels, and evidence limits. These checks do not prove
 complete feature parity. Photo replacement is now available in both clients;
-pin changes preserve in-memory drafts and the selected contribution. Persistent
-web draft recovery still needs alignment. Anonymous
+pin changes preserve drafts and the selected contribution. Browser drafts now
+retain photos, fields, stage, location, and contribution in account-scoped
+IndexedDB storage, with Resume, Start new, Save for later, and Discard controls.
+Drafts are local to that browser; clearing site data removes them. Submission
+recovery records survive reloads and are cleared atomically with the draft only
+after confirmed publication. Other Version 2 differences remain under review. Anonymous
 Supabase claims are rejected on server-rendered and browser write boundaries.
 
 ## Environment
