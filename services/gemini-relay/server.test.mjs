@@ -6,6 +6,7 @@ import {
   MAX_PHOTO_BYTES,
   MODEL,
   PROJECT_ID,
+  SYSTEM_INSTRUCTION,
 } from "./server.mjs";
 
 const secret = "test-only-relay-secret-with-more-than-32-characters";
@@ -38,11 +39,18 @@ test("health route is public without exposing the review route", async () => {
   assert.equal(review.status, 401);
 });
 
-test("ordinary roadside reports are not automatically treated as traffic exposure", async () => {
-  const { SYSTEM_INSTRUCTION } = await import('./server.mjs');
-  assert.match(SYSTEM_INSTRUCTION, /Ordinary roadside litter/i);
-  assert.match(SYSTEM_INSTRUCTION, /not traffic exposure by itself/i);
-  assert.match(SYSTEM_INSTRUCTION, /active lane or median/i);
+test("report triage presumes eligibility and requires concrete escalation evidence", () => {
+  assert.match(SYSTEM_INSTRUCTION, /Default to pass for an ordinary litter report/);
+  assert.match(SYSTEM_INSTRUCTION, /isolated country road/);
+  assert.match(SYSTEM_INSTRUCTION, /may pass without a visible shoulder/);
+  assert.match(SYSTEM_INSTRUCTION, /uncertainty about traffic or safe separation alone.*must not trigger admin_review or better_photos/);
+  assert.match(SYSTEM_INSTRUCTION, /concrete visible evidence, never hypothetical hazards/);
+  assert.match(SYSTEM_INSTRUCTION, /exposed needles/);
+  assert.match(SYSTEM_INSTRUCTION, /Never use fail/);
+  assert.match(SYSTEM_INSTRUCTION, /Private ownership alone is not a reason to hold funding/);
+  assert.match(SYSTEM_INSTRUCTION, /Never use general uncertainty as a standalone reason/);
+  assert.match(SYSTEM_INSTRUCTION, /active travel lane/);
+  assert.match(SYSTEM_INSTRUCTION, /strong, specific visible evidence/);
 });
 
 test("rejects unauthorized calls before fetching anything", async () => {
@@ -130,7 +138,7 @@ test("uses the fixed production model, ADC token, schema, and private photo", as
       assert.match(String(url), new RegExp(`/models/${MODEL}:generateContent$`));
       assert.equal(init.headers.Authorization, "Bearer adc-access-token");
       const body = JSON.parse(init.body);
-      assert.match(body.systemInstruction.parts[0].text, /untrusted evidence/i);
+      assert.equal(body.systemInstruction.parts[0].text, SYSTEM_INSTRUCTION);
       assert.equal(body.contents[0].parts[1].inlineData.data, "/9j/");
       assert.equal(body.generationConfig.responseMimeType, "application/json");
       assert.ok(body.generationConfig.responseSchema);

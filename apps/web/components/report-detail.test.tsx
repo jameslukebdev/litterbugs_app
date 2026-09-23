@@ -2,7 +2,7 @@
 
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { Report } from '@litterbugs/report-contract';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ReportDetail } from './report-detail';
 
@@ -49,7 +49,14 @@ const report: Report = {
   user_id: 'user-id',
 };
 
+beforeEach(() => {
+  // Keep the active report fixture active as the calendar advances.
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-09-01T12:00:00Z'));
+});
+
 afterEach(() => {
+  vi.useRealTimers();
   cleanup();
   vi.restoreAllMocks();
   vi.clearAllMocks();

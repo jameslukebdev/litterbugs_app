@@ -1338,6 +1338,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      publish_report: {
+        Args: {
+          target_report_id: string
+          target_photo_paths: string[]
+          current_latitude: number
+          current_longitude: number
+          location_captured_at: string
+        }
+        Returns: Database['public']['Tables']['reports']['Row']
+      }
       accept_cleanup_waiver: {
         Args: {
           accepted_guidelines_version: string

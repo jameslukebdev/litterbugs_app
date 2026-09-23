@@ -15,7 +15,7 @@ import {
 describe('public cleanup safety document', () => {
   it('matches the versioned acknowledgment prepared for rollout', () => {
     const migrationPath = fileURLToPath(new URL(
-      '../../../supabase/rollout/20260907130658_publish_cleanup_waiver_v3_early_approval.sql',
+      '../../../supabase/rollout/20260923213700_publish_cleanup_waiver_v4_saved_acceptance.sql',
       import.meta.url,
     ));
     const migration = readFileSync(migrationPath, 'utf8');

@@ -65,7 +65,7 @@ describe('mobile report parity', () => {
       'label',
     );
     const mobileSeverityLevels = quotedValues(
-      block(/styles\.wizardSeverityList\}>\s*\{\[([\s\S]*?)\]\.map/, mobileWizardSource),
+      block(/const SEVERITY_OPTIONS = \[([\s\S]*?)\n\];/, mobileWizardSource),
       'level',
     );
 
@@ -75,8 +75,7 @@ describe('mobile report parity', () => {
   });
 
   it('keeps mobile limits aligned and supports bounded report-photo replacement', () => {
-    // Mobile now confirms a manually placed pin without requiring GPS. The web
-    // distance policy and wizard sequence are independent UI behavior, not shared data.
+    // Both clients keep the same report evidence limits.
     expect(MAX_REPORT_PHOTOS).toBe(3);
     expect(mobileReportPhotoSource).toContain('export const MAX_REPORT_PHOTOS = 3;');
     expect(mobileReportPhotoSource).toContain(

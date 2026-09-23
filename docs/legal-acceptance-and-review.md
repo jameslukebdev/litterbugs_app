@@ -17,8 +17,9 @@ For the minimum viable launch, keep these records together:
 - publication and retirement timestamps for every version; and
 - any later administrator decision and audit record connected to the attempt.
 
-The app presents the current acknowledgment before every claim and requires an
-unchecked, affirmative checkbox before the cleaner can continue. The server
+The app presents the full acknowledgment once per document-version pair and
+requires an unchecked, affirmative checkbox before saving acceptance. Each
+cleanup also requires a short site-specific safety confirmation. The server
 rejects a claim unless that user has accepted the exact active version, and it
 copies the two active version IDs onto the cleanup attempt. A newly published
 version therefore requires a new recorded acceptance. Do not pre-check the box,
@@ -39,7 +40,9 @@ counsel identifies a specific need.
 - The ordinary-negligence release is conspicuous and expressly excludes gross
   negligence, willful misconduct, and rights that cannot legally be waived.
 - Every cleanup claimant must affirm they are at least 18. Funded cleaners must
-  also be in the United States and satisfy Stripe's payout requirements.
+  satisfy the approved country eligibility and Stripe payout requirements.
+  International availability depends on the account-specific rollout; the
+  revised wording does not itself enable a country.
 - The liability cap is the greater of $100 or the Litterbugs platform fees paid
   by the user during the preceding 12 months, where such a cap is lawful.
 - Litterbugs does not claim to provide insurance or hazardous-material services.

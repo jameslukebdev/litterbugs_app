@@ -600,7 +600,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
 
               <View style={styles.startingFundChoices}>
                 {[
-                  { value: 'none', label: 'Volunteer' },
+                  { value: 'none', label: 'No contribution now' },
                   { value: '1', label: '$1' },
                   { value: '5', label: '$5' },
                   { value: '10', label: '$10' },
@@ -637,6 +637,12 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                   );
                 })}
               </View>
+
+              {form.startingFundingChoice === 'none' ? (
+                <Text style={styles.startingFundSummaryText}>
+                  Post without paying. Others can still contribute to this cleanup.
+                </Text>
+              ) : null}
 
               {form.startingFundingChoice === 'other' ? (
                 <View style={styles.startingFundCustom}>

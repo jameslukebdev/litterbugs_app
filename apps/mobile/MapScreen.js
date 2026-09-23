@@ -1154,7 +1154,7 @@ const submitReport = async () => {
   if (!hasStartingFundingChoice) {
     Alert.alert(
       'Choose cleanup funding',
-      'Select Volunteer or choose a starting cleanup reward.'
+      'Select No contribution now or choose an amount to add.'
     );
     return;
   }
@@ -1162,7 +1162,7 @@ const submitReport = async () => {
   if (wantsStartingFunding && !startingContributionCents) {
     Alert.alert(
       'Enter a valid contribution',
-      'Choose at least $1 and no more than $1,000, or select Volunteer.'
+      'Choose at least $1 and no more than $1,000, or select No contribution now.'
     );
     return;
   }
@@ -1955,12 +1955,12 @@ useEffect(() => {
     if (!cleanupEligible) return;
 
     Alert.alert(
-      'Claim this cleanup?',
-      "You'll have 24 hours to complete the cleanup and submit your results.",
+      'Confirm this site is safe for you',
+      "I can legally access this site and clean safely with my equipment, away from moving traffic and hazardous materials. I'll stop if conditions become unsafe. I have 24 hours to clean and submit photos.",
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Claim Cleanup',
+          text: 'I can clean safely',
           onPress: executeCleanupClaim,
         },
       ]
@@ -1979,10 +1979,14 @@ useEffect(() => {
 
     try {
       setCleanupActionBusy(true);
-      const waiverStatus = await loadCurrentCleanupWaiver();
+      const waiverStatus = await loadCurrentCleanupWaiver(currentUserId);
       setCleanupWaiver(waiverStatus.waiver);
-      setCleanupWaiverQueued(true);
-      setDetailsOpen(false);
+      if (waiverStatus.accepted) {
+        setClaimConfirmationQueued(true);
+      } else {
+        setCleanupWaiverQueued(true);
+        setDetailsOpen(false);
+      }
     } catch (error) {
       Alert.alert('Unable to start cleanup', cleanupActionMessage(error));
     } finally {

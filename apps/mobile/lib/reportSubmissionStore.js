@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
+import * as Location from 'expo-location';
+import { requireReportLocation } from './reportLocationCheck';
 import { supabase } from './supabase';
 import { submitRecoverableReport } from './reportSubmission';
 import { loadReportDraft, saveReportDraft } from './savedReportDraft';
@@ -14,6 +16,8 @@ async function publishReportDraftRequest({ userId, payload, form, coordinate, up
     if (existing?.is_published) return existing;
   }
   const previous = journal;
+  onProgress?.('Checking your current location…');
+  await requireReportLocation(Location, coordinate);
   {
     await saveReportDraft(userId, { form, coordinate, step: 4 });
     const saved = await loadReportDraft(userId);
@@ -34,7 +38,15 @@ async function publishReportDraftRequest({ userId, payload, form, coordinate, up
     },
     upload: async (uri, id) => (await upload([uri], id, userId, onProgress))[0],
     publish: async (id, paths) => {
-      const { data, error } = await supabase.from('reports').update({ photo_paths: paths, is_published: true }).eq('id', id).eq('user_id', userId).select('*').single();
+      onProgress?.('Confirming your location and publishing…');
+      const origin = await requireReportLocation(Location, coordinate);
+      const { data, error } = await supabase.rpc('publish_report', {
+        target_report_id: id,
+        target_photo_paths: paths,
+        current_latitude: origin.latitude,
+        current_longitude: origin.longitude,
+        location_captured_at: origin.capturedAt,
+      });
       if (error) throw error;
       return data;
     },

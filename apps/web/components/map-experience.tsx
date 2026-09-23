@@ -22,7 +22,7 @@ import { PublicAccountAction, type PublicAccountActionHandle } from '@/component
 import { PublicSiteHeader } from '@/components/public-site-header';
 import { ReportBrowser } from '@/components/report-browser';
 import { canManageReport, realUserId } from '@/lib/report-access';
-import { getBrowserLocation } from '@/lib/geolocation';
+import { getBrowserLocation, requireReportLocation } from '@/lib/geolocation';
 import { ReportDetail } from '@/components/report-detail';
 import { ReportWizard } from '@/components/report-wizard';
 import { readReportPreferences, writeReportPreferences } from '@/lib/report-preferences';
@@ -81,6 +81,7 @@ export function MapExperience({
   const [mapTypeIndex, setMapTypeIndex] = useState(0);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [draftCoordinates, setDraftCoordinates] = useState<Coordinates | null>(null);
+  const pendingPublication = useRef<{ userId: string; reportId: string; paths: string[] } | null>(null);
   const [editingReport, setEditingReport] = useState<Report | null>(null);
   const [editPhotoUrls, setEditPhotoUrls] = useState<string[]>([]);
   const [reportListOpen, setReportListOpen] = useState(false);
@@ -404,7 +405,44 @@ export function MapExperience({
     }
 
     if (!draftCoordinates) return 'Choose a location on the map and try again.';
+    // A lost publication response must be resolved before retrying with a new ID.
+    const pending = pendingPublication.current;
+    if (pending?.userId === authenticatedUserId) {
+      const { data: previous, error: readError } = await supabase.from('reports')
+        .select('*').eq('id', pending.reportId).eq('user_id', authenticatedUserId).maybeSingle();
+      if (readError) return 'We are still checking whether your report was published. Check your connection and try again.';
+      if (previous?.is_published) {
+        pendingPublication.current = null;
+        setDraftCoordinates(null);
+        await refreshReports();
+        setToast('Your report was published successfully.');
+        return null;
+      }
+      if (previous && hasReportCoordinates(previous)) {
+        // The first request may still be committing. Retry the same row and
+        // evidence: the RPC locks the row and returns an already published report.
+        let origin;
+        try { origin = await requireReportLocation(previous); }
+        catch (error) { return error instanceof Error ? error.message : 'Your current location is required.'; }
+        const { error: retryError } = await supabase.rpc('publish_report', {
+          target_report_id: pending.reportId,
+          target_photo_paths: pending.paths,
+          current_latitude: origin.latitude,
+          current_longitude: origin.longitude,
+          location_captured_at: origin.capturedAt,
+        });
+        if (retryError) return 'Your report has not been confirmed yet. Check your connection and try again.';
+        pendingPublication.current = null;
+        setDraftCoordinates(null);
+        await refreshReports();
+        setToast('Your report was published successfully.');
+        return null;
+      }
+      pendingPublication.current = null;
+    }
     if (!draft.photos.length) return 'Add at least one clear photo before saving this report.';
+    try { await requireReportLocation(draftCoordinates); }
+    catch (error) { return error instanceof Error ? error.message : 'Your current location is required to post.'; }
     const reportId = crypto.randomUUID();
     // The media processor verifies that the destination report belongs to the
     // caller, so create the report row before sending its photos through the
@@ -414,6 +452,7 @@ export function MapExperience({
       .insert({
         ...reportInsertFromDraft(draft, draftCoordinates, authenticatedUserId),
         id: reportId,
+        is_published: false,
         photo_paths: [],
       })
       .select()
@@ -425,23 +464,31 @@ export function MapExperience({
       await supabase.from('reports').delete().eq('id', reportId).eq('user_id', authenticatedUserId);
       return uploaded.error;
     }
-    const { data: report, error } = await supabase
-      .from('reports')
-      .update({ photo_paths: uploaded.paths })
-      .eq('id', reportId)
-      .eq('user_id', authenticatedUserId)
-      .select()
-      .single();
-    if (error) {
+    let origin;
+    try { origin = await requireReportLocation(draftCoordinates); }
+    catch (error) {
       await supabase.storage.from('report_photos').remove(uploaded.paths);
       await supabase.from('reports').delete().eq('id', reportId).eq('user_id', authenticatedUserId);
-      return `Save failed: ${error.message}`;
+      return error instanceof Error ? error.message : 'Your current location is required to post.';
+    }
+    pendingPublication.current = { userId: authenticatedUserId, reportId, paths: uploaded.paths };
+    const { data: report, error } = await supabase.rpc('publish_report', {
+      target_report_id: reportId,
+      target_photo_paths: uploaded.paths,
+      current_latitude: origin.latitude,
+      current_longitude: origin.longitude,
+      location_captured_at: origin.capturedAt,
+    });
+    if (error) {
+      // Keep the evidence until a retry establishes whether publication committed.
+      return 'We could not confirm publication. Your photos are saved. Try again to check the result without creating a duplicate.';
     }
     if (!hasReportCoordinates(report)) {
       await supabase.from('reports').delete().eq('id', createdReport.id).eq('user_id', authenticatedUserId);
       await supabase.storage.from('report_photos').remove(uploaded.paths);
       return 'The saved report is missing its map location.';
     }
+    pendingPublication.current = null;
     setDraftCoordinates(null);
     await refreshReports();
     setToast('Report saved. Thanks for helping keep the community clean!');

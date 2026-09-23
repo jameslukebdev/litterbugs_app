@@ -1,0 +1,50 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+apps/*/node_modules/
+packages/*/node_modules/
+
+# Expo
+.expo/
+.expo-shared/
+dist/
+web-build/
+.next/
+coverage/
+playwright-report/
+test-results/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# OS / editor junk
+.DS_Store
+.idea/
+.vscode/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+*.pem
+
+# Generated native projects
+ios/
+android/
+artifacts/
+supabase/.temp/
+
+# TypeScript / caches
+*.tsbuildinfo
+services/auth-bridge/.wrangler/
+.vercel
+
+# Local agent and editor state is not build input.
+.agents/
+skills-lock.json
+**/*.swp

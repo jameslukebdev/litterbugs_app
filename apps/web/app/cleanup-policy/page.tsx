@@ -14,7 +14,7 @@ export default function CleanupPolicyPage() {
       eyebrow="CLEANUP, FUNDING & SAFETY"
       title="Cleanup and reward policy"
       summary="The plain-language rules for contributions, report pools, safe participation, evidence review, disputes, refunds, and cleaner rewards."
-      effectiveDate="September 9, 2026"
+      effectiveDate="September 23, 2026"
       sections={[
         {
           title: 'Contributions and the displayed reward',
@@ -34,7 +34,7 @@ export default function CleanupPolicyPage() {
           title: 'Claiming a cleanup',
           content: <>
             <p>When an eligible cleaner claims a report, contributions stop and any funded reward is frozen for that attempt. The cleaner has 24 hours to complete the cleanup and submit evidence. A reporter may clean their own report and receive its reward, but the same review, dispute, and administrator rules apply.</p>
-            <p>Before every claim, the cleaner must be at least 18 and review and explicitly accept the current Cleanup Safety, Assumption of Risk, and Funded Reward Acknowledgment. Funded cleaners must also be in the United States and be eligible for Stripe payouts.</p>
+            <p>Cleaners must be at least 18 and explicitly accept each new version of the Cleanup Safety, Assumption of Risk, and Funded Reward Acknowledgment. Acceptance is saved for that document version. Every claim requires a separate confirmation that the site can be cleaned safely and legally. Funded cleaners must satisfy the country and payout eligibility requirements shown during setup.</p>
           </>,
         },
         {

@@ -1,8 +1,28 @@
-export const CLEANUP_ACKNOWLEDGMENT_VERSION = 'cleanup-acknowledgment-v4';
-export const CLEANUP_GUIDELINES_VERSION = 'cleanup-safety-guidelines-v2';
-export const CLEANUP_ACKNOWLEDGMENT_TITLE = 'Cleanup Safety, Assumption of Risk, and Funded Reward Acknowledgment';
+begin;
 
-export const CLEANUP_ACKNOWLEDGMENT = `PLEASE READ BEFORE CLAIMING THIS CLEANUP
+update public.cleanup_waiver_versions
+set
+  is_active = false,
+  retired_at = coalesce(retired_at, now())
+where is_active;
+
+insert into public.cleanup_waiver_versions (
+  waiver_version,
+  guidelines_version,
+  title,
+  body,
+  guidelines_body,
+  release_body,
+  is_active,
+  published_at,
+  retired_at
+)
+values (
+  'cleanup-acknowledgment-v4',
+  'cleanup-safety-guidelines-v2',
+  'Cleanup Safety, Assumption of Risk, and Funded Reward Acknowledgment',
+  $acknowledgment$
+PLEASE READ BEFORE CLAIMING THIS CLEANUP
 
 My choice and eligibility
 • I am voluntarily choosing whether to claim this cleanup. I am not required to perform it.
@@ -25,16 +45,25 @@ Evidence, review, and funded rewards
 • I am responsible for determining and reporting taxes related to rewards. Stripe or Litterbugs may collect tax information and issue required forms.
 
 My agreement
-I have read the current Litterbugs Terms of Use, Privacy Policy, Cleanup and Reward Policy, and the safety rules above. I understand that a reporter may clean their own report but receives no preferential treatment, and any self-approval remains recorded as such. By checking the box and continuing, I accept this version of the acknowledgment for my cleanup participation and agree to follow it. My acceptance is saved until the acknowledgment or safety guidelines change. Before every cleanup, I will separately confirm that I can safely and legally clean that location.`;
-
-export const CLEANUP_SAFETY_GUIDELINES = `• Park safely and lawfully before opening Litterbugs. Never use the app while driving.
+I have read the current Litterbugs Terms of Use, Privacy Policy, Cleanup and Reward Policy, and the safety rules above. I understand that a reporter may clean their own report but receives no preferential treatment, and any self-approval remains recorded as such. By checking the box and continuing, I accept this version of the acknowledgment for my cleanup participation and agree to follow it. My acceptance is saved until the acknowledgment or safety guidelines change. Before every cleanup, I will separately confirm that I can safely and legally clean that location.
+$acknowledgment$,
+  $guidelines$
+• Park safely and lawfully before opening Litterbugs. Never use the app while driving.
 • Wear suitable gloves, clothing, footwear, and any other protective equipment the cleanup requires.
 • Stay out of traffic, roadways, railroads, waterways, unstable terrain, construction zones, restricted areas, and private property without permission.
 • Never handle needles, chemicals, biological or medical waste, damaged batteries, weapons, explosives, pressurized containers, unknown liquids or powders, or anything else hazardous or unidentified.
 • Do not confront people, disturb encampments, move suspicious property, or perform work requiring specialized training or licensed disposal.
 • Follow local laws and disposal rules. Contact emergency services or the appropriate public authority for immediate danger or hazardous waste.
-• Stop or decline the cleanup whenever conditions are unsafe or beyond your ability.`;
+• Stop or decline the cleanup whenever conditions are unsafe or beyond your ability.
+$guidelines$,
+  $release$
+Outdoor litter cleanup can involve cuts, punctures, falls, strains, traffic, weather, animals, contaminated or sharp materials, property conditions, interactions with other people, and other known or unexpected risks. I knowingly and voluntarily assume the risks of choosing, traveling to, entering, and attempting this cleanup, including risks caused by conditions Litterbugs did not create or control.
 
-export const CLEANUP_RELEASE = `Outdoor litter cleanup can involve cuts, punctures, falls, strains, traffic, weather, animals, contaminated or sharp materials, property conditions, interactions with other people, and other known or unexpected risks. I knowingly and voluntarily assume the risks of choosing, traveling to, entering, and attempting this cleanup, including risks caused by conditions Litterbugs did not create or control.
+To the fullest extent permitted by applicable law, I release and agree not to hold Litterbugs and its owners, officers, employees, and agents liable for claims, injuries, losses, or property damage arising from my voluntary cleanup participation or my failure to follow these safety rules, including claims based on ordinary negligence. This release does not apply to gross negligence, reckless or willful misconduct, or liability that applicable law does not allow to be waived.
+$release$,
+  true,
+  now(),
+  null
+);
 
-To the fullest extent permitted by applicable law, I release and agree not to hold Litterbugs and its owners, officers, employees, and agents liable for claims, injuries, losses, or property damage arising from my voluntary cleanup participation or my failure to follow these safety rules, including claims based on ordinary negligence. This release does not apply to gross negligence, reckless or willful misconduct, or liability that applicable law does not allow to be waived.`;
+commit;

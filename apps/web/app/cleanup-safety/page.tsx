@@ -22,18 +22,19 @@ export default function CleanupSafetyPage() {
       eyebrow="CLEANUP SAFETY & RELEASE"
       title="Safety and cleanup acknowledgment"
       summary="A public reference copy of the safety rules, assumption of risk, release, and funded reward acknowledgment shown before a cleanup claim."
-      effectiveDate="September 9, 2026"
+      effectiveDate="September 23, 2026"
       sections={[
         {
           title: 'Before every cleanup claim',
           content: <>
             <p className={styles.notice}>
-              Viewing this page does not claim a cleanup or record acceptance. Before every claim,
-              the Litterbugs app presents the active text and requires a separate, unchecked affirmative
-              checkbox. The acceptance record identifies the exact versions accepted for that claim.
+              Viewing this page does not claim a cleanup or record acceptance. The Litterbugs app
+              asks you to accept each new document version with an unchecked checkbox and saves
+              that acceptance. Every cleanup also requires a separate site-specific safety confirmation.
+              Each claim records the document versions that apply.
             </p>
             <div className={styles.versions} aria-label="Document update date">
-              <div><span>Updated</span><strong>September 9, 2026</strong></div>
+              <div><span>Updated</span><strong>September 23, 2026</strong></div>
             </div>
           </>,
         },
