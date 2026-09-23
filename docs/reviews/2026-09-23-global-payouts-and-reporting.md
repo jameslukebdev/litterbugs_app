@@ -271,6 +271,12 @@ the local development session; direct inspection and a fresh full run passed at
 both sizes. No backend reports or payments were created. Mock-based failure tests
 cover unavailable storage, failed saves, and uncertain-publication discard guards.
 
+Commit `48dc0e2` deployed as `dpl_4NJpb1qfJqHHRpVPgoTvTjUzPpVw`. The
+separate deployment passed its page check, was promoted to litterbugs.app, and
+fresh public Chrome checks reached sign-in at desktop/phone widths without
+console errors. Prior `dpl_GWPE4vg984zzYxQLtL59PFUWRVD1` remains for rollback.
+Fresh origin/main remains Luke’s `5cc45c4` and is still an ancestor of this branch.
+
 ## Stripe account review
 
 Correct Litterbugs account: `acct_1U2HZe40KMkUKMFW`. The installed Stripe
