@@ -38,12 +38,14 @@ export function hasRequiredWebReportPhoto({
   photos,
   existingPhotoUrls,
   isEditing,
+  existingPhotoCount = existingPhotoUrls.length,
 }: {
   photos: File[];
   existingPhotoUrls: string[];
   isEditing: boolean;
+  existingPhotoCount?: number;
 }) {
-  return photos.length > 0 || (isEditing && existingPhotoUrls.length > 0);
+  return photos.length > 0 || (isEditing && existingPhotoCount > 0);
 }
 
 export function validateWebReportPhotos(photos: File[]) {
@@ -62,6 +64,7 @@ export function ReportWizard({
   initialDraft,
   isEditing,
   existingPhotoUrls = [],
+  existingPhotoCount = existingPhotoUrls.length,
   fundingEnabled = false,
   onClose,
   onSubmit,
@@ -69,6 +72,7 @@ export function ReportWizard({
   initialDraft: ReportDraft;
   isEditing: boolean;
   existingPhotoUrls?: string[];
+  existingPhotoCount?: number;
   fundingEnabled?: boolean;
   onClose: () => void;
   onSubmit: (draft: ReportDraft, startingContributionCents: number | null) => Promise<string | null>;
@@ -89,7 +93,7 @@ export function ReportWizard({
   useEffect(() => () => previewUrls.forEach((url) => URL.revokeObjectURL(url)), [previewUrls]);
 
   const errors = validateReportDraft(draft);
-  const hasRequiredPhoto = hasRequiredWebReportPhoto({ photos: draft.photos, existingPhotoUrls, isEditing });
+  const hasRequiredPhoto = hasRequiredWebReportPhoto({ photos: draft.photos, existingPhotoUrls, existingPhotoCount, isEditing });
   const currentCanAdvance = step === 0
     ? hasRequiredPhoto
     : step === 1
@@ -160,10 +164,11 @@ export function ReportWizard({
           <span className="step-required">REQUIRED</span>
           <h3>Add photos</h3>
           <p>Add at least one clear photo so volunteers can identify the site and see what the area looked like before cleanup.</p>
-          {isEditing && existingPhotoUrls.length > 0 ? <div className="existing-photo-notice"><Icon name="image" /><strong>Existing photos will stay attached</strong><span>Photo replacement isn’t enabled while editing a report yet.</span><div className="photo-grid">{existingPhotoUrls.map((url, index) => <img src={url} alt={`Existing report photo ${index + 1}`} key={url} />)}</div></div> : <>
+          {isEditing && existingPhotoCount > 0 && <div className="existing-photo-notice"><Icon name="image" /><strong>{draft.photos.length ? 'New photos will replace the current set when you save' : 'Keep these photos or choose a replacement set'}</strong><span>Choose one to three new photos to replace all existing photos. Remove the new selections to keep the originals.</span>{!draft.photos.length && <div className="photo-grid">{existingPhotoUrls.map((url, index) => <img src={url} alt={`Existing report photo ${index + 1}`} key={url} />)}</div>}</div>}
+          <>
             <label className={`photo-picker ${draft.photos.length >= MAX_REPORT_PHOTOS ? 'photo-picker-disabled' : ''}`}>
               <span className="photo-picker-icon"><Icon name="camera" /></span>
-              <strong>{draft.photos.length >= MAX_REPORT_PHOTOS ? '3 photos added' : 'Add a photo'}</strong>
+              <strong>{draft.photos.length >= MAX_REPORT_PHOTOS ? '3 photos added' : isEditing && existingPhotoCount && !draft.photos.length ? 'Choose replacement photos' : 'Add a photo'}</strong>
               <span>1–3 photos · 5 MB each</span>
               <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" multiple disabled={draft.photos.length >= MAX_REPORT_PHOTOS} onChange={(event) => {
                 const additions = [...draft.photos, ...Array.from(event.target.files ?? [])];
@@ -178,7 +183,7 @@ export function ReportWizard({
               }} />
             </label>
             {previewUrls.length > 0 && <div className="photo-grid">{previewUrls.map((url, index) => <div className="photo-preview" key={url}><img src={url} alt={`Selected report photo ${index + 1}`} /><button onClick={() => setDraft((current) => ({ ...current, photos: current.photos.filter((_, photoIndex) => photoIndex !== index) }))} aria-label={`Remove photo ${index + 1}`}><Icon name="close" /></button></div>)}</div>}
-          </>}
+          </>
           {!hasRequiredPhoto && <p className="required-hint" role="alert">Add at least one photo to continue.</p>}
           <label className="field-label report-optional-title">Report title (optional)<input value={draft.title} maxLength={MAX_REPORT_TITLE_LENGTH} placeholder="Litter Report" onChange={(event) => setDraft({ ...draft, title: event.target.value })} /></label>
           <span className="character-count">{draft.title.length}/{MAX_REPORT_TITLE_LENGTH}</span>
@@ -216,7 +221,7 @@ export function ReportWizard({
           <p>Make sure everything looks right before you submit it.</p>
           <div className="review-card">
             <ReviewRow label="Title" onEdit={() => editStep(0)}><strong>{draft.title.trim() || 'Litter Report'}</strong></ReviewRow>
-            <ReviewRow label="Photos" onEdit={() => editStep(0)}>{existingPhotoUrls.length ? <span>{existingPhotoUrls.length} existing photo{existingPhotoUrls.length === 1 ? '' : 's'}</span> : previewUrls.length ? <div className="review-photos">{previewUrls.map((url, index) => <img src={url} alt={`Report photo ${index + 1}`} key={url} />)}</div> : <span>No photos added</span>}</ReviewRow>
+            <ReviewRow label="Photos" onEdit={() => editStep(0)}>{previewUrls.length ? <><div className="review-photos">{previewUrls.map((url, index) => <img src={url} alt={`Report photo ${index + 1}`} key={url} />)}</div>{isEditing && existingPhotoCount > 0 && <p>These photos replace the current set when saved.</p>}</> : existingPhotoCount ? <span>{existingPhotoCount} existing photo{existingPhotoCount === 1 ? '' : 's'}</span> : <span>No photos added</span>}</ReviewRow>
             <ReviewRow label="Litter Types" onEdit={() => editStep(1)}><div className="chip-row">{draft.selectedTypes.map((type) => <span className="detail-chip type-chip" key={type}>{type}</span>)}{draft.types.trim() && <span className="detail-chip other-chip">{draft.types.trim()}</span>}</div></ReviewRow>
             <ReviewRow label="Severity" onEdit={() => editStep(2)}><strong>{draft.severity}</strong></ReviewRow>
             <ReviewRow label="Site conditions" onEdit={() => editStep(3)}><div className="chip-row">{draft.selectedNotes.map((note) => <span className="detail-chip note-chip" key={note}>{note}</span>)}</div>{draft.notes.trim() && <p>{draft.notes.trim()}</p>}{!draft.selectedNotes.length && !draft.notes.trim() && <span>No notes added</span>}</ReviewRow>

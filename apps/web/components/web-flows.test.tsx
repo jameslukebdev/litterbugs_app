@@ -6,7 +6,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 import { EMPTY_REPORT_DRAFT } from '@litterbugs/report-contract';
 
 import { AuthDialog } from './auth-dialog';
-import { ReportWizard, validateWebReportPhotos } from './report-wizard';
+import { ReportWizard, validateWebReportPhotos, hasRequiredWebReportPhoto } from './report-wizard';
 
 vi.mock('next/image', () => ({
   default: ({ src, alt }: { src: string; alt: string }) => <img src={src} alt={alt} />,
@@ -143,4 +143,31 @@ describe('report creation funding choice', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Submit report' }));
     expect(onSubmit).toHaveBeenCalledWith(expect.anything(), null);
   });
+});
+
+describe('editing report photos', () => {
+  it('previews a replacement set, returns to the originals when removed, and submits replacements', () => {
+    const onSubmit = vi.fn(async () => null);
+    render(<ReportWizard initialDraft={{ ...EMPTY_REPORT_DRAFT, title: 'Existing report', selectedTypes: ['Bottles'], severity: 'Low' }} isEditing existingPhotoUrls={['https://example.test/old.jpg']} onClose={vi.fn()} onSubmit={onSubmit} />);
+    expect(screen.getByAltText('Existing report photo 1')).toBeTruthy();
+    const picker = document.querySelector<HTMLInputElement>('input[type="file"]')!;
+    const photo = new File(['new'], 'new.jpg', { type: 'image/jpeg' });
+    fireEvent.change(picker, { target: { files: [photo] } });
+    expect(screen.getByAltText('Selected report photo 1')).toBeTruthy();
+    expect(screen.queryByAltText('Existing report photo 1')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Remove photo 1' }));
+    expect(screen.getByAltText('Existing report photo 1')).toBeTruthy();
+    fireEvent.change(picker, { target: { files: [photo] } });
+    for (let step = 0; step < 4; step++) fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByText('These photos replace the current set when saved.')).toBeTruthy();
+    expect(screen.queryByRole('group', { name: 'Starting contribution' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ photos: [photo] }), null);
+  });
+});
+
+
+it('allows keeping stored photos when their temporary previews cannot load', () => {
+  expect(hasRequiredWebReportPhoto({ photos: [], existingPhotoUrls: [], existingPhotoCount: 2, isEditing: true })).toBe(true);
+  expect(hasRequiredWebReportPhoto({ photos: [], existingPhotoUrls: [], existingPhotoCount: 2, isEditing: false })).toBe(false);
 });

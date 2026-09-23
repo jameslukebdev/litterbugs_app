@@ -6,7 +6,6 @@ import {
   FALLBACK_MAP_CENTER,
   hasReportCoordinates,
   reportInsertFromDraft,
-  reportUpdateFromDraft,
   type Coordinates,
   type MappableReport,
   type Report,
@@ -27,6 +26,7 @@ import { FundingContributionAction } from '@/components/funding-contribution-act
 import { loadCleanupFeatureFlags, requestReportPhotoReview } from '@/lib/funding';
 import { readReportPreferences, writeReportPreferences } from '@/lib/report-preferences';
 import { uploadSecureBrowserMedia } from '@/lib/secure-media-upload';
+import { saveReportEdit } from '@/lib/save-report-edit';
 import { createClient } from '@/lib/supabase/client';
 
 const MAP_TYPES = ['roadmap', 'satellite', 'hybrid', 'terrain'] as const;
@@ -405,19 +405,15 @@ export function MapExperience({
         ? await uploadReportPhotos(editingReport.id)
         : { paths: [] as string[], error: '' };
       if (uploaded.error) return uploaded.error;
-      const photoPaths = existingPhotoPaths.length ? existingPhotoPaths : uploaded.paths;
-      const { data, error } = await supabase
-        .from('reports')
-        .update({ ...reportUpdateFromDraft(draft), photo_paths: photoPaths })
-        .eq('id', editingReport.id)
-        .eq('user_id', authenticatedUserId)
-        .select()
-        .single();
-      if (error) {
-        if (uploaded.paths.length) await supabase.storage.from('report_photos').remove(uploaded.paths);
-        return `Save failed: ${error.message}`;
+      let data: Report;
+      try {
+        data = await saveReportEdit({ supabase, report: editingReport, draft, userId: authenticatedUserId, replacementPaths: uploaded.paths });
+      } catch (error) {
+        return error instanceof Error ? error.message : 'The edit could not be confirmed. Refresh the report before retrying.';
       }
-      if (!hasReportCoordinates(data)) return 'The saved report is missing its map location.';
+      if (uploaded.paths.length && fundingEnabled) {
+        void refreshFundingReview(editingReport.id).catch(() => undefined);
+      }
       setSelectedReport(data);
       setEditingReport(null);
       setEditPhotoUrls([]);
@@ -616,7 +612,7 @@ export function MapExperience({
       {selectedReport && <ReportDetail key={selectedReport.id} report={selectedReport} userId={userId} isOwner={canManageReport(selectedReport, userId)} favorite={reportPreferences.favorites.has(selectedReport.id)} hidden={reportPreferences.hidden.has(selectedReport.id)} onFavoriteChange={(favorite) => updateReportPreference('favorites', selectedReport.id, favorite)} onHiddenChange={(hidden) => updateReportPreference('hidden', selectedReport.id, hidden)} onNotify={setToast} onRequireSignIn={() => { setSelectedReport(null); accountActionRef.current?.openAuth(); }} onReportChanged={refreshReports} onClose={() => setSelectedReport(null)} onEdit={() => { void editSelectedReport(); }} onDelete={() => { void deleteSelectedReport(); }} />}
       {draftCoordinates && <ReportWizard initialDraft={{ ...EMPTY_REPORT_DRAFT }} isEditing={false} fundingEnabled={fundingEnabled} onClose={() => setDraftCoordinates(null)} onSubmit={saveReport} />}
       {reportFunding && <FundingContributionAction key={reportFunding.report.id} report={reportFunding.report} userId={userId} initialAmountCents={reportFunding.amountCents} startOpen onDismiss={() => setReportFunding(null)} onChanged={refreshReports} onRefreshFunding={() => refreshFundingReview(reportFunding.report.id)} />}
-      {editingReport && <ReportWizard initialDraft={editDraft} isEditing existingPhotoUrls={editPhotoUrls} onClose={() => { setEditingReport(null); setEditPhotoUrls([]); }} onSubmit={saveReport} />}
+      {editingReport && <ReportWizard initialDraft={editDraft} isEditing existingPhotoCount={editingReport.photo_paths?.length ?? 0} existingPhotoUrls={editPhotoUrls} onClose={() => { setEditingReport(null); setEditPhotoUrls([]); }} onSubmit={saveReport} />}
     </main>
   );
 }

@@ -189,8 +189,28 @@ page and verified Report litter opens the sign-in dialog, with no console
 warnings/errors. This is public-shell verification, not an authenticated live
 publication/payment test.
 
-This is not complete website parity. Existing-photo replacement, draft/pin-change
-behavior, and other Luke Version 2 surfaces still need a systematic comparison.
+Photo-edit follow-up: the website now permits replacing the complete existing
+photo set with one to three new photos. Removing all new selections retains the
+originals. Review displays the actual selected replacements. Text-only updates
+omit `photo_paths` so a stale editor cannot overwrite a newer photo set, and a
+missing signed preview does not falsely mean the report has no stored photos.
+The save helper removes superseded photos only after a confirmed successful
+update; an uncertain response retains both sets, because the write may already
+have committed. A cleanup failure does not falsely report that the edit failed.
+Unconfirmed replacement uploads can therefore remain unattached; no automatic
+orphan cleanup is claimed. Successful replacement requests a new photo review.
+
+All 133 web tests, typecheck, lint, production build, and boundary checks passed.
+Local rendered Chrome checks at 1280×900 and 390×844 exercised replacement,
+removing selections to restore originals, rejecting four photos, and confirming
+three replacements on Review without opening funding. Console/runtime checks
+were clean and no live reports, photos, or payments were changed. The first
+fixture run found a macOS `/tmp` versus `/private/tmp` serving-path issue; fixing
+the temporary fixture allowlist resolved it without changing application code.
+Screenshot: `/tmp/litterbugs-web-report-alignment/edit-photos-390.png`.
+
+This is not complete website parity. Draft/pin-change behavior and other Luke
+Version 2 surfaces still need a systematic comparison.
 Physical native verification and strict GPS rollout gates remain unchanged.
 
 ## Stripe account review

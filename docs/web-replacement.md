@@ -24,7 +24,9 @@ The new website lives in `apps/web` and connects only to Supabase project
   an amount opens a separate contribution screen after publication, preserving
   the chosen amount. Photo eligibility and explicit payment confirmation still
   apply; publication itself never creates a payment.
-- Owner-only editing and deletion.
+- Owner-only editing and deletion, including replacement of the full photo set
+  with one to three new photos. Text-only edits preserve the stored photos;
+  replacements remove superseded photos only after a confirmed save.
 - Feature-gated funded-cleanup card contributions through Stripe's Payment
   Element, using the same principal, 10% fee, full-refund rule, PaymentIntent,
   webhook reconciliation, and dark-launch flags as mobile.
@@ -46,8 +48,8 @@ website environment.
 
 The shared contract has automated parity checks for the five-stage order,
 preset labels, severity levels, and evidence limits. These checks do not prove
-complete feature parity. In particular, mobile supports replacing existing
-report photos while the website still preserves them during editing. Anonymous
+complete feature parity. Photo replacement is now available in both clients;
+web draft recovery and pin changes still need alignment. Anonymous
 Supabase claims are rejected on server-rendered and browser write boundaries.
 
 ## Environment
