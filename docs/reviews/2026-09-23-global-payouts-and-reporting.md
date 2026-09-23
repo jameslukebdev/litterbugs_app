@@ -328,6 +328,14 @@ endpoint tests rather than a live example. The broader discovery pagination,
 combined filters, text/place search, and distance controls remain open.
 Stripe support still shows only the specialist escalation acknowledgment.
 
+Commit `2d0605c` deployed as `dpl_BNaBdmyTXSkfy52PiGd9dsGFmwPJ`, checked at
+its separate URL, and promoted to litterbugs.app. Fresh public Chrome checks
+passed at desktop/phone widths. A production read-only comparison returned 16
+rows under the old query and 6 under the new query: all 10 omitted rows had
+`cancelled_at` set. No uncanceled old-query row was lost, and no report record
+was changed. The previous deployment `dpl_HBWUqWYN6U8CsVGTNh85CnG7j9F1`
+remains available for rollback.
+
 ## Stripe account review
 
 Correct Litterbugs account: `acct_1U2HZe40KMkUKMFW`. The installed Stripe
