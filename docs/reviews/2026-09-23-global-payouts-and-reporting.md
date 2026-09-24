@@ -467,3 +467,27 @@ TT TW TZ US UY UZ VN ZA.
 Do not mark the goal complete based on disabled scaffolding or public country
 lists. All 120 must be enabled and verified, or concrete external blockers must
 be reported honestly while independent work continues.
+
+## Follow-up preservation and visible map verification — September 23, 20:17 EDT
+
+- Fetched origin again: latest main remains Luke's `5cc45c4` (app icon),
+  following `77e1720` (TestFlight preparation) and `f8c84cb` (mobile polish).
+  `git merge-base --is-ancestor origin/main HEAD` succeeds. Mobile app config,
+  EAS profiles and assets have no diff against main; reviewed mobile changes
+  remain the requested GPS, funding wording, sharing and waiver fixes.
+- Investigated earlier premature map screenshots. A fresh live Chrome check
+  now waits for Google's `tilesloaded` event before capture. At 1280×900 and
+  390×844, roads, labels, report markers and the Boone area outline are visibly
+  rendered. One initial desktop capture showed a Google no-imagery tile; a
+  fresh repeat did not reproduce it. No production code change was needed.
+- Actual Census selection adds one map feature, Clear area removes it, and
+  actual Nairobi address search selects a center explicitly labeled without
+  a boundary. Both viewport runs have no browser console/runtime errors.
+  Browser plugin unavailable; used existing Playwright with installed Chrome.
+  Screenshots: `/tmp/litterbugs-web-report-alignment/live-boundary-1280.png`
+  and `/tmp/litterbugs-web-report-alignment/live-boundary-390.png`.
+- Full website suite now passes: 37 files, 172 tests. This verifies the latest
+  startup-GPS guard alongside the earlier place-search tests.
+- No native code, reports, payments or store submissions changed in this pass.
+  Physical-device verification and account-specific Stripe approval remain
+  outstanding; international address search does not enable payouts.
