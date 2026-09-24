@@ -746,3 +746,11 @@ fieldset.cleanup-submission-fields { border: 0; padding: 0; margin: 0; min-width
 .community-rank progress::-webkit-progress-bar { background:#e8ece9; }
 .community-rank progress::-webkit-progress-value { background:#2f7d32; }
 .community-rank progress::-moz-progress-bar { background:#2f7d32; }
+
+.member-settings { border-top:0; margin-top:0; padding-top:0; }
+.member-settings details.member-panel { padding:18px; }
+.member-settings details.member-panel summary { cursor:pointer; font-weight:700; }
+.member-settings details.member-panel p { line-height:1.5; color:var(--muted); }
+.member-settings .member-empty { min-height:0; padding:18px 0 0; text-align:left; }
+.payment-detail > button { margin:8px 8px 8px 0; }
+.payment-detail > a { display:block; margin-top:12px; color:var(--green-dark); }

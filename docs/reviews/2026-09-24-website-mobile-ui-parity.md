@@ -102,3 +102,11 @@ Production release evidence will be appended after deployment. Full completion o
 ## Deployment authorization and goal extension — September 24
 
 The owner explicitly added this entire inventory to the ongoing goal and authorized live website deployment after implementation and verification. This scope is active; Stripe country expansion remains a separate external dependency. The goal API cannot edit or resume the existing blocked objective, so this document records the addition without claiming that the payout objective is complete. Implementation and verification evidence will be recorded here before promotion.
+
+## Live verification and release
+
+PR #77 merged to main as `f5c5cdf9dfbf905b2ed6cbf62bd59fa7db13b942` on September 24. Implementation commit `6ba54b3` passed the full repository check: 450 mobile, 186 web, 14 shared-contract, 25 edge-function and 7 relay tests; typecheck, ESLint, production build, web boundaries and auth-bridge dry run passed. It was deployed and promoted as `dpl_2v4xVpBbYD5aF7AAh99X2vajSuxF`.
+
+Production browser verification at litterbugs.app confirmed Google Maps tiles and semantic markers, a $6 marker → preview → report detail, map recentering on the selected report, and the signed-in account’s 3 reports / Ladybug / 1 point. Responsive profile screens were inspected at 390×844 and 320×740. Current/history/personal report navigation worked; a closed report absent from discovery opened, showed its closed state, and offered no new cleanup claim. Some closed report photos are unavailable and display the explicit fallback rather than a broken image. Settings showed Google connected and the correct help/policy links. Payments displayed historical pending contributions; opening a payment detail explicitly said it was not confirmed. No status reconciliation, charge or payout was triggered for live testing.
+
+Live checks identified minor settings spacing/order and ambiguous pending-payment copy. A follow-up release puts blocked accounts in a compact disclosure under account settings, adds dialog spacing and changes “total charged” to “total.” This is presentation-only. The physical iPhone and excluded Apple/Facebook scenarios remain unverified as described above. Luke’s source and all three pre-existing local untracked owner items remain intact.

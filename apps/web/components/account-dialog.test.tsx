@@ -185,6 +185,7 @@ describe('AccountDialog expired report decisions', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Settings' }));
     expect(await screen.findByText('Blocked Member')).toBeTruthy();
+    fireEvent.click(screen.getByText('Blocked accounts'));
     expect(screen.getByText('@blocked.member')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Unblock' }));
 
@@ -198,7 +199,7 @@ describe('AccountDialog expired report decisions', () => {
     render(<AccountDialog onClose={vi.fn()} onSignedOut={vi.fn()} onOpenReport={vi.fn()} />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Payments' }));
-    expect(screen.getByText('$2.50 fee · $27.50 total charged')).toBeTruthy();
+    expect(screen.getByText('$2.50 fee · $27.50 total')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Back to profile' }));
     fireEvent.click(screen.getByRole('button', { name: 'My activity' }));
     fireEvent.click(screen.getByRole('tab', { name: 'My reports' }));
