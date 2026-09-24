@@ -181,7 +181,7 @@
 
 @media (max-width: 700px) {
   .header { height: 66px; }
-  .inner { padding: 0 14px; }
+  .inner { padding: 0 12px; grid-template-columns: auto auto minmax(0, 1fr); gap: 8px; }
   .desktopNav { display: none; }
   .mobileMenu { grid-column: 1; justify-self: start; display: block; position: static; }
   .mobileMenu .menuTrigger { min-height: 44px; color: #111116; font-size: 16px; font-weight: 600; }
@@ -192,7 +192,7 @@
   .mobilePrimaryLinks .navLink[aria-current='page'] { color: var(--green-dark); background: var(--green-soft); }
   .mobilePrimaryLinks .navLink[aria-current='page']::after { display: none; }
   .brandLink { height: 64px; }
-  .brandLink img { height: 50px; max-width: 138px; }
+  .brandLink img { width: 64px; height: 46px; max-width: 100%; }
   .desktopActions { grid-column: 3; display: contents; }
   .infoMenu { display: none; }
   .action { grid-column: 3; justify-self: end; }

@@ -7,7 +7,6 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { DEFAULT_DISCOVERY_FILTERS, matchesDiscovery, type DiscoveryFilters } from '@/lib/report-discovery';
 import type { BoundaryGeometry } from '@/lib/place-geography';
-import NextImage from 'next/image';
 import { getBrowserLocation } from '@/lib/geolocation';
 import { createClient } from '@/lib/supabase/client';
 import { ReportAuthor, publicFields, type PublicProfile } from '@/components/report-author';
@@ -257,7 +256,7 @@ export function ReportBrowser({
         <header className="report-browser-header">
           <div className="report-browser-heading-row">
             <div>
-              <h1 className="reports-screen-title"><NextImage src="/brand/litterbugs-logo.png" alt="Litterbugs" width={50} height={34} />Reports</h1>
+              <h1 className="reports-screen-title">Litter reports</h1>
               <p>{resultsHeading(visibleReports.length, activeFilter)} · Map area</p>
             </div>
             <label className="report-sort">
