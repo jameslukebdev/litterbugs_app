@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { renderToStaticMarkup } from 'react-dom/server';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import SharedReportPage from './page';
@@ -19,7 +20,13 @@ describe('public shared report funding copy', () => {
     render(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
     expect(screen.getByText(/This report has a \$6.00 cleanup reward/)).toBeTruthy();
     expect(screen.queryByText(/available for volunteer cleanup/)).toBeNull();
-    expect(screen.getByRole('button', { name: 'Open in Litterbugs' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Open in Litterbugs' }).getAttribute('href'))
+      .toBe('litterbugs://reports/report-id');
+  });
+  it('includes an app link in server HTML before browser JavaScript runs', async () => {
+    loadReport.mockResolvedValue(report);
+    const html = renderToStaticMarkup(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
+    expect(html).toContain('href="litterbugs://reports/report-id"');
   });
   it('retains volunteer wording when there is no reward', async () => {
     loadReport.mockResolvedValue({ ...report, rewardCents: 0 });
