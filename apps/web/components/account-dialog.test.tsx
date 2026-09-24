@@ -17,6 +17,7 @@ const { blockDelete, blockedRows, rpc, profileUpdate, reportQueryNumber, invoke,
   reportQueryNumber: { value: 0 },
 }));
 
+vi.mock('@/lib/saved-cleanup-draft', () => ({ clearAccountCleanupDrafts: vi.fn(async () => undefined) }));
 vi.mock('@/lib/saved-report-draft', () => ({ clearPublishedReport: clearDraft }));
 
 vi.mock('@/components/payout-setup-action', () => ({
@@ -60,6 +61,7 @@ function query(result: { data: unknown; error: null }) {
     gt: () => builder,
     in: () => builder,
     limit: () => Promise.resolve(result),
+    range: () => Promise.resolve(result),
     maybeSingle: () => Promise.resolve(result),
     or: () => builder,
     order: () => builder,
@@ -161,8 +163,9 @@ describe('AccountDialog expired report decisions', () => {
     })));
     expect(onProfileChanged).toHaveBeenCalled();
     expect(await screen.findByText(/website and app account are now up to date/i)).toBeTruthy();
-    expect(screen.getByText('7')).toBeTruthy();
-    expect(screen.getByText('Reports submitted')).toBeTruthy();
+    expect(screen.queryByText('7')).toBeNull();
+    expect(screen.getByLabelText('Reports submitted').textContent).toContain('0');
+    expect(screen.getByText('Reports')).toBeTruthy();
   });
 
   it('loads and unblocks the same blocked accounts used by the mobile app', async () => {
@@ -180,6 +183,7 @@ describe('AccountDialog expired report decisions', () => {
     const onAccountDataChanged = vi.fn();
     render(<AccountDialog onClose={vi.fn()} onSignedOut={vi.fn()} onOpenReport={vi.fn()} onAccountDataChanged={onAccountDataChanged} />);
 
+    fireEvent.click(await screen.findByRole('button', { name: 'Settings' }));
     expect(await screen.findByText('Blocked Member')).toBeTruthy();
     expect(screen.getByText('@blocked.member')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Unblock' }));
@@ -193,9 +197,13 @@ describe('AccountDialog expired report decisions', () => {
   it('renews an expired report for 30 days while preserving its displayed fund', async () => {
     render(<AccountDialog onClose={vi.fn()} onSignedOut={vi.fn()} onOpenReport={vi.fn()} />);
 
+    fireEvent.click(await screen.findByRole('button', { name: 'Payments' }));
+    expect(screen.getByText('$2.50 fee · $27.50 total charged')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Back to profile' }));
+    fireEvent.click(screen.getByRole('button', { name: 'My activity' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'My reports' }));
     expect(await screen.findByRole('heading', { name: 'Renew or close reports' })).toBeTruthy();
     expect(screen.getByText('$125.00 reward', { exact: false })).toBeTruthy();
-    expect(screen.getByText('$2.50 fee · $27.50 total charged')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Renew 30 days' }));
 
     await waitFor(() => expect(rpc).toHaveBeenCalledWith('renew_report', {
@@ -209,6 +217,8 @@ describe('AccountDialog expired report decisions', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     render(<AccountDialog onClose={vi.fn()} onSignedOut={vi.fn()} onOpenReport={vi.fn()} />);
 
+    fireEvent.click(await screen.findByRole('button', { name: 'My activity' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'My reports' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Close and refund' }));
 
     expect(window.confirm).toHaveBeenCalledWith(expect.stringMatching(/including the 10% fee/i));
@@ -225,6 +235,7 @@ describe('saved report cleanup after account deletion', () => {
     const onSignedOut = vi.fn();
     render(<AccountDialog onClose={vi.fn()} onSignedOut={onSignedOut} onOpenReport={vi.fn()} />);
     await screen.findByText('Member');
+    fireEvent.click(await screen.findByRole('button', { name: 'Settings' }));
     return onSignedOut;
   }
   it('clears only the deleted account’s draft and journal after confirmed deletion', async () => {

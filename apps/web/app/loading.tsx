@@ -1,13 +1,4 @@
+import Image from 'next/image';
 export default function Loading() {
-  return (
-    <main className="loading-page" aria-label="Loading Litterbugs">
-      <div className="loading-header">
-        <div className="loading-logo" />
-        <div className="loading-account" />
-      </div>
-      <div className="loading-map">
-        <div className="loading-pin" />
-      </div>
-    </main>
-  );
+  return <main className="loading-page app-loading" aria-label="Loading Litterbugs"><Image src="/brand/litterbugs-logo.png" alt="Litterbugs" width={130} height={89} priority /><span className="spinner" /><p role="status">Loading your community…</p></main>;
 }

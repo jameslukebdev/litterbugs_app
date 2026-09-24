@@ -11,7 +11,7 @@ export type DiscoveryFilters = {
   query: string;
   scope: 'all' | 'favorites' | 'hidden';
 };
-export const DEFAULT_DISCOVERY_FILTERS: DiscoveryFilters = { status: 'available', funding: 'all', severity: 'all', radius: 0, query: '', scope: 'all' };
+export const DEFAULT_DISCOVERY_FILTERS: DiscoveryFilters = { status: 'all', funding: 'all', severity: 'all', radius: 0, query: '', scope: 'all' };
 export type DiscoveryArea = Coordinates & { north: number; south: number; west: number; east: number };
 export const DISCOVERY_LIMIT = 1000;
 const EMPTY_IDS = new Set<string>();

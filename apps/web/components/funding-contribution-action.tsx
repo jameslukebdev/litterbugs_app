@@ -5,10 +5,11 @@ import { loadStripe } from '@stripe/stripe-js';
 import type { Report } from '@litterbugs/report-contract';
 import { useEffect, useMemo, useState } from 'react';
 
+import { resumeOrCreatePayment } from '@/lib/payment-attempt';
+import { PaymentDetail } from '@/components/payment-detail';
 import { ModalShell } from '@/components/modal-shell';
 import {
   calculatePlatformFee,
-  createCleanupContribution,
   formatUsd,
   loadCleanupFeatureFlags,
   parseContributionAmount,
@@ -19,10 +20,12 @@ function ContributionPaymentForm({
   intent,
   reportId,
   onComplete,
+  onBusyChange,
 }: {
   intent: ContributionIntent;
   reportId: string;
   onComplete: () => void | Promise<void>;
+  onBusyChange: (busy: boolean) => void;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -34,10 +37,12 @@ function ContributionPaymentForm({
     if (!stripe || !elements || busy) return;
     setBusy(true);
     setError('');
+    onBusyChange(true);
+    try {
     const result = await stripe.confirmPayment({
       elements,
       confirmParams: {
-        return_url: `${window.location.origin}/payment-return?report=${encodeURIComponent(reportId)}`,
+        return_url: `${window.location.origin}/payment-return?report=${encodeURIComponent(reportId)}&contribution=${encodeURIComponent(intent.contributionId)}`,
       },
       redirect: 'if_required',
     });
@@ -47,6 +52,8 @@ function ContributionPaymentForm({
       return;
     }
     await onComplete();
+    } catch { setError('We couldn’t confirm this payment. Check Payments before trying again.'); }
+    finally { setBusy(false); onBusyChange(false); }
   }
 
   return (
@@ -82,6 +89,7 @@ export function FundingContributionAction({
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [open, setOpen] = useState(startOpen);
   const [amount, setAmount] = useState(() => initialAmountCents == null ? '25' : (initialAmountCents / 100).toFixed(2));
+  const [previousContribution, setPreviousContribution] = useState<string | null>(null);
   const [intent, setIntent] = useState<ContributionIntent | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -135,16 +143,20 @@ export function FundingContributionAction({
       return;
     }
     setIntent(null);
+    setPreviousContribution(null);
     setMessage('');
     setOpen(true);
   }
 
   async function continueToPayment() {
-    if (!enabled || !eligible || principalAmountCents == null || busy) return;
+    if (!userId || !enabled || !eligible || principalAmountCents == null || busy) return;
     setBusy(true);
     setMessage('');
     try {
-      setIntent(await createCleanupContribution(report.id, principalAmountCents));
+      const result = await resumeOrCreatePayment(userId!, report.id, principalAmountCents);
+      setAmount((result.amount / 100).toFixed(2));
+      if (result.contributionId) setPreviousContribution(result.contributionId);
+      else { setIntent(result.intent ?? null); if (result.amount !== principalAmountCents) setMessage('Resuming your previous unpaid contribution with its original amount.'); }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Payment could not be started.');
     } finally {
@@ -155,7 +167,7 @@ export function FundingContributionAction({
   async function complete() {
     setIntent(null);
     setOpen(false);
-    setMessage('Contribution received. The reward will update after Stripe confirms it.');
+    setMessage('Payment submitted. Check Payments for confirmation before paying again.');
     await onChanged?.();
     onDismiss?.();
   }
@@ -168,7 +180,7 @@ export function FundingContributionAction({
         <ModalShell onClose={dismiss} label="Add money to this cleanup reward" className="funding-dialog" closeDisabled={busy}>
           <h2>{intent ? 'Secure payment' : 'Add to the cleanup reward'}</h2>
           <p className="funding-dialog-report">{report.title || 'Litter cleanup'}</p>
-          {enabled !== true || !eligible ? <>
+          {previousContribution ? <PaymentDetail contributionId={previousContribution} onOpenReport={() => dismiss()} /> : enabled !== true || !eligible ? <>
             <p role="status">{enabled === null ? 'Checking funding availability…' : !enabled
               ? 'Your report is saved. Funding is temporarily unavailable. No payment has been made.'
               : report.funding_eligibility === 'pending'
@@ -180,6 +192,7 @@ export function FundingContributionAction({
             <button className="primary-button" disabled={busy} onClick={dismiss}>Done</button>
           </> : !intent ? (
             <>
+              <div className="funding-amount-presets" aria-label="Suggested contribution amounts">{['5', '25', '50'].map(preset => <button key={preset} className="secondary-button" aria-pressed={principalAmountCents === Number(preset) * 100} onClick={() => setAmount(preset)}>${preset}</button>)}</div>
               <label className="funding-amount-label">Contribution amount
                 <span className="funding-amount-input"><b>$</b><input value={amount} onChange={(event) => { setAmount(event.target.value); setMessage(''); }} inputMode="decimal" aria-label="Cleanup fund contribution amount" /></span>
                 <small>Minimum $1 · Maximum $1,000</small>
@@ -200,7 +213,7 @@ export function FundingContributionAction({
               clientSecret: intent.paymentIntentClientSecret,
               appearance: { variables: { colorPrimary: '#2f7d32', borderRadius: '12px' } },
             }}>
-              <ContributionPaymentForm intent={intent} reportId={report.id} onComplete={complete} />
+              <ContributionPaymentForm intent={intent} reportId={report.id} onComplete={complete} onBusyChange={setBusy} />
             </Elements>
           ) : <p className="form-message error-message">Payment could not be loaded.</p>}
         </ModalShell>

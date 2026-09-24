@@ -493,3 +493,33 @@
     transition: none;
   }
 }
+
+/* Information pages use the same compact cards and type scale as app settings. */
+.hero { min-height: 0; padding: 40px 24px; background: var(--soft); }
+.heroInner { max-width: 760px; text-align: left; }
+.hero h1 { font-size: clamp(28px, 4vw, 36px); line-height: 1.15; letter-spacing: -.025em; }
+.heroCopy { font-size: 17px; margin: 16px 0 0; }
+.heroActions { justify-content: flex-start; margin-top: 24px; }
+.sectionInner, .finalCtaInner, .contact { max-width: 960px; }
+.process, .roles, .trust, .finalCta { padding: 32px 24px; }
+.sectionIntro { gap: 24px; padding-bottom: 24px; }
+.sectionIntro h2, .trust h2, .finalCta h2 { font-size: 28px; line-height: 1.2; }
+.sectionIntro > p:last-child, .trustContent > p { font-size: 16px; }
+.stepList { gap: 16px; margin-top: 24px; }
+.step, .step + .step { min-height: 0; padding: 24px; border: 1px solid #e0e5e1; border-radius: 18px; background: white; }
+.stepNumber, .roleLabel { margin-bottom: 20px; }
+.step h3, .role h3, .role h2 { font-size: 20px; }
+.roleGrid { padding-top: 24px; }
+.role { padding: 24px; background: white; }
+.trust, .finalCta { background: white; color: #172019; border-block: 1px solid #e0e5e1; }
+.trustGrid { gap: 32px; }
+.trust h2, .contact a { color: #172019; }
+.trust .eyebrow, .finalCta .eyebrow { color: var(--green-dark); }
+.trustContent > p, .contact { color: #59665d; }
+.policyLinks a { min-height: 64px; color: #172019; border: 1px solid #dce4de; background: var(--soft); }
+.policyLinks a:hover { background: #edf5ed; border-color: #93b69a; }
+.finalCtaInner { padding-bottom: 28px; gap: 24px; }
+.lightAction { background: var(--green); color: white; border-color: var(--green); }
+.lightAction:hover { background: var(--green-dark); color: white; }
+.contact { border-top: 1px solid #dce4de; }
+@media (max-width:700px) { .hero, .process, .roles, .trust, .finalCta { padding: 28px 20px; } .heroActions { display: flex; } .stepList { grid-template-columns: 1fr; } }

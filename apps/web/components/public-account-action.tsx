@@ -5,26 +5,28 @@ import { useRouter } from 'next/navigation';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 
 import { AccountDialog } from '@/components/account-dialog';
-import { AuthDialog } from '@/components/auth-dialog';
+import { AuthDialog, type AuthIntent } from '@/components/auth-dialog';
 import { getProfileAvatarUrl, getProfileLabel, type Profile } from '@/lib/profile';
 import { realUserId } from '@/lib/report-access';
 import { createClient } from '@/lib/supabase/client';
 
 export type PublicAccountActionHandle = {
   openAccount: () => void;
-  openAuth: () => void;
+  openAuth: (intent?: AuthIntent) => void;
 };
 
 export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
   initialUserId?: string | null;
   onAccountDataChanged?: () => void | Promise<void>;
   onOpenReport?: (reportId: string) => void;
+  onResumeDraft?: () => void;
   onUserChange?: (userId: string | null) => void;
-}>(function PublicAccountAction({ initialUserId = null, onAccountDataChanged, onOpenReport, onUserChange }, ref) {
+}>(function PublicAccountAction({ initialUserId = null, onAccountDataChanged, onOpenReport, onUserChange, onResumeDraft }, ref) {
   const router = useRouter();
   const [userId, setUserId] = useState(initialUserId);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [email, setEmail] = useState('');
+  const [authIntent, setAuthIntent] = useState<AuthIntent>(null);
   const [authOpen, setAuthOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const userIdRef = useRef(initialUserId);
@@ -36,6 +38,7 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
     if (identityChanged) setUserId(nextUserId);
     setEmail(nextEmail);
     if (identityChanged) onUserChange?.(nextUserId);
+    if (nextUserId) setAuthOpen(false);
     if (!nextUserId) {
       setProfile(null);
       promptedForProfileRef.current = false;
@@ -68,8 +71,8 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
   }, [loadProfile]);
 
   useImperativeHandle(ref, () => ({
-    openAccount: () => userId ? setAccountOpen(true) : setAuthOpen(true),
-    openAuth: () => setAuthOpen(true),
+    openAccount: () => { if (userId) setAccountOpen(true); else { setAuthIntent(null); setAuthOpen(true); } },
+    openAuth: (intent = null) => { setAuthIntent(intent); setAuthOpen(true); },
   }), [userId]);
 
   const avatarUrl = getProfileAvatarUrl(createClient(), profile);
@@ -95,12 +98,13 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
         <span>{userId ? 'Account' : 'Sign in'}</span>
       </button>
 
-      {authOpen && <AuthDialog onClose={() => setAuthOpen(false)} />}
+      {authOpen && <AuthDialog intent={authIntent} onClose={() => setAuthOpen(false)} />}
       {accountOpen && userId && (
         <AccountDialog
           onClose={() => setAccountOpen(false)}
           onAccountDataChanged={onAccountDataChanged}
           onOpenReport={openReport}
+          onResumeDraft={onResumeDraft}
           onProfileChanged={setProfile}
           onSignedOut={() => {
             setAccountOpen(false);

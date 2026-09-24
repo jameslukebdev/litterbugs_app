@@ -31,7 +31,7 @@ vi.mock('@googlemaps/js-api-loader', () => ({
   } } : { AdvancedMarkerElement: class {} },
 }));
 vi.mock('@/components/public-site-header', () => ({ PublicSiteHeader: ({ action }: { action: React.ReactNode }) => action }));
-vi.mock('@/components/public-account-action', () => ({ PublicAccountAction: () => null }));
+vi.mock('@/components/public-account-action', () => ({ PublicAccountAction: ({ onOpenReport }: { onOpenReport: (id: string) => void }) => <button onClick={() => onOpenReport('test-report')}>Open report from history</button> }));
 vi.mock('@/components/report-browser', () => ({ ReportBrowser: ({ reports, onDiscoveryFiltersChange, placeSearch }: { placeSearch: React.ReactNode; reports: Array<{ title: string }>; onDiscoveryFiltersChange: (filters: unknown) => void }) => <>{placeSearch}<output aria-label="Discovery results">{reports.map(report => report.title).join(',')}</output><button onClick={() => onDiscoveryFiltersChange({ status: 'available', funding: 'all', severity: 'high', radius: 0, query: '', scope: 'all' })}>High severity filter</button></> }));
 vi.mock('@/components/place-search', () => ({ PlaceSearch: ({onSelect}: {onSelect: (place: unknown) => void}) => <button onClick={() => onSelect({id:'chosen',label:'Chosen area',latitude:1,longitude:2,bounds:{north:2,south:0,west:1,east:3}})}>Choose map area</button> }));
 vi.mock('@/lib/report-discovery', async (importOriginal) => ({ ...await importOriginal<typeof import('@/lib/report-discovery')>(), loadDiscoveryReports: (...args: unknown[]) => state.discovery(...args) }));
@@ -159,7 +159,7 @@ describe('map publication and funding handoff', () => {
     await choosePin();
     fireEvent.click(screen.getByRole('button', { name: 'Change report location' }));
     expect(screen.queryByRole('dialog')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Keep previous report location' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Keep location' }));
     expect(screen.getByLabelText('Selected latitude').textContent).toBe('0.5');
   });
 
@@ -210,8 +210,15 @@ it('does not let delayed startup GPS override a user-selected search area', asyn
   Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { getCurrentPosition: (success: PositionCallback) => { locate = success; } } });
   render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
   await waitFor(() => expect(state.click).toBeTruthy());
-  fireEvent.click(screen.getByRole('button', { name: 'Choose map area' }));
+  fireEvent.click(screen.getAllByRole('button', { name: 'Choose map area' }).at(-1)!);
   expect(state.fitBounds).toHaveBeenCalledWith({north:2,south:0,west:1,east:3},60);
   await act(async () => locate({coords:{latitude:50,longitude:50},timestamp:Date.now()} as GeolocationPosition));
   expect(state.panTo).not.toHaveBeenCalled();
+});
+
+it('opens an account report even when it is absent from discovery results', async () => {
+  state.published = true;
+  render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+  fireEvent.click(screen.getByRole('button', { name: 'Open report from history' }));
+  expect((await screen.findByLabelText('Linked report')).textContent).toBe('Test bottles');
 });

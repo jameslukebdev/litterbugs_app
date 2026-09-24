@@ -86,12 +86,13 @@ export async function requestReportPhotoReview(reportId: string) {
 export async function createCleanupContribution(
   reportId: string,
   principalAmountCents: number,
+  clientRequestId = crypto.randomUUID(),
 ): Promise<ContributionIntent> {
   const { data, error } = await createClient().functions.invoke('create-cleanup-contribution', {
     body: {
       reportId,
       principalAmountCents,
-      clientRequestId: crypto.randomUUID(),
+      clientRequestId,
     },
   });
   if (error || data?.error) {
