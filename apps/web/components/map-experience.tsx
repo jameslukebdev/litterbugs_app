@@ -17,6 +17,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/icon';
 import { PublicAccountAction, type PublicAccountActionHandle } from '@/components/public-account-action';
 import { PublicSiteHeader } from '@/components/public-site-header';
+import { PlaceSearch } from '@/components/place-search';
+import type { SearchPlace } from '@/lib/place-geography';
 import { ReportBrowser } from '@/components/report-browser';
 import { canManageReport, realUserId } from '@/lib/report-access';
 import { getBrowserLocation, requireReportLocation } from '@/lib/geolocation';
@@ -78,6 +80,7 @@ export function MapExperience({
   );
   const [userId, setUserId] = useState(initialUserId);
   const [mapReady, setMapReady] = useState(false);
+  const [searchPlace, setSearchPlace] = useState<SearchPlace | null>(null);
   const [discoveryArea, setDiscoveryArea] = useState<DiscoveryArea | null>(null);
   const [discoveryFilters, setDiscoveryFilters] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
   const [discoveryLoading, setDiscoveryLoading] = useState(false);
@@ -123,7 +126,7 @@ export function MapExperience({
     setDiscoveryLoading(true);
     setDiscoveryError('');
     try {
-      const result = await loadDiscoveryReports(createClient(), { filters: discoveryFilters, area: discoveryArea, favorites: reportPreferences.favorites, hidden: reportPreferences.hidden, signal: controller.signal });
+      const result = await loadDiscoveryReports(createClient(), { filters: discoveryFilters, area: discoveryArea, favorites: reportPreferences.favorites, hidden: reportPreferences.hidden, signal: controller.signal, geometry: searchPlace?.geometry });
       if (controller.signal.aborted) return;
       const nextReports = result.reports;
       setReports(nextReports);
@@ -135,7 +138,7 @@ export function MapExperience({
     } finally {
       if (!controller.signal.aborted) setDiscoveryLoading(false);
     }
-  }, [discoveryArea, discoveryFilters, reportPreferences]);
+  }, [discoveryArea, discoveryFilters, reportPreferences, searchPlace]);
 
   useEffect(() => {
     if (!discoveryArea) return;
@@ -144,6 +147,36 @@ export function MapExperience({
   }, [discoveryArea, refreshReports]);
 
   useEffect(() => () => discoveryRequest.current?.abort(), []);
+
+  async function geocodeAddress(text: string): Promise<SearchPlace[]> {
+    const { Geocoder } = await importLibrary('geocoding');
+    try {
+      const { results } = await new Geocoder().geocode({ address: text });
+      return results.slice(0, 5).map(result => ({
+        id: result.place_id,
+        label: result.formatted_address,
+        subtitle: 'Address / area center · no boundary',
+        latitude: result.geometry.location.lat(), longitude: result.geometry.location.lng(),
+        bounds: result.geometry.viewport.toJSON(),
+      }));
+    } catch (error) {
+      if ((error as { code?: string }).code === 'ZERO_RESULTS') return [];
+      throw error;
+    }
+  }
+
+  function selectSearchPlace(place: SearchPlace) {
+    setSearchPlace(place);
+    mapRef.current?.fitBounds(place.bounds, 60);
+  }
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map?.data || !searchPlace?.geometry) return;
+    const features = map.data.addGeoJson({ type: 'Feature', properties: {}, geometry: searchPlace.geometry });
+    map.data.setStyle({ fillColor: '#2f7d32', fillOpacity: 0.08, strokeColor: '#2f7d32', strokeWeight: 2, clickable: false });
+    return () => { features.forEach(feature => map.data.remove(feature)); };
+  }, [mapReady, searchPlace]);
 
   const handleUserChange = useCallback((nextUserId: string | null) => {
     setUserId(nextUserId);
@@ -674,6 +707,8 @@ export function MapExperience({
         <ReportBrowser
           reports={reports}
           mapCenter={discoveryArea}
+          boundary={searchPlace?.geometry}
+          placeSearch={<PlaceSearch selected={searchPlace} onSelect={selectSearchPlace} onClear={() => setSearchPlace(null)} geocode={geocodeAddress} disabled={!mapReady || reportMode} />}
           onDiscoveryFiltersChange={setDiscoveryFilters}
           loading={discoveryLoading}
           truncated={discoveryTruncated}

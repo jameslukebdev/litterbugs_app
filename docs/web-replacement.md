@@ -11,9 +11,12 @@ The new website lives in `apps/web` and connects only to Supabase project
 - Combined report-title/notes search, cleanup status, reward, severity, favorites,
   hidden reports, and 5/25/50-mile distance from the map center. Discovery uses
   stable pages within the visible map bounds and a visible 1,000-match limit.
-  City/address search remains a separate parity item.
+  U.S. town search selects and draws the same Census town/surrounding postal
+  boundary used by mobile. Address / worldwide search selects an area center
+  without claiming a boundary; Clear area removes the boundary filter.
 - Google Maps JavaScript API with location centering and roadmap, satellite,
-  hybrid, and terrain controls.
+  hybrid, and terrain controls. The restricted web Maps key also permits the Geocoding
+  API for explicit address searches; native Maps keys remain separate.
 - Mobile-style report details with signed private photo URLs, types, severity,
   notes, reported date, and expiration date. Mobile-created HEIC/HEIF objects
   are converted to cached JPEG responses by a web-only endpoint after it proves

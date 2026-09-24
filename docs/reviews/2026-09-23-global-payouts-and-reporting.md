@@ -374,6 +374,31 @@ map-area queries, which returned HTTP 200 with clean consoles and no horizontal
 overflow. Prior `dpl_BNaBdmyTXSkfy52PiGd9dsGFmwPJ` remains for rollback.
 Remote main was fetched before commit and remains an ancestor of this branch.
 
+### Website city, address, and boundary search — September 23
+
+Added U.S. town search using the same Census place/postal-area logic as mobile,
+with a drawn boundary and matching report filtering. Polygon holes and separate
+parts are preserved. Address / worldwide search uses the Maps JavaScript
+geocoder and labels its result as an area center without a boundary. Clearing
+an area removes its geometry restriction while retaining the current map.
+Request sequence/abort guards ignore obsolete responses; failed boundary
+resolution preserves the previous place. No mobile source or configuration changed.
+
+Enabled `geocoding-backend.googleapis.com` in `litterbugs-auth` and added that
+single API to web key `5528ba95-42db-4d24-bc0e-076ddad81f59`. Existing allowed
+website referrers were preserved exactly, and native keys were untouched.
+Google setup reference: https://developers.google.com/maps/documentation/javascript/geocoding .
+
+All 171 web tests, typecheck, lint, build, and 407-file boundary checks passed.
+Local rendered components at 1280×900 and 390×844 resolved Boone, NC through the
+actual Census service, selected its boundary, and cleared it without console
+errors or horizontal overflow. The worldwide result in that fixture was mocked;
+separate actual Google geocoder calls on litterbugs.app resolved Rio de Janeiro,
+Nairobi, and Bangkok to BR, KE, and TH respectively. This proves address search
+in those examples, not Stripe payout availability. A Playwright label initially
+matched both the search region and input; selecting the named searchbox fixed
+the verifier. No reports, claims, legal acceptance, or payments were created.
+
 ## Stripe account review
 
 Correct Litterbugs account: `acct_1U2HZe40KMkUKMFW`. The installed Stripe

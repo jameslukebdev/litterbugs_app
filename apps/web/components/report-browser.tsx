@@ -3,9 +3,10 @@
 /* eslint-disable @next/next/no-img-element -- Signed Supabase URLs are short-lived runtime images. */
 
 import type { Coordinates, MappableReport } from '@litterbugs/report-contract';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { DEFAULT_DISCOVERY_FILTERS, matchesDiscovery, type DiscoveryFilters } from '@/lib/report-discovery';
+import type { BoundaryGeometry } from '@/lib/place-geography';
 import { Icon } from '@/components/icon';
 import { getReportCardPhotoUrl, getReportDetailPhotoUrl } from '@/lib/report-photo';
 
@@ -147,12 +148,16 @@ export function ReportBrowser({
   favoriteReportIds = EMPTY_REPORT_IDS,
   hiddenReportIds = EMPTY_REPORT_IDS,
   mapCenter,
+  placeSearch,
+  boundary,
   onDiscoveryFiltersChange,
   loading = false,
   truncated = false,
   discoveryError = '',
 }: {
   mapCenter?: Coordinates | null;
+  placeSearch?: ReactNode;
+  boundary?: BoundaryGeometry;
   onDiscoveryFiltersChange?: (filters: DiscoveryFilters) => void;
   loading?: boolean;
   truncated?: boolean;
@@ -188,7 +193,7 @@ export function ReportBrowser({
     setFilter('custom');
   }
   const visibleReports = useMemo(() => {
-    const filtered = reports.filter((report) => matchesDiscovery(report, applied, mapCenter, favoriteReportIds, hiddenReportIds));
+    const filtered = reports.filter((report) => matchesDiscovery(report, applied, mapCenter, favoriteReportIds, hiddenReportIds, boundary));
     return filtered.sort((left, right) => {
       if (sort === 'reward-high') return right.funded_amount_cents - left.funded_amount_cents;
       if (sort === 'severity') {
@@ -197,7 +202,7 @@ export function ReportBrowser({
       }
       return new Date(right.created_at ?? 0).getTime() - new Date(left.created_at ?? 0).getTime();
     });
-  }, [applied, mapCenter, favoriteReportIds, hiddenReportIds, reports, sort]);
+  }, [applied, mapCenter, favoriteReportIds, hiddenReportIds, reports, sort, boundary]);
 
   useEffect(() => {
     onVisibleReportsChange?.(visibleReports);
@@ -241,6 +246,7 @@ export function ReportBrowser({
               </button>
             ))}
           </div>
+          {placeSearch}
           <details className="discovery-filter-details"><summary>Search and filters</summary>
             <div className="discovery-filter-fields">
               <label className="discovery-query">Search report titles and notes<input type="search" value={applied.query} onChange={event => updateFilter('query', event.target.value)} placeholder="Bottles, roadside…" /></label>
