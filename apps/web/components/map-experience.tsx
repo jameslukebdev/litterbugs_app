@@ -68,6 +68,7 @@ export function MapExperience({
   const mapElementRef = useRef<HTMLDivElement>(null);
   const initialMapReports = useRef(initialReports.filter(hasReportCoordinates));
   const mapRef = useRef<google.maps.Map | null>(null);
+  const mapPositionChosen = useRef(false);
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
   const markerGlyphsRef = useRef(new Map<string, HTMLElement>());
   const accountActionRef = useRef<PublicAccountActionHandle>(null);
@@ -166,6 +167,7 @@ export function MapExperience({
   }
 
   function selectSearchPlace(place: SearchPlace) {
+    mapPositionChosen.current = true;
     setSearchPlace(place);
     mapRef.current?.fitBounds(place.bounds, 60);
   }
@@ -245,6 +247,7 @@ export function MapExperience({
       url.searchParams.delete('report');
       window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
       if (!report) { setToast('This report is no longer available.'); return; }
+      mapPositionChosen.current = true;
       setSelectedReport(report);
       setReportListOpen(false);
       mapRef.current?.panTo({ lat: report.latitude, lng: report.longitude });
@@ -289,6 +292,7 @@ export function MapExperience({
         map.addListener('click', (event: google.maps.MapMouseEvent) => {
           if (event.latLng) mapClickRef.current({ latitude: event.latLng.lat(), longitude: event.latLng.lng() });
         });
+        map.addListener('dragstart', () => { mapPositionChosen.current = true; });
         map.addListener('idle', () => {
           const bounds = map.getBounds()?.toJSON();
           const center = map.getCenter();
@@ -299,13 +303,13 @@ export function MapExperience({
         mapRef.current = map;
         setMapReady(true);
         void getBrowserLocation().then((location) => {
-          if (!cancelled) {
+          if (!cancelled && !mapPositionChosen.current) {
             map.panTo({ lat: location.latitude, lng: location.longitude });
             map.setZoom(14);
           }
         }).catch(() => {
           const seedReports = initialMapReports.current;
-          if (cancelled || !seedReports.length) return;
+          if (cancelled || mapPositionChosen.current || !seedReports.length) return;
           if (seedReports.length === 1) {
             map.panTo({ lat: seedReports[0].latitude, lng: seedReports[0].longitude });
             map.setZoom(14);
@@ -399,6 +403,7 @@ export function MapExperience({
 
   function changeDraftLocation() {
     if (!draftCoordinates || pendingPublication.current) return;
+    mapPositionChosen.current = true;
     setSelectingDraftLocation(true);
     setReportMode(true);
     mapRef.current?.panTo({ lat: draftCoordinates.latitude, lng: draftCoordinates.longitude });
@@ -416,6 +421,7 @@ export function MapExperience({
   }, [draftCoordinates, selectingDraftLocation]);
 
   async function centerOnUser() {
+    mapPositionChosen.current = true;
     try {
       const location = await getBrowserLocation();
       mapRef.current?.panTo({ lat: location.latitude, lng: location.longitude });
@@ -432,6 +438,7 @@ export function MapExperience({
   }
 
   function openReport(report: MappableReport) {
+    mapPositionChosen.current = true;
     setSelectedReport(report);
     setReportListOpen(false);
     mapRef.current?.panTo({ lat: report.latitude, lng: report.longitude });

@@ -8,6 +8,8 @@ const state = vi.hoisted(() => ({
   click: null as null | ((event: unknown) => void),
   idle: null as null | (() => void),
   discovery: vi.fn(),
+  panTo: vi.fn(),
+  fitBounds: vi.fn(),
   published: false,
   lostResponse: false,
   inserts: vi.fn(),
@@ -23,14 +25,15 @@ vi.mock('@googlemaps/js-api-loader', () => ({
   setOptions: vi.fn(),
   importLibrary: async (name: string) => name === 'maps' ? { Map: class {
     addListener(name: string, callback: (event: unknown) => void) { if (name === 'click') state.click = callback; else if (name === 'idle') state.idle = () => callback(undefined); }
-    panTo() {} setZoom() {} getZoom() { return 14; }
+    panTo(...args: unknown[]) { state.panTo(...args); } fitBounds(...args: unknown[]) { state.fitBounds(...args); } setZoom() {} getZoom() { return 14; }
     getBounds() { return { toJSON: () => ({ north: 1, south: -1, west: -1, east: 1 }) }; }
     getCenter() { return { lat: () => 0, lng: () => 0 }; }
   } } : { AdvancedMarkerElement: class {} },
 }));
 vi.mock('@/components/public-site-header', () => ({ PublicSiteHeader: ({ action }: { action: React.ReactNode }) => action }));
 vi.mock('@/components/public-account-action', () => ({ PublicAccountAction: () => null }));
-vi.mock('@/components/report-browser', () => ({ ReportBrowser: ({ reports, onDiscoveryFiltersChange }: { reports: Array<{ title: string }>; onDiscoveryFiltersChange: (filters: unknown) => void }) => <><output aria-label="Discovery results">{reports.map(report => report.title).join(',')}</output><button onClick={() => onDiscoveryFiltersChange({ status: 'available', funding: 'all', severity: 'high', radius: 0, query: '', scope: 'all' })}>High severity filter</button></> }));
+vi.mock('@/components/report-browser', () => ({ ReportBrowser: ({ reports, onDiscoveryFiltersChange, placeSearch }: { placeSearch: React.ReactNode; reports: Array<{ title: string }>; onDiscoveryFiltersChange: (filters: unknown) => void }) => <>{placeSearch}<output aria-label="Discovery results">{reports.map(report => report.title).join(',')}</output><button onClick={() => onDiscoveryFiltersChange({ status: 'available', funding: 'all', severity: 'high', radius: 0, query: '', scope: 'all' })}>High severity filter</button></> }));
+vi.mock('@/components/place-search', () => ({ PlaceSearch: ({onSelect}: {onSelect: (place: unknown) => void}) => <button onClick={() => onSelect({id:'chosen',label:'Chosen area',latitude:1,longitude:2,bounds:{north:2,south:0,west:1,east:3}})}>Choose map area</button> }));
 vi.mock('@/lib/report-discovery', async (importOriginal) => ({ ...await importOriginal<typeof import('@/lib/report-discovery')>(), loadDiscoveryReports: (...args: unknown[]) => state.discovery(...args) }));
 vi.mock('@/components/report-detail', () => ({ ReportDetail: ({report}: {report: {title: string}}) => <output aria-label="Linked report">{report.title}</output> }));
 vi.mock('@/components/resumable-report-wizard', () => ({ ResumableReportWizard: ({ onSubmit, onChangeLocation, selectingLocation, coordinates }: { onSubmit: (draft: ReportDraft, amount: number | null) => Promise<unknown>; onChangeLocation?: () => void; selectingLocation: boolean; coordinates: { latitude: number } }) => {
@@ -200,4 +203,15 @@ it('opens a shared report outside the initial discovery page', async () => {
   render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
   expect((await screen.findByLabelText('Linked report')).textContent).toBe('Test bottles');
   expect(window.location.search).toBe('');
+});
+
+it('does not let delayed startup GPS override a user-selected search area', async () => {
+  let locate!: PositionCallback;
+  Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { getCurrentPosition: (success: PositionCallback) => { locate = success; } } });
+  render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+  await waitFor(() => expect(state.click).toBeTruthy());
+  fireEvent.click(screen.getByRole('button', { name: 'Choose map area' }));
+  expect(state.fitBounds).toHaveBeenCalledWith({north:2,south:0,west:1,east:3},60);
+  await act(async () => locate({coords:{latitude:50,longitude:50},timestamp:Date.now()} as GeolocationPosition));
+  expect(state.panTo).not.toHaveBeenCalled();
 });
