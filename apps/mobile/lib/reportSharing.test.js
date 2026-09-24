@@ -333,6 +333,15 @@ describe('report sharing', () => {
       .toBe('Share Impact');
   });
 
+  it.each(['ios', 'android'])('shares only the report URL for copying into a sticker on %s', async (platform) => {
+    const share = vi.fn().mockResolvedValue({});
+    await shareReportWithSystemSheet({ report: availableReport, platform, share, linkOnly: true });
+    const payload = share.mock.calls[0][0];
+    expect(platform === 'ios' ? payload.url : payload.message).toBe('https://litterbugs.app/reports/report-1');
+    expect(payload.type).toBeUndefined();
+    if (platform === 'ios') expect(payload.message).toBeUndefined();
+  });
+
   it('opens the system sheet, reports cancellation, and does not mutate report state', async () => {
     const report = { ...availableReport, cleanup_state: 'completed' };
     const original = JSON.stringify(report);
@@ -356,7 +365,7 @@ describe('report sharing', () => {
     expect(JSON.stringify(report)).toBe(original);
   });
 
-  it('opens a prepared Instagram Story with a report link sticker', async () => {
+  it('passes report link metadata to Instagram without assuming it creates a sticker', async () => {
     const shareSingle = vi.fn().mockResolvedValue({ success: true });
     const result = await shareReportToInstagramStories({
       report: availableReport,

@@ -1,6 +1,7 @@
 import {
   ActivityIndicator,
   Image,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -49,6 +50,7 @@ export default function ReportShareSheet({
   busyAction = null,
   onClose,
   onSystemShare,
+  onLinkShare,
   onInstagramStory,
   previewPhotoUrl = null,
   report,
@@ -91,6 +93,7 @@ export default function ReportShareSheet({
             </TouchableOpacity>
           </View>
 
+          <ScrollView bounces={false}>
           <View style={styles.preview} accessibilityLabel={`Report being shared: ${title}`}>
             <View style={styles.previewMedia}>
               <Image
@@ -109,9 +112,18 @@ export default function ReportShareSheet({
 
           <View style={styles.options}>
             <ShareOption
+              accessibilityLabel="Share report link"
+              busy={busy}
+              description="Send or copy a clickable report link"
+              icon="link-outline"
+              iconColor="#2F7D32"
+              onPress={onLinkShare}
+              title="Share link"
+            />
+            <ShareOption
               accessibilityLabel="Share to Instagram Stories"
               busy={busy}
-              description="Open a Story draft with the report card"
+              description="Open a draft, then add a Link sticker"
               icon="logo-instagram"
               iconColor="#C13584"
               onPress={onInstagramStory}
@@ -120,20 +132,24 @@ export default function ReportShareSheet({
             <ShareOption
               accessibilityLabel="Share report"
               busy={busy}
-              description="Messages, Mail, and more"
+              description="Send the report card and caption"
               icon="share-outline"
               iconColor="#2F7D32"
               onPress={onSystemShare}
-              title="Choose where to share"
+              title="Share photo"
             />
           </View>
 
+          <Text style={styles.linkHelp}>
+            For an Instagram link: open your Story draft, return here to copy the URL with Share link, then paste it into a Link sticker in Instagram.
+          </Text>
           <View style={styles.privacyRow}>
             <Ionicons name="shield-checkmark-outline" size={16} color="#617066" accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
             <Text style={styles.privacyText}>
               Exact coordinates and private account details stay off the shared card.
             </Text>
           </View>
+          </ScrollView>
       </View>
     </View>
   );
@@ -147,6 +163,7 @@ const styles = StyleSheet.create({
     zIndex: 50,
   },
   sheet: {
+    maxHeight: '92%',
     overflow: 'hidden',
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
@@ -227,6 +244,7 @@ const styles = StyleSheet.create({
   previewTitle: { color: '#263129', fontSize: 16, lineHeight: 21, fontWeight: '600' },
   previewDetails: { color: '#5C675E', fontSize: 12 },
   options: { gap: 10, paddingHorizontal: 20 },
+  linkHelp: { marginHorizontal: 20, marginTop: 14, color: '#5C675E', fontSize: 12, lineHeight: 17 },
   option: {
     minHeight: 70,
     flexDirection: 'row',

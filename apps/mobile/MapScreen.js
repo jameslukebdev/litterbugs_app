@@ -1821,13 +1821,33 @@ useEffect(() => {
     }
   };
 
+  const shareSelectedReportLink = async () => {
+    if (!selectedReportIsShareable || reportShareBusyAction) return;
+    setReportShareBusyAction('link');
+    try {
+      await shareReportWithSystemSheet({
+        report: selectedReport,
+        impact: completedCleanupImpact,
+        platform: Platform.OS,
+        linkOnly: true,
+        share: NativeShare.share,
+      });
+      setReportShareSheetOpen(false);
+    } catch (error) {
+      console.log('Report link sharing error:', error);
+      Alert.alert('Sharing unavailable', 'We couldn’t open the share menu. Please try again.');
+    } finally {
+      setReportShareBusyAction(null);
+    }
+  };
+
   const shareSelectedReportToInstagram = async () => {
     if (!selectedReportIsShareable || reportShareBusyAction) return;
 
     if (!installedRNShare?.shareSingle || !installedRNShare.Social?.INSTAGRAM_STORIES) {
       Alert.alert(
         'Instagram sharing unavailable',
-        'We couldn’t open Instagram Stories. You can still send this report with “Choose where to share”.'
+        'We couldn’t open Instagram Stories. You can still send this report with “Share link”.'
       );
       return;
     }
@@ -1846,7 +1866,7 @@ useEffect(() => {
     if (!instagramAvailable) {
       Alert.alert(
         'Instagram isn’t available',
-        'Instagram isn’t available on this phone. Try “Choose where to share” to send the report another way.'
+        'Instagram isn’t available on this phone. Try “Share link” to send the report another way.'
       );
       return;
     }
@@ -1872,8 +1892,8 @@ useEffect(() => {
       Alert.alert(
         unavailable ? 'Instagram isn’t available' : 'Instagram sharing unavailable',
         unavailable
-          ? 'Instagram isn’t available on this phone. Try “Choose where to share” to send the report another way.'
-          : 'We couldn’t prepare your Story. Please try again, or use “Choose where to share”.'
+          ? 'Instagram isn’t available on this phone. Try “Share link” to send the report another way.'
+          : 'We couldn’t prepare your Story. Please try again, or use “Share link”.'
       );
     } finally {
       setReportShareBusyAction(null);
@@ -2816,7 +2836,7 @@ const revealBottomReportField = () => {
 {/* ============================= */}
 
 <ReportDetailsSheet state={{ detailsOpen, reportShareSheetOpen, reportShareBusyAction, selectedReport, insets, region, reportDetailsPreparing, selectedReportHasUtilityActions, completedCleanupImpact, completedCleanupImpactLoading, completedCleanupImpactError, reportHeroWidth, currentUserId, reportPhotoUrls, photosLoading, geminiReviewEnabled, userOwnsSelectedReport, reportFundingFeedback, cleanupDiscoverable, cleanupStatus, currentUserIsCleaner, selectedCleanupAttempt, cleanupAttemptLoading, cleanupActionBusy, canEditOrDeleteSelectedReport, selectedReportCanOpenFunding, payoutGateBusy, selectedReportIsShareable }}
-  actions={{ setReportShareSheetOpen, closeReportDetails, setDetailsOpen, setSelectedReport, setPreviewId, navigation, commitMapRegion, setCompletedCleanupImpact, setCompletedCleanupImpactError, setCompletedCleanupImpactLoading, setCompletedCleanupImpactReloadKey, openCleanupNavigation, openCleanupSubmission, confirmCleanupRelease, openCleanupFeedback, openCleanupReview, beginCleanupClaim, openFundingContribution, removeReport, setForm, setEditingReportId, setIsEditing, setDraftCoord, resetReportWizard, setFormOpen, shareSelectedReport, shareSelectedReportToInstagram, editReportPhotos }} />
+  actions={{ setReportShareSheetOpen, closeReportDetails, setDetailsOpen, setSelectedReport, setPreviewId, navigation, commitMapRegion, setCompletedCleanupImpact, setCompletedCleanupImpactError, setCompletedCleanupImpactLoading, setCompletedCleanupImpactReloadKey, openCleanupNavigation, openCleanupSubmission, confirmCleanupRelease, openCleanupFeedback, openCleanupReview, beginCleanupClaim, openFundingContribution, removeReport, setForm, setEditingReportId, setIsEditing, setDraftCoord, resetReportWizard, setFormOpen, shareSelectedReport, shareSelectedReportLink, shareSelectedReportToInstagram, editReportPhotos }} />
 
 <CleanupWaiverModal
   visible={cleanupWaiverOpen}
