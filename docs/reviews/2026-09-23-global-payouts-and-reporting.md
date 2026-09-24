@@ -399,6 +399,20 @@ in those examples, not Stripe payout availability. A Playwright label initially
 matched both the search region and input; selecting the named searchbox fixed
 the verifier. No reports, claims, legal acceptance, or payments were created.
 
+A delayed-startup GPS race was then fixed: choosing a place, opening a report,
+changing a draft pin, or dragging the map takes precedence over initial GPS
+centering. Eleven focused map tests passed, including delayed GPS after place
+selection; typecheck/lint and the cloud build passed. The earlier candidate
+`dpl_CbXZMEzymX9u3LS8AUsqmEVZYAMH` was superseded before domain promotion.
+Final commit `407f841` deployed as `dpl_54Moy57D8aWMEbDAfnATZLxY2q5m`, checked
+at its separate URL, then promoted to litterbugs.app. Actual live UI checks at
+1280×900 and 390×844 selected Boone, drew one Google Maps data feature, removed
+it with Clear area, then selected Nairobi through the real worldwide geocoder.
+Both had clean consoles. Screenshot: `/tmp/litterbugs-web-report-alignment/live-boundary-390.png`.
+Prior live `dpl_7sCud2RjGVypeUsXaXyjG3onDWHX` remains available for rollback.
+Fresh remote main is still Luke’s `5cc45c4`, included in this branch. Stripe
+support remains at the same escalation acknowledgment with no approval yet.
+
 ## Stripe account review
 
 Correct Litterbugs account: `acct_1U2HZe40KMkUKMFW`. The installed Stripe
