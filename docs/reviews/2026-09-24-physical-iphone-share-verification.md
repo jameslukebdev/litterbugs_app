@@ -42,3 +42,8 @@ Instagram's Story handoff clears the clipboard; trying to retain plain text alon
 The Messages rich preview revealed a separate hardcoded volunteer label in the web Open Graph image. The web follow-up now renders the reward for funded reports and retains volunteer/completed labels for those states; three generated-image markup tests cover this distinction.
 
 Limits: photo captions remain receiver-dependent; Instagram requires the manual sticker step. These checks prove custom-scheme handoff on the QA iPhone, not production Universal Links, Android device delivery, or store release. No native dependency patch is retained.
+
+
+## Android production-artifact follow-up
+
+The September 24 production APK from main `5fe4a07` subsequently passed an in-place update, cold HTTPS report opening through Android's verified App Link, exact-URL delivery to the native share sheet, cancellation, and production map rendering on the API 36 emulator. See [current release candidates](../current-mobile-release-candidates.md) for artifact IDs, hashes, and scope. This adds Android emulator evidence; it does not claim physical Android testing or enable iOS production Universal Links.
