@@ -21,8 +21,8 @@ describe('PublicSiteHeader', () => {
     render(<PublicSiteHeader activePath="/terms" action={<button>Sign in</button>} />);
 
     expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Search' })).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Field Guide' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Map' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'About' })).toBeTruthy();
     expect(screen.queryByRole('navigation', { name: 'Information and policies' })).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Safety' }));
@@ -39,8 +39,8 @@ describe('PublicSiteHeader', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
     const mobileNavigation = screen.getByRole('navigation', { name: 'Mobile navigation' });
     expect(mobileNavigation).toBeTruthy();
-    expect(screen.getAllByRole('link', { name: 'Search' })).toHaveLength(2);
-    expect(screen.getAllByRole('link', { name: 'Field Guide' })).toHaveLength(2);
+    expect(screen.getAllByRole('link', { name: 'Map' })).toHaveLength(2);
+    expect(screen.getAllByRole('link', { name: 'About' })).toHaveLength(2);
     expect(screen.getByRole('link', { name: /Safety & waiver/ })).toBeTruthy();
 
     fireEvent.pointerDown(document.body);

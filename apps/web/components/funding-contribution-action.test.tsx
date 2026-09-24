@@ -8,6 +8,8 @@ import { FundingContributionAction } from './funding-contribution-action';
 
 const { loadFlags, createContribution } = vi.hoisted(() => ({ loadFlags: vi.fn(), createContribution: vi.fn() }));
 
+vi.mock('@/lib/payment-attempt', () => ({ resumeOrCreatePayment: (_user: string, report: string, amount: number) => createContribution(report, amount).then((intent: unknown) => ({ intent, amount })) }));
+
 vi.mock('@/lib/funding', async (importOriginal) => ({
   ...await importOriginal<typeof import('@/lib/funding')>(),
   loadCleanupFeatureFlags: loadFlags,

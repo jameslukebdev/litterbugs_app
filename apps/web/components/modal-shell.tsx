@@ -1,8 +1,11 @@
 'use client';
 
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react';
 
+import { createPortal } from 'react-dom';
 import { Icon } from '@/components/icon';
+
+const subscribe = () => () => {};
 
 export function ModalShell({
   children,
@@ -17,22 +20,48 @@ export function ModalShell({
   className?: string;
   closeDisabled?: boolean;
 }) {
+  const clientReady = useSyncExternalStore(subscribe, () => true, () => false);
+  const dialogRef = useRef<HTMLElement>(null);
+  const onCloseRef = useRef(onClose);
+  const disabledRef = useRef(closeDisabled);
+  useEffect(() => { onCloseRef.current = onClose; disabledRef.current = closeDisabled; }, [onClose, closeDisabled]);
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     document.body.style.overflow = 'hidden';
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !closeDisabled) onClose();
+    dialogRef.current?.focus();
+    const handleKey = (event: KeyboardEvent) => {
+      if (Array.from(document.querySelectorAll('[role="dialog"]')).at(-1) !== dialogRef.current) return;
+      if (event.key === 'Escape' && !disabledRef.current) {
+        event.preventDefault(); onCloseRef.current();
+      }
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+      const items = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
+        'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])',
+      )).filter(item => item.getClientRects().length > 0);
+      const first = items[0]; const last = items.at(-1);
+      if (!first || !last) { event.preventDefault(); dialogRef.current.focus(); return; }
+      if (!dialogRef.current.contains(document.activeElement)) { event.preventDefault(); (event.shiftKey ? last : first).focus(); return; }
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === dialogRef.current)) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || document.activeElement === dialogRef.current)) {
+        event.preventDefault(); first.focus();
+      }
     };
-    window.addEventListener('keydown', closeOnEscape);
+    window.addEventListener('keydown', handleKey);
     return () => {
       document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', closeOnEscape);
+      window.removeEventListener('keydown', handleKey);
+      if (previousFocus?.isConnected) previousFocus.focus();
     };
-  }, [closeDisabled, onClose]);
+  }, []);
 
-  return (
+  if (!clientReady) return null;
+  return createPortal(
     <div className="modal-backdrop" role="presentation" onMouseDown={() => !closeDisabled && onClose()}>
       <section
+        ref={dialogRef}
+        tabIndex={-1}
         className={`modal-shell ${className}`}
         role="dialog"
         aria-modal="true"
@@ -44,6 +73,6 @@ export function ModalShell({
         </button>
         {children}
       </section>
-    </div>
+    </div>, document.body
   );
 }

@@ -16,7 +16,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Icon } from '@/components/icon';
 import { PublicAccountAction, type PublicAccountActionHandle } from '@/components/public-account-action';
-import { PublicSiteHeader } from '@/components/public-site-header';
+import Image from 'next/image';
+import { IoMapOutline, IoListOutline, IoPersonOutline, IoOptionsOutline } from 'react-icons/io5';
 import { PlaceSearch } from '@/components/place-search';
 import type { SearchPlace } from '@/lib/place-geography';
 import { ReportBrowser } from '@/components/report-browser';
@@ -24,7 +25,7 @@ import { canManageReport, realUserId } from '@/lib/report-access';
 import { getBrowserLocation, requireReportLocation } from '@/lib/geolocation';
 import { ReportDetail } from '@/components/report-detail';
 import { ResumableReportWizard } from '@/components/resumable-report-wizard';
-import { clearPublishedReport, clearReportPublication, loadReportPublication, saveReportPublication, type ReportPublicationJournal } from '@/lib/saved-report-draft';
+import { clearPublishedReport, clearReportPublication, loadReportDraft, loadReportPublication, saveReportPublication, type ReportPublicationJournal } from '@/lib/saved-report-draft';
 import { ReportWizard } from '@/components/report-wizard';
 import { FundingContributionAction } from '@/components/funding-contribution-action';
 import { loadCleanupFeatureFlags, requestReportPhotoReview } from '@/lib/funding';
@@ -34,6 +35,8 @@ import { saveReportEdit } from '@/lib/save-report-edit';
 import { isDiscoverableReport } from '@/lib/report-visibility';
 import { DEFAULT_DISCOVERY_FILTERS, loadDiscoveryReports, type DiscoveryArea, type DiscoveryFilters } from '@/lib/report-discovery';
 import { createClient } from '@/lib/supabase/client';
+
+declare global { interface Window { gm_authFailure?: () => void; } }
 
 const MAP_TYPES = ['roadmap', 'satellite', 'hybrid', 'terrain'] as const;
 let mapsConfigured = false;
@@ -69,15 +72,18 @@ export function MapExperience({
   const initialMapReports = useRef(initialReports.filter(hasReportCoordinates));
   const mapRef = useRef<google.maps.Map | null>(null);
   const mapPositionChosen = useRef(false);
+  const mapAuthFailed = useRef(false);
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
   const markerGlyphsRef = useRef(new Map<string, HTMLElement>());
   const accountActionRef = useRef<PublicAccountActionHandle>(null);
+  const returnToReportList = useRef(false);
   const selectedReportIdRef = useRef<string | null>(null);
   const advancedMarkerRef = useRef<typeof google.maps.marker.AdvancedMarkerElement | null>(null);
   const mapClickRef = useRef<(coordinates: Coordinates) => void>(() => undefined);
+  const [filtersRequest, setFiltersRequest] = useState(0);
   const [reports, setReports] = useState<MappableReport[]>(initialReports.filter(hasReportCoordinates));
   const [visibleReports, setVisibleReports] = useState<MappableReport[]>(
-    initialReports.filter(hasReportCoordinates).filter(({ cleanup_state }) => cleanup_state === 'available'),
+    initialReports.filter(hasReportCoordinates),
   );
   const [userId, setUserId] = useState(initialUserId);
   const [mapReady, setMapReady] = useState(false);
@@ -101,6 +107,7 @@ export function MapExperience({
   const [publicationUncertain, setPublicationUncertain] = useState(false);
   const [editingReport, setEditingReport] = useState<Report | null>(null);
   const [editPhotoUrls, setEditPhotoUrls] = useState<string[]>([]);
+  const [mapPreviewId, setMapPreviewId] = useState<string | null>(null);
   const [reportListOpen, setReportListOpen] = useState(false);
   const [reportMode, setReportMode] = useState(false);
   const [previewedReportId, setPreviewedReportId] = useState<string | null>(null);
@@ -142,10 +149,10 @@ export function MapExperience({
   }, [discoveryArea, discoveryFilters, reportPreferences, searchPlace]);
 
   useEffect(() => {
-    if (!discoveryArea) return;
+    if (!discoveryArea && !mapError) return;
     const timer = window.setTimeout(() => { void refreshReports(); }, 250);
     return () => { window.clearTimeout(timer); discoveryRequest.current?.abort(); };
-  }, [discoveryArea, refreshReports]);
+  }, [discoveryArea, mapError, refreshReports]);
 
   useEffect(() => () => discoveryRequest.current?.abort(), []);
 
@@ -267,6 +274,10 @@ export function MapExperience({
     if (!googleMapsKey || !googleMapsMapId || !mapElementRef.current || mapRef.current) return;
     let cancelled = false;
 
+    const previousAuthFailure = window.gm_authFailure;
+    window.gm_authFailure = () => {
+      if (!cancelled) { mapAuthFailed.current = true; discoveryRequest.current?.abort(); setDiscoveryArea(null); setReports(initialMapReports.current); setMapReady(false); setMapError('The map is unavailable on this address. You can still browse reports.'); }
+    };
     async function startMap() {
       try {
         if (!mapsConfigured) {
@@ -277,7 +288,7 @@ export function MapExperience({
           importLibrary('maps'),
           importLibrary('marker'),
         ]);
-        if (cancelled || !mapElementRef.current) return;
+        if (cancelled || mapAuthFailed.current || !mapElementRef.current) return;
         const map = new Map(mapElementRef.current, {
           center: { lat: FALLBACK_MAP_CENTER.latitude, lng: FALLBACK_MAP_CENTER.longitude },
           zoom: 12,
@@ -294,6 +305,7 @@ export function MapExperience({
         });
         map.addListener('dragstart', () => { mapPositionChosen.current = true; });
         map.addListener('idle', () => {
+          if (mapAuthFailed.current) return;
           const bounds = map.getBounds()?.toJSON();
           const center = map.getCenter();
           if (!bounds || !center) return;
@@ -303,13 +315,13 @@ export function MapExperience({
         mapRef.current = map;
         setMapReady(true);
         void getBrowserLocation().then((location) => {
-          if (!cancelled && !mapPositionChosen.current) {
+          if (!cancelled && !mapAuthFailed.current && !mapPositionChosen.current) {
             map.panTo({ lat: location.latitude, lng: location.longitude });
             map.setZoom(14);
           }
         }).catch(() => {
           const seedReports = initialMapReports.current;
-          if (cancelled || mapPositionChosen.current || !seedReports.length) return;
+          if (cancelled || mapAuthFailed.current || mapPositionChosen.current || !seedReports.length) return;
           if (seedReports.length === 1) {
             map.panTo({ lat: seedReports[0].latitude, lng: seedReports[0].longitude });
             map.setZoom(14);
@@ -324,18 +336,18 @@ export function MapExperience({
       }
     }
     void startMap();
-    return () => { cancelled = true; };
+    return () => { cancelled = true; window.gm_authFailure = previousAuthFailure; };
   }, [googleMapsKey, googleMapsMapId]);
 
   useEffect(() => {
     const map = mapRef.current;
     const AdvancedMarkerElement = advancedMarkerRef.current;
-    if (!mapReady || !map || !AdvancedMarkerElement) return;
-    markersRef.current.forEach((marker) => { marker.map = null; });
+    if (!mapReady || mapAuthFailed.current || !map || !AdvancedMarkerElement) return;
+    markersRef.current.forEach((marker) => { try { marker.map = null; } catch { /* Google may already detach markers after an authentication failure. */ } });
     markerGlyphsRef.current.clear();
     markersRef.current = visibleReports.map((report) => {
       const markerGlyph = document.createElement('span');
-      markerGlyph.className = `report-map-marker${selectedReportIdRef.current === report.id ? ' report-map-marker-selected' : ''}`;
+      markerGlyph.className = `report-map-marker report-map-marker-${report.cleanup_state ?? 'available'}${selectedReportIdRef.current === report.id ? ' report-map-marker-selected' : ''}`;
       markerGlyph.textContent = markerLabel(report);
       markerGlyphsRef.current.set(report.id, markerGlyph);
       const marker = new AdvancedMarkerElement({
@@ -351,7 +363,7 @@ export function MapExperience({
       });
       marker.addEventListener('gmp-click', () => {
         setPreviewedReportId(null);
-        setSelectedReport(report);
+        setMapPreviewId(report.id);
         setReportListOpen(false);
       });
       return marker;
@@ -438,6 +450,7 @@ export function MapExperience({
   }
 
   function openReport(report: MappableReport) {
+    returnToReportList.current = reportListOpen;
     mapPositionChosen.current = true;
     setSelectedReport(report);
     setReportListOpen(false);
@@ -445,9 +458,23 @@ export function MapExperience({
     if ((mapRef.current?.getZoom() ?? 0) < 14) mapRef.current?.setZoom(14);
   }
 
-  function openReportById(reportId: string) {
+  async function openReportById(reportId: string) {
     const report = reports.find(({ id }) => id === reportId);
-    if (report) openReport(report);
+    if (report) { openReport(report); return; }
+    setToast('Loading report…');
+    try {
+      const { data, error } = await createClient().from('reports').select('*').eq('id', reportId).eq('is_published', true).eq('is_sample', false).maybeSingle();
+      if (error || !data || !hasReportCoordinates(data)) throw new Error();
+      setToast(''); openReport(data);
+    } catch { setToast('This report could not be opened. Try again from your activity.'); }
+  }
+
+  function closeReport() {
+    setSelectedReport(null);
+    setReportListOpen(returnToReportList.current);
+    const url = new URL(window.location.href);
+    url.searchParams.delete('report');
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
   }
 
   async function refreshFundingReview(reportId: string) {
@@ -667,6 +694,8 @@ export function MapExperience({
     setToast('Report deleted.');
   }
 
+  const mapPreview = visibleReports.find(report => report.id === mapPreviewId);
+
   const editDraft: ReportDraft = editingReport ? {
     ...EMPTY_REPORT_DRAFT,
     title: editingReport.title ?? '',
@@ -678,41 +707,26 @@ export function MapExperience({
   } : EMPTY_REPORT_DRAFT;
 
   return (
-    <main className="map-page">
-      <PublicSiteHeader
-        activePath="/"
-        action={(
-          <div className="map-header-actions">
-            <button
-              type="button"
-              className={`header-report-button${reportMode ? ' header-report-button-active' : ''}`}
-              onClick={toggleReportMode}
-              aria-label={selectingDraftLocation ? 'Keep previous report location' : reportMode ? 'Cancel reporting' : 'Report litter'}
-              aria-pressed={reportMode}
-            >
-              {reportMode ? (
-                <span aria-hidden>{selectingDraftLocation ? 'Keep location' : 'Cancel'}</span>
-              ) : (
-                <>
-                  <span className="header-report-long" aria-hidden>Report litter</span>
-                  <span className="header-report-short" aria-hidden>Report</span>
-                </>
-              )}
-            </button>
-            <PublicAccountAction
-              ref={accountActionRef}
-              initialUserId={initialUserId}
-              onAccountDataChanged={refreshReports}
-              onOpenReport={openReportById}
-              onUserChange={handleUserChange}
-            />
-          </div>
-        )}
-      />
+    <main className={`map-page native-experience${reportListOpen ? ' showing-reports' : ''}`}>
+      <div className="app-account-controller">
+        <PublicAccountAction ref={accountActionRef} initialUserId={initialUserId}
+          onAccountDataChanged={refreshReports} onOpenReport={openReportById} onUserChange={handleUserChange}
+          onResumeDraft={() => { if (userId) void loadReportDraft(userId).then(draft => { if (draft) setDraftCoordinates(draft.coordinates); }).catch(() => setToast('Your saved report could not be loaded. Try again.')); }} />
+      </div>
+      <nav className="app-bottom-nav" aria-label="Main navigation">
+        <button aria-current={reportListOpen ? 'page' : undefined} onClick={() => setReportListOpen(true)}><IoListOutline aria-hidden /><span>Reports</span></button>
+        <button aria-current={!reportListOpen ? 'page' : undefined} onClick={() => setReportListOpen(false)}><IoMapOutline aria-hidden /><span>Map</span></button>
+        <button onClick={() => accountActionRef.current?.openAccount()}><IoPersonOutline aria-hidden /><span>Profile</span></button>
+      </nav>
 
       <div className="map-workspace">
         <ReportBrowser
           reports={reports}
+          filtersRequest={filtersRequest}
+          showAuthors
+          onMemberBlocked={() => { void refreshReports(); }}
+          onFavoriteChange={(id, favorite) => updateReportPreference('favorites', id, favorite)}
+          onHiddenChange={(id, hidden) => updateReportPreference('hidden', id, hidden)}
           mapCenter={discoveryArea}
           boundary={searchPlace?.geometry}
           placeSearch={<PlaceSearch selected={searchPlace} onSelect={selectSearchPlace} onClear={() => setSearchPlace(null)} geocode={geocodeAddress} disabled={!mapReady || reportMode} />}
@@ -732,6 +746,14 @@ export function MapExperience({
         />
         <section className={`map-stage${reportMode ? ' map-stage-reporting' : ''}`} aria-label="Litterbugs report map">
           <div ref={mapElementRef} className="google-map" />
+          <div className="map-search-pill">
+            <Image src="/brand/litterbugs-logo.png" alt="Litterbugs" width={64} height={44} priority />
+            <PlaceSearch selected={searchPlace} onSelect={selectSearchPlace} onClear={() => setSearchPlace(null)} geocode={geocodeAddress} disabled={!mapReady || reportMode} />
+            <button className="icon-button" aria-label="Search and filters" onClick={() => { setReportListOpen(true); setFiltersRequest(value => value + 1); }}><IoOptionsOutline aria-hidden /></button>
+          </div>
+          <button className="map-report-action primary-button" onClick={() => { setReportListOpen(false); toggleReportMode(); }} aria-pressed={reportMode}>
+            {selectingDraftLocation ? 'Keep location' : reportMode ? 'Cancel reporting' : 'Report litter'}
+          </button>
           {!mapReady && !mapError && <div className="map-loading"><span className="spinner" /><span>Loading map…</span></div>}
           {mapError && <div className="map-error"><Icon name="warning" /><strong>Map unavailable</strong><span>{mapError}</span></div>}
 
@@ -739,6 +761,10 @@ export function MapExperience({
             <button onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() ?? 12) + 1)} aria-label="Zoom in"><Icon name="plus" /></button>
             <button onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() ?? 12) - 1)} aria-label="Zoom out"><Icon name="minus" /></button>
           </div>
+          {mapPreview && <section className="map-report-preview" aria-label="Selected map report">
+            <button className="icon-button" aria-label="Close report preview" onClick={() => setMapPreviewId(null)}><Icon name="close" /></button>
+            <button className="map-report-preview-content" onClick={() => { openReport(mapPreview); setMapPreviewId(null); }}><strong>{mapPreview.title || 'Litter report'}</strong><span>{mapPreview.cleanup_state === 'completed' ? 'Cleanup complete' : mapPreview.funded_amount_cents ? `${(mapPreview.funded_amount_cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })} reward` : 'Volunteer cleanup'}</span><span>View report →</span></button>
+          </section>}
           <div className="map-action-controls">
             <button onClick={toggleMapType} aria-label={`Change map type. Current: ${MAP_TYPES[mapTypeIndex]}`} title="Change map type"><Icon name="layers" /></button>
             <button onClick={centerOnUser} aria-label="Center map on your location" title="My location"><Icon name="location" /></button>
@@ -748,7 +774,7 @@ export function MapExperience({
         </section>
       </div>
 
-      {selectedReport && <ReportDetail key={selectedReport.id} report={selectedReport} userId={userId} isOwner={canManageReport(selectedReport, userId)} favorite={reportPreferences.favorites.has(selectedReport.id)} hidden={reportPreferences.hidden.has(selectedReport.id)} onFavoriteChange={(favorite) => updateReportPreference('favorites', selectedReport.id, favorite)} onHiddenChange={(hidden) => updateReportPreference('hidden', selectedReport.id, hidden)} onNotify={setToast} onRequireSignIn={() => { setSelectedReport(null); accountActionRef.current?.openAuth(); }} onReportChanged={refreshReports} onClose={() => setSelectedReport(null)} onEdit={() => { void editSelectedReport(); }} onDelete={() => { void deleteSelectedReport(); }} />}
+      {selectedReport && <ReportDetail key={selectedReport.id} report={selectedReport} userId={userId} isOwner={canManageReport(selectedReport, userId)} favorite={reportPreferences.favorites.has(selectedReport.id)} hidden={reportPreferences.hidden.has(selectedReport.id)} onFavoriteChange={(favorite) => updateReportPreference('favorites', selectedReport.id, favorite)} onHiddenChange={(hidden) => updateReportPreference('hidden', selectedReport.id, hidden)} onNotify={setToast} onRequireSignIn={(intent) => { const url = new URL(window.location.href); url.searchParams.set('report', selectedReport.id); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`); accountActionRef.current?.openAuth(intent); }} onReportChanged={refreshReports} onClose={closeReport} onEdit={() => { void editSelectedReport(); }} onDelete={() => { void deleteSelectedReport(); }} />}
       {draftCoordinates && userId && <ResumableReportWizard key={userId} userId={userId} onCoordinatesChange={setDraftCoordinates} onRestorePublication={restorePublication} fundingEnabled={fundingEnabled} coordinates={draftCoordinates} selectingLocation={selectingDraftLocation} onChangeLocation={publicationUncertain ? undefined : changeDraftLocation} onClose={() => setDraftCoordinates(null)} onSubmit={saveReport} />}
       {reportFunding && <FundingContributionAction key={reportFunding.report.id} report={reportFunding.report} userId={userId} initialAmountCents={reportFunding.amountCents} startOpen onDismiss={() => setReportFunding(null)} onChanged={refreshReports} onRefreshFunding={() => refreshFundingReview(reportFunding.report.id)} />}
       {editingReport && <ReportWizard initialDraft={editDraft} isEditing existingPhotoCount={editingReport.photo_paths?.length ?? 0} existingPhotoUrls={editPhotoUrls} onClose={() => { setEditingReport(null); setEditPhotoUrls([]); }} onSubmit={saveReport} />}

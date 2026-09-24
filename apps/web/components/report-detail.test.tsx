@@ -13,6 +13,7 @@ const createSignedUrl = vi.fn(async (path: string) => ({
 
 vi.mock('@/lib/supabase/client', () => ({
   createClient: () => ({
+    from: () => { const builder = { select: () => builder, eq: () => builder, not: () => builder, order: () => builder, limit: () => builder, maybeSingle: async () => ({ data: null, error: null }) }; return builder; },
     storage: {
       from: () => ({ createSignedUrl }),
     },
@@ -119,7 +120,7 @@ describe('ReportDetail photos', () => {
 
     expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Back to search' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Back' })).toBeTruthy();
   });
 
   it('shows the cleaner-facing reward and cleanup status', () => {
@@ -187,7 +188,7 @@ describe('ReportDetail photos', () => {
     );
 
     const dialog = screen.getByRole('dialog', { name: 'Photo report' });
-    const closeButton = screen.getByRole('button', { name: 'Back to search' });
+    const closeButton = screen.getByRole('button', { name: 'Back' });
     expect(dialog.getAttribute('aria-modal')).toBe('true');
     expect(document.activeElement).toBe(closeButton);
 
@@ -292,7 +293,7 @@ describe('ReportDetail photos', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Share Your Impact' }));
     expect(screen.getByRole('dialog', { name: 'Share your cleanup impact' })).toBeTruthy();
-    expect(screen.getAllByText('Cleanup complete')).toHaveLength(2);
+    expect(screen.getAllByText('Cleanup complete')).toHaveLength(3);
     fireEvent.click(screen.getByRole('button', { name: 'Close share options' }));
 
     Object.defineProperty(window, 'matchMedia', {
@@ -504,4 +505,10 @@ describe('ReportDetail photos', () => {
     expect(screen.getByRole('dialog', { name: 'Share this cleanup report' })).toBeTruthy();
     expect(screen.getByRole('status').textContent).toBe('');
   });
+});
+
+it('shows a closed historical report without inviting a new cleanup claim', () => {
+  render(<ReportDetail report={{ ...report, expired_at: '2026-08-31', expires_at: '2026-08-31' }} isOwner={false} onClose={vi.fn()} onEdit={vi.fn()} onDelete={vi.fn()} />);
+  expect(screen.getByText('Report closed')).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Sign in to clean' })).toBeNull();
 });

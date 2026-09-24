@@ -3,9 +3,12 @@
 import type { Database, Report } from '@litterbugs/report-contract';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { FiCheckCircle, FiExternalLink, FiFileText, FiHeart, FiKey, FiLogOut, FiMapPin, FiShield, FiTrash2 } from 'react-icons/fi';
 
+import { loadAccountReports, loadAccountPages, accountReportStatus } from '@/lib/account-reports';
+import { PaymentDetail } from '@/components/payment-detail';
+import { CommunityRank } from '@/components/community-rank';
 import { Icon } from '@/components/icon';
 import { ModalShell } from '@/components/modal-shell';
 import { PayoutSetupAction } from '@/components/payout-setup-action';
@@ -17,7 +20,8 @@ import {
   type ProfileDraftErrors,
 } from '@/lib/profile';
 import { uploadSecureBrowserMedia } from '@/lib/secure-media-upload';
-import { clearPublishedReport as clearSavedReportData } from '@/lib/saved-report-draft';
+import { clearAccountCleanupDrafts } from '@/lib/saved-cleanup-draft';
+import { loadReportDraft, clearPublishedReport as clearSavedReportData } from '@/lib/saved-report-draft';
 import { createClient } from '@/lib/supabase/client';
 
 type CleanupAttemptRow = Database['public']['Tables']['cleanup_attempts']['Row'];
@@ -96,14 +100,24 @@ export function AccountDialog({
   onOpenReport,
   onProfileChanged,
   onAccountDataChanged,
+  onResumeDraft,
 }: {
   onClose: () => void;
   onSignedOut: () => void;
   onOpenReport: (reportId: string) => void;
   onProfileChanged?: (profile: Profile) => void;
   onAccountDataChanged?: () => void | Promise<void>;
+  onResumeDraft?: () => void;
 }) {
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const [hasSavedDraft, setHasSavedDraft] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
+  const [section, setSection] = useState<'profile' | 'activity' | 'payments' | 'settings'>('profile');
+  useEffect(() => { headingRef.current?.focus(); }, [section]);
+  const [activityTab, setActivityTab] = useState<'current' | 'history' | 'reports'>('current');
   const [userId, setUserId] = useState('');
+  const [signInMethods, setSignInMethods] = useState<string[]>([]);
+  const [reportsAvailable, setReportsAvailable] = useState(true);
   const [email, setEmail] = useState('');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileEditing, setProfileEditing] = useState(false);
@@ -138,18 +152,10 @@ export function AccountDialog({
 
       setUserId(user.id);
       setEmail(user.email ?? '');
+      setSignInMethods([...new Set((user.identities ?? []).map(identity => identity.provider))]);
       const [profileResult, reportsResult, expiredReportsResult, cleanupResult, contributionResult, blockedResult] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
-        supabase
-          .from('reports')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('is_sample', false)
-          .eq('is_published', true)
-          .or('status.is.null,status.eq.active')
-          .gt('expires_at', new Date().toISOString())
-          .order('created_at', { ascending: false })
-          .limit(50),
+        loadAccountReports(user.id),
         supabase
           .from('reports')
           .select('*')
@@ -160,26 +166,25 @@ export function AccountDialog({
           .gt('renewal_decision_due_at', new Date().toISOString())
           .order('renewal_decision_due_at', { ascending: true })
           .limit(50),
-        supabase
+        loadAccountPages((start, end) => supabase
           .from('cleanup_attempts')
           .select('id, report_id, status, claim_expires_at, completed_at, is_paid, reward_amount_cents, payout_status, approval_method, dispute_status, financial_review_status, first_paid_admin_status, report:reports(id,title,severity,cleanup_state,is_sample)')
           .eq('cleaner_id', user.id)
           .in('status', ['claimed', 'changes_requested', 'completion_submitted', 'completed'])
           .order('last_activity_at', { ascending: false })
-          .limit(50),
-        supabase
+          .range(start, end)),
+        loadAccountPages((start, end) => supabase
           .from('cleanup_contributions')
-          .select('*, report:reports!inner(id,title,cleanup_state)')
-          .eq('report.cleanup_state', 'completed')
-          .in('status', ['succeeded', 'paid_out'])
+          .select('*, report:reports(id,title,cleanup_state)')
+          .eq('contributor_id', user.id)
           .order('created_at', { ascending: false })
-          .limit(50),
-        supabase
+          .range(start, end)),
+        loadAccountPages((start, end) => supabase
           .from('user_blocks')
           .select('blocked_id, blocked:profiles!user_blocks_blocked_id_fkey(id,display_name,username,provider_avatar_url,avatar_path,updated_at)')
           .eq('blocker_id', user.id)
           .order('created_at', { ascending: false })
-          .limit(50),
+          .range(start, end)),
       ]);
 
       if (cancelled) return;
@@ -190,6 +195,7 @@ export function AccountDialog({
       setLocationDraft(profileResult.data?.location ?? '');
       setProfileEditing(Boolean(profileResult.data && !profileResult.data.profile_completed_at));
       setReports(reportsResult.data ?? []);
+      setReportsAvailable(!reportsResult.error);
       setExpiredReports(expiredReportsResult.data ?? []);
       setCleanups((cleanupResult.data ?? [])
         .filter(({ report }) => !report?.is_sample) as unknown as CleanupAttempt[]);
@@ -204,6 +210,13 @@ export function AccountDialog({
     void loadDashboard();
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    if (!userId || !onResumeDraft) return;
+    let cancelled = false;
+    void loadReportDraft(userId).then(draft => { if (!cancelled) setHasSavedDraft(Boolean(draft)); }).catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [userId, onResumeDraft]);
 
   useEffect(() => () => {
     if (avatarPreview.startsWith('blob:')) URL.revokeObjectURL(avatarPreview);
@@ -249,6 +262,7 @@ export function AccountDialog({
     }
     try {
       await clearSavedReportData(userId);
+        await clearAccountCleanupDrafts(userId);
     } catch {
       window.alert('Your account was deleted, but this browser could not remove its saved report photos. Clear site data for litterbugs.app in your browser settings to remove them.');
     }
@@ -411,12 +425,15 @@ export function AccountDialog({
   const joinedLabel = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
     : '';
-  const awaitingReviewCount = cleanups.filter(({ status }) => status === 'completion_submitted').length;
-  const activeCleanupCount = cleanups.filter(({ status }) => status === 'claimed' || status === 'changes_requested').length;
+
 
   return (
     <ModalShell onClose={onClose} label="Your Litterbugs account" className="account-dialog member-dashboard" closeDisabled={Boolean(busyAction)}>
-      <header className="member-dashboard-header">
+      <header className="account-screen-title">
+        {section !== 'profile' && <button className="icon-button" onClick={() => setSection('profile')} aria-label="Back to profile"><Icon name="chevron-left" /></button>}
+        <h2 ref={headingRef} tabIndex={-1}>{section === 'profile' ? 'Profile' : section === 'activity' ? 'My activity' : section === 'payments' ? 'Payments' : 'Settings'}</h2>
+      </header>
+      {(section === 'profile' || profileEditing) && <header className="member-dashboard-header">
         <div className="account-avatar" aria-hidden>
           {visibleAvatarUrl ? <Image src={visibleAvatarUrl} alt="" width={64} height={64} unoptimized /> : (initial || <Icon name="account" />)}
         </div>
@@ -428,7 +445,7 @@ export function AccountDialog({
           {joinedLabel ? <p className="member-profile-joined">Joined {joinedLabel}</p> : null}
         </div>
         {!profileEditing && <button className="secondary-button member-edit-profile" onClick={startProfileEdit}>Edit profile</button>}
-      </header>
+      </header>}
 
       {message && <p className={`form-message ${message.includes('sent') || message.includes('saved') ? 'success-message' : 'error-message'}`} role="status">{message}</p>}
 
@@ -500,19 +517,26 @@ export function AccountDialog({
         <div className="member-dashboard-loading"><span className="spinner" /><span>Loading your activity…</span></div>
       ) : (
         <>
-          <section className="member-report-stat" aria-label="Reports submitted">
-            <strong>{profile?.reports_created_count ?? reports.length}</strong>
-            <span>Reports submitted</span>
+          {section === 'profile' && <>
+          <CommunityRank userId={userId} />
+          <nav className="account-section-links" aria-label="Profile sections">
+            <button onClick={() => setSection('activity')}>My activity<Icon name="chevron-right" /></button>
+            <button onClick={() => setSection('payments')}>Payments<Icon name="chevron-right" /></button>
+            <button onClick={() => setSection('settings')}>Settings<Icon name="chevron-right" /></button>
+          </nav>
+          <section className="member-stats" aria-label="Community activity">
+            <div aria-label="Reports submitted"><strong>{reportsAvailable ? reports.length : '—'}</strong><span>Reports</span></div>
+            <div><strong>{completedCleanups.length}</strong><span>Cleanups</span></div>
           </section>
 
-          <section className="member-stats" aria-label="Cleanup activity summary">
-            <div><strong>{completedCleanups.length}</strong><span>Completed</span></div>
-            <div><strong>{awaitingReviewCount}</strong><span>Awaiting review</span></div>
-            <div><strong>{activeCleanupCount}</strong><span>Active</span></div>
-          </section>
-
+          </>}
+          {section === 'activity' && <div className="activity-tabs" role="tablist" aria-label="My activity">
+            {(['current', 'history', 'reports'] as const).map(tab => <button key={tab} role="tab" aria-selected={activityTab === tab} onClick={() => setActivityTab(tab)}>{tab === 'current' ? 'Current cleanups' : tab === 'history' ? 'Cleanup history' : 'My reports'}</button>)}
+          </div>}
+          {section === 'activity' && activityTab === 'reports' && hasSavedDraft && <button className="secondary-button" onClick={() => { onClose(); onResumeDraft?.(); }}>Resume saved report</button>}
+          {section === 'payments' && <PayoutSetupAction />}
           <div className="member-dashboard-grid">
-            {expiredReports.length ? (
+            {section === 'activity' && activityTab === 'reports' && expiredReports.length ? (
               <section className="member-panel">
                 <header><div><span className="eyebrow">ACTION NEEDED</span><h3>Renew or close reports</h3></div></header>
                 <div className="member-activity-list">
@@ -546,19 +570,19 @@ export function AccountDialog({
               </section>
             ) : null}
 
-            <section className="member-panel">
-              <header><div><span className="eyebrow">REPORTED BY YOU</span><h3>My active reports</h3></div></header>
+            {section === 'activity' && activityTab === 'reports' && <section className="member-panel">
+              <header><div><span className="eyebrow">REPORTED BY YOU</span><h3>My reports</h3></div></header>
               <div className="member-activity-list">
                 {reports.length ? reports.map((report) => (
                   <button key={report.id} className="member-activity-row" onClick={() => openReport(report.id)}>
-                    <span><strong>{report.title || 'Litter Report'}</strong><small>{report.severity || 'Medium'} severity</small></span>
+                    <span><strong>{report.title || 'Litter Report'}</strong><small>{accountReportStatus(report)} · {report.severity || 'Medium'} severity</small></span>
                     <Icon name="chevron-right" />
                   </button>
-                )) : <p className="member-empty">You do not have any active reports.</p>}
+                )) : <p className="member-empty">Your reports will appear here.</p>}
               </div>
-            </section>
+            </section>}
 
-            <section className="member-panel">
+            {section === 'activity' && activityTab === 'current' && <section className="member-panel">
               <header><div><span className="eyebrow">CLEANUP ACTIVITY</span><h3>Current cleanups</h3></div></header>
               <div className="member-activity-list">
                 {activeCleanups.map((attempt) => (
@@ -576,9 +600,9 @@ export function AccountDialog({
                 ))}
                 {!activeCleanups.length && <p className="member-empty">Claimed and awaiting-review cleanups will appear here.</p>}
               </div>
-            </section>
+            </section>}
 
-            <section className="member-panel">
+            {((section === 'activity' && activityTab === 'history') || section === 'payments') && <section className="member-panel">
               <header><div><span className="eyebrow">YOUR IMPACT</span><h3>Completed cleanups</h3></div></header>
               <div className="member-activity-list">
                 {completedCleanups.map((attempt) => (
@@ -593,13 +617,13 @@ export function AccountDialog({
                 ))}
                 {!completedCleanups.length && <p className="member-empty">Your completed cleanup history will appear here.</p>}
               </div>
-            </section>
+            </section>}
 
-            <section className="member-panel member-contributions-panel">
-              <header><div><span className="eyebrow">CLEANUP FUNDS</span><h3>Completed cleanup contributions</h3></div></header>
+            {section === 'payments' && <section className="member-panel member-contributions-panel">
+              <header><div><span className="eyebrow">CLEANUP FUNDS</span><h3>Your contributions and payments</h3></div></header>
               <div className="member-activity-list">
                 {contributions.map((contribution) => (
-                  <button key={contribution.id} className="member-activity-row" onClick={() => openReport(contribution.report_id)}>
+                  <button key={contribution.id} className="member-activity-row" onClick={() => setSelectedPayment(contribution.id)}>
                     <span>
                       <strong>{formatUsd(contribution.principal_amount_cents)} cleanup reward</strong>
                       <small>{contributionStatusLabel(contribution.status)} · {new Date(contribution.created_at).toLocaleString()}</small>
@@ -608,11 +632,11 @@ export function AccountDialog({
                     <Icon name="chevron-right" />
                   </button>
                 ))}
-                {!contributions.length && <p className="member-empty">Contributions will appear here after their cleanups are completed.</p>}
+                {!contributions.length && <p className="member-empty">Your contributions and payment status will appear here.</p>}
               </div>
-            </section>
+            </section>}
 
-            <section className="member-panel member-blocked-panel">
+            {section === 'settings' && <section className="member-panel member-blocked-panel">
               <header><div><span className="eyebrow">PRIVACY &amp; SAFETY</span><h3>Blocked accounts</h3></div></header>
               <div className="member-activity-list">
                 {blockedAccounts.map(({ blocked_id, blocked }) => {
@@ -639,26 +663,33 @@ export function AccountDialog({
                 })}
                 {!blockedAccounts.length && <p className="member-empty">No blocked accounts. Accounts you block in Litterbugs will appear here on every device.</p>}
               </div>
-            </section>
+            </section>}
           </div>
         </>
       )}
 
-      <section className="member-settings">
+      {section === 'settings' && <section className="member-settings">
         <div className="member-settings-heading"><span className="eyebrow">ACCOUNT</span><h3>Account settings</h3><p>{email || 'Email unavailable for this account'}</p></div>
+        <div className="account-section-links">
+          <button onClick={startProfileEdit}>Edit profile<Icon name="chevron-right" /></button>
+        </div>
+        <details className="member-panel"><summary>Sign-in methods</summary><p>{email || 'No email shared'}</p>{signInMethods.length ? signInMethods.map(provider => <p key={provider}>{provider === 'email' ? 'Email and password' : provider.charAt(0).toUpperCase() + provider.slice(1)} · Connected</p>) : <p>Sign-in method information is unavailable.</p>}<p>Use a connected method to sign in on the website or mobile app.</p></details>
         <div className="member-setting-links">
+          <Link href="/help"><FiHeart aria-hidden /><span>Get help</span><FiExternalLink aria-hidden /></Link>
+          <Link href="/cleanup-safety"><FiShield aria-hidden /><span>Cleanup safety</span><FiExternalLink aria-hidden /></Link>
           <Link href="/terms"><FiFileText aria-hidden /><span>Terms of use</span><FiExternalLink aria-hidden /></Link>
           <Link href="/privacy"><FiShield aria-hidden /><span>Privacy policy</span><FiExternalLink aria-hidden /></Link>
           <Link href="/cleanup-policy"><FiCheckCircle aria-hidden /><span>Cleanup &amp; reward policy</span><FiExternalLink aria-hidden /></Link>
+          <Link href="/photo-review"><FiExternalLink aria-hidden /><span>About photo review</span><FiExternalLink aria-hidden /></Link>
           <Link href="/support"><FiHeart aria-hidden /><span>Support Litterbugs</span><FiExternalLink aria-hidden /></Link>
         </div>
         <div className="account-actions member-account-actions">
-          <PayoutSetupAction />
           <button className="secondary-button" onClick={sendRecovery} disabled={Boolean(busyAction)}><FiKey aria-hidden />{busyAction === 'recovery' ? 'Sending…' : 'Reset password'}</button>
           <button className="secondary-button" onClick={signOut} disabled={Boolean(busyAction)}><FiLogOut aria-hidden />{busyAction === 'signout' ? 'Signing out…' : 'Sign out'}</button>
           <button className="danger-button" onClick={deleteAccount} disabled={Boolean(busyAction)}><FiTrash2 aria-hidden />{busyAction === 'delete' ? 'Deleting account…' : 'Delete account'}</button>
         </div>
-      </section>
+      </section>}
+      {selectedPayment && <ModalShell label="Payment details" onClose={() => setSelectedPayment(null)}><PaymentDetail contributionId={selectedPayment} onOpenReport={openReport} /></ModalShell>}
     </ModalShell>
   );
 }

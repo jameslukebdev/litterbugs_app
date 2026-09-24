@@ -2,11 +2,15 @@
 
 /* eslint-disable @next/next/no-img-element -- Signed Supabase URLs are short-lived runtime images. */
 
-import type { Coordinates, MappableReport } from '@litterbugs/report-contract';
+import { getDistanceMiles, type Coordinates, type MappableReport } from '@litterbugs/report-contract';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { DEFAULT_DISCOVERY_FILTERS, matchesDiscovery, type DiscoveryFilters } from '@/lib/report-discovery';
 import type { BoundaryGeometry } from '@/lib/place-geography';
+import NextImage from 'next/image';
+import { getBrowserLocation } from '@/lib/geolocation';
+import { createClient } from '@/lib/supabase/client';
+import { ReportAuthor, publicFields, type PublicProfile } from '@/components/report-author';
 import { Icon } from '@/components/icon';
 import { getReportCardPhotoUrl, getReportDetailPhotoUrl } from '@/lib/report-photo';
 
@@ -17,7 +21,7 @@ const formatUsd = (cents: number) => new Intl.NumberFormat('en-US', {
 }).format(cents / 100);
 
 type ReportFilter = 'available' | 'rewarded' | 'volunteer' | 'claimed' | 'completed' | 'all' | 'favorites' | 'hidden' | 'custom';
-type ReportSort = 'newest' | 'reward-high' | 'severity';
+type ReportSort = 'closest' | 'newest' | 'reward-high' | 'severity';
 
 const FILTERS: { value: ReportFilter; label: string }[] = [
   { value: 'available', label: 'Available' },
@@ -45,7 +49,7 @@ function preloadReportPhoto(report: MappableReport) {
 function workflowStatus(report: MappableReport) {
   if (report.cleanup_state === 'completed') return 'Cleaned';
   if (['claimed', 'completion_submitted', 'changes_requested'].includes(report.cleanup_state ?? '')) return 'In progress';
-  return 'Open';
+  return 'Available';
 }
 
 function rewardLabel(report: MappableReport) {
@@ -69,6 +73,7 @@ function reportSummary(report: MappableReport) {
 
 function quickFilters(filter: ReportFilter): DiscoveryFilters {
   const next = { ...DEFAULT_DISCOVERY_FILTERS };
+  if (['available', 'rewarded', 'volunteer'].includes(filter)) next.status = 'available';
   if (filter === 'all' || filter === 'favorites' || filter === 'hidden') next.status = 'all';
   if (filter === 'favorites' || filter === 'hidden') next.scope = filter;
   if (filter === 'completed') next.status = 'completed';
@@ -87,20 +92,17 @@ function resultsHeading(count: number, filter: ReportFilter) {
   return `${count} cleanup opportunit${count === 1 ? 'y' : 'ies'}`;
 }
 
-function reportDate(createdAt: string | null) {
-  if (!createdAt) return '';
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    timeZone: 'UTC',
-  }).format(new Date(createdAt));
-}
-
 function reportTiming(report: MappableReport) {
   if (report.cleanup_state === 'completed') return 'Cleanup complete';
-  if (report.expires_at) return `Ends ${reportDate(report.expires_at)}`;
-  if (report.created_at) return `Reported ${reportDate(report.created_at)}`;
-  return '';
+  if (!report.created_at) return '';
+  const minutes = Math.max(0, Math.floor((Date.now() - Date.parse(report.created_at)) / 60000));
+  if (!Number.isFinite(minutes)) return '';
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hr${hours === 1 ? '' : 's'} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? '' : 's'} ago`;
 }
 
 function ReportThumbnail({ report, priority }: { report: MappableReport; priority: boolean }) {
@@ -138,6 +140,10 @@ function ReportThumbnail({ report, priority }: { report: MappableReport; priorit
 
 export function ReportBrowser({
   reports,
+  onFavoriteChange,
+  onHiddenChange,
+  showAuthors = false,
+  onMemberBlocked,
   open,
   onToggle,
   onSelect,
@@ -154,7 +160,9 @@ export function ReportBrowser({
   loading = false,
   truncated = false,
   discoveryError = '',
+  filtersRequest = 0,
 }: {
+  filtersRequest?: number;
   mapCenter?: Coordinates | null;
   placeSearch?: ReactNode;
   boundary?: BoundaryGeometry;
@@ -163,6 +171,10 @@ export function ReportBrowser({
   truncated?: boolean;
   discoveryError?: string;
   reports: MappableReport[];
+  showAuthors?: boolean;
+  onMemberBlocked?: () => void;
+  onFavoriteChange?: (reportId: string, favorite: boolean) => void;
+  onHiddenChange?: (reportId: string, hidden: boolean) => void;
   open: boolean;
   onToggle: () => void;
   onSelect: (report: MappableReport) => void;
@@ -173,8 +185,14 @@ export function ReportBrowser({
   favoriteReportIds?: ReadonlySet<string>;
   hiddenReportIds?: ReadonlySet<string>;
 }) {
+  const [locationOrigin, setLocationOrigin] = useState<Coordinates | null>(null);
+  const [locationMessage, setLocationMessage] = useState('');
+  const [authors, setAuthors] = useState<Record<string, PublicProfile>>({});
+  const filterDetailsRef = useRef<HTMLDetailsElement>(null);
+  useEffect(() => { if (filtersRequest && open && filterDetailsRef.current) { filterDetailsRef.current.open = true; filterDetailsRef.current.querySelector('summary')?.focus(); } }, [filtersRequest, open]);
   const listRef = useRef<HTMLDivElement>(null);
-  const [filter, setFilter] = useState<ReportFilter>('available');
+  const [filter, setFilter] = useState<ReportFilter>('all');
+  const [draftFilters, setDraftFilters] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
   const [advanced, setAdvanced] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
   const [sort, setSort] = useState<ReportSort>('newest');
   const filters = useMemo(() => [
@@ -189,12 +207,12 @@ export function ReportBrowser({
   const applied = useMemo(() => filter === 'custom' ? advanced : quickFilters(activeFilter), [filter, advanced, activeFilter]);
   useEffect(() => { onDiscoveryFiltersChange?.(applied); }, [applied, onDiscoveryFiltersChange]);
   function updateFilter<K extends keyof DiscoveryFilters>(key: K, value: DiscoveryFilters[K]) {
-    setAdvanced({ ...applied, [key]: value });
-    setFilter('custom');
+    setDraftFilters(current => ({ ...current, [key]: value }));
   }
   const visibleReports = useMemo(() => {
     const filtered = reports.filter((report) => matchesDiscovery(report, applied, mapCenter, favoriteReportIds, hiddenReportIds, boundary));
     return filtered.sort((left, right) => {
+      if (sort === 'closest' && locationOrigin) return getDistanceMiles(locationOrigin, left) - getDistanceMiles(locationOrigin, right);
       if (sort === 'reward-high') return right.funded_amount_cents - left.funded_amount_cents;
       if (sort === 'severity') {
         return (SEVERITY_ORDER[(right.severity ?? '').toLowerCase()] ?? 0)
@@ -202,15 +220,33 @@ export function ReportBrowser({
       }
       return new Date(right.created_at ?? 0).getTime() - new Date(left.created_at ?? 0).getTime();
     });
-  }, [applied, mapCenter, favoriteReportIds, hiddenReportIds, reports, sort, boundary]);
+  }, [applied, mapCenter, favoriteReportIds, hiddenReportIds, reports, sort, boundary, locationOrigin]);
+
+  useEffect(() => {
+    if (!open || !showAuthors) return;
+    let cancelled = false;
+    const ids = [...new Set(visibleReports.map(report => report.user_id).filter((id): id is string => Boolean(id)))];
+    if (!ids.length) return;
+    async function loadAuthors() {
+      const results: PublicProfile[] = [];
+      for (let offset = 0; offset < ids.length; offset += 100) {
+        const { data, error } = await createClient().from('profiles').select(publicFields).in('id', ids.slice(offset, offset + 100));
+        if (cancelled) return;
+        if (!error) results.push(...(data ?? []));
+      }
+      if (!cancelled) setAuthors(Object.fromEntries(results.map(profile => [profile.id, profile])));
+    }
+    void loadAuthors();
+    return () => { cancelled = true; };
+  }, [open, visibleReports, showAuthors]);
 
   useEffect(() => {
     onVisibleReportsChange?.(visibleReports);
   }, [onVisibleReportsChange, visibleReports]);
 
   useEffect(() => {
-    if (open && listRef.current) listRef.current.scrollTop = 0;
-  }, [filter, open, sort]);
+    if (listRef.current) listRef.current.scrollTop = 0;
+  }, [filter, sort]);
 
   return (
     <>
@@ -221,13 +257,17 @@ export function ReportBrowser({
         <header className="report-browser-header">
           <div className="report-browser-heading-row">
             <div>
-              <h1>{resultsHeading(visibleReports.length, activeFilter)}</h1>
-              <p>{activeFilter === 'custom' ? 'Matching reports' : filters.find(({ value }) => value === activeFilter)?.label} near this map</p>
+              <h1 className="reports-screen-title"><NextImage src="/brand/litterbugs-logo.png" alt="Litterbugs" width={50} height={34} />Reports</h1>
+              <p>{resultsHeading(visibleReports.length, activeFilter)} · Map area</p>
             </div>
             <label className="report-sort">
               <span className="sr-only">Sort cleanup opportunities</span>
-              <select value={sort} onChange={(event) => setSort(event.target.value as ReportSort)}>
-                <option value="newest">Newest</option>
+              <select value={sort} onChange={(event) => {
+                const next = event.target.value as ReportSort; setSort(next);
+                if (next === 'closest') { setLocationMessage('Finding your location…'); void getBrowserLocation().then(origin => { setLocationOrigin(origin); setLocationMessage(''); }).catch(() => { setLocationOrigin(null); setLocationMessage('Location unavailable. Showing newest first. Allow location access in your browser to sort by distance.'); }); }
+              }}>
+                <option value="newest">Newest first</option>
+                <option value="closest">Closest to me</option>
                 <option value="reward-high">Highest reward</option>
                 <option value="severity">Highest severity</option>
               </select>
@@ -240,24 +280,26 @@ export function ReportBrowser({
                 key={value}
                 type="button"
                 aria-pressed={activeFilter === value}
-                onClick={() => setFilter(value)}
+                onClick={() => { setFilter(value); setAdvanced(quickFilters(value)); setDraftFilters(quickFilters(value)); }}
               >
                 {label}
               </button>
             ))}
           </div>
           {placeSearch}
-          <details className="discovery-filter-details"><summary>Search and filters</summary>
+          <details ref={filterDetailsRef} className="discovery-filter-details"><summary>Search and filters</summary>
             <div className="discovery-filter-fields">
-              <label className="discovery-query">Search report titles and notes<input type="search" value={applied.query} onChange={event => updateFilter('query', event.target.value)} placeholder="Bottles, roadside…" /></label>
-              <label>Cleanup status<select value={applied.status} onChange={event => updateFilter('status', event.target.value as DiscoveryFilters['status'])}><option value="all">All</option><option value="available">Available</option><option value="progress">In progress</option><option value="completed">Completed</option></select></label>
-              <label>Reward<select value={applied.funding} onChange={event => updateFilter('funding', event.target.value as DiscoveryFilters['funding'])}><option value="all">Any reward</option><option value="funded">Funded</option><option value="volunteer">Volunteer</option></select></label>
-              <label>Severity<select value={applied.severity} onChange={event => updateFilter('severity', event.target.value as DiscoveryFilters['severity'])}><option value="all">All</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>
-              <label>Distance from map center<select disabled={!mapCenter} value={applied.radius} onChange={event => updateFilter('radius', Number(event.target.value) as DiscoveryFilters['radius'])}><option value={0}>Any distance</option><option value={5}>5 miles</option><option value={25}>25 miles</option><option value={50}>50 miles</option></select></label>
-              <label>Saved reports<select value={applied.scope} onChange={event => updateFilter('scope', event.target.value as DiscoveryFilters['scope'])}><option value="all">All visible reports</option><option value="favorites">Favorites only</option><option value="hidden">Hidden reports</option></select></label>
-              <button className="secondary-button" onClick={() => setFilter('all')}>Reset filters</button>
+              <label className="discovery-query">Search report titles and notes<input type="search" value={draftFilters.query} onChange={event => updateFilter('query', event.target.value)} placeholder="Bottles, roadside…" /></label>
+              <label>Cleanup status<select value={draftFilters.status} onChange={event => updateFilter('status', event.target.value as DiscoveryFilters['status'])}><option value="all">All</option><option value="available">Available</option><option value="progress">In progress</option><option value="completed">Completed</option></select></label>
+              <label>Reward<select value={draftFilters.funding} onChange={event => updateFilter('funding', event.target.value as DiscoveryFilters['funding'])}><option value="all">Any reward</option><option value="funded">Funded</option><option value="volunteer">Volunteer</option></select></label>
+              <label>Severity<select value={draftFilters.severity} onChange={event => updateFilter('severity', event.target.value as DiscoveryFilters['severity'])}><option value="all">All</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>
+              <label>Distance from map center<select disabled={!mapCenter} value={draftFilters.radius} onChange={event => updateFilter('radius', Number(event.target.value) as DiscoveryFilters['radius'])}><option value={0}>Any distance</option><option value={5}>5 miles</option><option value={25}>25 miles</option><option value={50}>50 miles</option></select></label>
+              <label>Saved reports<select value={draftFilters.scope} onChange={event => updateFilter('scope', event.target.value as DiscoveryFilters['scope'])}><option value="all">All visible reports</option><option value="favorites">Favorites only</option><option value="hidden">Hidden reports</option></select></label>
+              <button className="secondary-button" onClick={() => { setDraftFilters(quickFilters('all')); }}>Reset filters</button>
+              <div className="account-actions"><button className="secondary-button" onClick={() => { setDraftFilters(applied); if (filterDetailsRef.current) filterDetailsRef.current.open = false; }}>Cancel</button><button className="primary-button" onClick={() => { setAdvanced(draftFilters); setFilter('custom'); if (filterDetailsRef.current) filterDetailsRef.current.open = false; }}>Apply filters</button></div>
             </div>
           </details>
+          {sort === 'closest' && locationMessage && <p role="status">{locationMessage}</p>}
           <p className="discovery-status" role="status">{discoveryError || (loading ? 'Searching this map area…' : truncated ? 'Showing up to 1,000 matches. Zoom in or narrow your filters to see more.' : '')}</p>
         </header>
         <div className="report-browser-list" ref={listRef} aria-busy={loading}>
@@ -267,6 +309,7 @@ export function ReportBrowser({
             const previewed = report.id === previewedReportId;
             const funded = report.funded_amount_cents > 0;
             return (
+              <article className="report-card-container" key={report.id}>
               <button
                 className={`report-result${selected ? ' report-result-selected' : ''}${previewed ? ' report-result-previewed' : ''}`}
                 key={report.id}
@@ -283,11 +326,15 @@ export function ReportBrowser({
                   <span className={`report-result-reward${funded ? ' report-result-reward-funded' : ' report-result-reward-volunteer'}`}>{rewardLabel(report)}</span>
                   <span className="report-result-summary">{reportSummary(report)}</span>
                   <span className="report-result-meta">
-                    <span className={`report-result-severity severity-${severity}`}><i />{report.severity ?? 'Medium'} priority</span>
+                    <span className={`report-result-severity severity-${severity}`}><i />{report.severity ?? 'Medium'}</span>
                     <span>{reportTiming(report)}</span>
                   </span>
                 </span>
               </button>
+              {onFavoriteChange && <button className="card-favorite" aria-label={`${favoriteReportIds.has(report.id) ? 'Unfavorite' : 'Favorite'} ${report.title || 'report'}`} aria-pressed={favoriteReportIds.has(report.id)} onClick={() => onFavoriteChange(report.id, !favoriteReportIds.has(report.id))}><Icon name="heart" /></button>}
+              {onHiddenChange && <details className="card-options"><summary aria-label={`Options for ${report.title || 'report'}`}>•••</summary><button onClick={() => onHiddenChange(report.id, !hiddenReportIds.has(report.id))}>{hiddenReportIds.has(report.id) ? 'Unhide report' : 'Hide report'}</button></details>}
+              {report.user_id && authors[report.user_id] && <ReportAuthor key={report.user_id} profileId={report.user_id} initialProfile={authors[report.user_id]} sourceReportId={report.id} onBlocked={onMemberBlocked} />}
+              </article>
             );
           }) : (
             <div className="report-browser-empty">

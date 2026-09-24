@@ -44,14 +44,14 @@ describe('ReportBrowser', () => {
     render(<ReportBrowser reports={[report]} open onToggle={vi.fn()} onSelect={onSelect} />);
 
     expect(screen.getByText('Map')).toBeTruthy();
-    expect(screen.getByRole('heading', { name: '1 cleanup opportunity' })).toBeTruthy();
+    expect(screen.getByText(/1 litter report · Map area/)).toBeTruthy();
     expect(screen.getByText('Roadside bottles')).toBeTruthy();
     expect(screen.getByText('$125 reward')).toBeTruthy();
-    expect(screen.getByText('Ends Sep 25')).toBeTruthy();
+    expect(screen.getByText(/(?:day|hr|min).*ago|Just now/)).toBeTruthy();
     expect(screen.getByText('No photo yet')).toBeTruthy();
-    expect(screen.getByText('Open')).toBeTruthy();
+    expect(screen.getAllByText('Available')[1]).toBeTruthy();
     expect(screen.getByText('Bottles')).toBeTruthy();
-    expect(screen.getByText('High priority')).toBeTruthy();
+    expect(screen.getAllByText('High')[0]).toBeTruthy();
     expect(document.querySelector('.report-result-photo')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: /roadside bottles/i }));
@@ -161,11 +161,11 @@ describe('ReportBrowser', () => {
       />,
     );
 
-    expect(screen.getByRole('heading', { name: '2 cleanup opportunities' })).toBeTruthy();
-    expect(screen.queryByText('Claimed cleanup')).toBeNull();
+    expect(screen.getByText(/3 litter reports · Map area/)).toBeTruthy();
+    expect(screen.getByText('Claimed cleanup')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Rewarded' }));
-    expect(screen.getByRole('heading', { name: '1 cleanup opportunity' })).toBeTruthy();
+    expect(screen.getByText(/1 cleanup opportunity · Map area/)).toBeTruthy();
     expect(screen.getByText('$125 reward')).toBeTruthy();
     expect(screen.queryByText('Volunteer park cleanup')).toBeNull();
 
@@ -181,7 +181,7 @@ describe('ReportBrowser', () => {
 it('shows completed cleanups without presenting their old expiration as an upcoming deadline', () => {
   render(<ReportBrowser reports={[{ ...report, cleanup_state: 'completed', expires_at: '2020-01-01T00:00:00Z' }]} open onToggle={vi.fn()} onSelect={vi.fn()} />);
   fireEvent.click(screen.getByRole('button', { name: 'Completed' }));
-  expect(screen.getByRole('heading', { name: '1 completed cleanup' })).toBeTruthy();
+  expect(screen.getByText(/1 completed cleanup · Map area/)).toBeTruthy();
   expect(screen.getByText('Cleanup complete')).toBeTruthy();
   expect(screen.getByText('$125 funded cleanup')).toBeTruthy();
   expect(screen.queryByText(/Ends /)).toBeNull();
@@ -189,7 +189,7 @@ it('shows completed cleanups without presenting their old expiration as an upcom
 it('includes photos-under-review and changes-requested cleanups in progress', () => {
   render(<ReportBrowser reports={[{ ...report, cleanup_state: 'completion_submitted' }, { ...report, id: 'changes', title: 'Changes cleanup', cleanup_state: 'changes_requested' }]} open onToggle={vi.fn()} onSelect={vi.fn()} />);
   fireEvent.click(screen.getByRole('button', { name: 'In progress' }));
-  expect(screen.getByRole('heading', { name: '2 cleanups in progress' })).toBeTruthy();
+  expect(screen.getByText(/2 cleanups in progress · Map area/)).toBeTruthy();
   expect(screen.getByText('Changes cleanup')).toBeTruthy();
 });
 
@@ -202,13 +202,16 @@ it('combines status, reward, severity, text, and radius independently', () => {
     { ...report, id: 'far', title: 'Far bottles', latitude: 40 },
     { ...report, id: 'other', title: 'Cans' },
   ]} mapCenter={{ latitude: 36.21, longitude: -81.67 }} open onToggle={vi.fn()} onSelect={vi.fn()} onDiscoveryFiltersChange={onDiscoveryFiltersChange} />);
+  fireEvent.change(screen.getByLabelText('Cleanup status'), { target: { value: 'available' } });
   fireEvent.change(screen.getByLabelText('Reward'), { target: { value: 'funded' } });
   fireEvent.change(screen.getByLabelText('Severity'), { target: { value: 'high' } });
   fireEvent.change(screen.getByLabelText('Distance from map center'), { target: { value: '5' } });
   fireEvent.change(screen.getByLabelText('Search report titles and notes'), { target: { value: 'bottles' } });
-  expect(screen.getByRole('heading', { name: '1 litter report' })).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
+  expect(screen.getByText(/1 litter report · Map area/)).toBeTruthy();
   expect(onDiscoveryFiltersChange).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'available', funding: 'funded', severity: 'high', radius: 5, query: 'bottles' }));
   expect(screen.queryByText('Far bottles')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Reset filters' }));
-  expect(screen.getByRole('heading', { name: '5 litter reports' })).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
+  expect(screen.getByText(/5 litter reports · Map area/)).toBeTruthy();
 });

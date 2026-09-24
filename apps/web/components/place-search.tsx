@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { resolvePlace, searchPlaces, type TownResult } from '@/lib/place-search';
 import type { SearchPlace } from '@/lib/place-geography';
 
 export function PlaceSearch({ selected, onSelect, onClear, geocode, disabled = false }: { selected: SearchPlace | null; onSelect: (place: SearchPlace) => void; onClear: () => void; geocode: (text: string) => Promise<SearchPlace[]>; disabled?: boolean }) {
+  const inputId = useId();
   const [text, setText] = useState('');
   const [results, setResults] = useState<Array<TownResult | SearchPlace>>([]);
   const [busy, setBusy] = useState(false);
@@ -43,8 +44,8 @@ export function PlaceSearch({ selected, onSelect, onClear, geocode, disabled = f
   }
   return <section className="place-search" aria-label="Find a city or address">
     <form onSubmit={event => { event.preventDefault(); void search(false); }}>
-      <label htmlFor="place-search-input">City or address</label>
-      <div className="place-search-input-row"><input id="place-search-input" type="search" maxLength={120} placeholder="City, state or country" value={text} disabled={disabled} onChange={event => { invalidate(); setText(event.target.value); setResults([]); setMessage(''); }} /><button className="primary-button" disabled={disabled || busy || text.trim().length < 2}>Find U.S. town</button></div>
+      <label htmlFor={inputId}>City or address</label>
+      <div className="place-search-input-row"><input id={inputId} type="search" maxLength={120} placeholder="City, state or country" value={text} disabled={disabled} onChange={event => { invalidate(); setText(event.target.value); setResults([]); setMessage(''); }} /><button className="primary-button" disabled={disabled || busy || text.trim().length < 2}>Find U.S. town</button></div>
       <button className="place-address-button" type="button" disabled={disabled || busy || !text.trim()} onClick={() => void search(true)}>Address / worldwide</button>
     </form>
     {busy && <p role="status">Searching…</p>}

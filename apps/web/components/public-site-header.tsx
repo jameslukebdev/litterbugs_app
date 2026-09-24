@@ -8,7 +8,7 @@ import { PublicAccountAction } from '@/components/public-account-action';
 
 import styles from './public-site-header.module.css';
 
-export type PublicPath = '/' | '/support' | '/about' | '/cleanup-policy' | '/cleanup-safety' | '/privacy' | '/terms';
+export type PublicPath = '/' | '/support' | '/about' | '/cleanup-policy' | '/cleanup-safety' | '/privacy' | '/terms' | '/help' | '/photo-review';
 
 const policyLinks: { href: PublicPath; label: string; description: string }[] = [
   { href: '/cleanup-policy', label: 'Cleanup policy', description: 'Funding, rewards, disputes, and refunds' },
@@ -88,8 +88,8 @@ function NavigationMenu({ activePath, mobile = false }: { activePath: PublicPath
             <>
               <span className={styles.menuLabel}>Explore</span>
               <div className={styles.mobilePrimaryLinks}>
-                <HeaderLink href="/" activePath={activePath} onNavigate={() => setOpen(false)}>Search</HeaderLink>
-                <HeaderLink href="/about" activePath={activePath} onNavigate={() => setOpen(false)}>Field Guide</HeaderLink>
+                <HeaderLink href="/" activePath={activePath} onNavigate={() => setOpen(false)}>Map</HeaderLink>
+                <HeaderLink href="/about" activePath={activePath} onNavigate={() => setOpen(false)}>About</HeaderLink>
               </div>
             </>
           )}
@@ -120,8 +120,8 @@ export function PublicSiteHeader({ activePath, action }: { activePath: PublicPat
     <header className={styles.header}>
       <div className={styles.inner}>
         <nav className={styles.desktopNav} aria-label="Main navigation">
-          <HeaderLink href="/" activePath={activePath}>Search</HeaderLink>
-          <HeaderLink href="/about" activePath={activePath}>Field Guide</HeaderLink>
+          <HeaderLink href="/" activePath={activePath}>Map</HeaderLink>
+          <HeaderLink href="/about" activePath={activePath}>About</HeaderLink>
         </nav>
 
         <NavigationMenu activePath={activePath} mobile />

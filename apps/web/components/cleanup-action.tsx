@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element -- Browser-selected cleanup evidence uses local object URLs. */
 
+import { loadCleanupDraft, saveCleanupDraft, clearCleanupDraft } from '@/lib/saved-cleanup-draft';
 import type { Database, Report } from '@litterbugs/report-contract';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -36,7 +37,7 @@ export function validateCleanupEvidence(files: File[], description: string) {
   return '';
 }
 
-function PhotoPreview({ file, onRemove }: { file: File; onRemove: () => void }) {
+function PhotoPreview({ file, onRemove }: { file: File; onRemove?: () => void }) {
   const [src] = useState(() => URL.createObjectURL(file));
 
   useEffect(() => {
@@ -46,7 +47,7 @@ function PhotoPreview({ file, onRemove }: { file: File; onRemove: () => void }) 
   return (
     <div className="cleanup-photo-preview">
       {src && <img src={src} alt={`Selected cleanup evidence ${file.name}`} />}
-      <button type="button" onClick={onRemove} aria-label={`Remove ${file.name}`}><Icon name="close" /></button>
+      {onRemove && <button type="button" onClick={onRemove} aria-label={`Remove ${file.name}`}><Icon name="close" /></button>}
     </div>
   );
 }
@@ -79,6 +80,10 @@ export function CleanupAction({
   const [bagsOrItems, setBagsOrItems] = useState('');
   const [weightPounds, setWeightPounds] = useState('');
   const [submissionError, setSubmissionError] = useState('');
+  const [reviewing, setReviewing] = useState(false);
+  const [draftReady, setDraftReady] = useState('');
+  const [draftStorageFailed, setDraftStorageFailed] = useState(false);
+  const [draftMessage, setDraftMessage] = useState('');
 
   async function refreshAttempt() {
     if (!userId) {
@@ -116,6 +121,25 @@ export function CleanupAction({
 
   const isMyAttempt = Boolean(attempt && attempt.cleaner_id === userId);
   const canSubmit = isMyAttempt && ['claimed', 'changes_requested'].includes(attempt?.status ?? '');
+  useEffect(() => {
+    if (!userId || !attempt?.id || !canSubmit) return;
+    let cancelled = false;
+    void loadCleanupDraft(userId, attempt.id).then(draft => {
+      if (cancelled) return;
+      setDraftStorageFailed(false);
+      if (draft) { setPhotos(draft.photos); setDescription(draft.description); setBagsOrItems(draft.bagsOrItems); setWeightPounds(draft.weightPounds); setDraftMessage('Your saved cleanup draft is ready.'); }
+      setDraftReady(attempt.id);
+    }).catch(() => { if (!cancelled) { setDraftStorageFailed(true); setDraftReady(attempt.id); setDraftMessage('Draft storage is unavailable. Keep this page open until you submit.'); } });
+    return () => { cancelled = true; };
+  }, [userId, attempt?.id, canSubmit]);
+
+  useEffect(() => {
+    if (!submissionOpen || !userId || !attempt?.id || draftReady !== attempt.id || draftStorageFailed || busy) return;
+    void saveCleanupDraft(userId, attempt.id, { photos, description, bagsOrItems, weightPounds })
+        .then(() => setDraftMessage('Draft saved on this device.'))
+        .catch(() => setDraftMessage('Couldn’t save your draft. Keep this page open until you submit.'));
+  }, [submissionOpen, userId, attempt?.id, draftReady, draftStorageFailed, busy, photos, description, bagsOrItems, weightPounds]);
+
   const deadline = useMemo(() => {
     const value = attempt?.status === 'changes_requested' ? attempt.correction_due_at : attempt?.claim_expires_at;
     return value ? new Date(value).toLocaleString() : '';
@@ -203,6 +227,7 @@ export function CleanupAction({
     setAttemptState({ key: attemptKey, data: null });
     setSubmissionOpen(false);
     setMessage('Cleanup claim released.');
+    if (userId) await clearCleanupDraft(userId, attempt.id).catch(() => undefined);
     await onChanged?.();
   }
 
@@ -225,6 +250,14 @@ export function CleanupAction({
       return { error: 'Weight removed must be between 0.1 and 10,000 pounds.' };
     }
     return { value: parsed };
+  }
+
+  function reviewCleanup() {
+    const error = validateCleanupEvidence(photos, description)
+      || parseOptionalInteger(bagsOrItems, 'Bags or items removed', 0, 9999).error
+      || parseOptionalWeight(weightPounds).error;
+    if (error) { setSubmissionError(error); return; }
+    setSubmissionError(''); setReviewing(true);
   }
 
   async function submitCleanup() {
@@ -270,6 +303,7 @@ export function CleanupAction({
         await supabase.functions.invoke('run-financial-maintenance', { body: { cleanupId: attempt.id } }).catch(() => undefined);
       }
 
+      await clearCleanupDraft(userId, attempt.id).catch(() => undefined);
       setSubmissionOpen(false);
       setPhotos([]);
       setDescription('');
@@ -333,7 +367,7 @@ export function CleanupAction({
           <span className="eyebrow">CLEANUP EVIDENCE</span>
           <h2>{attempt.status === 'changes_requested' ? 'Update your cleanup photos' : 'Show what you cleaned'}</h2>
           <p className="cleanup-deadline">Submit by {deadline}</p>
-          <div className="cleanup-submission-fields">
+          <fieldset className="cleanup-submission-fields" hidden={reviewing} disabled={draftReady !== attempt.id}>
             <label className="field-label">After photos <span>Required · {photos.length}/3</span>
               <span className="cleanup-photo-picker"><Icon name="camera" />Choose 1–3 photos<input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" multiple onChange={(event) => {
                 const selected = Array.from(event.target.files ?? []);
@@ -348,11 +382,14 @@ export function CleanupAction({
               <label>Bags/items removed <span>Optional</span><input inputMode="numeric" value={bagsOrItems} onChange={(event) => setBagsOrItems(event.target.value)} /></label>
               <label>Weight removed (lb) <span>Optional</span><input inputMode="decimal" value={weightPounds} onChange={(event) => setWeightPounds(event.target.value)} /></label>
             </div>
-          </div>
+          </fieldset>
+          {draftReady !== attempt.id && <p role="status">Loading saved cleanup…</p>}
+          {reviewing && <section className="cleanup-review-summary"><h3>Review your cleanup</h3><div className="cleanup-photo-grid">{photos.map((file, index) => <PhotoPreview key={index} file={file} />)}</div><p>{description}</p><p>{photos.length} after-cleanup {photos.length === 1 ? 'photo' : 'photos'}</p>{bagsOrItems && <p>{bagsOrItems} bags/items removed</p>}{weightPounds && <p>{weightPounds} lb removed</p>}<p>Check your evidence before sending it for review.</p></section>}
+          {draftMessage && <p className="form-message" role="status">{draftMessage}</p>}
           {submissionError && <p className="form-message error-message" role="alert">{submissionError}</p>}
           <div className="cleanup-flow-actions">
             <button className="secondary-button" onClick={releaseClaim} disabled={Boolean(busy)}>Release claim</button>
-            <button className="primary-button" onClick={submitCleanup} disabled={Boolean(busy)}>{busy === 'submit' ? 'Submitting…' : 'Submit cleanup'}</button>
+            {reviewing ? <><button className="secondary-button" onClick={() => setReviewing(false)} disabled={Boolean(busy)}>Edit cleanup</button><button className="primary-button" onClick={submitCleanup} disabled={Boolean(busy)}>{busy === 'submit' ? 'Submitting…' : 'Submit cleanup'}</button></> : <button className="primary-button" onClick={reviewCleanup} disabled={Boolean(busy) || draftReady !== attempt.id}>Review cleanup</button>}
           </div>
         </ModalShell>
       )}

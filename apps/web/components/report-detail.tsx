@@ -5,6 +5,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Report } from '@litterbugs/report-contract';
 
+import { ModalShell } from '@/components/modal-shell';
+import { CompletedCleanup } from '@/components/completed-cleanup';
+import { ReportAuthor } from '@/components/report-author';
 import { CleanupAction } from '@/components/cleanup-action';
 import { CleanupReviewAction } from '@/components/cleanup-review-action';
 import { FundingContributionAction } from '@/components/funding-contribution-action';
@@ -57,7 +60,7 @@ export function ReportDetail({
   onEdit: () => void;
   onDelete: () => void;
   userId?: string | null;
-  onRequireSignIn?: () => void;
+  onRequireSignIn?: (intent?: 'clean' | 'fund') => void;
   onReportChanged?: () => void | Promise<void>;
   favorite?: boolean;
   hidden?: boolean;
@@ -68,6 +71,8 @@ export function ReportDetail({
   const dialogRef = useRef<HTMLElement>(null);
   const backButtonRef = useRef<HTMLButtonElement>(null);
   const shareButtonRef = useRef<HTMLButtonElement>(null);
+  const [photoExpanded, setPhotoExpanded] = useState(false);
+  const [photoZoomed, setPhotoZoomed] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [signedPhoto, setSignedPhoto] = useState<{ path: string; src: string | null; failed: boolean }>({ path: '', src: null, failed: false });
   const [renderedPhoto, setRenderedPhoto] = useState<{ path: string; loaded: boolean; failed: boolean }>({ path: '', loaded: false, failed: false });
@@ -115,6 +120,8 @@ export function ReportDetail({
     return () => { cancelled = true; };
   }, [compatibilityUrl, currentPhotoPath, detailPhotoUrl]);
 
+  const [openedAt] = useState(() => Date.now());
+  const closed = Boolean(report.cancelled_at || report.expired_at || (report.cleanup_state !== 'completed' && report.expires_at && Date.parse(report.expires_at) <= openedAt));
   const severity = report.severity ?? 'Medium';
   const hasLitterTypes = Boolean(report.litter_types?.length || report.types);
   const shareable = isPubliclyShareableReport(report);
@@ -214,7 +221,7 @@ export function ReportDetail({
         <header className="report-detail-toolbar">
           <button ref={backButtonRef} type="button" className="report-detail-toolbar-back" onClick={onClose}>
             <Icon name="chevron-left" />
-            <span>Back to search</span>
+            <span>Back</span>
           </button>
           <img className="report-detail-toolbar-logo" src="/brand/litterbugs-logo.png" alt="" aria-hidden />
           <nav className="report-detail-toolbar-actions" aria-label="Report actions">
@@ -244,6 +251,7 @@ export function ReportDetail({
         <div className="report-detail-layout">
           <div className="report-detail-visual">
             <div className="report-photo-region">
+              {photoSrc && photoLoaded && !photoFailed && <button className="photo-expand-button" onClick={() => { setPhotoExpanded(true); setPhotoZoomed(false); }}>View full photo</button>}
               {photoPaths.length ? (
                 <>
                   {previewPhotoUrl && !photoLoaded && !previewFailed && (
@@ -297,11 +305,14 @@ export function ReportDetail({
                   {report.cleanup_state !== 'completed' && report.expires_at && <span>Expires {formatDate(report.expires_at)}</span>}
                 </div>
                 <div className="report-status-row">
-                  <span>{cleanupStatusLabel(report.cleanup_state)}</span>
+                  <span>{closed ? 'Report closed' : cleanupStatusLabel(report.cleanup_state)}</span>
                   {report.funded_amount_cents > 0 && <strong>{formatUsd(report.funded_amount_cents)} {report.cleanup_state === 'completed' ? 'funded cleanup' : 'reward'}</strong>}
                 </div>
               </header>
 
+              <ReportAuthor profileId={report.user_id} sourceReportId={report.id} onBlocked={() => { onClose(); void onReportChanged?.(); }} />
+              {report.cleanup_state === 'completed' && <CompletedCleanup reportId={report.id} />}
+              {report.latitude !== null && report.longitude !== null && <a className="report-directions secondary-button" href={`https://www.google.com/maps/dir/?api=1&destination=${report.latitude},${report.longitude}`} target="_blank" rel="noopener noreferrer"><Icon name="location" />Get directions</a>}
               <div className="report-detail-body">
                 {hasLitterTypes && <p className="report-detail-fact"><strong>Litter</strong><span>{[...(report.litter_types ?? []), ...(report.types ? [report.types] : [])].join(', ')}</span></p>}
                 {!!report.notes_presets?.length && <p className="report-detail-fact"><strong>Notes</strong><span>{report.notes_presets.join(', ')}</span></p>}
@@ -313,9 +324,9 @@ export function ReportDetail({
               {isOwner && !report.funding_locked_at && <button className="danger-button compact-button" onClick={onDelete}><Icon name="trash" />Delete</button>}
               {isOwner && !report.funding_locked_at && <button className="secondary-button compact-button" onClick={onEdit}><Icon name="edit" />Edit</button>}
               <CleanupReviewAction report={report} userId={userId} isOwner={isOwner} onChanged={onReportChanged} />
-              <FundingContributionAction report={report} userId={userId} onRequireSignIn={onRequireSignIn} onChanged={onReportChanged} />
+              <FundingContributionAction report={report} userId={userId} onRequireSignIn={() => onRequireSignIn?.('fund')} onChanged={onReportChanged} />
               {userId && report.funded_amount_cents > 0 && report.cleanup_state !== 'completed' && <PayoutSetupAction compact />}
-              <CleanupAction report={report} userId={userId} onRequireSignIn={onRequireSignIn} onChanged={onReportChanged} />
+              {!closed && <CleanupAction report={report} userId={userId} onRequireSignIn={() => onRequireSignIn?.('clean')} onChanged={onReportChanged} />}
             </footer>
           </div>
         </div>
@@ -327,6 +338,7 @@ export function ReportDetail({
           onClose={closeShareDialog}
           onShared={() => notify('Report shared.')}
         />
+        {photoExpanded && photoSrc && <ModalShell onClose={() => setPhotoExpanded(false)} label="Report photo viewer" className="photo-viewer-dialog"><h2>Photo {displayedPhotoIndex + 1} of {photoPaths.length}</h2><button className="secondary-button" onClick={() => setPhotoZoomed(value => !value)}>{photoZoomed ? 'Fit photo' : 'Zoom in'}</button><div className={`photo-viewer-image${photoZoomed ? ' zoomed' : ''}`}><img src={photoSrc} alt={`Report photo ${displayedPhotoIndex + 1}`} /></div>{photoPaths.length > 1 && <div className="photo-viewer-controls"><button className="secondary-button" onClick={() => { setPhotoIndex(index => (index + photoPaths.length - 1) % photoPaths.length); setPhotoZoomed(false); }}>Previous photo</button><button className="secondary-button" onClick={() => { setPhotoIndex(index => (index + 1) % photoPaths.length); setPhotoZoomed(false); }}>Next photo</button></div>}</ModalShell>}
       </aside>
     </div>
   );

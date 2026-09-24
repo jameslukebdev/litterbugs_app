@@ -6,17 +6,22 @@ import Image from 'next/image';
 import { ModalShell } from '@/components/modal-shell';
 import { createClient } from '@/lib/supabase/client';
 
+export type AuthIntent = 'clean' | 'fund' | 'report' | null;
+
 type EmailMode = 'login' | 'signup' | 'forgot' | 'sent';
 
 type AuthDialogProps = {
   onClose: () => void;
+  intent?: AuthIntent;
   facebookLoginEnabled?: boolean;
 };
 
 export function AuthDialog({
   onClose,
+  intent = null,
   facebookLoginEnabled = process.env.NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED === 'true',
 }: AuthDialogProps) {
+  const [emailOpen, setEmailOpen] = useState(false);
   const [mode, setMode] = useState<EmailMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -125,11 +130,11 @@ export function AuthDialog({
         <>
           <div className="auth-heading">
             <span className="eyebrow">HELP KEEP YOUR COMMUNITY CLEAN</span>
-            <h2>{mode === 'signup' ? 'Create your account' : mode === 'forgot' ? 'Reset your password' : 'Welcome to Litterbugs'}</h2>
-            <p>{mode === 'forgot' ? 'We’ll email you a secure password reset link.' : 'Sign in to report litter and manage the reports you create.'}</p>
+            <h2>{mode === 'signup' ? 'Create your account' : mode === 'forgot' ? 'Reset your password' : intent === 'clean' ? 'Sign in to clean up' : intent === 'fund' ? 'Sign in to fund a cleanup' : intent === 'report' ? 'Sign in to report litter' : 'Welcome to Litterbugs'}</h2>
+            <p>{mode === 'forgot' ? 'We’ll email you a secure password reset link.' : intent === 'clean' ? 'Your selected report will be ready when you return.' : intent === 'fund' ? 'Sign in to contribute to this cleanup reward.' : 'Sign in to report litter and manage the reports you create.'}</p>
           </div>
 
-          {mode !== 'forgot' && <div className="provider-grid">
+          {!emailOpen && <div className="provider-grid">
             <button className="provider-button google-provider" onClick={() => startProvider('google')} disabled={Boolean(loading)}>
               <span className="provider-button-content">
                 <Image className="google-provider-icon" src="/brand/google-g-logo.png" alt="" width={200} height={204} aria-hidden />
@@ -146,7 +151,10 @@ export function AuthDialog({
             </button>}
           </div>}
 
-          {mode !== 'forgot' && <div className="auth-divider"><span>or use email</span></div>}
+          {!emailOpen && <button className="provider-button email-provider" onClick={() => setEmailOpen(true)}>Continue with Email</button>}
+          {!emailOpen && message && <p role="alert" className="form-message error-message">{message}</p>}
+          {emailOpen && <button className="auth-back" onClick={() => { setEmailOpen(false); setMessage(''); setMode('login'); }}>← All sign-in options</button>}
+          {emailOpen && <>
 
           <form className="auth-form" onSubmit={submitEmail}>
             <label>Email address<input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" disabled={Boolean(loading)} /></label>
@@ -161,6 +169,9 @@ export function AuthDialog({
             {mode === 'login' && <><button onClick={() => { setMode('forgot'); setMessage(''); }}>Forgot password?</button><span>New to Litterbugs? <button onClick={() => { setMode('signup'); setMessage(''); }}>Create an account</button></span></>}
             {mode !== 'login' && <button onClick={() => { setMode('login'); setMessage(''); }}>Back to sign in</button>}
           </div>
+          </>}
+          <p className="auth-policy">By continuing, you agree to our <a href="/terms">Terms of use</a> and <a href="/privacy">Privacy policy</a>.</p>
+          <a className="auth-help" href="/help">Need help?</a>
           {loading && loading !== 'email' && <p className="sr-only" aria-live="polite">Opening {providerLabel} sign in</p>}
         </>
       )}
