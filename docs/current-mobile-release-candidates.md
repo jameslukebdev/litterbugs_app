@@ -1,5 +1,31 @@
 # Current Mobile Release Candidates
 
+## September 24, 2026 — current source and build refresh
+
+The current source is main `5fe4a07e87d923cc8a356273d125ac518fe7fac9` (through PR 83). Older artifacts below predate the reporting and sharing changes and must not be described as current release candidates.
+
+The connected iPhone has a freshly built Release QA app with the native changes through PR 82. Messages link previews, Copy, the documented Instagram Link-sticker workflow, and live Safari-to-app report handoff passed. See [physical-device evidence](reviews/2026-09-24-physical-iphone-share-verification.md). This QA install is not an App Store distribution.
+
+Fresh production builds use an isolated checkout of the exact main revision and existing frozen credentials; no signing settings, Apple account configuration, or store submission were changed.
+
+| Platform / artifact | EAS build | Version | Verification status |
+| --- | --- | --- | --- |
+| Android production AAB | `cfa748ef-1979-4d85-a555-8238fa038e93` | 2.0.0 / code 12 | Finished; bundle, signature, manifest, and production Maps configuration verified |
+| Android installable APK | `448b0904-1b31-4e6d-b2f7-2b09d0d62fb7` | 2.0.0 / code 12 | Finished; signature, upgrade, native map, HTTPS report opening, and Share link verified on API 36 emulator |
+| iOS production IPA | `5c519649-b68c-44af-a002-f79523f34634` | 2.0.0 / build 11 | Finished; signature, profile, version, and current sharing bundle verified |
+
+The [signed iOS IPA](https://expo.dev/artifacts/eas/Sjx_4vsf-O5aJRz7pbHBTB6OsHblGdYKQtvdlADW9_0.ipa) finished on September 24 at 15:25 UTC. Its SHA256 is `61e9c253173c7263d6394001aad261d7212479dcf20fd0d3f384fb822fff33d1`. Deep/strict code-signature verification passes. The package is `com.litterbugs.app`, minimum iOS 15.1, signed for Luke's existing team `DB39U76V6Q` with a profile expiring August 20, 2027, production push, and no debugging entitlement. The packaged JavaScript contains the current Share link, Share photo, Link sticker instructions, and No contribution now wording. Its bundle SHA256 is `114f30bba07cc6d0f2fc18885b2f9f62d384f80d4ebd04df5212ed93454207a3`.
+
+This is a store-distribution artifact, not the QA app installed on the connected iPhone. The production IPA still has no associated-domain entitlement; automatic iOS Universal Links are not enabled or verified. The physical QA device separately passed the website's explicit Open in Litterbugs handoff and sharing workflow described above.
+
+The [Android AAB](https://expo.dev/artifacts/eas/PpGPqqvvDUKr8WR8F1w9sCt_EDuGkLutYyq9wPdOU9Y.aab) has SHA256 `e778ecc85f4e8cfe9f4e02c90f7870638f66757eb04275658fa2325c6bd9118d`. `bundletool validate` succeeds and `jarsigner` reports the bundle verified, with the existing self-signed/no-timestamp and ZIP-stream-order warnings. The [installable Android APK](https://expo.dev/artifacts/eas/xq050_2qZvJBsBRyhnlrp0tKMH2hfoST-Jy9LtrYm8M.apk) has SHA256 `76252077890e8872e0a96e4ffe94e79d58fe7582dc6017a30f525cc64e2084a5`; `apksigner verify` succeeds. Both retain the existing signing certificate SHA256 `2C:0A:31:66:6C:8C:7A:35:04:E9:0D:8E:B8:15:01:67:30:75:40:11:2F:96:90:51:B0:36:AB:13:C1:B0:AA:0E` and package `com.litterbugs.app`. The AAB is not debuggable, targets SDK 36 with minimum 24, and contains neither RECORD_AUDIO nor SYSTEM_ALERT_WINDOW. Decoded manifests from both finished artifacts pass `scripts/check-android-release-map.py` against the current EAS production environment.
+
+The APK updated the existing API 36 emulator installation in place from 1.0.0/code 11 to 2.0.0/code 12. Android's original first-install timestamp remained September 1; no uninstall or data clear was performed. This was a guest-session smoke test, not a signed-in session-persistence test. Android still reports `litterbugs.app` verified. A cold HTTPS VIEW intent for report `ce154938-f7c9-40d9-99bc-4a5d43710aa0` selected `com.litterbugs.app/.MainActivity` and displayed the exact Howard's Creek report, its photos, and $6.00 reward. Share link opened Android's native Sharing link sheet containing exactly `https://litterbugs.app/reports/ce154938-f7c9-40d9-99bc-4a5d43710aa0`, without caption text. Cancel returned to the unchanged report. Closing the report showed rendered native Google Maps roads, place labels, and its $6 marker. No recipient/message, claim, payment, or agreement acceptance was submitted. Evidence is in `/tmp/litterbugs-sep24-release/android-report.png`, `android-system-share.png`, `android-map.png`, and their UI XML captures. These are emulator checks, not a new physical Android acceptance pass.
+
+All three artifacts are current, verified build candidates. Store publication remains outside this task's authorization. Strict GPS direct-write enforcement remains deferred until compatible mobile clients are distributed; building or installing one QA device is not that distribution gate. International payouts remain gated by Stripe's account-specific response.
+
+## Historical artifacts and verification (superseded)
+
 > Debugging pass closed for controlled user testing. The physical Pixel startup comparison reached the map in about three seconds after the splash, without reproducing the emulator delay or flashing circle. The human spoken accessibility walkthrough was waived by the user. Store submission and Apple/Meta account work remain deferred. See the [closure record](reviews/2026-09-10-device-acceptance.md#debugging-pass-closure).
 
 > Latest correction: use `litterbugs-production-maps-corrected-v11.aab` from the [device acceptance record](reviews/2026-09-10-device-acceptance.md#production-login-and-local-maps-build-correction--september-10-afternoon). The preceding local `ae59d05` AAB contained the QA Maps key and is superseded. The corrected production APK renders native map tiles, completes Google sign-in, resumes funding, and retains the account after updating/relaunching. The user waived the spoken accessibility walkthrough for this pass; Apple/Meta configuration remains deferred.
