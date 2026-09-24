@@ -1829,6 +1829,7 @@ useEffect(() => {
         report: selectedReport,
         impact: completedCleanupImpact,
         platform: Platform.OS,
+        linkOnly: true,
         share: NativeShare.share,
       });
       setReportShareSheetOpen(false);

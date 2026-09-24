@@ -52,8 +52,8 @@ avoids imitating a platform composer that the web cannot control.
 The native Expo app now provides a focused Litterbugs share sheet before the
 operating-system chooser:
 
-- **Share link** sends the public report URL and privacy-safe text without a file attachment. Use it to send a clickable link or choose Copy in the native sheet. This avoids receivers that discard captions when an image is attached.
-- **Instagram Stories** downloads the branded report card and opens a real Story draft through `react-native-share`. Link metadata is supplied to Instagram, but physical iPhone testing did not produce a clickable sticker automatically. Copy the URL through Share link first, then add a Link sticker in Instagram and paste the URL. Litterbugs never publishes the Story.
+- **Share link** sends only the public report URL without a file attachment or caption. Use it to send a clickable link or choose Copy in the native sheet. This avoids receivers that discard captions when an image is attached.
+- **Instagram Stories** downloads the branded report card and opens a real Story draft through `react-native-share`. Link metadata is supplied to Instagram, but physical iPhone testing did not produce a clickable sticker automatically. Instagram clears the clipboard during the Story handoff. Open the draft first, return to Litterbugs to copy the URL with Share link, then return to Instagram and paste it into a Link sticker. Litterbugs never publishes the Story.
 - **Share photo** sends the branded card and prepared caption (including the URL) to the native share sheet. Receiving apps control whether the caption is retained; Notes on the tested iPhone received only the image. Share link remains available for reliable URL delivery.
 - If Instagram is unavailable, the app explains the problem and keeps Share link available.
 

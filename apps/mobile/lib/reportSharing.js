@@ -280,6 +280,12 @@ export function createNativeReportShareContent(model, platform, shareImageUri = 
   };
 }
 
+export function createNativeReportLinkContent(model, platform) {
+  return platform === 'ios'
+    ? { title: model.title, url: model.reportUrl }
+    : { title: model.title, message: model.reportUrl };
+}
+
 export function reportShareActionLabel(report) {
   return report?.cleanup_state === 'completed' ? 'Share Impact' : 'Share';
 }
@@ -293,6 +299,7 @@ export async function shareReportWithSystemSheet({
   share,
   shareImageUri = null,
   dismissedAction = 'dismissedAction',
+  linkOnly = false,
 }) {
   const model = createReportShareModel({
     report,
@@ -304,7 +311,9 @@ export async function shareReportWithSystemSheet({
   if (!model) return { status: 'unavailable', model: null };
 
   const result = await share(
-    createNativeReportShareContent(model, platform, shareImageUri),
+    linkOnly
+      ? createNativeReportLinkContent(model, platform)
+      : createNativeReportShareContent(model, platform, shareImageUri),
     { dialogTitle: model.state === 'completed' ? 'Share cleanup impact' : 'Share cleanup report' }
   );
 

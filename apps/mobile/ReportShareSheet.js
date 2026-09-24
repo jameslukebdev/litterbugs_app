@@ -141,7 +141,7 @@ export default function ReportShareSheet({
           </View>
 
           <Text style={styles.linkHelp}>
-            Some apps leave out photo captions. Use Share link to copy the report URL, then paste it into an Instagram Link sticker.
+            For an Instagram link: open your Story draft, return here to copy the URL with Share link, then paste it into a Link sticker in Instagram.
           </Text>
           <View style={styles.privacyRow}>
             <Ionicons name="shield-checkmark-outline" size={16} color="#617066" accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
