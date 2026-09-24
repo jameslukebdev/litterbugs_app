@@ -28,7 +28,7 @@ The pre-existing `com.gegibson.litterbugs.qa` installation reports version 1.0.0
 
 ## Remaining acceptance
 
-PR 81 was merged and `dpl_9NL6REUrMAMGDLTsmYXpQoGEQ2MS` promoted. On the physical iPhone, the live link presented Safari’s Open in Litterbugs confirmation and opened the exact Howard’s Creek report with its $6.00 reward. Provide and verify a reliable link-sharing path for receivers that drop image captions, and make Instagram's manual link-sticker requirement clear. Production Universal Links remain a separate signing/build verification requirement; this QA build has no associated-domain entitlement. No store submission or Apple-account changes were performed.
+PR 81 was merged and `dpl_9NL6REUrMAMGDLTsmYXpQoGEQ2MS` promoted. On the physical iPhone, the live link presented Safari’s Open in Litterbugs confirmation and opened the exact Howard’s Creek report with its $6.00 reward. Native link delivery and the manual Instagram sticker workflow passed below. Production Universal Links remain a separate signing/build verification requirement; this QA build has no associated-domain entitlement. No store submission or Apple-account changes were performed.
 
 
 ## Final native share acceptance — PR 82
@@ -39,6 +39,6 @@ The share sheet fits the iPhone 6s and offers Share link, Instagram Stories, and
 
 Instagram's Story handoff clears the clipboard; trying to retain plain text alongside its native pasteboard items did not work on the device, so that experimental dependency change was removed. The verified workflow is explicit: open the Story draft, return to Litterbugs, use Share link → Copy, return to Instagram, add a Link sticker and Paste. The field contained exactly `https://litterbugs.app/reports/ce154938-f7c9-40d9-99bc-4a5d43710aa0`; Done added a visible Litterbugs.app link sticker. The draft was discarded without publishing, and Litterbugs resumed the original report. Evidence: `/tmp/lb-instagram-exact-link.png`, `/tmp/lb-instagram-link-sticker.png`, `/tmp/lb-final-message-link-preview.png`.
 
-The Messages rich preview revealed a separate hardcoded volunteer label in the web Open Graph image. Its correction is the next web sharing follow-up; the visible public page and native card already show the actual reward.
+The Messages rich preview revealed a separate hardcoded volunteer label in the web Open Graph image. The web follow-up now renders the reward for funded reports and retains volunteer/completed labels for those states; three generated-image markup tests cover this distinction.
 
 Limits: photo captions remain receiver-dependent; Instagram requires the manual sticker step. These checks prove custom-scheme handoff on the QA iPhone, not production Universal Links, Android device delivery, or store release. No native dependency patch is retained.
