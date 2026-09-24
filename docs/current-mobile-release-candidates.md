@@ -1,5 +1,18 @@
 # Current Mobile Release Candidates
 
+## Deployment handoff to Luke — September 24
+
+The owner clarified that “push live” means push the completed fixes to GitHub main. Luke will deploy through his developer account. Do not interpret that wording as authorization for Codex to submit or publish either mobile app.
+
+Use the September 24 artifacts below, which include the reporting, waiver, and reliable link-sharing fixes. The older artifacts in the historical section are superseded. All implementation changes are merged through PR 83; PR 84 records signed-artifact and Android link verification.
+
+- **iOS:** the current signed IPA is version 2.0.0/build 11 on Luke's existing team. To include automatic Universal Links, enable Associated Domains for the existing `com.litterbugs.app` App ID, refresh its provisioning profile, set `ENABLE_IOS_ASSOCIATED_DOMAINS=true` in the intended EAS build profile, and build a new IPA. The current IPA cannot gain that entitlement through a JavaScript update. Verify an HTTPS report link from Messages or Notes on the newly signed installation. Until then, the website's explicit Open in Litterbugs button remains the tested handoff.
+- **Android:** the current AAB/APK are version 2.0.0/code 12. If Google Play uses a separate app-signing certificate, register that certificate for the production Maps configuration and website Digital Asset Links before release. The current checks use the existing EAS signing certificate.
+- **GPS:** both current clients use the fresh-location publication RPC. Apply `supabase/rollout/20260923215000_enforce_report_location_after_client_release.sql` only after compatible clients are distributed; the switch blocks the old direct-publication path. A GitHub push or a QA installation alone does not satisfy this gate.
+- **International payouts:** leave existing country eligibility unchanged until Stripe resolves case `sco_VJarfjNbi0QKE3`. The 120-country expansion is not enabled.
+
+During the clarification, an iOS 2.0.0 draft was created in App Store Connect. EAS upload attempt `ba5c4446-92b1-4f7c-b75e-aa498fc72fd4` was canceled, with cancellation confirmed by EAS. No App Review submission or store release was performed. The unpublished version draft remains for Luke; no Google Play app was created.
+
 ## September 24, 2026 — current source and build refresh
 
 The current source is main `5fe4a07e87d923cc8a356273d125ac518fe7fac9` (through PR 83). Older artifacts below predate the reporting and sharing changes and must not be described as current release candidates.
