@@ -365,7 +365,7 @@ export function MapExperience({
       marker.addEventListener('gmp-click', () => {
         setPreviewedReportId(null);
         setMapPreviewId(report.id);
-        setReportListOpen(false);
+        if (window.matchMedia('(max-width: 760px)').matches) setReportListOpen(false);
       });
       return marker;
     });

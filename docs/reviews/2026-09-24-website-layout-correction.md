@@ -19,4 +19,8 @@ Secondary reference: Eventbrite style `4aa419e7-b05e-48f7-9dd8-4f65d5fc153f`, re
 
 Reject: floating native tab bar on desktop, duplicated logos/search, app-sized controls consuming the desktop viewport, reverting the completed functional fixes.
 
-Verification: all 186 web tests pass; type checking and ESLint pass; production Vercel build is Ready. Browser checks covered desktop, 390px and 320px layouts, filters/Cancel, and header sign-in. A 320px header overlap was fixed and rechecked. Production candidate: `dpl_BYry4Xfqdvkr1jnuCKY2BTwXLr3b`. Google Maps rejects the temporary deployment hostname as expected; its fallback still permits report browsing. Live-domain map verification follows promotion.
+Verification: all 186 web tests pass; type checking and ESLint pass; production Vercel build is Ready. Browser checks covered desktop, 390px and 320px layouts, filters/Cancel, and header sign-in. A 320px header overlap was fixed and rechecked. Production candidate: `dpl_BYry4Xfqdvkr1jnuCKY2BTwXLr3b`. Google Maps rejects the temporary deployment hostname as expected; its fallback still permits report browsing. PR 79 merged as `a2174a40cfe94dec65cb4638e145c554b647e10a`; promotion succeeded and live litterbugs.app rendered map tiles, report markers, header/account action, report cards, and footer.
+
+## Follow-up acceptance fixes
+
+Desktop marker selection now preserves the side-by-side report list; narrow browsers still switch to the map preview. Physical share-link inspection also found that the public page called a funded $6 cleanup a volunteer cleanup. The visible copy now uses the actual reward, with regression coverage for funded and zero-reward reports. All 188 web tests, type checking, and ESLint pass. Candidate `dpl_2Dcsa2saWby9Pvjp4qPZVQhVx7Hc` is Ready; its rendered shared page shows the $6.00 reward and report details.

@@ -87,7 +87,9 @@ export default async function SharedReportPage({ params }: Props) {
             <p className={styles.heroDescription}>
               {completed
                 ? 'A Litterbugs community member finished this cleanup. See the public impact summary below.'
-                : 'A community member reported litter that is available for volunteer cleanup.'}
+                : report.rewardCents && report.rewardCents > 0
+                  ? `This report has a $${(report.rewardCents / 100).toFixed(2)} cleanup reward. View the report for the current funding and cleanup details.`
+                  : 'A community member reported litter that is available for volunteer cleanup.'}
             </p>
             <div className={styles.heroMeta}>
               {completed && report.cleanerName ? <span>Cleaned by {report.cleanerName}</span> : null}
