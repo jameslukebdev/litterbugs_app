@@ -16,8 +16,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Icon } from '@/components/icon';
 import { PublicAccountAction, type PublicAccountActionHandle } from '@/components/public-account-action';
-import Image from 'next/image';
-import { IoMapOutline, IoListOutline, IoPersonOutline, IoOptionsOutline } from 'react-icons/io5';
+import Link from 'next/link';
+import { PublicSiteHeader } from '@/components/public-site-header';
+import { IoMapOutline, IoListOutline, IoOptionsOutline } from 'react-icons/io5';
 import { PlaceSearch } from '@/components/place-search';
 import type { SearchPlace } from '@/lib/place-geography';
 import { ReportBrowser } from '@/components/report-browser';
@@ -108,7 +109,7 @@ export function MapExperience({
   const [editingReport, setEditingReport] = useState<Report | null>(null);
   const [editPhotoUrls, setEditPhotoUrls] = useState<string[]>([]);
   const [mapPreviewId, setMapPreviewId] = useState<string | null>(null);
-  const [reportListOpen, setReportListOpen] = useState(false);
+  const [reportListOpen, setReportListOpen] = useState(true);
   const [reportMode, setReportMode] = useState(false);
   const [previewedReportId, setPreviewedReportId] = useState<string | null>(null);
   const [toast, setToast] = useState('');
@@ -707,17 +708,30 @@ export function MapExperience({
   } : EMPTY_REPORT_DRAFT;
 
   return (
-    <main className={`map-page native-experience${reportListOpen ? ' showing-reports' : ''}`}>
-      <div className="app-account-controller">
-        <PublicAccountAction ref={accountActionRef} initialUserId={initialUserId}
-          onAccountDataChanged={refreshReports} onOpenReport={openReportById} onUserChange={handleUserChange}
-          onResumeDraft={() => { if (userId) void loadReportDraft(userId).then(draft => { if (draft) setDraftCoordinates(draft.coordinates); }).catch(() => setToast('Your saved report could not be loaded. Try again.')); }} />
+    <main className={`map-page website-experience${reportListOpen ? ' showing-reports' : ''}`}>
+      <PublicSiteHeader activePath="/" action={(
+        <div className="map-header-actions">
+          <button className={`header-report-button${reportMode ? ' header-report-button-active' : ''}`}
+            onClick={() => { setReportListOpen(false); toggleReportMode(); }} aria-pressed={reportMode}
+            aria-label={selectingDraftLocation ? 'Keep location' : reportMode ? 'Cancel reporting' : 'Report litter'}>
+            <span className="header-report-long">{selectingDraftLocation ? 'Keep location' : reportMode ? 'Cancel reporting' : 'Report litter'}</span>
+            <span className="header-report-short">{selectingDraftLocation ? 'Keep' : reportMode ? 'Cancel' : 'Report'}</span>
+          </button>
+          <PublicAccountAction ref={accountActionRef} initialUserId={initialUserId}
+            onAccountDataChanged={refreshReports} onOpenReport={openReportById} onUserChange={handleUserChange}
+            onResumeDraft={() => { if (userId) void loadReportDraft(userId).then(draft => { if (draft) setDraftCoordinates(draft.coordinates); }).catch(() => setToast('Your saved report could not be loaded. Try again.')); }} />
+        </div>
+      )} />
+      <div className="discovery-toolbar">
+        <PlaceSearch selected={searchPlace} onSelect={selectSearchPlace} onClear={() => setSearchPlace(null)} geocode={geocodeAddress} disabled={!mapReady || reportMode} />
+        <div className="discovery-toolbar-actions">
+          <button className="secondary-button discovery-filters" onClick={() => { setReportListOpen(true); setFiltersRequest(value => value + 1); }}><IoOptionsOutline aria-hidden />Filters</button>
+          <div className="discovery-view-toggle" role="group" aria-label="Browse reports">
+            <button aria-pressed={reportListOpen} onClick={() => setReportListOpen(true)}><IoListOutline aria-hidden /><span>Reports</span></button>
+            <button aria-pressed={!reportListOpen} onClick={() => setReportListOpen(false)}><IoMapOutline aria-hidden /><span>Map</span></button>
+          </div>
+        </div>
       </div>
-      <nav className="app-bottom-nav" aria-label="Main navigation">
-        <button aria-current={reportListOpen ? 'page' : undefined} onClick={() => setReportListOpen(true)}><IoListOutline aria-hidden /><span>Reports</span></button>
-        <button aria-current={!reportListOpen ? 'page' : undefined} onClick={() => setReportListOpen(false)}><IoMapOutline aria-hidden /><span>Map</span></button>
-        <button onClick={() => accountActionRef.current?.openAccount()}><IoPersonOutline aria-hidden /><span>Profile</span></button>
-      </nav>
 
       <div className="map-workspace">
         <ReportBrowser
@@ -729,7 +743,6 @@ export function MapExperience({
           onHiddenChange={(id, hidden) => updateReportPreference('hidden', id, hidden)}
           mapCenter={discoveryArea}
           boundary={searchPlace?.geometry}
-          placeSearch={<PlaceSearch selected={searchPlace} onSelect={selectSearchPlace} onClear={() => setSearchPlace(null)} geocode={geocodeAddress} disabled={!mapReady || reportMode} />}
           onDiscoveryFiltersChange={setDiscoveryFilters}
           loading={discoveryLoading}
           truncated={discoveryTruncated}
@@ -746,14 +759,6 @@ export function MapExperience({
         />
         <section className={`map-stage${reportMode ? ' map-stage-reporting' : ''}`} aria-label="Litterbugs report map">
           <div ref={mapElementRef} className="google-map" />
-          <div className="map-search-pill">
-            <Image src="/brand/litterbugs-logo.png" alt="Litterbugs" width={64} height={44} priority />
-            <PlaceSearch selected={searchPlace} onSelect={selectSearchPlace} onClear={() => setSearchPlace(null)} geocode={geocodeAddress} disabled={!mapReady || reportMode} />
-            <button className="icon-button" aria-label="Search and filters" onClick={() => { setReportListOpen(true); setFiltersRequest(value => value + 1); }}><IoOptionsOutline aria-hidden /></button>
-          </div>
-          <button className="map-report-action primary-button" onClick={() => { setReportListOpen(false); toggleReportMode(); }} aria-pressed={reportMode}>
-            {selectingDraftLocation ? 'Keep location' : reportMode ? 'Cancel reporting' : 'Report litter'}
-          </button>
           {!mapReady && !mapError && <div className="map-loading"><span className="spinner" /><span>Loading map…</span></div>}
           {mapError && <div className="map-error"><Icon name="warning" /><strong>Map unavailable</strong><span>{mapError}</span></div>}
 
@@ -773,6 +778,14 @@ export function MapExperience({
           {(initialError || toast || selectingDraftLocation) && <div className={`toast ${initialError && !toast ? 'toast-warning' : ''}`} role="status">{toast || (selectingDraftLocation ? 'Choose a new spot on the map. Your report details and photos are kept.' : 'Some reports could not be loaded. The map is still available.')}</div>}
         </section>
       </div>
+
+      <footer className="discovery-footer">
+        <span>© {new Date().getFullYear()} Litterbugs</span>
+        <nav aria-label="Footer navigation">
+          <Link href="/about">About</Link><Link href="/help">Help</Link><Link href="/support">Contact</Link>
+          <Link href="/cleanup-safety">Safety</Link><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link>
+        </nav>
+      </footer>
 
       {selectedReport && <ReportDetail key={selectedReport.id} report={selectedReport} userId={userId} isOwner={canManageReport(selectedReport, userId)} favorite={reportPreferences.favorites.has(selectedReport.id)} hidden={reportPreferences.hidden.has(selectedReport.id)} onFavoriteChange={(favorite) => updateReportPreference('favorites', selectedReport.id, favorite)} onHiddenChange={(hidden) => updateReportPreference('hidden', selectedReport.id, hidden)} onNotify={setToast} onRequireSignIn={(intent) => { const url = new URL(window.location.href); url.searchParams.set('report', selectedReport.id); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`); accountActionRef.current?.openAuth(intent); }} onReportChanged={refreshReports} onClose={closeReport} onEdit={() => { void editSelectedReport(); }} onDelete={() => { void deleteSelectedReport(); }} />}
       {draftCoordinates && userId && <ResumableReportWizard key={userId} userId={userId} onCoordinatesChange={setDraftCoordinates} onRestorePublication={restorePublication} fundingEnabled={fundingEnabled} coordinates={draftCoordinates} selectingLocation={selectingDraftLocation} onChangeLocation={publicationUncertain ? undefined : changeDraftLocation} onClose={() => setDraftCoordinates(null)} onSubmit={saveReport} />}
