@@ -627,7 +627,7 @@ export function AccountDialog({
                     <span>
                       <strong>{formatUsd(contribution.principal_amount_cents)} cleanup reward</strong>
                       <small>{contributionStatusLabel(contribution.status)} · {new Date(contribution.created_at).toLocaleString()}</small>
-                      <small>{formatUsd(contribution.platform_fee_cents)} fee · {formatUsd(contribution.total_amount_cents)} total charged</small>
+                      <small>{formatUsd(contribution.platform_fee_cents)} fee · {formatUsd(contribution.total_amount_cents)} total</small>
                     </span>
                     <Icon name="chevron-right" />
                   </button>
@@ -636,8 +636,19 @@ export function AccountDialog({
               </div>
             </section>}
 
-            {section === 'settings' && <section className="member-panel member-blocked-panel">
-              <header><div><span className="eyebrow">PRIVACY &amp; SAFETY</span><h3>Blocked accounts</h3></div></header>
+
+          </div>
+        </>
+      )}
+
+      {section === 'settings' && <section className="member-settings">
+        <div className="member-settings-heading"><span className="eyebrow">ACCOUNT</span><h3>Account settings</h3><p>{email || 'Email unavailable for this account'}</p></div>
+        <div className="account-section-links">
+          <button onClick={startProfileEdit}>Edit profile<Icon name="chevron-right" /></button>
+        </div>
+        <details className="member-panel"><summary>Sign-in methods</summary><p>{email || 'No email shared'}</p>{signInMethods.length ? signInMethods.map(provider => <p key={provider}>{provider === 'email' ? 'Email and password' : provider.charAt(0).toUpperCase() + provider.slice(1)} · Connected</p>) : <p>Sign-in method information is unavailable.</p>}<p>Use a connected method to sign in on the website or mobile app.</p></details>
+            <details className="member-panel member-blocked-panel">
+              <summary>Blocked accounts</summary>
               <div className="member-activity-list">
                 {blockedAccounts.map(({ blocked_id, blocked }) => {
                   const blockedAvatarUrl = getProfileAvatarUrl(createClient(), blocked);
@@ -663,17 +674,7 @@ export function AccountDialog({
                 })}
                 {!blockedAccounts.length && <p className="member-empty">No blocked accounts. Accounts you block in Litterbugs will appear here on every device.</p>}
               </div>
-            </section>}
-          </div>
-        </>
-      )}
-
-      {section === 'settings' && <section className="member-settings">
-        <div className="member-settings-heading"><span className="eyebrow">ACCOUNT</span><h3>Account settings</h3><p>{email || 'Email unavailable for this account'}</p></div>
-        <div className="account-section-links">
-          <button onClick={startProfileEdit}>Edit profile<Icon name="chevron-right" /></button>
-        </div>
-        <details className="member-panel"><summary>Sign-in methods</summary><p>{email || 'No email shared'}</p>{signInMethods.length ? signInMethods.map(provider => <p key={provider}>{provider === 'email' ? 'Email and password' : provider.charAt(0).toUpperCase() + provider.slice(1)} · Connected</p>) : <p>Sign-in method information is unavailable.</p>}<p>Use a connected method to sign in on the website or mobile app.</p></details>
+            </details>
         <div className="member-setting-links">
           <Link href="/help"><FiHeart aria-hidden /><span>Get help</span><FiExternalLink aria-hidden /></Link>
           <Link href="/cleanup-safety"><FiShield aria-hidden /><span>Cleanup safety</span><FiExternalLink aria-hidden /></Link>
