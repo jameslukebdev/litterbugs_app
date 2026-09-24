@@ -52,18 +52,10 @@ avoids imitating a platform composer that the web cannot control.
 The native Expo app now provides a focused Litterbugs share sheet before the
 operating-system chooser:
 
-- **Instagram Stories** downloads the existing privacy-safe branded report card
-  to the app cache and opens a real Instagram Story draft through
-  `react-native-share`. The card is supplied as the Story background, and the
-  public report URL is supplied as the attribution/link sticker where the
-  installed Instagram version supports it.
-- **More sharing options** sends the branded card, prepared report copy, and
-  public report URL to the native iOS/Android share sheet. That path supports
-  Instagram posts, Facebook, Messages, Mail, WhatsApp, and any other installed
-  provider without requesting broad Photos-library access or posting
-  automatically.
-- If Instagram is unavailable, the app explains the problem and keeps the
-  general native share path available.
+- **Share link** sends the public report URL and privacy-safe text without a file attachment. Use it to send a clickable link or choose Copy in the native sheet. This avoids receivers that discard captions when an image is attached.
+- **Instagram Stories** downloads the branded report card and opens a real Story draft through `react-native-share`. Link metadata is supplied to Instagram, but physical iPhone testing did not produce a clickable sticker automatically. Copy the URL through Share link first, then add a Link sticker in Instagram and paste the URL. Litterbugs never publishes the Story.
+- **Share photo** sends the branded card and prepared caption (including the URL) to the native share sheet. Receiving apps control whether the caption is retained; Notes on the tested iPhone received only the image. Share link remains available for reliable URL delivery.
+- If Instagram is unavailable, the app explains the problem and keeps Share link available.
 
 This uses the existing Expo architecture rather than replacing navigation. The
 native integration adds `react-native-share` and configures the Expo plugin to
@@ -95,12 +87,12 @@ available report and a public completed report that contain no private test data
 
 1. Install the current native build and open it once.
 2. Open an available report. Confirm **Share** appears and opens the Litterbugs
-   share sheet with **Instagram Stories** and **More sharing options**.
+   share sheet with **Share link**, **Instagram Stories**, and **Share photo**.
 3. Tap **Instagram Stories**. Confirm Instagram opens a Story draft containing
-   the branded report card and the public report link/link sticker. Cancel the
+   the branded report card. Add a Link sticker using the copied report URL and verify its destination in the draft without publishing. Cancel the
    draft and confirm report state is unchanged.
-4. Tap **More sharing options**. Confirm the native sheet opens with the branded
-   card and privacy-safe report copy. Dismiss it and confirm report state is
+4. Tap **Share photo**. Confirm the native sheet opens with the branded
+   card; check whether that receiver retains the caption. Separately use **Share link** to verify the public URL reaches the receiving composer. Dismiss it and confirm report state is
    unchanged.
 5. Open a completed report. Confirm **Share Your Impact** appears and uses
    completed-cleanup language in the share preview and card.

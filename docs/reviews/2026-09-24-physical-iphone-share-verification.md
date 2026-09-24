@@ -28,4 +28,4 @@ The pre-existing `com.gegibson.litterbugs.qa` installation reports version 1.0.0
 
 ## Remaining acceptance
 
-Verify the fixed live Safari-to-app handoff on this phone. Provide and verify a reliable link-sharing path for receivers that drop image captions, and make Instagram's manual link-sticker requirement clear. Production Universal Links remain a separate signing/build verification requirement; this QA build has no associated-domain entitlement. No store submission or Apple-account changes were performed.
+PR 81 was merged and `dpl_9NL6REUrMAMGDLTsmYXpQoGEQ2MS` promoted. On the physical iPhone, the live link presented Safari’s Open in Litterbugs confirmation and opened the exact Howard’s Creek report with its $6.00 reward. Provide and verify a reliable link-sharing path for receivers that drop image captions, and make Instagram's manual link-sticker requirement clear. Production Universal Links remain a separate signing/build verification requirement; this QA build has no associated-domain entitlement. No store submission or Apple-account changes were performed.

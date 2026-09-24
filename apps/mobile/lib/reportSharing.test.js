@@ -356,7 +356,7 @@ describe('report sharing', () => {
     expect(JSON.stringify(report)).toBe(original);
   });
 
-  it('opens a prepared Instagram Story with a report link sticker', async () => {
+  it('passes report link metadata to Instagram without assuming it creates a sticker', async () => {
     const shareSingle = vi.fn().mockResolvedValue({ success: true });
     const result = await shareReportToInstagramStories({
       report: availableReport,
