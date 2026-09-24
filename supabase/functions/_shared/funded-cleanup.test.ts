@@ -317,3 +317,38 @@ Deno.test("paid cleanup exact-photo reuse is detected before Gemini review", () 
     throw new Error("Distinct cleanup evidence was treated as an exact duplicate");
   }
 });
+
+
+import { normalizePhotoReviewDecision } from "./photo-review-policy.ts";
+
+Deno.test("AI rejection becomes a human decision rather than automatic ineligibility", () => {
+  const result = normalizePhotoReviewDecision({
+    decision: "fail",
+    summary: "The submitted evidence cannot be assessed.",
+    reason_codes: ["ambiguous"],
+  });
+  if (result.decision !== "admin_review" || result.reason_codes[0] !== "ambiguous") {
+    throw new Error("AI failure must preserve evidence and route to human review");
+  }
+});
+
+Deno.test("concrete safety and integrity findings cannot accidentally pass", () => {
+  for (const reason of [
+    "mismatched_location", "exact_original_photo_reuse", "hazardous_waste",
+    "traffic_exposure", "private_property", "inaccessible_terrain", "suspected_manipulation",
+  ]) {
+    for (const decision of ["pass", "better_photos"] as const) {
+      const result = normalizePhotoReviewDecision({ decision, summary: "Concrete finding", reason_codes: [reason] });
+      if (result.decision !== "admin_review") throw new Error(`Unreviewed finding: ${reason}`);
+    }
+  }
+});
+
+Deno.test("quality issues and uncertainty do not independently force human review", () => {
+  for (const reason of ["usable", "blurry", "poor_framing", "insufficient_coverage", "cleanup_incomplete", "ambiguous"]) {
+    for (const decision of ["pass", "better_photos", "admin_review"] as const) {
+      const result = normalizePhotoReviewDecision({ decision, summary: "Photo assessment", reason_codes: [reason] });
+      if (result.decision !== decision) throw new Error(`Unnecessary escalation for ${reason}`);
+    }
+  }
+});

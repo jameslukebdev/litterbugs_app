@@ -10,7 +10,6 @@ test.use({
 });
 
 async function advanceToReview(page: Page | Locator, chooseValues: boolean) {
-  await page.getByRole('button', { name: 'Next', exact: true }).click();
   if (chooseValues) {
     const onePixelPng = Buffer.from(
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zl1sAAAAASUVORK5CYII=',
@@ -32,7 +31,7 @@ async function advanceToReview(page: Page | Locator, chooseValues: boolean) {
   await page.getByRole('button', { name: 'Next', exact: true }).click();
   if (chooseValues) await page.getByRole('button', { name: 'Scattered', exact: true }).click();
   await page.getByRole('button', { name: 'Next', exact: true }).click();
-  await expect(page.getByText('Step 6 of 6')).toBeVisible();
+  await expect(page.getByText('Step 5 of 5')).toBeVisible();
 }
 
 test('confirmed email user creates, edits, deletes, and signs out cleanly', async ({ page }, testInfo) => {
@@ -63,7 +62,7 @@ test('confirmed email user creates, edits, deletes, and signs out cleanly', asyn
 
   const createDialog = page.getByRole('dialog', { name: 'Create litter report' });
   await expect(createDialog).toBeVisible();
-  await createDialog.getByLabel('Report title').fill(reportTitle);
+  await createDialog.getByLabel('Report title (optional)').fill(reportTitle);
   await advanceToReview(createDialog, true);
   await createDialog.getByRole('button', { name: 'Submit report', exact: true }).click();
   await expect(createDialog).toBeHidden();
@@ -90,7 +89,7 @@ test('confirmed email user creates, edits, deletes, and signs out cleanly', asyn
   await detail.getByRole('button', { name: 'Edit', exact: true }).click();
 
   const editDialog = page.getByRole('dialog', { name: 'Edit litter report' });
-  await editDialog.getByLabel('Report title').fill(editedTitle);
+  await editDialog.getByLabel('Report title (optional)').fill(editedTitle);
   await advanceToReview(editDialog, false);
   await editDialog.getByRole('button', { name: 'Save changes', exact: true }).click();
   await expect(detail.getByRole('heading', { name: editedTitle, exact: true })).toBeVisible();

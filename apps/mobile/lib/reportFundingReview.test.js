@@ -6,8 +6,9 @@ import { describe, expect, it } from 'vitest';
 const mapScreenSource = ['../MapScreen.js', '../components/ReportWizardSteps.jsx', '../components/ReportDetailsSheet.jsx', '../styles/MapScreen.styles.js'].map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
 
 describe('report review cleanup-fund choices', () => {
-  it('offers a simple volunteer default and optional reward', () => {
-    expect(mapScreenSource).toContain("{ value: 'none', label: 'Volunteer' }");
+  it('offers no contribution now and explains that others can still fund it', () => {
+    expect(mapScreenSource).toContain("{ value: 'none', label: 'No contribution now' }");
+    expect(mapScreenSource).toContain('Others can still contribute to this cleanup.');
     expect(mapScreenSource).toContain("{ value: '1', label: '$1' }");
     expect(mapScreenSource).toContain("{ value: '5', label: '$5' }");
     expect(mapScreenSource).toContain("{ value: '10', label: '$10' }");
@@ -18,7 +19,7 @@ describe('report review cleanup-fund choices', () => {
   it('enforces the custom $1 to $1,000 range', () => {
     expect(mapScreenSource).toContain('placeholder="1.00"');
     expect(mapScreenSource).toContain(
-      'Choose at least $1 and no more than $1,000, or select Volunteer.'
+      'Choose at least $1 and no more than $1,000, or select No contribution now.'
     );
   });
 

@@ -5,20 +5,38 @@ The new website lives in `apps/web` and connects only to Supabase project
 
 ## Implemented product surface
 
-- Public browsing of active, unexpired reports with exact coordinates.
+- Public browsing of unexpired reports and completed cleanup history with exact
+  coordinates. Canceled, explicitly expired, sample, and unpublished reports
+  remain excluded. Completed photos remain viewable after the old deadline.
+- Combined report-title/notes search, cleanup status, reward, severity, favorites,
+  hidden reports, and 5/25/50-mile distance from the map center. Discovery uses
+  stable pages within the visible map bounds and a visible 1,000-match limit.
+  U.S. town search selects and draws the same Census town/surrounding postal
+  boundary used by mobile. Address / worldwide search selects an area center
+  without claiming a boundary; Clear area removes the boundary filter.
 - Google Maps JavaScript API with location centering and roadmap, satellite,
-  hybrid, and terrain controls.
+  hybrid, and terrain controls. The restricted web Maps key also permits the Geocoding
+  API for explicit address searches; native Maps keys remain separate.
 - Mobile-style report details with signed private photo URLs, types, severity,
   notes, reported date, and expiration date. Mobile-created HEIC/HEIF objects
   are converted to cached JPEG responses by a web-only endpoint after it proves
-  the object belongs to an active, unexpired report; stored objects and mobile
+  the object belongs to a discoverable report; stored objects and mobile
   behavior remain unchanged.
 - A signed-out prompt before report creation; there is no web Guest mode.
-- Email/password, Google, and Facebook authentication. Apple remains absent
-  until the production App ID transfer and provider setup are complete.
-- The same Title, Photos, Litter Types, Severity, Notes, and Review report steps.
-- The same ten-mile creation boundary and maximum of three photos.
-- Owner-only editing and deletion.
+- Email/password and Google authentication. Facebook is separately gated for
+  invited provider testing; Apple web sign-in is not exposed.
+- Five mobile-aligned stages: Photos (including optional title), Type of litter,
+  Severity, Site conditions, and Review. Review edits return directly to Review.
+- Draft preparation and pin changes do not require GPS. Publication requires
+  fresh current GPS within fifty miles before upload and again before publishing,
+  with a maximum of three photos. The earlier ten-mile entry gate is removed.
+- Optional starting contribution defaults to **No contribution now**. Selecting
+  an amount opens a separate contribution screen after publication, preserving
+  the chosen amount. Photo eligibility and explicit payment confirmation still
+  apply; publication itself never creates a payment.
+- Owner-only editing and deletion, including replacement of the full photo set
+  with one to three new photos. Text-only edits preserve the stored photos;
+  replacements remove superseded photos only after a confirmed save.
 - Feature-gated funded-cleanup card contributions through Stripe's Payment
   Element, using the same principal, 10% fee, full-refund rule, PaymentIntent,
   webhook reconciliation, and dark-launch flags as mobile.
@@ -38,11 +56,16 @@ PaymentIntent client secret after the authenticated Edge Function creates the
 ledger entry. Secret Stripe keys and service-role credentials never enter the
 website environment.
 
-The shared contract has an automated parity gate that reads the mechanically
-moved `apps/mobile/MapScreen.js` source. It fails if the web contract drifts
-from mobile's exact step order, preset labels, severity levels, limits,
-ten-mile boundary, or current edit-photo behavior. Anonymous Supabase claims
-are rejected on both the server-rendered and browser write boundaries.
+The shared contract has automated parity checks for the five-stage order,
+preset labels, severity levels, and evidence limits. These checks do not prove
+complete feature parity. Photo replacement is now available in both clients;
+pin changes preserve drafts and the selected contribution. Browser drafts now
+retain photos, fields, stage, location, and contribution in account-scoped
+IndexedDB storage, with Resume, Start new, Save for later, and Discard controls.
+Drafts are local to that browser; clearing site data removes them. Submission
+recovery records survive reloads and are cleared atomically with the draft only
+after confirmed publication. Other Version 2 differences remain under review. Anonymous
+Supabase claims are rejected on server-rendered and browser write boundaries.
 
 ## Environment
 
@@ -75,11 +98,12 @@ web URLs. Its fallback Site URL is `https://litterbugs.app`; mobile signup,
 recovery, and OAuth continue to provide their unchanged explicit
 `litterbugs://` destinations.
 
-Apple sign-in is not exposed in the current mobile or web UI. After the
-production `com.litterbugs.app` App ID transfers to Grant's Apple team, Apple
-web login will require a separate Service ID with the production domain and
-Supabase callback registered. That later project must be explicitly tested
-before exposing the provider and must not change mobile behavior incidentally.
+Mobile Apple sign-in uses Luke's existing production configuration. Apple web
+login is separate provider work requiring a Service ID with the production
+domain and Supabase callback registered. Luke's developer account is unavailable
+to Grant; do not change Grant's Apple settings as a substitute or treat an App ID
+transfer as part of this debugging task. Web setup must be explicitly tested
+before exposing that provider.
 
 Enable the Google Maps JavaScript API on the intended Google Cloud project and
 create a JavaScript map ID plus a browser-only key restricted to:

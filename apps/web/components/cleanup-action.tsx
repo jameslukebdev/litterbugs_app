@@ -71,6 +71,8 @@ export function CleanupAction({
   const [waiver, setWaiver] = useState<CleanupWaiver | null>(null);
   const [waiverOpen, setWaiverOpen] = useState(false);
   const [waiverAccepted, setWaiverAccepted] = useState(false);
+  const [agreementSaved, setAgreementSaved] = useState(false);
+  const [siteConfirmed, setSiteConfirmed] = useState(false);
   const [submissionOpen, setSubmissionOpen] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
   const [description, setDescription] = useState('');
@@ -132,21 +134,35 @@ export function CleanupAction({
       .eq('is_active', true)
       .is('retired_at', null)
       .maybeSingle();
-    setBusy('');
     if (error || !data) {
+      setBusy('');
       setMessage('The cleanup safety acknowledgment is temporarily unavailable. Try again.');
       return;
     }
+    const { data: acceptance, error: acceptanceError } = await createClient()
+      .from('cleanup_waiver_acceptances')
+      .select('waiver_version')
+      .eq('user_id', userId)
+      .eq('waiver_version', data.waiver_version)
+      .eq('guidelines_version', data.guidelines_version)
+      .maybeSingle();
+    setBusy('');
+    if (acceptanceError) {
+      setMessage('Your saved agreement could not be checked. Try again.');
+      return;
+    }
     setWaiver(data as CleanupWaiver);
+    setAgreementSaved(Boolean(acceptance));
+    setSiteConfirmed(false);
     setWaiverAccepted(false);
     setWaiverOpen(true);
   }
 
   async function acceptAndClaim() {
-    if (!waiver || !waiverAccepted) return;
+    if (!waiver || (!agreementSaved && !waiverAccepted) || !siteConfirmed) return;
     setBusy('claim');
     const supabase = createClient();
-    const acceptance = await supabase.rpc('accept_cleanup_waiver', {
+    const acceptance = agreementSaved ? { error: null } : await supabase.rpc('accept_cleanup_waiver', {
       accepted_waiver_version: waiver.waiver_version,
       accepted_guidelines_version: waiver.guidelines_version,
     });
@@ -158,6 +174,12 @@ export function CleanupAction({
     const claim = await supabase.rpc('claim_cleanup', { target_report_id: report.id });
     setBusy('');
     if (claim.error) {
+      if (/cleanup_waiver_outdated|cleanup_waiver_required/i.test(claim.error.message)) {
+        setWaiverOpen(false);
+        await beginClaim();
+        setMessage('The safety agreement has changed. Please review the current version.');
+        return;
+      }
       setMessage(report.funded_amount_cents > 0
         ? 'Finish cleanup payout setup before claiming this funded cleanup.'
         : 'This cleanup is no longer available to claim. Refresh the report and try again.');
@@ -286,18 +308,23 @@ export function CleanupAction({
       {waiverOpen && waiver && (
         <ModalShell onClose={() => setWaiverOpen(false)} label="Cleanup safety and funded reward acknowledgment" className="cleanup-flow-dialog cleanup-waiver-dialog" closeDisabled={busy === 'claim'}>
           <span className="eyebrow">CLEANUP SAFETY</span>
-          <h2>Cleanup safety and agreement</h2>
-          <div className="cleanup-waiver-scroll">
+          <h2>{agreementSaved ? 'Confirm this site is safe for you' : 'Cleanup safety and agreement'}</h2>
+          {!agreementSaved && <div className="cleanup-waiver-scroll">
             <p className="cleanup-legal-copy">{waiver.body}</p>
             {waiver.guidelines_body && <section className="cleanup-guidelines-card"><h3>Cleanup safety guidelines</h3><p>{waiver.guidelines_body}</p></section>}
             {waiver.release_body && <section className="cleanup-release-card"><h3>Assumption of risk and release</h3><p>{waiver.release_body}</p></section>}
             <p>Updated {new Date(waiver.published_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</p>
             <label className="cleanup-acknowledgment">
               <input type="checkbox" checked={waiverAccepted} onChange={(event) => setWaiverAccepted(event.target.checked)} />
-              <span>I confirm I am 18 or older. I have read and accept the safety guidelines, funded reward acknowledgment, assumption of risk, and release for this claim.</span>
+              <span>I confirm I am 18 or older. I have read and accept this version of the safety guidelines, funded reward acknowledgment, assumption of risk, and release.</span>
             </label>
-          </div>
-          <button className="primary-button cleanup-flow-submit" onClick={acceptAndClaim} disabled={!waiverAccepted || busy === 'claim'}>{busy === 'claim' ? 'Claiming…' : 'Accept and claim cleanup'}</button>
+          </div>}
+          <label className="cleanup-acknowledgment">
+            <input type="checkbox" checked={siteConfirmed} onChange={(event) => setSiteConfirmed(event.target.checked)} />
+            <span>I can legally access this site and clean safely with my equipment, away from moving traffic and hazardous materials. I will stop if conditions become unsafe.</span>
+          </label>
+          <p>You have 24 hours to clean and submit photos.</p>
+          <button className="primary-button cleanup-flow-submit" onClick={acceptAndClaim} disabled={(!agreementSaved && !waiverAccepted) || !siteConfirmed || busy === 'claim'}>{busy === 'claim' ? 'Claiming…' : 'Confirm and claim cleanup'}</button>
         </ModalShell>
       )}
 

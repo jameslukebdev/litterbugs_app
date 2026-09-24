@@ -9,6 +9,7 @@ import {
   MAX_REPORT_PHOTOS,
   MAX_REPORT_TITLE_LENGTH,
   NOTE_OPTIONS,
+  REPORT_STEPS,
   SEVERITY_LEVELS,
 } from './report';
 
@@ -43,6 +44,9 @@ function quotedValues(source: string, key?: string): string[] {
 }
 
 describe('mobile report parity', () => {
+  it('keeps the five report stages aligned with Luke’s mobile flow', () => {
+    expect([...REPORT_STEPS]).toEqual(quotedValues(block(/const REPORT_STEPS = \[([^\]]+)\]/)));
+  });
   it('keeps the web fallback map center aligned with mobile', () => {
     const fallbackMatch = mobileReportsSource.match(
       /export const DEFAULT_MAP_REGION = Object\.freeze\(\{([\s\S]*?)\}\);/,
@@ -65,7 +69,7 @@ describe('mobile report parity', () => {
       'label',
     );
     const mobileSeverityLevels = quotedValues(
-      block(/styles\.wizardSeverityList\}>\s*\{\[([\s\S]*?)\]\.map/, mobileWizardSource),
+      block(/const SEVERITY_OPTIONS = \[([\s\S]*?)\n\];/, mobileWizardSource),
       'level',
     );
 
@@ -75,8 +79,7 @@ describe('mobile report parity', () => {
   });
 
   it('keeps mobile limits aligned and supports bounded report-photo replacement', () => {
-    // Mobile now confirms a manually placed pin without requiring GPS. The web
-    // distance policy and wizard sequence are independent UI behavior, not shared data.
+    // Both clients keep the same report evidence limits.
     expect(MAX_REPORT_PHOTOS).toBe(3);
     expect(mobileReportPhotoSource).toContain('export const MAX_REPORT_PHOTOS = 3;');
     expect(mobileReportPhotoSource).toContain(

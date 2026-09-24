@@ -724,6 +724,7 @@ startingFundChoiceText: {
   color: '#405044',
   fontSize: 14,
   fontWeight: '600',
+  textAlign: 'center',
 },
 
 startingFundChoiceTextSelected: {

@@ -10,3 +10,9 @@ apps/mobile/.expo/
 coverage/
 artifacts/
 *.log
+.agents/
+skills-lock.json
+**/*.swp
+.env*
+**/.env*
+supabase/.temp/

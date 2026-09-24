@@ -6,11 +6,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { FundingContributionAction } from './funding-contribution-action';
 
-const { loadFlags } = vi.hoisted(() => ({ loadFlags: vi.fn() }));
+const { loadFlags, createContribution } = vi.hoisted(() => ({ loadFlags: vi.fn(), createContribution: vi.fn() }));
 
 vi.mock('@/lib/funding', async (importOriginal) => ({
   ...await importOriginal<typeof import('@/lib/funding')>(),
   loadCleanupFeatureFlags: loadFlags,
+  createCleanupContribution: createContribution,
 }));
 
 vi.mock('@stripe/stripe-js', () => ({ loadStripe: vi.fn() }));
@@ -73,5 +74,30 @@ describe('FundingContributionAction', () => {
     expect(screen.getByText('$2.50')).toBeTruthy();
     expect(screen.getByText('$27.50')).toBeTruthy();
     expect(screen.getByText(/full charge—including the fee—is refunded/i)).toBeTruthy();
+  });
+});
+
+
+describe('report creation handoff', () => {
+  it('opens with the chosen amount and requires an explicit action before creating payment', async () => {
+    loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
+    createContribution.mockResolvedValue({ publishableKey: null });
+    render(<FundingContributionAction report={report} userId="member-id" initialAmountCents={500} startOpen />);
+    const amount = await screen.findByLabelText('Cleanup fund contribution amount');
+    expect((amount as HTMLInputElement).value).toBe('5.00');
+    expect(screen.getByText('$5.50')).toBeTruthy();
+    expect(createContribution).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await waitFor(() => expect(createContribution).toHaveBeenCalledWith(report.id, 500));
+  });
+
+  it('waits for eligibility without creating a payment or replacing the selected amount', async () => {
+    loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
+    const { rerender } = render(<FundingContributionAction report={{ ...report, funding_eligibility: 'pending' }} userId="member-id" initialAmountCents={100} startOpen />);
+    await screen.findByText(/Its photos are being reviewed/);
+    expect(screen.queryByRole('button', { name: 'Continue' })).toBeNull();
+    expect(createContribution).not.toHaveBeenCalled();
+    rerender(<FundingContributionAction report={report} userId="member-id" initialAmountCents={100} startOpen />);
+    expect((await screen.findByLabelText('Cleanup fund contribution amount') as HTMLInputElement).value).toBe('1.00');
   });
 });

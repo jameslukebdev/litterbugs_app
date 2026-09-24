@@ -14,13 +14,13 @@ export default function TermsPage() {
       eyebrow="LITTERBUGS TERMS"
       title="Terms of use"
       summary="These terms govern Litterbugs accounts, community reports, cleanup funding, cleaner rewards, safety, reviews, disputes, and refunds."
-      effectiveDate="September 9, 2026"
+      effectiveDate="September 23, 2026"
       sections={[
         {
           title: 'Agreement and who may use Litterbugs',
           content: <>
             <p>These Terms of Use form an agreement between you and Litterbugs. By creating an account or using Litterbugs, you agree to these terms, the Privacy Policy, and the Cleanup, Contribution, Reward, Dispute, and Refund Policy. If you do not agree, do not use the service.</p>
-            <p>You must be at least 13 years old to create an account and, if you are under the age of legal majority where you live, have permission from a parent or legal guardian. You must provide accurate information, keep your account secure, and use Litterbugs lawfully. A permanent Litterbugs account is required to report litter, contribute money, claim a cleanup, dispute a cleanup, or receive a reward. You must be at least 18 years old to claim any cleanup. Funded cleaners must also be in the United States and satisfy Stripe&apos;s identity, eligibility, tax-information, and payout requirements.</p>
+            <p>You must be at least 13 years old to create an account and, if you are under the age of legal majority where you live, have permission from a parent or legal guardian. You must provide accurate information, keep your account secure, and use Litterbugs lawfully. A permanent Litterbugs account is required to report litter, contribute money, claim a cleanup, dispute a cleanup, or receive a reward. You must be at least 18 years old to claim any cleanup. Funded cleaners must satisfy the country eligibility shown during payout setup and Stripe&apos;s identity, tax-information, and payout requirements.</p>
           </>,
         },
         {
@@ -72,7 +72,7 @@ export default function TermsPage() {
         {
           title: 'Safety, assumption of risk, and independent participation',
           content: <>
-            <p>Claiming and performing a cleanup is voluntary. Before every claim, you must review and accept the current Cleanup Safety, Assumption of Risk, and Funded Reward Acknowledgment. You decide whether conditions are safe, supply your own transportation, tools, protective equipment, and disposal arrangements, and must stop when a condition is unsafe or beyond your ability.</p>
+            <p>Claiming and performing a cleanup is voluntary. You must review and accept each new version of the Cleanup Safety, Assumption of Risk, and Funded Reward Acknowledgment. We save that acceptance, and every claim requires a separate confirmation that you can safely and legally clean the site. You decide whether conditions are safe, supply your own transportation, tools, protective equipment, and disposal arrangements, and must stop when a condition is unsafe or beyond your ability.</p>
             <p>Cleaners are independent participants, not employees, agents, partners, joint venturers, or representatives of Litterbugs. Rewards are conditional marketplace payments for approved results, not wages, salary, hourly compensation, or a promise of recurring work. Litterbugs does not control how a cleaner performs physical work. To the fullest extent permitted by law, you assume the risks identified in the acknowledgment and release the Litterbugs parties from claims arising from your voluntary participation, including claims based on ordinary negligence. This does not release gross negligence, reckless or willful misconduct, or liability that cannot lawfully be waived.</p>
           </>,
         },

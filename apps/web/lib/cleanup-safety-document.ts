@@ -1,4 +1,4 @@
-export const CLEANUP_ACKNOWLEDGMENT_VERSION = 'cleanup-acknowledgment-v3';
+export const CLEANUP_ACKNOWLEDGMENT_VERSION = 'cleanup-acknowledgment-v4';
 export const CLEANUP_GUIDELINES_VERSION = 'cleanup-safety-guidelines-v2';
 export const CLEANUP_ACKNOWLEDGMENT_TITLE = 'Cleanup Safety, Assumption of Risk, and Funded Reward Acknowledgment';
 
@@ -6,7 +6,7 @@ export const CLEANUP_ACKNOWLEDGMENT = `PLEASE READ BEFORE CLAIMING THIS CLEANUP
 
 My choice and eligibility
 • I am voluntarily choosing whether to claim this cleanup. I am not required to perform it.
-• I confirm that I am at least 18 years old. If this is a funded cleanup, I am in the United States and will complete Stripe’s identity, tax-information, and payout requirements.
+• I confirm that I am at least 18 years old. If this is a funded cleanup, I must be eligible for payouts in a country supported by Litterbugs and Stripe and complete all required identity, tax-information, and payout checks.
 • I participate independently, not as an employee, agent, partner, joint venturer, or representative of Litterbugs. I decide whether, when, and how to attempt the cleanup within the claim rules.
 
 My safety assessment
@@ -25,7 +25,7 @@ Evidence, review, and funded rewards
 • I am responsible for determining and reporting taxes related to rewards. Stripe or Litterbugs may collect tax information and issue required forms.
 
 My agreement
-I have read the current Litterbugs Terms of Use, Privacy Policy, Cleanup and Reward Policy, and the safety rules above. I understand that a reporter may clean their own report but receives no preferential treatment, and any self-approval remains recorded as such. By checking the box and continuing, I accept this acknowledgment for this cleanup claim and agree to follow it.`;
+I have read the current Litterbugs Terms of Use, Privacy Policy, Cleanup and Reward Policy, and the safety rules above. I understand that a reporter may clean their own report but receives no preferential treatment, and any self-approval remains recorded as such. By checking the box and continuing, I accept this version of the acknowledgment for my cleanup participation and agree to follow it. My acceptance is saved until the acknowledgment or safety guidelines change. Before every cleanup, I will separately confirm that I can safely and legally clean that location.`;
 
 export const CLEANUP_SAFETY_GUIDELINES = `• Park safely and lawfully before opening Litterbugs. Never use the app while driving.
 • Wear suitable gloves, clothing, footwear, and any other protective equipment the cleanup requires.

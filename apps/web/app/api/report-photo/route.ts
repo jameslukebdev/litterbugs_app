@@ -4,6 +4,7 @@ import convert from 'heic-convert';
 import sharp from 'sharp';
 
 import { isHeicReportPhoto, isReportCardPhoto } from '@/lib/report-photo';
+import { isDiscoverableReport, reportDiscoveryWindow } from '@/lib/report-visibility';
 import { createClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
@@ -61,17 +62,21 @@ export async function GET(request: Request) {
     } else {
       const { data: report, error: reportError } = await supabase
         .from('reports')
-        .select('expires_at')
+        .select('expires_at, cleanup_state, is_published, is_sample, cancelled_at, expired_at')
         .eq('is_sample', false)
+        .eq('is_published', true)
+        .is('cancelled_at', null)
+        .is('expired_at', null)
         .contains('photo_paths', [photoPath])
-        .or('status.is.null,status.eq.active')
-        .gt('expires_at', now.toISOString())
+        .or(reportDiscoveryWindow(now))
         .limit(1)
         .maybeSingle();
 
       if (reportError) return errorResponse(502, 'Report photo could not be verified.');
-      if (!report?.expires_at) return errorResponse(404, 'Report photo not found.');
-      expiresAt = report.expires_at;
+      if (!report || !isDiscoverableReport(report, now)) return errorResponse(404, 'Report photo not found.');
+      expiresAt = report.cleanup_state === 'completed'
+        ? new Date(now.getTime() + MAX_CACHE_SECONDS * 1000).toISOString()
+        : report.expires_at;
     }
 
     const { data: source, error: downloadError } = await supabase.storage

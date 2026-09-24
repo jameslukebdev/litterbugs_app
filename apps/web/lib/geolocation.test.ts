@@ -2,7 +2,7 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
-import { GEOLOCATION_OPTIONS, getBrowserLocation } from './geolocation';
+import { GEOLOCATION_OPTIONS, getBrowserLocation, requireReportLocation } from './geolocation';
 
 describe('browser geolocation', () => {
   it('returns allowed coordinates with the production request options', async () => {
@@ -32,5 +32,19 @@ describe('browser geolocation', () => {
 
   it('fails closed when browser geolocation is unavailable', async () => {
     await expect(getBrowserLocation(undefined)).rejects.toThrow('unavailable');
+  });
+
+  it('requires a fresh high-accuracy reading for report submission', async () => {
+    const position = { coords: { latitude: 0, longitude: 0 }, timestamp: Date.now() } as GeolocationPosition;
+    const getCurrentPosition = vi.fn((success: PositionCallback) => success(position));
+    await expect(requireReportLocation({ latitude: 0.7, longitude: 0 }, { getCurrentPosition })).resolves.toMatchObject({ latitude: 0, longitude: 0 });
+    expect(getCurrentPosition).toHaveBeenCalledWith(expect.any(Function), expect.any(Function), {
+      enableHighAccuracy: true, timeout: 20000, maximumAge: 0,
+    });
+    await expect(requireReportLocation({ latitude: 1, longitude: 0 }, { getCurrentPosition })).rejects.toThrow('within 50 miles');
+    const stale = { ...position, timestamp: Date.now() - 120000 };
+    await expect(requireReportLocation({ latitude: 0, longitude: 0 }, {
+      getCurrentPosition: success => success(stale),
+    })).rejects.toThrow('fresh location');
   });
 });

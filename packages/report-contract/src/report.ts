@@ -1,11 +1,10 @@
 import type { Report, ReportInsert, ReportUpdate } from './database.types';
 
 export const REPORT_STEPS = [
-  'Title',
   'Photos',
-  'Litter Types',
+  'Type of litter',
   'Severity',
-  'Notes',
+  'Site conditions',
   'Review',
 ] as const;
 
@@ -145,6 +144,9 @@ export function getDistanceMiles(pointA: Coordinates, pointB: Coordinates): numb
 }
 
 export function isWithinReportDistance(user: Coordinates, report: Coordinates): boolean {
+  if (![user, report].every(point => Number.isFinite(point.latitude)
+    && Number.isFinite(point.longitude) && Math.abs(point.latitude) <= 90
+    && Math.abs(point.longitude) <= 180)) return false;
   return getDistanceMiles(user, report) <= MAX_REPORT_DISTANCE_MILES;
 }
 

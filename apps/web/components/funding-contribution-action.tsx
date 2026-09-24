@@ -65,15 +65,23 @@ export function FundingContributionAction({
   userId,
   onRequireSignIn,
   onChanged,
+  initialAmountCents,
+  startOpen = false,
+  onDismiss,
+  onRefreshFunding,
 }: {
   report: Report;
   userId: string | null;
   onRequireSignIn?: () => void;
   onChanged?: () => void | Promise<void>;
+  initialAmountCents?: number;
+  startOpen?: boolean;
+  onDismiss?: () => void;
+  onRefreshFunding?: () => Promise<void>;
 }) {
-  const [enabled, setEnabled] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [amount, setAmount] = useState('25');
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [open, setOpen] = useState(startOpen);
+  const [amount, setAmount] = useState(() => initialAmountCents == null ? '25' : (initialAmountCents / 100).toFixed(2));
   const [intent, setIntent] = useState<ContributionIntent | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -95,17 +103,31 @@ export function FundingContributionAction({
           setEnabled(Boolean(flags.payments_enabled && flags.gemini_financial_review_enabled));
         }
       })
-      .catch(() => undefined);
+      .catch(() => { if (!cancelled) setEnabled(false); });
     return () => { cancelled = true; };
   }, []);
 
-  if (
-    !enabled
-    || report.cleanup_state === 'completed'
-    || report.cleanup_state === 'claimed'
-    || report.funding_eligibility !== 'eligible'
-    || report.funding_frozen_at
-  ) return null;
+  const eligible = report.cleanup_state === 'available'
+    && report.funding_eligibility === 'eligible'
+    && report.renewal_status === 'active'
+    && !report.funding_frozen_at
+    && !report.cancelled_at
+    && !report.expired_at;
+  if (!startOpen && (!enabled || !eligible)) return null;
+
+  function dismiss() {
+    setOpen(false);
+    onDismiss?.();
+  }
+
+  async function refreshFunding() {
+    if (!onRefreshFunding || busy) return;
+    setBusy(true);
+    setMessage('');
+    try { await onRefreshFunding(); }
+    catch { setMessage('The review could not be refreshed. Your report is saved; you can add funds later.'); }
+    finally { setBusy(false); }
+  }
 
   function begin() {
     if (!userId) {
@@ -118,7 +140,7 @@ export function FundingContributionAction({
   }
 
   async function continueToPayment() {
-    if (principalAmountCents == null || busy) return;
+    if (!enabled || !eligible || principalAmountCents == null || busy) return;
     setBusy(true);
     setMessage('');
     try {
@@ -135,17 +157,28 @@ export function FundingContributionAction({
     setOpen(false);
     setMessage('Contribution received. The reward will update after Stripe confirms it.');
     await onChanged?.();
+    onDismiss?.();
   }
 
   return (
     <>
       {message && <span className="cleanup-action-message" role="status">{message}</span>}
-      <button className="primary-button compact-button" onClick={begin}>{userId ? 'Add funds' : 'Sign in to fund'}</button>
+      {!startOpen && <button className="primary-button compact-button" onClick={begin}>{userId ? 'Add funds' : 'Sign in to fund'}</button>}
       {open && (
-        <ModalShell onClose={() => setOpen(false)} label="Add money to this cleanup reward" className="funding-dialog" closeDisabled={busy}>
+        <ModalShell onClose={dismiss} label="Add money to this cleanup reward" className="funding-dialog" closeDisabled={busy}>
           <h2>{intent ? 'Secure payment' : 'Add to the cleanup reward'}</h2>
           <p className="funding-dialog-report">{report.title || 'Litter cleanup'}</p>
-          {!intent ? (
+          {enabled !== true || !eligible ? <>
+            <p role="status">{enabled === null ? 'Checking funding availability…' : !enabled
+              ? 'Your report is saved. Funding is temporarily unavailable. No payment has been made.'
+              : report.funding_eligibility === 'pending'
+                ? 'Your report is saved. Its photos are being reviewed before funding opens. No payment has been made.'
+                : 'Your report is saved. Funding is not available yet. Open the report to see its review status. No payment has been made.'}</p>
+            <p>Your selected contribution is {formatUsd(initialAmountCents ?? 0)}. You can close this screen and add funds later.</p>
+            {message && <p className="form-message error-message" role="alert">{message}</p>}
+            {enabled && onRefreshFunding && <button className="secondary-button" disabled={busy} onClick={refreshFunding}>{busy ? 'Checking…' : 'Check funding status'}</button>}
+            <button className="primary-button" disabled={busy} onClick={dismiss}>Done</button>
+          </> : !intent ? (
             <>
               <label className="funding-amount-label">Contribution amount
                 <span className="funding-amount-input"><b>$</b><input value={amount} onChange={(event) => { setAmount(event.target.value); setMessage(''); }} inputMode="decimal" aria-label="Cleanup fund contribution amount" /></span>

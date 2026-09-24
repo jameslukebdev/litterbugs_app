@@ -12,6 +12,7 @@ import {
   serviceClient,
   stripeClient,
 } from "../_shared/funded-cleanup.ts";
+import { normalizePhotoReviewDecision, PHOTO_REVIEW_POLICY_VERSION } from "../_shared/photo-review-policy.ts";
 import { geminiRelayConfig } from "../_shared/google-cloud.ts";
 import {
   claimedOperationRow,
@@ -67,16 +68,6 @@ const reasonCodes = [
   "ambiguous",
 ] as const;
 const reasonCodeSet = new Set<string>(reasonCodes);
-
-const mandatoryAdminReasonCodes = new Set<string>([
-  "mismatched_location",
-  "exact_original_photo_reuse",
-  "hazardous_waste",
-  "traffic_exposure",
-  "private_property",
-  "inaccessible_terrain",
-  "suspected_manipulation",
-]);
 
 const isTransientStripeError = (error: unknown) => {
   const type = error && typeof error === "object" && "type" in error
@@ -203,7 +194,7 @@ const processAiCheck = async (
   if (check.provider_attempts >= 3) {
     const { error: resultError } = await admin.rpc("record_cleanup_ai_result", {
       target_check_id: check.id,
-      result_status: "failed",
+      result_status: "admin_review",
       result_model: "gemini-3.7-flash",
       result_image_hashes: [],
       result_summary:
@@ -214,7 +205,7 @@ const processAiCheck = async (
     if (resultError) throw resultError;
     return {
       checkId: check.id,
-      status: "failed",
+      status: "admin_review",
       summary: "Automated photo review was unavailable after several attempts.",
     };
   }
@@ -246,7 +237,7 @@ const processAiCheck = async (
 
     const parts: unknown[] = [{
       text: check.check_kind === "report"
-        ? `Review this original litter report for a usable photo, obvious fraud, and cleanup safety. Ordinary roadside litter beside a usable shoulder, pull-off, parking area, sidewalk, or drainage edge is not traffic_exposure by itself and may pass with usable evidence. Reserve traffic_exposure and admin_review for a visibly high-risk location that appears to require entering an active travel lane or median, has no safe standing or parking area, is on a high-speed controlled-access road, is at a blind curve, or has another specific visible traffic danger. If the photos do not establish whether a suspected roadway location has safe separation, use admin_review. Report metadata: ${
+        ? `Review this original litter report for funding eligibility. Default to pass when litter is recognizable. Ordinary roadside litter, including an isolated country road, should pass unless there is concrete visible evidence of an unavoidable traffic danger or another explicit safety or integrity exception in the system instructions. Do not require proof of safe separation, a visible shoulder, parking, or access permission. Missing context and hypothetical risks are not reasons to hold funding or request better photos. Ask for better_photos only when image quality actually prevents identifying the litter. Use admin_review only for the concrete exceptions in the system instructions, and state the visible evidence. If litter cannot be identified or the content is unrelated, request a usable litter photo with better_photos and insufficient_coverage. Never use fail. Report metadata: ${
           JSON.stringify({
             title: report.title,
             severity: report.severity,
@@ -255,7 +246,7 @@ const processAiCheck = async (
             other: report.notes_other,
           })
         }`
-        : `Compare the original report photos followed by the cleanup submission photos. Decide whether the litter appears materially cleaned, whether the photos plausibly show the same location, and whether better photos are needed. This is photo attempt ${check.attempt_number} of 3. For ordinary blur, framing, or insufficient coverage on attempts 1 and 2, request better_photos instead of escalating. On attempt 3, unresolved ambiguity should use admin_review. This decision gates a financial reward.`,
+        : `Compare the original report photos followed by the cleanup submission photos. Default to pass when the photos plausibly show the same location and the litter appears materially cleaned. Do not require identical framing, perfect coverage, or removal of every minor remnant. Apply safety and integrity exceptions only when supported by concrete visible evidence as defined in the system instructions. This is photo attempt ${check.attempt_number} of 3. On attempts 1 and 2, use better_photos only for blur, framing, or insufficient coverage that actually prevents assessing the cleanup, or clearly incomplete cleanup that needs finishing and new evidence. On attempt 3, unresolved evidence or incomplete cleanup should use admin_review. This decision gates a financial reward.`,
     }];
     const hashes: string[] = [];
     const reportHashes: string[] = [];
@@ -305,21 +296,9 @@ const processAiCheck = async (
       };
     } else {
       decision = await callGemini(parts, check.prompt_version);
-      if (
-        decision.decision !== "admin_review" &&
-        decision.decision !== "fail" &&
-        decision.reason_codes.some((code) =>
-          mandatoryAdminReasonCodes.has(code)
-        )
-      ) {
-        decision = { ...decision, decision: "admin_review" };
-      }
     }
-    const status = decision.decision === "pass"
-      ? "passed"
-      : decision.decision === "fail"
-      ? "failed"
-      : decision.decision;
+    decision = normalizePhotoReviewDecision(decision);
+    const status = decision.decision === "pass" ? "passed" : decision.decision;
     const { error: resultError } = await admin.rpc("record_cleanup_ai_result", {
       target_check_id: check.id,
       result_status: status,
@@ -327,7 +306,7 @@ const processAiCheck = async (
       result_image_hashes: hashes,
       result_summary: decision.summary,
       result_reason_codes: decision.reason_codes,
-      result_raw: decision,
+      result_raw: { ...decision, policy_version: PHOTO_REVIEW_POLICY_VERSION },
     });
     if (resultError) throw resultError;
     await admin.from("cleanup_ai_checks")
@@ -342,7 +321,7 @@ const processAiCheck = async (
         "record_cleanup_ai_result",
         {
           target_check_id: check.id,
-          result_status: "failed",
+          result_status: "admin_review",
           result_model: "gemini-3.7-flash",
           result_image_hashes: [],
           result_summary:
@@ -357,7 +336,7 @@ const processAiCheck = async (
         .eq("id", check.id);
       return {
         checkId: check.id,
-        status: "failed",
+        status: "admin_review",
         summary:
           "Automated photo review was unavailable after several attempts.",
       };

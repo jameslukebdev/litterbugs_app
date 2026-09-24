@@ -129,16 +129,16 @@ final class LitterbugsUIRegression: XCTestCase {
     }
     func testWaiverUsesReadableDocumentLabels() throws {
         centerAndZoomOut()
-        let funded = marker("$6, available:")
-        XCTAssertTrue(funded.waitForExistence(timeout: 15)); funded.tap()
-        app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'View report, photo 1'")).firstMatch.tap()
-        let cleanup = app.buttons["Help clean this up"]
+        tab("reports").tap()
+        let funded = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Litter at corner of Howard’s Creek Road near C&T")).firstMatch
+        waitForHittable(funded); funded.tap()
+        let cleanup = app.buttons["Claim Cleanup"]
         waitForHittable(cleanup); cleanup.tap()
         XCTAssertTrue(element("Cleanup safety and agreement").waitForExistence(timeout: 15))
         XCTAssertFalse(marker("Burrow Base").exists)
         XCTAssertFalse(marker("cleanup-acknowledgment-v").exists)
         XCTAssertFalse(marker("cleanup-safety-guidelines-v").exists)
-        let date = element("Updated September 9, 2026")
+        let date = element("Updated September 23, 2026")
         XCTAssertTrue(date.exists)
         for _ in 0..<12 {
             if date.isHittable { break }

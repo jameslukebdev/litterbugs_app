@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import { summarizeCleanupAttempts } from './cleanupProfile';
 
-export async function loadCurrentCleanupWaiver() {
+export async function loadCurrentCleanupWaiver(userId) {
   const { data: waiver, error: waiverError } = await supabase
     .from('cleanup_waiver_versions')
     .select('waiver_version, guidelines_version, title, body, guidelines_body, release_body, published_at')
@@ -12,7 +12,16 @@ export async function loadCurrentCleanupWaiver() {
   if (waiverError) throw waiverError;
   if (!waiver) throw new Error('cleanup_waiver_unavailable');
 
-  return { waiver };
+  if (!userId) return { waiver, accepted: false };
+  const { data: acceptance, error: acceptanceError } = await supabase
+    .from('cleanup_waiver_acceptances')
+    .select('waiver_version')
+    .eq('user_id', userId)
+    .eq('waiver_version', waiver.waiver_version)
+    .eq('guidelines_version', waiver.guidelines_version)
+    .maybeSingle();
+  if (acceptanceError) throw acceptanceError;
+  return { waiver, accepted: Boolean(acceptance) };
 }
 
 export async function acceptCleanupWaiver(waiver) {

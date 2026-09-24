@@ -310,11 +310,11 @@ describe('report sharing', () => {
     expect(timeoutCallback).toBeTypeOf('function');
   });
 
-  it('includes the branded card in the general native share sheet', () => {
+  it.each(['ios', 'android'])('includes the branded card and report link on %s', (platform) => {
     const model = createReportShareModel({ report: availableReport });
     const content = createNativeReportShareContent(
       model,
-      'android',
+      platform,
       'file:///cache/litterbugs-report.png',
     );
 
@@ -396,12 +396,12 @@ describe('report sharing', () => {
 
 
 describe('physical iOS sharing regressions', () => {
-  it('shares one image item to iOS extensions, while Android keeps its caption', () => {
+  it('keeps the clickable report caption in general iOS and Android sharing', () => {
     const model = createReportShareModel({ report: availableReport });
     const ios = createNativeReportShareContent(model, 'ios', 'file:///card.png');
     expect(ios.url).toBe('file:///card.png');
     expect(ios.type).toBe('image/png');
-    expect(ios).not.toHaveProperty('message');
+    expect(ios.message).toContain(model.reportUrl);
     expect(createNativeReportShareContent(model, 'android', 'file:///card.png').message).toContain(model.reportUrl);
   });
   it('describes eligible funded reports accurately without offering rewards for ineligible reports', () => {

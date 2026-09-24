@@ -17,6 +17,7 @@ import {
   type ProfileDraftErrors,
 } from '@/lib/profile';
 import { uploadSecureBrowserMedia } from '@/lib/secure-media-upload';
+import { clearPublishedReport as clearSavedReportData } from '@/lib/saved-report-draft';
 import { createClient } from '@/lib/supabase/client';
 
 type CleanupAttemptRow = Database['public']['Tables']['cleanup_attempts']['Row'];
@@ -245,6 +246,11 @@ export function AccountDialog({
     if (error || !data?.deleted) {
       setBusyAction('');
       return setMessage('Couldn’t delete account. No additional changes were made. Check your connection and try again.');
+    }
+    try {
+      await clearSavedReportData(userId);
+    } catch {
+      window.alert('Your account was deleted, but this browser could not remove its saved report photos. Clear site data for litterbugs.app in your browser settings to remove them.');
     }
     await supabase.auth.signOut({ scope: 'local' });
     onSignedOut();

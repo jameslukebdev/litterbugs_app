@@ -255,8 +255,9 @@ export function createNativeReportShareContent(model, platform, shareImageUri = 
     return {
       title,
       subject: title,
-      // Instagram's iOS extension rejects an image plus a separate text item.
-      ...(platform === 'ios' ? {} : { message: formatReportShareMessage(model) }),
+      // General sharing includes the clickable report link alongside the card.
+      // Instagram Stories uses its dedicated image-sharing path below.
+      message: formatReportShareMessage(model),
       url: shareImageUri,
       type: REPORT_SHARE_IMAGE_MIME_TYPE,
       filename: reportShareImageFilename(model),

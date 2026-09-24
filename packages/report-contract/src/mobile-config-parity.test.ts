@@ -134,6 +134,7 @@ describe('mobile configuration non-regression', () => {
           ENABLE_APPLE_PAY: 'false',
           ENABLE_IOS_ASSOCIATED_DOMAINS: 'false',
           EXPO_PUBLIC_FACEBOOK_LOGIN_ENABLED: 'true',
+          EXPO_PUBLIC_APPLE_SIGN_IN_ENABLED: 'true',
           IOS_BUNDLE_IDENTIFIER: 'com.litterbugs.app',
           ANDROID_PACKAGE_IDENTIFIER: 'com.litterbugs.app',
         },
