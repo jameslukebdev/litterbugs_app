@@ -24,3 +24,5 @@ Verification: all 186 web tests pass; type checking and ESLint pass; production 
 ## Follow-up acceptance fixes
 
 Desktop marker selection now preserves the side-by-side report list; narrow browsers still switch to the map preview. Physical share-link inspection also found that the public page called a funded $6 cleanup a volunteer cleanup. The visible copy now uses the actual reward, with regression coverage for funded and zero-reward reports. All 188 web tests, type checking, and ESLint pass. Candidate `dpl_2Dcsa2saWby9Pvjp4qPZVQhVx7Hc` is Ready; its rendered shared page shows the $6.00 reward and report details.
+
+PR 80 merged as `6340f75` and candidate `dpl_2Dcsa2saWby9Pvjp4qPZVQhVx7Hc` was promoted. Live desktop marker selection showed the $6 preview while retaining the complete report list, header, and footer.

@@ -24,7 +24,6 @@ export function OpenReportAction({ reportId, className }: { reportId: string; cl
     };
 
     document.addEventListener('visibilitychange', stopFallback, { once: true });
-    window.location.href = reportAppUrl(reportId);
 
     if (fallback) {
       fallbackTimer = setTimeout(() => {
@@ -34,8 +33,8 @@ export function OpenReportAction({ reportId, className }: { reportId: string; cl
   };
 
   return (
-    <button className={className} type="button" onClick={openReport}>
+    <a className={className} href={reportAppUrl(reportId)} onClick={openReport}>
       Open in Litterbugs
-    </button>
+    </a>
   );
 }
