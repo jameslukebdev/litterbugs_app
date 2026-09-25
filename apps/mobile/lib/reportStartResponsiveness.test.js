@@ -12,7 +12,7 @@ const appTabsSource = readFileSync(
 describe('new report workflow responsiveness', () => {
   it('starts reports from a visible action and confirms the selected location first', () => {
     expect(mapScreenSource).toContain(
-      "accessibilityLabel={isLocatingReportLocation ? 'Finding user location'"
+      "accessibilityLabel={isCheckingReportLocation ? 'Checking reporting distance' : isLocatingReportLocation ? 'Finding user location'"
     );
     expect(mapScreenSource).toContain('Finding User Location');
     expect(mapScreenSource).toContain('mapUserLocation\n    ? reportLocationRegion');
@@ -36,11 +36,13 @@ describe('new report workflow responsiveness', () => {
     expect(appTabsSource).toContain('headerShown: false');
     expect(mapScreenSource).toContain('Choose Report Location');
 
-    const confirmStart = mapScreenSource.indexOf('const confirmReportLocation = () => {');
+    const confirmStart = mapScreenSource.indexOf('const confirmReportLocation = async () => {');
     const confirmEnd = mapScreenSource.indexOf('\nuseEffect(() => {', confirmStart);
     const confirmSource = mapScreenSource.slice(confirmStart, confirmEnd);
 
     expect(confirmSource).toContain('beginReportAtCoordinate(coord)');
+    expect(confirmSource.indexOf('await requireReportLocation(Location, coord)')).toBeLessThan(confirmSource.indexOf('beginReportAtCoordinate(coord)'));
+    expect(confirmSource).toContain('reportLocationCheckRef.current !== request');
   });
 
   it('does not use an ordinary map tap as the report entry point', () => {

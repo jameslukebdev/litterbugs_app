@@ -1,4 +1,5 @@
 import { userMessage } from './lib/userMessage';
+import { requireReportLocation } from './lib/reportLocationCheck';
 import { publishReportDraft, clearReportSubmission } from './lib/reportSubmissionStore';
 import ReportDetailsSheet from './components/ReportDetailsSheet';
 import { canAdvanceReportStep, nextReportStep } from './lib/reportWizard';
@@ -232,6 +233,8 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   }, [isPreparingPhotos]);
   const [isCentering, setIsCentering] = useState(false);
   const [isLocatingReportLocation, setIsLocatingReportLocation] = useState(false);
+  const [isCheckingReportLocation, setIsCheckingReportLocation] = useState(false);
+  const reportLocationCheckRef = useRef(null);
   const mapViewRef = useRef(null);
   const [mapReady, setMapReady] = useState(false);
   const [mapSurfaceLoaded, setMapSurfaceLoaded] = useState(false);
@@ -429,6 +432,8 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   }, [reportControlTransition, reportPlacementActive]);
 
   useEffect(() => navigation.addListener('blur', () => {
+    reportLocationCheckRef.current = null;
+    setIsCheckingReportLocation(false);
     setReportPlacementActive(false);
     setPlacementCoordinate(null);
   }), [navigation]);
@@ -772,8 +777,7 @@ const reportStepPanResponder = PanResponder.create({
 });
 
 
-// The user confirms a map pin; device GPS is optional and is never the
-// authority for where litter was observed.
+// The pin identifies the litter; fresh device GPS checks that it is nearby.
 const beginReportAtCoordinate = (coord, savedForm = null, savedStep = 0, missingPhotoCount = 0) => {
   if (!navigation.isFocused()) return;
   const selectedCoordinate = mapCenterCoordinate(coord);
@@ -847,7 +851,7 @@ const openReportLocationPicker = async (skipDraft = false) => {
       console.log('Report location centering error:', error);
       Alert.alert(
         'Current location unavailable',
-        'You can still move the map beneath the pin to choose the litter location.',
+        'Move the pin to the litter location. Location access and a fresh GPS reading within 50 miles are required to confirm it.',
       );
     } finally {
       setIsLocatingReportLocation(false);
@@ -879,6 +883,8 @@ const changeDraftLocation = () => {
 };
 
 const cancelReportLocationPicker = () => {
+  reportLocationCheckRef.current = null;
+  setIsCheckingReportLocation(false);
   setReportPlacementActive(false);
   setPlacementCoordinate(null);
   if (editingDraftLocationRef.current) {
@@ -887,21 +893,38 @@ const cancelReportLocationPicker = () => {
   }
 };
 
-const confirmReportLocation = () => {
+const confirmReportLocation = async () => {
+  if (reportLocationCheckRef.current) return;
   const coord = placementCoordinate || mapCenterCoordinate(region);
   if (!coord) {
     Alert.alert('Map location unavailable', 'Move the map and try again.');
     return;
   }
 
-  setReportPlacementActive(false);
-  setPlacementCoordinate(null);
-  if (editingDraftLocationRef.current) {
-    editingDraftLocationRef.current = false;
-    setDraftCoord(coord);
-    setFormOpen(true);
-  } else {
-    beginReportAtCoordinate(coord);
+  const request = {};
+  reportLocationCheckRef.current = request;
+  setIsCheckingReportLocation(true);
+  try {
+    await requireReportLocation(Location, coord);
+    if (reportLocationCheckRef.current !== request || !navigation.isFocused()) return;
+    setReportPlacementActive(false);
+    setPlacementCoordinate(null);
+    if (editingDraftLocationRef.current) {
+      editingDraftLocationRef.current = false;
+      setDraftCoord(coord);
+      setFormOpen(true);
+    } else {
+      beginReportAtCoordinate(coord);
+    }
+  } catch (error) {
+    if (reportLocationCheckRef.current === request && navigation.isFocused()) {
+      Alert.alert('Choose a nearby report location', userMessage(error, 'Your current location could not be checked. Please try again.'));
+    }
+  } finally {
+    if (reportLocationCheckRef.current === request) {
+      reportLocationCheckRef.current = null;
+      setIsCheckingReportLocation(false);
+    }
   }
 };
 
@@ -2546,22 +2569,22 @@ const revealBottomReportField = () => {
           <TouchableOpacity
             style={[styles.reportLitterButton, { width: reportControlWidth, height: fontScale > 1.5 ? undefined : BOTTOM_NAV_METRICS.mapControlSize, minHeight: 44, paddingVertical: fontScale > 1.5 ? 12 : 0 }]}
             onPress={reportPlacementActive ? confirmReportLocation : openReportLocationPicker}
-            disabled={showInitialMapLoading || formOpen || detailsOpen || isSaving || isLocatingReportLocation}
+            disabled={showInitialMapLoading || formOpen || detailsOpen || isSaving || isLocatingReportLocation || isCheckingReportLocation}
             activeOpacity={0.82}
             accessibilityRole="button"
-            accessibilityLabel={isLocatingReportLocation ? 'Finding user location' : reportPlacementActive ? 'Use this location' : 'Report litter'}
+            accessibilityLabel={isCheckingReportLocation ? 'Checking reporting distance' : isLocatingReportLocation ? 'Finding user location' : reportPlacementActive ? 'Use this location' : 'Report litter'}
             accessibilityHint={reportPlacementActive
-              ? 'Uses the location beneath the red pin for this report'
+              ? 'Checks that the pin is within 50 miles of your current GPS location'
               : 'Places a pin at the map center so you can choose the cleanup site'}
             accessibilityState={{
-              busy: isLocatingReportLocation,
-              disabled: showInitialMapLoading || formOpen || detailsOpen || isSaving || isLocatingReportLocation,
+              busy: isLocatingReportLocation || isCheckingReportLocation,
+              disabled: showInitialMapLoading || formOpen || detailsOpen || isSaving || isLocatingReportLocation || isCheckingReportLocation,
             }}
           >
-              {isLocatingReportLocation ? (
+              {isLocatingReportLocation || isCheckingReportLocation ? (
                 <>
                   <ActivityIndicator size="small" color="#2F7D32" />
-                  <Text style={[styles.reportLitterButtonText, { flexShrink: 1, textAlign: 'center' }]}>Finding User Location</Text>
+                  <Text style={[styles.reportLitterButtonText, { flexShrink: 1, textAlign: 'center' }]}>{isCheckingReportLocation ? 'Checking Distance' : 'Finding User Location'}</Text>
                 </>
               ) : (
                 <>
