@@ -129,7 +129,7 @@ const notificationContent = (eventType: string) => {
     case "report_funding_approved":
       return {
         title: "Cleanup funding approved",
-        body: "Your report can now accept funding. Finish your secure Stripe payment.",
+        body: "Your report can now accept contributions. Adding funds is optional.",
       };
     case "report_funding_rejected":
       return {

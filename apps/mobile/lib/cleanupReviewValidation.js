@@ -1,5 +1,17 @@
 export const MAX_CLEANUP_REVIEW_NOTE_LENGTH = 500;
 
+export function cleanupReviewOutcome(status) {
+  if (status === 'completed') return {
+    title: 'Cleanup complete',
+    message: 'Cleanup approved. Thank you for helping.',
+  };
+  if (status === 'changes_requested') return {
+    title: 'Changes requested',
+    message: 'The cleaner can now submit updated cleanup evidence.',
+  };
+  return null;
+}
+
 export const CLEANUP_CHANGE_REASONS = Object.freeze([
   {
     code: 'additional_photo_needed',

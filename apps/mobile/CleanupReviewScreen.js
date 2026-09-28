@@ -34,6 +34,7 @@ import {
 import { formatUsd } from './lib/funding';
 import {
   CLEANUP_CHANGE_REASONS,
+  cleanupReviewOutcome,
   MAX_CLEANUP_REVIEW_NOTE_LENGTH,
   validateCleanupChangeRequest,
 } from './lib/cleanupReviewValidation';
@@ -195,20 +196,24 @@ export default function CleanupReviewScreen({ navigation, route }) {
         reasons,
         note: reviewerNote,
       });
+      const outcome = cleanupReviewOutcome(reviewedAttempt?.status);
+      if (!outcome) {
+        await retryContext();
+        Alert.alert('Review still pending', 'The cleanup has not been approved yet. Your feedback is saved. Check the current review status and try again.');
+        return;
+      }
       await clearReviewDraft();
       await refreshReports({ showRefresh: false });
 
-      const completed = reviewedAttempt.status === 'completed';
       Alert.alert(
-        completed ? 'Cleanup complete' : 'Changes requested',
-        completed
-          ? 'Cleanup approved. Thank you for helping.'
-          : 'The cleaner can now submit updated cleanup evidence.',
+        outcome.title,
+        outcome.message,
         [{ text: 'View report', onPress: viewReport }],
         { cancelable: false }
       );
     } catch (error) {
       console.log('Cleanup review error:', error);
+      await retryContext();
       Alert.alert('Couldn’t review cleanup', reviewErrorMessage(error));
     } finally {
       setSubmitting(false);
@@ -440,7 +445,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
               </View>
             ) : context.attempt.financial_review_status === 'passed' && context.attempt.review_due_at ? (
               <>
-                <Text style={styles.paidReviewNotice}>Approve now if the cleanup looks complete, or dispute it if something is wrong. If you do nothing, it is automatically approved after 48 hours.</Text>
+                <Text style={styles.paidReviewNotice}>Approve now if the cleanup looks complete, or dispute it if something is wrong. Otherwise, it is automatically approved after 48 hours unless a dispute or review issue needs attention.</Text>
                 <TouchableOpacity
                   style={[styles.approveButton, submitting && styles.disabled]}
                   onPress={confirmApproval}

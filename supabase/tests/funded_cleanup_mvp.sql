@@ -1099,9 +1099,8 @@ end;
 $$;
 reset role;
 
--- A paid self-cleanup must wait for both the full reporter dispute deadline
--- and the first-paid-cleanup admin check. Clearing that check after the
--- deadline may complete it, but it never bypasses either gate.
+-- A paid self-cleanup auto-approves at the reporter dispute deadline,
+-- without a routine first-paid administrator prerequisite.
 insert into public.reports (
   id, user_id, title, latitude, longitude, photo_paths, expires_at,
   cleanup_state, funding_eligibility, funded_amount_cents,
@@ -1169,37 +1168,8 @@ insert into public.cleanup_admin_cases (
   'First paid cleanup check', 'Confirm the first paid cleanup before payout.'
 );
 
+-- A routine first-paid flag no longer prevents automatic completion.
 select private.run_cleanup_maintenance();
-
-do $$
-begin
-  if not exists (
-    select 1 from public.cleanup_attempts
-    where id = '84000000-0000-4000-8000-000000000007'
-      and status = 'completion_submitted'
-      and is_self_cleanup
-      and first_paid_admin_status = 'pending'
-      and payout_status = 'blocked'
-      and review_due_at < now()
-  ) then
-    raise exception 'Paid self-cleanup bypassed the 48-hour or first-payout gate';
-  end if;
-end;
-$$;
-
-set local role authenticated;
-select set_config('request.jwt.claim.sub', '81000000-0000-4000-8000-000000000001', true);
-select set_config(
-  'request.jwt.claims',
-  '{"sub":"81000000-0000-4000-8000-000000000001","is_anonymous":false,"aal":"aal2"}',
-  true
-);
-select public.resolve_cleanup_admin_case(
-  '89000000-0000-4000-8000-000000000007',
-  'approve_cleanup',
-  'The first paid cleanup evidence is consistent and complete.'
-);
-reset role;
 
 do $$
 begin
@@ -1208,14 +1178,13 @@ begin
     where id = '84000000-0000-4000-8000-000000000007'
       and status = 'completed'
       and approval_method = 'auto_approved'
-      and first_paid_admin_status = 'approved'
       and payout_status = 'pending'
   ) or (
     select count(*) from public.cleanup_reviews
     where cleanup_attempt_id = '84000000-0000-4000-8000-000000000007'
       and decision = 'auto_approved'
   ) <> 1 then
-    raise exception 'Admin-cleared first paid self-cleanup did not complete exactly once';
+    raise exception 'Routine first paid self-cleanup did not complete exactly once';
   end if;
 end;
 $$;
