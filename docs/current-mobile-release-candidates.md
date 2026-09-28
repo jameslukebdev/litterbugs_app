@@ -1,5 +1,24 @@
 # Current Mobile Release Candidates
 
+## September 28 — cleanup approval source update
+
+[PR 87](https://github.com/jameslukebdev/litterbugs_app/pull/87) removes routine
+first-paid holds, suppresses draft-generated rejection alerts, opens the report
+from funding notices instead of checkout, and corrects review messages. The
+database migration and notification service are deployed. Ridge Road's routine
+hold is cleared with an audit entry; its evidence and $5 contribution are intact.
+Luke can reopen and approve that existing cleanup using his current app.
+
+The mobile notification-routing and message fixes require a fresh native build
+from main containing PR 87. The September 24 IPA/build 11 and Android/code 12
+below predate those client fixes. No new native artifact or store submission was
+made in this pass. Luke should use his existing production build/distribution
+process, increment the build number, and install the new TestFlight build before
+checking the updated notification route. App identifiers, icons, EAS profiles,
+and signing configuration were unchanged.
+
+Acceptance steps and evidence: [September 28 investigation and rollout](reviews/2026-09-28-ridge-road-investigation.md).
+
 ## Deployment handoff to Luke — September 24
 
 The owner clarified that “push live” means push the completed fixes to GitHub main. Luke will deploy through his developer account. Do not interpret that wording as authorization for Codex to submit or publish either mobile app.

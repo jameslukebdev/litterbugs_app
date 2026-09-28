@@ -3,8 +3,9 @@
 Scope: Luke's five supplied screenshots; read-only inspection of the linked
 Litterbugs production database (`mvaygkflcjswtwchflrk`); current mobile, web,
 notification, and payment source at `badd2a5`; prior release evidence; focused
-existing mobile tests. No production records, approvals, payments, account
-settings, or deployments were changed. The analysis below records the initial findings; implementation and rollout
+existing mobile tests. During the initial analysis, no production records,
+approvals, payments, account settings, or deployments were changed.
+The analysis below records the initial findings; implementation and rollout
 results are appended at the end. Luke's installed build was not established from the images.
 
 Owner clarification during this investigation: blocks should be very rare and
@@ -402,3 +403,16 @@ rolled-back fixtures.
 Contributor completion notifications, public funder profiles, upload optimization,
 international expansion, store publication, and the deferred strict GPS rollout
 are separate work and were not included in this narrow fix.
+
+Delivery: [PR 87](https://github.com/jameslukebdev/litterbugs_app/pull/87), code
+commit `57a5e3d`. Notification function version 23 is active with its pre-existing
+JWT configuration retained. The deployed SQL regression passed again after
+migration; no fixture users remained. Security-advisor comparison introduced no
+new findings (36 existing warnings remain). Eligible reports had zero obsolete
+unread prepublication rejection notices, so no historical notice rewrite was
+needed.
+
+Website deployment `dpl_6W3R2rSwXLQvzeNwoeg5ew6gbEYD` was built from an archive of
+the committed source, checked through authenticated Vercel access because its
+separate URL is protected, then promoted to litterbugs.app. Native TestFlight
+acceptance remains Luke's next step; no payment was sent during verification.
