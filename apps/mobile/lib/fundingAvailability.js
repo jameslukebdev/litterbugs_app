@@ -21,7 +21,7 @@ export function fundingReviewCompletionPresentation(previousEligibility, report)
     case 'eligible':
       return {
         title: 'Photo review complete',
-        message: 'This report is approved for funding. You can now complete your secure Stripe payment.',
+        message: 'This report can now accept contributions. Adding funds is optional.',
       };
     case 'better_photos':
       return {

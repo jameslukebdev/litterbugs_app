@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  cleanupReviewOutcome,
   CLEANUP_CHANGE_REASONS,
   MAX_CLEANUP_REVIEW_NOTE_LENGTH,
   cleanupChangeReasonLabel,
@@ -55,5 +56,16 @@ describe('cleanup reporter review validation', () => {
     expect(cleanupChangeReasonLabel('additional_photo_needed')).toBe('Need another photo');
     expect(cleanupChangeReasonLabel('details_unclear')).toBe('Need more information');
     expect(cleanupChangeReasonLabel('other')).toBe('Other');
+  });
+});
+
+// A successful RPC may return an unchanged attempt after a race/deadline.
+describe('review outcomes', () => {
+  it('only presents completion or requested changes for those actual states', () => {
+    expect(cleanupReviewOutcome('completed')?.title).toBe('Cleanup complete');
+    expect(cleanupReviewOutcome('changes_requested')?.title).toBe('Changes requested');
+    for (const state of ['completion_submitted', 'claimed', 'rejected', undefined]) {
+      expect(cleanupReviewOutcome(state)).toBeNull();
+    }
   });
 });

@@ -77,7 +77,7 @@ const CLEANUP_NOTIFICATION_CONTENT = Object.freeze({
   },
   report_funding_approved: {
     title: 'Cleanup funding approved',
-    message: 'Your report can now accept contributions. Open it when you’re ready to add funds.',
+    message: 'Your report can now accept contributions. Adding funds is optional.',
   },
   report_funding_rejected: {
     title: 'Cleanup funding unavailable',
@@ -137,20 +137,9 @@ export function cleanupNotificationDestination(notification) {
   }
 
   if (
-    eventType === 'report_funding_review_required'
-    || eventType === 'report_funding_approved'
-  ) {
-    return {
-      name: 'FundingContribution',
-      label: eventType === 'report_funding_approved'
-        ? 'Complete Payment'
-        : 'View Safety Review',
-      params: { reportId, fromReportCreation: true },
-    };
-  }
-
-  if (
     eventType === 'cleanup_fund_increased'
+    || eventType === 'report_funding_review_required'
+    || eventType === 'report_funding_approved'
     || eventType === 'report_renewed'
     || eventType === 'report_funding_photos_needed'
     || eventType === 'report_funding_rejected'

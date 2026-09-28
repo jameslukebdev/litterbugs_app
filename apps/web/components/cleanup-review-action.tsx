@@ -134,11 +134,11 @@ export function CleanupReviewAction({
     }
     if (!window.confirm(decision === 'approved' ? 'Approve this cleanup?' : 'Request updated cleanup evidence?')) return;
     setBusy(decision);
-    const { error } = await createClient().rpc('review_cleanup', {
+    const { data: reviewedAttempt, error } = await createClient().rpc('review_cleanup', {
       target_cleanup_id: attempt.id,
       target_submission_id: context.submission.id,
       review_decision: decision,
-      request_change_reasons: decision === 'changes_requested' ? ['Other'] : undefined,
+      request_change_reasons: decision === 'changes_requested' ? ['other'] : undefined,
       reviewer_note: note.trim() || undefined,
     });
     setBusy('');
@@ -146,9 +146,13 @@ export function CleanupReviewAction({
       setMessage('The cleanup decision could not be saved. Try again.');
       return;
     }
+    if (reviewedAttempt?.status !== 'completed' && reviewedAttempt?.status !== 'changes_requested') {
+      setMessage('The cleanup is still awaiting review. Your feedback has been kept.');
+      return;
+    }
     setOpen(false);
     setAttemptState({ key: queryKey, data: null });
-    setMessage(decision === 'approved' ? 'Cleanup approved.' : 'The cleaner has been asked for updated evidence.');
+    setMessage(reviewedAttempt.status === 'completed' ? 'Cleanup approved.' : 'The cleaner has been asked for updated evidence.');
     await onChanged?.();
   }
 
@@ -196,7 +200,7 @@ export function CleanupReviewAction({
               <p>{context.submission.description}</p>
               {(context.submission.bags_or_items_removed != null || context.submission.weight_pounds != null) && <small>{context.submission.bags_or_items_removed != null ? `${context.submission.bags_or_items_removed} bags/items` : ''}{context.submission.bags_or_items_removed != null && context.submission.weight_pounds != null ? ' · ' : ''}{context.submission.weight_pounds != null ? `${context.submission.weight_pounds} lb removed` : ''}</small>}
             </section>
-            <label className="cleanup-review-note">{attempt.is_paid ? 'Why are you disputing this cleanup?' : 'Feedback for the cleaner'}<textarea value={note} maxLength={1000} onChange={(event) => { setNote(event.target.value); setMessage(''); }} placeholder={attempt.is_paid ? 'Explain what does not look right.' : 'Required only when asking for changes.'} /></label>
+            <label className="cleanup-review-note">{attempt.is_paid ? 'Why are you disputing this cleanup?' : 'Feedback for the cleaner'}<textarea value={note} maxLength={attempt.is_paid ? 1000 : 500} onChange={(event) => { setNote(event.target.value); setMessage(''); }} placeholder={attempt.is_paid ? 'Explain what does not look right.' : 'Required only when asking for changes.'} /></label>
             {message && <p className="form-message error-message" role="alert">{message}</p>}
           </div>
           {attempt.is_paid ? (

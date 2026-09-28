@@ -34,7 +34,7 @@ describe('funding availability presentation', () => {
       funding_eligibility: 'eligible',
     })).toEqual({
       title: 'Photo review complete',
-      message: 'This report is approved for funding. You can now complete your secure Stripe payment.',
+      message: 'This report can now accept contributions. Adding funds is optional.',
     });
     expect(fundingReviewCompletionPresentation('safety_hold', {
       funding_eligibility: 'ineligible',

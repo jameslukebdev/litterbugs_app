@@ -98,15 +98,17 @@ describe('cleanup notifications', () => {
       event_type: 'report_funding_review_required',
       report_id: 'report',
     })).toMatchObject({
-      name: 'FundingContribution',
-      params: { reportId: 'report', fromReportCreation: true },
+      name: 'App',
+      label: 'View Report',
+      params: { screen: 'Map', params: { reportId: 'report' } },
     });
     expect(cleanupNotificationDestination({
       event_type: 'report_funding_approved',
       report_id: 'report',
     })).toMatchObject({
-      name: 'FundingContribution',
-      label: 'Complete Payment',
+      name: 'App',
+      label: 'View Report',
+      params: { screen: 'Map', params: { reportId: 'report' } },
     });
   });
 
