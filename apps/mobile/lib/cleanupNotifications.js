@@ -1,4 +1,12 @@
 const CLEANUP_NOTIFICATION_CONTENT = Object.freeze({
+  admin_cleanup_needed: {
+    title: 'Cleanup needs attention',
+    message: 'A cleanup or payment issue needs your review. Open your admin inbox.',
+  },
+  funded_cleanup_completed: {
+    title: 'Cleanup you funded is complete',
+    message: 'A cleanup you helped fund has been approved. Thank you for supporting it!',
+  },
   admin_moderation_needed: {
     title: 'Community report needs review',
     message: 'A member sent a concern to the Litterbugs team. Review it in your admin inbox.',
@@ -106,7 +114,7 @@ export function cleanupNotificationDestination(notification) {
   const reportId = notification?.report_id ?? notification?.reportId;
   const cleanupId = notification?.cleanup_attempt_id ?? notification?.cleanupId;
 
-  if (eventType === 'admin_moderation_needed') {
+  if (eventType === 'admin_moderation_needed' || eventType === 'admin_cleanup_needed') {
     return { url: 'https://litterbugs.app/admin', label: 'Open admin inbox' };
   }
 
@@ -190,6 +198,7 @@ export function cleanupStateFromNotification(notification) {
       return 'completion_submitted';
     case 'changes_requested':
       return 'changes_requested';
+    case 'funded_cleanup_completed':
     case 'cleanup_approved':
     case 'cleanup_auto_approved':
       return 'completed';

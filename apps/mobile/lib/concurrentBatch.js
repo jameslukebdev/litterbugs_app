@@ -10,30 +10,28 @@ export async function mapInConcurrentBatches(
     onFulfilled = () => {},
   } = {},
 ) {
-  const batchSize = Math.max(1, Math.floor(concurrency));
+  const workerCount = Number.isFinite(concurrency) ? Math.max(1, Math.floor(concurrency)) : 1;
   const results = new Array(items.length);
+  let nextIndex = 0;
+  let failed = false;
+  let firstError;
 
-  for (let start = 0; start < items.length; start += batchSize) {
-    const entries = items
-      .slice(start, start + batchSize)
-      .map((item, offset) => ({ item, index: start + offset }));
-    const settled = await Promise.allSettled(
-      entries.map(({ item, index }) => worker(item, index)),
-    );
-    let batchError = null;
-
-    settled.forEach((result, offset) => {
-      const { index } = entries[offset];
-      if (result.status === 'fulfilled') {
-        results[index] = result.value;
-        onFulfilled(result.value, index);
-      } else if (!batchError) {
-        batchError = result.reason;
+  // Keep each slot busy without waiting for a slower photo in the same batch.
+  // Drain active work before rejecting so callers can safely clean up uploads.
+  const run = async () => {
+    while (!failed && nextIndex < items.length) {
+      const index = nextIndex++;
+      try {
+        const value = await worker(items[index], index);
+        results[index] = value;
+        await onFulfilled(value, index);
+      } catch (error) {
+        if (!failed) firstError = error;
+        failed = true;
       }
-    });
-
-    if (batchError) throw batchError;
-  }
-
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(workerCount, items.length) }, run));
+  if (failed) throw firstError;
   return results;
 }

@@ -416,3 +416,95 @@ Website deployment `dpl_6W3R2rSwXLQvzeNwoeg5ew6gbEYD` was built from an archive 
 the committed source, checked through authenticated Vercel access because its
 separate URL is protected, then promoted to litterbugs.app. Native TestFlight
 acceptance remains Luke's next step; no payment was sent during verification.
+
+## Follow-up: contributor alerts and photo submission latency
+
+Grant authorized the remaining focused fixes on September 28 (deployment work
+continued after midnight UTC September 29).
+
+At 00:15 UTC September 29, a read-only production check found Ridge Road attempt
+`20f29523-9db1-4b73-ac62-d56ad58a515b` already `completed`, with
+`financial_review_status=passed`, `first_paid_admin_status=not_required`,
+`dispute_status=none`, and `payout_status=transferred`. No approval or transfer was
+performed by this follow-up. Luke does not need to approve that attempt again.
+Transferred means the connected payout account received the transfer, not proof
+of arrival in his bank account.
+
+The follow-up reuses the existing notification table, device delivery queue,
+admin inbox, and financial maintenance queue:
+
+- Approval (manual or automatic) sends one `funded_cleanup_completed` event per
+  contributor whose contribution belongs to that cleanup and remains succeeded
+  or paid out. Multiple contributions by one person do not duplicate the event;
+  refunded-only contributors are excluded. A cleaner who also funded the cleanup
+  continues receiving the existing cleaner approval event instead of a duplicate.
+- New open report-safety, photo-review, dispute, refund-failure, and payout-failure
+  cases send `admin_cleanup_needed` to active admins who enabled the existing
+  alert preference. The website names both community reports and cleanup/payment
+  issues in that preference. Routine first-paid cases do not generate alerts.
+- There is no historical notification backfill. Ridge Road was already completed
+  before this patch; validate contributor notices with a subsequent approval.
+- Mobile report and cleanup uploads keep at most two photos active. Each freed
+  slot starts the next photo immediately, and progress updates as each finishes.
+  Report recovery journal writes remain serialized with immutable path snapshots;
+  failed submissions retain successful concurrent uploads for retry. Cleanup photo
+  order is preserved even when upload completion order differs.
+- When camera/library dimensions are available, resizing occurs in the first JPEG
+  conversion, avoiding a redundant full-size encode for large originals. Existing
+  output size limits and all safety scans remain in place.
+- After a paid cleanup is durably saved, the app waits up to three seconds for the
+  requested review. A slower review continues with pending messaging; the existing
+  minute-by-minute server queue provides recovery if the app closes. This changes
+  waiting time, not the approval criteria or the AI model's actual processing speed.
+- An open, foreground mobile cleanup review screen refreshes queued photo reviews
+  every five seconds and stops when that status changes or the screen loses focus.
+
+Validation: full `npm run check` passed (461 mobile, 196 web, 14 shared, 25 backend,
+7 relay tests), then the added concurrent partial-failure test passed in a targeted
+six-test report-submission run. Mobile source validation passed for 163 modules.
+The SQL regression was extended and rehearsed with the candidate migration in a
+single rolled-back transaction. It verifies manual and automatic completion
+recipients, duplicate suppression, refunded/self-funded exclusions, admin
+preferences, and the original serious-review guards. No real payments or fixture
+notifications were committed.
+
+Browser plugin was not available. A temporary Playwright harness rendered the real
+admin inbox component and CSS with fixture API responses at 1280×900 and 390×900.
+The expanded alert label rendered and switching the preference off/on worked;
+there were no browser console or page errors. Evidence is at
+`/tmp/litterbugs-notifications-browser/admin-1280.png` and `admin-390.png`.
+The mobile-speed changes still need physical-device timing on the new native build;
+unit checks are not a measured promise of a particular cellular upload duration.
+
+Luke's follow-up verification:
+
+1. Confirm Ridge Road is shown as completed; do not resubmit its evidence or retry
+   approving a completed attempt.
+2. Install a newly distributed TestFlight build from the follow-up source commit.
+   Older builds receive backend notification events but lack the upload, polling,
+   and latest notification-navigation changes.
+3. Submit a new report with three photos and choose not to contribute. It should
+   publish without a false rejection or a demand to finish a $25 payment.
+4. Submit a new cleanup with three photos. Progress should advance per completed
+   photo; after the save, a slow review should show pending instead of holding the
+   submission screen open for the entire AI review. Reopen/keep the reporter review
+   screen open and confirm approval appears when the review passes.
+5. For the next genuinely funded cleanup, use a separate contributor. After the
+   reporter approves, that contributor should receive one completion notification,
+   and tapping it should open the report. Enable app notifications on the test
+   phones; provider acceptance alone does not establish OS banner delivery.
+6. Confirm opted-in admins get an alert for an actual exception if one occurs.
+   Do not manufacture unsafe reports or failed payments just to test production.
+   The exception paths were tested with rolled-back database fixtures.
+
+Follow-up deployment evidence:
+
+- Source commit `c40f291`, [PR #88](https://github.com/jameslukebdev/litterbugs_app/pull/88).
+- Applied migration `20260929001733_cleanup_completion_and_exception_notifications`
+  to `mvaygkflcjswtwchflrk`. The deployed-schema SQL regression passed, including
+  synthetic device-delivery queue assertions; its fixtures and outbound work rolled
+  back. The notification sender is ACTIVE at version 24 with its prior JWT setting
+  preserved. Security advisors remained at 36 existing findings, with zero new ones.
+- Website candidate `dpl_2ZJZkkjwWQPAtvFc6TumeMPB8hHh` built successfully from
+  `c40f291`; authenticated candidate smoke returned the expected Cleanup Policy
+  page. Native distribution remains Luke's separate release step.

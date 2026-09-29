@@ -4,7 +4,15 @@ begin;
 insert into auth.users (id, email, is_anonymous, raw_user_meta_data, created_at)
 values
   ('a1000000-0000-4000-8000-000000000001', 'routine-owner@example.com', false, '{}', now()),
-  ('a1000000-0000-4000-8000-000000000002', 'routine-cleaner@example.com', false, '{}', now());
+  ('a1000000-0000-4000-8000-000000000002', 'routine-cleaner@example.com', false, '{}', now()),
+  ('a1000000-0000-4000-8000-000000000003', 'routine-funder@example.com', false, '{}', now()),
+  ('a1000000-0000-4000-8000-000000000004', 'routine-refunded@example.com', false, '{}', now());
+
+-- Synthetic device tokens and all outgoing queue work roll back with fixtures.
+insert into public.push_devices(user_id,installation_id,expo_push_token,platform)
+select uid,gen_random_uuid(),'ExponentPushToken[routine-'||uid::text||']','ios'
+from (values ('a1000000-0000-4000-8000-000000000001'::uuid),
+ ('a1000000-0000-4000-8000-000000000003'::uuid)) fixture(uid);
 
 -- A private draft cannot send rejection or approval notices, even if a result
 -- arrives before publication. An actual reviewed, published result still can.
@@ -65,6 +73,19 @@ values ('a2000000-0000-4000-8000-000000000001','a1000000-0000-4000-8000-00000000
   'a3000000-0000-4000-8000-000000000001',500,50,550,'succeeded','pi_routine_regression',
   'ch_routine_regression',now(),now()+interval '23 months');
 
+-- Repeated contributions get one completion notice; refunded contributions
+-- and the cleaner's own contribution must not add duplicate/incorrect notices.
+insert into public.cleanup_contributions(report_id,contributor_id,client_request_id,
+ principal_amount_cents,platform_fee_cents,total_amount_cents,status,succeeded_at,auto_refund_due_at,refunded_at)
+select 'a2000000-0000-4000-8000-000000000001',uid,gen_random_uuid(),500,50,550,status,
+ now(),now()+interval '23 months',case when status='refunded' then now() else null end
+from (values
+ ('a1000000-0000-4000-8000-000000000003'::uuid,'succeeded'),
+ ('a1000000-0000-4000-8000-000000000003'::uuid,'succeeded'),
+ ('a1000000-0000-4000-8000-000000000002'::uuid,'succeeded'),
+ ('a1000000-0000-4000-8000-000000000004'::uuid,'refunded')
+) fixtures(uid,status);
+
 set local role authenticated;
 select set_config('request.jwt.claim.sub','a1000000-0000-4000-8000-000000000002',true);
 select set_config('request.jwt.claims','{"sub":"a1000000-0000-4000-8000-000000000002","is_anonymous":false,"aal":"aal1"}',true);
@@ -105,6 +126,13 @@ do $$ begin
   end if;
 end $$;
 
+do $$ begin
+  if exists(select 1 from public.cleanup_notifications where event_type='funded_cleanup_completed'
+    and report_id='a2000000-0000-4000-8000-000000000001') then
+    raise exception 'Contributor was notified before approval';
+  end if;
+end $$;
+
 -- Test the legacy pending flag, which must not block an otherwise valid review.
 update public.cleanup_attempts set first_paid_admin_status='pending'
 where report_id='a2000000-0000-4000-8000-000000000001';
@@ -120,6 +148,51 @@ do $$ begin
       where report_id='a2000000-0000-4000-8000-000000000001'
       and status='completed' and payout_status='pending') then
     raise exception 'First paid reporter approval did not queue payout';
+  end if;
+end $$;
+
+-- Reporter/funder and distinct contributor get a notice; cleaner already
+-- has the existing approval notice. Repeated status writes do not send again.
+update public.cleanup_attempts set status=status where report_id='a2000000-0000-4000-8000-000000000001';
+do $$ begin
+  if (select count(*) from public.cleanup_notifications where event_type='funded_cleanup_completed'
+      and report_id='a2000000-0000-4000-8000-000000000001') <> 2 then
+    raise exception 'Contributor completion recipient count incorrect';
+  end if;
+  if exists(select 1 from public.cleanup_notifications where event_type='funded_cleanup_completed'
+    and user_id in ('a1000000-0000-4000-8000-000000000002','a1000000-0000-4000-8000-000000000004')) then
+    raise exception 'Cleaner or refunded-only user received contributor notice';
+  end if;
+end $$;
+
+-- Respect admin membership and the existing alert preference. Routine first
+-- cleanups and resolved cases never generate exception alerts.
+insert into public.cleanup_admin_memberships(user_id,active,moderation_alerts_enabled) values
+ ('a1000000-0000-4000-8000-000000000001',true,true),
+ ('a1000000-0000-4000-8000-000000000002',true,false),
+ ('a1000000-0000-4000-8000-000000000003',false,true);
+do $$
+declare cid uuid; kind text;
+begin
+  foreach kind in array array['report_safety','gemini_review','dispute','refund_failure','payout_failure','first_paid_cleanup'] loop
+    cid := gen_random_uuid();
+    insert into public.cleanup_admin_cases(id,case_type,title) values(cid,kind,'Notification regression');
+    update public.cleanup_admin_cases set status=status where id=cid;
+    if (select count(*) from public.cleanup_notifications where admin_case_id=cid
+      and event_type='admin_cleanup_needed' and user_id='a1000000-0000-4000-8000-000000000001')
+      <> (case when kind='first_paid_cleanup' then 0 else 1 end) then
+      raise exception 'Admin notice missing or duplicated for %',kind;
+    end if;
+    if exists(select 1 from public.cleanup_notifications where admin_case_id=cid
+      and user_id in ('a1000000-0000-4000-8000-000000000002','a1000000-0000-4000-8000-000000000003')) then
+      raise exception 'Opted-out or inactive admin received alert';
+    end if;
+  end loop;
+  cid := gen_random_uuid();
+  insert into public.cleanup_admin_cases(id,case_type,status,title,resolved_at)
+    values(cid,'payout_failure','resolved','Already handled',now());
+  if exists(select 1 from public.cleanup_notifications where admin_case_id=cid) then
+    raise exception 'Resolved case sent an alert';
   end if;
 end $$;
 
@@ -146,11 +219,19 @@ begin
     insert into public.cleanup_submission_photos (submission_id,storage_path,display_order)
     values (sid,'fixture/'||sid::text||'.jpg',1);
     if i=1 then
+      insert into public.cleanup_contributions(report_id,cleanup_attempt_id,contributor_id,client_request_id,
+        principal_amount_cents,platform_fee_cents,total_amount_cents,status,succeeded_at,auto_refund_due_at)
+      values(rid,aid,'a1000000-0000-4000-8000-000000000003',gen_random_uuid(),500,50,550,'succeeded',now(),now()+interval '23 months');
+    end if;
+    if i=1 then
       result := private.auto_approve_cleanup(aid,now());
       if result.status <> 'completed' or result.payout_status <> 'pending' then
         raise exception 'Routine first-paid auto-approval failed';
       end if;
       perform private.auto_approve_cleanup(aid,now());
+      if (select count(*) from public.cleanup_notifications where cleanup_attempt_id=aid and event_type='funded_cleanup_completed') <> 1 then
+        raise exception 'Automatic approval did not send exactly one contributor notice';
+      end if;
       if (select count(*) from public.cleanup_reviews where cleanup_attempt_id=aid) <> 1 then
         raise exception 'Repeated automatic approval duplicated the decision';
       end if;
@@ -167,6 +248,17 @@ begin
       end;
     end if;
   end loop;
+end $$;
+
+do $$ begin
+  if exists (
+    select 1 from public.cleanup_notifications n
+    where n.event_type in ('funded_cleanup_completed','admin_cleanup_needed')
+      and n.user_id in ('a1000000-0000-4000-8000-000000000001','a1000000-0000-4000-8000-000000000003')
+      and not exists(select 1 from public.cleanup_notification_deliveries d
+        join public.push_devices p on p.id=d.push_device_id
+        where d.notification_id=n.id and p.user_id=n.user_id and d.status='pending')
+  ) then raise exception 'New notice failed to enter the existing device-delivery queue'; end if;
 end $$;
 
 rollback;

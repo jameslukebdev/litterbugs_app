@@ -1375,7 +1375,7 @@ const submitReport = async () => {
           setPhotoPreparationStatus(
             `Preparing photo ${index + 1} of ${result.assets.length}…`,
           );
-          const prepared = await preparePhotoForSafetyScan(result.assets[index].uri);
+          const prepared = await preparePhotoForSafetyScan(result.assets[index].uri, { width: result.assets[index].width, height: result.assets[index].height });
           preparedAssets.push({ uri: prepared.uri });
         }
         setForm((prev) => ({

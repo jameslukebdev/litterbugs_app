@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { usePreventRemove } from '@react-navigation/native';
+import { useFocusEffect, usePreventRemove } from '@react-navigation/native';
 import RemotePhoto from './components/RemotePhoto';
 import { createSignedPhotoUrl } from './lib/cleanupReview';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -126,6 +126,22 @@ export default function CleanupReviewScreen({ navigation, route }) {
   const resource = useFocusedResource(useCallback(() => loadCleanupReviewContext(cleanupId, userId), [cleanupId, userId]), { enabled: Boolean(cleanupId && userId) });
   const { data: context, loading, error: contextError, refresh: retryContext } = resource;
   const loadError = contextError ? reviewErrorMessage(contextError) : null;
+
+  const awaitingPhotoReview = context?.attempt?.is_paid
+    && context.attempt.status === 'completion_submitted'
+    && context.attempt.financial_review_status === 'queued'
+    && !contextError && !submitting;
+  useFocusEffect(useCallback(() => {
+    if (!awaitingPhotoReview) return undefined;
+    let cancelled = false;
+    let timer;
+    const tick = async () => {
+      if (AppState.currentState === 'active') await retryContext();
+      if (!cancelled) timer = setTimeout(tick, 5000);
+    };
+    timer = setTimeout(tick, 5000);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [awaitingPhotoReview, retryContext]));
 
 
   const [reviewDraftReady, setReviewDraftReady] = useState(false);

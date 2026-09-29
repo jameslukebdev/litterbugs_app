@@ -406,9 +406,9 @@ function ModerationAlertPreferences() {
     catch { setError('Your alert preference could not be saved. Please try again.'); }
     finally { setBusy(false); }
   }
-  return <section className={styles.alertPreferences} aria-label="Community report alerts">
+  return <section className={styles.alertPreferences} aria-label="Admin review alerts">
     <label><input type="checkbox" checked={preference?.enabled ?? false} disabled={!preference || busy}
-      onChange={(event) => void change(event.target.checked)} /> Notify me about new community reports</label>
+      onChange={(event) => void change(event.target.checked)} /> Notify me about community reports and cleanup or payment issues</label>
     <p>{preference?.devices ? 'Alerts arrive in the Litterbugs app on your signed-in devices.' : 'Phone alerts will be available once notifications are enabled for this admin account.'}</p>
     {error ? <p role="status">{error}</p> : null}
   </section>;
