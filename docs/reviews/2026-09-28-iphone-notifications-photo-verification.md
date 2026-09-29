@@ -107,15 +107,22 @@ A fresh EAS build used the exact verified source checkout and
 - [Download the signed IPA](https://expo.dev/artifacts/eas/mw5S80KEXrHBRf4IVonyvEsMvrB68f2knhRPuxaOnMI.ipa).
 - [EAS build record](https://expo.dev/accounts/litterbugs-community-cleanup/projects/litterbugs-partner/builds/2e5875c5-dec1-4c4f-ab02-00a40e4da63d).
 
-No TestFlight upload, App Review submission, or store publication occurred.
+At the end of the initial verification, no TestFlight upload, App Review
+submission, or store publication had occurred. Grant subsequently explicitly
+authorized uploading this build to TestFlight. EAS submission
+`e64f819c-f5fc-426c-8cb8-e91bc657f19c` used the existing EAS-hosted App Store Connect
+API key and completed successfully: Apple accepted the binary and reported it
+processing. No additional Apple login, credential change, App Review submission,
+or public release was performed. Processing completion and tester availability
+remain unverified.
 Production Universal Links remain unchanged: this IPA has no Associated Domains
 entitlement. The previously tested website Open in Litterbugs handoff remains
 available. Android artifacts were not rebuilt in this iPhone-focused pass.
 
 ## Luke's remaining release check
 
-Luke can upload build 12 through his existing Apple distribution process, install
-it through TestFlight, and repeat notification delivery/tap navigation under the
+After Apple finishes processing the uploaded build 12, Luke can install
+it through TestFlight and repeat notification delivery/tap navigation under the
 production signing identity. On the next real funded cleanup, confirm each
 contributor receives one completion notice after approval. Ridge Road is already
 completed; do not resubmit its evidence or approve it again. No historical

@@ -11,8 +11,12 @@ objects were removed and the normal app was restored with Grant's account intact
 
 The fresh [signed iOS IPA, version 2.0.0 / build 12](https://expo.dev/artifacts/eas/mw5S80KEXrHBRf4IVonyvEsMvrB68f2knhRPuxaOnMI.ipa)
 is finished and verified. EAS build `2e5875c5-dec1-4c4f-ab02-00a40e4da63d` uses
-Luke's existing credentials. **It has not been uploaded to TestFlight or submitted
-to the App Store.** Luke owns that distribution step. This supersedes build 11 for
+Luke's existing credentials. **Grant explicitly authorized the TestFlight upload
+on September 28, and Apple accepted build 12.** EAS submission
+`e64f819c-f5fc-426c-8cb8-e91bc657f19c` completed successfully; Apple processing and
+tester availability were not yet confirmed. No App Review or public release was
+submitted. Check [TestFlight](https://appstoreconnect.apple.com/apps/6757313862/testflight/ios)
+for version 2.0.0 (12). This supersedes build 11 for
 iOS; the September 24 Android artifacts below remain older than PRs 87 and 88.
 
 See [device evidence, timing limits, artifact hashes, and Luke's release checks](reviews/2026-09-28-iphone-notifications-photo-verification.md).
