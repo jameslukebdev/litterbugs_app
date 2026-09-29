@@ -1,6 +1,24 @@
 # Current Mobile Release Candidates
 
-## September 28 follow-up — notification and photo-speed source changes
+## September 28 — verified iPhone update and fresh iOS build 12
+
+The connected iPhone now has the current Release QA app from main `abfb3fa`,
+including PRs 87 and 88. Completion notifications reached the phone and opened
+Luke's completed Ridge Road cleanup; admin notifications opened the protected
+admin sign-in page. Three existing report photos were prepared, uploaded, and
+safety-checked in **11.441 seconds** in a private Wi-Fi test. All test report/photo
+objects were removed and the normal app was restored with Grant's account intact.
+
+The fresh [signed iOS IPA, version 2.0.0 / build 12](https://expo.dev/artifacts/eas/mw5S80KEXrHBRf4IVonyvEsMvrB68f2knhRPuxaOnMI.ipa)
+is finished and verified. EAS build `2e5875c5-dec1-4c4f-ab02-00a40e4da63d` uses
+Luke's existing credentials. **It has not been uploaded to TestFlight or submitted
+to the App Store.** Luke owns that distribution step. This supersedes build 11 for
+iOS; the September 24 Android artifacts below remain older than PRs 87 and 88.
+
+See [device evidence, timing limits, artifact hashes, and Luke's release checks](reviews/2026-09-28-iphone-notifications-photo-verification.md).
+
+
+## Earlier September 28 follow-up — source handoff (superseded for iOS above)
 
 A fresh native build is required for the latest changes on
 `codex/cleanup-notifications-speed`: contributor/admin notification navigation,
