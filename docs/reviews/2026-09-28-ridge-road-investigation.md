@@ -496,3 +496,15 @@ Luke's follow-up verification:
 6. Confirm opted-in admins get an alert for an actual exception if one occurs.
    Do not manufacture unsafe reports or failed payments just to test production.
    The exception paths were tested with rolled-back database fixtures.
+
+Follow-up deployment evidence:
+
+- Source commit `c40f291`, [PR #88](https://github.com/jameslukebdev/litterbugs_app/pull/88).
+- Applied migration `20260929001733_cleanup_completion_and_exception_notifications`
+  to `mvaygkflcjswtwchflrk`. The deployed-schema SQL regression passed, including
+  synthetic device-delivery queue assertions; its fixtures and outbound work rolled
+  back. The notification sender is ACTIVE at version 24 with its prior JWT setting
+  preserved. Security advisors remained at 36 existing findings, with zero new ones.
+- Website candidate `dpl_2ZJZkkjwWQPAtvFc6TumeMPB8hHh` built successfully from
+  `c40f291`; authenticated candidate smoke returned the expected Cleanup Policy
+  page. Native distribution remains Luke's separate release step.

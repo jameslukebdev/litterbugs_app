@@ -8,6 +8,12 @@ values
   ('a1000000-0000-4000-8000-000000000003', 'routine-funder@example.com', false, '{}', now()),
   ('a1000000-0000-4000-8000-000000000004', 'routine-refunded@example.com', false, '{}', now());
 
+-- Synthetic device tokens and all outgoing queue work roll back with fixtures.
+insert into public.push_devices(user_id,installation_id,expo_push_token,platform)
+select uid,gen_random_uuid(),'ExponentPushToken[routine-'||uid::text||']','ios'
+from (values ('a1000000-0000-4000-8000-000000000001'::uuid),
+ ('a1000000-0000-4000-8000-000000000003'::uuid)) fixture(uid);
+
 -- A private draft cannot send rejection or approval notices, even if a result
 -- arrives before publication. An actual reviewed, published result still can.
 insert into public.reports (id,user_id,title,latitude,longitude,photo_paths,is_published)
@@ -242,6 +248,17 @@ begin
       end;
     end if;
   end loop;
+end $$;
+
+do $$ begin
+  if exists (
+    select 1 from public.cleanup_notifications n
+    where n.event_type in ('funded_cleanup_completed','admin_cleanup_needed')
+      and n.user_id in ('a1000000-0000-4000-8000-000000000001','a1000000-0000-4000-8000-000000000003')
+      and not exists(select 1 from public.cleanup_notification_deliveries d
+        join public.push_devices p on p.id=d.push_device_id
+        where d.notification_id=n.id and p.user_id=n.user_id and d.status='pending')
+  ) then raise exception 'New notice failed to enter the existing device-delivery queue'; end if;
 end $$;
 
 rollback;
