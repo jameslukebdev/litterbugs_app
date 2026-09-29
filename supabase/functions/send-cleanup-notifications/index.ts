@@ -34,6 +34,10 @@ const jsonResponse = (body: Record<string, unknown>, status = 200) =>
 
 const notificationContent = (eventType: string) => {
   switch (eventType) {
+    case "admin_cleanup_needed":
+      return { title: "Cleanup needs attention", body: "A cleanup or payment issue needs your review. Open your admin inbox." };
+    case "funded_cleanup_completed":
+      return { title: "Cleanup you funded is complete", body: "A cleanup you helped fund has been approved. Thank you for supporting it!" };
     case "admin_moderation_needed":
       return { title: "Community report needs review", body: "A member sent a concern to the Litterbugs team. Open your admin inbox to review it." };
     case "report_claimed":

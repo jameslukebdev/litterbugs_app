@@ -45,6 +45,8 @@ export async function preparePhotoForSafetyScan(
   {
     fileSystem = FileSystem,
     imageManipulator = installedImageManipulator,
+    width,
+    height,
   } = {},
 ) {
   if (!uri) throw new Error('No photo was selected.');
@@ -60,7 +62,7 @@ export async function preparePhotoForSafetyScan(
     throw new Error('Update the Litterbugs development app to upload photos larger than 3 MB.');
   }
 
-  const first = await imageManipulator.manipulateAsync(uri, [], {
+  const first = await imageManipulator.manipulateAsync(uri, resizeAction(width, height, MEDIA_UPLOAD_MAX_EDGE), {
     compress: 0.75,
     format: imageManipulator.SaveFormat.JPEG,
   });

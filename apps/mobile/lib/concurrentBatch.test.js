@@ -49,3 +49,36 @@ describe('concurrent batch processing', () => {
     expect(completed).toEqual([1]);
   });
 });
+
+it('starts the third photo as soon as either slot frees and reports immediate progress', async () => {
+  let finishFirst;
+  const first = new Promise(resolve => { finishFirst = resolve; });
+  const started = [], progress = [];
+  const operation = mapInConcurrentBatches([1, 2, 3], async value => {
+    started.push(value);
+    if (value === 1) await first;
+    return value;
+  }, { onFulfilled: value => progress.push(value) });
+  await vi.waitFor(() => expect(started).toEqual([1, 2, 3]));
+  expect(progress).toEqual([2, 3]);
+  finishFirst();
+  expect(await operation).toEqual([1, 2, 3]);
+});
+
+it('drains active uploads after failure before returning evidence for rollback', async () => {
+  let finishFirst;
+  const first = new Promise(resolve => { finishFirst = resolve; });
+  const completed = [];
+  let settled = false;
+  const operation = mapInConcurrentBatches([1, 2, 3], async value => {
+    if (value === 2) throw Error('offline');
+    await first;
+    return value;
+  }, { onFulfilled: value => completed.push(value) }).catch(error => { settled = true; return error; });
+  await Promise.resolve();
+  await Promise.resolve();
+  expect(settled).toBe(false);
+  finishFirst();
+  expect((await operation).message).toBe('offline');
+  expect(completed).toEqual([1]);
+});

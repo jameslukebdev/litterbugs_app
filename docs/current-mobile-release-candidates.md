@@ -1,5 +1,19 @@
 # Current Mobile Release Candidates
 
+## September 28 follow-up — notification and photo-speed source changes
+
+A fresh native build is required for the latest changes on
+`codex/cleanup-notifications-speed`: contributor/admin notification navigation,
+continuous two-photo upload scheduling, immediate progress, single-pass resizing
+when dimensions are known, a three-second foreground wait for a saved cleanup's
+review, and automatic refresh of a pending mobile review screen. No native build
+or TestFlight upload was produced in this follow-up. Luke owns distribution.
+
+The notification backend is deployed separately. Already-completed Ridge Road
+requires no further approval, and historical completion notices are not backfilled.
+See [the investigation and verification steps](reviews/2026-09-28-ridge-road-investigation.md#follow-up-contributor-alerts-and-photo-submission-latency).
+
+
 ## September 28 — cleanup approval source update
 
 [PR 87](https://github.com/jameslukebdev/litterbugs_app/pull/87) removes routine

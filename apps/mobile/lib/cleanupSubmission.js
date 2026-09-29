@@ -5,6 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { supabase } from './supabase';
 import { requestGeminiReview } from './funding';
+import { withTimeout } from './asyncTimeout';
 import { MEDIA_PICKER_COMPRESSION_QUALITY } from './mediaCompression';
 import {
   CLEANUP_PHOTO_UPLOAD_CONCURRENCY,
@@ -141,9 +142,14 @@ export async function uploadCleanupSubmission({
     if (error) throw error;
     return data;
   };
+  // Submission already queues a durable server review. Start it immediately,
+  // but don't hold the success screen open for the full review round trip.
+  const startReview = () => withTimeout(
+    requestGeminiReview({ cleanupId }), 3000, 'Review continues in the background.',
+  ).catch(() => null);
   const recoveredResult = async (submission) => {
     // A response loss may also have skipped starting the funded review.
-    const aiReview = isPaid ? await requestGeminiReview({ cleanupId }).catch(() => null) : null;
+    const aiReview = isPaid ? await startReview() : null;
     return { submission, aiReview };
   };
   const existing = await findSavedSubmission();
@@ -157,7 +163,7 @@ export async function uploadCleanupSubmission({
     await mapInConcurrentBatches(
       photos,
       async (asset, index) => {
-        const preparedPhoto = await preparePhotoForSafetyScan(asset.uri);
+        const preparedPhoto = await preparePhotoForSafetyScan(asset.uri, { width: asset.width, height: asset.height });
         const { mimeType: originalMimeType } = await cleanupPhotoMetadata({
           ...asset,
           uri: preparedPhoto.uri,
@@ -179,8 +185,8 @@ export async function uploadCleanupSubmission({
       },
       {
         concurrency: CLEANUP_PHOTO_UPLOAD_CONCURRENCY,
-        onFulfilled: (path) => {
-          uploadedPaths.push(path);
+        onFulfilled: (path, index) => {
+          uploadedPaths[index] = path;
           completedPhotos += 1;
           onProgress({
             stage: 'uploading',
@@ -210,7 +216,7 @@ export async function uploadCleanupSubmission({
     if (isPaid) {
       try {
         onProgress({ stage: 'reviewing', current: photos.length, total: photos.length });
-        aiReview = await requestGeminiReview({ cleanupId });
+        aiReview = await startReview();
       } catch (reviewError) {
         console.log('Funded cleanup review deferred:', reviewError);
       }
@@ -226,7 +232,7 @@ export async function uploadCleanupSubmission({
     if (uploadedPaths.length > 0) {
       await supabase.storage
         .from('cleanup_photos')
-        .remove(uploadedPaths)
+        .remove(uploadedPaths.filter(Boolean))
         .catch((cleanupError) => {
           console.log('Cleanup photo rollback error:', cleanupError);
         });

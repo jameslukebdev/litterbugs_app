@@ -36,7 +36,7 @@ async function publishReportDraftRequest({ userId, payload, form, coordinate, up
       if (updateError) throw updateError;
       return data;
     },
-    upload: async (uri, id) => (await upload([uri], id, userId, onProgress))[0],
+    upload: async (uri, id) => (await upload([uri], id, userId))[0],
     publish: async (id, paths) => {
       onProgress?.('Confirming your location and publishing…');
       const origin = await requireReportLocation(Location, coordinate);

@@ -155,3 +155,14 @@ describe('photo safety preparation', () => {
       .resolves.toEqual({ uri: 'file://prepared.jpg', byteSize: 1_000_000 });
   });
 });
+
+it('uses known camera dimensions to resize and encode in a single pass', async () => {
+  const deps = dependencies(
+    { 'original': 7_000_000, 'prepared': 1_000_000 },
+    [{ uri: 'prepared', width: 2048, height: 1536 }],
+  );
+  const result = await preparePhotoForSafetyScan('original', { ...deps, width: 4032, height: 3024 });
+  expect(result.byteSize).toBe(1_000_000);
+  expect(deps.manipulateAsync).toHaveBeenCalledTimes(1);
+  expect(deps.manipulateAsync).toHaveBeenCalledWith('original', [{ resize: { width: 2048 } }], { compress: 0.75, format: 'jpeg' });
+});

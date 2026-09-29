@@ -130,3 +130,16 @@ describe('administrator moderation alerts', () => {
       .toBe('Community report needs review');
   });
 });
+
+
+describe('contributor completion and serious exception notifications', () => {
+  it('shows contributor-specific completion copy and opens the report', () => {
+    const notice = { event_type: 'funded_cleanup_completed', report_id: 'report', cleanup_attempt_id: 'cleanup' };
+    expect(cleanupNotificationPresentation([notice]).title).toBe('Cleanup you funded is complete');
+    expect(cleanupNotificationDestination(notice)).toMatchObject({ name: 'App', params: { screen: 'Map', params: { reportId: 'report' } } });
+    expect(cleanupStateFromNotification(notice)).toBe('completed');
+  });
+  it('opens the admin inbox for cleanup and payment exceptions, including a missing report', () => {
+    expect(cleanupNotificationDestination({ event_type: 'admin_cleanup_needed' })).toEqual({ url: 'https://litterbugs.app/admin', label: 'Open admin inbox' });
+  });
+});
