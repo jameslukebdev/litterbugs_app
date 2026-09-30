@@ -19,7 +19,7 @@ export default function CleanupPolicyPage() {
         {
           title: 'Contributions and the displayed reward',
           content: <>
-            <p>A logged-in member may add $1 to $1,000 of principal per transaction to an active, eligible report. Litterbugs adds one combined service fee of 10% + $0.50 per checkout and shows the principal, fee, and total before payment. Existing payments and pending payment attempts keep their original fee and total. Selecting “No contribution now” creates no fee. Contributions are not charitable donations and are not represented as tax deductible.</p>
+            <p>A logged-in member may add $1 to $1,000 of principal per transaction to an active, eligible report. Litterbugs adds one service fee per checkout and shows the principal, fee, and total before payment. Existing payments and pending payment attempts keep their original fee and total. Selecting “No contribution now” creates no fee. Contributions are not charitable donations and are not represented as tax deductible.</p>
             <p>The cleaner reward shows only the contributed principal. An approved cleaner receives that exact frozen principal. Litterbugs keeps the service fee and absorbs standard payment, payout, refund, and chargeback costs.</p>
           </>,
         },
