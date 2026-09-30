@@ -110,7 +110,13 @@ surfaces show one fee amount; internal pricing math is unchanged.
   `READY_FOR_BETA_SUBMISSION`. Uploaded September 30 at 20:54:02 UTC.
   Build 13 was not submitted. No App Review/public release was submitted.
 - Android EAS `eff3ef5b-dcad-4433-ba70-2d51426f6b3b`, same release source,
-  version 2.0.0/code 14: remote build underway.
+  version 2.0.0/code 14: finished, [signed AAB](https://expo.dev/artifacts/eas/Ft7t_UY1mJ3JckqCcv-FgK2CdVQJH0TRTfAJJjvQtuU.aab).
+  SHA-256 `c4277439f097f4f5e2d362fb18067880cac550150d71049dfe49c2d0a849d7a0`.
+  Bundletool validation, JAR signature, package/version, and existing upload
+  certificate match all pass. Packaged bundle SHA-256
+  `d89617b9d56e7f12d9d7cab9bdddad29ba5519f6bd4487541a924c986bce5ff2` contains
+  the plain service-fee label and production backend, excludes both local test
+  URLs, and contains no fee formula. Not submitted to Google Play.
 - Updated website deployment `litterbugs-d9rg0h5mz-grant-9890s-projects.vercel.app`
   is Ready. HTTP checks verify Terms/Cleanup Policy show one fee and omit the
   internal formula. The custom domain has not been promoted.
@@ -236,3 +242,20 @@ both emulators and the dedicated audit VM are off. The default 3 GB Colima VM
 was restored with all six retirement-launch-local containers running (five
 health checks healthy; PostgREST has no health check). Docker context is back to
 `colima`; memory pressure was normal after restoration.
+
+## Completion audit and remaining rollout gate
+
+The original “Plan small-transaction monetization” thread was reviewed. Its six
+requirements map to the economics, implementation/compatibility, customer copy,
+SQL/Edge/native/sandbox evidence, and deployment sections above. Requirements
+1–5 are implemented and verified within the documented fixture/auth limits.
+Requirement 6 is partially complete: compatible database/Edge support is live,
+web is staged, iOS build 14 is in internal TestFlight, and Android code 14 is
+verified. Public mobile distribution, website domain promotion, and pricing
+activation remain unfinished. The goal must not be marked fully rolled out.
+
+AGENTS.md explicitly separates store publication from this debugging pass.
+Grant's authorization covers the completed TestFlight upload. A concrete request
+for public App Store/Google Play release authorization is pending. Do not activate
+version 2 while the public clients cannot be upgraded to compatible versions.
+No bank payout scheduling changes are part of this fee rollout.
