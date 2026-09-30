@@ -72,6 +72,9 @@ begin
   assert not has_function_privilege('authenticated','public.reserve_cleanup_contribution(uuid,uuid,uuid,bigint,integer,text)','execute');
   assert not has_function_privilege('anon','public.attach_cleanup_payment_intent(uuid,text)','execute');
   assert not has_table_privilege('authenticated','public.cleanup_pricing_config','update');
+  assert has_table_privilege('service_role','public.cleanup_pricing_config','select');
+  assert not has_table_privilege('service_role','public.cleanup_pricing_config','update');
+  assert not has_table_privilege('service_role','public.cleanup_pricing_config','delete');
 end $$;
 set local role service_role;
 select id from public.reserve_cleanup_contribution('92000000-0000-4000-8000-000000000001',

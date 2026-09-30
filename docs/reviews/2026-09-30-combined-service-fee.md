@@ -58,6 +58,9 @@ change as guaranteeing a profitable cleanup or as changing bank payout timing.
   web tests verify server-returned v1/v2 confirmation and update-required errors.
 - Typecheck, web lint/build, mobile source check, and web boundary check passed.
 - Production security advisors show no new findings.
+- Final privilege verification caught Supabase default write grants on the new
+  config table. A follow-up migration explicitly revokes service-role writes;
+  regression assertions verify service read access and deny update/delete.
 
 ## Stripe sandbox and client evidence
 
@@ -122,7 +125,7 @@ payments keep their full original charge and refund amounts.
 
 ## Deployment state
 
-Both compatibility migrations and create-cleanup-contribution,
+All three compatibility/permissions migrations and create-cleanup-contribution,
 check-contribution-status, and stripe-webhook are deployed. Production pricing
 is still version 1; no existing contribution was repriced. The tested website
 candidate is `https://litterbugs-hz4v5boe8-grant-9890s-projects.vercel.app`;
