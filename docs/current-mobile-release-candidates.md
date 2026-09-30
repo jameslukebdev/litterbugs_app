@@ -12,7 +12,10 @@ amount, without the internal formula. Version 2.0.0/build 14 supersedes the earl
 `c6476e08-eff7-4d10-87ab-37f004f04083`.
 [Open TestFlight](https://appstoreconnect.apple.com/apps/6757313862/testflight/ios).
 External beta review/App Review/public release were not submitted. Android
-production build `eff3ef5b-dcad-4433-ba70-2d51426f6b3b` is still building remotely.
+production build `eff3ef5b-dcad-4433-ba70-2d51426f6b3b` is finished and verified:
+[signed AAB, version 2.0.0/code 14](https://expo.dev/artifacts/eas/Ft7t_UY1mJ3JckqCcv-FgK2CdVQJH0TRTfAJJjvQtuU.aab).
+Its package, existing upload certificate, bundle structure, production backend,
+and single-amount fee copy pass verification. It has not been submitted to Play.
 
 Fresh iOS and Android native Stripe sandbox payments passed; server-confirmed
 amounts, cancellation/retry, principal-only rewards, and full refunds were
