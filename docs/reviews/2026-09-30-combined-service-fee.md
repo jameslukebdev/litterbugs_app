@@ -243,7 +243,7 @@ was restored with all six retirement-launch-local containers running (five
 health checks healthy; PostgREST has no health check). Docker context is back to
 `colima`; memory pressure was normal after restoration.
 
-## Completion audit and remaining rollout gate
+## Completion audit and owner-confirmed TestFlight endpoint
 
 The original “Plan small-transaction monetization” thread was reviewed. Its six
 requirements map to the economics, implementation/compatibility, customer copy,
@@ -252,10 +252,14 @@ SQL/Edge/native/sandbox evidence, and deployment sections above. Requirements
 Requirement 6 is partially complete: compatible database/Edge support is live,
 web is staged, iOS build 14 is in internal TestFlight, and Android code 14 is
 verified. Public mobile distribution, website domain promotion, and pricing
-activation remain unfinished. The goal must not be marked fully rolled out.
+activation have not occurred. Do not describe this as a public rollout.
 
-AGENTS.md explicitly separates store publication from this debugging pass.
-Grant's authorization covers the completed TestFlight upload. A concrete request
-for public App Store/Google Play release authorization is pending. Do not activate
-version 2 while the public clients cannot be upgraded to compatible versions.
-No bank payout scheduling changes are part of this fee rollout.
+Grant then explicitly narrowed completion to TestFlight: “no, just finish with
+testflight.” This supersedes the pending public-release question. Testing and
+TestFlight delivery are complete; public store release, website promotion, and
+pricing activation are excluded from this completed task, not pending approval
+or completion gates. Do not reopen them without a new owner request. A fresh
+App Store Connect check confirms version 2.0.0/build 14 is VALID,
+IN_BETA_TESTING internally, and not expired. The build ID matches the verified
+signed artifact above. Production pricing stays at version 1. No bank payout
+scheduling changes were made.

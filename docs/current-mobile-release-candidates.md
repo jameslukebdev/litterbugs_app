@@ -23,9 +23,11 @@ verified. The final copy-only change was separately verified in the current iOS
 simulator bundle and web component tests. Both emulators and local test servers
 are stopped; the temporarily stopped retirement backend has been restored.
 
-Grant explicitly authorized TestFlight upload after testing; do not ask again.
-App Review/public store publication remains separate. Production pricing remains
-version 1, pending coordinated client distribution and website promotion.
+Grant explicitly closed this task at TestFlight on September 30: “no, just
+finish with testflight.” Testing and TestFlight delivery are complete. Public
+store release, website promotion, and pricing activation are excluded from this
+completed task; do not reopen them as blockers or request publication approval.
+Production pricing remains version 1.
 
 See [the rollout evidence and rollback procedure](reviews/2026-09-30-combined-service-fee.md).
 
