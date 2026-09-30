@@ -32,13 +32,13 @@ begin
   exception when check_violation then assert sqlerrm='cleanup_contribution_idempotency_mismatch'; end;
   foreach cents in array array[100,104,105,109,500,505,100000] loop
     expected_fee := case cents when 100 then 60 when 104 then 60 when 105 then 61 when 109 then 61 when 500 then 100 when 505 then 101 when 100000 then 10050 end;
-    c := public.reserve_cleanup_contribution('92000000-0000-4000-8000-000000000001','91000000-0000-4000-8000-000000000001',gen_random_uuid(),cents,2);
+    c := public.reserve_cleanup_contribution('92000000-0000-4000-8000-000000000001','91000000-0000-4000-8000-000000000001',gen_random_uuid(),cents,2,'receipt@example.com');
     assert c.pricing_version=2 and c.platform_fee_cents=expected_fee and c.total_amount_cents=cents+expected_fee, 'v2 fee and total';
-    assert c.stripe_payment_intent_id is null, 'reserve before Stripe';
+    assert c.stripe_payment_intent_id is null and c.stripe_receipt_email='receipt@example.com', 'reserve before Stripe';
     d := public.reserve_cleanup_contribution(c.report_id,c.contributor_id,c.client_request_id,cents,2);
     assert c.id=d.id, 'duplicate reservation';
     d := public.attach_cleanup_payment_intent(c.id,'pi_fee_'||c.id::text);
-    assert d.stripe_payment_intent_id='pi_fee_'||c.id::text;
+    assert d.stripe_payment_intent_id='pi_fee_'||c.id::text and d.stripe_receipt_email is null, 'email removed after attachment';
     begin
       perform public.attach_cleanup_payment_intent(c.id,'pi_different');
       raise exception 'different intent accepted';
