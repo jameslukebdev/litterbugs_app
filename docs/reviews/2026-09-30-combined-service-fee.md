@@ -106,7 +106,9 @@ source `09510ce` (the later commit changes only database privacy handling).
   Strict deep code-signature verification passed; bundle `com.litterbugs.app`,
   Luke's team `DB39U76V6Q`, production push, and non-debug signing verified.
 - Android SHA-256: `690bad21c362bf6076c1d147f6a6e137e59201e83eb9d30d90742573a903c5c2`.
-  Bundletool validation and JAR signature verification passed. Jarsigner emits
+  Bundletool validation and JAR signature verification passed. The upload
+  certificate SHA-256 matches the previous production release
+  (`2C:0A:31:66:6C:8C:7A:35:04:E9:0D:8E:B8:15:01:67:30:75:40:11:2F:96:90:51:B0:36:AB:13:C1:B0:AA:0E`). Jarsigner emits
   standard self-signed/no-timestamp and ZIP stream-order warnings; validation
   succeeds. Manifest package is `com.litterbugs.app`, code 13.
 - Both packaged bundles contain the combined-fee copy, server confirmation,
@@ -125,7 +127,9 @@ payments keep their full original charge and refund amounts.
 
 ## Deployment state
 
-All three compatibility/permissions migrations and create-cleanup-contribution,
+[PR 92](https://github.com/jameslukebdev/litterbugs_app/pull/92) is merged into
+main `91712a601b17edf392fb64b5bd3ca58d2b95afb5`. All three compatibility/permissions
+migrations and create-cleanup-contribution,
 check-contribution-status, and stripe-webhook are deployed. Production pricing
 is still version 1; no existing contribution was repriced. The tested website
 candidate is `https://litterbugs-hz4v5boe8-grant-9890s-projects.vercel.app`;
@@ -146,13 +150,43 @@ A fresh fetch confirmed latest GitHub main is
 source `09510ce5c9a73f4c950f4809752b5ee1e2f2a8ca`; all 300 tracked mobile/shared
 files exactly match the tested working source. Recent notification, photo-upload,
 cleanup, and other main-branch fixes are included. EAS archives exclude generated
-native folders and regenerate native projects. A fresh full iOS simulator build
-`04e8d4a6-5c7a-44bf-82bc-d1ae1a28d1a4` is being built to replace the initially
-reused native simulator shell; its mobile source is identical.
+native folders and regenerate native projects. The merged main mobile/shared tree also matches signed source `09510ce` exactly.
+
+A fresh full [iOS simulator archive](https://expo.dev/artifacts/eas/jZYjpgiN2cWY4bvsSBg2KgLR_vEYrxm_7jq-Zdv_Clo.tar.gz),
+EAS `04e8d4a6-5c7a-44bf-82bc-d1ae1a28d1a4`, finished from source `4ff5bcb`
+(the mobile code is identical). Archive SHA-256:
+`cce96a0f0e0ddc8584fe613038ca0723deb79f92a9b28d61025260820da55834`.
+The simulator profile packages version 2.0.0/build 1; the **store IPA is build 13**.
+Its unchanged production JS hash is
+`572957fcdf03149b331eb014378eb0a9e16c31423412ebeee422128c6a8ad23f`.
+The additional fresh-simulator runtime check was interrupted by the memory guard
+and is **not passed**. Earlier successful iOS payment tests used the same current
+mobile source with the previously built native shell.
+
+Android QA build `9c0b7446-555c-443e-b245-5a387d5ad3db` finished, but binary
+inspection found that it retained the production backend despite the requested
+sandbox environment override. It was **not installed or used for payment tests**
+and must not be used as the sandbox build. Its signature verified; package is
+`com.litterbugs.app.qa`, version 2.0.0/code 1, and SHA-256 is
+`0022828ec06100b7873e9cd4144d7663e14e7feaa4994d4488b47d8eec25ade1`.
+
+Replacement QA build `1737e187-dca6-495f-a290-f07de40f42c1` is running remotely
+from merged main `91712a6`, with explicit temporary local-backend literals in the
+Supabase client configuration, the QA package, and cleartext access to the
+emulator's local backend. All temporary source/profile settings were restored
+after upload. Verify its packaged backend address before installation. Its build
+completion, isolation check, and runtime checks are pending. Neither QA build is
+for distribution; the production AAB/code 13 remains the verified release file.
 
 The owner's 16 GB Mac must not run concurrent device-test stacks. Idle emulators,
 web servers, and the dedicated audit VM were stopped; memory pressure was normal
-and free-memory percentage increased from 39% to 59%. Remaining local Android
-compilation uses one worker, a 1 GB Java heap, and a guard that stops that build
-if macOS memory pressure leaves normal. Run only one emulator at a time and stop
-the dedicated audit VM after testing. Leave other projects' processes untouched.
+and free-memory percentage increased from 39% to 59%. The local Android
+build was limited to one worker and a 1 GB Java heap. The guard detected elevated
+memory pressure and stopped its entire process tree. Subsequent isolated VM and
+simulator startup also triggered the guard, so **all local device testing is now
+stopped**; do not automatically repeat these heavy tests under the same workload.
+The dedicated audit VM and both emulators are off, Litterbugs web/payment test
+servers are stopped, generated native build settings are restored, and temporary
+Stripe key copies are removed. Other projects were left running. Memory pressure
+returned to normal. Additional fresh-device checks remain unfinished until enough
+resources are available; do not report them as passed.
