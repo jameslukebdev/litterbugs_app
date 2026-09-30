@@ -9,6 +9,32 @@ array['91000000-0000-4000-8000-000000000001/report/test.jpg'],now()+interval '30
 update public.reports set funding_eligibility='eligible' where id='92000000-0000-4000-8000-000000000001';
 update public.cleanup_feature_flags set enabled = true;
 update public.cleanup_pricing_config set pricing_version=1;
+-- Exercise NEW reservations as the actual Edge Function role. Existing retries
+-- return before locking the pricing row and cannot verify these privileges.
+set local role service_role;
+do $$
+declare c public.cleanup_contributions;
+begin
+  c := public.reserve_cleanup_contribution('92000000-0000-4000-8000-000000000001',
+    '91000000-0000-4000-8000-000000000001','93000000-0000-4000-8000-000000000098',100,1);
+  assert c.platform_fee_cents=10 and c.total_amount_cents=110 and c.pricing_version=1, 'service role can reserve new legacy payment';
+  begin
+    update public.cleanup_pricing_config set pricing_version=2;
+    raise exception 'service role can change pricing';
+  exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+update public.cleanup_pricing_config set pricing_version=2;
+set local role service_role;
+do $$
+declare c public.cleanup_contributions;
+begin
+  c := public.reserve_cleanup_contribution('92000000-0000-4000-8000-000000000001',
+    '91000000-0000-4000-8000-000000000001','93000000-0000-4000-8000-000000000099',105,2);
+  assert c.platform_fee_cents=61 and c.total_amount_cents=166 and c.pricing_version=2, 'service role can reserve new combined-fee payment';
+end $$;
+reset role;
+update public.cleanup_pricing_config set pricing_version=1;
 do $$
 declare c public.cleanup_contributions; d public.cleanup_contributions; cents bigint; expected_fee bigint;
 begin
@@ -75,6 +101,8 @@ begin
   assert has_table_privilege('service_role','public.cleanup_pricing_config','select');
   assert not has_table_privilege('service_role','public.cleanup_pricing_config','update');
   assert not has_table_privilege('service_role','public.cleanup_pricing_config','delete');
+  assert not has_function_privilege('authenticated','private.lock_cleanup_pricing_version()','execute');
+  assert not has_function_privilege('anon','private.lock_cleanup_pricing_version()','execute');
 end $$;
 set local role service_role;
 select id from public.reserve_cleanup_contribution('92000000-0000-4000-8000-000000000001',
