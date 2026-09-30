@@ -131,3 +131,25 @@ its Terms route returns the new fee and $22.50 example.
 Native distribution, website promotion, and final pricing activation remain
 pending. Keep those coordinated: old mobile versions will reject new checkouts
 once version 2 is active. Existing pending payments remain recoverable.
+
+Activation is prepared in
+`supabase/rollout/20260930193000_activate_combined_service_fee.sql`; it has not
+been applied to production.
+
+## Source freshness and test resource limits
+
+A fresh fetch confirmed latest GitHub main is
+`f480c8e33a3682c5ec081562bdf448e732c98346`. It is an ancestor of signed-build
+source `09510ce5c9a73f4c950f4809752b5ee1e2f2a8ca`; all 300 tracked mobile/shared
+files exactly match the tested working source. Recent notification, photo-upload,
+cleanup, and other main-branch fixes are included. EAS archives exclude generated
+native folders and regenerate native projects. A fresh full iOS simulator build
+`04e8d4a6-5c7a-44bf-82bc-d1ae1a28d1a4` is being built to replace the initially
+reused native simulator shell; its mobile source is identical.
+
+The owner's 16 GB Mac must not run concurrent device-test stacks. Idle emulators,
+web servers, and the dedicated audit VM were stopped; memory pressure was normal
+and free-memory percentage increased from 39% to 59%. Remaining local Android
+compilation uses one worker, a 1 GB Java heap, and a guard that stops that build
+if macOS memory pressure leaves normal. Run only one emulator at a time and stop
+the dedicated audit VM after testing. Leave other projects' processes untouched.
