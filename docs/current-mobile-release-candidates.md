@@ -1,23 +1,28 @@
 # Current Mobile Release Candidates
 
-## September 30 — combined service fee candidates (distribution pending)
+## September 30 — single-amount service fee release
 
-Fresh production version 2.0.0/build 13 artifacts include the single service fee
-of 10% + $0.50, server-confirmed payment totals, and prior-payment recovery:
+Release source `a4d9be14b500a0be14f8c244c7d7a9f73da289a4` includes all current
+fixes plus the owner's correction: customers see “Service fee” and one dollar
+amount, without the internal formula. Version 2.0.0/build 14 supersedes the earlier build 13 candidates.
 
-- [Signed iOS IPA](https://expo.dev/artifacts/eas/nTp9kSn_h28p-V4rXE44u_BP8vmWem42kwml8VIRM3g.ipa), EAS `603b8847-b0b9-422b-9d5a-90e30b9d6cce`.
-- [Signed Android AAB](https://expo.dev/artifacts/eas/0uivsekcC5woK7AuXAEdE0pFyG43voJu-wC4d03wyUc.aab), EAS `4575907f-cbf3-4185-ae92-7f5cd1270244`.
+**Apple accepted iOS build 14 and it is available for internal TestFlight testing**
+(`VALID`, `IN_BETA_TESTING`). EAS build
+`8c10d921-3798-481c-8404-8a150f6102d4`, submission
+`c6476e08-eff7-4d10-87ab-37f004f04083`.
+[Open TestFlight](https://appstoreconnect.apple.com/apps/6757313862/testflight/ios).
+External beta review/App Review/public release were not submitted. Android
+production build `eff3ef5b-dcad-4433-ba70-2d51426f6b3b` is still building remotely.
 
-Signatures, production backend, and packaged new-fee code were verified. iOS
-native sandbox payment and cancellation/retry passed using current mobile code.
-Additional fresh native-device checks were stopped by the memory guard and remain
-unverified; all local device-test stacks are off. These artifacts are not
-yet distributed. Grant explicitly authorized uploading iOS build 13 to TestFlight
-after the remaining testing passes; do not ask for that authorization again.
-App Review and public store publication remain outside this authorization.
-Coordinate distribution with website promotion and version-2 fee
-activation. Older apps cannot start new payments after activation; old pending
-payments retain their original amounts.
+Fresh iOS and Android native Stripe sandbox payments passed; server-confirmed
+amounts, cancellation/retry, principal-only rewards, and full refunds were
+verified. The final copy-only change was separately verified in the current iOS
+simulator bundle and web component tests. Both emulators and local test servers
+are stopped; the temporarily stopped retirement backend has been restored.
+
+Grant explicitly authorized TestFlight upload after testing; do not ask again.
+App Review/public store publication remains separate. Production pricing remains
+version 1, pending coordinated client distribution and website promotion.
 
 See [the rollout evidence and rollback procedure](reviews/2026-09-30-combined-service-fee.md).
 
