@@ -114,8 +114,11 @@ and documentation; the mobile/shared source remains identical).
   succeeds. Manifest package is `com.litterbugs.app`, code 13.
 - Both packaged bundles contain the combined-fee copy, server confirmation,
   and production Supabase hostname, and exclude the local test URL.
-- TestFlight upload is awaiting explicit owner direction under the existing
-  mobile-distribution instruction. No App Review or public store release.
+- Grant explicitly authorized TestFlight upload after finishing verification:
+  “finish testing the change and make sure iit works. Then go ahjead and upload
+  to testflighjt”. This supersedes the earlier Luke-only distribution restriction
+  for this TestFlight upload. Remaining testing must pass first; no repeated
+  upload approval is needed. App Review and public store release remain excluded.
 
 ## Rollback procedure
 
@@ -204,3 +207,18 @@ servers are stopped, generated native build settings are restored, and temporary
 Stripe key copies are removed. Other projects were left running. Memory pressure
 returned to normal. Additional fresh-device checks remain unfinished until enough
 resources are available; do not report them as passed.
+
+After the owner's request to finish testing and then upload, the backend was
+reduced to 1 GB/one CPU and the Android emulator to 1 GB/one CPU. Both fresh iOS
+and Android startup attempts still triggered the memory guard before app testing.
+The third permissions migration was applied to the isolated database, and the
+sandbox account and local pricing version 2 were reverified. All test processes
+were stopped again, temporary Stripe key copies removed, and memory pressure
+returned to normal.
+
+The unrelated `retirement-launch-local` backend remains running in the default
+3 GB Colima VM. Permission was requested to temporarily stop that VM for device
+testing and restore it afterward; that permission has not been received. Do not
+interpret TestFlight authorization as approval to interrupt the other project.
+The TestFlight pre-upload check still shows build 12 as the newest uploaded build;
+build 13 has not been submitted.
