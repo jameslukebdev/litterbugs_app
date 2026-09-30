@@ -222,7 +222,7 @@ describe('AccountDialog expired report decisions', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'My reports' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Close and refund' }));
 
-    expect(window.confirm).toHaveBeenCalledWith(expect.stringMatching(/including the 10% fee/i));
+    expect(window.confirm).toHaveBeenCalledWith(expect.stringMatching(/including the service fee/i));
     await waitFor(() => expect(rpc).toHaveBeenCalledWith('close_expired_report', {
       target_report_id: expiredReport.id,
     }));

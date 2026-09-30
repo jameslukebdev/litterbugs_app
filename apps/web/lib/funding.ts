@@ -13,6 +13,7 @@ export type ContributionIntent = {
   platformFeeCents: number;
   totalAmountCents: number;
   currency: 'usd';
+  pricingVersion?: number;
 };
 
 export type PayoutStatus = {
@@ -36,7 +37,7 @@ export function parseContributionAmount(value: string) {
 }
 
 export function calculatePlatformFee(principalAmountCents: number) {
-  return Math.floor((principalAmountCents + 5) / 10);
+  return principalAmountCents === 0 ? 0 : Math.floor((principalAmountCents + 5) / 10) + 50;
 }
 
 export async function edgeFunctionErrorMessage(
@@ -93,6 +94,7 @@ export async function createCleanupContribution(
       reportId,
       principalAmountCents,
       clientRequestId,
+      pricingVersion: 2,
     },
   });
   if (error || data?.error) {

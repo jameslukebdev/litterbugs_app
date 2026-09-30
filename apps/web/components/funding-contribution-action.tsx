@@ -58,6 +58,11 @@ function ContributionPaymentForm({
 
   return (
     <form className="funding-payment-form" onSubmit={submit}>
+      <dl className="funding-summary">
+        <div><dt>Cleanup contribution</dt><dd>{formatUsd(intent.principalAmountCents)}</dd></div>
+        <div><dt>Service fee{intent.pricingVersion === 2 ? ' (10% + $0.50)' : ''}</dt><dd>{formatUsd(intent.platformFeeCents)}</dd></div>
+        <div><dt>Total payment</dt><dd>{formatUsd(intent.totalAmountCents)}</dd></div>
+      </dl>
       <PaymentElement options={{ layout: 'tabs' }} />
       {error && <p className="form-message error-message" role="alert">{error}</p>}
       <button className="primary-button" type="submit" disabled={!stripe || busy}>
@@ -200,7 +205,7 @@ export function FundingContributionAction({
               {principalAmountCents != null && platformFeeCents != null && (
                 <dl className="funding-summary">
                   <div><dt>Cleaner reward</dt><dd>{formatUsd(principalAmountCents)}</dd></div>
-                  <div><dt>Litterbugs fee (10%)</dt><dd>{formatUsd(platformFeeCents)}</dd></div>
+                  <div><dt>Service fee (10% + $0.50)</dt><dd>{formatUsd(platformFeeCents)}</dd></div>
                   <div><dt>Total</dt><dd>{formatUsd(principalAmountCents + platformFeeCents)}</dd></div>
                 </dl>
               )}

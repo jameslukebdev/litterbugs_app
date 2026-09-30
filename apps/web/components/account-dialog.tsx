@@ -386,7 +386,7 @@ export function AccountDialog({
   }
 
   async function closeExpiredReport(reportId: string) {
-    if (!window.confirm('Close this report and refund every active contribution, including the 10% fee?')) return;
+    if (!window.confirm('Close this report and refund every active contribution, including the service fee?')) return;
     setBusyAction(`close:${reportId}`);
     const { error } = await createClient().rpc('close_expired_report', { target_report_id: reportId });
     setBusyAction('');

@@ -14,13 +14,13 @@ export default function CleanupPolicyPage() {
       eyebrow="CLEANUP, FUNDING & SAFETY"
       title="Cleanup and reward policy"
       summary="The plain-language rules for contributions, report pools, safe participation, evidence review, disputes, refunds, and cleaner rewards."
-      effectiveDate="September 23, 2026"
+      effectiveDate="September 30, 2026"
       sections={[
         {
           title: 'Contributions and the displayed reward',
           content: <>
-            <p>A logged-in member may add $1 to $1,000 of principal per transaction to an active, eligible report. Litterbugs adds a separate 10% platform fee and shows the principal, fee, and total before payment. Contributions are not charitable donations and are not represented as tax deductible.</p>
-            <p>The cleaner reward shows only the contributed principal. An approved cleaner receives that exact frozen principal. Litterbugs keeps the separate 10% fee and absorbs standard payment, payout, refund, and chargeback costs.</p>
+            <p>A logged-in member may add $1 to $1,000 of principal per transaction to an active, eligible report. Litterbugs adds one combined service fee of 10% + $0.50 per checkout and shows the principal, fee, and total before payment. Existing payments and pending payment attempts keep their original fee and total. Selecting “No contribution now” creates no fee. Contributions are not charitable donations and are not represented as tax deductible.</p>
+            <p>The cleaner reward shows only the contributed principal. An approved cleaner receives that exact frozen principal. Litterbugs keeps the service fee and absorbs standard payment, payout, refund, and chargeback costs.</p>
           </>,
         },
         {
@@ -89,7 +89,7 @@ export default function CleanupPolicyPage() {
         {
           title: 'Refunds',
           content: <>
-            <p>Litterbugs returns each contributor&apos;s complete original charge—including the principal and 10% fee—when the reporter closes an expired report, takes no action during the seven-day decision window, or the contribution remains unused for 23 months.</p>
+            <p>Litterbugs returns each contributor&apos;s complete original charge—including the principal and service fee—when the reporter closes an expired report, takes no action during the seven-day decision window, or the contribution remains unused for 23 months.</p>
             <p>Refunds return to the original payment method and may take provider-dependent time to appear. A successful contribution cannot be refunded solely because a contributor changes their mind while the report remains active. Failed refunds are held for administrator attention and bounded retry.</p>
           </>,
         },

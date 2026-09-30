@@ -464,6 +464,21 @@ export type Database = {
           },
         ]
       }
+      cleanup_pricing_config: {
+        Row: {
+          id: boolean
+          pricing_version: number
+        }
+        Insert: {
+          id?: boolean
+          pricing_version?: number
+        }
+        Update: {
+          id?: boolean
+          pricing_version?: number
+        }
+        Relationships: []
+      }
       cleanup_contributions: {
         Row: {
           auto_refund_due_at: string | null
@@ -475,6 +490,7 @@ export type Database = {
           failure_code: string | null
           id: string
           platform_fee_cents: number
+          pricing_version: number
           principal_amount_cents: number
           refund_attempts: number
           refund_processing_started_at: string | null
@@ -484,6 +500,7 @@ export type Database = {
           status: string
           stripe_charge_id: string | null
           stripe_payment_intent_id: string | null
+          stripe_receipt_email: string | null
           stripe_refund_id: string | null
           succeeded_at: string | null
           total_amount_cents: number
@@ -499,6 +516,7 @@ export type Database = {
           failure_code?: string | null
           id?: string
           platform_fee_cents: number
+          pricing_version?: number
           principal_amount_cents: number
           refund_attempts?: number
           refund_processing_started_at?: string | null
@@ -508,6 +526,7 @@ export type Database = {
           status?: string
           stripe_charge_id?: string | null
           stripe_payment_intent_id?: string | null
+          stripe_receipt_email?: string | null
           stripe_refund_id?: string | null
           succeeded_at?: string | null
           total_amount_cents: number
@@ -523,6 +542,7 @@ export type Database = {
           failure_code?: string | null
           id?: string
           platform_fee_cents?: number
+          pricing_version?: number
           principal_amount_cents?: number
           refund_attempts?: number
           refund_processing_started_at?: string | null
@@ -532,6 +552,7 @@ export type Database = {
           status?: string
           stripe_charge_id?: string | null
           stripe_payment_intent_id?: string | null
+          stripe_receipt_email?: string | null
           stripe_refund_id?: string | null
           succeeded_at?: string | null
           total_amount_cents?: number
@@ -1577,6 +1598,83 @@ export type Database = {
         }
         Returns: undefined
       }
+      reserve_cleanup_contribution: {
+        Args: {
+          expected_pricing_version: number
+          principal_cents: number
+          receipt_email?: string
+          target_client_request_id: string
+          target_contributor_id: string
+          target_report_id: string
+        }
+        Returns: {
+          auto_refund_due_at: string | null
+          cleanup_attempt_id: string | null
+          client_request_id: string
+          contributor_id: string | null
+          created_at: string
+          currency: string
+          failure_code: string | null
+          id: string
+          platform_fee_cents: number
+          pricing_version: number
+          principal_amount_cents: number
+          refund_attempts: number
+          refund_processing_started_at: string | null
+          refund_requested_at: string | null
+          refunded_at: string | null
+          report_id: string
+          status: string
+          stripe_charge_id: string | null
+          stripe_payment_intent_id: string | null
+          stripe_receipt_email: string | null
+          stripe_refund_id: string | null
+          succeeded_at: string | null
+          total_amount_cents: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cleanup_contributions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      attach_cleanup_payment_intent: {
+        Args: { payment_intent_id: string; target_contribution_id: string }
+        Returns: {
+          auto_refund_due_at: string | null
+          cleanup_attempt_id: string | null
+          client_request_id: string
+          contributor_id: string | null
+          created_at: string
+          currency: string
+          failure_code: string | null
+          id: string
+          platform_fee_cents: number
+          pricing_version: number
+          principal_amount_cents: number
+          refund_attempts: number
+          refund_processing_started_at: string | null
+          refund_requested_at: string | null
+          refunded_at: string | null
+          report_id: string
+          status: string
+          stripe_charge_id: string | null
+          stripe_payment_intent_id: string | null
+          stripe_receipt_email: string | null
+          stripe_refund_id: string | null
+          succeeded_at: string | null
+          total_amount_cents: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cleanup_contributions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_cleanup_contribution_intent: {
         Args: {
           payment_intent_id: string
@@ -1595,6 +1693,7 @@ export type Database = {
           failure_code: string | null
           id: string
           platform_fee_cents: number
+          pricing_version: number
           principal_amount_cents: number
           refund_attempts: number
           refund_processing_started_at: string | null
@@ -1604,6 +1703,7 @@ export type Database = {
           status: string
           stripe_charge_id: string | null
           stripe_payment_intent_id: string | null
+          stripe_receipt_email: string | null
           stripe_refund_id: string | null
           succeeded_at: string | null
           total_amount_cents: number

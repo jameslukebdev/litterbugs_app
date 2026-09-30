@@ -260,7 +260,7 @@ export function ReportWizard({
             {fundingChoice === 'other' && <label className="field-label">Starting contribution amount ($)<input value={customAmount} inputMode="decimal" maxLength={7} placeholder="1.00" onChange={(event) => setCustomAmount(event.target.value)} /></label>}
             {contributionCents != null && <dl className="funding-summary">
               <div><dt>Contribution</dt><dd>{formatUsd(contributionCents)}</dd></div>
-              <div><dt>Litterbugs fee (10%)</dt><dd>{formatUsd(calculatePlatformFee(contributionCents))}</dd></div>
+              <div><dt>Service fee (10% + $0.50)</dt><dd>{formatUsd(calculatePlatformFee(contributionCents))}</dd></div>
               <div><dt>Total</dt><dd>{formatUsd(contributionCents + calculatePlatformFee(contributionCents))}</dd></div>
             </dl>}
             {wantsFunding && <p>You’ll confirm payment separately after the report is saved and eligible for funding.</p>}

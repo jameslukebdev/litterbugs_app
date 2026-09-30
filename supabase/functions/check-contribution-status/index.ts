@@ -14,6 +14,9 @@ Deno.serve(async (request: Request) => {
       .eq("id", contributionId).eq("contributor_id", user.id).maybeSingle();
     if (error) throw error;
     if (!row) return jsonResponse({ error: "Payment unavailable" }, 404);
+    // A reserved quote has no charge until its PaymentIntent has been attached.
+    // Retrying create with the same request identity safely completes that step.
+    if (!row.stripe_payment_intent_id) return jsonResponse({ providerState: "requires_payment_method", checkedAt: new Date().toISOString() });
     const intent = await stripeClient().paymentIntents.retrieve(row.stripe_payment_intent_id);
     if (intent.metadata.contributor_id !== user.id || intent.metadata.client_request_id !== row.client_request_id || intent.amount !== row.total_amount_cents || intent.currency !== "usd") throw new Error("Payment identity mismatch");
     if (intent.status === "succeeded") await reconcileSuccessfulPaymentIntent(admin, intent);
