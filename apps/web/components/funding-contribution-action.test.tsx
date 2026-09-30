@@ -116,7 +116,7 @@ describe('server-confirmed pricing', () => {
     await screen.findByText('Secure card form');
     expect(screen.getByText(feeText)).toBeTruthy();
     expect(screen.getByRole('button', { name: buttonText })).toBeTruthy();
-    expect(screen.getByText(pricingVersion === 2 ? 'Service fee (10% + $0.50)' : 'Service fee')).toBeTruthy();
+    expect(screen.getByText('Service fee')).toBeTruthy();
   });
   it('shows the update instruction when an old checkout is rejected', async () => {
     loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });

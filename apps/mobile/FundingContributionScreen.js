@@ -281,7 +281,7 @@ function FundingContributionController({ navigation, route }) {
       if (!mounted.current) return;
       const accepted = await new Promise((resolve) => Alert.alert(
         'Confirm contribution',
-        `Cleanup contribution: ${formatUsd(intent.principalAmountCents)}\nService fee${intent.pricingVersion === 2 ? ' (10% + $0.50)' : ''}: ${formatUsd(intent.platformFeeCents)}\nTotal payment: ${formatUsd(intent.totalAmountCents)}`,
+        `Cleanup contribution: ${formatUsd(intent.principalAmountCents)}\nService fee: ${formatUsd(intent.platformFeeCents)}\nTotal payment: ${formatUsd(intent.totalAmountCents)}`,
         [{ text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
           { text: 'Continue to payment', onPress: () => resolve(true) }],
         { cancelable: true, onDismiss: () => resolve(false) },
