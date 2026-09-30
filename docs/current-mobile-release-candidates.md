@@ -12,8 +12,10 @@ Signatures, production backend, and packaged new-fee code were verified. iOS
 native sandbox payment and cancellation/retry passed using current mobile code.
 Additional fresh native-device checks were stopped by the memory guard and remain
 unverified; all local device-test stacks are off. These artifacts are not
-yet distributed; TestFlight permission is pending, and no store publication is
-authorized. Coordinate distribution with website promotion and version-2 fee
+yet distributed. Grant explicitly authorized uploading iOS build 13 to TestFlight
+after the remaining testing passes; do not ask for that authorization again.
+App Review and public store publication remain outside this authorization.
+Coordinate distribution with website promotion and version-2 fee
 activation. Older apps cannot start new payments after activation; old pending
 payments retain their original amounts.
 
