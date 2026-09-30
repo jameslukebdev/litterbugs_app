@@ -11,6 +11,7 @@ export const paymentIntentMatchesLedger = ({
   ledgerPrincipalCents,
   ledgerFeeCents,
   ledgerTotalCents,
+  ledgerPricingVersion = 1,
 }: {
   intentId: string;
   intentAmountReceivedCents: number;
@@ -24,6 +25,7 @@ export const paymentIntentMatchesLedger = ({
   ledgerPrincipalCents: number;
   ledgerFeeCents: number;
   ledgerTotalCents: number;
+  ledgerPricingVersion?: number;
 }) =>
   intentId === ledgerPaymentIntentId &&
   intentAmountReceivedCents === ledgerTotalCents &&
@@ -34,7 +36,8 @@ export const paymentIntentMatchesLedger = ({
   (!ledgerContributorId || intentMetadata.contributor_id === ledgerContributorId) &&
   intentMetadata.client_request_id === ledgerClientRequestId &&
   intentMetadata.principal_amount_cents === String(ledgerPrincipalCents) &&
-  intentMetadata.platform_fee_cents === String(ledgerFeeCents);
+  intentMetadata.platform_fee_cents === String(ledgerFeeCents) &&
+  (intentMetadata.pricing_version ?? "1") === String(ledgerPricingVersion);
 
 export const refundMatchesLedger = ({
   refundPaymentIntentId,

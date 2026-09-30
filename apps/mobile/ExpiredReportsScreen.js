@@ -31,7 +31,7 @@ export default function ExpiredReportsScreen() {
 
   const close = (report) => Alert.alert(
     'Close this report?',
-    'The report will end and every available contribution will be fully refunded, including the 10% fee.',
+    'The report will end and every available contribution will be fully refunded, including the service fee.',
     [
       { text: 'Keep report', style: 'cancel' },
       {

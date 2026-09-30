@@ -1,5 +1,22 @@
 # Current Mobile Release Candidates
 
+## September 30 — combined service fee candidates (distribution pending)
+
+Fresh production version 2.0.0/build 13 artifacts include the single service fee
+of 10% + $0.50, server-confirmed payment totals, and prior-payment recovery:
+
+- [Signed iOS IPA](https://expo.dev/artifacts/eas/nTp9kSn_h28p-V4rXE44u_BP8vmWem42kwml8VIRM3g.ipa), EAS `603b8847-b0b9-422b-9d5a-90e30b9d6cce`.
+- [Signed Android AAB](https://expo.dev/artifacts/eas/0uivsekcC5woK7AuXAEdE0pFyG43voJu-wC4d03wyUc.aab), EAS `4575907f-cbf3-4185-ae92-7f5cd1270244`.
+
+Signatures, production backend, and packaged new-fee code were verified. iOS
+native sandbox payment and cancellation/retry passed. These artifacts are not
+yet distributed; TestFlight permission is pending, and no store publication is
+authorized. Coordinate distribution with website promotion and version-2 fee
+activation. Older apps cannot start new payments after activation; old pending
+payments retain their original amounts.
+
+See [the rollout evidence and rollback procedure](reviews/2026-09-30-combined-service-fee.md).
+
 ## September 28 — verified iPhone update and fresh iOS build 12
 
 The connected iPhone now has the current Release QA app from main `abfb3fa`,

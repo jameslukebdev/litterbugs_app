@@ -118,7 +118,7 @@ describe('report creation funding choice', () => {
   it('preserves the chosen amount through a review edit and passes exact cents', () => {
     const onSubmit = review();
     fireEvent.click(screen.getByRole('button', { name: '$5' }));
-    expect(screen.getByText('$5.50')).toBeTruthy();
+    expect(screen.getByText('$6.00')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Edit title' }));
     fireEvent.change(screen.getByLabelText('Report title (optional)'), { target: { value: 'Country road bottles' } });
     fireEvent.click(screen.getByRole('button', { name: 'Back to review' }));

@@ -9,7 +9,7 @@ export const reconcileSuccessfulPaymentIntent = async (
   const { data: contribution, error: contributionError } = await admin
     .from("cleanup_contributions")
     .select(
-      "report_id, contributor_id, client_request_id, principal_amount_cents, platform_fee_cents, total_amount_cents, stripe_payment_intent_id",
+      "report_id, contributor_id, client_request_id, principal_amount_cents, platform_fee_cents, total_amount_cents, pricing_version, stripe_payment_intent_id",
     )
     .eq("stripe_payment_intent_id", intent.id)
     .maybeSingle();
@@ -33,6 +33,7 @@ export const reconcileSuccessfulPaymentIntent = async (
     ledgerPrincipalCents: contribution.principal_amount_cents,
     ledgerFeeCents: contribution.platform_fee_cents,
     ledgerTotalCents: contribution.total_amount_cents,
+    ledgerPricingVersion: contribution.pricing_version,
   })) {
     throw new Error(
       "Stripe PaymentIntent details did not match the Litterbugs contribution ledger",

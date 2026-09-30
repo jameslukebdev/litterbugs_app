@@ -214,6 +214,10 @@ Deno.test("Stripe contribution success requires the exact recorded charge", () =
     ledgerFeeCents: 50,
     ledgerTotalCents: 550,
   };
+  const combined = { ...valid, intentAmountReceivedCents: 600, ledgerTotalCents: 600, ledgerFeeCents: 100,
+    ledgerPricingVersion: 2, intentMetadata: { ...valid.intentMetadata, platform_fee_cents: "100", pricing_version: "2" } };
+  if (!paymentIntentMatchesLedger(combined)) throw new Error("Combined fee rejected");
+  if (paymentIntentMatchesLedger({ ...combined, intentMetadata: { ...combined.intentMetadata, pricing_version: "1" } })) throw new Error("Mismatched pricing version accepted");
   if (!paymentIntentMatchesLedger(valid)) {
     throw new Error("Exact contribution charge was rejected");
   }

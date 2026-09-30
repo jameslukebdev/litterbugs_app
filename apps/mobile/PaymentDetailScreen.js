@@ -32,7 +32,7 @@ export default function PaymentDetailScreen({ navigation, route }) {
       <Text style={{ marginTop: 12, color: '#687178' }}>{formatContributionDate(item.created_at)}</Text>
       <View style={{ marginVertical: 20, gap: 14, padding: 16, borderRadius: 14, backgroundColor: '#F4F8F4' }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}><Text>Cleanup contribution</Text><Text>{formatUsd(item.principal_amount_cents)}</Text></View>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignItems: 'center', justifyContent: 'space-between' }}><FeeExplanationLabel label="Litterbugs fee" /><Text>{formatUsd(item.platform_fee_cents)}</Text></View>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignItems: 'center', justifyContent: 'space-between' }}><FeeExplanationLabel label="Service fee" /><Text>{formatUsd(item.platform_fee_cents)}</Text></View>
         {item.refunded_at ? <Text>Refunded: {formatContributionDate(item.refunded_at)}</Text> : null}
       </View>
       {item.report ? action('View cleanup report', () => navigation.popTo('App', { screen: 'Map', params: { reportId: item.report_id } })) : <Text style={{ color: '#687178', lineHeight: 21 }}>The linked report is no longer available. Your payment record remains here.</Text>}

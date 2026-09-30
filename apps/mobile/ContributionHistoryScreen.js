@@ -53,7 +53,7 @@ export default function ContributionHistoryScreen({ navigation }) {
           </Text>
           <Text style={styles.statusMessage}>{statusMessage(item)}</Text>
           <Text style={styles.date}>{formatContributionDate(item.created_at)}</Text>
-          <View style={styles.breakdown}><FeeExplanationLabel label="Litterbugs fee" textStyle={styles.muted} /><Text style={styles.muted}>{formatUsd(item.platform_fee_cents)}</Text></View>
+          <View style={styles.breakdown}><FeeExplanationLabel label="Service fee" textStyle={styles.muted} /><Text style={styles.muted}>{formatUsd(item.platform_fee_cents)}</Text></View>
           <View style={styles.breakdown}><Text style={styles.total}>{['payment_pending','failed'].includes(item.status) ? 'Payment amount' : item.status === 'refunded' ? 'Original total' : 'Total charged'}</Text><Text style={styles.total}>{formatUsd(item.total_amount_cents)}</Text></View>
           <TouchableOpacity accessibilityRole="button" style={styles.detailsLink} onPress={() => navigation.navigate('PaymentDetail', { contributionId: item.id })}><Text style={styles.status}>View payment details</Text><Ionicons name="chevron-forward" size={16} color="#7A867D" /></TouchableOpacity>
           {item.refunded_at ? <Text style={styles.date}>Refunded {formatContributionDate(item.refunded_at)}</Text> : null}

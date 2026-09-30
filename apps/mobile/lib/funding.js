@@ -18,7 +18,7 @@ export async function loadCleanupFeatureFlags() {
 
 export async function createCleanupContribution({ reportId, principalAmountCents, clientRequestId }) {
   const { data, error } = await supabase.functions.invoke('create-cleanup-contribution', {
-    body: { reportId, principalAmountCents, clientRequestId },
+    body: { reportId, principalAmountCents, clientRequestId, pricingVersion: 2 },
   });
   if (error) throw new Error(await edgeFunctionErrorMessage(data, error, 'Payment could not be started. Please try again.'));
   if (data?.error) throw new Error(data.error);

@@ -14,7 +14,7 @@ export default function TermsPage() {
       eyebrow="LITTERBUGS TERMS"
       title="Terms of use"
       summary="These terms govern Litterbugs accounts, community reports, cleanup funding, cleaner rewards, safety, reviews, disputes, and refunds."
-      effectiveDate="September 23, 2026"
+      effectiveDate="September 30, 2026"
       sections={[
         {
           title: 'Agreement and who may use Litterbugs',
@@ -38,10 +38,10 @@ export default function TermsPage() {
           </>,
         },
         {
-          title: 'Contributions and the 10% Litterbugs fee',
+          title: 'Contributions and the service fee',
           content: <>
-            <p>A logged-in member may add between <strong>$1 and $1,000 per transaction</strong> to an active, eligible cleanup report. The reporter does not have to contribute. Before payment, Litterbugs shows the principal added to the cleaner reward, a separate 10% Litterbugs platform fee, and the total charge. For example, a $20 principal contribution has a $2 platform fee and a $22 total charge.</p>
-            <p>The displayed cleaner reward is the total contribution principal, not the total charged. If an eligible cleanup is approved, the cleaner receives that exact frozen principal. Litterbugs retains the 10% fee and absorbs standard Stripe processing, payout, refund, and chargeback costs. Contributions are not charitable donations and are not represented as tax deductible.</p>
+            <p>A logged-in member may add between <strong>$1 and $1,000 per transaction</strong> to an active, eligible cleanup report. The reporter does not have to contribute. Before payment, Litterbugs shows the principal added to the cleaner reward, one combined service fee of 10% + $0.50 per checkout, and the total charge. For example, a $20 principal contribution has a $2.50 service fee and a $22.50 total charge.</p>
+            <p>The displayed cleaner reward is the total contribution principal, not the total charged. If an eligible cleanup is approved, the cleaner receives that exact frozen principal. Litterbugs retains the service fee and absorbs standard Stripe processing, payout, refund, and chargeback costs. Existing payments and pending payment attempts keep their original fee and total. Selecting “No contribution now” creates no fee. Contributions are not charitable donations and are not represented as tax deductible.</p>
             <p>By confirming a contribution, you authorize Litterbugs and Stripe to charge the selected payment method for the displayed total. A contribution is successful only after the payment is confirmed and reconciled. A pending, failed, canceled, reversed, duplicated, or mismatched payment may be blocked or sent to administrator review.</p>
             <p>A successful contribution remains assigned to the report until paid to an approved cleaner or refunded under the published rules. A contributor cannot cancel, withdraw, or opt out merely because they changed their mind. This does not limit rights that cannot be waived under applicable law or governing payment-network rules.</p>
           </>,
@@ -86,7 +86,7 @@ export default function TermsPage() {
         {
           title: 'Refunds, payment failures, and chargebacks',
           content: <>
-            <p>Litterbugs refunds each active contributor&apos;s complete original charge, including principal and the 10% fee, when the reporter closes an expired report, takes no action during its seven-day decision window, or the contribution remains unused for 23 months. Refunds return to the original payment method and may take additional provider-dependent time to appear.</p>
+            <p>Litterbugs refunds each active contributor&apos;s complete original charge, including principal and the service fee, when the reporter closes an expired report, takes no action during its seven-day decision window, or the contribution remains unused for 23 months. Refunds return to the original payment method and may take additional provider-dependent time to appear.</p>
             <p>Refund, chargeback, or payment inconsistencies may freeze the related pool, cleanup, transfer, or account while Litterbugs reconciles the records. A contributor&apos;s chargeback does not change the published refund rules and may lead to account restrictions if it is abusive or fraudulent.</p>
           </>,
         },
