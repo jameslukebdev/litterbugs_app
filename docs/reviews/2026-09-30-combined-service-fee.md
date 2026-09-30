@@ -95,7 +95,8 @@ local database. No production contribution or real charge was created.
 ## Signed mobile artifacts
 
 Both artifacts are version 2.0.0 / build or version code 13, production profile,
-source `09510ce` (the later commit changes only database privacy handling).
+source `09510ce` (subsequent merged commits change backend handling, rollout SQL,
+and documentation; the mobile/shared source remains identical).
 
 | Platform | EAS build | Artifact |
 | --- | --- | --- |
@@ -145,12 +146,14 @@ been applied to production.
 
 ## Source freshness and test resource limits
 
-A fresh fetch confirmed latest GitHub main is
+At implementation start, a fresh fetch confirmed GitHub main was
 `f480c8e33a3682c5ec081562bdf448e732c98346`. It is an ancestor of signed-build
 source `09510ce5c9a73f4c950f4809752b5ee1e2f2a8ca`; all 300 tracked mobile/shared
 files exactly match the tested working source. Recent notification, photo-upload,
 cleanup, and other main-branch fixes are included. EAS archives exclude generated
-native folders and regenerate native projects. The merged main mobile/shared tree also matches signed source `09510ce` exactly.
+native folders and regenerate native projects. A subsequent fetch verified main
+`059fba38a76ab792d5f27268ecee16c9624b3d3a`; its mobile/shared tree also matches
+signed source `09510ce` exactly.
 
 A fresh full [iOS simulator archive](https://expo.dev/artifacts/eas/jZYjpgiN2cWY4bvsSBg2KgLR_vEYrxm_7jq-Zdv_Clo.tar.gz),
 EAS `04e8d4a6-5c7a-44bf-82bc-d1ae1a28d1a4`, finished from source `4ff5bcb`
@@ -170,13 +173,24 @@ and must not be used as the sandbox build. Its signature verified; package is
 `com.litterbugs.app.qa`, version 2.0.0/code 1, and SHA-256 is
 `0022828ec06100b7873e9cd4144d7663e14e7feaa4994d4488b47d8eec25ade1`.
 
-Replacement QA build `1737e187-dca6-495f-a290-f07de40f42c1` is running remotely
+Replacement QA build `1737e187-dca6-495f-a290-f07de40f42c1` finished remotely
 from merged main `91712a6`, with explicit temporary local-backend literals in the
 Supabase client configuration, the QA package, and cleartext access to the
 emulator's local backend. All temporary source/profile settings were restored
-after upload. Verify its packaged backend address before installation. Its build
-completion, isolation check, and runtime checks are pending. Neither QA build is
-for distribution; the production AAB/code 13 remains the verified release file.
+after upload. The [replacement APK](https://expo.dev/artifacts/eas/ZCl9sY0O_5Bz0HYxciIvUfmDCY93zkjSVoTicd4b6HE.apk)
+passed static verification:
+
+- APK SHA-256: `7b9fc6d972fdc5e4d8d4b1e67c1ab71d7d84eadb2e27a411c6dea8c88ae091c1`.
+- JavaScript bundle SHA-256: `8f235511c6814e9addec84e8fc1bab90cbae45fcca056c2b0fcea74026058f8b`.
+- Package `com.litterbugs.app.qa`, version 2.0.0/code 1; APK signature verifies.
+- Packaged JavaScript contains `http://10.0.2.2:62421`, excludes the production
+  Supabase hostname, and contains the combined-fee and confirmation copy.
+- Android manifest enables cleartext traffic for this local sandbox build.
+
+It has **not been installed or run**. Native runtime/payment checks remain
+pending because local device testing is stopped for memory safety. Neither QA
+build is for distribution; the production AAB/code 13 remains the verified
+release file.
 
 The owner's 16 GB Mac must not run concurrent device-test stacks. Idle emulators,
 web servers, and the dedicated audit VM were stopped; memory pressure was normal
