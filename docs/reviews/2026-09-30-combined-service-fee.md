@@ -28,7 +28,8 @@ change as guaranteeing a profitable cleanup or as changing bank payout timing.
 - Each contribution stores immutable principal, fee, total, and pricing version.
   The quote is reserved under an advisory lock before creating a PaymentIntent.
 - Stripe creation uses the reservation ID as its stable idempotency key. Receipt
-  email is stored with the quote so retry parameters do not change.
+  email is stored only while the intent is unattached so retry parameters do not
+  change, then automatically cleared on attachment or contributor anonymization.
 - Existing PaymentIntents are retrieved, never recreated. A reservation with no
   attached intent older than 23 hours stops for support review, avoiding a new
   charge after Stripe's idempotency retention expires.
@@ -39,7 +40,7 @@ change as guaranteeing a profitable cleanup or as changing bank payout timing.
   fee help, payment history/detail, refund text, Terms and Cleanup Policy agree.
 - No contribution creates no fee. Cleaner reward remains principal only.
 
-## Verified so far
+## Verification
 
 - Migration and service-fee transaction tests pass in the isolated local database
   and in a rollback-only transaction against production.
@@ -58,6 +59,58 @@ change as guaranteeing a profitable cleanup or as changing bank payout timing.
 - Typecheck, web lint/build, mobile source check, and web boundary check passed.
 - Production security advisors show no new findings.
 
+## Stripe sandbox and client evidence
+
+All test charges used Litterbugs sandbox `acct_1U2HaBKUBoEpySr6` and an isolated
+local database. No production contribution or real charge was created.
+
+- Actual PaymentIntents verified totals of $1.60, $1.64, $1.66, $6.06, and
+  $1,100.50 for principals of $1, $1.04, $1.05, $5.05, and $1,000.
+- Legacy intent `pi_3ULSh6KUBoEpySr602MAvBIE` retained its $5.50 total after
+  activation. New legacy requests returned the refresh/update message.
+- Concurrent HTTP requests returned one contribution and one PaymentIntent.
+- Intent `pi_3ULSh7KUBoEpySr618PkIAsh` first declined for insufficient funds,
+  then succeeded for $1.60. Status recovery finalized it without waiting for a
+  webhook; duplicate signed webhook delivery was harmless. Reward was exactly $1.
+- Full refund `re_3ULSh7KUBoEpySr61qHjYKYv` returned all $1.60 and reconciled to
+  `refunded`. Provider cancellation also reconciled correctly.
+- Browser checkout paid $1.60 using Stripe's real test card form
+  (`pi_3ULSg3KUBoEpySr6115Ze15x`). Payments > Check payment status confirmed
+  receipt; payment details showed $1 principal and $0.60 service fee. Narrow
+  390px layout was inspected. $1.05 and $1,000 previews matched server math.
+- iOS Release simulator app used the current JS bundle with a separate QA bundle
+  ID and local test account. Server confirmation showed $5 + $1 = $6. Cancel
+  and retry reused `pi_3ULSkuKUBoEpySr61QJDqTMZ`; native Stripe PaymentSheet
+  succeeded and displayed “$5.00 was added ... total charge was $6.00.”
+- Local browser Google Maps rejected the localhost:3101 referrer; report lists
+  and payments worked. Fixture photos intentionally had no stored image. These
+  were test-environment limitations, not production map/photo regressions.
+- Live Stripe settlement remains Manual payouts. September's inspected fees
+  view showed card/Link processing fees and no Connect/payout fee rows; this
+  does not establish that future payouts are free.
+
+## Signed mobile artifacts
+
+Both artifacts are version 2.0.0 / build or version code 13, production profile,
+source `09510ce` (the later commit changes only database privacy handling).
+
+| Platform | EAS build | Artifact |
+| --- | --- | --- |
+| iOS | `603b8847-b0b9-422b-9d5a-90e30b9d6cce` | [IPA](https://expo.dev/artifacts/eas/nTp9kSn_h28p-V4rXE44u_BP8vmWem42kwml8VIRM3g.ipa) |
+| Android | `4575907f-cbf3-4185-ae92-7f5cd1270244` | [AAB](https://expo.dev/artifacts/eas/0uivsekcC5woK7AuXAEdE0pFyG43voJu-wC4d03wyUc.aab) |
+
+- iOS SHA-256: `798d3ddc656da516fc317cf8fe93aa0fc6c3eac0a667900797890905e72ba882`.
+  Strict deep code-signature verification passed; bundle `com.litterbugs.app`,
+  Luke's team `DB39U76V6Q`, production push, and non-debug signing verified.
+- Android SHA-256: `690bad21c362bf6076c1d147f6a6e137e59201e83eb9d30d90742573a903c5c2`.
+  Bundletool validation and JAR signature verification passed. Jarsigner emits
+  standard self-signed/no-timestamp and ZIP stream-order warnings; validation
+  succeeds. Manifest package is `com.litterbugs.app`, code 13.
+- Both packaged bundles contain the combined-fee copy, server confirmation,
+  and production Supabase hostname, and exclude the local test URL.
+- TestFlight upload is awaiting explicit owner direction under the existing
+  mobile-distribution instruction. No App Review or public store release.
+
 ## Rollback procedure
 
 Do not revert the schema or edit existing contribution amounts. Pause new
@@ -69,7 +122,12 @@ payments keep their full original charge and refund amounts.
 
 ## Deployment state
 
-Compatibility migration and create-cleanup-contribution, check-contribution-status,
-and stripe-webhook are deployed. Version 2 is not yet active. Native release
-artifacts, browser/native validation, sandbox integration, and activation remain
-in progress; this document will be updated with their concrete results.
+Both compatibility migrations and create-cleanup-contribution,
+check-contribution-status, and stripe-webhook are deployed. Production pricing
+is still version 1; no existing contribution was repriced. The tested website
+candidate is `https://litterbugs-hz4v5boe8-grant-9890s-projects.vercel.app`;
+its Terms route returns the new fee and $22.50 example.
+
+Native distribution, website promotion, and final pricing activation remain
+pending. Keep those coordinated: old mobile versions will reject new checkouts
+once version 2 is active. Existing pending payments remain recoverable.
