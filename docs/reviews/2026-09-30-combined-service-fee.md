@@ -92,7 +92,30 @@ local database. No production contribution or real charge was created.
   view showed card/Link processing fees and no Connect/payout fee rows; this
   does not establish that future payouts are free.
 
-## Signed mobile artifacts
+## Current build 14 — single service fee amount
+
+Release source: `a4d9be14b500a0be14f8c244c7d7a9f73da289a4` (PR 97), including
+all current mobile fixes and the owner's final copy correction. Customer-facing
+surfaces show one fee amount; internal pricing math is unchanged.
+
+- iOS EAS `8c10d921-3798-481c-8404-8a150f6102d4`, version 2.0.0/build 14,
+  [signed IPA](https://expo.dev/artifacts/eas/M9ajYy3zB9kurusDQtznN77edzG3LTkY2r7eniIG3OU.ipa).
+  SHA-256 `862dac55eb37658ce4b1c20a2c881297163a6a7d51cb415a22ae9f28ae8b76dc`.
+  Strict/deep signature validation passed. Packaged bundle
+  `5cb397f9b429d5836668753bd22f04fac40b2671bc0dc8cc0dd2b94323c76f44` contains
+  the production backend and plain service-fee label, excludes local backend
+  URLs, and contains no fee formula. Apple accepted TestFlight submission
+  `c6476e08-eff7-4d10-87ab-37f004f04083`. App Store Connect reports build 14
+  `VALID` and `IN_BETA_TESTING` (internal); external state is
+  `READY_FOR_BETA_SUBMISSION`. Uploaded September 30 at 20:54:02 UTC.
+  Build 13 was not submitted. No App Review/public release was submitted.
+- Android EAS `eff3ef5b-dcad-4433-ba70-2d51426f6b3b`, same release source,
+  version 2.0.0/code 14: remote build underway.
+- Updated website deployment `litterbugs-d9rg0h5mz-grant-9890s-projects.vercel.app`
+  is Ready. HTTP checks verify Terms/Cleanup Policy show one fee and omit the
+  internal formula. The custom domain has not been promoted.
+
+## Earlier signed mobile artifacts (build 13, superseded)
 
 Both artifacts are version 2.0.0 / build or version code 13, production profile,
 source `09510ce` (subsequent merged commits change backend handling, rollout SQL,
@@ -132,93 +155,84 @@ payments keep their full original charge and refund amounts.
 ## Deployment state
 
 [PR 92](https://github.com/jameslukebdev/litterbugs_app/pull/92) is merged into
-main `91712a601b17edf392fb64b5bd3ca58d2b95afb5`. All three compatibility/permissions
+main; PRs 96 and 97 add the pricing-lock correction and single-amount fee copy.
+Current release source is `a4d9be14b500a0be14f8c244c7d7a9f73da289a4`. All four compatibility/permissions
 migrations and create-cleanup-contribution,
 check-contribution-status, and stripe-webhook are deployed. Production pricing
 is still version 1; no existing contribution was repriced. The tested website
-candidate is `https://litterbugs-hz4v5boe8-grant-9890s-projects.vercel.app`;
-its Terms route returns the new fee and $22.50 example.
+candidate is `https://litterbugs-d9rg0h5mz-grant-9890s-projects.vercel.app`;
+it contains the single-amount service-fee wording and $22.50 example.
 
-Native distribution, website promotion, and final pricing activation remain
-pending. Keep those coordinated: old mobile versions will reject new checkouts
+Internal TestFlight distribution is complete. Public mobile distribution,
+website promotion, and final pricing activation remain pending. The public
+App Store still serves version 1.0/build 4. Keep those coordinated: old mobile versions will reject new checkouts
 once version 2 is active. Existing pending payments remain recoverable.
 
 Activation is prepared in
 `supabase/rollout/20260930193000_activate_combined_service_fee.sql`; it has not
 been applied to production.
 
-## Source freshness and test resource limits
+## Fresh native verification and resource limits
 
-At implementation start, a fresh fetch confirmed GitHub main was
-`f480c8e33a3682c5ec081562bdf448e732c98346`. It is an ancestor of signed-build
-source `09510ce5c9a73f4c950f4809752b5ee1e2f2a8ca`; all 300 tracked mobile/shared
-files exactly match the tested working source. Recent notification, photo-upload,
-cleanup, and other main-branch fixes are included. EAS archives exclude generated
-native folders and regenerate native projects. A subsequent fetch verified main
-`059fba38a76ab792d5f27268ecee16c9624b3d3a`; its mobile/shared tree also matches
-signed source `09510ce` exactly.
+Grant authorized temporarily stopping the default Colima VM. Both native device
+checks subsequently passed, one device at a time, against an isolated native
+PostgreSQL 17/PostgREST/Deno backend and real Litterbugs Stripe sandbox. The
+backend uses the actual payment handlers and database roles. Authentication is a
+synthetic test-user fixture; this is not a new production login acceptance test.
 
-A fresh full [iOS simulator archive](https://expo.dev/artifacts/eas/jZYjpgiN2cWY4bvsSBg2KgLR_vEYrxm_7jq-Zdv_Clo.tar.gz),
-EAS `04e8d4a6-5c7a-44bf-82bc-d1ae1a28d1a4`, finished from source `4ff5bcb`
-(the mobile code is identical). Archive SHA-256:
-`cce96a0f0e0ddc8584fe613038ca0723deb79f92a9b28d61025260820da55834`.
-The simulator profile packages version 2.0.0/build 1; the **store IPA is build 13**.
-Its unchanged production JS hash is
-`572957fcdf03149b331eb014378eb0a9e16c31423412ebeee422128c6a8ad23f`.
-The additional fresh-simulator runtime check was interrupted by the memory guard
-and is **not passed**. Earlier successful iOS payment tests used the same current
-mobile source with the previously built native shell.
+The native backend exposed a real regression: after restricting config writes,
+`SELECT ... FOR SHARE` needed a privilege service_role no longer held. PR 96
+introduces `private.lock_cleanup_pricing_version()`, a narrowly scoped definer
+function available only to service_role. It preserves the activation lock without
+granting pricing-config writes. Migration
+`20260930202000_fix_cleanup_pricing_lock_permissions.sql` is deployed. Expanded
+SQL tests fail before the fix and pass afterward locally and in a production
+rollback transaction, including NEW service-role reservations for both pricing
+versions and denied config writes/helper calls by ordinary roles.
 
-Android QA build `9c0b7446-555c-443e-b245-5a387d5ad3db` finished, but binary
-inspection found that it retained the production backend despite the requested
-sandbox environment override. It was **not installed or used for payment tests**
-and must not be used as the sandbox build. Its signature verified; package is
-`com.litterbugs.app.qa`, version 2.0.0/code 1, and SHA-256 is
-`0022828ec06100b7873e9cd4144d7663e14e7feaa4994d4488b47d8eec25ade1`.
+- Fresh iOS simulator archive EAS `04e8d4a6-5c7a-44bf-82bc-d1ae1a28d1a4`,
+  current native dependencies, separate QA ID and isolated backend bundle:
+  $1,000 preview = $1,100.50; $1.05 preview/server confirmation = $1.66.
+  Cancel/retry reused contribution `0122dcc5-a948-4f14-8801-c838e250876d` and
+  intent `pi_3ULU58KUBoEpySr60WxDPC0S`. Native PaymentSheet displayed an
+  insufficient-funds decline, then succeeded with a Stripe test card. The receipt
+  showed $1.05 principal and $1.66 total. Status recovery confirmed success and
+  only $1.05 was added to the reward.
+- Fresh Android QA APK EAS `1737e187-dca6-495f-a290-f07de40f42c1`, package
+  `com.litterbugs.app.qa`, version 2.0.0/code 1, installed on API 36. APK SHA-256
+  `7b9fc6d972fdc5e4d8d4b1e67c1ab71d7d84eadb2e27a411c6dea8c88ae091c1`.
+  It uses `http://10.0.2.2:62421`, excludes production backend, and contains all
+  payment fixes. $1 preview/server confirmation = $1.60; cancellation/retry
+  reused contribution `ee57f5e2-dfd2-45a1-be36-9a13bc0a0e22` and intent
+  `pi_3ULUGqKUBoEpySr60lD6wRod`. Native PaymentSheet succeeded and the receipt
+  showed $1 principal/$1.60 total. Server recovery confirmed principal-only
+  funding. The earlier misconfigured QA build `9c0b7446` was never used.
+- Both device payments were fully refunded in the sandbox, including their
+  service fees, and reconciled to `refunded`: iOS refund
+  `re_3ULU58KUBoEpySr60uVBg1cS` ($1.66); Android
+  `re_3ULUGqKUBoEpySr60erWwxrF` ($1.60). Earlier browser/iOS fixture payments
+  were also refunded; the final unpaid wording-check reservation was canceled.
+- Native backend integration additionally passed rounding, maximum, legacy
+  preservation, concurrent duplicates, decline/retry, duplicate webhook,
+  cancellation, principal-only rewards, and full refunds.
 
-Replacement QA build `1737e187-dca6-495f-a290-f07de40f42c1` finished remotely
-from merged main `91712a6`, with explicit temporary local-backend literals in the
-Supabase client configuration, the QA package, and cleartext access to the
-emulator's local backend. All temporary source/profile settings were restored
-after upload. The [replacement APK](https://expo.dev/artifacts/eas/ZCl9sY0O_5Bz0HYxciIvUfmDCY93zkjSVoTicd4b6HE.apk)
-passed static verification:
+After these payment tests, Grant requested that customers see only one fee
+amount, with no internal formula. PR 97 removes the formula from app/web
+previews, server confirmations, Terms and Cleanup Policy, retaining all dollar
+amounts and unchanged calculations. The seven existing checkout component tests
+and 163-module mobile source check pass. The latest merged source was rebundled
+into the fresh iOS native shell and visibly verified: “Cleanup contribution:
+$1.00 / Service fee: $0.60 / Total payment: $1.60.” The preview likewise shows
+only “Service fee.” Bundle SHA-256:
+`867e1940a4cd1e1dc280eb145a9ae02bfe880e9a82d18d70e83085e59d943407`.
+This final copy-only check is distinct from the full native payment tests above.
+Evidence: `~/Library/Caches/litterbugs-payment-audit/evidence/ios-service-fee-single-label.png`.
 
-- APK SHA-256: `7b9fc6d972fdc5e4d8d4b1e67c1ab71d7d84eadb2e27a411c6dea8c88ae091c1`.
-- JavaScript bundle SHA-256: `8f235511c6814e9addec84e8fc1bab90cbae45fcca056c2b0fcea74026058f8b`.
-- Package `com.litterbugs.app.qa`, version 2.0.0/code 1; APK signature verifies.
-- Packaged JavaScript contains `http://10.0.2.2:62421`, excludes the production
-  Supabase hostname, and contains the combined-fee and confirmation copy.
-- Android manifest enables cleartext traffic for this local sandbox build.
-
-It has **not been installed or run**. Native runtime/payment checks remain
-pending because local device testing is stopped for memory safety. Neither QA
-build is for distribution; the production AAB/code 13 remains the verified
-release file.
-
-The owner's 16 GB Mac must not run concurrent device-test stacks. Idle emulators,
-web servers, and the dedicated audit VM were stopped; memory pressure was normal
-and free-memory percentage increased from 39% to 59%. The local Android
-build was limited to one worker and a 1 GB Java heap. The guard detected elevated
-memory pressure and stopped its entire process tree. Subsequent isolated VM and
-simulator startup also triggered the guard, so **all local device testing is now
-stopped**; do not automatically repeat these heavy tests under the same workload.
-The dedicated audit VM and both emulators are off, Litterbugs web/payment test
-servers are stopped, generated native build settings are restored, and temporary
-Stripe key copies are removed. Other projects were left running. Memory pressure
-returned to normal. Additional fresh-device checks remain unfinished until enough
-resources are available; do not report them as passed.
-
-After the owner's request to finish testing and then upload, the backend was
-reduced to 1 GB/one CPU and the Android emulator to 1 GB/one CPU. Both fresh iOS
-and Android startup attempts still triggered the memory guard before app testing.
-The third permissions migration was applied to the isolated database, and the
-sandbox account and local pricing version 2 were reverified. All test processes
-were stopped again, temporary Stripe key copies removed, and memory pressure
-returned to normal.
-
-The unrelated `retirement-launch-local` backend remains running in the default
-3 GB Colima VM. Permission was requested to temporarily stop that VM for device
-testing and restore it afterward; that permission has not been received. Do not
-interpret TestFlight authorization as approval to interrupt the other project.
-The TestFlight pre-upload check still shows build 12 as the newest uploaded build;
-build 13 has not been submitted.
+No concurrent emulators or native builds ran. Android guest RAM was 1 GB with one
+CPU. A guard watched critical pressure, low reclaimable memory, rapid pageouts,
+and a bounded test window. All device-test processes and the native local
+backend are now stopped, temporary Stripe/auth credential copies removed, and
+both emulators and the dedicated audit VM are off. The default 3 GB Colima VM
+was restored with all six retirement-launch-local containers running (five
+health checks healthy; PostgREST has no health check). Docker context is back to
+`colima`; memory pressure was normal after restoration.
