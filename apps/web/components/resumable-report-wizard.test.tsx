@@ -41,15 +41,28 @@ it('keeps the form open and reports an explicit save failure', async () => {
   await screen.findByText('Draft could not be saved. Keep this screen open and try again.');
   expect(props.onClose).not.toHaveBeenCalled();
 });
-it('checks the journal again before discarding and keeps uncertain submissions recoverable', async () => {
+it('keeps the recovery draft open when server cancellation cannot be confirmed', async () => {
+  storage.clear.mockRejectedValue(new Error('Offline'));
   const props=open();await screen.findByLabelText('Report title (optional)');
   storage.journal.mockResolvedValue({ userId: 'owner', reportId: 'report', paths: [] });
   fireEvent.click(screen.getByRole('button', { name: 'Close' }));
   fireEvent.click(screen.getByRole('button', { name: 'Discard draft' }));
-  await waitFor(() => expect(screen.getByText(/Your previous submission needs checking/)).toBeTruthy());
-  expect(storage.clear).not.toHaveBeenCalled();expect(props.onClose).not.toHaveBeenCalled();
+  await screen.findByText('Draft could not be saved. Keep this screen open and try again.');
+  expect(storage.clear).toHaveBeenCalled();expect(props.onClose).not.toHaveBeenCalled();
 });
 it('does not overwrite a draft when loading storage fails', async () => {
   storage.load.mockRejectedValue(new Error('Unavailable'));open();
   await screen.findByText('Draft unavailable');expect(storage.save).not.toHaveBeenCalled();
+});
+
+it('clears a pending publication only after confirmed server cancellation', async () => {
+  storage.load.mockResolvedValue(saved());storage.journal.mockResolvedValue({ userId:'owner',reportId:'report',paths:[] });
+  let confirm!:()=>void;
+  storage.clear.mockImplementation(()=>new Promise<void>(resolve=>{confirm=resolve;}));
+  const props=open();fireEvent.click(await screen.findByRole('button',{name:'Resume draft'}));
+  fireEvent.click(screen.getByRole('button',{name:'Close'}));fireEvent.click(screen.getByRole('button',{name:'Discard draft'}));
+  expect(props.onClose).not.toHaveBeenCalled();
+  confirm();
+  await waitFor(()=>expect(props.onClose).toHaveBeenCalled());
+  expect(props.onRestorePublication).toHaveBeenLastCalledWith(undefined);
 });

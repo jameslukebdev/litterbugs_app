@@ -78,7 +78,7 @@ export async function saveReportDraft(userId: string, draft: SavedReportDraft) {
   await saveLocalReportDraft(userId, draft); cloudDrafts.schedule(userId, 'report');
 }
 export async function loadReportDraft(userId: string) { return (await cloudDrafts.load(userId, 'report')) as SavedReportDraft | undefined; }
-export async function clearReportDraft(userId: string) { await cloudDrafts.discard(userId, 'report'); }
+export async function clearReportDraft(userId: string) { await cloudDrafts.discard(userId, 'report'); await clearReportPublication(userId); }
 
 /** Inspect a remote draft's location without replacing another tab's local editor. */
 export async function reportDraftLocation(userId: string): Promise<Coordinates | undefined> {

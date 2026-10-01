@@ -51,25 +51,21 @@ export function ResumableReportWizard({ userId, submissionProgress, coordinates,
   }, [userId, onRestorePublication, editorLock]);
 
   const saveSnapshot = useCallback((next: ReportWizardSnapshot) => {
-    if(locked) return;
+    if(locked || mode !== 'editing') return;
     snapshot.current = next;
     void saveReportDraft(userId, { ...next, coordinates }).then(() => {
       if (active.current) setMessage('');
     }).catch(() => {
       if (active.current) setMessage('Draft could not be saved on this browser. Keep this screen open and try Save for later again.');
     });
-  }, [userId, coordinates, locked]);
+  }, [userId, coordinates, locked, mode]);
 
   async function closeDraft(discard: boolean) {
     setBusy(true);
     try {
       if (discard) {
-        // Check again because publication may have become uncertain since loading.
-        if (await loadReportPublication(userId)) {
-          setMessage('Your previous submission needs checking. Keep editing and submit again to recover it.');
-          return;
-        }
         await clearReportDraft(userId);
+        onRestorePublication(undefined);
       } else if (snapshot.current) await saveReportDraft(userId, { ...snapshot.current, coordinates });
       onClose();
     } catch { setMessage('Draft could not be saved. Keep this screen open and try again.'); }
@@ -103,10 +99,10 @@ export function ResumableReportWizard({ userId, submissionProgress, coordinates,
   return <>
     <ReportWizard key={generation} draftSync={syncStatus} draftLocked={locked} submissionProgress={submissionProgress} draftSaveMessage={message} initialDraft={{ ...EMPTY_REPORT_DRAFT }} initialState={saved} onStateChange={saveSnapshot} isEditing={false} fundingEnabled={fundingEnabled} coordinates={coordinates} selectingLocation={selectingLocation || mode === 'close'} onChangeLocation={onChangeLocation} onClose={() => setMode('close')} onSubmit={onSubmit} />
     {mode === 'close' && <ModalShell label="Keep your report?" onClose={() => { if (!busy) setMode('editing'); }} closeDisabled={busy}>
-      <div className="wizard-content"><h2>Keep your report?</h2><p>Keep your photos and details to finish later. The sync status shows whether they are also available on your other devices.</p>
+      <div className="wizard-content"><h2>Keep your report?</h2><p>Keep your photos and details to finish later. Discarding cancels any unfinished submission; an already published report stays published.</p>
         <div className="draft-recovery-actions"><button className="primary-button" disabled={busy} onClick={() => void closeDraft(false)}>Save for later</button>
         <button className="secondary-button" disabled={busy} onClick={() => setMode('editing')}>Keep editing</button>
-        <button className="secondary-button" disabled={busy || pending || locked} onClick={() => void closeDraft(true)}>Discard draft</button></div>
+        <button className="secondary-button" disabled={busy} onClick={() => void closeDraft(true)}>Discard draft</button></div>
         {syncStatus}
         {message && <p role="alert">{message}</p>}
       </div>

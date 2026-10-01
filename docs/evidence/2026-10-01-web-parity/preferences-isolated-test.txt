@@ -1,17 +1,17 @@
 SET
-              set_config              
+              set_config
 --------------------------------------
  22222222-2222-4222-8222-222222222222
 (1 row)
 
 DO
-              set_config              
+              set_config
 --------------------------------------
  33333333-3333-4333-8333-333333333333
 (1 row)
 
 DO
- set_config 
+ set_config
 ------------
  true
 (1 row)
@@ -23,8 +23,7 @@ DELETE 1
 DO
 DELETE 1
 DO
-                   ?column?                   
+                   ?column?
 ----------------------------------------------
  PREFERENCES_ISOLATED_SECURITY_AND_RETRY_PASS
 (1 row)
-
