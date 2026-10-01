@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
+import { useDataRefresh } from '@/lib/use-data-refresh';
 import { ModalShell } from '@/components/modal-shell';
 import {
   createPayoutLink,
@@ -11,6 +12,7 @@ import {
 } from '@/lib/funding';
 
 export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
+  const refresh = useDataRefresh();
   const [available, setAvailable] = useState(false);
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<PayoutStatus | null>(null);
@@ -27,6 +29,13 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
       .catch(() => undefined);
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    void loadPayoutStatus().then(value => { if (!cancelled) setStatus(value); }).catch(() => { if (!cancelled) setMessage('Payout status could not be refreshed. Reopen this window to retry.'); });
+    return () => { cancelled = true; };
+  }, [open, refresh]);
 
   if (!available) return null;
 

@@ -1,4 +1,5 @@
 import { beforeEach, expect, it, vi } from 'vitest';
+vi.mock('./cloudDrafts', () => ({ cloudDrafts: { retire: async () => {} } }));
 const m = vi.hoisted(() => ({ storage: new Map(), files: new Set(), fail: false, drain: Promise.resolve() }));
 vi.mock('@react-native-async-storage/async-storage', () => ({ default: {
   setItem: async (k, v) => m.storage.set(k, v),
@@ -15,12 +16,13 @@ vi.mock('expo-file-system/legacy', () => ({
 }));
 vi.mock('./savedReportDraft', () => ({ waitForReportDraftWrites: () => m.drain }));
 vi.mock('./savedCleanupDraft', () => ({ waitForCleanupDraftWrites: async () => {} }));
+vi.mock('./syncedReportPreferences', () => ({ reportPreferenceSync: { retire: async () => {} } }));
 vi.mock('./reportFavorites', () => ({ waitForFavoriteWrites: async () => {} }));
 import { clearDeletedAccountData, retryDeletedAccountDataCleanup } from './deletedAccountData';
 beforeEach(() => { m.storage.clear(); m.files.clear(); m.fail = false; m.drain = Promise.resolve(); });
 
 it('removes all deleted-account drafts and preserves another account and device preferences', async () => {
-  const own = ['litterbugs.report-draft.alice', 'litterbugs.report-submission.alice', 'litterbugs.report-favorites.v1.alice', 'litterbugs.cleanup-draft.alice.one', 'cleanup-review:alice:one:two', 'payment-check:v1:alice:one'];
+  const own = ['litterbugs.cloud-draft.alice.report', 'litterbugs.preferences.v2:alice', 'litterbugs.report-draft.alice', 'litterbugs.report-submission.alice', 'litterbugs.report-favorites.v1.alice', 'litterbugs.cleanup-draft.alice.one', 'cleanup-review:alice:one:two', 'payment-check:v1:alice:one'];
   const other = ['litterbugs.report-draft.alice2', 'litterbugs.cleanup-draft.alice2.one', 'cleanup-review:alice2:one:two', 'litterbugs.welcome-seen.v1'];
   [...own, ...other].forEach(k => m.storage.set(k, 'saved'));
   ['report-drafts/alice/a.jpg', 'cleanup-drafts/alice/one/a.jpg', 'report-drafts/alice2/a.jpg'].forEach(p => m.files.add(`file://documents/${p}`));

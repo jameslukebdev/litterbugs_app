@@ -1,3 +1,4 @@
+import { cloudDrafts } from './cloud-drafts';
 import type { Coordinates, ReportDraft } from '@litterbugs/report-contract';
 
 export type ReportWizardSnapshot = {
@@ -38,8 +39,8 @@ function transaction<T>(store: 'drafts' | 'publications', userId: string, operat
   queue = work;
   return work;
 }
-export const saveReportDraft = (userId: string, draft: SavedReportDraft) => transaction('drafts', userId, store => store.put(draft, userId));
-export async function loadReportDraft(userId: string): Promise<SavedReportDraft | undefined> {
+export const saveLocalReportDraft = (userId: string, draft: SavedReportDraft) => transaction('drafts', userId, store => store.put(draft, userId));
+export async function loadLocalReportDraft(userId: string): Promise<SavedReportDraft | undefined> {
   const value = await transaction<SavedReportDraft | undefined>('drafts', userId, store => store.get(userId));
   if (!value) return undefined;
   const draft = value.draft;
@@ -54,7 +55,7 @@ export async function loadReportDraft(userId: string): Promise<SavedReportDraft 
   }
   return value;
 }
-export const clearReportDraft = (userId: string) => transaction('drafts', userId, store => store.delete(userId));
+export const clearLocalReportDraft = (userId: string) => transaction('drafts', userId, store => store.delete(userId));
 export const saveReportPublication = (journal: ReportPublicationJournal) => transaction('publications', journal.userId, store => store.put(journal, journal.userId));
 export async function loadReportPublication(userId: string): Promise<ReportPublicationJournal | undefined> {
   const value = await transaction<ReportPublicationJournal | undefined>('publications', userId, store => store.get(userId));
@@ -71,3 +72,23 @@ export const clearPublishedReport = (userId: string) => transaction('drafts', us
   tx.objectStore('publications').delete(userId);
   return store.delete(userId);
 }, true);
+
+export async function saveReportDraft(userId: string, draft: SavedReportDraft) {
+  if(cloudDrafts.isRetired(userId)) throw new Error('This account was deleted.');
+  await saveLocalReportDraft(userId, draft); cloudDrafts.schedule(userId, 'report');
+}
+export async function loadReportDraft(userId: string) { return (await cloudDrafts.load(userId, 'report')) as SavedReportDraft | undefined; }
+export async function clearReportDraft(userId: string) { await cloudDrafts.discard(userId, 'report'); }
+
+/** Inspect a remote draft's location without replacing another tab's local editor. */
+export async function reportDraftLocation(userId: string): Promise<Coordinates | undefined> {
+  const local = await loadLocalReportDraft(userId);
+  if(local) return local.coordinates;
+  const { createClient } = await import('./supabase/client');
+  const { accountDraftPayload } = await import('@litterbugs/report-contract');
+  const {data,error} = await createClient().from('customer_drafts').select('payload,expires_at').eq('user_id',userId).eq('draft_key','report').abortSignal(AbortSignal.timeout(8000)).maybeSingle();
+  if(error) throw error;
+  if(!data?.payload || Date.parse(data.expires_at)<=Date.now()) return undefined;
+  const parsed = accountDraftPayload(data.payload,'report');
+  return parsed.kind==='report' ? parsed.coordinates : undefined;
+}

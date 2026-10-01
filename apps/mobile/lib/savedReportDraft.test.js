@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+vi.mock('./cloudDrafts', () => ({ cloudDrafts: {} }));
 const m = vi.hoisted(() => ({
   storage: new Map(),
   files: new Set(['file://source.jpg']),
@@ -28,9 +29,9 @@ vi.mock('expo-file-system/legacy', () => ({
   },
 }));
 import {
-  saveReportDraft,
-  loadReportDraft,
-  clearReportDraft,
+  saveLocalReportDraft as saveReportDraft,
+  loadLocalReportDraft as loadReportDraft,
+  clearLocalReportDraft as clearReportDraft,
 } from './savedReportDraft';
 const draft = {
   coordinate: { latitude: 36, longitude: -81 },

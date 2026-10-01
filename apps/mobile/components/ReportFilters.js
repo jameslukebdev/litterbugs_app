@@ -44,6 +44,7 @@ function filterChoiceColors(key, value, optionIndex) {
 }
 
 const groups = [
+  ['visibility', 'Visibility', [['visible', 'Visible reports'], ['hidden', 'Hidden reports']]],
   ['favoritesOnly', 'Favorites', [[false, 'All reports'], [true, 'Favorites only']]],
   [
     'status',

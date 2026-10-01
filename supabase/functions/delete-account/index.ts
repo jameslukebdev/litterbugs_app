@@ -123,6 +123,12 @@ Deno.serve(async (request: Request) => {
     }
     await removeInChunks(admin.storage, "media_quarantine", quarantinePaths);
 
+    let draftPaths: string[] = [];
+    try {
+      draftPaths = await listStorageTree((path, options) => admin.storage.from('customer_draft_photos').list(path, options), user.id);
+    } catch(error) { if(!isMissingBucketError(error)) throw error; }
+    await removeInChunks(admin.storage, 'customer_draft_photos', draftPaths);
+
     const avatarPath = `${user.id}/avatar`;
     const { error: avatarError } = await admin.storage
       .from("profile_avatars")

@@ -1,10 +1,13 @@
 import type { Report } from '@litterbugs/report-contract';
 
+import { withCompletedRewards } from '@/lib/cleanup-reward';
 import { MapExperience } from '@/components/map-experience';
 import { getGoogleMapsKey, getGoogleMapsMapId } from '@/lib/env';
 import { realUserIdFromClaims } from '@/lib/report-access';
 import { reportDiscoveryWindow } from '@/lib/report-visibility';
 import { createClient } from '@/lib/supabase/server';
+
+export const metadata = { alternates: { canonical: '/' } };
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +33,7 @@ export default async function HomePage() {
 
     userId = realUserIdFromClaims(claimsData?.claims);
     if (reportsResult.error) throw reportsResult.error;
-    reports = reportsResult.data ?? [];
+    reports = await withCompletedRewards(supabase, reportsResult.data ?? []);
   } catch (error) {
     initialError = error instanceof Error ? error.message : 'Reports could not be loaded.';
   }

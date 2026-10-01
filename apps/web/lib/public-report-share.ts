@@ -7,7 +7,7 @@ import {
   isPubliclyShareableReport,
   type PublicReportShareModel,
 } from '@/lib/public-report-share-model';
-import { createClient } from '@/lib/supabase/server';
+import { createPublicClient } from '@/lib/supabase/public';
 import { embedSocialCardPhoto } from '@/lib/social-card-photo';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -38,7 +38,7 @@ function litterTypes(report: Report) {
 export async function loadPublicReportShare(reportId: string): Promise<PublicReportShareModel | null> {
   if (!reportId) return null;
 
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data: reportData, error: reportError } = await supabase
     .from('reports')
     .select('*')
@@ -105,7 +105,7 @@ export async function loadPublicReportShare(reportId: string): Promise<PublicRep
 
   return {
     id: report.id,
-    state: report.cleanup_state as 'available' | 'completed',
+    state: report.cleanup_state === 'completed' ? 'completed' : report.cleanup_state === 'available' ? 'available' : 'in_progress',
     rewardCents: report.cleanup_state === 'available' && report.funding_eligibility === 'eligible' ? Math.max(0, report.funded_amount_cents || 0) : 0,
     title: report.title?.trim() || 'Litter Report',
     generalLocation: 'Exact location shown only in Litterbugs',

@@ -9,7 +9,7 @@ import {
 const now = new Date('2026-08-28T12:00:00.000Z');
 
 describe('public report sharing', () => {
-  it('exposes only available active and completed reports', () => {
+  it('keeps public reports available through their cleanup lifecycle', () => {
     const base = {
       cleanup_state: 'available',
       cancelled_at: null,
@@ -20,7 +20,7 @@ describe('public report sharing', () => {
 
     expect(isPubliclyShareableReport(base, now)).toBe(true);
     expect(isPubliclyShareableReport({ ...base, cleanup_state: 'completed' }, now)).toBe(true);
-    expect(isPubliclyShareableReport({ ...base, cleanup_state: 'claimed' }, now)).toBe(false);
+    expect(isPubliclyShareableReport({ ...base, cleanup_state: 'claimed' }, now)).toBe(true);
     expect(isPubliclyShareableReport({ ...base, expires_at: '2026-08-27T12:00:00.000Z' }, now)).toBe(false);
     expect(isPubliclyShareableReport({ ...base, cleanup_state: 'completed', is_sample: true }, now)).toBe(false);
   });

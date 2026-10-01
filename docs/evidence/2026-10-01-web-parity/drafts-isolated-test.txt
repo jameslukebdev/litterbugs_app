@@ -1,0 +1,34 @@
+BEGIN
+INSERT 0 2
+SET
+              set_config              
+--------------------------------------
+ f888ef8b-d2fd-48bb-bc7f-e86337dcd3f7
+(1 row)
+
+                                         set_config                                         
+--------------------------------------------------------------------------------------------
+ {"sub":"f888ef8b-d2fd-48bb-bc7f-e86337dcd3f7","role":"authenticated","is_anonymous":false}
+(1 row)
+
+DO
+              set_config              
+--------------------------------------
+ 858a97d0-ca99-4423-89a2-babee67afe41
+(1 row)
+
+                                         set_config                                         
+--------------------------------------------------------------------------------------------
+ {"sub":"858a97d0-ca99-4423-89a2-babee67afe41","role":"authenticated","is_anonymous":false}
+(1 row)
+
+DO
+SET
+DO
+RESET
+UPDATE 1
+UPDATE 2
+SET
+DO
+RESET
+ROLLBACK

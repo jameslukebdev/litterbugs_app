@@ -13,12 +13,14 @@ export function ModalShell({
   label,
   className = '',
   closeDisabled = false,
+  embedded = false,
 }: {
   children: ReactNode;
   onClose: () => void;
   label: string;
   className?: string;
   closeDisabled?: boolean;
+  embedded?: boolean;
 }) {
   const clientReady = useSyncExternalStore(subscribe, () => true, () => false);
   const dialogRef = useRef<HTMLElement>(null);
@@ -26,6 +28,7 @@ export function ModalShell({
   const disabledRef = useRef(closeDisabled);
   useEffect(() => { onCloseRef.current = onClose; disabledRef.current = closeDisabled; }, [onClose, closeDisabled]);
   useEffect(() => {
+    if (embedded) return;
     const previousOverflow = document.body.style.overflow;
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     document.body.style.overflow = 'hidden';
@@ -54,8 +57,9 @@ export function ModalShell({
       window.removeEventListener('keydown', handleKey);
       if (previousFocus?.isConnected) previousFocus.focus();
     };
-  }, []);
+  }, [embedded]);
 
+  if (embedded) return <section className={`embedded-panel ${className}`} aria-label={label}>{children}</section>;
   if (!clientReady) return null;
   return createPortal(
     <div className="modal-backdrop" role="presentation" onMouseDown={() => !closeDisabled && onClose()}>

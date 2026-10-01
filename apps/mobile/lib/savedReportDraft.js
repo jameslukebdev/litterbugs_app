@@ -1,3 +1,4 @@
+import { cloudDrafts } from './cloudDrafts';
 import { resumableReportStep } from './reportWizard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
@@ -25,7 +26,7 @@ const enqueue = (work) => {
   queue = result;
   return result;
 };
-export function saveReportDraft(userId, draft) {
+export function saveLocalReportDraft(userId, draft) {
   return enqueue(async () => {
     const directory = `${FileSystem.documentDirectory}report-drafts/${userId}/`;
     await FileSystem.makeDirectoryAsync(directory, { intermediates: true });
@@ -50,7 +51,7 @@ export function saveReportDraft(userId, draft) {
     );
   });
 }
-export function loadReportDraft(userId) {
+export function loadLocalReportDraft(userId) {
   return enqueue(async () => {
     const raw = await AsyncStorage.getItem(key(userId));
     if (!raw) return null;
@@ -70,7 +71,7 @@ export function loadReportDraft(userId) {
     return { ...restored, step: resumableReportStep(restored), workflowVersion: 2 };
   });
 }
-export function clearReportDraft(userId) {
+export function clearLocalReportDraft(userId) {
   return enqueue(async () => {
     await AsyncStorage.removeItem(key(userId));
     await AsyncStorage.removeItem(`litterbugs.report-submission.${userId}`);
@@ -79,4 +80,20 @@ export function clearReportDraft(userId) {
       { idempotent: true },
     );
   });
+}
+
+export async function saveReportDraft(userId, draft) { if(cloudDrafts.isRetired(userId)) throw new Error('This account was deleted.'); await saveLocalReportDraft(userId, draft); cloudDrafts.schedule(userId, 'report'); }
+export const loadReportDraft = userId => cloudDrafts.load(userId, 'report');
+export const clearReportDraft = userId => cloudDrafts.discard(userId, 'report');
+
+export async function reportDraftSummary(userId) {
+  const local = await loadLocalReportDraft(userId);
+  if(local) return {savedAt:local.savedAt};
+  const {supabase} = await import('./supabase');
+  const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),8000);
+  try {
+    const {data,error}=await supabase.from('customer_drafts').select('payload,updated_at,expires_at').eq('user_id',userId).eq('draft_key','report').abortSignal(controller.signal).maybeSingle();
+    if(error)throw error;
+    return data?.payload && Date.parse(data.expires_at)>Date.now() ? {savedAt:Date.parse(data.updated_at)} : null;
+  } finally {clearTimeout(timer);}
 }

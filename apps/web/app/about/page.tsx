@@ -5,6 +5,7 @@ import { PublicSiteHeader } from '@/components/public-site-header';
 import styles from './about-page.module.css';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/about' },
   title: 'How Litterbugs Works',
   description: 'See how neighbors report litter, build cleanup rewards, and verify completed work with Litterbugs.',
 };

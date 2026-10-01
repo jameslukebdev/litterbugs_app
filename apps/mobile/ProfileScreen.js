@@ -1,4 +1,4 @@
-import { loadReportDraft } from './lib/savedReportDraft';
+import { reportDraftSummary as loadReportDraft } from './lib/savedReportDraft';
 import ActionRow from './components/NavigationRow';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import {

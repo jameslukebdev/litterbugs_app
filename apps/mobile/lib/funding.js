@@ -16,9 +16,21 @@ export async function loadCleanupFeatureFlags() {
   return Object.fromEntries((data ?? []).map(({ name, enabled }) => [name, enabled]));
 }
 
-export async function createCleanupContribution({ reportId, principalAmountCents, clientRequestId }) {
+export async function loadContributionQuote(principalAmountCents) {
+  const { data, error } = await supabase.functions.invoke('create-cleanup-contribution', { body: { mode: 'quote', principalAmountCents } });
+  if (error || data?.error) throw new Error(await edgeFunctionErrorMessage(data, error, 'Pricing could not be loaded. Please retry.'));
+  if (![1, 2].includes(data?.pricingVersion) || data?.principalAmountCents !== principalAmountCents
+    || !Number.isInteger(data.platformFeeCents) || data.platformFeeCents < 0
+    || data.totalAmountCents !== principalAmountCents + data.platformFeeCents || data.currency !== 'usd') {
+    throw new Error('Pricing could not be verified. No payment has been made.');
+  }
+  return data;
+}
+
+export async function createCleanupContribution({ reportId, principalAmountCents, clientRequestId, pricingVersion }) {
+  const version = pricingVersion ?? (await loadContributionQuote(principalAmountCents)).pricingVersion;
   const { data, error } = await supabase.functions.invoke('create-cleanup-contribution', {
-    body: { reportId, principalAmountCents, clientRequestId, pricingVersion: 2 },
+    body: { reportId, principalAmountCents, clientRequestId, pricingVersion: version },
   });
   if (error) throw new Error(await edgeFunctionErrorMessage(data, error, 'Payment could not be started. Please try again.'));
   if (data?.error) throw new Error(data.error);

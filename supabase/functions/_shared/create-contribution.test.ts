@@ -13,7 +13,7 @@ function fixture() {
   const deps = {
     authenticatedUser: async () => ({ id: userId, email: 'fixture@example.com', is_anonymous: false }),
     requiredEnv: () => 'pk_test_fixture',
-    serviceClient: () => ({ rpc: async (name: string, args: Record<string, any>) => {
+    serviceClient: () => ({ from: () => ({ select: () => ({ eq: () => ({ single: async () => ({ data: { pricing_version: activeVersion }, error: null }) }) }) }), rpc: async (name: string, args: Record<string, any>) => {
       if (name === 'reserve_cleanup_contribution') {
         if (row) {
           if (row.report_id !== args.target_report_id || row.principal_amount_cents !== args.principal_cents) return { error: new Error('cleanup_contribution_idempotency_mismatch') };
@@ -93,4 +93,27 @@ Deno.test('invalid amounts never call Stripe', async () => {
   for (const principalAmountCents of [0,99,100001,100.5,'100']) {
     const f = fixture(); assert((await f.call({ principalAmountCents })).status === 400); assert(f.createCount === 0);
   }
+});
+
+Deno.test('read-only quotes follow active pricing without reserving or calling Stripe', async () => {
+  const f = fixture();
+  for (const version of [1, 2]) {
+    f.activeVersion = version;
+    const response = await f.call({ mode: 'quote', principalAmountCents: 2000 });
+    const quote = await response.json();
+    assert(response.status === 200);
+    assert(quote.pricingVersion === version);
+    assert(quote.platformFeeCents === (version === 1 ? 200 : 250));
+    assert(quote.totalAmountCents === (version === 1 ? 2200 : 2250));
+    assert(f.createCount === 0 && !f.row);
+  }
+});
+Deno.test('a pricing change between quote and reservation requires a new quote, never a hidden price change', async () => {
+  const f = fixture(); f.activeVersion = 1;
+  const quote = await (await f.call({ mode: 'quote' })).json();
+  f.activeVersion = 2;
+  const rejected = await f.call({ pricingVersion: quote.pricingVersion });
+  assert(rejected.status === 409 && f.createCount === 0);
+  const refreshed = await (await f.call({ mode: 'quote' })).json();
+  assert((await f.call({ pricingVersion: refreshed.pricingVersion })).status === 200);
 });

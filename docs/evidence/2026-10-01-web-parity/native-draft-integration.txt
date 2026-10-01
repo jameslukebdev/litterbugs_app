@@ -1,0 +1,13 @@
+
+> @litterbugs/mobile@1.0.0 test
+> vitest run lib/cloudDrafts.integration.test.js
+
+
+ RUN  v4.1.11 /Users/grantgibson/Desktop/Burrow Base/LItterbugs Partner/apps/mobile
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  15:18:12
+   Duration  252ms (transform 56ms, setup 0ms, import 106ms, tests 72ms, environment 0ms)
+

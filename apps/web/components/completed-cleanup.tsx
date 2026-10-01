@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { ReportAuthor } from '@/components/report-author';
 
-type Impact = { cleanerId: string | null; completedAt: string | null; description: string | null; bags: number | null; weight: number | null; photos: string[] };
+type Impact = { rewardCents: number; cleanerId: string | null; completedAt: string | null; description: string | null; bags: number | null; weight: number | null; photos: string[] };
 export function CompletedCleanup({ reportId }: { reportId: string }) {
   const [impact, setImpact] = useState<Impact | null>(null);
   const [error, setError] = useState(false);
@@ -14,7 +14,7 @@ export function CompletedCleanup({ reportId }: { reportId: string }) {
     async function load() {
       const client = createClient();
       const { data: attempt, error } = await client.from('cleanup_attempts')
-        .select('id,cleaner_id,completed_at,final_submission_id').eq('report_id', reportId).eq('status', 'completed')
+        .select('id,cleaner_id,completed_at,final_submission_id,is_paid,reward_amount_cents').eq('report_id', reportId).eq('status', 'completed')
         .not('final_submission_id', 'is', null).order('completed_at', { ascending: false }).limit(1).maybeSingle();
       if (error || !attempt) throw new Error('Cleanup unavailable');
       const [submission, photos] = await Promise.all([
@@ -26,7 +26,7 @@ export function CompletedCleanup({ reportId }: { reportId: string }) {
         const result = await client.storage.from('cleanup_photos').createSignedUrl(photo.storage_path, 3600);
         return result.data?.signedUrl ?? '';
       }));
-      if (!cancelled) setImpact({ cleanerId: attempt.cleaner_id, completedAt: attempt.completed_at, description: submission.data.description, bags: submission.data.bags_or_items_removed, weight: submission.data.weight_pounds, photos: urls.filter(Boolean) });
+      if (!cancelled) setImpact({ rewardCents: attempt.is_paid ? attempt.reward_amount_cents : 0, cleanerId: attempt.cleaner_id, completedAt: attempt.completed_at, description: submission.data.description, bags: submission.data.bags_or_items_removed, weight: submission.data.weight_pounds, photos: urls.filter(Boolean) });
     }
     void load().catch(() => { if (!cancelled) setError(true); });
     return () => { cancelled = true; };
@@ -36,6 +36,7 @@ export function CompletedCleanup({ reportId }: { reportId: string }) {
     {error ? <><p>Cleanup details unavailable.</p><button className="secondary-button" onClick={() => { setError(false); setRetry(value => value + 1); }}>Try again</button></> : !impact ? <p role="status">Loading cleanup details…</p> : <>
       <ReportAuthor profileId={impact.cleanerId} />
       {impact.completedAt && <p>Cleaned {new Date(impact.completedAt).toLocaleDateString()}</p>}
+      {impact.rewardCents > 0 && <p>Funded cleanup · ${(impact.rewardCents / 100).toFixed(2)} cleanup reward</p>}
       <p>{impact.description}</p>
       <div className="cleanup-impact-facts">{impact.bags !== null && <span><strong>{impact.bags}</strong> bags/items removed</span>}{impact.weight !== null && <span><strong>{impact.weight} lb</strong> removed</span>}</div>
       <h4>After cleanup</h4>

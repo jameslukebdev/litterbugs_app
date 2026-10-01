@@ -4,6 +4,8 @@ import { publishReportDraft, clearReportSubmission } from './lib/reportSubmissio
 import ReportDetailsSheet from './components/ReportDetailsSheet';
 import { canAdvanceReportStep, nextReportStep } from './lib/reportWizard';
 import styles from './styles/MapScreen.styles';
+import { cloudDrafts } from './lib/cloudDrafts';
+import CloudDraftStatus from './components/CloudDraftStatus';
 import ReportWizardSteps from './components/ReportWizardSteps';
 
 import MapReportPreview from './components/MapReportPreview';
@@ -115,34 +117,6 @@ function loadInstalledRNShare() {
 }
 
 const installedRNShare = loadInstalledRNShare();
-
-const MAP_MARKER_TRANSITION_MS = 180;
-
-function MapMarkerTransition({ children, transitionKey }) {
-  const opacity = useRef(new Animated.Value(0.72)).current;
-  const scale = useRef(new Animated.Value(0.94)).current;
-
-  useEffect(() => {
-    opacity.setValue(0.72);
-    scale.setValue(0.94);
-    const transition = Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: MAP_MARKER_TRANSITION_MS,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scale, {
-        toValue: 1,
-        duration: MAP_MARKER_TRANSITION_MS,
-        useNativeDriver: true,
-      }),
-    ]);
-    transition.start();
-    return () => transition.stop();
-  }, [opacity, scale, transitionKey]);
-
-  return <Animated.View style={{ opacity, transform: [{ scale }] }}>{children}</Animated.View>;
-}
 
 const showPermanentAccountRequired = () => {
   Alert.alert(
@@ -293,7 +267,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const currentUserId = permanentUserId(currentUser);
   const [draftSaveError, setDraftSaveError] = useState(false);
   useEffect(() => {
-    if (!formOpen || isEditing || !currentUserId || !draftCoord || isSaving) return undefined;
+    if (!formOpen || isEditing || !currentUserId || !draftCoord || isSaving || cloudDrafts.status(currentUserId, 'report') === 'submitting') return undefined;
     const timer = setTimeout(() => {
       saveReportDraft(currentUserId, { form, coordinate: draftCoord, step: reportStep })
         .then(() => setDraftSaveError(false)).catch(() => setDraftSaveError(true));
@@ -811,9 +785,9 @@ const openReportLocationPicker = async (skipDraft = false) => {
     try {
       const saved = await loadReportDraft(currentUserId);
       if (saved) {
-        Alert.alert('Resume your report?', 'Your details and photos are saved on this device. Your chosen report location is saved with your draft.', [
+        Alert.alert('Resume your report?', 'Resume your saved details, photos, and chosen report location. Account sync status is shown inside the draft.', [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Start new', style: 'destructive', onPress: async () => { await clearReportDraft(currentUserId); openReportLocationPicker(true); } },
+          { text: 'Start new', style: 'destructive', onPress: async () => { try { await clearReportDraft(currentUserId); openReportLocationPicker(true); } catch(error) { Alert.alert('Draft kept', error.message || 'Check your connection and try again.'); } } },
           { text: 'Resume draft', onPress: () => beginReportAtCoordinate(saved.coordinate, saved.form, saved.step, saved.missingPhotoCount) },
         ]);
         return;
@@ -2342,7 +2316,7 @@ const revealBottomReportField = () => {
                   onPress();
                 }}
               >
-                <MapMarkerTransition transitionKey={`cluster-${id}`}>
+                <>
                   <View collapsable={false} style={styles.reportClusterHit}>
                     <View style={styles.reportClusterBubble}>
                       <Text style={styles.reportClusterText}>{properties.point_count}</Text>
@@ -2356,7 +2330,7 @@ const revealBottomReportField = () => {
                       ))}
                     </View>
                   </View>
-                </MapMarkerTransition>
+                </>
               </Marker>
             );
           }}
@@ -2395,7 +2369,7 @@ const revealBottomReportField = () => {
                 chooseMapReport(marker.report);
               }}
             >
-              <MapMarkerTransition transitionKey={`${reportClusteringEnabled ? 'clustered' : 'direct'}:${marker.id}:${tone.key}`}>
+              <>
                 <View collapsable={false} style={styles.reportMarkerHitLg}>
                   <View style={[
                     styles.reportMarkerIconWrapLg,
@@ -2421,7 +2395,7 @@ const revealBottomReportField = () => {
                     ) : null}
                   </View>
                 </View>
-              </MapMarkerTransition>
+              </>
             </Marker>
           );
         })}
@@ -2675,6 +2649,7 @@ const revealBottomReportField = () => {
         )}
 
 
+        {!isEditing && currentUserId ? <CloudDraftStatus userId={currentUserId} draftKey="report" onRestored={saved => { if(saved) beginReportAtCoordinate(saved.coordinate, saved.form, saved.step, saved.missingPhotoCount); }} /> : null}
         {!isEditing && draftSaveError ? <Text style={{ color: '#B42318', paddingHorizontal: 20 }}>Draft could not be saved. Keep this screen open and try Save for later again.</Text> : null}
         {/* Persistent Header */}
         <View style={styles.wizardHeader}>

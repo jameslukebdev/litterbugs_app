@@ -7,6 +7,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { DEFAULT_DISCOVERY_FILTERS, matchesDiscovery, type DiscoveryFilters } from '@/lib/report-discovery';
 import type { BoundaryGeometry } from '@/lib/place-geography';
+import { readBrowserMemory, saveBrowserMemory } from '@/lib/discovery-memory';
+import { reportRewardCents } from '@/lib/cleanup-reward';
 import { getBrowserLocation } from '@/lib/geolocation';
 import { createClient } from '@/lib/supabase/client';
 import { ReportAuthor, publicFields, type PublicProfile } from '@/components/report-author';
@@ -52,7 +54,10 @@ function workflowStatus(report: MappableReport) {
 }
 
 function rewardLabel(report: MappableReport) {
-  if (report.cleanup_state === 'completed') return report.funded_amount_cents > 0 ? `${formatUsd(report.funded_amount_cents)} funded cleanup` : 'Volunteer cleanup completed';
+  if (report.cleanup_state === 'completed') {
+    const reward = reportRewardCents(report);
+    return reward == null ? 'Cleanup completed' : reward > 0 ? `${formatUsd(reward)} funded cleanup` : 'Volunteer cleanup completed';
+  }
   return report.funded_amount_cents > 0
     ? `${formatUsd(report.funded_amount_cents)} reward`
     : 'Volunteer cleanup';
@@ -194,6 +199,20 @@ export function ReportBrowser({
   const [draftFilters, setDraftFilters] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
   const [advanced, setAdvanced] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
   const [sort, setSort] = useState<ReportSort>('newest');
+  const [memoryReady, setMemoryReady] = useState(false);
+  const restoringScrollRef = useRef<number | null>(null);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const memory = readBrowserMemory();
+      if (memory) {
+        setAdvanced(memory.filters); setDraftFilters(memory.filters); setFilter('custom'); setSort(memory.sort);
+        restoringScrollRef.current = memory.scroll;
+        if (memory.sort === 'closest') void getBrowserLocation().then(setLocationOrigin).catch(() => setLocationMessage('Allow location access to sort by distance.'));
+      }
+      setMemoryReady(true);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
   const filters = useMemo(() => [
     ...FILTERS,
     ...(favoriteReportIds.size ? [{ value: 'favorites' as const, label: `Favorites (${favoriteReportIds.size})` }] : []),
@@ -204,7 +223,8 @@ export function ReportBrowser({
     ? 'available'
     : filter;
   const applied = useMemo(() => filter === 'custom' ? advanced : quickFilters(activeFilter), [filter, advanced, activeFilter]);
-  useEffect(() => { onDiscoveryFiltersChange?.(applied); }, [applied, onDiscoveryFiltersChange]);
+  useEffect(() => { if (memoryReady) onDiscoveryFiltersChange?.(applied); }, [applied, onDiscoveryFiltersChange, memoryReady]);
+  useEffect(() => { if (memoryReady) saveBrowserMemory({ filters: applied, sort, scroll: restoringScrollRef.current ?? listRef.current?.scrollTop ?? 0 }); }, [applied, sort, memoryReady]);
   function updateFilter<K extends keyof DiscoveryFilters>(key: K, value: DiscoveryFilters[K]) {
     setDraftFilters(current => ({ ...current, [key]: value }));
   }
@@ -212,7 +232,7 @@ export function ReportBrowser({
     const filtered = reports.filter((report) => matchesDiscovery(report, applied, mapCenter, favoriteReportIds, hiddenReportIds, boundary));
     return filtered.sort((left, right) => {
       if (sort === 'closest' && locationOrigin) return getDistanceMiles(locationOrigin, left) - getDistanceMiles(locationOrigin, right);
-      if (sort === 'reward-high') return right.funded_amount_cents - left.funded_amount_cents;
+      if (sort === 'reward-high') return (reportRewardCents(right) ?? 0) - (reportRewardCents(left) ?? 0);
       if (sort === 'severity') {
         return (SEVERITY_ORDER[(right.severity ?? '').toLowerCase()] ?? 0)
           - (SEVERITY_ORDER[(left.severity ?? '').toLowerCase()] ?? 0);
@@ -244,8 +264,14 @@ export function ReportBrowser({
   }, [onVisibleReportsChange, visibleReports]);
 
   useEffect(() => {
-    if (listRef.current) listRef.current.scrollTop = 0;
+    if (listRef.current && restoringScrollRef.current === null) listRef.current.scrollTop = 0;
   }, [filter, sort]);
+
+  useEffect(() => {
+    if (memoryReady && !loading && reports.length && listRef.current && restoringScrollRef.current !== null) {
+      listRef.current.scrollTop = restoringScrollRef.current; restoringScrollRef.current = null;
+    }
+  }, [memoryReady, loading, reports]);
 
   return (
     <>
@@ -301,18 +327,23 @@ export function ReportBrowser({
           {sort === 'closest' && locationMessage && <p role="status">{locationMessage}</p>}
           <p className="discovery-status" role="status">{discoveryError || (loading ? 'Searching this map area…' : truncated ? 'Showing up to 1,000 matches. Zoom in or narrow your filters to see more.' : '')}</p>
         </header>
-        <div className="report-browser-list" ref={listRef} aria-busy={loading}>
+        <div className="report-browser-list" ref={listRef} onScroll={() => { if (memoryReady) saveBrowserMemory({ filters: applied, sort, scroll: listRef.current?.scrollTop ?? 0 }); }} aria-busy={loading}>
           {visibleReports.length ? visibleReports.map((report, index) => {
             const severity = (report.severity ?? 'Medium').toLowerCase();
             const selected = report.id === selectedReportId;
             const previewed = report.id === previewedReportId;
-            const funded = report.funded_amount_cents > 0;
+            const funded = (reportRewardCents(report) ?? 0) > 0;
             return (
               <article className="report-card-container" key={report.id}>
-              <button
+              <a
+                href={`/reports/${encodeURIComponent(report.id)}`}
                 className={`report-result${selected ? ' report-result-selected' : ''}${previewed ? ' report-result-previewed' : ''}`}
                 key={report.id}
-                onClick={() => onSelect(report)}
+                onClick={event => {
+                  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                  event.preventDefault();
+                  onSelect(report);
+                }}
                 onPointerEnter={() => { preloadReportPhoto(report); onPreviewReport?.(report.id); }}
                 onPointerLeave={() => onPreviewReport?.(null)}
                 onFocus={() => { preloadReportPhoto(report); onPreviewReport?.(report.id); }}
@@ -329,7 +360,7 @@ export function ReportBrowser({
                     <span>{reportTiming(report)}</span>
                   </span>
                 </span>
-              </button>
+              </a>
               {onFavoriteChange && <button className="card-favorite" aria-label={`${favoriteReportIds.has(report.id) ? 'Unfavorite' : 'Favorite'} ${report.title || 'report'}`} aria-pressed={favoriteReportIds.has(report.id)} onClick={() => onFavoriteChange(report.id, !favoriteReportIds.has(report.id))}><Icon name="heart" /></button>}
               {onHiddenChange && <details className="card-options"><summary aria-label={`Options for ${report.title || 'report'}`}>•••</summary><button onClick={() => onHiddenChange(report.id, !hiddenReportIds.has(report.id))}>{hiddenReportIds.has(report.id) ? 'Unhide report' : 'Hide report'}</button></details>}
               {report.user_id && authors[report.user_id] && <ReportAuthor key={report.user_id} profileId={report.user_id} initialProfile={authors[report.user_id]} sourceReportId={report.id} onBlocked={onMemberBlocked} />}

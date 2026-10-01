@@ -26,15 +26,19 @@ import { canManageReport, realUserId } from '@/lib/report-access';
 import { getBrowserLocation, requireReportLocation } from '@/lib/geolocation';
 import { ReportDetail } from '@/components/report-detail';
 import { ResumableReportWizard } from '@/components/resumable-report-wizard';
-import { clearPublishedReport, clearReportPublication, loadReportDraft, loadReportPublication, saveReportPublication, type ReportPublicationJournal } from '@/lib/saved-report-draft';
+import { cloudDrafts } from '@/lib/cloud-drafts';
+import { clearPublishedReport, clearReportPublication, reportDraftLocation, loadReportPublication, saveReportPublication, type ReportPublicationJournal } from '@/lib/saved-report-draft';
 import { ReportWizard } from '@/components/report-wizard';
 import { FundingContributionAction } from '@/components/funding-contribution-action';
 import { loadCleanupFeatureFlags, requestReportPhotoReview } from '@/lib/funding';
-import { readReportPreferences, writeReportPreferences } from '@/lib/report-preferences';
+import { reportPreferenceSync } from '@/lib/synced-report-preferences';
+import { uploadConcurrently } from '@/lib/concurrent-upload';
 import { uploadSecureBrowserMedia } from '@/lib/secure-media-upload';
 import { saveReportEdit } from '@/lib/save-report-edit';
 import { isDiscoverableReport } from '@/lib/report-visibility';
 import { DEFAULT_DISCOVERY_FILTERS, loadDiscoveryReports, type DiscoveryArea, type DiscoveryFilters } from '@/lib/report-discovery';
+import { readDiscoveryMemory, saveDiscoveryMemory } from '@/lib/discovery-memory';
+import { useDataRefresh } from '@/lib/use-data-refresh';
 import { createClient } from '@/lib/supabase/client';
 
 declare global { interface Window { gm_authFailure?: () => void; } }
@@ -69,12 +73,14 @@ export function MapExperience({
   initialError: string;
 }) {
   const router = useRouter();
+  const refreshRevision = useDataRefresh();
+  const [navigationRevision, setNavigationRevision] = useState(0);
   const mapElementRef = useRef<HTMLDivElement>(null);
   const initialMapReports = useRef(initialReports.filter(hasReportCoordinates));
   const mapRef = useRef<google.maps.Map | null>(null);
   const mapPositionChosen = useRef(false);
   const mapAuthFailed = useRef(false);
-  const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
+  const markersRef = useRef(new Map<string, google.maps.marker.AdvancedMarkerElement>());
   const markerGlyphsRef = useRef(new Map<string, HTMLElement>());
   const accountActionRef = useRef<PublicAccountActionHandle>(null);
   const returnToReportList = useRef(false);
@@ -87,8 +93,16 @@ export function MapExperience({
     initialReports.filter(hasReportCoordinates),
   );
   const [userId, setUserId] = useState(initialUserId);
+  const preferenceOwnerRef = useRef(userId ?? 'guest');
+  useEffect(() => { preferenceOwnerRef.current = userId ?? 'guest'; }, [userId]);
   const [mapReady, setMapReady] = useState(false);
   const [searchPlace, setSearchPlace] = useState<SearchPlace | null>(null);
+  const searchPlaceRef = useRef<SearchPlace | null>(null);
+  useEffect(() => {
+    searchPlaceRef.current = searchPlace;
+    const memory = readDiscoveryMemory();
+    if (memory && mapRef.current) saveDiscoveryMemory({ ...memory, place: searchPlace });
+  }, [searchPlace]);
   const [discoveryArea, setDiscoveryArea] = useState<DiscoveryArea | null>(null);
   const [discoveryFilters, setDiscoveryFilters] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
   const [discoveryLoading, setDiscoveryLoading] = useState(false);
@@ -111,8 +125,10 @@ export function MapExperience({
   const [mapPreviewId, setMapPreviewId] = useState<string | null>(null);
   const [reportListOpen, setReportListOpen] = useState(true);
   const [reportMode, setReportMode] = useState(false);
+  const [checkingDraft, setCheckingDraft] = useState(false);
   const [previewedReportId, setPreviewedReportId] = useState<string | null>(null);
   const [toast, setToast] = useState('');
+  const [reportUploadProgress, setReportUploadProgress] = useState('');
   const [fundingEnabled, setFundingEnabled] = useState(false);
   const [reportFunding, setReportFunding] = useState<{ report: Report; amountCents: number } | null>(null);
 
@@ -141,7 +157,21 @@ export function MapExperience({
       setReports(nextReports);
       setDiscoveryTruncated(result.truncated);
       setReportFunding(current => current ? { ...current, report: nextReports.find(({ id }) => id === current.report.id) ?? current.report } : null);
-      setSelectedReport(current => current ? nextReports.find(({ id }) => id === current.id) ?? current : null);
+      const selectedId = selectedReportIdRef.current;
+      if (selectedId) {
+        const { data, error } = await createClient().from('reports').select('*')
+          .eq('id', selectedId).eq('is_published', true).maybeSingle();
+        if (controller.signal.aborted || selectedReportIdRef.current !== selectedId) return;
+        if (error) throw error;
+        if (!data || !isDiscoverableReport(data)) {
+          setSelectedReport(null);
+          setReportListOpen(true);
+          const url = new URL(window.location.href);
+          url.searchParams.delete('report');
+          window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`);
+          setToast('This report is no longer available.');
+        } else setSelectedReport(data);
+      }
     } catch {
       if (!controller.signal.aborted) setDiscoveryError('Reports could not be refreshed. Check your connection and move the map or try another filter.');
     } finally {
@@ -153,7 +183,7 @@ export function MapExperience({
     if (!discoveryArea && !mapError) return;
     const timer = window.setTimeout(() => { void refreshReports(); }, 250);
     return () => { window.clearTimeout(timer); discoveryRequest.current?.abort(); };
-  }, [discoveryArea, mapError, refreshReports]);
+  }, [discoveryArea, mapError, refreshReports, refreshRevision]);
 
   useEffect(() => () => discoveryRequest.current?.abort(), []);
 
@@ -197,36 +227,36 @@ export function MapExperience({
     setReportMode(false);
     setEditingReport(null);
     setEditPhotoUrls([]);
-    const stored = readReportPreferences(nextUserId);
-    setReportPreferences({ favorites: new Set(stored.favorites), hidden: new Set(stored.hidden) });
+    preferenceOwnerRef.current = nextUserId ?? 'guest';
+    setReportPreferences({ favorites: new Set(), hidden: new Set() });
     router.refresh();
   }, [router]);
 
   useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      const stored = readReportPreferences(userId);
-      setReportPreferences({ favorites: new Set(stored.favorites), hidden: new Set(stored.hidden) });
-    }, 0);
-    return () => window.clearTimeout(timeout);
-  }, [userId]);
+    let cancelled = false;
+    const owner = userId ?? 'guest';
+    const show = (value: { preferences: { favorites: string[]; hidden: string[] } }) => {
+      if (!cancelled && preferenceOwnerRef.current === owner) setReportPreferences({ favorites: new Set(value.preferences.favorites), hidden: new Set(value.preferences.hidden) });
+    };
+    void reportPreferenceSync.load(owner).then(show).then(() => reportPreferenceSync.sync(owner)).then(show)
+      .catch(() => { if (!cancelled) setToast('Saved preferences could not be loaded. Please try again.'); });
+    return () => { cancelled = true; };
+  }, [userId, refreshRevision]);
 
-  function updateReportPreference(kind: 'favorites' | 'hidden', reportId: string, enabled: boolean) {
-    setReportPreferences((current) => {
-      const next = {
-        favorites: new Set(current.favorites),
-        hidden: new Set(current.hidden),
-      };
-      if (enabled) next[kind].add(reportId);
-      else next[kind].delete(reportId);
-      writeReportPreferences(userId, {
-        favorites: Array.from(next.favorites),
-        hidden: Array.from(next.hidden),
-      });
-      return next;
-    });
-    setToast(kind === 'favorites'
-      ? enabled ? 'Report added to favorites.' : 'Report removed from favorites.'
-      : enabled ? 'Report hidden. Use the Hidden filter to restore it.' : 'Report restored to search.');
+  async function updateReportPreference(kind: 'favorites' | 'hidden', reportId: string, enabled: boolean) {
+    const owner = userId ?? 'guest';
+    try {
+      const value = await reportPreferenceSync.set(owner, kind, reportId, enabled);
+      if (preferenceOwnerRef.current !== owner) return;
+      setReportPreferences({ favorites: new Set(value.preferences.favorites), hidden: new Set(value.preferences.hidden) });
+      setToast(kind === 'favorites'
+        ? enabled ? 'Report added to favorites.' : 'Report removed from favorites.'
+        : enabled ? 'Report hidden. Use the Hidden filter to restore it.' : 'Report restored to search.');
+      const synced = await reportPreferenceSync.sync(owner);
+      if (preferenceOwnerRef.current !== owner) return;
+      setReportPreferences({ favorites: new Set(synced.preferences.favorites), hidden: new Set(synced.preferences.hidden) });
+      if (synced.offline) setToast('Saved on this device. Changes will sync when you reconnect.');
+    } catch { if (preferenceOwnerRef.current === owner) setToast('Your preference could not be saved. Please try again.'); }
   }
 
   useEffect(() => {
@@ -239,11 +269,20 @@ export function MapExperience({
   }, []);
 
   useEffect(() => {
+    const navigate = () => setNavigationRevision(value => value + 1);
+    window.addEventListener('popstate', navigate);
+    return () => window.removeEventListener('popstate', navigate);
+  }, []);
+
+  useEffect(() => {
     const url = new URL(window.location.href);
     const reportId = url.searchParams.get('report') ?? '';
-    if (!reportId) return;
     let cancelled = false;
+    if (reportId && selectedReportIdRef.current === reportId) return;
     async function openLinkedReport() {
+      await Promise.resolve();
+      if (cancelled) return;
+      if (!reportId) { setSelectedReport(null); return; }
       let report = reports.find(({ id }) => id === reportId);
       if (!report) {
         const { data, error } = await createClient().from('reports').select('*').eq('id', reportId).eq('is_published', true).maybeSingle();
@@ -252,18 +291,15 @@ export function MapExperience({
         if (data && hasReportCoordinates(data) && isDiscoverableReport(data)) report = data;
       } else await Promise.resolve();
       if (cancelled) return;
-      url.searchParams.delete('report');
-      window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
       if (!report) { setToast('This report is no longer available.'); return; }
       mapPositionChosen.current = true;
       setSelectedReport(report);
-      setReportListOpen(false);
       mapRef.current?.panTo({ lat: report.latitude, lng: report.longitude });
       if ((mapRef.current?.getZoom() ?? 0) < 14) mapRef.current?.setZoom(14);
     }
     void openLinkedReport().catch(() => { if (!cancelled) setToast('The shared report could not be loaded. Please try opening its link again.'); });
     return () => { cancelled = true; };
-  }, [reports]);
+  }, [reports, navigationRevision]);
 
   useEffect(() => {
     if (!toast) return;
@@ -290,9 +326,11 @@ export function MapExperience({
           importLibrary('marker'),
         ]);
         if (cancelled || mapAuthFailed.current || !mapElementRef.current) return;
+        const memory = readDiscoveryMemory();
+        if (memory) { mapPositionChosen.current = true; searchPlaceRef.current = memory.place; setSearchPlace(memory.place); }
         const map = new Map(mapElementRef.current, {
-          center: { lat: FALLBACK_MAP_CENTER.latitude, lng: FALLBACK_MAP_CENTER.longitude },
-          zoom: 12,
+          center: { lat: memory?.latitude ?? FALLBACK_MAP_CENTER.latitude, lng: memory?.longitude ?? FALLBACK_MAP_CENTER.longitude },
+          zoom: memory?.zoom ?? 12,
           mapId: googleMapsMapId,
           mapTypeId: 'roadmap',
           disableDefaultUI: true,
@@ -311,11 +349,12 @@ export function MapExperience({
           const center = map.getCenter();
           if (!bounds || !center) return;
           const area = { ...bounds, latitude: center.lat(), longitude: center.lng() };
+          saveDiscoveryMemory({ latitude: area.latitude, longitude: area.longitude, zoom: map.getZoom() ?? 12, place: searchPlaceRef.current });
           setDiscoveryArea(current => current && Object.keys(area).every(key => current[key as keyof DiscoveryArea] === area[key as keyof DiscoveryArea]) ? current : area);
         });
         mapRef.current = map;
         setMapReady(true);
-        void getBrowserLocation().then((location) => {
+        if (!memory) void getBrowserLocation().then((location) => {
           if (!cancelled && !mapAuthFailed.current && !mapPositionChosen.current) {
             map.panTo({ lat: location.latitude, lng: location.longitude });
             map.setZoom(14);
@@ -344,30 +383,55 @@ export function MapExperience({
     const map = mapRef.current;
     const AdvancedMarkerElement = advancedMarkerRef.current;
     if (!mapReady || mapAuthFailed.current || !map || !AdvancedMarkerElement) return;
-    markersRef.current.forEach((marker) => { try { marker.map = null; } catch { /* Google may already detach markers after an authentication failure. */ } });
-    markerGlyphsRef.current.clear();
-    markersRef.current = visibleReports.map((report) => {
-      const markerGlyph = document.createElement('span');
-      markerGlyph.className = `report-map-marker report-map-marker-${report.cleanup_state ?? 'available'}${selectedReportIdRef.current === report.id ? ' report-map-marker-selected' : ''}`;
-      markerGlyph.textContent = markerLabel(report);
-      markerGlyphsRef.current.set(report.id, markerGlyph);
-      const marker = new AdvancedMarkerElement({
-        map,
-        position: { lat: report.latitude, lng: report.longitude },
-        title: report.title || 'Litter Report',
-        gmpClickable: true,
-      });
-      marker.append(markerGlyph);
-      markerGlyph.addEventListener('pointerenter', () => setPreviewedReportId(report.id));
-      markerGlyph.addEventListener('pointerleave', () => {
-        setPreviewedReportId((current) => current === report.id ? null : current);
-      });
-      marker.addEventListener('gmp-click', () => {
-        setPreviewedReportId(null);
-        setMapPreviewId(report.id);
-        if (window.matchMedia('(max-width: 760px)').matches) setReportListOpen(false);
-      });
-      return marker;
+    // Keep native marker elements attached across polling, panning and sorting.
+    // Recreating unchanged pins makes the entire map flash on each result update.
+    const wanted = new Set(visibleReports.map(report => report.id));
+    markersRef.current.forEach((marker, id) => {
+      if (wanted.has(id)) return;
+      marker.map = null;
+      markersRef.current.delete(id);
+      markerGlyphsRef.current.delete(id);
+    });
+    visibleReports.forEach((report) => {
+      let marker = markersRef.current.get(report.id);
+      let markerGlyph = markerGlyphsRef.current.get(report.id);
+      if (!marker || !markerGlyph) {
+        markerGlyph = document.createElement('span');
+        marker = new AdvancedMarkerElement({
+          map,
+          position: { lat: report.latitude, lng: report.longitude },
+          title: report.title || 'Litter Report',
+          gmpClickable: true,
+        });
+        marker.append(markerGlyph);
+        markersRef.current.set(report.id, marker);
+        markerGlyphsRef.current.set(report.id, markerGlyph);
+        markerGlyph.addEventListener('pointerenter', () => setPreviewedReportId(report.id));
+        markerGlyph.addEventListener('pointerleave', () => {
+          setPreviewedReportId((current) => current === report.id ? null : current);
+        });
+        marker.addEventListener('gmp-click', () => {
+          setPreviewedReportId(null);
+          setMapPreviewId(report.id);
+          if (window.matchMedia('(max-width: 760px)').matches) setReportListOpen(false);
+        });
+      }
+      const position = marker.position as google.maps.LatLngLiteral;
+      if (position.lat !== report.latitude || position.lng !== report.longitude) {
+        marker.position = { lat: report.latitude, lng: report.longitude };
+      }
+      const title = report.title || 'Litter Report';
+      if (marker.title !== title) marker.title = title;
+      const label = markerLabel(report);
+      if (markerGlyph.textContent !== label) markerGlyph.textContent = label;
+      // Preserve hover/selection while changing just the report's status class.
+      const statusClass = `report-map-marker-${report.cleanup_state ?? 'available'}`;
+      if (markerGlyph.dataset.statusClass !== statusClass) {
+        if (markerGlyph.dataset.statusClass) markerGlyph.classList.remove(markerGlyph.dataset.statusClass);
+        markerGlyph.classList.add('report-map-marker', statusClass);
+        markerGlyph.dataset.statusClass = statusClass;
+      }
+      markerGlyph.classList.toggle('report-map-marker-selected', selectedReportIdRef.current === report.id);
     });
   }, [mapReady, visibleReports]);
 
@@ -400,7 +464,24 @@ export function MapExperience({
     };
   }, [beginReport, reportMode]);
 
-  function toggleReportMode() {
+  useEffect(() => {
+    if (!userId) return;
+    const url = new URL(window.location.href);
+    const compose = url.searchParams.get('compose');
+    if (!compose) return;
+    let cancelled = false;
+    void reportDraftLocation(userId).then(coordinates => {
+      if (cancelled) return;
+      if (coordinates && compose === 'resume') setDraftCoordinates(coordinates);
+      else { setReportMode(true); setToast('Select the litter location on the map to start your report.'); }
+      url.searchParams.delete('compose');
+      window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`);
+    }).catch(() => { if (!cancelled) setToast('Your saved draft could not be loaded. Try again from your account.'); });
+    return () => { cancelled = true; };
+  }, [userId]);
+
+  async function toggleReportMode() {
+    if(checkingDraft) return;
     if (!userId) {
       accountActionRef.current?.openAuth();
       return;
@@ -410,6 +491,12 @@ export function MapExperience({
       setReportMode(false);
       setToast('');
       return;
+    }
+    if(!reportMode) {
+      setCheckingDraft(true);
+      try { const savedLocation = await reportDraftLocation(userId); if(savedLocation) {setDraftCoordinates(savedLocation);return;} }
+      catch {setToast('Your saved draft could not be checked. Check your connection and try again.');return;}
+      finally {setCheckingDraft(false);}
     }
     setReportMode((current) => !current);
   }
@@ -452,11 +539,11 @@ export function MapExperience({
 
   function openReport(report: MappableReport) {
     returnToReportList.current = reportListOpen;
-    mapPositionChosen.current = true;
+    selectedReportIdRef.current = report.id;
     setSelectedReport(report);
-    setReportListOpen(false);
-    mapRef.current?.panTo({ lat: report.latitude, lng: report.longitude });
-    if ((mapRef.current?.getZoom() ?? 0) < 14) mapRef.current?.setZoom(14);
+    const url = new URL(window.location.href);
+    url.searchParams.set('report', report.id);
+    window.history.pushState({ ...window.history.state, litterbugsReportNavigation: true }, '', `${url.pathname}${url.search}`);
   }
 
   async function openReportById(reportId: string) {
@@ -473,9 +560,14 @@ export function MapExperience({
   function closeReport() {
     setSelectedReport(null);
     setReportListOpen(returnToReportList.current);
-    const url = new URL(window.location.href);
-    url.searchParams.delete('report');
-    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+    selectedReportIdRef.current = null;
+    if (window.history.state?.litterbugsReportNavigation) {
+      window.history.back();
+    } else {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('report');
+      window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+    }
   }
 
   async function refreshFundingReview(reportId: string) {
@@ -493,6 +585,7 @@ export function MapExperience({
     // published report rather than creating a duplicate.
     try {
       if (report.user_id) {
+        await cloudDrafts.discard(report.user_id, 'report');
         await clearPublishedReport(report.user_id);
       }
     } catch { /* Keep the recovery journal when local cleanup is unavailable. */ }
@@ -517,29 +610,20 @@ export function MapExperience({
       return 'Sign in with a real account to save this report.';
     }
 
+    setReportUploadProgress('');
     const uploadReportPhotos = async (reportId: string) => {
       const paths: string[] = [];
-      for (const photo of draft.photos) {
-        try {
-          const path = await uploadSecureBrowserMedia({
-            supabase,
-            userId: authenticatedUserId,
-            kind: 'report',
-            file: photo,
-            subjectId: reportId,
-          });
-          paths.push(path);
-        } catch (error) {
-          if (paths.length) await supabase.storage.from('report_photos').remove(paths);
-          return {
-            paths: [] as string[],
-            error: error instanceof Error
-              ? error.message
-              : 'One or more photos could not be uploaded. Check your connection and try again.',
-          };
-        }
+      let completed = 0;
+      try {
+        const ordered = await uploadConcurrently(draft.photos, async photo => {
+          const path = await uploadSecureBrowserMedia({ supabase, userId: authenticatedUserId, kind: 'report', file: photo, subjectId: reportId });
+          return path;
+        }, path => { paths.push(path); completed += 1; setReportUploadProgress(`Uploading photos ${completed} of ${draft.photos.length}…`); });
+        return { paths: ordered, error: '' };
+      } catch (error) {
+        if (paths.length) await supabase.storage.from('report_photos').remove(paths);
+        return { paths: [] as string[], error: error instanceof Error ? error.message : 'One or more photos could not be uploaded. Please try again.' };
       }
-      return { paths, error: '' };
     };
 
     if (editingReport) {
@@ -610,32 +694,33 @@ export function MapExperience({
     if (!draft.photos.length) return 'Add at least one clear photo before saving this report.';
     try { await requireReportLocation(draftCoordinates); }
     catch (error) { return error instanceof Error ? error.message : 'Your current location is required to post.'; }
-    const reportId = crypto.randomUUID();
+    let reportId: string;
+    try { reportId = await cloudDrafts.begin(authenticatedUserId, 'report'); }
+    catch(error) { return error instanceof Error ? error.message : 'Your draft must sync before submission. Please try again.'; }
     // The media processor verifies that the destination report belongs to the
     // caller, so create the report row before sending its photos through the
-    // quarantine pipeline. Roll the empty row back if any later step fails.
-    const { data: createdReport, error: createError } = await supabase
+    // quarantine pipeline. Keep the reservation so another device can recover it.
+    const { error: createError } = await supabase
       .from('reports')
-      .insert({
+      .upsert({
         ...reportInsertFromDraft(draft, draftCoordinates, authenticatedUserId),
         id: reportId,
         is_published: false,
         photo_paths: [],
-      })
-      .select()
-      .single();
+      }, { onConflict: 'id', ignoreDuplicates: true });
     if (createError) return `Save failed: ${createError.message}`;
 
+    const { data: reserved, error: reserveError } = await supabase.from('reports').select('*').eq('id', reportId).eq('user_id', authenticatedUserId).single();
+    if (reserveError) return 'Your report reservation could not be checked. Retry to recover it.';
+    if (reserved.is_published) { await finishPublication(reserved, startingContributionCents); return null; }
     const uploaded = await uploadReportPhotos(reportId);
     if (uploaded.error) {
-      await supabase.from('reports').delete().eq('id', reportId).eq('user_id', authenticatedUserId);
       return uploaded.error;
     }
     let origin;
     try { origin = await requireReportLocation(draftCoordinates); }
     catch (error) {
       await supabase.storage.from('report_photos').remove(uploaded.paths);
-      await supabase.from('reports').delete().eq('id', reportId).eq('user_id', authenticatedUserId);
       return error instanceof Error ? error.message : 'Your current location is required to post.';
     }
     pendingPublication.current = { userId: authenticatedUserId, reportId, paths: uploaded.paths };
@@ -656,7 +741,6 @@ export function MapExperience({
       return 'We could not confirm publication. Your photos are saved. Try again to check the result without creating a duplicate.';
     }
     if (!hasReportCoordinates(report)) {
-      await supabase.from('reports').delete().eq('id', createdReport.id).eq('user_id', authenticatedUserId);
       await supabase.storage.from('report_photos').remove(uploaded.paths);
       return 'The saved report is missing its map location.';
     }
@@ -712,14 +796,14 @@ export function MapExperience({
       <PublicSiteHeader activePath="/" action={(
         <div className="map-header-actions">
           <button className={`header-report-button${reportMode ? ' header-report-button-active' : ''}`}
-            onClick={() => { setReportListOpen(false); toggleReportMode(); }} aria-pressed={reportMode}
-            aria-label={selectingDraftLocation ? 'Keep location' : reportMode ? 'Cancel reporting' : 'Report litter'}>
-            <span className="header-report-long">{selectingDraftLocation ? 'Keep location' : reportMode ? 'Cancel reporting' : 'Report litter'}</span>
-            <span className="header-report-short">{selectingDraftLocation ? 'Keep' : reportMode ? 'Cancel' : 'Report'}</span>
+            onClick={() => { setReportListOpen(false); void toggleReportMode(); }} aria-pressed={reportMode} disabled={checkingDraft} aria-busy={checkingDraft}
+            aria-label={checkingDraft ? 'Checking saved draft' : selectingDraftLocation ? 'Keep location' : reportMode ? 'Cancel reporting' : 'Report litter'}>
+            <span className="header-report-long">{checkingDraft ? 'Checking…' : selectingDraftLocation ? 'Keep location' : reportMode ? 'Cancel reporting' : 'Report litter'}</span>
+            <span className="header-report-short">{checkingDraft ? 'Checking…' : selectingDraftLocation ? 'Keep' : reportMode ? 'Cancel' : 'Report'}</span>
           </button>
           <PublicAccountAction ref={accountActionRef} initialUserId={initialUserId}
             onAccountDataChanged={refreshReports} onOpenReport={openReportById} onUserChange={handleUserChange}
-            onResumeDraft={() => { if (userId) void loadReportDraft(userId).then(draft => { if (draft) setDraftCoordinates(draft.coordinates); }).catch(() => setToast('Your saved report could not be loaded. Try again.')); }} />
+            onResumeDraft={() => { if (userId) void reportDraftLocation(userId).then(coordinates => { if (coordinates) setDraftCoordinates(coordinates); }).catch(() => setToast('Your saved report could not be loaded. Try again.')); }} />
         </div>
       )} />
       <div className="discovery-toolbar">
@@ -788,9 +872,9 @@ export function MapExperience({
       </footer>
 
       {selectedReport && <ReportDetail key={selectedReport.id} report={selectedReport} userId={userId} isOwner={canManageReport(selectedReport, userId)} favorite={reportPreferences.favorites.has(selectedReport.id)} hidden={reportPreferences.hidden.has(selectedReport.id)} onFavoriteChange={(favorite) => updateReportPreference('favorites', selectedReport.id, favorite)} onHiddenChange={(hidden) => updateReportPreference('hidden', selectedReport.id, hidden)} onNotify={setToast} onRequireSignIn={(intent) => { const url = new URL(window.location.href); url.searchParams.set('report', selectedReport.id); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`); accountActionRef.current?.openAuth(intent); }} onReportChanged={refreshReports} onClose={closeReport} onEdit={() => { void editSelectedReport(); }} onDelete={() => { void deleteSelectedReport(); }} />}
-      {draftCoordinates && userId && <ResumableReportWizard key={userId} userId={userId} onCoordinatesChange={setDraftCoordinates} onRestorePublication={restorePublication} fundingEnabled={fundingEnabled} coordinates={draftCoordinates} selectingLocation={selectingDraftLocation} onChangeLocation={publicationUncertain ? undefined : changeDraftLocation} onClose={() => setDraftCoordinates(null)} onSubmit={saveReport} />}
+      {draftCoordinates && userId && <ResumableReportWizard submissionProgress={reportUploadProgress} key={userId} userId={userId} onCoordinatesChange={setDraftCoordinates} onRestorePublication={restorePublication} fundingEnabled={fundingEnabled} coordinates={draftCoordinates} selectingLocation={selectingDraftLocation} onChangeLocation={publicationUncertain ? undefined : changeDraftLocation} onClose={() => setDraftCoordinates(null)} onSubmit={saveReport} />}
       {reportFunding && <FundingContributionAction key={reportFunding.report.id} report={reportFunding.report} userId={userId} initialAmountCents={reportFunding.amountCents} startOpen onDismiss={() => setReportFunding(null)} onChanged={refreshReports} onRefreshFunding={() => refreshFundingReview(reportFunding.report.id)} />}
-      {editingReport && <ReportWizard initialDraft={editDraft} isEditing existingPhotoCount={editingReport.photo_paths?.length ?? 0} existingPhotoUrls={editPhotoUrls} onClose={() => { setEditingReport(null); setEditPhotoUrls([]); }} onSubmit={saveReport} />}
+      {editingReport && <ReportWizard submissionProgress={reportUploadProgress} initialDraft={editDraft} isEditing existingPhotoCount={editingReport.photo_paths?.length ?? 0} existingPhotoUrls={editPhotoUrls} onClose={() => { setEditingReport(null); setEditPhotoUrls([]); }} onSubmit={saveReport} />}
     </main>
   );
 }

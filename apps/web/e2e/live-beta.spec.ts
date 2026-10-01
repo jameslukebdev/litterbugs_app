@@ -19,12 +19,13 @@ test('public map, report detail, controls, and signed-out boundaries work', asyn
   await page.locator('gmp-advanced-marker').first().evaluate((marker) =>
     (marker as HTMLElement).click(),
   );
+  await page.locator('.map-report-preview-content').click();
   const reportDetail = page.locator('.report-detail');
   await expect(reportDetail).toBeVisible();
   const reportPhoto = reportDetail.locator('img.report-photo').first();
   await expect(reportPhoto).toHaveAttribute('src', /\/api\/report-photo\?path=/);
   await expect.poll(() => reportPhoto.evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
-  await reportDetail.getByRole('button', { name: 'Back to search' }).click();
+  await reportDetail.getByRole('button', { name: 'Back', exact: true }).click();
 
   const mapType = page.getByRole('button', { name: /Change map type/ });
   await mapType.click();
@@ -34,7 +35,10 @@ test('public map, report detail, controls, and signed-out boundaries work', asyn
   const dialog = page.getByRole('dialog', { name: 'Sign in to Litterbugs' });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('button', { name: /Continue with Google/i })).toBeVisible();
-  await expect(dialog.getByRole('button', { name: /Continue with Facebook/i })).toBeVisible();
+  if (process.env.NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED === 'true') {
+    await expect(dialog.getByRole('button', { name: /Continue with Facebook/i })).toBeVisible();
+  }
+  await dialog.getByRole('button', { name: /Continue with Email/i }).click();
   await expect(dialog.getByLabel('Email address')).toBeVisible();
   await expect(dialog.getByRole('button', { name: /Apple/i })).toHaveCount(0);
   await expect(dialog.getByRole('button', { name: /Guest/i })).toHaveCount(0);

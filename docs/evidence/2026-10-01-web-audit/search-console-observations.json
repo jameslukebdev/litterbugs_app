@@ -1,0 +1,62 @@
+{
+  "observedDate": "2026-10-01",
+  "timezone": "America/New_York",
+  "source": "Google Search Console browser UI",
+  "property": "sc-domain:litterbugs.app",
+  "pageIndexingLastUpdated": "2026-09-20",
+  "indexedCount": 14,
+  "excludedCount": 7,
+  "excluded": [
+    {
+      "reason": "Not found (404)",
+      "urls": [
+        "https://litterbugs.app/account/reports",
+        "https://litterbugs.app/manifest.webmanifest",
+        "https://litterbugs.app/&",
+        "https://litterbugs.app/$"
+      ]
+    },
+    {
+      "reason": "Page with redirect",
+      "urls": [
+        "http://litterbugs.app/",
+        "http://www.litterbugs.app/",
+        "https://www.litterbugs.app/"
+      ]
+    }
+  ],
+  "indexedExamples": [
+    "/",
+    "/cleanup-policy",
+    "/about",
+    "/cleaner",
+    "/report",
+    "/support",
+    "/account/privacy",
+    "/safety",
+    "/terms",
+    "/privacy",
+    "/account/legal",
+    "/sign-in",
+    "/account/connect",
+    "/how-it-works"
+  ],
+  "submittedSitemapCount": 0,
+  "urlInspection": {
+    "url": "https://litterbugs.app/reports/ba227d19-b46d-46fa-a02c-7d1f4c5047c3",
+    "indexVerdict": "URL is not on Google",
+    "reason": "URL is unknown to Google",
+    "referringSitemaps": "None detected",
+    "referringPage": "None detected",
+    "lastCrawl": "N/A",
+    "liveTestTime": "2026-10-01 13:32 America/New_York",
+    "liveTestVerdict": "URL is available to Google",
+    "liveAvailability": "Page can be indexed",
+    "indexingRequested": false
+  },
+  "limits": [
+    "Page Indexing inventory is dated September 20, not a real-time snapshot.",
+    "One current public report was inspected; this does not prove the index status of every report.",
+    "Live test confirms eligibility, not indexing or future ranking."
+  ]
+}

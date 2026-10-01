@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+vi.mock('./cloudDrafts', () => ({ cloudDrafts: {} }));
 const m = vi.hoisted(() => ({
   storage: new Map(),
   files: new Set(['file://source.jpg']),
@@ -29,9 +30,9 @@ vi.mock('expo-file-system/legacy', () => ({
   },
 }));
 import {
-  saveCleanupDraft,
-  loadCleanupDraft,
-  clearCleanupDraft,
+  saveLocalCleanupDraft as saveCleanupDraft,
+  loadLocalCleanupDraft as loadCleanupDraft,
+  clearLocalCleanupDraft as clearCleanupDraft,
 } from './savedCleanupDraft';
 const draft = {
   description: 'Removed bottles', photos: [{ uri: 'file://source.jpg', mimeType: 'image/jpeg' }], submissionId: 'stable-id',

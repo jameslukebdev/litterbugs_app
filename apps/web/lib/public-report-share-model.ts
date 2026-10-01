@@ -1,6 +1,6 @@
 import type { Report } from '@litterbugs/report-contract';
 
-export type PublicReportShareState = 'available' | 'completed';
+export type PublicReportShareState = 'available' | 'in_progress' | 'completed';
 
 export type PublicReportShareModel = {
   id: string;
@@ -22,9 +22,10 @@ export type PublicReportShareModel = {
   canonicalUrl: string;
 };
 
-export function isPubliclyShareableReport(report: Pick<Report, 'cleanup_state' | 'cancelled_at' | 'expired_at' | 'expires_at' | 'is_sample'>, now = new Date()) {
-  if (report.is_sample || report.cancelled_at || report.expired_at) return false;
+export function isPubliclyShareableReport(report: Pick<Report, 'cleanup_state' | 'cancelled_at' | 'expired_at' | 'expires_at' | 'is_sample'> & { is_published?: boolean }, now = new Date()) {
+  if (report.is_published === false || report.is_sample || report.cancelled_at || report.expired_at) return false;
   if (report.cleanup_state === 'completed') return true;
+  if (['claimed', 'completion_submitted', 'changes_requested'].includes(report.cleanup_state)) return true;
   if (report.cleanup_state !== 'available') return false;
   if (!report.expires_at) return true;
 
@@ -33,6 +34,9 @@ export function isPubliclyShareableReport(report: Pick<Report, 'cleanup_state' |
 }
 
 export function publicReportShareDescription(report: PublicReportShareModel) {
+  if (report.state === 'in_progress') {
+    return `${report.title} has a cleanup in progress. Follow its current status on Litterbugs.`;
+  }
   if (report.state === 'completed') {
     const cleaner = report.cleanerName ? ` by ${report.cleanerName}` : '';
     return `${report.title} was cleaned${cleaner}. See the before-and-after community impact story on Litterbugs.`;

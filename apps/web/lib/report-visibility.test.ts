@@ -6,7 +6,10 @@ describe('report discovery visibility', () => {
   it('keeps completed history after its old expiration, but excludes unfinished expired work', () => {
     expect(isDiscoverableReport({ ...report, expires_at: '2026-01-01' }, now)).toBe(false);
     expect(isDiscoverableReport({ ...report, cleanup_state: 'completed', expires_at: '2026-01-01' }, now)).toBe(true);
-    expect(reportDiscoveryWindow(now)).toBe('cleanup_state.eq.completed,expires_at.gt.2026-09-23T00:00:00.000Z');
+    expect(reportDiscoveryWindow(now)).toBe('cleanup_state.in.(completed,claimed,completion_submitted,changes_requested),expires_at.gt.2026-09-23T00:00:00.000Z');
+  });
+  it.each(['claimed','completion_submitted','changes_requested'])('keeps active cleanup %s reachable after the old discovery deadline', cleanup_state => {
+    expect(isDiscoverableReport({...report,cleanup_state,expires_at:'2026-01-01'},now)).toBe(true);
   });
   it.each([{ is_published: false }, { is_sample: true }, { cancelled_at: '2026-01-01' }, { expired_at: '2026-01-01' }])('keeps excluded reports private even if completed: %j', overrides => {
     expect(isDiscoverableReport({ ...report, cleanup_state: 'completed', ...overrides }, now)).toBe(false);

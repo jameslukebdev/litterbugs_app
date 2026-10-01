@@ -12,6 +12,7 @@ import {
 } from "./funded-cleanup.ts";
 
 type RequestBody = {
+  mode?: unknown;
   reportId?: unknown;
   principalAmountCents?: unknown;
   clientRequestId?: unknown;
@@ -41,6 +42,22 @@ export async function createContributionResponse(request: Request, dependencies 
   const reportId = body.reportId;
   const clientRequestId = body.clientRequestId;
   const principalAmountCents = body.principalAmountCents;
+  if (body.mode === 'quote') {
+    if (!Number.isInteger(principalAmountCents)
+      || Number(principalAmountCents) < MIN_CLEANUP_CONTRIBUTION_CENTS
+      || Number(principalAmountCents) > MAX_CLEANUP_CONTRIBUTION_CENTS) {
+      return jsonResponse({ error: 'Enter an amount from $1 to $1,000' }, 400);
+    }
+    const { data, error } = await admin.from('cleanup_pricing_config').select('pricing_version').eq('id', true).single();
+    if (error || !data || ![1, 2].includes(data.pricing_version)) {
+      return jsonResponse({ error: 'Pricing is temporarily unavailable. No payment has been made.' }, 503);
+    }
+    const principal = Number(principalAmountCents);
+    const fee = Math.floor((principal + 5) / 10) + (data.pricing_version === 2 ? 50 : 0);
+    // Read-only quote. Reservation rechecks this version under its pricing lock.
+    return jsonResponse({ principalAmountCents: principal, platformFeeCents: fee,
+      totalAmountCents: principal + fee, pricingVersion: data.pricing_version, currency: 'usd' });
+  }
   if (
     !isUuid(reportId)
     || !isUuid(clientRequestId)

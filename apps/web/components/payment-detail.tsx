@@ -1,7 +1,8 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Database } from '@litterbugs/report-contract';
 import { createClient } from '@/lib/supabase/client';
+import { useDataRefresh } from '@/lib/use-data-refresh';
 import { formatUsd } from '@/lib/funding';
 
 type Contribution = Database['public']['Tables']['cleanup_contributions']['Row'];
@@ -13,6 +14,8 @@ const messages: Record<string, string> = {
 };
 export function PaymentDetail({ contributionId, onOpenReport }: { contributionId: string; onOpenReport: (id: string) => void }) {
   const [item, setItem] = useState<Contribution | null>(null);
+  const refresh = useDataRefresh(item?.status === 'payment_pending' ? 10000 : 30000);
+  const lastReconcileRef = useRef(0);
   const [message, setMessage] = useState('');
   const [retry, setRetry] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -21,14 +24,20 @@ export function PaymentDetail({ contributionId, onOpenReport }: { contributionId
     async function load() {
       const client = createClient();
       const { data: auth, error: authError } = await client.auth.getUser();
+      if (cancelled) return;
       if (authError || !auth.user) throw new Error('Sign in to view your payment details.');
+      if (item?.id === contributionId && item.status === 'payment_pending' && Date.now() - lastReconcileRef.current >= 10000) {
+        lastReconcileRef.current = Date.now();
+        // A provider outage must not hide the last server-confirmed receipt.
+        await client.functions.invoke('check-contribution-status', { body: { contributionId } }).catch(() => undefined);
+      }
       const { data, error } = await client.from('cleanup_contributions').select('*').eq('id', contributionId).eq('contributor_id', auth.user.id).maybeSingle();
       if (error || !data) throw new Error('Payment details could not be loaded.');
       if (!cancelled) { setItem(data); setMessage(''); }
     }
     void load().catch(error => { if (!cancelled) setMessage(error.message); });
     return () => { cancelled = true; };
-  }, [contributionId, retry]);
+  }, [contributionId, retry, refresh, item?.id, item?.status]);
   async function check() {
     if (busy) return;
     setBusy(true);

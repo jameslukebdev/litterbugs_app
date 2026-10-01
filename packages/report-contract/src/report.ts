@@ -53,7 +53,7 @@ export const SEVERITY_LEVELS = ['Low', 'Medium', 'High'] as const;
 
 export type Severity = (typeof SEVERITY_LEVELS)[number];
 export type Coordinates = { latitude: number; longitude: number };
-export type MappableReport = Report & { latitude: number; longitude: number };
+export type MappableReport = Report & { latitude: number; longitude: number; completedRewardCents?: number | null };
 
 export function hasReportCoordinates(report: Report): report is MappableReport {
   return typeof report.latitude === 'number' && typeof report.longitude === 'number';

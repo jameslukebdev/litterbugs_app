@@ -11,6 +11,7 @@ import {
 import styles from './cleanup-safety.module.css';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/cleanup-safety' },
   title: 'Cleanup Safety & Waiver | Litterbugs',
   description: 'The safety rules, acknowledgment, assumption of risk, and release shown before a Litterbugs cleanup claim.',
 };

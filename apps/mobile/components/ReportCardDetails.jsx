@@ -36,11 +36,11 @@ export default function ReportCardDetails({ report, distance, onPress, selected 
   const presentation = reportPresentation(report);
   const completed = report?.cleanup_state === 'completed';
   const reporter = report.reporter?.display_name?.trim() || (report.reporter?.username ? `@${report.reporter.username}` : 'Reporter unavailable');
-  const fundedAmount = Math.max(0, Number(report.funded_amount_cents) || 0);
-  const funding = fundedAmount < 1
+  const fundedAmount = Math.max(0, Number(completed ? report.completedRewardCents : report.funded_amount_cents) || 0);
+  const funding = completed && report.completedRewardCents == null ? 'Cleanup complete' : fundedAmount < 1
     ? 'Volunteer'
     : completed
-      ? `Cleanup fund total ${new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(fundedAmount / 100)}`
+      ? `Funded cleanup ${new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(fundedAmount / 100)}`
       : presentation.funding;
 
   const relativeTime = getRelativeTime(report?.created_at);
