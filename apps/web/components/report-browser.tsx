@@ -211,6 +211,7 @@ export function ReportBrowser({
     return () => clearTimeout(timer);
   }, [filtersRequest]);
   const listRef = useRef<HTMLDivElement>(null);
+  const filterStripRef = useRef<HTMLDivElement>(null);
   const [filter, setFilter] = useState<ReportFilter>('all');
   const [draftFilters, setDraftFilters] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
   const [advanced, setAdvanced] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
@@ -253,6 +254,7 @@ export function ReportBrowser({
     : filter;
   const applied = useMemo(() => filter === 'custom' ? advanced : quickFilters(activeFilter), [filter, advanced, activeFilter]);
   const selectedQuickFilter = filters.find(item => (Object.keys(DEFAULT_DISCOVERY_FILTERS) as (keyof DiscoveryFilters)[]).every(key => quickFilters(item.value)[key] === applied[key]))?.value;
+  useEffect(() => { if (filterStripRef.current) filterStripRef.current.scrollLeft = 0; }, [selectedQuickFilter]);
   useEffect(() => { if (memoryReady) onDiscoveryFiltersChange?.(applied); }, [applied, onDiscoveryFiltersChange, memoryReady]);
   useEffect(() => { if (memoryReady) { const memory = { filters: applied, sort, scroll: restoringScrollRef.current ?? listRef.current?.scrollTop ?? 0, displayLimit }; saveBrowserMemory(memory); window.history.replaceState(window.history.state, '', browserUrl(new URL(window.location.href), memory)); } }, [applied, sort, memoryReady, displayLimit]);
   function updateFilter<K extends keyof DiscoveryFilters>(key: K, value: DiscoveryFilters[K]) {
@@ -330,7 +332,7 @@ export function ReportBrowser({
             </label>
             <button className="icon-button report-browser-close" onClick={onToggle} aria-label="Close report list"><Icon name="close" /></button>
           </div>
-          <div className="report-browser-filters" aria-label="Filter cleanup opportunities">
+          <div ref={filterStripRef} className="report-browser-filters" aria-label="Filter cleanup opportunities">
             {!selectedQuickFilter && <button aria-pressed="true" onClick={() => { setDraftFilters(applied); setFiltersOpen(true); }}>Custom filters</button>}
             {[...filters].sort((a, b) => Number(b.value === selectedQuickFilter) - Number(a.value === selectedQuickFilter)).map(({ value, label }) => (
               <button

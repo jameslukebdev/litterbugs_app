@@ -50,7 +50,7 @@ vi.mock('@/components/report-browser', () => ({ ReportBrowser: ({ reports, onVis
 vi.mock('@/components/place-search', () => ({ PlaceSearch: ({onSelect}: {onSelect: (place: unknown) => void}) => <button onClick={() => onSelect({id:'chosen',label:'Chosen area',latitude:1,longitude:2,bounds:{north:2,south:0,west:1,east:3}})}>Choose map area</button> }));
 vi.mock('@/lib/synced-report-preferences', () => ({ reportPreferenceSync: { load: async () => ({ preferences: { favorites: [], hidden: [] } }), sync: async () => ({ preferences: { favorites: [], hidden: [] }, offline: false }) } }));
 vi.mock('@/lib/report-discovery', async (importOriginal) => ({ ...await importOriginal<typeof import('@/lib/report-discovery')>(), loadDiscoveryReports: (...args: unknown[]) => state.discovery(...args) }));
-vi.mock('@/components/report-detail', () => ({ ReportDetail: ({report}: {report: {title: string}}) => <output aria-label="Linked report">{report.title}</output> }));
+vi.mock('@/components/report-detail', () => ({ ReportDetail: ({report, onClose}: {report: {title: string}; onClose: () => void}) => <><output aria-label="Linked report">{report.title}</output><button onClick={onClose}>Back to discovery</button></> }));
 vi.mock('@/components/resumable-report-wizard', () => ({ ResumableReportWizard: ({ onSubmit, onChangeLocation, selectingLocation, coordinates }: { onSubmit: (draft: ReportDraft, amount: number | null) => Promise<unknown>; onChangeLocation?: () => void; selectingLocation: boolean; coordinates: { latitude: number } }) => {
   const draft = { ...EMPTY_REPORT_DRAFT, photos: [new File(['photo'], 'photo.jpg', { type: 'image/jpeg' })], selectedTypes: ['Bottles'], severity: 'Low' as const };
   if (selectingLocation) return null;
@@ -112,6 +112,16 @@ async function choosePin(latitude = 0.5, valid = true) {
 }
 
 describe('map publication and funding handoff', () => {
+  it('returns a directly opened report to the default report list', async () => {
+    state.published = true;
+    window.history.replaceState({}, '', '/?report=test-report');
+    render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+    await screen.findByLabelText('Linked report');
+    fireEvent.click(screen.getByRole('button', { name: 'Back to discovery' }));
+    expect(screen.getByRole('button', { name: 'Reports', exact: true }).getAttribute('aria-pressed')).toBe('true');
+    expect(new URL(window.location.href).searchParams.has('report')).toBe(false);
+  });
+
   it('recovers a published report after a full map remount without another upload or insert', async () => {
     state.lostResponse = true;
     await choosePin();

@@ -91,7 +91,7 @@ export function MapExperience({
   const markersRef = useRef(new Map<string, google.maps.marker.AdvancedMarkerElement>());
   const markerGlyphsRef = useRef(new Map<string, HTMLElement>());
   const accountActionRef = useRef<PublicAccountActionHandle>(null);
-  const returnToReportList = useRef(false);
+  const returnToReportList = useRef(true);
   const selectedReportIdRef = useRef<string | null>(null);
   const advancedMarkerRef = useRef<typeof google.maps.marker.AdvancedMarkerElement | null>(null);
   const mapClickRef = useRef<(coordinates: Coordinates) => void>(() => undefined);
