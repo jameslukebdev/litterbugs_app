@@ -289,7 +289,7 @@ export function MapExperience({
 
   useEffect(() => {
     const navigate = () => {
-      if (window.location.pathname !== '/report') { locationCheck.current++; setCheckingLocation(false); setDraftCoordinates(null); setReportMode(false); setLocationError(''); setSelectingDraftLocation(false); }
+      if (window.location.pathname !== '/report') { locationCheck.current++; reportEntry.current++; setCheckingDraft(false); setCheckingLocation(false); setDraftCoordinates(null); setReportMode(false); setLocationError(''); setSelectingDraftLocation(false); }
       setNavigationRevision(value => value + 1);
     };
     window.addEventListener('popstate', navigate);
@@ -501,28 +501,29 @@ export function MapExperience({
     };
   }, [reportMode, checkingLocation]);
 
-  const enterReportTask = useCallback(async (resume = true) => {
+  const enterReportTask = useCallback(async (resume = true, signal?: AbortSignal) => {
     if (!userId) return;
     const entry = ++reportEntry.current;
     setCheckingDraft(true); setLocationError(''); setReportListOpen(false);
     setSelectedReport(null); selectedReportIdRef.current = null;
     try {
       const coordinates = await reportDraftLocation(userId);
-      if (entry !== reportEntry.current) return;
+      if (signal?.aborted || entry !== reportEntry.current) return;
       if (coordinates && resume) { setReportMode(false); setDraftCoordinates(coordinates); }
       else setReportMode(true);
-    } catch { if (entry === reportEntry.current) setToast('Your saved draft could not be checked. Check your connection and try again.'); }
-    finally { if (entry === reportEntry.current) setCheckingDraft(false); }
+    } catch { if (!signal?.aborted && entry === reportEntry.current) setToast('Your saved draft could not be checked. Check your connection and try again.'); }
+    finally { if (!signal?.aborted && entry === reportEntry.current) setCheckingDraft(false); }
   }, [userId]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
     const compose = url.searchParams.get('compose') ?? (url.pathname === '/report' ? 'resume' : null);
     if (!userId || !compose) return;
-    void enterReportTask(compose === 'resume');
+    const controller = new AbortController();
+    queueMicrotask(() => { if (!controller.signal.aborted) void enterReportTask(compose === 'resume', controller.signal); });
     url.searchParams.delete('compose');
     window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`);
-    return () => { reportEntry.current++; };
+    return () => controller.abort();
   }, [userId, navigationRevision, enterReportTask]);
 
   function closeReportTask() {
