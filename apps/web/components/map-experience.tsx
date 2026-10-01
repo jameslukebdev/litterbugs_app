@@ -36,8 +36,9 @@ import { uploadConcurrently } from '@/lib/concurrent-upload';
 import { uploadSecureBrowserMedia } from '@/lib/secure-media-upload';
 import { saveReportEdit } from '@/lib/save-report-edit';
 import { isDiscoverableReport } from '@/lib/report-visibility';
+import { resolvePlaceId } from '@/lib/place-search';
 import { DEFAULT_DISCOVERY_FILTERS, loadDiscoveryReports, type DiscoveryArea, type DiscoveryFilters } from '@/lib/report-discovery';
-import { readDiscoveryMemory, saveDiscoveryMemory } from '@/lib/discovery-memory';
+import { readDiscoveryMemory, saveDiscoveryMemory, readMapUrl, mapUrl } from '@/lib/discovery-memory';
 import { useDataRefresh } from '@/lib/use-data-refresh';
 import { createClient } from '@/lib/supabase/client';
 
@@ -76,7 +77,6 @@ export function MapExperience({
   const refreshRevision = useDataRefresh();
   const [navigationRevision, setNavigationRevision] = useState(0);
   const mapElementRef = useRef<HTMLDivElement>(null);
-  const initialMapReports = useRef(initialReports.filter(hasReportCoordinates));
   const mapRef = useRef<google.maps.Map | null>(null);
   const mapPositionChosen = useRef(false);
   const mapAuthFailed = useRef(false);
@@ -187,10 +187,10 @@ export function MapExperience({
 
   useEffect(() => () => discoveryRequest.current?.abort(), []);
 
-  async function geocodeAddress(text: string): Promise<SearchPlace[]> {
+  async function geocodeAddress(text: string, placeId = false): Promise<SearchPlace[]> {
     const { Geocoder } = await importLibrary('geocoding');
     try {
-      const { results } = await new Geocoder().geocode({ address: text });
+      const { results } = await new Geocoder().geocode(placeId ? { placeId: text } : { address: text });
       return results.slice(0, 5).map(result => ({
         id: result.place_id,
         label: result.formatted_address,
@@ -206,6 +206,8 @@ export function MapExperience({
 
   function selectSearchPlace(place: SearchPlace) {
     mapPositionChosen.current = true;
+    const url = new URL(window.location.href); url.searchParams.set('area', place.id);
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`);
     setSearchPlace(place);
     mapRef.current?.fitBounds(place.bounds, 60);
   }
@@ -269,7 +271,10 @@ export function MapExperience({
   }, []);
 
   useEffect(() => {
-    const navigate = () => setNavigationRevision(value => value + 1);
+    const navigate = () => {
+      if (window.location.pathname !== '/report') { setDraftCoordinates(null); setReportMode(false); setSelectingDraftLocation(false); }
+      setNavigationRevision(value => value + 1);
+    };
     window.addEventListener('popstate', navigate);
     return () => window.removeEventListener('popstate', navigate);
   }, []);
@@ -307,6 +312,7 @@ export function MapExperience({
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
+  const initialMapReports = useRef(initialReports.filter(hasReportCoordinates));
   useEffect(() => {
     if (!googleMapsKey || !googleMapsMapId || !mapElementRef.current || mapRef.current) return;
     let cancelled = false;
@@ -326,7 +332,11 @@ export function MapExperience({
           importLibrary('marker'),
         ]);
         if (cancelled || mapAuthFailed.current || !mapElementRef.current) return;
-        const memory = readDiscoveryMemory();
+        const stored = readDiscoveryMemory();
+        const sharedMap = readMapUrl(window.location.search);
+        const areaId = new URLSearchParams(window.location.search).get('area');
+        const memory = sharedMap ? { ...sharedMap, place: stored?.place?.id === areaId ? stored.place : null } : stored;
+        if (areaId) mapPositionChosen.current = true;
         if (memory) { mapPositionChosen.current = true; searchPlaceRef.current = memory.place; setSearchPlace(memory.place); }
         const map = new Map(mapElementRef.current, {
           center: { lat: memory?.latitude ?? FALLBACK_MAP_CENTER.latitude, lng: memory?.longitude ?? FALLBACK_MAP_CENTER.longitude },
@@ -349,27 +359,30 @@ export function MapExperience({
           const center = map.getCenter();
           if (!bounds || !center) return;
           const area = { ...bounds, latitude: center.lat(), longitude: center.lng() };
+          window.history.replaceState(window.history.state, '', mapUrl(new URL(window.location.href), { latitude: area.latitude, longitude: area.longitude, zoom: map.getZoom() ?? 12 }));
           saveDiscoveryMemory({ latitude: area.latitude, longitude: area.longitude, zoom: map.getZoom() ?? 12, place: searchPlaceRef.current });
           setDiscoveryArea(current => current && Object.keys(area).every(key => current[key as keyof DiscoveryArea] === area[key as keyof DiscoveryArea]) ? current : area);
         });
         mapRef.current = map;
         setMapReady(true);
+        if (areaId && memory?.place?.id !== areaId) {
+          const restore = /^[45]:\d{5,12}$/.test(areaId)
+            ? resolvePlaceId(areaId, AbortSignal.timeout(15000))
+            : /^[A-Za-z0-9_-]{8,300}$/.test(areaId) ? geocodeAddress(areaId, true).then(places => places[0]) : Promise.resolve(null);
+          void restore.then(place => {
+            if (cancelled || new URLSearchParams(window.location.search).get('area') !== areaId) return;
+            if (place) { searchPlaceRef.current = place; setSearchPlace(place); if (!sharedMap) map.fitBounds(place.bounds, 60); }
+            else setToast('This search area could not be restored. Choose a city or address.');
+          }).catch(() => { if (!cancelled) setToast('This search area could not be restored. Choose a city or address.'); });
+        }
         if (!memory) void getBrowserLocation().then((location) => {
           if (!cancelled && !mapAuthFailed.current && !mapPositionChosen.current) {
             map.panTo({ lat: location.latitude, lng: location.longitude });
             map.setZoom(14);
           }
         }).catch(() => {
-          const seedReports = initialMapReports.current;
-          if (cancelled || mapAuthFailed.current || mapPositionChosen.current || !seedReports.length) return;
-          if (seedReports.length === 1) {
-            map.panTo({ lat: seedReports[0].latitude, lng: seedReports[0].longitude });
-            map.setZoom(14);
-            return;
-          }
-          const bounds = new google.maps.LatLngBounds();
-          seedReports.forEach((report) => bounds.extend({ lat: report.latitude, lng: report.longitude }));
-          map.fitBounds(bounds, 90);
+          if (cancelled || mapAuthFailed.current || mapPositionChosen.current) return;
+          setToast('Location is unavailable. Choose a city or address to browse nearby cleanups.');
         });
       } catch {
         if (!cancelled) setMapError('Google Maps could not load. Check the browser key and try again.');
@@ -393,16 +406,21 @@ export function MapExperience({
       markerGlyphsRef.current.delete(id);
     });
     visibleReports.forEach((report) => {
+      if (mapAuthFailed.current) return;
       let marker = markersRef.current.get(report.id);
       let markerGlyph = markerGlyphsRef.current.get(report.id);
       if (!marker || !markerGlyph) {
         markerGlyph = document.createElement('span');
-        marker = new AdvancedMarkerElement({
+        try { marker = new AdvancedMarkerElement({
           map,
           position: { lat: report.latitude, lng: report.longitude },
           title: report.title || 'Litter Report',
           gmpClickable: true,
-        });
+        }); } catch {
+          mapAuthFailed.current = true; setMapReady(false);
+          setMapError('The map could not display its pins. You can still browse reports. Reload to try the map again.');
+          return;
+        }
         marker.append(markerGlyph);
         markersRef.current.set(report.id, marker);
         markerGlyphsRef.current.set(report.id, markerGlyph);
@@ -467,18 +485,25 @@ export function MapExperience({
   useEffect(() => {
     if (!userId) return;
     const url = new URL(window.location.href);
-    const compose = url.searchParams.get('compose');
+    const compose = url.searchParams.get('compose') ?? (url.pathname === '/report' ? 'resume' : null);
     if (!compose) return;
     let cancelled = false;
     void reportDraftLocation(userId).then(coordinates => {
       if (cancelled) return;
       if (coordinates && compose === 'resume') setDraftCoordinates(coordinates);
       else { setReportMode(true); setToast('Select the litter location on the map to start your report.'); }
-      url.searchParams.delete('compose');
-      window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`);
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.delete('compose');
+      window.history.replaceState(window.history.state, '', `${currentUrl.pathname}${currentUrl.search}`);
     }).catch(() => { if (!cancelled) setToast('Your saved draft could not be loaded. Try again from your account.'); });
     return () => { cancelled = true; };
-  }, [userId]);
+  }, [userId, navigationRevision]);
+
+  function closeReportTask() {
+    setDraftCoordinates(null); setReportMode(false);
+    const url = new URL(window.location.href);
+    if (url.pathname === '/report') { url.pathname = '/'; url.searchParams.delete('compose'); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`); }
+  }
 
   async function toggleReportMode() {
     if(checkingDraft) return;
@@ -493,12 +518,14 @@ export function MapExperience({
       return;
     }
     if(!reportMode) {
+      const url = new URL(window.location.href); url.pathname = '/report'; url.searchParams.delete('report');
+      window.history.pushState(window.history.state, '', `${url.pathname}${url.search}`);
       setCheckingDraft(true);
       try { const savedLocation = await reportDraftLocation(userId); if(savedLocation) {setDraftCoordinates(savedLocation);return;} }
       catch {setToast('Your saved draft could not be checked. Check your connection and try again.');return;}
       finally {setCheckingDraft(false);}
     }
-    setReportMode((current) => !current);
+    if (reportMode) closeReportTask(); else setReportMode(true);
   }
 
   function changeDraftLocation() {
@@ -558,6 +585,11 @@ export function MapExperience({
   }
 
   function closeReport() {
+    const returnTo = new URL(window.location.href).searchParams.get('returnTo');
+    if (returnTo && ['/account/reports', '/account/activity', '/account/activity?view=history', '/account/payments'].includes(returnTo)) {
+      window.location.assign(returnTo);
+      return;
+    }
     setSelectedReport(null);
     setReportListOpen(returnToReportList.current);
     selectedReportIdRef.current = null;
@@ -593,6 +625,7 @@ export function MapExperience({
     setPublicationUncertain(false);
     setDraftCoordinates(null);
     if (contributionCents != null) setReportFunding({ report, amountCents: contributionCents });
+    closeReportTask();
     setToast('Report saved. Thanks for helping keep the community clean!');
     void refreshReports();
     if (fundingEnabled) void refreshFundingReview(report.id).catch(() => undefined);
@@ -648,6 +681,7 @@ export function MapExperience({
       setEditingReport(null);
       setEditPhotoUrls([]);
       await refreshReports();
+      closeReportTask();
       setToast('Report saved. Thanks for helping keep the community clean!');
       return null;
     }
@@ -807,9 +841,9 @@ export function MapExperience({
         </div>
       )} />
       <div className="discovery-toolbar">
-        <PlaceSearch selected={searchPlace} onSelect={selectSearchPlace} onClear={() => setSearchPlace(null)} geocode={geocodeAddress} disabled={!mapReady || reportMode} />
+        <PlaceSearch selected={searchPlace} onSelect={selectSearchPlace} onClear={() => { setSearchPlace(null); const url = new URL(window.location.href); url.searchParams.delete('area'); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`); }} geocode={geocodeAddress} disabled={!mapReady || reportMode} />
         <div className="discovery-toolbar-actions">
-          <button className="secondary-button discovery-filters" onClick={() => { setReportListOpen(true); setFiltersRequest(value => value + 1); }}><IoOptionsOutline aria-hidden />Filters</button>
+          <button className="secondary-button discovery-filters" onClick={() => { setReportListOpen(true); setFiltersRequest(value => value + 1); }}><IoOptionsOutline aria-hidden />Filters{Object.entries(discoveryFilters).filter(([key, value]) => value !== DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]).length > 0 ? ` (${Object.entries(discoveryFilters).filter(([key, value]) => value !== DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]).length})` : ''}</button>
           <div className="discovery-view-toggle" role="group" aria-label="Browse reports">
             <button aria-pressed={reportListOpen} onClick={() => setReportListOpen(true)}><IoListOutline aria-hidden /><span>Reports</span></button>
             <button aria-pressed={!reportListOpen} onClick={() => setReportListOpen(false)}><IoMapOutline aria-hidden /><span>Map</span></button>
@@ -821,6 +855,7 @@ export function MapExperience({
         <ReportBrowser
           reports={reports}
           filtersRequest={filtersRequest}
+          areaLabel={searchPlace?.label ?? 'Current map area'}
           showAuthors
           onMemberBlocked={() => { void refreshReports(); }}
           onFavoriteChange={(id, favorite) => updateReportPreference('favorites', id, favorite)}
@@ -872,7 +907,7 @@ export function MapExperience({
       </footer>
 
       {selectedReport && <ReportDetail key={selectedReport.id} report={selectedReport} userId={userId} isOwner={canManageReport(selectedReport, userId)} favorite={reportPreferences.favorites.has(selectedReport.id)} hidden={reportPreferences.hidden.has(selectedReport.id)} onFavoriteChange={(favorite) => updateReportPreference('favorites', selectedReport.id, favorite)} onHiddenChange={(hidden) => updateReportPreference('hidden', selectedReport.id, hidden)} onNotify={setToast} onRequireSignIn={(intent) => { const url = new URL(window.location.href); url.searchParams.set('report', selectedReport.id); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`); accountActionRef.current?.openAuth(intent); }} onReportChanged={refreshReports} onClose={closeReport} onEdit={() => { void editSelectedReport(); }} onDelete={() => { void deleteSelectedReport(); }} />}
-      {draftCoordinates && userId && <ResumableReportWizard submissionProgress={reportUploadProgress} key={userId} userId={userId} onCoordinatesChange={setDraftCoordinates} onRestorePublication={restorePublication} fundingEnabled={fundingEnabled} coordinates={draftCoordinates} selectingLocation={selectingDraftLocation} onChangeLocation={publicationUncertain ? undefined : changeDraftLocation} onClose={() => setDraftCoordinates(null)} onSubmit={saveReport} />}
+      {draftCoordinates && userId && <ResumableReportWizard submissionProgress={reportUploadProgress} key={userId} userId={userId} onCoordinatesChange={setDraftCoordinates} onRestorePublication={restorePublication} fundingEnabled={fundingEnabled} coordinates={draftCoordinates} selectingLocation={selectingDraftLocation} onChangeLocation={publicationUncertain ? undefined : changeDraftLocation} onClose={closeReportTask} onSubmit={saveReport} />}
       {reportFunding && <FundingContributionAction key={reportFunding.report.id} report={reportFunding.report} userId={userId} initialAmountCents={reportFunding.amountCents} startOpen onDismiss={() => setReportFunding(null)} onChanged={refreshReports} onRefreshFunding={() => refreshFundingReview(reportFunding.report.id)} />}
       {editingReport && <ReportWizard submissionProgress={reportUploadProgress} initialDraft={editDraft} isEditing existingPhotoCount={editingReport.photo_paths?.length ?? 0} existingPhotoUrls={editPhotoUrls} onClose={() => { setEditingReport(null); setEditPhotoUrls([]); }} onSubmit={saveReport} />}
     </main>

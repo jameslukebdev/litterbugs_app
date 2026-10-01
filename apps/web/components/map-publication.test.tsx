@@ -5,6 +5,7 @@ import { EMPTY_REPORT_DRAFT, type ReportDraft, type MappableReport } from '@litt
 import { MapExperience } from './map-experience';
 
 const state = vi.hoisted(() => ({
+  markerFailure: false,
   markerReports: [] as MappableReport[],
   markerInstances: [] as { map: unknown; position: {lat: number; lng: number}; title: string; glyph?: HTMLElement }[],
   click: null as null | ((event: unknown) => void),
@@ -23,7 +24,7 @@ const state = vi.hoisted(() => ({
 }));
 const report = () => ({ id: 'test-report', title: 'Test bottles', latitude: 0.5, longitude: 0, user_id: 'test-user', is_published: state.published, photo_paths: ['test-user/test-report/photo.jpg'], cleanup_state: 'available', funding_eligibility: 'eligible', renewal_status: 'active', expires_at: '2099-01-01', cancelled_at: null, expired_at: null, is_sample: false });
 vi.mock('@/lib/cloud-drafts', () => ({ cloudDrafts: { begin: async () => 'test-report', discard: async () => {} } }));
-vi.mock('@/lib/discovery-memory', () => ({ readBrowserMemory: () => null, saveBrowserMemory: () => {}, readDiscoveryMemory: () => null, saveDiscoveryMemory: () => {} }));
+vi.mock('@/lib/discovery-memory', async importOriginal => ({ ...await importOriginal<typeof import('@/lib/discovery-memory')>(), readBrowserMemory: () => null, saveBrowserMemory: () => {}, readDiscoveryMemory: () => null, saveDiscoveryMemory: () => {} }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock('@googlemaps/js-api-loader', () => ({
   setOptions: vi.fn(),
@@ -35,6 +36,7 @@ vi.mock('@googlemaps/js-api-loader', () => ({
   } } : { AdvancedMarkerElement: class {
     map: unknown; position: {lat: number; lng: number}; title: string; glyph?: HTMLElement;
     constructor(options: {map: unknown; position: {lat: number; lng: number}; title: string}) {
+      if (state.markerFailure) throw new Error('Map renderer unavailable');
       this.map = options.map; this.position = options.position; this.title = options.title; state.markerInstances.push(this);
     }
     append(glyph: HTMLElement) { this.glyph = glyph; }
@@ -86,7 +88,7 @@ vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({
 }) }));
 
 beforeEach(() => {
-  state.markerInstances = []; state.markerReports = [];
+  state.markerFailure = false; state.markerInstances = []; state.markerReports = [];
   vi.clearAllMocks(); state.discovery.mockReset().mockResolvedValue({ reports: [], truncated: false }); state.idle = null; state.journal = undefined; state.click = null; state.published = false; state.lostResponse = false;
   state.upload.mockResolvedValue('test-user/test-report/photo.jpg');
   state.review.mockResolvedValue(undefined);
@@ -98,7 +100,9 @@ afterEach(() => { cleanup(); window.history.replaceState({}, '', '/'); });
 async function choosePin(latitude = 0.5) {
   render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
   await waitFor(() => expect(state.click).toBeTruthy());
-  fireEvent.click(screen.getByRole('button', { name: 'Report litter' }));
+  const start = screen.queryByRole('button', { name: 'Report litter' });
+  if (start) fireEvent.click(start);
+  expect(window.location.pathname).toBe('/report');
   await screen.findByRole('button', { name: 'Cancel reporting' });
   await act(async () => { state.click!({ latLng: { lat: () => latitude, lng: () => 0 } }); });
   await screen.findByRole('dialog', { name: 'Report form' });
@@ -268,4 +272,11 @@ it('keeps pins attached during refresh and reorder, updates changed artwork, and
   expect(glyph.classList.contains('report-map-marker-completed')).toBe(true);
   expect(glyph.classList.contains('report-map-marker-available')).toBe(false);
   expect(other.map).toBeNull();
+});
+
+it('keeps the website usable when the map provider fails to create a pin', async () => {
+  state.markerFailure = true; state.markerReports = [{ ...report(), is_published: true } as MappableReport];
+  render(<MapExperience initialReports={state.markerReports} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+  await screen.findByText(/map could not display its pins/);
+  expect(screen.getByRole('button', { name: 'Report litter' })).toBeTruthy();
 });

@@ -68,7 +68,7 @@ export function ResumableReportWizard({ userId, submissionProgress, coordinates,
         onRestorePublication(undefined);
       } else if (snapshot.current) await saveReportDraft(userId, { ...snapshot.current, coordinates });
       onClose();
-    } catch { setMessage('Draft could not be saved. Keep this screen open and try again.'); }
+    } catch { setMessage(discard ? 'Draft could not be discarded. It is still available; keep this screen open and try again.' : 'Draft could not be saved. Keep this screen open and try again.'); }
     finally { setBusy(false); }
   }
 
@@ -80,7 +80,7 @@ export function ResumableReportWizard({ userId, submissionProgress, coordinates,
     <ModalShell label="Saved report" onClose={onClose} closeDisabled={busy}>
       <div className="wizard-content">
         <h2>{mode === 'loading' ? 'Checking for a saved report…' : mode === 'error' ? 'Draft unavailable' : 'Resume your report?'}</h2>
-        {mode === 'resume' && <><p>Your saved draft includes its details, photos, and chosen location.</p>{pending && <p>Your last submission needs checking. Resume and submit again to check the original report.</p>}
+        {mode === 'resume' && <><p><strong>{saved?.draft.title || 'Untitled litter report'}</strong><br />{saved?.draft.photos.length ?? 0} photos · Step {(saved?.step ?? 0) + 1} of 5<br />{saved?.coordinates.latitude.toFixed(4)}, {saved?.coordinates.longitude.toFixed(4)}</p>{pending && <p>Your last submission needs checking. Resume and submit again to check the original report.</p>}
           <div className="draft-recovery-actions"><button className="primary-button" disabled={busy} onClick={() => { onCoordinatesChange(saved!.coordinates); setMode('editing'); }}>Resume draft</button>
           {!pending && !locked && <button className="secondary-button" disabled={busy} onClick={async () => {
             setBusy(true);

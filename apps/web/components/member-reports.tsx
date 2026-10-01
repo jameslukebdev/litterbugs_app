@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import type { Report } from '@litterbugs/report-contract';
+import { reportDiscoveryWindow } from '@/lib/report-visibility';
 import { createClient } from '@/lib/supabase/client';
 
 export function MemberReports({ profileId }: { profileId: string }) {
@@ -17,7 +18,7 @@ export function MemberReports({ profileId }: { profileId: string }) {
       .eq('user_id', profileId).eq('is_sample', false).eq('is_published', true).is('cancelled_at', null);
     query = view === 'completed' ? query.eq('cleanup_state', 'completed') : query
       .in('cleanup_state', ['available', 'claimed', 'completion_submitted', 'changes_requested'])
-      .is('expired_at', null).or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`);
+      .is('expired_at', null).or(reportDiscoveryWindow());
     void query.order('created_at', { ascending: false }).order('id', { ascending: false }).range(page * 30, page * 30 + 30)
       .then(({ data, error }) => {
         if (cancelled) return;
@@ -27,7 +28,7 @@ export function MemberReports({ profileId }: { profileId: string }) {
     return () => { cancelled = true; };
   }, [profileId, view, page, retry]);
   return <section><h3>Reports</h3>
-    <div className="activity-tabs" role="tablist" aria-label="Member reports">{(['active', 'completed'] as const).map(value => <button key={value} role="tab" aria-selected={value === view} onClick={() => { setView(value); setPage(0); setRows([]); setLoading(true); }}>{value === 'active' ? 'Active reports' : 'Completed reports'}</button>)}</div>
+    <div className="activity-tabs" role="group" aria-label="Member reports">{(['active', 'completed'] as const).map(value => <button key={value} aria-pressed={value === view} onClick={() => { setView(value); setPage(0); setRows([]); setLoading(true); }}>{value === 'active' ? 'Active reports' : 'Completed reports'}</button>)}</div>
     {rows.map(report => <a key={report.id} className="member-activity-row" href={`/?report=${encodeURIComponent(report.id)}`}><span><strong>{report.title || 'Litter report'}</strong><small>{report.severity} severity</small></span></a>)}
     {loading && <p role="status">Loading reports…</p>}
     {!loading && !error && !rows.length && <p className="member-empty">No {view} reports</p>}

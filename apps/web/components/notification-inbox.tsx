@@ -40,7 +40,7 @@ export function NotificationInbox({ userId }: { userId: string }) {
   }
   const unread = notices.filter(notice => !notice.read_at);
   return <section className="notification-inbox">
-    <header><h1>Notifications</h1><p>Updates to your reports, cleanups and payments. Read status is shared with the app.</p></header>
+    <header><h1>Notifications</h1><p>Updates to your reports, cleanups and payments. Read status is shared with the app. Updates refresh automatically while this page is open.</p></header>
     {!!unread.length && <button className="secondary-button" disabled={busy} onClick={() => void markRead(unread.map(notice => notice.id))}>Mark displayed updates as read</button>}
     {message && <p role="alert">{message} <button onClick={() => setRetry(value => value + 1)}>Retry</button></p>}
     {!loaded && <p role="status">Loading updates…</p>}
@@ -48,7 +48,7 @@ export function NotificationInbox({ userId }: { userId: string }) {
     <ul className="notification-list">{notices.map(notice => {
       const copy = notificationPresentation(notice);
       return <li key={notice.id} data-unread={!notice.read_at}>
-        <div><Link href={notificationHref(notice)}><strong>{copy.title}</strong></Link><p>{copy.message}</p><time dateTime={notice.created_at}>{new Date(notice.created_at).toLocaleString()}</time></div>
+        <div>{!notice.read_at && <span className="notification-unread">Unread</span>}<Link href={notificationHref(notice)}><strong>{copy.title}</strong></Link><p>{copy.message}</p><time dateTime={notice.created_at}>{new Date(notice.created_at).toLocaleString()}</time></div>
         {!notice.read_at && <button className="secondary-button compact-button" disabled={busy} onClick={() => void markRead([notice.id])}>Mark read</button>}
       </li>;
     })}</ul>

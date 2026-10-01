@@ -36,7 +36,7 @@ const report: MappableReport = {
   user_id: 'user-id',
 };
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); sessionStorage.clear(); window.history.replaceState(null, '', '/'); });
 
 describe('ReportBrowser', () => {
   it('makes live reports and the cleaner reward discoverable', () => {
@@ -44,7 +44,7 @@ describe('ReportBrowser', () => {
     render(<ReportBrowser reports={[report]} open onToggle={vi.fn()} onSelect={onSelect} />);
 
     expect(screen.getByText('Map')).toBeTruthy();
-    expect(screen.getByText(/1 litter report · Map area/)).toBeTruthy();
+    expect(screen.getByText(/1 litter report · Current map area/)).toBeTruthy();
     expect(screen.getByText('Roadside bottles')).toBeTruthy();
     expect(screen.getByText('$125 reward')).toBeTruthy();
     expect(screen.getByText(/(?:day|hr|min).*ago|Just now/)).toBeTruthy();
@@ -161,11 +161,11 @@ describe('ReportBrowser', () => {
       />,
     );
 
-    expect(screen.getByText(/3 litter reports · Map area/)).toBeTruthy();
+    expect(screen.getByText(/3 litter reports · Current map area/)).toBeTruthy();
     expect(screen.getByText('Claimed cleanup')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Rewarded' }));
-    expect(screen.getByText(/1 cleanup opportunity · Map area/)).toBeTruthy();
+    expect(screen.getByText(/1 cleanup opportunity · Current map area/)).toBeTruthy();
     expect(screen.getByText('$125 reward')).toBeTruthy();
     expect(screen.queryByText('Volunteer park cleanup')).toBeNull();
 
@@ -181,7 +181,7 @@ describe('ReportBrowser', () => {
 it('shows completed cleanups without presenting their old expiration as an upcoming deadline', () => {
   render(<ReportBrowser reports={[{ ...report, cleanup_state: 'completed', funded_amount_cents: 0, completedRewardCents: 12500, expires_at: '2020-01-01T00:00:00Z' }]} open onToggle={vi.fn()} onSelect={vi.fn()} />);
   fireEvent.click(screen.getByRole('button', { name: 'Completed' }));
-  expect(screen.getByText(/1 completed cleanup · Map area/)).toBeTruthy();
+  expect(screen.getByText(/1 completed cleanup · Current map area/)).toBeTruthy();
   expect(screen.getByText('Cleanup complete')).toBeTruthy();
   expect(screen.getByText('$125 funded cleanup')).toBeTruthy();
   expect(screen.queryByText(/Ends /)).toBeNull();
@@ -189,7 +189,7 @@ it('shows completed cleanups without presenting their old expiration as an upcom
 it('includes photos-under-review and changes-requested cleanups in progress', () => {
   render(<ReportBrowser reports={[{ ...report, cleanup_state: 'completion_submitted' }, { ...report, id: 'changes', title: 'Changes cleanup', cleanup_state: 'changes_requested' }]} open onToggle={vi.fn()} onSelect={vi.fn()} />);
   fireEvent.click(screen.getByRole('button', { name: 'In progress' }));
-  expect(screen.getByText(/2 cleanups in progress · Map area/)).toBeTruthy();
+  expect(screen.getByText(/2 cleanups in progress · Current map area/)).toBeTruthy();
   expect(screen.getByText('Changes cleanup')).toBeTruthy();
 });
 
@@ -202,16 +202,42 @@ it('combines status, reward, severity, text, and radius independently', async ()
     { ...report, id: 'far', title: 'Far bottles', latitude: 40 },
     { ...report, id: 'other', title: 'Cans' },
   ]} mapCenter={{ latitude: 36.21, longitude: -81.67 }} open onToggle={vi.fn()} onSelect={vi.fn()} onDiscoveryFiltersChange={onDiscoveryFiltersChange} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Search and filters' }));
   fireEvent.change(screen.getByLabelText('Cleanup status'), { target: { value: 'available' } });
   fireEvent.change(screen.getByLabelText('Reward'), { target: { value: 'funded' } });
   fireEvent.change(screen.getByLabelText('Severity'), { target: { value: 'high' } });
   fireEvent.change(screen.getByLabelText('Distance from map center'), { target: { value: '5' } });
   fireEvent.change(screen.getByLabelText('Search report titles and notes'), { target: { value: 'bottles' } });
   fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
-  expect(screen.getByText(/1 litter report · Map area/)).toBeTruthy();
+  expect(screen.getByText(/1 litter report · Current map area/)).toBeTruthy();
   await waitFor(() => expect(onDiscoveryFiltersChange).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'available', funding: 'funded', severity: 'high', radius: 5, query: 'bottles' })));
   expect(screen.queryByText('Far bottles')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Search and filters' }));
   fireEvent.click(screen.getByRole('button', { name: 'Reset filters' }));
   fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
-  expect(screen.getByText(/5 litter reports · Map area/)).toBeTruthy();
+  expect(screen.getByText(/5 litter reports · Current map area/)).toBeTruthy();
+});
+
+
+it('keeps all 1,000 map matches while rendering results in accessible batches', async () => {
+  const onVisibleReportsChange = vi.fn();
+  const reports = Array.from({ length: 1000 }, (_, index) => ({ ...report, id: `report-${index}`, title: `Cleanup ${index}` }));
+  render(<ReportBrowser reports={reports} open onToggle={vi.fn()} onSelect={vi.fn()} onVisibleReportsChange={onVisibleReportsChange} />);
+  await waitFor(() => expect(document.querySelectorAll('.report-result')).toHaveLength(50));
+  expect(onVisibleReportsChange).toHaveBeenLastCalledWith(reports);
+  fireEvent.click(screen.getByRole('button', { name: 'Show more reports (50 of 1000)' }));
+  expect(document.querySelectorAll('.report-result')).toHaveLength(100);
+  fireEvent.click(screen.getByRole('button', { name: 'Completed' }));
+  expect(screen.getByText('No matching cleanup opportunities')).toBeTruthy();
+});
+
+it('restores expanded results when URL filters match device memory regardless of key order', async () => {
+  window.history.replaceState(null, '', '/?browse=1');
+  sessionStorage.setItem('litterbugs.results.v1', JSON.stringify({
+    filters: { status: 'all', funding: 'all', severity: 'all', radius: 0, query: '', scope: 'all' },
+    sort: 'newest', scroll: 120, displayLimit: 100,
+  }));
+  render(<ReportBrowser reports={Array.from({ length: 120 }, (_, index) => ({ ...report, id: `restored-${index}` }))} open onToggle={vi.fn()} onSelect={vi.fn()} />);
+  await waitFor(() => expect(document.querySelectorAll('.report-result')).toHaveLength(100));
+  expect(screen.getByRole('button', { name: 'Show more reports (100 of 120)' })).toBeTruthy();
 });

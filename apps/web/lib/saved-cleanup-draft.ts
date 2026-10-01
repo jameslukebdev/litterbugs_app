@@ -1,5 +1,5 @@
 import { cloudDrafts } from './cloud-drafts';
-export type CleanupDraft = { photos: File[]; description: string; bagsOrItems: string; weightPounds: string; submissionId?: string; uploadedPaths?: string[]; correctionDueAt?: string | null };
+export type CleanupDraft = { savedAt?: number; photos: File[]; description: string; bagsOrItems: string; weightPounds: string; submissionId?: string; uploadedPaths?: string[]; correctionDueAt?: string | null };
 let queue: Promise<unknown> = Promise.resolve();
 function transact<T>(operation: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
   const work = queue.catch(() => undefined).then(() => new Promise<T>((resolve, reject) => {
@@ -24,7 +24,7 @@ function transact<T>(operation: (store: IDBObjectStore) => IDBRequest<T>): Promi
   queue = work; return work;
 }
 const key = (userId: string, attemptId: string) => `${userId}:${attemptId}`;
-export const saveLocalCleanupDraft = (userId: string, attemptId: string, draft: CleanupDraft) => transact(store => store.put(draft, key(userId, attemptId)));
+export const saveLocalCleanupDraft = (userId: string, attemptId: string, draft: CleanupDraft) => transact(store => store.put({ ...draft, savedAt: Date.now() }, key(userId, attemptId)));
 export async function loadLocalCleanupDraft(userId: string, attemptId: string) {
   const value = await transact<CleanupDraft | undefined>(store => store.get(key(userId, attemptId)));
   if (value && (!Array.isArray(value.photos) || value.photos.length > 3 || !value.photos.every(file => file instanceof File) || ![value.description, value.bagsOrItems, value.weightPounds].every(item => typeof item === 'string'))) throw new Error('Saved cleanup could not be read');

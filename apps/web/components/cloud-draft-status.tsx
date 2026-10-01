@@ -1,4 +1,5 @@
 'use client';
+import { DraftComparison } from '@/components/draft-comparison';
 import { useEffect, useState } from 'react';
 import type { DraftSyncStatus } from '@litterbugs/report-contract';
 import { cloudDrafts } from '@/lib/cloud-drafts';
@@ -18,8 +19,10 @@ export function CloudDraftStatus({userId,draftKey,onRestored}:{userId:string;dra
     finally{setBusy(false);}
   }
   return <section className="cloud-draft-status" aria-label="Draft sync"><p role="status">{copy[status]}</p>{error&&<p role="alert">{error}</p>}
+    {status==='conflict' && <DraftComparison userId={userId} draftKey={draftKey} />}
     {status==='conflict'?<div className="draft-recovery-actions"><button type="button" className="secondary-button" disabled={busy} onClick={()=>void act('account')}>Use account draft</button><button type="button" className="secondary-button" disabled={busy} onClick={()=>void act('device')}>Keep this device’s draft</button></div>:
       ['local','offline'].includes(status)&&<button type="button" className="secondary-button" disabled={busy} onClick={()=>void act()}>Sync now</button>}
     {status==='submitting' && <button type="button" className="secondary-button" disabled={busy} onClick={()=>void act('account')}>Restore submitted draft</button>}
+    {status === 'synced' && <details><summary>Continue on your phone</summary><p>Sign in to the same account in Litterbugs on your phone. For a report, open Profile → My activity → Continue draft. For cleanup photos, open your current cleanup and continue its evidence form.</p><p>Wait for “Synced to your account” before switching devices. Keep one editor open at a time.</p></details>}
   </section>;
 }

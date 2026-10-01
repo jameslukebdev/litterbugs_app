@@ -39,6 +39,8 @@ The sitemap was submitted in Search Console October 1. Google accepted the submi
 
 The earlier seven exclusions were three expected host/protocol redirects and four 404 URLs. `/account/reports` and `/manifest.webmanifest` now exist; the two malformed URLs remain intentional 404s. Account pages should be noindex, so “every known URL indexed” is not the desired outcome. See [Google's sitemap report guidance](https://support.google.com/webmasters/answer/7451001).
 
+Later October 1 follow-up: Search Console now reports **Success**, last read October 1, with **17 discovered pages**. The Page indexing aggregate remains last updated September 20 (14 indexed / 7 excluded), so it does not yet measure this release. Evidence: `docs/evidence/2026-10-01-web-ux-followup/google-sitemap-success.png`. The [subsequent UX audit](2026-10-01-web-ux-compatibility-followup.md) identifies remaining navigation, lifecycle, focus and responsive defects; the shipped feature inventory above should not be read as complete customer-journey acceptance.
+
 ## Release/rollback notes
 
 The signed iOS 2.0.0/build 15 uses source `8370e5cf64346355c8cdd6d82a8e16120044f9b6`; subsequent changes affect only web, backend and documentation. Build `5a85bae2-0b95-4a8b-90b6-c30384fa5bfe` finished, and EAS submission `985b3f4e-6e87-4fda-82e6-9c66f096bf84` finished uploading it to Apple. Final Apple processing status is recorded in `docs/current-mobile-release-candidates.md`.

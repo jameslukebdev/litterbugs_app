@@ -28,3 +28,13 @@ it('suspends polling in the background and catches up when visible again', () =>
   unmount();
   expect(vi.getTimerCount()).toBe(0);
 });
+
+it('shares refresh work across a large list and releases the clock after the last subscriber', () => {
+  const subscribers = Array.from({ length: 100 }, () => renderHook(() => useDataRefresh(31000)));
+  expect(vi.getTimerCount()).toBe(1);
+  act(() => vi.advanceTimersByTime(31000));
+  expect(subscribers.every(item => item.result.current === 1)).toBe(true);
+  subscribers.slice(0, 99).forEach(item => item.unmount());
+  expect(vi.getTimerCount()).toBe(1);
+  subscribers[99].unmount(); expect(vi.getTimerCount()).toBe(0);
+});

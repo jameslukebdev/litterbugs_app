@@ -8,10 +8,10 @@ import { NotificationInbox } from '@/components/notification-inbox';
 import { AccountDialog } from '@/components/account-dialog';
 
 const destinations = [
-  ['', 'Profile'], ['activity', 'My activity'], ['reports', 'My reports'],
+  ['', 'Profile'], ['activity', 'My activity'],
   ['payments', 'Payments & payouts'], ['notifications', 'Notifications'], ['settings', 'Settings'],
 ] as const;
-export function AccountPage({ destination, userId }: { destination: string; userId: string }) {
+export function AccountPage({ destination, userId, activityView = 'current' }: { destination: string; userId: string; activityView?: 'current' | 'history' | 'reports' }) {
   const router = useRouter();
   const [sessionMatches, setSessionMatches] = useState(true);
   useEffect(() => {
@@ -25,14 +25,21 @@ export function AccountPage({ destination, userId }: { destination: string; user
   }, [router, userId]);
   if (!sessionMatches) return <main className="info-page"><p role="status">Updating your account…</p></main>;
   const section = destination === 'reports' ? 'activity' : destination === 'connect' ? 'payments' : destination === 'activity' || destination === 'payments' || destination === 'settings' ? destination : 'profile';
+  const selectedDestination = destination === 'reports' ? 'activity' : destination === 'connect' ? 'payments' : destination;
   return <main className="account-page-layout">
+    <label className="account-page-mobile-nav">Your account
+      <select value={selectedDestination} onChange={event => router.push(`/account${event.target.value ? `/${event.target.value}` : ''}`)}>
+        {destinations.map(([path, label]) => <option key={path} value={path}>{label}</option>)}
+      </select>
+    </label>
     <nav className="account-page-nav" aria-label="Your account">
-      {destinations.map(([path, label]) => <Link key={path} href={`/account${path ? `/${path}` : ''}`} aria-current={destination === path || (path === 'payments' && destination === 'connect') ? 'page' : undefined}>{label}</Link>)}
+      {destinations.map(([path, label]) => <Link key={path} href={`/account${path ? `/${path}` : ''}`} aria-current={selectedDestination === path ? 'page' : undefined}>{label}</Link>)}
+      <Link className="primary-button" href="/report">Report litter</Link>
     </nav>
-    {destination === 'notifications' ? <NotificationInbox key={userId} userId={userId} /> : <AccountDialog key={destination} embedded initialSection={section} initialActivityTab={destination === 'reports' ? 'reports' : 'current'}
+    {destination === 'notifications' ? <NotificationInbox key={userId} userId={userId} /> : <AccountDialog key={`${destination}:${activityView}`} embedded initialSection={section} initialActivityTab={destination === 'reports' ? 'reports' : activityView}
       onClose={() => router.push('/')} onSignedOut={() => { router.replace('/sign-in'); router.refresh(); }}
-      onOpenReport={id => router.push(`/?report=${encodeURIComponent(id)}`)}
-      onResumeDraft={() => router.push('/?compose=resume')}
+      onOpenReport={id => router.push(`/account/reports/${encodeURIComponent(id)}?from=${destination === 'reports' ? 'reports' : activityView}`)}
+      onResumeDraft={() => router.push('/report')}
       onNavigateSection={next => router.push(next === 'profile' ? '/account' : `/account/${next}`)} />}
   </main>;
 }

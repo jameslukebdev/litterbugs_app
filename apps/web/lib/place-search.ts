@@ -56,3 +56,14 @@ export async function resolvePlace(place: TownResult, { signal }: { signal?: Abo
   cache.set(place.id, result);
   return result;
 }
+
+/** Restore the same town search from its stable Census identity, including its original center. */
+export async function resolvePlaceId(id: string, signal?: AbortSignal) {
+  const match = /^([45]):(\d{5,12})$/.exec(id);
+  if (!match) throw new Error('Invalid town');
+  const layer = Number(match[1]), geoid = match[2];
+  const body = await query(layer, { where: `GEOID = '${geoid}'`, outFields: 'GEOID,BASENAME,STATE,INTPTLAT,INTPTLON', returnGeometry: 'false' }, signal);
+  const a = body.features?.[0]?.attributes;
+  if (!a) throw new Error('Town unavailable');
+  return resolvePlace({ id, layer, geoid, latitude: Number(a.INTPTLAT), longitude: Number(a.INTPTLON), label: `${a.BASENAME}, ${STATES[a.STATE] || a.STATE}`, subtitle: 'U.S. town and surrounding area' }, { signal });
+}
