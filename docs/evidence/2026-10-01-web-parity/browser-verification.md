@@ -18,3 +18,9 @@ Additional checks:
 
 - Marking the four displayed unread notifications read removed their buttons and badge; the authenticated owner's shared database unread count became zero.
 - The native cloud-draft adapter passed an isolated integration test against the same API/database: downloaded a browser-format draft and identical photo bytes into native-shaped local storage; uploaded a native title edit using the shared payload; reused the existing photo path; discarded the account draft. Expo filesystem/crypto/storage are Node shims in this test, so this is adapter integration evidence, not an iPhone UI claim. See `native-draft-integration.txt`.
+
+## Deployed map and SEO follow-up
+
+The production map was tested on the authorized host litterbugs.app. All seven initial pin DOM nodes survived sorting unchanged. After selecting Boone, the four local pin nodes (141, 145, 149, 153) remained identical through pan, zoom, selection, report details, browser Back and several background refresh intervals. Map tiles rendered without authentication errors. The live Ridge Road completed card showed its frozen $5 funded-cleanup reward. Screenshot: `live-map.jpg`.
+
+The sitemap contains 17 eligible public URLs; all returned HTTP 200 with matching canonicals and no noindex. Utility/private routes are deliberately noindex. Search Console accepted the sitemap submission, initially reported Couldn't fetch, then its live URL test successfully fetched the XML with crawl/indexing allowed at 15:39 EDT. The report itself had not refreshed during this pass. See `live-crawl.json` and `google-sitemap-live-fetch.jpg`.
