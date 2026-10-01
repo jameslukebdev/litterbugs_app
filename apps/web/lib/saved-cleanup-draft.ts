@@ -1,3 +1,4 @@
+import { trackDeviceSave, forgetDeviceSave } from './device-save-state';
 import { cloudDrafts } from './cloud-drafts';
 export type CleanupDraft = { savedAt?: number; photos: File[]; description: string; bagsOrItems: string; weightPounds: string; submissionId?: string; uploadedPaths?: string[]; correctionDueAt?: string | null };
 let queue: Promise<unknown> = Promise.resolve();
@@ -30,12 +31,14 @@ export async function loadLocalCleanupDraft(userId: string, attemptId: string) {
   if (value && (!Array.isArray(value.photos) || value.photos.length > 3 || !value.photos.every(file => file instanceof File) || ![value.description, value.bagsOrItems, value.weightPounds].every(item => typeof item === 'string'))) throw new Error('Saved cleanup could not be read');
   return value;
 }
-export const clearLocalCleanupDraft = (userId: string, attemptId: string) => transact(store => store.delete(key(userId, attemptId)));
+export const clearLocalCleanupDraft = async (userId: string, attemptId: string) => { await transact(store => store.delete(key(userId, attemptId))); forgetDeviceSave(userId, `cleanup:${attemptId}`); };
 export const clearAccountCleanupDrafts = (userId: string) => transact(store => store.delete(IDBKeyRange.bound(`${userId}:`, `${userId}:\uffff`)));
 
 export async function saveCleanupDraft(userId: string, attemptId: string, draft: CleanupDraft) {
-  if(cloudDrafts.isRetired(userId)) throw new Error('This account was deleted.');
-  await saveLocalCleanupDraft(userId, attemptId, draft); cloudDrafts.schedule(userId, `cleanup:${attemptId}`);
+  return trackDeviceSave(userId, `cleanup:${attemptId}`, async () => {
+    if(cloudDrafts.isRetired(userId)) throw new Error('This account was deleted.');
+    await saveLocalCleanupDraft(userId, attemptId, draft); cloudDrafts.schedule(userId, `cleanup:${attemptId}`);
+  });
 }
 export async function loadCleanupDraft(userId: string, attemptId: string, correctionDueAt?: string | null) {
   const draft = (await cloudDrafts.load(userId, `cleanup:${attemptId}`)) as CleanupDraft | undefined;

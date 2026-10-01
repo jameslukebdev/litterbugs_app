@@ -1,3 +1,4 @@
+import { trackDeviceSave, forgetDeviceSave } from './device-save-state';
 import { cloudDrafts } from './cloud-drafts';
 import type { Coordinates, ReportDraft } from '@litterbugs/report-contract';
 
@@ -55,7 +56,7 @@ export async function loadLocalReportDraft(userId: string): Promise<SavedReportD
   }
   return value;
 }
-export const clearLocalReportDraft = (userId: string) => transaction('drafts', userId, store => store.delete(userId));
+export const clearLocalReportDraft = async (userId: string) => { await transaction('drafts', userId, store => store.delete(userId)); forgetDeviceSave(userId, 'report'); };
 export const saveReportPublication = (journal: ReportPublicationJournal) => transaction('publications', journal.userId, store => store.put(journal, journal.userId));
 export async function loadReportPublication(userId: string): Promise<ReportPublicationJournal | undefined> {
   const value = await transaction<ReportPublicationJournal | undefined>('publications', userId, store => store.get(userId));
@@ -68,14 +69,16 @@ export async function loadReportPublication(userId: string): Promise<ReportPubli
 }
 export const clearReportPublication = (userId: string) => transaction('publications', userId, store => store.delete(userId));
 
-export const clearPublishedReport = (userId: string) => transaction('drafts', userId, (store, tx) => {
+export const clearPublishedReport = async (userId: string) => { await transaction('drafts', userId, (store, tx) => {
   tx.objectStore('publications').delete(userId);
   return store.delete(userId);
-}, true);
+}, true); forgetDeviceSave(userId, 'report'); };
 
 export async function saveReportDraft(userId: string, draft: SavedReportDraft) {
-  if(cloudDrafts.isRetired(userId)) throw new Error('This account was deleted.');
-  await saveLocalReportDraft(userId, draft); cloudDrafts.schedule(userId, 'report');
+  return trackDeviceSave(userId, 'report', async () => {
+    if(cloudDrafts.isRetired(userId)) throw new Error('This account was deleted.');
+    await saveLocalReportDraft(userId, draft); cloudDrafts.schedule(userId, 'report');
+  });
 }
 export async function loadReportDraft(userId: string) { return (await cloudDrafts.load(userId, 'report')) as SavedReportDraft | undefined; }
 export async function clearReportDraft(userId: string) { await cloudDrafts.discard(userId, 'report'); await clearReportPublication(userId); }

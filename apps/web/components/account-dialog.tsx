@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { FiCheckCircle, FiExternalLink, FiFileText, FiHeart, FiKey, FiLogOut, FiMapPin, FiShield, FiTrash2 } from 'react-icons/fi';
 
 import { loadAccountReports, loadAccountPages, accountReportStatus } from '@/lib/account-reports';
+import { NeedsAttention } from '@/components/needs-attention';
 import { ResumeDrafts } from '@/components/resume-drafts';
 import { PaymentDetail } from '@/components/payment-detail';
 import { LinkSignInMethod } from '@/components/link-sign-in-method';
@@ -35,6 +36,7 @@ type CleanupAttempt = Pick<
   CleanupAttemptRow,
   | 'approval_method'
   | 'claim_expires_at'
+  | 'correction_due_at'
   | 'completed_at'
   | 'dispute_status'
   | 'financial_review_status'
@@ -188,7 +190,7 @@ export function AccountDialog({
           .limit(50),
         loadAccountPages((start, end) => supabase
           .from('cleanup_attempts')
-          .select('id, report_id, status, claim_expires_at, completed_at, is_paid, reward_amount_cents, payout_status, approval_method, dispute_status, financial_review_status, first_paid_admin_status, report:reports(id,title,severity,cleanup_state,is_sample)')
+          .select('id, report_id, status, claim_expires_at, correction_due_at, completed_at, is_paid, reward_amount_cents, payout_status, approval_method, dispute_status, financial_review_status, first_paid_admin_status, report:reports(id,title,severity,cleanup_state,is_sample)')
           .eq('cleaner_id', user.id)
           .in('status', ['claimed', 'changes_requested', 'completion_submitted', 'completed'])
           .order('last_activity_at', { ascending: false })
@@ -544,6 +546,7 @@ export function AccountDialog({
         <div className="member-dashboard-loading"><span className="spinner" /><span>Loading your activity…</span></div>
       ) : (
         <>
+          {embedded && (section === 'profile' || section === 'activity') && <NeedsAttention userId={userId} reports={reports} renewals={expiredReports} attempts={cleanups} />}
           {embedded && (section === 'profile' || section === 'activity') && <ResumeDrafts userId={userId} attempts={activeCleanups} />}
           {section === 'profile' && <>
           <CommunityRank userId={userId} />

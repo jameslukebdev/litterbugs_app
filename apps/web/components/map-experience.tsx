@@ -76,6 +76,14 @@ export function MapExperience({
   const router = useRouter();
   const refreshRevision = useDataRefresh();
   const [navigationRevision, setNavigationRevision] = useState(0);
+  const [desktopDetail, setDesktopDetail] = useState(false);
+  useEffect(() => {
+    if (!window.matchMedia) return;
+    const media = window.matchMedia('(min-width: 1100px)');
+    const update = () => setDesktopDetail(media.matches);
+    update(); media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
   const mapElementRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const mapPositionChosen = useRef(false);
@@ -125,6 +133,12 @@ export function MapExperience({
   const [mapPreviewId, setMapPreviewId] = useState<string | null>(null);
   const [reportListOpen, setReportListOpen] = useState(true);
   const [reportMode, setReportMode] = useState(false);
+  const [placement, setPlacement] = useState<Coordinates | null>(null);
+  const [checkingLocation, setCheckingLocation] = useState(false);
+  const locationCheck = useRef(0);
+  const reportEntry = useRef(0);
+  const [locationError, setLocationError] = useState('');
+  const [areaChosen, setAreaChosen] = useState(false);
   const [checkingDraft, setCheckingDraft] = useState(false);
   const [previewedReportId, setPreviewedReportId] = useState<string | null>(null);
   const [toast, setToast] = useState('');
@@ -206,9 +220,11 @@ export function MapExperience({
 
   function selectSearchPlace(place: SearchPlace) {
     mapPositionChosen.current = true;
+    setAreaChosen(true);
     const url = new URL(window.location.href); url.searchParams.set('area', place.id);
     window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`);
     setSearchPlace(place);
+    setDiscoveryArea({ ...place.bounds, latitude: place.latitude, longitude: place.longitude });
     mapRef.current?.fitBounds(place.bounds, 60);
   }
 
@@ -221,6 +237,7 @@ export function MapExperience({
   }, [mapReady, searchPlace]);
 
   const handleUserChange = useCallback((nextUserId: string | null) => {
+    locationCheck.current++; reportEntry.current++; setCheckingLocation(false); setCheckingDraft(false);
     setUserId(nextUserId);
     setReportFunding(null);
     setPublicationUncertain(false);
@@ -272,7 +289,7 @@ export function MapExperience({
 
   useEffect(() => {
     const navigate = () => {
-      if (window.location.pathname !== '/report') { setDraftCoordinates(null); setReportMode(false); setSelectingDraftLocation(false); }
+      if (window.location.pathname !== '/report') { locationCheck.current++; setCheckingLocation(false); setDraftCoordinates(null); setReportMode(false); setLocationError(''); setSelectingDraftLocation(false); }
       setNavigationRevision(value => value + 1);
     };
     window.addEventListener('popstate', navigate);
@@ -337,7 +354,7 @@ export function MapExperience({
         const areaId = new URLSearchParams(window.location.search).get('area');
         const memory = sharedMap ? { ...sharedMap, place: stored?.place?.id === areaId ? stored.place : null } : stored;
         if (areaId) mapPositionChosen.current = true;
-        if (memory) { mapPositionChosen.current = true; searchPlaceRef.current = memory.place; setSearchPlace(memory.place); }
+        if (memory) { setAreaChosen(Boolean(memory.place) || Math.abs(memory.latitude - FALLBACK_MAP_CENTER.latitude) > 0.001 || Math.abs(memory.longitude - FALLBACK_MAP_CENTER.longitude) > 0.001); mapPositionChosen.current = true; searchPlaceRef.current = memory.place; setSearchPlace(memory.place); }
         const map = new Map(mapElementRef.current, {
           center: { lat: memory?.latitude ?? FALLBACK_MAP_CENTER.latitude, lng: memory?.longitude ?? FALLBACK_MAP_CENTER.longitude },
           zoom: memory?.zoom ?? 12,
@@ -352,13 +369,14 @@ export function MapExperience({
         map.addListener('click', (event: google.maps.MapMouseEvent) => {
           if (event.latLng) mapClickRef.current({ latitude: event.latLng.lat(), longitude: event.latLng.lng() });
         });
-        map.addListener('dragstart', () => { mapPositionChosen.current = true; });
+        map.addListener('dragstart', () => { mapPositionChosen.current = true; setAreaChosen(true); });
         map.addListener('idle', () => {
           if (mapAuthFailed.current) return;
           const bounds = map.getBounds()?.toJSON();
           const center = map.getCenter();
           if (!bounds || !center) return;
           const area = { ...bounds, latitude: center.lat(), longitude: center.lng() };
+          setPlacement({ latitude: area.latitude, longitude: area.longitude });
           window.history.replaceState(window.history.state, '', mapUrl(new URL(window.location.href), { latitude: area.latitude, longitude: area.longitude, zoom: map.getZoom() ?? 12 }));
           saveDiscoveryMemory({ latitude: area.latitude, longitude: area.longitude, zoom: map.getZoom() ?? 12, place: searchPlaceRef.current });
           setDiscoveryArea(current => current && Object.keys(area).every(key => current[key as keyof DiscoveryArea] === area[key as keyof DiscoveryArea]) ? current : area);
@@ -377,6 +395,7 @@ export function MapExperience({
         }
         if (!memory) void getBrowserLocation().then((location) => {
           if (!cancelled && !mapAuthFailed.current && !mapPositionChosen.current) {
+            setAreaChosen(true);
             map.panTo({ lat: location.latitude, lng: location.longitude });
             map.setZoom(14);
           }
@@ -478,36 +497,48 @@ export function MapExperience({
 
   useEffect(() => {
     mapClickRef.current = (coordinates) => {
-      if (reportMode) void beginReport(coordinates);
+      if (reportMode && !checkingLocation) { mapRef.current?.panTo({ lat: coordinates.latitude, lng: coordinates.longitude }); setPlacement(coordinates); setLocationError(''); }
     };
-  }, [beginReport, reportMode]);
+  }, [reportMode, checkingLocation]);
+
+  const enterReportTask = useCallback(async (resume = true) => {
+    if (!userId) return;
+    const entry = ++reportEntry.current;
+    setCheckingDraft(true); setLocationError(''); setReportListOpen(false);
+    setSelectedReport(null); selectedReportIdRef.current = null;
+    try {
+      const coordinates = await reportDraftLocation(userId);
+      if (entry !== reportEntry.current) return;
+      if (coordinates && resume) { setReportMode(false); setDraftCoordinates(coordinates); }
+      else setReportMode(true);
+    } catch { if (entry === reportEntry.current) setToast('Your saved draft could not be checked. Check your connection and try again.'); }
+    finally { if (entry === reportEntry.current) setCheckingDraft(false); }
+  }, [userId]);
 
   useEffect(() => {
-    if (!userId) return;
     const url = new URL(window.location.href);
     const compose = url.searchParams.get('compose') ?? (url.pathname === '/report' ? 'resume' : null);
-    if (!compose) return;
-    let cancelled = false;
-    void reportDraftLocation(userId).then(coordinates => {
-      if (cancelled) return;
-      if (coordinates && compose === 'resume') setDraftCoordinates(coordinates);
-      else { setReportMode(true); setToast('Select the litter location on the map to start your report.'); }
-      const currentUrl = new URL(window.location.href);
-      currentUrl.searchParams.delete('compose');
-      window.history.replaceState(window.history.state, '', `${currentUrl.pathname}${currentUrl.search}`);
-    }).catch(() => { if (!cancelled) setToast('Your saved draft could not be loaded. Try again from your account.'); });
-    return () => { cancelled = true; };
-  }, [userId, navigationRevision]);
+    if (!userId || !compose) return;
+    void enterReportTask(compose === 'resume');
+    url.searchParams.delete('compose');
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`);
+    return () => { reportEntry.current++; };
+  }, [userId, navigationRevision, enterReportTask]);
 
   function closeReportTask() {
-    setDraftCoordinates(null); setReportMode(false);
+    locationCheck.current++; reportEntry.current++; setCheckingDraft(false);
+    setDraftCoordinates(null); setReportMode(false); setLocationError('');
     const url = new URL(window.location.href);
     if (url.pathname === '/report') { url.pathname = '/'; url.searchParams.delete('compose'); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`); }
   }
 
   async function toggleReportMode() {
+    setReportListOpen(false);
+    setLocationError('');
     if(checkingDraft) return;
     if (!userId) {
+      const url = new URL(window.location.href); url.pathname = '/report'; url.searchParams.delete('report');
+      window.history.pushState(window.history.state, '', `${url.pathname}${url.search}`);
       accountActionRef.current?.openAuth();
       return;
     }
@@ -517,40 +548,47 @@ export function MapExperience({
       setToast('');
       return;
     }
-    if(!reportMode) {
-      const url = new URL(window.location.href); url.pathname = '/report'; url.searchParams.delete('report');
-      window.history.pushState(window.history.state, '', `${url.pathname}${url.search}`);
-      setCheckingDraft(true);
-      try { const savedLocation = await reportDraftLocation(userId); if(savedLocation) {setDraftCoordinates(savedLocation);return;} }
-      catch {setToast('Your saved draft could not be checked. Check your connection and try again.');return;}
-      finally {setCheckingDraft(false);}
-    }
-    if (reportMode) closeReportTask(); else setReportMode(true);
+    if (reportMode) { closeReportTask(); return; }
+    const url = new URL(window.location.href); url.pathname = '/report'; url.searchParams.delete('report');
+    window.history.pushState(window.history.state, '', `${url.pathname}${url.search}`);
+    await enterReportTask();
   }
 
   function changeDraftLocation() {
     if (!draftCoordinates || pendingPublication.current) return;
     mapPositionChosen.current = true;
     setSelectingDraftLocation(true);
+    setReportListOpen(false);
     setReportMode(true);
+    setLocationError('');
+    setPlacement(draftCoordinates);
     mapRef.current?.panTo({ lat: draftCoordinates.latitude, lng: draftCoordinates.longitude });
   }
 
-  useEffect(() => {
-    const AdvancedMarkerElement = advancedMarkerRef.current;
-    if (!selectingDraftLocation || !draftCoordinates || !mapRef.current || !AdvancedMarkerElement) return;
-    const marker = new AdvancedMarkerElement({
-      map: mapRef.current,
-      position: { lat: draftCoordinates.latitude, lng: draftCoordinates.longitude },
-      title: 'Current draft location',
-    });
-    return () => { marker.map = null; };
-  }, [draftCoordinates, selectingDraftLocation]);
+  async function confirmReportLocation() {
+    if (checkingLocation || !mapReady) return;
+    const center = mapRef.current?.getCenter();
+    const chosen = center ? { latitude: center.lat(), longitude: center.lng() } : placement;
+    if (!chosen) return;
+    const check = ++locationCheck.current;
+    setCheckingLocation(true); setLocationError('');
+    try {
+      await requireReportLocation(chosen);
+      if (check !== locationCheck.current) return;
+      const current = mapRef.current?.getCenter();
+      if (current && (Math.abs(current.lat() - chosen.latitude) > 0.00001 || Math.abs(current.lng() - chosen.longitude) > 0.00001)) { setLocationError('The pin moved while checking. Confirm the new location.'); return; }
+      beginReport(chosen);
+    }
+    catch (error) { if (check === locationCheck.current) setLocationError(error instanceof Error ? error.message : 'Location could not be checked. Try again.'); }
+    finally { if (check === locationCheck.current) setCheckingLocation(false); }
+  }
 
   async function centerOnUser() {
     mapPositionChosen.current = true;
     try {
       const location = await getBrowserLocation();
+      setAreaChosen(true);
+      if (!mapReady) setDiscoveryArea({ latitude: location.latitude, longitude: location.longitude, north: Math.min(90, location.latitude + 0.1), south: Math.max(-90, location.latitude - 0.1), east: Math.min(180, location.longitude + 0.1), west: Math.max(-180, location.longitude - 0.1) });
       mapRef.current?.panTo({ lat: location.latitude, lng: location.longitude });
       mapRef.current?.setZoom(14);
     } catch {
@@ -570,7 +608,7 @@ export function MapExperience({
     setSelectedReport(report);
     const url = new URL(window.location.href);
     url.searchParams.set('report', report.id);
-    window.history.pushState({ ...window.history.state, litterbugsReportNavigation: true }, '', `${url.pathname}${url.search}`);
+    window.history[selectedReport ? 'replaceState' : 'pushState']({ ...window.history.state, litterbugsReportNavigation: true }, '', `${url.pathname}${url.search}`);
   }
 
   async function openReportById(reportId: string) {
@@ -586,7 +624,7 @@ export function MapExperience({
 
   function closeReport() {
     const returnTo = new URL(window.location.href).searchParams.get('returnTo');
-    if (returnTo && ['/account/reports', '/account/activity', '/account/activity?view=history', '/account/payments'].includes(returnTo)) {
+    if (returnTo && ['/account/reports', '/account/activity', '/account/activity?view=history', '/account/payments', '/account/notifications'].includes(returnTo)) {
       window.location.assign(returnTo);
       return;
     }
@@ -830,31 +868,38 @@ export function MapExperience({
       <PublicSiteHeader activePath="/" action={(
         <div className="map-header-actions">
           <button className={`header-report-button${reportMode ? ' header-report-button-active' : ''}`}
-            onClick={() => { setReportListOpen(false); void toggleReportMode(); }} aria-pressed={reportMode} disabled={checkingDraft} aria-busy={checkingDraft}
+            onClick={() => { setReportListOpen(false); void toggleReportMode(); }} aria-pressed={reportMode} disabled={checkingDraft || checkingLocation} aria-busy={checkingDraft || checkingLocation}
             aria-label={checkingDraft ? 'Checking saved draft' : selectingDraftLocation ? 'Keep location' : reportMode ? 'Cancel reporting' : 'Report litter'}>
             <span className="header-report-long">{checkingDraft ? 'Checking…' : selectingDraftLocation ? 'Keep location' : reportMode ? 'Cancel reporting' : 'Report litter'}</span>
             <span className="header-report-short">{checkingDraft ? 'Checking…' : selectingDraftLocation ? 'Keep' : reportMode ? 'Cancel' : 'Report'}</span>
           </button>
           <PublicAccountAction ref={accountActionRef} initialUserId={initialUserId}
             onAccountDataChanged={refreshReports} onOpenReport={openReportById} onUserChange={handleUserChange}
-            onResumeDraft={() => { if (userId) void reportDraftLocation(userId).then(coordinates => { if (coordinates) setDraftCoordinates(coordinates); }).catch(() => setToast('Your saved report could not be loaded. Try again.')); }} />
+            onResumeDraft={() => { void toggleReportMode(); }} />
         </div>
       )} />
       <div className="discovery-toolbar">
-        <PlaceSearch selected={searchPlace} onSelect={selectSearchPlace} onClear={() => { setSearchPlace(null); const url = new URL(window.location.href); url.searchParams.delete('area'); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`); }} geocode={geocodeAddress} disabled={!mapReady || reportMode} />
-        <div className="discovery-toolbar-actions">
+        <PlaceSearch selected={searchPlace} onSelect={selectSearchPlace} onClear={() => { setSearchPlace(null); const url = new URL(window.location.href); url.searchParams.delete('area'); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`); }} geocode={geocodeAddress} disabled={checkingLocation} />
+        {!reportMode && <div className="discovery-toolbar-actions">
           <button className="secondary-button discovery-filters" onClick={() => { setReportListOpen(true); setFiltersRequest(value => value + 1); }}><IoOptionsOutline aria-hidden />Filters{Object.entries(discoveryFilters).filter(([key, value]) => value !== DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]).length > 0 ? ` (${Object.entries(discoveryFilters).filter(([key, value]) => value !== DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]).length})` : ''}</button>
           <div className="discovery-view-toggle" role="group" aria-label="Browse reports">
             <button aria-pressed={reportListOpen} onClick={() => setReportListOpen(true)}><IoListOutline aria-hidden /><span>Reports</span></button>
             <button aria-pressed={!reportListOpen} onClick={() => setReportListOpen(false)}><IoMapOutline aria-hidden /><span>Map</span></button>
           </div>
-        </div>
+        </div>}
       </div>
 
-      <div className="map-workspace">
+      {(initialError || toast) && <div className="discovery-message" role="status">{toast || 'Some reports could not be loaded. Try refreshing the results.'}</div>}
+      <div className={`map-workspace${desktopDetail && selectedReport ? ' has-report-detail' : ''}`}>
         <ReportBrowser
           reports={reports}
           filtersRequest={filtersRequest}
+          areaChosen={areaChosen}
+          onChooseArea={() => document.querySelector<HTMLInputElement>('.discovery-toolbar input')?.focus()}
+          onUseLocation={() => void centerOnUser()}
+          onWidenArea={() => { setSearchPlace(null); const url = new URL(window.location.href); url.searchParams.delete('area'); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`); mapRef.current?.setZoom(Math.max(3, (mapRef.current?.getZoom() ?? 12) - 2)); }}
+          onRetry={() => void refreshReports()}
+          onStartReport={() => void toggleReportMode()}
           areaLabel={searchPlace?.label ?? 'Current map area'}
           showAuthors
           onMemberBlocked={() => { void refreshReports(); }}
@@ -881,6 +926,18 @@ export function MapExperience({
           {!mapReady && !mapError && <div className="map-loading"><span className="spinner" /><span>Loading map…</span></div>}
           {mapError && <div className="map-error"><Icon name="warning" /><strong>Map unavailable</strong><span>{mapError}</span></div>}
 
+          {reportMode && <>
+            <div className="report-placement-pin" aria-hidden="true"><Icon name="location" /></div>
+            <section className="report-placement-confirm" aria-label="Choose report location">
+              <h1>Choose report location</h1>
+              <p>Move the map or search for the litter site. The pin marks your selection.</p>
+              {placement && <p className="location-coordinate">{placement.latitude.toFixed(4)}, {placement.longitude.toFixed(4)}</p>}
+              <p>We’ll check that it is within 50 miles of your current GPS location.</p>
+              {locationError && <p role="alert">{locationError}</p>}
+              <button className="primary-button" disabled={!mapReady || checkingLocation} onClick={() => void confirmReportLocation()}>{checkingLocation ? 'Checking location…' : 'Use this location'}</button>
+              {selectingDraftLocation && <p>Your report details and photos are kept.</p>}
+            </section>
+          </>}
           <div className="zoom-controls" aria-label="Map zoom controls">
             <button onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() ?? 12) + 1)} aria-label="Zoom in"><Icon name="plus" /></button>
             <button onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() ?? 12) - 1)} aria-label="Zoom out"><Icon name="minus" /></button>
@@ -894,8 +951,9 @@ export function MapExperience({
             <button onClick={centerOnUser} aria-label="Center map on your location" title="My location"><Icon name="location" /></button>
           </div>
 
-          {(initialError || toast || selectingDraftLocation) && <div className={`toast ${initialError && !toast ? 'toast-warning' : ''}`} role="status">{toast || (selectingDraftLocation ? 'Choose a new spot on the map. Your report details and photos are kept.' : 'Some reports could not be loaded. The map is still available.')}</div>}
+
         </section>
+        {selectedReport && <ReportDetail inline={desktopDetail} key={selectedReport.id} report={selectedReport} userId={userId} isOwner={canManageReport(selectedReport, userId)} favorite={reportPreferences.favorites.has(selectedReport.id)} hidden={reportPreferences.hidden.has(selectedReport.id)} onFavoriteChange={(favorite) => updateReportPreference('favorites', selectedReport.id, favorite)} onHiddenChange={(hidden) => updateReportPreference('hidden', selectedReport.id, hidden)} onNotify={setToast} onRequireSignIn={(intent) => { const url = new URL(window.location.href); url.searchParams.set('report', selectedReport.id); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`); accountActionRef.current?.openAuth(intent); }} onReportChanged={refreshReports} onClose={closeReport} onEdit={() => { void editSelectedReport(); }} onDelete={() => { void deleteSelectedReport(); }} />}
       </div>
 
       <footer className="discovery-footer">
@@ -906,7 +964,7 @@ export function MapExperience({
         </nav>
       </footer>
 
-      {selectedReport && <ReportDetail key={selectedReport.id} report={selectedReport} userId={userId} isOwner={canManageReport(selectedReport, userId)} favorite={reportPreferences.favorites.has(selectedReport.id)} hidden={reportPreferences.hidden.has(selectedReport.id)} onFavoriteChange={(favorite) => updateReportPreference('favorites', selectedReport.id, favorite)} onHiddenChange={(hidden) => updateReportPreference('hidden', selectedReport.id, hidden)} onNotify={setToast} onRequireSignIn={(intent) => { const url = new URL(window.location.href); url.searchParams.set('report', selectedReport.id); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`); accountActionRef.current?.openAuth(intent); }} onReportChanged={refreshReports} onClose={closeReport} onEdit={() => { void editSelectedReport(); }} onDelete={() => { void deleteSelectedReport(); }} />}
+
       {draftCoordinates && userId && <ResumableReportWizard submissionProgress={reportUploadProgress} key={userId} userId={userId} onCoordinatesChange={setDraftCoordinates} onRestorePublication={restorePublication} fundingEnabled={fundingEnabled} coordinates={draftCoordinates} selectingLocation={selectingDraftLocation} onChangeLocation={publicationUncertain ? undefined : changeDraftLocation} onClose={closeReportTask} onSubmit={saveReport} />}
       {reportFunding && <FundingContributionAction key={reportFunding.report.id} report={reportFunding.report} userId={userId} initialAmountCents={reportFunding.amountCents} startOpen onDismiss={() => setReportFunding(null)} onChanged={refreshReports} onRefreshFunding={() => refreshFundingReview(reportFunding.report.id)} />}
       {editingReport && <ReportWizard submissionProgress={reportUploadProgress} initialDraft={editDraft} isEditing existingPhotoCount={editingReport.photo_paths?.length ?? 0} existingPhotoUrls={editPhotoUrls} onClose={() => { setEditingReport(null); setEditPhotoUrls([]); }} onSubmit={saveReport} />}

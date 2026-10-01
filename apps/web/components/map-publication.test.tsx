@@ -5,6 +5,7 @@ import { EMPTY_REPORT_DRAFT, type ReportDraft, type MappableReport } from '@litt
 import { MapExperience } from './map-experience';
 
 const state = vi.hoisted(() => ({
+  center: { lat: 0, lng: 0 },
   markerFailure: false,
   markerReports: [] as MappableReport[],
   markerInstances: [] as { map: unknown; position: {lat: number; lng: number}; title: string; glyph?: HTMLElement }[],
@@ -30,9 +31,9 @@ vi.mock('@googlemaps/js-api-loader', () => ({
   setOptions: vi.fn(),
   importLibrary: async (name: string) => name === 'maps' ? { Map: class {
     addListener(name: string, callback: (event: unknown) => void) { if (name === 'click') state.click = callback; else if (name === 'idle') state.idle = () => callback(undefined); }
-    panTo(...args: unknown[]) { state.panTo(...args); } fitBounds(...args: unknown[]) { state.fitBounds(...args); } setZoom() {} getZoom() { return 14; }
+    panTo(location: { lat: number; lng: number }) { state.center = location; state.panTo(location); } fitBounds(...args: unknown[]) { state.fitBounds(...args); } setZoom() {} getZoom() { return 14; }
     getBounds() { return { toJSON: () => ({ north: 1, south: -1, west: -1, east: 1 }) }; }
-    getCenter() { return { lat: () => 0, lng: () => 0 }; }
+    getCenter() { return { lat: () => state.center.lat, lng: () => state.center.lng }; }
   } } : { AdvancedMarkerElement: class {
     map: unknown; position: {lat: number; lng: number}; title: string; glyph?: HTMLElement;
     constructor(options: {map: unknown; position: {lat: number; lng: number}; title: string}) {
@@ -88,7 +89,7 @@ vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({
 }) }));
 
 beforeEach(() => {
-  state.markerFailure = false; state.markerInstances = []; state.markerReports = [];
+  state.center = { lat: 0, lng: 0 }; state.markerFailure = false; state.markerInstances = []; state.markerReports = [];
   vi.clearAllMocks(); state.discovery.mockReset().mockResolvedValue({ reports: [], truncated: false }); state.idle = null; state.journal = undefined; state.click = null; state.published = false; state.lostResponse = false;
   state.upload.mockResolvedValue('test-user/test-report/photo.jpg');
   state.review.mockResolvedValue(undefined);
@@ -97,7 +98,7 @@ beforeEach(() => {
   } });
 });
 afterEach(() => { cleanup(); window.history.replaceState({}, '', '/'); });
-async function choosePin(latitude = 0.5) {
+async function choosePin(latitude = 0.5, valid = true) {
   render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
   await waitFor(() => expect(state.click).toBeTruthy());
   const start = screen.queryByRole('button', { name: 'Report litter' });
@@ -105,7 +106,9 @@ async function choosePin(latitude = 0.5) {
   expect(window.location.pathname).toBe('/report');
   await screen.findByRole('button', { name: 'Cancel reporting' });
   await act(async () => { state.click!({ latLng: { lat: () => latitude, lng: () => 0 } }); });
-  await screen.findByRole('dialog', { name: 'Report form' });
+  expect(screen.queryByRole('dialog', { name: 'Report form' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Use this location' }));
+  if (valid) await screen.findByRole('dialog', { name: 'Report form' });
 }
 
 describe('map publication and funding handoff', () => {
@@ -134,10 +137,10 @@ describe('map publication and funding handoff', () => {
     expect(state.publish).toHaveBeenCalledWith('publish_report', expect.objectContaining({ current_latitude: 0, current_longitude: 0 }));
   });
 
-  it('allows preparing a distant draft but rejects publication before uploading', async () => {
-    await choosePin(1);
-    fireEvent.click(screen.getByRole('button', { name: 'Post without funds' }));
-    await waitFor(() => expect(state.saveResult).toHaveBeenCalledWith(expect.stringContaining('within 50 miles')));
+  it('rejects a distant selection before opening the form or uploading', async () => {
+    await choosePin(1, false);
+    expect((await screen.findByRole('alert')).textContent).toContain('within 50 miles');
+    expect(screen.queryByRole('dialog', { name: 'Report form' })).toBeNull();
     expect(state.upload).not.toHaveBeenCalled();
     expect(state.inserts).not.toHaveBeenCalled();
   });
@@ -170,7 +173,8 @@ describe('map publication and funding handoff', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Change report location' }));
     expect(screen.queryByRole('dialog')).toBeNull();
     await act(async () => { state.click!({ latLng: { lat: () => 0.6, lng: () => 0 } }); });
-    expect(screen.getByLabelText('Selected latitude').textContent).toBe('0.6');
+    fireEvent.click(screen.getByRole('button', { name: 'Use this location' }));
+    expect((await screen.findByLabelText('Selected latitude')).textContent).toBe('0.6');
     fireEvent.click(screen.getByRole('button', { name: 'Post without funds' }));
     await waitFor(() => expect(state.inserts).toHaveBeenCalledWith(expect.objectContaining({ latitude: 0.6 })));
   });
@@ -183,19 +187,30 @@ describe('map publication and funding handoff', () => {
     expect(screen.getByLabelText('Selected latitude').textContent).toBe('0.5');
   });
 
-  it('permits preparing and moving a draft without GPS but requires it to publish', async () => {
+  it('explains denied GPS before starting a new report', async () => {
     const getCurrentPosition = vi.fn((_success: PositionCallback, failure: PositionErrorCallback) => failure({ code: 1 } as GeolocationPositionError));
     Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { getCurrentPosition } });
+    await choosePin(0.5, false);
+    expect((await screen.findByRole('alert')).textContent).toContain('Allow location access');
+    expect(screen.queryByRole('dialog', { name: 'Report form' })).toBeNull();
+    expect(state.upload).not.toHaveBeenCalled();
+    expect(state.inserts).not.toHaveBeenCalled();
+  });
+
+  it('opens location selection directly from /report with the list closed', async () => {
+    window.history.replaceState({}, '', '/report');
+    render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+    await screen.findByRole('button', { name: 'Use this location' });
+    expect(document.querySelector('main')?.classList.contains('showing-reports')).toBe(false);
+    expect(screen.queryByRole('group', { name: 'Browse reports' })).toBeNull();
+  });
+
+  it('checks fresh GPS again at publication after a valid selection', async () => {
     await choosePin();
-    getCurrentPosition.mockClear();
-    fireEvent.click(screen.getByRole('button', { name: 'Change report location' }));
-    await act(async () => { state.click!({ latLng: { lat: () => 0.6, lng: () => 0 } }); });
-    expect(screen.getByLabelText('Selected latitude').textContent).toBe('0.6');
-    expect(getCurrentPosition).not.toHaveBeenCalled();
+    Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { getCurrentPosition: (_success: PositionCallback, failure: PositionErrorCallback) => failure({ code: 1 } as GeolocationPositionError) } });
     fireEvent.click(screen.getByRole('button', { name: 'Post without funds' }));
     await waitFor(() => expect(state.saveResult).toHaveBeenCalledWith(expect.stringContaining('Allow location access')));
     expect(state.upload).not.toHaveBeenCalled();
-    expect(state.inserts).not.toHaveBeenCalled();
   });
 
 });

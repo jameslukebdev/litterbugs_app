@@ -6,5 +6,5 @@ const subscribe = (change: () => void) => {
 };
 export function ConnectionStatus() {
   const online = useSyncExternalStore(subscribe, () => navigator.onLine, () => true);
-  return online ? null : <div className="connection-status" role="status">You’re offline. Saved device drafts remain available. Reconnect to sync, claim, submit or pay.</div>;
+  return online ? null : <div className="connection-status" role="status">You’re offline. Saved drafts are kept on this device. Keep this page open to continue editing. Reconnect to sync, claim, submit or pay.</div>;
 }

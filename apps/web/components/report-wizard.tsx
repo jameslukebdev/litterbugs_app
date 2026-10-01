@@ -69,6 +69,7 @@ export function ReportWizard({
   initialDraft,
   initialState,
   onStateChange,
+  onPreparePhotos,
   draftSaveMessage,
   draftSync,
   draftLocked = false,
@@ -90,6 +91,7 @@ export function ReportWizard({
   draftLocked?: boolean;
   submissionProgress?: string;
   onStateChange?: (snapshot: ReportWizardSnapshot) => void;
+  onPreparePhotos?: (selected: File[], snapshot: ReportWizardSnapshot, progress: (done: number, total: number) => void, onPrepared: (draft: ReportDraft) => void) => Promise<ReportDraft>;
   isEditing: boolean;
   existingPhotoUrls?: string[];
   existingPhotoCount?: number;
@@ -181,8 +183,10 @@ export function ReportWizard({
     if (draft.photos.length + selected.length > MAX_REPORT_PHOTOS) { setMessage('Choose no more than 3 photos.'); return; }
     setPreparing(true); setMessage('Preparing photos…');
     try {
-      const prepared = await prepareBrowserPhotos(selected, (done, total) => setMessage(`Preparing photos ${done} of ${total}…`));
-      setDraft(current => ({ ...current, photos: [...current.photos, ...prepared] })); setMessage('');
+      const progress = (done: number, total: number) => setMessage(`Preparing photos ${done} of ${total}…`);
+      if (onPreparePhotos) setDraft(await onPreparePhotos(selected, { draft, step, fundingChoice, customAmount }, progress, setDraft));
+      else { const prepared = await prepareBrowserPhotos(selected, progress); setDraft(current => ({ ...current, photos: [...current.photos, ...prepared] })); }
+      setMessage('');
     } catch (error) { setMessage(error instanceof Error ? error.message : 'The photos could not be prepared.'); }
     finally { setPreparing(false); }
   }

@@ -105,5 +105,5 @@ export function notificationHref(notice: Pick<CleanupNotification, 'event_type' 
   if (notice.event_type === 'cleanup_contribution_refunded') return notice.contribution_id ? `/account/payments/${encodeURIComponent(notice.contribution_id)}` : '/account/payments';
   if (notice.event_type === 'cleanup_payout_failed' || notice.event_type === 'cleanup_reward_sent') return '/account/connect';
   if (notice.event_type === 'report_renewal_due') return '/account/reports';
-  return notice.report_id ? `/?report=${encodeURIComponent(notice.report_id)}` : '/account/activity';
+  return notice.report_id ? `/account/reports/${encodeURIComponent(notice.report_id)}?from=notifications` : '/account/activity';
 }

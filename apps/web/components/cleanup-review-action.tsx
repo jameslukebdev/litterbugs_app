@@ -37,7 +37,9 @@ export function CleanupReviewAction({
   userId,
   isOwner,
   onChanged,
+  workspace = false,
 }: {
+  workspace?: boolean;
   report: Report;
   userId: string | null;
   isOwner: boolean;
@@ -220,7 +222,7 @@ export function CleanupReviewAction({
       <button className="secondary-button compact-button" onClick={openReview} disabled={busy === 'load'}>{busy === 'load' ? 'Loading…' : attempt.is_paid ? 'Review or dispute' : 'Review cleanup'}</button>
 
       {open && context && (
-        <ModalShell onClose={() => setOpen(false)} label="Review submitted cleanup evidence" className="cleanup-flow-dialog cleanup-review-dialog" closeDisabled={Boolean(busy)}>
+        <ModalShell embedded={workspace} onClose={() => setOpen(false)} label="Review submitted cleanup evidence" className="cleanup-flow-dialog cleanup-review-dialog" closeDisabled={Boolean(busy)}>
           <span className="eyebrow">CLEANUP REVIEW</span>
           <h2>Compare the cleanup photos</h2>
           <p className="cleanup-review-summary">Submitted by {context.cleanerName}{attempt.review_due_at ? ` · Automatic approval after ${new Date(attempt.review_due_at).toLocaleString()}` : ''}</p>
