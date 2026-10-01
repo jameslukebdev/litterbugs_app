@@ -60,6 +60,7 @@ export default async function SharedReportPage({ params }: Props) {
   if (!report) notFound();
 
   const completed = report.state === 'completed';
+  const inProgress = report.state === 'in_progress';
   const impactFacts = [
     report.bagsOrItemsRemoved != null
       ? `${report.bagsOrItemsRemoved} ${report.bagsOrItemsRemoved === 1 ? 'bag/item' : 'bags/items'} removed`
@@ -82,11 +83,13 @@ export default async function SharedReportPage({ params }: Props) {
         <article className={styles.story}>
           <section className={`${styles.hero} ${completed ? styles.heroCompleted : ''}`}>
             <p className={styles.shareLabel}>Shared Litterbugs report</p>
-            <p className={styles.eyebrow}>{completed ? 'Cleanup complete' : 'Cleanup needed'}</p>
+            <p className={styles.eyebrow}>{completed ? 'Cleanup complete' : inProgress ? 'Cleanup in progress' : 'Cleanup needed'}</p>
             <h1>{report.title}</h1>
             <p className={styles.heroDescription}>
               {completed
                 ? 'A Litterbugs community member finished this cleanup. See the public impact summary below.'
+                : inProgress
+                  ? 'A member is working on this cleanup or its evidence is under review. Open the report for the latest status.'
                 : report.rewardCents && report.rewardCents > 0
                   ? `This report has a $${(report.rewardCents / 100).toFixed(2)} cleanup reward. View the report for the current funding and cleanup details.`
                   : 'A community member reported litter that is available for volunteer cleanup.'}
@@ -122,7 +125,7 @@ export default async function SharedReportPage({ params }: Props) {
                 <section className={styles.section}>
                   <p className={styles.sectionLabel}>Impact story</p>
                   <h2>Cleanup completed</h2>
-                  <p>{report.cleanupDescription || 'A Litterbugs volunteer completed this cleanup.'}</p>
+                  <p>{report.cleanupDescription || 'A Litterbugs member completed this cleanup.'}</p>
                 </section>
               ) : (
                 <section className={styles.section}>
@@ -155,8 +158,8 @@ export default async function SharedReportPage({ params }: Props) {
             </div>
 
             <aside className={styles.actionCard}>
-              <p className={styles.sectionLabel}>{completed ? 'Explore the report' : 'Help clean up'}</p>
-              <h2>{completed ? 'See it on the map' : 'Ready to help?'}</h2>
+              <p className={styles.sectionLabel}>{completed || inProgress ? 'Explore the report' : 'Help clean up'}</p>
+              <h2>{completed || inProgress ? 'See it on the map' : 'Ready to help?'}</h2>
               <p>
                 {completed
                   ? 'View the report in context on the Litterbugs map.'

@@ -9,7 +9,8 @@ import { resumeOrCreatePayment } from '@/lib/payment-attempt';
 import { PaymentDetail } from '@/components/payment-detail';
 import { ModalShell } from '@/components/modal-shell';
 import {
-  calculatePlatformFee,
+  loadContributionQuote,
+  type ContributionQuote,
   formatUsd,
   loadCleanupFeatureFlags,
   parseContributionAmount,
@@ -98,10 +99,21 @@ export function FundingContributionAction({
   const [intent, setIntent] = useState<ContributionIntent | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [quote, setQuote] = useState<ContributionQuote | null>(null);
+  const [quoteError, setQuoteError] = useState('');
+  const [quoteRetry, setQuoteRetry] = useState(0);
   const principalAmountCents = useMemo(() => parseContributionAmount(amount), [amount]);
-  const platformFeeCents = principalAmountCents == null
-    ? null
-    : calculatePlatformFee(principalAmountCents);
+  const currentQuote = quote?.principalAmountCents === principalAmountCents ? quote : null;
+  const platformFeeCents = currentQuote?.platformFeeCents ?? null;
+
+  useEffect(() => {
+    if (!open || !userId || !principalAmountCents || intent) return;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void loadContributionQuote(principalAmountCents).then(value => { if (!cancelled) { setQuote(value); setQuoteError(''); } }).catch(error => { if (!cancelled) { setQuote(null); setQuoteError(error.message); } });
+    }, 200);
+    return () => { cancelled = true; window.clearTimeout(timer); };
+  }, [open, userId, principalAmountCents, intent, quoteRetry]);
   const publishableKey = intent?.publishableKey;
   const stripe = useMemo(
     () => publishableKey ? loadStripe(publishableKey) : null,
@@ -158,12 +170,14 @@ export function FundingContributionAction({
     setBusy(true);
     setMessage('');
     try {
-      const result = await resumeOrCreatePayment(userId!, report.id, principalAmountCents);
+      const result = await resumeOrCreatePayment(userId!, report.id, principalAmountCents, currentQuote?.pricingVersion);
       setAmount((result.amount / 100).toFixed(2));
       if (result.contributionId) setPreviousContribution(result.contributionId);
       else { setIntent(result.intent ?? null); if (result.amount !== principalAmountCents) setMessage('Resuming your previous unpaid contribution with its original amount.'); }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Payment could not be started.');
+      setQuote(null);
+      setQuoteRetry(value => value + 1);
     } finally {
       setBusy(false);
     }
@@ -209,9 +223,11 @@ export function FundingContributionAction({
                   <div><dt>Total</dt><dd>{formatUsd(principalAmountCents + platformFeeCents)}</dd></div>
                 </dl>
               )}
+              {principalAmountCents != null && !currentQuote && <p role="status">{quoteError || 'Checking the current service fee…'}</p>}
+              {quoteError && <button className="secondary-button" onClick={() => setQuoteRetry(value => value + 1)}>Retry pricing</button>}
               <p className="funding-refund-note">If this report closes before payout, your full charge—including the fee—is refunded.</p>
               {message && <p className="form-message error-message" role="alert">{message}</p>}
-              <button className="primary-button funding-continue" onClick={continueToPayment} disabled={principalAmountCents == null || busy}>{busy ? 'Opening payment…' : 'Continue'}</button>
+              <button className="primary-button funding-continue" onClick={continueToPayment} disabled={principalAmountCents == null || busy || !currentQuote}>{busy ? 'Opening payment…' : 'Continue'}</button>
             </>
           ) : stripe ? (
             <Elements stripe={stripe} options={{

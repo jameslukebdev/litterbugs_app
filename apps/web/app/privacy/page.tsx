@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { LegalPage } from '@/components/legal-page';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/privacy' },
   title: 'Privacy | Litterbugs',
   description: 'How Litterbugs handles account, report, payment, and cleanup-review data.',
 };
@@ -79,6 +80,7 @@ export default function PrivacyPage() {
           title: 'Retention',
           content: <>
             <p>We retain information for as long as reasonably needed to operate reports and cleanup history, complete payments and refunds, resolve disputes, prevent abuse, maintain audit trails, and satisfy tax, financial, legal, and provider requirements. Retention varies by record type and may continue after account deletion when necessary for those purposes.</p>
+            <p>Signed-in unfinished report and cleanup drafts, including their photos and chosen locations, sync privately to your account so you can continue on another device. Account drafts expire after 30 days without a save. Discarding or finishing a draft clears its account content; unreferenced draft photos are removed by scheduled cleanup after a recovery period of at least 24 hours. Local recovery copies may remain on a device until you discard them, delete your account on that device, or clear its app or browser data.</p>
             <p>Backups and provider systems may retain information for an additional limited period under their normal safeguards and deletion cycles. We do not promise deletion from a third party sooner than its applicable contractual, technical, or legal process permits.</p>
           </>,
         },

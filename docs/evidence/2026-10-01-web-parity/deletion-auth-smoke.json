@@ -1,0 +1,20 @@
+[
+  {
+    "method": "OPTIONS",
+    "bearer": "absent",
+    "status": 200,
+    "body": "ok"
+  },
+  {
+    "method": "POST",
+    "bearer": "absent",
+    "status": 401,
+    "body": "{\"error\":\"Authentication required\"}"
+  },
+  {
+    "method": "POST",
+    "bearer": "invalid",
+    "status": 401,
+    "body": "{\"error\":\"Authentication required\"}"
+  }
+]

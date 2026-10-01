@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { MappableReport } from '@litterbugs/report-contract';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -54,7 +54,7 @@ describe('ReportBrowser', () => {
     expect(screen.getAllByText('High')[0]).toBeTruthy();
     expect(document.querySelector('.report-result-photo')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: /roadside bottles/i }));
+    fireEvent.click(screen.getByRole('link', { name: /roadside bottles/i }));
     expect(onSelect).toHaveBeenCalledWith(report);
   });
 
@@ -71,7 +71,7 @@ describe('ReportBrowser', () => {
       />,
     );
 
-    const card = screen.getByRole('button', { name: /roadside bottles/i });
+    const card = screen.getByRole('link', { name: /roadside bottles/i });
     const title = screen.getByText('Roadside bottles');
     const reward = screen.getByText('$125 reward');
 
@@ -107,7 +107,7 @@ describe('ReportBrowser', () => {
     globalThis.Image = MockImage as unknown as typeof Image;
 
     render(<ReportBrowser reports={[{ ...report, photo_paths: ['user/report/preload.jpg'] }]} open onToggle={vi.fn()} onSelect={vi.fn()} />);
-    fireEvent.pointerEnter(screen.getByRole('button', { name: /roadside bottles/i }));
+    fireEvent.pointerEnter(screen.getByRole('link', { name: /roadside bottles/i }));
 
     expect(sources).toContain('/api/report-photo?path=user%2Freport%2Fpreload.jpg&variant=detail');
     globalThis.Image = originalImage;
@@ -179,7 +179,7 @@ describe('ReportBrowser', () => {
 
 
 it('shows completed cleanups without presenting their old expiration as an upcoming deadline', () => {
-  render(<ReportBrowser reports={[{ ...report, cleanup_state: 'completed', expires_at: '2020-01-01T00:00:00Z' }]} open onToggle={vi.fn()} onSelect={vi.fn()} />);
+  render(<ReportBrowser reports={[{ ...report, cleanup_state: 'completed', funded_amount_cents: 0, completedRewardCents: 12500, expires_at: '2020-01-01T00:00:00Z' }]} open onToggle={vi.fn()} onSelect={vi.fn()} />);
   fireEvent.click(screen.getByRole('button', { name: 'Completed' }));
   expect(screen.getByText(/1 completed cleanup · Map area/)).toBeTruthy();
   expect(screen.getByText('Cleanup complete')).toBeTruthy();
@@ -193,7 +193,7 @@ it('includes photos-under-review and changes-requested cleanups in progress', ()
   expect(screen.getByText('Changes cleanup')).toBeTruthy();
 });
 
-it('combines status, reward, severity, text, and radius independently', () => {
+it('combines status, reward, severity, text, and radius independently', async () => {
   const onDiscoveryFiltersChange = vi.fn();
   render(<ReportBrowser reports={[
     report,
@@ -209,7 +209,7 @@ it('combines status, reward, severity, text, and radius independently', () => {
   fireEvent.change(screen.getByLabelText('Search report titles and notes'), { target: { value: 'bottles' } });
   fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
   expect(screen.getByText(/1 litter report · Map area/)).toBeTruthy();
-  expect(onDiscoveryFiltersChange).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'available', funding: 'funded', severity: 'high', radius: 5, query: 'bottles' }));
+  await waitFor(() => expect(onDiscoveryFiltersChange).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'available', funding: 'funded', severity: 'high', radius: 5, query: 'bottles' })));
   expect(screen.queryByText('Far bottles')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Reset filters' }));
   fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }));

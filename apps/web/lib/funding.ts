@@ -16,6 +16,21 @@ export type ContributionIntent = {
   pricingVersion?: number;
 };
 
+export type ContributionQuote = Pick<ContributionIntent, 'principalAmountCents' | 'platformFeeCents' | 'totalAmountCents' | 'currency'> & { pricingVersion: 1 | 2 };
+
+export async function loadContributionQuote(principalAmountCents: number): Promise<ContributionQuote> {
+  const { data, error } = await createClient().functions.invoke('create-cleanup-contribution', {
+    body: { mode: 'quote', principalAmountCents },
+  });
+  if (error || data?.error) throw new Error(await edgeFunctionErrorMessage(data, error, 'Pricing could not be loaded. Please retry.'));
+  if (![1, 2].includes(data?.pricingVersion) || data?.principalAmountCents !== principalAmountCents
+    || !Number.isInteger(data.platformFeeCents) || data.platformFeeCents < 0
+    || data.totalAmountCents !== principalAmountCents + data.platformFeeCents || data.currency !== 'usd') {
+    throw new Error('Pricing could not be verified. No payment has been made.');
+  }
+  return data;
+}
+
 export type PayoutStatus = {
   onboardingStatus: 'not_started' | 'pending' | 'restricted' | 'enabled';
   payoutsEnabled: boolean;
@@ -88,13 +103,15 @@ export async function createCleanupContribution(
   reportId: string,
   principalAmountCents: number,
   clientRequestId = crypto.randomUUID(),
+  pricingVersion?: number,
 ): Promise<ContributionIntent> {
+  const version = pricingVersion ?? (await loadContributionQuote(principalAmountCents)).pricingVersion;
   const { data, error } = await createClient().functions.invoke('create-cleanup-contribution', {
     body: {
       reportId,
       principalAmountCents,
       clientRequestId,
-      pricingVersion: 2,
+      pricingVersion: version,
     },
   });
   if (error || data?.error) {

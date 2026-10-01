@@ -1,3 +1,4 @@
+vi.mock('./cloudDrafts', () => ({ cloudDrafts: { begin: async () => 'report-1' } }));
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -18,7 +19,7 @@ vi.mock('expo-location', () => ({
 }));
 vi.mock('./savedReportDraft', () => ({
   saveReportDraft: async (user, draft) => mocks.drafts.set(user, draft),
-  loadReportDraft: async user => mocks.drafts.get(user),
+  loadLocalReportDraft: async user => mocks.drafts.get(user),
 }));
 vi.mock('./supabase', () => ({ supabase: { from: mocks.from, rpc: mocks.rpc } }));
 import { publishReportDraft } from './reportSubmissionStore';

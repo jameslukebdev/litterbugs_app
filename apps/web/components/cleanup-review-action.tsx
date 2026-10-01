@@ -7,6 +7,8 @@ import { useEffect, useState } from 'react';
 
 import { ModalShell } from '@/components/modal-shell';
 import { getWebCompatibleReportPhotoUrl } from '@/lib/report-photo';
+import { CLEANUP_CHANGE_REASONS, loadCleanupReviewDraft, saveCleanupReviewDraft, clearCleanupReviewDraft } from '@/lib/cleanup-review';
+import { useDataRefresh, notifyDataChanged } from '@/lib/use-data-refresh';
 import { createClient } from '@/lib/supabase/client';
 
 type Attempt = Database['public']['Tables']['cleanup_attempts']['Row'];
@@ -41,12 +43,16 @@ export function CleanupReviewAction({
   isOwner: boolean;
   onChanged?: () => void | Promise<void>;
 }) {
+  const refreshRevision = useDataRefresh(report.cleanup_state === 'completion_submitted' ? 5_000 : 30_000);
   const queryKey = userId && isOwner ? `${userId}:${report.id}` : '';
-  const [attemptState, setAttemptState] = useState<{ key: string; data: Attempt | null }>({ key: '', data: null });
+  const [attemptState, setAttemptState] = useState<{ key: string; data: Attempt | null; checkedAt?: number }>({ key: '', data: null });
   const [context, setContext] = useState<ReviewContext | null>(null);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState('');
   const [note, setNote] = useState('');
+  const [reasons, setReasons] = useState<string[]>([]);
+  const [draftMessage, setDraftMessage] = useState('');
+  const [draftUnreadable, setDraftUnreadable] = useState(false);
   const [message, setMessage] = useState('');
   const attempt = attemptState.key === queryKey ? attemptState.data : null;
 
@@ -63,10 +69,19 @@ export function CleanupReviewAction({
       .limit(1)
       .maybeSingle()
       .then(({ data }) => {
-        if (!cancelled) setAttemptState({ key: queryKey, data });
+        if (!cancelled) setAttemptState({ key: queryKey, data, checkedAt: Date.now() });
       });
     return () => { cancelled = true; };
-  }, [isOwner, queryKey, report.id, userId]);
+  }, [isOwner, queryKey, report.id, report.cleanup_state, userId, refreshRevision]);
+
+  function updateFeedback(nextNote: string, nextReasons: string[]) {
+    setNote(nextNote); setReasons(nextReasons); setMessage('');
+    if (!context || !userId || draftUnreadable) return;
+    try {
+      saveCleanupReviewDraft(userId, context.submission.id, { note: nextNote, reasons: nextReasons });
+      setDraftMessage('Feedback saved on this device.');
+    } catch { setDraftMessage('Feedback could not be saved on this device. Keep this page open.'); }
+  }
 
   if (!attempt) return message ? <span className="cleanup-action-message" role="status">{message}</span> : null;
 
@@ -122,14 +137,26 @@ export function CleanupReviewAction({
       afterUrls: afterUrls.filter(Boolean),
     });
     setNote('');
+    setReasons([]);
+    setDraftUnreadable(false);
+    if (userId) {
+      try {
+        const saved = loadCleanupReviewDraft(userId, submission.id);
+        setNote(saved.note); setReasons(saved.reasons);
+        setDraftMessage(saved.note || saved.reasons.length ? 'Saved feedback restored.' : '');
+      } catch {
+        setDraftUnreadable(true);
+        setDraftMessage('Saved feedback could not be read. Keep this page open until you submit.');
+      }
+    }
     setBusy('');
     setOpen(true);
   }
 
   async function completeReview(decision: 'approved' | 'changes_requested') {
     if (!attempt || !context) return;
-    if (decision === 'changes_requested' && note.trim().length < 3) {
-      setMessage('Briefly explain what the cleaner should update.');
+    if (decision === 'changes_requested' && !reasons.length) {
+      setMessage('Choose at least one reason for requesting changes.');
       return;
     }
     if (!window.confirm(decision === 'approved' ? 'Approve this cleanup?' : 'Request updated cleanup evidence?')) return;
@@ -138,7 +165,7 @@ export function CleanupReviewAction({
       target_cleanup_id: attempt.id,
       target_submission_id: context.submission.id,
       review_decision: decision,
-      request_change_reasons: decision === 'changes_requested' ? ['other'] : undefined,
+      request_change_reasons: decision === 'changes_requested' ? reasons : undefined,
       reviewer_note: note.trim() || undefined,
     });
     setBusy('');
@@ -150,10 +177,12 @@ export function CleanupReviewAction({
       setMessage('The cleanup is still awaiting review. Your feedback has been kept.');
       return;
     }
+    if (userId && context) { try { clearCleanupReviewDraft(userId, context.submission.id); } catch { /* The server decision remains authoritative. */ } }
+    notifyDataChanged();
     setOpen(false);
     setAttemptState({ key: queryKey, data: null });
     setMessage(reviewedAttempt.status === 'completed' ? 'Cleanup approved.' : 'The cleaner has been asked for updated evidence.');
-    await onChanged?.();
+    await Promise.resolve().then(() => onChanged?.()).catch(() => undefined);
   }
 
   async function disputePaidCleanup() {
@@ -172,15 +201,18 @@ export function CleanupReviewAction({
       setMessage('The dispute could not be submitted. Try again.');
       return;
     }
+    if (userId && context) { try { clearCleanupReviewDraft(userId, context.submission.id); } catch { /* The server decision remains authoritative. */ } }
+    notifyDataChanged();
     setOpen(false);
     setAttemptState({ key: queryKey, data: null });
     setMessage('Dispute submitted. A Litterbugs team member will review the photos and details.');
-    await onChanged?.();
+    await Promise.resolve().then(() => onChanged?.()).catch(() => undefined);
   }
 
   const paidDisputeAvailable = attempt.is_paid
     && attempt.financial_review_status === 'passed'
-    && attempt.dispute_status === 'none';
+    && attempt.dispute_status === 'none'
+    && Boolean(attempt.review_due_at && Date.parse(attempt.review_due_at) > (attemptState.checkedAt ?? 0));
 
   return (
     <>
@@ -200,7 +232,9 @@ export function CleanupReviewAction({
               <p>{context.submission.description}</p>
               {(context.submission.bags_or_items_removed != null || context.submission.weight_pounds != null) && <small>{context.submission.bags_or_items_removed != null ? `${context.submission.bags_or_items_removed} bags/items` : ''}{context.submission.bags_or_items_removed != null && context.submission.weight_pounds != null ? ' · ' : ''}{context.submission.weight_pounds != null ? `${context.submission.weight_pounds} lb removed` : ''}</small>}
             </section>
-            <label className="cleanup-review-note">{attempt.is_paid ? 'Why are you disputing this cleanup?' : 'Feedback for the cleaner'}<textarea value={note} maxLength={attempt.is_paid ? 1000 : 500} onChange={(event) => { setNote(event.target.value); setMessage(''); }} placeholder={attempt.is_paid ? 'Explain what does not look right.' : 'Required only when asking for changes.'} /></label>
+            {!attempt.is_paid && <fieldset className="cleanup-change-reasons"><legend>Reasons for requesting changes</legend>{CLEANUP_CHANGE_REASONS.map(reason => <label key={reason.code}><input type="checkbox" checked={reasons.includes(reason.code)} onChange={event => updateFeedback(note, event.target.checked ? [...reasons, reason.code] : reasons.filter(code => code !== reason.code))} />{reason.label}</label>)}</fieldset>}
+            <label className="cleanup-review-note">{attempt.is_paid ? 'Why are you disputing this cleanup?' : 'Feedback for the cleaner'}<textarea value={note} maxLength={attempt.is_paid ? 1000 : 500} onChange={event => updateFeedback(event.target.value, reasons)} placeholder={attempt.is_paid ? 'Explain what does not look right.' : 'Optional details to help the cleaner.'} /></label>
+            {draftMessage && <p className="form-message" role="status">{draftMessage}</p>}
             {message && <p className="form-message error-message" role="alert">{message}</p>}
           </div>
           {attempt.is_paid ? (

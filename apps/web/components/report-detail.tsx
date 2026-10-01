@@ -306,7 +306,7 @@ export function ReportDetail({
                 </div>
                 <div className="report-status-row">
                   <span>{closed ? 'Report closed' : cleanupStatusLabel(report.cleanup_state)}</span>
-                  {report.funded_amount_cents > 0 && <strong>{formatUsd(report.funded_amount_cents)} {report.cleanup_state === 'completed' ? 'funded cleanup' : 'reward'}</strong>}
+                  {report.cleanup_state !== 'completed' && report.funded_amount_cents > 0 && <strong>{formatUsd(report.funded_amount_cents)} reward</strong>}
                 </div>
               </header>
 

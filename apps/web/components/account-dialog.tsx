@@ -8,6 +8,7 @@ import { FiCheckCircle, FiExternalLink, FiFileText, FiHeart, FiKey, FiLogOut, Fi
 
 import { loadAccountReports, loadAccountPages, accountReportStatus } from '@/lib/account-reports';
 import { PaymentDetail } from '@/components/payment-detail';
+import { LinkSignInMethod } from '@/components/link-sign-in-method';
 import { CommunityRank } from '@/components/community-rank';
 import { Icon } from '@/components/icon';
 import { ModalShell } from '@/components/modal-shell';
@@ -20,8 +21,11 @@ import {
   type ProfileDraftErrors,
 } from '@/lib/profile';
 import { uploadSecureBrowserMedia } from '@/lib/secure-media-upload';
+import { cloudDrafts } from '@/lib/cloud-drafts';
 import { clearAccountCleanupDrafts } from '@/lib/saved-cleanup-draft';
-import { loadReportDraft, clearPublishedReport as clearSavedReportData } from '@/lib/saved-report-draft';
+import { reportDraftLocation, clearPublishedReport as clearSavedReportData } from '@/lib/saved-report-draft';
+import { useDataRefresh } from '@/lib/use-data-refresh';
+import { reportPreferenceSync } from '@/lib/synced-report-preferences';
 import { createClient } from '@/lib/supabase/client';
 
 type CleanupAttemptRow = Database['public']['Tables']['cleanup_attempts']['Row'];
@@ -101,6 +105,10 @@ export function AccountDialog({
   onProfileChanged,
   onAccountDataChanged,
   onResumeDraft,
+  initialSection = 'profile',
+  initialActivityTab = 'current',
+  embedded = false,
+  onNavigateSection,
 }: {
   onClose: () => void;
   onSignedOut: () => void;
@@ -108,13 +116,19 @@ export function AccountDialog({
   onProfileChanged?: (profile: Profile) => void;
   onAccountDataChanged?: () => void | Promise<void>;
   onResumeDraft?: () => void;
+  initialSection?: 'profile' | 'activity' | 'payments' | 'settings';
+  initialActivityTab?: 'current' | 'history' | 'reports';
+  embedded?: boolean;
+  onNavigateSection?: (section: 'profile' | 'activity' | 'payments' | 'settings') => void;
 }) {
+  const refreshRevision = useDataRefresh();
+  const loadedUser = useRef<string | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const [hasSavedDraft, setHasSavedDraft] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
-  const [section, setSection] = useState<'profile' | 'activity' | 'payments' | 'settings'>('profile');
+  const [section, setSection] = useState<'profile' | 'activity' | 'payments' | 'settings'>(initialSection);
   useEffect(() => { headingRef.current?.focus(); }, [section]);
-  const [activityTab, setActivityTab] = useState<'current' | 'history' | 'reports'>('current');
+  const [activityTab, setActivityTab] = useState<'current' | 'history' | 'reports'>(initialActivityTab);
   const [userId, setUserId] = useState('');
   const [signInMethods, setSignInMethods] = useState<string[]>([]);
   const [reportsAvailable, setReportsAvailable] = useState(true);
@@ -189,11 +203,14 @@ export function AccountDialog({
 
       if (cancelled) return;
       setProfile(profileResult.data);
+      if (loadedUser.current !== user.id) {
+      loadedUser.current = user.id;
       setDisplayNameDraft(profileResult.data?.display_name ?? '');
       setUsernameDraft(profileResult.data?.username ?? '');
       setBioDraft(profileResult.data?.bio ?? '');
       setLocationDraft(profileResult.data?.location ?? '');
       setProfileEditing(Boolean(profileResult.data && !profileResult.data.profile_completed_at));
+      }
       setReports(reportsResult.data ?? []);
       setReportsAvailable(!reportsResult.error);
       setExpiredReports(expiredReportsResult.data ?? []);
@@ -207,14 +224,14 @@ export function AccountDialog({
       setDataLoading(false);
     }
 
-    void loadDashboard();
+    void loadDashboard().catch(() => { if (!cancelled) { setDataLoading(false); setMessage('Account data could not be refreshed. Check your connection.'); } });
     return () => { cancelled = true; };
-  }, []);
+  }, [refreshRevision]);
 
   useEffect(() => {
     if (!userId || !onResumeDraft) return;
     let cancelled = false;
-    void loadReportDraft(userId).then(draft => { if (!cancelled) setHasSavedDraft(Boolean(draft)); }).catch(() => undefined);
+    void reportDraftLocation(userId).then(draft => { if (!cancelled) setHasSavedDraft(Boolean(draft)); }).catch(() => undefined);
     return () => { cancelled = true; };
   }, [userId, onResumeDraft]);
 
@@ -261,6 +278,11 @@ export function AccountDialog({
       return setMessage('Couldn’t delete account. No additional changes were made. Check your connection and try again.');
     }
     try {
+      await reportPreferenceSync.retire(userId);
+      await cloudDrafts.retire(userId);
+      for (const key of Object.keys(localStorage)) if(key.startsWith(`litterbugs.cloud-draft.${userId}.`)) localStorage.removeItem(key);
+      window.localStorage.removeItem(`litterbugs.preferences.v2:${userId}`);
+      window.localStorage.removeItem(`litterbugs.report-preferences.v1:${userId}`);
       await clearSavedReportData(userId);
         await clearAccountCleanupDrafts(userId);
     } catch {
@@ -418,6 +440,11 @@ export function AccountDialog({
     setBusyAction('');
   }
 
+  function navigateSection(next: 'profile' | 'activity' | 'payments' | 'settings') {
+    if (onNavigateSection) onNavigateSection(next);
+    else setSection(next);
+  }
+
   const displayName = getProfileLabel(profile, email);
   const initial = displayName.charAt(0).toUpperCase();
   const savedAvatarUrl = getProfileAvatarUrl(createClient(), profile);
@@ -428,9 +455,9 @@ export function AccountDialog({
 
 
   return (
-    <ModalShell onClose={onClose} label="Your Litterbugs account" className="account-dialog member-dashboard" closeDisabled={Boolean(busyAction)}>
+    <ModalShell embedded={embedded} onClose={onClose} label="Your Litterbugs account" className="account-dialog member-dashboard" closeDisabled={Boolean(busyAction)}>
       <header className="account-screen-title">
-        {section !== 'profile' && <button className="icon-button" onClick={() => setSection('profile')} aria-label="Back to profile"><Icon name="chevron-left" /></button>}
+        {section !== 'profile' && <button className="icon-button" onClick={() => navigateSection('profile')} aria-label="Back to profile"><Icon name="chevron-left" /></button>}
         <h2 ref={headingRef} tabIndex={-1}>{section === 'profile' ? 'Profile' : section === 'activity' ? 'My activity' : section === 'payments' ? 'Payments' : 'Settings'}</h2>
       </header>
       {(section === 'profile' || profileEditing) && <header className="member-dashboard-header">
@@ -520,9 +547,9 @@ export function AccountDialog({
           {section === 'profile' && <>
           <CommunityRank userId={userId} />
           <nav className="account-section-links" aria-label="Profile sections">
-            <button onClick={() => setSection('activity')}>My activity<Icon name="chevron-right" /></button>
-            <button onClick={() => setSection('payments')}>Payments<Icon name="chevron-right" /></button>
-            <button onClick={() => setSection('settings')}>Settings<Icon name="chevron-right" /></button>
+            <button onClick={() => navigateSection('activity')}>My activity<Icon name="chevron-right" /></button>
+            <button onClick={() => navigateSection('payments')}>Payments<Icon name="chevron-right" /></button>
+            <button onClick={() => navigateSection('settings')}>Settings<Icon name="chevron-right" /></button>
           </nav>
           <section className="member-stats" aria-label="Community activity">
             <div aria-label="Reports submitted"><strong>{reportsAvailable ? reports.length : '—'}</strong><span>Reports</span></div>
@@ -646,7 +673,7 @@ export function AccountDialog({
         <div className="account-section-links">
           <button onClick={startProfileEdit}>Edit profile<Icon name="chevron-right" /></button>
         </div>
-        <details className="member-panel"><summary>Sign-in methods</summary><p>{email || 'No email shared'}</p>{signInMethods.length ? signInMethods.map(provider => <p key={provider}>{provider === 'email' ? 'Email and password' : provider.charAt(0).toUpperCase() + provider.slice(1)} · Connected</p>) : <p>Sign-in method information is unavailable.</p>}<p>Use a connected method to sign in on the website or mobile app.</p></details>
+        <details className="member-panel"><summary>Sign-in methods</summary><p>{email || 'No email shared'}</p>{signInMethods.length ? signInMethods.map(provider => <p key={provider}>{provider === 'email' ? 'Email and password' : provider.charAt(0).toUpperCase() + provider.slice(1)} · Connected</p>) : <p>Sign-in method information is unavailable.</p>}<LinkSignInMethod connected={signInMethods} /></details>
             <details className="member-panel member-blocked-panel">
               <summary>Blocked accounts</summary>
               <div className="member-activity-list">

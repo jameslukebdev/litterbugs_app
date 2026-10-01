@@ -1,0 +1,279 @@
+{
+  "sitemapCount": 17,
+  "results": [
+    {
+      "url": "https://litterbugs.app",
+      "status": 200,
+      "final": "https://litterbugs.app",
+      "robotsHeader": null,
+      "metaRobots": [],
+      "canonical": [
+        "https://litterbugs.app"
+      ]
+    },
+    {
+      "url": "https://litterbugs.app/about",
+      "status": 200,
+      "final": "https://litterbugs.app/about",
+      "robotsHeader": null,
+      "metaRobots": [],
+      "canonical": [
+        "https://litterbugs.app/about"
+      ]
+    },
+    {
+      "url": "https://litterbugs.app/support",
+      "status": 200,
+      "final": "https://litterbugs.app/support",
+      "robotsHeader": null,
+      "metaRobots": [],
+      "canonical": [
+        "https://litterbugs.app/support"
+      ]
+    },
+    {
+      "url": "https://litterbugs.app/help",
+      "status": 200,
+      "final": "https://litterbugs.app/help",
+      "robotsHeader": null,
+      "metaRobots": [],
+      "canonical": [
+        "https://litterbugs.app/help"
+      ]
+    },
+    {
+      "url": "https://litterbugs.app/cleanup-safety",
+      "status": 200,
+      "final": "https://litterbugs.app/cleanup-safety",
+      "robotsHeader": null,
+      "metaRobots": [],
+      "canonical": [
+        "https://litterbugs.app/cleanup-safety"
+      ]
+    },
+    {
+      "url": "https://litterbugs.app/cleanup-policy",
+      "status": 200,
+      "final": "https://litterbugs.app/cleanup-policy",
+      "robotsHeader": null,
+      "metaRobots": [],
+      "canonical": [
+        "https://litterbugs.app/cleanup-policy"
+      ]
+    },
+    {
+      "url": "https://litterbugs.app/privacy",
+      "status": 200,
+      "final": "https://litterbugs.app/privacy",
+      "robotsHeader": null,
+      "metaRobots": [],
+      "canonical": [
+        "https://litterbugs.app/privacy"
+      ]
+    },
+    {
+      "url": "https://litterbugs.app/terms",
+      "status": 200,
+      "final": "https://litterbugs.app/terms",
+      "robotsHeader": null,
+      "metaRobots": [],
+      "canonical": [
+        "https://litterbugs.app/terms"
+      ]
+    },
+    {
+      "url": "https://litterbugs.app/photo-review",
+      "status": 200,
+      "final": "https://litterbugs.app/photo-review",
+      "robotsHeader": null,
+      "metaRobots": [],
+      "canonical": [
+        "https://litterbugs.app/photo-review"
+      ]
+    },
+    {
+      "url": "https://litterbugs.app/cleaner",
+      "status": 200,
+      "final": "https://litterbugs.app/cleaner",
+      "robotsHeader": null,
+      "metaRobots": [],
+      "canonical": [
+        "https://litterbugs.app/cleaner"
+      ]
+    },
+    {
+      "url": "https://litterbugs.app/reports/04001e36-1dcf-4bf7-b3b6-208ae50288f6",
+      "status": 200,
+      "final": "https://litterbugs.app/reports/04001e36-1dcf-4bf7-b3b6-208ae50288f6",
+      "robotsHeader": null,
+      "metaRobots": [],
+      "canonical": [
+        "https://litterbugs.app/reports/04001e36-1dcf-4bf7-b3b6-208ae50288f6"
+      ]
+    },
+    {
+      "url": "https://litterbugs.app/reports/25b202b4-b36f-47b8-b50d-a77de060d702",
+      "status": 200,
+      "final": "https://litterbugs.app/reports/25b202b4-b36f-47b8-b50d-a77de060d702",
+      "robotsHeader": null,
+      "metaRobots": [],
+      "canonical": [
+        "https://litterbugs.app/reports/25b202b4-b36f-47b8-b50d-a77de060d702"
+      ]
+    },
+    {
+      "url": "https://litterbugs.app/reports/42dd5736-8b33-41a0-951c-2d5db84e113a",
+      "status": 200,
+      "final": "https://litterbugs.app/reports/42dd5736-8b33-41a0-951c-2d5db84e113a",
+      "robotsHeader": null,
+      "metaRobots": [],
+      "canonical": [
+        "https://litterbugs.app/reports/42dd5736-8b33-41a0-951c-2d5db84e113a"
+      ]
+    },
+    {
+      "url": "https://litterbugs.app/reports/62fbcc67-1f15-429f-bb12-46058c6cfdf6",
+      "status": 200,
+      "final": "https://litterbugs.app/reports/62fbcc67-1f15-429f-bb12-46058c6cfdf6",
+      "robotsHeader": null,
+      "metaRobots": [],
+      "canonical": [
+        "https://litterbugs.app/reports/62fbcc67-1f15-429f-bb12-46058c6cfdf6"
+      ]
+    },
+    {
+      "url": "https://litterbugs.app/reports/ba227d19-b46d-46fa-a02c-7d1f4c5047c3",
+      "status": 200,
+      "final": "https://litterbugs.app/reports/ba227d19-b46d-46fa-a02c-7d1f4c5047c3",
+      "robotsHeader": null,
+      "metaRobots": [],
+      "canonical": [
+        "https://litterbugs.app/reports/ba227d19-b46d-46fa-a02c-7d1f4c5047c3"
+      ]
+    },
+    {
+      "url": "https://litterbugs.app/reports/ce154938-f7c9-40d9-99bc-4a5d43710aa0",
+      "status": 200,
+      "final": "https://litterbugs.app/reports/ce154938-f7c9-40d9-99bc-4a5d43710aa0",
+      "robotsHeader": null,
+      "metaRobots": [],
+      "canonical": [
+        "https://litterbugs.app/reports/ce154938-f7c9-40d9-99bc-4a5d43710aa0"
+      ]
+    },
+    {
+      "url": "https://litterbugs.app/reports/ed1500be-2555-4504-9421-6a72451c3ea6",
+      "status": 200,
+      "final": "https://litterbugs.app/reports/ed1500be-2555-4504-9421-6a72451c3ea6",
+      "robotsHeader": null,
+      "metaRobots": [],
+      "canonical": [
+        "https://litterbugs.app/reports/ed1500be-2555-4504-9421-6a72451c3ea6"
+      ]
+    },
+    {
+      "url": "https://litterbugs.app/robots.txt",
+      "status": 200,
+      "final": "https://litterbugs.app/robots.txt",
+      "robotsHeader": null,
+      "metaRobots": [],
+      "canonical": []
+    },
+    {
+      "url": "https://litterbugs.app/manifest.webmanifest",
+      "status": 200,
+      "final": "https://litterbugs.app/manifest.webmanifest",
+      "robotsHeader": null,
+      "metaRobots": [],
+      "canonical": []
+    },
+    {
+      "url": "https://litterbugs.app/account/reports",
+      "status": 200,
+      "final": "https://litterbugs.app/account/reports",
+      "robotsHeader": null,
+      "metaRobots": [
+        "noindex, nofollow"
+      ],
+      "canonical": []
+    },
+    {
+      "url": "https://litterbugs.app/sign-in",
+      "status": 200,
+      "final": "https://litterbugs.app/sign-in",
+      "robotsHeader": null,
+      "metaRobots": [
+        "noindex, nofollow"
+      ],
+      "canonical": []
+    },
+    {
+      "url": "https://litterbugs.app/how-it-works",
+      "status": 200,
+      "final": "https://litterbugs.app/about",
+      "robotsHeader": null,
+      "metaRobots": [],
+      "canonical": [
+        "https://litterbugs.app/about"
+      ]
+    },
+    {
+      "url": "https://litterbugs.app/safety",
+      "status": 200,
+      "final": "https://litterbugs.app/cleanup-safety",
+      "robotsHeader": null,
+      "metaRobots": [],
+      "canonical": [
+        "https://litterbugs.app/cleanup-safety"
+      ]
+    },
+    {
+      "url": "https://litterbugs.app/account/privacy",
+      "status": 200,
+      "final": "https://litterbugs.app/privacy",
+      "robotsHeader": null,
+      "metaRobots": [],
+      "canonical": [
+        "https://litterbugs.app/privacy"
+      ]
+    },
+    {
+      "url": "https://litterbugs.app/account/legal",
+      "status": 200,
+      "final": "https://litterbugs.app/account/legal",
+      "robotsHeader": null,
+      "metaRobots": [
+        "noindex, nofollow"
+      ],
+      "canonical": []
+    },
+    {
+      "url": "https://litterbugs.app/account/connect",
+      "status": 200,
+      "final": "https://litterbugs.app/account/connect",
+      "robotsHeader": null,
+      "metaRobots": [
+        "noindex, nofollow"
+      ],
+      "canonical": []
+    },
+    {
+      "url": "https://litterbugs.app/report",
+      "status": 200,
+      "final": "https://litterbugs.app/report",
+      "robotsHeader": null,
+      "metaRobots": [
+        "noindex, nofollow"
+      ],
+      "canonical": []
+    },
+    {
+      "url": "https://litterbugs.app/&",
+      "status": 404
+    },
+    {
+      "url": "https://litterbugs.app/$",
+      "status": 404
+    }
+  ]
+}

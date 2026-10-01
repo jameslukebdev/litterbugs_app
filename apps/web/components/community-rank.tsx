@@ -1,6 +1,7 @@
 'use client';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import { useDataRefresh } from '@/lib/use-data-refresh';
 import { createClient } from '@/lib/supabase/client';
 
 // Same thresholds and artwork as mobile/lib/ranking.js.
@@ -26,6 +27,7 @@ function loadRank(userId: string) {
   return work;
 }
 export function CommunityRank({ userId, compact = false }: { userId: string; compact?: boolean }) {
+  const refreshRevision = useDataRefresh();
   const [points, setPoints] = useState<number | null>(null);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -33,7 +35,7 @@ export function CommunityRank({ userId, compact = false }: { userId: string; com
     let cancelled = false;
     void loadRank(userId).then(value => { if (!cancelled) { setError(false); setPoints(value); } }).catch(() => { if (!cancelled) { setError(true); setPoints(null); } });
     return () => { cancelled = true; };
-  }, [userId, attempt]);
+  }, [userId, attempt, refreshRevision]);
   const index = ranks.reduce((current, rank, index) => (points ?? 0) >= rank.points ? index : current, 0);
   const rank = ranks[index];
   const next = ranks[index + 1];

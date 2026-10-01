@@ -11,6 +11,7 @@ const createSignedUrl = vi.fn(async (path: string) => ({
   error: null,
 }));
 
+vi.mock('@/lib/prepare-browser-photo', () => ({ prepareBrowserPhotos: async (files: File[]) => files }));
 vi.mock('@/lib/supabase/client', () => ({
   createClient: () => ({
     from: () => { const builder = { select: () => builder, eq: () => builder, not: () => builder, order: () => builder, limit: () => builder, maybeSingle: async () => ({ data: null, error: null }) }; return builder; },
@@ -136,10 +137,10 @@ describe('ReportDetail photos', () => {
 
     expect(screen.getByText('$125.00 reward')).toBeTruthy();
     expect(screen.getByText('Cleanup in progress')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Share' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Share' })).toBeTruthy();
   });
 
-  it('offers sharing only for public available and completed reports', () => {
+  it('offers sharing throughout a public report lifecycle', () => {
     const { rerender } = render(
       <ReportDetail
         report={report}
@@ -161,7 +162,7 @@ describe('ReportDetail photos', () => {
         onDelete={vi.fn()}
       />,
     );
-    expect(screen.queryByRole('button', { name: 'Share' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Share' })).toBeTruthy();
 
     rerender(
       <ReportDetail

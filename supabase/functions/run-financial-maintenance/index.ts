@@ -583,6 +583,16 @@ Deno.serve(async (request: Request) => {
   const results: Record<string, unknown> = {};
   try {
     if (internal) {
+      results.drafts = await (async () => {
+        const { data, error } = await admin.rpc('expire_customer_drafts');
+        if (error) throw error;
+        const paths = (data ?? []).map((row: { path: string }) => row.path);
+        if (paths.length) {
+          const { error: removeError } = await admin.storage.from('customer_draft_photos').remove(paths);
+          if (removeError) throw removeError;
+        }
+        return { removed: paths.length };
+      })().catch(() => { console.error('Draft retention cleanup is temporarily unavailable'); return { pending: true }; });
       results.appleRevocation = await processAppleRevocation(admin).catch(() => {
         console.error('Apple revocation queue is temporarily unavailable');
         return { pending: true };

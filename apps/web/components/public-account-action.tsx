@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 
+import { NotificationLink } from '@/components/notification-inbox';
 import { AccountDialog } from '@/components/account-dialog';
 import { AuthDialog, type AuthIntent } from '@/components/auth-dialog';
 import { getProfileAvatarUrl, getProfileLabel, type Profile } from '@/lib/profile';
@@ -71,9 +72,9 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
   }, [loadProfile]);
 
   useImperativeHandle(ref, () => ({
-    openAccount: () => { if (userId) setAccountOpen(true); else { setAuthIntent(null); setAuthOpen(true); } },
+    openAccount: () => { if (userId) router.push('/account'); else { setAuthIntent(null); setAuthOpen(true); } },
     openAuth: (intent = null) => { setAuthIntent(intent); setAuthOpen(true); },
-  }), [userId]);
+  }), [userId, router]);
 
   const avatarUrl = getProfileAvatarUrl(createClient(), profile);
   const profileLabel = getProfileLabel(profile, email);
@@ -85,10 +86,11 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
 
   return (
     <>
+      {userId && <NotificationLink key={userId} userId={userId} />}
       <button
         type="button"
         className={`public-account-control${userId ? '' : ' public-account-control-signed-out'}`}
-        onClick={() => userId ? setAccountOpen(true) : setAuthOpen(true)}
+        onClick={() => userId ? router.push('/account') : setAuthOpen(true)}
       >
         {userId && (avatarUrl ? (
           <Image className="public-account-avatar" src={avatarUrl} alt="" width={28} height={28} unoptimized aria-hidden />

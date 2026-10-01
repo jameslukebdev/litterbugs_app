@@ -1,5 +1,19 @@
 # Current Mobile Release Candidates
 
+## October 1 — customer web/app sync and map stability
+
+**Apple accepted iOS 2.0.0/build 15 and it is available for internal TestFlight testing** (`VALID`, `IN_BETA_TESTING`). It supersedes build 14 for customer draft/photo sync, favorites/hidden reports, refresh behavior, historical rewards and reduced map marker motion.
+
+- Source: `8370e5cf64346355c8cdd6d82a8e16120044f9b6`.
+- EAS build: `5a85bae2-0b95-4a8b-90b6-c30384fa5bfe` (finished).
+- EAS submission: `985b3f4e-6e87-4fda-82e6-9c66f096bf84` (finished).
+- [TestFlight](https://appstoreconnect.apple.com/apps/6757313862/testflight/ios).
+- The compatible website and three additive backend migrations are live. Subsequent source changes affect web/backend/docs only. Production pricing remains version 1.
+- Native unit tests, both native Hermes exports and isolated native draft-adapter integration passed. This pass did not perform a physical-device walkthrough of build 15 or a new live financial transaction. Android source/export is updated; no new Android store binary or Play submission was requested in this TestFlight-focused pass.
+- No external beta review or public App Store release was submitted. Existing Apple-revocation/separate-Facebook limitations remain excluded, not passed.
+
+See [release evidence and indexing status](reviews/2026-10-01-web-parity-implementation.md).
+
 ## September 30 — single-amount service fee release
 
 Release source `a4d9be14b500a0be14f8c244c7d7a9f73da289a4` includes all current

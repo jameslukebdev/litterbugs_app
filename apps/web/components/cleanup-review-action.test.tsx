@@ -27,6 +27,7 @@ vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({
 }) }));
 
 beforeEach(() => {
+  localStorage.clear();
   state.paid = false;
   rpc.mockResolvedValue({ data: { status: 'changes_requested' }, error: null });
   vi.spyOn(window, 'confirm').mockReturnValue(true);
@@ -44,9 +45,10 @@ it('sends a valid change-request reason and a bounded note', async () => {
   const input = screen.getByRole('textbox') as HTMLTextAreaElement;
   expect(input.maxLength).toBe(500);
   fireEvent.change(input, { target: { value: 'Please show the remaining area.' } });
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Need another photo' }));
   fireEvent.click(screen.getByRole('button', { name: 'Request changes' }));
   await waitFor(() => expect(rpc).toHaveBeenCalledWith('review_cleanup', expect.objectContaining({
-    review_decision: 'changes_requested', request_change_reasons: ['other'], reviewer_note: 'Please show the remaining area.',
+    review_decision: 'changes_requested', request_change_reasons: ['additional_photo_needed'], reviewer_note: 'Please show the remaining area.',
   })));
   await screen.findByText('The cleaner has been asked for updated evidence.');
 });
@@ -66,6 +68,7 @@ it('reports actual completion if the deadline passed during a change request', a
   rpc.mockResolvedValue({ data: { status: 'completed' }, error: null });
   await openReview();
   fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Please check this area.' } });
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Need another photo' }));
   fireEvent.click(screen.getByRole('button', { name: 'Request changes' }));
   await screen.findByText('Cleanup approved.');
   expect(screen.queryByText('The cleaner has been asked for updated evidence.')).toBeNull();

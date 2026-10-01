@@ -1,6 +1,7 @@
 import { getDistanceMiles, hasReportCoordinates, type Coordinates, type Database, type MappableReport, type Report } from '@litterbugs/report-contract';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { inBoundary, type BoundaryGeometry } from '@/lib/place-geography';
+import { withCompletedRewards, reportRewardCents } from '@/lib/cleanup-reward';
 import { reportDiscoveryWindow } from '@/lib/report-visibility';
 
 export type DiscoveryFilters = {
@@ -23,8 +24,8 @@ export function matchesDiscovery(report: MappableReport, filters: DiscoveryFilte
   if (filters.status === 'available' && report.cleanup_state !== 'available') return false;
   if (filters.status === 'completed' && report.cleanup_state !== 'completed') return false;
   if (filters.status === 'progress' && !['claimed', 'completion_submitted', 'changes_requested'].includes(report.cleanup_state ?? '')) return false;
-  if (filters.funding === 'funded' && !(report.funded_amount_cents > 0)) return false;
-  if (filters.funding === 'volunteer' && report.funded_amount_cents > 0) return false;
+  if (filters.funding === 'funded' && !((reportRewardCents(report) ?? 0) > 0)) return false;
+  if (filters.funding === 'volunteer' && (reportRewardCents(report) == null || (reportRewardCents(report) ?? 0) > 0)) return false;
   if (filters.severity !== 'all' && report.severity?.toLowerCase() !== filters.severity) return false;
   const text = [report.title, report.notes_other, ...(report.notes_presets ?? [])].filter(Boolean).join(' ').toLowerCase();
   if (filters.query.trim() && !text.includes(filters.query.trim().toLowerCase())) return false;
@@ -59,14 +60,14 @@ export async function loadDiscoveryReports(client: SupabaseClient<Database>, { f
     }
     if (filters.status === 'available' || filters.status === 'completed') query = query.eq('cleanup_state', filters.status);
     if (filters.status === 'progress') query = query.in('cleanup_state', ['claimed', 'completion_submitted', 'changes_requested']);
-    if (filters.funding === 'funded') query = query.gt('funded_amount_cents', 0);
-    if (filters.funding === 'volunteer') query = query.or('funded_amount_cents.lte.0,funded_amount_cents.is.null');
+    if (filters.status === 'available' && filters.funding === 'funded') query = query.gt('funded_amount_cents', 0);
+    if (filters.status === 'available' && filters.funding === 'volunteer') query = query.or('funded_amount_cents.lte.0,funded_amount_cents.is.null');
     if (filters.severity !== 'all') query = query.ilike('severity', filters.severity);
     const page = query.order('created_at', { ascending: false }).order('id').range(offset, offset + size - 1);
     const { data, error } = await (signal ? page.abortSignal(signal) : page);
     if (signal?.aborted) throw new Error('Obsolete report search');
     if (error) throw error;
-    return data ?? [];
+    return withCompletedRewards(client, data ?? []);
   }, report => hasReportCoordinates(report) && matchesDiscovery(report, filters, area, favorites, hidden, geometry));
   return { ...result, reports: result.reports.filter(hasReportCoordinates) };
 }

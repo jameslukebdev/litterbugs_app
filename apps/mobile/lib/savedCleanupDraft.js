@@ -1,3 +1,4 @@
+import { cloudDrafts } from './cloudDrafts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -6,7 +7,7 @@ const directory = (userId, cleanupId) => `${FileSystem.documentDirectory}cleanup
 let queue = Promise.resolve();
 export const waitForCleanupDraftWrites = () => queue.catch(() => {});
 const enqueue = work => { const result = queue.catch(() => {}).then(work); queue = result; return result; };
-export function saveCleanupDraft(userId, cleanupId, draft) {
+export function saveLocalCleanupDraft(userId, cleanupId, draft) {
   return enqueue(async () => {
     const folder = directory(userId, cleanupId);
     await FileSystem.makeDirectoryAsync(folder, { intermediates: true });
@@ -19,7 +20,7 @@ export function saveCleanupDraft(userId, cleanupId, draft) {
     await AsyncStorage.setItem(key(userId, cleanupId), JSON.stringify({ ...draft, photos, savedAt: Date.now() }));
   });
 }
-export function loadCleanupDraft(userId, cleanupId) {
+export function loadLocalCleanupDraft(userId, cleanupId) {
   return enqueue(async () => {
     const raw = await AsyncStorage.getItem(key(userId, cleanupId));
     if (!raw) return null;
@@ -30,9 +31,21 @@ export function loadCleanupDraft(userId, cleanupId) {
     return { ...draft, photos, missingPhotoCount: draft.photos.length - photos.length };
   });
 }
-export function clearCleanupDraft(userId, cleanupId) {
+export function clearLocalCleanupDraft(userId, cleanupId) {
   return enqueue(async () => {
     await AsyncStorage.removeItem(key(userId, cleanupId));
     await FileSystem.deleteAsync(directory(userId, cleanupId), { idempotent: true });
   });
 }
+
+export async function saveCleanupDraft(userId, cleanupId, draft) { if(cloudDrafts.isRetired(userId)) throw new Error('This account was deleted.'); await saveLocalCleanupDraft(userId, cleanupId, draft); cloudDrafts.schedule(userId, `cleanup:${cleanupId}`); }
+export async function loadCleanupDraft(userId, cleanupId, correctionDueAt) {
+  const draft = await cloudDrafts.load(userId, `cleanup:${cleanupId}`);
+  if(draft && correctionDueAt !== undefined && (draft.correctionDueAt ?? null) !== correctionDueAt) {
+    await cloudDrafts.discard(userId, `cleanup:${cleanupId}`);
+    const updated = { ...draft, correctionDueAt, submissionId: undefined };
+    await saveCleanupDraft(userId, cleanupId, updated); return updated;
+  }
+  return draft;
+}
+export const clearCleanupDraft = (userId, cleanupId) => cloudDrafts.discard(userId, `cleanup:${cleanupId}`);

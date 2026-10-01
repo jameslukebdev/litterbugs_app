@@ -41,6 +41,8 @@ export default async function Image({ params }: { params: Promise<{ id: string }
           <span style={{ color: completed ? '#2f7d32' : '#b448cf', fontSize: 22, fontWeight: 900, letterSpacing: 1.5 }}>
             {completed
               ? 'CLEANUP COMPLETE'
+              : report?.state === 'in_progress'
+                ? 'CLEANUP IN PROGRESS'
               : report?.rewardCents && report.rewardCents > 0
                 ? `$${(report.rewardCents / 100).toFixed(2)} CLEANUP REWARD`
                 : 'VOLUNTEER CLEANUP NEEDED'}

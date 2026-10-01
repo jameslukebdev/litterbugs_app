@@ -1,3 +1,4 @@
+import type { CloudDraft, DraftWrite } from './cloud-drafts';
 export type Json =
   | string
   | number
@@ -14,6 +15,7 @@ export type Database = {
   }
   public: {
     Tables: {
+      customer_drafts: { Row: CloudDraft; Insert: never; Update: never; Relationships: [] };
       cleaner_payout_accounts: {
         Row: {
           age_18_confirmed_at: string | null
@@ -1359,6 +1361,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      write_customer_draft: { Args: DraftWrite; Returns: CloudDraft };
+      expire_customer_drafts: { Args: Record<string, never>; Returns: { path: string }[] };
+      sync_report_preferences: {
+        Args: { target_user_id: string; seed?: Json; operations?: Json };
+        Returns: Json;
+      };
       publish_report: {
         Args: {
           target_report_id: string

@@ -1,5 +1,7 @@
 import { usePreventRemove } from '@react-navigation/native';
 import * as Crypto from 'expo-crypto';
+import CloudDraftStatus from './components/CloudDraftStatus';
+import { cloudDrafts } from './lib/cloudDrafts';
 import { loadCleanupDraft, saveCleanupDraft, clearCleanupDraft } from './lib/savedCleanupDraft';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -126,7 +128,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
   const submitted = useRef(false);
   const draftOwner = useRef(null);
   const latestDraft = useRef(null);
-  latestDraft.current = { photos, description, bagsOrItemsRemoved, weightPounds, submissionId: submissionId.current };
+  latestDraft.current = { photos, description, bagsOrItemsRemoved, weightPounds, submissionId: submissionId.current, correctionDueAt: context?.attempt?.correction_due_at ?? null };
 
   useEffect(() => {
     let active = true;
@@ -134,8 +136,8 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
     setDraftReady(false);
     setDraftLoadError(false);
     submitted.current = false;
-    if (!userId || !cleanupId) return;
-    loadCleanupDraft(userId, cleanupId).then(draft => {
+    if (!userId || !cleanupId || !context?.attempt) return;
+    loadCleanupDraft(userId, cleanupId, context.attempt.correction_due_at ?? null).then(draft => {
       if (!active) return;
       submissionId.current = draft?.submissionId || Crypto.randomUUID();
       setPhotos([]); setDescription(''); setBagsOrItemsRemoved(''); setWeightPounds('');
@@ -150,7 +152,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
     }).catch(() => { if (active) { setDraftLoadError(true); setDraftStatus('Couldn’t restore the saved draft'); } })
       .finally(() => { if (active) setDraftReady(true); });
     return () => { active = false; };
-  }, [userId, cleanupId, draftRestoreAttempt]);
+  }, [userId, cleanupId, draftRestoreAttempt, context?.attempt?.id, context?.attempt?.correction_due_at]);
 
   useEffect(() => {
     if (!draftReady || submitted.current || !userId || !cleanupId || draftOwner.current !== `${userId}:${cleanupId}`) return;
@@ -259,6 +261,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
       setSubmitting(true);
       setSubmissionProgress({ stage: 'preparing', current: 1, total: photos.length });
       await saveCleanupDraft(userId, cleanupId, latestDraft.current);
+      submissionId.current = await cloudDrafts.begin(userId, `cleanup:${cleanupId}`);
       const result = await uploadCleanupSubmission({
         submissionId: submissionId.current,
         cleanupId: context.attempt.id,
@@ -375,6 +378,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
+        {draftReady && !submitted.current ? <CloudDraftStatus userId={userId} draftKey={`cleanup:${cleanupId}`} onRestored={() => setDraftRestoreAttempt(value => value + 1)} /> : null}
         {!submitted.current ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
           {missingPhotoCount > 0 ? <Text style={{ color: '#8A6400', marginBottom: 8 }}>{missingPhotoCount} saved {missingPhotoCount === 1 ? 'photo is' : 'photos are'} no longer on this device. Add replacement photos before submitting. Your other answers were kept.</Text> : null}
           <Text accessibilityLiveRegion="polite" style={{ flex: 1, color: '#687178', fontSize: 12 }}>{draftStatus}</Text>

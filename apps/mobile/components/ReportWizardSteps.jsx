@@ -2,7 +2,6 @@ import { View, Text, TextInput, Image, TouchableOpacity, Keyboard, ActivityIndic
 import { Ionicons } from '@expo/vector-icons';
 import { MAX_REPORT_PHOTOS } from '../lib/reportPhotoSelection';
 import { formatUsd } from '../lib/funding';
-import { calculatePlatformFee } from '../lib/fundingMath';
 import FeeExplanationLabel from './FeeExplanationLabel';
 import { LoadingButtonContent } from '../BrandedLoadingState';
 import { getLitterSelectionColors } from '../lib/litterSelectionColors';
@@ -676,11 +675,11 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                     </View>
                     <View style={styles.startingFundSummaryRow}>
                       <FeeExplanationLabel />
-                      <Text style={styles.startingFundSummaryText}>{formatUsd(calculatePlatformFee(startingContributionCents))}</Text>
+                      <Text style={styles.startingFundSummaryText}>Shown at checkout</Text>
                     </View>
                     <View style={[styles.startingFundSummaryRow, styles.startingFundTotalRow]}>
                       <Text style={styles.startingFundTotal}>Total</Text>
-                      <Text style={styles.startingFundTotal}>{formatUsd(startingContributionCents + calculatePlatformFee(startingContributionCents))}</Text>
+                      <Text style={styles.startingFundTotal}>Confirmed before payment</Text>
                     </View>
                   </View>
                 ) : (

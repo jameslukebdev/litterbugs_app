@@ -2,12 +2,16 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { EMPTY_REPORT_DRAFT, type Coordinates, type ReportDraft } from '@litterbugs/report-contract';
+import { cloudDrafts } from '@/lib/cloud-drafts';
+import { CloudDraftStatus } from '@/components/cloud-draft-status';
+import { useDraftEditorLock } from '@/lib/use-draft-editor-lock';
 import { ModalShell } from '@/components/modal-shell';
 import { ReportWizard } from '@/components/report-wizard';
 import { clearReportDraft, loadReportDraft, loadReportPublication, saveReportDraft, type ReportPublicationJournal, type ReportWizardSnapshot, type SavedReportDraft } from '@/lib/saved-report-draft';
 
-export function ResumableReportWizard({ userId, coordinates, selectingLocation, fundingEnabled, onCoordinatesChange, onRestorePublication, onChangeLocation, onClose, onSubmit }: {
+export function ResumableReportWizard({ userId, submissionProgress, coordinates, selectingLocation, fundingEnabled, onCoordinatesChange, onRestorePublication, onChangeLocation, onClose, onSubmit }: {
   userId: string;
+  submissionProgress?: string;
   coordinates: Coordinates;
   selectingLocation: boolean;
   fundingEnabled: boolean;
@@ -17,6 +21,10 @@ export function ResumableReportWizard({ userId, coordinates, selectingLocation, 
   onClose: () => void;
   onSubmit: (draft: ReportDraft, amount: number | null) => Promise<string | null>;
 }) {
+  const editorLock = useDraftEditorLock(userId, 'report');
+  const [locked, setLocked] = useState(cloudDrafts.status(userId, 'report') === 'submitting');
+  const [generation, setGeneration] = useState(0);
+  useEffect(() => cloudDrafts.subscribe((owner,key,status) => { if(owner===userId && key==='report') setLocked(status==='submitting'); }), [userId]);
   const [mode, setMode] = useState<'loading' | 'resume' | 'editing' | 'close' | 'error'>('loading');
   const [saved, setSaved] = useState<SavedReportDraft>();
   const [pending, setPending] = useState(false);
@@ -25,6 +33,7 @@ export function ResumableReportWizard({ userId, coordinates, selectingLocation, 
   const snapshot = useRef<ReportWizardSnapshot | null>(null);
   const active = useRef(true);
   useEffect(() => {
+    if(editorLock !== 'ready') return;
     active.current = true;
     void Promise.all([loadReportDraft(userId), loadReportPublication(userId)]).then(([draft, journal]) => {
       if (!active.current) return;
@@ -39,40 +48,41 @@ export function ResumableReportWizard({ userId, coordinates, selectingLocation, 
       if (active.current) { setMessage('Your saved report could not be loaded. Close this window and try again.'); setMode('error'); }
     });
     return () => { active.current = false; };
-  }, [userId, onRestorePublication]);
+  }, [userId, onRestorePublication, editorLock]);
 
   const saveSnapshot = useCallback((next: ReportWizardSnapshot) => {
+    if(locked || mode !== 'editing') return;
     snapshot.current = next;
     void saveReportDraft(userId, { ...next, coordinates }).then(() => {
       if (active.current) setMessage('');
     }).catch(() => {
       if (active.current) setMessage('Draft could not be saved on this browser. Keep this screen open and try Save for later again.');
     });
-  }, [userId, coordinates]);
+  }, [userId, coordinates, locked, mode]);
 
   async function closeDraft(discard: boolean) {
     setBusy(true);
     try {
       if (discard) {
-        // Check again because publication may have become uncertain since loading.
-        if (await loadReportPublication(userId)) {
-          setMessage('Your previous submission needs checking. Keep editing and submit again to recover it.');
-          return;
-        }
         await clearReportDraft(userId);
+        onRestorePublication(undefined);
       } else if (snapshot.current) await saveReportDraft(userId, { ...snapshot.current, coordinates });
       onClose();
     } catch { setMessage('Draft could not be saved. Keep this screen open and try again.'); }
     finally { setBusy(false); }
   }
 
+  const syncStatus = <CloudDraftStatus userId={userId} draftKey="report" onRestored={async () => {
+    const restored = await loadReportDraft(userId); if(restored) {setSaved(restored);onCoordinatesChange(restored.coordinates);setGeneration(value=>value+1);}
+  }} />;
+  if(editorLock === 'unavailable') return <ModalShell label="Draft open in another tab" onClose={onClose}><h2>Draft open in another tab</h2><p>Close the other draft editor, then reopen this draft here.</p></ModalShell>;
   if (mode === 'loading' || mode === 'resume' || mode === 'error') return (
     <ModalShell label="Saved report" onClose={onClose} closeDisabled={busy}>
       <div className="wizard-content">
         <h2>{mode === 'loading' ? 'Checking for a saved report…' : mode === 'error' ? 'Draft unavailable' : 'Resume your report?'}</h2>
-        {mode === 'resume' && <><p>Your details, photos, and chosen location are saved in this browser.</p>{pending && <p>Your last submission needs checking. Resume and submit again to check the original report.</p>}
+        {mode === 'resume' && <><p>Your saved draft includes its details, photos, and chosen location.</p>{pending && <p>Your last submission needs checking. Resume and submit again to check the original report.</p>}
           <div className="draft-recovery-actions"><button className="primary-button" disabled={busy} onClick={() => { onCoordinatesChange(saved!.coordinates); setMode('editing'); }}>Resume draft</button>
-          {!pending && <button className="secondary-button" disabled={busy} onClick={async () => {
+          {!pending && !locked && <button className="secondary-button" disabled={busy} onClick={async () => {
             setBusy(true);
             try { await clearReportDraft(userId); setSaved(undefined); setMode('editing'); }
             catch { setMessage('The saved draft could not be cleared. Please try again.'); }
@@ -80,18 +90,20 @@ export function ResumableReportWizard({ userId, coordinates, selectingLocation, 
           }}>Start new</button>}
           <button className="secondary-button" disabled={busy} onClick={onClose}>Cancel</button></div>
         </>}
+        {mode !== 'loading' && syncStatus}
         {message && <p role="alert">{message}</p>}
       </div>
     </ModalShell>
   );
 
   return <>
-    <ReportWizard draftSaveMessage={message} initialDraft={{ ...EMPTY_REPORT_DRAFT }} initialState={saved} onStateChange={saveSnapshot} isEditing={false} fundingEnabled={fundingEnabled} coordinates={coordinates} selectingLocation={selectingLocation || mode === 'close'} onChangeLocation={onChangeLocation} onClose={() => setMode('close')} onSubmit={onSubmit} />
+    <ReportWizard key={generation} draftSync={syncStatus} draftLocked={locked} submissionProgress={submissionProgress} draftSaveMessage={message} initialDraft={{ ...EMPTY_REPORT_DRAFT }} initialState={saved} onStateChange={saveSnapshot} isEditing={false} fundingEnabled={fundingEnabled} coordinates={coordinates} selectingLocation={selectingLocation || mode === 'close'} onChangeLocation={onChangeLocation} onClose={() => setMode('close')} onSubmit={onSubmit} />
     {mode === 'close' && <ModalShell label="Keep your report?" onClose={() => { if (!busy) setMode('editing'); }} closeDisabled={busy}>
-      <div className="wizard-content"><h2>Keep your report?</h2><p>Save your photos and details in this browser to finish later.</p>
+      <div className="wizard-content"><h2>Keep your report?</h2><p>Keep your photos and details to finish later. Discarding cancels any unfinished submission; an already published report stays published.</p>
         <div className="draft-recovery-actions"><button className="primary-button" disabled={busy} onClick={() => void closeDraft(false)}>Save for later</button>
         <button className="secondary-button" disabled={busy} onClick={() => setMode('editing')}>Keep editing</button>
-        <button className="secondary-button" disabled={busy || pending} onClick={() => void closeDraft(true)}>Discard draft</button></div>
+        <button className="secondary-button" disabled={busy} onClick={() => void closeDraft(true)}>Discard draft</button></div>
+        {syncStatus}
         {message && <p role="alert">{message}</p>}
       </div>
     </ModalShell>}

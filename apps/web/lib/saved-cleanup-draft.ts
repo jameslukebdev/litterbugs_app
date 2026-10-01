@@ -1,4 +1,5 @@
-export type CleanupDraft = { photos: File[]; description: string; bagsOrItems: string; weightPounds: string };
+import { cloudDrafts } from './cloud-drafts';
+export type CleanupDraft = { photos: File[]; description: string; bagsOrItems: string; weightPounds: string; submissionId?: string; uploadedPaths?: string[]; correctionDueAt?: string | null };
 let queue: Promise<unknown> = Promise.resolve();
 function transact<T>(operation: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
   const work = queue.catch(() => undefined).then(() => new Promise<T>((resolve, reject) => {
@@ -23,11 +24,26 @@ function transact<T>(operation: (store: IDBObjectStore) => IDBRequest<T>): Promi
   queue = work; return work;
 }
 const key = (userId: string, attemptId: string) => `${userId}:${attemptId}`;
-export const saveCleanupDraft = (userId: string, attemptId: string, draft: CleanupDraft) => transact(store => store.put(draft, key(userId, attemptId)));
-export async function loadCleanupDraft(userId: string, attemptId: string) {
+export const saveLocalCleanupDraft = (userId: string, attemptId: string, draft: CleanupDraft) => transact(store => store.put(draft, key(userId, attemptId)));
+export async function loadLocalCleanupDraft(userId: string, attemptId: string) {
   const value = await transact<CleanupDraft | undefined>(store => store.get(key(userId, attemptId)));
   if (value && (!Array.isArray(value.photos) || value.photos.length > 3 || !value.photos.every(file => file instanceof File) || ![value.description, value.bagsOrItems, value.weightPounds].every(item => typeof item === 'string'))) throw new Error('Saved cleanup could not be read');
   return value;
 }
-export const clearCleanupDraft = (userId: string, attemptId: string) => transact(store => store.delete(key(userId, attemptId)));
+export const clearLocalCleanupDraft = (userId: string, attemptId: string) => transact(store => store.delete(key(userId, attemptId)));
 export const clearAccountCleanupDrafts = (userId: string) => transact(store => store.delete(IDBKeyRange.bound(`${userId}:`, `${userId}:\uffff`)));
+
+export async function saveCleanupDraft(userId: string, attemptId: string, draft: CleanupDraft) {
+  if(cloudDrafts.isRetired(userId)) throw new Error('This account was deleted.');
+  await saveLocalCleanupDraft(userId, attemptId, draft); cloudDrafts.schedule(userId, `cleanup:${attemptId}`);
+}
+export async function loadCleanupDraft(userId: string, attemptId: string, correctionDueAt?: string | null) {
+  const draft = (await cloudDrafts.load(userId, `cleanup:${attemptId}`)) as CleanupDraft | undefined;
+  if(draft && correctionDueAt !== undefined && (draft.correctionDueAt ?? null) !== correctionDueAt) {
+    await cloudDrafts.discard(userId, `cleanup:${attemptId}`);
+    const updated = { ...draft, correctionDueAt, submissionId: undefined, uploadedPaths: [] };
+    await saveCleanupDraft(userId, attemptId, updated); return updated;
+  }
+  return draft;
+}
+export async function clearCleanupDraft(userId: string, attemptId: string) { await cloudDrafts.discard(userId, `cleanup:${attemptId}`); }

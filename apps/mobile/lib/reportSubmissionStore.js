@@ -1,10 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Crypto from 'expo-crypto';
+import { cloudDrafts } from './cloudDrafts';
 import * as Location from 'expo-location';
 import { requireReportLocation } from './reportLocationCheck';
 import { supabase } from './supabase';
 import { submitRecoverableReport } from './reportSubmission';
-import { loadReportDraft, saveReportDraft } from './savedReportDraft';
+import { loadLocalReportDraft, saveReportDraft } from './savedReportDraft';
 const key = userId => `litterbugs.report-submission.${userId}`;
 export const clearReportSubmission = userId => AsyncStorage.removeItem(key(userId));
 async function publishReportDraftRequest({ userId, payload, form, coordinate, upload, onProgress }) {
@@ -16,12 +16,13 @@ async function publishReportDraftRequest({ userId, payload, form, coordinate, up
     if (existing?.is_published) return existing;
   }
   const previous = journal;
+  const submissionCoordinate = previous?.payload ? { latitude: previous.payload.latitude, longitude: previous.payload.longitude } : coordinate;
   onProgress?.('Checking your current location…');
-  await requireReportLocation(Location, coordinate);
-  {
+  await requireReportLocation(Location, submissionCoordinate);
+  if (!previous) {
     await saveReportDraft(userId, { form, coordinate, step: 4 });
-    const saved = await loadReportDraft(userId);
-    journal = { id: previous?.id || Crypto.randomUUID(), payload, photos: saved.form.photos, paths: JSON.stringify(previous?.photos) === JSON.stringify(saved.form.photos) ? previous.paths : [] };
+    const saved = await loadLocalReportDraft(userId);
+    journal = { id: previous?.id || await cloudDrafts.begin(userId, 'report'), payload, photos: saved.form.photos, paths: JSON.stringify(previous?.photos) === JSON.stringify(saved.form.photos) ? previous.paths : [] };
   }
   const result = await submitRecoverableReport({
     journal, onProgress,
@@ -39,7 +40,7 @@ async function publishReportDraftRequest({ userId, payload, form, coordinate, up
     upload: async (uri, id) => (await upload([uri], id, userId))[0],
     publish: async (id, paths) => {
       onProgress?.('Confirming your location and publishing…');
-      const origin = await requireReportLocation(Location, coordinate);
+      const origin = await requireReportLocation(Location, submissionCoordinate);
       const { data, error } = await supabase.rpc('publish_report', {
         target_report_id: id,
         target_photo_paths: paths,

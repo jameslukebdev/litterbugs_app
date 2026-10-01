@@ -5,10 +5,13 @@ import { completedImpactReportFilter, isVisibleReport } from './reportVisibility
 describe('report visibility', () => {
   it('keeps completed impact records visible after original expiration', () => {
     expect(completedImpactReportFilter('2026-08-25T12:00:00.000Z')).toBe(
-      'cleanup_state.eq.completed,expires_at.gt.2026-08-25T12:00:00.000Z'
+      'cleanup_state.in.(completed,claimed,completion_submitted,changes_requested),expires_at.gt.2026-08-25T12:00:00.000Z'
     );
   });
 
+  it.each(['claimed','completion_submitted','changes_requested'])('keeps active cleanup %s after its old discovery deadline', cleanup_state => {
+    expect(isVisibleReport({cleanup_state,expires_at:'2026-01-01',expired_at:null,cancelled_at:null},new Date('2026-10-01'))).toBe(true);
+  });
   it('never presents cancelled or expired reports as active content', () => {
     const now = new Date('2026-09-03T00:00:00.000Z');
     const active = {

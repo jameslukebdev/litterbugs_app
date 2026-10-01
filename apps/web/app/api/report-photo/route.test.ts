@@ -113,7 +113,7 @@ describe('public report card photos', () => {
     expect(query.eq).toHaveBeenCalledWith('is_published', true);
     expect(query.is).toHaveBeenCalledWith('cancelled_at', null);
     expect(query.is).toHaveBeenCalledWith('expired_at', null);
-    expect(query.or).toHaveBeenCalledWith(expect.stringContaining('cleanup_state.eq.completed,expires_at.gt.'));
+    expect(query.or).toHaveBeenCalledWith(expect.stringContaining('cleanup_state.in.(completed,claimed,completion_submitted,changes_requested),expires_at.gt.'));
   });
   it.each([{ is_published: false }, { cancelled_at: '2020-01-01' }, { expired_at: '2020-01-01' }, { is_sample: true }])('does not download excluded completed evidence: %j', async overrides => {
     mockPublicReport({ cleanup_state: 'completed', ...overrides });

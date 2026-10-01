@@ -32,10 +32,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   createCleanupContribution,
+  loadContributionQuote,
   formatUsd,
   loadCleanupFeatureFlags,
 } from './lib/funding';
-import { calculatePlatformFee, parseContributionAmount } from './lib/fundingMath';
+import { parseContributionAmount } from './lib/fundingMath';
 import { paymentSheetConfiguration, stripeInitializationConfiguration } from './lib/paymentConfiguration';
 import { evaluatePaymentConfirmation } from './lib/paymentConfirmation';
 import {
@@ -99,7 +100,19 @@ function FundingContributionController({ navigation, route }) {
   const previousFundingEligibility = useRef(null);
   const fundingEligibilityInitialized = useRef(false);
   const principalCents = parseContributionAmount(amount);
-  const feeCents = principalCents == null ? null : calculatePlatformFee(principalCents);
+  const [quote, setQuote] = useState(null);
+  const [quoteError, setQuoteError] = useState('');
+  const [quoteRetry, setQuoteRetry] = useState(0);
+  const currentQuote = quote?.principalAmountCents === principalCents ? quote : null;
+  const feeCents = currentQuote?.platformFeeCents ?? null;
+  useEffect(() => {
+    if (!principalCents || !isFocused) return;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      loadContributionQuote(principalCents).then(value => { if (!cancelled) { setQuote(value); setQuoteError(''); } }).catch(error => { if (!cancelled) { setQuote(null); setQuoteError(error.message); } });
+    }, 200);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [principalCents, isFocused, quoteRetry]);
 
   const reconcileAttempt = ({ preserveAmount = false } = {}) => {
     if (reconciliationRef.current) return reconciliationRef.current;
@@ -274,7 +287,7 @@ function FundingContributionController({ navigation, route }) {
       if (!attempt.intent && Date.now() - attempt.createdAt > 23 * 60 * 60 * 1000) {
         throw new Error('We haven’t confirmed your previous payment. Open payment history or get help before paying again.');
       }
-      const intent = attempt.intent || await createCleanupContribution({ reportId, principalAmountCents: attempt.principalAmountCents, clientRequestId: attempt.clientRequestId });
+      const intent = attempt.intent || await createCleanupContribution({ reportId, principalAmountCents: attempt.principalAmountCents, clientRequestId: attempt.clientRequestId, pricingVersion: currentQuote?.pricingVersion });
       attempt = { ...attempt, intent, phase: 'ready' };
       await savePaymentAttempt(user.id, reportId, attempt, { updating: true });
       attemptRef.current = attempt;
@@ -337,6 +350,8 @@ function FundingContributionController({ navigation, route }) {
       });
       await refreshReports({ showRefresh: false });
     } catch (error) {
+      setQuote(null);
+      setQuoteRetry(value => value + 1);
       if (attemptRef.current?.phase === 'submitted') setConfirmationPending(true);
       if (!mounted.current) return;
       Alert.alert('Check contribution status', userMessage(error, 'We couldn’t update your contribution. View payment history before paying again.'));
@@ -485,10 +500,11 @@ function FundingContributionController({ navigation, route }) {
         {principalCents ? (
           <View style={styles.card}>
             <View style={styles.line}><Text style={styles.lineLabel}>Cleanup fund</Text><Text style={styles.lineValue}>{formatUsd(principalCents)}</Text></View>
-            <View style={styles.line}><FeeExplanationLabel textStyle={styles.lineLabel} /><Text style={styles.lineValue}>{formatUsd(feeCents)}</Text></View>
+            <View style={styles.line}><FeeExplanationLabel textStyle={styles.lineLabel} /><Text style={styles.lineValue}>{feeCents == null ? 'Checking…' : formatUsd(feeCents)}</Text></View>
           </View>
         ) : null}
 
+        {quoteError ? <View style={styles.card}><Text style={styles.error}>{quoteError}</Text><TouchableOpacity onPress={() => setQuoteRetry(value => value + 1)} accessibilityRole="button"><Text>Retry pricing</Text></TouchableOpacity></View> : null}
         <View style={styles.termsCard}>
           <Ionicons name="information-circle-outline" size={21} color="#52636B" />
           <Text style={styles.termsText}>
@@ -505,14 +521,14 @@ function FundingContributionController({ navigation, route }) {
 
       </ScrollView>
       <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: Math.max(insets.bottom, 12), backgroundColor: '#FFFFFF', borderTopWidth: StyleSheet.hairlineWidth, borderColor: '#DDE2DE' }}>
-        <View style={styles.line}><Text style={styles.totalLabel}>Total</Text><Text style={styles.totalValue}>{principalCents ? formatUsd(principalCents + feeCents) : 'Enter an amount'}</Text></View>
+        <View style={styles.line}><Text style={styles.totalLabel}>Total</Text><Text style={styles.totalValue}>{currentQuote ? formatUsd(currentQuote.totalAmountCents) : principalCents ? 'Checking pricing…' : 'Enter an amount'}</Text></View>
         <TouchableOpacity
           style={[styles.primaryButton, styles.paymentButton, (!principalCents || confirmationPending) && styles.disabled]}
           activeOpacity={1}
           onPress={pay}
-          disabled={!principalCents || paying || confirmationPending}
+          disabled={!principalCents || !currentQuote || paying || confirmationPending}
           accessibilityRole="button"
-          accessibilityState={{ busy: paying, disabled: !principalCents || paying || confirmationPending }}
+          accessibilityState={{ busy: paying, disabled: !principalCents || !currentQuote || paying || confirmationPending }}
           accessibilityLabel={paying ? 'Opening secure payment' : confirmationPending ? 'Payment confirmation pending' : 'Continue to payment'}
         >
           <Text style={styles.primaryButtonText}>{confirmationPending ? 'Payment confirmation pending' : 'Continue to payment'}</Text>

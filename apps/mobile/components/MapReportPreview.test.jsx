@@ -36,9 +36,9 @@ describe('map preview states', () => {
     expect(html).toContain('View report');
   });
   it('does not advertise a completed report as an available reward', () => {
-    const html = render({ report: { ...report, cleanup_state: 'completed' } });
+    const html = render({ report: { ...report, cleanup_state: 'completed', completedRewardCents: 500, funded_amount_cents: 0 } });
     expect(html.match(/Completed/g)).toHaveLength(1);
-    expect(html).toContain('Cleanup fund total');
+    expect(html).toContain('Funded cleanup');
     expect(html).not.toContain('Cleaner reward');
   });
   it('shows compact creator identity, severity, and available actions', () => {

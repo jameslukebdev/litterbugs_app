@@ -1,8 +1,10 @@
 'use client';
+import { prepareBrowserPhotos } from '@/lib/prepare-browser-photo';
 
 /* eslint-disable @next/next/no-img-element -- Blob previews and short-lived signed URLs cannot use the image optimizer. */
 
-import { useEffect, useMemo, useState } from 'react';
+import { usePhotoPreviews } from '@/lib/use-photo-previews';
+import { useEffect, useState } from 'react';
 import {
   LITTER_OPTIONS,
   MAX_REPORT_NOTES_LENGTH,
@@ -20,7 +22,7 @@ import type { ReportWizardSnapshot } from '@/lib/saved-report-draft';
 
 import { Icon } from '@/components/icon';
 import { ModalShell } from '@/components/modal-shell';
-import { calculatePlatformFee, formatUsd, parseContributionAmount } from '@/lib/funding';
+import { formatUsd, parseContributionAmount } from '@/lib/funding';
 
 const MAX_REPORT_PHOTO_BYTES = 5 * 1024 * 1024;
 const ALLOWED_REPORT_PHOTO_TYPES = new Set([
@@ -68,6 +70,9 @@ export function ReportWizard({
   initialState,
   onStateChange,
   draftSaveMessage,
+  draftSync,
+  draftLocked = false,
+  submissionProgress,
   isEditing,
   existingPhotoUrls = [],
   existingPhotoCount = existingPhotoUrls.length,
@@ -81,6 +86,9 @@ export function ReportWizard({
   initialDraft: ReportDraft;
   initialState?: ReportWizardSnapshot;
   draftSaveMessage?: string;
+  draftSync?: React.ReactNode;
+  draftLocked?: boolean;
+  submissionProgress?: string;
   onStateChange?: (snapshot: ReportWizardSnapshot) => void;
   isEditing: boolean;
   existingPhotoUrls?: string[];
@@ -95,6 +103,7 @@ export function ReportWizard({
   const [step, setStep] = useState(initialState?.step ?? 0);
   const [draft, setDraft] = useState<ReportDraft>(initialState?.draft ?? initialDraft);
   const [saving, setSaving] = useState(false);
+  const [preparing, setPreparing] = useState(false);
   const [message, setMessage] = useState('');
   const [returnToReview, setReturnToReview] = useState(false);
   const [fundingChoice, setFundingChoice] = useState(initialState?.fundingChoice ?? 'none');
@@ -103,9 +112,7 @@ export function ReportWizard({
   const contributionCents = wantsFunding
     ? parseContributionAmount(fundingChoice === 'other' ? customAmount : fundingChoice)
     : null;
-  const previewUrls = useMemo(() => draft.photos.map((photo) => URL.createObjectURL(photo)), [draft.photos]);
-
-  useEffect(() => () => previewUrls.forEach((url) => URL.revokeObjectURL(url)), [previewUrls]);
+  const previewUrls = usePhotoPreviews(draft.photos);
 
   useEffect(() => { onStateChange?.({ draft, step, fundingChoice, customAmount }); }, [draft, step, fundingChoice, customAmount, onStateChange]);
 
@@ -142,7 +149,7 @@ export function ReportWizard({
   }
 
   async function submit() {
-    if (saving) return;
+    if (saving || preparing) return;
     if (!hasRequiredPhoto) {
       setStep(0);
       setMessage('Add at least one clear photo before submitting.');
@@ -173,15 +180,16 @@ export function ReportWizard({
   if (selectingLocation) return null;
 
   return (
-    <ModalShell onClose={onClose} label={isEditing ? 'Edit litter report' : 'Create litter report'} className="report-wizard" closeDisabled={saving}>
+    <ModalShell onClose={onClose} label={isEditing ? 'Edit litter report' : 'Create litter report'} className="report-wizard" closeDisabled={saving || preparing}>
       <header className="wizard-header">
         <span className="eyebrow">{isEditing ? 'EDIT REPORT' : 'NEW LITTER REPORT'}</span>
         <div className="wizard-heading-row"><h2>{REPORT_STEPS[step]}</h2><span>Step {step + 1} of {REPORT_STEPS.length}</span></div>
         <div className="wizard-progress"><span style={{ width: `${((step + 1) / REPORT_STEPS.length) * 100}%` }} /></div>
       </header>
 
+      {draftSync}
       {draftSaveMessage && <p role="alert" className="form-error">{draftSaveMessage}</p>}
-      <div className="wizard-content" key={step}><fieldset className="wizard-fields" disabled={saving}>
+      <div className="wizard-content" key={step}><fieldset className="wizard-fields" disabled={saving || preparing || draftLocked}>
         {step === 0 && <section className="wizard-step">
           <span className="step-required">REQUIRED</span>
           <h3>Add photos</h3>
@@ -191,17 +199,17 @@ export function ReportWizard({
             <label className={`photo-picker ${draft.photos.length >= MAX_REPORT_PHOTOS ? 'photo-picker-disabled' : ''}`}>
               <span className="photo-picker-icon"><Icon name="camera" /></span>
               <strong>{draft.photos.length >= MAX_REPORT_PHOTOS ? '3 photos added' : isEditing && existingPhotoCount && !draft.photos.length ? 'Choose replacement photos' : 'Add a photo'}</strong>
-              <span>1–3 photos · 5 MB each</span>
-              <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" multiple disabled={draft.photos.length >= MAX_REPORT_PHOTOS} onChange={(event) => {
-                const additions = [...draft.photos, ...Array.from(event.target.files ?? [])];
-                const photoError = validateWebReportPhotos(additions);
-                if (photoError) {
-                  setMessage(photoError);
-                } else {
-                  setMessage('');
-                  setDraft((current) => ({ ...current, photos: additions.slice(0, MAX_REPORT_PHOTOS) }));
-                }
-                event.target.value = '';
+              <span>1–3 photos · Up to 25 MB each; resized for upload</span>
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" multiple disabled={draft.photos.length >= MAX_REPORT_PHOTOS} onChange={async (event) => {
+                const selected = Array.from(event.target.files ?? []); event.target.value = '';
+                if (!selected.length) return;
+                if (draft.photos.length + selected.length > MAX_REPORT_PHOTOS) { setMessage('Choose no more than 3 photos.'); return; }
+                setPreparing(true); setMessage('Preparing photos…');
+                try {
+                  const prepared = await prepareBrowserPhotos(selected, (done, total) => setMessage(`Preparing photos ${done} of ${total}…`));
+                  setDraft(current => ({ ...current, photos: [...current.photos, ...prepared] })); setMessage('');
+                } catch (error) { setMessage(error instanceof Error ? error.message : 'The photos could not be prepared.'); }
+                finally { setPreparing(false); }
               }} />
             </label>
             {previewUrls.length > 0 && <div className="photo-grid">{previewUrls.map((url, index) => <div className="photo-preview" key={url}><img src={url} alt={`Selected report photo ${index + 1}`} /><button onClick={() => setDraft((current) => ({ ...current, photos: current.photos.filter((_, photoIndex) => photoIndex !== index) }))} aria-label={`Remove photo ${index + 1}`}><Icon name="close" /></button></div>)}</div>}
@@ -260,8 +268,8 @@ export function ReportWizard({
             {fundingChoice === 'other' && <label className="field-label">Starting contribution amount ($)<input value={customAmount} inputMode="decimal" maxLength={7} placeholder="1.00" onChange={(event) => setCustomAmount(event.target.value)} /></label>}
             {contributionCents != null && <dl className="funding-summary">
               <div><dt>Contribution</dt><dd>{formatUsd(contributionCents)}</dd></div>
-              <div><dt>Service fee</dt><dd>{formatUsd(calculatePlatformFee(contributionCents))}</dd></div>
-              <div><dt>Total</dt><dd>{formatUsd(contributionCents + calculatePlatformFee(contributionCents))}</dd></div>
+              <div><dt>Service fee</dt><dd>Shown at checkout</dd></div>
+              <div><dt>Total</dt><dd>Confirmed before payment</dd></div>
             </dl>}
             {wantsFunding && <p>You’ll confirm payment separately after the report is saved and eligible for funding.</p>}
           </section>}
@@ -270,8 +278,8 @@ export function ReportWizard({
 
       {message && <p className="form-message error-message wizard-message" role="alert">{message}</p>}
       <footer className="wizard-footer">
-        <button className="secondary-button wizard-back" onClick={() => { if (returnToReview) { setStep(4); setReturnToReview(false); } else if (step === 0) onClose(); else setStep(step - 1); }} disabled={saving}><Icon name="chevron-left" />{step === 0 && !returnToReview ? 'Cancel' : 'Back'}</button>
-        {step < REPORT_STEPS.length - 1 ? <button className="primary-button wizard-next" onClick={next} disabled={saving || !currentCanAdvance}><span>{returnToReview ? 'Back to review' : 'Next'}</span><Icon name="chevron-right" /></button> : <button className="primary-button wizard-next" onClick={submit} disabled={saving || (wantsFunding && contributionCents == null)}>{saving ? 'Saving report…' : isEditing ? 'Save changes' : 'Submit report'}</button>}
+        <button className="secondary-button wizard-back" onClick={() => { if (returnToReview) { setStep(4); setReturnToReview(false); } else if (step === 0) onClose(); else setStep(step - 1); }} disabled={saving || preparing}><Icon name="chevron-left" />{step === 0 && !returnToReview ? 'Cancel' : 'Back'}</button>
+        {step < REPORT_STEPS.length - 1 ? <button className="primary-button wizard-next" onClick={next} disabled={saving || preparing || !currentCanAdvance}><span>{returnToReview ? 'Back to review' : 'Next'}</span><Icon name="chevron-right" /></button> : <button className="primary-button wizard-next" onClick={submit} disabled={saving || preparing || (wantsFunding && contributionCents == null)}>{saving ? submissionProgress || 'Saving report…' : isEditing ? 'Save changes' : 'Submit report'}</button>}
       </footer>
     </ModalShell>
   );

@@ -1,0 +1,261 @@
+{
+  "id": "crawl_e17c4f81e5ed42448848499de92149f8",
+  "status": "completed",
+  "config": {
+    "url": "https://litterbugs.app/",
+    "mode": "site",
+    "strategy": "full",
+    "urls": [],
+    "maxPages": 30,
+    "maxDepth": 3,
+    "concurrency": 2,
+    "timeoutMs": 20000,
+    "include": [],
+    "exclude": [],
+    "respectRobots": true,
+    "useSitemap": false,
+    "checkExternal": true,
+    "checkAgentDiscovery": false,
+    "js": "off",
+    "refresh": false,
+    "fetchRate": {
+      "concurrency": 2
+    }
+  },
+  "summary": {
+    "totalPages": 8,
+    "statusOnlyPages": 0,
+    "indexablePages": 8,
+    "nonIndexablePages": 0,
+    "statusErrors": 0,
+    "discoveredUrls": 8,
+    "queuedUrls": 8,
+    "crawledUrls": 8,
+    "skippedUrls": 0,
+    "skipReasons": [],
+    "skippedUrlsByImpact": {
+      "coverageAffecting": 0,
+      "nonImpacting": 0
+    },
+    "failedUrls": 0,
+    "observedInternalLinks": 40,
+    "pageLimitReached": false,
+    "attemptedRequests": 8,
+    "responseRequests": 8,
+    "failedRequests": 0,
+    "abortedRequests": 0,
+    "extractionFailures": 0,
+    "requestByStatus": {
+      "200": 8
+    },
+    "avgRequestMs": 168,
+    "highIssues": 0,
+    "mediumIssues": 2,
+    "lowIssues": 40,
+    "avgResponseMs": 168,
+    "byStatus": {
+      "200": 8
+    },
+    "byCategory": {
+      "metadata": 2,
+      "canonical": 8,
+      "social": 32
+    }
+  },
+  "dataSources": {
+    "searchConsole": {
+      "status": "skipped",
+      "totalPages": 8,
+      "queriedPages": 0,
+      "joinedMetricPages": 0,
+      "joinedQueryPages": 0,
+      "pageLimit": 5000,
+      "pageLimitReached": false,
+      "retainedRowLimitReached": false,
+      "warning": "Search Console join skipped because no property was selected."
+    },
+    "analytics": {
+      "status": "skipped",
+      "totalPages": 8,
+      "queriedPages": 0,
+      "joinedPages": 0,
+      "retainedRowLimit": 5000,
+      "retainedRowLimitReached": false,
+      "warning": "Google Analytics join skipped because no property was selected."
+    }
+  },
+  "topFixes": [
+    {
+      "ruleId": "meta_description_duplicate",
+      "title": "Duplicate meta description",
+      "category": "metadata",
+      "severity": "medium",
+      "count": 2,
+      "sampleUrls": [
+        "https://litterbugs.app/",
+        "https://litterbugs.app/help"
+      ],
+      "recommendation": "fix",
+      "score": 1290,
+      "scoreFactors": {
+        "severity": 1200,
+        "affectedUrls": 2,
+        "searchVisibleUrls": 0,
+        "clicks": 0,
+        "impressions": 0,
+        "sessions": 0,
+        "totalUsers": 0,
+        "conversions": 0,
+        "effort": "low",
+        "effortScore": 60
+      },
+      "whyThisRanks": "No joined GSC visibility is available for these affected URLs; Search Console evidence is skipped. This ranks as a fix. Severity is 1200; 2 URLs are affected; estimated effort is low.",
+      "howToFix": "Write a distinct description for each page that explains what is unique about that URL.",
+      "howToVerify": "Re-run the crawl and confirm this description appears on only one URL.",
+      "verification": {
+        "command": "seo crawl https://litterbugs.app/ --severity medium --max-pages 30",
+        "expected": "Re-run the crawl and confirm this description appears on only one URL."
+      }
+    }
+  ],
+  "warnings": [],
+  "caveats": [],
+  "pages": [
+    {
+      "url": "https://litterbugs.app/",
+      "status": 200,
+      "title": "Litterbugs",
+      "metaDescription": "Report litter and help keep your community clean.",
+      "canonicalStatus": "missing",
+      "canonicalCandidates": [],
+      "indexable": true,
+      "sampleInternalLinks": [
+        "https://litterbugs.app/",
+        "https://litterbugs.app/about",
+        "https://litterbugs.app/cleanup-safety",
+        "https://litterbugs.app/help",
+        "https://litterbugs.app/privacy",
+        "https://litterbugs.app/support",
+        "https://litterbugs.app/terms"
+      ],
+      "usedJs": false
+    },
+    {
+      "url": "https://litterbugs.app/about",
+      "status": 200,
+      "title": "How Litterbugs Works",
+      "metaDescription": "See how neighbors report litter, build cleanup rewards, and verify completed work with Litterbugs.",
+      "canonicalStatus": "missing",
+      "canonicalCandidates": [],
+      "indexable": true,
+      "sampleInternalLinks": [
+        "https://litterbugs.app/",
+        "https://litterbugs.app/about",
+        "https://litterbugs.app/cleanup-policy",
+        "https://litterbugs.app/cleanup-safety",
+        "https://litterbugs.app/terms"
+      ],
+      "usedJs": false
+    },
+    {
+      "url": "https://litterbugs.app/cleanup-policy",
+      "status": 200,
+      "title": "Cleanup Policy | Litterbugs",
+      "metaDescription": "Contribution, safety, photo review, dispute, refund, and cleaner reward rules.",
+      "canonicalStatus": "missing",
+      "canonicalCandidates": [],
+      "indexable": true,
+      "sampleInternalLinks": [
+        "https://litterbugs.app/",
+        "https://litterbugs.app/about",
+        "https://litterbugs.app/cleanup-policy",
+        "https://litterbugs.app/cleanup-safety",
+        "https://litterbugs.app/privacy",
+        "https://litterbugs.app/terms"
+      ],
+      "usedJs": false
+    },
+    {
+      "url": "https://litterbugs.app/cleanup-safety",
+      "status": 200,
+      "title": "Cleanup Safety & Waiver | Litterbugs",
+      "metaDescription": "The safety rules, acknowledgment, assumption of risk, and release shown before a Litterbugs cleanup claim.",
+      "canonicalStatus": "missing",
+      "canonicalCandidates": [],
+      "indexable": true,
+      "sampleInternalLinks": [
+        "https://litterbugs.app/",
+        "https://litterbugs.app/about",
+        "https://litterbugs.app/cleanup-policy",
+        "https://litterbugs.app/cleanup-safety",
+        "https://litterbugs.app/privacy",
+        "https://litterbugs.app/terms"
+      ],
+      "usedJs": false
+    },
+    {
+      "url": "https://litterbugs.app/help",
+      "status": 200,
+      "title": "Get help | Litterbugs",
+      "metaDescription": "Report litter and help keep your community clean.",
+      "canonicalStatus": "missing",
+      "canonicalCandidates": [],
+      "indexable": true,
+      "sampleInternalLinks": [
+        "https://litterbugs.app/",
+        "https://litterbugs.app/about"
+      ],
+      "usedJs": false
+    },
+    {
+      "url": "https://litterbugs.app/privacy",
+      "status": 200,
+      "title": "Privacy | Litterbugs",
+      "metaDescription": "How Litterbugs handles account, report, payment, and cleanup-review data.",
+      "canonicalStatus": "missing",
+      "canonicalCandidates": [],
+      "indexable": true,
+      "sampleInternalLinks": [
+        "https://litterbugs.app/",
+        "https://litterbugs.app/about",
+        "https://litterbugs.app/cleanup-policy",
+        "https://litterbugs.app/cleanup-safety",
+        "https://litterbugs.app/privacy",
+        "https://litterbugs.app/terms"
+      ],
+      "usedJs": false
+    },
+    {
+      "url": "https://litterbugs.app/support",
+      "status": 200,
+      "title": "Support Litterbugs",
+      "metaDescription": "Help our community grow by reporting litter, joining a cleanup, or spreading the word.",
+      "canonicalStatus": "missing",
+      "canonicalCandidates": [],
+      "indexable": true,
+      "sampleInternalLinks": [
+        "https://litterbugs.app/",
+        "https://litterbugs.app/about"
+      ],
+      "usedJs": false
+    },
+    {
+      "url": "https://litterbugs.app/terms",
+      "status": 200,
+      "title": "Terms | Litterbugs",
+      "metaDescription": "Terms for Litterbugs reports, funded cleanups, contributions, and rewards.",
+      "canonicalStatus": "missing",
+      "canonicalCandidates": [],
+      "indexable": true,
+      "sampleInternalLinks": [
+        "https://litterbugs.app/",
+        "https://litterbugs.app/about",
+        "https://litterbugs.app/cleanup-policy",
+        "https://litterbugs.app/cleanup-safety",
+        "https://litterbugs.app/privacy",
+        "https://litterbugs.app/terms"
+      ],
+      "usedJs": false
+    }
+  ]
+}

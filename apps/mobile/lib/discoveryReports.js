@@ -1,3 +1,4 @@
+import { withCompletedRewards } from './completedRewards';
 import { supabase } from './supabase';
 import { collectReportMatches } from './collectReportMatches';
 import { matchesReportFilters } from './reportFilters';
@@ -16,7 +17,7 @@ export const REPORT_SELECT = `
   )
 `;
 
-export async function loadDiscoveryReports({ area, filters, searchPlace, blockedIds = [], favoriteIds = [], signal }) {
+export async function loadDiscoveryReports({ area, filters, searchPlace, blockedIds = [], favoriteIds = [], hiddenIds = [], signal }) {
       const latitudeSpan = Math.max(area.latitudeDelta, filters.radius / 69);
       const longitudeSpan = Math.max(area.longitudeDelta, filters.radius / (69 * Math.max(0.01, Math.cos(area.latitude * Math.PI / 180))));
       const blocked = new Set(blockedIds);
@@ -34,12 +35,12 @@ export async function loadDiscoveryReports({ area, filters, searchPlace, blocked
         if (filters.status === 'available') query = query.eq('cleanup_state', 'available');
         if (filters.status === 'completed') query = query.eq('cleanup_state', 'completed');
         if (filters.status === 'progress') query = query.in('cleanup_state', ['claimed', 'completion_submitted', 'changes_requested']);
-        if (filters.funding === 'funded') query = query.gt('funded_amount_cents', 0);
-        if (filters.funding === 'volunteer') query = query.or('funded_amount_cents.lte.0,funded_amount_cents.is.null');
+        if (filters.status === 'available' && filters.funding === 'funded') query = query.gt('funded_amount_cents', 0);
+        if (filters.status === 'available' && filters.funding === 'volunteer') query = query.or('funded_amount_cents.lte.0,funded_amount_cents.is.null');
         if (filters.severity !== 'all') query = query.ilike('severity', filters.severity);
         const { data, error: reportsError } = await query.order('created_at', { ascending: false }).order('id').range(offset, offset + pageSize - 1).abortSignal(signal);
         if (signal?.aborted) throw new Error('Obsolete discovery request');
         if (reportsError) throw reportsError;
-        return data || [];
-      }, report => !blocked.has(report.user_id) && matchesReportFilters(report, filters, area, favoriteIds) && matchesGeography(report, area, searchPlace), { limit: MAP_REPORT_LIMIT });
+        return withCompletedRewards(data || []);
+      }, report => !blocked.has(report.user_id) && matchesReportFilters(report, filters, area, favoriteIds, hiddenIds) && matchesGeography(report, area, searchPlace), { limit: MAP_REPORT_LIMIT });
 }

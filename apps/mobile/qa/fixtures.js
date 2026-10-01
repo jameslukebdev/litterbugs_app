@@ -8,7 +8,7 @@ export const CLEANUP_STATES = Object.freeze(['available', 'claimed', 'completion
 const names = ['Available', 'In progress', 'Awaiting review', 'Changes requested', 'Completed'];
 function report(id, state, cents, latitude, longitude, extra = {}) {
   return Object.freeze({ id: `fixture-${id}`, user_id: 'fixture-owner', title: `${names[CLEANUP_STATES.indexOf(state)]} ${cents ? 'funded' : 'volunteer'}`,
-    cleanup_state: state, funded_amount_cents: cents, latitude, longitude, severity: 'Low',
+    cleanup_state: state, funded_amount_cents: cents, completedRewardCents: state === 'completed' ? cents : undefined, latitude, longitude, severity: 'Low',
     created_at: '2026-09-01T00:00:00Z', expires_at: '2099-01-01T00:00:00Z',
     expired_at: null, cancelled_at: null, is_sample: true, photo_paths: [], ...extra });
 }

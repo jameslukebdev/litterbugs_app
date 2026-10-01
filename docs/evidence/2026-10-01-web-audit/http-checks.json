@@ -1,0 +1,266 @@
+[
+  {
+    "url": "https://litterbugs.app/robots.txt",
+    "status": 404,
+    "final": "https://litterbugs.app/robots.txt",
+    "robots": null,
+    "meta": [
+      {
+        "name": "robots",
+        "content": "noindex"
+      },
+      {
+        "name": "description",
+        "content": "Report litter and help keep your community clean."
+      }
+    ],
+    "canonical": [],
+    "feeCopy": []
+  },
+  {
+    "url": "https://litterbugs.app/sitemap.xml",
+    "status": 404,
+    "final": "https://litterbugs.app/sitemap.xml",
+    "robots": null,
+    "meta": [
+      {
+        "name": "robots",
+        "content": "noindex"
+      },
+      {
+        "name": "description",
+        "content": "Report litter and help keep your community clean."
+      }
+    ],
+    "canonical": [],
+    "feeCopy": []
+  },
+  {
+    "url": "https://litterbugs.app/manifest.webmanifest",
+    "status": 404,
+    "final": "https://litterbugs.app/manifest.webmanifest",
+    "robots": null,
+    "meta": [
+      {
+        "name": "robots",
+        "content": "noindex"
+      },
+      {
+        "name": "description",
+        "content": "Report litter and help keep your community clean."
+      }
+    ],
+    "canonical": [],
+    "feeCopy": []
+  },
+  {
+    "url": "https://litterbugs.app/account/reports",
+    "status": 404,
+    "final": "https://litterbugs.app/account/reports",
+    "robots": null,
+    "meta": [
+      {
+        "name": "robots",
+        "content": "noindex"
+      },
+      {
+        "name": "description",
+        "content": "Report litter and help keep your community clean."
+      }
+    ],
+    "canonical": [],
+    "feeCopy": []
+  },
+  {
+    "url": "https://litterbugs.app/&",
+    "status": 404,
+    "final": "https://litterbugs.app/&",
+    "robots": null,
+    "meta": [
+      {
+        "name": "robots",
+        "content": "noindex"
+      },
+      {
+        "name": "description",
+        "content": "Report litter and help keep your community clean."
+      }
+    ],
+    "canonical": [],
+    "feeCopy": []
+  },
+  {
+    "url": "https://litterbugs.app/$",
+    "status": 404,
+    "final": "https://litterbugs.app/$",
+    "robots": null,
+    "meta": [
+      {
+        "name": "robots",
+        "content": "noindex"
+      },
+      {
+        "name": "description",
+        "content": "Report litter and help keep your community clean."
+      }
+    ],
+    "canonical": [],
+    "feeCopy": []
+  },
+  {
+    "url": "http://litterbugs.app/",
+    "status": 200,
+    "final": "https://litterbugs.app/",
+    "robots": null,
+    "meta": [
+      {
+        "name": "description",
+        "content": "Report litter and help keep your community clean."
+      }
+    ],
+    "canonical": [],
+    "feeCopy": []
+  },
+  {
+    "url": "http://www.litterbugs.app/",
+    "status": 200,
+    "final": "https://litterbugs.app/",
+    "robots": null,
+    "meta": [
+      {
+        "name": "description",
+        "content": "Report litter and help keep your community clean."
+      }
+    ],
+    "canonical": [],
+    "feeCopy": []
+  },
+  {
+    "url": "https://www.litterbugs.app/",
+    "status": 200,
+    "final": "https://litterbugs.app/",
+    "robots": null,
+    "meta": [
+      {
+        "name": "description",
+        "content": "Report litter and help keep your community clean."
+      }
+    ],
+    "canonical": [],
+    "feeCopy": []
+  },
+  {
+    "url": "https://litterbugs.app/reports/ba227d19-b46d-46fa-a02c-7d1f4c5047c3",
+    "status": 200,
+    "final": "https://litterbugs.app/reports/ba227d19-b46d-46fa-a02c-7d1f4c5047c3",
+    "robots": null,
+    "meta": [
+      {
+        "name": "description",
+        "content": "Ridge Road cleanup part 2 - more cleanup needed needs a volunteer cleanup. Open the litter report in Litterbugs to view its location."
+      }
+    ],
+    "canonical": [
+      {
+        "rel": "canonical",
+        "href": "https://litterbugs.app/reports/ba227d19-b46d-46fa-a02c-7d1f4c5047c3"
+      }
+    ],
+    "feeCopy": []
+  },
+  {
+    "url": "https://litterbugs.app/admin",
+    "status": 200,
+    "final": "https://litterbugs.app/admin",
+    "robots": null,
+    "meta": [
+      {
+        "name": "description",
+        "content": "Report litter and help keep your community clean."
+      }
+    ],
+    "canonical": [],
+    "feeCopy": []
+  },
+  {
+    "url": "https://litterbugs.app/payment-return",
+    "status": 200,
+    "final": "https://litterbugs.app/payment-return",
+    "robots": null,
+    "meta": [
+      {
+        "name": "description",
+        "content": "Report litter and help keep your community clean."
+      }
+    ],
+    "canonical": [],
+    "feeCopy": []
+  },
+  {
+    "url": "https://litterbugs.app/terms",
+    "status": 200,
+    "final": "https://litterbugs.app/terms",
+    "robots": null,
+    "meta": [
+      {
+        "name": "description",
+        "content": "Terms for Litterbugs reports, funded cleanups, contributions, and rewards."
+      }
+    ],
+    "canonical": [],
+    "feeCopy": [
+      "Contributions and the 10% Litterbugs fee",
+      " to an active, eligible cleanup report. The reporter does not have to contribute. Before payment, Litterbugs shows the principal added to the cleaner reward, a separate 10% Litterbugs platform fee, and the total charge. For example, a $20 principal contribution has a $2 platform fee and a $22 total charge.",
+      "The displayed cleaner reward is the total contribution principal, not the total charged. If an eligible cleanup is approved, the cleaner receives that exact frozen principal. Litterbugs retains the 10% fee and absorbs standard Stripe processing, payout, refund, and chargeback costs. Contributions are not charitable donations and are not represented as tax deductible.",
+      "Litterbugs refunds each active contributor's complete original charge, including principal and the 10% fee, when the reporter closes an expired report, takes no action during its seven-day decision window, or the contribution remains unused for 23 months. Refunds return to the original payment method and may take additional provider-dependent time to appear."
+    ]
+  },
+  {
+    "url": "https://litterbugs.app/cleaner",
+    "status": 404,
+    "final": "https://litterbugs.app/cleaner",
+    "evidence": "Separate read-only HTTP checks on October 1, 2026"
+  },
+  {
+    "url": "https://litterbugs.app/report",
+    "status": 404,
+    "final": "https://litterbugs.app/report",
+    "evidence": "Separate read-only HTTP checks on October 1, 2026"
+  },
+  {
+    "url": "https://litterbugs.app/account/privacy",
+    "status": 404,
+    "final": "https://litterbugs.app/account/privacy",
+    "evidence": "Separate read-only HTTP checks on October 1, 2026"
+  },
+  {
+    "url": "https://litterbugs.app/safety",
+    "status": 404,
+    "final": "https://litterbugs.app/safety",
+    "evidence": "Separate read-only HTTP checks on October 1, 2026"
+  },
+  {
+    "url": "https://litterbugs.app/account/legal",
+    "status": 404,
+    "final": "https://litterbugs.app/account/legal",
+    "evidence": "Separate read-only HTTP checks on October 1, 2026"
+  },
+  {
+    "url": "https://litterbugs.app/sign-in",
+    "status": 404,
+    "final": "https://litterbugs.app/sign-in",
+    "evidence": "Separate read-only HTTP checks on October 1, 2026"
+  },
+  {
+    "url": "https://litterbugs.app/account/connect",
+    "status": 404,
+    "final": "https://litterbugs.app/account/connect",
+    "evidence": "Separate read-only HTTP checks on October 1, 2026"
+  },
+  {
+    "url": "https://litterbugs.app/how-it-works",
+    "status": 404,
+    "final": "https://litterbugs.app/how-it-works",
+    "evidence": "Separate read-only HTTP checks on October 1, 2026"
+  }
+]

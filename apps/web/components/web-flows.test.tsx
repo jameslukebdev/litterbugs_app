@@ -1,13 +1,14 @@
 // @vitest-environment jsdom
 /* eslint-disable @next/next/no-img-element -- The test mock intentionally renders a native image. */
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { EMPTY_REPORT_DRAFT } from '@litterbugs/report-contract';
 
 import { AuthDialog } from './auth-dialog';
 import { ReportWizard, validateWebReportPhotos, hasRequiredWebReportPhoto } from './report-wizard';
 
+vi.mock('@/lib/prepare-browser-photo', () => ({ prepareBrowserPhotos: async (files: File[]) => files }));
 vi.mock('next/image', () => ({
   default: ({ src, alt }: { src: string; alt: string }) => <img src={src} alt={alt} />,
 }));
@@ -48,7 +49,7 @@ describe('web product boundaries', () => {
     expect(document.querySelector('.facebook-provider-icon-frame')).toBeNull();
   });
 
-  it('keeps the mobile app’s five report steps and required gates', () => {
+  it('keeps the mobile app’s five report steps and required gates', async () => {
     render(
       <ReportWizard
         initialDraft={{ ...EMPTY_REPORT_DRAFT }}
@@ -67,7 +68,7 @@ describe('web product boundaries', () => {
     fireEvent.change(picker!, {
       target: { files: [new File(['report'], 'report.jpg', { type: 'image/jpeg' })] },
     });
-    expect(photoNext.disabled).toBe(false);
+    await waitFor(() => expect(photoNext.disabled).toBe(false));
     fireEvent.click(photoNext);
     expect(screen.getByText('Step 2 of 5')).toBeTruthy();
 
@@ -118,7 +119,8 @@ describe('report creation funding choice', () => {
   it('preserves the chosen amount through a review edit and passes exact cents', () => {
     const onSubmit = review();
     fireEvent.click(screen.getByRole('button', { name: '$5' }));
-    expect(screen.getByText('$6.00')).toBeTruthy();
+    expect(screen.getByText('$5.00')).toBeTruthy();
+    expect(screen.getByText('Shown at checkout')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Edit title' }));
     fireEvent.change(screen.getByLabelText('Report title (optional)'), { target: { value: 'Country road bottles' } });
     fireEvent.click(screen.getByRole('button', { name: 'Back to review' }));
@@ -147,18 +149,19 @@ describe('report creation funding choice', () => {
 });
 
 describe('editing report photos', () => {
-  it('previews a replacement set, returns to the originals when removed, and submits replacements', () => {
+  it('previews a replacement set, returns to the originals when removed, and submits replacements', async () => {
     const onSubmit = vi.fn(async () => null);
     render(<ReportWizard initialDraft={{ ...EMPTY_REPORT_DRAFT, title: 'Existing report', selectedTypes: ['Bottles'], severity: 'Low' }} isEditing existingPhotoUrls={['https://example.test/old.jpg']} onClose={vi.fn()} onSubmit={onSubmit} />);
     expect(screen.getByAltText('Existing report photo 1')).toBeTruthy();
     const picker = document.querySelector<HTMLInputElement>('input[type="file"]')!;
     const photo = new File(['new'], 'new.jpg', { type: 'image/jpeg' });
     fireEvent.change(picker, { target: { files: [photo] } });
-    expect(screen.getByAltText('Selected report photo 1')).toBeTruthy();
+    expect(await screen.findByAltText('Selected report photo 1')).toBeTruthy();
     expect(screen.queryByAltText('Existing report photo 1')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Remove photo 1' }));
     expect(screen.getByAltText('Existing report photo 1')).toBeTruthy();
     fireEvent.change(picker, { target: { files: [photo] } });
+    await screen.findByAltText('Selected report photo 1');
     for (let step = 0; step < 4; step++) fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     expect(screen.getByText('These photos replace the current set when saved.')).toBeTruthy();
     expect(screen.queryByRole('group', { name: 'Starting contribution' })).toBeNull();
@@ -173,7 +176,7 @@ it('allows keeping stored photos when their temporary previews cannot load', () 
   expect(hasRequiredWebReportPhoto({ photos: [], existingPhotoUrls: [], existingPhotoCount: 2, isEditing: false })).toBe(false);
 });
 
-it('retains the review stage, photos, title and custom funding choice while changing the pin', () => {
+it('retains the review stage, photos, title and custom funding choice while changing the pin', async () => {
   const photo = new File(['photo'], 'report.jpg', { type: 'image/jpeg' });
   const initialDraft = { ...EMPTY_REPORT_DRAFT, title: 'Country road', photos: [photo], selectedTypes: ['Bottles'], severity: 'Low' as const };
   const onSubmit = vi.fn(async () => null);
@@ -194,7 +197,7 @@ it('retains the review stage, photos, title and custom funding choice while chan
   expect(screen.getByText('Step 5 of 5')).toBeTruthy();
   expect(screen.getByText('36.10000, -81.10000')).toBeTruthy();
   expect(screen.getByText('Country road')).toBeTruthy();
-  expect(screen.getByAltText('Report photo 1')).toBeTruthy();
+  expect(await screen.findByAltText('Report photo 1')).toBeTruthy();
   expect((screen.getByLabelText('Starting contribution amount ($)') as HTMLInputElement).value).toBe('12.34');
   fireEvent.click(screen.getByRole('button', { name: 'Submit report' }));
   expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ photos: [photo], title: 'Country road' }), 1234);

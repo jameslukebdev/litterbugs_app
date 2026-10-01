@@ -1,7 +1,9 @@
+import { cloudDrafts } from './cloudDrafts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import { waitForReportDraftWrites } from './savedReportDraft';
 import { waitForCleanupDraftWrites } from './savedCleanupDraft';
+import { reportPreferenceSync } from './syncedReportPreferences';
 import { waitForFavoriteWrites } from './reportFavorites';
 
 const pendingPrefix = 'litterbugs.deleted-account-cleanup.';
@@ -13,14 +15,18 @@ export async function clearDeletedAccountData(userId) {
   // device write can be retried on launch without repeating account deletion.
   const pendingKey = `${pendingPrefix}${userId}`;
   await AsyncStorage.setItem(pendingKey, 'pending');
+  await reportPreferenceSync.retire(userId);
+  await cloudDrafts.retire(userId);
   await Promise.all([waitForReportDraftWrites(), waitForCleanupDraftWrites(), waitForFavoriteWrites()]);
   const exact = new Set([
+    `litterbugs.preferences.v2:${userId}`,
     `litterbugs.report-draft.${userId}`,
     `litterbugs.report-submission.${userId}`,
     `litterbugs.report-favorites.v1.${userId}`,
   ]);
   const prefixes = [
     `litterbugs.cleanup-draft.${userId}.`,
+    `litterbugs.cloud-draft.${userId}.`,
     `cleanup-review:${userId}:`,
     `payment-check:v1:${userId}:`,
   ];

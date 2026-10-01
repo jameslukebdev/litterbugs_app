@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { LegalPage } from '@/components/legal-page';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/cleanup-policy' },
   title: 'Cleanup Policy | Litterbugs',
   description: 'Contribution, safety, photo review, dispute, refund, and cleaner reward rules.',
 };

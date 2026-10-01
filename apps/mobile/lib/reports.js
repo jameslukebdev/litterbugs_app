@@ -1,6 +1,6 @@
-import { loadReportFavorites, saveReportFavorites, toggleFavoriteId } from './reportFavorites';
+import { reportPreferenceSync } from './syncedReportPreferences';
 import { useSession } from './session';
-import { Alert } from 'react-native';
+import { Alert, AppState } from 'react-native';
 import { loadDiscoveryReports, REPORT_SELECT } from './discoveryReports';
 import { saveMapMemory } from './discoveryMemory';
 import {
@@ -61,32 +61,37 @@ export function getDistanceMiles(pointA, pointB) {
 export function ReportsProvider({ children, initialDiscovery = null }) {
   const { user } = useSession();
   const favoriteOwner = user?.id || 'guest';
-  const [favoriteState, setFavoriteState] = useState({ owner: null, ids: [] });
+  const [favoriteState, setFavoriteState] = useState({ owner: null, ids: [], hidden: [] });
   const favoriteIds = useMemo(() => favoriteState.owner === favoriteOwner ? favoriteState.ids : [], [favoriteState, favoriteOwner]);
+  const hiddenIds = useMemo(() => favoriteState.owner === favoriteOwner ? favoriteState.hidden : [], [favoriteState, favoriteOwner]);
   const favoritesReady = favoriteState.owner === favoriteOwner;
-  const favoriteRef = useRef({ owner: null, ids: [] });
-  favoriteRef.current = { owner: favoriteOwner, ids: favoriteIds };
+  const favoriteRef = useRef({ owner: null, ids: [], hidden: [] });
+  favoriteRef.current = { owner: favoriteOwner, ids: favoriteIds, hidden: hiddenIds };
   useEffect(() => {
     let active = true;
-    loadReportFavorites(favoriteOwner).then(ids => {
-      if (active) setFavoriteState({ owner: favoriteOwner, ids });
-    }).catch(() => { if (active) Alert.alert('Favorites unavailable', 'Please reopen the app to try again.'); });
-    return () => { active = false; };
+    const show = value => { if (active) setFavoriteState({ owner: favoriteOwner, ids: value.preferences.favorites, hidden: value.preferences.hidden }); };
+    const sync = () => { if (AppState.currentState === 'active') void reportPreferenceSync.sync(favoriteOwner).then(show).catch(() => {}); };
+    void reportPreferenceSync.load(favoriteOwner).then(show).then(sync).catch(() => {
+      if (active) Alert.alert('Preferences unavailable', 'Your saved preferences could not be read. Please try again.');
+    });
+    const interval = setInterval(sync, 30000);
+    const subscription = AppState.addEventListener('change', state => { if (state === 'active') sync(); });
+    return () => { active = false; clearInterval(interval); subscription.remove(); };
   }, [favoriteOwner]);
-  const toggleFavorite = useCallback(async (id) => {
+  const updatePreference = useCallback(async (kind, id, enabled) => {
     if (!favoritesReady || !id) return;
-    const previous = favoriteRef.current.ids;
-    const next = toggleFavoriteId(previous, id);
-    favoriteRef.current = { owner: favoriteOwner, ids: next };
-    setFavoriteState({ owner: favoriteOwner, ids: next });
-    try { await saveReportFavorites(favoriteOwner, next); }
-    catch {
-      if (favoriteRef.current.owner === favoriteOwner && favoriteRef.current.ids === next) {
-        setFavoriteState({ owner: favoriteOwner, ids: previous });
-      }
-      Alert.alert('Favorite not saved', 'Please try again.');
-    }
+    const show = value => { if (favoriteRef.current.owner === favoriteOwner) {
+      const next = { owner: favoriteOwner, ids: value.preferences.favorites, hidden: value.preferences.hidden };
+      favoriteRef.current = next; setFavoriteState(next);
+    } };
+    try {
+      show(await reportPreferenceSync.set(favoriteOwner, kind, id, enabled));
+      const synced = await reportPreferenceSync.sync(favoriteOwner); show(synced);
+      if (synced.offline && favoriteRef.current.owner === favoriteOwner) Alert.alert('Saved on this device', 'Your changes will sync when you reconnect.');
+    } catch { if (favoriteRef.current.owner === favoriteOwner) Alert.alert('Preference not saved', 'Please try again.'); }
   }, [favoriteOwner, favoritesReady]);
+  const toggleFavorite = useCallback(id => updatePreference('favorites', id, !favoriteRef.current.ids.includes(id)), [updatePreference]);
+  const toggleHidden = useCallback(id => updatePreference('hidden', id, !favoriteRef.current.hidden.includes(id)), [updatePreference]);
   const [truncated, setTruncated] = useState(false);
   const requestAbort = useRef(null);
   const [allReports, setAllReports] = useState([]);
@@ -111,11 +116,11 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
   const photoUrlRequests = useRef(new Map());
   const { blockedIds } = useProfile();
   const discoveryRef = useRef(null);
-  discoveryRef.current = { filters, searchPlace, blockedIds, favoriteIds };
+  discoveryRef.current = { filters, searchPlace, blockedIds, favoriteIds, hiddenIds };
 
-  const refreshReports = useCallback(async ({ showRefresh = false } = {}) => {
+  const refreshReports = useCallback(async ({ showRefresh = false, background = false } = {}) => {
     if (showRefresh) setRefreshing(true);
-    else setLoading(true);
+    else if (!background) setLoading(true);
 
     requestAbort.current?.abort();
     const controller = new AbortController();
@@ -137,7 +142,14 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
   useEffect(() => {
     const timer = setTimeout(() => refreshReports(), 400);
     return () => { clearTimeout(timer); requestSequence.current += 1; requestAbort.current?.abort(); };
-  }, [mapRegion, filters, searchPlace, blockedIds, refreshReports, filters.favoritesOnly ? favoriteIds : null]);
+  }, [mapRegion, filters, searchPlace, blockedIds, refreshReports, filters.favoritesOnly ? favoriteIds : null, hiddenIds]);
+
+  useEffect(() => {
+    const refresh = () => { if (AppState.currentState === 'active') void refreshReports({ background: true }); };
+    const interval = setInterval(refresh, 30000);
+    const subscription = AppState.addEventListener('change', state => { if (state === 'active') refresh(); });
+    return () => { clearInterval(interval); subscription.remove(); };
+  }, [refreshReports]);
 
   const getReportById = useCallback(async (reportId) => {
     const { data, error: reportError } = await supabase
@@ -157,7 +169,7 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
     return allReports.filter((report) => !blocked.has(report.user_id));
   }, [allReports, blockedIds]);
 
-  const filteredReports = useMemo(() => reports.filter((report) => matchesReportFilters(report, filters, mapRegion, favoriteIds) && matchesGeography(report, mapRegion, searchPlace)), [reports, filters, mapRegion, searchPlace, favoriteIds]);
+  const filteredReports = useMemo(() => reports.filter((report) => matchesReportFilters(report, filters, mapRegion, favoriteIds, hiddenIds) && matchesGeography(report, mapRegion, searchPlace)), [reports, filters, mapRegion, searchPlace, favoriteIds, hiddenIds]);
 
   const markers = useMemo(
     () => filteredReports
@@ -235,7 +247,7 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
   }, []);
 
   const value = useMemo(() => ({
-    favoriteIds, toggleFavorite, favoritesReady,
+    favoriteIds, toggleFavorite, favoritesReady, hiddenIds, toggleHidden,
     restoredMap: Boolean(initialDiscovery),
     searchPlace, selectSearchPlace, clearSearchPlace, selectedMapReportId, setSelectedMapReportId,
     reports,
@@ -253,7 +265,7 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
     removeReport,
     getReportPhotoUrl,
   }), [
-    favoriteIds, toggleFavorite, favoritesReady,
+    favoriteIds, toggleFavorite, favoritesReady, hiddenIds, toggleHidden,
     searchPlace, selectSearchPlace, clearSearchPlace, selectedMapReportId,
     filteredReports, filters, truncated,
     commitMapRegion,

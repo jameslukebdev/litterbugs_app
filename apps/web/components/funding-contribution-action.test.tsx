@@ -2,17 +2,18 @@
 
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { Report } from '@litterbugs/report-contract';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { FundingContributionAction } from './funding-contribution-action';
 
-const { loadFlags, createContribution } = vi.hoisted(() => ({ loadFlags: vi.fn(), createContribution: vi.fn() }));
+const { loadFlags, createContribution, quote } = vi.hoisted(() => ({ loadFlags: vi.fn(), createContribution: vi.fn(), quote: vi.fn() }));
 
 vi.mock('@/lib/payment-attempt', () => ({ resumeOrCreatePayment: (_user: string, report: string, amount: number) => createContribution(report, amount).then((intent: unknown) => ({ intent, amount })) }));
 
 vi.mock('@/lib/funding', async (importOriginal) => ({
   ...await importOriginal<typeof import('@/lib/funding')>(),
   loadCleanupFeatureFlags: loadFlags,
+  loadContributionQuote: quote,
   createCleanupContribution: createContribution,
 }));
 
@@ -54,6 +55,10 @@ const report: Report = {
   user_id: 'reporter-id',
 };
 
+beforeEach(() => {
+  quote.mockImplementation(async (principalAmountCents: number) => ({ principalAmountCents, platformFeeCents: Math.floor((principalAmountCents + 5) / 10) + 50, totalAmountCents: principalAmountCents + Math.floor((principalAmountCents + 5) / 10) + 50, pricingVersion: 2, currency: 'usd' }));
+});
+
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
@@ -71,7 +76,7 @@ describe('FundingContributionAction', () => {
     loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
     render(<FundingContributionAction report={report} userId="member-id" />);
     fireEvent.click(await screen.findByRole('button', { name: 'Add funds' }));
-    expect(screen.getByText('Cleaner reward')).toBeTruthy();
+    expect(await screen.findByText('Cleaner reward')).toBeTruthy();
     expect(screen.getByText('$25.00')).toBeTruthy();
     expect(screen.getByText('$3.00')).toBeTruthy();
     expect(screen.getByText('$28.00')).toBeTruthy();
@@ -87,7 +92,7 @@ describe('report creation handoff', () => {
     render(<FundingContributionAction report={report} userId="member-id" initialAmountCents={500} startOpen />);
     const amount = await screen.findByLabelText('Cleanup fund contribution amount');
     expect((amount as HTMLInputElement).value).toBe('5.00');
-    expect(screen.getByText('$6.00')).toBeTruthy();
+    expect(await screen.findByText('$6.00')).toBeTruthy();
     expect(createContribution).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     await waitFor(() => expect(createContribution).toHaveBeenCalledWith(report.id, 500));
@@ -112,7 +117,8 @@ describe('server-confirmed pricing', () => {
     loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
     createContribution.mockResolvedValue({ contributionId: 'saved-payment', publishableKey: 'pk_test_fixture', paymentIntentClientSecret: 'test_secret', principalAmountCents: 500, platformFeeCents, totalAmountCents, pricingVersion });
     render(<FundingContributionAction report={report} userId="member-id" initialAmountCents={500} startOpen />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Continue' }));
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Continue' }) as HTMLButtonElement).disabled).toBe(false));
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     await screen.findByText('Secure card form');
     expect(screen.getByText(feeText)).toBeTruthy();
     expect(screen.getByRole('button', { name: buttonText })).toBeTruthy();
@@ -122,8 +128,19 @@ describe('server-confirmed pricing', () => {
     loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
     createContribution.mockRejectedValue(new Error('Contribution pricing has changed. Refresh the website or update the app before starting a new payment. No payment has been made.'));
     render(<FundingContributionAction report={report} userId="member-id" initialAmountCents={100} startOpen />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Continue' }));
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Continue' }) as HTMLButtonElement).disabled).toBe(false));
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     expect((await screen.findByRole('alert')).textContent).toContain('Refresh the website');
     expect(screen.queryByText('Secure card form')).toBeNull();
   });
+});
+
+
+it('blocks new payment creation while pricing is unavailable', async () => {
+  loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
+  quote.mockRejectedValue(new Error('Pricing is unavailable.'));
+  render(<FundingContributionAction report={report} userId="member-id" startOpen />);
+  await screen.findByText('Pricing is unavailable.');
+  expect((screen.getByRole('button', { name: 'Continue' }) as HTMLButtonElement).disabled).toBe(true);
+  expect(createContribution).not.toHaveBeenCalled();
 });

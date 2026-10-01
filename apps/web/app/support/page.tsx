@@ -4,6 +4,7 @@ import { PublicSiteHeader } from '@/components/public-site-header';
 import styles from '../about/about-page.module.css';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/support' },
   title: 'Support Litterbugs',
   description: 'Help our community grow by reporting litter, joining a cleanup, or spreading the word.',
 };

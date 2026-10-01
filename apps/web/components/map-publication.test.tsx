@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
-import { EMPTY_REPORT_DRAFT, type ReportDraft } from '@litterbugs/report-contract';
+import { EMPTY_REPORT_DRAFT, type ReportDraft, type MappableReport } from '@litterbugs/report-contract';
 import { MapExperience } from './map-experience';
 
 const state = vi.hoisted(() => ({
+  markerReports: [] as MappableReport[],
+  markerInstances: [] as { map: unknown; position: {lat: number; lng: number}; title: string; glyph?: HTMLElement }[],
   click: null as null | ((event: unknown) => void),
   idle: null as null | (() => void),
   discovery: vi.fn(),
@@ -20,6 +22,8 @@ const state = vi.hoisted(() => ({
   journal: undefined as { userId: string; reportId: string; paths: string[] } | undefined,
 }));
 const report = () => ({ id: 'test-report', title: 'Test bottles', latitude: 0.5, longitude: 0, user_id: 'test-user', is_published: state.published, photo_paths: ['test-user/test-report/photo.jpg'], cleanup_state: 'available', funding_eligibility: 'eligible', renewal_status: 'active', expires_at: '2099-01-01', cancelled_at: null, expired_at: null, is_sample: false });
+vi.mock('@/lib/cloud-drafts', () => ({ cloudDrafts: { begin: async () => 'test-report', discard: async () => {} } }));
+vi.mock('@/lib/discovery-memory', () => ({ readBrowserMemory: () => null, saveBrowserMemory: () => {}, readDiscoveryMemory: () => null, saveDiscoveryMemory: () => {} }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock('@googlemaps/js-api-loader', () => ({
   setOptions: vi.fn(),
@@ -28,12 +32,20 @@ vi.mock('@googlemaps/js-api-loader', () => ({
     panTo(...args: unknown[]) { state.panTo(...args); } fitBounds(...args: unknown[]) { state.fitBounds(...args); } setZoom() {} getZoom() { return 14; }
     getBounds() { return { toJSON: () => ({ north: 1, south: -1, west: -1, east: 1 }) }; }
     getCenter() { return { lat: () => 0, lng: () => 0 }; }
-  } } : { AdvancedMarkerElement: class {} },
+  } } : { AdvancedMarkerElement: class {
+    map: unknown; position: {lat: number; lng: number}; title: string; glyph?: HTMLElement;
+    constructor(options: {map: unknown; position: {lat: number; lng: number}; title: string}) {
+      this.map = options.map; this.position = options.position; this.title = options.title; state.markerInstances.push(this);
+    }
+    append(glyph: HTMLElement) { this.glyph = glyph; }
+    addEventListener() {}
+  } },
 }));
 vi.mock('@/components/public-site-header', () => ({ PublicSiteHeader: ({ action }: { action: React.ReactNode }) => action }));
 vi.mock('@/components/public-account-action', () => ({ PublicAccountAction: ({ onOpenReport }: { onOpenReport: (id: string) => void }) => <button onClick={() => onOpenReport('test-report')}>Open report from history</button> }));
-vi.mock('@/components/report-browser', () => ({ ReportBrowser: ({ reports, onDiscoveryFiltersChange, placeSearch }: { placeSearch: React.ReactNode; reports: Array<{ title: string }>; onDiscoveryFiltersChange: (filters: unknown) => void }) => <>{placeSearch}<output aria-label="Discovery results">{reports.map(report => report.title).join(',')}</output><button onClick={() => onDiscoveryFiltersChange({ status: 'available', funding: 'all', severity: 'high', radius: 0, query: '', scope: 'all' })}>High severity filter</button></> }));
+vi.mock('@/components/report-browser', () => ({ ReportBrowser: ({ reports, onVisibleReportsChange, onDiscoveryFiltersChange, placeSearch }: { onVisibleReportsChange: (reports: MappableReport[]) => void; placeSearch: React.ReactNode; reports: Array<{ title: string }>; onDiscoveryFiltersChange: (filters: unknown) => void }) => <>{placeSearch}<button onClick={() => onVisibleReportsChange(state.markerReports)}>Refresh visible pins</button><output aria-label="Discovery results">{reports.map(report => report.title).join(',')}</output><button onClick={() => onDiscoveryFiltersChange({ status: 'available', funding: 'all', severity: 'high', radius: 0, query: '', scope: 'all' })}>High severity filter</button></> }));
 vi.mock('@/components/place-search', () => ({ PlaceSearch: ({onSelect}: {onSelect: (place: unknown) => void}) => <button onClick={() => onSelect({id:'chosen',label:'Chosen area',latitude:1,longitude:2,bounds:{north:2,south:0,west:1,east:3}})}>Choose map area</button> }));
+vi.mock('@/lib/synced-report-preferences', () => ({ reportPreferenceSync: { load: async () => ({ preferences: { favorites: [], hidden: [] } }), sync: async () => ({ preferences: { favorites: [], hidden: [] }, offline: false }) } }));
 vi.mock('@/lib/report-discovery', async (importOriginal) => ({ ...await importOriginal<typeof import('@/lib/report-discovery')>(), loadDiscoveryReports: (...args: unknown[]) => state.discovery(...args) }));
 vi.mock('@/components/report-detail', () => ({ ReportDetail: ({report}: {report: {title: string}}) => <output aria-label="Linked report">{report.title}</output> }));
 vi.mock('@/components/resumable-report-wizard', () => ({ ResumableReportWizard: ({ onSubmit, onChangeLocation, selectingLocation, coordinates }: { onSubmit: (draft: ReportDraft, amount: number | null) => Promise<unknown>; onChangeLocation?: () => void; selectingLocation: boolean; coordinates: { latitude: number } }) => {
@@ -42,6 +54,7 @@ vi.mock('@/components/resumable-report-wizard', () => ({ ResumableReportWizard: 
   return <div role="dialog" aria-label="Report form"><output aria-label="Selected latitude">{coordinates.latitude}</output><button disabled={!onChangeLocation} onClick={onChangeLocation}>Change report location</button><button onClick={() => void onSubmit(draft, null).then(state.saveResult)}>Post without funds</button><button onClick={() => void onSubmit(draft, 500).then(state.saveResult)}>Post with $5</button></div>;
 } }));
 vi.mock('@/lib/saved-report-draft', () => ({
+  reportDraftLocation: async () => undefined,
   loadReportPublication: async () => state.journal,
   saveReportPublication: async (journal: typeof state.journal) => { state.journal = journal; },
   clearReportPublication: async () => { state.journal = undefined; },
@@ -58,7 +71,7 @@ vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({
   from: () => {
     const chain = {
       select: () => chain, eq: () => chain, is: () => chain, range: () => chain, abortSignal: () => chain, or: () => chain, gt: () => chain, order: () => chain,
-      insert: (value: unknown) => { state.inserts(value); return chain; },
+      upsert: (value: unknown) => { state.inserts(value); return chain; },
       single: async () => ({ data: report(), error: null }),
       maybeSingle: async () => ({ data: report(), error: null }),
       then: (resolve: (value: unknown) => unknown) => Promise.resolve({ data: [], error: null }).then(resolve),
@@ -73,6 +86,7 @@ vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({
 }) }));
 
 beforeEach(() => {
+  state.markerInstances = []; state.markerReports = [];
   vi.clearAllMocks(); state.discovery.mockReset().mockResolvedValue({ reports: [], truncated: false }); state.idle = null; state.journal = undefined; state.click = null; state.published = false; state.lostResponse = false;
   state.upload.mockResolvedValue('test-user/test-report/photo.jpg');
   state.review.mockResolvedValue(undefined);
@@ -85,7 +99,9 @@ async function choosePin(latitude = 0.5) {
   render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
   await waitFor(() => expect(state.click).toBeTruthy());
   fireEvent.click(screen.getByRole('button', { name: 'Report litter' }));
+  await screen.findByRole('button', { name: 'Cancel reporting' });
   await act(async () => { state.click!({ latLng: { lat: () => latitude, lng: () => 0 } }); });
+  await screen.findByRole('dialog', { name: 'Report form' });
 }
 
 describe('map publication and funding handoff', () => {
@@ -202,7 +218,7 @@ it('opens a shared report outside the initial discovery page', async () => {
   window.history.replaceState({}, '', '/?report=test-report');
   render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
   expect((await screen.findByLabelText('Linked report')).textContent).toBe('Test bottles');
-  expect(window.location.search).toBe('');
+  expect(window.location.search).toBe('?report=test-report');
 });
 
 it('does not let delayed startup GPS override a user-selected search area', async () => {
@@ -221,4 +237,35 @@ it('opens an account report even when it is absent from discovery results', asyn
   render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
   fireEvent.click(screen.getByRole('button', { name: 'Open report from history' }));
   expect((await screen.findByLabelText('Linked report')).textContent).toBe('Test bottles');
+});
+
+
+it('keeps pins attached during refresh and reorder, updates changed artwork, and only removes missing pins', async () => {
+  render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+  await waitFor(() => expect(state.click).toBeTruthy());
+  const first = { ...report(), funded_amount_cents: 500 } as MappableReport;
+  const second = { ...first, id: 'second', longitude: 0.2 };
+  state.markerReports = [first, second];
+  fireEvent.click(screen.getByRole('button', {name: 'Refresh visible pins'}));
+  expect(state.markerInstances).toHaveLength(2);
+  const [pin, other] = state.markerInstances;
+  const attachedMap = pin.map;
+  const glyph = pin.glyph!;
+  glyph.classList.add('report-map-marker-previewed');
+  state.markerReports = [{...second}, {...first}];
+  fireEvent.click(screen.getByRole('button', {name: 'Refresh visible pins'}));
+  expect(state.markerInstances).toHaveLength(2);
+  expect(pin.map).toBe(attachedMap);
+  expect(pin.glyph).toBe(glyph);
+  expect(glyph.classList.contains('report-map-marker-previewed')).toBe(true);
+  state.markerReports = [{...first, title: 'Cleaned bottles', cleanup_state: 'completed', latitude: 0.6}];
+  fireEvent.click(screen.getByRole('button', {name: 'Refresh visible pins'}));
+  expect(state.markerInstances).toHaveLength(2);
+  expect(pin.map).toBe(attachedMap);
+  expect(pin.title).toBe('Cleaned bottles');
+  expect(pin.position.lat).toBe(0.6);
+  expect(glyph.textContent).toBe('Done');
+  expect(glyph.classList.contains('report-map-marker-completed')).toBe(true);
+  expect(glyph.classList.contains('report-map-marker-available')).toBe(false);
+  expect(other.map).toBeNull();
 });

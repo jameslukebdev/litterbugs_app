@@ -20,9 +20,10 @@ import BrandedLoadingState from './BrandedLoadingState';
 
 export function ReportListItem({ report, origin, onPress, selected = false }) {
   const distance = getDistanceMiles(origin, report);
-  const { favoriteIds, toggleFavorite, favoritesReady, getReportPhotoUrl } = useReports();
+  const { favoriteIds, toggleFavorite, favoritesReady, hiddenIds, toggleHidden, getReportPhotoUrl } = useReports();
   const isFavorite = favoriteIds.includes(report.id);
   const actions = [
+    ...(favoritesReady ? [{ text: hiddenIds.includes(report.id) ? 'Restore report' : 'Hide report', icon: 'eye-off-outline', onPress: () => toggleHidden(report.id) }] : []),
     ...(isReportShareable(report) ? [{ text: 'Share report', icon: 'share-outline', onPress: async () => {
       try { await shareReportWithSystemSheet({ report, platform: Platform.OS, share: Share.share }); }
       catch { Alert.alert('Sharing unavailable', 'We couldn’t open the share menu. Please try again.'); }

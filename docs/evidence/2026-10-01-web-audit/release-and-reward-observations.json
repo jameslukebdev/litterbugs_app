@@ -1,0 +1,28 @@
+{
+  "observedDate": "2026-10-01",
+  "source": "read-only production SQL and Vercel CLI",
+  "productionPricingVersion": 1,
+  "reservationRejectsMismatchedNewPricing": true,
+  "productionDeployment": {
+    "id": "dpl_2ZJZkkjwWQPAtvFc6TumeMPB8hHh",
+    "url": "litterbugs-ixa9210jx-grant-9890s-projects.vercel.app",
+    "state": "READY"
+  },
+  "candidateDeployment": {
+    "id": "dpl_26GrgjNf7r4RKpaqLA9VvTC2P5pw",
+    "url": "litterbugs-d9rg0h5mz-grant-9890s-projects.vercel.app",
+    "state": "READY"
+  },
+  "completedRewardExample": {
+    "title": "Litter along Ridge Road on other side of guardrail",
+    "cleanup_state": "completed",
+    "funded_amount_cents": 0,
+    "completedAttempt": {
+      "is_paid": true,
+      "reward_amount_cents": 500,
+      "status": "completed"
+    },
+    "observedCardLabel": "Volunteer cleanup completed",
+    "bankReceiptVerified": false
+  }
+}

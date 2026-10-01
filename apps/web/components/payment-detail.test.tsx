@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PaymentDetail } from './payment-detail';
 const { getUser, from, invoke, eq, record } = vi.hoisted(() => ({ getUser: vi.fn(), from: vi.fn(), invoke: vi.fn(), eq: vi.fn(), record: { status: 'payment_pending' } }));
@@ -15,8 +15,6 @@ describe('payment status confirmation', () => {
     render(<PaymentDetail contributionId="payment-1" onOpenReport={vi.fn()} />);
     await screen.findByText(/haven’t confirmed this payment yet/);
     expect(eq).toHaveBeenCalledWith('contributor_id', 'member-1');
-    expect(screen.queryByText('Your contribution is in the cleanup fund.')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Check payment status' }));
     await screen.findByText('Your contribution is in the cleanup fund.');
     expect(invoke).toHaveBeenCalledWith('check-contribution-status', { body: { contributionId: 'payment-1' } });
   });

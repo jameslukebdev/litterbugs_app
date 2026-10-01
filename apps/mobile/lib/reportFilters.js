@@ -1,5 +1,7 @@
+const rewardCents = report => report.cleanup_state === 'completed' ? report.completedRewardCents : report.funded_amount_cents;
 export const DEFAULT_REPORT_FILTERS = Object.freeze({
   favoritesOnly: false,
+  visibility: 'visible',
   status: 'all',
   funding: 'all',
   severity: 'all',
@@ -21,8 +23,9 @@ export function distanceMiles(a, b) {
       Math.sin(rad(b.longitude - a.longitude) / 2) ** 2;
   return 7917.6 * Math.asin(Math.sqrt(Math.min(1, n)));
 }
-export function matchesReportFilters(report, filters, origin, favoriteIds = []) {
+export function matchesReportFilters(report, filters, origin, favoriteIds = [], hiddenIds = []) {
   if (filters.favoritesOnly && !favoriteIds.includes(report.id)) return false;
+  if (filters.visibility === 'hidden' ? !hiddenIds.includes(report.id) : hiddenIds.includes(report.id)) return false;
   const state = report.cleanup_state;
   if (filters.status === 'available' && state !== 'available') return false;
   if (
@@ -31,9 +34,9 @@ export function matchesReportFilters(report, filters, origin, favoriteIds = []) 
   )
     return false;
   if (filters.status === 'completed' && state !== 'completed') return false;
-  if (filters.funding === 'funded' && !(report.funded_amount_cents > 0))
+  if (filters.funding === 'funded' && !(rewardCents(report) > 0))
     return false;
-  if (filters.funding === 'volunteer' && report.funded_amount_cents > 0)
+  if (filters.funding === 'volunteer' && (rewardCents(report) == null || rewardCents(report) > 0))
     return false;
   if (
     filters.severity !== 'all' &&

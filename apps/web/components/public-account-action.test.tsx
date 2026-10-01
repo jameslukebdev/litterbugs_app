@@ -6,7 +6,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PublicAccountAction } from './public-account-action';
 
-const { currentUser, authListener } = vi.hoisted(() => ({
+const { currentUser, authListener, push } = vi.hoisted(() => ({
+  push: vi.fn(),
   currentUser: { value: null as null | { id: string; email: string } },
   authListener: { value: null as null | ((event: string, session: unknown) => void) },
 }));
@@ -16,7 +17,7 @@ vi.mock('next/image', () => ({
 }));
 
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push }),
 }));
 
 vi.mock('@/components/auth-dialog', () => ({
@@ -86,6 +87,6 @@ describe('PublicAccountAction', () => {
     const accountButton = screen.getByRole('button', { name: 'Account' });
     expect(accountButton.classList.contains('public-account-control-signed-out')).toBe(false);
     fireEvent.click(accountButton);
-    expect(screen.getByRole('dialog', { name: 'Account' })).toBeTruthy();
+    expect(push).toHaveBeenCalledWith('/account');
   });
 });

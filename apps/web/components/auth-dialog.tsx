@@ -12,12 +12,18 @@ type EmailMode = 'login' | 'signup' | 'forgot' | 'sent';
 
 type AuthDialogProps = {
   onClose: () => void;
+  onSuccess?: () => void;
+  returnPath?: string;
+  embedded?: boolean;
   intent?: AuthIntent;
   facebookLoginEnabled?: boolean;
 };
 
 export function AuthDialog({
   onClose,
+  onSuccess = onClose,
+  returnPath,
+  embedded = false,
   intent = null,
   facebookLoginEnabled = process.env.NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED === 'true',
 }: AuthDialogProps) {
@@ -34,8 +40,8 @@ export function AuthDialog({
   const providerLabel = loading ? loading.charAt(0).toUpperCase() + loading.slice(1) : '';
 
   function authCallbackUrl() {
-    const returnPath = `${window.location.pathname}${window.location.search}`;
-    return `${window.location.origin}/auth/callback?next=${encodeURIComponent(returnPath)}`;
+    const nextPath = returnPath ?? `${window.location.pathname}${window.location.search}`;
+    return `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
   }
 
   async function startProvider(provider: 'google' | 'facebook') {
@@ -67,7 +73,7 @@ export function AuthDialog({
       if (error) return setMessage(error.message.toLowerCase().includes('email not confirmed')
         ? 'Please verify your email before signing in.'
         : 'That email and password did not match. Try again or reset your password.');
-      onClose();
+      onSuccess();
       return;
     }
 
@@ -82,7 +88,7 @@ export function AuthDialog({
       if (error || hiddenDuplicate) return setMessage(hiddenDuplicate
         ? 'An account may already exist for this email. Try signing in or reset your password.'
         : 'We couldn’t create your account. Check your connection and try again.');
-      if (data.session) return onClose();
+      if (data.session) return onSuccess();
       setSentReason('signup');
       setMode('sent');
       return;
@@ -110,7 +116,7 @@ export function AuthDialog({
   }
 
   return (
-    <ModalShell onClose={onClose} label="Sign in to Litterbugs" className="auth-dialog" closeDisabled={Boolean(loading)}>
+    <ModalShell embedded={embedded} onClose={onClose} label="Sign in to Litterbugs" className="auth-dialog" closeDisabled={Boolean(loading)}>
       <Image className="auth-logo" src="/brand/litterbugs-logo.png" alt="Litterbugs" width={636} height={433} />
       {mode === 'sent' ? (
         <div className="auth-sent">

@@ -1,0 +1,12 @@
+{
+  "appVersion": "2.0.0",
+  "buildNumber": "15",
+  "processingState": "VALID",
+  "internalState": "IN_BETA_TESTING",
+  "externalState": "READY_FOR_BETA_SUBMISSION",
+  "uploadedDate": "2026-10-01T12:48:54-07:00",
+  "expired": false,
+  "easSubmissionId": "985b3f4e-6e87-4fda-82e6-9c66f096bf84",
+  "easBuildId": "5a85bae2-0b95-4a8b-90b6-c30384fa5bfe",
+  "fingerprintHash": "e865fd2f326ee2ba841e4a9b182c1eb9fea135f5"
+}
