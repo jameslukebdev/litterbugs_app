@@ -532,3 +532,9 @@ it.each(['claimed', 'completion_submitted', 'changes_requested'])('does not clos
   render(<ReportDetail report={{ ...report, cleanup_state: state, expires_at: '2020-01-01T00:00:00Z' }} isOwner={false} onClose={vi.fn()} onEdit={vi.fn()} onDelete={vi.fn()} />);
   expect(screen.queryByText('Report closed')).toBeNull();
 });
+
+it('does not show an upcoming expiry on a cancelled historical report', () => {
+  render(<ReportDetail report={{ ...report, cancelled_at: '2026-09-01', expires_at: '2099-01-01' }} isOwner={false} onClose={vi.fn()} onEdit={vi.fn()} onDelete={vi.fn()} />);
+  expect(screen.getByText('Report closed')).toBeTruthy();
+  expect(screen.queryByText(/^Expires /)).toBeNull();
+});

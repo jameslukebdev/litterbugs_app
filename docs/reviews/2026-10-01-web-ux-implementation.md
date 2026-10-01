@@ -20,7 +20,7 @@ Implements the [UX follow-up](2026-10-01-web-ux-compatibility-followup.md). Test
 
 ## Verification
 
-- Web suite: 234 tests across 49 files passed before final public-profile accessibility adjustment; final release results recorded below.
+- Web suite: 235 tests across 49 files passed on final application source.
 - TypeScript, ESLint, production build and whitespace validation passed during implementation.
 - Browser checks: 1280px compact/expanded report; long completed story can scroll to original facts/author; nested share Escape/focus; 390px report and filters; 768px and 320px no-photo reflow; photo selection/focus preserved across background refresh; public member route.
 - Local map-provider restrictions are treated explicitly: production-mode local test lacked Maps env, development host key was restricted. Hosted map validation is required before promotion. Provider pin failures now preserve the report browser and show a recoverable message.
@@ -34,4 +34,8 @@ Native push versus web inbox remains platform-specific. Browser push and a full 
 
 ## Release
 
-Pending hosted verification and website promotion. No new TestFlight build/submission.
+Website production deployment `dpl_4rnMkNwoqx72RoYMyh7BwwQyDsiR`, source `1ee0f59162bb288f4a3bd9ec316c7cf3d59cf5f2`, built October 1 at 17:30 EDT and promoted after staged checks. URL: https://litterbugs-4i0rmiypt-grant-9890s-projects.vercel.app. Live domain verified to resolve to this Ready deployment. PR: https://github.com/jameslukebdev/litterbugs_app/pull/102.
+
+The temporary domain is intentionally not authorized by the production Maps key (`RefererNotAllowedMapError`). No key restrictions were changed. Production Boone search returned four reports, visible town boundary, map tiles and four pins. Pin DOM identities remained `[80,84,88,92]` across zoom and subsequent refresh. Production report photo 2 and Next photo focus were retained across background refresh. Authenticated closed report opened its history destination and Back returned to My reports. The 390px account menu, report task entry and offline banner were also verified without creating customer records. A cancelled-history expiry label found during this check was corrected and regression-tested in the follow-up release. Authenticated Cleanup history selection survived a full reload at `/account/activity?view=history`. Staged completed filters persisted after reload. Production manifest parsed with no errors and Chrome returned `installabilityErrors: []`; actual installation was not performed. Initial deployment error-log query returned no matching logs; that is a bounded observation, not proof of zero possible errors.
+
+Rollback target: prior Ready release `dpl_GTbe12DSwyMkvA7aDhKwLyYN2162` / `litterbugs-q6k2af3k6-grant-9890s-projects.vercel.app`. No new TestFlight build/submission.

@@ -263,7 +263,7 @@ export function ReportDetail({
                 <div className="report-summary-line">
                   <span className={`report-detail-severity report-detail-severity-${severity.toLowerCase()}`}><span />{severity}</span>
                   {report.created_at && <span>{formatDate(report.created_at)}</span>}
-                  {report.cleanup_state === 'available' && report.expires_at && <span>Expires {formatDate(report.expires_at)}</span>}
+                  {!closed && report.cleanup_state === 'available' && report.expires_at && <span>Expires {formatDate(report.expires_at)}</span>}
                 </div>
                 <div className="report-status-row">
                   <span>{closed ? 'Report closed' : cleanupStatusLabel(report.cleanup_state)}</span>
