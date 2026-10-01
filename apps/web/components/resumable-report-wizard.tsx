@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { EMPTY_REPORT_DRAFT, type Coordinates, type ReportDraft } from '@litterbugs/report-contract';
+import { trackDeviceSave } from '@/lib/device-save-state';
+import { prepareBrowserPhotos } from '@/lib/prepare-browser-photo';
 import { cloudDrafts } from '@/lib/cloud-drafts';
 import { CloudDraftStatus } from '@/components/cloud-draft-status';
 import { useDraftEditorLock } from '@/lib/use-draft-editor-lock';
@@ -60,6 +62,17 @@ export function ResumableReportWizard({ userId, submissionProgress, coordinates,
     });
   }, [userId, coordinates, locked, mode]);
 
+  async function prepareAndSavePhotos(selected: File[], current: ReportWizardSnapshot, progress: (done: number, total: number) => void, onPrepared: (draft: ReportDraft) => void) {
+    return trackDeviceSave(userId, 'report', async () => {
+      const photos = await prepareBrowserPhotos(selected, progress);
+      const next = { ...current, draft: { ...current.draft, photos: [...current.draft.photos, ...photos] } };
+      snapshot.current = next;
+      onPrepared(next.draft);
+      await saveReportDraft(userId, { ...next, coordinates });
+      return next.draft;
+    });
+  }
+
   async function closeDraft(discard: boolean) {
     setBusy(true);
     try {
@@ -97,7 +110,7 @@ export function ResumableReportWizard({ userId, submissionProgress, coordinates,
   );
 
   return <>
-    <ReportWizard key={generation} draftSync={syncStatus} draftLocked={locked} submissionProgress={submissionProgress} draftSaveMessage={message} initialDraft={{ ...EMPTY_REPORT_DRAFT }} initialState={saved} onStateChange={saveSnapshot} isEditing={false} fundingEnabled={fundingEnabled} coordinates={coordinates} selectingLocation={selectingLocation || mode === 'close'} onChangeLocation={onChangeLocation} onClose={() => setMode('close')} onSubmit={onSubmit} />
+    <ReportWizard key={generation} draftSync={syncStatus} draftLocked={locked} submissionProgress={submissionProgress} draftSaveMessage={message} initialDraft={{ ...EMPTY_REPORT_DRAFT }} initialState={saved} onStateChange={saveSnapshot} onPreparePhotos={prepareAndSavePhotos} isEditing={false} fundingEnabled={fundingEnabled} coordinates={coordinates} selectingLocation={selectingLocation || mode === 'close'} onChangeLocation={onChangeLocation} onClose={() => setMode('close')} onSubmit={onSubmit} />
     {mode === 'close' && <ModalShell label="Keep your report?" onClose={() => { if (!busy) setMode('editing'); }} closeDisabled={busy}>
       <div className="wizard-content"><h2>Keep your report?</h2><p>Keep your photos and details to finish later. Discarding cancels any unfinished submission; an already published report stays published.</p>
         <div className="draft-recovery-actions"><button className="primary-button" disabled={busy} onClick={() => void closeDraft(false)}>Save for later</button>

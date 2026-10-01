@@ -1,4 +1,5 @@
 'use client';
+import { trackDeviceSave } from '@/lib/device-save-state';
 import { prepareBrowserPhotos } from '@/lib/prepare-browser-photo';
 
 /* eslint-disable @next/next/no-img-element -- Browser-selected cleanup evidence uses local object URLs. */
@@ -61,7 +62,9 @@ export function CleanupAction({
   userId,
   onRequireSignIn,
   onChanged,
+  workspace = false,
 }: {
+  workspace?: boolean;
   report: Report;
   userId: string | null;
   onRequireSignIn?: () => void;
@@ -79,7 +82,7 @@ export function CleanupAction({
   const [waiverAccepted, setWaiverAccepted] = useState(false);
   const [agreementSaved, setAgreementSaved] = useState(false);
   const [siteConfirmed, setSiteConfirmed] = useState(false);
-  const [submissionOpen, setSubmissionOpen] = useState(false);
+  const [submissionOpen, setSubmissionOpen] = useState(workspace);
   const [preparing, setPreparing] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
   const [description, setDescription] = useState('');
@@ -340,8 +343,15 @@ export function CleanupAction({
     if (photos.length + selected.length > MAX_CLEANUP_PHOTOS) { setSubmissionError('Choose no more than 3 photos.'); return; }
     setPreparing(true); setSubmissionError('Preparing photos…');
     try {
-      const prepared = await prepareBrowserPhotos(selected, (done, total) => setSubmissionError(`Preparing photos ${done} of ${total}…`));
-      setPhotos(current => [...current, ...prepared]); setSubmissionError('');
+      if (!userId || !attempt) return;
+      const nextPhotos = await trackDeviceSave(userId, `cleanup:${attempt.id}`, async () => {
+        const prepared = await prepareBrowserPhotos(selected, (done, total) => setSubmissionError(`Preparing photos ${done} of ${total}…`));
+        const nextPhotos = [...photos, ...prepared];
+        setPhotos(nextPhotos);
+        await saveCleanupDraft(userId, attempt.id, { photos: nextPhotos, description, bagsOrItems, weightPounds, submissionId, uploadedPaths, correctionDueAt: attempt.correction_due_at });
+        return nextPhotos;
+      });
+      setPhotos(nextPhotos); setSubmissionError('');
     } catch (error) { setSubmissionError(error instanceof Error ? error.message : 'The photos could not be prepared.'); }
     finally { setPreparing(false); }
   }
@@ -385,7 +395,7 @@ export function CleanupAction({
       )}
 
       {submissionOpen && attempt && (
-        <ModalShell onClose={() => setSubmissionOpen(false)} label="Submit cleanup evidence" className="cleanup-flow-dialog cleanup-evidence-workspace" closeDisabled={busy === 'submit' || preparing}>
+        <ModalShell embedded={workspace} onClose={() => setSubmissionOpen(false)} label="Submit cleanup evidence" className="cleanup-flow-dialog cleanup-evidence-workspace" closeDisabled={busy === 'submit' || preparing}>
           {editorLock === 'unavailable' && <p role="alert">This cleanup draft is open in another tab. Close that editor before continuing here.</p>}
           <span className="eyebrow">CLEANUP EVIDENCE</span>
           <h2>{attempt.status === 'changes_requested' ? 'Update your cleanup photos' : 'Show what you cleaned'}</h2>

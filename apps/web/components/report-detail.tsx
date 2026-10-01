@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 
 /* eslint-disable @next/next/no-img-element -- Signed Supabase URLs are short-lived runtime images. */
 
@@ -43,6 +44,8 @@ function cleanupStatusLabel(status: string) {
 export function ReportDetail({
   report,
   embedded = false,
+  inline = false,
+  taskBase,
   isOwner,
   onClose,
   onEdit,
@@ -58,10 +61,12 @@ export function ReportDetail({
 }: {
   report: Report;
   embedded?: boolean;
+  inline?: boolean;
+  taskBase?: string;
   isOwner: boolean;
   onClose: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
   userId?: string | null;
   onRequireSignIn?: (intent?: 'clean' | 'fund') => void;
   onReportChanged?: () => void | Promise<void>;
@@ -135,6 +140,14 @@ export function ReportDetail({
 
   useEffect(() => {
     if (embedded) return;
+    if (inline && !expandedLayout) {
+      backButtonRef.current?.focus();
+      const escape = (event: KeyboardEvent) => {
+        if (event.key === 'Escape' && !document.querySelector('[role="dialog"]') && dialogRef.current?.contains(document.activeElement)) { event.preventDefault(); closeRef.current(); }
+      };
+      window.addEventListener('keydown', escape);
+      return () => window.removeEventListener('keydown', escape);
+    }
     const previousOverflow = document.body.style.overflow;
     const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     document.body.style.overflow = 'hidden';
@@ -177,7 +190,7 @@ export function ReportDetail({
       window.removeEventListener('keydown', handleKeyDown);
       previouslyFocused?.focus();
     };
-  }, [embedded]);
+  }, [embedded, inline, expandedLayout]);
 
   useEffect(() => {
     if (!actionStatus) return;
@@ -216,12 +229,12 @@ export function ReportDetail({
   }
 
   return (
-    <div className={embedded ? "report-detail-embedded" : `report-detail-backdrop${expandedLayout ? ' report-detail-expanded' : ' report-detail-context'}`} role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+    <div className={embedded ? "report-detail-embedded" : inline && !expandedLayout ? "report-detail-pane report-detail-context" : `report-detail-backdrop${expandedLayout ? ' report-detail-expanded' : ' report-detail-context'}`} role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <aside
         ref={dialogRef}
         className={`report-detail${photoPaths.length ? '' : ' report-detail-without-photo'}`}
-        role={embedded ? "region" : "dialog"}
-        aria-modal={embedded ? undefined : true}
+        role={embedded || (inline && !expandedLayout) ? "region" : "dialog"}
+        aria-modal={embedded || (inline && !expandedLayout) ? undefined : true}
         aria-labelledby="report-detail-title"
       >
         <div className="sheet-handle" aria-hidden />
@@ -331,12 +344,12 @@ export function ReportDetail({
             </div>
 
             <footer className="report-detail-footer">
-              {isOwner && !closed && report.cleanup_state === 'available' && !report.funding_locked_at && <button className="danger-button compact-button" onClick={onDelete}><Icon name="trash" />Delete</button>}
-              {isOwner && !closed && report.cleanup_state === 'available' && !report.funding_locked_at && <button className="secondary-button compact-button" onClick={onEdit}><Icon name="edit" />Edit</button>}
-              <CleanupReviewAction report={report} userId={userId} isOwner={isOwner} onChanged={onReportChanged} />
+              {onDelete && isOwner && !closed && report.cleanup_state === 'available' && !report.funding_locked_at && <button className="danger-button compact-button" onClick={onDelete}><Icon name="trash" />Delete</button>}
+              {onEdit && isOwner && !closed && report.cleanup_state === 'available' && !report.funding_locked_at && <button className="secondary-button compact-button" onClick={onEdit}><Icon name="edit" />Edit</button>}
+              {taskBase && isOwner && !closed && report.cleanup_state === 'completion_submitted' ? <Link className="secondary-button" href={`${taskBase}&task=review`}>Review cleanup</Link> : <CleanupReviewAction report={report} userId={userId} isOwner={isOwner} onChanged={onReportChanged} />}
               <FundingContributionAction report={report} userId={userId} onRequireSignIn={() => onRequireSignIn?.('fund')} onChanged={onReportChanged} />
               {!closed && userId && report.funded_amount_cents > 0 && report.cleanup_state !== 'completed' && <PayoutSetupAction compact />}
-              {!closed && <CleanupAction report={report} userId={userId} onRequireSignIn={() => onRequireSignIn?.('clean')} onChanged={onReportChanged} />}
+              {!closed && (taskBase ? <Link className="primary-button" href={`${taskBase}&task=cleanup`}>Open cleanup workspace</Link> : <CleanupAction report={report} userId={userId} onRequireSignIn={() => onRequireSignIn?.('clean')} onChanged={onReportChanged} />)}
             </footer>
           </div>
         </div>

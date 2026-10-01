@@ -66,3 +66,29 @@ it('clears a pending publication only after confirmed server cancellation', asyn
   await waitFor(()=>expect(props.onClose).toHaveBeenCalled());
   expect(props.onRestorePublication).toHaveBeenLastCalledWith(undefined);
 });
+
+const photos = vi.hoisted(() => ({ prepare: vi.fn() }));
+vi.mock('@/lib/prepare-browser-photo', () => ({ prepareBrowserPhotos: photos.prepare }));
+it('persists prepared photo bytes even if browser navigation unmounts the editor', async () => {
+  let finish!: (files: File[]) => void;
+  photos.prepare.mockImplementationOnce(() => new Promise<File[]>(resolve => { finish = resolve; }));
+  open();
+  await screen.findByLabelText('Report title (optional)');
+  const input = document.querySelector<HTMLInputElement>('input[type="file"]')!;
+  const selected = new File(['photo'], 'photo.jpg', { type: 'image/jpeg' });
+  fireEvent.change(input, { target: { files: [selected] } });
+  await waitFor(() => expect(photos.prepare).toHaveBeenCalled());
+  cleanup();
+  finish([selected]);
+  await waitFor(() => expect(storage.save).toHaveBeenCalledWith('owner', expect.objectContaining({ draft: expect.objectContaining({ photos: [selected] }) })));
+});
+it('keeps a prepared photo visible if saving its device copy fails', async () => {
+  const selected = new File(['photo'], 'photo.jpg', { type: 'image/jpeg' });
+  photos.prepare.mockResolvedValueOnce([selected]);
+  open();
+  await screen.findByLabelText('Report title (optional)');
+  storage.save.mockRejectedValue(new Error('Device storage is full'));
+  fireEvent.change(document.querySelector<HTMLInputElement>('input[type="file"]')!, { target: { files: [selected] } });
+  expect(await screen.findByAltText('Selected report photo 1')).toBeTruthy();
+  await screen.findByText('Device storage is full');
+});

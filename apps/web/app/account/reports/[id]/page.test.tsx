@@ -34,7 +34,12 @@ describe('authenticated report history', () => {
   });
   it('preserves the account origin when opening an ongoing cleanup past original expiry', async () => {
     state.report = { ...state.report, expired_at: null, cleanup_state: 'claimed' };
-    await expect(open('history')).rejects.toThrow(`redirect:/?report=${id}&returnTo=%2Faccount%2Factivity%3Fview%3Dhistory`);
+    expect((await open('history')).props.back).toBe('/account/activity?view=history');
+  });
+  it('preserves notification return context for closed and active records', async () => {
+    expect((await open('notifications')).props.back).toBe('/account/notifications');
+    state.report = { ...state.report, expired_at: null, cleanup_state: 'claimed' };
+    expect((await open('notifications')).props.back).toBe('/account/notifications');
   });
   it('shows a retryable load failure instead of treating a network error as missing history', async () => {
     state.error = new Error('offline');

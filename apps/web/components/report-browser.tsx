@@ -168,8 +168,16 @@ export function ReportBrowser({
   truncated = false,
   discoveryError = '',
   filtersRequest = 0,
+  areaChosen = true,
+  onChooseArea, onUseLocation, onWidenArea, onRetry, onStartReport,
 }: {
   filtersRequest?: number;
+  areaChosen?: boolean;
+  onChooseArea?: () => void;
+  onUseLocation?: () => void;
+  onWidenArea?: () => void;
+  onRetry?: () => void;
+  onStartReport?: () => void;
   mapCenter?: Coordinates | null;
   placeSearch?: ReactNode;
   boundary?: BoundaryGeometry;
@@ -203,6 +211,7 @@ export function ReportBrowser({
     return () => clearTimeout(timer);
   }, [filtersRequest]);
   const listRef = useRef<HTMLDivElement>(null);
+  const filterStripRef = useRef<HTMLDivElement>(null);
   const [filter, setFilter] = useState<ReportFilter>('all');
   const [draftFilters, setDraftFilters] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
   const [advanced, setAdvanced] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
@@ -244,6 +253,8 @@ export function ReportBrowser({
     ? 'available'
     : filter;
   const applied = useMemo(() => filter === 'custom' ? advanced : quickFilters(activeFilter), [filter, advanced, activeFilter]);
+  const selectedQuickFilter = filters.find(item => (Object.keys(DEFAULT_DISCOVERY_FILTERS) as (keyof DiscoveryFilters)[]).every(key => quickFilters(item.value)[key] === applied[key]))?.value;
+  useEffect(() => { if (filterStripRef.current) filterStripRef.current.scrollLeft = 0; }, [selectedQuickFilter]);
   useEffect(() => { if (memoryReady) onDiscoveryFiltersChange?.(applied); }, [applied, onDiscoveryFiltersChange, memoryReady]);
   useEffect(() => { if (memoryReady) { const memory = { filters: applied, sort, scroll: restoringScrollRef.current ?? listRef.current?.scrollTop ?? 0, displayLimit }; saveBrowserMemory(memory); window.history.replaceState(window.history.state, '', browserUrl(new URL(window.location.href), memory)); } }, [applied, sort, memoryReady, displayLimit]);
   function updateFilter<K extends keyof DiscoveryFilters>(key: K, value: DiscoveryFilters[K]) {
@@ -321,12 +332,13 @@ export function ReportBrowser({
             </label>
             <button className="icon-button report-browser-close" onClick={onToggle} aria-label="Close report list"><Icon name="close" /></button>
           </div>
-          <div className="report-browser-filters" aria-label="Filter cleanup opportunities">
-            {filters.map(({ value, label }) => (
+          <div ref={filterStripRef} className="report-browser-filters" aria-label="Filter cleanup opportunities">
+            {!selectedQuickFilter && <button aria-pressed="true" onClick={() => { setDraftFilters(applied); setFiltersOpen(true); }}>Custom filters</button>}
+            {[...filters].sort((a, b) => Number(b.value === selectedQuickFilter) - Number(a.value === selectedQuickFilter)).map(({ value, label }) => (
               <button
                 key={value}
                 type="button"
-                aria-pressed={activeFilter === value}
+                aria-pressed={selectedQuickFilter === value}
                 onClick={() => { setDisplayLimit(50); setFilter(value); setAdvanced(quickFilters(value)); setDraftFilters(quickFilters(value)); }}
               >
                 {label}
@@ -391,8 +403,17 @@ export function ReportBrowser({
             );
           }) : (
             <div className="report-browser-empty">
-              <strong>No matching cleanup opportunities</strong>
-              <span>Try another filter or check this map again later.</span>
+              <strong>{loading ? 'Looking for cleanup opportunities…' : discoveryError ? 'Reports could not be loaded' : !areaChosen ? 'Where would you like to help?' : 'No matching cleanup opportunities'}</strong>
+              <span>{loading ? 'Checking the selected area.' : discoveryError ? 'Check your connection, then try again.' : !areaChosen ? 'Choose a city or use your location to find nearby reports.' : 'Try a wider area or clear your filters. You can also report litter you have found.'}</span>
+              {!loading && <div className="empty-discovery-actions">
+                {discoveryError ? onRetry && <button className="primary-button" onClick={onRetry}>Try again</button> : <>
+                  {onChooseArea && <button className="primary-button" onClick={onChooseArea}>Choose a city</button>}
+                  {!areaChosen && onUseLocation && <button className="secondary-button" onClick={onUseLocation}>Use my location</button>}
+                  {areaChosen && <button className="secondary-button" onClick={() => { setFilter('all'); setAdvanced(quickFilters('all')); setDraftFilters(quickFilters('all')); setDisplayLimit(50); }}>Clear filters</button>}
+                  {areaChosen && onWidenArea && <button className="secondary-button" onClick={onWidenArea}>Search a wider area</button>}
+                  {areaChosen && onStartReport && <button className="secondary-button" onClick={onStartReport}>Report litter</button>}
+                </>}
+              </div>}
             </div>
           )}
           {displayedReports.length < visibleReports.length && <button className="secondary-button load-more-reports" onClick={() => setDisplayLimit(value => value + 50)}>Show more reports ({displayedReports.length} of {visibleReports.length})</button>}
