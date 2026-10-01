@@ -7,7 +7,7 @@ export type ReportWizardSnapshot = {
   fundingChoice: string;
   customAmount: string;
 };
-export type SavedReportDraft = ReportWizardSnapshot & { coordinates: Coordinates };
+export type SavedReportDraft = ReportWizardSnapshot & { coordinates: Coordinates; savedAt?: number };
 export type ReportPublicationJournal = { userId: string; reportId: string; paths: string[] };
 
 // IndexedDB preserves File bytes; localStorage and blob URLs do not survive reloads.
@@ -39,7 +39,7 @@ function transaction<T>(store: 'drafts' | 'publications', userId: string, operat
   queue = work;
   return work;
 }
-export const saveLocalReportDraft = (userId: string, draft: SavedReportDraft) => transaction('drafts', userId, store => store.put(draft, userId));
+export const saveLocalReportDraft = (userId: string, draft: SavedReportDraft) => transaction('drafts', userId, store => store.put({ ...draft, savedAt: Date.now() }, userId));
 export async function loadLocalReportDraft(userId: string): Promise<SavedReportDraft | undefined> {
   const value = await transaction<SavedReportDraft | undefined>('drafts', userId, store => store.get(userId));
   if (!value) return undefined;

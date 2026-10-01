@@ -9,3 +9,15 @@ export function isDiscoverableReport(report: Pick<Report, 'is_published' | 'is_s
   if (['completed', 'claimed', 'completion_submitted', 'changes_requested'].includes(report.cleanup_state ?? '')) return true;
   return Boolean(report.expires_at && Date.parse(report.expires_at) > now.getTime());
 }
+
+/** TestFlight keeps ongoing cleanup work alive beyond the original discovery window. */
+export function isReportClosed(report: Pick<Report, 'cancelled_at' | 'expired_at' | 'cleanup_state' | 'expires_at'>, now = Date.now()) {
+  if (report.cancelled_at || report.expired_at) return true;
+  if (['completed', 'claimed', 'completion_submitted', 'changes_requested'].includes(report.cleanup_state)) return false;
+  return Boolean(report.expires_at && Date.parse(report.expires_at) <= now);
+}
+
+export function reportWorkflowTone(report: Pick<Report, 'cleanup_state'>) {
+  if (report.cleanup_state === 'completed') return 'completed';
+  return ['claimed', 'completion_submitted', 'changes_requested'].includes(report.cleanup_state) ? 'active' : 'available';
+}

@@ -225,8 +225,8 @@ export function CleanupReviewAction({
           <h2>Compare the cleanup photos</h2>
           <p className="cleanup-review-summary">Submitted by {context.cleanerName}{attempt.review_due_at ? ` · Automatic approval after ${new Date(attempt.review_due_at).toLocaleString()}` : ''}</p>
           <div className="cleanup-review-scroll">
-            <EvidencePhotos title="Before" urls={context.beforeUrls} />
-            <EvidencePhotos title="After" urls={context.afterUrls} />
+            <div className="cleanup-evidence-comparison"><EvidencePhotos title="Before" urls={context.beforeUrls} />
+            <EvidencePhotos title="After" urls={context.afterUrls} /></div>
             <section className="cleanup-submission-summary">
               <h3>Cleaner’s description</h3>
               <p>{context.submission.description}</p>

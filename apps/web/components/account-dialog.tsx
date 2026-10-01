@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { FiCheckCircle, FiExternalLink, FiFileText, FiHeart, FiKey, FiLogOut, FiMapPin, FiShield, FiTrash2 } from 'react-icons/fi';
 
 import { loadAccountReports, loadAccountPages, accountReportStatus } from '@/lib/account-reports';
+import { ResumeDrafts } from '@/components/resume-drafts';
 import { PaymentDetail } from '@/components/payment-detail';
 import { LinkSignInMethod } from '@/components/link-sign-in-method';
 import { CommunityRank } from '@/components/community-rank';
@@ -20,6 +21,7 @@ import {
   type Profile,
   type ProfileDraftErrors,
 } from '@/lib/profile';
+import { prepareBrowserPhoto } from '@/lib/prepare-browser-photo';
 import { uploadSecureBrowserMedia } from '@/lib/secure-media-upload';
 import { cloudDrafts } from '@/lib/cloud-drafts';
 import { clearAccountCleanupDrafts } from '@/lib/saved-cleanup-draft';
@@ -96,6 +98,10 @@ function contributionStatusLabel(status: string) {
     failed: 'Not completed',
     paid_out: 'Paid to cleaner',
   } as Record<string, string>)[status] ?? status.replaceAll('_', ' ');
+}
+
+function ActivityLink({ embedded, href, onClick, children, className = 'member-activity-row' }: { embedded: boolean; href: string; onClick: () => void; children: React.ReactNode; className?: string }) {
+  return embedded ? <Link className={className} href={href}>{children}</Link> : <button className={className} onClick={onClick}>{children}</button>;
 }
 
 export function AccountDialog({
@@ -313,22 +319,15 @@ export function AccountDialog({
     setRemoveAvatar(false);
   }
 
-  function chooseAvatar(file: File | undefined) {
-    if (!file) return;
-    const contentType = file.type.toLowerCase() === 'image/jpg' ? 'image/jpeg' : file.type.toLowerCase();
-    const allowed = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
-    if (!allowed.has(contentType)) {
-      setProfileErrors((current) => ({ ...current, avatarFile: 'Choose a JPEG, PNG, WebP, HEIC, or HEIF image.' }));
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setProfileErrors((current) => ({ ...current, avatarFile: 'Choose an image smaller than 5 MB.' }));
-      return;
-    }
-    setProfileErrors((current) => ({ ...current, avatarFile: undefined }));
-    setAvatarFile(file);
-    setAvatarPreview(URL.createObjectURL(file));
-    setRemoveAvatar(false);
+  async function chooseAvatar(file: File | undefined) {
+    if (!file || busyAction) return;
+    setBusyAction('photo');
+    try {
+      const prepared = await prepareBrowserPhoto(file);
+      setProfileErrors(current => ({ ...current, avatarFile: undefined }));
+      setAvatarFile(prepared); setAvatarPreview(URL.createObjectURL(prepared)); setRemoveAvatar(false);
+    } catch (error) { setProfileErrors(current => ({ ...current, avatarFile: error instanceof Error ? error.message : 'The photo could not be prepared.' })); }
+    finally { setBusyAction(''); }
   }
 
   async function saveProfile(event: React.FormEvent<HTMLFormElement>) {
@@ -391,8 +390,8 @@ export function AccountDialog({
   }
 
   function openReport(reportId: string) {
+    if (!embedded) onClose();
     onOpenReport(reportId);
-    onClose();
   }
 
   async function renewReport(reportId: string) {
@@ -454,11 +453,12 @@ export function AccountDialog({
     : '';
 
 
+  const Heading = embedded ? 'h1' : 'h2';
   return (
     <ModalShell embedded={embedded} onClose={onClose} label="Your Litterbugs account" className="account-dialog member-dashboard" closeDisabled={Boolean(busyAction)}>
       <header className="account-screen-title">
-        {section !== 'profile' && <button className="icon-button" onClick={() => navigateSection('profile')} aria-label="Back to profile"><Icon name="chevron-left" /></button>}
-        <h2 ref={headingRef} tabIndex={-1}>{section === 'profile' ? 'Profile' : section === 'activity' ? 'My activity' : section === 'payments' ? 'Payments' : 'Settings'}</h2>
+        {!embedded && section !== 'profile' && <button className="icon-button" onClick={() => navigateSection('profile')} aria-label="Back to profile"><Icon name="chevron-left" /></button>}
+        <Heading ref={headingRef} tabIndex={-1}>{section === 'profile' ? 'Profile' : section === 'activity' ? 'My activity' : section === 'payments' ? 'Payments' : 'Settings'}</Heading>
       </header>
       {(section === 'profile' || profileEditing) && <header className="member-dashboard-header">
         <div className="account-avatar" aria-hidden>
@@ -503,7 +503,7 @@ export function AccountDialog({
                 {(visibleAvatarUrl || profile?.avatar_path) && (
                   <button type="button" className="profile-text-button" onClick={() => { setAvatarFile(null); setAvatarPreview(''); setRemoveAvatar(true); }} disabled={Boolean(busyAction)}>Remove photo</button>
                 )}
-                <small>JPEG, PNG, WebP, HEIC, or HEIF · 5 MB max</small>
+                <small>JPEG, PNG, WebP, HEIC, or HEIF · Up to 25 MB; resized for upload</small>
                 {profileErrors.avatarFile && <span className="profile-field-error">{profileErrors.avatarFile}</span>}
               </div>
             </div>
@@ -544,6 +544,7 @@ export function AccountDialog({
         <div className="member-dashboard-loading"><span className="spinner" /><span>Loading your activity…</span></div>
       ) : (
         <>
+          {embedded && (section === 'profile' || section === 'activity') && <ResumeDrafts userId={userId} attempts={activeCleanups} />}
           {section === 'profile' && <>
           <CommunityRank userId={userId} />
           <nav className="account-section-links" aria-label="Profile sections">
@@ -557,10 +558,10 @@ export function AccountDialog({
           </section>
 
           </>}
-          {section === 'activity' && <div className="activity-tabs" role="tablist" aria-label="My activity">
-            {(['current', 'history', 'reports'] as const).map(tab => <button key={tab} role="tab" aria-selected={activityTab === tab} onClick={() => setActivityTab(tab)}>{tab === 'current' ? 'Current cleanups' : tab === 'history' ? 'Cleanup history' : 'My reports'}</button>)}
+          {section === 'activity' && <div className="activity-tabs" role="navigation" aria-label="My activity">
+            {(['current', 'history', 'reports'] as const).map(tab => embedded ? <Link key={tab} href={tab === 'reports' ? '/account/reports' : `/account/activity${tab === 'history' ? '?view=history' : ''}`} aria-current={activityTab === tab ? 'page' : undefined}>{tab === 'current' ? 'Current cleanups' : tab === 'history' ? 'Cleanup history' : 'My reports'}</Link> : <button key={tab} aria-pressed={activityTab === tab} onClick={() => setActivityTab(tab)}>{tab === 'current' ? 'Current cleanups' : tab === 'history' ? 'Cleanup history' : 'My reports'}</button>)}
           </div>}
-          {section === 'activity' && activityTab === 'reports' && hasSavedDraft && <button className="secondary-button" onClick={() => { onClose(); onResumeDraft?.(); }}>Resume saved report</button>}
+          {!embedded && (section === 'profile' || section === 'activity') && hasSavedDraft && <button className="secondary-button" onClick={() => { if (!embedded) onClose(); onResumeDraft?.(); }}>Resume saved report</button>}
           {section === 'payments' && <PayoutSetupAction />}
           <div className="member-dashboard-grid">
             {section === 'activity' && activityTab === 'reports' && expiredReports.length ? (
@@ -601,11 +602,11 @@ export function AccountDialog({
               <header><div><span className="eyebrow">REPORTED BY YOU</span><h3>My reports</h3></div></header>
               <div className="member-activity-list">
                 {reports.length ? reports.map((report) => (
-                  <button key={report.id} className="member-activity-row" onClick={() => openReport(report.id)}>
+                  <ActivityLink embedded={embedded} href={`/account/reports/${report.id}?from=${activityTab}`} key={report.id} className="member-activity-row" onClick={() => openReport(report.id)}>
                     <span><strong>{report.title || 'Litter Report'}</strong><small>{accountReportStatus(report)} · {report.severity || 'Medium'} severity</small></span>
                     <Icon name="chevron-right" />
-                  </button>
-                )) : <p className="member-empty">Your reports will appear here.</p>}
+                  </ActivityLink>
+                )) : <p className="member-empty">Your reports will appear here. <Link href="/report">Report litter</Link></p>}
               </div>
             </section>}
 
@@ -613,7 +614,7 @@ export function AccountDialog({
               <header><div><span className="eyebrow">CLEANUP ACTIVITY</span><h3>Current cleanups</h3></div></header>
               <div className="member-activity-list">
                 {activeCleanups.map((attempt) => (
-                  <button key={attempt.id} className="member-activity-row" onClick={() => openReport(attempt.report_id)}>
+                  <ActivityLink embedded={embedded} href={`/account/reports/${attempt.report_id}?from=${activityTab}`} key={attempt.id} className="member-activity-row" onClick={() => openReport(attempt.report_id)}>
                     <span>
                       <strong>{attempt.report?.title || 'Litter cleanup'}</strong>
                       <small>{cleanupStatus(attempt)}{attempt.is_paid ? ` · ${formatUsd(attempt.reward_amount_cents)}` : ''}</small>
@@ -623,9 +624,9 @@ export function AccountDialog({
                       ) : null}
                     </span>
                     <Icon name="chevron-right" />
-                  </button>
+                  </ActivityLink>
                 ))}
-                {!activeCleanups.length && <p className="member-empty">Claimed and awaiting-review cleanups will appear here.</p>}
+                {!activeCleanups.length && <p className="member-empty">Claimed and awaiting-review cleanups will appear here. <Link href="/">Browse cleanups</Link></p>}
               </div>
             </section>}
 
@@ -633,14 +634,14 @@ export function AccountDialog({
               <header><div><span className="eyebrow">YOUR IMPACT</span><h3>Completed cleanups</h3></div></header>
               <div className="member-activity-list">
                 {completedCleanups.map((attempt) => (
-                  <button key={attempt.id} className="member-activity-row member-completed-row" onClick={() => openReport(attempt.report_id)}>
+                  <ActivityLink embedded={embedded} href={`/account/reports/${attempt.report_id}?from=${section === 'payments' ? 'payments' : activityTab}`} key={attempt.id} className="member-activity-row member-completed-row" onClick={() => openReport(attempt.report_id)}>
                     <span>
                       <strong>{attempt.report?.title || 'Completed litter cleanup'}</strong>
                       <small>{attempt.completed_at ? new Date(attempt.completed_at).toLocaleDateString() : 'Date unavailable'} · {cleanupApprovalLabel(attempt.approval_method)}</small>
                       {attempt.is_paid ? <small className="member-reward-status">{formatUsd(attempt.reward_amount_cents)} · {cleanupRewardStatus(attempt)}</small> : null}
                     </span>
                     <Icon name="chevron-right" />
-                  </button>
+                  </ActivityLink>
                 ))}
                 {!completedCleanups.length && <p className="member-empty">Your completed cleanup history will appear here.</p>}
               </div>
@@ -650,14 +651,14 @@ export function AccountDialog({
               <header><div><span className="eyebrow">CLEANUP FUNDS</span><h3>Your contributions and payments</h3></div></header>
               <div className="member-activity-list">
                 {contributions.map((contribution) => (
-                  <button key={contribution.id} className="member-activity-row" onClick={() => setSelectedPayment(contribution.id)}>
+                  <ActivityLink embedded={embedded} href={`/account/payments/${contribution.id}`} key={contribution.id} className="member-activity-row" onClick={() => setSelectedPayment(contribution.id)}>
                     <span>
                       <strong>{formatUsd(contribution.principal_amount_cents)} cleanup reward</strong>
                       <small>{contributionStatusLabel(contribution.status)} · {new Date(contribution.created_at).toLocaleString()}</small>
                       <small>{formatUsd(contribution.platform_fee_cents)} fee · {formatUsd(contribution.total_amount_cents)} total</small>
                     </span>
                     <Icon name="chevron-right" />
-                  </button>
+                  </ActivityLink>
                 ))}
                 {!contributions.length && <p className="member-empty">Your contributions and payment status will appear here.</p>}
               </div>

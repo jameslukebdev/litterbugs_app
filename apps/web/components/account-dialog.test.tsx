@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import type { Report } from '@litterbugs/report-contract';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { AccountPage } from './account-page';
 import { AccountDialog } from './account-dialog';
 
 const { blockDelete, blockedRows, rpc, profileUpdate, reportQueryNumber, invoke, clearDraft, signOut } = vi.hoisted(() => ({
@@ -17,8 +18,10 @@ const { blockDelete, blockedRows, rpc, profileUpdate, reportQueryNumber, invoke,
   reportQueryNumber: { value: 0 },
 }));
 
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }) }));
+vi.mock('@/components/resume-drafts', () => ({ ResumeDrafts: () => null }));
 vi.mock('@/lib/saved-cleanup-draft', () => ({ clearAccountCleanupDrafts: vi.fn(async () => undefined) }));
-vi.mock('@/lib/saved-report-draft', () => ({ clearPublishedReport: clearDraft }));
+vi.mock('@/lib/saved-report-draft', () => ({ clearPublishedReport: clearDraft, reportDraftLocation: vi.fn(async () => undefined) }));
 
 vi.mock('@/components/payout-setup-action', () => ({
   PayoutSetupAction: () => null,
@@ -75,6 +78,7 @@ function query(result: { data: unknown; error: null }) {
 vi.mock('@/lib/supabase/client', () => ({
   createClient: () => ({
     auth: {
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: vi.fn() } } }),
       getUser: vi.fn(async () => ({ data: { user: { id: 'member-id', email: 'member@example.com' } } })),
       resetPasswordForEmail: vi.fn(async () => ({ error: null })),
       signOut,
@@ -202,7 +206,7 @@ describe('AccountDialog expired report decisions', () => {
     expect(screen.getByText('$2.50 fee · $27.50 total')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Back to profile' }));
     fireEvent.click(screen.getByRole('button', { name: 'My activity' }));
-    fireEvent.click(screen.getByRole('tab', { name: 'My reports' }));
+    fireEvent.click(screen.getByRole('button', { name: 'My reports' }));
     expect(await screen.findByRole('heading', { name: 'Renew or close reports' })).toBeTruthy();
     expect(screen.getByText('$125.00 reward', { exact: false })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Renew 30 days' }));
@@ -219,7 +223,7 @@ describe('AccountDialog expired report decisions', () => {
     render(<AccountDialog onClose={vi.fn()} onSignedOut={vi.fn()} onOpenReport={vi.fn()} />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'My activity' }));
-    fireEvent.click(screen.getByRole('tab', { name: 'My reports' }));
+    fireEvent.click(screen.getByRole('button', { name: 'My reports' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Close and refund' }));
 
     expect(window.confirm).toHaveBeenCalledWith(expect.stringMatching(/including the service fee/i));
@@ -270,4 +274,25 @@ describe('saved report cleanup after account deletion', () => {
     await waitFor(() => expect(onSignedOut).toHaveBeenCalled());
     expect(clearDraft).not.toHaveBeenCalled();expect(invoke).not.toHaveBeenCalled();
   });
+});
+
+
+it('uses authenticated history links in the real account wrapper with one selected navigation section', async () => {
+  reportQueryNumber.value = 1;
+  render(<AccountPage destination="reports" userId="member-id" />);
+  const reportLink = await screen.findByRole('link', { name: /Creek cleanup.*Closed/ });
+  expect(reportLink.getAttribute('href')).toBe('/account/reports/expired-report-id?from=reports');
+  expect(screen.getByRole('link', { name: 'My activity' }).getAttribute('aria-current')).toBe('page');
+  expect(screen.getByRole('link', { name: 'My reports' }).getAttribute('aria-current')).toBe('page');
+  expect(screen.getByRole('link', { name: 'Cleanup history' }).getAttribute('href')).toBe('/account/activity?view=history');
+  expect(screen.getByRole('heading', { level: 1, name: 'My activity' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Back to profile' })).toBeNull();
+});
+it('restores cleanup history from its route state and uses route-based payment receipts', async () => {
+  const { unmount } = render(<AccountPage destination="activity" activityView="history" userId="member-id" />);
+  expect(await screen.findByRole('heading', { name: 'Completed cleanups' })).toBeTruthy();
+  expect(screen.getByRole('link', { name: 'Cleanup history' }).getAttribute('aria-current')).toBe('page');
+  unmount(); render(<AccountPage destination="payments" userId="member-id" />);
+  const receipt = await screen.findByRole('link', { name: /25.00 cleanup reward/ });
+  expect(receipt.getAttribute('href')).toBe('/account/payments/contribution-id');
 });

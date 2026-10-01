@@ -7,11 +7,10 @@ import { ModalShell } from '@/components/modal-shell';
 import { MemberSafetyActions } from '@/components/member-safety-actions';
 import { MemberReports } from '@/components/member-reports';
 import { CommunityRank } from '@/components/community-rank';
-import type { Database } from '@litterbugs/report-contract';
+import Link from 'next/link';
 
-type Profile = Database['public']['Tables']['profiles']['Row'];
-export type PublicProfile = Pick<Profile, 'id' | 'display_name' | 'username' | 'bio' | 'location' | 'provider_avatar_url' | 'avatar_path' | 'updated_at' | 'created_at'>;
-export const publicFields = 'id,display_name,username,bio,location,provider_avatar_url,avatar_path,updated_at,created_at';
+export { publicFields, type PublicProfile } from '@/lib/public-profile';
+import { publicFields, type PublicProfile } from '@/lib/public-profile';
 export function ReportAuthor({ profileId, sourceReportId, onBlocked, initialProfile }: { profileId: string | null; sourceReportId?: string; onBlocked?: () => void; initialProfile?: PublicProfile }) {
   const [loadedProfile, setProfile] = useState<PublicProfile | null>(initialProfile ?? null);
   const [open, setOpen] = useState(false);
@@ -38,6 +37,7 @@ export function ReportAuthor({ profileId, sourceReportId, onBlocked, initialProf
       {profile.bio && <p>{profile.bio}</p>}
       <p>Joined {new Date(profile.created_at).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</p>
       <CommunityRank userId={profile.id} />
+      <Link href={`/members/${profile.id}`} className="secondary-button">Open full profile</Link>
       <MemberReports profileId={profile.id} />
       <MemberSafetyActions profileId={profile.id} sourceReportId={sourceReportId} onBlocked={() => { setOpen(false); onBlocked?.(); }} />
     </ModalShell>}

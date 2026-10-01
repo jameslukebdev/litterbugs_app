@@ -150,7 +150,7 @@ export function CleanupAction({
   useEffect(() => {
     if (!submissionOpen || !userId || !attempt?.id || draftReady !== attempt.id || draftStorageFailed || busy || draftLocked || editorLock !== 'ready') return;
     void saveCleanupDraft(userId, attempt.id, { photos, description, bagsOrItems, weightPounds, submissionId, uploadedPaths, correctionDueAt: attempt.correction_due_at })
-        .then(() => setDraftMessage('Draft saved on this device.'))
+        .then(() => setDraftMessage(''))
         .catch(() => setDraftMessage('Couldn’t save your draft. Keep this page open until you submit.'));
   }, [submissionOpen, userId, attempt?.id, draftReady, draftStorageFailed, busy, photos, description, bagsOrItems, weightPounds, submissionId, uploadedPaths, attempt?.correction_due_at, draftLocked, editorLock]);
 
@@ -334,6 +334,18 @@ export function CleanupAction({
     await Promise.allSettled([refreshAttempt(), Promise.resolve().then(() => onChanged?.())]);
   }
 
+  async function addEvidencePhotos(selected: File[]) {
+    if (busy || preparing || draftLocked || editorLock !== 'ready' || uploadedPaths.length) return;
+    if (!selected.length) return;
+    if (photos.length + selected.length > MAX_CLEANUP_PHOTOS) { setSubmissionError('Choose no more than 3 photos.'); return; }
+    setPreparing(true); setSubmissionError('Preparing photos…');
+    try {
+      const prepared = await prepareBrowserPhotos(selected, (done, total) => setSubmissionError(`Preparing photos ${done} of ${total}…`));
+      setPhotos(current => [...current, ...prepared]); setSubmissionError('');
+    } catch (error) { setSubmissionError(error instanceof Error ? error.message : 'The photos could not be prepared.'); }
+    finally { setPreparing(false); }
+  }
+
   const action = (() => {
     if (attemptLoading) return <button className="secondary-button compact-button" disabled>Checking cleanup…</button>;
     if (canSubmit) return <button className="primary-button compact-button" onClick={() => setSubmissionOpen(true)}>{attempt?.status === 'changes_requested' ? 'Update cleanup photos' : 'Submit cleanup photos'}</button>;
@@ -373,7 +385,7 @@ export function CleanupAction({
       )}
 
       {submissionOpen && attempt && (
-        <ModalShell onClose={() => setSubmissionOpen(false)} label="Submit cleanup evidence" className="cleanup-flow-dialog" closeDisabled={busy === 'submit' || preparing}>
+        <ModalShell onClose={() => setSubmissionOpen(false)} label="Submit cleanup evidence" className="cleanup-flow-dialog cleanup-evidence-workspace" closeDisabled={busy === 'submit' || preparing}>
           {editorLock === 'unavailable' && <p role="alert">This cleanup draft is open in another tab. Close that editor before continuing here.</p>}
           <span className="eyebrow">CLEANUP EVIDENCE</span>
           <h2>{attempt.status === 'changes_requested' ? 'Update your cleanup photos' : 'Show what you cleaned'}</h2>
@@ -381,18 +393,12 @@ export function CleanupAction({
           {attempt.status === 'changes_requested' && <CleanupFeedback key={attempt.id} cleanupId={attempt.id} />}
           <fieldset className="cleanup-submission-fields" hidden={reviewing} disabled={editorLock !== 'ready' || draftLocked || draftReady !== attempt.id || Boolean(busy) || preparing || uploadedPaths.length > 0}>
             <label className="field-label">After photos <span>Required · {photos.length}/3</span>
-              <span className="cleanup-photo-picker"><Icon name="camera" />Choose 1–3 photos<input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" multiple onChange={async (event) => {
+              <span className="cleanup-photo-picker" onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); void addEvidencePhotos(Array.from(event.dataTransfer.files)); }}><Icon name="camera" />Choose 1–3 photos<input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" multiple onChange={async (event) => {
                 const selected = Array.from(event.target.files ?? []); event.target.value = '';
-                if (!selected.length) return;
-                if (photos.length + selected.length > MAX_CLEANUP_PHOTOS) { setSubmissionError('Choose no more than 3 photos.'); return; }
-                setPreparing(true); setSubmissionError('Preparing photos…');
-                try {
-                  const prepared = await prepareBrowserPhotos(selected, (done, total) => setSubmissionError(`Preparing photos ${done} of ${total}…`));
-                  setPhotos(current => [...current, ...prepared]); setSubmissionError('');
-                } catch (error) { setSubmissionError(error instanceof Error ? error.message : 'The photos could not be prepared.'); }
-                finally { setPreparing(false); }
+                await addEvidencePhotos(selected);
               }} /></span>
             </label>
+            <label className="phone-camera-picker secondary-button">Take an after photo<input type="file" accept="image/*" capture="environment" disabled={photos.length >= 3} onChange={event => { const selected = Array.from(event.target.files ?? []); event.target.value = ''; void addEvidencePhotos(selected); }} /></label>
             {!!photos.length && <div className="cleanup-photo-grid">{photos.map((photo, index) => <PhotoPreview key={`${photo.name}-${photo.lastModified}-${index}`} file={photo} onRemove={() => setPhotos((current) => current.filter((_, itemIndex) => itemIndex !== index))} />)}</div>}
             <label>Cleanup description <span>Required</span><textarea value={description} maxLength={500} onChange={(event) => { setDescription(event.target.value); setSubmissionError(''); }} placeholder="Describe what you removed and where you cleaned." /></label>
             <div className="cleanup-number-grid">

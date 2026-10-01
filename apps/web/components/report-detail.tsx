@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Report } from '@litterbugs/report-contract';
 
+import { isReportClosed } from '@/lib/report-visibility';
 import { ModalShell } from '@/components/modal-shell';
 import { CompletedCleanup } from '@/components/completed-cleanup';
 import { ReportAuthor } from '@/components/report-author';
@@ -41,6 +42,7 @@ function cleanupStatusLabel(status: string) {
 
 export function ReportDetail({
   report,
+  embedded = false,
   isOwner,
   onClose,
   onEdit,
@@ -55,6 +57,7 @@ export function ReportDetail({
   onNotify,
 }: {
   report: Report;
+  embedded?: boolean;
   isOwner: boolean;
   onClose: () => void;
   onEdit: () => void;
@@ -70,7 +73,10 @@ export function ReportDetail({
 }) {
   const dialogRef = useRef<HTMLElement>(null);
   const backButtonRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef(onClose);
+  useEffect(() => { closeRef.current = onClose; }, [onClose]);
   const shareButtonRef = useRef<HTMLButtonElement>(null);
+  const [expandedLayout, setExpandedLayout] = useState(false);
   const [photoExpanded, setPhotoExpanded] = useState(false);
   const [photoZoomed, setPhotoZoomed] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
@@ -121,13 +127,14 @@ export function ReportDetail({
   }, [compatibilityUrl, currentPhotoPath, detailPhotoUrl]);
 
   const [openedAt] = useState(() => Date.now());
-  const closed = Boolean(report.cancelled_at || report.expired_at || (report.cleanup_state !== 'completed' && report.expires_at && Date.parse(report.expires_at) <= openedAt));
+  const closed = isReportClosed(report, openedAt);
   const severity = report.severity ?? 'Medium';
   const hasLitterTypes = Boolean(report.litter_types?.length || report.types);
   const shareable = isPubliclyShareableReport(report);
   const shareCopy = reportShareCopy(report);
 
   useEffect(() => {
+    if (embedded) return;
     const previousOverflow = document.body.style.overflow;
     const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     document.body.style.overflow = 'hidden';
@@ -143,14 +150,14 @@ export function ReportDetail({
 
       if (event.key === 'Escape') {
         event.preventDefault();
-        onClose();
+        closeRef.current();
         return;
       }
 
       if (event.key !== 'Tab' || !dialogRef.current) return;
       const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      ));
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), summary',
+      )).filter(element => element.getClientRects().length > 0);
       if (!focusable.length) return;
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
@@ -170,7 +177,7 @@ export function ReportDetail({
       window.removeEventListener('keydown', handleKeyDown);
       previouslyFocused?.focus();
     };
-  }, [onClose]);
+  }, [embedded]);
 
   useEffect(() => {
     if (!actionStatus) return;
@@ -209,12 +216,12 @@ export function ReportDetail({
   }
 
   return (
-    <div className="report-detail-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+    <div className={embedded ? "report-detail-embedded" : `report-detail-backdrop${expandedLayout ? ' report-detail-expanded' : ' report-detail-context'}`} role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <aside
         ref={dialogRef}
         className={`report-detail${photoPaths.length ? '' : ' report-detail-without-photo'}`}
-        role="dialog"
-        aria-modal="true"
+        role={embedded ? "region" : "dialog"}
+        aria-modal={embedded ? undefined : true}
         aria-labelledby="report-detail-title"
       >
         <div className="sheet-handle" aria-hidden />
@@ -223,12 +230,13 @@ export function ReportDetail({
             <Icon name="chevron-left" />
             <span>Back</span>
           </button>
+          {!embedded && <button className="report-layout-toggle" onClick={() => setExpandedLayout(value => !value)} aria-pressed={expandedLayout}>{expandedLayout ? 'Compact view' : 'Larger view'}</button>}
           <img className="report-detail-toolbar-logo" src="/brand/litterbugs-logo.png" alt="" aria-hidden />
           <nav className="report-detail-toolbar-actions" aria-label="Report actions">
-            <button type="button" aria-pressed={favorite} onClick={() => onFavoriteChange?.(!favorite)}>
+            {onFavoriteChange && <button type="button" aria-pressed={favorite} onClick={() => onFavoriteChange?.(!favorite)}>
               <Icon name="heart" />
               <span>{favorite ? 'Saved' : 'Favorite'}</span>
-            </button>
+            </button>}
             {shareable && (
               <button
                 ref={shareButtonRef}
@@ -241,14 +249,27 @@ export function ReportDetail({
                 <span>{shareCopy.actionLabel}</span>
               </button>
             )}
-            <button type="button" aria-pressed={hidden} onClick={() => onHiddenChange?.(!hidden)}>
+            {onHiddenChange && <button type="button" aria-pressed={hidden} onClick={() => onHiddenChange?.(!hidden)}>
               <Icon name="eye-off" />
               <span>{hidden ? 'Hidden' : 'Hide'}</span>
-            </button>
+            </button>}
           </nav>
           {actionStatus && <span className="report-detail-toolbar-status" role="status">{actionStatus}</span>}
         </header>
         <div className="report-detail-layout">
+              <header className="report-detail-header">
+                {report.cleanup_state === 'completed' && <><CompletedCleanup reportId={report.id} /><p className="eyebrow">Original litter report</p></>}
+                  <h2 id="report-detail-title">{report.title || 'Litter Report'}</h2>
+                <div className="report-summary-line">
+                  <span className={`report-detail-severity report-detail-severity-${severity.toLowerCase()}`}><span />{severity}</span>
+                  {report.created_at && <span>{formatDate(report.created_at)}</span>}
+                  {!closed && report.cleanup_state === 'available' && report.expires_at && <span>Expires {formatDate(report.expires_at)}</span>}
+                </div>
+                <div className="report-status-row">
+                  <span>{closed ? 'Report closed' : cleanupStatusLabel(report.cleanup_state)}</span>
+                  {report.cleanup_state !== 'completed' && report.funded_amount_cents > 0 && <strong>{formatUsd(report.funded_amount_cents)} reward</strong>}
+                </div>
+              </header>
           <div className="report-detail-visual">
             <div className="report-photo-region">
               {photoSrc && photoLoaded && !photoFailed && <button className="photo-expand-button" onClick={() => { setPhotoExpanded(true); setPhotoZoomed(false); }}>View full photo</button>}
@@ -297,35 +318,24 @@ export function ReportDetail({
 
           <div className="report-detail-panel">
             <div className="report-detail-scroll">
-              <header className="report-detail-header">
-                <h2 id="report-detail-title">{report.title || 'Litter Report'}</h2>
-                <div className="report-summary-line">
-                  <span className={`report-detail-severity report-detail-severity-${severity.toLowerCase()}`}><span />{severity}</span>
-                  {report.created_at && <span>{formatDate(report.created_at)}</span>}
-                  {report.cleanup_state !== 'completed' && report.expires_at && <span>Expires {formatDate(report.expires_at)}</span>}
-                </div>
-                <div className="report-status-row">
-                  <span>{closed ? 'Report closed' : cleanupStatusLabel(report.cleanup_state)}</span>
-                  {report.cleanup_state !== 'completed' && report.funded_amount_cents > 0 && <strong>{formatUsd(report.funded_amount_cents)} reward</strong>}
-                </div>
-              </header>
 
-              <ReportAuthor profileId={report.user_id} sourceReportId={report.id} onBlocked={() => { onClose(); void onReportChanged?.(); }} />
-              {report.cleanup_state === 'completed' && <CompletedCleanup reportId={report.id} />}
+
+
               {report.latitude !== null && report.longitude !== null && <a className="report-directions secondary-button" href={`https://www.google.com/maps/dir/?api=1&destination=${report.latitude},${report.longitude}`} target="_blank" rel="noopener noreferrer"><Icon name="location" />Get directions</a>}
               <div className="report-detail-body">
                 {hasLitterTypes && <p className="report-detail-fact"><strong>Litter</strong><span>{[...(report.litter_types ?? []), ...(report.types ? [report.types] : [])].join(', ')}</span></p>}
                 {!!report.notes_presets?.length && <p className="report-detail-fact"><strong>Notes</strong><span>{report.notes_presets.join(', ')}</span></p>}
                 {report.notes_other && <p className="report-detail-fact"><strong>Details</strong><span>{report.notes_other}</span></p>}
               </div>
+              <ReportAuthor profileId={report.user_id} sourceReportId={report.id} onBlocked={() => { onClose(); void onReportChanged?.(); }} />
             </div>
 
             <footer className="report-detail-footer">
-              {isOwner && !report.funding_locked_at && <button className="danger-button compact-button" onClick={onDelete}><Icon name="trash" />Delete</button>}
-              {isOwner && !report.funding_locked_at && <button className="secondary-button compact-button" onClick={onEdit}><Icon name="edit" />Edit</button>}
+              {isOwner && !closed && report.cleanup_state === 'available' && !report.funding_locked_at && <button className="danger-button compact-button" onClick={onDelete}><Icon name="trash" />Delete</button>}
+              {isOwner && !closed && report.cleanup_state === 'available' && !report.funding_locked_at && <button className="secondary-button compact-button" onClick={onEdit}><Icon name="edit" />Edit</button>}
               <CleanupReviewAction report={report} userId={userId} isOwner={isOwner} onChanged={onReportChanged} />
               <FundingContributionAction report={report} userId={userId} onRequireSignIn={() => onRequireSignIn?.('fund')} onChanged={onReportChanged} />
-              {userId && report.funded_amount_cents > 0 && report.cleanup_state !== 'completed' && <PayoutSetupAction compact />}
+              {!closed && userId && report.funded_amount_cents > 0 && report.cleanup_state !== 'completed' && <PayoutSetupAction compact />}
               {!closed && <CleanupAction report={report} userId={userId} onRequireSignIn={() => onRequireSignIn?.('clean')} onChanged={onReportChanged} />}
             </footer>
           </div>

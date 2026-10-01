@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 
 import { getSiteUrl } from '@/lib/env';
 
+import { ConnectionStatus } from '@/components/connection-status';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -25,7 +26,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body><ConnectionStatus />{children}</body>
     </html>
   );
 }

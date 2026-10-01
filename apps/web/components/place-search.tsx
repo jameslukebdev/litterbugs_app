@@ -6,6 +6,7 @@ import type { SearchPlace } from '@/lib/place-geography';
 
 export function PlaceSearch({ selected, onSelect, onClear, geocode, disabled = false }: { selected: SearchPlace | null; onSelect: (place: SearchPlace) => void; onClear: () => void; geocode: (text: string) => Promise<SearchPlace[]>; disabled?: boolean }) {
   const inputId = useId();
+  const [addressMode, setAddressMode] = useState(false);
   const [text, setText] = useState('');
   const [results, setResults] = useState<Array<TownResult | SearchPlace>>([]);
   const [busy, setBusy] = useState(false);
@@ -26,9 +27,9 @@ export function PlaceSearch({ selected, onSelect, onClear, geocode, disabled = f
       ]);
       if (seq !== sequence.current) return;
       setResults(found);
-      if (!found.length) setMessage(address ? 'No location found. Try a city and country or a full address.' : 'No U.S. town found. Try Address / worldwide.');
+      if (!found.length) setMessage(address ? 'No location found. Try a city and country or a full address.' : 'No U.S. town found. Choose Address or worldwide in Search options.');
     } catch {
-      if (seq === sequence.current) setMessage(address ? 'Address search could not load. Please try again.' : 'Town search could not load. Retry or use Address / worldwide.');
+      if (seq === sequence.current) setMessage(address ? 'Address search could not load. Please try again.' : 'Town search could not load. Retry or choose Address or worldwide in Search options.');
     } finally { window.clearTimeout(timer); if (seq === sequence.current) setBusy(false); }
   }
   async function choose(place: TownResult | SearchPlace) {
@@ -43,10 +44,10 @@ export function PlaceSearch({ selected, onSelect, onClear, geocode, disabled = f
     finally { window.clearTimeout(timer); if (seq === sequence.current) setBusy(false); }
   }
   return <section className="place-search" aria-label="Find a city or address">
-    <form onSubmit={event => { event.preventDefault(); void search(false); }}>
+    <form onSubmit={event => { event.preventDefault(); void search(addressMode); }}>
       <label htmlFor={inputId}>City or address</label>
-      <div className="place-search-input-row"><input id={inputId} type="search" maxLength={120} placeholder="City, state or country" value={text} disabled={disabled} onChange={event => { invalidate(); setText(event.target.value); setResults([]); setMessage(''); }} /><button className="primary-button" disabled={disabled || busy || text.trim().length < 2}>Find U.S. town</button></div>
-      <button className="place-address-button" type="button" disabled={disabled || busy || !text.trim()} onClick={() => void search(true)}>Address / worldwide</button>
+      <div className="place-search-input-row"><input id={inputId} type="search" maxLength={120} placeholder="City, state or country" value={text} disabled={disabled} onChange={event => { invalidate(); setText(event.target.value); setResults([]); setMessage(''); }} /><button className="primary-button" disabled={disabled || busy || text.trim().length < 2}>Search</button></div>
+      <details className="place-search-options"><summary>Search options</summary><label>Search area<select value={addressMode ? 'address' : 'town'} onChange={event => { invalidate(); setAddressMode(event.target.value === 'address'); setResults([]); }}><option value="town">U.S. town boundary</option><option value="address">Address or worldwide</option></select></label></details>
     </form>
     {busy && <p role="status">Searching…</p>}
     {message && <p role="status">{message}</p>}

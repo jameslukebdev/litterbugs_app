@@ -2,16 +2,18 @@
 
 /* eslint-disable @next/next/no-img-element -- Signed Supabase URLs are short-lived runtime images. */
 
+import { reportWorkflowTone } from '@/lib/report-visibility';
 import { getDistanceMiles, type Coordinates, type MappableReport } from '@litterbugs/report-contract';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { DEFAULT_DISCOVERY_FILTERS, matchesDiscovery, type DiscoveryFilters } from '@/lib/report-discovery';
 import type { BoundaryGeometry } from '@/lib/place-geography';
-import { readBrowserMemory, saveBrowserMemory } from '@/lib/discovery-memory';
+import { readBrowserMemory, saveBrowserMemory, readBrowserUrl, browserUrl } from '@/lib/discovery-memory';
 import { reportRewardCents } from '@/lib/cleanup-reward';
 import { getBrowserLocation } from '@/lib/geolocation';
 import { createClient } from '@/lib/supabase/client';
 import { ReportAuthor, publicFields, type PublicProfile } from '@/components/report-author';
+import { ModalShell } from '@/components/modal-shell';
 import { Icon } from '@/components/icon';
 import { getReportCardPhotoUrl, getReportDetailPhotoUrl } from '@/lib/report-photo';
 
@@ -119,7 +121,7 @@ function ReportThumbnail({ report, priority }: { report: MappableReport; priorit
       <span className="report-result-photo report-result-photo-empty">
         <Icon name="image" />
         <span>{failed ? 'Photo unavailable' : 'No photo yet'}</span>
-        <span className="report-result-workflow">{workflowStatus(report)}</span>
+        <span className="report-result-workflow" data-tone={reportWorkflowTone(report)}>{workflowStatus(report)}</span>
       </span>
     );
   }
@@ -134,7 +136,7 @@ function ReportThumbnail({ report, priority }: { report: MappableReport; priorit
         fetchPriority={priority ? 'high' : 'auto'}
         onError={() => setFailed(true)}
       />
-      <span className="report-result-workflow">{workflowStatus(report)}</span>
+      <span className="report-result-workflow" data-tone={reportWorkflowTone(report)}>{workflowStatus(report)}</span>
       {(report.photo_paths?.length ?? 0) > 1 && (
         <span className="report-result-photo-count">{report.photo_paths?.length} photos</span>
       )}
@@ -144,6 +146,7 @@ function ReportThumbnail({ report, priority }: { report: MappableReport; priorit
 
 export function ReportBrowser({
   reports,
+  areaLabel = 'Current map area',
   onFavoriteChange,
   onHiddenChange,
   showAuthors = false,
@@ -175,6 +178,7 @@ export function ReportBrowser({
   truncated?: boolean;
   discoveryError?: string;
   reports: MappableReport[];
+  areaLabel?: string;
   showAuthors?: boolean;
   onMemberBlocked?: () => void;
   onFavoriteChange?: (reportId: string, favorite: boolean) => void;
@@ -192,26 +196,43 @@ export function ReportBrowser({
   const [locationOrigin, setLocationOrigin] = useState<Coordinates | null>(null);
   const [locationMessage, setLocationMessage] = useState('');
   const [authors, setAuthors] = useState<Record<string, PublicProfile>>({});
-  const filterDetailsRef = useRef<HTMLDetailsElement>(null);
-  useEffect(() => { if (filtersRequest && open && filterDetailsRef.current) { filterDetailsRef.current.open = true; filterDetailsRef.current.querySelector('summary')?.focus(); } }, [filtersRequest, open]);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  useEffect(() => {
+    if (!filtersRequest) return;
+    const timer = setTimeout(() => setFiltersOpen(true), 0);
+    return () => clearTimeout(timer);
+  }, [filtersRequest]);
   const listRef = useRef<HTMLDivElement>(null);
   const [filter, setFilter] = useState<ReportFilter>('all');
   const [draftFilters, setDraftFilters] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
   const [advanced, setAdvanced] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
+  const [displayLimit, setDisplayLimit] = useState(50);
   const [sort, setSort] = useState<ReportSort>('newest');
   const [memoryReady, setMemoryReady] = useState(false);
   const restoringScrollRef = useRef<number | null>(null);
   useEffect(() => {
     const timer = setTimeout(() => {
-      const memory = readBrowserMemory();
+      const stored = readBrowserMemory();
+      const fromUrl = readBrowserUrl(window.location.search);
+      const sameSearch = stored && fromUrl && stored.sort === fromUrl.sort && (Object.keys(DEFAULT_DISCOVERY_FILTERS) as (keyof DiscoveryFilters)[]).every(key => stored.filters[key] === fromUrl.filters[key]);
+      const memory = fromUrl ? { ...fromUrl, scroll: sameSearch ? stored.scroll : 0, displayLimit: sameSearch ? stored.displayLimit : 50 } : stored;
       if (memory) {
         setAdvanced(memory.filters); setDraftFilters(memory.filters); setFilter('custom'); setSort(memory.sort);
         restoringScrollRef.current = memory.scroll;
+        setDisplayLimit(memory.displayLimit ?? 50);
         if (memory.sort === 'closest') void getBrowserLocation().then(setLocationOrigin).catch(() => setLocationMessage('Allow location access to sort by distance.'));
       }
       setMemoryReady(true);
     }, 0);
     return () => clearTimeout(timer);
+  }, []);
+  useEffect(() => {
+    const restore = () => {
+      const memory = readBrowserUrl(window.location.search);
+      if (memory) { setAdvanced(memory.filters); setDraftFilters(memory.filters); setFilter('custom'); setSort(memory.sort); }
+    };
+    window.addEventListener('popstate', restore);
+    return () => window.removeEventListener('popstate', restore);
   }, []);
   const filters = useMemo(() => [
     ...FILTERS,
@@ -224,7 +245,7 @@ export function ReportBrowser({
     : filter;
   const applied = useMemo(() => filter === 'custom' ? advanced : quickFilters(activeFilter), [filter, advanced, activeFilter]);
   useEffect(() => { if (memoryReady) onDiscoveryFiltersChange?.(applied); }, [applied, onDiscoveryFiltersChange, memoryReady]);
-  useEffect(() => { if (memoryReady) saveBrowserMemory({ filters: applied, sort, scroll: restoringScrollRef.current ?? listRef.current?.scrollTop ?? 0 }); }, [applied, sort, memoryReady]);
+  useEffect(() => { if (memoryReady) { const memory = { filters: applied, sort, scroll: restoringScrollRef.current ?? listRef.current?.scrollTop ?? 0, displayLimit }; saveBrowserMemory(memory); window.history.replaceState(window.history.state, '', browserUrl(new URL(window.location.href), memory)); } }, [applied, sort, memoryReady, displayLimit]);
   function updateFilter<K extends keyof DiscoveryFilters>(key: K, value: DiscoveryFilters[K]) {
     setDraftFilters(current => ({ ...current, [key]: value }));
   }
@@ -241,10 +262,11 @@ export function ReportBrowser({
     });
   }, [applied, mapCenter, favoriteReportIds, hiddenReportIds, reports, sort, boundary, locationOrigin]);
 
+  const displayedReports = useMemo(() => visibleReports.slice(0, displayLimit), [visibleReports, displayLimit]);
   useEffect(() => {
     if (!open || !showAuthors) return;
     let cancelled = false;
-    const ids = [...new Set(visibleReports.map(report => report.user_id).filter((id): id is string => Boolean(id)))];
+    const ids = [...new Set(displayedReports.map(report => report.user_id).filter((id): id is string => Boolean(id)))];
     if (!ids.length) return;
     async function loadAuthors() {
       const results: PublicProfile[] = [];
@@ -257,7 +279,7 @@ export function ReportBrowser({
     }
     void loadAuthors();
     return () => { cancelled = true; };
-  }, [open, visibleReports, showAuthors]);
+  }, [open, displayedReports, showAuthors]);
 
   useEffect(() => {
     onVisibleReportsChange?.(visibleReports);
@@ -283,12 +305,12 @@ export function ReportBrowser({
           <div className="report-browser-heading-row">
             <div>
               <h1 className="reports-screen-title">Litter reports</h1>
-              <p>{resultsHeading(visibleReports.length, activeFilter)} · Map area</p>
+              <p>{resultsHeading(visibleReports.length, activeFilter)} · {areaLabel}</p>
             </div>
             <label className="report-sort">
               <span className="sr-only">Sort cleanup opportunities</span>
               <select value={sort} onChange={(event) => {
-                const next = event.target.value as ReportSort; setSort(next);
+                const next = event.target.value as ReportSort; setSort(next); setDisplayLimit(50);
                 if (next === 'closest') { setLocationMessage('Finding your location…'); void getBrowserLocation().then(origin => { setLocationOrigin(origin); setLocationMessage(''); }).catch(() => { setLocationOrigin(null); setLocationMessage('Location unavailable. Showing newest first. Allow location access in your browser to sort by distance.'); }); }
               }}>
                 <option value="newest">Newest first</option>
@@ -305,14 +327,15 @@ export function ReportBrowser({
                 key={value}
                 type="button"
                 aria-pressed={activeFilter === value}
-                onClick={() => { setFilter(value); setAdvanced(quickFilters(value)); setDraftFilters(quickFilters(value)); }}
+                onClick={() => { setDisplayLimit(50); setFilter(value); setAdvanced(quickFilters(value)); setDraftFilters(quickFilters(value)); }}
               >
                 {label}
               </button>
             ))}
           </div>
           {placeSearch}
-          <details ref={filterDetailsRef} className="discovery-filter-details"><summary>Search and filters</summary>
+          <button className="secondary-button discovery-inline-filters" onClick={() => { setDraftFilters(applied); setFiltersOpen(true); }}>Search and filters</button>
+          {filtersOpen && <ModalShell label="Search and filters" className="discovery-filter-dialog" onClose={() => { setDraftFilters(applied); setFiltersOpen(false); }}><h2>Search and filters</h2>
             <div className="discovery-filter-fields">
               <label className="discovery-query">Search report titles and notes<input type="search" value={draftFilters.query} onChange={event => updateFilter('query', event.target.value)} placeholder="Bottles, roadside…" /></label>
               <label>Cleanup status<select value={draftFilters.status} onChange={event => updateFilter('status', event.target.value as DiscoveryFilters['status'])}><option value="all">All</option><option value="available">Available</option><option value="progress">In progress</option><option value="completed">Completed</option></select></label>
@@ -321,14 +344,14 @@ export function ReportBrowser({
               <label>Distance from map center<select disabled={!mapCenter} value={draftFilters.radius} onChange={event => updateFilter('radius', Number(event.target.value) as DiscoveryFilters['radius'])}><option value={0}>Any distance</option><option value={5}>5 miles</option><option value={25}>25 miles</option><option value={50}>50 miles</option></select></label>
               <label>Saved reports<select value={draftFilters.scope} onChange={event => updateFilter('scope', event.target.value as DiscoveryFilters['scope'])}><option value="all">All visible reports</option><option value="favorites">Favorites only</option><option value="hidden">Hidden reports</option></select></label>
               <button className="secondary-button" onClick={() => { setDraftFilters(quickFilters('all')); }}>Reset filters</button>
-              <div className="account-actions"><button className="secondary-button" onClick={() => { setDraftFilters(applied); if (filterDetailsRef.current) filterDetailsRef.current.open = false; }}>Cancel</button><button className="primary-button" onClick={() => { setAdvanced(draftFilters); setFilter('custom'); if (filterDetailsRef.current) filterDetailsRef.current.open = false; }}>Apply filters</button></div>
+              <div className="account-actions"><button className="secondary-button" onClick={() => { setDraftFilters(applied); setFiltersOpen(false); }}>Cancel</button><button className="primary-button" onClick={() => { setDisplayLimit(50); setAdvanced(draftFilters); setFilter('custom'); setFiltersOpen(false); }}>Apply filters</button></div>
             </div>
-          </details>
+          </ModalShell>}
           {sort === 'closest' && locationMessage && <p role="status">{locationMessage}</p>}
           <p className="discovery-status" role="status">{discoveryError || (loading ? 'Searching this map area…' : truncated ? 'Showing up to 1,000 matches. Zoom in or narrow your filters to see more.' : '')}</p>
         </header>
-        <div className="report-browser-list" ref={listRef} onScroll={() => { if (memoryReady) saveBrowserMemory({ filters: applied, sort, scroll: listRef.current?.scrollTop ?? 0 }); }} aria-busy={loading}>
-          {visibleReports.length ? visibleReports.map((report, index) => {
+        <div className="report-browser-list" ref={listRef} onScroll={() => { if (memoryReady) saveBrowserMemory({ filters: applied, sort, scroll: listRef.current?.scrollTop ?? 0, displayLimit }); }} aria-busy={loading}>
+          {visibleReports.length ? displayedReports.map((report, index) => {
             const severity = (report.severity ?? 'Medium').toLowerCase();
             const selected = report.id === selectedReportId;
             const previewed = report.id === previewedReportId;
@@ -372,6 +395,7 @@ export function ReportBrowser({
               <span>Try another filter or check this map again later.</span>
             </div>
           )}
+          {displayedReports.length < visibleReports.length && <button className="secondary-button load-more-reports" onClick={() => setDisplayLimit(value => value + 50)}>Show more reports ({displayedReports.length} of {visibleReports.length})</button>}
         </div>
       </aside>
     </>

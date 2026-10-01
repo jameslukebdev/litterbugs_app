@@ -513,3 +513,28 @@ it('shows a closed historical report without inviting a new cleanup claim', () =
   expect(screen.getByText('Report closed')).toBeTruthy();
   expect(screen.queryByRole('button', { name: 'Sign in to clean' })).toBeNull();
 });
+
+
+it('keeps photo selection and keyboard focus through data refresh and uses the latest close callback', () => {
+  const initialClose = vi.fn(); const updatedClose = vi.fn();
+  const props = { report: { ...report, photo_paths: ['user/report/one.jpg', 'user/report/two.jpg'] }, isOwner: false, onEdit: vi.fn(), onDelete: vi.fn() };
+  const { rerender } = render(<ReportDetail {...props} onClose={initialClose} />);
+  const next = screen.getByRole('button', { name: 'Next photo' });
+  next.focus(); fireEvent.click(next);
+  rerender(<ReportDetail {...props} report={{ ...props.report, funded_amount_cents: 2500 }} onClose={updatedClose} />);
+  expect(document.activeElement).toBe(next);
+  expect(screen.getByAltText('Report photo 2 of 2')).toBeTruthy();
+  fireEvent.keyDown(window, { key: 'Escape' });
+  expect(initialClose).not.toHaveBeenCalled(); expect(updatedClose).toHaveBeenCalledOnce();
+});
+
+it.each(['claimed', 'completion_submitted', 'changes_requested'])('does not close %s after its original expiry', state => {
+  render(<ReportDetail report={{ ...report, cleanup_state: state, expires_at: '2020-01-01T00:00:00Z' }} isOwner={false} onClose={vi.fn()} onEdit={vi.fn()} onDelete={vi.fn()} />);
+  expect(screen.queryByText('Report closed')).toBeNull();
+});
+
+it('does not show an upcoming expiry on a cancelled historical report', () => {
+  render(<ReportDetail report={{ ...report, cancelled_at: '2026-09-01', expires_at: '2099-01-01' }} isOwner={false} onClose={vi.fn()} onEdit={vi.fn()} onDelete={vi.fn()} />);
+  expect(screen.getByText('Report closed')).toBeTruthy();
+  expect(screen.queryByText(/^Expires /)).toBeNull();
+});

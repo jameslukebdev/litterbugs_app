@@ -47,7 +47,7 @@ it('keeps the recovery draft open when server cancellation cannot be confirmed',
   storage.journal.mockResolvedValue({ userId: 'owner', reportId: 'report', paths: [] });
   fireEvent.click(screen.getByRole('button', { name: 'Close' }));
   fireEvent.click(screen.getByRole('button', { name: 'Discard draft' }));
-  await screen.findByText('Draft could not be saved. Keep this screen open and try again.');
+  await screen.findByText('Draft could not be discarded. It is still available; keep this screen open and try again.');
   expect(storage.clear).toHaveBeenCalled();expect(props.onClose).not.toHaveBeenCalled();
 });
 it('does not overwrite a draft when loading storage fails', async () => {
