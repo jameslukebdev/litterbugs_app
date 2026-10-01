@@ -905,7 +905,9 @@ a.member-activity-row { color: inherit; text-decoration: none; }
 .report-placement-confirm { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: min(440px, calc(100% - 100px)); padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: white; box-shadow: 0 4px 20px #17201a20; z-index: 4; max-height: 42%; overflow: auto; }
 .report-placement-confirm h1 { margin: 0 0 6px; font-size: 20px; }
 .report-placement-confirm p { margin: 6px 0; font-size: 13px; }
-.report-placement-confirm .primary-button { width: 100%; margin-top: 8px; }
+.report-placement-confirm { display: flex; flex-direction: column; overflow: hidden; }
+.report-placement-instructions { min-height: 0; overflow: auto; }
+.report-placement-confirm .primary-button { width: 100%; margin-top: 8px; flex: none; }
 .report-placement-confirm [role="alert"] { color: #ad302b; }
 .location-coordinate { font-variant-numeric: tabular-nums; color: #59645c; }
 .empty-discovery-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 14px; }

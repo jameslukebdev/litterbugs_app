@@ -930,13 +930,15 @@ export function MapExperience({
           {reportMode && <>
             <div className="report-placement-pin" aria-hidden="true"><Icon name="location" /></div>
             <section className="report-placement-confirm" aria-label="Choose report location">
+              <div className="report-placement-instructions">
               <h1>Choose report location</h1>
               <p>Move the map or search for the litter site. The pin marks your selection.</p>
               {placement && <p className="location-coordinate">{placement.latitude.toFixed(4)}, {placement.longitude.toFixed(4)}</p>}
               <p>We’ll check that it is within 50 miles of your current GPS location.</p>
               {locationError && <p role="alert">{locationError}</p>}
-              <button className="primary-button" disabled={!mapReady || checkingLocation} onClick={() => void confirmReportLocation()}>{checkingLocation ? 'Checking location…' : 'Use this location'}</button>
               {selectingDraftLocation && <p>Your report details and photos are kept.</p>}
+              </div>
+              <button className="primary-button" disabled={!mapReady || checkingLocation} onClick={() => void confirmReportLocation()}>{checkingLocation ? 'Checking location…' : 'Use this location'}</button>
             </section>
           </>}
           <div className="zoom-controls" aria-label="Map zoom controls">
