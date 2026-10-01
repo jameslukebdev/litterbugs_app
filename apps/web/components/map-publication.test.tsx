@@ -118,7 +118,7 @@ describe('map publication and funding handoff', () => {
     render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
     await screen.findByLabelText('Linked report');
     fireEvent.click(screen.getByRole('button', { name: 'Back to discovery' }));
-    expect(screen.getByRole('button', { name: 'Reports', exact: true }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Reports' }).getAttribute('aria-pressed')).toBe('true');
     expect(new URL(window.location.href).searchParams.has('report')).toBe(false);
   });
 
