@@ -130,6 +130,9 @@ export function AccountDialog({
   onNavigateSection?: (section: 'profile' | 'activity' | 'payments' | 'settings') => void;
 }) {
   const refreshRevision = useDataRefresh();
+  const dashboardOwner = useRef<string | null>(null);
+  const [retryRevision, setRetryRevision] = useState(0);
+  const [unavailable, setUnavailable] = useState<string[]>([]);
   const loadedUser = useRef<string | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const [hasSavedDraft, setHasSavedDraft] = useState(false);
@@ -165,11 +168,22 @@ export function AccountDialog({
 
     async function loadDashboard() {
       const supabase = createClient();
-      const { data: authData } = await supabase.auth.getUser();
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
       const user = authData.user;
-      if (!user || cancelled) {
-        setDataLoading(false);
+      if (cancelled) return;
+      if (!user) {
+        dashboardOwner.current = null; loadedUser.current = null;
+        setEmail(''); setSignInMethods([]); setProfileEditing(false); setDisplayNameDraft(''); setUsernameDraft(''); setBioDraft(''); setLocationDraft(''); setAvatarFile(null); setRemoveAvatar(false); setProfileErrors({}); setMessage('');
+        setUserId(''); setProfile(null); setReports([]); setExpiredReports([]); setCleanups([]); setContributions([]); setBlockedAccounts([]);
+        setUnavailable(['Account']); setDataLoading(false);
         return;
+      }
+      if (dashboardOwner.current !== user.id) {
+        dashboardOwner.current = user.id; loadedUser.current = null;
+        setProfileEditing(false); setDisplayNameDraft(''); setUsernameDraft(''); setBioDraft(''); setLocationDraft(''); setAvatarFile(null); setRemoveAvatar(false); setProfileErrors({}); setMessage('');
+        setProfile(null); setReports([]); setExpiredReports([]); setCleanups([]); setContributions([]); setBlockedAccounts([]);
+        setUnavailable([]); setDataLoading(true);
       }
 
       setUserId(user.id);
@@ -210,8 +224,8 @@ export function AccountDialog({
       ]);
 
       if (cancelled) return;
-      setProfile(profileResult.data);
-      if (loadedUser.current !== user.id) {
+      if (!profileResult.error) setProfile(profileResult.data);
+      if (loadedUser.current !== user.id && !profileResult.error) {
       loadedUser.current = user.id;
       setDisplayNameDraft(profileResult.data?.display_name ?? '');
       setUsernameDraft(profileResult.data?.username ?? '');
@@ -219,22 +233,24 @@ export function AccountDialog({
       setLocationDraft(profileResult.data?.location ?? '');
       setProfileEditing(Boolean(profileResult.data && !profileResult.data.profile_completed_at));
       }
-      setReports(reportsResult.data ?? []);
+      if (!reportsResult.error) setReports(reportsResult.data ?? []);
       setReportsAvailable(!reportsResult.error);
-      setExpiredReports(expiredReportsResult.data ?? []);
-      setCleanups((cleanupResult.data ?? [])
+      if (!expiredReportsResult.error) setExpiredReports(expiredReportsResult.data ?? []);
+      if (!cleanupResult.error) setCleanups((cleanupResult.data ?? [])
         .filter(({ report }) => !report?.is_sample) as unknown as CleanupAttempt[]);
-      setContributions(contributionResult.data ?? []);
-      setBlockedAccounts((blockedResult.data ?? []) as unknown as BlockedAccount[]);
-      if (profileResult.error || reportsResult.error || expiredReportsResult.error || cleanupResult.error || contributionResult.error || blockedResult.error) {
-        setMessage('Some account activity could not be loaded. You can still use the map.');
-      }
+      if (!contributionResult.error) setContributions(contributionResult.data ?? []);
+      if (!blockedResult.error) setBlockedAccounts((blockedResult.data ?? []) as unknown as BlockedAccount[]);
+      setUnavailable([
+        ...(profileResult.error ? ['Profile'] : []), ...(reportsResult.error ? ['Reports'] : []),
+        ...(expiredReportsResult.error ? ['Renewals'] : []), ...(cleanupResult.error ? ['Cleanups'] : []),
+        ...(contributionResult.error ? ['Payments'] : []), ...(blockedResult.error ? ['Blocked accounts'] : []),
+      ]);
       setDataLoading(false);
     }
 
-    void loadDashboard().catch(() => { if (!cancelled) { setDataLoading(false); setMessage('Account data could not be refreshed. Check your connection.'); } });
+    void loadDashboard().catch(() => { if (!cancelled) { setDataLoading(false); setUnavailable(['Account']); } });
     return () => { cancelled = true; };
-  }, [refreshRevision]);
+  }, [refreshRevision, retryRevision]);
 
   useEffect(() => {
     if (!userId || !onResumeDraft) return;
@@ -542,11 +558,14 @@ export function AccountDialog({
         </section>
       )}
 
+      {unavailable.length > 0 && <section className="account-recovery" aria-label="Account loading problems" role="status">
+        {unavailable.map(name => <p key={name}><strong>{name} could not be refreshed.</strong> Previously loaded information may be out of date. <button type="button" className="secondary-button" onClick={() => setRetryRevision(value => value + 1)}>Retry {name.toLowerCase()}</button></p>)}
+      </section>}
       {dataLoading ? (
         <div className="member-dashboard-loading"><span className="spinner" /><span>Loading your activity…</span></div>
       ) : (
         <>
-          {embedded && (section === 'profile' || section === 'activity') && <NeedsAttention userId={userId} reports={reports} renewals={expiredReports} attempts={cleanups} />}
+          {embedded && (section === 'profile' || section === 'activity') && <NeedsAttention userId={userId} reports={reports} renewals={expiredReports} attempts={cleanups} incomplete={unavailable.some(name => ['Account', 'Reports', 'Renewals', 'Cleanups'].includes(name))} />}
           {embedded && (section === 'profile' || section === 'activity') && <ResumeDrafts userId={userId} attempts={activeCleanups} />}
           {section === 'profile' && <>
           <CommunityRank userId={userId} />
@@ -556,8 +575,8 @@ export function AccountDialog({
             <button onClick={() => navigateSection('settings')}>Settings<Icon name="chevron-right" /></button>
           </nav>
           <section className="member-stats" aria-label="Community activity">
-            <div aria-label="Reports submitted"><strong>{reportsAvailable ? reports.length : '—'}</strong><span>Reports</span></div>
-            <div><strong>{completedCleanups.length}</strong><span>Cleanups</span></div>
+            <div aria-label="Reports submitted"><strong>{reportsAvailable && !unavailable.includes('Account') ? reports.length : '—'}</strong><span>Reports</span></div>
+            <div><strong>{unavailable.includes('Cleanups') || unavailable.includes('Account') ? '—' : completedCleanups.length}</strong><span>Cleanups</span></div>
           </section>
 
           </>}
@@ -609,7 +628,7 @@ export function AccountDialog({
                     <span><strong>{report.title || 'Litter Report'}</strong><small>{accountReportStatus(report)} · {report.severity || 'Medium'} severity</small></span>
                     <Icon name="chevron-right" />
                   </ActivityLink>
-                )) : <p className="member-empty">Your reports will appear here. <Link href="/report">Report litter</Link></p>}
+                )) : !unavailable.includes('Reports') && !unavailable.includes('Account') && <p className="member-empty">Your reports will appear here. <Link href="/report">Report litter</Link></p>}
               </div>
             </section>}
 
@@ -629,7 +648,7 @@ export function AccountDialog({
                     <Icon name="chevron-right" />
                   </ActivityLink>
                 ))}
-                {!activeCleanups.length && <p className="member-empty">Claimed and awaiting-review cleanups will appear here. <Link href="/">Browse cleanups</Link></p>}
+                {!activeCleanups.length && !unavailable.includes('Cleanups') && !unavailable.includes('Account') && <p className="member-empty">Claimed and awaiting-review cleanups will appear here. <Link href="/">Browse cleanups</Link></p>}
               </div>
             </section>}
 
@@ -646,7 +665,7 @@ export function AccountDialog({
                     <Icon name="chevron-right" />
                   </ActivityLink>
                 ))}
-                {!completedCleanups.length && <p className="member-empty">Your completed cleanup history will appear here.</p>}
+                {!completedCleanups.length && !unavailable.includes('Cleanups') && !unavailable.includes('Account') && <p className="member-empty">Your completed cleanup history will appear here.</p>}
               </div>
             </section>}
 
@@ -663,7 +682,7 @@ export function AccountDialog({
                     <Icon name="chevron-right" />
                   </ActivityLink>
                 ))}
-                {!contributions.length && <p className="member-empty">Your contributions and payment status will appear here.</p>}
+                {!contributions.length && !unavailable.includes('Payments') && !unavailable.includes('Account') && <p className="member-empty">Your contributions and payment status will appear here.</p>}
               </div>
             </section>}
 
@@ -703,7 +722,7 @@ export function AccountDialog({
                     </div>
                   );
                 })}
-                {!blockedAccounts.length && <p className="member-empty">No blocked accounts. Accounts you block in Litterbugs will appear here on every device.</p>}
+                {!blockedAccounts.length && !unavailable.includes('Blocked accounts') && !unavailable.includes('Account') && <p className="member-empty">No blocked accounts. Accounts you block in Litterbugs will appear here on every device.</p>}
               </div>
             </details>
         <div className="member-setting-links">

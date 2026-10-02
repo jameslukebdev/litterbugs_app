@@ -32,6 +32,27 @@ function fixture() {
 }
 afterEach(()=>vi.useRealTimers());
 describe('account draft continuity',()=>{
+  it('checks an unchanged draft with the server and rejects expired account copies',async()=>{
+    const f=fixture(),a=f.device();a.edit('Keep this');await a.sync.save('alice','report');
+    expect(a.sync.confirmation('alice','report')?.expiresAt).toBe(f.remote.get('alice:report')?.expires_at);
+    f.remote.get('alice:report')!.expires_at=new Date(Date.now()-1).toISOString();
+    await expect(a.sync.save('alice','report')).rejects.toBeInstanceOf(DraftConflictError);
+    expect(a.sync.status('alice','report')).toBe('conflict');
+    expect(a.local.get('alice:report')?.text).toBe('Keep this');
+    expect(f.write).toHaveBeenCalledTimes(1);
+    await a.sync.resolve('alice','report','device');
+    expect(a.sync.status('alice','report')).toBe('synced');
+  });
+  it('does not confirm unchanged work offline or after another device changes or discards it',async()=>{
+    const f=fixture(),a=f.device(),b=f.device();a.edit('Original');await a.sync.save('alice','report');
+    f.setOffline(true);await expect(a.sync.save('alice','report')).rejects.toThrow('offline');
+    expect(a.sync.confirmation('alice','report')).toBeUndefined();
+    f.setOffline(false);await b.sync.load('alice','report');b.edit('Changed elsewhere');await b.sync.save('alice','report');
+    await expect(a.sync.save('alice','report')).rejects.toBeInstanceOf(DraftConflictError);
+    await a.sync.resolve('alice','report','account');await b.sync.discard('alice','report');
+    await expect(a.sync.save('alice','report')).rejects.toBeInstanceOf(DraftConflictError);
+    expect(f.remote.get('alice:report')?.payload).toBeNull();
+  });
   it('restores the same fields and private photo references on another device',async()=>{
     const f=fixture(),a=f.device(),b=f.device();a.edit('Bottles');await a.sync.save('alice','report');
     expect(await b.sync.load('alice','report')).toEqual({text:'Bottles',photos:['photo.jpg']});

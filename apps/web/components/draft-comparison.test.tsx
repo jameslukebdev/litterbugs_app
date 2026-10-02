@@ -13,10 +13,11 @@ it('prevents replacement before comparison loads and after a failed comparison',
   expect((screen.getByRole('button', { name: 'Replace account version' }) as HTMLButtonElement).disabled).toBe(true);
   await act(async () => reject(new Error('network')));
   expect((screen.getByRole('button', { name: 'Replace account version' }) as HTMLButtonElement).disabled).toBe(true);
-  read.mockResolvedValueOnce({ device: { title: 'Local title', photos: 1, detail: 'Local notes', fields: ['Severity: High'] }, account: { title: 'Account title', photos: 2, detail: 'Account notes', fields: ['Severity: Low'] } });
+  read.mockResolvedValueOnce({ device: { title: 'Local title', photos: 1, detail: 'Local notes', fields: ['Severity: High'], photoPreviews:[{name:'Device photo 1',src:'https://example.com/photo.jpg'}] }, account: { title: 'Account title', photos: 2, detail: 'Account notes', fields: ['Severity: Low'] } });
   fireEvent.click(screen.getByRole('button', { name: 'Retry comparison' }));
   await screen.findByText('Account title');
   expect(screen.getByText('Severity: High')).toBeTruthy();
+  expect(screen.getByRole('img',{name:'Device photo 1'})).toBeTruthy();
   expect((screen.getByRole('button', { name: 'Replace account version' }) as HTMLButtonElement).disabled).toBe(false);
 });
 it('does not enable choices with another account’s previously loaded summary', async () => {

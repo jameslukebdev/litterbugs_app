@@ -950,3 +950,21 @@ a.member-activity-row { color: inherit; text-decoration: none; }
 @media (max-width: 600px) { .account-task-workspace { padding: 14px; } }
 
 .discovery-message { flex: none; padding: 10px 24px; font-size: 14px; color: #314e34; background: #edf5ed; border-bottom: 1px solid #d7e5d8; }
+
+.draft-photo-comparison { display: flex; flex-wrap: wrap; gap: 12px; }
+.draft-photo-comparison figure { margin: 0; max-width: 144px; }
+.draft-photo-comparison img { width: 144px; height: 108px; object-fit: contain; background: var(--surface-muted, #f5f6f5); border-radius: 8px; }
+.draft-photo-comparison figcaption { font-size: 12px; }
+.account-recovery { padding: 16px; border: 1px solid #cfb469; border-radius: 12px; }
+.account-recovery p { margin: 0 0 8px; }
+.cleanup-progress ol { list-style: none; padding: 0 0 0 12px; margin: 20px 0; border-left: 2px solid #d5ded7; }
+.cleanup-progress li { position: relative; margin: 0 0 16px 12px; }
+.cleanup-progress li::before { content: ''; position: absolute; width: 8px; height: 8px; border-radius: 50%; background: #287442; left: -29px; top: 7px; }
+.cleanup-progress time { display: block; font-size: 13px; color: #536057; }
+.cleanup-progress-payment { margin-top: 20px; border-top: 1px solid #d5ded7; padding-top: 12px; }
+.report-placement-instructions details { margin: 8px 0; }
+.report-placement-instructions details button { margin-bottom: 8px; }
+.cleanup-progress { padding: 20px; margin-top: 20px; }
+.cleanup-progress h2 { margin-top: 0; }
+.cleanup-progress .secondary-button { color: var(--ink); text-decoration: none; }
+.cleanup-progress ol { margin-left: 5px; }

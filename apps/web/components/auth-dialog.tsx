@@ -158,7 +158,7 @@ export function AuthDialog({
           </div>}
 
           {!emailOpen && <button className="provider-button email-provider" onClick={() => setEmailOpen(true)}>Continue with Email</button>}
-          {!emailOpen && <details className="account-continuation"><summary>Used Apple to sign in on the app?</summary><p>Open Litterbugs on your phone while signed in, then go to Profile → Settings → Sign-in methods. Connect Google there, then use that same Google account here to continue with your existing reports and drafts.</p><p>Creating another account with the same email does not link your accounts.</p></details>}
+          {<details className="account-continuation"><summary>Used Apple to sign in on the app?</summary><p>Open Litterbugs on your phone while signed in, then go to Profile → Settings → Sign-in methods. Connect Google there, then use that same Google account here to continue with your existing reports and drafts.</p><p>Creating another account with the same email does not link your accounts.</p></details>}
           {!emailOpen && message && <p role="alert" className="form-message error-message">{message}</p>}
           {emailOpen && <button className="auth-back" onClick={() => { setEmailOpen(false); setMessage(''); setMode('login'); }}>← All sign-in options</button>}
           {emailOpen && <>

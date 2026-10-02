@@ -9,14 +9,14 @@ export function isReportCardPhoto(path: string): boolean {
   return CARD_PHOTO_PATH_PATTERN.test(path.split(/[?#]/, 1)[0]);
 }
 
-export function getReportCardPhotoUrl(path: string): string | null {
+export function getReportCardPhotoUrl(path: string, accountReportId?: string): string | null {
   if (!isReportCardPhoto(path)) return null;
-  return `/api/report-photo?${new URLSearchParams({ path, variant: 'card' }).toString()}`;
+  return `/api/report-photo?${new URLSearchParams({ path, variant: 'card', ...(accountReportId ? { accountReportId } : {}) }).toString()}`;
 }
 
-export function getReportDetailPhotoUrl(path: string): string | null {
+export function getReportDetailPhotoUrl(path: string, accountReportId?: string): string | null {
   if (!isReportCardPhoto(path)) return null;
-  return `/api/report-photo?${new URLSearchParams({ path, variant: 'detail' }).toString()}`;
+  return `/api/report-photo?${new URLSearchParams({ path, variant: 'detail', ...(accountReportId ? { accountReportId } : {}) }).toString()}`;
 }
 
 export function getWebCompatibleReportPhotoUrl(

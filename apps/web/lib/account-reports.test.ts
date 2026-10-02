@@ -23,6 +23,11 @@ describe('personal report history parity', () => {
     range.mockResolvedValueOnce({ data: [], error: new Error('offline') });
     expect((await loadAccountReports('owner')).data).toBeNull();
   });
+  it.each(['claimed','completion_submitted','changes_requested'] as const)('keeps %s active after the discovery date', state => {
+    const report = { cleanup_state: state, expires_at: '2020-01-01' } as Report;
+    expect(accountReportStatus(report)).toBe('Active');
+    expect(accountReportStatus({ ...report, cancelled_at: '2020-01-02' })).toBe('Closed');
+  });
   it('keeps completed reports in history when their original expiry passes', () => {
     const expired = { expires_at: '2020-01-01', cleanup_state: 'completed' } as Report;
     expect(accountReportStatus(expired)).toBe('Completed');

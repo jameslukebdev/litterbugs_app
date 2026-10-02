@@ -6,6 +6,7 @@ import sharp from 'sharp';
 import { isHeicReportPhoto, isReportCardPhoto } from '@/lib/report-photo';
 import { isDiscoverableReport, reportDiscoveryWindow } from '@/lib/report-visibility';
 import { createClient } from '@/lib/supabase/server';
+import { realUserIdFromClaims } from '@/lib/report-access';
 
 export const runtime = 'nodejs';
 
@@ -24,6 +25,7 @@ export async function GET(request: Request) {
   const searchParams = new URL(request.url).searchParams;
   const photoPath = searchParams.get('path')?.trim() ?? '';
   const adminCaseId = searchParams.get('caseId')?.trim() ?? '';
+  const accountReportId = searchParams.get('accountReportId')?.trim() ?? '';
   const variant = searchParams.get('variant')?.trim() ?? '';
   const isPublicVariant = variant === 'card' || variant === 'detail';
 
@@ -40,6 +42,7 @@ export async function GET(request: Request) {
   if (adminCaseId && !UUID_PATTERN.test(adminCaseId)) {
     return errorResponse(400, 'Invalid administrator case.');
   }
+  if (accountReportId && (!UUID_PATTERN.test(accountReportId) || adminCaseId)) return errorResponse(400, 'Invalid account report.');
   if (variant && !isPublicVariant) {
     return errorResponse(400, 'Invalid report photo variant.');
   }
@@ -58,6 +61,22 @@ export async function GET(request: Request) {
       const report = (detail as { report?: { photo_paths?: string[] | null } | null } | null)?.report;
       if (!report?.photo_paths?.includes(photoPath)) {
         return errorResponse(404, 'Report photo not found in this case.');
+      }
+    } else if (accountReportId) {
+      const { data: identity, error: authError } = await supabase.auth.getClaims();
+      const userId = realUserIdFromClaims(identity?.claims);
+      if (authError || !userId) return errorResponse(401, 'Sign in to view your report photos.');
+      const { data: report, error: reportError } = await supabase.from('reports')
+        .select('id,user_id,photo_paths,is_published,is_sample').eq('id', accountReportId).maybeSingle();
+      if (reportError) return errorResponse(502, 'Report access could not be checked.');
+      if (!report?.is_published || report.is_sample || !report.photo_paths?.includes(photoPath)) return errorResponse(404, 'Report photo not found.');
+      if (report.user_id !== userId) {
+        const [attempts, contributions] = await Promise.all([
+          supabase.from('cleanup_attempts').select('id').eq('report_id', accountReportId).eq('cleaner_id', userId).limit(1),
+          supabase.from('cleanup_contributions').select('id').eq('report_id', accountReportId).eq('contributor_id', userId).limit(1),
+        ]);
+        if (attempts.error || contributions.error) return errorResponse(502, 'Report participation could not be checked.');
+        if (!attempts.data?.length && !contributions.data?.length) return errorResponse(404, 'Report photo not found.');
       }
     } else {
       const { data: report, error: reportError } = await supabase
@@ -117,7 +136,7 @@ export async function GET(request: Request) {
     return new Response(deliveredImage, {
       status: 200,
       headers: {
-        'Cache-Control': adminCaseId
+        'Cache-Control': adminCaseId || accountReportId
           ? 'private, no-store'
           : `public, max-age=${cacheSeconds}, s-maxage=${cacheSeconds}`,
         'Content-Type': isPublicVariant ? 'image/webp' : 'image/jpeg',
