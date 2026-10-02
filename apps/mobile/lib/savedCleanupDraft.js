@@ -42,7 +42,7 @@ export async function saveCleanupDraft(userId, cleanupId, draft) { if(cloudDraft
 export async function loadCleanupDraft(userId, cleanupId, correctionDueAt) {
   const draft = await cloudDrafts.load(userId, `cleanup:${cleanupId}`);
   if(draft && correctionDueAt !== undefined && (draft.correctionDueAt ?? null) !== correctionDueAt) {
-    await cloudDrafts.discard(userId, `cleanup:${cleanupId}`);
+    await cloudDrafts.discard(userId, `cleanup:${cleanupId}`, { preserveLocal: true });
     const updated = { ...draft, correctionDueAt, submissionId: undefined };
     await saveCleanupDraft(userId, cleanupId, updated); return updated;
   }
