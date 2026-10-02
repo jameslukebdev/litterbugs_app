@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { ErrorBoundary } from 'next/dist/client/components/error-boundary';
+import { ErrorBoundary, type ErrorInfo } from 'next/dist/client/components/error-boundary';
 import { AppRouterContext } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import ErrorPage from './error';
 
@@ -22,7 +22,7 @@ it('fetches fresh page data when retrying a temporary server failure', () => {
       refresh, back: vi.fn(), forward: vi.fn(), push: vi.fn(),
       replace: vi.fn(), prefetch: vi.fn(), bfcacheId: 'test',
     }}>
-      <ErrorBoundary errorComponent={props => <ErrorPage {...props} error={failure} />}>
+      <ErrorBoundary errorComponent={(props: ErrorInfo) => <ErrorPage {...props} error={failure} />}>
         <ServerResult />
       </ErrorBoundary>
     </AppRouterContext.Provider>,
