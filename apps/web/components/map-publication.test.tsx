@@ -14,6 +14,7 @@ const state = vi.hoisted(() => ({
   discovery: vi.fn(),
   panTo: vi.fn(),
   fitBounds: vi.fn(),
+  mapOptions: vi.fn(),
   published: false,
   lostResponse: false,
   inserts: vi.fn(),
@@ -31,6 +32,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock('@googlemaps/js-api-loader', () => ({
   setOptions: vi.fn(),
   importLibrary: async (name: string) => name === 'maps' ? { Map: class {
+    constructor(_element: unknown, options: unknown) { state.mapOptions(options); }
     addListener(name: string, callback: (event: unknown) => void) { if (name === 'click') state.click = callback; else if (name === 'idle') state.idle = () => callback(undefined); }
     panTo(location: { lat: number; lng: number }) { state.center = location; state.panTo(location); } fitBounds(...args: unknown[]) { state.fitBounds(...args); } setZoom() {} getZoom() { return 14; }
     getBounds() { return { toJSON: () => ({ north: 1, south: -1, west: -1, east: 1 }) }; }
@@ -271,6 +273,17 @@ it('does not let delayed startup GPS override a user-selected search area', asyn
   fireEvent.click(screen.getAllByRole('button', { name: 'Choose map area' }).at(-1)!);
   expect(state.fitBounds).toHaveBeenCalledWith({north:2,south:0,west:1,east:3},60);
   await act(async () => locate({coords:{latitude:50,longitude:50},timestamp:Date.now()} as GeolocationPosition));
+  expect(state.panTo).not.toHaveBeenCalled();
+});
+
+it('keeps a location selected while the map library is still loading', async () => {
+  window.history.replaceState({}, '', '/?lat=39.799&lng=-98.649&zoom=11');
+  render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+  expect(state.click).toBeNull();
+  fireEvent.click(screen.getAllByRole('button', { name: 'Choose map area' }).at(-1)!);
+  await waitFor(() => expect(state.click).toBeTruthy());
+  expect(state.fitBounds).toHaveBeenCalledWith({north:2,south:0,west:1,east:3},60);
+  expect(state.mapOptions).toHaveBeenCalledWith(expect.objectContaining({center:{lat:1,lng:2}}));
   expect(state.panTo).not.toHaveBeenCalled();
 });
 
