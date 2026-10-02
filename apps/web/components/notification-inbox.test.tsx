@@ -2,11 +2,11 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { NotificationInbox } from './notification-inbox';
-const mocks = vi.hoisted(() => ({ load: vi.fn(), acknowledge: vi.fn(), revision: 0 }));
+const mocks = vi.hoisted(() => ({ load: vi.fn(), acknowledge: vi.fn(), revision: 0, unread: vi.fn() }));
 vi.mock('@/lib/use-data-refresh', () => ({ useDataRefresh: () => mocks.revision, notifyDataChanged: vi.fn() }));
 vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({
   rpc: mocks.acknowledge,
-  from: () => { const chain = { select: () => chain, eq: () => chain, order: () => chain, range: mocks.load }; return chain; },
+  from: () => { const chain = { select: () => chain, eq: () => chain, order: () => chain, is: (...args: unknown[]) => { mocks.unread(...args); return chain; }, range: mocks.load }; return chain; },
 }) }));
 const notice = (id: string, title = 'Creek cleanup') => ({ id, report_id: 'report', event_type: 'changes_requested', read_at: null, created_at: '2026-10-01T12:00:00Z', report: { title } });
 beforeEach(() => { mocks.revision = 0; mocks.load.mockResolvedValue({ data: [notice('one')], error: null }); });
@@ -46,7 +46,7 @@ it('does not let an older fetch restore unread status after acknowledgement', as
   fireEvent.click(screen.getByRole('button', { name: 'Mark read' }));
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Mark read' })).toBeNull());
   finish({ data: [notice('one')], error: null });
-  await waitFor(() => expect(screen.queryByText('Unread')).toBeNull());
+  await waitFor(() => expect(document.querySelector('.notification-unread')).toBeNull());
 });
 it('clears old notices and pending retry IDs when the account changes', async () => {
   mocks.acknowledge.mockRejectedValue(new Error('offline'));
@@ -70,4 +70,37 @@ it('retains updates on refresh failure and provides an accurate reload action', 
   fireEvent.click(screen.getByRole('button', { name: 'Retry updates' }));
   await screen.findByText('Report details unavailable');
   expect(mocks.acknowledge).not.toHaveBeenCalled();
+});
+
+it('queries unread updates before pagination, including older pages', async () => {
+  mocks.load.mockResolvedValue({ data: Array.from({ length: 51 }, (_, index) => notice(`n${index}`, `Cleanup ${index}`)), error: null });
+  render(<NotificationInbox userId="owner" view={{ filter: 'unread', page: 3 }} />);
+  await screen.findByText('Cleanup 49');
+  expect(screen.queryByText('Cleanup 50')).toBeNull();
+  expect(mocks.unread).toHaveBeenCalledWith('read_at', null);
+  expect(mocks.load).toHaveBeenCalledWith(100, 150);
+  expect(screen.getByRole('link', { name: 'Older updates' }).getAttribute('href')).toBe('/account/notifications?filter=unread&page=4');
+  expect(screen.getByRole('link', { name: 'Newer updates' }).getAttribute('href')).toBe('/account/notifications?filter=unread&page=2');
+  expect(screen.getAllByRole('link', { name: 'Changes requested' })[0].getAttribute('href')).toContain('filter=unread&page=3&from=notifications&notice=n0');
+});
+it('does not show all-updates rows while an unread query fails', async () => {
+  const view = render(<NotificationInbox userId="owner" />);
+  await screen.findByText('Creek cleanup');
+  mocks.load.mockRejectedValue(new Error('offline'));
+  view.rerender(<NotificationInbox userId="owner" view={{ filter: 'unread', page: 1 }} />);
+  expect(screen.queryByText('Creek cleanup')).toBeNull();
+  await screen.findByRole('button', { name: 'Retry updates' });
+  expect(screen.queryByText('You’re caught up. No unread updates.')).toBeNull();
+});
+it('removes an acknowledged update from unread and preserves read failures across view changes', async () => {
+  mocks.acknowledge.mockRejectedValueOnce(new Error('offline')).mockResolvedValue({ error: null });
+  const view = render(<NotificationInbox userId="owner" view={{ filter: 'unread', page: 1 }} />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Mark read' }));
+  await screen.findByRole('button', { name: 'Retry marking read' });
+  view.rerender(<NotificationInbox userId="owner" view={{ filter: 'all', page: 1 }} />);
+  expect(screen.getByRole('button', { name: 'Retry marking read' })).toBeTruthy();
+  mocks.load.mockResolvedValue({ data: [], error: null });
+  view.rerender(<NotificationInbox userId="owner" view={{ filter: 'unread', page: 1 }} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Retry marking read' }));
+  await screen.findByText('You’re caught up. No unread updates.');
 });

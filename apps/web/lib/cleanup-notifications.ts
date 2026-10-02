@@ -1,3 +1,4 @@
+import { notificationViewQuery, type NotificationView } from './notification-view';
 import type { Database } from '@litterbugs/report-contract';
 
 export type CleanupNotification = Database['public']['Tables']['cleanup_notifications']['Row'];
@@ -100,10 +101,13 @@ const CLEANUP_NOTIFICATION_CONTENT: Record<string, { title: string; message: str
 export function notificationPresentation(notice: Pick<CleanupNotification, 'event_type'>) {
   return CLEANUP_NOTIFICATION_CONTENT[notice.event_type] ?? { title: 'Cleanup update', message: 'There is an update to one of your cleanups.' };
 }
-export function notificationHref(notice: Pick<CleanupNotification, 'event_type' | 'report_id' | 'contribution_id'>) {
+export function notificationHref(notice: Pick<CleanupNotification, 'event_type' | 'report_id' | 'contribution_id'> & { id?: string }, view?: NotificationView) {
   if (notice.event_type.startsWith('admin_')) return '/admin';
   if (notice.event_type === 'cleanup_contribution_refunded') return notice.contribution_id ? `/account/payments/${encodeURIComponent(notice.contribution_id)}` : '/account/payments';
   if (notice.event_type === 'cleanup_payout_failed' || notice.event_type === 'cleanup_reward_sent') return '/account/connect';
   if (notice.event_type === 'report_renewal_due') return '/account/reports';
-  return notice.report_id ? `/account/reports/${encodeURIComponent(notice.report_id)}?from=notifications` : '/account/activity';
+  const query = view ? notificationViewQuery(view) : new URLSearchParams();
+  query.set('from', 'notifications');
+  if (view && notice.id) query.set('notice', notice.id);
+  return notice.report_id ? `/account/reports/${encodeURIComponent(notice.report_id)}?${query}` : '/account/activity';
 }

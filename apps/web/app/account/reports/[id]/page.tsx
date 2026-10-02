@@ -1,17 +1,21 @@
+import { notificationView, notificationInboxHref, notificationViewQuery } from '@/lib/notification-view';
 import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { realUserIdFromClaims } from '@/lib/report-access';
 import { AccountReport } from './report-page';
 
 export const metadata = { title: 'Your report | Litterbugs', robots: { index: false, follow: false } };
-export default async function Page({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ from?: string; task?: string }> }) {
-  const [{ id }, { from, task }] = await Promise.all([params, searchParams]);
+export default async function Page({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ from?: string; task?: string; filter?: string; page?: string; notice?: string }> }) {
+  const [{ id }, { from, task, filter, page, notice }] = await Promise.all([params, searchParams]);
   if (!/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(id)) notFound();
-  const back = from === 'notifications' ? '/account/notifications' : from === 'history' ? '/account/activity?view=history' : from === 'current' ? '/account/activity' : from === 'payments' ? '/account/payments' : '/account/reports';
+  const inbox = notificationView({ filter, page });
+  const inboxQuery = notificationViewQuery(inbox);
+  if (notice) inboxQuery.set('notice', notice);
+  const back = from === 'notifications' ? notificationInboxHref(inbox, notice) : from === 'history' ? '/account/activity?view=history' : from === 'current' ? '/account/activity' : from === 'payments' ? '/account/payments' : '/account/reports';
   const client = await createClient();
   const { data: identity } = await client.auth.getClaims();
   const userId = realUserIdFromClaims(identity?.claims);
-  if (!userId) redirect(`/sign-in?next=${encodeURIComponent(`/account/reports/${id}?from=${from ?? 'reports'}${task === 'cleanup' || task === 'review' ? `&task=${task}` : ''}`)}`);
+  if (!userId) redirect(`/sign-in?next=${encodeURIComponent(`/account/reports/${id}?from=${from ?? 'reports'}${from === 'notifications' && inboxQuery.size ? `&${inboxQuery}` : ''}${task === 'cleanup' || task === 'review' ? `&task=${task}` : ''}`)}`);
   // Use the signed-in client's RLS, plus participation checks. History isn't discovery.
   const { data: report, error } = await client.from('reports').select('*').eq('id', id).eq('is_published', true).eq('is_sample', false).maybeSingle();
   if (error) throw new Error('Your report could not be loaded. Please try again.');

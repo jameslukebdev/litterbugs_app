@@ -1,5 +1,25 @@
 # Current Mobile Release Candidates
 
+## October 1 — notification read behavior follow-up
+
+The current source leaves foreground notifications unread when displayed or
+dismissed with Later. Opening an update or choosing Mark read acknowledges only
+the displayed IDs. Funding-approved alerts no longer navigate automatically.
+Historical unread events no longer overwrite the current map task status;
+the map refreshes authoritative report data before showing the prompt.
+
+Validation: 470 native tests passed (one opt-in integration test skipped),
+168 native modules validated, and iOS/Android Hermes exports succeeded.
+Physical-device notification acceptance remains unverified.
+
+The earlier signed iOS 2.0.0/build 16 candidate completed in EAS job
+`66c6ed7a-a26a-43e6-9da8-bf9d19f41038`, source `1f9aaed`.
+Its bundle/version and code signature were verified. It contains the shared
+draft-confirmation safeguards but predates these notification changes.
+Build 16 has not been submitted to TestFlight; build 15 remains the available
+internal TestFlight reference. A candidate containing this follow-up must be
+built before distribution. No public store release is authorized by this record.
+
 ## October 1 — customer web/app sync and map stability
 
 **Apple accepted iOS 2.0.0/build 15 and it is available for internal TestFlight testing** (`VALID`, `IN_BETA_TESTING`). It supersedes build 14 for customer draft/photo sync, favorites/hidden reports, refresh behavior, historical rewards and reduced map marker motion.
