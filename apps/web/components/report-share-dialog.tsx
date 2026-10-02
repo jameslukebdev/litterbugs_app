@@ -8,6 +8,7 @@ import type { Report } from '@litterbugs/report-contract';
 import { FiCheck, FiCopy, FiDownload, FiExternalLink, FiMail, FiShare2 } from 'react-icons/fi';
 
 import { Icon } from '@/components/icon';
+import { moveDialogFocus } from '@/lib/dialog-focus';
 import {
   reportShareCopy,
   reportShareDestinationUrls,
@@ -104,21 +105,7 @@ export function ReportShareDialog({
       return;
     }
 
-    if (event.key !== 'Tab' || !dialogRef.current) return;
-    const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
-      'a[href]:not([hidden]):not([tabindex="-1"]), button:not([disabled]), [tabindex]:not([tabindex="-1"]):not([hidden])',
-    ));
-    if (!focusable.length) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
+    if (dialogRef.current) moveDialogFocus(dialogRef.current, event);
   }
 
   async function copyLink() {

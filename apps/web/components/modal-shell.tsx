@@ -4,6 +4,7 @@ import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react';
 
 import { createPortal } from 'react-dom';
 import { Icon } from '@/components/icon';
+import { moveDialogFocus } from '@/lib/dialog-focus';
 
 const subscribe = () => () => {};
 
@@ -38,18 +39,7 @@ export function ModalShell({
       if (event.key === 'Escape' && !disabledRef.current) {
         event.preventDefault(); onCloseRef.current();
       }
-      if (event.key !== 'Tab' || !dialogRef.current) return;
-      const items = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
-        'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])',
-      )).filter(item => item.getClientRects().length > 0);
-      const first = items[0]; const last = items.at(-1);
-      if (!first || !last) { event.preventDefault(); dialogRef.current.focus(); return; }
-      if (!dialogRef.current.contains(document.activeElement)) { event.preventDefault(); (event.shiftKey ? last : first).focus(); return; }
-      if (event.shiftKey && (document.activeElement === first || document.activeElement === dialogRef.current)) {
-        event.preventDefault(); last.focus();
-      } else if (!event.shiftKey && (document.activeElement === last || document.activeElement === dialogRef.current)) {
-        event.preventDefault(); first.focus();
-      }
+      if (dialogRef.current) moveDialogFocus(dialogRef.current, event);
     };
     window.addEventListener('keydown', handleKey);
     return () => {
