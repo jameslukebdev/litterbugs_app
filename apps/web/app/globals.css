@@ -710,6 +710,14 @@ button.member-activity-row:hover { background: var(--green-soft); }
 .map-report-preview-content { display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 4px 38px 4px 0; border: 0; text-align: left; background: white; cursor: pointer; }
 .map-report-preview-content strong { font-size: 18px; }
 .map-report-preview-content span { color: #2f7d32; font-size: 14px; }
+.report-map-cluster { display: flex; align-items: center; justify-content: center; min-width: 48px; height: 48px; padding: 0 10px; border: 3px solid white; border-radius: 50%; background: #244d30; color: white; font: 800 15px/1 system-ui, sans-serif; box-shadow: 0 2px 8px #17201a50; }
+.report-map-cluster-selected { outline: 3px solid #e7ba35; outline-offset: 2px; }
+.cluster-report-dialog { width: min(560px, calc(100vw - 24px)); }
+.cluster-report-list { list-style: none; padding: 0; margin: 16px 0; }
+.cluster-report-list li + li { border-top: 1px solid #dce4de; }
+.cluster-report-list button { display: flex; flex-direction: column; gap: 6px; width: 100%; min-height: 64px; padding: 14px 8px; border: 0; background: transparent; text-align: left; cursor: pointer; color: #17201a; }
+.cluster-report-list button:hover, .cluster-report-list button:focus-visible { background: #edf5ee; }
+.cluster-report-list span { font-size: 14px; color: #405e47; }
 .app-loading { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 18px; background: #f5f6f7; }
 .app-loading p { color: #667078; }
 .reports-screen-title { display: flex; align-items: center; gap: 10px; }

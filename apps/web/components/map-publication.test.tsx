@@ -24,6 +24,7 @@ const state = vi.hoisted(() => ({
   journal: undefined as { userId: string; reportId: string; paths: string[] } | undefined,
 }));
 const report = () => ({ id: 'test-report', title: 'Test bottles', latitude: 0.5, longitude: 0, user_id: 'test-user', is_published: state.published, photo_paths: ['test-user/test-report/photo.jpg'], cleanup_state: 'available', funding_eligibility: 'eligible', renewal_status: 'active', expires_at: '2099-01-01', cancelled_at: null, expired_at: null, is_sample: false });
+vi.mock('@/lib/report-clusters', () => ({ createReportClusters: (map: unknown) => ({ update: (markers: Map<string, { map: unknown }>) => { for (const marker of markers.values()) if (!marker.map) marker.map = map; }, select: vi.fn(), dispose: vi.fn() }) }));
 vi.mock('@/lib/cloud-drafts', () => ({ cloudDrafts: { begin: async () => 'test-report', discard: async () => {} } }));
 vi.mock('@/lib/discovery-memory', async importOriginal => ({ ...await importOriginal<typeof import('@/lib/discovery-memory')>(), readBrowserMemory: () => null, saveBrowserMemory: () => {}, readDiscoveryMemory: () => null, saveDiscoveryMemory: () => {} }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));

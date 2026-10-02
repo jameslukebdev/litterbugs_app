@@ -5,15 +5,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CleanupAction } from './cleanup-action';
 
 const { from, rpc, state } = vi.hoisted(() => ({
-  from: vi.fn(), rpc: vi.fn(), state: { accepted: true, error: false, claimed: false },
+  from: vi.fn(), rpc: vi.fn(), state: { accepted: true, error: false, claimed: false, attemptError: false, revision: 0 },
 }));
 const { loadDraft, saveDraft } = vi.hoisted(() => ({ loadDraft: vi.fn(), saveDraft: vi.fn() }));
 vi.mock('@/lib/saved-cleanup-draft', () => ({ loadCleanupDraft: loadDraft, saveCleanupDraft: saveDraft, clearCleanupDraft: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({ from, rpc }) }));
 vi.mock('@/components/modal-shell', () => ({ ModalShell: ({ children }: { children: React.ReactNode }) => <div role="dialog">{children}</div> }));
+vi.mock('@/lib/use-data-refresh', () => ({ useDataRefresh: () => state.revision, notifyDataChanged: vi.fn() }));
 const report = { id: 'report-1', cleanup_state: 'available', funded_amount_cents: 0 } as Report;
 beforeEach(() => {
-  state.claimed = false;
+  state.claimed = false; state.attemptError = false; state.revision = 0;
   loadDraft.mockResolvedValue(undefined);
   saveDraft.mockResolvedValue(undefined);
   Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:evidence') });
@@ -28,7 +29,7 @@ beforeEach(() => {
         ? { data: { waiver_version: 'v4', guidelines_version: 'v2', body: 'Full versioned agreement', published_at: '2026-09-23' }, error: null }
         : table === 'cleanup_waiver_acceptances'
           ? { data: state.accepted ? { waiver_version: 'v4' } : null, error: state.error ? new Error('offline') : null }
-          : { data: state.claimed ? { id: 'attempt-1', cleaner_id: 'cleaner-1', status: 'claimed', claim_expires_at: '2026-09-30' } : null, error: null }),
+          : { data: state.attemptError ? null : state.claimed ? { id: 'attempt-1', cleaner_id: 'cleaner-1', status: 'claimed', claim_expires_at: '2026-09-30' } : null, error: state.attemptError ? new Error('offline') : null }),
     };
     for (const method of ['select', 'eq', 'in', 'is', 'order', 'limit'] as const) chain[method].mockReturnValue(chain);
     return chain;
@@ -97,4 +98,37 @@ describe('cleanup evidence recovery', () => {
     fireEvent.change(screen.getByLabelText(/Cleanup description/), { target: { value: 'New text' } });
     expect(saveDraft).not.toHaveBeenCalled();
   });
+});
+
+
+it('never offers a claim when the initial task check fails, and recovers with Retry', async () => {
+  state.attemptError = true;
+  render(<CleanupAction report={report} userId="cleaner-1" />);
+  await screen.findByRole('alert');
+  expect(screen.queryByRole('button', { name: 'Claim cleanup' })).toBeNull();
+  state.attemptError = false; state.claimed = true;
+  fireEvent.click(screen.getByRole('button', { name: 'Retry cleanup status' }));
+  await screen.findByRole('button', { name: 'Submit cleanup photos' });
+  expect(screen.queryByRole('alert')).toBeNull();
+});
+
+it('keeps entered evidence through refresh failure and restores submission after retry', async () => {
+  state.claimed = true;
+  loadDraft.mockResolvedValue({ photos: [new File(['photo'], 'after.jpg', { type: 'image/jpeg' })], description: 'Initial notes', bagsOrItems: '2', weightPounds: '' });
+  const view = render(<CleanupAction report={report} userId="cleaner-1" workspace />);
+  const description = await screen.findByLabelText(/Cleanup description/);
+  await waitFor(() => expect((description as HTMLTextAreaElement).value).toBe('Initial notes'));
+  fireEvent.change(description, { target: { value: 'My latest evidence' } });
+  state.attemptError = true; state.revision++;
+  view.rerender(<CleanupAction report={report} userId="cleaner-1" workspace />);
+  await screen.findByRole('alert');
+  expect((screen.getByLabelText(/Cleanup description/) as HTMLTextAreaElement).value).toBe('My latest evidence');
+  expect(screen.queryByRole('button', { name: 'Claim cleanup' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Review cleanup' }));
+  expect((screen.getByRole('button', { name: 'Submit cleanup', exact: true }) as HTMLButtonElement).disabled).toBe(true);
+  state.attemptError = false;
+  fireEvent.click(screen.getByRole('button', { name: 'Retry cleanup status' }));
+  await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+  expect((screen.getByRole('button', { name: 'Submit cleanup', exact: true }) as HTMLButtonElement).disabled).toBe(false);
+  expect(screen.getByText('My latest evidence', { selector: 'p' })).toBeTruthy();
 });

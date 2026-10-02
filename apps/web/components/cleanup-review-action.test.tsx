@@ -4,7 +4,8 @@ import type { Report } from '@litterbugs/report-contract';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { CleanupReviewAction } from './cleanup-review-action';
 
-const { rpc, state } = vi.hoisted(() => ({ rpc: vi.fn(), state: { paid: false } }));
+const { rpc, state } = vi.hoisted(() => ({ rpc: vi.fn(), state: { paid: false, attemptError: false, revision: 0 } }));
+vi.mock('@/lib/use-data-refresh', () => ({ useDataRefresh: () => state.revision, notifyDataChanged: vi.fn() }));
 vi.mock('@/components/modal-shell', () => ({ ModalShell: ({ children }: { children: React.ReactNode }) => <div role="dialog">{children}</div> }));
 vi.mock('@/lib/report-photo', () => ({ getWebCompatibleReportPhotoUrl: () => 'before.jpg' }));
 vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({
@@ -12,11 +13,11 @@ vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({
   storage: { from: () => ({ createSignedUrl: async () => ({ data: { signedUrl: 'after.jpg' } }) }) },
   from: (table: string) => {
     const result = { data: table === 'cleanup_attempts'
-      ? { id: 'cleanup', is_paid: state.paid, financial_review_status: 'passed', dispute_status: 'none' }
+      ? state.attemptError ? null : { id: 'cleanup', is_paid: state.paid, financial_review_status: 'passed', dispute_status: 'none' }
       : table === 'cleanup_submissions'
         ? { id: 'submission', description: 'Litter removed' }
         : table === 'profiles' ? { display_name: 'Cleaner' }
-          : [{ storage_path: 'after.jpg' }], error: null };
+          : [{ storage_path: 'after.jpg' }], error: table === 'cleanup_attempts' && state.attemptError ? new Error('offline') : null };
     const chain = {
       select: () => chain, eq: () => chain, order: () => chain, limit: () => chain,
       maybeSingle: async () => result,
@@ -28,7 +29,7 @@ vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({
 
 beforeEach(() => {
   localStorage.clear();
-  state.paid = false;
+  state.paid = false; state.attemptError = false; state.revision = 0;
   rpc.mockResolvedValue({ data: { status: 'changes_requested' }, error: null });
   vi.spyOn(window, 'confirm').mockReturnValue(true);
 });
@@ -78,4 +79,32 @@ it('keeps the separate 1000-character dispute allowance', async () => {
   state.paid = true;
   await openReview();
   expect((screen.getByRole('textbox') as HTMLTextAreaElement).maxLength).toBe(1000);
+});
+
+
+it('shows a retry state instead of a blank review on initial failure', async () => {
+  state.attemptError = true;
+  render(<CleanupReviewAction report={{ id: 'report' } as Report} userId="owner" isOwner />);
+  await screen.findByRole('alert');
+  state.attemptError = false;
+  fireEvent.click(screen.getByRole('button', { name: 'Retry cleanup review' }));
+  await screen.findByRole('button', { name: 'Review cleanup' });
+});
+
+it('retains unsent feedback through a failed poll and retry', async () => {
+  const props = { report: { id: 'report', photo_paths: ['before.jpg'] } as Report, userId: 'owner', isOwner: true };
+  const view = render(<CleanupReviewAction {...props} />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Review cleanup' }));
+  await screen.findByRole('dialog');
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Please photograph the far side' } });
+  state.attemptError = true; state.revision++;
+  view.rerender(<CleanupReviewAction {...props} />);
+  await screen.findByRole('alert');
+  expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('Please photograph the far side');
+  expect((screen.getByRole('button', { name: 'Approve cleanup' }) as HTMLButtonElement).disabled).toBe(true);
+  state.attemptError = false;
+  fireEvent.click(screen.getByRole('button', { name: 'Retry cleanup review' }));
+  await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+  expect((screen.getByRole('button', { name: 'Approve cleanup' }) as HTMLButtonElement).disabled).toBe(false);
+  expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('Please photograph the far side');
 });

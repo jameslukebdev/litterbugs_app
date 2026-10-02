@@ -17,9 +17,9 @@ import { Icon } from '@/components/icon';
 import { ModalShell } from '@/components/modal-shell';
 import { submitCleanupEvidence } from '@/lib/cleanup-submission';
 import { useDataRefresh, notifyDataChanged } from '@/lib/use-data-refresh';
+import { useCleanupAttempt } from '@/lib/use-cleanup-attempt';
 import { createClient } from '@/lib/supabase/client';
 
-type CleanupAttempt = Database['public']['Tables']['cleanup_attempts']['Row'];
 type WaiverRow = Database['public']['Tables']['cleanup_waiver_versions']['Row'];
 type CleanupWaiver = WaiverRow & {
   guidelines_body?: string | null;
@@ -71,10 +71,7 @@ export function CleanupAction({
   onChanged?: () => void | Promise<void>;
 }) {
   const refreshRevision = useDataRefresh();
-  const attemptKey = userId ? `${userId}:${report.id}` : '';
-  const [attemptState, setAttemptState] = useState<{ key: string; data: CleanupAttempt | null }>({ key: '', data: null });
-  const attempt = attemptState.key === attemptKey ? attemptState.data : null;
-  const attemptLoading = Boolean(userId && attemptState.key !== attemptKey);
+  const { attempt, loading: attemptLoading, failed: attemptFailed, refresh: refreshAttempt, clear: clearAttempt } = useCleanupAttempt(report.id, userId, false, refreshRevision, report.cleanup_state);
   const [busy, setBusy] = useState('');
   const [message, setMessage] = useState('');
   const [waiver, setWaiver] = useState<CleanupWaiver | null>(null);
@@ -96,40 +93,6 @@ export function CleanupAction({
   const [submissionId, setSubmissionId] = useState('');
   const [uploadedPaths, setUploadedPaths] = useState<string[]>([]);
   const [uploadProgress, setUploadProgress] = useState('');
-
-  async function refreshAttempt() {
-    if (!userId) {
-      return;
-    }
-    const { data } = await createClient()
-      .from('cleanup_attempts')
-      .select('*')
-      .eq('report_id', report.id)
-      .in('status', ['claimed', 'changes_requested', 'completion_submitted'])
-      .order('claimed_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    setAttemptState({ key: attemptKey, data });
-  }
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!userId) return;
-    void createClient()
-      .from('cleanup_attempts')
-      .select('*')
-      .eq('report_id', report.id)
-      .in('status', ['claimed', 'changes_requested', 'completion_submitted'])
-      .order('claimed_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!cancelled) {
-          setAttemptState({ key: attemptKey, data });
-        }
-      });
-    return () => { cancelled = true; };
-  }, [attemptKey, report.id, report.cleanup_state, userId, refreshRevision]);
 
   const editorLock = useDraftEditorLock(submissionOpen ? userId : null, attempt ? `cleanup:${attempt.id}` : null);
   const [draftLocked, setDraftLocked] = useState(false);
@@ -163,6 +126,7 @@ export function CleanupAction({
   }, [attempt]);
 
   async function beginClaim() {
+    if (attemptFailed) return;
     if (!userId) {
       onRequireSignIn?.();
       return;
@@ -200,6 +164,7 @@ export function CleanupAction({
   }
 
   async function acceptAndClaim() {
+    if (attemptFailed) return;
     if (!waiver || (!agreementSaved && !waiverAccepted) || !siteConfirmed) return;
     setBusy('claim');
     const supabase = createClient();
@@ -233,7 +198,7 @@ export function CleanupAction({
   }
 
   async function releaseClaim() {
-    if (!attempt || !window.confirm('Release this cleanup claim so another member can clean it?')) return;
+    if (attemptFailed || !attempt || !window.confirm('Release this cleanup claim so another member can clean it?')) return;
     setBusy('release');
     const { error } = await createClient().rpc('release_cleanup', { target_cleanup_id: attempt.id });
     setBusy('');
@@ -241,7 +206,7 @@ export function CleanupAction({
       setMessage('The cleanup claim could not be released. Try again.');
       return;
     }
-    setAttemptState({ key: attemptKey, data: null });
+    clearAttempt();
     setSubmissionOpen(false);
     setMessage('Cleanup claim released.');
     if (userId) await clearCleanupDraft(userId, attempt.id).catch(() => undefined);
@@ -278,7 +243,7 @@ export function CleanupAction({
   }
 
   async function submitCleanup() {
-    if (!attempt || !userId) return;
+    if (attemptFailed || !attempt || !userId) return;
     const evidenceError = validateCleanupEvidence(photos, description);
     if (evidenceError) return setSubmissionError(evidenceError);
     const bags = parseOptionalInteger(bagsOrItems, 'Bags or items removed', 0, 9999);
@@ -358,22 +323,27 @@ export function CleanupAction({
   }
 
   const action = (() => {
+    if (attemptFailed && !attempt) return null;
     if (attemptLoading) return <button className="secondary-button compact-button" disabled>Checking cleanup…</button>;
     if (canSubmit) return <button className="primary-button compact-button" onClick={() => setSubmissionOpen(true)}>{attempt?.status === 'changes_requested' ? 'Update cleanup photos' : 'Submit cleanup photos'}</button>;
     if (isMyAttempt && attempt?.status === 'completion_submitted') return <button className="secondary-button compact-button" disabled>Cleanup under review</button>;
     if (attempt && !isMyAttempt) return <span className="cleanup-unavailable-note">Another member is cleaning this report</span>;
     if (report.cleanup_state === 'completed') return null;
-    return <button className="primary-button compact-button" onClick={beginClaim} disabled={Boolean(busy) || preparing}>{userId ? (busy === 'waiver' ? 'Loading…' : 'Claim cleanup') : 'Sign in to clean'}</button>;
+    return <button className="primary-button compact-button" onClick={beginClaim} disabled={attemptFailed || Boolean(busy) || preparing}>{userId ? (busy === 'waiver' ? 'Loading…' : 'Claim cleanup') : 'Sign in to clean'}</button>;
   })();
+
+  const attemptNotice = attemptFailed && <p role="alert" className="form-message error-message">Cleanup status could not be refreshed. {attempt ? 'Your last confirmed task and entered work are still here. Reconnect and retry before sending changes.' : 'Retry before starting a cleanup.'} <button type="button" className="secondary-button" onClick={() => void refreshAttempt()}>Retry cleanup status</button></p>;
 
   return (
     <>
       {message && <span className="cleanup-action-message" role="status">{message}</span>}
+      {!waiverOpen && !(submissionOpen && attempt) && attemptNotice}
       {action}
-      {canSubmit && <button className="secondary-button compact-button" onClick={releaseClaim} disabled={Boolean(busy) || preparing}>{busy === 'release' ? 'Releasing…' : 'Release claim'}</button>}
+      {canSubmit && <button className="secondary-button compact-button" onClick={releaseClaim} disabled={attemptFailed || Boolean(busy) || preparing}>{busy === 'release' ? 'Releasing…' : 'Release claim'}</button>}
 
       {waiverOpen && waiver && (
         <ModalShell onClose={() => setWaiverOpen(false)} label="Cleanup safety and funded reward acknowledgment" className="cleanup-flow-dialog cleanup-waiver-dialog" closeDisabled={busy === 'claim'}>
+          {attemptNotice}
           <span className="eyebrow">CLEANUP SAFETY</span>
           <h2>{agreementSaved ? 'Confirm this site is safe for you' : 'Cleanup safety and agreement'}</h2>
           {!agreementSaved && <div className="cleanup-waiver-scroll">
@@ -391,12 +361,13 @@ export function CleanupAction({
             <span>I can legally access this site and clean safely with my equipment, away from moving traffic and hazardous materials. I will stop if conditions become unsafe.</span>
           </label>
           <p>You have 24 hours to clean and submit photos.</p>
-          <button className="primary-button cleanup-flow-submit" onClick={acceptAndClaim} disabled={(!agreementSaved && !waiverAccepted) || !siteConfirmed || busy === 'claim'}>{busy === 'claim' ? 'Claiming…' : 'Confirm and claim cleanup'}</button>
+          <button className="primary-button cleanup-flow-submit" onClick={acceptAndClaim} disabled={attemptFailed || (!agreementSaved && !waiverAccepted) || !siteConfirmed || busy === 'claim'}>{busy === 'claim' ? 'Claiming…' : 'Confirm and claim cleanup'}</button>
         </ModalShell>
       )}
 
       {submissionOpen && attempt && (
         <ModalShell embedded={workspace} onClose={() => setSubmissionOpen(false)} label="Submit cleanup evidence" className="cleanup-flow-dialog cleanup-evidence-workspace" closeDisabled={busy === 'submit' || preparing}>
+          {attemptNotice}
           {editorLock === 'unavailable' && <p role="alert">This cleanup draft is open in another tab. Close that editor before continuing here.</p>}
           <span className="eyebrow">CLEANUP EVIDENCE</span>
           <h2>{attempt.status === 'changes_requested' ? 'Update your cleanup photos' : 'Show what you cleaned'}</h2>
@@ -424,8 +395,8 @@ export function CleanupAction({
           {(preparing || uploadProgress) && <section className="evidence-transfer" aria-label="Evidence transfer"><h3>{preparing ? 'Preparing selected photos' : uploadProgress.includes('review') ? 'Starting evidence review' : uploadProgress.includes('Uploading') ? 'Uploading and checking photos' : 'Saving your evidence'}</h3><p role="status" aria-live="polite">{preparing ? 'Preparing browser-compatible photos. Keep this page open until the device save finishes.' : uploadProgress}</p><p>Uploading a photo does not mean the cleanup has been approved. Your task will show the review result and any requested corrections.</p></section>}
           {submissionError && <p className="form-message error-message" role="alert">{submissionError}</p>}
           <div className="cleanup-flow-actions">
-            <button className="secondary-button" onClick={releaseClaim} disabled={Boolean(busy) || preparing}>Release claim</button>
-            {reviewing ? <><button className="secondary-button" onClick={() => setReviewing(false)} disabled={Boolean(busy) || preparing || uploadedPaths.length > 0}>Edit cleanup</button><button className="primary-button" onClick={submitCleanup} disabled={editorLock !== 'ready' || Boolean(busy) || !submissionId}>{busy === 'submit' ? 'Submitting…' : 'Submit cleanup'}</button></> : <button className="primary-button" onClick={reviewCleanup} disabled={editorLock !== 'ready' || Boolean(busy) || preparing || draftReady !== attempt.id}>Review cleanup</button>}
+            <button className="secondary-button" onClick={releaseClaim} disabled={attemptFailed || Boolean(busy) || preparing}>Release claim</button>
+            {reviewing ? <><button className="secondary-button" onClick={() => setReviewing(false)} disabled={Boolean(busy) || preparing || uploadedPaths.length > 0}>Edit cleanup</button><button className="primary-button" onClick={submitCleanup} disabled={attemptFailed || editorLock !== 'ready' || Boolean(busy) || !submissionId}>{busy === 'submit' ? 'Submitting…' : 'Submit cleanup'}</button></> : <button className="primary-button" onClick={reviewCleanup} disabled={editorLock !== 'ready' || Boolean(busy) || preparing || draftReady !== attempt.id}>Review cleanup</button>}
           </div>
         </ModalShell>
       )}
