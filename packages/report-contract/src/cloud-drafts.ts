@@ -155,15 +155,23 @@ export function createCloudDraftSync<D>(adapter: {
       try { const locked=await dispatch(owner,key,m); status(owner,key,'submitting'); return locked!.submission_id; }
       catch(error) { return failed(owner,key,error); }
     }),
-    discard: (owner: string,key: string)=>serialize(owner,key,async()=>{
+    // Correction retries reset the account submission while retaining local
+    // evidence. Normal user-initiated discard still removes both copies.
+    discard: (owner: string,key: string,options?: { preserveLocal?: boolean })=>serialize(owner,key,async()=>{
       clearTimeout(timers.get(identity(owner,key))); timers.delete(identity(owner,key));
       try {
         const m=await meta(owner,key); await dispatch(owner,key,m);
         const remote=await adapter.loadRemote(owner,key);
-        if(!remote?.payload) { await persist(owner,key,{revision:remote?.revision??0}); await adapter.clearLocal(owner,key); return; }
+        if(!remote?.payload) {
+          await persist(owner,key,{revision:remote?.revision??0});
+          if(!options?.preserveLocal) await adapter.clearLocal(owner,key);
+          status(owner,key,'local'); return;
+        }
         if(m.revision!==remote.revision) throw new DraftConflictError();
         m.pending={target_user_id:owner,target_key:key,expected_revision:remote.revision,operation_id:adapter.id(),action:'delete',draft_payload:null,draft_photos:[]};
-        await persist(owner,key,m); await dispatch(owner,key,m); await adapter.clearLocal(owner,key); status(owner,key,'local');
+        await persist(owner,key,m); await dispatch(owner,key,m);
+        if(!options?.preserveLocal) await adapter.clearLocal(owner,key);
+        status(owner,key,'local');
       } catch(error) { return failed(owner,key,error); }
     }),
   };

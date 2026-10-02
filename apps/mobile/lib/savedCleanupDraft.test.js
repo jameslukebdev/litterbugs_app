@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-vi.mock('./cloudDrafts', () => ({ cloudDrafts: {} }));
+vi.mock('./cloudDrafts', () => ({ cloudDrafts: {
+  load: vi.fn(), discard: vi.fn(), schedule: vi.fn(), isRetired: () => false,
+} }));
 const m = vi.hoisted(() => ({
   storage: new Map(),
   files: new Set(['file://source.jpg']),
@@ -21,8 +23,9 @@ vi.mock('expo-file-system/legacy', () => ({
   documentDirectory: 'file://documents/',
   makeDirectoryAsync: async () => {},
   getInfoAsync: async (p) => ({ exists: m.files.has(p) }),
-  copyAsync: async ({ to }) => {
+  copyAsync: async ({ from, to }) => {
     if (m.copyFails) throw Error('interrupted');
+    if (!m.files.has(from)) throw Error('Source photo missing');
     m.files.add(to);
   },
   deleteAsync: async (p) => {
@@ -33,12 +36,15 @@ import {
   saveLocalCleanupDraft as saveCleanupDraft,
   loadLocalCleanupDraft as loadCleanupDraft,
   clearLocalCleanupDraft as clearCleanupDraft,
+  loadCleanupDraft as loadAccountCleanupDraft,
 } from './savedCleanupDraft';
+import { cloudDrafts } from './cloudDrafts';
 const draft = {
   description: 'Removed bottles', photos: [{ uri: 'file://source.jpg', mimeType: 'image/jpeg' }], submissionId: 'stable-id',
 };
 describe('durable report drafts', () => {
   beforeEach(() => {
+    vi.resetAllMocks();
     m.storage.clear();
     m.files = new Set(['file://source.jpg']);
     m.copyFails = false;
@@ -91,5 +97,21 @@ describe('durable report drafts', () => {
     expect(restored.photos).toEqual([]);
     expect(restored.description).toBe(draft.description);
     expect(restored.submissionId).toBe(draft.submissionId);
+  });
+  it('keeps the actual photo files when reopening evidence for a new correction window', async () => {
+    await saveCleanupDraft('alice', 'cleanup-1', { ...draft, correctionDueAt: null });
+    m.files.delete('file://source.jpg');
+    cloudDrafts.load.mockResolvedValue(await loadCleanupDraft('alice', 'cleanup-1'));
+    cloudDrafts.discard.mockImplementation(async (owner, cleanupKey, options) => {
+      if (!options?.preserveLocal) await clearCleanupDraft(owner, cleanupKey.slice(8));
+    });
+    const due = '2026-10-03T16:00:00Z';
+    const updated = await loadAccountCleanupDraft('alice', 'cleanup-1', due);
+    expect(updated.submissionId).toBeUndefined();
+    expect(updated.correctionDueAt).toBe(due);
+    expect(updated.photos).toHaveLength(1);
+    expect(m.files.has(updated.photos[0].uri)).toBe(true);
+    expect((await loadCleanupDraft('alice', 'cleanup-1')).photos).toHaveLength(1);
+    expect(cloudDrafts.schedule).toHaveBeenCalledWith('alice', 'cleanup:cleanup-1');
   });
 });

@@ -100,6 +100,34 @@ describe('account draft continuity',()=>{
     await a.sync.save('alice','report');await a.sync.discard('alice','report');await vi.advanceTimersByTimeAsync(2000);
     expect(a.local.size).toBe(0);expect(f.remote.get('alice:report')?.payload).toBeNull();
   });
+  it('retains correction evidence while resetting the submission identity',async()=>{
+    const f=fixture(),a=f.device(),key='cleanup:attempt';a.edit('Keep evidence','alice',key);
+    const original=await a.sync.save('alice',key);
+    await a.sync.discard('alice',key,{preserveLocal:true});
+    expect(a.local.get(`alice:${key}`)).toEqual({text:'Keep evidence',photos:['photo.jpg']});
+    expect(a.sync.confirmation('alice',key)).toBeUndefined();
+    const corrected=await a.sync.save('alice',key);
+    expect(corrected?.submission_id).not.toBe(original?.submission_id);
+    expect(corrected?.photo_paths).toEqual(['alice/photo.jpg']);
+  });
+  it('keeps correction evidence when a reset response is lost and retried',async()=>{
+    const f=fixture(),a=f.device(),key='cleanup:attempt';a.edit('Keep evidence','alice',key);
+    await a.sync.save('alice',key);f.loseNextResponse();
+    await expect(a.sync.discard('alice',key,{preserveLocal:true})).rejects.toThrow('response lost');
+    expect(a.local.get(`alice:${key}`)?.photos).toEqual(['photo.jpg']);
+    await a.sync.discard('alice',key,{preserveLocal:true});
+    expect(a.sync.status('alice',key)).toBe('local');
+    expect(a.sync.confirmation('alice',key)).toBeUndefined();
+    expect((await a.sync.save('alice',key))?.payload).toMatchObject({text:'Keep evidence'});
+  });
+  it('does not overwrite another device when preserving local correction evidence',async()=>{
+    const f=fixture(),a=f.device(),b=f.device(),key='cleanup:attempt';
+    a.edit('Original','alice',key);await a.sync.save('alice',key);await b.sync.load('alice',key);
+    b.edit('Newer account correction','alice',key);await b.sync.save('alice',key);
+    await expect(a.sync.discard('alice',key,{preserveLocal:true})).rejects.toBeInstanceOf(DraftConflictError);
+    expect(a.local.get(`alice:${key}`)?.photos).toEqual(['photo.jpg']);
+    expect(f.remote.get(`alice:${key}`)?.payload).toMatchObject({text:'Newer account correction'});
+  });
   it('isolates accounts and retires queued sync after account deletion',async()=>{
     vi.useFakeTimers();const f=fixture(),a=f.device();a.edit('Alice');a.edit('Bob','bob');a.sync.schedule('alice','report');
     await a.sync.retire('alice');await vi.advanceTimersByTimeAsync(2000);
