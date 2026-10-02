@@ -93,9 +93,9 @@ function cleanupApprovalLabel(approvalMethod: string | null) {
 
 function contributionStatusLabel(status: string) {
   return ({
-    payment_pending: 'Processing',
+    payment_pending: 'Payment unconfirmed',
     succeeded: 'In cleanup fund',
-    refund_pending: 'Refund processing',
+    refund_pending: 'Refund requested',
     refund_processing: 'Refund processing',
     refunded: 'Refunded',
     failed: 'Not completed',
@@ -139,6 +139,7 @@ export function AccountDialog({
   const loadedUser = useRef<string | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const [hasSavedDraft, setHasSavedDraft] = useState(false);
+  const [contributionLimit, setContributionLimit] = useState(5);
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
   const [section, setSection] = useState<'profile' | 'activity' | 'payments' | 'settings'>(initialSection);
   useEffect(() => { headingRef.current?.focus(); }, [section]);
@@ -577,6 +578,9 @@ export function AccountDialog({
         <div className="member-dashboard-loading"><span className="spinner" /><span>Loading your activity…</span></div>
       ) : (
         <>
+          {section === 'activity' && <div className="activity-tabs" role="navigation" aria-label="My activity">
+            {(['current', 'history', 'reports'] as const).map(tab => embedded ? <Link key={tab} href={tab === 'reports' ? '/account/reports' : `/account/activity${tab === 'history' ? '?view=history' : ''}`} aria-current={activityTab === tab ? 'page' : undefined}>{tab === 'current' ? 'Current cleanups' : tab === 'history' ? 'Cleanup history' : 'My reports'}</Link> : <button key={tab} aria-pressed={activityTab === tab} onClick={() => setActivityTab(tab)}>{tab === 'current' ? 'Current cleanups' : tab === 'history' ? 'Cleanup history' : 'My reports'}</button>)}
+          </div>}
           {embedded && (section === 'profile' || section === 'activity') && <NeedsAttention userId={userId} reports={reports} renewals={expiredReports} attempts={cleanups} incomplete={unavailable.some(name => ['Account', 'Reports', 'Renewals', 'Cleanups'].includes(name))} />}
           {embedded && (section === 'profile' || section === 'activity') && <ResumeDrafts userId={userId} attempts={activeCleanups} />}
           {section === 'profile' && <>
@@ -592,11 +596,8 @@ export function AccountDialog({
           </section>
 
           </>}
-          {section === 'activity' && <div className="activity-tabs" role="navigation" aria-label="My activity">
-            {(['current', 'history', 'reports'] as const).map(tab => embedded ? <Link key={tab} href={tab === 'reports' ? '/account/reports' : `/account/activity${tab === 'history' ? '?view=history' : ''}`} aria-current={activityTab === tab ? 'page' : undefined}>{tab === 'current' ? 'Current cleanups' : tab === 'history' ? 'Cleanup history' : 'My reports'}</Link> : <button key={tab} aria-pressed={activityTab === tab} onClick={() => setActivityTab(tab)}>{tab === 'current' ? 'Current cleanups' : tab === 'history' ? 'Cleanup history' : 'My reports'}</button>)}
-          </div>}
+
           {!embedded && (section === 'profile' || section === 'activity') && hasSavedDraft && <button className="secondary-button" onClick={() => { if (!embedded) onClose(); onResumeDraft?.(); }}>Resume saved report</button>}
-          {section === 'payments' && <PayoutSetupAction />}
           <div className="member-dashboard-grid">
             {initialRenewalId && section === 'activity' && activityTab === 'reports' && !dataLoading && !unavailable.some(name => ['Account', 'Renewals'].includes(name)) && !expiredReports.some(report => report.id === initialRenewalId) && <p role="status">This report no longer has a renewal decision due. Check its current status in My reports.</p>}
             {section === 'activity' && activityTab === 'reports' && expiredReports.length ? (
@@ -665,10 +666,31 @@ export function AccountDialog({
               </div>
             </section>}
 
-            {((section === 'activity' && activityTab === 'history') || section === 'payments') && <section className="member-panel">
-              <header><div><span className="eyebrow">YOUR IMPACT</span><h3>Completed cleanups</h3></div></header>
+            {section === 'payments' && <section className="member-panel member-contributions-panel">
+              <header><div><span className="eyebrow">CLEANUP FUNDS</span><h3>Your contributions</h3></div></header>
               <div className="member-activity-list">
-                {completedCleanups.map((attempt) => (
+                {(embedded ? contributions.slice(0, contributionLimit) : contributions).map((contribution) => (
+                  <ActivityLink embedded={embedded} href={`/account/payments/${contribution.id}`} key={contribution.id} className="member-activity-row" onClick={() => setSelectedPayment(contribution.id)}>
+                    <span>
+                      <strong>{contribution.report?.title || 'Litter report'}</strong>
+                      <small className="report-context">Report {contribution.report_id.slice(0, 8)}</small>
+                      <small>{formatUsd(contribution.principal_amount_cents)} contribution</small>
+                      <small>{contributionStatusLabel(contribution.status)} · {new Date(contribution.created_at).toLocaleString()}</small>
+                      <small>{formatUsd(contribution.platform_fee_cents)} fee · {formatUsd(contribution.total_amount_cents)} total</small>
+                    </span>
+                    <Icon name="chevron-right" />
+                  </ActivityLink>
+                ))}
+                {embedded && contributions.length > contributionLimit && <button type="button" className="secondary-button member-show-more" onClick={() => setContributionLimit(value => value + 5)}>Show {Math.min(5, contributions.length - contributionLimit)} more contributions</button>}
+                {!contributions.length && !unavailable.includes('Payments') && !unavailable.includes('Account') && <p className="member-empty">Your contributions and payment status will appear here.</p>}
+              </div>
+            </section>}
+
+            {((section === 'activity' && activityTab === 'history') || section === 'payments') && <section className="member-panel">
+              <header><div><span className="eyebrow">{section === 'payments' ? 'YOUR CLEANUP REWARDS' : 'YOUR IMPACT'}</span><h3>{section === 'payments' ? 'Cleanup earnings' : 'Completed cleanups'}</h3></div></header>
+              {section === 'payments' && <div className="member-payout-action"><PayoutSetupAction /></div>}
+              <div className="member-activity-list">
+                {(section === 'payments' ? completedCleanups.filter(attempt => attempt.is_paid) : completedCleanups).map((attempt) => (
                   <ActivityLink embedded={embedded} href={`/account/reports/${attempt.report_id}?from=${section === 'payments' ? 'payments' : activityTab}`} key={attempt.id} className="member-activity-row member-completed-row" onClick={() => openReport(attempt.report_id)}>
                     <span>
                       <strong>{attempt.report?.title || 'Completed litter cleanup'}</strong><small className="report-context">{reportContext(attempt.report)}</small>
@@ -678,27 +700,9 @@ export function AccountDialog({
                     <Icon name="chevron-right" />
                   </ActivityLink>
                 ))}
-                {!completedCleanups.length && !unavailable.includes('Cleanups') && !unavailable.includes('Account') && <p className="member-empty">Your completed cleanup history will appear here.</p>}
+                {!(section === 'payments' ? completedCleanups.some(attempt => attempt.is_paid) : completedCleanups.length) && !unavailable.includes('Cleanups') && !unavailable.includes('Account') && <p className="member-empty">{section === 'payments' ? 'Rewards from your completed paid cleanups will appear here.' : 'Your completed cleanup history will appear here.'}</p>}
               </div>
             </section>}
-
-            {section === 'payments' && <section className="member-panel member-contributions-panel">
-              <header><div><span className="eyebrow">CLEANUP FUNDS</span><h3>Your contributions and payments</h3></div></header>
-              <div className="member-activity-list">
-                {contributions.map((contribution) => (
-                  <ActivityLink embedded={embedded} href={`/account/payments/${contribution.id}`} key={contribution.id} className="member-activity-row" onClick={() => setSelectedPayment(contribution.id)}>
-                    <span>
-                      <strong>{formatUsd(contribution.principal_amount_cents)} cleanup reward</strong>
-                      <small>{contributionStatusLabel(contribution.status)} · {new Date(contribution.created_at).toLocaleString()}</small>
-                      <small>{formatUsd(contribution.platform_fee_cents)} fee · {formatUsd(contribution.total_amount_cents)} total</small>
-                    </span>
-                    <Icon name="chevron-right" />
-                  </ActivityLink>
-                ))}
-                {!contributions.length && !unavailable.includes('Payments') && !unavailable.includes('Account') && <p className="member-empty">Your contributions and payment status will appear here.</p>}
-              </div>
-            </section>}
-
 
           </div>
         </>

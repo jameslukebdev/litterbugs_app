@@ -13,6 +13,7 @@ describe('payment status confirmation', () => {
     eq.mockReturnValue(query); from.mockReturnValue(query);
     invoke.mockImplementation(async () => { record.status = 'succeeded'; return { data: {}, error: null }; });
     render(<PaymentDetail contributionId="payment-1" onOpenReport={vi.fn()} />);
+    expect(screen.getByRole('heading', { level: 2, name: 'Payment details' })).toBeTruthy();
     await screen.findByText(/haven’t confirmed this payment yet/);
     expect(eq).toHaveBeenCalledWith('contributor_id', 'member-1');
     await screen.findByText('Your contribution is in the cleanup fund.');
@@ -20,7 +21,8 @@ describe('payment status confirmation', () => {
   });
   it('does not query payment data for a signed-out visitor', async () => {
     getUser.mockResolvedValue({ data: { user: null } });
-    render(<PaymentDetail contributionId="payment-1" onOpenReport={vi.fn()} />);
+    render(<PaymentDetail standalone contributionId="payment-1" onOpenReport={vi.fn()} />);
+    expect(screen.getByRole('heading', { level: 1, name: 'Payment details' })).toBeTruthy();
     await waitFor(() => expect(screen.getByText('Sign in to view your payment details.')).toBeTruthy());
     expect(from).not.toHaveBeenCalled();
   });

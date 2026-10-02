@@ -97,7 +97,7 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
         ) : (
           <span className="public-account-initials" aria-hidden>{profileLabel.charAt(0).toUpperCase()}</span>
         ))}
-        <span>{userId ? 'Account' : 'Sign in'}</span>
+        <span className="public-account-label">{userId ? 'Account' : 'Sign in'}</span>
       </button>
 
       {authOpen && <AuthDialog intent={authIntent} onClose={() => setAuthOpen(false)} />}

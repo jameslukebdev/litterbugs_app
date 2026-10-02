@@ -66,8 +66,11 @@ export function ResumeDrafts({ userId, attempts }: { userId: string; attempts: A
   }, [userId, attempts, refresh, retry]);
   if (!rows.length && !message) return null;
   return <section className="resume-drafts member-panel" aria-label="Resume your work"><h2>Resume your work</h2>{message && <p role="status">{message} <button type="button" className="secondary-button" onClick={() => setRetry(value => value + 1)}>Retry saved drafts</button></p>}{rows.map(row => <article key={row.key}>
-    <div className="draft-comparison">{row.account && <section><h3>Saved to your account</h3>{row.accountStale && <p>Last known account copy — could not refresh.</p>}<DraftSummaryView summary={row.account} /></section>}{row.device && <section><h3>Saved on this device</h3>{row.deviceStale && <p>Last known device copy — could not refresh.</p>}<DraftSummaryView summary={row.device} /></section>}</div>
-    <small>{row.device && row.account ? 'Both copies are shown. We check for differences when you resume; saving time alone does not choose a version.' : row.device ? 'Account sync is checked when resumed. Keep this device copy until sync is confirmed.' : 'Sign in to this same account to continue on another device.'}</small>
-    <Link className="secondary-button" href={row.href}>{row.key === 'report' ? 'Resume report' : 'Continue cleanup'}</Link>
+    <div className="resume-draft-copies">{row.account && <div><span className="resume-copy-label">Account copy</span><strong>{row.account.title}</strong><span>{row.account.photos} photo{row.account.photos === 1 ? '' : 's'}</span></div>}{row.device && <div><span className="resume-copy-label">Device copy</span><strong>{row.device.title}</strong><span>{row.device.photos} photo{row.device.photos === 1 ? '' : 's'}</span></div>}</div>
+    {row.accountStale && <p role="status">Last known account copy — could not refresh.</p>}
+    {row.deviceStale && <p role="status">Last known device copy — could not refresh.</p>}
+    <Link className="secondary-button resume-draft-action" href={row.href}>{row.key === 'report' ? 'Resume report' : 'Continue cleanup'}</Link>
+    <small>{row.device && row.account ? 'Both copies are kept. We check for differences when you resume.' : row.device ? 'Keep this device copy until account sync is confirmed.' : 'Continue on another device by signing in to this account.'}</small>
+    <details className="resume-draft-details"><summary>Saved version details</summary><div className="draft-comparison">{row.account && <section><h3>Saved to your account</h3><DraftSummaryView summary={row.account} omitTitle /></section>}{row.device && <section><h3>Saved on this device</h3><DraftSummaryView summary={row.device} omitTitle /></section>}</div><p>Saving time alone does not choose a version. Copies are compared when you resume.</p></details>
   </article>)}</section>;
 }

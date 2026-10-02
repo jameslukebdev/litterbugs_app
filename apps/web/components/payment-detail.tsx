@@ -12,7 +12,7 @@ const messages: Record<string, string> = {
   failed: 'This payment did not complete.', refund_pending: 'A refund has been requested.',
   refund_processing: 'Your refund is being processed.', refunded: 'The contribution was refunded.',
 };
-export function PaymentDetail({ contributionId, onOpenReport }: { contributionId: string; onOpenReport: (id: string) => void }) {
+export function PaymentDetail({ contributionId, onOpenReport, standalone = false }: { standalone?: boolean; contributionId: string; onOpenReport: (id: string) => void }) {
   const [item, setItem] = useState<Contribution | null>(null);
   const refresh = useDataRefresh(item?.status === 'payment_pending' ? 10000 : 30000);
   const lastReconcileRef = useRef(0);
@@ -48,8 +48,10 @@ export function PaymentDetail({ contributionId, onOpenReport }: { contributionId
     } catch { setMessage('We couldn’t confirm this payment. Try again before paying again.'); }
     finally { setBusy(false); }
   }
-  return <section className="payment-detail"><h2>Payment details</h2>
-    {item ? <><h3>{formatUsd(item.total_amount_cents)}</h3><p>{messages[item.status] || 'Payment status unavailable.'}</p><p>{new Date(item.created_at).toLocaleString()}</p><dl className="funding-summary"><div><dt>Cleanup contribution</dt><dd>{formatUsd(item.principal_amount_cents)}</dd></div><div><dt>Service fee</dt><dd>{formatUsd(item.platform_fee_cents)}</dd></div></dl>{item.refunded_at && <p>Refunded {new Date(item.refunded_at).toLocaleString()}</p>}{item.status === 'payment_pending' && <button className="secondary-button" disabled={busy} onClick={check}>{busy ? 'Checking…' : 'Check payment status'}</button>}<button className="primary-button" onClick={() => onOpenReport(item.report_id)}>View report</button></> : !message && <p role="status">Loading payment details…</p>}
+  const Heading = standalone ? 'h1' : 'h2';
+  const AmountHeading = standalone ? 'h2' : 'h3';
+  return <section className="payment-detail"><Heading>Payment details</Heading>
+    {item ? <><AmountHeading>{formatUsd(item.total_amount_cents)}</AmountHeading><p>{messages[item.status] || 'Payment status unavailable.'}</p><p>{new Date(item.created_at).toLocaleString()}</p><dl className="funding-summary"><div><dt>Cleanup contribution</dt><dd>{formatUsd(item.principal_amount_cents)}</dd></div><div><dt>Service fee</dt><dd>{formatUsd(item.platform_fee_cents)}</dd></div></dl>{item.refunded_at && <p>Refunded {new Date(item.refunded_at).toLocaleString()}</p>}{item.status === 'payment_pending' && <button className="secondary-button" disabled={busy} onClick={check}>{busy ? 'Checking…' : 'Check payment status'}</button>}<button className="primary-button" onClick={() => onOpenReport(item.report_id)}>View report</button></> : !message && <p role="status">Loading payment details…</p>}
     {message && <p role="status">{message}</p>}
     {!item && message && <button className="secondary-button" onClick={() => setRetry(value => value + 1)}>Retry</button>}
     <a href="/help">Payment help</a>
