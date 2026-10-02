@@ -534,6 +534,23 @@ it('keeps photo selection and keyboard focus through data refresh and uses the l
   expect(initialClose).not.toHaveBeenCalled(); expect(updatedClose).toHaveBeenCalledOnce();
 });
 
+it.each([false, true])('restores desktop return focus without stealing an independently moved focus (%s)', movedElsewhere => {
+  const view = (open: boolean) => <>
+    <button>Open report card</button>
+    {open && <ReportDetail inline report={report} isOwner={false} onClose={vi.fn()} />}
+    <button>Another report card</button>
+  </>;
+  const { rerender } = render(view(false));
+  const origin = screen.getByRole('button', { name: 'Open report card' });
+  origin.focus();
+  rerender(view(true));
+  expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Back' }));
+  const other = screen.getByRole('button', { name: 'Another report card' });
+  if (movedElsewhere) other.focus();
+  rerender(view(false));
+  expect(document.activeElement).toBe(movedElsewhere ? other : origin);
+});
+
 it.each(['claimed', 'completion_submitted', 'changes_requested'])('does not close %s after its original expiry', state => {
   render(<ReportDetail report={{ ...report, cleanup_state: state, expires_at: '2020-01-01T00:00:00Z' }} isOwner={false} onClose={vi.fn()} onEdit={vi.fn()} onDelete={vi.fn()} />);
   expect(screen.queryByText('Report closed')).toBeNull();

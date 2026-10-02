@@ -143,12 +143,19 @@ export function ReportDetail({
   useEffect(() => {
     if (embedded) return;
     if (inline && !expandedLayout) {
+      const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      const panel = dialogRef.current;
       backButtonRef.current?.focus();
       const escape = (event: KeyboardEvent) => {
         if (event.key === 'Escape' && !document.querySelector('[role="dialog"]') && dialogRef.current?.contains(document.activeElement)) { event.preventDefault(); closeRef.current(); }
       };
       window.addEventListener('keydown', escape);
-      return () => window.removeEventListener('keydown', escape);
+      return () => {
+        window.removeEventListener('keydown', escape);
+        // React may already have removed the focused pane. Preserve focus elsewhere
+        // when switching cards instead of pulling it back to the previous card.
+        if (previousFocus?.isConnected && (document.activeElement === document.body || panel?.contains(document.activeElement))) previousFocus.focus();
+      };
     }
     const previousOverflow = document.body.style.overflow;
     const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
