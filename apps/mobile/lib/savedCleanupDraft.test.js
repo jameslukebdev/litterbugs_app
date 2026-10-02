@@ -62,6 +62,31 @@ describe('durable report drafts', () => {
     expect(await loadCleanupDraft('alice', 'cleanup-2')).toBeNull();
     expect(restored.submissionId).toBe('stable-id');
   });
+  it('stores portable photo paths instead of the current iOS container', async () => {
+    await saveCleanupDraft('alice', 'cleanup-1', draft);
+    const stored = JSON.parse(m.storage.get('litterbugs.cleanup-draft.alice.cleanup-1'));
+    expect(stored.photos[0]).toEqual({ uri: 'cleanup-drafts/alice/cleanup-1/photo-hash.jpg', mimeType: 'image/jpeg' });
+    expect((await loadCleanupDraft('alice', 'cleanup-1')).photos[0].uri).toBe('file://documents/cleanup-drafts/alice/cleanup-1/photo-hash.jpg');
+  });
+  it('recovers legacy cleanup photos after iOS relocates the app container', async () => {
+    const current = 'file://documents/cleanup-drafts/alice/cleanup-1/legacy.jpg';
+    const old = 'file:///old-container/Documents/cleanup-drafts/alice/cleanup-1/legacy.jpg';
+    m.files = new Set([current]);
+    m.storage.set('litterbugs.cleanup-draft.alice.cleanup-1', JSON.stringify({ ...draft, photos: [{ uri: old, mimeType: 'image/jpeg' }] }));
+    const restored = await loadCleanupDraft('alice', 'cleanup-1');
+    expect(restored.photos).toEqual([{ uri: current, mimeType: 'image/jpeg' }]);
+    expect(restored.missingPhotoCount).toBe(0);
+    expect(restored.submissionId).toBe('stable-id');
+    await saveCleanupDraft('alice', 'cleanup-1', { ...draft, photos: [{ uri: old, mimeType: 'image/jpeg' }] });
+    expect((await loadCleanupDraft('alice', 'cleanup-1')).photos[0].uri).toBe(current);
+  });
+  it('does not relocate paths from a different owner, cleanup, or nested directory', async () => {
+    m.files = new Set(['file://documents/cleanup-drafts/alice/cleanup-1/legacy.jpg']);
+    for (const uri of ['file:///old/Documents/cleanup-drafts/bob/cleanup-1/legacy.jpg', 'file:///old/Documents/cleanup-drafts/alice/cleanup-2/legacy.jpg', 'cleanup-drafts/alice/cleanup-1/../legacy.jpg']) {
+      m.storage.set('litterbugs.cleanup-draft.alice.cleanup-1', JSON.stringify({ ...draft, photos: [{ uri }] }));
+      expect((await loadCleanupDraft('alice', 'cleanup-1')).photos).toEqual([]);
+    }
+  });
   it('does not overwrite a previous good draft after an interrupted photo copy', async () => {
     await saveCleanupDraft('alice', 'cleanup-1', {
       ...draft,

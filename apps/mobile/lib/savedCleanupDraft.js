@@ -4,6 +4,20 @@ import * as Crypto from 'expo-crypto';
 import * as FileSystem from 'expo-file-system/legacy';
 const key = (userId, cleanupId) => `litterbugs.cleanup-draft.${userId}.${cleanupId}`;
 const directory = (userId, cleanupId) => `${FileSystem.documentDirectory}cleanup-drafts/${userId}/${cleanupId}/`;
+// iOS may relocate Documents when an app is updated; persist scoped relative paths.
+function draftPhotoUri(userId, cleanupId, uri) {
+  const prefix = `cleanup-drafts/${userId}/${cleanupId}/`;
+  const marker = `/${prefix}`;
+  const relative = uri.startsWith(prefix)
+    ? uri
+    : uri.startsWith('file:') && uri.includes(marker)
+      ? prefix + uri.slice(uri.lastIndexOf(marker) + marker.length)
+      : null;
+  if (relative && !relative.slice(prefix.length).includes('/') && !relative.includes('..')) {
+    return `${FileSystem.documentDirectory}${relative}`;
+  }
+  return uri;
+}
 let queue = Promise.resolve();
 export const waitForCleanupDraftWrites = () => queue.catch(() => {});
 const enqueue = work => { const result = queue.catch(() => {}).then(work); queue = result; return result; };
@@ -13,9 +27,10 @@ export function saveLocalCleanupDraft(userId, cleanupId, draft) {
     await FileSystem.makeDirectoryAsync(folder, { intermediates: true });
     const photos = [];
     for (const photo of draft.photos) {
-      const uri = photo.uri.startsWith(folder) ? photo.uri : `${folder}${await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, photo.uri)}.jpg`;
-      if (!(await FileSystem.getInfoAsync(uri)).exists) await FileSystem.copyAsync({ from: photo.uri, to: uri });
-      photos.push({ ...photo, uri });
+      const source = draftPhotoUri(userId, cleanupId, photo.uri);
+      const uri = source.startsWith(folder) ? source : `${folder}${await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, source)}.jpg`;
+      if (!(await FileSystem.getInfoAsync(uri)).exists) await FileSystem.copyAsync({ from: source, to: uri });
+      photos.push({ ...photo, uri: uri.slice(FileSystem.documentDirectory.length) });
     }
     await AsyncStorage.setItem(key(userId, cleanupId), JSON.stringify({ ...draft, photos, savedAt: Date.now() }));
   });
@@ -27,7 +42,11 @@ export function loadLocalCleanupDraft(userId, cleanupId) {
     const draft = JSON.parse(raw);
     if (!Array.isArray(draft?.photos) || typeof draft.description !== 'string') return null;
     const photos = [];
-    for (const photo of draft.photos) if (typeof photo?.uri === 'string' && (await FileSystem.getInfoAsync(photo.uri)).exists) photos.push(photo);
+    for (const photo of draft.photos) {
+      if (typeof photo?.uri !== 'string') continue;
+      const uri = draftPhotoUri(userId, cleanupId, photo.uri);
+      if ((await FileSystem.getInfoAsync(uri)).exists) photos.push({ ...photo, uri });
+    }
     return { ...draft, photos, missingPhotoCount: draft.photos.length - photos.length };
   });
 }
