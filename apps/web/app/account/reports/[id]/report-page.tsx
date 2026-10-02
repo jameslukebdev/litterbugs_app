@@ -17,7 +17,7 @@ export function AccountReport({ report, userId, back, task }: { report: Report; 
   const base = `/account/reports/${report.id}?from=${from}`;
   const closed = isReportClosed(report);
   return <main className="account-report-page">
-    <Link className="secondary-button" href={task ? base : back}>{task ? 'Back to report' : from === 'notifications' ? 'Back to notifications' : 'Back to my activity'}</Link>
+    <Link className="secondary-button" href={task ? base : back}>{task ? 'Back to report' : from === 'notifications' ? 'Back to notifications' : from === 'payments' ? 'Back to payments' : 'Back to my activity'}</Link>
     <h1>{task === 'cleanup' ? 'Cleanup workspace' : task === 'review' ? 'Review cleanup' : isDiscoverableReport(report) ? 'Your report activity' : 'Report history'}</h1>
     {!isDiscoverableReport(report) && <p>This report is no longer on the discovery map. Your activity and payment records remain in your account.</p>}
     {task ? <section className="account-task-workspace"><h2>{report.title || 'Litter report'}</h2>
