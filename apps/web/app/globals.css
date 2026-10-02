@@ -773,6 +773,7 @@ fieldset.cleanup-submission-fields { border: 0; padding: 0; margin: 0; min-width
 .account-page-layout { width: min(1120px, calc(100% - 40px)); margin: 32px auto 64px; display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 32px; align-items: start; }
 .account-page-nav { display: grid; gap: 6px; position: sticky; top: 24px; }
 .account-page-nav a { padding: 12px 14px; border-radius: 8px; color: #465148; text-decoration: none; }
+.account-page-nav a.primary-button { color: #fff; }
 .account-page-nav a[aria-current="page"] { background: #e9f3e9; color: #256329; font-weight: 700; }
 .embedded-panel.account-dialog { width: 100%; max-width: none; max-height: none; overflow: visible; padding: 24px; border: 1px solid #e2e6e2; border-radius: 16px; background: white; }
 .sign-in-page { width: min(520px, calc(100% - 32px)); margin: 40px auto; }

@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { EMPTY_REPORT_DRAFT } from '@litterbugs/report-contract';
 import { ResumeDrafts } from './resume-drafts';
-const mocks = vi.hoisted(() => ({ remote: vi.fn(), local: vi.fn() }));
-vi.mock('@/lib/use-data-refresh', () => ({ useDataRefresh: () => 0 }));
+const mocks = vi.hoisted(() => ({ remote: vi.fn(), local: vi.fn(), revision: 0 }));
+vi.mock('@/lib/use-data-refresh', () => ({ useDataRefresh: () => mocks.revision }));
 vi.mock('@/lib/saved-report-draft', () => ({ loadLocalReportDraft: mocks.local }));
 vi.mock('@/lib/saved-cleanup-draft', () => ({ loadLocalCleanupDraft: async () => undefined }));
 vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({ from: () => { const chain = { select: () => chain, eq: () => chain, in: () => chain, gt: mocks.remote }; return chain; } }) }));
@@ -28,4 +28,44 @@ it('shows the account copy alongside an older local summary', async () => {
   render(<ResumeDrafts userId="owner" attempts={attempts} />);
   expect(await screen.findByText('Newer account copy')).toBeTruthy();
   expect(screen.getByText('Older device copy')).toBeTruthy();
+});
+
+const accountDraft = () => ({ draft_key: 'report', state: 'editing', expires_at: '2099-01-01', updated_at: '2026-10-01T12:00:00Z', photo_paths: [], payload: { version: 1, kind: 'report', coordinates: { latitude: 2, longitude: 3 }, step: 1, fundingChoice: '', customAmount: '', draft: { ...EMPTY_REPORT_DRAFT, title: 'Phone draft' } } });
+it('retains account-only work on refresh failure, then removes it on a confirmed empty retry', async () => {
+  mocks.local.mockResolvedValue(undefined);
+  mocks.remote.mockResolvedValue({ data: [accountDraft()], error: null });
+  const view = render(<ResumeDrafts userId="owner" attempts={attempts} />);
+  await screen.findByText('Phone draft');
+  mocks.remote.mockResolvedValue({ data: null, error: new Error('offline') });
+  mocks.revision++;
+  view.rerender(<ResumeDrafts userId="owner" attempts={attempts} />);
+  await screen.findByText('Last known account copy — could not refresh.');
+  expect(screen.getByText('Phone draft')).toBeTruthy();
+  mocks.remote.mockResolvedValue({ data: [], error: null });
+  fireEvent.click(screen.getByRole('button', { name: 'Retry saved drafts' }));
+  await waitFor(() => expect(screen.queryByText('Phone draft')).toBeNull());
+});
+it('never retains another account’s draft when the next account fails to load', async () => {
+  mocks.local.mockResolvedValue(undefined);
+  mocks.remote.mockResolvedValue({ data: [accountDraft()], error: null });
+  const view = render(<ResumeDrafts userId="owner" attempts={attempts} />);
+  await screen.findByText('Phone draft');
+  mocks.remote.mockRejectedValue(new Error('offline'));
+  view.rerender(<ResumeDrafts userId="other" attempts={attempts} />);
+  expect(screen.queryByText('Phone draft')).toBeNull();
+  await screen.findByRole('button', { name: 'Retry saved drafts' });
+  expect(screen.queryByText('Phone draft')).toBeNull();
+});
+it('does not keep an expired account copy during an outage', async () => {
+  const draft = accountDraft();
+  draft.expires_at = new Date(Date.now() + 10000).toISOString();
+  mocks.local.mockResolvedValue(undefined);
+  mocks.remote.mockResolvedValue({ data: [draft], error: null });
+  const view = render(<ResumeDrafts userId="owner" attempts={attempts} />);
+  await screen.findByText('Phone draft');
+  const now = vi.spyOn(Date, 'now').mockReturnValue(Date.parse(draft.expires_at) + 1);
+  mocks.remote.mockRejectedValue(new Error('offline')); mocks.revision++;
+  view.rerender(<ResumeDrafts userId="owner" attempts={attempts} />);
+  await screen.findByRole('button', { name: 'Retry saved drafts' });
+  expect(screen.queryByText('Phone draft')).toBeNull(); now.mockRestore();
 });
