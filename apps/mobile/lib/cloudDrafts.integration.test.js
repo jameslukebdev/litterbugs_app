@@ -48,6 +48,24 @@ it.skipIf(!fixture.enabled)('restores browser photos, detects a newer account ed
     expect(restored.form.title).toBe('Newer browser edit');
     expect(await fixture.fs.readFile(restored.form.photos[0].replace(/^file:\/\//,''))).toEqual(bytes);
     expect(cloudDrafts.confirmation(owner,'report').expiresAt).toBe(kept.data.expires_at);
+    // A locally edited copy must exercise the RPC's revision guard, not only
+    // the unchanged-fingerprint preflight above. HTTP 409 / PT409 is deliberate:
+    // SQLSTATE 40001 makes older PostgREST servers retry instead of returning.
+    const otherEdit=await supabase.rpc('write_customer_draft',{target_user_id:owner,target_key:'report',expected_revision:kept.data.revision,operation_id:fixture.crypto.randomUUID(),action:'save',draft_payload:{...kept.data.payload,draft:{...kept.data.payload.draft,title:'Concurrent account edit'}},draft_photos:[path]});if(otherEdit.error)throw otherEdit.error;
+    const staleWrite=await supabase.rpc('write_customer_draft',{target_user_id:owner,target_key:'report',expected_revision:kept.data.revision,operation_id:fixture.crypto.randomUUID(),action:'save',draft_payload:kept.data.payload,draft_photos:[path]}).abortSignal(AbortSignal.timeout(3000));
+    expect(staleWrite.status).toBe(409);
+    expect(staleWrite.error).toMatchObject({code:'PT409',message:'draft_conflict'});
+    await saveReportDraft(owner,{...restored,form:{...restored.form,title:'Concurrent native edit'}});
+    await expect(cloudDrafts.save(owner,'report')).rejects.toThrow(/another device/i);
+    expect(cloudDrafts.status(owner,'report')).toBe('conflict');
+    expect(cloudDrafts.confirmation(owner,'report')).toBeUndefined();
+    const untouched=await supabase.from('customer_drafts').select('*').eq('user_id',owner).eq('draft_key','report').single();if(untouched.error)throw untouched.error;
+    expect(untouched.data.revision).toBe(otherEdit.data.revision);
+    expect(untouched.data.payload.draft.title).toBe('Concurrent account edit');
+    expect(untouched.data.photo_paths).toEqual([path]);
+    const resolved=await cloudDrafts.resolve(owner,'report','account');
+    expect(resolved.form.title).toBe('Concurrent account edit');
+    expect(await fixture.fs.readFile(resolved.form.photos[0].replace(/^file:\/\//,''))).toEqual(bytes);
     await clearReportDraft(owner);
     const deleted=await supabase.from('customer_drafts').select('state,payload').eq('user_id',owner).eq('draft_key','report').single();
     expect(deleted.data).toEqual({state:'deleted',payload:null});
