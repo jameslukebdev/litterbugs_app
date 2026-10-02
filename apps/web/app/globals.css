@@ -977,3 +977,10 @@ a.member-activity-row { color: inherit; text-decoration: none; }
 .cleanup-progress h2 { margin-top: 0; }
 .cleanup-progress .secondary-button { color: var(--ink); text-decoration: none; }
 .cleanup-progress ol { margin-left: 5px; }
+
+/* Recovery actions remain outside card links and over the photo, not the task editor. */
+.card-photo-retry { margin: 0.25rem 0.75rem 0.75rem; }
+.report-photo-recovery { position: absolute; z-index: 3; bottom: 2.5rem; left: 0.5rem; right: 0.5rem; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0.5rem; padding: 0.6rem; background: var(--surface, #fff); color: #243b2a; border-radius: 0.5rem; font-size: 0.85rem; }
+.report-context { display: block; color: #465148; font-size: 0.75rem; line-height: 1.45; overflow-wrap: anywhere; }
+.renewal-decision { scroll-margin-block: 6rem; }
+.renewal-decision:focus { outline: 3px solid #2f7d32; outline-offset: 3px; }

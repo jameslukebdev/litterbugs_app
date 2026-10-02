@@ -12,7 +12,7 @@ const destinations = [
   ['', 'Profile'], ['activity', 'My activity'],
   ['payments', 'Payments & payouts'], ['notifications', 'Notifications'], ['settings', 'Settings'],
 ] as const;
-export function AccountPage({ destination, userId, activityView = 'current', notificationView }: { destination: string; userId: string; activityView?: 'current' | 'history' | 'reports'; notificationView?: NotificationView }) {
+export function AccountPage({ destination, userId, activityView = 'current', notificationView, renewalId }: { destination: string; userId: string; activityView?: 'current' | 'history' | 'reports'; notificationView?: NotificationView; renewalId?: string }) {
   const router = useRouter();
   const [sessionMatches, setSessionMatches] = useState(true);
   useEffect(() => {
@@ -37,7 +37,7 @@ export function AccountPage({ destination, userId, activityView = 'current', not
       {destinations.map(([path, label]) => <Link key={path} href={`/account${path ? `/${path}` : ''}`} aria-current={selectedDestination === path ? 'page' : undefined}>{label}</Link>)}
       <Link className="primary-button" href="/report">Report litter</Link>
     </nav>
-    {destination === 'notifications' ? <NotificationInbox key={userId} userId={userId} view={notificationView} /> : <AccountDialog key={`${destination}:${activityView}`} embedded initialSection={section} initialActivityTab={destination === 'reports' ? 'reports' : activityView}
+    {destination === 'notifications' ? <NotificationInbox key={userId} userId={userId} view={notificationView} /> : <AccountDialog key={`${destination}:${activityView}`} embedded initialRenewalId={renewalId} initialSection={section} initialActivityTab={destination === 'reports' ? 'reports' : activityView}
       onClose={() => router.push('/')} onSignedOut={() => { router.replace('/sign-in'); router.refresh(); }}
       onOpenReport={id => router.push(`/account/reports/${encodeURIComponent(id)}?from=${destination === 'reports' ? 'reports' : activityView}`)}
       onResumeDraft={() => router.push('/report')}

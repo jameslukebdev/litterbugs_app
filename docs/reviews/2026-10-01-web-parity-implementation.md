@@ -43,7 +43,7 @@ Later October 1 follow-up: Search Console now reports **Success**, last read Oct
 
 ## Release/rollback notes
 
-The signed iOS 2.0.0/build 15 uses source `8370e5cf64346355c8cdd6d82a8e16120044f9b6`; subsequent changes affect only web, backend and documentation. Build `5a85bae2-0b95-4a8b-90b6-c30384fa5bfe` finished, and EAS submission `985b3f4e-6e87-4fda-82e6-9c66f096bf84` finished uploading it to Apple. Final Apple processing status is recorded in `docs/current-mobile-release-candidates.md`.
+The signed iOS 2.0.0/build 15 uses source `8370e5cf64346355c8cdd6d82a8e16120044f9b6`. Later work also changes native/shared code: draft synchronization rechecks account state before confirming an unchanged copy, and foreground notifications require a deliberate open/read action. These safeguards require a newer native binary; a website deployment does not update an already-installed app. Build `5a85bae2-0b95-4a8b-90b6-c30384fa5bfe` finished, and EAS submission `985b3f4e-6e87-4fda-82e6-9c66f096bf84` finished uploading it to Apple. Final Apple processing status is recorded in `docs/current-mobile-release-candidates.md`.
 
 Website rollback can promote the prior known deployment `litterbugs-ixa9210jx-grant-9890s-projects.vercel.app`. Keep additive draft/preference tables and cancellation guards when rolling back clients: removing these would destroy customer recovery data and permit abandoned submissions to resume. Preserve quote compatibility and production pricing v1. No destructive rollback is authorized by this record.
 

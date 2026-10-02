@@ -1,4 +1,5 @@
 'use client';
+import { reportContext } from '@/lib/report-context';
 
 import type { Database, Report } from '@litterbugs/report-contract';
 import Image from 'next/image';
@@ -48,7 +49,7 @@ type CleanupAttempt = Pick<
   | 'reward_amount_cents'
   | 'status'
 > & {
-  report: Pick<Report, 'id' | 'title' | 'severity' | 'cleanup_state'> | null;
+  report: Pick<Report, 'id' | 'title' | 'severity' | 'cleanup_state' | 'created_at' | 'litter_types' | 'types'> | null;
 };
 type ContributionRow = Database['public']['Tables']['cleanup_contributions']['Row'];
 type CompletedContribution = ContributionRow & {
@@ -115,6 +116,7 @@ export function AccountDialog({
   onResumeDraft,
   initialSection = 'profile',
   initialActivityTab = 'current',
+  initialRenewalId,
   embedded = false,
   onNavigateSection,
 }: {
@@ -126,6 +128,7 @@ export function AccountDialog({
   onResumeDraft?: () => void;
   initialSection?: 'profile' | 'activity' | 'payments' | 'settings';
   initialActivityTab?: 'current' | 'history' | 'reports';
+  initialRenewalId?: string;
   embedded?: boolean;
   onNavigateSection?: (section: 'profile' | 'activity' | 'payments' | 'settings') => void;
 }) {
@@ -162,6 +165,15 @@ export function AccountDialog({
   const [message, setMessage] = useState('');
   const [busyAction, setBusyAction] = useState('');
   const [dataLoading, setDataLoading] = useState(true);
+  const focusedRenewal = useRef('');
+  useEffect(() => {
+    if (!embedded || !initialRenewalId || dataLoading || section !== 'activity' || activityTab !== 'reports' || focusedRenewal.current === initialRenewalId) return;
+    const row = document.getElementById(`renewal-${initialRenewalId}`);
+    if (!row) return;
+    row.scrollIntoView({ block: 'center' });
+    row.focus({ preventScroll: true });
+    focusedRenewal.current = initialRenewalId;
+  }, [embedded, initialRenewalId, dataLoading, expiredReports, section, activityTab]);
 
   useEffect(() => {
     let cancelled = false;
@@ -192,7 +204,7 @@ export function AccountDialog({
       const [profileResult, reportsResult, expiredReportsResult, cleanupResult, contributionResult, blockedResult] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
         loadAccountReports(user.id),
-        supabase
+        loadAccountPages((start, end) => supabase
           .from('reports')
           .select('*')
           .eq('user_id', user.id)
@@ -200,11 +212,11 @@ export function AccountDialog({
           .eq('is_published', true)
           .eq('renewal_status', 'decision_required')
           .gt('renewal_decision_due_at', new Date().toISOString())
-          .order('renewal_decision_due_at', { ascending: true })
-          .limit(50),
+          .order('renewal_decision_due_at', { ascending: true }).order('id')
+          .range(start, end)),
         loadAccountPages((start, end) => supabase
           .from('cleanup_attempts')
-          .select('id, report_id, status, claim_expires_at, correction_due_at, completed_at, is_paid, reward_amount_cents, payout_status, approval_method, dispute_status, financial_review_status, first_paid_admin_status, report:reports(id,title,severity,cleanup_state,is_sample)')
+          .select('id, report_id, status, claim_expires_at, correction_due_at, completed_at, is_paid, reward_amount_cents, payout_status, approval_method, dispute_status, financial_review_status, first_paid_admin_status, report:reports(id,title,severity,cleanup_state,is_sample,created_at,litter_types,types)')
           .eq('cleaner_id', user.id)
           .in('status', ['claimed', 'changes_requested', 'completion_submitted', 'completed'])
           .order('last_activity_at', { ascending: false })
@@ -586,14 +598,15 @@ export function AccountDialog({
           {!embedded && (section === 'profile' || section === 'activity') && hasSavedDraft && <button className="secondary-button" onClick={() => { if (!embedded) onClose(); onResumeDraft?.(); }}>Resume saved report</button>}
           {section === 'payments' && <PayoutSetupAction />}
           <div className="member-dashboard-grid">
+            {initialRenewalId && section === 'activity' && activityTab === 'reports' && !dataLoading && !unavailable.some(name => ['Account', 'Renewals'].includes(name)) && !expiredReports.some(report => report.id === initialRenewalId) && <p role="status">This report no longer has a renewal decision due. Check its current status in My reports.</p>}
             {section === 'activity' && activityTab === 'reports' && expiredReports.length ? (
               <section className="member-panel">
                 <header><div><span className="eyebrow">ACTION NEEDED</span><h3>Renew or close reports</h3></div></header>
                 <div className="member-activity-list">
                   {expiredReports.map((report) => (
-                    <div key={report.id} className="member-activity-row member-completed-row">
+                    <div key={report.id} id={`renewal-${report.id}`} tabIndex={-1} className="member-activity-row member-completed-row renewal-decision">
                       <span>
-                        <strong>{report.title || 'Litter Report'}</strong>
+                        <strong>{report.title || 'Litter Report'}</strong><small className="report-context">{reportContext(report)}</small>
                         <small>
                           {formatUsd(report.funded_amount_cents)} reward · Decide by {new Date(report.renewal_decision_due_at ?? '').toLocaleDateString()}
                         </small>
@@ -625,7 +638,7 @@ export function AccountDialog({
               <div className="member-activity-list">
                 {reports.length ? reports.map((report) => (
                   <ActivityLink embedded={embedded} href={`/account/reports/${report.id}?from=${activityTab}`} key={report.id} className="member-activity-row" onClick={() => openReport(report.id)}>
-                    <span><strong>{report.title || 'Litter Report'}</strong><small>{accountReportStatus(report)} · {report.severity || 'Medium'} severity</small></span>
+                    <span><strong>{report.title || 'Litter Report'}</strong><small className="report-context">{reportContext(report)}</small><small>{accountReportStatus(report)} · {report.severity || 'Medium'} severity</small></span>
                     <Icon name="chevron-right" />
                   </ActivityLink>
                 )) : !unavailable.includes('Reports') && !unavailable.includes('Account') && <p className="member-empty">Your reports will appear here. <Link href="/report">Report litter</Link></p>}
@@ -638,7 +651,7 @@ export function AccountDialog({
                 {activeCleanups.map((attempt) => (
                   <ActivityLink embedded={embedded} href={`/account/reports/${attempt.report_id}?from=${activityTab}`} key={attempt.id} className="member-activity-row" onClick={() => openReport(attempt.report_id)}>
                     <span>
-                      <strong>{attempt.report?.title || 'Litter cleanup'}</strong>
+                      <strong>{attempt.report?.title || 'Litter cleanup'}</strong><small className="report-context">{reportContext(attempt.report)}</small>
                       <small>{cleanupStatus(attempt)}{attempt.is_paid ? ` · ${formatUsd(attempt.reward_amount_cents)}` : ''}</small>
                       {attempt.is_paid ? <small className="member-reward-status">{cleanupRewardStatus(attempt)}</small> : null}
                       {attempt.status === 'claimed' && attempt.claim_expires_at ? (
@@ -658,7 +671,7 @@ export function AccountDialog({
                 {completedCleanups.map((attempt) => (
                   <ActivityLink embedded={embedded} href={`/account/reports/${attempt.report_id}?from=${section === 'payments' ? 'payments' : activityTab}`} key={attempt.id} className="member-activity-row member-completed-row" onClick={() => openReport(attempt.report_id)}>
                     <span>
-                      <strong>{attempt.report?.title || 'Completed litter cleanup'}</strong>
+                      <strong>{attempt.report?.title || 'Completed litter cleanup'}</strong><small className="report-context">{reportContext(attempt.report)}</small>
                       <small>{attempt.completed_at ? new Date(attempt.completed_at).toLocaleDateString() : 'Date unavailable'} · {cleanupApprovalLabel(attempt.approval_method)}</small>
                       {attempt.is_paid ? <small className="member-reward-status">{formatUsd(attempt.reward_amount_cents)} · {cleanupRewardStatus(attempt)}</small> : null}
                     </span>

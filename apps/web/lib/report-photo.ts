@@ -28,3 +28,8 @@ export function getWebCompatibleReportPhotoUrl(
   if (options?.adminCaseId) params.set('caseId', options.adminCaseId);
   return `/api/report-photo?${params.toString()}`;
 }
+
+/** Retry our authenticated image endpoint without changing signed external URLs. */
+export function retryReportPhotoUrl(src: string, retry: number): string {
+  return retry && src.startsWith('/api/report-photo?') ? `${src}&retry=${retry}` : src;
+}

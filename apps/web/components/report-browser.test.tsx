@@ -241,3 +241,17 @@ it('restores expanded results when URL filters match device memory regardless of
   await waitFor(() => expect(document.querySelectorAll('.report-result')).toHaveLength(100));
   expect(screen.getByRole('button', { name: 'Show more reports (100 of 120)' })).toBeTruthy();
 });
+it('retries a failed thumbnail without opening the report and resets when its photo changes', async () => {
+ const onSelect=vi.fn();
+ const props={reports:[{...report,photo_paths:['user/report/one.jpg']}],open:true,onToggle:vi.fn(),onSelect};
+ const view=render(<ReportBrowser {...props}/>);
+ fireEvent.error(view.container.querySelector('.report-result-photo img')!);
+ fireEvent.click(screen.getByRole('button',{name:/Retry photo for/}));
+ expect(view.container.querySelector('.report-result-photo img')?.getAttribute('src')).toContain('retry=1');
+ expect(onSelect).not.toHaveBeenCalled();
+ expect(screen.queryByRole('button',{name:/Retry photo for/})).toBeNull();
+ fireEvent.error(view.container.querySelector('.report-result-photo img')!);
+ view.rerender(<ReportBrowser {...props} reports={[{...report,photo_paths:['user/report/replaced.jpg']}]}/>);
+ expect(view.container.querySelector('.report-result-photo img')?.getAttribute('src')).toContain('replaced.jpg');
+ expect(screen.queryByRole('button',{name:/Retry photo for/})).toBeNull();
+});

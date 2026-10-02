@@ -20,7 +20,7 @@ export function attentionItems(reports: Report[], renewals: Report[], attempts: 
     if (attempt.payout_status === 'failed') items.push({ id: `payout:${attempt.id}`, title, reason: 'Your reward could not be sent. Review the payout details.', action: 'Review payouts', href: '/account/connect' });
   }
   for (const report of reports) if (report.cleanup_state === 'completion_submitted' && !isReportClosed(report, now)) items.push({ id: `review:${report.id}`, title: report.title || 'Your report', reason: 'Cleanup evidence is ready for your review', action: 'Review cleanup', href: `/account/reports/${report.id}?from=reports&task=review` });
-  for (const report of renewals) if (report.renewal_status === 'decision_required' && Date.parse(report.renewal_decision_due_at ?? '') > now) items.push({ id: `renew:${report.id}`, title: report.title || 'Your report', reason: 'Decide whether to renew this report or close its cleanup fund', action: 'Review renewal', href: '/account/reports', due: report.renewal_decision_due_at });
+  for (const report of renewals) if (report.renewal_status === 'decision_required' && Date.parse(report.renewal_decision_due_at ?? '') > now) items.push({ id: `renew:${report.id}`, title: report.title || 'Your report', reason: 'Decide whether to renew this report or close its cleanup fund', action: 'Review renewal', href: `/account/reports?renewal=${encodeURIComponent(report.id)}`, due: report.renewal_decision_due_at });
   return items.sort((a, b) => (a.due ? Date.parse(a.due) : Infinity) - (b.due ? Date.parse(b.due) : Infinity));
 }
 export function NeedsAttention({ userId, reports, renewals, attempts, incomplete = false }: { incomplete?: boolean; userId: string; reports: Report[]; renewals: Report[]; attempts: Attempt[] }) {

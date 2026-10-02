@@ -561,3 +561,16 @@ it('does not show an upcoming expiry on a cancelled historical report', () => {
   expect(screen.getByText('Report closed')).toBeTruthy();
   expect(screen.queryByText(/^Expires /)).toBeNull();
 });
+it('explains a full-photo failure even with a loaded preview and retries in place', () => {
+ const onClose=vi.fn();
+ const view=render(<ReportDetail report={{...report,photo_paths:['user/report/one.jpg']}} isOwner={false} onClose={onClose} onEdit={vi.fn()} onDelete={vi.fn()}/>);
+ fireEvent.load(view.container.querySelector('.report-photo-preview')!);
+ fireEvent.error(screen.getByAltText('Report photo 1 of 1'));
+ expect(screen.getByText('Full-size photo unavailable. Preview shown.')).toBeTruthy();
+ fireEvent.click(screen.getByRole('button',{name:'Retry photo'}));
+ const retried=screen.getByAltText('Report photo 1 of 1');
+ expect(retried.getAttribute('src')).toContain('retry=1');
+ fireEvent.load(retried);
+ expect(screen.getByRole('button',{name:'View full photo'})).toBeTruthy();
+ expect(onClose).not.toHaveBeenCalled();
+});

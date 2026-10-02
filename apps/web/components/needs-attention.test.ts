@@ -18,3 +18,7 @@ it('explains an elapsed claim and only flags payout failure when the record says
   expect(items[1].href).toBe('/account/connect');
   expect(attentionItems([], [], [{ ...attempt, status: 'completed', payout_status: 'transferred' }])).toEqual([]);
 });
+it('links a renewal decision to the specific report instead of the general list', () => {
+ const items=attentionItems([], [{...report,renewal_status:'decision_required',renewal_decision_due_at:'2099-10-02'}], [], Date.parse('2026-10-01'));
+ expect(items[0].href).toBe('/account/reports?renewal=r');
+});
