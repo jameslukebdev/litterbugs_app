@@ -1,4 +1,5 @@
 'use client';
+import { reportContext } from '@/lib/report-context';
 
 import { moveDialogFocus } from '@/lib/dialog-focus';
 import Link from 'next/link';
@@ -20,7 +21,7 @@ import { PayoutSetupAction } from '@/components/payout-setup-action';
 import { ReportShareDialog } from '@/components/report-share-dialog';
 import { isPubliclyShareableReport } from '@/lib/public-report-share-model';
 import { reportShareCopy } from '@/lib/report-share-destinations';
-import { getReportCardPhotoUrl, getReportDetailPhotoUrl, getWebCompatibleReportPhotoUrl } from '@/lib/report-photo';
+import { retryReportPhotoUrl, getReportCardPhotoUrl, getReportDetailPhotoUrl, getWebCompatibleReportPhotoUrl } from '@/lib/report-photo';
 import { createClient } from '@/lib/supabase/client';
 
 const formatUsd = (cents: number) => new Intl.NumberFormat('en-US', {
@@ -87,6 +88,7 @@ export function ReportDetail({
   const [photoExpanded, setPhotoExpanded] = useState(false);
   const [photoZoomed, setPhotoZoomed] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [photoRetry, setPhotoRetry] = useState(0);
   const [signedPhoto, setSignedPhoto] = useState<{ path: string; src: string | null; failed: boolean }>({ path: '', src: null, failed: false });
   const [renderedPhoto, setRenderedPhoto] = useState<{ path: string; loaded: boolean; failed: boolean }>({ path: '', loaded: false, failed: false });
   const [renderedPreview, setRenderedPreview] = useState<{ path: string; loaded: boolean; failed: boolean }>({ path: '', loaded: false, failed: false });
@@ -104,7 +106,8 @@ export function ReportDetail({
   const currentSignedPhoto = signedPhoto.path === currentPhotoPath ? signedPhoto : null;
   const currentRenderedPhoto = renderedPhoto.path === currentPhotoPath ? renderedPhoto : null;
   const currentRenderedPreview = renderedPreview.path === currentPhotoPath ? renderedPreview : null;
-  const photoSrc = detailPhotoUrl ?? compatibilityUrl ?? currentSignedPhoto?.src ?? null;
+  const rawPhotoSrc = detailPhotoUrl ?? compatibilityUrl ?? currentSignedPhoto?.src ?? null;
+  const photoSrc = rawPhotoSrc ? retryReportPhotoUrl(rawPhotoSrc, photoRetry) : null;
   const photoLoaded = currentRenderedPhoto?.loaded ?? false;
   const photoFailed = currentRenderedPhoto?.failed || currentSignedPhoto?.failed || false;
   const previewLoaded = currentRenderedPreview?.loaded ?? false;
@@ -116,22 +119,19 @@ export function ReportDetail({
     async function loadPhotoSource() {
       if (!currentPhotoPath || detailPhotoUrl || compatibilityUrl) return;
 
-      const { data, error } = await createClient().storage
-        .from('report_photos')
-        .createSignedUrl(currentPhotoPath, 60 * 60);
-
-      if (!cancelled) {
-        setSignedPhoto({
-          path: currentPhotoPath,
-          src: data?.signedUrl ?? null,
-          failed: Boolean(error || !data?.signedUrl),
-        });
+      try {
+        const { data, error } = await createClient().storage
+          .from('report_photos')
+          .createSignedUrl(currentPhotoPath, 60 * 60);
+        if (!cancelled) setSignedPhoto({ path: currentPhotoPath, src: data?.signedUrl ?? null, failed: Boolean(error || !data?.signedUrl) });
+      } catch {
+        if (!cancelled) setSignedPhoto({ path: currentPhotoPath, src: null, failed: true });
       }
     }
 
     void loadPhotoSource();
     return () => { cancelled = true; };
-  }, [compatibilityUrl, currentPhotoPath, detailPhotoUrl]);
+  }, [compatibilityUrl, currentPhotoPath, detailPhotoUrl, photoRetry]);
 
   const [openedAt] = useState(() => Date.now());
   const closed = isReportClosed(report, openedAt);
@@ -267,7 +267,7 @@ export function ReportDetail({
         <div className="report-detail-layout">
               <header className="report-detail-header">
                 {report.cleanup_state === 'completed' && <><CompletedCleanup reportId={report.id} /><p className="eyebrow">Original litter report</p></>}
-                  <h2 id="report-detail-title">{report.title || 'Litter Report'}</h2>
+                  <h2 id="report-detail-title">{report.title || 'Litter Report'}</h2><p className="report-context">{reportContext(report)}</p>
                 <div className="report-summary-line">
                   <span className={`report-detail-severity report-detail-severity-${severity.toLowerCase()}`}><span />{severity}</span>
                   {report.created_at && <span>{formatDate(report.created_at)}</span>}
@@ -286,7 +286,7 @@ export function ReportDetail({
                   {previewPhotoUrl && !photoLoaded && !previewFailed && (
                     <img
                       className={`report-photo report-photo-preview${previewLoaded ? ' report-photo-preview-loaded' : ''}`}
-                      src={previewPhotoUrl}
+                      src={retryReportPhotoUrl(previewPhotoUrl, photoRetry)}
                       alt=""
                       aria-hidden="true"
                       decoding="async"
@@ -297,6 +297,7 @@ export function ReportDetail({
                   {photoSrc && !photoFailed && (
                     <img
                       className={`report-photo${photoLoaded ? '' : ' report-photo-loading'}`}
+                      key={`${currentPhotoPath}:${photoRetry}`}
                       src={photoSrc}
                       alt={`Report photo ${displayedPhotoIndex + 1} of ${photoPaths.length}`}
                       decoding="async"
@@ -310,6 +311,15 @@ export function ReportDetail({
                       {photoFailed ? <><Icon name="image" /><strong>Photo unavailable</strong><span>This photo could not be displayed.</span></> : <><span className="spinner" /><span>Loading photo…</span></>}
                     </div>
                   )}
+                  {photoFailed && <div className="report-photo-recovery" role="status">
+                    <span>{previewLoaded ? 'Full-size photo unavailable. Preview shown.' : 'Photo could not load.'}</span>
+                    <button className="secondary-button compact-button" onClick={() => {
+                      setRenderedPhoto({ path: '', loaded: false, failed: false });
+                      setRenderedPreview({ path: '', loaded: false, failed: false });
+                      setSignedPhoto({ path: '', src: null, failed: false });
+                      setPhotoRetry(value => value + 1);
+                    }}>Retry photo</button>
+                  </div>}
                   {photoPaths.length > 1 && (
                     <>
                       <button className="photo-arrow photo-previous" onClick={() => setPhotoIndex((displayedPhotoIndex - 1 + photoPaths.length) % photoPaths.length)} aria-label="Previous photo"><Icon name="chevron-left" /></button>

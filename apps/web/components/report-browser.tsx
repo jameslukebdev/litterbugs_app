@@ -1,4 +1,5 @@
 'use client';
+import { reportContext } from '@/lib/report-context';
 
 /* eslint-disable @next/next/no-img-element -- Signed Supabase URLs are short-lived runtime images. */
 
@@ -15,7 +16,7 @@ import { createClient } from '@/lib/supabase/client';
 import { ReportAuthor, publicFields, type PublicProfile } from '@/components/report-author';
 import { ModalShell } from '@/components/modal-shell';
 import { Icon } from '@/components/icon';
-import { getReportCardPhotoUrl, getReportDetailPhotoUrl } from '@/lib/report-photo';
+import { getReportCardPhotoUrl, getReportDetailPhotoUrl, retryReportPhotoUrl } from '@/lib/report-photo';
 
 const formatUsd = (cents: number) => new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -111,7 +112,7 @@ function reportTiming(report: MappableReport) {
   return `${days} day${days === 1 ? '' : 's'} ago`;
 }
 
-function ReportThumbnail({ report, priority }: { report: MappableReport; priority: boolean }) {
+function ReportThumbnail({ report, priority, retry, onError }: { report: MappableReport; priority: boolean; retry: number; onError: () => void }) {
   const photoPath = report.photo_paths?.[0];
   const src = photoPath ? getReportCardPhotoUrl(photoPath) : null;
   const [failed, setFailed] = useState(false);
@@ -129,12 +130,12 @@ function ReportThumbnail({ report, priority }: { report: MappableReport; priorit
   return (
     <span className="report-result-photo">
       <img
-        src={src}
+        src={retryReportPhotoUrl(src, retry)}
         alt=""
         decoding="async"
         loading={priority ? 'eager' : 'lazy'}
         fetchPriority={priority ? 'high' : 'auto'}
-        onError={() => setFailed(true)}
+        onError={() => { setFailed(true); onError(); }}
       />
       <span className="report-result-workflow" data-tone={reportWorkflowTone(report)}>{workflowStatus(report)}</span>
       {(report.photo_paths?.length ?? 0) > 1 && (
@@ -201,6 +202,8 @@ export function ReportBrowser({
   favoriteReportIds?: ReadonlySet<string>;
   hiddenReportIds?: ReadonlySet<string>;
 }) {
+  const [photoFailures, setPhotoFailures] = useState<Record<string, string>>({});
+  const [photoRetries, setPhotoRetries] = useState<Record<string, number>>({});
   const [locationOrigin, setLocationOrigin] = useState<Coordinates | null>(null);
   const [locationMessage, setLocationMessage] = useState('');
   const [authors, setAuthors] = useState<Record<string, PublicProfile>>({});
@@ -385,17 +388,22 @@ export function ReportBrowser({
                 onBlur={() => onPreviewReport?.(null)}
                 aria-current={selected ? 'true' : undefined}
               >
-                <ReportThumbnail report={report} priority={index < 4} />
+                <ReportThumbnail key={`${report.photo_paths?.[0]}:${photoRetries[report.id] ?? 0}`} report={report} priority={index < 4} retry={photoRetries[report.id] ?? 0} onError={() => setPhotoFailures(current => ({ ...current, [report.id]: report.photo_paths?.[0] ?? '' }))} />
                 <span className="report-result-copy">
                   <strong>{report.title || 'Litter report'}</strong>
                   <span className={`report-result-reward${funded ? ' report-result-reward-funded' : ' report-result-reward-volunteer'}`}>{rewardLabel(report)}</span>
                   <span className="report-result-summary">{reportSummary(report)}</span>
+                  <span className="report-context">{reportContext(report, false)}</span>
                   <span className="report-result-meta">
                     <span className={`report-result-severity severity-${severity}`}><i />{report.severity ?? 'Medium'}</span>
                     <span>{reportTiming(report)}</span>
                   </span>
                 </span>
               </a>
+              {report.photo_paths?.[0] && photoFailures[report.id] === report.photo_paths[0] && <button className="secondary-button compact-button card-photo-retry" aria-label={`Retry photo for ${report.title || 'report'}`} onClick={() => {
+                setPhotoFailures(current => ({ ...current, [report.id]: '' }));
+                setPhotoRetries(current => ({ ...current, [report.id]: (current[report.id] ?? 0) + 1 }));
+              }}>Retry photo</button>}
               {onFavoriteChange && <button className="card-favorite" aria-label={`${favoriteReportIds.has(report.id) ? 'Unfavorite' : 'Favorite'} ${report.title || 'report'}`} aria-pressed={favoriteReportIds.has(report.id)} onClick={() => onFavoriteChange(report.id, !favoriteReportIds.has(report.id))}><Icon name="heart" /></button>}
               {onHiddenChange && <details className="card-options"><summary aria-label={`Options for ${report.title || 'report'}`}>•••</summary><button onClick={() => onHiddenChange(report.id, !hiddenReportIds.has(report.id))}>{hiddenReportIds.has(report.id) ? 'Unhide report' : 'Hide report'}</button></details>}
               {report.user_id && authors[report.user_id] && <ReportAuthor key={report.user_id} profileId={report.user_id} initialProfile={authors[report.user_id]} sourceReportId={report.id} onBlocked={onMemberBlocked} />}

@@ -35,3 +35,20 @@ it('keeps the previous place when town boundary resolution fails',async()=>{
  fireEvent.click(await screen.findByRole('button',{name:/Boone, NC/}));
  await screen.findByText(/The area could not be loaded/);expect(onSelect).not.toHaveBeenCalled();expect(screen.getByText('Nairobi, Kenya')).toBeTruthy();
 });
+it('finds worldwide and address results in the default search without requiring a mode change', async () => {
+ api.search.mockResolvedValue([]);
+ const geocode=vi.fn().mockResolvedValue([place]);
+ render(<PlaceSearch selected={null} onSelect={vi.fn()} onClear={vi.fn()} geocode={geocode}/>);
+ fireEvent.change(screen.getByLabelText('City or address'),{target:{value:'Nairobi, Kenya'}});
+ fireEvent.click(screen.getByRole('button',{name:'Search'}));
+ expect(await screen.findByRole('button',{name:/Nairobi, Kenya/})).toBeTruthy();
+ expect(geocode).toHaveBeenCalledWith('Nairobi, Kenya');
+});
+it('preserves available results and explains a partial provider failure', async () => {
+ api.search.mockRejectedValue(new Error('Town service unavailable'));
+ render(<PlaceSearch selected={null} onSelect={vi.fn()} onClear={vi.fn()} geocode={vi.fn().mockResolvedValue([place])}/>);
+ fireEvent.change(screen.getByLabelText('City or address'),{target:{value:'Nairobi'}});
+ fireEvent.click(screen.getByRole('button',{name:'Search'}));
+ expect(await screen.findByRole('button',{name:/Nairobi, Kenya/})).toBeTruthy();
+ expect(screen.getByText(/Some locations could not load/)).toBeTruthy();
+});

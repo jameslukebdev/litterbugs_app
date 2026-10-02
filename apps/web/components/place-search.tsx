@@ -6,7 +6,7 @@ import type { SearchPlace } from '@/lib/place-geography';
 
 export function PlaceSearch({ selected, onSelect, onClear, geocode, disabled = false }: { selected: SearchPlace | null; onSelect: (place: SearchPlace) => void; onClear: () => void; geocode: (text: string) => Promise<SearchPlace[]>; disabled?: boolean }) {
   const inputId = useId();
-  const [addressMode, setAddressMode] = useState(false);
+  const [mode, setMode] = useState<'auto' | 'town' | 'address'>('auto');
   const [text, setText] = useState('');
   const [results, setResults] = useState<Array<TownResult | SearchPlace>>([]);
   const [busy, setBusy] = useState(false);
@@ -15,21 +15,27 @@ export function PlaceSearch({ selected, onSelect, onClear, geocode, disabled = f
   const sequence = useRef(0);
   useEffect(() => () => { sequence.current++; request.current?.abort(); }, []);
   function invalidate() { sequence.current++; request.current?.abort(); setBusy(false); }
-  async function search(address: boolean) {
+  async function search() {
     if (!text.trim()) return;
     invalidate();const seq = sequence.current;const controller = new AbortController();request.current = controller;
     const timer = window.setTimeout(() => controller.abort(), 15000);
     setBusy(true);setMessage('');setResults([]);
     try {
-      const found = await Promise.race([
-        address ? geocode(text.trim()) : searchPlaces(text.trim(), { signal: controller.signal }),
+      const providers = mode === 'town' ? [searchPlaces(text.trim(), { signal: controller.signal })]
+        : mode === 'address' ? [geocode(text.trim())]
+        : [searchPlaces(text.trim(), { signal: controller.signal }), geocode(text.trim())];
+      const responses = await Promise.race([
+        Promise.allSettled(providers),
         new Promise<never>((_, reject) => controller.signal.addEventListener('abort', () => reject(new Error('Search timed out')), { once: true })),
       ]);
       if (seq !== sequence.current) return;
+      const found = responses.flatMap<TownResult | SearchPlace>(result => result.status === 'fulfilled' ? result.value ?? [] : []);
+      const failed = responses.some(result => result.status === 'rejected');
       setResults(found);
-      if (!found.length) setMessage(address ? 'No location found. Try a city and country or a full address.' : 'No U.S. town found. Choose Address or worldwide in Search options.');
+      if (failed) setMessage(found.length ? 'Some locations could not load. You can choose a result or search again.' : 'Location search could not load. Please try again.');
+      else if (!found.length) setMessage(mode === 'town' ? 'No U.S. town found. Choose All locations in Search options.' : 'No location found. Try a city and country or a full address.');
     } catch {
-      if (seq === sequence.current) setMessage(address ? 'Address search could not load. Please try again.' : 'Town search could not load. Retry or choose Address or worldwide in Search options.');
+      if (seq === sequence.current) setMessage('Location search could not load. Please try again.');
     } finally { window.clearTimeout(timer); if (seq === sequence.current) setBusy(false); }
   }
   async function choose(place: TownResult | SearchPlace) {
@@ -44,10 +50,10 @@ export function PlaceSearch({ selected, onSelect, onClear, geocode, disabled = f
     finally { window.clearTimeout(timer); if (seq === sequence.current) setBusy(false); }
   }
   return <section className="place-search" aria-label="Find a city or address">
-    <form onSubmit={event => { event.preventDefault(); void search(addressMode); }}>
+    <form onSubmit={event => { event.preventDefault(); void search(); }}>
       <label htmlFor={inputId}>City or address</label>
       <div className="place-search-input-row"><input id={inputId} type="search" maxLength={120} placeholder="City, state or country" value={text} disabled={disabled} onChange={event => { invalidate(); setText(event.target.value); setResults([]); setMessage(''); }} /><button className="primary-button" disabled={disabled || busy || text.trim().length < 2}>Search</button></div>
-      <details className="place-search-options"><summary>Search options</summary><label>Search area<select value={addressMode ? 'address' : 'town'} onChange={event => { invalidate(); setAddressMode(event.target.value === 'address'); setResults([]); }}><option value="town">U.S. town boundary</option><option value="address">Address or worldwide</option></select></label></details>
+      <details className="place-search-options"><summary>Search options</summary><label>Search area<select value={mode} onChange={event => { invalidate(); setMode(event.target.value as typeof mode); setResults([]); setMessage(''); }}><option value="auto">All locations</option><option value="town">U.S. town boundary</option><option value="address">Address or worldwide</option></select></label></details>
     </form>
     {busy && <p role="status">Searching…</p>}
     {message && <p role="status">{message}</p>}

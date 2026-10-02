@@ -1,4 +1,5 @@
 'use client';
+import { reportContext } from '@/lib/report-context';
 import Link from 'next/link';
 import { IoNotificationsOutline } from 'react-icons/io5';
 import { useEffect, useRef, useState } from 'react';
@@ -7,7 +8,7 @@ import { notificationHref, notificationPresentation, type CleanupNotification } 
 import { notificationInboxHref, type NotificationView } from '@/lib/notification-view';
 import { notifyDataChanged, useDataRefresh } from '@/lib/use-data-refresh';
 
-type Notice = CleanupNotification & { report: { title: string | null } | null };
+type Notice = CleanupNotification & { report: ({ title: string | null } & import('@/lib/report-context').ReportContextFields) | null };
 const defaultView: NotificationView = { filter: 'all', page: 1 };
 export function NotificationInbox({ userId, view = defaultView }: { userId: string; view?: NotificationView }) {
   return <AccountNotificationInbox key={userId} userId={userId} view={view} />;
@@ -31,7 +32,7 @@ function AccountNotificationInbox({ userId, view }: { userId: string; view: Noti
     const sequence = ++request.current;
     if (mutation.current) return;
     void (async () => {
-      let query = createClient().from('cleanup_notifications').select('*, report:reports!cleanup_notifications_report_id_fkey(title)').eq('user_id', userId);
+      let query = createClient().from('cleanup_notifications').select('*, report:reports!cleanup_notifications_report_id_fkey(id,title,created_at,litter_types,types)').eq('user_id', userId);
       if (filter === 'unread') query = query.is('read_at', null);
       const { data, error } = await query.order('created_at', { ascending: false }).order('id').range((page - 1) * 50, page * 50);
       if (error) throw error;
@@ -81,7 +82,7 @@ function AccountNotificationInbox({ userId, view }: { userId: string; view: Noti
     <ul className="notification-list">{notices.map(notice => {
       const copy = notificationPresentation(notice);
       return <li key={notice.id} id={`notification-${notice.id}`} data-unread={!notice.read_at}>
-        <div>{!notice.read_at && <span className="notification-unread">Unread</span>}<Link href={notificationHref(notice, view)} onClick={() => { if (!notice.read_at) void markRead([notice.id]); }}><strong>{copy.title}</strong></Link><p className="notification-report">{notice.report?.title || 'Report details unavailable'}</p><p>{copy.message}</p><time dateTime={notice.created_at}>{new Date(notice.created_at).toLocaleString()}</time></div>
+        <div>{!notice.read_at && <span className="notification-unread">Unread</span>}<Link href={notificationHref(notice, view)} onClick={() => { if (!notice.read_at) void markRead([notice.id]); }}><strong>{copy.title}</strong></Link><p className="notification-report">{notice.report?.title || 'Report details unavailable'}</p>{notice.report && <p className="report-context">{reportContext(notice.report)}</p>}<p>{copy.message}</p><time dateTime={notice.created_at}>{new Date(notice.created_at).toLocaleString()}</time></div>
         {!notice.read_at && <button className="secondary-button compact-button" disabled={busy} onClick={() => void markRead([notice.id])}>Mark read</button>}
       </li>;
     })}</ul>

@@ -10,15 +10,23 @@ the map refreshes authoritative report data before showing the prompt.
 
 Validation: 470 native tests passed (one opt-in integration test skipped),
 168 native modules validated, and iOS/Android Hermes exports succeeded.
-Physical-device notification acceptance remains unverified.
+Physical-device notification acceptance remains unverified. A fresh October 1
+device inventory still reports the paired iPhone unavailable. A fresh Apple
+status check confirms build 15 is VALID / IN_BETA_TESTING; built candidates
+16 and 17 are not installed-release evidence.
 
 The earlier signed iOS 2.0.0/build 16 candidate completed in EAS job
 `66c6ed7a-a26a-43e6-9da8-bf9d19f41038`, source `1f9aaed`.
 Its bundle/version and code signature were verified. It contains the shared
 draft-confirmation safeguards but predates these notification changes.
 Build 16 has not been submitted to TestFlight; build 15 remains the available
-internal TestFlight reference. A candidate containing this follow-up must be
-built before distribution. No public store release is authorized by this record.
+internal TestFlight reference. The candidate containing this follow-up is iOS 2.0.0/build 17,
+source `77d4721f006f5dc7e1afc5a7b2874df12e961000`, EAS job
+`46240c2e-0953-47a3-8b48-6e4087e5d664`. It finished October 1 at
+10:08 p.m. EDT. The downloaded artifact identifies `com.litterbugs.app`,
+version 2.0.0/build 17, and passes strict code-signature verification.
+Build 17 has not been submitted to TestFlight; submission and Apple processing
+remain separate from this artifact verification. No public store release is authorized by this record.
 
 ## October 1 — customer web/app sync and map stability
 

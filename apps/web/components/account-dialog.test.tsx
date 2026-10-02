@@ -321,3 +321,14 @@ it('retains account work after a failed refresh, offers retry, and never declare
   await screen.findByText('Reports could not be refreshed.');
   expect(screen.queryByRole('link',{name:/Creek cleanup.*Closed/})).toBeNull();
 });
+it('focuses the requested renewal after its authorized data loads', async () => {
+ const scroll=vi.fn();
+ const original=HTMLElement.prototype.scrollIntoView;
+ HTMLElement.prototype.scrollIntoView=scroll;
+ try {
+   render(<AccountDialog embedded initialSection="activity" initialActivityTab="reports" initialRenewalId="expired-report-id" onClose={vi.fn()} onSignedOut={vi.fn()} onOpenReport={vi.fn()}/>);
+   await waitFor(()=>expect(document.activeElement?.id).toBe('renewal-expired-report-id'));
+   expect(scroll).toHaveBeenCalledWith({block:'center'});
+   expect(screen.getByRole('button',{name:'Renew 30 days'})).toBeTruthy();
+ } finally { HTMLElement.prototype.scrollIntoView=original; }
+});

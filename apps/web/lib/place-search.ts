@@ -8,6 +8,28 @@ function regionForGeometry(geometry: BoundaryGeometry | undefined) {
 }
 const BASE = 'https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Places_CouSub_ConCity_SubMCD/MapServer';
 const STATES = Object.fromEntries('01:AL 02:AK 04:AZ 05:AR 06:CA 08:CO 09:CT 10:DE 11:DC 12:FL 13:GA 15:HI 16:ID 17:IL 18:IN 19:IA 20:KS 21:KY 22:LA 23:ME 24:MD 25:MA 26:MI 27:MN 28:MS 29:MO 30:MT 31:NE 32:NV 33:NH 34:NJ 35:NM 36:NY 37:NC 38:ND 39:OH 40:OK 41:OR 42:PA 44:RI 45:SC 46:SD 47:TN 48:TX 49:UT 50:VT 51:VA 53:WA 54:WV 55:WI 56:WY 72:PR'.split(' ').map(v => v.split(':')));
+const STATE_NAMES = 'Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|District of Columbia|Florida|Georgia|Hawaii|Idaho|Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|Montana|Nebraska|Nevada|New Hampshire|New Jersey|New Mexico|New York|North Carolina|North Dakota|Ohio|Oklahoma|Oregon|Pennsylvania|Rhode Island|South Carolina|South Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|West Virginia|Wisconsin|Wyoming|Puerto Rico'.split('|');
+// Keep explicit FIPS order: integer-like object keys do not preserve the leading-zero sequence.
+const STATE_CODES = '01 02 04 05 06 08 09 10 11 12 13 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 44 45 46 47 48 49 50 51 53 54 55 56 72'.split(' ');
+const STATE_REGIONS = STATE_CODES.flatMap((id, index) => [
+  { name: STATES[id], id }, { name: STATE_NAMES[index].toUpperCase(), id },
+]).sort((a, b) => b.name.length - a.name.length);
+export function townSearchParts(text: string): { name: string; stateId?: string } | null {
+  const parts = text.trim().split(',').map(part => part.trim());
+  let name = parts[0];
+  let stateId: string | undefined;
+  if (parts.length > 1) {
+    const region = STATE_REGIONS.find(region => region.name === parts[1].toUpperCase());
+    // An unrecognized region must never silently broaden the search to all states.
+    if (!region || parts.slice(2).some(part => !/^(US|USA|United States|United States of America)$/i.test(part))) return null;
+    stateId = region.id;
+  } else {
+    const region = STATE_REGIONS.find(region => name.toUpperCase().endsWith(` ${region.name}`));
+    if (region) { name = name.slice(0, -region.name.length).trim(); stateId = region.id; }
+  }
+  if (name.length < 2 || /^\d/.test(name)) return null;
+  return { name, stateId };
+}
 async function query(layer: number, params: Record<string, string>, signal?: AbortSignal, base = BASE): Promise<CensusResponse> {
   const response = await fetch(`${base}/${layer}/query?${new URLSearchParams({ f: 'json', ...params })}`, { signal });
   if (!response.ok) throw new Error('Location search unavailable');
@@ -16,12 +38,10 @@ async function query(layer: number, params: Record<string, string>, signal?: Abo
   return body;
 }
 export async function searchPlaces(text: string, { signal }: { signal?: AbortSignal } = {}): Promise<TownResult[]> {
-  let [name, state] = text.trim().split(',').map(v => v.trim());
-  const suffix = name.match(/^(.*)\s+([A-Za-z]{2})$/);
-  if (!state && suffix && Object.values(STATES).includes(suffix[2].toUpperCase())) { name = suffix[1]; state = suffix[2]; }
-  if (name.length < 2) return [];
+  const parsed = townSearchParts(text);
+  if (!parsed) return [];
+  const { name, stateId } = parsed;
   const safeName = name.replace(/[%_]/g, '').replace(/'/g, "''").toUpperCase();
-  const stateId = Object.keys(STATES).find(key => STATES[key] === state?.toUpperCase());
   const where = `UPPER(BASENAME) LIKE '${safeName}%'${stateId ? ` AND STATE = '${stateId}'` : ''}`;
   const results = await Promise.all([4, 5].map(async layer => {
     const body = await query(layer, { where, outFields: 'GEOID,NAME,BASENAME,STATE,INTPTLAT,INTPTLON', returnGeometry: 'false', orderByFields: 'BASENAME,STATE', resultRecordCount: '20' }, signal);
