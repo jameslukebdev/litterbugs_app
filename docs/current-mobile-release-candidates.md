@@ -1,5 +1,42 @@
 # Current Mobile Release Candidates
 
+## October 2 — quiet draft saving release
+
+Routine draft-sync messages and the changing “Sync now” button are removed from
+the native report and cleanup forms. Autosaving continues; explicit conflict
+choices and recovery for an existing submission remain available. GitHub
+[PR #123](https://github.com/jameslukebdev/litterbugs_app/pull/123) is merged.
+Release source: `15f4d9c6a66ab9313ac2f7dd550620fd8756a465`.
+
+This candidate also includes the map viewport/clustering and cleanup-draft photo
+preservation fixes merged after build 17. Validation on the release source:
+483 mobile tests passed, 34 shared-contract tests passed, shared-contract type
+checking passed, and all 168 mobile source modules validated. One opt-in native
+integration test was skipped. Rendered component tests confirm normal autosave
+cycles produce no layout elements and account/device conflict choices still
+work. iOS and Android Hermes exports passed after a clean locked dependency
+installation. No new physical-device acceptance is claimed for this candidate.
+
+iOS 2.0.0/build 18 finished in EAS job
+`ef1c92ce-67bd-4e47-a0b5-ad30265220a3`, using the existing production identity
+`com.litterbugs.app` and Luke's existing signing credentials without credential
+changes. The downloaded IPA passed strict code-signature verification, identifies
+version 2.0.0/build 18, and uses the existing production push entitlement. Its
+bundled code omits routine draft-sync copy and retains conflict recovery copy.
+IPA SHA-256: `8de35770ab578cc2917e9b58ac395087924b51f7184186b1d0b3e4078331f94d`.
+EAS submission `94d3d063-c3ae-4643-9176-d6c57cb142e7` completed. Apple confirms
+**VALID / IN_BETA_TESTING**, uploaded October 2 at 6:04 p.m. EDT. Build 18 is
+available in the existing internal [TestFlight setup](https://appstoreconnect.apple.com/apps/6757313862/testflight/ios).
+No tester groups, external beta review, or public App Store release were changed.
+
+Coordination with the active “Align website with TestFlight app” chat was checked
+against website PR #124, merged as `25fa3dbf13d7717b994a6fa83844429f2c374bd2`.
+The complete mobile, shared-contract, patch and dependency trees match build 18's
+source exactly. That website release changes presentation only, including saved
+draft summaries; draft selection and sync behavior are unchanged. The native
+release used an isolated checkout so concurrent website edits were not bundled.
+Public App Store review/submission remains Luke's separate release step.
+
 ## October 2 — connected iPhone draft and map verification
 
 The USB-connected iPhone 6s (iOS 15.8.8) retained sign-in through in-place QA
