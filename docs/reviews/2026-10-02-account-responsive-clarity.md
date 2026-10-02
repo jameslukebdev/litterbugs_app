@@ -22,7 +22,7 @@ Refero research from the preceding audit informed category navigation, payment/p
 - Keyboard Enter expands saved-version details; payment Show more reveals older rows; contribution opens its receipt with pending guidance and a page heading.
 - Browser fixture has synthetic records only. No real payments, reports or account changes were submitted.
 
-Evidence images and layout JSON are in the task artifact directory `responsive-release-oct2`. Browser emulation is not physical Safari/Android or screen-reader coverage. Localhost guest preview did not complete; signed-out checks remain for the deployed build. Cloud build and deployment verification are recorded in the task release report after completion.
+Evidence images and layout JSON are in the task artifact directory `responsive-release-oct2`. Browser emulation is not physical Safari/Android or screen-reader coverage. Localhost guest preview did not complete; the deployed build subsequently passed signed-out map/header checks at 320 px and menu open/Escape behavior. PR #124 merged and its cloud build passed. Live profile, activity, payments and receipt were verified, including no header overlap or page overflow at ten widths (320–1474 px, including both sides of the 1100 px breakpoint), and no captured browser warnings/errors. The live activity tabs begin at y=238. A final singular contribution-count label correction passed the focused account suite, typecheck, lint and boundaries. Deployment identity is recorded in the task release report.
 
 ## Memory and workspace hygiene
 
