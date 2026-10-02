@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { renderToStaticMarkup } from 'react-dom/server';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import SharedReportPage from './page';
 import type { PublicReportShareModel } from '@/lib/public-report-share-model';
@@ -27,10 +27,22 @@ describe('public shared report funding copy', () => {
     loadReport.mockResolvedValue(report);
     const html = renderToStaticMarkup(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
     expect(html).toContain('href="litterbugs://reports/report-id"');
+    expect(loadReport).toHaveBeenCalledWith(report.id, 'linked');
   });
   it('retains volunteer wording when there is no reward', async () => {
     loadReport.mockResolvedValue({ ...report, rewardCents: 0 });
     render(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
     expect(screen.getByText(/available for volunteer cleanup/)).toBeTruthy();
+  });
+  it('keeps the before/after layout and removes unavailable photos without a broken-image panel', async () => {
+    loadReport.mockResolvedValue({ ...report, state: 'completed', beforePhotoUrl: '/photo/before', afterPhotoUrl: '/photo/after' });
+    const { container } = render(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
+    expect(screen.getByAltText('Location after the cleanup').getAttribute('src')).toBe('/photo/after');
+    fireEvent.error(screen.getByAltText('Location after the cleanup'));
+    expect(screen.queryByAltText('Location after the cleanup')).toBeNull();
+    expect(container.querySelector('[class*="singlePhoto"]')).toBeTruthy();
+    fireEvent.error(screen.getByAltText('Location before the cleanup'));
+    expect(screen.queryByText('Before')).toBeNull();
+    expect(screen.getByRole('heading', { level: 1, name: report.title })).toBeTruthy();
   });
 });

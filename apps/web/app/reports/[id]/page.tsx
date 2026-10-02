@@ -7,6 +7,7 @@ import { notFound } from 'next/navigation';
 import { publicReportShareDescription } from '@/lib/public-report-share-model';
 import { loadPublicReportShare } from '@/lib/public-report-share';
 import { OpenReportAction } from './open-report-action';
+import { ReportPhotos } from './report-photos';
 
 import styles from './report-share.module.css';
 
@@ -27,7 +28,7 @@ const formatDate = (value: string | null) => value
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const report = await loadPublicReportShare(id);
+  const report = await loadPublicReportShare(id, 'linked');
   if (!report) return { title: 'Report unavailable | Litterbugs' };
 
   const description = publicReportShareDescription(report);
@@ -56,7 +57,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function SharedReportPage({ params }: Props) {
   const { id } = await params;
-  const report = await loadPublicReportShare(id);
+  const report = await loadPublicReportShare(id, 'linked');
   if (!report) notFound();
 
   const completed = report.state === 'completed';
@@ -102,22 +103,12 @@ export default async function SharedReportPage({ params }: Props) {
             </div>
           </section>
 
-          {(report.beforePhotoUrl || report.afterPhotoUrl) ? (
-            <div className={`${styles.photos} ${report.beforePhotoUrl && report.afterPhotoUrl ? '' : styles.singlePhoto}`}>
-              {report.afterPhotoUrl ? (
-                <div className={styles.photo}>
-                  <img src={report.afterPhotoUrl} alt="Location after the cleanup" />
-                  <span className={styles.photoLabel}>After</span>
-                </div>
-              ) : null}
-              {report.beforePhotoUrl ? (
-                <div className={styles.photo}>
-                  <img src={report.beforePhotoUrl} alt={completed ? 'Location before the cleanup' : 'Reported litter'} />
-                  <span className={styles.photoLabel}>{completed ? 'Before' : 'Report photo'}</span>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
+          <ReportPhotos
+            key={report.id}
+            beforePhotoUrl={report.beforePhotoUrl}
+            afterPhotoUrl={report.afterPhotoUrl}
+            completed={completed}
+          />
 
           <div className={styles.content}>
             <div className={styles.reportCopy}>

@@ -18,7 +18,7 @@ type PhotoStorageClient = {
   };
 };
 
-export async function embedSocialCardPhoto(
+export async function loadSocialCardPhoto(
   supabase: PhotoStorageClient,
   bucket: 'report_photos' | 'cleanup_photos',
   path: string | null | undefined,
@@ -48,8 +48,17 @@ export async function embedSocialCardPhoto(
       .jpeg({ quality: 82, mozjpeg: true })
       .toBuffer();
 
-    return `data:image/jpeg;base64,${cardImage.toString('base64')}`;
+    return cardImage;
   } catch {
     return null;
   }
+}
+
+export async function embedSocialCardPhoto(
+  supabase: PhotoStorageClient,
+  bucket: 'report_photos' | 'cleanup_photos',
+  path: string | null | undefined,
+) {
+  const image = await loadSocialCardPhoto(supabase, bucket, path);
+  return image ? `data:image/jpeg;base64,${image.toString('base64')}` : null;
 }

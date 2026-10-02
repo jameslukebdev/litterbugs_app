@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 
 import type { Database, Report } from '@litterbugs/report-contract';
 
@@ -8,7 +9,7 @@ import {
   type PublicReportShareModel,
 } from '@/lib/public-report-share-model';
 import { createPublicClient } from '@/lib/supabase/public';
-import { embedSocialCardPhoto } from '@/lib/social-card-photo';
+import { embedSocialCardPhoto, loadSocialCardPhoto } from '@/lib/social-card-photo';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type CleanupAttempt = Database['public']['Tables']['cleanup_attempts']['Row'];
@@ -35,8 +36,12 @@ function litterTypes(report: Report) {
   ];
 }
 
-export async function loadPublicReportShare(reportId: string): Promise<PublicReportShareModel | null> {
-  if (!reportId) return null;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+// Request-scoped only: metadata and the page can share reads, while a later
+// photo request always rechecks current publication and visibility through RLS.
+const loadPublicReportData = cache(async (reportId: string) => {
+  if (!UUID_PATTERN.test(reportId)) return null;
 
   const supabase = createPublicClient();
   const { data: reportData, error: reportError } = await supabase
@@ -44,7 +49,7 @@ export async function loadPublicReportShare(reportId: string): Promise<PublicRep
     .select('*')
     .eq('id', reportId)
     .eq('is_sample', false)
-          .eq('is_published', true)
+    .eq('is_published', true)
     .maybeSingle();
 
   if (reportError) throw reportError;
@@ -98,12 +103,7 @@ export async function loadPublicReportShare(reportId: string): Promise<PublicRep
     }
   }
 
-  const [beforePhotoUrl, afterPhotoUrl] = await Promise.all([
-    embedSocialCardPhoto(supabase, 'report_photos', report.photo_paths?.[0]),
-    embedSocialCardPhoto(supabase, 'cleanup_photos', afterPhoto?.storage_path),
-  ]);
-
-  return {
+  const model: PublicReportShareModel = {
     id: report.id,
     state: report.cleanup_state === 'completed' ? 'completed' : report.cleanup_state === 'available' ? 'available' : 'in_progress',
     rewardCents: report.cleanup_state === 'available' && report.funding_eligibility === 'eligible' ? Math.max(0, report.funded_amount_cents || 0) : 0,
@@ -118,8 +118,49 @@ export async function loadPublicReportShare(reportId: string): Promise<PublicRep
     cleanupDescription: submission?.description ?? null,
     bagsOrItemsRemoved: submission?.bags_or_items_removed ?? null,
     weightPounds: submission?.weight_pounds ?? null,
-    beforePhotoUrl,
-    afterPhotoUrl,
+    beforePhotoUrl: null,
+    afterPhotoUrl: null,
     canonicalUrl: `${getSiteUrl()}/reports/${encodeURIComponent(report.id)}`,
   };
+
+  return { model, beforePath: report.photo_paths?.[0], afterPath: afterPhoto?.storage_path };
+});
+
+export async function loadPublicReportShare(
+  reportId: string,
+  photos: 'embedded' | 'linked' = 'embedded',
+): Promise<PublicReportShareModel | null> {
+  const data = await loadPublicReportData(reportId);
+  if (!data) return null;
+
+  if (photos === 'linked') {
+    const photoBase = `/reports/${encodeURIComponent(data.model.id)}/photo`;
+    return {
+      ...data.model,
+      beforePhotoUrl: data.beforePath ? `${photoBase}/before` : null,
+      afterPhotoUrl: data.afterPath ? `${photoBase}/after` : null,
+    };
+  }
+
+  const supabase = createPublicClient();
+  const [beforePhotoUrl, afterPhotoUrl] = await Promise.all([
+    embedSocialCardPhoto(supabase, 'report_photos', data.beforePath),
+    embedSocialCardPhoto(supabase, 'cleanup_photos', data.afterPath),
+  ]);
+  return { ...data.model, beforePhotoUrl, afterPhotoUrl };
+}
+
+export async function loadPublicReportPhoto(reportId: string, kind: 'before' | 'after') {
+  const data = await loadPublicReportData(reportId);
+  if (!data) return null;
+
+  // Only the first public report photo or the completed attempt's final evidence
+  // is addressable. Callers cannot supply a Storage bucket, path or submission.
+  const path = kind === 'before' ? data.beforePath : data.afterPath;
+  if (!path) return null;
+  return loadSocialCardPhoto(
+    createPublicClient(),
+    kind === 'before' ? 'report_photos' : 'cleanup_photos',
+    path,
+  );
 }
