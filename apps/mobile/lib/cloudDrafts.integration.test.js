@@ -22,7 +22,7 @@ vi.mock('./supabase',async()=>{
 import {cloudDrafts} from './cloudDrafts';
 import {saveReportDraft,clearReportDraft} from './savedReportDraft';
 import {supabase} from './supabase';
-it.skipIf(!fixture.enabled)('restores a browser-format photo draft into native storage, syncs an edit, and discards the account draft',async()=>{
+it.skipIf(!fixture.enabled)('restores browser photos, detects a newer account edit, resolves it, and discards the draft',async()=>{
   const owner=fixture.config.users[1].id;
   try {
     const before=await supabase.from('customer_drafts').select('revision').eq('user_id',owner).eq('draft_key','report').maybeSingle();if(before.error)throw before.error;
@@ -35,6 +35,19 @@ it.skipIf(!fixture.enabled)('restores a browser-format photo draft into native s
     await saveReportDraft(owner,{...native,form:{...native.form,title:'Edited on native client'}});await cloudDrafts.save(owner,'report');
     const updated=await supabase.from('customer_drafts').select('*').eq('user_id',owner).eq('draft_key','report').single();if(updated.error)throw updated.error;
     expect(updated.data.payload.draft.title).toBe('Edited on native client');expect(updated.data.photo_paths).toEqual([path]);
+    // The installed/native adapter must not certify its unchanged local copy
+    // after another device has changed the account record.
+    const browserEdit=await supabase.rpc('write_customer_draft',{target_user_id:owner,target_key:'report',expected_revision:updated.data.revision,operation_id:fixture.crypto.randomUUID(),action:'save',draft_payload:{...updated.data.payload,draft:{...updated.data.payload.draft,title:'Newer browser edit'}},draft_photos:[path]});if(browserEdit.error)throw browserEdit.error;
+    await expect(cloudDrafts.save(owner,'report')).rejects.toThrow(/another device/i);
+    expect(cloudDrafts.status(owner,'report')).toBe('conflict');
+    expect(cloudDrafts.confirmation(owner,'report')).toBeUndefined();
+    const kept=await supabase.from('customer_drafts').select('*').eq('user_id',owner).eq('draft_key','report').single();if(kept.error)throw kept.error;
+    expect(kept.data.payload.draft.title).toBe('Newer browser edit');
+    expect(kept.data.revision).toBe(browserEdit.data.revision);
+    const restored=await cloudDrafts.resolve(owner,'report','account');
+    expect(restored.form.title).toBe('Newer browser edit');
+    expect(await fixture.fs.readFile(restored.form.photos[0].replace(/^file:\/\//,''))).toEqual(bytes);
+    expect(cloudDrafts.confirmation(owner,'report').expiresAt).toBe(kept.data.expires_at);
     await clearReportDraft(owner);
     const deleted=await supabase.from('customer_drafts').select('state,payload').eq('user_id',owner).eq('draft_key','report').single();
     expect(deleted.data).toEqual({state:'deleted',payload:null});

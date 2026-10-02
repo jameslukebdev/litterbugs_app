@@ -8,11 +8,23 @@
 - EAS build: `5a85bae2-0b95-4a8b-90b6-c30384fa5bfe` (finished).
 - EAS submission: `985b3f4e-6e87-4fda-82e6-9c66f096bf84` (finished).
 - [TestFlight](https://appstoreconnect.apple.com/apps/6757313862/testflight/ios).
-- The compatible website and three additive backend migrations are live. Subsequent source changes affect web/backend/docs only. Production pricing remains version 1.
+- The compatible website and three additive backend migrations are live. Build 15 uses the shared version-1 draft format. The later shared draft-sync safeguards in PR106 are **not included in build 15**: unchanged local drafts now recheck the account record before confirming sync, and confirmation records retain actual expiry. A future native build is required to distribute those safeguards. Production pricing remains version 1.
 - Native unit tests, both native Hermes exports and isolated native draft-adapter integration passed. This pass did not perform a physical-device walkthrough of build 15 or a new live financial transaction. Android source/export is updated; no new Android store binary or Play submission was requested in this TestFlight-focused pass.
 - No external beta review or public App Store release was submitted. Existing Apple-revocation/separate-Facebook limitations remain excluded, not passed.
 
 See [release evidence and indexing status](reviews/2026-10-01-web-parity-implementation.md).
+
+October 1 compatibility follow-up: the current native source passes 465 tests
+(one integration test intentionally excluded from the default run), all 31
+shared-contract tests, and validation of 167 native modules. The explicitly
+enabled loopback integration test separately passed using the real native draft
+adapter and PostgreSQL RLS: restore browser-format photo bytes, sync a native
+edit, detect a newer browser edit despite unchanged local contents, preserve the
+account revision, explicitly restore the account version and its photo bytes,
+then discard. Auth/Storage transport and Expo filesystem/crypto are fixture
+adapters, so this is not a physical TestFlight acceptance claim. The paired
+physical iPhone was unavailable. No new native build or submission was made in
+this verification follow-up; build 15 remains the installed-release reference.
 
 ## September 30 — single-amount service fee release
 
