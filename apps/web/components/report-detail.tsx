@@ -1,4 +1,6 @@
 'use client';
+
+import { moveDialogFocus } from '@/lib/dialog-focus';
 import Link from 'next/link';
 
 /* eslint-disable @next/next/no-img-element -- Signed Supabase URLs are short-lived runtime images. */
@@ -167,21 +169,7 @@ export function ReportDetail({
         return;
       }
 
-      if (event.key !== 'Tab' || !dialogRef.current) return;
-      const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), summary',
-      )).filter(element => element.getClientRects().length > 0);
-      if (!focusable.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
+      if (dialogRef.current) moveDialogFocus(dialogRef.current, event);
     }
 
     window.addEventListener('keydown', handleKeyDown);

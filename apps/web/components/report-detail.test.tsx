@@ -320,6 +320,7 @@ describe('ReportDetail photos', () => {
   });
 
   it('traps keyboard focus inside the share chooser without including the hidden download link', () => {
+    vi.spyOn(HTMLElement.prototype, 'getClientRects').mockReturnValue([{}] as unknown as DOMRectList);
     Object.defineProperty(navigator, 'share', { configurable: true, value: undefined });
     Object.defineProperty(window, 'matchMedia', {
       configurable: true,
@@ -341,6 +342,11 @@ describe('ReportDetail photos', () => {
     const close = screen.getByRole('button', { name: 'Close share options' });
     const last = screen.getByRole('link', { name: /^X/ });
 
+    expect(document.activeElement).toBe(shareDialog);
+    fireEvent.keyDown(shareDialog, { key: 'Tab' });
+    expect(document.activeElement).toBe(close);
+    fireEvent.keyDown(shareDialog, { key: 'Tab' });
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /Copy link/ }));
     close.focus();
     fireEvent.keyDown(shareDialog, { key: 'Tab', shiftKey: true });
     expect(document.activeElement).toBe(last);
