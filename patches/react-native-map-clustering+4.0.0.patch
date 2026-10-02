@@ -1,0 +1,22 @@
+diff --git a/node_modules/react-native-map-clustering/lib/ClusteredMapView.js b/node_modules/react-native-map-clustering/lib/ClusteredMapView.js
+index 8c7820c..7e930ad 100644
+--- a/node_modules/react-native-map-clustering/lib/ClusteredMapView.js
++++ b/node_modules/react-native-map-clustering/lib/ClusteredMapView.js
+@@ -132,6 +132,9 @@ const ClusteredMapView = forwardRef(
+     }, [isSpiderfier, markers]);
+ 
+     const _onRegionChangeComplete = (region, details) => {
++      // Keep the viewport current while close-zoom clustering is disabled.
++      // Re-enabling clustering must query the new viewport, not the last cluster view.
++      if (region) updateRegion(region);
+       if (superCluster && region) {
+         const bBox = calculateBBox(region);
+         const zoom = returnMapZoom(region, bBox, minZoom);
+@@ -148,7 +151,6 @@ const ClusteredMapView = forwardRef(
+         onMarkersChange(markers);
+         onRegionChangeComplete &&
+           onRegionChangeComplete(region, details, markers);
+-        updateRegion(region);
+       } else {
+         onRegionChangeComplete && onRegionChangeComplete(region, details);
+       }

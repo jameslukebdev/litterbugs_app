@@ -26,6 +26,15 @@ All 470 native tests passed again; the Release build and strict signature check
 passed. A short pan recording before this adjustment showed no full-map
 whiteout in its sampled frames, but does not certify all flashing scenarios.
 
+Follow-up: recentering from the closest zoom exposed stale clustering state:
+the dependency did not remember viewport changes while clustering was disabled.
+The dependency patch now retains those changes. Its regression failed before
+the patch and passed afterward; all 473 native tests passed. This additional
+patch is **not yet installed or physically verified**: its build was stopped
+when the owner's Mac showed elevated memory pressure. PR118 remains pending
+physical recenter verification before merge. The installed hash below identifies
+the radius-only candidate, not the new dependency patch.
+
 QA identity: `com.gegibson.litterbugs.qa`, locally signed with the existing QA
 setup. Installed candidate bundle SHA-256:
 `f4ab71458a4ee9b36ec9f83e1e798cc6257e9104abb0f3fc0b8d6d5b51ee4ef3`.
