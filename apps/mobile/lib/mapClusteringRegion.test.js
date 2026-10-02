@@ -26,6 +26,33 @@ function harness(superCluster = null) {
 }
 
 describe('clustering viewport transitions', () => {
+  it.each([false, true])('recalculates groups after a viewport change (controlled: %s)', (controlled) => {
+    const effectStart = source.indexOf('useEffect(() => {');
+    const effectSource = source.slice(source.indexOf('const clusteringRegion ='), source.indexOf('useEffect(() => {', effectStart + 1));
+    const query = vi.fn(() => []);
+    let previousDependencies;
+    const scope = {
+      propsChildren: [], clusteringEnabled: true,
+      currentRegion: { latitudeDelta: 0.02 }, restProps: {},
+      updateSpiderMarker: vi.fn(), updateMarkers: vi.fn(), updateChildren: vi.fn(),
+      setSuperCluster: vi.fn(), superClusterRef: {},
+      radius: 80, maxZoom: 14, minZoom: 1, minPoints: 2, extent: 512, nodeSize: 64,
+      calculateBBox: (region) => region, returnMapZoom: () => 10,
+      SuperCluster: class { load() {} getClusters(bounds) { return query(bounds); } },
+      useEffect: (callback, dependencies) => {
+        if (!previousDependencies || dependencies.some((value, index) => !Object.is(value, previousDependencies[index]))) callback();
+        previousDependencies = dependencies;
+      },
+    };
+    runInNewContext(`{ ${effectSource} }`, scope);
+    const town = { latitudeDelta: 0.3 };
+    if (controlled) scope.restProps.region = town;
+    else scope.currentRegion = town;
+    runInNewContext(`{ ${effectSource} }`, scope);
+    expect(query).toHaveBeenCalledTimes(2);
+    expect(query).toHaveBeenLastCalledWith(town);
+  });
+
   it('remembers town recentering while clustering is disabled at close zoom', () => {
     const { handler, updateRegion, onRegionChangeComplete } = harness();
     const town = { latitude: 36.2, longitude: -81.6, latitudeDelta: 0.3, longitudeDelta: 0.3 };

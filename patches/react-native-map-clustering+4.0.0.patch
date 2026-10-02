@@ -1,8 +1,37 @@
 diff --git a/node_modules/react-native-map-clustering/lib/ClusteredMapView.js b/node_modules/react-native-map-clustering/lib/ClusteredMapView.js
-index 8c7820c..7e930ad 100644
 --- a/node_modules/react-native-map-clustering/lib/ClusteredMapView.js
 +++ b/node_modules/react-native-map-clustering/lib/ClusteredMapView.js
-@@ -132,6 +132,9 @@ const ClusteredMapView = forwardRef(
+@@ -66,6 +66,9 @@
+       [children]
+     );
+ 
++    // Controlled camera moves can precede the native region-complete event.
++    const clusteringRegion = restProps.region || currentRegion;
++
+     useEffect(() => {
+       const rawData = [];
+       const otherChildren = [];
+@@ -97,8 +100,8 @@
+ 
+       superCluster.load(rawData);
+ 
+-      const bBox = calculateBBox(currentRegion);
+-      const zoom = returnMapZoom(currentRegion, bBox, minZoom);
++      const bBox = calculateBBox(clusteringRegion);
++      const zoom = returnMapZoom(clusteringRegion, bBox, minZoom);
+       const markers = superCluster.getClusters(bBox, zoom);
+ 
+       updateMarkers(markers);
+@@ -106,7 +109,7 @@
+       setSuperCluster(superCluster);
+ 
+       superClusterRef.current = superCluster;
+-    }, [propsChildren, clusteringEnabled]);
++    }, [propsChildren, clusteringEnabled, clusteringRegion]);
+ 
+     useEffect(() => {
+       if (!spiralEnabled) return;
+@@ -132,6 +135,9 @@
      }, [isSpiderfier, markers]);
  
      const _onRegionChangeComplete = (region, details) => {
@@ -12,7 +41,7 @@ index 8c7820c..7e930ad 100644
        if (superCluster && region) {
          const bBox = calculateBBox(region);
          const zoom = returnMapZoom(region, bBox, minZoom);
-@@ -148,7 +151,6 @@ const ClusteredMapView = forwardRef(
+@@ -148,7 +154,6 @@
          onMarkersChange(markers);
          onRegionChangeComplete &&
            onRegionChangeComplete(region, details, markers);
