@@ -224,6 +224,7 @@ export function MapExperience({
 
   function selectSearchPlace(place: SearchPlace) {
     mapPositionChosen.current = true;
+    searchPlaceRef.current = place;
     setAreaChosen(true);
     const url = new URL(window.location.href); url.searchParams.set('area', place.id);
     window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`);
@@ -357,7 +358,12 @@ export function MapExperience({
         const stored = readDiscoveryMemory();
         const sharedMap = readMapUrl(window.location.search);
         const areaId = new URLSearchParams(window.location.search).get('area');
-        const memory = sharedMap ? { ...sharedMap, place: stored?.place?.id === areaId ? stored.place : null } : stored;
+        // Search is usable before Google Maps finishes loading. A choice made
+        // in this session must outrank the previous URL or saved viewport.
+        const selectedWhileLoading = searchPlaceRef.current;
+        const memory = selectedWhileLoading
+          ? { latitude: selectedWhileLoading.latitude, longitude: selectedWhileLoading.longitude, zoom: 12, place: selectedWhileLoading }
+          : sharedMap ? { ...sharedMap, place: stored?.place?.id === areaId ? stored.place : null } : stored;
         if (areaId) mapPositionChosen.current = true;
         if (memory) { setAreaChosen(Boolean(memory.place) || Math.abs(memory.latitude - FALLBACK_MAP_CENTER.latitude) > 0.001 || Math.abs(memory.longitude - FALLBACK_MAP_CENTER.longitude) > 0.001); mapPositionChosen.current = true; searchPlaceRef.current = memory.place; setSearchPlace(memory.place); }
         const map = new Map(mapElementRef.current, {
@@ -388,6 +394,7 @@ export function MapExperience({
         });
         clustersRef.current = createReportClusters(map, AdvancedMarkerElement, ids => { setMapPreviewId(null); setClusterIds(ids); });
         mapRef.current = map;
+        if (selectedWhileLoading) map.fitBounds(selectedWhileLoading.bounds, 60);
         setMapReady(true);
         if (areaId && memory?.place?.id !== areaId) {
           const restore = /^[45]:\d{5,12}$/.test(areaId)
