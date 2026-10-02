@@ -89,7 +89,6 @@ import {
   userLocationRegion,
 } from './lib/responsiveLocation';
 import { mapCenterCoordinate } from './lib/reportLocationPlacement';
-import { shouldClusterReports } from './lib/mapClustering';
 import { formatMapFundingLabel } from './lib/mapFundingMarker';
 import {
   clusterStatusCounts,
@@ -276,7 +275,6 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
 
   const insets = useSafeAreaInsets();
   const { width: screenWidth, fontScale } = useWindowDimensions();
-  const reportClusteringEnabled = shouldClusterReports(region);
   const previewReport = markers.find((marker) => marker.id === previewId)?.report;
   const [previewControlsHidden, setPreviewControlsHidden] = useState(Boolean(previewReport));
   useEffect(() => {
@@ -1410,7 +1408,7 @@ const refreshReportMarkerSnapshots = useCallback(() => {
 
 useEffect(() => {
   refreshReportMarkerSnapshots();
-}, [refreshReportMarkerSnapshots, reportClusteringEnabled]);
+}, [refreshReportMarkerSnapshots]);
 
 useEffect(() => () => {
   if (reportMarkerTrackingTimerRef.current) {
@@ -2250,9 +2248,12 @@ const revealBottomReportField = () => {
             }
           }}
           maxZoom={14}
-          radius={20}
+          // Match the 60-point pins and 96-point cluster status controls.
+          radius={80}
           animationEnabled={false}
-          clusteringEnabled={reportClusteringEnabled}
+          // Keep native marker children in one tree; maxZoom reveals individual pins.
+          clusteringEnabled={true}
+          spiralEnabled={false}
           superClusterRef={reportClusterRef}
           renderCluster={({ id, geometry, properties, onPress }) => {
             const statusCounts = getClusterStatusCounts(id);

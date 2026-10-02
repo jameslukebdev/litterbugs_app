@@ -2,31 +2,41 @@
 
 ## October 2 — connected iPhone draft and map verification
 
-The USB-connected iPhone 6s (iOS 15.8.8) is now usable. An in-place QA update
-preserved sign-in. Private synthetic report/photo handoff passed web → phone →
-web → phone, including cold relaunch. Concurrent edits exposed a server retry
-loop; the production PT409 migration now shows conflict choices promptly, and
-choosing the account draft restored its title and photo on the physical phone.
+The USB-connected iPhone 6s (iOS 15.8.8) retained sign-in through in-place QA
+updates. Private synthetic report/photo handoff passed web → phone → web →
+phone, including cold relaunch. The production PT409 correction now exposes
+concurrent-edit conflict choices promptly; choosing the account draft restored
+its title and photo on the phone.
 
-A subsequent QA candidate removes the extra native draft pin that reproduced
-disappearing discovery pins after Resume draft → Close → Save for later. It
-also clears transient coordinates after saving and changes the close prompt to
-“Keep your report?” with accurate save/discard guidance. The corrected candidate
-passed this sequence at town and closer cluster zooms, with report selection
-still working. Location selection retains its existing center target and review
-coordinates. All 470 native tests passed; the separate real-PostgREST draft
-integration test passed for the conflict fix.
+The native map fixes preserve discovery pins after Resume draft → Close → Save
+for later and use accurate “Keep your report?” guidance. Nearby reports now
+cluster at a distance appropriate for the existing marker artwork. The map
+keeps clustering enabled, uses maxZoom to reveal individual pins, and disables
+unused spiral rendering. The clustering dependency now queries the controlled
+viewport when it changes, including programmatic recentering that does not emit
+a fresh native region-complete event on the tested phone.
 
-QA identity: `com.gegibson.litterbugs.qa`, locally signed with the existing QA
-setup. Installed candidate bundle SHA-256:
-`2d80e0b5cbdea6afb6fef08a8b632e05c42044ebd68da19a58fbd5188384fa39`.
-This candidate's map/prompt changes are **not in TestFlight build 17** and have
-not been submitted. Build 17 remains the latest internal TestFlight release.
-The shared server conflict correction is already live for existing clients.
+Physical verification passed: four-report Boone group → smaller group →
+individual reports → Re-center → restored four-report group. Reopening the
+synced private photo draft and saving it preserved that group. All 475 native
+tests passed (one opt-in integration test skipped); 168 native modules validated.
+The real-PostgREST conflict integration separately passed earlier in this pass.
 
-These checks do not certify general map animation smoothness, production push
-delivery, native camera/HEIC capture, or physical cleanup-draft handoff. No
-public report, cleanup claim, payment, or personal photo upload occurred.
+QA identity: `com.gegibson.litterbugs.qa`, using the existing development signing
+setup. To limit Mac memory use, the final candidate reuses the compiled QA
+native binary and replaces its JavaScript/assets through Expo export and Hermes,
+then re-signs and passes strict signature verification. The final one-worker
+bundle peaked at 507.5 MB RSS with normal system memory pressure throughout.
+Installed candidate: `/tmp/litterbugs-oct2-clustering-qa/Litterbugs.app`.
+JavaScript SHA-256:
+`7868405f1feb6f2c106e9a4a488e7ad8d0329bed2ed65f193694b0eeaed473fe`.
+
+These native changes are **not in TestFlight build 17** and have not been
+submitted. Build 17 remains the latest internal TestFlight release. The shared
+server conflict correction and website startup-search correction are live.
+These checks do not certify every map flashing scenario, production push,
+native camera/HEIC capture, or physical cleanup-draft handoff. No public report,
+cleanup claim, payment, or personal photo upload occurred.
 
 ## October 1 — notification read behavior follow-up
 
