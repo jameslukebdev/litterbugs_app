@@ -2250,7 +2250,8 @@ const revealBottomReportField = () => {
             }
           }}
           maxZoom={14}
-          radius={20}
+          // Match the 60-point pins and 96-point cluster status controls.
+          radius={80}
           animationEnabled={false}
           clusteringEnabled={reportClusteringEnabled}
           superClusterRef={reportClusterRef}

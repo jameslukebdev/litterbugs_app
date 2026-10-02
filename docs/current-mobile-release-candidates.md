@@ -17,9 +17,18 @@ still working. Location selection retains its existing center target and review
 coordinates. All 470 native tests passed; the separate real-PostgREST draft
 integration test passed for the conflict fix.
 
+A further physical map check found overlapping report artwork at town scale.
+Increasing the clustering radius from 20 to 80 keeps the existing marker design
+readable. On the connected phone, the four-report Boone group expanded into two
+individual reports and a two-report group; that group expanded into individually
+selectable reports. Resume draft → Close → Save for later still preserved pins.
+All 470 native tests passed again; the Release build and strict signature check
+passed. A short pan recording before this adjustment showed no full-map
+whiteout in its sampled frames, but does not certify all flashing scenarios.
+
 QA identity: `com.gegibson.litterbugs.qa`, locally signed with the existing QA
 setup. Installed candidate bundle SHA-256:
-`2d80e0b5cbdea6afb6fef08a8b632e05c42044ebd68da19a58fbd5188384fa39`.
+`f4ab71458a4ee9b36ec9f83e1e798cc6257e9104abb0f3fc0b8d6d5b51ee4ef3`.
 This candidate's map/prompt changes are **not in TestFlight build 17** and have
 not been submitted. Build 17 remains the latest internal TestFlight release.
 The shared server conflict correction is already live for existing clients.
