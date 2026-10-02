@@ -26,7 +26,7 @@ export function createReportClusters(map: google.maps.Map, AdvancedMarker: typeo
   const visuals = new Set<{ marker: google.maps.marker.AdvancedMarkerElement; glyph: HTMLElement; ids: string[] }>();
   let currentReports = new Map<string, MappableReport>();
   let selectedId: string | null = null;
-  const algorithm = new MovingReportAlgorithm({ radius: 70, maxZoom: 22 });
+  const algorithm = new MovingReportAlgorithm({ radius: 120, maxZoom: 22 });
   const updateVisual = (visual: { marker: google.maps.marker.AdvancedMarkerElement; glyph: HTMLElement; ids: string[] }) => {
     const members = visual.ids.map(id => currentReports.get(id)).filter((report): report is MappableReport => Boolean(report));
     const summary = clusterSummary(members);
@@ -43,15 +43,18 @@ export function createReportClusters(map: google.maps.Map, AdvancedMarker: typeo
       glyph.className = 'report-map-cluster';
       const marker = new AdvancedMarker({ position: cluster.position, gmpClickable: true, zIndex: 1000 + cluster.count });
       marker.append(glyph);
+      marker.addEventListener('gmp-click', () => {
+        const members = cluster.markers.map(item => reportsByMarker.get(item)).filter((report): report is MappableReport => Boolean(report));
+        if ((map.getZoom() ?? 0) >= 20 || coincidentReports(members)) choose(members.map(report => report.id));
+        else if (cluster.bounds) map.fitBounds(cluster.bounds, 80);
+      });
       const visual = { marker, glyph, ids: cluster.markers.map(item => reportsByMarker.get(item)?.id).filter((id): id is string => Boolean(id)) };
       updateVisual(visual); visuals.add(visual);
       return marker;
     } },
-    onClusterClick: (_event, cluster) => {
-      const members = cluster.markers.map(marker => reportsByMarker.get(marker)).filter((report): report is MappableReport => Boolean(report));
-      if ((map.getZoom() ?? 0) >= 20 || coincidentReports(members)) choose(members.map(report => report.id));
-      else if (cluster.bounds) map.fitBounds(cluster.bounds, 80);
-    },
+    // Disable the library's legacy addListener bridge. Advanced Markers use
+    // native gmp-click events above for pointer and keyboard activation.
+    onClusterClick: null!,
   });
   return {
     update(markers: Map<string, google.maps.marker.AdvancedMarkerElement>, reports: MappableReport[], selected: string | null) {
