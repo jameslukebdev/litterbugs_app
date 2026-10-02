@@ -15,6 +15,8 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Icon } from '@/components/icon';
+import { ClusterReports } from '@/components/cluster-reports';
+import type { createReportClusters } from '@/lib/report-clusters';
 import { PublicAccountAction, type PublicAccountActionHandle } from '@/components/public-account-action';
 import Link from 'next/link';
 import { PublicSiteHeader } from '@/components/public-site-header';
@@ -88,6 +90,8 @@ export function MapExperience({
   const mapRef = useRef<google.maps.Map | null>(null);
   const mapPositionChosen = useRef(false);
   const mapAuthFailed = useRef(false);
+  const clustersRef = useRef<ReturnType<typeof createReportClusters> | null>(null);
+  const [clusterIds, setClusterIds] = useState<string[] | null>(null);
   const markersRef = useRef(new Map<string, google.maps.marker.AdvancedMarkerElement>());
   const markerGlyphsRef = useRef(new Map<string, HTMLElement>());
   const accountActionRef = useRef<PublicAccountActionHandle>(null);
@@ -344,9 +348,10 @@ export function MapExperience({
           setOptions({ key: googleMapsKey, v: 'weekly', authReferrerPolicy: 'origin' });
           mapsConfigured = true;
         }
-        const [{ Map }, { AdvancedMarkerElement }] = await Promise.all([
+        const [{ Map }, { AdvancedMarkerElement }, { createReportClusters }] = await Promise.all([
           importLibrary('maps'),
           importLibrary('marker'),
+          import('@/lib/report-clusters'),
         ]);
         if (cancelled || mapAuthFailed.current || !mapElementRef.current) return;
         const stored = readDiscoveryMemory();
@@ -381,6 +386,7 @@ export function MapExperience({
           saveDiscoveryMemory({ latitude: area.latitude, longitude: area.longitude, zoom: map.getZoom() ?? 12, place: searchPlaceRef.current });
           setDiscoveryArea(current => current && Object.keys(area).every(key => current[key as keyof DiscoveryArea] === area[key as keyof DiscoveryArea]) ? current : area);
         });
+        clustersRef.current = createReportClusters(map, AdvancedMarkerElement, ids => { setMapPreviewId(null); setClusterIds(ids); });
         mapRef.current = map;
         setMapReady(true);
         if (areaId && memory?.place?.id !== areaId) {
@@ -408,7 +414,7 @@ export function MapExperience({
       }
     }
     void startMap();
-    return () => { cancelled = true; window.gm_authFailure = previousAuthFailure; };
+    return () => { cancelled = true; window.gm_authFailure = previousAuthFailure; clustersRef.current?.dispose(); clustersRef.current = null; mapRef.current = null; };
   }, [googleMapsKey, googleMapsMapId]);
 
   useEffect(() => {
@@ -431,7 +437,6 @@ export function MapExperience({
       if (!marker || !markerGlyph) {
         markerGlyph = document.createElement('span');
         try { marker = new AdvancedMarkerElement({
-          map,
           position: { lat: report.latitude, lng: report.longitude },
           title: report.title || 'Litter Report',
           gmpClickable: true,
@@ -470,10 +475,12 @@ export function MapExperience({
       }
       markerGlyph.classList.toggle('report-map-marker-selected', selectedReportIdRef.current === report.id);
     });
+    clustersRef.current?.update(markersRef.current, visibleReports, selectedReportIdRef.current);
   }, [mapReady, visibleReports]);
 
   useEffect(() => {
     selectedReportIdRef.current = selectedReport?.id ?? null;
+    clustersRef.current?.select(selectedReportIdRef.current);
     markerGlyphsRef.current.forEach((glyph, reportId) => {
       glyph.classList.toggle('report-map-marker-selected', reportId === selectedReport?.id);
       glyph.classList.toggle(
@@ -970,6 +977,7 @@ export function MapExperience({
 
 
       {draftCoordinates && userId && <ResumableReportWizard submissionProgress={reportUploadProgress} key={userId} userId={userId} onCoordinatesChange={setDraftCoordinates} onRestorePublication={restorePublication} fundingEnabled={fundingEnabled} coordinates={draftCoordinates} selectingLocation={selectingDraftLocation} onChangeLocation={publicationUncertain ? undefined : changeDraftLocation} onClose={closeReportTask} onSubmit={saveReport} />}
+      {clusterIds && <ClusterReports reports={visibleReports.filter(report => clusterIds.includes(report.id))} truncated={discoveryTruncated} onClose={() => setClusterIds(null)} onChoose={report => { setClusterIds(null); openReport(report); }} />}
       {reportFunding && <FundingContributionAction key={reportFunding.report.id} report={reportFunding.report} userId={userId} initialAmountCents={reportFunding.amountCents} startOpen onDismiss={() => setReportFunding(null)} onChanged={refreshReports} onRefreshFunding={() => refreshFundingReview(reportFunding.report.id)} />}
       {editingReport && <ReportWizard submissionProgress={reportUploadProgress} initialDraft={editDraft} isEditing existingPhotoCount={editingReport.photo_paths?.length ?? 0} existingPhotoUrls={editPhotoUrls} onClose={() => { setEditingReport(null); setEditPhotoUrls([]); }} onSubmit={saveReport} />}
     </main>

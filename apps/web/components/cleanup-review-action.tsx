@@ -3,15 +3,15 @@
 /* eslint-disable @next/next/no-img-element -- Review evidence uses short-lived signed Storage URLs. */
 
 import type { Database, Report } from '@litterbugs/report-contract';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { ModalShell } from '@/components/modal-shell';
 import { getWebCompatibleReportPhotoUrl } from '@/lib/report-photo';
 import { CLEANUP_CHANGE_REASONS, loadCleanupReviewDraft, saveCleanupReviewDraft, clearCleanupReviewDraft } from '@/lib/cleanup-review';
 import { useDataRefresh, notifyDataChanged } from '@/lib/use-data-refresh';
+import { useCleanupAttempt } from '@/lib/use-cleanup-attempt';
 import { createClient } from '@/lib/supabase/client';
 
-type Attempt = Database['public']['Tables']['cleanup_attempts']['Row'];
 type Submission = Database['public']['Tables']['cleanup_submissions']['Row'];
 
 type ReviewContext = {
@@ -46,8 +46,7 @@ export function CleanupReviewAction({
   onChanged?: () => void | Promise<void>;
 }) {
   const refreshRevision = useDataRefresh(report.cleanup_state === 'completion_submitted' ? 5_000 : 30_000);
-  const queryKey = userId && isOwner ? `${userId}:${report.id}` : '';
-  const [attemptState, setAttemptState] = useState<{ key: string; data: Attempt | null; checkedAt?: number }>({ key: '', data: null });
+  const { attempt, failed: attemptFailed, loading: attemptLoading, checkedAt, refresh: refreshAttempt, clear: clearAttempt } = useCleanupAttempt(report.id, isOwner ? userId : null, true, refreshRevision, report.cleanup_state);
   const [context, setContext] = useState<ReviewContext | null>(null);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState('');
@@ -56,26 +55,6 @@ export function CleanupReviewAction({
   const [draftMessage, setDraftMessage] = useState('');
   const [draftUnreadable, setDraftUnreadable] = useState(false);
   const [message, setMessage] = useState('');
-  const attempt = attemptState.key === queryKey ? attemptState.data : null;
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!userId || !isOwner) return;
-    void createClient()
-      .from('cleanup_attempts')
-      .select('*')
-      .eq('report_id', report.id)
-      .eq('reporter_id', userId)
-      .eq('status', 'completion_submitted')
-      .order('latest_submitted_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!cancelled) setAttemptState({ key: queryKey, data, checkedAt: Date.now() });
-      });
-    return () => { cancelled = true; };
-  }, [isOwner, queryKey, report.id, report.cleanup_state, userId, refreshRevision]);
-
   function updateFeedback(nextNote: string, nextReasons: string[]) {
     setNote(nextNote); setReasons(nextReasons); setMessage('');
     if (!context || !userId || draftUnreadable) return;
@@ -85,7 +64,8 @@ export function CleanupReviewAction({
     } catch { setDraftMessage('Feedback could not be saved on this device. Keep this page open.'); }
   }
 
-  if (!attempt) return message ? <span className="cleanup-action-message" role="status">{message}</span> : null;
+  const refreshNotice = attemptFailed ? <p role="alert" className="form-message error-message">Cleanup review could not be refreshed. {attempt ? 'Your last confirmed review and feedback are still here. Retry before sending a decision.' : 'Retry to check whether evidence needs your review.'} <button type="button" className="secondary-button" onClick={() => void refreshAttempt()}>Retry cleanup review</button></p> : null;
+  if (!attempt) return <>{refreshNotice}{attemptLoading && <span role="status">Checking cleanup review…</span>}{message && <span className="cleanup-action-message" role="status">{message}</span>}</>;
 
   async function openReview() {
     if (!attempt) return;
@@ -156,7 +136,7 @@ export function CleanupReviewAction({
   }
 
   async function completeReview(decision: 'approved' | 'changes_requested') {
-    if (!attempt || !context) return;
+    if (attemptFailed || !attempt || !context) return;
     if (decision === 'changes_requested' && !reasons.length) {
       setMessage('Choose at least one reason for requesting changes.');
       return;
@@ -182,12 +162,13 @@ export function CleanupReviewAction({
     if (userId && context) { try { clearCleanupReviewDraft(userId, context.submission.id); } catch { /* The server decision remains authoritative. */ } }
     notifyDataChanged();
     setOpen(false);
-    setAttemptState({ key: queryKey, data: null });
+    clearAttempt();
     setMessage(reviewedAttempt.status === 'completed' ? 'Cleanup approved.' : 'The cleaner has been asked for updated evidence.');
     await Promise.resolve().then(() => onChanged?.()).catch(() => undefined);
   }
 
   async function disputePaidCleanup() {
+    if (attemptFailed) return;
     if (!attempt || note.trim().length < 3) {
       setMessage('Briefly explain what does not look right.');
       return;
@@ -206,7 +187,7 @@ export function CleanupReviewAction({
     if (userId && context) { try { clearCleanupReviewDraft(userId, context.submission.id); } catch { /* The server decision remains authoritative. */ } }
     notifyDataChanged();
     setOpen(false);
-    setAttemptState({ key: queryKey, data: null });
+    clearAttempt();
     setMessage('Dispute submitted. A Litterbugs team member will review the photos and details.');
     await Promise.resolve().then(() => onChanged?.()).catch(() => undefined);
   }
@@ -214,15 +195,17 @@ export function CleanupReviewAction({
   const paidDisputeAvailable = attempt.is_paid
     && attempt.financial_review_status === 'passed'
     && attempt.dispute_status === 'none'
-    && Boolean(attempt.review_due_at && Date.parse(attempt.review_due_at) > (attemptState.checkedAt ?? 0));
+    && Boolean(attempt.review_due_at && Date.parse(attempt.review_due_at) > checkedAt);
 
   return (
     <>
+      {!(open && context) && refreshNotice}
       {message && <span className="cleanup-action-message" role="status">{message}</span>}
       <button className="secondary-button compact-button" onClick={openReview} disabled={busy === 'load'}>{busy === 'load' ? 'Loading…' : attempt.is_paid ? 'Review or dispute' : 'Review cleanup'}</button>
 
       {open && context && (
         <ModalShell embedded={workspace} onClose={() => setOpen(false)} label="Review submitted cleanup evidence" className="cleanup-flow-dialog cleanup-review-dialog" closeDisabled={Boolean(busy)}>
+          {refreshNotice}
           <span className="eyebrow">CLEANUP REVIEW</span>
           <h2>Compare the cleanup photos</h2>
           <p className="cleanup-review-summary">Submitted by {context.cleanerName}{attempt.review_due_at ? ` · Automatic approval after ${new Date(attempt.review_due_at).toLocaleString()}` : ''}</p>
@@ -242,12 +225,12 @@ export function CleanupReviewAction({
           {attempt.is_paid ? (
             <div className="cleanup-flow-actions">
               <span className="cleanup-paid-review-note">The 48-hour review window begins after the photos pass review. No response is needed unless you see a problem.</span>
-              <button className="danger-button" onClick={disputePaidCleanup} disabled={!paidDisputeAvailable || Boolean(busy)}>{paidDisputeAvailable ? (busy === 'dispute' ? 'Submitting…' : 'Dispute cleanup') : 'Dispute unavailable'}</button>
+              <button className="danger-button" onClick={disputePaidCleanup} disabled={attemptFailed || !paidDisputeAvailable || Boolean(busy)}>{paidDisputeAvailable ? (busy === 'dispute' ? 'Submitting…' : 'Dispute cleanup') : 'Dispute unavailable'}</button>
             </div>
           ) : (
             <div className="cleanup-flow-actions cleanup-review-actions">
-              <button className="secondary-button" onClick={() => completeReview('changes_requested')} disabled={Boolean(busy)}>{busy === 'changes_requested' ? 'Saving…' : 'Request changes'}</button>
-              <button className="primary-button" onClick={() => completeReview('approved')} disabled={Boolean(busy)}>{busy === 'approved' ? 'Approving…' : 'Approve cleanup'}</button>
+              <button className="secondary-button" onClick={() => completeReview('changes_requested')} disabled={attemptFailed || Boolean(busy)}>{busy === 'changes_requested' ? 'Saving…' : 'Request changes'}</button>
+              <button className="primary-button" onClick={() => completeReview('approved')} disabled={attemptFailed || Boolean(busy)}>{busy === 'approved' ? 'Approving…' : 'Approve cleanup'}</button>
             </div>
           )}
         </ModalShell>
