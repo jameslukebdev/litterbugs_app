@@ -8,7 +8,7 @@ import { AccountPage } from './account-page';
 import { AccountDialog } from './account-dialog';
 
 const { dashboard, blockDelete, blockedRows, rpc, profileUpdate, reportQueryNumber, invoke, clearDraft, signOut } = vi.hoisted(() => ({
-  dashboard: { revision:0, failed:false, user:'member-id' },
+  dashboard: { revision:0, failed:false, user:'member-id', paymentStatus:'succeeded', paymentCount:1 },
   invoke: vi.fn(),
   clearDraft: vi.fn(),
   signOut: vi.fn(),
@@ -21,7 +21,7 @@ const { dashboard, blockDelete, blockedRows, rpc, profileUpdate, reportQueryNumb
 
 vi.mock('@/lib/use-data-refresh', () => ({ useDataRefresh: () => dashboard.revision, notifyDataChanged: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }) }));
-vi.mock('@/components/resume-drafts', () => ({ ResumeDrafts: () => null }));
+vi.mock('@/components/resume-drafts', () => ({ ResumeDrafts: () => <section aria-label="Resume your work">Saved draft summary</section> }));
 vi.mock('@/lib/saved-cleanup-draft', () => ({ clearAccountCleanupDrafts: vi.fn(async () => undefined) }));
 vi.mock('@/lib/saved-report-draft', () => ({ clearPublishedReport: clearDraft, reportDraftLocation: vi.fn(async () => undefined) }));
 
@@ -110,15 +110,16 @@ vi.mock('@/lib/supabase/client', () => ({
       }
       if (table === 'cleanup_contributions') {
         return query({
-          data: [{
-            id: 'contribution-id',
+          data: Array.from({ length: dashboard.paymentCount }, (_, index) => ({
+            id: index === 0 ? 'contribution-id' : `contribution-${index}`,
             report_id: expiredReport.id,
             principal_amount_cents: 2500,
             platform_fee_cents: 250,
             total_amount_cents: 2750,
-            status: 'succeeded',
+            status: dashboard.paymentStatus,
+            report: { id: expiredReport.id, title: expiredReport.title, cleanup_state: expiredReport.cleanup_state },
             created_at: '2026-08-01T12:00:00.000Z',
-          }],
+          })),
           error: null,
         });
       }
@@ -137,7 +138,7 @@ vi.mock('@/lib/supabase/client', () => ({
 }));
 
 beforeEach(() => {
-  dashboard.revision=0;dashboard.failed=false;dashboard.user='member-id';
+  dashboard.revision=0;dashboard.failed=false;dashboard.user='member-id';dashboard.paymentStatus='succeeded';dashboard.paymentCount=1;
   invoke.mockReset().mockResolvedValue({ data: null, error: null });
   clearDraft.mockReset().mockResolvedValue(undefined);
   signOut.mockReset().mockResolvedValue({ error: null });
@@ -297,7 +298,7 @@ it('restores cleanup history from its route state and uses route-based payment r
   expect(await screen.findByRole('heading', { name: 'Completed cleanups' })).toBeTruthy();
   expect(screen.getByRole('link', { name: 'Cleanup history' }).getAttribute('aria-current')).toBe('page');
   unmount(); render(<AccountPage destination="payments" userId="member-id" />);
-  const receipt = await screen.findByRole('link', { name: /25.00 cleanup reward/ });
+  const receipt = await screen.findByRole('link', { name: /Creek cleanup.*25.00 contribution/ });
   expect(receipt.getAttribute('href')).toBe('/account/payments/contribution-id');
 });
 
@@ -331,4 +332,32 @@ it('focuses the requested renewal after its authorized data loads', async () => 
    expect(scroll).toHaveBeenCalledWith({block:'center'});
    expect(screen.getByRole('button',{name:'Renew 30 days'})).toBeTruthy();
  } finally { HTMLElement.prototype.scrollIntoView=original; }
+});
+
+it('keeps activity navigation before saved work in document and keyboard order', async () => {
+  render(<AccountPage destination="activity" userId="member-id" />);
+  await screen.findByRole('heading', { name: 'Current cleanups' });
+  const navigation = screen.getByRole('navigation', { name: 'My activity' });
+  const drafts = screen.getByRole('region', { name: 'Resume your work' });
+  expect(navigation.compareDocumentPosition(drafts) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+it('identifies unconfirmed contributions separately from cleanup earnings', async () => {
+  dashboard.paymentStatus = 'payment_pending';
+  render(<AccountPage destination="payments" userId="member-id" />);
+  const receipt = await screen.findByRole('link', { name: /Creek cleanup.*Report expired-.*25.00 contribution.*Payment unconfirmed/ });
+  expect(receipt.getAttribute('href')).toBe('/account/payments/contribution-id');
+  expect(screen.queryByText(/^Processing/)).toBeNull();
+  const contributions = screen.getByRole('heading', { name: 'Your contributions' });
+  const earnings = screen.getByRole('heading', { name: 'Cleanup earnings' });
+  expect(contributions.compareDocumentPosition(earnings) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+it('reveals older contributions without a nested scrolling list', async () => {
+  dashboard.paymentCount = 7;
+  render(<AccountPage destination="payments" userId="member-id" />);
+  await screen.findByRole('button', { name: 'Show 2 more contributions' });
+  expect(screen.getAllByRole('link', { name: /Creek cleanup.*contribution/ })).toHaveLength(5);
+  fireEvent.click(screen.getByRole('button', { name: 'Show 2 more contributions' }));
+  expect(screen.getAllByRole('link', { name: /Creek cleanup.*contribution/ })).toHaveLength(7);
+  expect(screen.queryByRole('button', { name: /more contributions/ })).toBeNull();
 });
