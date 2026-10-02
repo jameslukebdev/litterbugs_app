@@ -52,11 +52,7 @@ import {
   releaseCleanup,
 } from './lib/cleanup';
 import { canOfferCleanup, cleanupActionMessage, cleanupStatusPresentation, isCleanupInProgress, isCurrentCleaner } from './lib/cleanupEligibility';
-import {
-  cleanupNotificationDestination,
-  cleanupNotificationPresentation,
-  cleanupStateFromNotification,
-} from './lib/cleanupNotifications';
+import { createCleanupNotificationPrompt } from './lib/cleanupNotificationPrompt';
 import { useProfile } from './lib/profile';
 import {
   CLEANUP_NAVIGATION_SAFETY_REMINDER,
@@ -237,6 +233,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const [pendingPayoutWorkflowToken, setPendingPayoutWorkflowToken] = useState(null);
   const [payoutGateBusy, setPayoutGateBusy] = useState(false);
   const cleanupNoticeCheckInFlight = useRef(false);
+  const cleanupNoticePromptState = useRef(null);
   // Report detail photo carousel
 
   const { user: currentUser } = useSession();
@@ -489,6 +486,24 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     if (!currentUserId) return undefined;
 
     let active = true;
+    if (cleanupNoticePromptState.current?.owner !== currentUserId) {
+      cleanupNoticePromptState.current = { owner: currentUserId, shown: new Set(), pending: false };
+    }
+    const prompt = createCleanupNotificationPrompt({
+      state: cleanupNoticePromptState.current,
+      isCurrent: () => active,
+      present: (...args) => Alert.alert(...args),
+      acknowledge: acknowledgeCleanupNotifications,
+      open: async destination => {
+        if (destination.url) await Linking.openURL(destination.url);
+        else {
+          const parent = navigation.getParent();
+          if (!parent) throw new Error('Navigation is not ready.');
+          parent.navigate(destination.name, destination.params);
+        }
+      },
+      onError: () => Alert.alert('Update remains unread', 'The update could not be opened or marked read. Check your connection and try again.'),
+    });
 
     const checkCleanupNotices = async () => {
       if (cleanupNoticeCheckInFlight.current) return;
@@ -498,62 +513,10 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
         const notices = await loadUnreadCleanupNotifications();
         if (!active || notices.length === 0) return;
 
-        const reportStates = new Map();
-        const attemptStates = new Map();
-        notices.forEach((notice) => {
-          const state = cleanupStateFromNotification(notice);
-          if (!state) return;
-          reportStates.set(notice.report_id, state);
-          attemptStates.set(notice.cleanup_attempt_id, state);
-        });
-
-        setSelectedReport((report) => {
-          const state = reportStates.get(report?.id);
-          return state ? { ...report, cleanup_state: state } : report;
-        });
-        setSelectedCleanupAttempt((attempt) => {
-          const state = attemptStates.get(attempt?.id);
-          if (state === 'available') return null;
-          return state ? { ...attempt, status: state } : attempt;
-        });
-
-        const paymentReadyNotice = notices.find(({ event_type: eventType }) => (
-          eventType === 'report_funding_approved'
-        ));
-        if (paymentReadyNotice) {
-          const destination = cleanupNotificationDestination(paymentReadyNotice);
-          await acknowledgeCleanupNotifications([paymentReadyNotice.id]);
-          await refreshReports({ showRefresh: false });
-          if (destination) {
-            navigation.getParent()?.navigate(destination.name, destination.params);
-          }
-          return;
-        }
-
-        const presentation = cleanupNotificationPresentation(notices);
-        const destination = notices.length === 1
-          ? cleanupNotificationDestination(notices[0])
-          : null;
-        Alert.alert(
-          presentation.title,
-          presentation.message,
-          destination
-            ? [
-              { text: 'Later', style: 'cancel' },
-              {
-                text: destination.label,
-                onPress: () => destination.url
-                  ? Linking.openURL(destination.url).catch(() => Alert.alert('Couldn’t open the inbox', 'Visit litterbugs.app/admin to review community reports.'))
-                  : navigation.getParent()?.navigate(destination.name, destination.params),
-              },
-            ]
-            : [{ text: 'OK' }]
-        );
-
-        await acknowledgeCleanupNotifications(
-          notices.map(({ id }) => id)
-        );
+        // Unread historical events are not the current task state. Refresh from
+        // the account before presenting; never navigate or acknowledge on display.
         await refreshReports({ showRefresh: false });
+        if (active) prompt.show(notices);
       } catch (error) {
         console.log('Cleanup notification error:', error);
       } finally {
@@ -572,7 +535,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
       clearInterval(interval);
       subscription.remove();
     };
-  }, [currentUserId, refreshReports]);
+  }, [currentUserId, refreshReports, navigation]);
 
   useEffect(() => {
     if (!cleanupWaiverQueued || detailsOpen) return undefined;

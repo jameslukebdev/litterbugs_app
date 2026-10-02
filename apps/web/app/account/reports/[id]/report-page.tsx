@@ -13,8 +13,11 @@ export function AccountReport({ report, userId, back, task }: { report: Report; 
   const router = useRouter();
   const revision = useDataRefresh();
   useEffect(() => { if (revision) router.refresh(); }, [revision, router]);
-  const from = back === '/account/notifications' ? 'notifications' : back === '/account/payments' ? 'payments' : back.includes('history') ? 'history' : back === '/account/activity' ? 'current' : 'reports';
-  const base = `/account/reports/${report.id}?from=${from}`;
+  const from = back.startsWith('/account/notifications') ? 'notifications' : back === '/account/payments' ? 'payments' : back.includes('history') ? 'history' : back === '/account/activity' ? 'current' : 'reports';
+  const origin = new URL(back, 'https://litterbugs.app');
+  const context = from === 'notifications' ? new URLSearchParams(origin.search) : new URLSearchParams();
+  if (from === 'notifications' && origin.hash.startsWith('#notification-')) context.set('notice', decodeURIComponent(origin.hash.slice(14)));
+  const base = `/account/reports/${report.id}?from=${from}${context.size ? `&${context}` : ''}`;
   const closed = isReportClosed(report);
   return <main className="account-report-page">
     <Link className="secondary-button" href={task ? base : back}>{task ? 'Back to report' : from === 'notifications' ? 'Back to notifications' : from === 'payments' ? 'Back to payments' : 'Back to my activity'}</Link>

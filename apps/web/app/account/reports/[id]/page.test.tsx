@@ -46,3 +46,13 @@ describe('authenticated report history', () => {
     await expect(open()).rejects.toThrow('could not be loaded');
   });
 });
+
+it('restores the inbox filter, page and originating notification after opening a report', async () => {
+  const result = await Page({ params: Promise.resolve({ id }), searchParams: Promise.resolve({ from: 'notifications', filter: 'unread', page: '3', notice: 'notice-id' }) });
+  expect(result.props.back).toBe('/account/notifications?filter=unread&page=3#notification-notice-id');
+});
+it('preserves inbox context through sign-in without accepting an external return URL', async () => {
+  state.userId = null;
+  await expect(Page({ params: Promise.resolve({ id }), searchParams: Promise.resolve({ from: 'notifications', filter: 'unread', page: '3', notice: 'notice-id' }) }))
+    .rejects.toThrow(encodeURIComponent(`from=notifications&filter=unread&page=3&notice=notice-id`));
+});
