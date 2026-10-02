@@ -681,7 +681,7 @@ export function AccountDialog({
                     <Icon name="chevron-right" />
                   </ActivityLink>
                 ))}
-                {embedded && contributions.length > contributionLimit && <button type="button" className="secondary-button member-show-more" onClick={() => setContributionLimit(value => value + 5)}>Show {Math.min(5, contributions.length - contributionLimit)} more contributions</button>}
+                {embedded && contributions.length > contributionLimit && <button type="button" className="secondary-button member-show-more" onClick={() => setContributionLimit(value => value + 5)}>Show {Math.min(5, contributions.length - contributionLimit)} more contribution{contributions.length - contributionLimit === 1 ? '' : 's'}</button>}
                 {!contributions.length && !unavailable.includes('Payments') && !unavailable.includes('Account') && <p className="member-empty">Your contributions and payment status will appear here.</p>}
               </div>
             </section>}

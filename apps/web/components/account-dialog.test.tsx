@@ -361,3 +361,9 @@ it('reveals older contributions without a nested scrolling list', async () => {
   expect(screen.getAllByRole('link', { name: /Creek cleanup.*contribution/ })).toHaveLength(7);
   expect(screen.queryByRole('button', { name: /more contributions/ })).toBeNull();
 });
+
+it('uses a singular label when only one older contribution remains', async () => {
+  dashboard.paymentCount = 6;
+  render(<AccountPage destination="payments" userId="member-id" />);
+  await screen.findByRole('button', { name: 'Show 1 more contribution' });
+});
