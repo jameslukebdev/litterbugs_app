@@ -52,3 +52,15 @@ it('preserves available results and explains a partial provider failure', async 
  expect(await screen.findByRole('button',{name:/Nairobi, Kenya/})).toBeTruthy();
  expect(screen.getByText(/Some locations could not load/)).toBeTruthy();
 });
+it('retains completed search results when another provider times out', async () => {
+ vi.useFakeTimers();
+ try {
+  api.search.mockImplementation(()=>new Promise(()=>{}));
+  render(<PlaceSearch selected={null} onSelect={vi.fn()} onClear={vi.fn()} geocode={vi.fn().mockResolvedValue([place])}/>);
+  fireEvent.change(screen.getByLabelText('City or address'),{target:{value:'Nairobi'}});
+  fireEvent.click(screen.getByRole('button',{name:'Search'}));
+  await act(async()=>{await vi.advanceTimersByTimeAsync(15000)});
+  expect(screen.getByRole('button',{name:/Nairobi, Kenya/})).toBeTruthy();
+  expect(screen.getByText(/Some locations could not load/)).toBeTruthy();
+ } finally {vi.useRealTimers()}
+});

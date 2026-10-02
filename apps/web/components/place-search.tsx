@@ -24,10 +24,8 @@ export function PlaceSearch({ selected, onSelect, onClear, geocode, disabled = f
       const providers = mode === 'town' ? [searchPlaces(text.trim(), { signal: controller.signal })]
         : mode === 'address' ? [geocode(text.trim())]
         : [searchPlaces(text.trim(), { signal: controller.signal }), geocode(text.trim())];
-      const responses = await Promise.race([
-        Promise.allSettled(providers),
-        new Promise<never>((_, reject) => controller.signal.addEventListener('abort', () => reject(new Error('Search timed out')), { once: true })),
-      ]);
+      const timeout = new Promise<never>((_, reject) => controller.signal.addEventListener('abort', () => reject(new Error('Search timed out')), { once: true }));
+      const responses = await Promise.allSettled(providers.map(provider => Promise.race([provider, timeout])));
       if (seq !== sequence.current) return;
       const found = responses.flatMap<TownResult | SearchPlace>(result => result.status === 'fulfilled' ? result.value ?? [] : []);
       const failed = responses.some(result => result.status === 'rejected');
