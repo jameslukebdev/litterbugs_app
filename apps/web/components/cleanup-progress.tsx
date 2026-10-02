@@ -26,7 +26,7 @@ export function CleanupProgress({ report, userId, taskBase }: { report: Report; 
     <h2>Cleanup progress</h2>
     {current?.error && <p role="status">Progress could not be refreshed. Previously loaded dates may be out of date. <button className="secondary-button" onClick={()=>setRetry(value=>value+1)}>Retry progress</button></p>}
     {!current && <p role="status">Loading cleanup dates…</p>}
-    <ol>{progress.events.map((event,index)=><li key={`${event.label}:${index}`}><strong>{event.label}</strong><time dateTime={event.at}>{new Date(event.at).toLocaleString()}</time></li>)}</ol>
+    {current && <><p className="cleanup-progress-timezone">Dates and deadlines use your local time.</p><ol>{progress.events.map((event,index)=><li key={`${event.label}:${index}`}><strong>{event.label}</strong><time dateTime={event.at}>{new Date(event.at).toLocaleString()}</time></li>)}</ol></>}
     <p>{progress.next}</p>
     {progress.due && <p><strong>Due {new Date(progress.due).toLocaleString()}</strong>{Date.parse(progress.due)<=checkedAt?' — This deadline has passed. Refresh the task before proceeding.':''}</p>}
     {progress.task && <Link className="secondary-button" href={`${taskBase}&task=${progress.task}`}>{progress.task==='review'?'Review cleanup':'Continue cleanup'}</Link>}
