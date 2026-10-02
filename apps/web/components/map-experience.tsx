@@ -934,9 +934,10 @@ export function MapExperience({
               <h1>Choose report location</h1>
               <p>Move the map or search for the litter site. The pin marks your selection.</p>
               {placement && <p className="location-coordinate">{placement.latitude.toFixed(4)}, {placement.longitude.toFixed(4)}</p>}
-              <p>We’ll check that it is within 50 miles of your current GPS location.</p>
+              <p>We’ll check that it is within 50 miles of your current location.</p>
               {locationError && <p role="alert">{locationError}</p>}
               {selectingDraftLocation && <p>Your report details and photos are kept.</p>}
+              <details><summary>Prepare a draft or finish on your phone</summary><p>You can prepare a private draft here without sharing your current location. Save and confirm account sync, then open Profile → My activity in the app on your phone. Publishing still requires a fresh location check within 50 miles of this site.</p><button type="button" className="secondary-button" disabled={!mapReady || checkingLocation} onClick={() => { const center = mapRef.current?.getCenter(); const chosen = center ? { latitude: center.lat(), longitude: center.lng() } : placement; if (chosen) beginReport(chosen); }}>Prepare private draft</button></details>
               </div>
               <button className="primary-button" disabled={!mapReady || checkingLocation} onClick={() => void confirmReportLocation()}>{checkingLocation ? 'Checking location…' : 'Use this location'}</button>
             </section>

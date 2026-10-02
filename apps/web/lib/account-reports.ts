@@ -1,5 +1,6 @@
 import type { Report } from '@litterbugs/report-contract';
 import { createClient } from '@/lib/supabase/client';
+import { isReportClosed } from '@/lib/report-visibility';
 
 /** Matches mobile personal activity: independent of discovery filters and lifetime counters. */
 export async function loadAccountReports(userId: string) {
@@ -15,8 +16,8 @@ export async function loadAccountReports(userId: string) {
 }
 
 export function accountReportStatus(report: Report, now = Date.now()) {
+  if (isReportClosed(report, now)) return 'Closed';
   if (report.cleanup_state === 'completed') return 'Completed';
-  if (report.cancelled_at || report.expired_at || (report.expires_at && Date.parse(report.expires_at) <= now)) return 'Closed';
   return 'Active';
 }
 

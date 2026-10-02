@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useDataRefresh } from '@/lib/use-data-refresh';
 import { useEffect } from 'react';
 import type { Report } from '@litterbugs/report-contract';
+import { CleanupProgress } from '@/components/cleanup-progress';
 import { ReportDetail } from '@/components/report-detail';
 import { CleanupAction } from '@/components/cleanup-action';
 import { CleanupReviewAction } from '@/components/cleanup-review-action';
@@ -20,10 +21,11 @@ export function AccountReport({ report, userId, back, task }: { report: Report; 
     <h1>{task === 'cleanup' ? 'Cleanup workspace' : task === 'review' ? 'Review cleanup' : isDiscoverableReport(report) ? 'Your report activity' : 'Report history'}</h1>
     {!isDiscoverableReport(report) && <p>This report is no longer on the discovery map. Your activity and payment records remain in your account.</p>}
     {task ? <section className="account-task-workspace"><h2>{report.title || 'Litter report'}</h2>
-      <p>Current status: {closed ? 'Report closed' : report.cleanup_state.replaceAll('_', ' ')}. This page reflects the current task, including updates since an earlier notification.</p>
+      <p>Current status: {closed ? 'Report closed' : report.cleanup_state === 'claimed' ? 'Cleanup in progress' : report.cleanup_state === 'completion_submitted' ? 'Cleanup photos under review' : report.cleanup_state === 'changes_requested' ? 'Updated evidence requested' : report.cleanup_state === 'completed' ? 'Cleanup complete' : 'Available to clean'}. This page reflects the current task, including updates since an earlier notification.</p>
       {closed ? <p>This cleanup is closed. Your history remains available using Back to report.</p> : task === 'cleanup' ? <CleanupAction key={report.id} workspace report={report} userId={userId} onChanged={() => router.refresh()} /> : report.user_id === userId && report.cleanup_state === 'completion_submitted' ? <CleanupReviewAction workspace report={report} userId={userId} isOwner onChanged={() => router.refresh()} /> : <p>No cleanup evidence currently needs your review.</p>}
     </section> : <><ReportDetail embedded taskBase={base} report={report} userId={userId} isOwner={report.user_id === userId} onClose={() => router.push(back)} onReportChanged={() => router.refresh()} />
       {isDiscoverableReport(report) && <Link className="secondary-button" href={`/?report=${report.id}&returnTo=${encodeURIComponent(back)}`}>Open on map{report.user_id === userId && report.cleanup_state === 'available' && !report.funding_locked_at ? ' to edit or manage' : ''}</Link>}
     </>}
+    <CleanupProgress report={report} userId={userId} taskBase={base} />
   </main>;
 }

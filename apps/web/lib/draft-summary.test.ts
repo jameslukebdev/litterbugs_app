@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import type { CloudDraft } from '@litterbugs/report-contract';
+import { EMPTY_REPORT_DRAFT, type CloudDraft } from '@litterbugs/report-contract';
 vi.mock('./supabase/client', () => ({ createClient: vi.fn() }));
 vi.mock('./saved-report-draft', () => ({ loadLocalReportDraft: vi.fn() }));
 vi.mock('./saved-cleanup-draft', () => ({ loadLocalCleanupDraft: vi.fn() }));
@@ -21,4 +21,10 @@ it('does not offer deleted or expired drafts for continuation', () => {
 });
 it('rejects an incompatible draft rather than displaying it as a usable version', () => {
   expect(() => accountDraftSummary({ ...record, payload: { version: 2 } })).toThrow('cannot be opened');
+});
+
+it('includes the funding selection and real account expiry in report comparisons',()=>{
+ const summary=accountDraftSummary({...record,draft_key:'report',payload:{version:1,kind:'report',coordinates:{latitude:1,longitude:2},step:4,fundingChoice:'other',customAmount:'17.50',draft:{...EMPTY_REPORT_DRAFT,photos:undefined}} as unknown as CloudDraft['payload']});
+ expect(summary?.fields).toContain('Starting contribution: $17.50');
+ expect(summary?.expiresAt).toBe(record.expires_at);
 });

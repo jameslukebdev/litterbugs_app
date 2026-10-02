@@ -288,6 +288,7 @@ export function CleanupAction({
 
     setBusy('submit');
     setSubmissionError('');
+    setUploadProgress('Saving and syncing your draft and photos…');
     try {
       // Await a durable ID before any network mutation, including after a reload.
       await saveCleanupDraft(userId, attempt.id, {
@@ -420,7 +421,7 @@ export function CleanupAction({
           {reviewing && <section className="cleanup-review-summary"><h3>Review your cleanup</h3><div className="cleanup-photo-grid">{photos.map((file, index) => <PhotoPreview key={index} file={file} />)}</div><p>{description}</p><p>{photos.length} after-cleanup {photos.length === 1 ? 'photo' : 'photos'}</p>{bagsOrItems && <p>{bagsOrItems} bags/items removed</p>}{weightPounds && <p>{weightPounds} lb removed</p>}<p>Check your evidence before sending it for review.</p></section>}
           <CloudDraftStatus userId={userId!} draftKey={`cleanup:${attempt.id}`} onRestored={async () => { const restored = await loadCleanupDraft(userId!, attempt.id); if(restored) {setPhotos(restored.photos);setDescription(restored.description);setBagsOrItems(restored.bagsOrItems);setWeightPounds(restored.weightPounds);setSubmissionId(restored.submissionId!);setUploadedPaths([]);} }} />
           {draftMessage && <p className="form-message" role="status">{draftMessage}</p>}
-          {uploadProgress && <p role="status" aria-live="polite">{uploadProgress}</p>}
+          {(preparing || uploadProgress) && <section className="evidence-transfer" aria-label="Evidence transfer"><h3>{preparing ? 'Preparing selected photos' : uploadProgress.includes('review') ? 'Starting evidence review' : uploadProgress.includes('Uploading') ? 'Uploading and checking photos' : 'Saving your evidence'}</h3><p role="status" aria-live="polite">{preparing ? 'Preparing browser-compatible photos. Keep this page open until the device save finishes.' : uploadProgress}</p><p>Uploading a photo does not mean the cleanup has been approved. Your task will show the review result and any requested corrections.</p></section>}
           {submissionError && <p className="form-message error-message" role="alert">{submissionError}</p>}
           <div className="cleanup-flow-actions">
             <button className="secondary-button" onClick={releaseClaim} disabled={Boolean(busy) || preparing}>Release claim</button>

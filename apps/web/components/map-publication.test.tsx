@@ -112,6 +112,18 @@ async function choosePin(latitude = 0.5, valid = true) {
 }
 
 describe('map publication and funding handoff', () => {
+  it('allows private preparation after location denial but still blocks publication', async () => {
+    Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { getCurrentPosition: (_success: PositionCallback, fail: PositionErrorCallback) => fail({code:1} as GeolocationPositionError) } });
+    await choosePin(0.5, false);
+    await screen.findByRole('alert');
+    fireEvent.click(screen.getByText('Prepare a draft or finish on your phone'));
+    fireEvent.click(screen.getByRole('button', {name:'Prepare private draft'}));
+    await screen.findByRole('dialog', {name:'Report form'});
+    fireEvent.click(screen.getByRole('button', {name:'Post without funds'}));
+    await waitFor(()=>expect(state.saveResult).toHaveBeenCalled());
+    expect(state.upload).not.toHaveBeenCalled();expect(state.publish).not.toHaveBeenCalled();expect(state.inserts).not.toHaveBeenCalled();
+  });
+
   it('returns a directly opened report to the default report list', async () => {
     state.published = true;
     window.history.replaceState({}, '', '/?report=test-report');

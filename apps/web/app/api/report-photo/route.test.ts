@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { rpc, download, from, convert, sharp, rotate, resize, webp, toBuffer } = vi.hoisted(() => ({
+const { rpc, download, from, convert, sharp, rotate, resize, webp, toBuffer, getClaims } = vi.hoisted(() => ({
+  getClaims: vi.fn(),
   rpc: vi.fn(),
   download: vi.fn(),
   from: vi.fn(),
@@ -18,6 +19,7 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     rpc,
     from,
+    auth: { getClaims },
     storage: { from: () => ({ download }) },
   }),
 }));
@@ -31,6 +33,8 @@ const caseId = '11111111-1111-4111-8111-111111111111';
 const photoPath = 'cleaner/report/before.heic';
 
 beforeEach(() => {
+  getClaims.mockReset();
+  getClaims.mockResolvedValue({data:{claims:{sub:'owner'}}});
   rpc.mockReset();
   download.mockReset();
   from.mockReset();
@@ -159,5 +163,31 @@ describe('public report card photos', () => {
       withoutEnlargement: true,
     });
     expect(webp).toHaveBeenCalledWith({ quality: 82 });
+  });
+});
+
+
+describe('private account report photos', () => {
+  const request = () => new Request(`http://localhost/api/report-photo?path=${encodeURIComponent(photoPath)}&variant=detail&accountReportId=${caseId}`);
+  function history(owner = 'owner', participant: 'cleaner' | 'contributor' | null = null, paths = [photoPath]) {
+    from.mockImplementation((table: string) => {
+      const query = {select: () => query, eq: () => query,
+        maybeSingle: async () => ({data: {id:caseId,user_id:owner,is_published:true,is_sample:false,photo_paths:paths},error:null}),
+        limit: async () => ({data: (table === 'cleanup_attempts' && participant === 'cleaner') || (table === 'cleanup_contributions' && participant === 'contributor') ? [{id:'participation'}] : [],error:null})};
+      return query;
+    });
+  }
+  it.each(['owner','cleaner','contributor'] as const)('allows %s history with private caching', async role => {
+    history(role === 'owner' ? 'owner' : 'other', role === 'owner' ? null : role);
+    const response = await GET(request());
+    expect(response.status).toBe(200);expect(response.headers.get('cache-control')).toBe('private, no-store');
+    expect(download).toHaveBeenCalledWith(photoPath);
+  });
+  it('denies unrelated accounts, unrelated photo paths and unauthenticated access before download', async () => {
+    history('other');expect((await GET(request())).status).toBe(404);
+    history('owner',null,['different.jpg']);expect((await GET(request())).status).toBe(404);
+    history();getClaims.mockResolvedValue({data:{claims:null}});expect((await GET(request())).status).toBe(401);
+    getClaims.mockResolvedValue({data:{claims:{sub:'owner',is_anonymous:true}}});expect((await GET(request())).status).toBe(401);
+    expect(download).not.toHaveBeenCalled();
   });
 });

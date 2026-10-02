@@ -50,13 +50,17 @@ export async function submitCleanupEvidence({
   let uploaded = 0;
   try {
     if (!paths.length) {
-      onProgress(`Uploading photos… 0/${photos.length}`);
-      await uploadConcurrently(photos, (file, index) => uploadSecureBrowserMedia({
-      supabase, userId, kind: 'cleanup', file, subjectId: cleanupId,
-      submissionId, position: index + 1,
-    }), (path, index) => {
+      onProgress(`Uploading and checking photos… 0/${photos.length}`);
+      await uploadConcurrently(photos, async (file, index) => {
+        try { return await uploadSecureBrowserMedia({
+          supabase, userId, kind: 'cleanup', file, subjectId: cleanupId,
+          submissionId, position: index + 1,
+        }); } catch (error) {
+          throw new Error(`Photo ${index + 1} (${file.name}): ${error instanceof Error ? error.message : 'Upload could not be completed.'} Your selected photos remain in this draft.`);
+        }
+      }, (path, index) => {
       paths[index] = path;
-      onProgress(`Uploading photos… ${++uploaded}/${photos.length}`);
+      onProgress(`Uploading and checking photos… ${++uploaded}/${photos.length}`);
       });
     }
     await onPrepared(paths);

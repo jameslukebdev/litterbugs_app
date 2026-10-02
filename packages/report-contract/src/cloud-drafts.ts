@@ -28,8 +28,10 @@ export function createCloudDraftSync<D>(adapter: {
   const timers = new Map<string, ReturnType<typeof setTimeout>>();
   const listeners = new Set<(owner: string, key: string, status: DraftSyncStatus) => void>();
   const statuses = new Map<string, DraftSyncStatus>();
+  const confirmations = new Map<string, { confirmedAt: string; savedAt: string; expiresAt: string }>();
   const identity = (owner: string, key: string) => `${owner}:${key}`;
-  const status = (owner: string, key: string, value: DraftSyncStatus) => { statuses.set(identity(owner,key),value); for (const listener of listeners) listener(owner,key,value); };
+  const confirm = (owner: string, key: string, record: CloudDraft) => confirmations.set(identity(owner,key), { confirmedAt: new Date().toISOString(), savedAt: record.updated_at, expiresAt: record.expires_at });
+  const status = (owner: string, key: string, value: DraftSyncStatus) => { if (!['synced','submitting'].includes(value)) confirmations.delete(identity(owner,key)); statuses.set(identity(owner,key),value); for (const listener of listeners) listener(owner,key,value); };
   const meta = async (owner: string, key: string): Promise<Meta> => JSON.parse(await adapter.readMeta(owner,key) ?? '{}');
   const persist = (owner: string, key: string, value: Meta) => adapter.writeMeta(owner,key,JSON.stringify(value));
   function serialize<T>(owner: string, key: string, work: () => Promise<T>) {
@@ -47,6 +49,7 @@ export function createCloudDraftSync<D>(adapter: {
     const record=await adapter.writeRemote(m.pending);
     m.revision=record.revision; m.record=record; m.fingerprint=m.pendingFingerprint;
     delete m.pending; delete m.pendingFingerprint; await persist(owner,key,m);
+    confirm(owner,key,record);
     return record;
   }
   async function bounded<T>(operation: Promise<T>): Promise<T> {
@@ -65,7 +68,14 @@ export function createCloudDraftSync<D>(adapter: {
         if (remote?.payload) throw new DraftConflictError();
         m.revision=remote?.revision??0;
       }
-      if (fingerprint===m.fingerprint && m.record?.payload) { status(owner,key,m.record.state==='submitting'?'submitting':'synced'); return m.record; }
+      if (fingerprint===m.fingerprint && m.record?.payload) {
+        // A cached fingerprint proves local equality, not that the account copy
+        // still exists. Check the server before promising a device handoff.
+        const remote=await adapter.loadRemote(owner,key);
+        if (!remote?.payload || remote.revision!==m.revision || Date.parse(remote.expires_at)<=Date.now()) throw new DraftConflictError();
+        m.record=remote; await persist(owner,key,m); confirm(owner,key,remote);
+        status(owner,key,remote.state==='submitting'?'submitting':'synced'); return remote;
+      }
       const uploaded=await bounded(adapter.upload(owner,key,local));
       m.pending={target_user_id:owner,target_key:key,expected_revision:m.revision,operation_id:adapter.id(),action:'save',draft_payload:uploaded.payload,draft_photos:uploaded.paths};
       m.pendingFingerprint=fingerprint; await persist(owner,key,m);
@@ -80,7 +90,12 @@ export function createCloudDraftSync<D>(adapter: {
       await Promise.allSettled([...queues].filter(([id])=>id.startsWith(`${owner}:`)).map(([,work])=>work));
     },
     subscribe: (listener: (owner: string,key: string,status: DraftSyncStatus)=>void) => { listeners.add(listener); return () => { listeners.delete(listener); }; },
-    status: (owner: string,key: string): DraftSyncStatus => statuses.get(identity(owner,key))??'unsaved',
+    status: (owner: string,key: string): DraftSyncStatus => {
+      const value=statuses.get(identity(owner,key))??'unsaved';
+      const confirmation=confirmations.get(identity(owner,key));
+      return value==='synced' && confirmation && Date.parse(confirmation.expiresAt)<=Date.now() ? 'local' : value;
+    },
+    confirmation: (owner: string,key: string) => confirmations.get(identity(owner,key)),
     schedule(owner: string,key: string) {
       if(retired.has(owner)) return;
       const id=identity(owner,key); clearTimeout(timers.get(id));
@@ -100,12 +115,14 @@ export function createCloudDraftSync<D>(adapter: {
           m.revision=remote?.revision??0; m.record=remote??undefined; await persist(owner,key,m); status(owner,key,'local'); return local;
         }
         if (local && remote?.payload && remote.revision===m.revision && fingerprint===m.fingerprint && Date.parse(remote.expires_at)>Date.now()) {
+          confirm(owner,key,remote);
           status(owner,key,remote.state==='submitting'?'submitting':'synced'); return local;
         }
         if (remote?.payload && Date.parse(remote.expires_at)>Date.now()) {
           const restored=await bounded(adapter.download(owner,key,remote));
           await adapter.writeLocal(owner,key,restored);
           await persist(owner,key,{revision:remote.revision,record:remote,fingerprint:await adapter.fingerprint(restored)});
+          confirm(owner,key,remote);
           status(owner,key,remote.state==='submitting'?'submitting':'synced'); return restored;
         }
         // Preserve a local recovery copy after remote discard/expiry, but never
@@ -122,6 +139,7 @@ export function createCloudDraftSync<D>(adapter: {
         if(!remote?.payload || Date.parse(remote.expires_at)<=Date.now()) throw new Error('There is no current account draft to restore.');
         const restored=await bounded(adapter.download(owner,key,remote)); await adapter.writeLocal(owner,key,restored);
         await persist(owner,key,{revision:remote.revision,record:remote,fingerprint:await adapter.fingerprint(restored)});
+        confirm(owner,key,remote);
         status(owner,key,remote.state==='submitting'?'submitting':'synced'); return restored;
       }
       if(remote?.state==='submitting') throw new Error('The account draft is being submitted. Restore it to check the original submission.');

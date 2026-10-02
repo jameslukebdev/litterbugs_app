@@ -94,8 +94,8 @@ export function ReportDetail({
   const photoPaths = report.photo_paths ?? [];
   const displayedPhotoIndex = photoPaths.length ? photoIndex % photoPaths.length : 0;
   const currentPhotoPath = photoPaths[displayedPhotoIndex];
-  const detailPhotoUrl = currentPhotoPath ? getReportDetailPhotoUrl(currentPhotoPath) : null;
-  const previewPhotoUrl = currentPhotoPath ? getReportCardPhotoUrl(currentPhotoPath) : null;
+  const detailPhotoUrl = currentPhotoPath ? getReportDetailPhotoUrl(currentPhotoPath, taskBase ? report.id : undefined) : null;
+  const previewPhotoUrl = currentPhotoPath ? getReportCardPhotoUrl(currentPhotoPath, taskBase ? report.id : undefined) : null;
   const compatibilityUrl = currentPhotoPath
     ? getWebCompatibleReportPhotoUrl(currentPhotoPath)
     : null;

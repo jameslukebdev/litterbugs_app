@@ -7,7 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AccountPage } from './account-page';
 import { AccountDialog } from './account-dialog';
 
-const { blockDelete, blockedRows, rpc, profileUpdate, reportQueryNumber, invoke, clearDraft, signOut } = vi.hoisted(() => ({
+const { dashboard, blockDelete, blockedRows, rpc, profileUpdate, reportQueryNumber, invoke, clearDraft, signOut } = vi.hoisted(() => ({
+  dashboard: { revision:0, failed:false, user:'member-id' },
   invoke: vi.fn(),
   clearDraft: vi.fn(),
   signOut: vi.fn(),
@@ -18,6 +19,7 @@ const { blockDelete, blockedRows, rpc, profileUpdate, reportQueryNumber, invoke,
   reportQueryNumber: { value: 0 },
 }));
 
+vi.mock('@/lib/use-data-refresh', () => ({ useDataRefresh: () => dashboard.revision, notifyDataChanged: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }) }));
 vi.mock('@/components/resume-drafts', () => ({ ResumeDrafts: () => null }));
 vi.mock('@/lib/saved-cleanup-draft', () => ({ clearAccountCleanupDrafts: vi.fn(async () => undefined) }));
@@ -57,7 +59,7 @@ const expiredReport: Report = {
   user_id: 'member-id',
 };
 
-function query(result: { data: unknown; error: null }) {
+function query(result: { data: unknown; error: unknown }) {
   const builder = {
     eq: () => builder,
     delete: () => { blockDelete(); return builder; },
@@ -79,7 +81,7 @@ vi.mock('@/lib/supabase/client', () => ({
   createClient: () => ({
     auth: {
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: vi.fn() } } }),
-      getUser: vi.fn(async () => ({ data: { user: { id: 'member-id', email: 'member@example.com' } } })),
+      getUser: vi.fn(async () => ({ data: { user: { id: dashboard.user, email: 'member@example.com' } } })),
       resetPasswordForEmail: vi.fn(async () => ({ error: null })),
       signOut,
     },
@@ -101,6 +103,7 @@ vi.mock('@/lib/supabase/client', () => ({
         },
         error: null,
       });
+      if (dashboard.failed) return query({data:null,error:new Error('offline')});
       if (table === 'reports') {
         reportQueryNumber.value += 1;
         return query({ data: reportQueryNumber.value === 1 ? [] : [expiredReport], error: null });
@@ -134,6 +137,7 @@ vi.mock('@/lib/supabase/client', () => ({
 }));
 
 beforeEach(() => {
+  dashboard.revision=0;dashboard.failed=false;dashboard.user='member-id';
   invoke.mockReset().mockResolvedValue({ data: null, error: null });
   clearDraft.mockReset().mockResolvedValue(undefined);
   signOut.mockReset().mockResolvedValue({ error: null });
@@ -295,4 +299,25 @@ it('restores cleanup history from its route state and uses route-based payment r
   unmount(); render(<AccountPage destination="payments" userId="member-id" />);
   const receipt = await screen.findByRole('link', { name: /25.00 cleanup reward/ });
   expect(receipt.getAttribute('href')).toBe('/account/payments/contribution-id');
+});
+
+
+it('retains account work after a failed refresh, offers retry, and never declares unknown tasks empty', async () => {
+  reportQueryNumber.value=1;
+  const props={embedded:true,initialSection:'activity' as const,initialActivityTab:'reports' as const,onClose:vi.fn(),onSignedOut:vi.fn(),onOpenReport:vi.fn()};
+  const view=render(<AccountDialog {...props} />);
+  await screen.findByRole('link',{name:/Creek cleanup.*Closed/});
+  dashboard.failed=true;dashboard.revision++;
+  view.rerender(<AccountDialog {...props} />);
+  await screen.findByText('Reports could not be refreshed.');
+  expect(screen.getByRole('link',{name:/Creek cleanup.*Closed/})).toBeTruthy();
+  expect(screen.queryByText(/No actions are due/)).toBeNull();
+  dashboard.failed=false;
+  fireEvent.click(screen.getByRole('button',{name:'Retry reports'}));
+  await waitFor(()=>expect(screen.queryByText('Reports could not be refreshed.')).toBeNull());
+  expect(screen.getByRole('link',{name:/Creek cleanup.*Closed/})).toBeTruthy();
+  dashboard.user='another-account';dashboard.failed=true;dashboard.revision++;
+  view.rerender(<AccountDialog {...props} />);
+  await screen.findByText('Reports could not be refreshed.');
+  expect(screen.queryByRole('link',{name:/Creek cleanup.*Closed/})).toBeNull();
 });
