@@ -1169,14 +1169,14 @@ const submitReport = async () => {
     }
 
     Alert.alert(
-      isEditing ? 'Discard report changes?' : 'Discard this report?',
+      isEditing ? 'Discard report changes?' : 'Keep your report?',
       isEditing
         ? 'Your unsaved changes will be lost.'
-        : 'Your report details and selected photos will be lost.',
+        : 'Save your details and photos to finish later, or discard this draft.',
       [
         { text: 'Keep editing', style: 'cancel' },
         ...(!isEditing ? [{ text: 'Save for later', onPress: async () => {
-          try { await saveReportDraft(currentUserId, { form, coordinate: draftCoord, step: reportStep }); setFormOpen(false); }
+          try { await saveReportDraft(currentUserId, { form, coordinate: draftCoord, step: reportStep }); setFormOpen(false); setDraftCoord(null); }
           catch { Alert.alert('Draft not saved', 'Keep this screen open and try again.'); }
         } }] : []),
         { text: 'Discard', style: 'destructive', onPress: discardDraft },
@@ -2363,15 +2363,6 @@ const revealBottomReportField = () => {
           );
         })}
 
-        {draftCoord && (
-          <Marker
-            coordinate={draftCoord}
-            cluster={false}
-            pinColor="#2F7D32"
-            title="Draft report"
-            description="Fill the form below to save"
-          />
-        )}
       </ClusteredMapView>
 
       {showInitialMapLoading ? (
