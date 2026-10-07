@@ -896,9 +896,8 @@ export function MapExperience({
         <div className="map-header-actions">
           <button className={`header-report-button${reportMode ? ' header-report-button-active' : ''}`}
             onClick={() => { setReportListOpen(false); void toggleReportMode(); }} aria-pressed={reportMode} disabled={checkingDraft || checkingLocation} aria-busy={checkingDraft || checkingLocation}
-            aria-label={checkingDraft ? 'Checking saved draft' : selectingDraftLocation ? 'Keep location' : reportMode ? 'Cancel reporting' : 'Report litter'}>
-            <span className="header-report-long">{checkingDraft ? 'Checking…' : selectingDraftLocation ? 'Keep location' : reportMode ? 'Cancel reporting' : 'Report litter'}</span>
-            <span className="header-report-short">{checkingDraft ? 'Checking…' : selectingDraftLocation ? 'Keep' : reportMode ? 'Cancel' : 'Report'}</span>
+            aria-label={checkingDraft ? 'Checking saved draft' : selectingDraftLocation ? 'Keep location' : reportMode ? 'Cancel reporting' : 'Report Litter'}>
+            {checkingDraft ? 'Checking…' : selectingDraftLocation ? 'Keep location' : reportMode ? 'Cancel' : 'Report Litter'}
           </button>
           <div className="map-header-account"><PublicAccountAction ref={accountActionRef} initialUserId={initialUserId}
             onAccountDataChanged={refreshReports} onOpenReport={openReportById} onUserChange={handleUserChange}
@@ -925,7 +924,6 @@ export function MapExperience({
           onWidenArea={() => { setSearchPlace(null); const url = new URL(window.location.href); url.searchParams.delete('area'); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`); mapRef.current?.setZoom(Math.max(3, (mapRef.current?.getZoom() ?? 12) - 2)); }}
           onRetry={() => void refreshReports()}
           onStartReport={() => void toggleReportMode()}
-          areaLabel={searchPlace?.label ?? 'Current map area'}
           showAuthors
           onMemberBlocked={() => { void refreshReports(); }}
           onFavoriteChange={(id, favorite) => updateReportPreference('favorites', id, favorite)}

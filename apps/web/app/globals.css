@@ -42,7 +42,6 @@ button:disabled { cursor: not-allowed; opacity: .6; }
 .header-report-button:hover { border-color: var(--green-dark); background: var(--green-dark); }
 .header-report-button-active { border-color: #cbd2cd; color: #202622; background: #f7f8f7; }
 .header-report-button-active:hover { border-color: #aeb8b0; background: #eef1ef; }
-.header-report-short { display: none; }
 .public-account-control { gap: 9px; padding: 0 15px; border: 1px solid #cbd2cd; color: #202622; background: #f7f8f7; font-weight: 750; }
 .public-account-control:hover { border-color: #aeb8b0; background: #eef1ef; }
 /* The avatar is the profile affordance; the surrounding 44px target stays invisible. */
@@ -52,7 +51,7 @@ button:disabled { cursor: not-allowed; opacity: .6; }
 .public-account-control-signed-out { border-color: var(--green); color: var(--green); background: #fff; }
 .public-account-control-signed-out:hover { border-color: var(--green-dark); color: var(--green-dark); background: var(--green-soft); }
 .public-account-control:focus-visible, .header-report-button:focus-visible { outline: 3px solid rgba(47, 125, 50, .25); outline-offset: 3px; }
-.public-account-avatar, .public-account-initials { width: 32px; height: 32px; flex: none; border-radius: 50%; }
+.public-account-avatar, .public-account-initials { width: 44px; height: 44px; flex: none; border: 2px solid var(--green); border-radius: 50%; }
 .public-account-avatar { object-fit: cover; background: #e4e8e4; }
 .public-account-initials { display: grid; place-items: center; color: #35423a; background: #e2e7e3; font-size: 12px; font-weight: 850; }
 
@@ -492,8 +491,6 @@ button.member-activity-row:hover { background: var(--green-soft); }
   .map-stage { height: 100%; }
   .map-header-actions { gap: 6px; }
   .header-report-button, .public-account-control { min-height: 44px; padding: 0 10px; font-size: 13px; }
-  .header-report-long { display: none; }
-  .header-report-short { display: inline; }
   .zoom-controls { top: 12px; left: 12px; }.zoom-controls button { width: 42px; height: 42px; }
   .map-action-controls { right: 13px; bottom: 85px; }.map-action-controls button { width: 45px; height: 45px; }
   .toast { bottom: 76px; }
@@ -996,8 +993,6 @@ a.member-activity-row { color: inherit; text-decoration: none; }
 @media (max-width: 1100px) {
   .map-header-actions, .public-account-actions { gap: 6px; }
   .header-report-button, .public-account-control { padding: 0 10px; font-size: 13px; }
-  .header-report-long { display: none; }
-  .header-report-short { display: inline; }
 }
 .embedded-panel.member-dashboard .member-dashboard-header { padding-inline: 0; }
 .member-profile-summary { overflow-wrap: anywhere; }

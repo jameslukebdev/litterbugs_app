@@ -95,7 +95,7 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
           onClick={() => userId ? router.push('/account') : setAuthOpen(true)}
         >
           {userId && (avatarUrl ? (
-            <Image className="public-account-avatar" src={avatarUrl} alt="" width={32} height={32} unoptimized aria-hidden />
+            <Image className="public-account-avatar" src={avatarUrl} alt="" width={44} height={44} unoptimized aria-hidden />
           ) : (
             <span className="public-account-initials" aria-hidden>{profileLabel.charAt(0).toUpperCase()}</span>
           ))}

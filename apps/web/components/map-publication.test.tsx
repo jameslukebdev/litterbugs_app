@@ -104,7 +104,7 @@ afterEach(() => { cleanup(); window.history.replaceState({}, '', '/'); });
 async function choosePin(latitude = 0.5, valid = true) {
   render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
   await waitFor(() => expect(state.click).toBeTruthy());
-  const start = screen.queryByRole('button', { name: 'Report litter' });
+  const start = screen.queryByRole('button', { name: 'Report Litter' });
   if (start) fireEvent.click(start);
   expect(window.location.pathname).toBe('/report');
   await screen.findByRole('button', { name: 'Cancel reporting' });
@@ -342,7 +342,7 @@ it('keeps the website usable when the map provider fails to create a pin', async
   state.markerFailure = true; state.markerReports = [{ ...report(), is_published: true } as MappableReport];
   render(<MapExperience initialReports={state.markerReports} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
   await screen.findByText(/map could not display its pins/);
-  expect(screen.getByRole('button', { name: 'Report litter' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Report Litter' })).toBeTruthy();
 });
 
 it('honors an explicit Map link and keeps the tab choice on refresh', async () => {

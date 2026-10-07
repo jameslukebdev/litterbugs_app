@@ -90,15 +90,6 @@ function quickFilters(filter: ReportFilter): DiscoveryFilters {
   return next;
 }
 
-function resultsHeading(count: number, filter: ReportFilter) {
-  if (filter === 'favorites') return `${count} favorite report${count === 1 ? '' : 's'}`;
-  if (filter === 'hidden') return `${count} hidden report${count === 1 ? '' : 's'}`;
-  if (filter === 'all' || filter === 'custom') return `${count} litter report${count === 1 ? '' : 's'}`;
-  if (filter === 'completed') return `${count} completed cleanup${count === 1 ? '' : 's'}`;
-  if (filter === 'claimed') return `${count} cleanup${count === 1 ? '' : 's'} in progress`;
-  return `${count} cleanup opportunit${count === 1 ? 'y' : 'ies'}`;
-}
-
 function reportTiming(report: MappableReport) {
   if (report.cleanup_state === 'completed') return 'Cleanup complete';
   if (!report.created_at) return '';
@@ -147,7 +138,6 @@ function ReportThumbnail({ report, priority, retry, onError }: { report: Mappabl
 
 export function ReportBrowser({
   reports,
-  areaLabel = 'Current map area',
   onFavoriteChange,
   onHiddenChange,
   showAuthors = false,
@@ -184,7 +174,6 @@ export function ReportBrowser({
   truncated?: boolean;
   discoveryError?: string;
   reports: MappableReport[];
-  areaLabel?: string;
   showAuthors?: boolean;
   onMemberBlocked?: () => void;
   onFavoriteChange?: (reportId: string, favorite: boolean) => void;
@@ -316,7 +305,6 @@ export function ReportBrowser({
           <div className="report-browser-heading-row">
             <div>
               <h1 className="reports-screen-title">Litter reports</h1>
-              <p>{resultsHeading(visibleReports.length, activeFilter)} · {areaLabel}</p>
             </div>
             <label className="report-sort">
               <span className="sr-only">Sort cleanup opportunities</span>

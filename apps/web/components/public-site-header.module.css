@@ -199,3 +199,7 @@
   .brandLink { justify-self: start; }
   .brandLink img { width: 60px; height: 48px; }
 }
+
+@media (max-width: 360px) {
+  .brandLink img { width: 44px; height: 40px; }
+}
