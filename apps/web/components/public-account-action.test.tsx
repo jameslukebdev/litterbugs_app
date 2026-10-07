@@ -83,8 +83,8 @@ describe('PublicAccountAction', () => {
     currentUser.value = { id: 'member-id', email: 'member@example.com' };
     render(<PublicAccountAction />);
 
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Account' })).toBeTruthy());
-    const accountButton = screen.getByRole('button', { name: 'Account' });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Profile' })).toBeTruthy());
+    const accountButton = screen.getByRole('button', { name: 'Profile' });
     expect(accountButton.classList.contains('public-account-control-signed-out')).toBe(false);
     fireEvent.click(accountButton);
     expect(push).toHaveBeenCalledWith('/account');

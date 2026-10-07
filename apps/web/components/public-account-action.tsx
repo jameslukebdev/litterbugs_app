@@ -90,16 +90,16 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
         {userId && <NotificationLink key={userId} userId={userId} />}
         <button
           type="button"
-          className={`public-account-control${userId ? '' : ' public-account-control-signed-out'}`}
-          title={userId ? 'Account' : 'Sign in'}
+          className={`public-account-control${userId ? ' public-account-control-profile' : ' public-account-control-signed-out'}`}
+          title={userId ? 'Your profile' : 'Sign in'}
           onClick={() => userId ? router.push('/account') : setAuthOpen(true)}
         >
           {userId && (avatarUrl ? (
-            <Image className="public-account-avatar" src={avatarUrl} alt="" width={28} height={28} unoptimized aria-hidden />
+            <Image className="public-account-avatar" src={avatarUrl} alt="" width={32} height={32} unoptimized aria-hidden />
           ) : (
             <span className="public-account-initials" aria-hidden>{profileLabel.charAt(0).toUpperCase()}</span>
           ))}
-          <span className="public-account-label">{userId ? 'Account' : 'Sign in'}</span>
+          <span className="public-account-label">{userId ? 'Profile' : 'Sign in'}</span>
         </button>
       </div>
 
