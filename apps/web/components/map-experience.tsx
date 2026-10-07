@@ -18,6 +18,7 @@ import { ClusterReports } from '@/components/cluster-reports';
 import type { createReportClusters } from '@/lib/report-clusters';
 import { PublicAccountAction, type PublicAccountActionHandle } from '@/components/public-account-action';
 import Link from 'next/link';
+import Image from 'next/image';
 import { PublicSiteHeader } from '@/components/public-site-header';
 import { IoMapOutline, IoListOutline, IoOptionsOutline, IoPersonOutline } from 'react-icons/io5';
 import { PlaceSearch } from '@/components/place-search';
@@ -110,6 +111,7 @@ export function MapExperience({
   const preferenceOwnerRef = useRef(userId ?? 'guest');
   useEffect(() => { preferenceOwnerRef.current = userId ?? 'guest'; }, [userId]);
   const [mapReady, setMapReady] = useState(false);
+  const [mapTilesReady, setMapTilesReady] = useState(false);
   const [searchPlace, setSearchPlace] = useState<SearchPlace | null>(null);
   const searchPlaceRef = useRef<SearchPlace | null>(null);
   useEffect(() => {
@@ -136,12 +138,14 @@ export function MapExperience({
   const [publicationUncertain, setPublicationUncertain] = useState(false);
   const [editingReport, setEditingReport] = useState<Report | null>(null);
   const [editPhotoUrls, setEditPhotoUrls] = useState<string[]>([]);
-  const [mapPreviewId, setMapPreviewId] = useState<string | null>(null);
-  const [reportListOpen, setReportListOpen] = useState(true);
+  const openMapReportRef = useRef<(id: string) => void>(() => {});
+  const [reportListOpen, setReportListOpen] = useState(requestedView !== 'map');
+  const [viewRestored, setViewRestored] = useState(false);
   useEffect(() => {
     const restoreView = () => {
       if (window.location.pathname === '/report') return;
       setReportListOpen(readDiscoveryView(window.location.search, window.matchMedia?.('(max-width: 760px)').matches ?? false) === 'reports');
+      setViewRestored(true);
     };
     const timer = window.setTimeout(restoreView, 0);
     window.addEventListener('popstate', restoreView);
@@ -357,9 +361,9 @@ export function MapExperience({
     if (!googleMapsKey || !googleMapsMapId || !mapElementRef.current || mapRef.current) return;
     let cancelled = false;
 
-    let viewportReady = false;
+    let tilesReady = false;
     const startupTimeout = window.setTimeout(() => {
-      if (!cancelled && !viewportReady) setMapError('The map is taking too long to load. You can still browse reports or reload to try again.');
+      if (!cancelled && !tilesReady) setMapError('The map is taking too long to load. You can still browse reports or reload to try again.');
     }, 12000);
     const previousAuthFailure = window.gm_authFailure;
     window.gm_authFailure = () => {
@@ -402,21 +406,25 @@ export function MapExperience({
         map.addListener('click', (event: google.maps.MapMouseEvent) => {
           if (event.latLng) mapClickRef.current({ latitude: event.latLng.lat(), longitude: event.latLng.lng() });
         });
+        map.addListener('tilesloaded', () => {
+          if (cancelled || mapAuthFailed.current) return;
+          tilesReady = true;
+          window.clearTimeout(startupTimeout);
+          setMapTilesReady(true);
+          setMapError('');
+        });
         map.addListener('idle', () => {
-          if (mapAuthFailed.current) return;
+          if (cancelled || mapAuthFailed.current) return;
           const bounds = map.getBounds()?.toJSON();
           const center = map.getCenter();
           if (!bounds || !center) return;
-          viewportReady = true;
-          window.clearTimeout(startupTimeout);
-          setMapError('');
           const area = { ...bounds, latitude: center.lat(), longitude: center.lng() };
           setPlacement({ latitude: area.latitude, longitude: area.longitude });
           window.history.replaceState(window.history.state, '', mapUrl(new URL(window.location.href), { latitude: area.latitude, longitude: area.longitude, zoom: map.getZoom() ?? 12 }));
           saveDiscoveryMemory({ latitude: area.latitude, longitude: area.longitude, zoom: map.getZoom() ?? 12, place: searchPlaceRef.current });
           setDiscoveryArea(current => current && Object.keys(area).every(key => current[key as keyof DiscoveryArea] === area[key as keyof DiscoveryArea]) ? current : area);
         });
-        clustersRef.current = createReportClusters(map, AdvancedMarkerElement, ids => { setMapPreviewId(null); setClusterIds(ids); });
+        clustersRef.current = createReportClusters(map, AdvancedMarkerElement, ids => setClusterIds(ids));
         mapRef.current = map;
         if (selectedWhileLoading) map.fitBounds(selectedWhileLoading.bounds, 60);
         setMapReady(true);
@@ -476,8 +484,7 @@ export function MapExperience({
         });
         marker.addEventListener('gmp-click', () => {
           setPreviewedReportId(null);
-          setMapPreviewId(report.id);
-          if (window.matchMedia('(max-width: 760px)').matches) setReportListOpen(false);
+          openMapReportRef.current(report.id);
         });
       }
       const position = marker.position as google.maps.LatLngLiteral;
@@ -637,6 +644,13 @@ export function MapExperience({
     url.searchParams.set('report', report.id);
     window.history[selectedReport ? 'replaceState' : 'pushState']({ ...window.history.state, litterbugsReportNavigation: true }, '', `${url.pathname}${url.search}`);
   }
+
+  useEffect(() => {
+    openMapReportRef.current = id => {
+      const report = visibleReports.find(item => item.id === id);
+      if (report) openReport(report);
+    };
+  });
 
   async function openReportById(reportId: string) {
     const report = reports.find(({ id }) => id === reportId);
@@ -878,7 +892,6 @@ export function MapExperience({
     setToast('Report deleted.');
   }
 
-  const mapPreview = visibleReports.find(report => report.id === mapPreviewId);
 
   const editDraft: ReportDraft = editingReport ? {
     ...EMPTY_REPORT_DRAFT,
@@ -891,7 +904,7 @@ export function MapExperience({
   } : EMPTY_REPORT_DRAFT;
 
   return (
-    <main className={`map-page website-experience${reportListOpen ? ' showing-reports' : ''}`}>
+    <main className={`map-page website-experience${!viewRestored && !requestedView ? ' discovery-default-view' : ''}${reportListOpen ? ' showing-reports' : ''}`}>
       <PublicSiteHeader activePath="/" action={(
         <div className="map-header-actions">
           <button className={`header-report-button${reportMode ? ' header-report-button-active' : ''}`}
@@ -944,9 +957,9 @@ export function MapExperience({
           favoriteReportIds={reportPreferences.favorites}
           hiddenReportIds={reportPreferences.hidden}
         />
-        <section className={`map-stage${reportMode ? ' map-stage-reporting' : ''}`} aria-label="Litterbugs report map">
+        <section aria-busy={!mapTilesReady && !mapError} className={`map-stage${reportMode ? ' map-stage-reporting' : ''}`} aria-label="Litterbugs report map">
           <div ref={mapElementRef} className="google-map" />
-          {!mapReady && !mapError && <div className="map-loading"><span className="spinner" /><span>Loading map…</span></div>}
+          {!mapError && <div className={`map-loading map-loading-cover${mapTilesReady ? ' map-loading-complete' : ''}`} aria-hidden={mapTilesReady} role="status" aria-label="Loading map"><Image src="/brand/litterbugs-logo.png" alt="" width={100} height={68} priority /></div>}
           {mapError && <div className="map-error"><Icon name="warning" /><strong>Map unavailable</strong><span>{mapError}</span></div>}
 
           {reportMode && <>
@@ -968,10 +981,6 @@ export function MapExperience({
             <button onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() ?? 12) + 1)} aria-label="Zoom in"><Icon name="plus" /></button>
             <button onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() ?? 12) - 1)} aria-label="Zoom out"><Icon name="minus" /></button>
           </div>
-          {mapPreview && <section className="map-report-preview" aria-label="Selected map report">
-            <button className="icon-button" aria-label="Close report preview" onClick={() => setMapPreviewId(null)}><Icon name="close" /></button>
-            <button className="map-report-preview-content" onClick={() => { openReport(mapPreview); setMapPreviewId(null); }}><strong>{mapPreview.title || 'Litter report'}</strong><span>{mapPreview.cleanup_state === 'completed' ? 'Cleanup complete' : mapPreview.funded_amount_cents ? `${(mapPreview.funded_amount_cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })} reward` : 'Volunteer cleanup'}</span><span>View report →</span></button>
-          </section>}
           <div className="map-action-controls">
             <button onClick={toggleMapType} aria-label={`Change map type. Current: ${MAP_TYPES[mapTypeIndex]}`} title="Change map type"><Icon name="layers" /></button>
             <button onClick={centerOnUser} aria-label="Center map on your location" title="My location"><Icon name="location" /></button>

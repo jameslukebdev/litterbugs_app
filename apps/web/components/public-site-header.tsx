@@ -32,6 +32,7 @@ function HeaderLink({
   return (
     <Link
       href={href}
+      prefetch={true}
       className={styles.navLink}
       aria-current={activePath === href.split('?')[0] ? 'page' : undefined}
       onClick={onNavigate}
@@ -130,7 +131,7 @@ export function PublicSiteHeader({ activePath, action }: { activePath: PublicPat
 
         <NavigationMenu activePath={activePath} mobile />
 
-        <Link href="/?view=map" className={styles.brandLink} aria-label="Litterbugs map">
+        <Link href="/?view=map" prefetch={true} className={styles.brandLink} aria-label="Litterbugs map">
           <Image src="/brand/litterbugs-logo.png" alt="Litterbugs" width={636} height={433} priority />
         </Link>
 

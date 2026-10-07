@@ -25,7 +25,9 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
 }>(function PublicAccountAction({ initialUserId = null, onAccountDataChanged, onOpenReport, onUserChange, onResumeDraft }, ref) {
   const router = useRouter();
   const [userId, setUserId] = useState(initialUserId);
+  const [authChecked, setAuthChecked] = useState(Boolean(initialUserId));
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [loadedAvatar, setLoadedAvatar] = useState('');
   const [email, setEmail] = useState('');
   const [authIntent, setAuthIntent] = useState<AuthIntent>(null);
   const [authOpen, setAuthOpen] = useState(false);
@@ -34,9 +36,10 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
   const promptedForProfileRef = useRef(false);
 
   const loadProfile = useCallback(async (nextUserId: string | null, nextEmail = '') => {
+    setAuthChecked(true);
     const identityChanged = userIdRef.current !== nextUserId;
     userIdRef.current = nextUserId;
-    if (identityChanged) setUserId(nextUserId);
+    if (identityChanged) { setUserId(nextUserId); setProfile(null); setLoadedAvatar(''); }
     setEmail(nextEmail);
     if (identityChanged) onUserChange?.(nextUserId);
     if (nextUserId) setAuthOpen(false);
@@ -47,6 +50,7 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
     }
 
     const { data } = await createClient().from('profiles').select('*').eq('id', nextUserId).maybeSingle();
+    if (userIdRef.current !== nextUserId) return;
     setProfile(data);
     if (data && !data.profile_completed_at && !promptedForProfileRef.current) {
       promptedForProfileRef.current = true;
@@ -59,7 +63,7 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
     const supabase = createClient();
     void supabase.auth.getUser().then(({ data }) => {
       if (!cancelled) void loadProfile(realUserId(data.user), data.user?.email ?? '');
-    });
+    }).catch(() => { if (!cancelled) setAuthChecked(true); });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       window.setTimeout(() => {
         if (!cancelled) void loadProfile(realUserId(session?.user), session?.user.email ?? '');
@@ -88,19 +92,18 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
     <>
       <div className="public-account-actions">
         {userId && <NotificationLink key={userId} userId={userId} />}
-        <button
+        {!authChecked ? <span className="public-account-placeholder" role="status" aria-label="Loading profile" /> : <button
           type="button"
           className={`public-account-control${userId ? ' public-account-control-profile' : ' public-account-control-signed-out'}`}
           title={userId ? 'Your profile' : 'Sign in'}
           onClick={() => userId ? router.push('/account') : setAuthOpen(true)}
         >
-          {userId && (avatarUrl ? (
-            <Image className="public-account-avatar" src={avatarUrl} alt="" width={44} height={44} unoptimized aria-hidden />
-          ) : (
-            <span className="public-account-initials" aria-hidden>{profileLabel.charAt(0).toUpperCase()}</span>
-          ))}
+          {userId && <span className="public-account-avatar-frame" aria-hidden="true">
+            <span className="public-account-initials">{profileLabel.charAt(0).toUpperCase()}</span>
+            {avatarUrl && <Image className="public-account-avatar" data-loaded={loadedAvatar === avatarUrl} src={avatarUrl} alt="" width={52} height={52} unoptimized loading="eager" onLoad={() => setLoadedAvatar(avatarUrl)} onError={() => setLoadedAvatar('')} />}
+          </span>}
           <span className="public-account-label">{userId ? 'Profile' : 'Sign in'}</span>
-        </button>
+        </button>}
       </div>
 
       {authOpen && <AuthDialog intent={authIntent} onClose={() => setAuthOpen(false)} />}

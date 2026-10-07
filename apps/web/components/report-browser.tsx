@@ -107,6 +107,7 @@ function ReportThumbnail({ report, priority, retry, onError }: { report: Mappabl
   const photoPath = report.photo_paths?.[0];
   const src = photoPath ? getReportCardPhotoUrl(photoPath) : null;
   const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   if (!src || failed) {
     return (
@@ -121,6 +122,9 @@ function ReportThumbnail({ report, priority, retry, onError }: { report: Mappabl
   return (
     <span className="report-result-photo">
       <img
+        className="report-card-image"
+        data-loaded={loaded}
+        onLoad={() => setLoaded(true)}
         src={retryReportPhotoUrl(src, retry)}
         alt=""
         decoding="async"
@@ -392,7 +396,7 @@ export function ReportBrowser({
               }}>Retry photo</button>}
               {onFavoriteChange && <button className="card-favorite" aria-label={`${favoriteReportIds.has(report.id) ? 'Unfavorite' : 'Favorite'} ${report.title || 'report'}`} aria-pressed={favoriteReportIds.has(report.id)} onClick={() => onFavoriteChange(report.id, !favoriteReportIds.has(report.id))}><Icon name="heart" /></button>}
               {onHiddenChange && <details className="card-options"><summary aria-label={`Options for ${report.title || 'report'}`}>•••</summary><button onClick={() => onHiddenChange(report.id, !hiddenReportIds.has(report.id))}>{hiddenReportIds.has(report.id) ? 'Unhide report' : 'Hide report'}</button></details>}
-              {report.user_id && authors[report.user_id] && <ReportAuthor key={report.user_id} profileId={report.user_id} initialProfile={authors[report.user_id]} sourceReportId={report.id} onBlocked={onMemberBlocked} />}
+              {showAuthors && report.user_id && (authors[report.user_id] ? <ReportAuthor key={report.user_id} profileId={report.user_id} initialProfile={authors[report.user_id]} sourceReportId={report.id} onBlocked={onMemberBlocked} /> : <div className="report-author report-author-placeholder" aria-hidden="true"><span className="report-author-initial" /><span className="report-author-copy"><span>Community member</span></span></div>)}
               </article>
             );
           }) : (

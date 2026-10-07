@@ -8,9 +8,10 @@ const state = vi.hoisted(() => ({
   center: { lat: 0, lng: 0 },
   markerFailure: false,
   markerReports: [] as MappableReport[],
-  markerInstances: [] as { map: unknown; position: {lat: number; lng: number}; title: string; glyph?: HTMLElement }[],
+  markerInstances: [] as { map: unknown; position: {lat: number; lng: number}; title: string; glyph?: HTMLElement; click?: () => void; click?: () => void }[],
   click: null as null | ((event: unknown) => void),
   idle: null as null | (() => void),
+  tiles: null as null | (() => void),
   discovery: vi.fn(),
   panTo: vi.fn(),
   fitBounds: vi.fn(),
@@ -33,18 +34,18 @@ vi.mock('@googlemaps/js-api-loader', () => ({
   setOptions: vi.fn(),
   importLibrary: async (name: string) => name === 'maps' ? { Map: class {
     constructor(_element: unknown, options: unknown) { state.mapOptions(options); }
-    addListener(name: string, callback: (event: unknown) => void) { if (name === 'click') state.click = callback; else if (name === 'idle') state.idle = () => callback(undefined); }
+    addListener(name: string, callback: (event: unknown) => void) { if (name === 'click') state.click = callback; else if (name === 'idle') state.idle = () => callback(undefined); else if (name === 'tilesloaded') state.tiles = () => callback(undefined); }
     panTo(location: { lat: number; lng: number }) { state.center = location; state.panTo(location); } fitBounds(...args: unknown[]) { state.fitBounds(...args); } setZoom() {} getZoom() { return 14; }
     getBounds() { return { toJSON: () => ({ north: 1, south: -1, west: -1, east: 1 }) }; }
     getCenter() { return { lat: () => state.center.lat, lng: () => state.center.lng }; }
   } } : { AdvancedMarkerElement: class {
-    map: unknown; position: {lat: number; lng: number}; title: string; glyph?: HTMLElement;
+    map: unknown; position: {lat: number; lng: number}; title: string; glyph?: HTMLElement; click?: () => void;
     constructor(options: {map: unknown; position: {lat: number; lng: number}; title: string}) {
       if (state.markerFailure) throw new Error('Map renderer unavailable');
       this.map = options.map; this.position = options.position; this.title = options.title; state.markerInstances.push(this);
     }
     append(glyph: HTMLElement) { this.glyph = glyph; }
-    addEventListener() {}
+    addEventListener(name: string, callback: () => void) { if (name === 'gmp-click') this.click = callback; }
   } },
 }));
 vi.mock('@/components/public-site-header', () => ({ PublicSiteHeader: ({ action }: { action: React.ReactNode }) => action }));
@@ -93,7 +94,7 @@ vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({
 
 beforeEach(() => {
   state.center = { lat: 0, lng: 0 }; state.markerFailure = false; state.markerInstances = []; state.markerReports = [];
-  vi.clearAllMocks(); state.discovery.mockReset().mockResolvedValue({ reports: [], truncated: false }); state.idle = null; state.journal = undefined; state.click = null; state.published = false; state.lostResponse = false;
+  vi.clearAllMocks(); state.discovery.mockReset().mockResolvedValue({ reports: [], truncated: false }); state.idle = null; state.tiles = null; state.journal = undefined; state.click = null; state.published = false; state.lostResponse = false;
   state.upload.mockResolvedValue('test-user/test-report/photo.jpg');
   state.review.mockResolvedValue(undefined);
   Object.defineProperty(navigator, 'geolocation', { configurable: true, value: {
@@ -364,5 +365,53 @@ it('falls back to reports when the map never supplies a viewport', async () => {
     expect(screen.getByText(/map is taking too long/)).toBeTruthy();
     await act(async () => { await vi.advanceTimersByTimeAsync(300); });
     expect(state.discovery).toHaveBeenCalled();
+  } finally { vi.useRealTimers(); }
+});
+
+
+it('keeps the map covered until its tiles are ready, then leaves it visible during later searches', async () => {
+  render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="test-key" googleMapsMapId="test-map" initialError="" />);
+  await waitFor(() => expect(state.tiles).toBeTruthy());
+  const cover = document.querySelector('.map-loading-cover')!;
+  expect(cover.classList.contains('map-loading-complete')).toBe(false);
+  act(() => state.idle!());
+  expect(cover.classList.contains('map-loading-complete')).toBe(false);
+  act(() => state.tiles!());
+  expect(cover.classList.contains('map-loading-complete')).toBe(true);
+  act(() => state.idle!());
+  expect(cover.classList.contains('map-loading-complete')).toBe(true);
+});
+
+it('renders an explicit map URL without briefly opening the report list', () => {
+  window.history.replaceState(null, '', '/?view=map');
+  render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="" googleMapsMapId="" initialError="" />);
+  expect(document.querySelector('.website-experience')?.classList.contains('showing-reports')).toBe(false);
+});
+
+it('opens a pin directly in report details, using the latest refreshed report data', async () => {
+  render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+  await waitFor(() => expect(state.click).toBeTruthy());
+  state.markerReports = [{ ...report(), title: 'Original title' } as MappableReport];
+  fireEvent.click(screen.getByRole('button', { name: 'Refresh visible pins' }));
+  state.markerReports = [{ ...state.markerReports[0], title: 'Updated cleanup' }];
+  fireEvent.click(screen.getByRole('button', { name: 'Refresh visible pins' }));
+  act(() => state.markerInstances[0].click!());
+  expect(screen.getByLabelText('Linked report').textContent).toBe('Updated cleanup');
+  expect(screen.queryByLabelText('Selected map report')).toBeNull();
+  expect(new URLSearchParams(window.location.search).get('report')).toBe('test-report');
+  fireEvent.click(screen.getByRole('button', { name: 'Back to discovery' }));
+  expect(screen.queryByLabelText('Linked report')).toBeNull();
+});
+
+it('exits the map loading state when tiles time out and recovers if they arrive later', async () => {
+  vi.useFakeTimers();
+  try {
+    render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(12000); });
+    expect(screen.getByText('Map unavailable')).toBeTruthy();
+    expect(document.querySelector('.map-loading-cover')).toBeNull();
+    act(() => state.tiles!());
+    expect(screen.queryByText('Map unavailable')).toBeNull();
+    expect(document.querySelector('.map-loading-complete')).toBeTruthy();
   } finally { vi.useRealTimers(); }
 });

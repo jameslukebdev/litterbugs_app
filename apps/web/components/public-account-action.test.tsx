@@ -8,7 +8,7 @@ import { PublicAccountAction } from './public-account-action';
 
 const { currentUser, authListener, push } = vi.hoisted(() => ({
   push: vi.fn(),
-  currentUser: { value: null as null | { id: string; email: string } },
+  currentUser: { fail: false, value: null as null | { id: string; email: string } },
   authListener: { value: null as null | ((event: string, session: unknown) => void) },
 }));
 
@@ -51,7 +51,7 @@ function profileQuery() {
 vi.mock('@/lib/supabase/client', () => ({
   createClient: () => ({
     auth: {
-      getUser: async () => ({ data: { user: currentUser.value } }),
+      getUser: async () => { if (currentUser.fail) throw new Error('Offline'); return { data: { user: currentUser.value } }; },
       onAuthStateChange: (listener: (event: string, session: unknown) => void) => {
         authListener.value = listener;
         return { data: { subscription: { unsubscribe: vi.fn() } } };
@@ -67,6 +67,7 @@ vi.mock('@/lib/supabase/client', () => ({
 afterEach(() => {
   cleanup();
   currentUser.value = null;
+  currentUser.fail = false;
   authListener.value = null;
 });
 
@@ -89,4 +90,11 @@ describe('PublicAccountAction', () => {
     fireEvent.click(accountButton);
     expect(push).toHaveBeenCalledWith('/account');
   });
+});
+
+it('keeps sign in available if the initial session check fails', async () => {
+  currentUser.fail = true;
+  render(<PublicAccountAction />);
+  expect(await screen.findByRole('button', { name: 'Sign in' })).toBeTruthy();
+  expect(screen.queryByLabelText('Loading profile')).toBeNull();
 });
