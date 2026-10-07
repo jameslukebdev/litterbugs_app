@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { Report } from '@litterbugs/report-contract';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -294,7 +294,7 @@ describe('ReportDetail photos', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Share Your Impact' }));
     expect(screen.getByRole('dialog', { name: 'Share your cleanup impact' })).toBeTruthy();
-    expect(screen.getAllByText('Cleanup complete')).toHaveLength(3);
+    expect(within(screen.getByRole('dialog', { name: 'Share your cleanup impact' })).getByText('Cleanup complete')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Close share options' }));
 
     Object.defineProperty(window, 'matchMedia', {
@@ -573,4 +573,46 @@ it('explains a full-photo failure even with a loaded preview and retries in plac
  fireEvent.load(retried);
  expect(screen.getByRole('button',{name:'View full photo'})).toBeTruthy();
  expect(onClose).not.toHaveBeenCalled();
+});
+
+
+it('retains the displayed photo and counter while another carousel image loads, including retries', () => {
+  const view = render(<ReportDetail report={{ ...report, photo_paths: ['user/report/one.jpg', 'user/report/two.jpg', 'user/report/three.jpg'] }} isOwner={false} onClose={vi.fn()} />);
+  const first = screen.getByAltText('Report photo 1 of 3');
+  fireEvent.load(first);
+  fireEvent.click(screen.getByRole('button', { name: 'Next photo' }));
+  expect(view.container.querySelector('.report-photo-retained')?.getAttribute('src')).toBe(first.getAttribute('src'));
+  expect(view.container.querySelector('.photo-count')?.textContent).toBe('1/3');
+  expect(screen.queryByText('Loading photo…')).toBeNull();
+  expect(view.container.querySelector('.spinner')).toBeNull();
+  // A fast second click skips the pending image without clearing the displayed one.
+  fireEvent.click(screen.getByRole('button', { name: 'Next photo' }));
+  fireEvent.error(screen.getByAltText('Report photo 3 of 3'));
+  expect(screen.getByText('Photo could not load. Previous photo shown.')).toBeTruthy();
+  expect(view.container.querySelector('.report-photo-retained')?.getAttribute('src')).toBe(first.getAttribute('src'));
+  fireEvent.click(screen.getByRole('button', { name: 'Retry photo' }));
+  fireEvent.load(screen.getByAltText('Report photo 3 of 3'));
+  expect(view.container.querySelector('.photo-count')?.textContent).toBe('3/3');
+});
+
+it('retains the photo in the expanded viewer while the next image loads', () => {
+  render(<ReportDetail report={{ ...report, photo_paths: ['user/report/one.jpg', 'user/report/two.jpg'] }} isOwner={false} onClose={vi.fn()} />);
+  fireEvent.load(screen.getByAltText('Report photo 1 of 2'));
+  fireEvent.click(screen.getByRole('button', { name: 'View full photo' }));
+  fireEvent.click(screen.getAllByRole('button', { name: 'Next photo' }).at(-1)!);
+  expect(document.querySelector('.photo-viewer-image img[aria-hidden="true"]')?.getAttribute('src')).toContain('one.jpg');
+  expect(document.querySelector('.photo-viewer-current')?.classList.contains('report-photo-loading')).toBe(true);
+  fireEvent.load(screen.getByAltText('Report photo 2 of 2'));
+  expect(document.querySelector('.photo-viewer-current')?.classList.contains('report-photo-loading')).toBe(false);
+});
+
+it('keeps the title and original photo ahead of async completed-cleanup details', async () => {
+  const view = render(<ReportDetail report={{ ...report, cleanup_state: 'completed', photo_paths: ['user/report/one.jpg'] }} isOwner={false} onClose={vi.fn()} />);
+  expect(view.container.querySelector('.report-detail-header .completed-cleanup-story')).toBeNull();
+  expect(screen.getByText('Loading cleanup details…').classList.contains('sr-only')).toBe(true);
+  expect(view.container.querySelector('.completed-cleanup-story')).toBeNull();
+  await screen.findByText('Cleanup details unavailable.');
+  const photo = view.container.querySelector('.report-detail-visual')!;
+  const story = view.container.querySelector('.completed-cleanup-story')!;
+  expect(photo.compareDocumentPosition(story) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });

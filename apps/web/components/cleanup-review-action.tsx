@@ -65,7 +65,7 @@ export function CleanupReviewAction({
   }
 
   const refreshNotice = attemptFailed ? <p role="alert" className="form-message error-message">Cleanup review could not be refreshed. {attempt ? 'Your last confirmed review and feedback are still here. Retry before sending a decision.' : 'Retry to check whether evidence needs your review.'} <button type="button" className="secondary-button" onClick={() => void refreshAttempt()}>Retry cleanup review</button></p> : null;
-  if (!attempt) return <>{refreshNotice}{attemptLoading && <span role="status">Checking cleanup review…</span>}{message && <span className="cleanup-action-message" role="status">{message}</span>}</>;
+  if (!attempt) return <>{refreshNotice}{attemptLoading && <span className="sr-only" role="status">Checking cleanup review…</span>}{message && <span className="cleanup-action-message" role="status">{message}</span>}</>;
 
   async function openReview() {
     if (!attempt) return;

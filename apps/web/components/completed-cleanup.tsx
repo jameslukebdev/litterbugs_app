@@ -31,9 +31,10 @@ export function CompletedCleanup({ reportId }: { reportId: string }) {
     void load().catch(() => { if (!cancelled) setError(true); });
     return () => { cancelled = true; };
   }, [reportId, retry]);
+  if (!impact && !error) return <span className="sr-only" role="status">Loading cleanup details…</span>;
   return <section className="completed-cleanup-story">
     <h3>Cleanup complete</h3>
-    {error ? <><p>Cleanup details unavailable.</p><button className="secondary-button" onClick={() => { setError(false); setRetry(value => value + 1); }}>Try again</button></> : !impact ? <p role="status">Loading cleanup details…</p> : <>
+    {error ? <><p>Cleanup details unavailable.</p><button className="secondary-button" onClick={() => { setError(false); setRetry(value => value + 1); }}>Try again</button></> : impact && <>
       <ReportAuthor profileId={impact.cleanerId} />
       {impact.completedAt && <p>Cleaned {new Date(impact.completedAt).toLocaleDateString()}</p>}
       {impact.rewardCents > 0 && <p>Funded cleanup · ${(impact.rewardCents / 100).toFixed(2)} cleanup reward</p>}

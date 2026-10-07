@@ -1105,3 +1105,18 @@ a.member-activity-row { color: inherit; text-decoration: none; }
   .public-account-actions { min-width: 100px; }
   .header-report-button { padding-inline: 8px; }
 }
+
+/* Keep the displayed carousel image in place while the next one decodes. */
+.report-photo-retained { pointer-events: none; }
+.report-photo { transition: opacity .2s ease; }
+.photo-viewer-image { height: min(65dvh, 650px); display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); align-items: center; justify-items: center; }
+.photo-viewer-image img { grid-area: 1 / 1; width: 100%; height: 100%; max-height: 100%; object-fit: contain; }
+.photo-viewer-current, .photo-viewer-retained { transition: opacity .2s ease; }
+.photo-viewer-image.zoomed { align-items: start; justify-items: start; }
+.photo-viewer-image.zoomed img { width: 200%; height: auto; max-height: none; }
+.completed-cleanup-story { animation: cleanup-story-in .18s ease; }
+@keyframes cleanup-story-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .report-photo, .photo-viewer-current, .photo-viewer-retained { transition: none; }
+  .completed-cleanup-story { animation: none; }
+}
