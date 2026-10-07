@@ -145,8 +145,8 @@ button:disabled { cursor: not-allowed; opacity: .6; }
 .auth-heading { margin-bottom: 22px; text-align: center; }
 .auth-heading h2 { margin-bottom: 9px; }
 .auth-heading p { margin: 0; font-size: 14px; }
-.provider-grid { display: grid; gap: 10px; }
-.provider-button { width: 100%; min-height: 52px; position: relative; display: flex; align-items: center; justify-content: center; border-radius: 14px; font-size: 16px; font-weight: 800; cursor: pointer; }
+.provider-grid { display: grid; gap: 11px; }
+.provider-button { width: 100%; min-height: 52px; position: relative; display: flex; align-items: center; justify-content: center; border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; }
 .provider-button-content { display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
 .google-provider-icon { width: 20px; height: 20px; object-fit: contain; }
 .google-provider { color: #1f1f1f; background: #fff; border: 1px solid #747775; }.google-provider:hover { background: #f8faf8; }
@@ -670,9 +670,14 @@ button.member-activity-row:hover { background: var(--green-soft); }
   .member-dashboard .member-dashboard-header { flex-wrap: wrap; }
   .member-dashboard .member-edit-profile { width: auto; min-height: 38px; }
 }
-.auth-dialog .provider-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
-.auth-dialog .provider-button { min-height: 52px; border-radius: 16px; width: 100%; }
-.email-provider { margin-top: 12px; border: 1px solid #d8dde2; background: #fff; font-weight: 600; cursor: pointer; }
+.auth-dialog .provider-grid { display: grid; grid-template-columns: 1fr; gap: 11px; }
+.auth-dialog .provider-button { min-height: 52px; border-radius: 14px; width: 100%; }
+.auth-dialog .provider-button:disabled { opacity: .58; cursor: wait; }
+.auth-provider-divider { display: flex; align-items: center; gap: 12px; margin: 15px 0 11px; color: #777; font-size: 13px; }
+.auth-provider-divider span { height: 1px; flex: 1; background: #bcc3ca; }
+.email-provider { border: 1px solid #2f7d32; background: #2f7d32; color: #fff; font-weight: 600; cursor: pointer; }
+.email-provider:hover { background: #256528; }
+.email-provider-icon { width: 21px; height: 21px; flex: none; }
 .auth-policy { font-size: 12px; color: #667078; line-height: 1.6; text-align: center; margin-top: 24px; }
 .auth-policy a, .auth-help { color: #2f7d32; }
 .auth-help { display: block; text-align: center; font-size: 13px; }

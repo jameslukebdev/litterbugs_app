@@ -47,11 +47,13 @@ export function AuthDialog({
   async function startProvider(provider: 'google' | 'facebook') {
     setMessage('');
     setLoading(provider);
-    const { error } = await createClient().auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: authCallbackUrl() },
-    });
-    if (error) {
+    try {
+      const { error } = await createClient().auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: authCallbackUrl() },
+      });
+      if (error) throw error;
+    } catch {
       setMessage(`We couldn’t start ${provider} sign in. Check your connection and try again.`);
       setLoading('');
     }
@@ -144,7 +146,7 @@ export function AuthDialog({
             <button className="provider-button google-provider" onClick={() => startProvider('google')} disabled={Boolean(loading)}>
               <span className="provider-button-content">
                 <Image className="google-provider-icon" src="/brand/google-g-logo.png" alt="" width={200} height={204} aria-hidden />
-                <span>{loading === 'google' ? 'Opening Google…' : 'Continue with Google'}</span>
+                <span>{loading === 'google' ? 'Signing in with Google…' : 'Continue with Google'}</span>
               </span>
             </button>
             {facebookLoginEnabled && <button className="provider-button facebook-provider" onClick={() => startProvider('facebook')} disabled={Boolean(loading)}>
@@ -152,12 +154,23 @@ export function AuthDialog({
                 <svg className="facebook-provider-icon" viewBox="0 0 512 512" aria-hidden>
                   <path fill="currentColor" fillRule="evenodd" d="M480 257.35c0-123.7-100.3-224-224-224s-224 100.3-224 224c0 111.8 81.9 204.47 189 221.29V322.12h-56.89v-64.77H221V208c0-56.13 33.45-87.16 84.61-87.16 24.51 0 50.15 4.38 50.15 4.38v55.13H327.5c-27.81 0-36.51 17.26-36.51 35v42h62.12l-9.92 64.77H291v156.54c107.1-16.81 189-109.48 189-221.31Z" />
                 </svg>
-                <span>{loading === 'facebook' ? 'Opening Facebook…' : 'Continue with Facebook'}</span>
+                <span>{loading === 'facebook' ? 'Signing in with Facebook…' : 'Continue with Facebook'}</span>
               </span>
             </button>}
           </div>}
 
-          {!emailOpen && <button className="provider-button email-provider" onClick={() => setEmailOpen(true)}>Continue with Email</button>}
+          {!emailOpen && <>
+            <div className="auth-provider-divider" aria-hidden><span />or<span /></div>
+            <button className="provider-button email-provider" onClick={() => setEmailOpen(true)} disabled={Boolean(loading)}>
+              <span className="provider-button-content">
+                <svg className="email-provider-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+                  <rect x="3" y="5" width="18" height="14" rx="2" />
+                  <path d="m3 6 9 7 9-7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span>Continue with Email</span>
+              </span>
+            </button>
+          </>}
           {<details className="account-continuation"><summary>Used Apple to sign in on the app?</summary><p>Open Litterbugs on your phone while signed in, then go to Profile → Settings → Sign-in methods. Connect Google there, then use that same Google account here to continue with your existing reports and drafts.</p><p>Creating another account with the same email does not link your accounts.</p></details>}
           {!emailOpen && message && <p role="alert" className="form-message error-message">{message}</p>}
           {emailOpen && <button className="auth-back" onClick={() => { setEmailOpen(false); setMessage(''); setMode('login'); }}>← All sign-in options</button>}
