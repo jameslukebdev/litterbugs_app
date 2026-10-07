@@ -121,6 +121,12 @@ export function ReportDetail({
   const retained = retainedPhoto?.reportId === report.id ? retainedPhoto : null;
   const visiblePhotoIndex = !photoLoaded && retained ? retained.index : displayedPhotoIndex;
 
+  function markPhotoReady() {
+    if (!photoSrc) return;
+    if (!photoLoaded) setRenderedPhoto({ path: currentPhotoPath, loaded: true, failed: false });
+    readyPhotoRef.current = { reportId: report.id, src: photoSrc, index: displayedPhotoIndex };
+  }
+
   function selectPhoto(index: number) {
     setRetainedPhoto(readyPhotoRef.current?.reportId === report.id ? readyPhotoRef.current : null);
     setPhotoIndex(index);
@@ -310,9 +316,10 @@ export function ReportDetail({
               {photoSrc && (photoLoaded || retained) && !photoFailed && <button disabled={!photoLoaded} className="photo-expand-button" onClick={() => { setPhotoExpanded(true); setPhotoZoomed(false); }}>View full photo</button>}
               {photoPaths.length ? (
                 <>
-                  {retained && <img className={`report-photo report-photo-retained${photoLoaded ? ' report-photo-loading' : ''}`} src={retained.src} alt="" aria-hidden="true" />}
+                  {retained && retained.src !== photoSrc && <img key={retained.src} className={`report-photo report-photo-retained${photoLoaded ? ' report-photo-loading' : ''}`} src={retained.src} alt="" aria-hidden="true" />}
                   {previewPhotoUrl && !retained && !photoLoaded && !previewFailed && (
                     <img
+                      key={retryReportPhotoUrl(previewPhotoUrl, photoRetry)}
                       className={`report-photo report-photo-preview${previewLoaded ? ' report-photo-preview-loaded' : ''}`}
                       src={retryReportPhotoUrl(previewPhotoUrl, photoRetry)}
                       alt=""
@@ -325,12 +332,13 @@ export function ReportDetail({
                   {photoSrc && !photoFailed && (
                     <img
                       className={`report-photo${photoLoaded ? '' : ' report-photo-loading'}`}
-                      key={`${currentPhotoPath}:${photoRetry}`}
+                      key={photoSrc}
                       src={photoSrc}
                       alt={`Report photo ${displayedPhotoIndex + 1} of ${photoPaths.length}`}
                       decoding="async"
                       fetchPriority="high"
-                      onLoad={() => { setRenderedPhoto({ path: currentPhotoPath, loaded: true, failed: false }); readyPhotoRef.current = { reportId: report.id, src: photoSrc, index: displayedPhotoIndex }; }}
+                      ref={node => { if (node?.complete && node.naturalWidth > 0) markPhotoReady(); }}
+                      onLoad={markPhotoReady}
                       onError={() => setRenderedPhoto({ path: currentPhotoPath, loaded: false, failed: true })}
                     />
                   )}
@@ -391,7 +399,7 @@ export function ReportDetail({
           onClose={closeShareDialog}
           onShared={() => notify('Report shared.')}
         />
-        {photoExpanded && photoSrc && <ModalShell onClose={() => setPhotoExpanded(false)} label="Report photo viewer" className="photo-viewer-dialog"><h2>Photo {visiblePhotoIndex + 1} of {photoPaths.length}</h2><button className="secondary-button" onClick={() => setPhotoZoomed(value => !value)}>{photoZoomed ? 'Fit photo' : 'Zoom in'}</button><div className={`photo-viewer-image${photoZoomed ? ' zoomed' : ''}`}><>{retained && <img className={`photo-viewer-retained${photoLoaded ? ' report-photo-loading' : ''}`} src={retained.src} alt="" aria-hidden="true" />}<img className={photoLoaded ? 'photo-viewer-current' : 'photo-viewer-current report-photo-loading'} src={photoSrc} alt={`Report photo ${displayedPhotoIndex + 1}`} /></></div>{photoPaths.length > 1 && <div className="photo-viewer-controls"><button className="secondary-button" onClick={() => { selectPhoto((displayedPhotoIndex + photoPaths.length - 1) % photoPaths.length); }}>Previous photo</button><button className="secondary-button" onClick={() => { selectPhoto((displayedPhotoIndex + 1) % photoPaths.length); }}>Next photo</button></div>}</ModalShell>}
+        {photoExpanded && photoSrc && <ModalShell onClose={() => setPhotoExpanded(false)} label="Report photo viewer" className="photo-viewer-dialog"><h2>Photo {visiblePhotoIndex + 1} of {photoPaths.length}</h2><button className="secondary-button" onClick={() => setPhotoZoomed(value => !value)}>{photoZoomed ? 'Fit photo' : 'Zoom in'}</button><div className={`photo-viewer-image${photoZoomed ? ' zoomed' : ''}`}><>{retained && retained.src !== photoSrc && <img key={retained.src} className={`photo-viewer-retained${photoLoaded ? ' report-photo-loading' : ''}`} src={retained.src} alt="" aria-hidden="true" />}<img key={photoSrc} className={photoLoaded ? 'photo-viewer-current' : 'photo-viewer-current report-photo-loading'} src={photoSrc} alt={`Report photo ${displayedPhotoIndex + 1}`} /></></div>{photoPaths.length > 1 && <div className="photo-viewer-controls"><button className="secondary-button" onClick={() => { selectPhoto((displayedPhotoIndex + photoPaths.length - 1) % photoPaths.length); }}>Previous photo</button><button className="secondary-button" onClick={() => { selectPhoto((displayedPhotoIndex + 1) % photoPaths.length); }}>Next photo</button></div>}</ModalShell>}
       </aside>
     </div>
   );

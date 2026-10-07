@@ -581,7 +581,7 @@ it('retains the displayed photo and counter while another carousel image loads, 
   const first = screen.getByAltText('Report photo 1 of 3');
   fireEvent.load(first);
   fireEvent.click(screen.getByRole('button', { name: 'Next photo' }));
-  expect(view.container.querySelector('.report-photo-retained')?.getAttribute('src')).toBe(first.getAttribute('src'));
+  expect(view.container.querySelector('.report-photo-retained')).toBe(first);
   expect(view.container.querySelector('.photo-count')?.textContent).toBe('1/3');
   expect(screen.queryByText('Loading photo…')).toBeNull();
   expect(view.container.querySelector('.spinner')).toBeNull();
@@ -589,10 +589,24 @@ it('retains the displayed photo and counter while another carousel image loads, 
   fireEvent.click(screen.getByRole('button', { name: 'Next photo' }));
   fireEvent.error(screen.getByAltText('Report photo 3 of 3'));
   expect(screen.getByText('Photo could not load. Previous photo shown.')).toBeTruthy();
-  expect(view.container.querySelector('.report-photo-retained')?.getAttribute('src')).toBe(first.getAttribute('src'));
+  expect(view.container.querySelector('.report-photo-retained')).toBe(first);
   fireEvent.click(screen.getByRole('button', { name: 'Retry photo' }));
   fireEvent.load(screen.getByAltText('Report photo 3 of 3'));
   expect(view.container.querySelector('.photo-count')?.textContent).toBe('3/3');
+});
+
+it('reuses a decoded previous photo when navigating back without waiting for another load event', () => {
+  render(<ReportDetail report={{ ...report, photo_paths: ['user/report/one.jpg', 'user/report/two.jpg'] }} isOwner={false} onClose={vi.fn()} />);
+  const first = screen.getByAltText('Report photo 1 of 2');
+  Object.defineProperty(first, 'complete', { value: true });
+  Object.defineProperty(first, 'naturalWidth', { value: 900 });
+  fireEvent.load(first);
+  fireEvent.click(screen.getByRole('button', { name: 'Next photo' }));
+  fireEvent.load(screen.getByAltText('Report photo 2 of 2'));
+  fireEvent.click(screen.getByRole('button', { name: 'Previous photo' }));
+  expect(screen.getByAltText('Report photo 1 of 2')).toBe(first);
+  expect(first.classList.contains('report-photo-loading')).toBe(false);
+  expect(screen.getByRole('button', { name: 'View full photo' }).hasAttribute('disabled')).toBe(false);
 });
 
 it('retains the photo in the expanded viewer while the next image loads', () => {
