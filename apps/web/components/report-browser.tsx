@@ -360,7 +360,8 @@ export function ReportBrowser({
             </div>
           </ModalShell>}
           {sort === 'closest' && locationMessage && <p role="status">{locationMessage}</p>}
-          <p className="discovery-status" role="status">{discoveryError || (loading ? 'Searching this map area…' : truncated ? 'Showing up to 1,000 matches. Zoom in or narrow your filters to see more.' : '')}</p>
+          <p className="sr-only" role="status">{loading ? 'Searching this map area…' : ''}</p>
+          <p className="discovery-status" role="status">{discoveryError || (truncated ? 'Showing up to 1,000 matches. Zoom in or narrow your filters to see more.' : '')}</p>
         </header>
         <div className="report-browser-list" ref={listRef} onScroll={() => { if (memoryReady) saveBrowserMemory({ filters: applied, sort, scroll: listRef.current?.scrollTop ?? 0, displayLimit }); }} aria-busy={loading}>
           {visibleReports.length ? displayedReports.map((report, index) => {

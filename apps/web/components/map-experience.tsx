@@ -294,9 +294,7 @@ export function MapExperience({
       const value = await reportPreferenceSync.set(owner, kind, reportId, enabled);
       if (preferenceOwnerRef.current !== owner) return;
       setReportPreferences({ favorites: new Set(value.preferences.favorites), hidden: new Set(value.preferences.hidden) });
-      setToast(kind === 'favorites'
-        ? enabled ? 'Report added to favorites.' : 'Report removed from favorites.'
-        : enabled ? 'Report hidden. Use the Hidden filter to restore it.' : 'Report restored to search.');
+      if (kind === 'hidden') setToast(enabled ? 'Report hidden. Use the Hidden filter to restore it.' : 'Report restored to search.');
       const synced = await reportPreferenceSync.sync(owner);
       if (preferenceOwnerRef.current !== owner) return;
       setReportPreferences({ favorites: new Set(synced.preferences.favorites), hidden: new Set(synced.preferences.hidden) });
@@ -918,7 +916,7 @@ export function MapExperience({
         </div>}
       </div>
 
-      {(initialError || toast) && <div className="discovery-message" role="status">{toast || 'Some reports could not be loaded. Try refreshing the results.'}</div>}
+      {(initialError || toast) && <div className="toast" role="status">{toast || 'Some reports could not be loaded. Try refreshing the results.'}</div>}
       <div className={`map-workspace${desktopDetail && selectedReport ? ' has-report-detail' : ''}`}>
         <ReportBrowser
           reports={discoveryArea || mapError ? reports : EMPTY_MAP_REPORTS}
