@@ -24,7 +24,7 @@
   display: flex;
   align-items: center;
   gap: 26px;
-  padding-right: clamp(88px, 8vw, 104px);
+  padding-right: 24px;
 }
 
 .navLink,
@@ -156,11 +156,11 @@
 
 .desktopActions {
   grid-column: 3;
-  justify-self: start;
+  justify-self: end;
   display: flex;
   align-items: center;
   gap: 20px;
-  padding-left: clamp(88px, 8vw, 104px);
+  padding-left: 24px;
 }
 
 .action {
@@ -190,5 +190,12 @@
   .brandLink img { width: 76px; height: 52px; max-width: 100%; }
   .desktopActions { grid-column: 3; display: contents; }
   .infoMenu { display: none; }
-  .action { grid-column: 3; justify-self: end; min-width: 0; margin-left: 0; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .action { grid-column: 3; justify-self: end; min-width: 0; margin-left: 0; gap: 6px; flex-wrap: nowrap; justify-content: flex-end; }
+}
+
+/* Keep account utilities reachable alongside Report on narrow screens. */
+@media (max-width: 600px) {
+  .inner { grid-template-columns: 44px auto minmax(0, 1fr); gap: 4px; padding-inline: 8px; }
+  .brandLink { justify-self: start; }
+  .brandLink img { width: 60px; height: 48px; }
 }

@@ -86,19 +86,22 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
 
   return (
     <>
-      {userId && <NotificationLink key={userId} userId={userId} />}
-      <button
-        type="button"
-        className={`public-account-control${userId ? '' : ' public-account-control-signed-out'}`}
-        onClick={() => userId ? router.push('/account') : setAuthOpen(true)}
-      >
-        {userId && (avatarUrl ? (
-          <Image className="public-account-avatar" src={avatarUrl} alt="" width={28} height={28} unoptimized aria-hidden />
-        ) : (
-          <span className="public-account-initials" aria-hidden>{profileLabel.charAt(0).toUpperCase()}</span>
-        ))}
-        <span className="public-account-label">{userId ? 'Account' : 'Sign in'}</span>
-      </button>
+      <div className="public-account-actions">
+        {userId && <NotificationLink key={userId} userId={userId} />}
+        <button
+          type="button"
+          className={`public-account-control${userId ? '' : ' public-account-control-signed-out'}`}
+          title={userId ? 'Account' : 'Sign in'}
+          onClick={() => userId ? router.push('/account') : setAuthOpen(true)}
+        >
+          {userId && (avatarUrl ? (
+            <Image className="public-account-avatar" src={avatarUrl} alt="" width={28} height={28} unoptimized aria-hidden />
+          ) : (
+            <span className="public-account-initials" aria-hidden>{profileLabel.charAt(0).toUpperCase()}</span>
+          ))}
+          <span className="public-account-label">{userId ? 'Account' : 'Sign in'}</span>
+        </button>
+      </div>
 
       {authOpen && <AuthDialog intent={authIntent} onClose={() => setAuthOpen(false)} />}
       {accountOpen && userId && (

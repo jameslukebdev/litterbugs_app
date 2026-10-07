@@ -104,5 +104,5 @@ export function NotificationLink({ userId }: { userId: string }) {
     })().catch(() => { if (!cancelled) setCount(null); });
     return () => { cancelled = true; };
   }, [userId, refresh]);
-  return <Link className="notification-link" href="/account/notifications" aria-label={count ? `Notifications, ${count} unread` : 'Notifications'}><IoNotificationsOutline aria-hidden /><span className="notification-label">Updates</span>{count ? <span className="notification-count">{count > 99 ? '99+' : count}</span> : null}</Link>;
+  return <Link className="notification-link" href="/account/notifications" title="Updates" aria-label={count ? `Notifications, ${count} unread` : 'Notifications'}><IoNotificationsOutline aria-hidden /><span className="notification-label">Updates</span>{count ? <span className="notification-count">{count > 99 ? '99+' : count}</span> : null}</Link>;
 }
