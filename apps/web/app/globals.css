@@ -51,7 +51,7 @@ button:disabled { cursor: not-allowed; opacity: .6; }
 .public-account-control-signed-out { border-color: var(--green); color: var(--green); background: #fff; }
 .public-account-control-signed-out:hover { border-color: var(--green-dark); color: var(--green-dark); background: var(--green-soft); }
 .public-account-control:focus-visible, .header-report-button:focus-visible { outline: 3px solid rgba(47, 125, 50, .25); outline-offset: 3px; }
-.public-account-avatar, .public-account-initials { width: 44px; height: 44px; flex: none; border: 2px solid var(--green); border-radius: 50%; }
+.public-account-avatar, .public-account-initials { width: 44px; height: 44px; flex: none; border: 3px solid var(--green); border-radius: 50%; }
 .public-account-avatar { object-fit: cover; background: #e4e8e4; }
 .public-account-initials { display: grid; place-items: center; color: #35423a; background: #e2e7e3; font-size: 12px; font-weight: 850; }
 
