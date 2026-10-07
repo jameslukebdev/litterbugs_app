@@ -49,6 +49,21 @@ describe('PublicSiteHeader', () => {
     fireEvent.pointerDown(document.body);
     expect(screen.queryByRole('navigation', { name: 'Mobile navigation' })).toBeNull();
   });
+
+  it('offers a permanent app link with a keyboard-dismissable QR panel and real store destinations', () => {
+    render(<PublicSiteHeader activePath="/" reportId="selected-report" />);
+    expect(screen.getByRole('link', { name: 'Use app' }).getAttribute('href')).toBe('/get-app?report=selected-report');
+    const trigger = screen.getByRole('link', { name: 'Get the app' });
+    fireEvent.click(trigger);
+    expect(screen.getByRole('region', { name: 'Get the Litterbugs app' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'App Store' }).getAttribute('href')).toContain('id6757313862');
+    expect(screen.getByRole('link', { name: 'Google Play' }).getAttribute('href')).toContain('com.litterbugs.app');
+    screen.getByRole('link', { name: 'App Store' }).focus();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('region', { name: 'Get the Litterbugs app' })).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+    expect(screen.getByRole('link', { name: 'Use app' })).toBeTruthy();
+  });
 });
 
   it('returns keyboard focus to the hamburger when Escape closes navigation', () => {

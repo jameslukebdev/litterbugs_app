@@ -905,7 +905,7 @@ export function MapExperience({
 
   return (
     <main className={`map-page website-experience${!viewRestored && !requestedView ? ' discovery-default-view' : ''}${reportListOpen ? ' showing-reports' : ''}`}>
-      <PublicSiteHeader activePath="/" action={(
+      <PublicSiteHeader activePath="/" reportId={selectedReport?.id} action={(
         <div className="map-header-actions">
           <button className={`header-report-button${reportMode ? ' header-report-button-active' : ''}`}
             onClick={() => { setReportListOpen(false); void toggleReportMode(); }} aria-pressed={reportMode} disabled={checkingDraft || checkingLocation} aria-busy={checkingDraft || checkingLocation}

@@ -1,0 +1,40 @@
+.strip { display: none; }
+.navigation { position: relative; }
+.trigger { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; color: var(--green-dark); font-size: 15px; font-weight: 650; text-decoration: none; white-space: nowrap; }
+.trigger svg { width: 19px; height: 19px; }
+.trigger:hover { color: var(--green); }
+.popover { position: absolute; top: calc(100% + 12px); left: 0; width: 312px; max-height: calc(100dvh - 104px); overflow-y: auto; padding: 24px 20px 20px; border: 1px solid #d8e1d9; border-radius: 18px; background: #fff; box-shadow: 0 12px 36px #17201a24; text-align: center; color: #202622; }
+.popover h2 { margin: 12px 0 6px; font-size: 19px; line-height: 1.25; }
+.popover p { margin: 0; font-size: 13px; color: #536357; }
+.appIcon { border-radius: 12px; }
+.close { position: absolute; top: 4px; right: 4px; width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: transparent; color: #536357; cursor: pointer; }
+.close svg { width: 22px; height: 22px; }
+.qr { display: block; margin: 16px auto; width: 176px; height: 176px; }
+.stores { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
+.stores a { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 10px 12px; border: 1px solid #d4ddd5; border-radius: 10px; background: #fff; color: #243129; font-size: 13px; font-weight: 650; text-decoration: none; }
+.stores a:hover { background: #f1f6f1; border-color: #2f7d32; }
+.stores svg { width: 20px; height: 20px; }
+.useApp { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 14px; border-radius: 10px; color: #fff; background: var(--green); font-size: 13px; font-weight: 750; text-decoration: none; white-space: nowrap; }
+.useApp:hover { background: var(--green-dark); }
+.trigger:focus-visible, .close:focus-visible, .stores a:focus-visible, .useApp:focus-visible { outline: 3px solid #2f7d3266; outline-offset: 3px; }
+.downloadPage { width: min(580px, calc(100% - 32px)); margin: 48px auto; padding: 32px; border: 1px solid #dce4dc; border-radius: 20px; background: white; text-align: center; }
+.downloadPage h1 { margin: 18px 0 12px; font-size: clamp(26px, 5vw, 36px); line-height: 1.15; text-wrap: balance; }
+.downloadPage p { color: #536357; line-height: 1.6; }
+.downloadPage .stores { margin: 24px 0 16px; }
+.installed { display: none; margin: 20px 0; }
+.installed a { color: var(--green-dark); font-weight: 650; }
+.desktopQr { margin-top: 28px; border-top: 1px solid #e3e9e3; padding-top: 12px; }
+.continue { display: inline-flex; align-items: center; min-height: 44px; margin-top: 12px; color: #536357; font-size: 14px; }
+@media (max-width: 1100px) {
+  .strip { display: flex; align-items: center; gap: 10px; height: 64px; padding: 8px 14px; background: #edf5ed; border-bottom: 1px solid #dbe7dc; }
+  .strip > img { flex: none; border-radius: 10px; }
+  .stripCopy { display: grid; gap: 3px; flex: 1; min-width: 0; }
+  .stripCopy strong { color: #243d2a; font-size: 13px; line-height: 1.2; }
+  .stripCopy span { color: #526b58; font-size: 12px; line-height: 1.2; }
+  .navigation { display: none; }
+  .desktopQr { display: none; }
+  .downloadPage { margin-block: 24px; padding: 28px 20px; }
+}
+@media (max-width: 360px) { .strip { gap: 8px; padding-inline: 8px; } .stripCopy strong { font-size: 12px; } .useApp { padding-inline: 10px; } }
+
+@media (pointer: coarse) { .installed { display: block; } }

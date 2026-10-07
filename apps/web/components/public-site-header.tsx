@@ -5,11 +5,13 @@ import { IoMenuOutline, IoCloseOutline } from 'react-icons/io5';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
+import { GetAppNavigation, MobileAppStrip } from '@/components/app-promotion';
+
 import { PublicAccountAction } from '@/components/public-account-action';
 
 import styles from './public-site-header.module.css';
 
-export type PublicPath = '/' | '/support' | '/about' | '/cleanup-policy' | '/cleanup-safety' | '/privacy' | '/terms' | '/help' | '/photo-review';
+export type PublicPath = '/get-app' | '/' | '/support' | '/about' | '/cleanup-policy' | '/cleanup-safety' | '/privacy' | '/terms' | '/help' | '/photo-review';
 
 const policyLinks: { href: PublicPath; label: string; description: string }[] = [
   { href: '/cleanup-policy', label: 'Cleanup policy', description: 'Funding, rewards, disputes, and refunds' },
@@ -93,6 +95,7 @@ function NavigationMenu({ activePath, mobile = false }: { activePath: PublicPath
               <div className={styles.mobilePrimaryLinks}>
                 <HeaderLink href="/?view=map" activePath={activePath} onNavigate={() => setOpen(false)}>Map</HeaderLink>
                 <HeaderLink href="/about" activePath={activePath} onNavigate={() => setOpen(false)}>About</HeaderLink>
+                <HeaderLink href="/get-app" activePath={activePath} onNavigate={() => setOpen(false)}>Get the app</HeaderLink>
                 <HeaderLink href="/help" activePath={activePath} onNavigate={() => setOpen(false)}>Help</HeaderLink>
                 <HeaderLink href="/support" activePath={activePath} onNavigate={() => setOpen(false)}>Contact</HeaderLink>
               </div>
@@ -120,13 +123,15 @@ function NavigationMenu({ activePath, mobile = false }: { activePath: PublicPath
   );
 }
 
-export function PublicSiteHeader({ activePath, action }: { activePath: PublicPath; action?: ReactNode }) {
+export function PublicSiteHeader({ activePath, action, reportId }: { activePath: PublicPath; action?: ReactNode; reportId?: string }) {
   return (
     <header className={styles.header}>
+      {activePath !== '/get-app' && <MobileAppStrip reportId={reportId} />}
       <div className={styles.inner}>
         <nav className={styles.desktopNav} aria-label="Main navigation">
           <HeaderLink href="/?view=map" activePath={activePath}>Map</HeaderLink>
           <HeaderLink href="/about" activePath={activePath}>About</HeaderLink>
+          <GetAppNavigation />
         </nav>
 
         <NavigationMenu activePath={activePath} mobile />

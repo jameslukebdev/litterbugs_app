@@ -1,4 +1,5 @@
 'use client';
+import { AppLink } from '@/components/app-link';
 import { reportContext } from '@/lib/report-context';
 
 import { moveDialogFocus } from '@/lib/dialog-focus';
@@ -310,6 +311,7 @@ export function ReportDetail({
                   <span>{closed ? 'Report closed' : cleanupStatusLabel(report.cleanup_state)}</span>
                   {report.cleanup_state !== 'completed' && report.funded_amount_cents > 0 && <strong>{formatUsd(report.funded_amount_cents)} reward</strong>}
                 </div>
+                <AppLink reportId={report.id} className="report-open-app">Open in app ↗</AppLink>
               </header>
           <div className="report-detail-visual">
             <div className="report-photo-region" aria-busy={photoPaths.length > 0 && !photoLoaded && !photoFailed}>
