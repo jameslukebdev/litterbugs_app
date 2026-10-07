@@ -632,7 +632,7 @@ button.member-activity-row:hover { background: var(--green-soft); }
   .discovery-toolbar > .place-search { width: 100%; }
   .discovery-toolbar-actions { width: 100%; justify-content: space-between; }
   .website-experience.showing-reports .map-workspace { display: block; }
-  .website-experience .report-browser { inset: 0; height: 100%; max-height: none; border: 0; border-radius: 0; box-shadow: none; }
+  .website-experience .report-browser { z-index: 6; inset: 0; height: 100%; max-height: none; border: 0; border-radius: 0; box-shadow: none; }
   .website-experience .report-browser-header { padding: 16px 14px 12px; }
   .website-experience .report-browser-list { grid-template-columns: 1fr; }
   .website-experience .report-browser .report-browser-close { display: none; }
@@ -1028,13 +1028,13 @@ a.member-activity-row { color: inherit; text-decoration: none; }
   .website-experience .discovery-toolbar-actions { width: auto; flex: none; }
   .website-experience .discovery-filters { min-height: 44px; padding-inline: 12px; }
   .website-experience .place-search-input-row input { min-width: 0; }
-  .mobile-discovery-navigation { display: block; flex: none; padding: 8px 18px calc(max(env(safe-area-inset-bottom), 8px) + 10px); background: #f5f6f7; }
-  .mobile-discovery-tabs { display: grid; grid-template-columns: repeat(3, 1fr); height: 64px; max-width: 420px; margin-inline: auto; padding: 6px; border: 1px solid rgba(47,125,50,.16); border-radius: 28px; background: #fff; box-shadow: 0 4px 16px #17201a0a; }
+  .mobile-discovery-navigation { display: block; flex: none; padding: 8px 18px calc(max(env(safe-area-inset-bottom), 8px) + 24px); background: transparent; pointer-events: none; }
+  .mobile-discovery-tabs { pointer-events: auto; display: grid; grid-template-columns: repeat(3, 1fr); height: 64px; max-width: 420px; margin-inline: auto; padding: 6px; border: 1px solid rgba(47,125,50,.16); border-radius: 28px; background: #fff; box-shadow: 0 4px 16px #17201a0a; }
   .mobile-discovery-tabs button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 44px; border: 0; border-radius: 22px; background: transparent; color: #4b5563; font-size: 11px; font-weight: 600; cursor: pointer; }
   .mobile-discovery-tabs svg { width: 23px; height: 23px; }
   .mobile-discovery-tabs button[aria-pressed='true'] { color: #2f7d32; background: #eaf5ea; font-weight: 750; }
   .mobile-discovery-tabs button:focus-visible { outline: 3px solid #2f7d32; outline-offset: 2px; }
-  .website-experience .map-action-controls { bottom: 20px; }
+  .website-experience .map-action-controls { bottom: calc(var(--mobile-navigation-clearance) + 12px); }
   .website-experience .map-stage-reporting .map-action-controls { bottom: auto; }
 }
 
@@ -1045,10 +1045,11 @@ a.member-activity-row { color: inherit; text-decoration: none; }
   .website-experience .place-search-submit span { display: none; }
 }
 
-/* Reserve a viewport-anchored navigation dock, even in short browser windows. */
+/* Float navigation over the full-height map, leaving map attribution visible. */
 @media (max-width: 760px) {
-  .website-experience { min-height: 0; padding-bottom: calc(82px + max(env(safe-area-inset-bottom), 8px)); }
-  .website-experience:has(.map-stage-reporting) { padding-bottom: 0; }
+  .website-experience { --mobile-navigation-clearance: calc(96px + max(env(safe-area-inset-bottom), 8px)); min-height: 0; padding-bottom: 0; }
+  .website-experience .report-browser-list { padding-bottom: calc(var(--mobile-navigation-clearance) + 16px); }
+  .website-experience .map-report-preview, .website-experience .toast { bottom: calc(var(--mobile-navigation-clearance) + 12px); }
   .mobile-discovery-navigation { position: fixed; z-index: 20; bottom: 0; left: 0; right: 0; }
   .website-experience .header-report-button { min-height: 44px; }
   .website-experience .report-browser-header { max-height: 45dvh; overflow-y: auto; }
