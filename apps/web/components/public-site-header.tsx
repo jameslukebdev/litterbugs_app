@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { IoMenuOutline, IoCloseOutline } from 'react-icons/io5';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
@@ -23,7 +24,7 @@ function HeaderLink({
   children,
   onNavigate,
 }: {
-  href: PublicPath;
+  href: PublicPath | '/?view=map';
   activePath: PublicPath;
   children: ReactNode;
   onNavigate?: () => void;
@@ -32,7 +33,7 @@ function HeaderLink({
     <Link
       href={href}
       className={styles.navLink}
-      aria-current={activePath === href ? 'page' : undefined}
+      aria-current={activePath === href.split('?')[0] ? 'page' : undefined}
       onClick={onNavigate}
     >
       {children}
@@ -54,7 +55,7 @@ function NavigationMenu({ activePath, mobile = false }: { activePath: PublicPath
     }
 
     function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'Escape') { setOpen(false); menuRef.current?.querySelector('button')?.focus(); }
     }
 
     document.addEventListener('pointerdown', closeOnPointerDown);
@@ -70,12 +71,13 @@ function NavigationMenu({ activePath, mobile = false }: { activePath: PublicPath
       <button
         type="button"
         className={styles.menuTrigger}
+        aria-label={mobile ? (open ? 'Close menu' : 'Open menu') : undefined}
         aria-expanded={open}
         aria-controls={panelId}
         data-active={!mobile && hasActivePolicy ? 'true' : undefined}
         onClick={() => setOpen((isOpen) => !isOpen)}
       >
-        {mobile ? 'Menu' : 'Safety'}
+        {mobile ? (open ? <IoCloseOutline aria-hidden /> : <IoMenuOutline aria-hidden />) : 'Safety'}
       </button>
 
       {open && (
@@ -88,8 +90,10 @@ function NavigationMenu({ activePath, mobile = false }: { activePath: PublicPath
             <>
               <span className={styles.menuLabel}>Explore</span>
               <div className={styles.mobilePrimaryLinks}>
-                <HeaderLink href="/" activePath={activePath} onNavigate={() => setOpen(false)}>Map</HeaderLink>
+                <HeaderLink href="/?view=map" activePath={activePath} onNavigate={() => setOpen(false)}>Map</HeaderLink>
                 <HeaderLink href="/about" activePath={activePath} onNavigate={() => setOpen(false)}>About</HeaderLink>
+                <HeaderLink href="/help" activePath={activePath} onNavigate={() => setOpen(false)}>Help</HeaderLink>
+                <HeaderLink href="/support" activePath={activePath} onNavigate={() => setOpen(false)}>Contact</HeaderLink>
               </div>
             </>
           )}
@@ -101,7 +105,7 @@ function NavigationMenu({ activePath, mobile = false }: { activePath: PublicPath
                 key={href}
                 href={href}
                 className={styles.policyLink}
-                aria-current={activePath === href ? 'page' : undefined}
+                aria-current={activePath === href.split('?')[0] ? 'page' : undefined}
                 onClick={() => setOpen(false)}
               >
                 <strong>{label}</strong>
@@ -120,13 +124,13 @@ export function PublicSiteHeader({ activePath, action }: { activePath: PublicPat
     <header className={styles.header}>
       <div className={styles.inner}>
         <nav className={styles.desktopNav} aria-label="Main navigation">
-          <HeaderLink href="/" activePath={activePath}>Map</HeaderLink>
+          <HeaderLink href="/?view=map" activePath={activePath}>Map</HeaderLink>
           <HeaderLink href="/about" activePath={activePath}>About</HeaderLink>
         </nav>
 
         <NavigationMenu activePath={activePath} mobile />
 
-        <Link href="/" className={styles.brandLink} aria-label="Litterbugs map">
+        <Link href="/?view=map" className={styles.brandLink} aria-label="Litterbugs map">
           <Image src="/brand/litterbugs-logo.png" alt="Litterbugs" width={636} height={433} priority />
         </Link>
 

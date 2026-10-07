@@ -36,10 +36,13 @@ describe('PublicSiteHeader', () => {
   it('groups mobile exploration and policy links and closes outside the sheet', () => {
     render(<PublicSiteHeader activePath="/about" />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
     const mobileNavigation = screen.getByRole('navigation', { name: 'Mobile navigation' });
     expect(mobileNavigation).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Close menu' }).getAttribute('aria-expanded')).toBe('true');
     expect(screen.getAllByRole('link', { name: 'Map' })).toHaveLength(2);
+    expect(screen.getAllByRole('link', { name: 'Map' }).every(link => link.getAttribute('href') === '/?view=map')).toBe(true);
+    expect(screen.getByRole('link', { name: 'Litterbugs map' }).getAttribute('href')).toBe('/?view=map');
     expect(screen.getAllByRole('link', { name: 'About' })).toHaveLength(2);
     expect(screen.getByRole('link', { name: /Safety & waiver/ })).toBeTruthy();
 
@@ -47,3 +50,12 @@ describe('PublicSiteHeader', () => {
     expect(screen.queryByRole('navigation', { name: 'Mobile navigation' })).toBeNull();
   });
 });
+
+  it('returns keyboard focus to the hamburger when Escape closes navigation', () => {
+    render(<PublicSiteHeader activePath="/" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
+    screen.getByRole('link', { name: 'Help' }).focus();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Open menu' }));
+    expect(screen.queryByRole('navigation', { name: 'Mobile navigation' })).toBeNull();
+  });

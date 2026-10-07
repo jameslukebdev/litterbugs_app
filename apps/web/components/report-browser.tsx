@@ -169,13 +169,10 @@ export function ReportBrowser({
   truncated = false,
   discoveryError = '',
   filtersRequest = 0,
-  areaChosen = true,
-  onChooseArea, onUseLocation, onWidenArea, onRetry, onStartReport,
+  onChooseArea, onWidenArea, onRetry, onStartReport,
 }: {
   filtersRequest?: number;
-  areaChosen?: boolean;
   onChooseArea?: () => void;
-  onUseLocation?: () => void;
   onWidenArea?: () => void;
   onRetry?: () => void;
   onStartReport?: () => void;
@@ -411,15 +408,14 @@ export function ReportBrowser({
             );
           }) : (
             <div className="report-browser-empty">
-              <strong>{loading ? 'Looking for cleanup opportunities…' : discoveryError ? 'Reports could not be loaded' : !areaChosen ? 'Where would you like to help?' : 'No matching cleanup opportunities'}</strong>
-              <span>{loading ? 'Checking the selected area.' : discoveryError ? 'Check your connection, then try again.' : !areaChosen ? 'Choose a city or use your location to find nearby reports.' : 'Try a wider area or clear your filters. You can also report litter you have found.'}</span>
+              <strong>{loading ? 'Looking for cleanup opportunities…' : discoveryError ? 'Reports could not be loaded' : 'No matching cleanup opportunities'}</strong>
+              <span>{loading ? 'Checking the selected area.' : discoveryError ? 'Check your connection, then try again.' : 'Try a wider area or clear your filters. You can also report litter you have found.'}</span>
               {!loading && <div className="empty-discovery-actions">
                 {discoveryError ? onRetry && <button className="primary-button" onClick={onRetry}>Try again</button> : <>
-                  {onChooseArea && <button className="primary-button" onClick={onChooseArea}>Choose a city</button>}
-                  {!areaChosen && onUseLocation && <button className="secondary-button" onClick={onUseLocation}>Use my location</button>}
-                  {areaChosen && <button className="secondary-button" onClick={() => { setFilter('all'); setAdvanced(quickFilters('all')); setDraftFilters(quickFilters('all')); setDisplayLimit(50); }}>Clear filters</button>}
-                  {areaChosen && onWidenArea && <button className="secondary-button" onClick={onWidenArea}>Search a wider area</button>}
-                  {areaChosen && onStartReport && <button className="secondary-button" onClick={onStartReport}>Report litter</button>}
+                  {onChooseArea && <button className="primary-button" onClick={onChooseArea}>Search another area</button>}
+                  <button className="secondary-button" onClick={() => { setFilter('all'); setAdvanced(quickFilters('all')); setDraftFilters(quickFilters('all')); setDisplayLimit(50); }}>Clear filters</button>
+                  {onWidenArea && <button className="secondary-button" onClick={onWidenArea}>Search a wider area</button>}
+                  {onStartReport && <button className="secondary-button" onClick={onStartReport}>Report litter</button>}
                 </>}
               </div>}
             </div>

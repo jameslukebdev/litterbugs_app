@@ -3,7 +3,6 @@
 import { importLibrary, setOptions } from '@googlemaps/js-api-loader';
 import {
   EMPTY_REPORT_DRAFT,
-  FALLBACK_MAP_CENTER,
   hasReportCoordinates,
   reportInsertFromDraft,
   type Coordinates,
@@ -11,7 +10,7 @@ import {
   type Report,
   type ReportDraft,
 } from '@litterbugs/report-contract';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Icon } from '@/components/icon';
@@ -20,7 +19,7 @@ import type { createReportClusters } from '@/lib/report-clusters';
 import { PublicAccountAction, type PublicAccountActionHandle } from '@/components/public-account-action';
 import Link from 'next/link';
 import { PublicSiteHeader } from '@/components/public-site-header';
-import { IoMapOutline, IoListOutline, IoOptionsOutline } from 'react-icons/io5';
+import { IoMapOutline, IoListOutline, IoOptionsOutline, IoPersonOutline } from 'react-icons/io5';
 import { PlaceSearch } from '@/components/place-search';
 import type { SearchPlace } from '@/lib/place-geography';
 import { ReportBrowser } from '@/components/report-browser';
@@ -40,12 +39,15 @@ import { saveReportEdit } from '@/lib/save-report-edit';
 import { isDiscoverableReport } from '@/lib/report-visibility';
 import { resolvePlaceId } from '@/lib/place-search';
 import { DEFAULT_DISCOVERY_FILTERS, loadDiscoveryReports, type DiscoveryArea, type DiscoveryFilters } from '@/lib/report-discovery';
-import { readDiscoveryMemory, saveDiscoveryMemory, readMapUrl, mapUrl } from '@/lib/discovery-memory';
+import { readDiscoveryMemory, saveDiscoveryMemory, readMapUrl, mapUrl, readDiscoveryView } from '@/lib/discovery-memory';
 import { useDataRefresh } from '@/lib/use-data-refresh';
 import { createClient } from '@/lib/supabase/client';
 
 declare global { interface Window { gm_authFailure?: () => void; } }
 
+const EMPTY_MAP_REPORTS: MappableReport[] = [];
+// Website starting viewport only: no city boundary or discovery filter.
+const DEFAULT_WEB_MAP_CENTER = { latitude: 36.2168, longitude: -81.6746 };
 const MAP_TYPES = ['roadmap', 'satellite', 'hybrid', 'terrain'] as const;
 let mapsConfigured = false;
 
@@ -76,6 +78,7 @@ export function MapExperience({
   initialError: string;
 }) {
   const router = useRouter();
+  const requestedView = useSearchParams().get('view');
   const refreshRevision = useDataRefresh();
   const [navigationRevision, setNavigationRevision] = useState(0);
   const [desktopDetail, setDesktopDetail] = useState(false);
@@ -88,7 +91,6 @@ export function MapExperience({
   }, []);
   const mapElementRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
-  const mapPositionChosen = useRef(false);
   const mapAuthFailed = useRef(false);
   const clustersRef = useRef<ReturnType<typeof createReportClusters> | null>(null);
   const [clusterIds, setClusterIds] = useState<string[] | null>(null);
@@ -117,7 +119,7 @@ export function MapExperience({
   }, [searchPlace]);
   const [discoveryArea, setDiscoveryArea] = useState<DiscoveryArea | null>(null);
   const [discoveryFilters, setDiscoveryFilters] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
-  const [discoveryLoading, setDiscoveryLoading] = useState(false);
+  const [discoveryLoading, setDiscoveryLoading] = useState(true);
   const [discoveryTruncated, setDiscoveryTruncated] = useState(false);
   const [discoveryError, setDiscoveryError] = useState('');
   const discoveryRequest = useRef<AbortController | null>(null);
@@ -136,13 +138,27 @@ export function MapExperience({
   const [editPhotoUrls, setEditPhotoUrls] = useState<string[]>([]);
   const [mapPreviewId, setMapPreviewId] = useState<string | null>(null);
   const [reportListOpen, setReportListOpen] = useState(true);
+  useEffect(() => {
+    const restoreView = () => {
+      if (window.location.pathname === '/report') return;
+      setReportListOpen(readDiscoveryView(window.location.search, window.matchMedia?.('(max-width: 760px)').matches ?? false) === 'reports');
+    };
+    const timer = window.setTimeout(restoreView, 0);
+    window.addEventListener('popstate', restoreView);
+    return () => { window.clearTimeout(timer); window.removeEventListener('popstate', restoreView); };
+  }, [requestedView]);
+  function switchDiscoveryView(view: 'map' | 'reports') {
+    setReportListOpen(view === 'reports');
+    const url = new URL(window.location.href);
+    url.searchParams.set('view', view);
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+  }
   const [reportMode, setReportMode] = useState(false);
   const [placement, setPlacement] = useState<Coordinates | null>(null);
   const [checkingLocation, setCheckingLocation] = useState(false);
   const locationCheck = useRef(0);
   const reportEntry = useRef(0);
   const [locationError, setLocationError] = useState('');
-  const [areaChosen, setAreaChosen] = useState(false);
   const [checkingDraft, setCheckingDraft] = useState(false);
   const [previewedReportId, setPreviewedReportId] = useState<string | null>(null);
   const [toast, setToast] = useState('');
@@ -168,6 +184,12 @@ export function MapExperience({
     discoveryRequest.current = controller;
     setDiscoveryLoading(true);
     setDiscoveryError('');
+    const requestTimeout = window.setTimeout(() => {
+      if (controller.signal.aborted) return;
+      controller.abort();
+      setDiscoveryError('Reports are taking too long to load. Check your connection and try again.');
+      setDiscoveryLoading(false);
+    }, 15000);
     try {
       const result = await loadDiscoveryReports(createClient(), { filters: discoveryFilters, area: discoveryArea, favorites: reportPreferences.favorites, hidden: reportPreferences.hidden, signal: controller.signal, geometry: searchPlace?.geometry });
       if (controller.signal.aborted) return;
@@ -193,6 +215,7 @@ export function MapExperience({
     } catch {
       if (!controller.signal.aborted) setDiscoveryError('Reports could not be refreshed. Check your connection and move the map or try another filter.');
     } finally {
+      window.clearTimeout(requestTimeout);
       if (!controller.signal.aborted) setDiscoveryLoading(false);
     }
   }, [discoveryArea, discoveryFilters, reportPreferences, searchPlace]);
@@ -223,9 +246,7 @@ export function MapExperience({
   }
 
   function selectSearchPlace(place: SearchPlace) {
-    mapPositionChosen.current = true;
     searchPlaceRef.current = place;
-    setAreaChosen(true);
     const url = new URL(window.location.href); url.searchParams.set('area', place.id);
     window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`);
     setSearchPlace(place);
@@ -319,7 +340,6 @@ export function MapExperience({
       } else await Promise.resolve();
       if (cancelled) return;
       if (!report) { setToast('This report is no longer available.'); return; }
-      mapPositionChosen.current = true;
       setSelectedReport(report);
       mapRef.current?.panTo({ lat: report.latitude, lng: report.longitude });
       if ((mapRef.current?.getZoom() ?? 0) < 14) mapRef.current?.setZoom(14);
@@ -339,8 +359,13 @@ export function MapExperience({
     if (!googleMapsKey || !googleMapsMapId || !mapElementRef.current || mapRef.current) return;
     let cancelled = false;
 
+    let viewportReady = false;
+    const startupTimeout = window.setTimeout(() => {
+      if (!cancelled && !viewportReady) setMapError('The map is taking too long to load. You can still browse reports or reload to try again.');
+    }, 12000);
     const previousAuthFailure = window.gm_authFailure;
     window.gm_authFailure = () => {
+      window.clearTimeout(startupTimeout);
       if (!cancelled) { mapAuthFailed.current = true; discoveryRequest.current?.abort(); setDiscoveryArea(null); setReports(initialMapReports.current); setMapReady(false); setMapError('The map is unavailable on this address. You can still browse reports.'); }
     };
     async function startMap() {
@@ -364,10 +389,9 @@ export function MapExperience({
         const memory = selectedWhileLoading
           ? { latitude: selectedWhileLoading.latitude, longitude: selectedWhileLoading.longitude, zoom: 12, place: selectedWhileLoading }
           : sharedMap ? { ...sharedMap, place: stored?.place?.id === areaId ? stored.place : null } : stored;
-        if (areaId) mapPositionChosen.current = true;
-        if (memory) { setAreaChosen(Boolean(memory.place) || Math.abs(memory.latitude - FALLBACK_MAP_CENTER.latitude) > 0.001 || Math.abs(memory.longitude - FALLBACK_MAP_CENTER.longitude) > 0.001); mapPositionChosen.current = true; searchPlaceRef.current = memory.place; setSearchPlace(memory.place); }
+        if (memory) { searchPlaceRef.current = memory.place; setSearchPlace(memory.place); }
         const map = new Map(mapElementRef.current, {
-          center: { lat: memory?.latitude ?? FALLBACK_MAP_CENTER.latitude, lng: memory?.longitude ?? FALLBACK_MAP_CENTER.longitude },
+          center: { lat: memory?.latitude ?? DEFAULT_WEB_MAP_CENTER.latitude, lng: memory?.longitude ?? DEFAULT_WEB_MAP_CENTER.longitude },
           zoom: memory?.zoom ?? 12,
           mapId: googleMapsMapId,
           mapTypeId: 'roadmap',
@@ -380,12 +404,14 @@ export function MapExperience({
         map.addListener('click', (event: google.maps.MapMouseEvent) => {
           if (event.latLng) mapClickRef.current({ latitude: event.latLng.lat(), longitude: event.latLng.lng() });
         });
-        map.addListener('dragstart', () => { mapPositionChosen.current = true; setAreaChosen(true); });
         map.addListener('idle', () => {
           if (mapAuthFailed.current) return;
           const bounds = map.getBounds()?.toJSON();
           const center = map.getCenter();
           if (!bounds || !center) return;
+          viewportReady = true;
+          window.clearTimeout(startupTimeout);
+          setMapError('');
           const area = { ...bounds, latitude: center.lat(), longitude: center.lng() };
           setPlacement({ latitude: area.latitude, longitude: area.longitude });
           window.history.replaceState(window.history.state, '', mapUrl(new URL(window.location.href), { latitude: area.latitude, longitude: area.longitude, zoom: map.getZoom() ?? 12 }));
@@ -406,22 +432,13 @@ export function MapExperience({
             else setToast('This search area could not be restored. Choose a city or address.');
           }).catch(() => { if (!cancelled) setToast('This search area could not be restored. Choose a city or address.'); });
         }
-        if (!memory) void getBrowserLocation().then((location) => {
-          if (!cancelled && !mapAuthFailed.current && !mapPositionChosen.current) {
-            setAreaChosen(true);
-            map.panTo({ lat: location.latitude, lng: location.longitude });
-            map.setZoom(14);
-          }
-        }).catch(() => {
-          if (cancelled || mapAuthFailed.current || mapPositionChosen.current) return;
-          setToast('Location is unavailable. Choose a city or address to browse nearby cleanups.');
-        });
       } catch {
+        window.clearTimeout(startupTimeout);
         if (!cancelled) setMapError('Google Maps could not load. Check the browser key and try again.');
       }
     }
     void startMap();
-    return () => { cancelled = true; window.gm_authFailure = previousAuthFailure; clustersRef.current?.dispose(); clustersRef.current = null; mapRef.current = null; };
+    return () => { cancelled = true; window.clearTimeout(startupTimeout); window.gm_authFailure = previousAuthFailure; clustersRef.current?.dispose(); clustersRef.current = null; mapRef.current = null; };
   }, [googleMapsKey, googleMapsMapId]);
 
   useEffect(() => {
@@ -571,7 +588,6 @@ export function MapExperience({
 
   function changeDraftLocation() {
     if (!draftCoordinates || pendingPublication.current) return;
-    mapPositionChosen.current = true;
     setSelectingDraftLocation(true);
     setReportListOpen(false);
     setReportMode(true);
@@ -599,10 +615,8 @@ export function MapExperience({
   }
 
   async function centerOnUser() {
-    mapPositionChosen.current = true;
     try {
       const location = await getBrowserLocation();
-      setAreaChosen(true);
       if (!mapReady) setDiscoveryArea({ latitude: location.latitude, longitude: location.longitude, north: Math.min(90, location.latitude + 0.1), south: Math.max(-90, location.latitude - 0.1), east: Math.min(180, location.longitude + 0.1), west: Math.max(-180, location.longitude - 0.1) });
       mapRef.current?.panTo({ lat: location.latitude, lng: location.longitude });
       mapRef.current?.setZoom(14);
@@ -888,18 +902,18 @@ export function MapExperience({
             <span className="header-report-long">{checkingDraft ? 'Checking…' : selectingDraftLocation ? 'Keep location' : reportMode ? 'Cancel reporting' : 'Report litter'}</span>
             <span className="header-report-short">{checkingDraft ? 'Checking…' : selectingDraftLocation ? 'Keep' : reportMode ? 'Cancel' : 'Report'}</span>
           </button>
-          <PublicAccountAction ref={accountActionRef} initialUserId={initialUserId}
+          <div className="map-header-account"><PublicAccountAction ref={accountActionRef} initialUserId={initialUserId}
             onAccountDataChanged={refreshReports} onOpenReport={openReportById} onUserChange={handleUserChange}
-            onResumeDraft={() => { void toggleReportMode(); }} />
+            onResumeDraft={() => { void toggleReportMode(); }} /></div>
         </div>
       )} />
       <div className="discovery-toolbar">
         <PlaceSearch selected={searchPlace} onSelect={selectSearchPlace} onClear={() => { setSearchPlace(null); const url = new URL(window.location.href); url.searchParams.delete('area'); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`); }} geocode={geocodeAddress} disabled={checkingLocation} />
         {!reportMode && <div className="discovery-toolbar-actions">
-          <button className="secondary-button discovery-filters" onClick={() => { setReportListOpen(true); setFiltersRequest(value => value + 1); }}><IoOptionsOutline aria-hidden />Filters{Object.entries(discoveryFilters).filter(([key, value]) => value !== DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]).length > 0 ? ` (${Object.entries(discoveryFilters).filter(([key, value]) => value !== DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]).length})` : ''}</button>
+          <button className="secondary-button discovery-filters" onClick={() => { switchDiscoveryView('reports'); setFiltersRequest(value => value + 1); }}><IoOptionsOutline aria-hidden />Filters{Object.entries(discoveryFilters).filter(([key, value]) => value !== DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]).length > 0 ? ` (${Object.entries(discoveryFilters).filter(([key, value]) => value !== DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]).length})` : ''}</button>
           <div className="discovery-view-toggle" role="group" aria-label="Browse reports">
-            <button aria-pressed={reportListOpen} onClick={() => setReportListOpen(true)}><IoListOutline aria-hidden /><span>Reports</span></button>
-            <button aria-pressed={!reportListOpen} onClick={() => setReportListOpen(false)}><IoMapOutline aria-hidden /><span>Map</span></button>
+            <button aria-pressed={reportListOpen} onClick={() => switchDiscoveryView('reports')}><IoListOutline aria-hidden /><span>Reports</span></button>
+            <button aria-pressed={!reportListOpen} onClick={() => switchDiscoveryView('map')}><IoMapOutline aria-hidden /><span>Map</span></button>
           </div>
         </div>}
       </div>
@@ -907,11 +921,9 @@ export function MapExperience({
       {(initialError || toast) && <div className="discovery-message" role="status">{toast || 'Some reports could not be loaded. Try refreshing the results.'}</div>}
       <div className={`map-workspace${desktopDetail && selectedReport ? ' has-report-detail' : ''}`}>
         <ReportBrowser
-          reports={reports}
+          reports={discoveryArea || mapError ? reports : EMPTY_MAP_REPORTS}
           filtersRequest={filtersRequest}
-          areaChosen={areaChosen}
           onChooseArea={() => document.querySelector<HTMLInputElement>('.discovery-toolbar input')?.focus()}
-          onUseLocation={() => void centerOnUser()}
           onWidenArea={() => { setSearchPlace(null); const url = new URL(window.location.href); url.searchParams.delete('area'); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`); mapRef.current?.setZoom(Math.max(3, (mapRef.current?.getZoom() ?? 12) - 2)); }}
           onRetry={() => void refreshReports()}
           onStartReport={() => void toggleReportMode()}
@@ -973,6 +985,14 @@ export function MapExperience({
         </section>
         {selectedReport && <ReportDetail inline={desktopDetail} key={selectedReport.id} report={selectedReport} userId={userId} isOwner={canManageReport(selectedReport, userId)} favorite={reportPreferences.favorites.has(selectedReport.id)} hidden={reportPreferences.hidden.has(selectedReport.id)} onFavoriteChange={(favorite) => updateReportPreference('favorites', selectedReport.id, favorite)} onHiddenChange={(hidden) => updateReportPreference('hidden', selectedReport.id, hidden)} onNotify={setToast} onRequireSignIn={(intent) => { const url = new URL(window.location.href); url.searchParams.set('report', selectedReport.id); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`); accountActionRef.current?.openAuth(intent); }} onReportChanged={refreshReports} onClose={closeReport} onEdit={() => { void editSelectedReport(); }} onDelete={() => { void deleteSelectedReport(); }} />}
       </div>
+
+      {!reportMode && <nav className="mobile-discovery-navigation" aria-label="Main app navigation">
+        <div className="mobile-discovery-tabs">
+          <button type="button" aria-pressed={reportListOpen} onClick={() => switchDiscoveryView('reports')}><IoListOutline aria-hidden /><span>Reports</span></button>
+          <button type="button" aria-pressed={!reportListOpen} onClick={() => switchDiscoveryView('map')}><IoMapOutline aria-hidden /><span>Map</span></button>
+          <button type="button" onClick={() => accountActionRef.current?.openAccount()}><IoPersonOutline aria-hidden /><span>Profile</span></button>
+        </div>
+      </nav>}
 
       <footer className="discovery-footer">
         <span>© {new Date().getFullYear()} Litterbugs</span>
