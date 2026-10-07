@@ -74,3 +74,11 @@ describe('PublicSiteHeader', () => {
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Open menu' }));
     expect(screen.queryByRole('navigation', { name: 'Mobile navigation' })).toBeNull();
   });
+
+it('preserves app report context and account routes in compact mobile navigation', () => {
+  render(<PublicSiteHeader activePath="/" compactMobile reportId="selected-report" action={<button>Report Litter</button>} />);
+  expect(screen.getAllByRole('link', { name: 'Use app' }).every(link => link.getAttribute('href') === '/get-app?report=selected-report')).toBe(true);
+  fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
+  expect(screen.getByRole('link', { name: 'Profile / sign in' }).getAttribute('href')).toBe('/account');
+  expect(screen.getByRole('link', { name: 'Updates' }).getAttribute('href')).toBe('/account/notifications');
+});

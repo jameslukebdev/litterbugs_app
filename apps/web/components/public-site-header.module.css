@@ -203,3 +203,21 @@
 @media (max-width: 360px) {
   .brandLink img { width: 44px; height: 40px; }
 }
+
+/* Discovery keeps its permanent app invitation in the first row on phones. */
+.compactAppLink { display: none; }
+@media (max-width: 760px) {
+  .compactMobile .appStrip { display: none; }
+  .compactMobile .inner { grid-template-columns: 44px auto minmax(0, 1fr); gap: 4px; padding-inline: 8px; height: 64px; min-height: 64px; }
+  .compactMobile .brandLink { justify-self: start; }
+  .compactMobile .brandLink img { width: 60px; height: 48px; }
+  .compactMobile .action { gap: 8px; }
+  .compactMobile .compactAppLink { display: inline-flex; align-items: center; justify-content: center; flex: none; min-height: 44px; padding: 0 10px; border-radius: 10px; background: var(--green-soft); color: var(--green-dark); font-size: 13px; font-weight: 750; text-decoration: none; white-space: nowrap; }
+  .compactAppLink:hover { background: #dcefdc; }
+  .compactAppLink:focus-visible { outline: 3px solid #2f7d3266; outline-offset: 2px; }
+  .compactMobile .mobilePopover { z-index: 30; max-height: calc(100dvh - 80px); }
+}
+@media (max-width: 360px) {
+  .compactMobile .brandLink img { width: 44px; height: 40px; }
+  .compactMobile .action { gap: 4px; }
+}

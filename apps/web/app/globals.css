@@ -1026,7 +1026,7 @@ a.member-activity-row { color: inherit; text-decoration: none; }
   .website-experience .discovery-filters { min-height: 44px; padding-inline: 12px; }
   .website-experience .place-search-input-row input { min-width: 0; }
   .mobile-discovery-navigation { display: block; flex: none; padding: 8px 18px calc(max(env(safe-area-inset-bottom), 8px) + 24px); background: transparent; pointer-events: none; }
-  .mobile-discovery-tabs { pointer-events: auto; display: grid; grid-template-columns: repeat(3, 1fr); height: 64px; max-width: 420px; margin-inline: auto; padding: 6px; border: 1px solid rgba(47,125,50,.16); border-radius: 28px; background: #fff; box-shadow: 0 4px 16px #17201a0a; }
+  .mobile-discovery-tabs { pointer-events: auto; display: grid; grid-template-columns: repeat(4, 1fr); height: 64px; max-width: 420px; margin-inline: auto; padding: 6px; border: 1px solid rgba(47,125,50,.16); border-radius: 28px; background: #fff; box-shadow: 0 4px 16px #17201a0a; }
   .mobile-discovery-tabs button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 44px; border: 0; border-radius: 22px; background: transparent; color: #4b5563; font-size: 11px; font-weight: 600; cursor: pointer; }
   .mobile-discovery-tabs svg { width: 23px; height: 23px; }
   .mobile-discovery-tabs button[aria-pressed='true'] { color: #2f7d32; background: #eaf5ea; font-weight: 750; }
@@ -1124,3 +1124,24 @@ a.member-activity-row { color: inherit; text-decoration: none; }
 .report-open-app { display: inline-flex; align-items: center; min-height: 36px; margin-top: 4px; color: var(--green-dark); font-size: 13px; font-weight: 650; text-decoration: none; }
 .report-open-app:hover { text-decoration: underline; }
 .report-open-app:focus-visible { outline: 3px solid #2f7d3266; outline-offset: 2px; }
+
+/* Compact mobile discovery: two header rows, with account utilities in the dock. */
+@media (max-width: 760px) {
+  .website-experience .map-header-account { display: contents; }
+  .website-experience .map-header-account .public-account-actions { display: none; }
+  .website-experience .place-search-input-row { position: relative; }
+  .website-experience .place-search-field input { padding-left: 42px; padding-right: 10px; width: 100%; font-size: 16px; }
+  .website-experience .place-search-field.has-selected-place input { padding-right: 40px; }
+  .website-experience .place-search-submit { position: absolute; left: 0; top: 0; height: 44px; min-height: 44px; border: 0; background: transparent; color: var(--green-dark); border-radius: 10px; }
+  .website-experience .place-search-submit:disabled { opacity: 1; color: #69776d; }
+  .website-experience .place-search-submit:not(:disabled):hover { background: #eaf5ea; }
+  .website-experience .place-search-clear { right: 0; top: 0; width: 40px; height: 44px; background: transparent; }
+  .mobile-discovery-tabs .mobile-updates-link { position: relative; width: auto; height: auto; min-width: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border-radius: 22px; background: transparent; color: #4b5563; font-size: 11px; font-weight: 600; text-decoration: none; }
+  .mobile-updates-link .notification-label { position: static; width: auto; height: auto; margin: 0; overflow: visible; clip-path: none; white-space: normal; }
+  .mobile-updates-link .notification-count { top: 0; right: calc(50% - 25px); }
+  .mobile-discovery-tabs .mobile-profile-button .public-account-avatar-frame,
+  .mobile-discovery-tabs .mobile-profile-button .public-account-avatar,
+  .mobile-discovery-tabs .mobile-profile-button .public-account-initials { width: 32px; height: 32px; }
+  .mobile-discovery-tabs .mobile-profile-button { gap: 1px; }
+  .mobile-discovery-tabs .mobile-updates-link:focus-visible { outline: 3px solid #2f7d32; outline-offset: 2px; }
+}

@@ -1,8 +1,10 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
+import { IoPersonOutline, IoNotificationsOutline } from 'react-icons/io5';
 import { useRouter } from 'next/navigation';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, type ReactNode } from 'react';
 
 import { NotificationLink } from '@/components/notification-inbox';
 import { AccountDialog } from '@/components/account-dialog';
@@ -18,11 +20,12 @@ export type PublicAccountActionHandle = {
 
 export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
   initialUserId?: string | null;
+  mobileTabs?: ReactNode;
   onAccountDataChanged?: () => void | Promise<void>;
   onOpenReport?: (reportId: string) => void;
   onResumeDraft?: () => void;
   onUserChange?: (userId: string | null) => void;
-}>(function PublicAccountAction({ initialUserId = null, onAccountDataChanged, onOpenReport, onUserChange, onResumeDraft }, ref) {
+}>(function PublicAccountAction({ initialUserId = null, onAccountDataChanged, onOpenReport, onUserChange, onResumeDraft, mobileTabs }, ref) {
   const router = useRouter();
   const [userId, setUserId] = useState(initialUserId);
   const [authChecked, setAuthChecked] = useState(Boolean(initialUserId));
@@ -88,6 +91,11 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
     else router.push(`/?report=${encodeURIComponent(reportId)}`);
   }
 
+  const avatar = userId && <span className="public-account-avatar-frame" aria-hidden="true">
+    <span className="public-account-initials">{profileLabel.charAt(0).toUpperCase()}</span>
+    {avatarUrl && <Image className="public-account-avatar" data-loaded={loadedAvatar === avatarUrl} src={avatarUrl} alt="" width={52} height={52} unoptimized loading="eager" onLoad={() => setLoadedAvatar(avatarUrl)} onError={() => setLoadedAvatar('')} />}
+  </span>;
+
   return (
     <>
       <div className="public-account-actions">
@@ -98,13 +106,20 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
           title={userId ? 'Your profile' : 'Sign in'}
           onClick={() => userId ? router.push('/account') : setAuthOpen(true)}
         >
-          {userId && <span className="public-account-avatar-frame" aria-hidden="true">
-            <span className="public-account-initials">{profileLabel.charAt(0).toUpperCase()}</span>
-            {avatarUrl && <Image className="public-account-avatar" data-loaded={loadedAvatar === avatarUrl} src={avatarUrl} alt="" width={52} height={52} unoptimized loading="eager" onLoad={() => setLoadedAvatar(avatarUrl)} onError={() => setLoadedAvatar('')} />}
-          </span>}
+          {avatar}
           <span className="public-account-label">{userId ? 'Profile' : 'Sign in'}</span>
         </button>}
       </div>
+
+      {mobileTabs && <nav className="mobile-discovery-navigation" aria-label="Main app navigation">
+        <div className="mobile-discovery-tabs">
+          {mobileTabs}
+          {userId ? <NotificationLink key={`mobile-${userId}`} userId={userId} mobile /> : <Link className="mobile-updates-link" href="/account/notifications" aria-label="Updates"><IoNotificationsOutline aria-hidden /><span>Updates</span></Link>}
+          <button type="button" className="mobile-profile-button" title={userId ? 'Your profile' : 'Sign in'} onClick={() => userId ? router.push('/account') : setAuthOpen(true)}>
+            {avatar || <IoPersonOutline aria-hidden />}<span>Profile</span>
+          </button>
+        </div>
+      </nav>}
 
       {authOpen && <AuthDialog intent={authIntent} onClose={() => setAuthOpen(false)} />}
       {accountOpen && userId && (

@@ -5,6 +5,7 @@ import { IoMenuOutline, IoCloseOutline } from 'react-icons/io5';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
+import { AppLink } from '@/components/app-link';
 import { GetAppNavigation, MobileAppStrip } from '@/components/app-promotion';
 
 import { PublicAccountAction } from '@/components/public-account-action';
@@ -44,7 +45,7 @@ function HeaderLink({
   );
 }
 
-function NavigationMenu({ activePath, mobile = false }: { activePath: PublicPath; mobile?: boolean }) {
+function NavigationMenu({ activePath, mobile = false, accountLinks = false }: { activePath: PublicPath; mobile?: boolean; accountLinks?: boolean }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const hasActivePolicy = policyLinks.some(({ href }) => href === activePath);
@@ -98,6 +99,7 @@ function NavigationMenu({ activePath, mobile = false }: { activePath: PublicPath
                 <HeaderLink href="/get-app" activePath={activePath} onNavigate={() => setOpen(false)}>Get the app</HeaderLink>
                 <HeaderLink href="/help" activePath={activePath} onNavigate={() => setOpen(false)}>Help</HeaderLink>
                 <HeaderLink href="/support" activePath={activePath} onNavigate={() => setOpen(false)}>Contact</HeaderLink>
+                {accountLinks && <><Link className={styles.navLink} href="/account" onClick={() => setOpen(false)}>Profile / sign in</Link><Link className={styles.navLink} href="/account/notifications" onClick={() => setOpen(false)}>Updates</Link></>}
               </div>
             </>
           )}
@@ -123,10 +125,10 @@ function NavigationMenu({ activePath, mobile = false }: { activePath: PublicPath
   );
 }
 
-export function PublicSiteHeader({ activePath, action, reportId }: { activePath: PublicPath; action?: ReactNode; reportId?: string }) {
+export function PublicSiteHeader({ activePath, action, reportId, compactMobile = false }: { activePath: PublicPath; action?: ReactNode; reportId?: string; compactMobile?: boolean }) {
   return (
-    <header className={styles.header}>
-      {activePath !== '/get-app' && <MobileAppStrip reportId={reportId} />}
+    <header className={`${styles.header}${compactMobile ? ` ${styles.compactMobile}` : ''}`}>
+      {activePath !== '/get-app' && <div className={styles.appStrip}><MobileAppStrip reportId={reportId} /></div>}
       <div className={styles.inner}>
         <nav className={styles.desktopNav} aria-label="Main navigation">
           <HeaderLink href="/?view=map" activePath={activePath}>Map</HeaderLink>
@@ -134,7 +136,7 @@ export function PublicSiteHeader({ activePath, action, reportId }: { activePath:
           <GetAppNavigation />
         </nav>
 
-        <NavigationMenu activePath={activePath} mobile />
+        <NavigationMenu activePath={activePath} mobile accountLinks={compactMobile} />
 
         <Link href="/?view=map" prefetch={true} className={styles.brandLink} aria-label="Litterbugs map">
           <Image src="/brand/litterbugs-logo.png" alt="Litterbugs" width={636} height={433} priority />
@@ -144,6 +146,7 @@ export function PublicSiteHeader({ activePath, action, reportId }: { activePath:
           <NavigationMenu activePath={activePath} />
           <div className={styles.action}>
             {action ?? <PublicAccountAction />}
+            {compactMobile && <AppLink reportId={reportId} className={styles.compactAppLink}>Use app</AppLink>}
           </div>
         </div>
       </div>

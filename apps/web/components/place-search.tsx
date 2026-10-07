@@ -128,7 +128,7 @@ export function PlaceSearch({ selected, onSelect, onClear, geocode, disabled = f
       <div className="place-search-input-row">
         <div className={`place-search-field${selected ? ' has-selected-place' : ''}`}><input id={inputId} type="search" role="combobox" aria-autocomplete="list" aria-expanded={showSuggestions} aria-controls={listId}
           aria-activedescendant={showSuggestions && active >= 0 ? `${listId}-${active}` : undefined}
-          autoComplete="off" maxLength={120} placeholder={selected?.label ?? 'Search city or address'} value={text} disabled={disabled}
+          autoComplete="off" enterKeyHint="search" maxLength={120} placeholder={selected?.label ?? 'Search city or address'} value={text} disabled={disabled}
           onFocus={() => setOpen(true)}
           onChange={event => {
             invalidate();

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /* eslint-disable @next/next/no-img-element -- The test mock intentionally renders a native image. */
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PublicAccountAction } from './public-account-action';
@@ -31,6 +31,7 @@ vi.mock('@/components/account-dialog', () => ({
 function profileQuery() {
   const builder = {
     eq: () => builder,
+    is: async () => ({ count: 3, error: null }),
     maybeSingle: async () => ({
       data: currentUser.value ? {
         id: currentUser.value.id,
@@ -97,4 +98,21 @@ it('keeps sign in available if the initial session check fails', async () => {
   render(<PublicAccountAction />);
   expect(await screen.findByRole('button', { name: 'Sign in' })).toBeTruthy();
   expect(screen.queryByLabelText('Loading profile')).toBeNull();
+});
+
+it('keeps signed-out mobile profile and updates accessible alongside the discovery tabs', async () => {
+  render(<PublicAccountAction mobileTabs={<><button>Reports</button><button>Map</button></>} />);
+  const dock = within(screen.getByRole('navigation', { name: 'Main app navigation' }));
+  expect(dock.getByRole('link', { name: 'Updates' }).getAttribute('href')).toBe('/account/notifications');
+  fireEvent.click(dock.getByRole('button', { name: 'Profile' }));
+  expect(screen.getByRole('dialog', { name: 'Sign in' })).toBeTruthy();
+});
+
+it('keeps the signed-in mobile profile and unread updates in the dock', async () => {
+  currentUser.value = { id: 'member-id', email: 'member@example.com' };
+  render(<PublicAccountAction mobileTabs={<><button>Reports</button><button>Map</button></>} />);
+  const dock = within(screen.getByRole('navigation', { name: 'Main app navigation' }));
+  await waitFor(() => expect(dock.getByRole('link', { name: 'Notifications, 3 unread' })).toBeTruthy());
+  fireEvent.click(dock.getByRole('button', { name: 'Profile' }));
+  expect(push).toHaveBeenCalledWith('/account');
 });

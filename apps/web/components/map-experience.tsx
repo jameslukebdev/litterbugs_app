@@ -20,7 +20,7 @@ import { PublicAccountAction, type PublicAccountActionHandle } from '@/component
 import Link from 'next/link';
 import Image from 'next/image';
 import { PublicSiteHeader } from '@/components/public-site-header';
-import { IoMapOutline, IoListOutline, IoOptionsOutline, IoPersonOutline } from 'react-icons/io5';
+import { IoMapOutline, IoListOutline, IoOptionsOutline } from 'react-icons/io5';
 import { PlaceSearch } from '@/components/place-search';
 import type { SearchPlace } from '@/lib/place-geography';
 import { ReportBrowser } from '@/components/report-browser';
@@ -905,7 +905,7 @@ export function MapExperience({
 
   return (
     <main className={`map-page website-experience${!viewRestored && !requestedView ? ' discovery-default-view' : ''}${reportListOpen ? ' showing-reports' : ''}`}>
-      <PublicSiteHeader activePath="/" reportId={selectedReport?.id} action={(
+      <PublicSiteHeader activePath="/" compactMobile reportId={selectedReport?.id} action={(
         <div className="map-header-actions">
           <button className={`header-report-button${reportMode ? ' header-report-button-active' : ''}`}
             onClick={() => { setReportListOpen(false); void toggleReportMode(); }} aria-pressed={reportMode} disabled={checkingDraft || checkingLocation} aria-busy={checkingDraft || checkingLocation}
@@ -913,6 +913,10 @@ export function MapExperience({
             {checkingDraft ? 'Checking…' : selectingDraftLocation ? 'Keep location' : reportMode ? 'Cancel' : 'Report Litter'}
           </button>
           <div className="map-header-account"><PublicAccountAction ref={accountActionRef} initialUserId={initialUserId}
+            mobileTabs={!reportMode ? <>
+              <button type="button" aria-pressed={reportListOpen} onClick={() => switchDiscoveryView('reports')}><IoListOutline aria-hidden /><span>Reports</span></button>
+              <button type="button" aria-pressed={!reportListOpen} onClick={() => switchDiscoveryView('map')}><IoMapOutline aria-hidden /><span>Map</span></button>
+            </> : undefined}
             onAccountDataChanged={refreshReports} onOpenReport={openReportById} onUserChange={handleUserChange}
             onResumeDraft={() => { void toggleReportMode(); }} /></div>
         </div>
@@ -990,14 +994,6 @@ export function MapExperience({
         </section>
         {selectedReport && <ReportDetail inline={desktopDetail} key={selectedReport.id} report={selectedReport} userId={userId} isOwner={canManageReport(selectedReport, userId)} favorite={reportPreferences.favorites.has(selectedReport.id)} hidden={reportPreferences.hidden.has(selectedReport.id)} onFavoriteChange={(favorite) => updateReportPreference('favorites', selectedReport.id, favorite)} onHiddenChange={(hidden) => updateReportPreference('hidden', selectedReport.id, hidden)} onNotify={setToast} onRequireSignIn={(intent) => { const url = new URL(window.location.href); url.searchParams.set('report', selectedReport.id); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`); accountActionRef.current?.openAuth(intent); }} onReportChanged={refreshReports} onClose={closeReport} onEdit={() => { void editSelectedReport(); }} onDelete={() => { void deleteSelectedReport(); }} />}
       </div>
-
-      {!reportMode && <nav className="mobile-discovery-navigation" aria-label="Main app navigation">
-        <div className="mobile-discovery-tabs">
-          <button type="button" aria-pressed={reportListOpen} onClick={() => switchDiscoveryView('reports')}><IoListOutline aria-hidden /><span>Reports</span></button>
-          <button type="button" aria-pressed={!reportListOpen} onClick={() => switchDiscoveryView('map')}><IoMapOutline aria-hidden /><span>Map</span></button>
-          <button type="button" onClick={() => accountActionRef.current?.openAccount()}><IoPersonOutline aria-hidden /><span>Profile</span></button>
-        </div>
-      </nav>}
 
       <footer className="discovery-footer">
         <span>© {new Date().getFullYear()} Litterbugs</span>

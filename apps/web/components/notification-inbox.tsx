@@ -93,7 +93,7 @@ function AccountNotificationInbox({ userId, view }: { userId: string; view: Noti
   </section>;
 }
 
-export function NotificationLink({ userId }: { userId: string }) {
+export function NotificationLink({ userId, mobile = false }: { userId: string; mobile?: boolean }) {
   const refresh = useDataRefresh();
   const [count, setCount] = useState<number | null>(null);
   useEffect(() => {
@@ -104,5 +104,5 @@ export function NotificationLink({ userId }: { userId: string }) {
     })().catch(() => { if (!cancelled) setCount(null); });
     return () => { cancelled = true; };
   }, [userId, refresh]);
-  return <Link className="notification-link" href="/account/notifications" title="Updates" aria-label={count ? `Notifications, ${count} unread` : 'Notifications'}><IoNotificationsOutline aria-hidden /><span className="notification-label">Updates</span>{count ? <span className="notification-count">{count > 99 ? '99+' : count}</span> : null}</Link>;
+  return <Link className={`notification-link${mobile ? ' mobile-updates-link' : ''}`} href="/account/notifications" title="Updates" aria-label={count ? `Notifications, ${count} unread` : 'Notifications'}><IoNotificationsOutline aria-hidden /><span className="notification-label">Updates</span>{count ? <span className="notification-count">{count > 99 ? '99+' : count}</span> : null}</Link>;
 }
