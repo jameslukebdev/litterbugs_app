@@ -8,7 +8,7 @@ const state = vi.hoisted(() => ({
   center: { lat: 0, lng: 0 },
   markerFailure: false,
   markerReports: [] as MappableReport[],
-  markerInstances: [] as { map: unknown; position: {lat: number; lng: number}; title: string; glyph?: HTMLElement; click?: () => void; click?: () => void }[],
+  markerInstances: [] as { map: unknown; position: {lat: number; lng: number}; title: string; glyph?: HTMLElement; click?: () => void }[],
   click: null as null | ((event: unknown) => void),
   idle: null as null | (() => void),
   tiles: null as null | (() => void),
