@@ -100,19 +100,20 @@ it('keeps sign in available if the initial session check fails', async () => {
   expect(screen.queryByLabelText('Loading profile')).toBeNull();
 });
 
-it('keeps signed-out mobile profile and updates accessible alongside the discovery tabs', async () => {
+it('keeps signed-out mobile profile accessible in the three-item discovery dock', async () => {
   render(<PublicAccountAction mobileTabs={<><button>Reports</button><button>Map</button></>} />);
   const dock = within(screen.getByRole('navigation', { name: 'Main app navigation' }));
-  expect(dock.getByRole('link', { name: 'Updates' }).getAttribute('href')).toBe('/account/notifications');
+  expect(dock.queryByRole('link', { name: /Updates|Notifications/ })).toBeNull();
+  expect(dock.getAllByRole('button')).toHaveLength(3);
   fireEvent.click(dock.getByRole('button', { name: 'Profile' }));
   expect(screen.getByRole('dialog', { name: 'Sign in' })).toBeTruthy();
 });
 
-it('keeps the signed-in mobile profile and unread updates in the dock', async () => {
+it('keeps signed-in mobile profile in the dock and unread updates outside it', async () => {
   currentUser.value = { id: 'member-id', email: 'member@example.com' };
   render(<PublicAccountAction mobileTabs={<><button>Reports</button><button>Map</button></>} />);
   const dock = within(screen.getByRole('navigation', { name: 'Main app navigation' }));
-  await waitFor(() => expect(dock.getByRole('link', { name: 'Notifications, 3 unread' })).toBeTruthy());
+  await waitFor(() => expect(screen.getByRole('link', { name: 'Notifications, 3 unread' })).toBeTruthy());
   fireEvent.click(dock.getByRole('button', { name: 'Profile' }));
   expect(push).toHaveBeenCalledWith('/account');
 });

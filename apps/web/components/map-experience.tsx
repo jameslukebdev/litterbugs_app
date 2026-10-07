@@ -19,6 +19,7 @@ import type { createReportClusters } from '@/lib/report-clusters';
 import { PublicAccountAction, type PublicAccountActionHandle } from '@/components/public-account-action';
 import Link from 'next/link';
 import Image from 'next/image';
+import { NotificationLink } from '@/components/notification-inbox';
 import { PublicSiteHeader } from '@/components/public-site-header';
 import { IoMapOutline, IoListOutline, IoOptionsOutline } from 'react-icons/io5';
 import { PlaceSearch } from '@/components/place-search';
@@ -925,6 +926,7 @@ export function MapExperience({
         <PlaceSearch selected={searchPlace} onSelect={selectSearchPlace} onClear={() => { setSearchPlace(null); const url = new URL(window.location.href); url.searchParams.delete('area'); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`); }} geocode={geocodeAddress} disabled={checkingLocation} />
         {!reportMode && <div className="discovery-toolbar-actions">
           <button className="secondary-button discovery-filters" onClick={() => { switchDiscoveryView('reports'); setFiltersRequest(value => value + 1); }}><IoOptionsOutline aria-hidden />Filters{Object.entries(discoveryFilters).filter(([key, value]) => value !== DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]).length > 0 ? ` (${Object.entries(discoveryFilters).filter(([key, value]) => value !== DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]).length})` : ''}</button>
+          <NotificationLink key={userId ?? 'guest'} userId={userId} className="mobile-toolbar-updates" />
           <div className="discovery-view-toggle" role="group" aria-label="Browse reports">
             <button aria-pressed={reportListOpen} onClick={() => switchDiscoveryView('reports')}><IoListOutline aria-hidden /><span>Reports</span></button>
             <button aria-pressed={!reportListOpen} onClick={() => switchDiscoveryView('map')}><IoMapOutline aria-hidden /><span>Map</span></button>

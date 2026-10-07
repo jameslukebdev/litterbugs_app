@@ -1,8 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
-import { IoPersonOutline, IoNotificationsOutline } from 'react-icons/io5';
+import { IoPersonOutline } from 'react-icons/io5';
 import { useRouter } from 'next/navigation';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, type ReactNode } from 'react';
 
@@ -114,7 +113,6 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
       {mobileTabs && <nav className="mobile-discovery-navigation" aria-label="Main app navigation">
         <div className="mobile-discovery-tabs">
           {mobileTabs}
-          {userId ? <NotificationLink key={`mobile-${userId}`} userId={userId} mobile /> : <Link className="mobile-updates-link" href="/account/notifications" aria-label="Updates"><IoNotificationsOutline aria-hidden /><span>Updates</span></Link>}
           <button type="button" className="mobile-profile-button" title={userId ? 'Your profile' : 'Sign in'} onClick={() => userId ? router.push('/account') : setAuthOpen(true)}>
             {avatar || <IoPersonOutline aria-hidden />}<span>Profile</span>
           </button>

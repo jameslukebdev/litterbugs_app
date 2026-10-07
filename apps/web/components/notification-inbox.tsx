@@ -93,16 +93,17 @@ function AccountNotificationInbox({ userId, view }: { userId: string; view: Noti
   </section>;
 }
 
-export function NotificationLink({ userId, mobile = false }: { userId: string; mobile?: boolean }) {
+export function NotificationLink({ userId, className = '' }: { userId: string | null; className?: string }) {
   const refresh = useDataRefresh();
   const [count, setCount] = useState<number | null>(null);
   useEffect(() => {
     let cancelled = false;
     void (async () => {
+      if (!userId) return;
       const result = await createClient().from('cleanup_notifications').select('id', { count: 'exact', head: true }).eq('user_id', userId).is('read_at', null);
       if (!cancelled) setCount(result.error ? null : result.count);
     })().catch(() => { if (!cancelled) setCount(null); });
     return () => { cancelled = true; };
   }, [userId, refresh]);
-  return <Link className={`notification-link${mobile ? ' mobile-updates-link' : ''}`} href="/account/notifications" title="Updates" aria-label={count ? `Notifications, ${count} unread` : 'Notifications'}><IoNotificationsOutline aria-hidden /><span className="notification-label">Updates</span>{count ? <span className="notification-count">{count > 99 ? '99+' : count}</span> : null}</Link>;
+  return <Link className={`notification-link ${className}`} href="/account/notifications" title="Updates" aria-label={count ? `Notifications, ${count} unread` : userId ? 'Notifications' : 'Updates'}><IoNotificationsOutline aria-hidden /><span className="notification-label">Updates</span>{count ? <span className="notification-count">{count > 99 ? '99+' : count}</span> : null}</Link>;
 }
