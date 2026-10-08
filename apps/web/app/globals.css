@@ -1151,6 +1151,8 @@ a.member-activity-row { color: inherit; text-decoration: none; }
 }
 
 /* Mobile report sheet: the grabber is also an accessible tap-to-dismiss target. */
+/* Initial modal focus belongs to the container; controls keep their keyboard focus rings. */
+.report-detail:focus { outline: none; }
 .report-detail-dismiss-handle { display: none; }
 @media (max-width: 700px) {
   .report-detail-backdrop .report-detail { transform: translateY(var(--sheet-drag-y, 0px)); transition: transform 200ms ease-out; }

@@ -648,9 +648,11 @@ describe('mobile report sheet dismissal', () => {
     fireEvent(target, new Event(cancel ? 'touchcancel' : 'touchend', { bubbles: true }));
   }
 
-  it('focuses the handle and offers a tap alternative to the gesture', () => {
-    const { handle, onClose } = openSheet();
-    expect(document.activeElement).toBe(handle);
+  it('focuses the report without selecting the handle and keeps the tap alternative', () => {
+    const { panel, handle, onClose } = openSheet();
+    expect(document.activeElement).toBe(panel);
+    expect(document.activeElement).not.toBe(handle);
+    expect(handle.tabIndex).toBe(0);
     fireEvent.click(handle);
     expect(onClose).toHaveBeenCalledOnce();
   });

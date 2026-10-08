@@ -85,7 +85,6 @@ export function ReportDetail({
 }) {
   const dialogRef = useRef<HTMLElement>(null);
   const backButtonRef = useRef<HTMLButtonElement>(null);
-  const dismissHandleRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef(onClose);
   useEffect(() => { closeRef.current = onClose; }, [onClose]);
   const shareButtonRef = useRef<HTMLButtonElement>(null);
@@ -198,7 +197,7 @@ export function ReportDetail({
     const previousOverflow = document.body.style.overflow;
     const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     document.body.style.overflow = 'hidden';
-    if (window.matchMedia?.('(max-width: 700px)').matches) dismissHandleRef.current?.focus();
+    if (window.matchMedia?.('(max-width: 700px)').matches) dialogRef.current?.focus({ preventScroll: true });
     else backButtonRef.current?.focus();
 
     function isTopmostDialog() {
@@ -269,10 +268,10 @@ export function ReportDetail({
         className={`report-detail${photoPaths.length ? '' : ' report-detail-without-photo'}`}
         role={embedded || (inline && !expandedLayout) ? "region" : "dialog"}
         aria-modal={embedded || (inline && !expandedLayout) ? undefined : true}
+        tabIndex={-1}
         aria-labelledby="report-detail-title"
       >
         {!embedded && (!inline || expandedLayout) && <button
-          ref={dismissHandleRef}
           type="button"
           className="report-detail-dismiss-handle"
           aria-label="Close report and return to map"
