@@ -12,6 +12,8 @@ import { NeedsAttention } from '@/components/needs-attention';
 import { ResumeDrafts } from '@/components/resume-drafts';
 import { PaymentDetail } from '@/components/payment-detail';
 import { LinkSignInMethod } from '@/components/link-sign-in-method';
+import { AccountActivityTabs } from './account-activity-tabs';
+import { AccountSectionSkeleton } from './account-section-skeleton';
 import { CommunityRank } from '@/components/community-rank';
 import { Icon } from '@/components/icon';
 import { ModalShell } from '@/components/modal-shell';
@@ -166,15 +168,17 @@ export function AccountDialog({
   const [message, setMessage] = useState('');
   const [busyAction, setBusyAction] = useState('');
   const [dataLoading, setDataLoading] = useState(true);
+  const [draftsReady, setDraftsReady] = useState(false);
+  const activityLoading = embedded && section === 'activity' && !unavailable.includes('Account') && !draftsReady;
   const focusedRenewal = useRef('');
   useEffect(() => {
-    if (!embedded || !initialRenewalId || dataLoading || section !== 'activity' || activityTab !== 'reports' || focusedRenewal.current === initialRenewalId) return;
+    if (!embedded || !initialRenewalId || dataLoading || activityLoading || section !== 'activity' || activityTab !== 'reports' || focusedRenewal.current === initialRenewalId) return;
     const row = document.getElementById(`renewal-${initialRenewalId}`);
     if (!row) return;
     row.scrollIntoView({ block: 'center' });
     row.focus({ preventScroll: true });
     focusedRenewal.current = initialRenewalId;
-  }, [embedded, initialRenewalId, dataLoading, expiredReports, section, activityTab]);
+  }, [embedded, initialRenewalId, dataLoading, activityLoading, expiredReports, section, activityTab]);
 
   useEffect(() => {
     let cancelled = false;
@@ -196,7 +200,7 @@ export function AccountDialog({
         dashboardOwner.current = user.id; loadedUser.current = null;
         setProfileEditing(false); setDisplayNameDraft(''); setUsernameDraft(''); setBioDraft(''); setLocationDraft(''); setAvatarFile(null); setRemoveAvatar(false); setProfileErrors({}); setMessage('');
         setProfile(null); setReports([]); setExpiredReports([]); setCleanups([]); setContributions([]); setBlockedAccounts([]);
-        setUnavailable([]); setDataLoading(true);
+        setUnavailable([]); setDataLoading(true); setDraftsReady(false);
       }
 
       setUserId(user.id);
@@ -576,15 +580,15 @@ export function AccountDialog({
       {unavailable.length > 0 && <section className="account-recovery" aria-label="Account loading problems" role="status">
         {unavailable.map(name => <p key={name}><strong>{name} could not be refreshed.</strong> Previously loaded information may be out of date. <button type="button" className="secondary-button" onClick={() => setRetryRevision(value => value + 1)}>Retry {name.toLowerCase()}</button></p>)}
       </section>}
+      {section === 'activity' && <AccountActivityTabs activeTab={activityTab} embedded={embedded} onChange={setActivityTab} />}
       {dataLoading && section !== 'profile' ? (
-        <div className="member-dashboard-loading" role="status" aria-label="Loading account"><span className="account-skeleton account-skeleton-panel" aria-hidden /></div>
+        <AccountSectionSkeleton section={section} />
       ) : (
-        <>
-          {section === 'activity' && <div className="activity-tabs" role="navigation" aria-label="My activity">
-            {(['current', 'history', 'reports'] as const).map(tab => embedded ? <Link key={tab} href={tab === 'reports' ? '/account/reports' : `/account/activity${tab === 'history' ? '?view=history' : ''}`} aria-current={activityTab === tab ? 'page' : undefined}>{tab === 'current' ? 'Current cleanups' : tab === 'history' ? 'Cleanup history' : 'My reports'}</Link> : <button key={tab} aria-pressed={activityTab === tab} onClick={() => setActivityTab(tab)}>{tab === 'current' ? 'Current cleanups' : tab === 'history' ? 'Cleanup history' : 'My reports'}</button>)}
-          </div>}
+        <div className="account-section-stage" aria-busy={activityLoading}>
+          {activityLoading && <AccountSectionSkeleton section={section} />}
+          <div className={activityLoading ? 'account-section-pending' : 'account-section-ready'} inert={activityLoading} aria-hidden={activityLoading || undefined}>
           {embedded && section === 'activity' && <NeedsAttention userId={userId} reports={reports} renewals={expiredReports} attempts={cleanups} incomplete={unavailable.some(name => ['Account', 'Reports', 'Renewals', 'Cleanups'].includes(name))} />}
-          {embedded && section === 'activity' && <ResumeDrafts userId={userId} attempts={activeCleanups} />}
+          {embedded && section === 'activity' && <ResumeDrafts userId={userId} attempts={activeCleanups} onReady={setDraftsReady} />}
           {section === 'profile' && <>
           <CommunityRank userId={userId} />
           <nav className="account-section-links" aria-label="Profile sections" style={dataLoading ? { visibility: 'hidden' } : undefined}>
@@ -707,10 +711,11 @@ export function AccountDialog({
             </section>}
 
           </div>
-        </>
+          </div>
+        </div>
       )}
 
-      {section === 'settings' && <section className="member-settings">
+      {!dataLoading && section === 'settings' && <section className="member-settings account-section-ready">
         <div className="member-settings-heading"><span className="eyebrow">ACCOUNT</span><h3>Account settings</h3><p>{email || 'Email unavailable for this account'}</p></div>
         <div className="account-section-links">
           <button onClick={startProfileEdit}>Edit profile<Icon name="chevron-right" /></button>

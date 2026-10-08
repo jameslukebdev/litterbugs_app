@@ -104,3 +104,15 @@ it('removes an acknowledged update from unread and preserves read failures acros
   fireEvent.click(screen.getByRole('button', { name: 'Retry marking read' }));
   await screen.findByText('You’re caught up. No unread updates.');
 });
+
+it('uses a quiet placeholder without declaring an empty inbox before loading finishes', async () => {
+  let resolve!: (value: unknown) => void;
+  mocks.load.mockReturnValue(new Promise(done => { resolve = done; }));
+  render(<NotificationInbox userId="owner" />);
+  expect(screen.getByRole('status', { name: 'Loading account section' })).toBeTruthy();
+  expect(screen.queryByText('Loading updates…')).toBeNull();
+  expect(screen.queryByText('No updates yet. Cleanup activity will appear here.')).toBeNull();
+  resolve({ data: [], error: null });
+  expect(await screen.findByText('No updates yet. Cleanup activity will appear here.')).toBeTruthy();
+  expect(screen.queryByRole('status', { name: 'Loading account section' })).toBeNull();
+});

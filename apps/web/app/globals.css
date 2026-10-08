@@ -1185,3 +1185,16 @@ a.member-activity-row { color: inherit; text-decoration: none; }
 @media (max-width: 600px) {
   .account-header-actions .public-account-actions { display: none; }
 }
+
+/* Account routes retain their shell and reveal content without sliding it around. */
+.account-page-layout > .account-dialog, .account-page-layout > .notification-inbox { min-height: calc(100svh - 180px); }
+.account-section-skeleton { display: grid; gap: 18px; padding-block: 6px; }
+.account-skeleton-card { border: 1px solid #e4e8e4; border-radius: 18px; padding: 20px; min-height: 170px; }
+.account-skeleton-card + .account-skeleton-card { min-height: 130px; }
+.account-skeleton-row { height: 38px; width: 85%; margin-top: 20px; }
+.account-section-stage { position: relative; }
+.account-section-pending { position: absolute; inset: 0; visibility: hidden; pointer-events: none; }
+.account-page-layout .member-payout-action { min-height: 50px; }
+.account-section-ready { animation: account-reveal 120ms ease-out; }
+@keyframes account-reveal { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .account-section-ready { animation: none; } }
