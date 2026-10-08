@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Report } from '@litterbugs/report-contract';
 
 import { isReportClosed } from '@/lib/report-visibility';
+import { useReportSheetDismiss } from '@/components/use-report-sheet-dismiss';
 import { ModalShell } from '@/components/modal-shell';
 import { CompletedCleanup } from '@/components/completed-cleanup';
 import { ReportAuthor } from '@/components/report-author';
@@ -88,6 +89,7 @@ export function ReportDetail({
   useEffect(() => { closeRef.current = onClose; }, [onClose]);
   const shareButtonRef = useRef<HTMLButtonElement>(null);
   const [expandedLayout, setExpandedLayout] = useState(false);
+  useReportSheetDismiss(dialogRef, closeRef, !embedded && (!inline || expandedLayout));
   const [photoExpanded, setPhotoExpanded] = useState(false);
   const [photoZoomed, setPhotoZoomed] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
@@ -195,7 +197,8 @@ export function ReportDetail({
     const previousOverflow = document.body.style.overflow;
     const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     document.body.style.overflow = 'hidden';
-    backButtonRef.current?.focus();
+    if (window.matchMedia?.('(max-width: 700px)').matches) dialogRef.current?.focus({ preventScroll: true });
+    else backButtonRef.current?.focus();
 
     function isTopmostDialog() {
       const dialogs = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"]'));
@@ -265,9 +268,16 @@ export function ReportDetail({
         className={`report-detail${photoPaths.length ? '' : ' report-detail-without-photo'}`}
         role={embedded || (inline && !expandedLayout) ? "region" : "dialog"}
         aria-modal={embedded || (inline && !expandedLayout) ? undefined : true}
+        tabIndex={-1}
         aria-labelledby="report-detail-title"
       >
-        <div className="sheet-handle" aria-hidden />
+        {!embedded && (!inline || expandedLayout) && <button
+          type="button"
+          className="report-detail-dismiss-handle"
+          aria-label="Close report and return to map"
+          title="Swipe down or tap to return to map"
+          onClick={onClose}
+        ><span aria-hidden /></button>}
         <header className="report-detail-toolbar">
           <button ref={backButtonRef} type="button" className="report-detail-toolbar-back" onClick={onClose}>
             <Icon name="chevron-left" />

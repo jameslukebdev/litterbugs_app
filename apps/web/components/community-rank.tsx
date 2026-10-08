@@ -32,6 +32,7 @@ export function CommunityRank({ userId, compact = false }: { userId: string; com
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
+    if (!userId) return;
     let cancelled = false;
     void loadRank(userId).then(value => { if (!cancelled) { setError(false); setPoints(value); } }).catch(() => { if (!cancelled) { setError(true); setPoints(null); } });
     return () => { cancelled = true; };
@@ -41,13 +42,13 @@ export function CommunityRank({ userId, compact = false }: { userId: string; com
   const next = ranks[index + 1];
   const progress = points === null ? 0 : next ? Math.round(100 * (points - rank.points) / (next.points - rank.points)) : 100;
   if (compact) return points === null ? null : <span className="community-rank-badge"><Image src={`/brand/ranks/${rank.id}.png`} width={22} height={22} alt="" /><span>{rank.name}</span></span>;
-  return <section className="community-rank" aria-label="Community rank">
+  return <section className="community-rank" aria-label="Community rank" aria-busy={points === null && !error}>
     <div className="community-rank-summary">
-      {points !== null && <Image src={`/brand/ranks/${rank.id}.png`} width={72} height={72} alt="" />}
-      <div><small>Community rank</small><h3>{points === null ? error ? 'Unavailable' : 'Loading…' : rank.name}</h3></div>
+      {points !== null ? <Image src={`/brand/ranks/${rank.id}.png`} width={72} height={72} alt="" /> : <span className="account-skeleton community-rank-artwork" aria-hidden />}
+      <div><small>Community rank</small><h3>{points === null ? error ? 'Unavailable' : <span className="account-skeleton account-skeleton-name" role="status" aria-label="Loading rank" /> : rank.name}</h3></div>
       {points !== null && <strong>{points} {points === 1 ? 'point' : 'points'}</strong>}
     </div>
-    {points !== null && <><p>{next ? `Next rank: ${next.name}` : 'Highest rank reached'} <strong>{progress}%</strong></p><progress max={100} value={progress} aria-label="Progress toward next rank" />{next && <small>{next.points - points} points to go</small>}</>}
+    <div className="community-rank-progress" style={points === null ? { visibility: 'hidden' } : undefined} aria-hidden={points === null}><p>{next ? `Next rank: ${next.name}` : 'Highest rank reached'} <strong>{progress}%</strong></p><progress max={100} value={progress} aria-label="Progress toward next rank" />{next && <small>{next.points - (points ?? 0)} points to go</small>}</div>
     {error && <button className="secondary-button" onClick={() => { setError(false); setAttempt(value => value + 1); }}>Retry loading rank</button>}
     <details><summary>How points work</summary><p>Earn 1 point when a report is accepted after review, and 3 points when a cleanup is confirmed complete.</p><p>You can earn up to 5 report points in a rolling 24 hours. Another report within 25 metres of a location credited to you in the previous 7 days does not earn another point. You can still report new litter there.</p></details>
   </section>;

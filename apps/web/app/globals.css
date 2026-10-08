@@ -653,7 +653,7 @@ button.member-activity-row:hover { background: var(--green-soft); }
 .community-rank-summary > strong { margin-left: auto; color: #2f7d32; }
 .community-rank-summary h3 { margin: 3px 0 0; font-size: 23px; }
 .community-rank small { color: #667078; }
-.community-rank > p { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.community-rank-progress > p { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
 .community-rank progress { width: 100%; height: 8px; accent-color: #2f7d32; display: block; margin-bottom: 10px; }
 .community-rank details { margin-top: 18px; padding-top: 14px; border-top: 1px solid #edf0ed; font-size: 14px; line-height: 1.6; }
 .community-rank summary { color: #2f7d32; cursor: pointer; }
@@ -1149,3 +1149,52 @@ a.member-activity-row { color: inherit; text-decoration: none; }
   .mobile-toolbar-updates:focus-visible { outline: 3px solid #2f7d3266; outline-offset: 2px; }
   .mobile-toolbar-updates .notification-count { top: 0; right: 0; }
 }
+
+/* Mobile report sheet: the grabber is also an accessible tap-to-dismiss target. */
+/* Initial modal focus belongs to the container; controls keep their keyboard focus rings. */
+.report-detail:focus { outline: none; }
+.report-detail-dismiss-handle { display: none; }
+@media (max-width: 700px) {
+  .report-detail-backdrop .report-detail { transform: translateY(var(--sheet-drag-y, 0px)); transition: transform 200ms ease-out; }
+  .report-detail-backdrop .report-detail[data-dragging] { animation: none; transition: none; user-select: none; }
+  .report-detail-backdrop .report-detail-toolbar-back { display: none; }
+  .report-detail-dismiss-handle { display: grid; place-items: center; flex: none; align-self: center; width: 96px; height: 44px; padding: 0; border: 0; background: transparent; cursor: pointer; touch-action: none; }
+  .report-detail-dismiss-handle span { width: 58px; height: 5px; border-radius: 99px; background: #cfd6d0; }
+  .report-detail-dismiss-handle:focus-visible { outline: 3px solid rgba(47,125,50,.35); outline-offset: -4px; border-radius: 10px; }
+  .report-detail-backdrop .report-detail-layout { overscroll-behavior-y: contain; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .report-detail-backdrop .report-detail { animation: none; transition: none; }
+}
+
+/* Quiet placeholders retain the profile layout while account data arrives. */
+.account-skeleton { display: block; background: #edf0ed; border-radius: 6px; }
+.account-skeleton-name { width: min(160px, 100%); height: 26px; }
+.account-skeleton-line { width: min(125px, 100%); height: 16px; margin-top: 10px; }
+.account-skeleton-count { width: 30px; height: 28px; margin-inline: auto; }
+.account-skeleton-panel { width: 100%; min-height: 250px; border-radius: 20px; }
+.member-dashboard .member-dashboard-header { min-height: 112px; }
+.community-rank-summary { min-height: 72px; }
+.community-rank-artwork { width: 72px; height: 72px; flex: none; border-radius: 50%; }
+.community-rank-progress { min-height: 82px; }
+@media (max-width: 600px) {
+  .member-dashboard .member-dashboard-header { min-height: 140px; align-content: start; }
+}
+
+.account-screen-title > h1:focus, .account-screen-title > h2:focus { outline: none; }
+@media (max-width: 600px) {
+  .account-header-actions .public-account-actions { display: none; }
+}
+
+/* Account routes retain their shell and reveal content without sliding it around. */
+.account-page-layout > .account-dialog, .account-page-layout > .notification-inbox { min-height: calc(100svh - 180px); }
+.account-section-skeleton { display: grid; gap: 18px; padding-block: 6px; }
+.account-skeleton-card { border: 1px solid #e4e8e4; border-radius: 18px; padding: 20px; min-height: 170px; }
+.account-skeleton-card + .account-skeleton-card { min-height: 130px; }
+.account-skeleton-row { height: 38px; width: 85%; margin-top: 20px; }
+.account-section-stage { position: relative; }
+.account-section-pending { position: absolute; inset: 0; visibility: hidden; pointer-events: none; }
+.account-page-layout .member-payout-action { min-height: 50px; }
+.account-section-ready { animation: account-reveal 120ms ease-out; }
+@keyframes account-reveal { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .account-section-ready { animation: none; } }
