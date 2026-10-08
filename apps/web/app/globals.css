@@ -653,7 +653,7 @@ button.member-activity-row:hover { background: var(--green-soft); }
 .community-rank-summary > strong { margin-left: auto; color: #2f7d32; }
 .community-rank-summary h3 { margin: 3px 0 0; font-size: 23px; }
 .community-rank small { color: #667078; }
-.community-rank > p { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.community-rank-progress > p { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
 .community-rank progress { width: 100%; height: 8px; accent-color: #2f7d32; display: block; margin-bottom: 10px; }
 .community-rank details { margin-top: 18px; padding-top: 14px; border-top: 1px solid #edf0ed; font-size: 14px; line-height: 1.6; }
 .community-rank summary { color: #2f7d32; cursor: pointer; }
@@ -1165,4 +1165,23 @@ a.member-activity-row { color: inherit; text-decoration: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .report-detail-backdrop .report-detail { animation: none; transition: none; }
+}
+
+/* Quiet placeholders retain the profile layout while account data arrives. */
+.account-skeleton { display: block; background: #edf0ed; border-radius: 6px; }
+.account-skeleton-name { width: min(160px, 100%); height: 26px; }
+.account-skeleton-line { width: min(125px, 100%); height: 16px; margin-top: 10px; }
+.account-skeleton-count { width: 30px; height: 28px; margin-inline: auto; }
+.account-skeleton-panel { width: 100%; min-height: 250px; border-radius: 20px; }
+.member-dashboard .member-dashboard-header { min-height: 112px; }
+.community-rank-summary { min-height: 72px; }
+.community-rank-artwork { width: 72px; height: 72px; flex: none; border-radius: 50%; }
+.community-rank-progress { min-height: 82px; }
+@media (max-width: 600px) {
+  .member-dashboard .member-dashboard-header { min-height: 140px; align-content: start; }
+}
+
+.account-screen-title > h1:focus, .account-screen-title > h2:focus { outline: none; }
+@media (max-width: 600px) {
+  .account-header-actions .public-account-actions { display: none; }
 }

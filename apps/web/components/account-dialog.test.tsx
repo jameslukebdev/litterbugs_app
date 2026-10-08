@@ -367,3 +367,19 @@ it('uses a singular label when only one older contribution remains', async () =>
   render(<AccountPage destination="payments" userId="member-id" />);
   await screen.findByRole('button', { name: 'Show 1 more contribution' });
 });
+
+
+describe('quiet profile loading', () => {
+  it('reserves the profile without temporary identity or loading copy and keeps drafts in activity', async () => {
+    const focus = vi.spyOn(HTMLElement.prototype, 'focus');
+    render(<AccountPage destination="" userId="member-id" />);
+    expect(screen.getByRole('status', { name: 'Loading profile' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Edit profile' })).toBeNull();
+    expect(screen.queryByText('Loading your activity…')).toBeNull();
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+    expect(await screen.findByRole('heading', { name: 'Member' })).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Resume your work' })).toBeNull();
+    expect(screen.queryByText(/No actions are due/)).toBeNull();
+    expect(screen.getByRole('navigation', { name: 'Profile sections' })).toBeTruthy();
+  });
+});
