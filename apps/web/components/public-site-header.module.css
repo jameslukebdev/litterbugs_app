@@ -224,14 +224,14 @@
   .compactMobile .brandLink { justify-self: start; }
   .compactMobile .brandLink img { width: 60px; height: 48px; }
   .compactMobile .action { gap: 8px; }
-  .compactMobile .compactAppLink { display: inline-flex; align-items: center; justify-content: center; gap: 4px; flex: none; min-height: 44px; padding: 0 8px; border-radius: 10px; background: var(--green-soft); color: var(--green-dark); font-size: 13px; font-weight: 750; text-decoration: none; white-space: nowrap; }
-  .compactAppLink svg { width: 16px; height: 16px; flex: none; }
-  .compactAppLink:hover { background: #dcefdc; }
-  .compactAppLink:focus-visible { outline: 3px solid #2f7d3266; outline-offset: 2px; }
+  .compactMobile .compactAppLink { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: none; min-height: 44px; padding: 0; color: var(--green-dark); font-size: 15px; font-weight: 650; text-decoration: none; white-space: nowrap; }
+  .compactAppLink svg { width: 19px; height: 19px; flex: none; }
+  .compactAppLink:hover { color: var(--green); }
+  .compactAppLink:focus-visible { border-radius: 5px; outline: 3px solid #2f7d3266; outline-offset: 2px; }
   .compactMobile .mobilePopover { z-index: 30; max-height: calc(100dvh - 80px); }
 }
 @media (max-width: 360px) {
-  .compactMobile .brandLink img { width: 44px; height: 40px; }
+  .compactMobile .brandLink img { width: 36px; height: 40px; }
   .compactMobile .action { gap: 4px; }
-  .compactMobile .compactAppLink { padding-inline: 4px; font-size: 12px; }
+  .compactMobile .inner { gap: 2px; }
 }
