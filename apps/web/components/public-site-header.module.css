@@ -209,14 +209,23 @@
 }
 
 /* Discovery keeps its permanent app invitation in the first row on phones. */
-.compactAppLink { display: none; }
+.compactAppLink, .tabletAppLink { display: none; }
+@media (min-width: 761px) and (max-width: 1100px) {
+  .appStrip { display: none; }
+  .inner > .mobileMenu, .brandLink, .action { grid-row: 1; }
+  .tabletAppLink { grid-column: 1; grid-row: 1; justify-self: start; margin-left: 54px; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; color: var(--green-dark); font-size: 15px; font-weight: 650; text-decoration: none; white-space: nowrap; }
+  .tabletAppLink svg { width: 19px; height: 19px; }
+  .tabletAppLink:hover { color: var(--green); }
+  .tabletAppLink:focus-visible { outline: 3px solid #2f7d3266; outline-offset: 2px; border-radius: 5px; }
+}
 @media (max-width: 760px) {
   .compactMobile .appStrip { display: none; }
   .compactMobile .inner { grid-template-columns: 44px auto minmax(0, 1fr); gap: 4px; padding-inline: 8px; height: 64px; min-height: 64px; }
   .compactMobile .brandLink { justify-self: start; }
   .compactMobile .brandLink img { width: 60px; height: 48px; }
   .compactMobile .action { gap: 8px; }
-  .compactMobile .compactAppLink { display: inline-flex; align-items: center; justify-content: center; flex: none; min-height: 44px; padding: 0 10px; border-radius: 10px; background: var(--green-soft); color: var(--green-dark); font-size: 13px; font-weight: 750; text-decoration: none; white-space: nowrap; }
+  .compactMobile .compactAppLink { display: inline-flex; align-items: center; justify-content: center; gap: 4px; flex: none; min-height: 44px; padding: 0 8px; border-radius: 10px; background: var(--green-soft); color: var(--green-dark); font-size: 13px; font-weight: 750; text-decoration: none; white-space: nowrap; }
+  .compactAppLink svg { width: 16px; height: 16px; flex: none; }
   .compactAppLink:hover { background: #dcefdc; }
   .compactAppLink:focus-visible { outline: 3px solid #2f7d3266; outline-offset: 2px; }
   .compactMobile .mobilePopover { z-index: 30; max-height: calc(100dvh - 80px); }
@@ -224,4 +233,5 @@
 @media (max-width: 360px) {
   .compactMobile .brandLink img { width: 44px; height: 40px; }
   .compactMobile .action { gap: 4px; }
+  .compactMobile .compactAppLink { padding-inline: 4px; font-size: 12px; }
 }

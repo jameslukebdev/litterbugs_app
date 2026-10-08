@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /* eslint-disable @next/next/no-img-element -- The test mock intentionally renders a native image. */
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PublicSiteHeader } from './public-site-header';
@@ -52,8 +52,8 @@ describe('PublicSiteHeader', () => {
 
   it('offers a permanent app link with a keyboard-dismissable QR panel and real store destinations', () => {
     render(<PublicSiteHeader activePath="/" reportId="selected-report" />);
-    expect(screen.getByRole('link', { name: 'Use app' }).getAttribute('href')).toBe('/get-app?report=selected-report');
-    const trigger = screen.getByRole('link', { name: 'Get the app' });
+    expect(screen.getAllByRole('link', { name: 'Get the app' }).filter(link => link.getAttribute('href') === '/get-app?report=selected-report')).toHaveLength(2);
+    const trigger = within(screen.getByRole('navigation', { name: 'Main navigation' })).getByRole('link', { name: 'Get the app' });
     fireEvent.click(trigger);
     expect(screen.getByRole('region', { name: 'Get the Litterbugs app' })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'App Store' }).getAttribute('href')).toContain('id6757313862');
@@ -62,7 +62,7 @@ describe('PublicSiteHeader', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.queryByRole('region', { name: 'Get the Litterbugs app' })).toBeNull();
     expect(document.activeElement).toBe(trigger);
-    expect(screen.getByRole('link', { name: 'Use app' })).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Use app' })).toBeNull();
   });
 });
 
@@ -77,7 +77,7 @@ describe('PublicSiteHeader', () => {
 
 it('preserves app report context and account routes in compact mobile navigation', () => {
   render(<PublicSiteHeader activePath="/" compactMobile reportId="selected-report" action={<button>Report Litter</button>} />);
-  expect(screen.getAllByRole('link', { name: 'Use app' }).every(link => link.getAttribute('href') === '/get-app?report=selected-report')).toBe(true);
+  expect(screen.getAllByRole('link', { name: 'Get the app' }).filter(link => link.getAttribute('href') === '/get-app?report=selected-report')).toHaveLength(3);
   fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
   expect(screen.getByRole('link', { name: 'Profile / sign in' }).getAttribute('href')).toBe('/account');
   expect(screen.getByRole('link', { name: 'Updates' }).getAttribute('href')).toBe('/account/notifications');

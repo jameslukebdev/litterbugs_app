@@ -19,7 +19,7 @@ export function MobileAppStrip({ reportId }: { reportId?: string }) {
   return <div className={styles.strip} aria-label="Litterbugs mobile app">
     <Image src="/brand/app-icon-192.png" alt="" width={40} height={40} />
     <div className={styles.stripCopy}><strong>Take Litterbugs with you</strong><span>Report litter on the go.</span></div>
-    <AppLink reportId={reportId} className={styles.useApp}>Use app</AppLink>
+    <AppLink reportId={reportId} className={styles.useApp}><IoPhonePortraitOutline aria-hidden />Get the app</AppLink>
   </div>;
 }
 

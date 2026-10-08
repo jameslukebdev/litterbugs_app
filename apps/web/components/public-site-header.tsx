@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { IoMenuOutline, IoCloseOutline } from 'react-icons/io5';
+import { IoMenuOutline, IoCloseOutline, IoPhonePortraitOutline } from 'react-icons/io5';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
@@ -137,6 +137,7 @@ export function PublicSiteHeader({ activePath, action, reportId, compactMobile =
         </nav>
 
         <NavigationMenu activePath={activePath} mobile accountLinks={compactMobile} />
+        {activePath !== '/get-app' && <AppLink reportId={reportId} className={styles.tabletAppLink}><IoPhonePortraitOutline aria-hidden />Get the app</AppLink>}
 
         <Link href="/?view=map" prefetch={true} className={styles.brandLink} aria-label="Litterbugs map">
           <Image src="/brand/litterbugs-logo.png" alt="Litterbugs" width={636} height={433} priority />
@@ -146,7 +147,7 @@ export function PublicSiteHeader({ activePath, action, reportId, compactMobile =
           <NavigationMenu activePath={activePath} />
           <div className={styles.action}>
             {action ?? <PublicAccountAction />}
-            {compactMobile && <AppLink reportId={reportId} className={styles.compactAppLink}>Use app</AppLink>}
+            {compactMobile && <AppLink reportId={reportId} className={styles.compactAppLink}><IoPhonePortraitOutline aria-hidden />Get the app</AppLink>}
           </div>
         </div>
       </div>
