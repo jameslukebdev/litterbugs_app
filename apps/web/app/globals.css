@@ -1149,3 +1149,18 @@ a.member-activity-row { color: inherit; text-decoration: none; }
   .mobile-toolbar-updates:focus-visible { outline: 3px solid #2f7d3266; outline-offset: 2px; }
   .mobile-toolbar-updates .notification-count { top: 0; right: 0; }
 }
+
+/* Mobile report sheet: the grabber is also an accessible tap-to-dismiss target. */
+.report-detail-dismiss-handle { display: none; }
+@media (max-width: 700px) {
+  .report-detail-backdrop .report-detail { transform: translateY(var(--sheet-drag-y, 0px)); transition: transform 200ms ease-out; }
+  .report-detail-backdrop .report-detail[data-dragging] { animation: none; transition: none; user-select: none; }
+  .report-detail-backdrop .report-detail-toolbar-back { display: none; }
+  .report-detail-dismiss-handle { display: grid; place-items: center; flex: none; align-self: center; width: 96px; height: 44px; padding: 0; border: 0; background: transparent; cursor: pointer; touch-action: none; }
+  .report-detail-dismiss-handle span { width: 58px; height: 5px; border-radius: 99px; background: #cfd6d0; }
+  .report-detail-dismiss-handle:focus-visible { outline: 3px solid rgba(47,125,50,.35); outline-offset: -4px; border-radius: 10px; }
+  .report-detail-backdrop .report-detail-layout { overscroll-behavior-y: contain; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .report-detail-backdrop .report-detail { animation: none; transition: none; }
+}

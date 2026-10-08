@@ -630,3 +630,83 @@ it('keeps the title and original photo ahead of async completed-cleanup details'
   const story = view.container.querySelector('.completed-cleanup-story')!;
   expect(photo.compareDocumentPosition(story) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
+
+describe('mobile report sheet dismissal', () => {
+  beforeEach(() => {
+    Object.defineProperty(window, 'matchMedia', { configurable: true, value: vi.fn((query: string) => ({ matches: query === '(max-width: 700px)' })) });
+  });
+
+  function openSheet() {
+    const onClose = vi.fn();
+    render(<ReportDetail report={report} isOwner={false} onClose={onClose} />);
+    return { onClose, panel: screen.getByRole('dialog'), handle: screen.getByRole('button', { name: 'Close report and return to map' }) };
+  }
+
+  function swipe(target: Element, x: number, y: number, endX: number, endY: number, cancel = false) {
+    fireEvent.touchStart(target, { touches: [{ clientX: x, clientY: y }] });
+    fireEvent.touchMove(target, { touches: [{ clientX: endX, clientY: endY }] });
+    fireEvent(target, new Event(cancel ? 'touchcancel' : 'touchend', { bubbles: true }));
+  }
+
+  it('focuses the handle and offers a tap alternative to the gesture', () => {
+    const { handle, onClose } = openSheet();
+    expect(document.activeElement).toBe(handle);
+    fireEvent.click(handle);
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('follows a downward drag and dismisses after the slide-out', () => {
+    vi.useFakeTimers();
+    const { panel, handle, onClose } = openSheet();
+    fireEvent.touchStart(handle, { touches: [{ clientX: 100, clientY: 100 }] });
+    fireEvent.touchMove(handle, { touches: [{ clientX: 105, clientY: 220 }] });
+    expect(panel.style.getPropertyValue('--sheet-drag-y')).toBe('120px');
+    fireEvent.touchEnd(handle);
+    fireEvent.click(handle); // A synthesized click after dragging must not close twice.
+    expect(onClose).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(200);
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    ['short drag', 100, 140, false],
+    ['horizontal swipe', 240, 120, false],
+    ['upward scroll', 100, 0, false],
+    ['cancelled drag', 100, 240, true],
+  ])('does not dismiss for a %s', (_name, x, y, cancel) => {
+    vi.useFakeTimers();
+    const { panel, handle, onClose } = openSheet();
+    swipe(handle, 100, 100, x as number, y as number, cancel as boolean);
+    vi.advanceTimersByTime(250);
+    expect(onClose).not.toHaveBeenCalled();
+    expect(panel.style.getPropertyValue('--sheet-drag-y')).toBe('');
+  });
+
+  it('preserves content scrolling below the top, but dismisses from content at the top', () => {
+    vi.useFakeTimers();
+    const { panel, onClose } = openSheet();
+    const content = panel.querySelector('.report-detail-layout') as HTMLElement;
+    const heading = screen.getByRole('heading', { name: 'Photo report' });
+    content.scrollTop = 100;
+    swipe(heading, 100, 100, 100, 250);
+    vi.advanceTimersByTime(250);
+    expect(onClose).not.toHaveBeenCalled();
+    content.scrollTop = 0;
+    swipe(heading, 100, 100, 100, 250);
+    vi.advanceTimersByTime(250);
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('does not take over action buttons, desktop reports, or embedded reports', () => {
+    vi.useFakeTimers();
+    const { handle, onClose } = openSheet();
+    swipe(screen.getByRole('button', { name: 'Share' }), 100, 100, 100, 250);
+    Object.defineProperty(window, 'matchMedia', { configurable: true, value: vi.fn(() => ({ matches: false })) });
+    swipe(handle, 100, 100, 100, 250);
+    vi.advanceTimersByTime(250);
+    expect(onClose).not.toHaveBeenCalled();
+    cleanup();
+    render(<ReportDetail embedded report={report} isOwner={false} onClose={onClose} />);
+    expect(screen.queryByRole('button', { name: 'Close report and return to map' })).toBeNull();
+  });
+});
