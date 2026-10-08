@@ -20,11 +20,15 @@
 }
 
 .desktopNav {
-  justify-self: end;
+  justify-self: stretch;
   display: flex;
   align-items: center;
   gap: 22px;
   padding-right: 24px;
+}
+
+.downloadNav {
+  margin-right: auto;
 }
 
 .navLink,

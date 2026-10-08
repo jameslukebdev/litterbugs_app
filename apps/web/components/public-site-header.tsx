@@ -131,9 +131,9 @@ export function PublicSiteHeader({ activePath, action, reportId, compactMobile =
       {activePath !== '/get-app' && <div className={styles.appStrip}><MobileAppStrip reportId={reportId} /></div>}
       <div className={styles.inner}>
         <nav className={styles.desktopNav} aria-label="Main navigation">
+          <div className={styles.downloadNav}><GetAppNavigation /></div>
           <HeaderLink href="/?view=map" activePath={activePath}>Map</HeaderLink>
           <HeaderLink href="/about" activePath={activePath}>About</HeaderLink>
-          <GetAppNavigation />
         </nav>
 
         <NavigationMenu activePath={activePath} mobile accountLinks={compactMobile} />
