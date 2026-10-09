@@ -1,6 +1,7 @@
 'use client';
 import { reportContext } from '@/lib/report-context';
 import Link from 'next/link';
+import { AccountSectionSkeleton } from './account-section-skeleton';
 import { IoNotificationsOutline } from 'react-icons/io5';
 import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -68,8 +69,8 @@ function AccountNotificationInbox({ userId, view }: { userId: string; view: Noti
     restoredAnchor.current = anchor;
   }, [loaded, snapshot]);
   const unread = notices.filter(notice => !notice.read_at);
-  return <section className="notification-inbox">
-    <header><h1 id="notification-heading" tabIndex={-1}>Notifications</h1><p>Updates to your reports, cleanups and payments. Read status is shared with the app. Reading an update does not complete a task. Updates refresh automatically while this page is open.</p></header>
+  return <section className="notification-inbox embedded-panel account-dialog member-dashboard">
+    <header className="account-screen-title"><h1 id="notification-heading" tabIndex={-1}>Notifications</h1></header>
     <nav className="activity-tabs" aria-label="Notification filters">
       <Link href={notificationInboxHref({ filter: 'all', page: 1 })} aria-current={filter === 'all' ? 'page' : undefined}>All updates</Link>
       <Link href={notificationInboxHref({ filter: 'unread', page: 1 })} aria-current={filter === 'unread' ? 'page' : undefined}>Unread</Link>
@@ -77,7 +78,7 @@ function AccountNotificationInbox({ userId, view }: { userId: string; view: Noti
     {!!unread.length && <button className="secondary-button" disabled={busy} onClick={() => void markRead(unread.map(notice => notice.id))}>Mark displayed updates as read</button>}
     {!!failedReadIds.length && <p role="alert">Could not mark these updates as read. <button disabled={busy} onClick={() => void markRead(failedReadIds)}>Retry marking read</button></p>}
     {message && <p role="alert">{message} <button onClick={() => setRetry(value => value + 1)}>Retry updates</button></p>}
-    {!loaded && <p role="status">Loading updates…</p>}
+    {!loaded && <AccountSectionSkeleton section="notifications" />}
     {loaded && !notices.length && !message && <p>{page > 1 ? 'No updates on this page.' : filter === 'unread' ? 'You’re caught up. No unread updates.' : 'No updates yet. Cleanup activity will appear here.'}</p>}
     <ul className="notification-list">{notices.map(notice => {
       const copy = notificationPresentation(notice);
@@ -93,16 +94,17 @@ function AccountNotificationInbox({ userId, view }: { userId: string; view: Noti
   </section>;
 }
 
-export function NotificationLink({ userId }: { userId: string }) {
+export function NotificationLink({ userId, className = '' }: { userId: string | null; className?: string }) {
   const refresh = useDataRefresh();
   const [count, setCount] = useState<number | null>(null);
   useEffect(() => {
     let cancelled = false;
     void (async () => {
+      if (!userId) return;
       const result = await createClient().from('cleanup_notifications').select('id', { count: 'exact', head: true }).eq('user_id', userId).is('read_at', null);
       if (!cancelled) setCount(result.error ? null : result.count);
     })().catch(() => { if (!cancelled) setCount(null); });
     return () => { cancelled = true; };
   }, [userId, refresh]);
-  return <Link className="notification-link" href="/account/notifications" aria-label={count ? `Notifications, ${count} unread` : 'Notifications'}><IoNotificationsOutline aria-hidden /><span className="notification-label">Updates</span>{count ? <span className="notification-count">{count > 99 ? '99+' : count}</span> : null}</Link>;
+  return <Link className={`notification-link ${className}`} href="/account/notifications" title="Updates" aria-label={count ? `Notifications, ${count} unread` : userId ? 'Notifications' : 'Updates'}><IoNotificationsOutline aria-hidden /><span className="notification-label">Updates</span>{count ? <span className="notification-count">{count > 99 ? '99+' : count}</span> : null}</Link>;
 }

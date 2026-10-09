@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /* eslint-disable @next/next/no-img-element -- The test mock intentionally renders a native image. */
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PublicSiteHeader } from './public-site-header';
@@ -36,14 +36,49 @@ describe('PublicSiteHeader', () => {
   it('groups mobile exploration and policy links and closes outside the sheet', () => {
     render(<PublicSiteHeader activePath="/about" />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
     const mobileNavigation = screen.getByRole('navigation', { name: 'Mobile navigation' });
     expect(mobileNavigation).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Close menu' }).getAttribute('aria-expanded')).toBe('true');
     expect(screen.getAllByRole('link', { name: 'Map' })).toHaveLength(2);
+    expect(screen.getAllByRole('link', { name: 'Map' }).every(link => link.getAttribute('href') === '/?view=map')).toBe(true);
+    expect(screen.getByRole('link', { name: 'Litterbugs map' }).getAttribute('href')).toBe('/?view=map');
     expect(screen.getAllByRole('link', { name: 'About' })).toHaveLength(2);
     expect(screen.getByRole('link', { name: /Safety & waiver/ })).toBeTruthy();
 
     fireEvent.pointerDown(document.body);
     expect(screen.queryByRole('navigation', { name: 'Mobile navigation' })).toBeNull();
   });
+
+  it('offers a permanent app link with a keyboard-dismissable QR panel and real store destinations', () => {
+    render(<PublicSiteHeader activePath="/" reportId="selected-report" />);
+    expect(screen.getAllByRole('link', { name: 'Get the app' }).filter(link => link.getAttribute('href') === '/get-app?report=selected-report')).toHaveLength(2);
+    const trigger = within(screen.getByRole('navigation', { name: 'Main navigation' })).getByRole('link', { name: 'Get the app' });
+    fireEvent.click(trigger);
+    expect(screen.getByRole('region', { name: 'Get the Litterbugs app' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'App Store' }).getAttribute('href')).toContain('id6757313862');
+    expect(screen.getByRole('link', { name: 'Google Play' }).getAttribute('href')).toContain('com.litterbugs.app');
+    screen.getByRole('link', { name: 'App Store' }).focus();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('region', { name: 'Get the Litterbugs app' })).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+    expect(screen.queryByRole('link', { name: 'Use app' })).toBeNull();
+  });
+});
+
+  it('returns keyboard focus to the hamburger when Escape closes navigation', () => {
+    render(<PublicSiteHeader activePath="/" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
+    screen.getByRole('link', { name: 'Help' }).focus();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Open menu' }));
+    expect(screen.queryByRole('navigation', { name: 'Mobile navigation' })).toBeNull();
+  });
+
+it('preserves app report context and account routes in compact mobile navigation', () => {
+  render(<PublicSiteHeader activePath="/" compactMobile reportId="selected-report" action={<button>Report Litter</button>} />);
+  expect(screen.getAllByRole('link', { name: 'Get the app' }).filter(link => link.getAttribute('href') === '/get-app?report=selected-report')).toHaveLength(3);
+  fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
+  expect(screen.getByRole('link', { name: 'Profile / sign in' }).getAttribute('href')).toBe('/account');
+  expect(screen.getByRole('link', { name: 'Updates' }).getAttribute('href')).toBe('/account/notifications');
 });

@@ -12,6 +12,8 @@ import { NeedsAttention } from '@/components/needs-attention';
 import { ResumeDrafts } from '@/components/resume-drafts';
 import { PaymentDetail } from '@/components/payment-detail';
 import { LinkSignInMethod } from '@/components/link-sign-in-method';
+import { AccountActivityTabs } from './account-activity-tabs';
+import { AccountSectionSkeleton } from './account-section-skeleton';
 import { CommunityRank } from '@/components/community-rank';
 import { Icon } from '@/components/icon';
 import { ModalShell } from '@/components/modal-shell';
@@ -142,7 +144,7 @@ export function AccountDialog({
   const [contributionLimit, setContributionLimit] = useState(5);
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
   const [section, setSection] = useState<'profile' | 'activity' | 'payments' | 'settings'>(initialSection);
-  useEffect(() => { headingRef.current?.focus(); }, [section]);
+  useEffect(() => { headingRef.current?.focus({ preventScroll: true }); }, [section]);
   const [activityTab, setActivityTab] = useState<'current' | 'history' | 'reports'>(initialActivityTab);
   const [userId, setUserId] = useState('');
   const [signInMethods, setSignInMethods] = useState<string[]>([]);
@@ -166,15 +168,17 @@ export function AccountDialog({
   const [message, setMessage] = useState('');
   const [busyAction, setBusyAction] = useState('');
   const [dataLoading, setDataLoading] = useState(true);
+  const [draftsReady, setDraftsReady] = useState(false);
+  const activityLoading = embedded && section === 'activity' && !unavailable.includes('Account') && !draftsReady;
   const focusedRenewal = useRef('');
   useEffect(() => {
-    if (!embedded || !initialRenewalId || dataLoading || section !== 'activity' || activityTab !== 'reports' || focusedRenewal.current === initialRenewalId) return;
+    if (!embedded || !initialRenewalId || dataLoading || activityLoading || section !== 'activity' || activityTab !== 'reports' || focusedRenewal.current === initialRenewalId) return;
     const row = document.getElementById(`renewal-${initialRenewalId}`);
     if (!row) return;
     row.scrollIntoView({ block: 'center' });
     row.focus({ preventScroll: true });
     focusedRenewal.current = initialRenewalId;
-  }, [embedded, initialRenewalId, dataLoading, expiredReports, section, activityTab]);
+  }, [embedded, initialRenewalId, dataLoading, activityLoading, expiredReports, section, activityTab]);
 
   useEffect(() => {
     let cancelled = false;
@@ -196,7 +200,7 @@ export function AccountDialog({
         dashboardOwner.current = user.id; loadedUser.current = null;
         setProfileEditing(false); setDisplayNameDraft(''); setUsernameDraft(''); setBioDraft(''); setLocationDraft(''); setAvatarFile(null); setRemoveAvatar(false); setProfileErrors({}); setMessage('');
         setProfile(null); setReports([]); setExpiredReports([]); setCleanups([]); setContributions([]); setBlockedAccounts([]);
-        setUnavailable([]); setDataLoading(true);
+        setUnavailable([]); setDataLoading(true); setDraftsReady(false);
       }
 
       setUserId(user.id);
@@ -491,7 +495,8 @@ export function AccountDialog({
         {!embedded && section !== 'profile' && <button className="icon-button" onClick={() => navigateSection('profile')} aria-label="Back to profile"><Icon name="chevron-left" /></button>}
         <Heading ref={headingRef} tabIndex={-1}>{section === 'profile' ? 'Profile' : section === 'activity' ? 'My activity' : section === 'payments' ? 'Payments' : 'Settings'}</Heading>
       </header>
-      {(section === 'profile' || profileEditing) && <header className="member-dashboard-header">
+      {(section === 'profile' || profileEditing) && <header className="member-dashboard-header" aria-busy={dataLoading}>
+        {dataLoading ? <><span className="account-avatar account-skeleton" aria-hidden /><div className="member-profile-summary" role="status" aria-label="Loading profile"><span className="account-skeleton account-skeleton-name" /><span className="account-skeleton account-skeleton-line" /></div></> : <>
         <div className="account-avatar" aria-hidden>
           {visibleAvatarUrl ? <Image src={visibleAvatarUrl} alt="" width={64} height={64} unoptimized /> : (initial || <Icon name="account" />)}
         </div>
@@ -503,6 +508,7 @@ export function AccountDialog({
           {joinedLabel ? <p className="member-profile-joined">Joined {joinedLabel}</p> : null}
         </div>
         {!profileEditing && <button className="secondary-button member-edit-profile" onClick={startProfileEdit}>Edit profile</button>}
+        </>}
       </header>}
 
       {message && <p className={`form-message ${message.includes('sent') || message.includes('saved') ? 'success-message' : 'error-message'}`} role="status">{message}</p>}
@@ -574,30 +580,30 @@ export function AccountDialog({
       {unavailable.length > 0 && <section className="account-recovery" aria-label="Account loading problems" role="status">
         {unavailable.map(name => <p key={name}><strong>{name} could not be refreshed.</strong> Previously loaded information may be out of date. <button type="button" className="secondary-button" onClick={() => setRetryRevision(value => value + 1)}>Retry {name.toLowerCase()}</button></p>)}
       </section>}
-      {dataLoading ? (
-        <div className="member-dashboard-loading"><span className="spinner" /><span>Loading your activity…</span></div>
+      {section === 'activity' && <AccountActivityTabs activeTab={activityTab} embedded={embedded} onChange={setActivityTab} />}
+      {dataLoading && section !== 'profile' ? (
+        <AccountSectionSkeleton section={section} />
       ) : (
-        <>
-          {section === 'activity' && <div className="activity-tabs" role="navigation" aria-label="My activity">
-            {(['current', 'history', 'reports'] as const).map(tab => embedded ? <Link key={tab} href={tab === 'reports' ? '/account/reports' : `/account/activity${tab === 'history' ? '?view=history' : ''}`} aria-current={activityTab === tab ? 'page' : undefined}>{tab === 'current' ? 'Current cleanups' : tab === 'history' ? 'Cleanup history' : 'My reports'}</Link> : <button key={tab} aria-pressed={activityTab === tab} onClick={() => setActivityTab(tab)}>{tab === 'current' ? 'Current cleanups' : tab === 'history' ? 'Cleanup history' : 'My reports'}</button>)}
-          </div>}
-          {embedded && (section === 'profile' || section === 'activity') && <NeedsAttention userId={userId} reports={reports} renewals={expiredReports} attempts={cleanups} incomplete={unavailable.some(name => ['Account', 'Reports', 'Renewals', 'Cleanups'].includes(name))} />}
-          {embedded && (section === 'profile' || section === 'activity') && <ResumeDrafts userId={userId} attempts={activeCleanups} />}
+        <div className="account-section-stage" aria-busy={activityLoading}>
+          {activityLoading && <AccountSectionSkeleton section={section} />}
+          <div className={activityLoading ? 'account-section-pending' : 'account-section-ready'} inert={activityLoading} aria-hidden={activityLoading || undefined}>
+          {embedded && section === 'activity' && <NeedsAttention userId={userId} reports={reports} renewals={expiredReports} attempts={cleanups} incomplete={unavailable.some(name => ['Account', 'Reports', 'Renewals', 'Cleanups'].includes(name))} />}
+          {embedded && section === 'activity' && <ResumeDrafts userId={userId} attempts={activeCleanups} onReady={setDraftsReady} />}
           {section === 'profile' && <>
           <CommunityRank userId={userId} />
-          <nav className="account-section-links" aria-label="Profile sections">
+          <nav className="account-section-links" aria-label="Profile sections" style={dataLoading ? { visibility: 'hidden' } : undefined}>
             <button onClick={() => navigateSection('activity')}>My activity<Icon name="chevron-right" /></button>
             <button onClick={() => navigateSection('payments')}>Payments<Icon name="chevron-right" /></button>
             <button onClick={() => navigateSection('settings')}>Settings<Icon name="chevron-right" /></button>
           </nav>
           <section className="member-stats" aria-label="Community activity">
-            <div aria-label="Reports submitted"><strong>{reportsAvailable && !unavailable.includes('Account') ? reports.length : '—'}</strong><span>Reports</span></div>
-            <div><strong>{unavailable.includes('Cleanups') || unavailable.includes('Account') ? '—' : completedCleanups.length}</strong><span>Cleanups</span></div>
+            <div aria-label="Reports submitted"><strong>{dataLoading ? <span className="account-skeleton account-skeleton-count" aria-label="Loading report count" /> : reportsAvailable && !unavailable.includes('Account') ? reports.length : '—'}</strong><span>Reports</span></div>
+            <div><strong>{dataLoading ? <span className="account-skeleton account-skeleton-count" aria-label="Loading cleanup count" /> : unavailable.includes('Cleanups') || unavailable.includes('Account') ? '—' : completedCleanups.length}</strong><span>Cleanups</span></div>
           </section>
 
           </>}
 
-          {!embedded && (section === 'profile' || section === 'activity') && hasSavedDraft && <button className="secondary-button" onClick={() => { if (!embedded) onClose(); onResumeDraft?.(); }}>Resume saved report</button>}
+          {!embedded && section === 'activity' && hasSavedDraft && <button className="secondary-button" onClick={() => { if (!embedded) onClose(); onResumeDraft?.(); }}>Resume saved report</button>}
           <div className="member-dashboard-grid">
             {initialRenewalId && section === 'activity' && activityTab === 'reports' && !dataLoading && !unavailable.some(name => ['Account', 'Renewals'].includes(name)) && !expiredReports.some(report => report.id === initialRenewalId) && <p role="status">This report no longer has a renewal decision due. Check its current status in My reports.</p>}
             {section === 'activity' && activityTab === 'reports' && expiredReports.length ? (
@@ -705,10 +711,11 @@ export function AccountDialog({
             </section>}
 
           </div>
-        </>
+          </div>
+        </div>
       )}
 
-      {section === 'settings' && <section className="member-settings">
+      {!dataLoading && section === 'settings' && <section className="member-settings account-section-ready">
         <div className="member-settings-heading"><span className="eyebrow">ACCOUNT</span><h3>Account settings</h3><p>{email || 'Email unavailable for this account'}</p></div>
         <div className="account-section-links">
           <button onClick={startProfileEdit}>Edit profile<Icon name="chevron-right" /></button>

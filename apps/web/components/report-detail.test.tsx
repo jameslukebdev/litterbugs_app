@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { Report } from '@litterbugs/report-contract';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -294,7 +294,7 @@ describe('ReportDetail photos', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Share Your Impact' }));
     expect(screen.getByRole('dialog', { name: 'Share your cleanup impact' })).toBeTruthy();
-    expect(screen.getAllByText('Cleanup complete')).toHaveLength(3);
+    expect(within(screen.getByRole('dialog', { name: 'Share your cleanup impact' })).getByText('Cleanup complete')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Close share options' }));
 
     Object.defineProperty(window, 'matchMedia', {
@@ -573,4 +573,142 @@ it('explains a full-photo failure even with a loaded preview and retries in plac
  fireEvent.load(retried);
  expect(screen.getByRole('button',{name:'View full photo'})).toBeTruthy();
  expect(onClose).not.toHaveBeenCalled();
+});
+
+
+it('retains the displayed photo and counter while another carousel image loads, including retries', () => {
+  const view = render(<ReportDetail report={{ ...report, photo_paths: ['user/report/one.jpg', 'user/report/two.jpg', 'user/report/three.jpg'] }} isOwner={false} onClose={vi.fn()} />);
+  const first = screen.getByAltText('Report photo 1 of 3');
+  fireEvent.load(first);
+  fireEvent.click(screen.getByRole('button', { name: 'Next photo' }));
+  expect(view.container.querySelector('.report-photo-retained')).toBe(first);
+  expect(view.container.querySelector('.photo-count')?.textContent).toBe('1/3');
+  expect(screen.queryByText('Loading photo…')).toBeNull();
+  expect(view.container.querySelector('.spinner')).toBeNull();
+  // A fast second click skips the pending image without clearing the displayed one.
+  fireEvent.click(screen.getByRole('button', { name: 'Next photo' }));
+  fireEvent.error(screen.getByAltText('Report photo 3 of 3'));
+  expect(screen.getByText('Photo could not load. Previous photo shown.')).toBeTruthy();
+  expect(view.container.querySelector('.report-photo-retained')).toBe(first);
+  fireEvent.click(screen.getByRole('button', { name: 'Retry photo' }));
+  fireEvent.load(screen.getByAltText('Report photo 3 of 3'));
+  expect(view.container.querySelector('.photo-count')?.textContent).toBe('3/3');
+});
+
+it('reuses a decoded previous photo when navigating back without waiting for another load event', () => {
+  render(<ReportDetail report={{ ...report, photo_paths: ['user/report/one.jpg', 'user/report/two.jpg'] }} isOwner={false} onClose={vi.fn()} />);
+  const first = screen.getByAltText('Report photo 1 of 2');
+  Object.defineProperty(first, 'complete', { value: true });
+  Object.defineProperty(first, 'naturalWidth', { value: 900 });
+  fireEvent.load(first);
+  fireEvent.click(screen.getByRole('button', { name: 'Next photo' }));
+  fireEvent.load(screen.getByAltText('Report photo 2 of 2'));
+  fireEvent.click(screen.getByRole('button', { name: 'Previous photo' }));
+  expect(screen.getByAltText('Report photo 1 of 2')).toBe(first);
+  expect(first.classList.contains('report-photo-loading')).toBe(false);
+  expect(screen.getByRole('button', { name: 'View full photo' }).hasAttribute('disabled')).toBe(false);
+});
+
+it('retains the photo in the expanded viewer while the next image loads', () => {
+  render(<ReportDetail report={{ ...report, photo_paths: ['user/report/one.jpg', 'user/report/two.jpg'] }} isOwner={false} onClose={vi.fn()} />);
+  fireEvent.load(screen.getByAltText('Report photo 1 of 2'));
+  fireEvent.click(screen.getByRole('button', { name: 'View full photo' }));
+  fireEvent.click(screen.getAllByRole('button', { name: 'Next photo' }).at(-1)!);
+  expect(document.querySelector('.photo-viewer-image img[aria-hidden="true"]')?.getAttribute('src')).toContain('one.jpg');
+  expect(document.querySelector('.photo-viewer-current')?.classList.contains('report-photo-loading')).toBe(true);
+  fireEvent.load(screen.getByAltText('Report photo 2 of 2'));
+  expect(document.querySelector('.photo-viewer-current')?.classList.contains('report-photo-loading')).toBe(false);
+});
+
+it('keeps the title and original photo ahead of async completed-cleanup details', async () => {
+  const view = render(<ReportDetail report={{ ...report, cleanup_state: 'completed', photo_paths: ['user/report/one.jpg'] }} isOwner={false} onClose={vi.fn()} />);
+  expect(view.container.querySelector('.report-detail-header .completed-cleanup-story')).toBeNull();
+  expect(screen.getByText('Loading cleanup details…').classList.contains('sr-only')).toBe(true);
+  expect(view.container.querySelector('.completed-cleanup-story')).toBeNull();
+  await screen.findByText('Cleanup details unavailable.');
+  const photo = view.container.querySelector('.report-detail-visual')!;
+  const story = view.container.querySelector('.completed-cleanup-story')!;
+  expect(photo.compareDocumentPosition(story) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+describe('mobile report sheet dismissal', () => {
+  beforeEach(() => {
+    Object.defineProperty(window, 'matchMedia', { configurable: true, value: vi.fn((query: string) => ({ matches: query === '(max-width: 700px)' })) });
+  });
+
+  function openSheet() {
+    const onClose = vi.fn();
+    render(<ReportDetail report={report} isOwner={false} onClose={onClose} />);
+    return { onClose, panel: screen.getByRole('dialog'), handle: screen.getByRole('button', { name: 'Close report and return to map' }) };
+  }
+
+  function swipe(target: Element, x: number, y: number, endX: number, endY: number, cancel = false) {
+    fireEvent.touchStart(target, { touches: [{ clientX: x, clientY: y }] });
+    fireEvent.touchMove(target, { touches: [{ clientX: endX, clientY: endY }] });
+    fireEvent(target, new Event(cancel ? 'touchcancel' : 'touchend', { bubbles: true }));
+  }
+
+  it('focuses the report without selecting the handle and keeps the tap alternative', () => {
+    const { panel, handle, onClose } = openSheet();
+    expect(document.activeElement).toBe(panel);
+    expect(document.activeElement).not.toBe(handle);
+    expect(handle.tabIndex).toBe(0);
+    fireEvent.click(handle);
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('follows a downward drag and dismisses after the slide-out', () => {
+    vi.useFakeTimers();
+    const { panel, handle, onClose } = openSheet();
+    fireEvent.touchStart(handle, { touches: [{ clientX: 100, clientY: 100 }] });
+    fireEvent.touchMove(handle, { touches: [{ clientX: 105, clientY: 220 }] });
+    expect(panel.style.getPropertyValue('--sheet-drag-y')).toBe('120px');
+    fireEvent.touchEnd(handle);
+    fireEvent.click(handle); // A synthesized click after dragging must not close twice.
+    expect(onClose).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(200);
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    ['short drag', 100, 140, false],
+    ['horizontal swipe', 240, 120, false],
+    ['upward scroll', 100, 0, false],
+    ['cancelled drag', 100, 240, true],
+  ])('does not dismiss for a %s', (_name, x, y, cancel) => {
+    vi.useFakeTimers();
+    const { panel, handle, onClose } = openSheet();
+    swipe(handle, 100, 100, x as number, y as number, cancel as boolean);
+    vi.advanceTimersByTime(250);
+    expect(onClose).not.toHaveBeenCalled();
+    expect(panel.style.getPropertyValue('--sheet-drag-y')).toBe('');
+  });
+
+  it('preserves content scrolling below the top, but dismisses from content at the top', () => {
+    vi.useFakeTimers();
+    const { panel, onClose } = openSheet();
+    const content = panel.querySelector('.report-detail-layout') as HTMLElement;
+    const heading = screen.getByRole('heading', { name: 'Photo report' });
+    content.scrollTop = 100;
+    swipe(heading, 100, 100, 100, 250);
+    vi.advanceTimersByTime(250);
+    expect(onClose).not.toHaveBeenCalled();
+    content.scrollTop = 0;
+    swipe(heading, 100, 100, 100, 250);
+    vi.advanceTimersByTime(250);
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('does not take over action buttons, desktop reports, or embedded reports', () => {
+    vi.useFakeTimers();
+    const { handle, onClose } = openSheet();
+    swipe(screen.getByRole('button', { name: 'Share' }), 100, 100, 100, 250);
+    Object.defineProperty(window, 'matchMedia', { configurable: true, value: vi.fn(() => ({ matches: false })) });
+    swipe(handle, 100, 100, 100, 250);
+    vi.advanceTimersByTime(250);
+    expect(onClose).not.toHaveBeenCalled();
+    cleanup();
+    render(<ReportDetail embedded report={report} isOwner={false} onClose={onClose} />);
+    expect(screen.queryByRole('button', { name: 'Close report and return to map' })).toBeNull();
+  });
 });

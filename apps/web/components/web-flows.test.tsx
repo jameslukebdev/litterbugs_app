@@ -26,8 +26,8 @@ afterAll(() => {
 afterEach(cleanup);
 
 describe('web product boundaries', () => {
-  it('keeps unapproved Facebook login out of the public release', () => {
-    render(<AuthDialog onClose={vi.fn()} />);
+  it('hides Facebook when its website setting is disabled', () => {
+    render(<AuthDialog onClose={vi.fn()} facebookLoginEnabled={false} />);
 
     expect(screen.queryByRole('button', { name: /continue with apple/i })).toBeNull();
     expect(screen.getByRole('button', { name: /continue with google/i })).toBeTruthy();
@@ -38,7 +38,7 @@ describe('web product boundaries', () => {
     expect(screen.queryByRole('button', { name: /guest/i })).toBeNull();
   });
 
-  it('keeps Facebook available for invited internal provider testing', () => {
+  it('shows Facebook when its website setting is enabled', () => {
     render(<AuthDialog onClose={vi.fn()} facebookLoginEnabled />);
 
     expect(screen.getByRole('button', { name: /continue with facebook/i })).toBeTruthy();

@@ -69,3 +69,23 @@ it('does not keep an expired account copy during an outage', async () => {
   await screen.findByRole('button', { name: 'Retry saved drafts' });
   expect(screen.queryByText('Phone draft')).toBeNull(); now.mockRestore();
 });
+
+it('signals readiness only after both draft sources settle, including an empty result', async () => {
+  let resolve!: (result: unknown) => void;
+  mocks.local.mockResolvedValue(undefined);
+  mocks.remote.mockReturnValue(new Promise(done => { resolve = done; }));
+  const ready = vi.fn();
+  render(<ResumeDrafts userId="owner" attempts={attempts} onReady={ready} />);
+  expect(ready).not.toHaveBeenCalled();
+  resolve({ data: [], error: null });
+  await waitFor(() => expect(ready).toHaveBeenCalledWith(true));
+  expect(screen.queryByRole('region', { name: 'Resume your work' })).toBeNull();
+});
+it('signals readiness on a source failure so activity is not hidden by an error', async () => {
+  mocks.local.mockRejectedValue(new Error('device unavailable'));
+  mocks.remote.mockRejectedValue(new Error('offline'));
+  const ready = vi.fn();
+  render(<ResumeDrafts userId="owner" attempts={attempts} onReady={ready} />);
+  expect(await screen.findByRole('button', { name: 'Retry saved drafts' })).toBeTruthy();
+  await waitFor(() => expect(ready).toHaveBeenCalledWith(true));
+});

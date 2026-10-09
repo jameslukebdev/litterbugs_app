@@ -90,15 +90,6 @@ function quickFilters(filter: ReportFilter): DiscoveryFilters {
   return next;
 }
 
-function resultsHeading(count: number, filter: ReportFilter) {
-  if (filter === 'favorites') return `${count} favorite report${count === 1 ? '' : 's'}`;
-  if (filter === 'hidden') return `${count} hidden report${count === 1 ? '' : 's'}`;
-  if (filter === 'all' || filter === 'custom') return `${count} litter report${count === 1 ? '' : 's'}`;
-  if (filter === 'completed') return `${count} completed cleanup${count === 1 ? '' : 's'}`;
-  if (filter === 'claimed') return `${count} cleanup${count === 1 ? '' : 's'} in progress`;
-  return `${count} cleanup opportunit${count === 1 ? 'y' : 'ies'}`;
-}
-
 function reportTiming(report: MappableReport) {
   if (report.cleanup_state === 'completed') return 'Cleanup complete';
   if (!report.created_at) return '';
@@ -116,6 +107,7 @@ function ReportThumbnail({ report, priority, retry, onError }: { report: Mappabl
   const photoPath = report.photo_paths?.[0];
   const src = photoPath ? getReportCardPhotoUrl(photoPath) : null;
   const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   if (!src || failed) {
     return (
@@ -130,6 +122,9 @@ function ReportThumbnail({ report, priority, retry, onError }: { report: Mappabl
   return (
     <span className="report-result-photo">
       <img
+        className="report-card-image"
+        data-loaded={loaded}
+        onLoad={() => setLoaded(true)}
         src={retryReportPhotoUrl(src, retry)}
         alt=""
         decoding="async"
@@ -147,7 +142,6 @@ function ReportThumbnail({ report, priority, retry, onError }: { report: Mappabl
 
 export function ReportBrowser({
   reports,
-  areaLabel = 'Current map area',
   onFavoriteChange,
   onHiddenChange,
   showAuthors = false,
@@ -169,13 +163,10 @@ export function ReportBrowser({
   truncated = false,
   discoveryError = '',
   filtersRequest = 0,
-  areaChosen = true,
-  onChooseArea, onUseLocation, onWidenArea, onRetry, onStartReport,
+  onChooseArea, onWidenArea, onRetry, onStartReport,
 }: {
   filtersRequest?: number;
-  areaChosen?: boolean;
   onChooseArea?: () => void;
-  onUseLocation?: () => void;
   onWidenArea?: () => void;
   onRetry?: () => void;
   onStartReport?: () => void;
@@ -187,7 +178,6 @@ export function ReportBrowser({
   truncated?: boolean;
   discoveryError?: string;
   reports: MappableReport[];
-  areaLabel?: string;
   showAuthors?: boolean;
   onMemberBlocked?: () => void;
   onFavoriteChange?: (reportId: string, favorite: boolean) => void;
@@ -319,7 +309,6 @@ export function ReportBrowser({
           <div className="report-browser-heading-row">
             <div>
               <h1 className="reports-screen-title">Litter reports</h1>
-              <p>{resultsHeading(visibleReports.length, activeFilter)} · {areaLabel}</p>
             </div>
             <label className="report-sort">
               <span className="sr-only">Sort cleanup opportunities</span>
@@ -363,7 +352,8 @@ export function ReportBrowser({
             </div>
           </ModalShell>}
           {sort === 'closest' && locationMessage && <p role="status">{locationMessage}</p>}
-          <p className="discovery-status" role="status">{discoveryError || (loading ? 'Searching this map area…' : truncated ? 'Showing up to 1,000 matches. Zoom in or narrow your filters to see more.' : '')}</p>
+          <p className="sr-only" role="status">{loading ? 'Searching this map area…' : ''}</p>
+          <p className="discovery-status" role="status">{discoveryError || (truncated ? 'Showing up to 1,000 matches. Zoom in or narrow your filters to see more.' : '')}</p>
         </header>
         <div className="report-browser-list" ref={listRef} onScroll={() => { if (memoryReady) saveBrowserMemory({ filters: applied, sort, scroll: listRef.current?.scrollTop ?? 0, displayLimit }); }} aria-busy={loading}>
           {visibleReports.length ? displayedReports.map((report, index) => {
@@ -406,20 +396,19 @@ export function ReportBrowser({
               }}>Retry photo</button>}
               {onFavoriteChange && <button className="card-favorite" aria-label={`${favoriteReportIds.has(report.id) ? 'Unfavorite' : 'Favorite'} ${report.title || 'report'}`} aria-pressed={favoriteReportIds.has(report.id)} onClick={() => onFavoriteChange(report.id, !favoriteReportIds.has(report.id))}><Icon name="heart" /></button>}
               {onHiddenChange && <details className="card-options"><summary aria-label={`Options for ${report.title || 'report'}`}>•••</summary><button onClick={() => onHiddenChange(report.id, !hiddenReportIds.has(report.id))}>{hiddenReportIds.has(report.id) ? 'Unhide report' : 'Hide report'}</button></details>}
-              {report.user_id && authors[report.user_id] && <ReportAuthor key={report.user_id} profileId={report.user_id} initialProfile={authors[report.user_id]} sourceReportId={report.id} onBlocked={onMemberBlocked} />}
+              {showAuthors && report.user_id && (authors[report.user_id] ? <ReportAuthor key={report.user_id} profileId={report.user_id} initialProfile={authors[report.user_id]} sourceReportId={report.id} onBlocked={onMemberBlocked} /> : <div className="report-author report-author-placeholder" aria-hidden="true"><span className="report-author-initial" /><span className="report-author-copy"><span>Community member</span></span></div>)}
               </article>
             );
           }) : (
             <div className="report-browser-empty">
-              <strong>{loading ? 'Looking for cleanup opportunities…' : discoveryError ? 'Reports could not be loaded' : !areaChosen ? 'Where would you like to help?' : 'No matching cleanup opportunities'}</strong>
-              <span>{loading ? 'Checking the selected area.' : discoveryError ? 'Check your connection, then try again.' : !areaChosen ? 'Choose a city or use your location to find nearby reports.' : 'Try a wider area or clear your filters. You can also report litter you have found.'}</span>
+              <strong>{loading ? 'Looking for cleanup opportunities…' : discoveryError ? 'Reports could not be loaded' : 'No matching cleanup opportunities'}</strong>
+              <span>{loading ? 'Checking the selected area.' : discoveryError ? 'Check your connection, then try again.' : 'Try a wider area or clear your filters. You can also report litter you have found.'}</span>
               {!loading && <div className="empty-discovery-actions">
                 {discoveryError ? onRetry && <button className="primary-button" onClick={onRetry}>Try again</button> : <>
-                  {onChooseArea && <button className="primary-button" onClick={onChooseArea}>Choose a city</button>}
-                  {!areaChosen && onUseLocation && <button className="secondary-button" onClick={onUseLocation}>Use my location</button>}
-                  {areaChosen && <button className="secondary-button" onClick={() => { setFilter('all'); setAdvanced(quickFilters('all')); setDraftFilters(quickFilters('all')); setDisplayLimit(50); }}>Clear filters</button>}
-                  {areaChosen && onWidenArea && <button className="secondary-button" onClick={onWidenArea}>Search a wider area</button>}
-                  {areaChosen && onStartReport && <button className="secondary-button" onClick={onStartReport}>Report litter</button>}
+                  {onChooseArea && <button className="primary-button" onClick={onChooseArea}>Search another area</button>}
+                  <button className="secondary-button" onClick={() => { setFilter('all'); setAdvanced(quickFilters('all')); setDraftFilters(quickFilters('all')); setDisplayLimit(50); }}>Clear filters</button>
+                  {onWidenArea && <button className="secondary-button" onClick={onWidenArea}>Search a wider area</button>}
+                  {onStartReport && <button className="secondary-button" onClick={onStartReport}>Report litter</button>}
                 </>}
               </div>}
             </div>

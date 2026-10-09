@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
 /* eslint-disable @next/next/no-img-element -- The test mock intentionally renders a native image. */
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PublicAccountAction } from './public-account-action';
 
 const { currentUser, authListener, push } = vi.hoisted(() => ({
   push: vi.fn(),
-  currentUser: { value: null as null | { id: string; email: string } },
+  currentUser: { fail: false, value: null as null | { id: string; email: string } },
   authListener: { value: null as null | ((event: string, session: unknown) => void) },
 }));
 
@@ -31,6 +31,7 @@ vi.mock('@/components/account-dialog', () => ({
 function profileQuery() {
   const builder = {
     eq: () => builder,
+    is: async () => ({ count: 3, error: null }),
     maybeSingle: async () => ({
       data: currentUser.value ? {
         id: currentUser.value.id,
@@ -51,7 +52,7 @@ function profileQuery() {
 vi.mock('@/lib/supabase/client', () => ({
   createClient: () => ({
     auth: {
-      getUser: async () => ({ data: { user: currentUser.value } }),
+      getUser: async () => { if (currentUser.fail) throw new Error('Offline'); return { data: { user: currentUser.value } }; },
       onAuthStateChange: (listener: (event: string, session: unknown) => void) => {
         authListener.value = listener;
         return { data: { subscription: { unsubscribe: vi.fn() } } };
@@ -67,6 +68,7 @@ vi.mock('@/lib/supabase/client', () => ({
 afterEach(() => {
   cleanup();
   currentUser.value = null;
+  currentUser.fail = false;
   authListener.value = null;
 });
 
@@ -83,10 +85,35 @@ describe('PublicAccountAction', () => {
     currentUser.value = { id: 'member-id', email: 'member@example.com' };
     render(<PublicAccountAction />);
 
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Account' })).toBeTruthy());
-    const accountButton = screen.getByRole('button', { name: 'Account' });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Profile' })).toBeTruthy());
+    const accountButton = screen.getByRole('button', { name: 'Profile' });
     expect(accountButton.classList.contains('public-account-control-signed-out')).toBe(false);
     fireEvent.click(accountButton);
     expect(push).toHaveBeenCalledWith('/account');
   });
+});
+
+it('keeps sign in available if the initial session check fails', async () => {
+  currentUser.fail = true;
+  render(<PublicAccountAction />);
+  expect(await screen.findByRole('button', { name: 'Sign in' })).toBeTruthy();
+  expect(screen.queryByLabelText('Loading profile')).toBeNull();
+});
+
+it('keeps signed-out mobile profile accessible in the three-item discovery dock', async () => {
+  render(<PublicAccountAction mobileTabs={<><button>Reports</button><button>Map</button></>} />);
+  const dock = within(screen.getByRole('navigation', { name: 'Main app navigation' }));
+  expect(dock.queryByRole('link', { name: /Updates|Notifications/ })).toBeNull();
+  expect(dock.getAllByRole('button')).toHaveLength(3);
+  fireEvent.click(dock.getByRole('button', { name: 'Profile' }));
+  expect(screen.getByRole('dialog', { name: 'Sign in' })).toBeTruthy();
+});
+
+it('keeps signed-in mobile profile in the dock and unread updates outside it', async () => {
+  currentUser.value = { id: 'member-id', email: 'member@example.com' };
+  render(<PublicAccountAction mobileTabs={<><button>Reports</button><button>Map</button></>} />);
+  const dock = within(screen.getByRole('navigation', { name: 'Main app navigation' }));
+  await waitFor(() => expect(screen.getByRole('link', { name: 'Notifications, 3 unread' })).toBeTruthy());
+  fireEvent.click(dock.getByRole('button', { name: 'Profile' }));
+  expect(push).toHaveBeenCalledWith('/account');
 });

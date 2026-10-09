@@ -8,9 +8,10 @@ const state = vi.hoisted(() => ({
   center: { lat: 0, lng: 0 },
   markerFailure: false,
   markerReports: [] as MappableReport[],
-  markerInstances: [] as { map: unknown; position: {lat: number; lng: number}; title: string; glyph?: HTMLElement }[],
+  markerInstances: [] as { map: unknown; position: {lat: number; lng: number}; title: string; glyph?: HTMLElement; click?: () => void }[],
   click: null as null | ((event: unknown) => void),
   idle: null as null | (() => void),
+  tiles: null as null | (() => void),
   discovery: vi.fn(),
   panTo: vi.fn(),
   fitBounds: vi.fn(),
@@ -28,23 +29,23 @@ const report = () => ({ id: 'test-report', title: 'Test bottles', latitude: 0.5,
 vi.mock('@/lib/report-clusters', () => ({ createReportClusters: (map: unknown) => ({ update: (markers: Map<string, { map: unknown }>) => { for (const marker of markers.values()) if (!marker.map) marker.map = map; }, select: vi.fn(), dispose: vi.fn() }) }));
 vi.mock('@/lib/cloud-drafts', () => ({ cloudDrafts: { begin: async () => 'test-report', discard: async () => {} } }));
 vi.mock('@/lib/discovery-memory', async importOriginal => ({ ...await importOriginal<typeof import('@/lib/discovery-memory')>(), readBrowserMemory: () => null, saveBrowserMemory: () => {}, readDiscoveryMemory: () => null, saveDiscoveryMemory: () => {} }));
-vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }), useSearchParams: () => new URLSearchParams(window.location.search) }));
 vi.mock('@googlemaps/js-api-loader', () => ({
   setOptions: vi.fn(),
   importLibrary: async (name: string) => name === 'maps' ? { Map: class {
     constructor(_element: unknown, options: unknown) { state.mapOptions(options); }
-    addListener(name: string, callback: (event: unknown) => void) { if (name === 'click') state.click = callback; else if (name === 'idle') state.idle = () => callback(undefined); }
+    addListener(name: string, callback: (event: unknown) => void) { if (name === 'click') state.click = callback; else if (name === 'idle') state.idle = () => callback(undefined); else if (name === 'tilesloaded') state.tiles = () => callback(undefined); }
     panTo(location: { lat: number; lng: number }) { state.center = location; state.panTo(location); } fitBounds(...args: unknown[]) { state.fitBounds(...args); } setZoom() {} getZoom() { return 14; }
     getBounds() { return { toJSON: () => ({ north: 1, south: -1, west: -1, east: 1 }) }; }
     getCenter() { return { lat: () => state.center.lat, lng: () => state.center.lng }; }
   } } : { AdvancedMarkerElement: class {
-    map: unknown; position: {lat: number; lng: number}; title: string; glyph?: HTMLElement;
+    map: unknown; position: {lat: number; lng: number}; title: string; glyph?: HTMLElement; click?: () => void;
     constructor(options: {map: unknown; position: {lat: number; lng: number}; title: string}) {
       if (state.markerFailure) throw new Error('Map renderer unavailable');
       this.map = options.map; this.position = options.position; this.title = options.title; state.markerInstances.push(this);
     }
     append(glyph: HTMLElement) { this.glyph = glyph; }
-    addEventListener() {}
+    addEventListener(name: string, callback: () => void) { if (name === 'gmp-click') this.click = callback; }
   } },
 }));
 vi.mock('@/components/public-site-header', () => ({ PublicSiteHeader: ({ action }: { action: React.ReactNode }) => action }));
@@ -93,7 +94,7 @@ vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({
 
 beforeEach(() => {
   state.center = { lat: 0, lng: 0 }; state.markerFailure = false; state.markerInstances = []; state.markerReports = [];
-  vi.clearAllMocks(); state.discovery.mockReset().mockResolvedValue({ reports: [], truncated: false }); state.idle = null; state.journal = undefined; state.click = null; state.published = false; state.lostResponse = false;
+  vi.clearAllMocks(); state.discovery.mockReset().mockResolvedValue({ reports: [], truncated: false }); state.idle = null; state.tiles = null; state.journal = undefined; state.click = null; state.published = false; state.lostResponse = false;
   state.upload.mockResolvedValue('test-user/test-report/photo.jpg');
   state.review.mockResolvedValue(undefined);
   Object.defineProperty(navigator, 'geolocation', { configurable: true, value: {
@@ -104,7 +105,7 @@ afterEach(() => { cleanup(); window.history.replaceState({}, '', '/'); });
 async function choosePin(latitude = 0.5, valid = true) {
   render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
   await waitFor(() => expect(state.click).toBeTruthy());
-  const start = screen.queryByRole('button', { name: 'Report litter' });
+  const start = screen.queryByRole('button', { name: 'Report Litter' });
   if (start) fireEvent.click(start);
   expect(window.location.pathname).toBe('/report');
   await screen.findByRole('button', { name: 'Cancel reporting' });
@@ -133,7 +134,7 @@ describe('map publication and funding handoff', () => {
     render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
     await screen.findByLabelText('Linked report');
     fireEvent.click(screen.getByRole('button', { name: 'Back to discovery' }));
-    expect(screen.getByRole('button', { name: 'Reports' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getAllByRole('button', { name: 'Reports' }).every(button => button.getAttribute('aria-pressed') === 'true')).toBe(true);
     expect(new URL(window.location.href).searchParams.has('report')).toBe(false);
   });
 
@@ -265,15 +266,28 @@ it('opens a shared report outside the initial discovery page', async () => {
   expect(window.location.search).toBe('?report=test-report');
 });
 
-it('does not let delayed startup GPS override a user-selected search area', async () => {
-  let locate!: PositionCallback;
-  Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { getCurrentPosition: (success: PositionCallback) => { locate = success; } } });
-  render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
-  await waitFor(() => expect(state.click).toBeTruthy());
-  fireEvent.click(screen.getAllByRole('button', { name: 'Choose map area' }).at(-1)!);
-  expect(state.fitBounds).toHaveBeenCalledWith({north:2,south:0,west:1,east:3},60);
-  await act(async () => locate({coords:{latitude:50,longitude:50},timestamp:Date.now()} as GeolocationPosition));
-  expect(state.panTo).not.toHaveBeenCalled();
+it('starts in Boone and loads the visible area without requesting GPS or adding a city filter', async () => {
+  const getCurrentPosition = vi.fn();
+  Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { getCurrentPosition } });
+  render(<MapExperience initialReports={[]} initialUserId={null} googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+  await waitFor(() => expect(state.idle).toBeTruthy());
+  expect(state.mapOptions).toHaveBeenCalledWith(expect.objectContaining({ center: { lat: 36.2168, lng: -81.6746 }, zoom: 12 }));
+  act(() => state.idle!());
+  await waitFor(() => expect(state.discovery).toHaveBeenCalled());
+  expect(state.discovery).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({
+    area: expect.objectContaining({ north: 1, south: -1, west: -1, east: 1 }),
+    filters: expect.objectContaining({ radius: 0, status: 'all' }), geometry: undefined,
+  }));
+  expect(getCurrentPosition).not.toHaveBeenCalled();
+  expect(window.location.search).not.toContain('area=');
+  expect(screen.queryByText(/Choose a city|Where would you like/)).toBeNull();
+});
+
+it('preserves a shared map viewport instead of resetting it to Boone', async () => {
+  window.history.replaceState({}, '', '/?lat=35.994&lng=-78.899&zoom=13');
+  render(<MapExperience initialReports={[]} initialUserId={null} googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+  await waitFor(() => expect(state.mapOptions).toHaveBeenCalled());
+  expect(state.mapOptions).toHaveBeenCalledWith(expect.objectContaining({ center: { lat: 35.994, lng: -78.899 }, zoom: 13 }));
 });
 
 it('keeps a location selected while the map library is still loading', async () => {
@@ -329,5 +343,75 @@ it('keeps the website usable when the map provider fails to create a pin', async
   state.markerFailure = true; state.markerReports = [{ ...report(), is_published: true } as MappableReport];
   render(<MapExperience initialReports={state.markerReports} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
   await screen.findByText(/map could not display its pins/);
-  expect(screen.getByRole('button', { name: 'Report litter' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Report Litter' })).toBeTruthy();
+});
+
+it('honors an explicit Map link and keeps the tab choice on refresh', async () => {
+  window.history.replaceState({}, '', '/?view=map');
+  const rendered = render(<MapExperience initialReports={[]} initialUserId={null} googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+  await waitFor(() => expect(document.querySelector('main')?.classList.contains('showing-reports')).toBe(false));
+  fireEvent.click(screen.getAllByRole('button', { name: /^Reports$/ })[0]);
+  expect(new URL(window.location.href).searchParams.get('view')).toBe('reports');
+  rendered.unmount();
+  render(<MapExperience initialReports={[]} initialUserId={null} googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+  await waitFor(() => expect(document.querySelector('main')?.classList.contains('showing-reports')).toBe(true));
+});
+
+it('falls back to reports when the map never supplies a viewport', async () => {
+  vi.useFakeTimers();
+  try {
+    render(<MapExperience initialReports={[]} initialUserId={null} googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(12500); });
+    expect(screen.getByText(/map is taking too long/)).toBeTruthy();
+    await act(async () => { await vi.advanceTimersByTimeAsync(300); });
+    expect(state.discovery).toHaveBeenCalled();
+  } finally { vi.useRealTimers(); }
+});
+
+
+it('keeps the map covered until its tiles are ready, then leaves it visible during later searches', async () => {
+  render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="test-key" googleMapsMapId="test-map" initialError="" />);
+  await waitFor(() => expect(state.tiles).toBeTruthy());
+  const cover = document.querySelector('.map-loading-cover')!;
+  expect(cover.classList.contains('map-loading-complete')).toBe(false);
+  act(() => state.idle!());
+  expect(cover.classList.contains('map-loading-complete')).toBe(false);
+  act(() => state.tiles!());
+  expect(cover.classList.contains('map-loading-complete')).toBe(true);
+  act(() => state.idle!());
+  expect(cover.classList.contains('map-loading-complete')).toBe(true);
+});
+
+it('renders an explicit map URL without briefly opening the report list', () => {
+  window.history.replaceState(null, '', '/?view=map');
+  render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="" googleMapsMapId="" initialError="" />);
+  expect(document.querySelector('.website-experience')?.classList.contains('showing-reports')).toBe(false);
+});
+
+it('opens a pin directly in report details, using the latest refreshed report data', async () => {
+  render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+  await waitFor(() => expect(state.click).toBeTruthy());
+  state.markerReports = [{ ...report(), title: 'Original title' } as MappableReport];
+  fireEvent.click(screen.getByRole('button', { name: 'Refresh visible pins' }));
+  state.markerReports = [{ ...state.markerReports[0], title: 'Updated cleanup' }];
+  fireEvent.click(screen.getByRole('button', { name: 'Refresh visible pins' }));
+  act(() => state.markerInstances[0].click!());
+  expect(screen.getByLabelText('Linked report').textContent).toBe('Updated cleanup');
+  expect(screen.queryByLabelText('Selected map report')).toBeNull();
+  expect(new URLSearchParams(window.location.search).get('report')).toBe('test-report');
+  fireEvent.click(screen.getByRole('button', { name: 'Back to discovery' }));
+  expect(screen.queryByLabelText('Linked report')).toBeNull();
+});
+
+it('exits the map loading state when tiles time out and recovers if they arrive later', async () => {
+  vi.useFakeTimers();
+  try {
+    render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(12000); });
+    expect(screen.getByText('Map unavailable')).toBeTruthy();
+    expect(document.querySelector('.map-loading-cover')).toBeNull();
+    act(() => state.tiles!());
+    expect(screen.queryByText('Map unavailable')).toBeNull();
+    expect(document.querySelector('.map-loading-complete')).toBeTruthy();
+  } finally { vi.useRealTimers(); }
 });
