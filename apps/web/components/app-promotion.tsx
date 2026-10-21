@@ -1,5 +1,7 @@
 'use client';
 
+import { GetAppQr } from '@/components/get-app-qr';
+
 import Image from 'next/image';
 import { useEffect, useId, useRef, useState } from 'react';
 import { IoCloseOutline, IoPhonePortraitOutline } from 'react-icons/io5';
@@ -53,10 +55,10 @@ export function GetAppNavigation() {
       }}><IoPhonePortraitOutline aria-hidden />Get the app</a>
     {open && <section id={id} className={styles.popover} aria-label="Get the Litterbugs app">
       <button type="button" className={styles.close} aria-label="Close app download panel" onClick={() => { setOpen(false); trigger.current?.focus(); }}><IoCloseOutline aria-hidden /></button>
-      <Image className={styles.appIcon} src="/brand/app-icon-192.png" alt="" width={48} height={48} />
+      <Image className={styles.appIcon} src="/brand/app-icon-192.png" alt="" width={48} height={48} loading="eager" unoptimized />
       <h2>Take Litterbugs with you</h2>
       <p>Scan with your phone to get the app.</p>
-      <Image className={styles.qr} src="/brand/get-app-qr.svg" alt="QR code linking to litterbugs.app/get-app" width={176} height={176} unoptimized />
+      <GetAppQr className={styles.qr} />
       <AppStoreLinks />
     </section>}
   </div>;

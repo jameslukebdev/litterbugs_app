@@ -4,7 +4,6 @@ import type { ReactNode } from 'react';
 import { getSiteUrl } from '@/lib/env';
 
 import { DeviceSaveStatus } from '@/components/device-save-status';
-import { ConnectionStatus } from '@/components/connection-status';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -27,7 +26,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en">
-      <body><ConnectionStatus /><DeviceSaveStatus />{children}</body>
+      <body><DeviceSaveStatus />{children}</body>
     </html>
   );
 }

@@ -38,7 +38,7 @@ button:disabled { cursor: not-allowed; opacity: .6; }
 .map-header-actions, .public-account-actions { display: flex; align-items: center; flex-wrap: nowrap; gap: 8px; flex: none; }
 .map-header-account { display: flex; flex: none; }
 .header-report-button, .public-account-control { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: 12px; font: inherit; font-size: 14px; white-space: nowrap; cursor: pointer; transition: border-color .16s ease, background .16s ease, box-shadow .16s ease; }
-.header-report-button { padding: 0 16px; border: 1px solid var(--green); color: #fff; background: var(--green); font-weight: 800; }
+.header-report-button { padding: 0 16px; border: 1px solid var(--green); color: #fff; background: var(--green); font-weight: 800; text-decoration: none; }
 .header-report-button:hover { border-color: var(--green-dark); background: var(--green-dark); }
 .header-report-button-active { border-color: #cbd2cd; color: #202622; background: #f7f8f7; }
 .header-report-button-active:hover { border-color: #aeb8b0; background: #eef1ef; }

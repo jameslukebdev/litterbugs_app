@@ -1,3 +1,4 @@
+import { GetAppQr } from '@/components/get-app-qr';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -20,7 +21,7 @@ export default async function GetAppPage({ searchParams }: { searchParams: Promi
       <AppStoreLinks />
       <p className={styles.installed}>Already have Litterbugs? <AppLink reportId={reportId}>Open the app</AppLink></p>
       <div className={styles.desktopQr}>
-        <Image className={styles.qr} src="/brand/get-app-qr.svg" alt="QR code linking to litterbugs.app/get-app" width={176} height={176} unoptimized />
+        <GetAppQr className={styles.qr} />
         <p>Scan with your phone to get the app.</p>
       </div>
       <Link className={styles.continue} href={reportId ? `/?view=map&report=${encodeURIComponent(reportId)}` : '/?view=map'}>Continue on the website</Link>
