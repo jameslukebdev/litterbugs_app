@@ -53,7 +53,7 @@ export async function createContributionResponse(request: Request, dependencies 
       return jsonResponse({ error: 'Pricing is temporarily unavailable. No payment has been made.' }, 503);
     }
     const principal = Number(principalAmountCents);
-    const fee = Math.floor((principal + 5) / 10) + (data.pricing_version === 2 ? 50 : 0);
+    const fee = data.pricing_version === 2 ? Math.floor((principal + 2) / 5) + (principal < 500 ? 50 : 0) : Math.floor((principal + 5) / 10);
     // Read-only quote. Reservation rechecks this version under its pricing lock.
     return jsonResponse({ principalAmountCents: principal, platformFeeCents: fee,
       totalAmountCents: principal + fee, pricingVersion: data.pricing_version, currency: 'usd' });
