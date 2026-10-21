@@ -38,7 +38,7 @@ export function ReporterEarnings({ userId }: { userId: string }) {
   }, [userId, refresh, retry]);
   return <section className="member-panel" aria-label="Reporter earnings">
     <header><div><span className="eyebrow">YOUR REPORT REWARDS</span><h3>Reporter earnings</h3></div></header>
-    <p>Earn 5% of eligible contributions when a report you create leads to an approved, funded cleanup. Your reward comes from the service fee, so the cleaner keeps the full cleanup reward.</p>
+    <p style={{ padding: '0 18px', fontSize: 14, lineHeight: 1.5 }}>Earn 5% of eligible contributions when a report you create leads to an approved, funded cleanup. Your reward comes from the service fee, so the cleaner keeps the full cleanup reward.</p>
     <div className="member-activity-list">
       {loading ? <p className="member-empty" role="status">Loading reporter earnings…</p> : failed ? <button className="secondary-button" onClick={() => setRetry(value => value + 1)}>Retry loading reporter earnings</button> : rewards.length ? rewards.map(reward =>
         <Link key={reward.cleanup_attempt_id} href={`/account/reports/${reward.report_id}?from=payments`} className="member-activity-row member-completed-row">
@@ -48,6 +48,6 @@ export function ReporterEarnings({ userId }: { userId: string }) {
           <Icon name="chevron-right" />
         </Link>) : <p className="member-empty">No reporter earnings yet. Reporting is free, and you can use the same payout settings for both kinds of reward.</p>}
     </div>
-    <p>Receiving rewards requires an eligible US Stripe account and age 18 or older. Bank arrival follows your Stripe payout schedule.</p>
+    <p style={{ padding: '0 18px', fontSize: 13, lineHeight: 1.5, color: 'var(--muted)' }}>Receiving rewards requires an eligible US Stripe account and age 18 or older. Bank arrival follows your Stripe payout schedule.</p>
   </section>;
 }
