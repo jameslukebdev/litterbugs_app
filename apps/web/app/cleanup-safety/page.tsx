@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default function CleanupSafetyPage() {
-  return <>
+  return <div className={styles.surface}>
     <PublicSiteHeader activePath="/cleanup-safety" />
     <main className={styles.page}>
       <h1>Cleanup safety</h1>
@@ -35,5 +35,5 @@ export default function CleanupSafetyPage() {
       </nav>
       <p><strong>Questions?</strong> Email <a href="mailto:admin@litterbugs.app">admin@litterbugs.app</a>.</p>
     </main>
-  </>;
+  </div>;
 }

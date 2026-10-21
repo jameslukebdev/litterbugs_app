@@ -10,7 +10,6 @@ type LegalSection = {
 };
 
 export function LegalPage({
-  eyebrow,
   title,
   summary,
   effectiveDate,
@@ -25,11 +24,10 @@ export function LegalPage({
   activePath: PublicPath;
 }) {
   return (
-    <>
+    <div className={styles.surface}>
       <PublicSiteHeader activePath={activePath} />
       <main className={styles.page}>
         <header className={styles.header}>
-          <span className={styles.eyebrow}>{eyebrow}</span>
           <h1>{title}</h1>
           <p className={styles.summary}>{summary}</p>
           <p className={styles.effective}>Effective {effectiveDate}</p>
@@ -38,7 +36,7 @@ export function LegalPage({
         <div className={styles.content}>
           {sections.map((section) => (
             <section key={section.title} className={styles.section}>
-              <h2>{section.title}</h2>
+              <p className={styles.sectionLabel}><strong>{section.title}</strong></p>
               <div>{section.content}</div>
             </section>
           ))}
@@ -51,6 +49,6 @@ export function LegalPage({
           <Link href="/cleanup-safety">Safety &amp; guidelines</Link>
         </footer>
       </main>
-    </>
+    </div>
   );
 }

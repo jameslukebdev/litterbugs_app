@@ -110,7 +110,7 @@ export default function CleanupPolicyPage() {
         },
         {
           title: 'Questions',
-          content: <p>For a cleanup, contribution, reward, dispute, or refund question, contact Litterbugs at <strong>admin@litterbugs.app</strong>.</p>,
+          content: <p>For a cleanup, contribution, reward, dispute, or refund question, contact Litterbugs at <a href="mailto:admin@litterbugs.app">admin@litterbugs.app</a>.</p>,
         },
       ]}
     />
