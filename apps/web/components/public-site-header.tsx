@@ -96,9 +96,9 @@ function NavigationMenu({ activePath, mobile = false, accountLinks = false }: { 
               <div className={styles.mobilePrimaryLinks}>
                 <HeaderLink href="/?view=map" activePath={activePath} onNavigate={() => setOpen(false)}>Map</HeaderLink>
                 <HeaderLink href="/about" activePath={activePath} onNavigate={() => setOpen(false)}>About</HeaderLink>
+                <HeaderLink href="/support" activePath={activePath} onNavigate={() => setOpen(false)}>Support</HeaderLink>
                 <HeaderLink href="/get-app" activePath={activePath} onNavigate={() => setOpen(false)}>Get the app</HeaderLink>
                 <HeaderLink href="/help" activePath={activePath} onNavigate={() => setOpen(false)}>Help</HeaderLink>
-                <HeaderLink href="/support" activePath={activePath} onNavigate={() => setOpen(false)}>Support</HeaderLink>
                 {accountLinks && <><Link className={styles.navLink} href="/account" onClick={() => setOpen(false)}>Profile / sign in</Link><Link className={styles.navLink} href="/account/notifications" onClick={() => setOpen(false)}>Updates</Link></>}
               </div>
             </>
@@ -134,6 +134,7 @@ export function PublicSiteHeader({ activePath, action, reportId, compactMobile =
           <div className={styles.downloadNav}><GetAppNavigation /></div>
           <HeaderLink href="/?view=map" activePath={activePath}>Map</HeaderLink>
           <HeaderLink href="/about" activePath={activePath}>About</HeaderLink>
+          <HeaderLink href="/support" activePath={activePath}>Support</HeaderLink>
         </nav>
 
         <NavigationMenu activePath={activePath} mobile accountLinks={compactMobile} />
