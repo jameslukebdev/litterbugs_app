@@ -98,7 +98,7 @@ function NavigationMenu({ activePath, mobile = false, accountLinks = false }: { 
                 <HeaderLink href="/about" activePath={activePath} onNavigate={() => setOpen(false)}>About</HeaderLink>
                 <HeaderLink href="/get-app" activePath={activePath} onNavigate={() => setOpen(false)}>Get the app</HeaderLink>
                 <HeaderLink href="/help" activePath={activePath} onNavigate={() => setOpen(false)}>Help</HeaderLink>
-                <HeaderLink href="/support" activePath={activePath} onNavigate={() => setOpen(false)}>Contact</HeaderLink>
+                <HeaderLink href="/support" activePath={activePath} onNavigate={() => setOpen(false)}>Support</HeaderLink>
                 {accountLinks && <><Link className={styles.navLink} href="/account" onClick={() => setOpen(false)}>Profile / sign in</Link><Link className={styles.navLink} href="/account/notifications" onClick={() => setOpen(false)}>Updates</Link></>}
               </div>
             </>
