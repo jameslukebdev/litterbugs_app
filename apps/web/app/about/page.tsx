@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default function AboutPage() {
-  return <>
+  return <div className={styles.surface}>
     <PublicSiteHeader activePath="/about" />
     <main className={styles.page}>
       <h1>About Litterbugs</h1>
@@ -22,5 +22,5 @@ export default function AboutPage() {
       <p><Link href="/?view=map">Explore the map</Link> to get started, and read the <Link href="/cleanup-safety">safety guidelines</Link> before cleaning.</p>
       <p><strong>Questions?</strong> Email <a href="mailto:admin@litterbugs.app">admin@litterbugs.app</a>.</p>
     </main>
-  </>;
+  </div>;
 }

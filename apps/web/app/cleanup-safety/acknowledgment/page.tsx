@@ -28,15 +28,12 @@ export default function CleanupSafetyPage() {
         {
           title: 'Before every cleanup claim',
           content: <>
-            <p className={styles.notice}>
+            <p>
               Viewing this page does not claim a cleanup or record acceptance. The Litterbugs app
               asks you to accept each new document version with an unchecked checkbox and saves
               that acceptance. Every cleanup also requires a separate site-specific safety confirmation.
               Each claim records the document versions that apply.
             </p>
-            <div className={styles.versions} aria-label="Document update date">
-              <div><span>Updated</span><strong>September 23, 2026</strong></div>
-            </div>
           </>,
         },
         {
@@ -49,7 +46,7 @@ export default function CleanupSafetyPage() {
         },
         {
           title: 'Assumption of risk and release',
-          content: <p className={`${styles.documentText} ${styles.release}`}>{CLEANUP_RELEASE}</p>,
+          content: <p className={styles.documentText}>{CLEANUP_RELEASE}</p>,
         },
         {
           title: 'Related documents',
