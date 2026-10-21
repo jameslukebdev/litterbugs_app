@@ -1008,7 +1008,7 @@ a.member-activity-row { color: inherit; text-decoration: none; }
 .resume-draft-details > summary { cursor: pointer; padding: 10px 0; color: #256329; font-weight: 600; }
 .resume-draft-details > summary:focus-visible { outline: 3px solid #2f7d3247; outline-offset: 2px; }
 .resume-draft-details p { font-size: 13px; }
-.member-payout-action { padding: 0 18px; }
+.member-payout-action { padding: 16px 18px 0; }
 
 @media (max-width: 600px) { .community-rank-summary { flex-wrap: wrap; } .account-page-mobile-nav, .account-page-mobile-nav select { min-width: 0; } }
 
