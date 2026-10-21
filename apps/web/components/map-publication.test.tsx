@@ -120,8 +120,7 @@ describe('map publication and funding handoff', () => {
     Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { getCurrentPosition: (_success: PositionCallback, fail: PositionErrorCallback) => fail({code:1} as GeolocationPositionError) } });
     await choosePin(0.5, false);
     await screen.findByRole('alert');
-    fireEvent.click(screen.getByText('Prepare a draft or finish on your phone'));
-    fireEvent.click(screen.getByRole('button', {name:'Prepare private draft'}));
+    fireEvent.click(screen.getByRole('button', {name:'Continue as draft'}));
     await screen.findByRole('dialog', {name:'Report form'});
     fireEvent.click(screen.getByRole('button', {name:'Post without funds'}));
     await waitFor(()=>expect(state.saveResult).toHaveBeenCalled());

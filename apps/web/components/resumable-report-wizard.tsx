@@ -88,12 +88,13 @@ export function ResumableReportWizard({ userId, submissionProgress, coordinates,
   const syncStatus = <CloudDraftStatus userId={userId} draftKey="report" onRestored={async () => {
     const restored = await loadReportDraft(userId); if(restored) {setSaved(restored);onCoordinatesChange(restored.coordinates);setGeneration(value=>value+1);}
   }} />;
-  if(editorLock === 'unavailable') return <ModalShell label="Draft open in another tab" onClose={onClose}><h2>Draft open in another tab</h2><p>Close the other draft editor, then reopen this draft here.</p></ModalShell>;
-  if (mode === 'loading' || mode === 'resume' || mode === 'error') return (
-    <ModalShell label="Saved report" onClose={onClose} closeDisabled={busy}>
-      <div className="wizard-content">
-        <h2>{mode === 'loading' ? 'Checking for a saved report…' : mode === 'error' ? 'Draft unavailable' : 'Resume your report?'}</h2>
-        {mode === 'resume' && <><p><strong>{saved?.draft.title || 'Untitled litter report'}</strong><br />{saved?.draft.photos.length ?? 0} photos · Step {(saved?.step ?? 0) + 1} of 5<br />{saved?.coordinates.latitude.toFixed(4)}, {saved?.coordinates.longitude.toFixed(4)}</p>{pending && <p>Your last submission needs checking. Resume and submit again to check the original report.</p>}
+  if(editorLock === 'unavailable') return <ModalShell className="draft-dialog" label="Draft open in another tab" onClose={onClose}><h2>Draft open in another tab</h2><p>Close it there, then try again here.</p><div className="draft-recovery-actions"><button className="primary-button" onClick={onClose}>Close</button></div></ModalShell>;
+  if (mode === 'loading') return null;
+  if (mode === 'resume' || mode === 'error') return (
+    <ModalShell className="draft-dialog" label={mode === 'error' ? 'Draft unavailable' : 'Resume your report?'} onClose={onClose} closeDisabled={busy}>
+      <div className="draft-dialog-content">
+        <h2>{mode === 'error' ? 'Draft unavailable' : 'Resume your report?'}</h2>
+        {mode === 'resume' && <><p><strong>{saved?.draft.title || 'Untitled litter report'}</strong><br />Step {(saved?.step ?? 0) + 1} of 5{Boolean(saved?.draft.photos.length) && <> · {saved?.draft.photos.length} {saved?.draft.photos.length === 1 ? 'photo' : 'photos'}</>}</p>{pending && <p>Resume to check your previous submission.</p>}
           <div className="draft-recovery-actions"><button className="primary-button" disabled={busy} onClick={() => { onCoordinatesChange(saved!.coordinates); setMode('editing'); }}>Resume draft</button>
           {!pending && !locked && <button className="secondary-button" disabled={busy} onClick={async () => {
             setBusy(true);
@@ -101,21 +102,22 @@ export function ResumableReportWizard({ userId, submissionProgress, coordinates,
             catch { setMessage('The saved draft could not be cleared. Please try again.'); }
             finally { setBusy(false); }
           }}>Start new</button>}
-          <button className="secondary-button" disabled={busy} onClick={onClose}>Cancel</button></div>
+          </div>{!pending && !locked && <p className="draft-dialog-hint">Starting new replaces this draft.</p>}
         </>}
-        {mode !== 'loading' && syncStatus}
+        {syncStatus}
         {message && <p role="alert">{message}</p>}
+        {mode === 'error' && <div className="draft-recovery-actions"><button className="primary-button" onClick={onClose}>Close</button></div>}
       </div>
     </ModalShell>
   );
 
   return <>
     <ReportWizard key={generation} draftSync={syncStatus} draftLocked={locked} submissionProgress={submissionProgress} draftSaveMessage={message} initialDraft={{ ...EMPTY_REPORT_DRAFT }} initialState={saved} onStateChange={saveSnapshot} onPreparePhotos={prepareAndSavePhotos} isEditing={false} fundingEnabled={fundingEnabled} coordinates={coordinates} selectingLocation={selectingLocation || mode === 'close'} onChangeLocation={onChangeLocation} onClose={() => setMode('close')} onSubmit={onSubmit} />
-    {mode === 'close' && <ModalShell label="Keep your report?" onClose={() => { if (!busy) setMode('editing'); }} closeDisabled={busy}>
-      <div className="wizard-content"><h2>Keep your report?</h2><p>Keep your photos and details to finish later. Discarding cancels any unfinished submission; an already published report stays published.</p>
+    {mode === 'close' && <ModalShell className="draft-dialog" label="Keep your report?" onClose={() => { if (!busy) setMode('editing'); }} closeDisabled={busy}>
+      <div className="draft-dialog-content"><h2>Keep your report?</h2><p>Save your photos and details to finish later.</p>
         <div className="draft-recovery-actions"><button className="primary-button" disabled={busy} onClick={() => void closeDraft(false)}>Save for later</button>
         <button className="secondary-button" disabled={busy} onClick={() => setMode('editing')}>Keep editing</button>
-        <button className="secondary-button" disabled={busy} onClick={() => void closeDraft(true)}>Discard draft</button></div>
+        <button className="secondary-button draft-dialog-discard" disabled={busy} onClick={() => void closeDraft(true)}>Discard draft</button></div>
         {syncStatus}
         {message && <p role="alert">{message}</p>}
       </div>
