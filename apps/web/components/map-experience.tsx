@@ -1024,7 +1024,7 @@ export function MapExperience({
       <footer className="discovery-footer">
         <span>© {new Date().getFullYear()} Litterbugs</span>
         <nav aria-label="Footer navigation">
-          <Link href="/about">About</Link><Link href="/help">Help</Link><Link href="/support">Contact</Link>
+          <Link href="/about">About</Link><Link href="/help">Help</Link><Link href="/support">Support</Link>
           <Link href="/cleanup-safety">Safety</Link><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link>
         </nav>
       </footer>
