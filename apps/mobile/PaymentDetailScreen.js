@@ -39,8 +39,8 @@ export default function PaymentDetailScreen({ navigation, route }) {
     </> : !loading && !error ? <Text>This payment record is unavailable.</Text> : null}
     {item || error ? action(loading ? 'Updating…' : 'Refresh payment details', load, loading) : null}
     {action('Get payment help', async () => {
-      try { await Linking.openURL(`mailto:support@litterbugs.app?subject=${encodeURIComponent('Payment help')}&body=${encodeURIComponent(`Payment reference: ${contributionId || 'Unavailable'}\n\n`)}`); }
-      catch { Alert.alert('Payment help', `Email support@litterbugs.app with payment reference ${contributionId || 'Unavailable'}.`); }
+      try { await Linking.openURL(`mailto:admin@litterbugs.app?subject=${encodeURIComponent('Payment help')}&body=${encodeURIComponent(`Payment reference: ${contributionId || 'Unavailable'}\n\n`)}`); }
+      catch { Alert.alert('Payment help', `Email admin@litterbugs.app with payment reference ${contributionId || 'Unavailable'}.`); }
     })}
   </ScrollView>;
 }
