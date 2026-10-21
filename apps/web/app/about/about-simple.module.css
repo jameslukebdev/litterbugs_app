@@ -4,3 +4,6 @@
 .page a { color: var(--green-dark); font-weight: 600; text-underline-offset: 3px; }
 .page a:focus-visible { outline: 3px solid var(--green); outline-offset: 4px; }
 @media (max-width: 600px) { .page { padding: 28px 20px; } .page p { font-size: 16px; } }
+
+.page nav ul { padding-left: 20px; margin: 0 0 24px; }
+.page nav li { margin-bottom: 12px; font-size: 16px; line-height: 1.6; }

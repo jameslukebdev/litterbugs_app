@@ -22,7 +22,17 @@ export default function CleanupSafetyPage() {
       <p><strong>Respect other people.</strong> Do not confront anyone, disturb encampments, or move suspicious property. Leave work that needs permits, specialized training, or licensed disposal to qualified professionals.</p>
       <p><strong>Plan for disposal.</strong> Follow local rules for trash and recycling. Avoid overfilled bags and loads you cannot lift safely. Arrange lawful disposal before you start.</p>
       <p><strong>Know when to get help.</strong> Move to a safe place and call 911 for an immediate emergency. Report hazardous waste to your local public works or waste-management authority. Litterbugs is not an emergency service.</p>
-      <p><strong>Before you claim a cleanup.</strong> You must be 18 or older, read and accept the cleanup acknowledgment, and confirm that you can safely and legally clean that location. Read the <Link href="/cleanup-safety/acknowledgment">full safety acknowledgment and waiver</Link> and the <Link href="/cleanup-policy">cleanup and reward policy</Link>.</p>
+      <p><strong>Before you claim a cleanup.</strong> You must be 18 or older, read and accept the cleanup acknowledgment, and confirm that you can safely and legally clean that location. The full documents below explain what you agree to and what to expect.</p>
+      <nav aria-label="Safety and participation documents">
+        <p><strong>Full guidelines and agreements</strong></p>
+        <ul>
+          <li><Link href="/cleanup-safety/acknowledgment">Safety acknowledgment and waiver</Link> — safety rules, assumption of risk, release, and funded reward acknowledgment.</li>
+          <li><Link href="/cleanup-policy">Cleanup expectations and rewards</Link> — claiming, photos, review, payments, disputes, and refunds.</li>
+          <li><Link href="/photo-review">How photo review works</Link> — image checks and their limits.</li>
+          <li><Link href="/terms">Terms of use</Link> — rules for using Litterbugs.</li>
+          <li><Link href="/privacy">Privacy policy</Link> — how your information is handled.</li>
+        </ul>
+      </nav>
       <p><strong>Questions?</strong> Email <a href="mailto:admin@litterbugs.app">admin@litterbugs.app</a>.</p>
     </main>
   </>;

@@ -48,7 +48,7 @@ export function LegalPage({
           <Link href="/terms">Terms</Link>
           <Link href="/privacy">Privacy</Link>
           <Link href="/cleanup-policy">Cleanup policy</Link>
-          <Link href="/cleanup-safety">Safety &amp; waiver</Link>
+          <Link href="/cleanup-safety">Safety &amp; guidelines</Link>
         </footer>
       </main>
     </>
