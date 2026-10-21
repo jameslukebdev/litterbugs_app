@@ -17,19 +17,13 @@ vi.mock('@/components/public-account-action', () => ({
 afterEach(cleanup);
 
 describe('PublicSiteHeader', () => {
-  it('keeps product tasks visible and moves legal links into the Safety menu', () => {
-    render(<PublicSiteHeader activePath="/terms" action={<button>Sign in</button>} />);
-
+  it('opens Safety directly from the desktop header', () => {
+    render(<PublicSiteHeader activePath="/cleanup-safety" action={<button>Sign in</button>} />);
     expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Map' })).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'About' })).toBeTruthy();
-    expect(screen.queryByRole('navigation', { name: 'Information and policies' })).toBeNull();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Safety' }));
-    expect(screen.getByRole('navigation', { name: 'Information and policies' })).toBeTruthy();
-    expect(screen.getByRole('link', { name: /Terms of use/ }).getAttribute('aria-current')).toBe('page');
-
-    fireEvent.keyDown(document, { key: 'Escape' });
+    const safety = screen.getByRole('link', { name: 'Safety' });
+    expect(safety.getAttribute('href')).toBe('/cleanup-safety');
+    expect(safety.getAttribute('aria-current')).toBe('page');
+    expect(screen.queryByRole('button', { name: 'Safety' })).toBeNull();
     expect(screen.queryByRole('navigation', { name: 'Information and policies' })).toBeNull();
   });
 
@@ -44,7 +38,7 @@ describe('PublicSiteHeader', () => {
     expect(screen.getAllByRole('link', { name: 'Map' }).every(link => link.getAttribute('href') === '/?view=map')).toBe(true);
     expect(screen.getByRole('link', { name: 'Litterbugs map' }).getAttribute('href')).toBe('/?view=map');
     expect(screen.getAllByRole('link', { name: 'About' })).toHaveLength(2);
-    expect(screen.getByRole('link', { name: /Safety & waiver/ })).toBeTruthy();
+    expect(within(mobileNavigation).getByRole('link', { name: /Safety/ }).getAttribute('href')).toBe('/cleanup-safety');
 
     fireEvent.pointerDown(document.body);
     expect(screen.queryByRole('navigation', { name: 'Mobile navigation' })).toBeNull();

@@ -16,7 +16,7 @@ export type PublicPath = '/get-app' | '/' | '/support' | '/about' | '/cleanup-po
 
 const policyLinks: { href: PublicPath; label: string; description: string }[] = [
   { href: '/cleanup-policy', label: 'Cleanup policy', description: 'Funding, rewards, disputes, and refunds' },
-  { href: '/cleanup-safety', label: 'Safety & waiver', description: 'Claim acknowledgment and release' },
+  { href: '/cleanup-safety', label: 'Safety', description: 'Guidelines for cleaning safely' },
   { href: '/terms', label: 'Terms of use', description: 'Rules for using Litterbugs' },
   { href: '/privacy', label: 'Privacy policy', description: 'How information is handled' },
 ];
@@ -144,7 +144,7 @@ export function PublicSiteHeader({ activePath, action, reportId, compactMobile =
         </Link>
 
         <div className={styles.desktopActions}>
-          <NavigationMenu activePath={activePath} />
+          <HeaderLink href="/cleanup-safety" activePath={activePath}>Safety</HeaderLink>
           <div className={styles.action}>
             {action ?? <PublicAccountAction />}
             {compactMobile && <AppLink reportId={reportId} className={styles.compactAppLink}><IoPhonePortraitOutline aria-hidden />Get the app</AppLink>}
