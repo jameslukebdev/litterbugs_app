@@ -89,10 +89,11 @@ export function ResumableReportWizard({ userId, submissionProgress, coordinates,
     const restored = await loadReportDraft(userId); if(restored) {setSaved(restored);onCoordinatesChange(restored.coordinates);setGeneration(value=>value+1);}
   }} />;
   if(editorLock === 'unavailable') return <ModalShell label="Draft open in another tab" onClose={onClose}><h2>Draft open in another tab</h2><p>Close the other draft editor, then reopen this draft here.</p></ModalShell>;
-  if (mode === 'loading' || mode === 'resume' || mode === 'error') return (
+  if (mode === 'loading') return null;
+  if (mode === 'resume' || mode === 'error') return (
     <ModalShell label="Saved report" onClose={onClose} closeDisabled={busy}>
       <div className="wizard-content">
-        <h2>{mode === 'loading' ? 'Checking for a saved report…' : mode === 'error' ? 'Draft unavailable' : 'Resume your report?'}</h2>
+        <h2>{mode === 'error' ? 'Draft unavailable' : 'Resume your report?'}</h2>
         {mode === 'resume' && <><p><strong>{saved?.draft.title || 'Untitled litter report'}</strong><br />{saved?.draft.photos.length ?? 0} photos · Step {(saved?.step ?? 0) + 1} of 5<br />{saved?.coordinates.latitude.toFixed(4)}, {saved?.coordinates.longitude.toFixed(4)}</p>{pending && <p>Your last submission needs checking. Resume and submit again to check the original report.</p>}
           <div className="draft-recovery-actions"><button className="primary-button" disabled={busy} onClick={() => { onCoordinatesChange(saved!.coordinates); setMode('editing'); }}>Resume draft</button>
           {!pending && !locked && <button className="secondary-button" disabled={busy} onClick={async () => {
@@ -103,7 +104,7 @@ export function ResumableReportWizard({ userId, submissionProgress, coordinates,
           }}>Start new</button>}
           <button className="secondary-button" disabled={busy} onClick={onClose}>Cancel</button></div>
         </>}
-        {mode !== 'loading' && syncStatus}
+        {syncStatus}
         {message && <p role="alert">{message}</p>}
       </div>
     </ModalShell>

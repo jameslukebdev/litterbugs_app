@@ -911,11 +911,11 @@ a.member-activity-row { color: inherit; text-decoration: none; }
 /* Reporting is a focused location task on every entry route. */
 .report-placement-pin { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); pointer-events: none; color: var(--green-dark); filter: drop-shadow(0 2px 2px #fff); z-index: 3; }
 .report-placement-pin svg { width: 42px; height: 42px; }
-.report-placement-confirm { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: min(440px, calc(100% - 100px)); padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: white; box-shadow: 0 4px 20px #17201a20; z-index: 4; max-height: 42%; overflow: auto; }
+.report-placement-confirm { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: min(440px, calc(100% - 100px)); padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: white; box-shadow: 0 4px 20px #17201a20; z-index: 4; }
 .report-placement-confirm h1 { margin: 0 0 6px; font-size: 20px; }
 .report-placement-confirm p { margin: 6px 0; font-size: 13px; }
-.report-placement-confirm { display: flex; flex-direction: column; overflow: hidden; }
-.report-placement-instructions { min-height: 0; overflow: auto; }
+.report-placement-confirm { display: flex; flex-direction: column; }
+.report-placement-instructions { min-height: 0; }
 .report-placement-confirm .primary-button { width: 100%; margin-top: 8px; flex: none; }
 .report-placement-confirm [role="alert"] { color: #ad302b; }
 .location-coordinate { font-variant-numeric: tabular-nums; color: #59645c; }
@@ -1198,3 +1198,9 @@ a.member-activity-row { color: inherit; text-decoration: none; }
 .account-section-ready { animation: account-reveal 120ms ease-out; }
 @keyframes account-reveal { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .account-section-ready { animation: none; } }
+
+.report-placement-draft { align-self: center; margin-top: 8px; padding: 6px 12px; border: 0; background: transparent; color: var(--green-dark); font: inherit; font-size: 13px; cursor: pointer; }
+.report-placement-confirm .primary-button { position: relative; }
+.report-placement-confirm .primary-button[aria-busy="true"]::after { content: ''; position: absolute; right: 16px; width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: location-pending .8s linear infinite; }
+@keyframes location-pending { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .report-placement-confirm .primary-button[aria-busy="true"]::after { animation: none; } }
