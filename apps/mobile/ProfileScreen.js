@@ -25,6 +25,7 @@ import { openSupport } from './lib/support';
 import * as WebBrowser from 'expo-web-browser';
 import { loadCurrentUserCleanupSummary } from './lib/cleanup';
 import { cleanupStatusPresentation } from './lib/cleanupEligibility';
+import { ReporterEarnings } from './components/ReporterEarnings';
 import { formatUsd, loadCleanupFeatureFlags, loadPayoutStatus } from './lib/funding';
 import {
   cleanupApprovalLabel,
@@ -528,7 +529,7 @@ export default function ProfileScreen({ navigation, route }) {
               onRetry={refreshPayoutStatus}
             />}
             <ActionRow
-              label={payoutStatus?.payoutsEnabled ? 'Review payout details' : 'Set up cleanup payouts'}
+              label={payoutStatus?.payoutsEnabled ? 'Review payout details' : 'Set up payouts'}
               icon="card-outline"
               onPress={() => navigation.navigate('PayoutSetup')}
             />
@@ -543,6 +544,7 @@ export default function ProfileScreen({ navigation, route }) {
           <View style={styles.card}>
             {cleanupsError && !cleanups.hasLoaded ? <ActionRow label="Retry loading earnings" icon="refresh-outline" onPress={refreshCleanups} /> : cleanupsLoading && !cleanups.hasLoaded ? <Text style={{ padding: 20, color: '#687178' }}>Loading earnings…</Text> : cleanupSummary.completed.filter(attempt => attempt.is_paid).length ? cleanupSummary.completed.filter(attempt => attempt.is_paid).map((attempt, index) => <CompletedCleanupRow key={attempt.id} attempt={attempt} divided={index > 0} onPress={() => openReport(attempt.report_id)} />) : <View style={styles.completedCleanupEmpty}><View style={styles.activityEmptyIcon}><Ionicons name="wallet-outline" size={24} color="#49704D" /></View><Text style={styles.activeCleanupEmptyTitle}>No cleanup earnings yet</Text><Text style={styles.activeCleanupEmptyText}>Rewards from your completed paid cleanups will appear here.</Text></View>}
           </View>
+          <ReporterEarnings userId={user.id} onOpenReport={openReport} />
         </>
       ) : null}
 

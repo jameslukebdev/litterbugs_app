@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { processReporterPayout } from "../_shared/reporter-payout.ts";
 import { processAppleRevocation } from "../_shared/apple-revocation.ts";
 import {
   authenticatedUser,
@@ -616,6 +617,7 @@ Deno.serve(async (request: Request) => {
     if (internal && paymentsEnabled) {
       results.refund = await processRefund(admin);
       results.payout = await processPayout(admin);
+      results.reporterPayout = await processReporterPayout(admin);
     }
     return jsonResponse(results);
   } catch (error) {

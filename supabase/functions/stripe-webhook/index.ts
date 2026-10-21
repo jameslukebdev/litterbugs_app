@@ -1,5 +1,6 @@
 import { reconcileSuccessfulPaymentIntent } from "../_shared/reconcile-payment.ts";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { reconcileReporterTransfer } from "../_shared/reporter-payout.ts";
 import Stripe from "npm:stripe@22.5.0";
 import {
   errorMessage,
@@ -216,6 +217,10 @@ const reconcileTransfer = async (
   transfer: Stripe.Transfer,
   reversed: boolean,
 ) => {
+  if (transfer.metadata?.reporter_reward_id) {
+    await reconcileReporterTransfer(admin, transfer, reversed);
+    return;
+  }
   const cleanupId = transfer.metadata?.cleanup_attempt_id;
   if (!isUuid(cleanupId)) return;
   const { data: attempt, error: attemptError } = await admin

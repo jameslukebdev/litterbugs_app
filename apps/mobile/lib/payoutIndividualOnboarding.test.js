@@ -17,7 +17,7 @@ describe('individual Stripe payout onboarding', () => {
     expect(onboardingFunctionSource).toContain('entity_type: "individual"');
     expect(onboardingFunctionSource).toContain('litterbugs-cleaner-individual-');
     expect(onboardingFunctionSource).toContain('business_url: "https://litterbugs.app/cleanup-policy"');
-    expect(onboardingFunctionSource).toContain('Individual litter cleanup services');
+    expect(onboardingFunctionSource).toContain('Individual litter reporting and cleanup services');
   });
 
   it('prefills unfinished individual onboarding before issuing a new link', () => {

@@ -84,11 +84,11 @@ Deno.serve(async (request: Request) => {
         headers: { "Idempotency-Key": `litterbugs-cleaner-individual-${user.id}` },
         body: JSON.stringify({
           contact_email: user.email,
-          display_name: user.user_metadata?.display_name ?? user.user_metadata?.full_name ?? "Litterbugs cleaner",
+          display_name: user.user_metadata?.display_name ?? user.user_metadata?.full_name ?? "Litterbugs member",
           defaults: {
             profile: {
               business_url: "https://litterbugs.app/cleanup-policy",
-              product_description: "Individual litter cleanup services coordinated and rewarded through the Litterbugs community cleanup platform.",
+              product_description: "Individual litter reporting and cleanup services rewarded after verified cleanups through the Litterbugs community cleanup platform.",
             },
             responsibilities: {
               fees_collector: "application",

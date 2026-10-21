@@ -121,10 +121,10 @@ function PayoutSetupController({ navigation, route }) {
           if (nextStatus) setStatus(nextStatus);
           if (connected) {
             Alert.alert(
-              'Ready to receive cleanup rewards',
+              'Ready to receive rewards',
               workflowToken
                 ? 'Your payout account is ready. Continue to return to the litter report and finish claiming the cleanup.'
-                : 'Your payout account is ready to receive cleanup rewards.',
+                : 'Your payout account is ready for cleanup and reporter rewards.',
               [{
                 text: workflowToken ? 'Continue to cleanup' : 'Done',
                 onPress: () => {
@@ -162,11 +162,11 @@ function PayoutSetupController({ navigation, route }) {
         <Ionicons name={enabled ? 'checkmark' : 'wallet-outline'} size={35} color={enabled ? '#FFFFFF' : '#2F7D32'} />
       </View>
       <Text style={styles.title}>
-        {enabled ? 'Payouts are ready' : workflowCopy?.title || 'Receive cleanup rewards'}
+        {enabled ? 'Payouts are ready' : workflowCopy?.title || 'Receive rewards'}
       </Text>
       <Text style={styles.text}>
         {enabled
-          ? 'You can claim funded cleanups. Stripe sends rewards to your connected payout account.'
+          ? 'Use this account for cleanup and reporter rewards. Stripe sends rewards to your connected payout account.'
           : workflowCopy?.text || 'Set up as an individual cleaner. Our payment provider, Stripe, securely verifies your identity and bank details, and Litterbugs never stores that information.'}
       </Text>
 
@@ -175,7 +175,7 @@ function PayoutSetupController({ navigation, route }) {
         <Text style={styles.cardTitle}>Before you continue</Text>
         <View style={styles.row}><Ionicons name="person-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>No business or LLC is required. You’ll set up a personal payout account with Stripe.</Text></View>
         <View style={styles.row}><Ionicons name="checkmark-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>You must be at least 18 years old.</Text></View>
-        <View style={styles.row}><Ionicons name="checkmark-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>Cleanup payouts are currently available to eligible U.S. cleaners.</Text></View>
+        <View style={styles.row}><Ionicons name="checkmark-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>Cleanup and reporter payouts are available to eligible U.S. members.</Text></View>
         <View style={styles.row}><Ionicons name="checkmark-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>Your shown reward is the exact amount Litterbugs transfers.</Text></View>
         <View style={styles.row}><Ionicons name="checkmark-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>You are responsible for determining and reporting taxes on cleanup rewards; Stripe or Litterbugs may provide required tax forms.</Text></View>
       </View>

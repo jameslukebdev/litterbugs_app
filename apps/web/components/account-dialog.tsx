@@ -17,6 +17,7 @@ import { AccountSectionSkeleton } from './account-section-skeleton';
 import { CommunityRank } from '@/components/community-rank';
 import { Icon } from '@/components/icon';
 import { ModalShell } from '@/components/modal-shell';
+import { ReporterEarnings } from '@/components/reporter-earnings';
 import { PayoutSetupAction } from '@/components/payout-setup-action';
 import {
   getProfileAvatarUrl,
@@ -691,6 +692,8 @@ export function AccountDialog({
                 {!contributions.length && !unavailable.includes('Payments') && !unavailable.includes('Account') && <p className="member-empty">Your contributions and payment status will appear here.</p>}
               </div>
             </section>}
+
+            {section === 'payments' && <ReporterEarnings key={userId} userId={userId} />}
 
             {((section === 'activity' && activityTab === 'history') || section === 'payments') && <section className="member-panel">
               <header><div><span className="eyebrow">{section === 'payments' ? 'YOUR CLEANUP REWARDS' : 'YOUR IMPACT'}</span><h3>{section === 'payments' ? 'Cleanup earnings' : 'Completed cleanups'}</h3></div></header>

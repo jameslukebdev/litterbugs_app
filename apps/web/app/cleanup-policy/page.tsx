@@ -15,13 +15,20 @@ export default function CleanupPolicyPage() {
       eyebrow="CLEANUP, FUNDING & SAFETY"
       title="Cleanup and reward policy"
       summary="The plain-language rules for contributions, report pools, safe participation, evidence review, disputes, refunds, and cleaner rewards."
-      effectiveDate="September 30, 2026"
+      effectiveDate="October 21, 2026"
       sections={[
         {
           title: 'Contributions and the displayed reward',
           content: <>
             <p>A logged-in member may add $1 to $1,000 of principal per transaction to an active, eligible report. Litterbugs adds one service fee per checkout and shows the principal, fee, and total before payment. Existing payments and pending payment attempts keep their original fee and total. Selecting “No contribution now” creates no fee. Contributions are not charitable donations and are not represented as tax deductible.</p>
-            <p>The cleaner reward shows only the contributed principal. An approved cleaner receives that exact frozen principal. Litterbugs keeps the service fee and absorbs standard payment, payout, refund, and chargeback costs.</p>
+            <p>The cleaner reward shows only the contributed principal. An approved cleaner receives that exact frozen principal. The service fee is 20% of the contribution, plus $0.50 when the contribution is less than $5. After an approved cleanup, 5% of eligible contributed principal goes to the person who created the report, paid from the service fee. Litterbugs retains the rest and covers standard processing costs.</p>
+          </>,
+        },
+        {
+          title: 'Reporter rewards',
+          content: <>
+            <p>Reporting is free. Contributions made under the fee introduced October 21, 2026 qualify for a reporter reward after the cleanup is approved. The reward is 5% of that cleanup&apos;s eligible principal, rounded once to the nearest cent. It does not reduce the cleaner&apos;s reward. A person who both reports and cleans may receive both rewards.</p>
+            <p>The existing evidence, review, and dispute requirements apply. No reward is earned for a rejected cleanup or refunded funding. Reporter transfers follow the cleaner&apos;s successful transfer. Receiving a reward requires age 18 or older and an eligible US Stripe payout account. An earned reporter reward waits if setup is incomplete; this does not hold up the cleaner. Both rewards use the same payout settings. A transfer to Stripe is separate from its arrival in your bank.</p>
           </>,
         },
         {
@@ -83,7 +90,7 @@ export default function CleanupPolicyPage() {
         {
           title: 'Cleaner rewards and taxes',
           content: <>
-            <p>After reporter approval or automatic approval at the end of the 48-hour window, and after all required reviews, Litterbugs processes the frozen principal through Stripe Connect. The cleaner&apos;s first paid cleanup receives a lightweight administrator check. A displayed reward is not guaranteed until every evidence, dispute, administrator, fraud, reconciliation, and Stripe eligibility requirement is satisfied.</p>
+            <p>After reporter approval or automatic approval at the end of the 48-hour window, and after all required reviews, Litterbugs processes the frozen principal through Stripe Connect. A displayed reward is not guaranteed until every evidence, dispute, administrator, fraud, reconciliation, and Stripe eligibility requirement is satisfied.</p>
             <p>Stripe provides hosted identity, tax-information, bank, and payout setup. Stripe or Litterbugs may delay or withhold payment when required by law, sanctions, identity requirements, provider rules, fraud controls, disputes, or reconciliation. Cleaners are responsible for determining and reporting taxes related to rewards.</p>
           </>,
         },
