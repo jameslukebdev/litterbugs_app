@@ -203,8 +203,7 @@ export function ReportWizard({
         <div className="wizard-progress"><span style={{ width: `${((step + 1) / REPORT_STEPS.length) * 100}%` }} /></div>
       </header>
 
-      {!isEditing && <p className="wizard-location-guidance">To publish, allow browser location access while you are within 50 miles of this site. If this computer cannot verify your location, save and sync your draft, then finish it in the app on your phone.</p>}
-      <ol className="wizard-step-list" aria-label="Report progress">{REPORT_STEPS.map((label, index) => <li key={label} aria-current={step === index ? 'step' : undefined}>{index + 1}. {label}</li>)}</ol>
+      {!isEditing && step === 4 && <p className="wizard-location-guidance">To publish, allow browser location access while you are within 50 miles of this site. If this computer cannot verify your location, save and sync your draft, then finish it in the app on your phone.</p>}
       {draftSync}
       {draftSaveMessage && <p role="alert" className="form-error">{draftSaveMessage}</p>}
       <div className="wizard-content" key={step}><fieldset className="wizard-fields" disabled={saving || preparing || draftLocked}>
