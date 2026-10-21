@@ -563,12 +563,38 @@ export function MapExperience({
     return () => controller.abort();
   }, [userId, navigationRevision, enterReportTask]);
 
-  function closeReportTask() {
-    locationCheck.current++; reportEntry.current++; setCheckingDraft(false);
+  const closeReportTask = useCallback(() => {
+    locationCheck.current++; reportEntry.current++; setCheckingDraft(false); setCheckingLocation(false); setSelectingDraftLocation(false);
     setDraftCoordinates(null); setReportMode(false); setLocationError('');
     const url = new URL(window.location.href);
     if (url.pathname === '/report') { url.pathname = '/'; url.searchParams.delete('compose'); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}`); }
-  }
+  }, []);
+
+  const cancelLocationSelection = useCallback(() => {
+    if (selectingDraftLocation) {
+      locationCheck.current++;
+      setCheckingLocation(false);
+      setSelectingDraftLocation(false);
+      setReportMode(false);
+      setLocationError('');
+    } else {
+      closeReportTask();
+      document.querySelector<HTMLButtonElement>('.header-report-button')?.focus();
+    }
+  }, [selectingDraftLocation, closeReportTask]);
+
+  useEffect(() => {
+    if (!reportMode) return;
+    function onKeyDown(event: KeyboardEvent) {
+      // Let search suggestions and other controls handle their own Escape first.
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      if (event.target instanceof Element && event.target.closest('input, textarea, [role="combobox"]')) return;
+      event.preventDefault();
+      cancelLocationSelection();
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [reportMode, cancelLocationSelection]);
 
   async function toggleReportMode() {
     setReportListOpen(false);
@@ -971,6 +997,7 @@ export function MapExperience({
           {reportMode && <>
             <div className="report-placement-pin" aria-hidden="true"><Icon name="location" /></div>
             <section className="report-placement-confirm" aria-label="Choose report location">
+              <button type="button" className="icon-button report-placement-close" aria-label={selectingDraftLocation ? 'Cancel location change' : 'Cancel reporting'} title="Close" onClick={cancelLocationSelection}><Icon name="close" /></button>
               <div className="report-placement-instructions">
               <h1>Where is the litter?</h1>
               <p>Move the map to place the pin.</p>

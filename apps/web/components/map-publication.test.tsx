@@ -108,7 +108,7 @@ async function choosePin(latitude = 0.5, valid = true) {
   const start = screen.queryByRole('button', { name: 'Report Litter' });
   if (start) fireEvent.click(start);
   expect(window.location.pathname).toBe('/report');
-  await screen.findByRole('button', { name: 'Cancel reporting' });
+  await screen.findByLabelText('Choose report location');
   await act(async () => { state.click!({ latLng: { lat: () => latitude, lng: () => 0 } }); });
   expect(screen.queryByRole('dialog', { name: 'Report form' })).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Use this location' }));
@@ -209,6 +209,25 @@ describe('map publication and funding handoff', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Change report location' }));
     expect(screen.queryByRole('dialog')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Keep location' }));
+    expect(screen.getByLabelText('Selected latitude').textContent).toBe('0.5');
+  });
+
+  it.each(['close', 'Escape'])('returns to browsing with %s without opening a report', async (action) => {
+    window.history.replaceState({}, '', '/report');
+    render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+    await screen.findByRole('button', { name: 'Use this location' });
+    if (action === 'close') fireEvent.click(document.querySelector('.report-placement-close')!);
+    else fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByLabelText('Choose report location')).toBeNull();
+    expect(window.location.pathname).toBe('/');
+    expect(screen.queryByRole('dialog', { name: 'Report form' })).toBeNull();
+  });
+
+  it('keeps the saved pin when closing a draft location change', async () => {
+    await choosePin();
+    fireEvent.click(screen.getByRole('button', { name: 'Change report location' }));
+    await act(async () => { state.click!({ latLng: { lat: () => 0.6, lng: () => 0 } }); });
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel location change' }));
     expect(screen.getByLabelText('Selected latitude').textContent).toBe('0.5');
   });
 
