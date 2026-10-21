@@ -144,9 +144,9 @@ export function PublicSiteHeader({ activePath, action, reportId, compactMobile =
         </Link>
 
         <div className={styles.desktopActions}>
-          <HeaderLink href="/cleanup-safety" activePath={activePath}>Safety</HeaderLink>
+          <div className={styles.infoMenu}><HeaderLink href="/cleanup-safety" activePath={activePath}>Safety</HeaderLink></div>
           <div className={styles.action}>
-            {action ?? <PublicAccountAction />}
+            {action ?? <div className="map-header-actions"><Link className="header-report-button" href="/report">Report Litter</Link><PublicAccountAction /></div>}
             {compactMobile && <AppLink reportId={reportId} className={styles.compactAppLink}><IoPhonePortraitOutline aria-hidden />Get the app</AppLink>}
           </div>
         </div>

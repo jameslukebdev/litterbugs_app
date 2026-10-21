@@ -27,6 +27,13 @@ describe('PublicSiteHeader', () => {
     expect(screen.queryByRole('navigation', { name: 'Information and policies' })).toBeNull();
   });
 
+  it('keeps the Report Litter action on informational pages', () => {
+    const { rerender } = render(<PublicSiteHeader activePath="/about" />);
+    expect(screen.getByRole('link', { name: 'Report Litter' }).getAttribute('href')).toBe('/report');
+    rerender(<PublicSiteHeader activePath="/cleanup-safety" />);
+    expect(screen.getByRole('link', { name: 'Report Litter' }).getAttribute('href')).toBe('/report');
+  });
+
   it('groups mobile exploration and policy links and closes outside the sheet', () => {
     render(<PublicSiteHeader activePath="/about" />);
 
