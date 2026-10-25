@@ -30,8 +30,9 @@
     "web:test:cross-browser": "npm exec --workspace @litterbugs/web playwright test -- --config=playwright.live.config.ts",
     "web:boundaries": "node scripts/check-web-boundaries.mjs",
     "test": "npm run test --workspaces --if-present",
+    "payout:readiness:test": "node --test scripts/payout-readiness.test.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "check": "npm run typecheck && npm test && npm run web:lint && npm run web:build && npm run web:boundaries && npm run supabase:functions:check && npm run supabase:functions:test && npm run gemini-relay:test && npm run auth-bridge:check",
+    "check": "npm run typecheck && npm test && npm run payout:readiness:test && npm run web:lint && npm run web:build && npm run web:boundaries && npm run supabase:functions:check && npm run supabase:functions:test && npm run gemini-relay:test && npm run auth-bridge:check",
     "mobile:check-source": "node scripts/check-mobile-source.mjs",
     "mobile:test:native": "python3 scripts/run-mobile-native-regression.py"
   },
