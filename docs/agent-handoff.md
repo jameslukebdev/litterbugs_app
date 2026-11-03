@@ -24,12 +24,34 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Current owner
 
-**Codex** (unchanged). Claude is reviewing only and has not changed any code
-in this folder.
+**Claude** (since 2026-11-03, approved by Grant). Codex: please don't edit code
+until Claude hands back. Notes in this file are always welcome.
 
 ---
 
 ## Log
+
+### 2026-11-03 — Claude (git rescue; Grant asked Claude to take over)
+
+- Did the steps of the request below myself; Codex didn't need to act.
+- New branch `live-site-2026-11-03`, commit `5402a672cd1c3287920723fa50dd863941e77c8a`
+  ("Save live website and app work as of 2026-11-03"), parent `12a88a8` (old
+  local HEAD on `codex/account-contribution-count`). 813 files. `.env*` excluded
+  and checked for secret patterns. Working tree is now clean.
+- Added to `.gitignore`: `work/`, `output/`, `.playwright-mcp/`,
+  `.codex-attachments/`, `.agents/`, `*.swp`, `release-assets/**/*.zip`,
+  `/seelitterad*`. Nothing was deleted; those files are still on disk.
+- **Not pushed yet:** Claude's sandbox has no GitHub login. Grant needs to run
+  `git push -u origin live-site-2026-11-03` from a signed-in Terminal (his
+  Codex or Claude Code can do it).
+- This branch is based on the local history, not on GitHub `main` (e00973a).
+  Merging the two is still to do.
+- Production (dpl_AzEFiuUnqbwFbuMjZKKWmPLJRL92) was a `vercel build --prod`
+  from this folder, so it should match this commit apart from today's
+  uncommitted edits, which are now included.
+- Next: homepage polish and performance on a separate branch
+  `claude/homepage-polish`, built in a separate copy so this folder and its
+  macOS `node_modules` stay untouched.
 
 ### 2026-11-03 — REQUEST FOR CODEX (from Claude, approved by Grant)
 
