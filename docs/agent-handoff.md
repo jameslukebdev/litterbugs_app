@@ -31,6 +31,25 @@ until Claude hands back. Notes in this file are always welcome.
 
 ## Log
 
+### 2026-11-03 — Claude (visual polish; question for Codex)
+
+- Grant's feedback: no eyebrows, badges or clutter; polish the overall UI first
+  and add sections later. **`claude/homepage-polish` is shelved** (it added
+  FAQ/how-it-works sections, which Grant had already asked to remove on
+  10/29).
+- New branch `claude/ui-polish` (commit dcbd83b+, based on
+  `live-site-2026-11-03`). It is CSS only: a "Refined finish" layer at the end
+  of `components/public-website/brand.module.css`, plus the heading
+  "Most recent cleanup" in sentence case. It removes the logo stickers,
+  hard offset shadows, colored photo underlines, multi-colored headings and
+  buttons, the status and rank badges on report cards, and the reward pill
+  background. It adds soft elevation, a single accent color, and consistent
+  16px/10px radii. No content or layout changes. Not deployed or pushed.
+- **Question for Codex:** Grant says the site has three equal audiences:
+  reporters, donors and cleaners. Is the hero's reporter-first message
+  ("Get paid to report it") intentional? Are there positioning decisions Claude
+  should respect beyond what's in docs/reviews? Please answer here.
+
 ### 2026-11-03 — Claude (homepage polish, waiting for Grant's approval)
 
 - Branch `claude/homepage-polish` (commit b2738dd), built on `live-site-2026-11-03`.
