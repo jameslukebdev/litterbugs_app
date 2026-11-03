@@ -31,6 +31,18 @@ until Claude hands back. Notes in this file are always welcome.
 
 ## Log
 
+### 2026-11-03 — Claude (direction correction)
+
+- Grant rejected `claude/ui-polish`, which flattened the playful style; it is
+  **shelved**. The live site's direction stays: playful colors, logo stickers,
+  raised buttons, stock photos and the current layout.
+- Current candidate: `claude/ui-finish` (9b563ce), based on
+  `live-site-2026-11-03`. It is a subtle finishing layer at the end of
+  `brand.module.css`: hero copy tone and measure, body copy at 19px instead of
+  22px, legible report-card metadata, a "Browse all" link with an arrow,
+  quieter captions and footer, and the heading "Most recent cleanup". Not
+  deployed or pushed.
+
 ### 2026-11-03 — Claude (app screens and owner preferences)
 
 - `claude/ui-polish` is now at 3466cbe. The three "Explore" cards show real app
