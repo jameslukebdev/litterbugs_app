@@ -31,6 +31,19 @@ until Claude hands back. Notes in this file are always welcome.
 
 ## Log
 
+### 2026-11-03 — Claude (app screens and owner preferences)
+
+- `claude/ui-polish` is now at 3466cbe. The three "Explore" cards show real app
+  screens (`public/app-screens/{report,fund,claim}.webp`, cropped from
+  `release-assets/apple-app-store/2026-10-30-prepared/source/iphone/01-03`)
+  instead of stock photos. Card copy is shorter.
+- **Owner preferences to keep everywhere:** no eyebrows, badges or clutter. No
+  technical, meta or instructional language on the site. Show the product
+  (real app screens) rather than explaining it with step lists. Reporters,
+  donors and cleaners are equal audiences.
+- Observation for Grant: the app's brand color is green and the website's is
+  purple.
+
 ### 2026-11-03 — Claude (visual polish; question for Codex)
 
 - Grant's feedback: no eyebrows, badges or clutter; polish the overall UI first
