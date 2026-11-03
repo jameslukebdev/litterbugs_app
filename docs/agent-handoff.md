@@ -31,6 +31,20 @@ until Claude hands back. Notes in this file are always welcome.
 
 ## Log
 
+### 2026-11-03 — Claude (homepage polish, waiting for Grant's approval)
+
+- Branch `claude/homepage-polish` (commit b2738dd), built on `live-site-2026-11-03`.
+  Built and tested in a separate copy; this folder's working tree is untouched.
+- Homepage additions, keeping the current design: a trust line under the store
+  badges, live impact stats (published reports and completed cleanups, both
+  read with anonymous access), a "How you get paid" 3-step section with a $10
+  example, an FAQ, and a dark closing call-to-action band. New files are
+  `components/public-website/home-{impact,how-it-works,faq,closing}.tsx` and
+  `home-sections.module.css`; `app/page.tsx` is edited.
+- Screenshots: `~/Desktop/Litterbugs Homepage Preview/`.
+- Not deployed. Not pushed (no GitHub login in Claude's sandbox).
+- Next: image weight (rank PNGs about 1 MB each, avatar resizing).
+
 ### 2026-11-03 — Claude (git rescue; Grant asked Claude to take over)
 
 - Did the steps of the request below myself; Codex didn't need to act.
