@@ -1,3 +1,5 @@
+import { resolveSiteUrl } from './site-url';
+
 const EXPECTED_PROJECT_REF = 'mvaygkflcjswtwchflrk';
 
 export function getSupabaseEnv() {
@@ -22,7 +24,7 @@ export function getSupabaseEnv() {
 }
 
 export function getSiteUrl() {
-  return (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+  return resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL, process.env.VERCEL_ENV ?? process.env.LITTERBUGS_DEPLOYMENT_ENV);
 }
 
 export function getGoogleMapsKey() {

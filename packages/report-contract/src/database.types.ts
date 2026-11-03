@@ -481,6 +481,15 @@ export type Database = {
         }
         Relationships: []
       }
+      reporter_rewards: {
+        Row: { cleanup_attempt_id: string; report_id: string; reporter_id: string | null; amount_cents: number;
+          status: 'pending' | 'processing' | 'transferred' | 'failed'; created_at: string; updated_at: string;
+          payout_attempts: number; next_attempt_at: string; attempt_started_at: string | null; stripe_destination_id: string | null;
+          stripe_transfer_id: string | null; last_error: string | null; retry_blocked: boolean };
+        Insert: never; Update: never;
+        Relationships: [{ foreignKeyName: 'reporter_rewards_report_id_fkey'; columns: ['report_id'];
+          isOneToOne: false; referencedRelation: 'reports'; referencedColumns: ['id'] }];
+      };
       cleanup_contributions: {
         Row: {
           auto_refund_due_at: string | null

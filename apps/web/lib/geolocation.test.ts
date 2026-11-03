@@ -45,6 +45,11 @@ describe('browser geolocation', () => {
     const stale = { ...position, timestamp: Date.now() - 120000 };
     await expect(requireReportLocation({ latitude: 0, longitude: 0 }, {
       getCurrentPosition: success => success(stale),
-    })).rejects.toThrow('fresh location');
+    })).rejects.toThrow('Please try your location again.');
   });
+});
+
+it.each([[1, 'Allow location access in your browser, then try again.'], [2, 'Your location is unavailable. Try again.'], [3, 'Location took too long. Try again.']])('gives one actionable message for location failure %s', async (code, message) => {
+  const getCurrentPosition = (_success: PositionCallback, failure?: PositionErrorCallback | null) => failure?.({ code } as GeolocationPositionError);
+  await expect(requireReportLocation({ latitude: 0, longitude: 0 }, { getCurrentPosition })).rejects.toThrow(message);
 });

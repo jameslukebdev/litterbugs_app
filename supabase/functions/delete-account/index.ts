@@ -87,7 +87,7 @@ Deno.serve(async (request: Request) => {
     );
     if (financialCleanupError) {
       if (financialCleanupError.message?.includes("cleanup_payout_must_finish_before_account_deletion")) {
-        return jsonResponse({ code: "PAYOUT_PENDING", error: "A cleanup reward is still being sent. Please contact support for help completing your account deletion." }, 409);
+        return jsonResponse({ code: "PAYOUT_PENDING", error: "A reward is still awaiting payment. Please contact support for help completing your account deletion." }, 409);
       }
       throw financialCleanupError;
     }

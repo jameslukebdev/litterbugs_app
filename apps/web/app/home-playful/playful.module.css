@@ -1,0 +1,214 @@
+@font-face { font-family: 'Playful Nunito'; src: url('/fonts/nunito/black.ttf') format('truetype'); font-weight: 700 900; font-display: swap; }
+.preview { --ink: #292932; --green: #5146ed; --green-dark: #4438bb; --green-soft: #efedff; --line: #e3dff0; --soft: #f8f7fc; background: #fff; }
+.preview h1, .preview h2, .preview h3 { font-family: 'Playful Nunito', sans-serif; font-weight: 900; }
+.preview main h1, .preview main h2, .preview main h3 { color: #292932; }
+/* Keep original widths, grids, spacing, section order, and breakpoints. */
+.preview header { box-shadow: 0 2px 0 #f0edf8; }
+.preview header img[src*="litterbugs-logo"] { mix-blend-mode: multiply; }
+.preview header a, .preview header button { font-weight: 700; }
+.preview :global(.header-report-button), .preview :global(.public-account-control) { border-radius: 14px; border-color: #5146ed; box-shadow: 0 3px 0 #d9d4f5; }
+.preview :global(.header-report-button) { background: #5146ed; color: #fff; box-shadow: 0 4px 0 #3528ac; }
+.preview main > section:first-child > div:nth-child(2) { position: relative; }
+.preview main > section:first-child > div:nth-child(2) > div > div { border-radius: 24px; box-shadow: 0 5px 0 #ffca30; }
+.preview main > section:first-child > div:nth-child(2) > div:first-child > div:nth-child(2) { box-shadow: 0 5px 0 #b645d3; }
+.preview main > section:first-child > div:nth-child(2) > div:nth-child(2) > div:first-child { box-shadow: 0 5px 0 #5146ff; }
+.preview main > section:first-child > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) { box-shadow: 0 5px 0 #ed3f48; }
+/* Out-of-flow logo motifs add no text or layout space. */
+.preview main > section:first-child > div:nth-child(2)::before { content: ''; position: absolute; z-index: 1; pointer-events: none; width: 75px; height: 75px; top: -18px; left: -18px; transform: rotate(-18deg); background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cg fill='%23ffbb00'%3E%3Cellipse cx='32' cy='27' rx='24' ry='14' transform='rotate(25 32 27)'/%3E%3Cellipse cx='78' cy='24' rx='15' ry='23' transform='rotate(30 78 24)'/%3E%3Cellipse cx='62' cy='76' rx='39' ry='32'/%3E%3C/g%3E%3Cpath d='M45 47c-4 20-1 42 10 60M65 45c-4 22 0 44 13 58' fill='none' stroke='white' stroke-width='9'/%3E%3C/svg%3E"); }
+.preview main > section:first-child > div:nth-child(2)::after { content: ''; position: absolute; z-index: 1; pointer-events: none; width: 64px; height: 64px; bottom: -22px; right: -12px; transform: rotate(18deg); background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cg fill='%235146ff'%3E%3Cellipse cx='60' cy='30' rx='22' ry='28'/%3E%3Cellipse cx='88' cy='52' rx='28' ry='22'/%3E%3Cellipse cx='78' cy='88' rx='22' ry='28'/%3E%3Cellipse cx='39' cy='88' rx='22' ry='28'/%3E%3Cellipse cx='29' cy='52' rx='28' ry='22'/%3E%3C/g%3E%3Cellipse cx='60' cy='62' rx='19' ry='15' fill='white'/%3E%3C/svg%3E"); }
+.preview section[aria-labelledby='report-starter-title'] article > img { border-radius: 22px; box-shadow: 0 5px 0 #e3bdef; }
+.preview section[aria-labelledby='report-starter-title'] article:nth-child(2) > img { box-shadow: 0 5px 0 #ffce38; }
+.preview section[aria-labelledby='report-starter-title'] article:nth-child(3) > img { box-shadow: 0 5px 0 #bbb5ff; }
+.preview section[aria-labelledby='report-starter-title'] article h3 { color: #783398; }
+.preview section[aria-labelledby='report-starter-title'] article:nth-child(2) h3 { color: #826200; }
+.preview section[aria-labelledby='report-starter-title'] article:nth-child(3) h3 { color: #5146bf; }
+.preview section[aria-labelledby='report-starter-title'] article button, .preview section[aria-labelledby='report-starter-title'] article a { border-radius: 14px; border-color: #e3c3f0; background: #f2e5fa; color: #71328e; box-shadow: 0 4px 0 #d9b7ec; font-weight: 700; }
+.preview section[aria-labelledby='report-starter-title'] article:nth-child(2) a { background: #ffce38; color: #493a10; border-color: #ffce38; box-shadow: 0 4px 0 #d9ac19; }
+.preview section[aria-labelledby='report-starter-title'] article:nth-child(3) a { background: #5146ed; color: #fff; border-color: #5146ed; box-shadow: 0 4px 0 #3528ac; }
+.preview :global(.report-result) { border-radius: 20px; border-color: #e1dcf0; box-shadow: 0 4px 0 #eeeaf8; }
+.preview :global(.report-result-photo) { border-radius: 20px 20px 0 0; }
+.preview :global(.report-result-reward) { border-radius: 10px; }
+.preview a:focus-visible, .preview button:focus-visible { outline: 3px solid #5146ed; outline-offset: 4px; }
+@media (max-width: 700px) { .preview main > section:first-child > div:nth-child(2)::before { width: 55px; height: 55px; left: -8px; top: -5px; }.preview main > section:first-child > div:nth-child(2)::after { width: 48px; height: 48px; right: -5px; bottom: -18px; } }
+
+/* Shared interaction language: raised controls, quiet links, visible focus. */
+.preview {
+  --playful-hover: #eeebff;
+  --playful-border: #d8d1f0;
+  --playful-ease: 160ms ease;
+}
+.preview :is(a, button, summary, input) {
+  transition: background-color var(--playful-ease), color var(--playful-ease), border-color var(--playful-ease), box-shadow var(--playful-ease), transform var(--playful-ease);
+}
+.preview :is(a, button, summary, input, [tabindex='0']):focus-visible {
+  outline: 3px solid #5146ed;
+  outline-offset: 4px;
+}
+.preview button:disabled { transform: none; box-shadow: none; }
+.preview button[aria-expanded], .preview header a { border-radius: 10px; }
+.preview header a[aria-label='Open map'] { border-color: var(--playful-border); border-radius: 12px; box-shadow: 0 3px 0 #eeeaf8; }
+.preview header ul { border-color: var(--playful-border); border-radius: 18px; box-shadow: 0 7px 0 #ede9f6, 0 12px 28px #5146ed12; }
+.preview header ul a { border-radius: 8px; }
+.preview header button[aria-expanded='true'] { color: #4438bb; background: var(--playful-hover); box-shadow: 0 3px 0 #d8d1f0; }
+.preview dialog { border-color: var(--playful-border); }
+.preview dialog::backdrop { background-color: #26213d55; }
+.preview input { border-color: var(--playful-border); border-radius: 12px; caret-color: #5146ed; }
+.preview :global(.place-search-dropdown) { border-color: var(--playful-border); border-radius: 14px; box-shadow: 0 6px 0 #ede9f6, 0 12px 28px #5146ed12; }
+
+/* Carry the finish through the carousel and its secondary controls. */
+.preview section[aria-roledescription='carousel'] button[aria-controls] { border-color: var(--playful-border); box-shadow: 0 3px 0 #e6e1f5; background: #fff; }
+.preview section[aria-roledescription='carousel'] button[aria-controls]:disabled { box-shadow: none; background: #f8f7fc; opacity: .45; }
+.preview :global(.report-card-container) { border-radius: 20px; box-shadow: 0 4px 0 #eeeaf8; transition: box-shadow var(--playful-ease); }
+.preview :global(.report-result) { box-shadow: none; }
+.preview :global(.public-card-footer) { border-color: #e1dcf0; border-radius: 0 0 20px 20px; }
+.preview :global(.public-card-options) summary { color: #65578b; border-radius: 10px; }
+.preview :global(.public-card-options[open]) summary { color: #4438bb; background: var(--playful-hover); }
+.preview :global(.public-card-options-panel) { border-color: var(--playful-border); border-radius: 14px; box-shadow: 0 5px 0 #ede9f6; }
+.preview :global(.public-card-options-panel) button { border-radius: 10px; }
+
+/* The final section uses the same soft corners and tactile action treatment. */
+.preview section[aria-labelledby='home-cleanup-title'] figure img { border-radius: 22px; box-shadow: 0 5px 0 #e3dff0; }
+.preview section[aria-labelledby='home-cleanup-title'] figure:nth-child(2) img { box-shadow: 0 5px 0 #bdb6fa; }
+.preview section[aria-labelledby='home-cleanup-title'] figcaption { color: #5c566b; font-weight: 600; }
+.preview section[aria-labelledby='home-cleanup-title'] > div:last-child > a {
+  border-radius: 14px; color: #4438bb; border-color: #d8d1f0; background: #f4f1ff; box-shadow: 0 4px 0 #d8d1f0;
+}
+.preview :global(.discovery-footer) { border-color: #e5dff2; }
+.preview :global(.discovery-footer) :is(a, button) { border-radius: 4px; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+
+@media (hover: hover) and (pointer: fine) {
+  .preview header a:hover, .preview header button:hover:not(:disabled) { color: #4438bb; background-color: #f4f1ff; }
+  .preview header a[aria-label='Litterbugs home']:hover { background: transparent; transform: rotate(-3deg); }
+  .preview header ul a:hover { background: var(--playful-hover); box-shadow: -3px 0 0 #b645d3; }
+  .preview :global(.public-account-control):hover { border-color: #5146ed; background: var(--playful-hover); box-shadow: 0 4px 0 #d9d4f5; transform: translateY(-1px); }
+  .preview :global(.header-report-button):hover { background: #4436d4; color: #fff; }
+  .preview section[aria-labelledby='report-starter-title'] article :is(button, a):hover:not(:disabled) { background: #e8d2f7; color: #60237e; border-color: #d4a2e8; transform: translateY(-2px); box-shadow: 0 6px 0 #cfa2e5; }
+  .preview section[aria-labelledby='report-starter-title'] article:nth-child(2) a:hover { background: #ffd95b; color: #493a10; border-color: #ffce38; box-shadow: 0 6px 0 #d9ac19; }
+  .preview section[aria-labelledby='report-starter-title'] article:nth-child(3) a:hover { background: #4436d4; color: #fff; border-color: #4436d4; box-shadow: 0 6px 0 #3528ac; }
+  .preview main > section:first-child a:hover { transform: translateY(-2px); filter: brightness(1.08); }
+  .preview section[aria-roledescription='carousel'] button[aria-controls]:hover:not(:disabled) { background: var(--playful-hover); border-color: #a79ce8; box-shadow: 0 4px 0 #d8d1f0; transform: translateY(-1px); }
+  .preview :global(.public-card-options) summary:hover, .preview :global(.public-card-options-panel) button:hover { background: var(--playful-hover); color: #4438bb; }
+  .preview section[aria-labelledby='home-cleanup-title'] > div:last-child > a:hover { background: #eae4ff; border-color: #bcb0e6; box-shadow: 0 6px 0 #d8d1f0; transform: translateY(-2px); }
+  .preview section[aria-labelledby='home-cleanup-title'] > div:first-child > a:hover,
+  .preview section[aria-roledescription='carousel'] > div:first-child a:hover,
+  .preview :global(.discovery-footer) :is(a, button):hover { color: #4438bb; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+}
+.preview section[aria-labelledby='report-starter-title'] article :is(button, a):active:not(:disabled),
+.preview section[aria-labelledby='home-cleanup-title'] > div:last-child > a:active,
+.preview section[aria-roledescription='carousel'] button[aria-controls]:active:not(:disabled),
+.preview :global(.public-account-control):active,
+.preview :global(.header-report-button):active { transform: translateY(3px); box-shadow: none; }
+@media (prefers-reduced-motion: reduce) {
+  .preview *, .preview *::before, .preview *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+  .preview :is(a, button):hover, .preview :is(a, button):active { transform: none !important; }
+}
+
+/* One card surface: image, copy, and attribution belong to one object.
+   Sub-actions retain their keyboard focus without repainting separate blocks. */
+.preview :global(.public-report-cards .report-card-container) {
+  --card-fill: #fff;
+  --card-edge: #e3e1e9;
+  background: var(--card-fill);
+  border-radius: 22px;
+  box-shadow: 0 0 0 2px var(--card-edge), 0 5px 0 #e9e6ef;
+  transition: box-shadow 160ms ease, background-color 160ms ease;
+}
+.preview :global(.public-report-cards .report-result),
+.preview :global(.public-report-cards .report-result):is(:hover, :active, :focus-visible) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  border-radius: 22px 22px 0 0;
+  transform: none;
+}
+.preview :global(.public-report-cards .report-result-photo) { border-radius: 21px 21px 0 0; }
+.preview :global(.public-report-cards .public-card-footer) {
+  background: transparent;
+  border-color: transparent;
+  border-radius: 0 0 22px 22px;
+  height: 72px;
+  padding: 10px 52px 12px 16px;
+  gap: 10px;
+}
+.preview :global(.public-report-cards .report-result-copy) { padding-top: 16px; }
+.preview :global(.public-report-cards .report-author),
+.preview :global(.public-report-cards .report-author):is(:hover, :active) {
+  background: transparent; color: #45434d; box-shadow: none;
+  text-decoration: none; border-radius: 10px; gap: 10px;
+}
+.preview :global(.public-report-cards .report-author-copy) { gap: 4px; }
+.preview :global(.public-report-cards .report-author-copy > span:first-child) { font-weight: 600; font-size: 13px; }
+.preview :global(.public-report-cards .community-rank-badge) { color: #66616f; font-size: 11px; gap: 5px; }
+.preview :global(.public-report-cards .community-rank-badge img) { width: 20px; height: 20px; object-fit: contain; }
+.preview :global(.public-report-cards .report-author-initial),
+.preview :global(.public-report-cards .report-author > img) {
+  width: 34px; height: 34px; border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #e3e1e9; flex-shrink: 0;
+}
+.preview :global(.public-report-cards .public-card-date) { color: #716c79; font-size: 11px; }
+.preview :global(.public-report-cards .public-card-options) { bottom: 14px; right: 8px; }
+.preview :global(.public-report-cards .public-card-options summary) { min-width: 36px; min-height: 40px; }
+.preview :global(.public-report-cards .public-card-options summary):hover { background: transparent; }
+.preview :global(.public-report-cards .public-card-options-panel) { padding: 6px; }
+.preview :global(.public-report-cards .public-card-options-panel button) { min-height: 44px; padding: 10px 14px; }
+.preview :global(.public-report-cards .report-result-workflow) { border-radius: 9px; background: #fff; color: #514639; box-shadow: 0 2px 0 #00000015; font-weight: 700; }
+.preview :global(.public-report-cards .report-result-reward) { background: #efedff; color: #5140aa; border-radius: 8px; }
+.preview :global(.public-report-cards .report-card-container):has(:focus-visible) {
+  --card-edge: #a89ae0;
+  box-shadow: 0 0 0 2px var(--card-edge), 0 5px 0 #d8cfee;
+}
+@media (hover: hover) and (pointer: fine) {
+  .preview :global(.public-report-cards .report-card-container):hover {
+    --card-fill: #f9f7ff; --card-edge: #b5a7e6;
+    box-shadow: 0 0 0 2px var(--card-edge), 0 5px 0 #d8cfee;
+  }
+}
+
+/* Header text controls need whitespace inside their highlighted shape. */
+@media (min-width: 1240px) {
+  .preview header nav button[aria-expanded] { padding-inline: 12px; min-height: 46px; }
+}
+.preview header button[aria-expanded='true'] { box-shadow: none; }
+.preview header ul { padding: 10px; border: 2px solid #e7e3ef; box-shadow: 0 4px 0 #ece8f2; }
+.preview header ul a { padding-inline: 12px; }
+.preview header ul a:hover { box-shadow: none; }
+.preview :global(.public-account-control-signed-out) { min-height: 46px; padding-inline: 18px; border-width: 2px; }
+/* Profile is a circle, not a rectangular raised button surrounding a circle. */
+.preview :global(.public-account-control-profile),
+.preview :global(.public-account-control-profile):is(:hover, :active) {
+  border: 0; border-radius: 50%; background: transparent;
+  box-shadow: none; transform: none;
+}
+.preview :global(.public-account-avatar-frame) { border-radius: 50%; }
+.preview :global(.public-account-avatar),
+.preview :global(.public-account-initials) { border: 2px solid #b3a6e5; padding: 3px; background-color: #fff; border-radius: 50%; box-shadow: none; }
+.preview :global(.public-account-control-profile):hover :is(:global(.public-account-avatar), :global(.public-account-initials)) { opacity: 1; border-color: #5146ed; }
+.preview :global(.public-account-control-profile):focus-visible { outline-offset: 3px; border-radius: 50%; }
+
+/* Use the same generous button padding throughout the three actions. */
+.preview section[aria-labelledby='report-starter-title'] article :is(a, button) { min-height: 54px; padding: 12px 24px; border-width: 2px; }
+.preview section[aria-labelledby='report-starter-title'] article button[class*='remove'] {
+  min-height: 44px; padding: 8px 10px; border: 0; box-shadow: none;
+  background: transparent; color: #615573; font-size: 16px;
+}
+.preview section[aria-labelledby='report-starter-title'] article button[class*='remove']:hover { background: #f3edf8; box-shadow: none; transform: none; }
+.preview section[aria-labelledby='report-starter-title'] article p[role='alert'] a { padding: 0; min-height: auto; border: 0; background: none; box-shadow: none; text-decoration: underline; }
+.preview section[aria-labelledby='home-cleanup-title'] > div:last-child > a { padding: 12px 24px; min-height: 54px; border-width: 2px; }
+.preview section[aria-roledescription='carousel'] > div:first-child button[aria-expanded] { border-radius: 12px; padding-inline: 12px; }
+@media (max-width: 600px) {
+  .preview :global(.public-report-cards .public-card-date) { font-size: 10px; }
+  .preview :global(.public-report-cards .public-card-footer) { gap: 8px; padding-left: 14px; }
+}
+/* Give the member name its own clear line; metadata sits beside the rank. */
+.preview :global(.public-report-cards .public-card-date) { position: absolute; right: 52px; bottom: 12px; line-height: 20px; }
+.preview :global(.public-report-cards .report-author) { align-self: flex-start; }
+.preview :global(.public-report-cards .public-card-options summary) { background: transparent; }
+.preview :global(.public-report-cards .public-card-options[open] summary) { background: #eeebff; }
+/* Never expose an avatar that has not finished loading on hover. */
+.preview :global(.public-account-control-profile):hover :global(.public-account-avatar:not([data-loaded='true'])) { opacity: 0; }
+@media (max-width: 600px) {
+  /* Small cards keep rank and date on separate lines instead of squeezing names. */
+  .preview :global(.public-report-cards .public-card-footer) { height: 90px; }
+  .preview :global(.public-report-cards .public-card-date) { left: 59px; right: auto; bottom: 8px; font-size: 11px; }
+  .preview :global(.public-report-cards .public-card-options) { top: 14px; bottom: auto; }
+}

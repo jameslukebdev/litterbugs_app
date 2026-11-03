@@ -30,8 +30,14 @@ describe('Stripe-gated cleanup workflows', () => {
     expect(payoutSetupSource).toContain("status?.payoutsEnabled !== true");
     expect(payoutSetupSource).toContain('markPayoutWorkflowReady(workflowToken);');
     expect(payoutSetupSource).toContain('cancelPayoutWorkflow(workflowToken);');
-    expect(payoutSetupSource).toContain("'Ready to receive cleanup rewards'");
+    expect(payoutSetupSource).toContain("'Ready to receive rewards'");
     expect(payoutSetupSource).toContain("'Continue to cleanup'");
+  });
+
+  it('keeps payout onboarding in the app task so checking SMS does not discard it', () => {
+    expect(payoutSetupSource).toContain('createTask: false');
+    expect(payoutSetupSource).toContain('openBrowserAsync(link.url, PAYOUT_BROWSER_OPTIONS)');
+    expect(payoutSetupSource).toContain('openAuthSessionAsync(link.url, PAYOUT_ONBOARDING_RETURN_URL, PAYOUT_BROWSER_OPTIONS)');
   });
 
   it('enforces the funded-claim gate in the backend', () => {

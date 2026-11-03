@@ -57,7 +57,7 @@ it('clears old notices and pending retry IDs when the account changes', async ()
   view.rerender(<NotificationInbox userId="other" />);
   expect(screen.queryByText('Creek cleanup')).toBeNull();
   expect(screen.queryByRole('button', { name: 'Retry marking read' })).toBeNull();
-  await screen.findByText('No updates yet. Cleanup activity will appear here.');
+  await screen.findByText('No updates yet.');
 });
 it('retains updates on refresh failure and provides an accurate reload action', async () => {
   const view = render(<NotificationInbox userId="owner" />);
@@ -68,7 +68,8 @@ it('retains updates on refresh failure and provides an accurate reload action', 
   expect(screen.getByText('Creek cleanup')).toBeTruthy();
   mocks.load.mockResolvedValue({ data: [{ ...notice('one'), report: null }], error: null });
   fireEvent.click(screen.getByRole('button', { name: 'Retry updates' }));
-  await screen.findByText('Report details unavailable');
+  await waitFor(() => expect(screen.queryByText('Creek cleanup')).toBeNull());
+  expect(screen.queryByText('Report details unavailable')).toBeNull();
   expect(mocks.acknowledge).not.toHaveBeenCalled();
 });
 
@@ -103,4 +104,16 @@ it('removes an acknowledged update from unread and preserves read failures acros
   view.rerender(<NotificationInbox userId="owner" view={{ filter: 'unread', page: 1 }} />);
   fireEvent.click(screen.getByRole('button', { name: 'Retry marking read' }));
   await screen.findByText('You’re caught up. No unread updates.');
+});
+
+it('uses a quiet placeholder without declaring an empty inbox before loading finishes', async () => {
+  let resolve!: (value: unknown) => void;
+  mocks.load.mockReturnValue(new Promise(done => { resolve = done; }));
+  render(<NotificationInbox userId="owner" />);
+  expect(screen.getByRole('status', { name: 'Loading account section' })).toBeTruthy();
+  expect(screen.queryByText('Loading updates…')).toBeNull();
+  expect(screen.queryByText('No updates yet.')).toBeNull();
+  resolve({ data: [], error: null });
+  expect(await screen.findByText('No updates yet.')).toBeTruthy();
+  expect(screen.queryByRole('status', { name: 'Loading account section' })).toBeNull();
 });

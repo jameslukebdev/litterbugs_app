@@ -30,14 +30,7 @@
   padding: 26px 26px 18px;
 }
 
-.eyebrow {
-  margin: 0 0 5px;
-  color: #c9302c;
-  font-size: 11px;
-  font-weight: 850;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-}
+
 
 .header h2 {
   margin: 0;
@@ -48,17 +41,20 @@
 }
 
 .close {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   flex: none;
   border: 1px solid #d7ded8;
   border-radius: 50%;
   color: #2d3730;
   background: #fff;
   cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease;
 }
 
+@media (hover: hover) and (pointer: fine) {
 .close:hover { background: #f3f5f3; }
+}
 .close svg { width: 20px; height: 20px; }
 
 .preview {
@@ -147,13 +143,14 @@
   text-align: left;
   text-decoration: none;
   cursor: pointer;
-  transition: border-color .14s ease, background .14s ease, transform .14s ease;
+  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
 }
 
+@media (hover: hover) and (pointer: fine) {
 .option:hover {
   border-color: #aeb9b0;
   background: #f7f9f7;
-  transform: translateY(-1px);
+}
 }
 
 .option:focus-visible,
@@ -175,18 +172,20 @@
 .primaryOption {
   grid-column: 1 / -1;
   min-height: 64px;
-  border-color: #c9302c;
-  background: #fff8f7;
+  border-color: var(--green);
+  background: var(--green-soft);
 }
 
+@media (hover: hover) and (pointer: fine) {
 .primaryOption:hover {
-  border-color: #a92825;
-  background: #fff2f0;
+  border-color: var(--green-dark);
+  background: var(--green-soft);
+}
 }
 
 .primaryIcon {
   color: #fff;
-  background: #c9302c;
+  background: var(--green);
 }
 
 .copyIcon,
@@ -273,8 +272,10 @@
   cursor: pointer;
 }
 
+@media (hover: hover) and (pointer: fine) {
 .helperActions a:hover,
 .helperActions button:hover { border-color: #9eaaa1; background: #fdfefd; }
+}
 .helperActions svg { width: 14px; height: 14px; }
 
 .steps {
@@ -337,5 +338,5 @@
 
 @media (prefers-reduced-motion: reduce) {
   .dialog { animation: none; }
-  .option { transition: none; }
+  .option, .close, .helperActions a, .helperActions button { transition: none; }
 }

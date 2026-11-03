@@ -1,0 +1,28 @@
+const fs=require('fs'),path=require('path'),sharp=require('sharp');
+sharp.concurrency(1);sharp.cache(false);
+const d=__dirname,old=path.join(d,'../v12');
+(async()=>{
+ const m=JSON.parse(fs.readFileSync(path.join(old,'manifest.json')));
+ for(const g of m.gallery) fs.copyFileSync(path.join(old,g.file),path.join(d,g.file));
+ const screen=m.gallery[0].screen;
+ const photo=await sharp(path.join(d,'source/reporting-original-user-photo.png')).resize(screen.width,screen.height,{fit:'cover',position:'centre'}).removeAlpha().png().toBuffer();
+ const name='01-make-money-reporting-real-photo.png';
+ await sharp(path.join(old,m.gallery[0].file)).composite([{input:photo,left:screen.left,top:screen.top}]).removeAlpha().png().toFile(path.join(d,name));
+ fs.unlinkSync(path.join(d,m.gallery[0].file));
+ Object.assign(m.gallery[0],{file:name,type:'Owner-provided real photograph with headline',source:'source/reporting-original-user-photo.png'});
+ for(const g of m.gallery.slice(1))g.source='../v12/'+g.source;
+ m.status='Replacement prepared; awaiting Google Play update';
+ m.provenance.illustrations='No generated imagery in this gallery. Lead image replaced with owner-provided October 30 4:09 PM photograph of a hand holding a phone. Original 362x233 photo is preserved in source, resized and center-cropped to existing phone frame. No generative editing.';
+ m.provenance.presentation='Unchanged 1080x1920 panels and same phone frame. Seven actual screenshot panels remain unchanged; first panel now uses the original owner-provided photograph.';
+ m.submission={order:[1,2,3,4,6,8,5,7],video:null,aiDeclaration:"Don't label assets",status:'replacement prepared'};
+ m.notUploaded=true;
+ fs.writeFileSync(path.join(d,'manifest.json'),JSON.stringify(m,null,2));
+ const thumbs=[];
+ for(let i=0;i<m.gallery.length;i++)thumbs.push({input:await sharp(path.join(d,m.gallery[i].file)).resize(270,480).png().toBuffer(),left:24+(i%4)*294,top:24+Math.floor(i/4)*504});
+ await sharp({create:{width:1200,height:1032,channels:3,background:'#e9e5de'}}).composite(thumbs).png().toFile(path.join(d,'gallery-review.png'));
+ const meta=await sharp(path.join(d,name)).metadata();
+ const actual=await sharp(path.join(d,name)).extract(screen).raw().toBuffer();
+ const expected=await sharp(photo).raw().toBuffer();
+ if(!actual.equals(expected)||meta.width!==1080||meta.height!==1920)throw Error('Verification failed');
+ console.log(JSON.stringify({file:name,width:meta.width,height:meta.height,sourcePixelsVerified:true}));
+})();

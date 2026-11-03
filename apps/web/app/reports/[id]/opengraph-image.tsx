@@ -7,15 +7,17 @@ export const alt = 'Litterbugs community cleanup report';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const report = await loadPublicReportShare(id);
+  if (!report) return new Response('Report not found', { status: 404, headers: { 'Cache-Control': 'private, no-store' } });
   const completed = report?.state === 'completed';
   const logoSource = await loadSocialCardLogo();
-  const imageUrls = completed
-    ? [report?.afterPhotoUrl, report?.beforePhotoUrl].filter((value): value is string => Boolean(value))
-    : [report?.beforePhotoUrl].filter((value): value is string => Boolean(value));
+  const images = (completed
+    ? [{ url: report.beforePhotoUrl, label: 'BEFORE' }, { url: report.afterPhotoUrl, label: 'AFTER' }]
+    : [{ url: report.beforePhotoUrl, label: 'REPORT PHOTO' }]).filter(photo => Boolean(photo.url));
 
   return new ImageResponse(
     <div style={{
@@ -39,7 +41,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <span style={{ color: completed ? '#2f7d32' : '#b448cf', fontSize: 22, fontWeight: 900, letterSpacing: 1.5 }}>
-            {completed
+            {report?.state === 'expired' ? 'REPORT EXPIRED' : completed
               ? 'CLEANUP COMPLETE'
               : report?.state === 'in_progress'
                 ? 'CLEANUP IN PROGRESS'
@@ -57,17 +59,17 @@ export default async function Image({ params }: { params: Promise<{ id: string }
 
         <div style={{ display: 'flex', gap: 12, color: '#fff', fontSize: 19, fontWeight: 800 }}>
           {completed && report?.cleanerName ? <span style={{ padding: '10px 16px', borderRadius: 999, background: '#2f7d32' }}>Cleaned by {report.cleanerName}</span> : null}
-          {!completed && report?.severity ? <span style={{ padding: '10px 16px', borderRadius: 999, background: '#d44c42' }}>{report.severity} severity</span> : null}
+          {!completed && report?.state !== 'expired' && report?.severity ? <span style={{ padding: '10px 16px', borderRadius: 999, background: '#d44c42' }}>{report.severity} severity</span> : null}
         </div>
       </div>
 
       <div style={{ width: '45%', height: '100%', display: 'flex', gap: 10 }}>
-        {imageUrls.length ? imageUrls.map((url, index) => (
-          <div key={url} style={{ position: 'relative', flex: 1, display: 'flex', overflow: 'hidden', borderRadius: 28, background: '#dfe7e0', boxShadow: '0 18px 48px rgba(23, 32, 26, .18)' }}>
-            <img src={url} alt="" width="100%" height="100%" style={{ objectFit: 'cover' }} />
+        {images.length ? images.map(photo => (
+          <div key={photo.label} style={{ position: 'relative', flex: 1, display: 'flex', overflow: 'hidden', borderRadius: 28, background: '#dfe7e0', boxShadow: '0 18px 48px rgba(23, 32, 26, .18)' }}>
+            <img src={photo.url!} alt={photo.label} width="100%" height="100%" style={{ objectFit: 'cover' }} />
             {completed ? (
               <span style={{ position: 'absolute', left: 16, bottom: 16, padding: '8px 12px', borderRadius: 999, color: '#17201a', background: 'rgba(255,255,255,.92)', fontSize: 15, fontWeight: 900 }}>
-                {index === 0 && report?.afterPhotoUrl ? 'AFTER' : 'BEFORE'}
+                {photo.label}
               </span>
             ) : null}
           </div>
@@ -78,6 +80,6 @@ export default async function Image({ params }: { params: Promise<{ id: string }
         )}
       </div>
     </div>,
-    size,
+    { ...size, headers: { 'Cache-Control': 'private, no-store' } },
   );
 }

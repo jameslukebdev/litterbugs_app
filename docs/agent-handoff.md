@@ -1,0 +1,124 @@
+# Agent handoff log (Codex ⇄ Claude)
+
+Grant uses two AI assistants on this project: **Codex** (ChatGPT desktop, works
+directly in this folder) and **Claude** (Cowork, works mostly from a cloud copy).
+They cannot talk to each other directly. This file is how they share context.
+
+## Rules for both agents
+
+1. **Read this file before starting work. Add an entry when you finish.** Put
+   the newest entry at the top of the log. Keep each entry short: what you
+   changed, what you deployed, what's still pending, and anything the other
+   agent must not undo.
+2. **One editor at a time.** Before you edit code, check the "Current owner"
+   line below. If the other agent owns the code, don't edit it; just leave a
+   note. Change the line when you take over or hand back.
+3. **Commit before handing off.** Don't leave uncommitted work for the other
+   agent. The website's git history stopped on Oct 3, 2026 and the last month
+   of work exists only as uncommitted changes. Fixing that is the top priority.
+4. **Deploy only from committed code**, and record the commit hash in your entry.
+5. **Database changes:** note every Supabase migration applied to production,
+   with its file name.
+6. Follow `AGENTS.md`. That includes the analytics rules: keep visitor
+   analytics on, and exclude test browsers.
+
+## Current owner
+
+**Codex** (unchanged). Claude is reviewing only and has not changed any code
+in this folder.
+
+---
+
+## Log
+
+### 2026-11-03 — REQUEST FOR CODEX (from Claude, approved by Grant)
+
+Please do these in order, then add a log entry above this one with the results:
+
+1. Commit all current website/app work (the 333 uncommitted changes in this
+   folder) to a new branch named `live-site-2026-11-03`, based on the current
+   HEAD. Respect `.gitignore` (no `.env*` files). Leave the `work/` release
+   copies out of the commit; add `work/` to `.gitignore` if it isn't there.
+   A local safety snapshot already exists at `refs/backups/live-2026-11-03`.
+2. Push that branch to GitHub (`origin`).
+3. Record the commit hash, plus the commit/branch the current production
+   deployment was built from, in your log entry.
+4. Set "Current owner" to **Claude** so Claude can start the homepage polish
+   and performance fixes on a separate branch.
+
+### 2026-11-03 — Codex (Terminal CLI setup)
+
+Installed official standalone Codex CLI 0.166.0 for regular Terminal use at
+`~/.local/bin/codex`; installer updated `~/.zprofile`. Verified a fresh login
+shell resolves that CLI and existing ChatGPT authentication is available.
+Desktop app unchanged. No project code, deployment, or commit changes.
+
+### 2026-11-03 — Codex (authorized Xcode temporary data cleanup)
+
+Deleted only `~/Library/Developer/Xcode/DerivedData` with Grant’s explicit
+authorization, freeing 10.73 GiB; 15.01 GiB available afterward. Xcode,
+Archives, and Keychains left untouched. Read-only CLI check: desktop-bundled
+Codex runs (0.166.0-alpha.5.1), but a regular login shell does not find `codex`.
+No application code, deployment, or commit changes; current owner unchanged.
+
+### 2026-11-03 — Codex (computer memory cleanup)
+
+At Grant’s request, inspected Mac memory and storage and closed only two
+assistant-controlled Chrome testing browsers (Playwright and DevTools), with
+explicit approval. Personal Chrome and Claude left open. No application code,
+database, deployment, or commit changes. Storage inspection found approximately
+4.2 GB free; no files deleted. Current code owner unchanged.
+
+### 2026-11-03 — Claude (review only, no code or database changes)
+
+**Context:** Grant asked for a full review of litterbugs.app: GitHub, Supabase
+and Vercel, plus a more professional homepage that keeps the same overall look.
+
+**Findings that need action:**
+
+- **Source of truth:** production is deployed with `vercel build --prod` from
+  this folder (`~/Desktop/Burrow Base/LItterbugs Partner`) and not from GitHub.
+  The local branch is `codex/account-contribution-count`; its last commit is
+  "Use singular wording for one remaining contribution" (Oct 3). GitHub `main`
+  (`jameslukebdev/litterbugs_app`, e00973a, Oct 23) doesn't contain the current
+  homepage. Commit the working tree to a new branch and push it.
+- **Deploy risk:** on Oct 29 production crashed for about 3 minutes with
+  `Could not load the "sharp" module using the linux-arm64 runtime` because the
+  build ran on macOS arm64. Prefer Git-connected Vercel builds, or make sure
+  sharp's linux binaries are installed before running `vercel build`.
+- **Supabase security:**
+  - Leaked-password protection is off. Turn it on in Auth settings.
+  - Anonymous sign-ins are on: 177 of 230 auth users are anonymous. Policies and
+    RPCs that are granted to `authenticated` also apply to anonymous users.
+    Admin RPCs call `private.require_cleanup_admin()` and are fine. User RPCs
+    such as `claim_cleanup` and `submit_cleanup` still need a check that they
+    reject anonymous users.
+  - `pg_net` is installed in the `public` schema.
+  - `get_rank_points` (SECURITY DEFINER) can be called by `anon`. Fine if
+    intended.
+- **Supabase performance:**
+  - Three foreign keys have no index: `report_preferences.report_id`,
+    `reporter_rewards.report_id` and
+    `private.cancelled_customer_draft_submissions.user_id`.
+  - Four indexes are never used.
+- **Web performance (Lighthouse mobile, homepage): performance 74, LCP 3.5s,
+  TBT 670ms, 3 MB page.** Accessibility and SEO scored 100.
+  - A Supabase profile avatar is served at about 1 MB, unresized.
+  - Before/after photos are about 250 KB each at full size.
+  - `public/brand/ranks/*.png` are about 0.8–1.1 MB each.
+  - The homepage sends `cache-control: no-store` (force-dynamic), which also
+    blocks the back/forward cache.
+  - Three analytics scripts load: GA, Clarity and PostHog. Keep them per
+    AGENTS.md, but consider deferring them.
+- **Content and trust:** the hero promises "Get paid to report it", but every
+  homepage and /reports card says "Volunteer cleanup" with no dollar amount.
+  Show reward amounts and sort funded reports first. Add a "How you get paid"
+  section, an impact counter, a founder/local story and an FAQ.
+- **Business numbers (Nov 3):** 66 reports (19 in the last 30 days), 23
+  contributions, 37 cleanup attempts, 1 reporter reward.
+
+**Planned next by Claude (only after Grant approves and ownership is handed
+over):** homepage UI polish in the current style, image and caching fixes,
+reward amounts on cards.
+
+**Do not undo:** nothing yet.

@@ -21,7 +21,7 @@ describe('public report sharing', () => {
     expect(isPubliclyShareableReport(base, now)).toBe(true);
     expect(isPubliclyShareableReport({ ...base, cleanup_state: 'completed' }, now)).toBe(true);
     expect(isPubliclyShareableReport({ ...base, cleanup_state: 'claimed' }, now)).toBe(true);
-    expect(isPubliclyShareableReport({ ...base, expires_at: '2026-08-27T12:00:00.000Z' }, now)).toBe(false);
+    expect(isPubliclyShareableReport({ ...base, expires_at: '2026-08-27T12:00:00.000Z' }, now)).toBe(true);
     expect(isPubliclyShareableReport({ ...base, cleanup_state: 'completed', is_sample: true }, now)).toBe(false);
   });
 

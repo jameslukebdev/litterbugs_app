@@ -1,0 +1,24 @@
+Earn real money by reporting litter or cleaning it up with Litterbugs. Help clean up your community and get paid.
+
+Report litter and earn real money
+
+Take clear photos of litter you find, mark its location and publish a report. When a funded cleanup from your report is completed and approved, you get paid. You can earn money even when someone else does the cleanup.
+
+Earn real money cleaning up
+
+Explore the map, review the litter photos and check how much you can earn before claiming a cleanup. Complete the work and submit after photos. Once the cleanup is approved, your money is sent through Stripe.
+
+Get paid for both
+
+Report a spot and complete its cleanup to earn money for both. The money you earn for reporting is paid separately and does not reduce the cleaner's payment.
+
+Find opportunities in your community
+
+• Browse litter reports, photos, locations and available paid cleanups.
+• Choose a cleanup that fits your ability and available time.
+• Share your report so others can help fund the cleanup.
+• Track reports and see before-and-after cleanup results.
+• Contribute money to a cleanup you want to support.
+
+How it works: https://litterbugs.app/cleanup-policy
+Support: admin@litterbugs.app

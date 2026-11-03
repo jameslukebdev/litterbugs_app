@@ -20,7 +20,7 @@ function fixture() {
           return { data: row };
         }
         if (args.expected_pricing_version !== activeVersion) return { error: new Error('cleanup_pricing_changed') };
-        const fee = Math.floor((args.principal_cents + 5) / 10) + (activeVersion === 2 ? 50 : 0);
+        const fee = activeVersion === 2 ? Math.floor((args.principal_cents + 2) / 5) + (args.principal_cents < 500 ? 50 : 0) : Math.floor((args.principal_cents + 5) / 10);
         row = { id: requestId, report_id: reportId, principal_amount_cents: args.principal_cents, platform_fee_cents: fee,
           total_amount_cents: args.principal_cents + fee, pricing_version: activeVersion, stripe_receipt_email: args.receipt_email,
           stripe_payment_intent_id: null, created_at: new Date().toISOString() };
@@ -53,7 +53,7 @@ Deno.test('new $1 charge uses server quote, repeated and concurrent calls reuse 
   for (const response of results) {
     assert(response.status === 200);
     const data = await response.json();
-    assert(data.principalAmountCents === 100 && data.platformFeeCents === 60 && data.totalAmountCents === 160 && data.pricingVersion === 2);
+    assert(data.principalAmountCents === 100 && data.platformFeeCents === 70 && data.totalAmountCents === 170 && data.pricingVersion === 2);
   }
   assert(f.createCount === 1);
 });
@@ -87,7 +87,7 @@ Deno.test('mismatched identities, totals, and pricing metadata cannot expose a p
   const f = fixture(); await f.call();
   assert((await f.call({ principalAmountCents: 500 })).status === 409);
   f.intent.amount = 110; assert((await f.call()).status === 409);
-  f.intent.amount = 160; f.intent.metadata.pricing_version = '1'; assert((await f.call()).status === 409);
+  f.intent.amount = 170; f.intent.metadata.pricing_version = '1'; assert((await f.call()).status === 409);
 });
 Deno.test('invalid amounts never call Stripe', async () => {
   for (const principalAmountCents of [0,99,100001,100.5,'100']) {
@@ -103,8 +103,8 @@ Deno.test('read-only quotes follow active pricing without reserving or calling S
     const quote = await response.json();
     assert(response.status === 200);
     assert(quote.pricingVersion === version);
-    assert(quote.platformFeeCents === (version === 1 ? 200 : 250));
-    assert(quote.totalAmountCents === (version === 1 ? 2200 : 2250));
+    assert(quote.platformFeeCents === (version === 1 ? 200 : 400));
+    assert(quote.totalAmountCents === (version === 1 ? 2200 : 2400));
     assert(f.createCount === 0 && !f.row);
   }
 });

@@ -17,7 +17,7 @@ export default async function AdminPage() {
           <span className={styles.eyebrow}>LITTERBUGS OPERATIONS</span>
           <h1>Community & cleanup review</h1>
         </div>
-        <Link href="/">Return to map</Link>
+        <Link href="/map">Return to map</Link>
       </header>
       {access === 'authorized'
         ? <AdminInbox />

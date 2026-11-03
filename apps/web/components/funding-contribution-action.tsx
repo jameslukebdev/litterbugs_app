@@ -1,4 +1,7 @@
 'use client';
+import { contributionReturnPath } from '@/lib/community-journey';
+
+import { rememberContributionAttempt } from '@/lib/website-analytics';
 
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
@@ -39,11 +42,12 @@ function ContributionPaymentForm({
     setBusy(true);
     setError('');
     onBusyChange(true);
+    rememberContributionAttempt(intent.contributionId);
     try {
     const result = await stripe.confirmPayment({
       elements,
       confirmParams: {
-        return_url: `${window.location.origin}/payment-return?report=${encodeURIComponent(reportId)}&contribution=${encodeURIComponent(intent.contributionId)}`,
+        return_url: `${window.location.origin}${contributionReturnPath(reportId, intent.contributionId, new URLSearchParams(window.location.search).get('returnTo'))}`,
       },
       redirect: 'if_required',
     });
@@ -138,6 +142,7 @@ export function FundingContributionAction({
     && !report.funding_frozen_at
     && !report.cancelled_at
     && !report.expired_at;
+  if (!startOpen && enabled === null && eligible) return <span className="primary-button compact-button funding-action-pending" role="status" aria-label="Checking funding availability"><span aria-hidden="true">{userId ? 'Add funds' : 'Sign in to fund'}</span></span>;
   if (!startOpen && (!enabled || !eligible)) return null;
 
   function dismiss() {

@@ -1,4 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { processCleanupPayout } from "../_shared/cleanup-payout.ts";
+import { processReporterPayout } from "../_shared/reporter-payout.ts";
 import { processAppleRevocation } from "../_shared/apple-revocation.ts";
 import {
   authenticatedUser,
@@ -16,7 +18,6 @@ import { normalizePhotoReviewDecision, PHOTO_REVIEW_POLICY_VERSION } from "../_s
 import { geminiRelayConfig } from "../_shared/google-cloud.ts";
 import {
   claimedOperationRow,
-  payoutSourceTransaction,
 } from "../_shared/maintenance-operation.ts";
 
 type AiCheck = {
@@ -44,13 +45,6 @@ type RefundOperation = {
   refund_attempts: number;
 };
 
-type PayoutOperation = {
-  id: string;
-  cleaner_id: string;
-  report_id: string;
-  reward_amount_cents: number;
-  payout_attempts: number;
-};
 
 const reasonCodes = [
   "usable",
@@ -421,95 +415,6 @@ const processRefund = async (admin: ReturnType<typeof serviceClient>) => {
   };
 };
 
-const processPayout = async (admin: ReturnType<typeof serviceClient>) => {
-  const { data, error } = await admin.rpc(
-    "claim_cleanup_payout_operation",
-  );
-  if (error) throw error;
-  const attempt = claimedOperationRow<PayoutOperation>(data);
-  if (!attempt) return null;
-  if (
-    !isUuid(attempt.id) || !isUuid(attempt.cleaner_id) ||
-    !isUuid(attempt.report_id) ||
-    !Number.isSafeInteger(attempt.reward_amount_cents) ||
-    attempt.reward_amount_cents <= 0 ||
-    !Number.isSafeInteger(attempt.payout_attempts) ||
-    attempt.payout_attempts < 1
-  ) {
-    throw new Error("Payout operation returned invalid ledger data");
-  }
-
-  const { data: payoutAccount, error: accountError } = await admin
-    .from("cleaner_payout_accounts")
-    .select("stripe_account_id, payouts_enabled")
-    .eq("user_id", attempt.cleaner_id)
-    .single();
-  if (accountError) throw accountError;
-  if (!payoutAccount.payouts_enabled || !payoutAccount.stripe_account_id) {
-    const payoutError = new Error("Cleaner payout account is not enabled");
-    const { error: markError } = await admin.rpc("mark_cleanup_payout_result", {
-      target_cleanup_id: attempt.id,
-      transfer_succeeded: false,
-      target_transfer_id: null,
-      target_error: payoutError.message,
-    });
-    if (markError) throw markError;
-    throw payoutError;
-  }
-
-  const { data: payoutContributions, error: contributionError } = await admin
-    .from("cleanup_contributions")
-    .select("stripe_charge_id, principal_amount_cents")
-    .eq("cleanup_attempt_id", attempt.id)
-    .eq("status", "succeeded");
-  if (contributionError) throw contributionError;
-  const sourceTransaction = payoutSourceTransaction(
-    payoutContributions ?? [],
-    attempt.reward_amount_cents,
-  );
-
-  let transfer;
-  try {
-    transfer = await stripeClient().transfers.create({
-      amount: attempt.reward_amount_cents,
-      currency: "usd",
-      destination: payoutAccount.stripe_account_id,
-      transfer_group: `cleanup_report_${attempt.report_id}`,
-      metadata: {
-        cleanup_attempt_id: attempt.id,
-        report_id: attempt.report_id,
-      },
-      ...(sourceTransaction
-        ? { source_transaction: sourceTransaction }
-        : {}),
-    }, {
-      idempotencyKey: `cleanup-payout-${attempt.id}-${attempt.payout_attempts}`,
-    });
-  } catch (transferError) {
-    if (isTransientStripeError(transferError)) {
-      await admin.from("cleanup_attempts").update({
-        last_activity_at: new Date(Date.now() - 6 * 60 * 1000).toISOString(),
-      }).eq("id", attempt.id).eq("payout_status", "processing");
-    } else {
-      await admin.rpc("mark_cleanup_payout_result", {
-        target_cleanup_id: attempt.id,
-        transfer_succeeded: false,
-        target_transfer_id: null,
-        target_error: errorMessage(transferError),
-      });
-    }
-    throw transferError;
-  }
-
-  const { error: markError } = await admin.rpc("mark_cleanup_payout_result", {
-    target_cleanup_id: attempt.id,
-    transfer_succeeded: true,
-    target_transfer_id: transfer.id,
-    target_error: null,
-  });
-  if (markError) throw markError;
-  return { cleanupId: attempt.id, status: "transferred" };
-};
 
 Deno.serve(async (request: Request) => {
   if (request.method === "OPTIONS") {
@@ -615,7 +520,8 @@ Deno.serve(async (request: Request) => {
     }
     if (internal && paymentsEnabled) {
       results.refund = await processRefund(admin);
-      results.payout = await processPayout(admin);
+      results.payout = await processCleanupPayout(admin);
+      results.reporterPayout = await processReporterPayout(admin);
     }
     return jsonResponse(results);
   } catch (error) {

@@ -1,0 +1,288 @@
+{
+  "created": "2026-10-30",
+  "status": "Submitted for Google Play review on 2026-10-30; quick checks running",
+  "boardId": "959886fa-d600-49fc-9797-89a0ff32bc4d",
+  "gallery": [
+    {
+      "id": "uniform-v12-1",
+      "file": "01-make-money-reporting-original-hq.png",
+      "title": "Make money reporting litter.",
+      "type": "Real Canva stock photograph used on homepage; no generative editing",
+      "source": "source/homepage-original-X4.jpg",
+      "width": 1080,
+      "height": 1920,
+      "phoneBorder": true,
+      "background": "#7531a5",
+      "frame": {
+        "left": 200,
+        "top": 440,
+        "width": 680,
+        "height": 1380,
+        "border": 16,
+        "radius": 56
+      },
+      "screen": {
+        "left": 216,
+        "top": 456,
+        "width": 648,
+        "height": 1348
+      },
+      "mediaFit": "cover"
+    },
+    {
+      "id": "uniform-v12-2",
+      "file": "02-make-money-cleaning-hq.png",
+      "title": "Make money cleaning up.",
+      "type": "Real live website screenshot, recaptured October 30 for sharper text and photos",
+      "source": "source/funded-cleanup-hq.png",
+      "width": 1080,
+      "height": 1920,
+      "phoneBorder": true,
+      "background": "#7531a5",
+      "frame": {
+        "left": 200,
+        "top": 440,
+        "width": 680,
+        "height": 1380,
+        "border": 16,
+        "radius": 56
+      },
+      "screen": {
+        "left": 216,
+        "top": 456,
+        "width": 648,
+        "height": 1348
+      },
+      "mediaFit": "contain"
+    },
+    {
+      "id": "uniform-v12-3",
+      "file": "03-donate.png",
+      "title": "Donate to a cleanup.",
+      "type": "real Android screenshot with headline",
+      "source": "../v12/source/captures/donate-build21.png",
+      "width": 1080,
+      "height": 1920,
+      "phoneBorder": true,
+      "background": "#efe4ff",
+      "frame": {
+        "left": 200,
+        "top": 440,
+        "width": 680,
+        "height": 1380,
+        "border": 16,
+        "radius": 56
+      },
+      "screen": {
+        "left": 216,
+        "top": 456,
+        "width": 648,
+        "height": 1348
+      },
+      "mediaFit": "contain"
+    },
+    {
+      "id": "uniform-v12-4",
+      "file": "04-map-hq.png",
+      "title": "Find litter on the map.",
+      "type": "Real live website screenshot, recaptured October 30 for sharper text and photos",
+      "source": "source/boone-map-hq.jpg",
+      "width": 1080,
+      "height": 1920,
+      "phoneBorder": true,
+      "background": "#7531a5",
+      "frame": {
+        "left": 200,
+        "top": 440,
+        "width": 680,
+        "height": 1380,
+        "border": 16,
+        "radius": 56
+      },
+      "screen": {
+        "left": 216,
+        "top": 456,
+        "width": 648,
+        "height": 1348
+      },
+      "mediaFit": "contain"
+    },
+    {
+      "id": "uniform-v12-6",
+      "file": "06-before-after-hq.png",
+      "title": "See the difference.",
+      "type": "Real live website screenshot, recaptured October 30 for sharper text and photos",
+      "source": "source/before-after-hq.png",
+      "width": 1080,
+      "height": 1920,
+      "phoneBorder": true,
+      "background": "#7531a5",
+      "frame": {
+        "left": 200,
+        "top": 440,
+        "width": 680,
+        "height": 1380,
+        "border": 16,
+        "radius": 56
+      },
+      "screen": {
+        "left": 216,
+        "top": 456,
+        "width": 648,
+        "height": 1348
+      },
+      "mediaFit": "contain"
+    },
+    {
+      "id": "uniform-v12-8",
+      "file": "08-track-your-litter-hq.png",
+      "title": "Track how much litter you’ve collected.",
+      "type": "Real live website screenshot, recaptured October 30 for sharper text and photos",
+      "source": "source/progress-hq.png",
+      "width": 1080,
+      "height": 1920,
+      "phoneBorder": true,
+      "background": "#efe4ff",
+      "frame": {
+        "left": 200,
+        "top": 440,
+        "width": 680,
+        "height": 1380,
+        "border": 16,
+        "radius": 56
+      },
+      "screen": {
+        "left": 216,
+        "top": 456,
+        "width": 648,
+        "height": 1348
+      },
+      "mediaFit": "contain"
+    },
+    {
+      "id": "uniform-v12-5",
+      "file": "05-reports.png",
+      "title": "Find your next cleanup.",
+      "type": "real Android screenshot with headline",
+      "source": "../v12/source/captures/reports-build21.png",
+      "width": 1080,
+      "height": 1920,
+      "phoneBorder": true,
+      "background": "#7531a5",
+      "frame": {
+        "left": 200,
+        "top": 440,
+        "width": 680,
+        "height": 1380,
+        "border": 16,
+        "radius": 56
+      },
+      "screen": {
+        "left": 216,
+        "top": 456,
+        "width": 648,
+        "height": 1348
+      },
+      "mediaFit": "contain"
+    },
+    {
+      "id": "uniform-v12-7",
+      "file": "07-share.png",
+      "title": "Get others involved.",
+      "type": "real Android screenshot with headline",
+      "source": "../v12/source/captures/sharing-build21.png",
+      "width": 1080,
+      "height": 1920,
+      "phoneBorder": true,
+      "background": "#7531a5",
+      "frame": {
+        "left": 200,
+        "top": 440,
+        "width": 680,
+        "height": 1380,
+        "border": 16,
+        "radius": 56
+      },
+      "screen": {
+        "left": 216,
+        "top": 456,
+        "width": 648,
+        "height": 1348
+      },
+      "mediaFit": "contain"
+    }
+  ],
+  "realScreenshots": 7,
+  "nativeAppScreenshots": 3,
+  "websiteScreenshots": 4,
+  "graphics": 1,
+  "featureGraphics": [],
+  "provenance": {
+    "collectionProgress": "Recaptured same public profile: James Luke Barber, Caterpillar, 63 points, 10%, same four completed reports. Actual website rendering.",
+    "app": "Three native build-21 screenshots captured October 30 via ADB. Map, funded cleanup, before/after and collection-progress images are user-provided website screenshots, not native Android captures. The old build-20 map is no longer used.",
+    "map": "Recaptured live populated Boone area at zoom12, 648x1120 screenshot mapped 1:1 into the648px screen width. No invented markers.",
+    "fundedCleanup": "Same Greenwood Lot report, original $25 reward, captured at double pixel density.",
+    "impact": "Same Greenwood Lot before-and-after photos recaptured from homepage at double pixel density.",
+    "screens": "Seven real screenshots retained unchanged from v12. Reporting panel uses the owner-provided real photo. No generated imagery in selected listing assets.",
+    "illustrations": "No generated imagery. Lead photo is the exact homepage Canva stock photograph Taking Photos with a Smart Phone. Extracted losslessly from Canva Print PDF export, image dimensions 3600x2400. Resized downward and center-cropped into the existing phone frame.",
+    "excluded": "Blank map tiles under local signing, location-permission dialogs, test-payment screenshots, and public reporter profile excluded.",
+    "video": "On hold at owner request. Existing video remains unchanged in ../v3/video-app-preview.mp4.",
+    "presentation": "Same headings, colors, 1080x1920 panels and 680x1380 phone frames. Lead photo from full-quality 3600x2400 source. Four web screenshots recaptured from live real website; three native screenshots unchanged. Every source meets or exceeds displayed pixel dimensions. No generative image processing.",
+    "sourceDesign": "https://www.canva.com/design/DAHZaHojjUg/d9YegEBOjpJ79XJyIFSCYw/edit"
+  },
+  "hookPriority": [
+    "Make money reporting litter",
+    "Make money cleaning up",
+    "Donate to a cleanup"
+  ],
+  "visualSystem": {
+    "headingSize": 96,
+    "headingLineSpacing": 100,
+    "headingFirstBaseline": 150,
+    "frame": {
+      "left": 200,
+      "top": 440,
+      "width": 680,
+      "height": 1380,
+      "border": 16,
+      "radius": 56
+    },
+    "screen": {
+      "left": 216,
+      "top": 456,
+      "width": 648,
+      "height": 1348
+    },
+    "backgrounds": [
+      "#7531a5",
+      "#efe4ff"
+    ],
+    "allEightPanelsFramed": true,
+    "screenshotFit": "contain without stretching or clipping",
+    "photoFit": "cover"
+  },
+  "remaining": [
+    "Google review and approval"
+  ],
+  "notUploaded": false,
+  "submission": {
+    "order": [
+      1,
+      2,
+      3,
+      4,
+      6,
+      8,
+      5,
+      7
+    ],
+    "video": null,
+    "aiDeclaration": "Don't label assets",
+    "status": "Changes in review; quick checks running",
+    "appIcon": "../v12/listing-assets/litterbugs-icon-white-512.png",
+    "featureGraphic": "../v12/listing-assets/litterbugs-feature-white-1024x500.png",
+    "galleryProof": "uploaded-gallery.jpg",
+    "date": "2026-10-30",
+    "confirmation": "submission-confirmation.jpg"
+  }
+}

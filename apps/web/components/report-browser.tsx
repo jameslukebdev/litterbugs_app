@@ -1,8 +1,11 @@
 'use client';
-import { reportContext } from '@/lib/report-context';
 
 /* eslint-disable @next/next/no-img-element -- Signed Supabase URLs are short-lived runtime images. */
 
+import { createPortal } from 'react-dom';
+import { ReportSortMenu } from './report-sort';
+import controls from './report-controls.module.css';
+import { ReportCardContent } from './report-card-content';
 import { reportWorkflowTone } from '@/lib/report-visibility';
 import { getDistanceMiles, type Coordinates, type MappableReport } from '@litterbugs/report-contract';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -28,12 +31,12 @@ type ReportFilter = 'available' | 'rewarded' | 'volunteer' | 'claimed' | 'comple
 type ReportSort = 'closest' | 'newest' | 'reward-high' | 'severity';
 
 const FILTERS: { value: ReportFilter; label: string }[] = [
+  { value: 'all', label: 'All reports' },
   { value: 'available', label: 'Available' },
   { value: 'rewarded', label: 'Rewarded' },
   { value: 'volunteer', label: 'Volunteer' },
   { value: 'claimed', label: 'In progress' },
   { value: 'completed', label: 'Completed' },
-  { value: 'all', label: 'All reports' },
 ];
 
 const SEVERITY_ORDER: Record<string, number> = { high: 3, medium: 2, low: 1 };
@@ -90,15 +93,6 @@ function quickFilters(filter: ReportFilter): DiscoveryFilters {
   return next;
 }
 
-function resultsHeading(count: number, filter: ReportFilter) {
-  if (filter === 'favorites') return `${count} favorite report${count === 1 ? '' : 's'}`;
-  if (filter === 'hidden') return `${count} hidden report${count === 1 ? '' : 's'}`;
-  if (filter === 'all' || filter === 'custom') return `${count} litter report${count === 1 ? '' : 's'}`;
-  if (filter === 'completed') return `${count} completed cleanup${count === 1 ? '' : 's'}`;
-  if (filter === 'claimed') return `${count} cleanup${count === 1 ? '' : 's'} in progress`;
-  return `${count} cleanup opportunit${count === 1 ? 'y' : 'ies'}`;
-}
-
 function reportTiming(report: MappableReport) {
   if (report.cleanup_state === 'completed') return 'Cleanup complete';
   if (!report.created_at) return '';
@@ -116,6 +110,7 @@ function ReportThumbnail({ report, priority, retry, onError }: { report: Mappabl
   const photoPath = report.photo_paths?.[0];
   const src = photoPath ? getReportCardPhotoUrl(photoPath) : null;
   const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   if (!src || failed) {
     return (
@@ -130,6 +125,9 @@ function ReportThumbnail({ report, priority, retry, onError }: { report: Mappabl
   return (
     <span className="report-result-photo">
       <img
+        className="report-card-image"
+        data-loaded={loaded}
+        onLoad={() => setLoaded(true)}
         src={retryReportPhotoUrl(src, retry)}
         alt=""
         decoding="async"
@@ -147,7 +145,6 @@ function ReportThumbnail({ report, priority, retry, onError }: { report: Mappabl
 
 export function ReportBrowser({
   reports,
-  areaLabel = 'Current map area',
   onFavoriteChange,
   onHiddenChange,
   showAuthors = false,
@@ -169,13 +166,12 @@ export function ReportBrowser({
   truncated = false,
   discoveryError = '',
   filtersRequest = 0,
-  areaChosen = true,
-  onChooseArea, onUseLocation, onWidenArea, onRetry, onStartReport,
+  filterToolbar,
+  onChooseArea, onWidenArea, onRetry, onStartReport,
 }: {
   filtersRequest?: number;
-  areaChosen?: boolean;
+  filterToolbar?: HTMLElement | null;
   onChooseArea?: () => void;
-  onUseLocation?: () => void;
   onWidenArea?: () => void;
   onRetry?: () => void;
   onStartReport?: () => void;
@@ -187,7 +183,6 @@ export function ReportBrowser({
   truncated?: boolean;
   discoveryError?: string;
   reports: MappableReport[];
-  areaLabel?: string;
   showAuthors?: boolean;
   onMemberBlocked?: () => void;
   onFavoriteChange?: (reportId: string, favorite: boolean) => void;
@@ -214,7 +209,6 @@ export function ReportBrowser({
     return () => clearTimeout(timer);
   }, [filtersRequest]);
   const listRef = useRef<HTMLDivElement>(null);
-  const filterStripRef = useRef<HTMLDivElement>(null);
   const [filter, setFilter] = useState<ReportFilter>('all');
   const [draftFilters, setDraftFilters] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
   const [advanced, setAdvanced] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
@@ -257,7 +251,6 @@ export function ReportBrowser({
     : filter;
   const applied = useMemo(() => filter === 'custom' ? advanced : quickFilters(activeFilter), [filter, advanced, activeFilter]);
   const selectedQuickFilter = filters.find(item => (Object.keys(DEFAULT_DISCOVERY_FILTERS) as (keyof DiscoveryFilters)[]).every(key => quickFilters(item.value)[key] === applied[key]))?.value;
-  useEffect(() => { if (filterStripRef.current) filterStripRef.current.scrollLeft = 0; }, [selectedQuickFilter]);
   useEffect(() => { if (memoryReady) onDiscoveryFiltersChange?.(applied); }, [applied, onDiscoveryFiltersChange, memoryReady]);
   useEffect(() => { if (memoryReady) { const memory = { filters: applied, sort, scroll: restoringScrollRef.current ?? listRef.current?.scrollTop ?? 0, displayLimit }; saveBrowserMemory(memory); window.history.replaceState(window.history.state, '', browserUrl(new URL(window.location.href), memory)); } }, [applied, sort, memoryReady, displayLimit]);
   function updateFilter<K extends keyof DiscoveryFilters>(key: K, value: DiscoveryFilters[K]) {
@@ -309,35 +302,9 @@ export function ReportBrowser({
     }
   }, [memoryReady, loading, reports]);
 
-  return (
-    <>
-      <button className="report-browser-toggle" onClick={onToggle} aria-expanded={open} aria-controls="active-report-list">
-        {open ? 'Map' : `List (${visibleReports.length})`}
-      </button>
-      <aside id="active-report-list" className={`report-browser${open ? ' report-browser-open' : ''}`} aria-label="Active litter reports">
-        <header className="report-browser-header">
-          <div className="report-browser-heading-row">
-            <div>
-              <h1 className="reports-screen-title">Litter reports</h1>
-              <p>{resultsHeading(visibleReports.length, activeFilter)} · {areaLabel}</p>
-            </div>
-            <label className="report-sort">
-              <span className="sr-only">Sort cleanup opportunities</span>
-              <select value={sort} onChange={(event) => {
-                const next = event.target.value as ReportSort; setSort(next); setDisplayLimit(50);
-                if (next === 'closest') { setLocationMessage('Finding your location…'); void getBrowserLocation().then(origin => { setLocationOrigin(origin); setLocationMessage(''); }).catch(() => { setLocationOrigin(null); setLocationMessage('Location unavailable. Showing newest first. Allow location access in your browser to sort by distance.'); }); }
-              }}>
-                <option value="newest">Newest first</option>
-                <option value="closest">Closest to me</option>
-                <option value="reward-high">Highest reward</option>
-                <option value="severity">Highest severity</option>
-              </select>
-            </label>
-            <button className="icon-button report-browser-close" onClick={onToggle} aria-label="Close report list"><Icon name="close" /></button>
-          </div>
-          <div ref={filterStripRef} className="report-browser-filters" aria-label="Filter cleanup opportunities">
+  const filterPills = (<div className={`report-browser-filters ${filterToolbar ? controls.toolbarFilters : ''}`} aria-label="Filter cleanup opportunities">
             {!selectedQuickFilter && <button aria-pressed="true" onClick={() => { setDraftFilters(applied); setFiltersOpen(true); }}>Custom filters</button>}
-            {[...filters].sort((a, b) => Number(b.value === selectedQuickFilter) - Number(a.value === selectedQuickFilter)).map(({ value, label }) => (
+            {filters.map(({ value, label }) => (
               <button
                 key={value}
                 type="button"
@@ -347,10 +314,29 @@ export function ReportBrowser({
                 {label}
               </button>
             ))}
+          </div>);
+
+  return (
+    <>
+      <button className="report-browser-toggle" onClick={onToggle} aria-expanded={open} aria-controls="active-report-list">
+        {open ? 'Map' : `List (${visibleReports.length})`}
+      </button>
+      <aside id="active-report-list" className={`${controls.panel} report-browser${open ? ' report-browser-open' : ''}`} aria-label="Active litter reports">
+        <header className="report-browser-header">
+          <div className="report-browser-heading-row">
+            <div>
+              <h1 className="reports-screen-title">Litter reports</h1>
+            </div>
+            <ReportSortMenu value={sort} options={[{ value: 'newest', label: 'Newest' }, { value: 'closest', label: 'Nearest' }, { value: 'reward-high', label: 'Top reward' }, { value: 'severity', label: 'Severity' }]} onChange={value => {
+                const next = value as ReportSort; setSort(next); setDisplayLimit(50);
+                if (next === 'closest') { setLocationMessage('Finding your location…'); void getBrowserLocation().then(origin => { setLocationOrigin(origin); setLocationMessage(''); }).catch(() => { setLocationOrigin(null); setLocationMessage('Location unavailable. Showing newest first. Allow location access in your browser to sort by distance.'); }); }
+              }} />
+            <button className="icon-button report-browser-close" onClick={onToggle} aria-label="Close report list"><Icon name="close" /></button>
           </div>
+          {filterToolbar ? createPortal(filterPills, filterToolbar) : filterPills}
           {placeSearch}
           <button className="secondary-button discovery-inline-filters" onClick={() => { setDraftFilters(applied); setFiltersOpen(true); }}>Search and filters</button>
-          {filtersOpen && <ModalShell label="Search and filters" className="discovery-filter-dialog" onClose={() => { setDraftFilters(applied); setFiltersOpen(false); }}><h2>Search and filters</h2>
+          {filtersOpen && <ModalShell label="Search and filters" className="discovery-filter-dialog" onClose={() => { setDraftFilters(applied); setFiltersOpen(false); }}>{close => <><h2>Search and filters</h2>
             <div className="discovery-filter-fields">
               <label className="discovery-query">Search report titles and notes<input type="search" value={draftFilters.query} onChange={event => updateFilter('query', event.target.value)} placeholder="Bottles, roadside…" /></label>
               <label>Cleanup status<select value={draftFilters.status} onChange={event => updateFilter('status', event.target.value as DiscoveryFilters['status'])}><option value="all">All</option><option value="available">Available</option><option value="progress">In progress</option><option value="completed">Completed</option></select></label>
@@ -359,15 +345,14 @@ export function ReportBrowser({
               <label>Distance from map center<select disabled={!mapCenter} value={draftFilters.radius} onChange={event => updateFilter('radius', Number(event.target.value) as DiscoveryFilters['radius'])}><option value={0}>Any distance</option><option value={5}>5 miles</option><option value={25}>25 miles</option><option value={50}>50 miles</option></select></label>
               <label>Saved reports<select value={draftFilters.scope} onChange={event => updateFilter('scope', event.target.value as DiscoveryFilters['scope'])}><option value="all">All visible reports</option><option value="favorites">Favorites only</option><option value="hidden">Hidden reports</option></select></label>
               <button className="secondary-button" onClick={() => { setDraftFilters(quickFilters('all')); }}>Reset filters</button>
-              <div className="account-actions"><button className="secondary-button" onClick={() => { setDraftFilters(applied); setFiltersOpen(false); }}>Cancel</button><button className="primary-button" onClick={() => { setDisplayLimit(50); setAdvanced(draftFilters); setFilter('custom'); setFiltersOpen(false); }}>Apply filters</button></div>
+              <div className="account-actions"><button className="secondary-button" onClick={close}>Cancel</button><button className="primary-button" onClick={() => { setDisplayLimit(50); setAdvanced(draftFilters); setFilter('custom'); close(); }}>Apply filters</button></div>
             </div>
-          </ModalShell>}
+          </>}</ModalShell>}
           {sort === 'closest' && locationMessage && <p role="status">{locationMessage}</p>}
-          <p className="discovery-status" role="status">{discoveryError || (loading ? 'Searching this map area…' : truncated ? 'Showing up to 1,000 matches. Zoom in or narrow your filters to see more.' : '')}</p>
+          <p className="discovery-status" role="status">{discoveryError || (truncated ? 'Showing up to 1,000 matches. Zoom in or narrow your filters to see more.' : '')}</p>
         </header>
         <div className="report-browser-list" ref={listRef} onScroll={() => { if (memoryReady) saveBrowserMemory({ filters: applied, sort, scroll: listRef.current?.scrollTop ?? 0, displayLimit }); }} aria-busy={loading}>
           {visibleReports.length ? displayedReports.map((report, index) => {
-            const severity = (report.severity ?? 'Medium').toLowerCase();
             const selected = report.id === selectedReportId;
             const previewed = report.id === previewedReportId;
             const funded = (reportRewardCents(report) ?? 0) > 0;
@@ -388,17 +373,13 @@ export function ReportBrowser({
                 onBlur={() => onPreviewReport?.(null)}
                 aria-current={selected ? 'true' : undefined}
               >
-                <ReportThumbnail key={`${report.photo_paths?.[0]}:${photoRetries[report.id] ?? 0}`} report={report} priority={index < 4} retry={photoRetries[report.id] ?? 0} onError={() => setPhotoFailures(current => ({ ...current, [report.id]: report.photo_paths?.[0] ?? '' }))} />
-                <span className="report-result-copy">
-                  <strong>{report.title || 'Litter report'}</strong>
-                  <span className={`report-result-reward${funded ? ' report-result-reward-funded' : ' report-result-reward-volunteer'}`}>{rewardLabel(report)}</span>
-                  <span className="report-result-summary">{reportSummary(report)}</span>
-                  <span className="report-context">{reportContext(report, false)}</span>
-                  <span className="report-result-meta">
-                    <span className={`report-result-severity severity-${severity}`}><i />{report.severity ?? 'Medium'}</span>
-                    <span>{reportTiming(report)}</span>
-                  </span>
-                </span>
+                <ReportCardContent
+                  photo={<ReportThumbnail key={`${report.photo_paths?.[0]}:${photoRetries[report.id] ?? 0}`} report={report} priority={index < 4} retry={photoRetries[report.id] ?? 0} onError={() => setPhotoFailures(current => ({ ...current, [report.id]: report.photo_paths?.[0] ?? '' }))} />}
+                  title={report.title || 'Litter report'}
+                  reward={rewardLabel(report)} funded={funded}
+                  summary={reportSummary(report)} severity={report.severity ?? 'Medium'}
+                  timing={reportTiming(report)}
+                />
               </a>
               {report.photo_paths?.[0] && photoFailures[report.id] === report.photo_paths[0] && <button className="secondary-button compact-button card-photo-retry" aria-label={`Retry photo for ${report.title || 'report'}`} onClick={() => {
                 setPhotoFailures(current => ({ ...current, [report.id]: '' }));
@@ -406,20 +387,19 @@ export function ReportBrowser({
               }}>Retry photo</button>}
               {onFavoriteChange && <button className="card-favorite" aria-label={`${favoriteReportIds.has(report.id) ? 'Unfavorite' : 'Favorite'} ${report.title || 'report'}`} aria-pressed={favoriteReportIds.has(report.id)} onClick={() => onFavoriteChange(report.id, !favoriteReportIds.has(report.id))}><Icon name="heart" /></button>}
               {onHiddenChange && <details className="card-options"><summary aria-label={`Options for ${report.title || 'report'}`}>•••</summary><button onClick={() => onHiddenChange(report.id, !hiddenReportIds.has(report.id))}>{hiddenReportIds.has(report.id) ? 'Unhide report' : 'Hide report'}</button></details>}
-              {report.user_id && authors[report.user_id] && <ReportAuthor key={report.user_id} profileId={report.user_id} initialProfile={authors[report.user_id]} sourceReportId={report.id} onBlocked={onMemberBlocked} />}
+              {showAuthors && report.user_id && (authors[report.user_id] ? <ReportAuthor key={report.user_id} profileId={report.user_id} initialProfile={authors[report.user_id]} sourceReportId={report.id} onBlocked={onMemberBlocked} /> : <div className="report-author report-author-placeholder" aria-hidden="true"><span className="report-author-initial" /><span className="report-author-copy"><span>Community member</span></span></div>)}
               </article>
             );
           }) : (
             <div className="report-browser-empty">
-              <strong>{loading ? 'Looking for cleanup opportunities…' : discoveryError ? 'Reports could not be loaded' : !areaChosen ? 'Where would you like to help?' : 'No matching cleanup opportunities'}</strong>
-              <span>{loading ? 'Checking the selected area.' : discoveryError ? 'Check your connection, then try again.' : !areaChosen ? 'Choose a city or use your location to find nearby reports.' : 'Try a wider area or clear your filters. You can also report litter you have found.'}</span>
+              <strong>{loading ? 'Looking for cleanup opportunities…' : discoveryError ? 'Reports could not be loaded' : 'No matching cleanup opportunities'}</strong>
+              <span>{loading ? 'Checking the selected area.' : discoveryError ? 'Check your connection, then try again.' : 'Try a wider area or clear your filters. You can also report litter you have found.'}</span>
               {!loading && <div className="empty-discovery-actions">
                 {discoveryError ? onRetry && <button className="primary-button" onClick={onRetry}>Try again</button> : <>
-                  {onChooseArea && <button className="primary-button" onClick={onChooseArea}>Choose a city</button>}
-                  {!areaChosen && onUseLocation && <button className="secondary-button" onClick={onUseLocation}>Use my location</button>}
-                  {areaChosen && <button className="secondary-button" onClick={() => { setFilter('all'); setAdvanced(quickFilters('all')); setDraftFilters(quickFilters('all')); setDisplayLimit(50); }}>Clear filters</button>}
-                  {areaChosen && onWidenArea && <button className="secondary-button" onClick={onWidenArea}>Search a wider area</button>}
-                  {areaChosen && onStartReport && <button className="secondary-button" onClick={onStartReport}>Report litter</button>}
+                  {onChooseArea && <button className="primary-button" onClick={onChooseArea}>Search another area</button>}
+                  <button className="secondary-button" onClick={() => { setFilter('all'); setAdvanced(quickFilters('all')); setDraftFilters(quickFilters('all')); setDisplayLimit(50); }}>Clear filters</button>
+                  {onWidenArea && <button className="secondary-button" onClick={onWidenArea}>Search a wider area</button>}
+                  {onStartReport && <button className="secondary-button" onClick={onStartReport}>Report litter</button>}
                 </>}
               </div>}
             </div>

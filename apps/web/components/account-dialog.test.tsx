@@ -1,13 +1,15 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { useEffect } from 'react';
 import type { Report } from '@litterbugs/report-contract';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AccountPage } from './account-page';
 import { AccountDialog } from './account-dialog';
 
-const { dashboard, blockDelete, blockedRows, rpc, profileUpdate, reportQueryNumber, invoke, clearDraft, signOut } = vi.hoisted(() => ({
+const { drafts, dashboard, blockDelete, blockedRows, rpc, profileUpdate, reportQueryNumber, invoke, clearDraft, signOut } = vi.hoisted(() => ({
+  drafts: { ready: true, signal: undefined as undefined | ((ready: boolean) => void) },
   dashboard: { revision:0, failed:false, user:'member-id', paymentStatus:'succeeded', paymentCount:1 },
   invoke: vi.fn(),
   clearDraft: vi.fn(),
@@ -21,7 +23,10 @@ const { dashboard, blockDelete, blockedRows, rpc, profileUpdate, reportQueryNumb
 
 vi.mock('@/lib/use-data-refresh', () => ({ useDataRefresh: () => dashboard.revision, notifyDataChanged: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }) }));
-vi.mock('@/components/resume-drafts', () => ({ ResumeDrafts: () => <section aria-label="Resume your work">Saved draft summary</section> }));
+vi.mock('@/components/resume-drafts', () => ({ ResumeDrafts: ({ onReady }: { onReady?: (ready: boolean) => void }) => {
+  useEffect(() => { drafts.signal = onReady; if (drafts.ready) onReady?.(true); }, [onReady]);
+  return <section aria-label="Resume your work">Saved draft summary</section>;
+} }));
 vi.mock('@/lib/saved-cleanup-draft', () => ({ clearAccountCleanupDrafts: vi.fn(async () => undefined) }));
 vi.mock('@/lib/saved-report-draft', () => ({ clearPublishedReport: clearDraft, reportDraftLocation: vi.fn(async () => undefined) }));
 
@@ -138,6 +143,7 @@ vi.mock('@/lib/supabase/client', () => ({
 }));
 
 beforeEach(() => {
+  drafts.ready = true; drafts.signal = undefined;
   dashboard.revision=0;dashboard.failed=false;dashboard.user='member-id';dashboard.paymentStatus='succeeded';dashboard.paymentCount=1;
   invoke.mockReset().mockResolvedValue({ data: null, error: null });
   clearDraft.mockReset().mockResolvedValue(undefined);
@@ -171,7 +177,7 @@ describe('AccountDialog expired report decisions', () => {
       location: 'Asheville, NC',
     })));
     expect(onProfileChanged).toHaveBeenCalled();
-    expect(await screen.findByText(/website and app account are now up to date/i)).toBeTruthy();
+    expect(await screen.findByText(/^Profile saved\.$/)).toBeTruthy();
     expect(screen.queryByText('7')).toBeNull();
     expect(screen.getByLabelText('Reports submitted').textContent).toContain('0');
     expect(screen.getByText('Reports')).toBeTruthy();
@@ -344,7 +350,7 @@ it('keeps activity navigation before saved work in document and keyboard order',
 it('identifies unconfirmed contributions separately from cleanup earnings', async () => {
   dashboard.paymentStatus = 'payment_pending';
   render(<AccountPage destination="payments" userId="member-id" />);
-  const receipt = await screen.findByRole('link', { name: /Creek cleanup.*Report expired-.*25.00 contribution.*Payment unconfirmed/ });
+  const receipt = await screen.findByRole('link', { name: /Creek cleanup.*25.00 contribution.*Payment unconfirmed/ });
   expect(receipt.getAttribute('href')).toBe('/account/payments/contribution-id');
   expect(screen.queryByText(/^Processing/)).toBeNull();
   const contributions = screen.getByRole('heading', { name: 'Your contributions' });
@@ -366,4 +372,71 @@ it('uses a singular label when only one older contribution remains', async () =>
   dashboard.paymentCount = 6;
   render(<AccountPage destination="payments" userId="member-id" />);
   await screen.findByRole('button', { name: 'Show 1 more contribution' });
+});
+
+
+describe('quiet profile loading', () => {
+  it('reserves the profile without temporary identity or loading copy and keeps drafts in activity', async () => {
+    const focus = vi.spyOn(HTMLElement.prototype, 'focus');
+    render(<AccountPage destination="" userId="member-id" />);
+    expect(screen.getByRole('status', { name: 'Loading profile' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Edit profile' })).toBeNull();
+    expect(screen.queryByText('Loading your activity…')).toBeNull();
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+    expect(await screen.findByRole('heading', { name: 'Member' })).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Resume your work' })).toBeNull();
+    expect(screen.queryByText(/No actions are due/)).toBeNull();
+    expect(screen.getByRole('navigation', { name: 'Profile sections' })).toBeTruthy();
+  });
+});
+
+
+it('does not render settings or missing-email copy beneath a temporary loading block', async () => {
+  render(<AccountPage destination="settings" userId="member-id" />);
+  expect(screen.getByRole('status', { name: 'Loading account section' })).toBeTruthy();
+  expect(screen.queryByText('Email unavailable for this account')).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Delete account' })).toBeNull();
+  expect(await screen.findByRole('button', { name: 'Reset password' })).toBeTruthy();
+  expect(screen.queryByRole('status', { name: 'Loading account section' })).toBeNull();
+});
+it('reveals activity and saved work together while keeping the tabs available', async () => {
+  drafts.ready = false;
+  render(<AccountPage destination="activity" userId="member-id" />);
+  await waitFor(() => expect(drafts.signal).toBeTypeOf('function'));
+  expect(screen.getByRole('navigation', { name: 'My activity' })).toBeTruthy();
+  expect(screen.queryByRole('heading', { name: 'Current cleanups' })).toBeNull();
+  expect(screen.queryByRole('region', { name: 'Resume your work' })).toBeNull();
+  act(() => drafts.signal?.(true));
+  expect(screen.getByRole('heading', { name: 'Current cleanups' })).toBeTruthy();
+  expect(screen.getByRole('region', { name: 'Resume your work' })).toBeTruthy();
+  expect(screen.queryByRole('status', { name: 'Loading account section' })).toBeNull();
+});
+
+it('shows one focused editor and restores the unchanged overview on Cancel', async () => {
+  render(<AccountPage destination="" userId="member-id" />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit profile' }));
+  const heading = screen.getByRole('heading', { name: 'Edit profile', level: 1 });
+  expect(document.activeElement).toBe(heading);
+  expect(screen.queryByRole('heading', { name: 'Profile' })).toBeNull();
+  expect(screen.queryByRole('heading', { name: 'Member' })).toBeNull();
+  expect(screen.queryByRole('heading', { name: 'Edit your profile' })).toBeNull();
+  expect(document.querySelectorAll('.account-avatar')).toHaveLength(1);
+  expect(screen.queryByRole('navigation', { name: 'Profile sections' })).toBeNull();
+  expect(screen.queryByRole('region', { name: 'Community activity' })).toBeNull();
+  fireEvent.change(screen.getByRole('textbox', { name: /^Display name/ }), { target: { value: 'Unsaved name' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(screen.getByRole('heading', { name: 'Profile', level: 1 })).toBeTruthy();
+  expect(screen.getByRole('heading', { name: 'Member' })).toBeTruthy();
+  expect(screen.queryByRole('region', { name: 'Profile editor' })).toBeNull();
+  expect(profileUpdate).not.toHaveBeenCalled();
+});
+
+it('uses the same focused editor when opened from Settings', async () => {
+  render(<AccountPage destination="settings" userId="member-id" />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit profile' }));
+  expect(screen.getByRole('heading', { name: 'Edit profile', level: 1 })).toBeTruthy();
+  expect(screen.queryByRole('heading', { name: 'Account settings' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(screen.getByRole('heading', { name: 'Settings', level: 1 })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Reset password' })).toBeTruthy();
 });

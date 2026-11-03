@@ -52,7 +52,7 @@ export function parseContributionAmount(value: string) {
 }
 
 export function calculatePlatformFee(principalAmountCents: number) {
-  return principalAmountCents === 0 ? 0 : Math.floor((principalAmountCents + 5) / 10) + 50;
+  return principalAmountCents === 0 ? 0 : Math.floor((principalAmountCents + 2) / 5) + (principalAmountCents < 500 ? 50 : 0);
 }
 
 export async function edgeFunctionErrorMessage(

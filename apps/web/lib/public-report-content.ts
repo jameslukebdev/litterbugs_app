@@ -1,0 +1,57 @@
+import type { PublicReportShareModel } from './public-report-share-model';
+
+export function reportDateLabel(value: string | null) {
+  if (!value || !Number.isFinite(Date.parse(value))) return null;
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
+  }).format(new Date(value));
+}
+
+/** Only locality verified by the public geography model belongs in search copy. */
+export function reportLocality(report: PublicReportShareModel) {
+  return report.communitySlug && report.localityLabel?.trim() ? report.localityLabel.trim() : null;
+}
+
+export function publicReportSearchTitle(report: PublicReportShareModel) {
+  const status = report.state === 'expired' ? 'Expired litter report' : report.state === 'completed' ? 'Completed cleanup'
+    : report.state === 'in_progress' ? 'Cleanup in progress' : 'Litter report';
+  const locality = reportLocality(report);
+  return `${report.title} — ${status}${locality ? ` near ${locality}` : ''}`;
+}
+
+export function publicReportSummary(report: PublicReportShareModel) {
+  const locality = reportLocality(report);
+  const where = locality ? ` near ${locality}` : '';
+  if (report.state === 'expired') {
+    const date = reportDateLabel(report.reportDate);
+    return `Litter reported${where}${date ? ` on ${date}` : ''}. This report is no longer active. A cleanup has not been confirmed.`;
+  }
+  if (report.state === 'completed') {
+    const date = reportDateLabel(report.completionDate);
+    return `Cleaned up${where}${date ? ` on ${date}` : ''}.`;
+  }
+  if (report.state === 'in_progress') {
+    return `A cleanup is underway${where}.`;
+  }
+  return `This spot${where} needs a cleanup.`;
+}
+
+export function publicReportSearchDescription(report: PublicReportShareModel) {
+  const evidence = report.state === 'completed' && report.beforePhotoUrl && report.afterPhotoUrl
+    ? ' See before-and-after photos from the cleanup.' : '';
+  return `${report.title}. ${publicReportSummary(report)}${evidence}`;
+}
+
+export function publicReportPhotoDescription(report: PublicReportShareModel, kind: 'before' | 'after') {
+  const locality = reportLocality(report);
+  const subject = `“${report.title}”${locality ? ` near ${locality}` : ''}`;
+  const after = kind === 'after';
+  const label = after ? 'After' : report.state === 'completed' ? 'Before' : 'Report photo';
+  const date = reportDateLabel(after ? report.completionDate : report.reportDate);
+  return {
+    label,
+    // These describe the photo's association, without guessing what it depicts.
+    alt: `${after ? 'Cleanup result photo' : 'Original report photo'} for ${subject}`,
+    caption: date ? `${after ? 'Cleaned up' : 'Reported'} ${date}` : '',
+  };
+}

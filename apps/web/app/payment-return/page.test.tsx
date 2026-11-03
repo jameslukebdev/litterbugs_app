@@ -21,3 +21,13 @@ it('passes authenticated receipt context through and ignores repeated parameters
   const page = await Page({ searchParams: Promise.resolve({ contribution: 'receipt-id', report: ['a', 'b'] }) });
   expect(page.props).toEqual({ contribution: 'receipt-id', report: '' });
 });
+
+it('preserves a validated community return through expired-session authentication', async () => {
+  identity.claims = null;
+  const next = '/payment-return?contribution=receipt&report=report&returnTo=%2Fcommunities%2Fus%2Fnc%2Fboone';
+  await expect(Page({ searchParams: Promise.resolve({ contribution: 'receipt', report: 'report', returnTo: '/communities/us/nc/boone', payment_intent_client_secret: 'do-not-forward' }) })).rejects.toThrow(`redirect:/sign-in?next=${encodeURIComponent(next)}`);
+});
+it('does not forward an arbitrary community return URL', async () => {
+  const page = await Page({ searchParams: Promise.resolve({ returnTo: 'https://evil.example', report: 'report' }) });
+  expect(page.props).toEqual({ contribution: '', report: 'report' });
+});

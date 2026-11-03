@@ -1,5 +1,6 @@
 'use client';
-import { reportContext } from '@/lib/report-context';
+import { AppLink } from '@/components/app-link';
+import { reportTypeSummary } from '@/lib/report-context';
 
 import { moveDialogFocus } from '@/lib/dialog-focus';
 import Link from 'next/link';
@@ -10,6 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Report } from '@litterbugs/report-contract';
 
 import { isReportClosed } from '@/lib/report-visibility';
+import { useReportSheetDismiss } from '@/components/use-report-sheet-dismiss';
 import { ModalShell } from '@/components/modal-shell';
 import { CompletedCleanup } from '@/components/completed-cleanup';
 import { ReportAuthor } from '@/components/report-author';
@@ -23,6 +25,8 @@ import { isPubliclyShareableReport } from '@/lib/public-report-share-model';
 import { reportShareCopy } from '@/lib/report-share-destinations';
 import { retryReportPhotoUrl, getReportCardPhotoUrl, getReportDetailPhotoUrl, getWebCompatibleReportPhotoUrl } from '@/lib/report-photo';
 import { createClient } from '@/lib/supabase/client';
+
+const EMPTY_PHOTO_PATHS: string[] = [];
 
 const formatUsd = (cents: number) => new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -46,6 +50,8 @@ function cleanupStatusLabel(status: string) {
 
 export function ReportDetail({
   report,
+  entryIntent,
+  closeLabel = 'Close report and return to map',
   embedded = false,
   inline = false,
   taskBase,
@@ -63,6 +69,8 @@ export function ReportDetail({
   onNotify,
 }: {
   report: Report;
+  entryIntent?: string | null;
+  closeLabel?: string;
   embedded?: boolean;
   inline?: boolean;
   taskBase?: string;
@@ -85,17 +93,42 @@ export function ReportDetail({
   useEffect(() => { closeRef.current = onClose; }, [onClose]);
   const shareButtonRef = useRef<HTMLButtonElement>(null);
   const [expandedLayout, setExpandedLayout] = useState(false);
+  useReportSheetDismiss(dialogRef, closeRef, !embedded && (!inline || expandedLayout));
   const [photoExpanded, setPhotoExpanded] = useState(false);
+  // Keep the report URL intact while giving the photo its own Back/Forward step.
+  useEffect(() => {
+    const restorePhoto = () => setPhotoExpanded(window.history.state?.litterbugsPhotoReport === report.id);
+    window.addEventListener('popstate', restorePhoto);
+    return () => window.removeEventListener('popstate', restorePhoto);
+  }, [report.id]);
+
+  function openPhoto() {
+    if (window.history.state?.litterbugsPhotoReport !== report.id) {
+      window.history.pushState({ ...window.history.state, litterbugsPhotoReport: report.id }, '', window.location.href);
+    }
+    setPhotoExpanded(true);
+    setPhotoZoomed(false);
+  }
+
+  function closePhoto() {
+    if (window.history.state?.litterbugsPhotoReport === report.id) window.history.back();
+    else setPhotoExpanded(false);
+  }
+
   const [photoZoomed, setPhotoZoomed] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [photoRetry, setPhotoRetry] = useState(0);
+  type ReadyPhoto = { reportId: string; src: string; index: number };
+  const readyPhotoRef = useRef<ReadyPhoto | null>(null);
+  const [retainedPhoto, setRetainedPhoto] = useState<ReadyPhoto | null>(null);
+  const preloadedPhotos = useRef(new Set<string>());
   const [signedPhoto, setSignedPhoto] = useState<{ path: string; src: string | null; failed: boolean }>({ path: '', src: null, failed: false });
   const [renderedPhoto, setRenderedPhoto] = useState<{ path: string; loaded: boolean; failed: boolean }>({ path: '', loaded: false, failed: false });
   const [renderedPreview, setRenderedPreview] = useState<{ path: string; loaded: boolean; failed: boolean }>({ path: '', loaded: false, failed: false });
   const [actionStatus, setActionStatus] = useState('');
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
-  const photoPaths = report.photo_paths ?? [];
+  const photoPaths = report.photo_paths ?? EMPTY_PHOTO_PATHS;
   const displayedPhotoIndex = photoPaths.length ? photoIndex % photoPaths.length : 0;
   const currentPhotoPath = photoPaths[displayedPhotoIndex];
   const detailPhotoUrl = currentPhotoPath ? getReportDetailPhotoUrl(currentPhotoPath, taskBase ? report.id : undefined) : null;
@@ -112,6 +145,34 @@ export function ReportDetail({
   const photoFailed = currentRenderedPhoto?.failed || currentSignedPhoto?.failed || false;
   const previewLoaded = currentRenderedPreview?.loaded ?? false;
   const previewFailed = currentRenderedPreview?.failed ?? false;
+  const retained = retainedPhoto?.reportId === report.id ? retainedPhoto : null;
+  const visiblePhotoIndex = !photoLoaded && retained ? retained.index : displayedPhotoIndex;
+
+  function markPhotoReady() {
+    if (!photoSrc) return;
+    if (!photoLoaded) setRenderedPhoto({ path: currentPhotoPath, loaded: true, failed: false });
+    readyPhotoRef.current = { reportId: report.id, src: photoSrc, index: displayedPhotoIndex };
+  }
+
+  function selectPhoto(index: number) {
+    setRetainedPhoto(readyPhotoRef.current?.reportId === report.id ? readyPhotoRef.current : null);
+    setPhotoIndex(index);
+    setPhotoZoomed(false);
+  }
+
+  useEffect(() => {
+    if (photoPaths.length < 2) return;
+    const neighbors = [(displayedPhotoIndex + 1) % photoPaths.length, (displayedPhotoIndex + photoPaths.length - 1) % photoPaths.length];
+    for (const index of neighbors) {
+      const src = getReportDetailPhotoUrl(photoPaths[index], taskBase ? report.id : undefined) ?? getWebCompatibleReportPhotoUrl(photoPaths[index]);
+      if (!src || preloadedPhotos.current.has(src)) continue;
+      preloadedPhotos.current.add(src);
+      const image = new window.Image();
+      image.decoding = 'async';
+      image.fetchPriority = 'low';
+      image.src = src;
+    }
+  }, [displayedPhotoIndex, photoPaths, report.id, taskBase]);
 
   useEffect(() => {
     let cancelled = false;
@@ -160,7 +221,8 @@ export function ReportDetail({
     const previousOverflow = document.body.style.overflow;
     const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     document.body.style.overflow = 'hidden';
-    backButtonRef.current?.focus();
+    if (window.matchMedia?.('(max-width: 700px)').matches) dialogRef.current?.focus({ preventScroll: true });
+    else backButtonRef.current?.focus();
 
     function isTopmostDialog() {
       const dialogs = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"]'));
@@ -186,6 +248,13 @@ export function ReportDetail({
       previouslyFocused?.focus();
     };
   }, [embedded, inline, expandedLayout]);
+
+  useEffect(() => {
+    if (entryIntent !== 'fund' && entryIntent !== 'clean') return;
+    const footer = dialogRef.current?.querySelector<HTMLElement>('footer');
+    footer?.scrollIntoView?.({ block: 'nearest' });
+    footer?.focus({ preventScroll: true });
+  }, [entryIntent, report.id]);
 
   useEffect(() => {
     if (!actionStatus) return;
@@ -230,9 +299,16 @@ export function ReportDetail({
         className={`report-detail${photoPaths.length ? '' : ' report-detail-without-photo'}`}
         role={embedded || (inline && !expandedLayout) ? "region" : "dialog"}
         aria-modal={embedded || (inline && !expandedLayout) ? undefined : true}
+        tabIndex={-1}
         aria-labelledby="report-detail-title"
       >
-        <div className="sheet-handle" aria-hidden />
+        {!embedded && (!inline || expandedLayout) && <button
+          type="button"
+          className="report-detail-dismiss-handle"
+          aria-label={closeLabel}
+          title="Swipe down or tap to return to map"
+          onClick={onClose}
+        ><span aria-hidden /></button>}
         <header className="report-detail-toolbar">
           <button ref={backButtonRef} type="button" className="report-detail-toolbar-back" onClick={onClose}>
             <Icon name="chevron-left" />
@@ -254,7 +330,7 @@ export function ReportDetail({
                 onClick={() => { void shareReport(); }}
               >
                 <Icon name="share" />
-                <span>{shareCopy.actionLabel}</span>
+                <span>{report.cleanup_state === 'completed' ? 'Share cleanup' : shareCopy.actionLabel}</span>
               </button>
             )}
             {onHiddenChange && <button type="button" aria-pressed={hidden} onClick={() => onHiddenChange?.(!hidden)}>
@@ -266,8 +342,7 @@ export function ReportDetail({
         </header>
         <div className="report-detail-layout">
               <header className="report-detail-header">
-                {report.cleanup_state === 'completed' && <><CompletedCleanup reportId={report.id} /><p className="eyebrow">Original litter report</p></>}
-                  <h2 id="report-detail-title">{report.title || 'Litter Report'}</h2><p className="report-context">{reportContext(report)}</p>
+                  <h2 id="report-detail-title">{report.title || 'Litter Report'}</h2><p className="report-context">{reportTypeSummary(report)}</p>
                 <div className="report-summary-line">
                   <span className={`report-detail-severity report-detail-severity-${severity.toLowerCase()}`}><span />{severity}</span>
                   {report.created_at && <span>{formatDate(report.created_at)}</span>}
@@ -277,42 +352,43 @@ export function ReportDetail({
                   <span>{closed ? 'Report closed' : cleanupStatusLabel(report.cleanup_state)}</span>
                   {report.cleanup_state !== 'completed' && report.funded_amount_cents > 0 && <strong>{formatUsd(report.funded_amount_cents)} reward</strong>}
                 </div>
+                <AppLink reportId={report.id} className="report-open-app">Open in app</AppLink>
               </header>
           <div className="report-detail-visual">
-            <div className="report-photo-region">
-              {photoSrc && photoLoaded && !photoFailed && <button className="photo-expand-button" onClick={() => { setPhotoExpanded(true); setPhotoZoomed(false); }}>View full photo</button>}
+            {report.cleanup_state === 'completed' && photoPaths.length > 0 && <p className="report-photo-label">Before cleanup</p>}
+            <div className="report-photo-region" aria-busy={photoPaths.length > 0 && !photoLoaded && !photoFailed}>
+              {photoSrc && (photoLoaded || retained) && !photoFailed && <button disabled={!photoLoaded} className="photo-expand-button" onClick={openPhoto}>View full photo</button>}
               {photoPaths.length ? (
                 <>
-                  {previewPhotoUrl && !photoLoaded && !previewFailed && (
+                  {retained && retained.src !== photoSrc && <img key={retained.src} className={`report-photo report-photo-retained${photoLoaded ? ' report-photo-loading' : ''}`} src={retained.src} alt="" aria-hidden="true" />}
+                  {previewPhotoUrl && !retained && !photoLoaded && !previewFailed && (
                     <img
+                      key={retryReportPhotoUrl(previewPhotoUrl, photoRetry)}
                       className={`report-photo report-photo-preview${previewLoaded ? ' report-photo-preview-loaded' : ''}`}
                       src={retryReportPhotoUrl(previewPhotoUrl, photoRetry)}
                       alt=""
                       aria-hidden="true"
                       decoding="async"
-                      onLoad={() => setRenderedPreview({ path: currentPhotoPath, loaded: true, failed: false })}
+                      onLoad={() => { setRenderedPreview({ path: currentPhotoPath, loaded: true, failed: false }); if (!photoLoaded) readyPhotoRef.current = { reportId: report.id, src: retryReportPhotoUrl(previewPhotoUrl, photoRetry), index: displayedPhotoIndex }; }}
                       onError={() => setRenderedPreview({ path: currentPhotoPath, loaded: false, failed: true })}
                     />
                   )}
                   {photoSrc && !photoFailed && (
                     <img
                       className={`report-photo${photoLoaded ? '' : ' report-photo-loading'}`}
-                      key={`${currentPhotoPath}:${photoRetry}`}
+                      key={photoSrc}
                       src={photoSrc}
                       alt={`Report photo ${displayedPhotoIndex + 1} of ${photoPaths.length}`}
                       decoding="async"
                       fetchPriority="high"
-                      onLoad={() => setRenderedPhoto({ path: currentPhotoPath, loaded: true, failed: false })}
+                      ref={node => { if (node?.complete && node.naturalWidth > 0) markPhotoReady(); }}
+                      onLoad={markPhotoReady}
                       onError={() => setRenderedPhoto({ path: currentPhotoPath, loaded: false, failed: true })}
                     />
                   )}
-                  {!photoLoaded && !previewLoaded && (
-                    <div className="photo-placeholder photo-placeholder-overlay">
-                      {photoFailed ? <><Icon name="image" /><strong>Photo unavailable</strong><span>This photo could not be displayed.</span></> : <><span className="spinner" /><span>Loading photo…</span></>}
-                    </div>
-                  )}
+                  {photoFailed && !previewLoaded && !retained && <div className="photo-placeholder photo-placeholder-overlay"><Icon name="image" /><strong>Photo unavailable</strong><span>This photo could not be displayed.</span></div>}
                   {photoFailed && <div className="report-photo-recovery" role="status">
-                    <span>{previewLoaded ? 'Full-size photo unavailable. Preview shown.' : 'Photo could not load.'}</span>
+                    <span>{retained ? 'Photo could not load. Previous photo shown.' : previewLoaded ? 'Full-size photo unavailable. Preview shown.' : 'Photo could not load.'}</span>
                     <button className="secondary-button compact-button" onClick={() => {
                       setRenderedPhoto({ path: '', loaded: false, failed: false });
                       setRenderedPreview({ path: '', loaded: false, failed: false });
@@ -322,9 +398,9 @@ export function ReportDetail({
                   </div>}
                   {photoPaths.length > 1 && (
                     <>
-                      <button className="photo-arrow photo-previous" onClick={() => setPhotoIndex((displayedPhotoIndex - 1 + photoPaths.length) % photoPaths.length)} aria-label="Previous photo"><Icon name="chevron-left" /></button>
-                      <button className="photo-arrow photo-next" onClick={() => setPhotoIndex((displayedPhotoIndex + 1) % photoPaths.length)} aria-label="Next photo"><Icon name="chevron-right" /></button>
-                      <span className="photo-count">{displayedPhotoIndex + 1}/{photoPaths.length}</span>
+                      <button className="photo-arrow photo-previous" onClick={() => selectPhoto((displayedPhotoIndex - 1 + photoPaths.length) % photoPaths.length)} aria-label="Previous photo"><Icon name="chevron-left" /></button>
+                      <button className="photo-arrow photo-next" onClick={() => selectPhoto((displayedPhotoIndex + 1) % photoPaths.length)} aria-label="Next photo"><Icon name="chevron-right" /></button>
+                      <span className="photo-count">{visiblePhotoIndex + 1}/{photoPaths.length}</span>
                     </>
                   )}
                 </>
@@ -336,6 +412,7 @@ export function ReportDetail({
 
           <div className="report-detail-panel">
             <div className="report-detail-scroll">
+              {report.cleanup_state === 'completed' && <CompletedCleanup key={report.id} reportId={report.id} />}
 
 
 
@@ -344,11 +421,12 @@ export function ReportDetail({
                 {hasLitterTypes && <p className="report-detail-fact"><strong>Litter</strong><span>{[...(report.litter_types ?? []), ...(report.types ? [report.types] : [])].join(', ')}</span></p>}
                 {!!report.notes_presets?.length && <p className="report-detail-fact"><strong>Notes</strong><span>{report.notes_presets.join(', ')}</span></p>}
                 {report.notes_other && <p className="report-detail-fact"><strong>Details</strong><span>{report.notes_other}</span></p>}
+                <details className="report-reference"><summary>Report details</summary><p>Report reference: {report.id}</p></details>
               </div>
               <ReportAuthor profileId={report.user_id} sourceReportId={report.id} onBlocked={() => { onClose(); void onReportChanged?.(); }} />
             </div>
 
-            <footer className="report-detail-footer">
+            <footer className="report-detail-footer" tabIndex={entryIntent ? -1 : undefined} aria-label="Cleanup and funding options">
               {onDelete && isOwner && !closed && report.cleanup_state === 'available' && !report.funding_locked_at && <button className="danger-button compact-button" onClick={onDelete}><Icon name="trash" />Delete</button>}
               {onEdit && isOwner && !closed && report.cleanup_state === 'available' && !report.funding_locked_at && <button className="secondary-button compact-button" onClick={onEdit}><Icon name="edit" />Edit</button>}
               {taskBase && isOwner && !closed && report.cleanup_state === 'completion_submitted' ? <Link className="secondary-button" href={`${taskBase}&task=review`}>Review cleanup</Link> : <CleanupReviewAction report={report} userId={userId} isOwner={isOwner} onChanged={onReportChanged} />}
@@ -366,7 +444,7 @@ export function ReportDetail({
           onClose={closeShareDialog}
           onShared={() => notify('Report shared.')}
         />
-        {photoExpanded && photoSrc && <ModalShell onClose={() => setPhotoExpanded(false)} label="Report photo viewer" className="photo-viewer-dialog"><h2>Photo {displayedPhotoIndex + 1} of {photoPaths.length}</h2><button className="secondary-button" onClick={() => setPhotoZoomed(value => !value)}>{photoZoomed ? 'Fit photo' : 'Zoom in'}</button><div className={`photo-viewer-image${photoZoomed ? ' zoomed' : ''}`}><img src={photoSrc} alt={`Report photo ${displayedPhotoIndex + 1}`} /></div>{photoPaths.length > 1 && <div className="photo-viewer-controls"><button className="secondary-button" onClick={() => { setPhotoIndex(index => (index + photoPaths.length - 1) % photoPaths.length); setPhotoZoomed(false); }}>Previous photo</button><button className="secondary-button" onClick={() => { setPhotoIndex(index => (index + 1) % photoPaths.length); setPhotoZoomed(false); }}>Next photo</button></div>}</ModalShell>}
+        {photoExpanded && photoSrc && <ModalShell onClose={closePhoto} label="Report photo viewer" className="photo-viewer-dialog"><h2>Photo {visiblePhotoIndex + 1} of {photoPaths.length}</h2><button className="secondary-button" onClick={() => setPhotoZoomed(value => !value)}>{photoZoomed ? 'Fit photo' : 'Zoom in'}</button><div className={`photo-viewer-image${photoZoomed ? ' zoomed' : ''}`}><>{retained && retained.src !== photoSrc && <img key={retained.src} className={`photo-viewer-retained${photoLoaded ? ' report-photo-loading' : ''}`} src={retained.src} alt="" aria-hidden="true" />}<img key={photoSrc} className={photoLoaded ? 'photo-viewer-current' : 'photo-viewer-current report-photo-loading'} src={photoSrc} alt={`Report photo ${displayedPhotoIndex + 1}`} /></></div>{photoPaths.length > 1 && <div className="photo-viewer-controls"><button className="secondary-button" onClick={() => { selectPhoto((displayedPhotoIndex + photoPaths.length - 1) % photoPaths.length); }}>Previous photo</button><button className="secondary-button" onClick={() => { selectPhoto((displayedPhotoIndex + 1) % photoPaths.length); }}>Next photo</button></div>}</ModalShell>}
       </aside>
     </div>
   );

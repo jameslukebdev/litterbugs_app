@@ -1,0 +1,12 @@
+/* Spacing fixes scoped to community actions; retain the current colors/type. */
+.afterCards { margin-top: 28px; }
+.actionRow.actionRow.actionRow { gap: 12px 20px; }
+.actionRow.actionRow.actionRow > a { margin-left: 0; }
+.resourceToolbar { margin-bottom: 24px; }
+.resourceToolbar > div { margin: 0; }
+
+.reportActions { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+
+.opportunityFilters { display:flex; flex-wrap:wrap; gap:12px 24px; margin:0 0 24px; align-items:center; font-size:16px; }
+.opportunityFilters > :is(a,span) { display:inline-flex; align-items:center; min-height:44px; }
+.opportunityFilters > [aria-current] { font-weight:700; border-bottom:2px solid var(--green); }

@@ -7,6 +7,7 @@ import { isHeicReportPhoto, isReportCardPhoto } from '@/lib/report-photo';
 import { isDiscoverableReport, reportDiscoveryWindow } from '@/lib/report-visibility';
 import { createClient } from '@/lib/supabase/server';
 import { realUserIdFromClaims } from '@/lib/report-access';
+import { loadDisplayPhoto, PhotoSourceError } from '@/lib/display-photo-cache';
 
 export const runtime = 'nodejs';
 
@@ -98,34 +99,41 @@ export async function GET(request: Request) {
         : report.expires_at;
     }
 
-    const { data: source, error: downloadError } = await supabase.storage
-      .from('report_photos')
-      .download(photoPath);
+    const renderPhoto = async () => {
+      const { data: source, error: downloadError } = await supabase.storage
+        .from('report_photos')
+        .download(photoPath);
 
-    if (downloadError || !source) return errorResponse(404, 'Report photo not found.');
-    if (source.size > MAX_SOURCE_BYTES) return errorResponse(413, 'Report photo is too large.');
+      if (downloadError || !source) throw new PhotoSourceError(404, 'Report photo not found.');
+      if (source.size > MAX_SOURCE_BYTES) throw new PhotoSourceError(413, 'Report photo is too large.');
 
-    const sourceBuffer = new Uint8Array(await source.arrayBuffer());
-    const browserImage = isHeicReportPhoto(photoPath)
-      ? Buffer.from(await convert({
-        buffer: sourceBuffer,
-        format: 'JPEG',
-        quality: 0.82,
-      }))
-      : Buffer.from(sourceBuffer);
-    const deliveredImage = variant === 'card'
-      ? await sharp(browserImage)
-        .rotate()
-        .resize({ width: 720, height: 405, fit: 'cover', position: 'centre', withoutEnlargement: true })
-        .webp({ quality: 76 })
-        .toBuffer()
-      : variant === 'detail'
+      const sourceBuffer = new Uint8Array(await source.arrayBuffer());
+      const browserImage = isHeicReportPhoto(photoPath)
+        ? Buffer.from(await convert({
+          buffer: sourceBuffer,
+          format: 'JPEG',
+          quality: 0.82,
+        }))
+        : Buffer.from(sourceBuffer);
+      return variant === 'card'
         ? await sharp(browserImage)
           .rotate()
-          .resize({ width: 1600, height: 1200, fit: 'inside', withoutEnlargement: true })
-          .webp({ quality: 82 })
+          .resize({ width: 720, height: 405, fit: 'cover', position: 'centre', withoutEnlargement: true })
+          .webp({ quality: 76 })
           .toBuffer()
-        : browserImage;
+        : variant === 'detail'
+          ? await sharp(browserImage)
+            .rotate()
+            .resize({ width: 1600, height: 1200, fit: 'inside', withoutEnlargement: true })
+            .webp({ quality: 82 })
+            .toBuffer()
+          : browserImage;
+    };
+    // Every public, participant, and administrator gate above runs even when
+    // the resized bytes already exist. Private response caching stays disabled.
+    const deliveredImage = isPublicVariant
+      ? await loadDisplayPhoto('report_photos', photoPath, variant as 'card' | 'detail', renderPhoto)
+      : await renderPhoto();
     const secondsUntilExpiration = expiresAt
       ? Math.floor((new Date(expiresAt).getTime() - now.getTime()) / 1000)
       : 0;
@@ -133,7 +141,7 @@ export async function GET(request: Request) {
       ? Math.max(0, Math.min(MAX_CACHE_SECONDS, secondsUntilExpiration))
       : 0;
 
-    return new Response(deliveredImage, {
+    return new Response(new Uint8Array(deliveredImage), {
       status: 200,
       headers: {
         'Cache-Control': adminCaseId || accountReportId
@@ -144,7 +152,8 @@ export async function GET(request: Request) {
         'X-Content-Type-Options': 'nosniff',
       },
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof PhotoSourceError) return errorResponse(error.status, error.message);
     return errorResponse(500, 'Report photo could not be converted.');
   }
 }

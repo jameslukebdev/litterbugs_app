@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { Report } from '@litterbugs/report-contract';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { FundingContributionAction } from './funding-contribution-action';
 
-const { loadFlags, createContribution, quote } = vi.hoisted(() => ({ loadFlags: vi.fn(), createContribution: vi.fn(), quote: vi.fn() }));
+const { loadFlags, createContribution, quote, stripeMock } = vi.hoisted(() => ({ loadFlags: vi.fn(), createContribution: vi.fn(), quote: vi.fn(), stripeMock: { ready: false, confirmPayment: vi.fn() } }));
 
 vi.mock('@/lib/payment-attempt', () => ({ resumeOrCreatePayment: (_user: string, report: string, amount: number) => createContribution(report, amount).then((intent: unknown) => ({ intent, amount })) }));
 
@@ -21,8 +21,8 @@ vi.mock('@stripe/stripe-js', () => ({ loadStripe: vi.fn().mockResolvedValue(null
 vi.mock('@stripe/react-stripe-js', () => ({
   Elements: ({ children }: { children: React.ReactNode }) => children,
   PaymentElement: () => <div>Secure card form</div>,
-  useElements: () => null,
-  useStripe: () => null,
+  useElements: () => stripeMock.ready ? {} : null,
+  useStripe: () => stripeMock.ready ? { confirmPayment: stripeMock.confirmPayment } : null,
 }));
 
 const report: Report = {
@@ -56,6 +56,7 @@ const report: Report = {
 };
 
 beforeEach(() => {
+  stripeMock.ready = false;
   quote.mockImplementation(async (principalAmountCents: number) => ({ principalAmountCents, platformFeeCents: Math.floor((principalAmountCents + 5) / 10) + 50, totalAmountCents: principalAmountCents + Math.floor((principalAmountCents + 5) / 10) + 50, pricingVersion: 2, currency: 'usd' }));
 });
 
@@ -143,4 +144,37 @@ it('blocks new payment creation while pricing is unavailable', async () => {
   await screen.findByText('Pricing is unavailable.');
   expect((screen.getByRole('button', { name: 'Continue' }) as HTMLButtonElement).disabled).toBe(true);
   expect(createContribution).not.toHaveBeenCalled();
+});
+
+it('reserves the funding action while flags load without enabling payment prematurely', async () => {
+  let resolve!: (flags: { payments_enabled: boolean; gemini_financial_review_enabled: boolean }) => void;
+  loadFlags.mockImplementationOnce(() => new Promise(done => { resolve = done; }));
+  const signIn = vi.fn();
+  render(<FundingContributionAction report={report} userId={null} onRequireSignIn={signIn} />);
+  expect(screen.getByRole('status', { name: 'Checking funding availability' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Sign in to fund' })).toBeNull();
+  await act(async () => resolve({ payments_enabled: true, gemini_financial_review_enabled: true }));
+  expect(screen.queryByRole('status', { name: 'Checking funding availability' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Sign in to fund' }));
+  expect(signIn).toHaveBeenCalledTimes(1);
+});
+
+it('preserves only the canonical community return in the Stripe confirmation URL', async () => {
+  stripeMock.ready = true;
+  stripeMock.confirmPayment.mockResolvedValue({ error: { message: 'Mock confirmation stopped' } });
+  loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
+  createContribution.mockResolvedValue({ contributionId: 'receipt', publishableKey: 'pk_test_fixture', paymentIntentClientSecret: 'test_secret', principalAmountCents: 500, platformFeeCents: 100, totalAmountCents: 600, pricingVersion: 2 });
+  window.history.replaceState({}, '', '/map?report=report&returnTo=%2Fcommunities%2Fus%2Fnc%2Fboone&payment_intent_client_secret=ignored');
+  render(<FundingContributionAction report={report} userId="member" initialAmountCents={500} startOpen />);
+  await waitFor(() => expect((screen.getByRole('button', { name: 'Continue' }) as HTMLButtonElement).disabled).toBe(false));
+  fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Pay $6.00' }));
+  await waitFor(() => expect(stripeMock.confirmPayment).toHaveBeenCalled());
+  const url = new URL(stripeMock.confirmPayment.mock.calls[0][0].confirmParams.return_url);
+  expect(url.pathname).toBe('/payment-return');
+  expect(url.searchParams.get('report')).toBe(report.id);
+  expect(url.searchParams.get('contribution')).toBe('receipt');
+  expect(url.searchParams.get('returnTo')).toBe('/communities/us/nc/boone');
+  expect(url.searchParams.has('payment_intent_client_secret')).toBe(false);
+  window.history.replaceState({}, '', '/');
 });

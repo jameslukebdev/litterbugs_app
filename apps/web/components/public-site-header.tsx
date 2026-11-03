@@ -1,21 +1,21 @@
 'use client';
 
 import Image from 'next/image';
+import { IoMenuOutline, IoPhonePortraitOutline, IoMapOutline } from 'react-icons/io5';
 import Link from 'next/link';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+
+import { AppLink } from '@/components/app-link';
+import { GetAppNavigation } from '@/components/app-promotion';
+
+import { HeaderAreaSearch } from './header-area-search';
 
 import { PublicAccountAction } from '@/components/public-account-action';
+import { getHeaderProfile, getServerHeaderProfile, subscribeHeaderProfile } from '@/lib/header-profile-cache';
 
 import styles from './public-site-header.module.css';
 
-export type PublicPath = '/' | '/support' | '/about' | '/cleanup-policy' | '/cleanup-safety' | '/privacy' | '/terms' | '/help' | '/photo-review';
-
-const policyLinks: { href: PublicPath; label: string; description: string }[] = [
-  { href: '/cleanup-policy', label: 'Cleanup policy', description: 'Funding, rewards, disputes, and refunds' },
-  { href: '/cleanup-safety', label: 'Safety & waiver', description: 'Claim acknowledgment and release' },
-  { href: '/terms', label: 'Terms of use', description: 'Rules for using Litterbugs' },
-  { href: '/privacy', label: 'Privacy policy', description: 'How information is handled' },
-];
+export type PublicPath = '/reports' | '/map' | '/report-litter' | '/cleaner' | '/fund-a-cleanup' | '/locations' | '/communities' | '/cleanups' | '/get-app' | '/' | '/support' | '/about' | '/cleanup-policy' | '/cleanup-safety' | '/privacy' | '/terms' | '/help' | '/photo-review';
 
 function HeaderLink({
   href,
@@ -23,7 +23,7 @@ function HeaderLink({
   children,
   onNavigate,
 }: {
-  href: PublicPath;
+  href: PublicPath | '/report' | `/map?${string}`;
   activePath: PublicPath;
   children: ReactNode;
   onNavigate?: () => void;
@@ -31,8 +31,9 @@ function HeaderLink({
   return (
     <Link
       href={href}
+      prefetch={true}
       className={styles.navLink}
-      aria-current={activePath === href ? 'page' : undefined}
+      aria-current={activePath === href.split('?')[0] ? 'page' : undefined}
       onClick={onNavigate}
     >
       {children}
@@ -40,102 +41,239 @@ function HeaderLink({
   );
 }
 
-function NavigationMenu({ activePath, mobile = false }: { activePath: PublicPath; mobile?: boolean }) {
-  const [open, setOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const hasActivePolicy = policyLinks.some(({ href }) => href === activePath);
-  const panelId = mobile ? 'mobile-navigation-panel' : 'information-navigation-panel';
+const reportingLinks = [
+  ['/report', 'Start a report'],
+  ['/report-litter', 'Reporter reward details'],
+] as const;
+const fundingLinks = [
+  ['/map?view=reports&browse=1&status=available', 'Choose a report to fund'],
+  ['/fund-a-cleanup', 'Fees, rewards & refunds'],
+] as const;
+const cleanupLinks = [
+  ['/reports', 'Browse litter reports'],
+  ['/map?view=reports&browse=1&status=available', 'Find litter to clean'],
+  ['/cleaner', 'Claiming & getting paid'],
+  ['/cleanups', 'Completed cleanups'],
+  ['/communities', 'Communities'],
+  ['/cleanup-safety', 'Safety guidelines'],
+] as const;
+const informationLinks = [
+  ['/report-litter', 'Reporting and rewards'],
+  ['/help', 'Get help'],
+  ['/cleanup-safety', 'Safety guidelines'],
+  ['/about', 'About Litterbugs'],
+  ['/support', 'Support Litterbugs'],
+] as const;
+type NavigationLinks = ReadonlyArray<readonly [PublicPath | '/report' | `/map?${string}`, string]>;
 
+function NavigationDropdown({ label, links, activePath, open, onToggle, onClose, onNavigate }: {
+  label: string;
+  links: NavigationLinks;
+  activePath: PublicPath;
+  open: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+  onNavigate?: () => void;
+}) {
+  const id = useId();
+  const root = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isOpen = useRef(open);
+  const openedByHover = useRef(false);
+  function clearTimers() {
+    if (openTimer.current) clearTimeout(openTimer.current);
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    openTimer.current = closeTimer.current = null;
+  }
+  function close() { clearTimers(); openedByHover.current = false; onClose(); }
+  useEffect(() => {
+    isOpen.current = open;
+    if (!open && closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+  }, [open]);
+  useEffect(() => () => {
+    if (openTimer.current) clearTimeout(openTimer.current);
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+  }, []);
   useEffect(() => {
     if (!open) return;
-
-    function closeOnPointerDown(event: PointerEvent) {
-      if (!menuRef.current?.contains(event.target as Node)) setOpen(false);
+    function outside(event: PointerEvent) {
+      if (root.current?.closest('dialog nav')?.contains(event.target as Node)) return;
+      if (!root.current?.contains(event.target as Node)) {
+        clearTimers();
+        onClose();
+      }
     }
-
-    function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') setOpen(false);
-    }
-
-    document.addEventListener('pointerdown', closeOnPointerDown);
-    document.addEventListener('keydown', closeOnEscape);
-    return () => {
-      document.removeEventListener('pointerdown', closeOnPointerDown);
-      document.removeEventListener('keydown', closeOnEscape);
-    };
-  }, [open]);
-
+    document.addEventListener('pointerdown', outside);
+    return () => document.removeEventListener('pointerdown', outside);
+  }, [open, onClose]);
   return (
-    <div ref={menuRef} className={mobile ? styles.mobileMenu : styles.infoMenu}>
-      <button
-        type="button"
-        className={styles.menuTrigger}
-        aria-expanded={open}
-        aria-controls={panelId}
-        data-active={!mobile && hasActivePolicy ? 'true' : undefined}
-        onClick={() => setOpen((isOpen) => !isOpen)}
-      >
-        {mobile ? 'Menu' : 'Safety'}
+    <div ref={root} className={styles.dropdown} data-nav-family={label}
+      onPointerEnter={(event) => {
+        clearTimers();
+        // Drawer/touch navigation stays tap-controlled, including on hybrid devices.
+        if (event.pointerType !== 'mouse' || root.current?.closest('dialog') || !window.matchMedia('(min-width: 760px) and (hover: hover) and (pointer: fine)').matches) return;
+        if (!open) openTimer.current = setTimeout(() => {
+          openTimer.current = null;
+          if (!isOpen.current) { openedByHover.current = true; onToggle(); }
+        }, 350);
+      }}
+      onPointerLeave={(event) => {
+        if (event.pointerType !== 'mouse' || root.current?.closest('dialog')) return;
+        clearTimers();
+        closeTimer.current = setTimeout(() => {
+          closeTimer.current = null;
+          if (isOpen.current && !root.current?.contains(document.activeElement)) onClose();
+        }, 300);
+      }}
+      onBlur={(event) => { if (root.current?.closest('dialog nav')?.contains(event.relatedTarget)) return; if (!event.currentTarget.contains(event.relatedTarget)) close(); }}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          clearTimers();
+          if (open) {
+            event.stopPropagation();
+            onClose();
+            trigger.current?.focus();
+          }
+        }
+      }}>
+      <button ref={trigger} className={styles.menuTrigger} type="button"
+        aria-expanded={open} aria-controls={id} data-active={links.some(([href]) => href === activePath)} onClick={() => { clearTimers(); if (open && openedByHover.current) { openedByHover.current = false; return; } openedByHover.current = false; onToggle(); }}>
+        {label}
       </button>
-
-      {open && (
-        <nav
-          id={panelId}
-          className={mobile ? styles.mobilePopover : styles.infoPopover}
-          aria-label={mobile ? 'Mobile navigation' : 'Information and policies'}
-        >
-          {mobile && (
-            <>
-              <span className={styles.menuLabel}>Explore</span>
-              <div className={styles.mobilePrimaryLinks}>
-                <HeaderLink href="/" activePath={activePath} onNavigate={() => setOpen(false)}>Map</HeaderLink>
-                <HeaderLink href="/about" activePath={activePath} onNavigate={() => setOpen(false)}>About</HeaderLink>
-              </div>
-            </>
-          )}
-
-          <span className={styles.menuLabel}>Policies &amp; safety</span>
-          <div className={styles.policyLinks}>
-            {policyLinks.map(({ href, label, description }) => (
-              <Link
-                key={href}
-                href={href}
-                className={styles.policyLink}
-                aria-current={activePath === href ? 'page' : undefined}
-                onClick={() => setOpen(false)}
-              >
-                <strong>{label}</strong>
-                <span>{description}</span>
-              </Link>
-            ))}
-          </div>
-        </nav>
-      )}
+      <ul id={id} className={`${styles.dropdownLinks}${label === 'Support' ? ` ${styles.helpLinks}` : ''}`} hidden={!open}>
+        {links.map(([href, text]) => <li key={href}><HeaderLink href={href} activePath={activePath} onNavigate={() => { close(); onNavigate?.(); }}>{text}</HeaderLink></li>)}
+      </ul>
     </div>
   );
 }
 
-export function PublicSiteHeader({ activePath, action }: { activePath: PublicPath; action?: ReactNode }) {
+function NavigationMenu({ activePath }: { activePath: PublicPath }) {
+  const member = useSyncExternalStore(subscribeHeaderProfile, getHeaderProfile, getServerHeaderProfile);
+  const [openCategory, setOpenCategory] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelId = 'mobile-navigation-panel';
+
+  function closeMenu() {
+    dialogRef.current?.close();
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const desktop = window.matchMedia(activePath === '/map' ? '(min-width: 760px)' : '(min-width: 840px)');
+    function closeOnDesktop() {
+      if (desktop.matches) dialogRef.current?.close();
+    }
+    desktop.addEventListener('change', closeOnDesktop);
+    closeOnDesktop();
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      desktop.removeEventListener('change', closeOnDesktop);
+    };
+  }, [open, activePath]);
+
   return (
-    <header className={styles.header}>
-      <div className={styles.inner}>
-        <nav className={styles.desktopNav} aria-label="Main navigation">
-          <HeaderLink href="/" activePath={activePath}>Map</HeaderLink>
-          <HeaderLink href="/about" activePath={activePath}>About</HeaderLink>
+    <div className={styles.mobileMenu}>
+      <button
+        ref={triggerRef}
+        type="button"
+        className={styles.menuTrigger}
+        aria-label="Open menu"
+        aria-expanded={open}
+        aria-controls={panelId}
+        aria-haspopup="dialog"
+        onClick={() => {
+          dialogRef.current?.showModal();
+          setOpen(true);
+        }}
+      >
+        <IoMenuOutline aria-hidden />
+        <span className={styles.menuLabel}>Menu</span>
+      </button>
+
+      <dialog
+        ref={dialogRef}
+        id={panelId}
+        className={styles.mobileDrawer}
+        aria-label="Site menu"
+        onClose={() => {
+          setOpen(false);
+          setOpenCategory(null);
+          triggerRef.current?.focus();
+        }}
+        onKeyDown={(event) => {
+          if (event.key !== 'Tab') return;
+          const controls = event.currentTarget.querySelectorAll<HTMLElement>('button, a[href]');
+          const first = controls[0];
+          const last = controls[controls.length - 1];
+          if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last?.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first?.focus();
+          }
+        }}
+        onClick={(event) => {
+          if (event.target !== event.currentTarget) return;
+          const bounds = event.currentTarget.getBoundingClientRect();
+          if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) closeMenu();
+        }}
+      >
+        <div className={styles.drawerHeader}>
+          <button type="button" className={styles.menuTrigger} aria-label="Close menu" aria-expanded={open} aria-controls={panelId} onClick={closeMenu}>
+            <IoMenuOutline aria-hidden />
+          </button>
+          <Link href="/" prefetch={true} className={styles.drawerBrand} aria-label="Litterbugs home" onClick={closeMenu}>
+            <Image src="/brand/litterbugs-logo.png" alt="Litterbugs" width={636} height={433} />
+          </Link>
+        </div>
+        <nav className={styles.mobilePrimaryLinks} aria-label="Mobile navigation">
+          <Link href="/map" prefetch={true} className={`${styles.navLink} ${styles.mapEntry}`} aria-current={activePath === '/map' ? 'page' : undefined} onClick={closeMenu}><IoMapOutline aria-hidden /><span>Open map</span></Link>
+          <NavigationDropdown label="Report" links={reportingLinks} activePath={activePath}
+            open={openCategory === 'reporting'} onToggle={() => setOpenCategory(openCategory === 'reporting' ? null : 'reporting')} onClose={() => setOpenCategory(current => current === 'reporting' ? null : current)} onNavigate={closeMenu} />
+          {([['Donate', fundingLinks], ['Earn', cleanupLinks], ['Support', informationLinks]] as const).map(([label, links]) =>
+            <NavigationDropdown key={label} label={label} links={links} activePath={activePath}
+              open={openCategory === label} onToggle={() => setOpenCategory(openCategory === label ? null : label)} onClose={() => setOpenCategory(current => current === label ? null : current)} onNavigate={closeMenu} />)}
+          {!member?.userId && <Link className={styles.navLink} href="/sign-in" onClick={closeMenu}>Log in / Sign up</Link>}
         </nav>
+      </dialog>
+    </div>
+  );
+}
 
-        <NavigationMenu activePath={activePath} mobile />
-
-        <Link href="/" className={styles.brandLink} aria-label="Litterbugs map">
+export function PublicSiteHeader({ activePath, action, reportAction, reportId, compactMobile = false }: { activePath: PublicPath; action?: ReactNode; reportAction?: ReactNode; reportId?: string; compactMobile?: boolean }) {
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  function toggleMenu(label: string) {
+    setSearchOpen(false);
+    setOpenMenu(openMenu === label ? null : label);
+  }
+  return (
+    <header className={`${styles.header}${compactMobile ? ` ${styles.compactMobile}` : ''}${activePath === '/map' ? ` ${styles.mapHeader}` : ''}`}>
+      <div className={styles.inner}>
+        <Link href="/" prefetch={true} className={styles.brandLink} aria-label="Litterbugs home">
           <Image src="/brand/litterbugs-logo.png" alt="Litterbugs" width={636} height={433} priority />
         </Link>
-
-        <div className={styles.desktopActions}>
-          <NavigationMenu activePath={activePath} />
-          <div className={styles.action}>
-            {action ?? <PublicAccountAction />}
-          </div>
-        </div>
+        <nav className={styles.desktopNav} aria-label="Main navigation">
+          <div className={styles.mapLink}>{activePath === '/map' ? <HeaderLink href="/map" activePath={activePath}>Map</HeaderLink> : <Link href="/map" aria-label="Open map" className={`${styles.navLink} ${styles.mapEntry}`}><IoMapOutline aria-hidden /><span className={styles.mapDesktopLabel}>Open map</span><span className={styles.mapMobileLabel}>Map</span></Link>}</div>
+          <div className={styles.reportAction}>{reportAction ?? (<NavigationDropdown label="Report" links={reportingLinks} activePath={activePath} open={openMenu === 'reporting'} onToggle={() => toggleMenu('reporting')} onClose={() => setOpenMenu(null)} />)}</div>
+          <div className={styles.funding}><NavigationDropdown label="Donate" links={fundingLinks} activePath={activePath} open={openMenu === 'funding'} onToggle={() => toggleMenu('funding')} onClose={() => setOpenMenu(null)} /></div>
+          <div className={styles.cleaning}><NavigationDropdown label="Earn" links={cleanupLinks} activePath={activePath} open={openMenu === 'cleaning'} onToggle={() => toggleMenu('cleaning')} onClose={() => setOpenMenu(null)} /></div>
+        </nav>
+        <div className={styles.help}><NavigationDropdown label="Support" links={informationLinks} activePath={activePath} open={openMenu === 'help'} onToggle={() => toggleMenu('help')} onClose={() => setOpenMenu(null)} /></div>
+        <div className={styles.appLink}><GetAppNavigation /><AppLink reportId={reportId} className={styles.smallAppLink}><IoPhonePortraitOutline aria-hidden />Get the app</AppLink></div>
+        {activePath !== '/map' && <HeaderAreaSearch open={searchOpen} onOpenChange={value => { setSearchOpen(value); if (value) setOpenMenu(null); }} />}
+        <div className={styles.account}>{action ?? <PublicAccountAction />}</div>
+        <NavigationMenu activePath={activePath} />
       </div>
     </header>
   );

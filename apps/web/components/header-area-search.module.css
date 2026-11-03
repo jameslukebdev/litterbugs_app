@@ -1,0 +1,25 @@
+.root { display: contents; }
+.trigger { grid-area: search; display: grid; place-items: center; width: 44px; min-height: 44px; padding: 0; border: 0; background: transparent; color: var(--green-dark); cursor: pointer; }
+.trigger svg, .close svg { width: 22px; height: 22px; }
+.trigger:hover, .trigger[aria-expanded='true'] { background: var(--green-soft); border-radius: 8px; }
+.trigger:focus-visible, .close:focus-visible { outline: 3px solid #2f7d3266; outline-offset: 2px; border-radius: 4px; }
+.panel { grid-column: 1 / -1; grid-row: 2; display: flex; position: relative; align-items: center; gap: 12px; width: min(640px, 100%); justify-self: end; padding: 8px 0 4px; }
+.searchIcon { width: 22px; height: 22px; flex: none; color: var(--green-dark); }
+.close { display: grid; place-items: center; width: 44px; min-height: 44px; flex: none; padding: 0; border: 0; background: transparent; color: var(--ink); cursor: pointer; }
+.panel :global(.place-search) { flex: 1; min-width: 0; margin: 0; padding: 0; border: 0; }
+.panel :global(.place-search) label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.panel :global(.place-search-submit) { display: none; }
+.panel :global(.place-search-field) input { width: 100%; min-height: 44px; padding: 10px 12px; font-size: 16px; }
+.panel :global(.place-search-dropdown) { top: calc(100% + 8px); left: 0; right: 0; width: 100%; border-radius: 0; box-shadow: 0 8px 20px #18251c12; }
+.panel :global(.place-search-hint) { display: none; }
+.panel :global(.place-search-results) { max-height: min(360px, 45dvh); }
+@media (max-width: 600px) { .panel { gap: 4px; } .searchIcon { display: none; } }
+@media (max-width: 360px) { .trigger { width: 36px; } }
+.inlineRoot { position: relative; display: block; }
+.inlineTrigger { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; width: auto; padding: 0 8px; border: 0; color: var(--green-dark); background: transparent; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.inlineTrigger svg { width: 20px; height: 20px; }
+.inlineRoot .panel { position: absolute; top: 100%; right: 0; left: auto; width: min(440px, calc(100vw - 48px)); z-index: 30; }
+@media(max-width:700px) { .inlineRoot .panel { left: 0; right: auto; } }
+.inlineRoot .panel { background: white; border: 1px solid var(--line); border-radius: 8px; padding: 10px; box-shadow: 0 8px 24px #18251c18; }
+.inlineTrigger:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; border-radius: 4px; }
+.inlineTrigger { font-size: 18px; }

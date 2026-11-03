@@ -1,0 +1,165 @@
+/* Account pages: existing Litterbugs palette with a quiet, consistent workspace. */
+@font-face { font-family: 'Playful Nunito'; src: url('/fonts/nunito/black.ttf') format('truetype'); font-weight: 700 900; font-display: swap; }
+.account-theme { --ink:#292932; --muted:#686477; --green:#5146ed; --green-dark:#4438bb; --green-soft:#efedff; --line:#e3dff0; --border:#e3dff0; --soft:#f8f7fc; min-height:100dvh; background:#fff; color:var(--ink); }
+.account-theme :is(h1,h2,h3) { color:var(--ink); }
+.account-theme :is(.account-screen-title h1,.account-screen-title h2) { font-family:'Playful Nunito',sans-serif; font-weight:900; font-size:32px; line-height:1.2; }
+.account-theme .account-page-layout { gap:36px; margin-top:28px; }
+.account-theme .account-page-nav { top:112px; }
+.account-theme .account-page-nav a { --account-tint:#efedff; --account-ink:#4438bb; min-height:48px; border-radius:12px; color:var(--ink); font-weight:600; }
+.account-theme .account-page-nav a[href='/account/activity'] { --account-tint:#fff0ee; --account-ink:#ac343b; }
+.account-theme .account-page-nav a[href='/account/payments'] { --account-tint:#fff4cc; --account-ink:#775700; }
+.account-theme .account-page-nav a[href='/account/notifications'] { --account-tint:#f7ebfb; --account-ink:#783398; }
+.account-theme .account-page-nav a:not(.primary-button):is(:hover,[aria-current='page']) { background:var(--account-tint); color:var(--account-ink); }
+.account-theme .embedded-panel.account-dialog { border:0; padding:8px 0 24px; border-radius:0; box-shadow:none; }
+.account-theme :is(.member-panel,.community-rank,.account-section-links,.notification-list li,.member-stats) { border-color:var(--line); border-radius:18px; box-shadow:none; background:#fff; }
+.account-theme .member-panel > header { background:#fff; border-color:var(--line); padding:20px; }
+.account-theme .member-panel h3 { font-size:18px; }
+.account-theme .member-panel .eyebrow { display:none; }
+.account-theme .member-activity-row { border-color:var(--line); padding:16px 20px; gap:12px; }
+.account-theme a.member-activity-row:hover,.account-theme button.member-activity-row:hover { background:#f8f6ff; }
+.account-theme .member-activity-row > span { min-width:0; overflow-wrap:anywhere; }
+.account-theme :is(.primary-button,.secondary-button) { min-height:46px; border-radius:12px; padding:10px 16px; font-size:15px; font-weight:700; text-decoration:none; }
+.account-theme .primary-button { color:#fff; background:#5146ed; border:2px solid #5146ed; box-shadow:0 3px 0 #3528ac; }
+.account-theme .primary-button:hover:not(:disabled) { background:#4438bb; border-color:#4438bb; }
+.account-theme .secondary-button { color:#4438bb; background:#fff; border:1px solid #d6ceef; box-shadow:none; }
+.account-theme .secondary-button:hover:not(:disabled) { background:#efedff; border-color:#b3a6e5; }
+.account-theme .danger-button { min-height:46px; border-radius:12px; padding:10px 16px; }
+.account-theme :is(a,button,input,select,textarea,summary):focus-visible { outline:3px solid #a99ae4; outline-offset:3px; }
+.account-theme .account-section-links :is(a,button) { min-height:56px; padding:14px 18px; color:var(--ink); text-decoration:none; }
+.account-theme .account-section-links :is(a,button):hover { background:#efedff; color:#4438bb; }
+.account-theme .account-section-links :is(a,button):nth-child(2):hover { background:#fff4cc; color:#775700; }
+.account-theme .account-section-links :is(a,button):nth-child(3):hover { background:#f7ebfb; color:#783398; }
+.account-theme .community-rank { padding:24px; background:#fcfbff; }
+.account-theme .community-rank-summary > strong,.account-theme .community-rank summary { color:#4438bb; }
+.account-theme .community-rank progress { accent-color:#5146ed; background:#eae5fa; height:10px; }
+.account-theme .community-rank progress::-webkit-progress-bar { background:#eae5fa; }
+.account-theme .community-rank progress::-webkit-progress-value { background:#5146ed; }
+.account-theme .community-rank progress::-moz-progress-bar { background:#5146ed; }
+.account-theme .community-rank details { border-color:var(--line); }
+.account-theme .community-rank summary { min-height:44px; padding-block:10px; }
+.account-theme .member-stats strong { color:#4438bb; }
+.account-theme .member-stats > div:nth-child(2) strong { color:#783398; }
+.account-theme .activity-tabs { display:flex; flex-wrap:wrap; gap:8px; border:0; margin-bottom:22px; }
+.account-theme .activity-tabs :is(a,button) { min-height:44px; padding:10px 14px; border:1px solid var(--line); border-radius:12px; color:var(--muted); background:#fff; text-decoration:none; }
+.account-theme .activity-tabs :is(a,button):is(:hover,[aria-current='page'],[aria-pressed='true']) { border-color:#b3a6e5; color:#4438bb; background:#efedff; }
+.account-theme .notification-list li[data-unread='true'] { border-left:4px solid #a452bd; }
+.account-theme .notification-list a { color:var(--ink); }
+.account-theme .notification-list a:hover { color:#783398; }
+.account-theme :is(.member-profile-form input,.member-profile-form textarea,.account-page-mobile-nav select) { border:1px solid #d6ceef; border-radius:12px; color:var(--ink); background:#fff; min-height:46px; font-size:16px; }
+.account-theme .member-setting-links a { padding:14px; border-radius:12px; text-decoration:none; }
+.account-theme .member-setting-links a:hover { background:#f7ebfb; color:#783398; }
+.account-theme .member-settings details.member-panel { padding:14px 18px; }
+.account-theme .member-settings summary { min-height:44px; padding-block:10px; }
+.account-theme .account-page-mobile-nav { color:var(--muted); font-size:14px; }
+.account-theme .member-empty { color:var(--muted); }
+@media(min-width:701px) and (max-width:1000px) {
+ .account-theme .account-page-layout { grid-template-columns:180px minmax(0,1fr); gap:24px; }
+ .account-theme .account-page-nav { top:104px; }
+ .account-theme .account-page-nav a { padding-inline:12px; }
+}
+@media(max-width:700px) {
+ .account-theme .account-page-layout { width:calc(100% - 32px); margin:20px auto 40px; gap:24px; }
+ .account-theme .account-screen-title { padding-right:0; margin-bottom:18px; }
+ .account-theme .account-screen-title :is(h1,h2) { font-size:28px; }
+ .account-theme .community-rank { padding:18px; }
+ .account-theme .community-rank-summary { gap:12px; }
+ .account-theme .community-rank-summary > strong { margin-left:0; }
+ .account-theme .member-panel > header,.account-theme .member-activity-row { padding:16px; }
+ .account-theme .member-settings .account-actions { display:flex; flex-wrap:wrap; }
+ .account-theme .activity-tabs :is(a,button) { flex:1 1 auto; justify-content:center; text-align:center; }
+ .account-theme .member-profile-form-actions { flex-wrap:wrap; }
+}
+.account-theme .account-page-nav a.primary-button { color:#fff; }
+.account-theme .account-section-links svg { display:none; }
+.account-theme .member-activity-row > svg:last-child { display:none; }
+.account-theme .member-setting-links a > svg:last-child { display:none; }
+.account-theme .payment-detail > h1 { font-family:'Playful Nunito',sans-serif; font-size:32px; }
+.account-theme .funding-summary { border-color:var(--line); background:#faf8ff; border-radius:14px; }
+.account-theme .member-settings-heading h3 { display:none; }
+/* Consistent alignment within navigation and action hit areas. */
+.account-theme .account-page-nav a,
+.account-theme :is(.primary-button,.secondary-button,.danger-button),
+.account-theme .account-section-links :is(a,button) {
+ display:flex; align-items:center; justify-content:center; text-align:center; gap:8px;
+}
+.account-theme .activity-tabs { background:transparent; padding:0; box-shadow:none; }
+.account-theme .member-empty a { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:8px 12px; border-radius:10px; color:#4438bb; text-decoration:none; }
+.account-theme .member-empty a:hover { background:#efedff; }
+.account-theme main a { text-decoration:none; }
+.account-theme .info-page > a,.account-theme .payment-detail > a { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:8px 12px; border-radius:10px; color:#4438bb; }
+.account-theme .info-page > a:hover,.account-theme .payment-detail > a:hover { background:#efedff; }
+body:has(.account-theme) > .modal-backdrop { --green:#5146ed; --green-dark:#4438bb; --green-soft:#efedff; --line:#e3dff0; --ink:#292932; --muted:#686477; }
+body:has(.account-theme) > .modal-backdrop .modal-shell { border-radius:20px; border:1px solid #e3dff0; }
+body:has(.account-theme) > .modal-backdrop :is(.primary-button,.secondary-button,.danger-button) { display:flex; align-items:center; justify-content:center; text-align:center; min-height:46px; padding:10px 16px; border-radius:12px; }
+body:has(.account-theme) > .modal-backdrop .primary-button { background:#5146ed; color:#fff; border-color:#5146ed; }
+body:has(.account-theme) > .modal-backdrop .secondary-button { color:#4438bb; background:#fff; border-color:#d6ceef; }
+body:has(.account-theme) > .modal-backdrop .secondary-button:hover { background:#efedff; }
+body:has(.account-theme) > .modal-backdrop :is(button,input,select,textarea):focus-visible { outline:3px solid #a99ae4; outline-offset:3px; }
+/* The username prefix and input form one control, including its focus ring. */
+.account-theme .member-profile-form .profile-username-input { min-height:48px; border:1px solid #d6ceef; border-radius:12px; background:#fff; overflow:visible; }
+.account-theme .member-profile-form .profile-username-input > span { flex:none; padding-left:14px; color:#686477; }
+.account-theme .member-profile-form .profile-username-input input { flex:1; min-width:0; width:100%; min-height:46px; padding:10px 14px 10px 6px; border:0; border-radius:12px; background:transparent; box-shadow:none; outline:none; }
+.account-theme .member-profile-form .profile-username-input:focus-within { border-color:#a99ae4; outline:3px solid #a99ae4; outline-offset:3px; }
+/* Quiet confirmation; retain the live status announcement. */
+.account-theme .form-message.success-message,
+body:has(.account-theme) > .modal-backdrop .form-message.success-message {
+ color:#4438bb !important; background:#efedff; border:1px solid #ded7f5;
+ border-radius:12px; padding:12px 16px; font-size:14px; font-weight:600;
+ line-height:1.5; width:fit-content; max-width:100%;
+}
+/* Navigation labels align left and stay vertically centered in their hit area. */
+.account-theme .account-page-nav a,
+.account-theme .account-section-links :is(a,button) {
+ justify-content:flex-start; align-items:center; text-align:left;
+}
+
+/* Keep action rows aligned and comfortably sized on narrow account screens. */
+.account-theme .activity-tabs :is(a,button) { display:inline-flex; align-items:center; justify-content:center; }
+.account-theme .account-select-field > svg { color:#686477; }
+.account-theme .member-account-actions { align-items:stretch; gap:12px; }
+.account-theme .member-account-actions button { flex:1 1 160px; }
+@media(max-width:700px) {
+ .account-theme .member-settings .member-account-actions { display:grid; grid-template-columns:1fr; gap:12px; }
+ .account-theme .member-profile-form-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+ .account-theme .member-profile-form-actions button { min-width:0; width:100%; }
+}
+
+/* A compact inbox: clear hierarchy, quiet dates, and explicit unread status. */
+.account-theme .notification-controls { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:20px; }
+.account-theme .notification-controls .activity-tabs { margin:0; }
+.account-theme .notification-list { gap:0; border:1px solid var(--line); border-radius:18px; overflow:hidden; }
+.account-theme .notification-list:empty { display:none; }
+.account-theme .notification-list li { padding:20px; border:0; border-bottom:1px solid var(--line); border-radius:0; align-items:center; gap:20px; }
+.account-theme .notification-list li:last-child { border-bottom:0; }
+.account-theme .notification-list li[data-unread='true'] { border-left:4px solid #a452bd; background:#fcf8ff; }
+.account-theme .notification-list li > div { min-width:0; flex:1; overflow-wrap:anywhere; }
+.account-theme .notification-list li > button { flex:none; }
+.account-theme .notification-list p { line-height:1.5; margin:6px 0; }
+.account-theme .notification-list .notification-report { color:#783398; font-weight:600; }
+.account-theme .notification-list time { display:block; margin-top:10px; font-size:12px; color:var(--muted); }
+.account-theme .notification-unread { background:#f4e8fa; color:#783398; border-radius:6px; padding:3px 7px; margin-right:8px; }
+.account-theme .account-report-page > h1 { font-family:'Playful Nunito',sans-serif; font-size:32px; margin:24px 0 12px; }
+.account-theme .account-report-page > p { color:var(--muted); margin-bottom:24px; }
+.account-theme .account-back-link { display:inline-flex; width:fit-content; }
+.account-theme .report-detail-embedded .report-detail { border:1px solid var(--line); border-radius:20px; overflow:hidden; }
+.account-theme .report-detail-embedded .report-detail-toolbar-back { display:none; }
+.account-theme .report-detail-embedded .report-detail-toolbar:not(:has(.report-detail-toolbar-actions button)) { display:none; }
+.account-theme .report-detail-embedded .report-detail-toolbar { display:flex; justify-content:flex-end; border-color:var(--line); }
+.account-theme .report-detail-visual { background:#faf8ff; }
+.account-theme .report-detail-panel { border-color:var(--line); }
+.account-theme .report-detail-header { padding:28px 24px 20px; }
+.account-theme .report-detail-header h2 { font-family:'Playful Nunito',sans-serif; margin-right:0; }
+.account-theme .report-detail-severity-low { color:#783398; }
+.account-theme .report-summary-line,.account-theme .report-status-row { color:var(--muted); }
+.account-theme .report-open-app { display:inline-flex; padding:10px 12px; margin:8px -12px 0; border-radius:10px; color:#4438bb; }
+.account-theme .report-open-app:hover { background:#efedff; }
+.account-theme .report-reference summary { min-height:44px; display:flex; align-items:center; text-decoration:none; color:var(--muted); }
+@media(max-width:700px) {
+ .account-theme .notification-list li { padding:16px; align-items:stretch; }
+ .account-theme .notification-controls > button { width:100%; }
+ .account-theme .account-report-page > h1 { font-size:28px; }
+ .account-theme .report-detail-header { padding:20px 16px; }
+}
+
+.account-theme .community-rank-progress > p { display:flex; justify-content:space-between; align-items:baseline; gap:16px; width:100%; }
+.account-theme .community-rank-progress > p > strong { margin-left:auto; flex-shrink:0; }

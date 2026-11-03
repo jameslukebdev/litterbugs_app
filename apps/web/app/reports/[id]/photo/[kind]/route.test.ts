@@ -30,3 +30,9 @@ describe('public report photo response', () => {
     expect(response.headers.get('cache-control')).toBe('private, no-store');
   });
 });
+
+it.each([['640',640],['100000',1080],['-1',1080]])('bounds requested photo width %s', async (width, expected) => {
+  loadPhoto.mockResolvedValue(Buffer.from([1]));
+  await GET(new Request(`https://litterbugs.app/reports/id/photo/before?width=${width}`), {params: Promise.resolve({id:'report-id',kind:'before'})});
+  expect(loadPhoto).toHaveBeenCalledWith('report-id', 'before', expected);
+});

@@ -30,17 +30,17 @@ export async function requireReportLocation(
     typeof navigator === 'undefined' ? undefined : navigator.geolocation,
 ): Promise<Coordinates & { capturedAt: string }> {
   const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-    if (!geolocation) { reject(new Error('Location access is required to post a report.')); return; }
-    geolocation.getCurrentPosition(resolve, () => reject(new Error('Allow location access and try again. Reports must be within 50 miles of your current location.')), {
+    if (!geolocation) { reject(new Error('Turn on location access to continue.')); return; }
+    geolocation.getCurrentPosition(resolve, (error) => reject(new Error(error.code === 1 ? 'Allow location access in your browser, then try again.' : error.code === 3 ? 'Location took too long. Try again.' : 'Your location is unavailable. Try again.')), {
       enableHighAccuracy: true, timeout: 20000, maximumAge: 0,
     });
   });
   if (!Number.isFinite(position.timestamp) || Math.abs(Date.now() - position.timestamp) > 60000) {
-    throw new Error('A fresh location is required. Please try again.');
+    throw new Error('Please try your location again.');
   }
   const origin = { latitude: position.coords.latitude, longitude: position.coords.longitude };
   if (!isWithinReportDistance(origin, destination)) {
-    throw new Error('Reports must be within 50 miles of your current location. Move the report pin closer and try again.');
+    throw new Error('Choose a spot within 50 miles of you.');
   }
   return { ...origin, capturedAt: new Date(position.timestamp).toISOString() };
 }

@@ -22,6 +22,7 @@
     "heic-convert": "2.1.0",
     "heic-decode": "^2.0.0",
     "next": "16.3.0",
+    "posthog-js": "^1.441.2",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-icons": "^5.7.0",

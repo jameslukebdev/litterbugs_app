@@ -8,6 +8,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { createPayoutDashboardLink, createPayoutOnboardingLink, loadPayoutStatus } from './lib/funding';
+import { payoutSetupPresentation } from './lib/payoutSetupPresentation';
 import {
   cancelPayoutWorkflow,
   isPayoutConnectionReady,
@@ -18,6 +19,12 @@ import {
 
 
 const PAYOUT_ONBOARDING_RETURN_URL = 'litterbugs://stripe-onboarding-return';
+const PAYOUT_BROWSER_OPTIONS = {
+  presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
+  // Android's default separate task sets FLAG_ACTIVITY_NO_HISTORY. Keeping
+  // the browser in our task preserves its form when members check SMS codes.
+  createTask: false,
+};
 
 export default function PayoutSetupScreen(props) {
   const { user } = useSession();
@@ -45,6 +52,13 @@ function PayoutSetupController({ navigation, route }) {
     return () => clearTimeout(timer);
   }, [busy]);
   const [eligibleConfirmed, setEligibleConfirmed] = useState(false);
+  const setupNotice = payoutSetupPresentation({ status, error: statusError, waiting });
+  const checkingSetup = setupNotice?.kind === 'pending';
+  const enabled = status?.payoutsEnabled === true;
+  const updatingRequiredDetails = enabled && setupNotice?.kind === 'action_required';
+  const openingOnboarding = !enabled || updatingRequiredDetails;
+  const needsEligibilityConfirmation = openingOnboarding && status?.age18Confirmed !== true;
+  const eligibilityReady = !needsEligibilityConfirmation || eligibleConfirmed;
 
   const refresh = useCallback(async () => {
     if (refreshBusy.current) return;
@@ -56,10 +70,10 @@ function PayoutSetupController({ navigation, route }) {
       setStatusError(false);
       if (next?.payoutsEnabled) setWaiting(false);
     } catch (error) {
-      setStatusError(true);
+      if (mounted.current) setStatusError(true);
     } finally {
       refreshBusy.current = false;
-      setLoading(false);
+      if (mounted.current) setLoading(false);
     }
   }, []);
 
@@ -69,10 +83,10 @@ function PayoutSetupController({ navigation, route }) {
     return () => subscription.remove();
   }, [refresh]);
   useEffect(() => {
-    if (!waiting) return undefined;
+    if (!checkingSetup) return undefined;
     const timer = setInterval(refresh, 10000);
     return () => clearInterval(timer);
-  }, [waiting, refresh]);
+  }, [checkingSetup, refresh]);
 
   useEffect(() => navigation.addListener('beforeRemove', () => {
     if (workflowToken && !workflowCompletedRef.current) {
@@ -96,22 +110,18 @@ function PayoutSetupController({ navigation, route }) {
   }, [completePendingWorkflow, status?.payoutsEnabled]);
 
   const openSetup = async () => {
-    if (busy || loading || statusError || !status || (!status.payoutsEnabled && !eligibleConfirmed)) return;
+    if (busy || loading || statusError || !status || !eligibilityReady) return;
     try {
       setBusy(true);
-      const link = status?.payoutsEnabled
-        ? await createPayoutDashboardLink()
-        : await createPayoutOnboardingLink();
+      const link = openingOnboarding
+        ? await createPayoutOnboardingLink()
+        : await createPayoutDashboardLink();
       if (!mounted.current) return;
-      if (status?.payoutsEnabled) {
-        await WebBrowser.openBrowserAsync(link.url, {
-          presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
-        });
+      if (!openingOnboarding) {
+        await WebBrowser.openBrowserAsync(link.url, PAYOUT_BROWSER_OPTIONS);
         await refresh();
       } else {
-        const result = await WebBrowser.openAuthSessionAsync(link.url, PAYOUT_ONBOARDING_RETURN_URL, {
-          presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
-        });
+        const result = await WebBrowser.openAuthSessionAsync(link.url, PAYOUT_ONBOARDING_RETURN_URL, PAYOUT_BROWSER_OPTIONS);
         if (!mounted.current) return;
         if (result.type === 'success') {
           const nextStatus = await waitForPayoutConnection(loadPayoutStatus);
@@ -121,10 +131,10 @@ function PayoutSetupController({ navigation, route }) {
           if (nextStatus) setStatus(nextStatus);
           if (connected) {
             Alert.alert(
-              'Ready to receive cleanup rewards',
+              'Ready to receive rewards',
               workflowToken
                 ? 'Your payout account is ready. Continue to return to the litter report and finish claiming the cleanup.'
-                : 'Your payout account is ready to receive cleanup rewards.',
+                : 'Your payout account is ready for cleanup and reporter rewards.',
               [{
                 text: workflowToken ? 'Continue to cleanup' : 'Done',
                 onPress: () => {
@@ -136,9 +146,10 @@ function PayoutSetupController({ navigation, route }) {
             );
           } else {
             setWaiting(true);
+            const notice = payoutSetupPresentation({ status: nextStatus, waiting: true });
             Alert.alert(
-              'Your payout details are being reviewed',
-              'Your information was received. Stay on this screen and try again shortly if Litterbugs does not return to the cleanup automatically.'
+              notice.title,
+              [notice.detail, ...notice.requirements.map(item => `• ${item}`)].join('\n\n')
             );
           }
         } else {
@@ -153,34 +164,34 @@ function PayoutSetupController({ navigation, route }) {
   };
 
 
-  const enabled = status?.payoutsEnabled === true;
-
   return (
     <ScrollView style={{ backgroundColor: '#FFFFFF' }} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]}>
-      {statusError || waiting ? <View style={styles.card} accessibilityLiveRegion="polite"><Text style={styles.cardTitle}>{statusError ? 'Payout status unavailable' : 'Payout setup in review'}</Text><Text style={styles.rowText}>{statusError ? 'Your existing setup is unchanged. Retry to check its latest status.' : 'We’re checking automatically. You can return here from your profile at any time.'}</Text><TouchableOpacity style={styles.secondaryButton} onPress={refresh} accessibilityRole="button"><Text style={styles.secondaryText}>Refresh status</Text></TouchableOpacity></View> : null}
+      {setupNotice ? (
+        <View style={[styles.card, styles.notice]} accessibilityLiveRegion="polite">
+          <Text style={styles.cardTitle}>{setupNotice.title}</Text>
+          <Text style={styles.noticeText}>{setupNotice.detail}</Text>
+          {setupNotice.requirements.map(item => <Text key={item} style={styles.requirementText}>• {item}</Text>)}
+          <TouchableOpacity style={styles.secondaryButton} onPress={refresh} disabled={busy || loading} accessibilityRole="button">
+            <Text style={styles.secondaryText}>Refresh status</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+      {!setupNotice ? <>
       <View style={[styles.icon, enabled && styles.iconEnabled]}>
         <Ionicons name={enabled ? 'checkmark' : 'wallet-outline'} size={35} color={enabled ? '#FFFFFF' : '#2F7D32'} />
       </View>
       <Text style={styles.title}>
-        {enabled ? 'Payouts are ready' : workflowCopy?.title || 'Receive cleanup rewards'}
+        {enabled ? 'Payouts are ready' : workflowCopy?.title || 'Receive rewards'}
       </Text>
       <Text style={styles.text}>
         {enabled
-          ? 'You can claim funded cleanups. Stripe sends rewards to your connected payout account.'
-          : workflowCopy?.text || 'Set up as an individual cleaner. Our payment provider, Stripe, securely verifies your identity and bank details, and Litterbugs never stores that information.'}
+          ? 'Use this account for cleanup and reporter rewards. Stripe sends rewards to your connected payout account.'
+          : workflowCopy?.text || 'Receive cleanup and reporter rewards in your bank account. We’ll open a secure form with Stripe to verify your identity and bank details. Have your phone nearby for a verification code.'}
       </Text>
 
-      <View style={styles.statusCheck} />
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Before you continue</Text>
-        <View style={styles.row}><Ionicons name="person-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>No business or LLC is required. You’ll set up a personal payout account with Stripe.</Text></View>
-        <View style={styles.row}><Ionicons name="checkmark-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>You must be at least 18 years old.</Text></View>
-        <View style={styles.row}><Ionicons name="checkmark-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>Cleanup payouts are currently available to eligible U.S. cleaners.</Text></View>
-        <View style={styles.row}><Ionicons name="checkmark-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>Your shown reward is the exact amount Litterbugs transfers.</Text></View>
-        <View style={styles.row}><Ionicons name="checkmark-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>You are responsible for determining and reporting taxes on cleanup rewards; Stripe or Litterbugs may provide required tax forms.</Text></View>
-      </View>
+      </> : null}
 
-      {!enabled ? (
+      {needsEligibilityConfirmation ? (
         <TouchableOpacity
           disabled={busy || loading || statusError}
           style={styles.confirmRow}
@@ -194,17 +205,25 @@ function PayoutSetupController({ navigation, route }) {
       ) : null}
 
       <TouchableOpacity
-        style={[enabled ? styles.secondaryButton : styles.button, (!status || loading || statusError || (!enabled && !eligibleConfirmed)) && styles.disabled]}
+        style={[enabled ? styles.secondaryButton : styles.button, (!status || loading || statusError || !eligibilityReady) && styles.disabled]}
         onPress={openSetup}
         activeOpacity={1}
         accessibilityRole="button"
-        accessibilityState={{ busy, disabled: busy || loading || statusError || !status || (!enabled && !eligibleConfirmed) }}
-        disabled={busy || loading || statusError || !status || (!enabled && !eligibleConfirmed)}
+        accessibilityState={{ busy, disabled: busy || loading || statusError || !status || !eligibilityReady }}
+        disabled={busy || loading || statusError || !status || !eligibilityReady}
       >
-        <Text style={enabled ? styles.secondaryText : styles.buttonText}>{enabled ? 'Review payout details' : 'Set up payouts'}</Text>
+        <Text style={enabled ? styles.secondaryText : styles.buttonText}>{updatingRequiredDetails ? 'Update payout details' : enabled ? 'Review payout details' : setupNotice?.kind === 'action_required' ? 'Continue payout setup' : checkingSetup ? 'Review payout setup' : 'Set up payouts'}</Text>
         {showBusy ? <ActivityIndicator size="small" color={enabled ? '#2F7D32' : '#FFFFFF'} style={styles.buttonSpinner} /> : null}
       </TouchableOpacity>
       <View style={styles.trustRow}><Ionicons name="lock-closed-outline" size={13} color="#6C786F" /><Text style={styles.trustText}>Secure verification and payouts by Stripe</Text></View>
+      {!enabled ? <View style={[styles.card, styles.expectations]}>
+        <Text style={styles.cardTitle}>What to expect</Text>
+        <View style={styles.row}><Ionicons name="person-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>No business or LLC is required. You’ll set up a personal payout account with Stripe.</Text></View>
+        <View style={styles.row}><Ionicons name="checkmark-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>You do not need a website. Your Litterbugs reward activity is described for you; review it when Stripe calls it a “product description.”</Text></View>
+        <View style={styles.row}><Ionicons name="checkmark-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>Your shown reward is the exact amount Litterbugs transfers.</Text></View>
+        <View style={styles.row}><Ionicons name="checkmark-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>You are responsible for determining and reporting taxes on cleanup rewards; Stripe or Litterbugs may provide required tax forms.</Text></View>
+      </View> : null}
+
 
     </ScrollView>
   );
@@ -219,6 +238,10 @@ const styles = StyleSheet.create({
   text: { marginTop: 8, color: '#66736A', fontSize: 14, lineHeight: 21 },
   card: { width: '100%', maxWidth: 420, marginTop: 0, padding: 16, borderRadius: 14, backgroundColor: '#F5F8F5', borderWidth: 1, borderColor: '#E1EAE2' },
   cardTitle: { color: '#30363B', fontSize: 17, fontWeight: '600' },
+  notice: { marginBottom: 0 },
+  expectations: { marginTop: 24 },
+  noticeText: { marginTop: 8, color: '#59636A', fontSize: 14, lineHeight: 20 },
+  requirementText: { marginTop: 8, color: '#30363B', fontSize: 14, lineHeight: 20, fontWeight: '600' },
   row: { marginTop: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 9 },
   rowText: { flex: 1, color: '#59636A', fontSize: 14, lineHeight: 20 },
   confirmRow: { width: '100%', maxWidth: 420, marginTop: 18, flexDirection: 'row', alignItems: 'flex-start', gap: 10 },

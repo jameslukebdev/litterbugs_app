@@ -43,3 +43,13 @@ supabase/.temp/
 *.tsbuildinfo
 services/auth-bridge/.wrangler/
 .vercel
+
+# Local agent/scratch output (kept out of git)
+work/
+output/
+.playwright-mcp/
+.codex-attachments/
+.agents/
+*.swp
+release-assets/**/*.zip
+/seelitterad*

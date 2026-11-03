@@ -1,0 +1,107 @@
+{
+  "status": "First visual draft — not uploaded",
+  "created": "2026-10-30",
+  "boardId": "959886fa-d600-49fc-9797-89a0ff32bc4d",
+  "palette": {
+    "ink": "#222125",
+    "cream": "#fff9ed",
+    "purple": "#7531a5",
+    "lavender": "#efe4ff",
+    "yellow": "#ffce41",
+    "red": "#e54549",
+    "blue": "#4b43ed"
+  },
+  "gallery": [
+    {
+      "id": "gallery-1",
+      "file": "01-your-neighborhood.png",
+      "title": "A cleaner place starts with you.",
+      "type": "editorial feature graphic",
+      "width": 1080,
+      "height": 1920,
+      "status": "design draft; final gallery needs additional current native UI captures"
+    },
+    {
+      "id": "gallery-2",
+      "file": "02-report-litter.png",
+      "title": "See litter? Put it on the map.",
+      "type": "editorial feature graphic",
+      "width": 1080,
+      "height": 1920,
+      "status": "design draft; final gallery needs additional current native UI captures"
+    },
+    {
+      "id": "gallery-3",
+      "file": "03-explore-the-map.png",
+      "title": "Find your next cleanup.",
+      "type": "current Android map capture + graphic",
+      "width": 1080,
+      "height": 1920,
+      "status": "design draft; final gallery needs additional current native UI captures"
+    },
+    {
+      "id": "gallery-4",
+      "file": "04-reporter-rewards.png",
+      "title": "Report a spot. Earn a reward.",
+      "type": "editorial feature graphic",
+      "width": 1080,
+      "height": 1920,
+      "status": "design draft; final gallery needs additional current native UI captures"
+    },
+    {
+      "id": "gallery-5",
+      "file": "05-fund-a-cleanup.png",
+      "title": "Turn support into a cleanup.",
+      "type": "editorial feature graphic",
+      "width": 1080,
+      "height": 1920,
+      "status": "design draft; final gallery needs additional current native UI captures"
+    },
+    {
+      "id": "gallery-6",
+      "file": "06-cleanup-rewards.png",
+      "title": "Clean up. Get rewarded.",
+      "type": "editorial feature graphic",
+      "width": 1080,
+      "height": 1920,
+      "status": "design draft; final gallery needs additional current native UI captures"
+    },
+    {
+      "id": "gallery-7",
+      "file": "07-share-your-report.png",
+      "title": "Share the spot. Rally support.",
+      "type": "editorial feature graphic",
+      "width": 1080,
+      "height": 1920,
+      "status": "design draft; final gallery needs additional current native UI captures"
+    },
+    {
+      "id": "gallery-8",
+      "file": "08-two-ways-to-earn.png",
+      "title": "Report it. Clean it. Earn both.",
+      "type": "editorial feature graphic",
+      "width": 1080,
+      "height": 1920,
+      "status": "design draft; final gallery needs additional current native UI captures"
+    }
+  ],
+  "featureGraphics": [
+    "feature-graphic-illustrated.png",
+    "feature-graphic-yellow.png"
+  ],
+  "provenance": {
+    "illustration": "Built-in ImageGen; prompt in source/illustration-prompt.txt",
+    "map": "Existing Oct 29 native Android production-map verification capture; release notes identify production signed build 20 with same map identity as current build 21.",
+    "logo": "Exact original alpha logo, unchanged."
+  },
+  "remaining": [
+    "Capture additional clean native screens from released Android 2.0.1 (21), especially reporter earnings, report creation, funded detail and sharing.",
+    "Replace graphic-only middle panels with native UI-led compositions before calling gallery final. Google recommends screenshots demonstrate actual app experience.",
+    "Review visual direction with owner. No Play listing upload or publication has been performed."
+  ],
+  "sources": [
+    "https://play.google.com/store/apps/details?id=org.litterati.android&hl=en_US",
+    "https://play.google.com/store/apps/details?id=com.app.tgtg&hl=en_US",
+    "https://support.google.com/googleplay/android-developer/answer/9866151?hl=en"
+  ]
+}

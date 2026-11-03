@@ -20,3 +20,20 @@ login available. These are unavailable resources, not pending owner actions.
 
 See `docs/user-testing-known-issues.md` for the current testing limitations and
 `docs/reviews/2026-09-11-deletion-moderation-financial-audit.md` for evidence.
+
+## Website analytics and internal testing
+
+- Keep normal visitor analytics enabled by default without an automatic
+  analytics-permission pop-up, as the owner requested.
+- Avoid counting staff and assistant testing as visitor traffic. Before routine
+  production-site testing, use an already excluded browser or the site's
+  existing Analytics choices to turn off analytics for that test browser.
+- When verifying analytics itself requires a tracked test visit, record that
+  it is test traffic and restore the test browser's exclusion afterward.
+
+## Working alongside Claude
+
+Grant also uses Claude (Cowork) on this project. Before starting work, read
+`docs/agent-handoff.md`. Respect its "Current owner" line, and add a short
+entry to its log when you finish (what changed, what was deployed with which
+commit, what's pending).

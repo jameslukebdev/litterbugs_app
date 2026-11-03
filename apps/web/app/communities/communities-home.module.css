@@ -1,0 +1,160 @@
+/* Communities home only. Shared branding is owned by the active homepage work. */
+.home.home { --community-purple: #5146ed; --community-ink: #292932; --community-muted: #656071; padding-block: 48px 80px; }
+.home.home > header { max-width: none; margin: 0; padding: 0; }
+.home.home > section { margin-top: 72px; padding: 0; scroll-margin-top: 112px; }
+.home.home h1, .home.home h2, .home.home h3 { color: var(--community-ink); }
+.home.home h2 { scroll-margin-top: 120px; margin: 0 0 20px; font-size: clamp(28px, 3vw, 36px); }
+.home.home p { font-size: 19px; line-height: 1.6; }
+.hero { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, .9fr); gap: 64px; align-items: center; }
+.home.home .eyebrow { color: #783398; font-size: 15px; font-weight: 750; margin: 0 0 14px; }
+.home.home h1 { font-size: clamp(36px, 4vw, 54px); line-height: 1.08; letter-spacing: -.035em; margin: 0 0 22px; max-width: 620px; text-wrap: balance; }
+.home.home .intro { font-size: 23px; line-height: 1.5; max-width: 570px; margin: 0 0 26px; }
+.heroPhoto { margin: 0; min-width: 0; }
+.heroPhoto > img { display: block; width: 100%; height: 350px; object-fit: cover; object-position: center; border-radius: 26px; box-shadow: 0 6px 0 #e5c5f0; }
+.heroPhoto figcaption { color: var(--community-muted); font-size: 14px; padding-top: 16px; text-align: center; }
+.finder { min-width: 0; }
+.finder [role='group'] { margin: 0 0 14px; gap: 8px; }
+.finder [role='group'] button { min-height: 40px; padding: 8px 13px; border-radius: 12px; border-color: #ddd5ed; color: #5d546c; background: #fff; font-size: 14px; font-weight: 650; }
+.finder [role='group'] button[aria-pressed='true'] { background: #efedff; border-color: #bbb2f6; color: #4438bb; }
+.finder [role='group'] button:hover { background: #f4f1ff; }
+.finder form { gap: 10px; }
+.finder form > label { border-radius: 14px; border-color: #d8d1f0; }
+.finder form input { height: 54px; font-size: 16px; }
+.finder form > button { min-height: 54px; border-radius: 14px; padding: 12px 18px; font-size: 16px; font-weight: 750; background: var(--community-purple); border: 1px solid var(--community-purple); color: #fff; box-shadow: 0 4px 0 #3528ac; white-space: nowrap; }
+.finder form > button:hover:not(:disabled) { background: #4436d4; }
+.finder form > button:disabled { opacity: .65; }
+.home.home .finder p { font-size: 13px; line-height: 1.5; color: var(--community-muted); margin: 12px 0 2px; }
+.finder ul { border: 1px solid #e3dff0; border-radius: 14px; overflow: hidden; }
+.home.home .finder li { font-size: 16px; }
+.home.home .finder li a { text-decoration: none; }
+.home.home .quietLink { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 10px 12px; border-radius: 12px; color: #5146bf; font-size: 16px; font-weight: 750; text-decoration: none; }
+.quietLink:hover { background: #efedff; }
+.heroCopy > .quietLink { margin-top: 8px; }
+.sectionHeading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px 32px; margin-bottom: 26px; }
+.home.home .sectionHeading h2 { margin-bottom: 8px; }
+.home.home .sectionHeading p { margin: 0; color: var(--community-muted); }
+.directoryLabel { color: #783398; background: #f7edfc; border-radius: 100px; padding: 8px 14px; font-size: 13px; font-weight: 700; }
+.directoryGrid { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr); gap: 28px; }
+.home.home .communityCard { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); min-width: 0; overflow: hidden; border: 1px solid #e3dff0; border-radius: 24px; color: var(--community-ink); text-decoration: none; box-shadow: 0 5px 0 #eeeaf8; }
+.communityCard:hover { border-color: #b3a6e5; background: #fcfaff; }
+.cardPhoto { position: relative; min-height: 315px; background: #f2e5fa; overflow: hidden; }
+.cardPhoto > img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+.photoCaption { position: absolute; inset: auto 12px 12px; background: #fff; color: #514166; font-size: 12px; line-height: 1.4; padding: 8px 10px; border-radius: 10px; width: fit-content; }
+.photoFallback { display: flex; height: 100%; flex-direction: column; align-items: center; justify-content: center; gap: 28px; padding: 32px; color: #71328e; font-size: 25px; font-weight: 800; text-align: center; }
+.cardCopy { padding: 28px; display: flex; flex-direction: column; align-items: start; }
+.placeLabel { color: var(--community-muted); font-size: 13px; line-height: 1.5; }
+.home.home .cardCopy h3 { font-size: 29px; margin: 8px 0 12px; }
+.home.home .cardCopy p { margin: 0 0 18px; font-size: 16px; line-height: 1.6; }
+.resourceCount { display: grid; gap: 4px; font-size: 14px; }
+.resourceCount strong { color: #783398; }
+.resourceCount > span { font-size: 12px; color: var(--community-muted); }
+.recentResult { display: grid; gap: 6px; margin-top: 18px; padding-top: 15px; border-top: 1px solid #eeeaf6; width: 100%; font-size: 13px; line-height: 1.5; }
+.recentResult span { color: var(--community-muted); font-size: 12px; }
+.recentResult strong { font-weight: 650; }
+.cardAction { display: flex; justify-content: space-between; align-items: center; gap: 20px; width: 100%; margin-top: auto; padding-top: 22px; color: #5146bf; font-size: 16px; font-weight: 750; }
+.otherPlace { padding: 28px; border-radius: 24px; background: #fff8dc; display: flex; flex-direction: column; align-items: start; }
+.home.home .otherPlace h3 { font-size: 28px; line-height: 1.2; margin: 22px 0 14px; }
+.home.home .otherPlace p { font-size: 16px; line-height: 1.6; margin: 0 0 22px; }
+.home.home .outlineAction { display: inline-flex; align-items: center; justify-content: center; gap: 12px; min-height: 46px; padding: 11px 15px; border: 1px solid #cabb85; border-radius: 12px; color: #594810; font-size: 15px; font-weight: 750; text-decoration: none; }
+.outlineAction:hover { background: #ffedaa; border-color: #a58b36; }
+.otherPlace > .quietLink { margin-top: 6px; }
+.logoFlower, .logoBee { display: block; flex: none; width: 35px; height: 35px; background-image: url('/brand/litterbugs-logo.png'); background-repeat: no-repeat; mix-blend-mode: multiply; }
+.logoFlower { background-size: 908.571% 636.765%; background-position: 54.77% 100%; }
+.logoBee { background-size: 605.714% 416.346%; background-position: 0% 57.751%; }
+.ways { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 26px; }
+.ways > div { border-radius: 22px; padding: 28px; background: #f8effc; }
+.ways > div:nth-child(2) { background: #fff8dc; }
+.ways > div:nth-child(3) { background: #f1efff; }
+.wayLabel { font-size: 13px; font-weight: 750; color: #783398; }
+.ways > div:nth-child(2) .wayLabel { color: #826200; }
+.ways > div:nth-child(3) .wayLabel { color: #5146bf; }
+.home.home .ways h3 { font-size: 25px; margin: 14px 0; line-height: 1.25; }
+.home.home .ways p { font-size: 17px; margin: 0; }
+.home.home .organization { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 64px; padding: 40px; border: 1px solid #e3dff0; border-radius: 26px; }
+.home.home .organization h2 { max-width: 440px; }
+.home.home .organization p { font-size: 18px; margin: 0 0 22px; }
+.home.home .organization .eyebrow { font-size: 14px; margin-bottom: 14px; }
+.organizationAction > button { padding: 12px 20px; border: 1px solid #e3c3f0; border-radius: 14px; background: #f2e5fa; box-shadow: 0 4px 0 #d9b7ec; color: #71328e; font-size: 17px; font-weight: 750; text-decoration: none; }
+.organizationAction > button:hover { background: #e8d2f7; text-decoration: none; }
+.home.home .previewNote, .home.home .organization .previewNote { color: var(--community-muted); font-size: 13px; line-height: 1.6; margin: 20px 0 0; }
+.organizationDetails { align-self: center; }
+.home.home .organizationDetails h3 { font-size: 25px; margin: 0 0 18px; }
+.organizationDetails ul { padding-left: 22px; margin: 0 0 20px; }
+.home.home .organizationDetails li { font-size: 17px; padding-left: 6px; margin-bottom: 12px; }
+.home.home .organizationDetails p { font-size: 15px; color: var(--community-muted); margin: 0; }
+.faq { max-width: 880px; }
+.faq details { border-bottom: 1px solid #e3dff0; }
+.faq details:first-of-type { border-top: 1px solid #e3dff0; }
+.faq summary { cursor: pointer; color: var(--community-ink); font-size: 20px; line-height: 1.5; font-weight: 650; min-height: 56px; padding: 18px 12px; border-radius: 10px; }
+.faq summary:hover { background: #f8f5ff; }
+.home.home .faq details p { font-size: 17px; margin: 0; padding: 0 12px 22px; }
+.home.home .networks { border-top: 1px solid #e3dff0; padding-top: 32px; }
+.home.home .networks h2 { font-size: 25px; margin-bottom: 12px; }
+.home.home .networks > p { font-size: 16px; margin-bottom: 12px; }
+.networks > div { display: flex; gap: 12px; flex-wrap: wrap; }
+.networks > div a { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 12px; color: #5146bf; font-size: 15px; font-weight: 700; border-radius: 12px; }
+.networks > div a:hover { background: #efedff; }
+@media (max-width: 1050px) {
+  .hero { gap: 36px; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
+  .directoryGrid { grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr); }
+  .home.home .communityCard { grid-template-columns: 1fr; }
+  .cardPhoto { min-height: 230px; }
+  .cardCopy { padding: 26px; }
+  .ways { gap: 18px; }
+  .ways > div { padding: 24px; }
+}
+@media (max-width: 760px) {
+  .home.home { width: calc(100% - 40px); padding-block: 32px 60px; }
+  .home.home > section { margin-top: 52px; }
+  .hero { grid-template-columns: 1fr; gap: 28px; }
+  .home.home h1 { font-size: clamp(34px, 7vw, 46px); max-width: 560px; }
+  .home.home .intro { font-size: 20px; }
+  .heroPhoto > img { height: 240px; object-position: 50% 55%; }
+  .heroPhoto figcaption { padding-top: 12px; }
+  .directoryGrid, .ways { grid-template-columns: 1fr; gap: 24px; }
+  .cardPhoto { min-height: 240px; }
+  .otherPlace { padding: 28px; }
+  .home.home .organization { grid-template-columns: 1fr; gap: 32px; padding: 28px; }
+  .home.home .ways h3, .home.home .otherPlace h3 { font-size: 25px; }
+  .home.home .sectionHeading p { font-size: 18px; }
+}
+@media (max-width: 470px) {
+  .finder form { flex-direction: column; }
+  .finder form > label { flex: auto; }
+  .finder form > button { width: 100%; }
+  .finder [role='group'] { gap: 6px; }
+  .finder [role='group'] button { padding-inline: 10px; font-size: 12px; }
+  .home.home .finder li a { flex-wrap: wrap; gap: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home.home :is(a,button,summary) { transition: none; }
+}
+
+/* Photo-led discovery; white surfaces replace pastel panels. */
+.home.home .heroPhoto > img { height:380px; border-radius:18px; box-shadow:none; object-position:58% center; }
+.home.home .heroCopy h1 { margin-bottom:30px; }
+.home.home .quietLink,.home.home .cardAction,.home.home .resourceCount strong,.home.home .networks a { color:#176b96; }
+.home.home .quietLink:hover,.home.home .networks a:hover { background:#edf6fb; }
+.home.home .communityCard { border:1px solid #dce4e8; border-radius:18px; box-shadow:none; }
+.home.home .communityCard:hover { background:#f7fafc; border-color:#176b96; }
+.home.home .cardCopy h3 { margin-top:0; }
+.home.home .cardPhoto { background:#f2f6f8; }
+.home.home .otherPlace { background:#fff; border:0; border-left:3px solid #eb735f; border-radius:0; padding:16px 0 16px 28px; }
+.home.home .outlineAction { color:#176b96; border-color:#bccdd7; background:#fff; }
+.home.home .outlineAction:hover { background:#edf6fb; border-color:#176b96; }
+.home.home .ways > div { background:#fff; border-radius:0; border-top:2px solid #eb735f; padding:24px 0 0; }
+.home.home .ways > div:nth-child(2) { border-color:#176b96; }
+.home.home .ways > div:nth-child(3) { border-color:#aebfc8; }
+.home.home .ways h3 { margin-top:0; }
+.home.home .organization { border:0; border-top:1px solid #dce4e8; border-bottom:1px solid #dce4e8; border-radius:0; padding:36px 0; }
+.home.home .organizationAction > button { background:#176b96; color:#fff; border-color:#176b96; box-shadow:none; border-radius:12px; }
+.home.home .organizationAction > button:hover { background:#155b80; }
+.home.home .faq details,.home.home .networks,.home.home .recentResult { border-color:#dce4e8; }
+.home.home .faq summary:hover { background:#edf6fb; }
+.home.home .finder > div > section { padding-top:12px; }
+
+@media(max-width:760px) {
+ .home.home .heroPhoto > img { height:260px; }
+ .home.home .otherPlace { padding:12px 0 12px 24px; }
+ .home.home .ways { gap:32px; }
+}

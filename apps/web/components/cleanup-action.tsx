@@ -323,12 +323,12 @@ export function CleanupAction({
   }
 
   const action = (() => {
+    if (report.cleanup_state === 'completed') return null;
     if (attemptFailed && !attempt) return null;
-    if (attemptLoading) return <button className="secondary-button compact-button" disabled>Checking cleanup…</button>;
+    if (attemptLoading) return <button className="primary-button compact-button" aria-label="Checking cleanup" disabled>{report.cleanup_state === 'available' ? 'Claim cleanup' : 'Cleanup details'}</button>;
     if (canSubmit) return <button className="primary-button compact-button" onClick={() => setSubmissionOpen(true)}>{attempt?.status === 'changes_requested' ? 'Update cleanup photos' : 'Submit cleanup photos'}</button>;
     if (isMyAttempt && attempt?.status === 'completion_submitted') return <button className="secondary-button compact-button" disabled>Cleanup under review</button>;
     if (attempt && !isMyAttempt) return <span className="cleanup-unavailable-note">Another member is cleaning this report</span>;
-    if (report.cleanup_state === 'completed') return null;
     return <button className="primary-button compact-button" onClick={beginClaim} disabled={attemptFailed || Boolean(busy) || preparing}>{userId ? (busy === 'waiver' ? 'Loading…' : 'Claim cleanup') : 'Sign in to clean'}</button>;
   })();
 

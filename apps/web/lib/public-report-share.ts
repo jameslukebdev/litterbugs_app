@@ -3,13 +3,16 @@ import { cache } from 'react';
 
 import type { Database, Report } from '@litterbugs/report-contract';
 
+import { publicCommunityForPoint } from './public-communities';
 import { getSiteUrl } from '@/lib/env';
 import {
   isPubliclyShareableReport,
+  isExpiredPublicReport,
   type PublicReportShareModel,
 } from '@/lib/public-report-share-model';
 import { createPublicClient } from '@/lib/supabase/public';
 import { embedSocialCardPhoto, loadSocialCardPhoto } from '@/lib/social-card-photo';
+import { loadLocalHistoryPhotoPreview } from '@/lib/local-history-photo-preview';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type CleanupAttempt = Database['public']['Tables']['cleanup_attempts']['Row'];
@@ -103,16 +106,28 @@ const loadPublicReportData = cache(async (reportId: string) => {
     }
   }
 
+  const { data: reporter } = report.user_id
+    ? await supabase.from('profiles').select('display_name, username').eq('id', report.user_id).maybeSingle()
+    : { data: null };
+
+  const expired = isExpiredPublicReport(report);
+  const community = publicCommunityForPoint(report.latitude, report.longitude);
   const model: PublicReportShareModel = {
     id: report.id,
-    state: report.cleanup_state === 'completed' ? 'completed' : report.cleanup_state === 'available' ? 'available' : 'in_progress',
-    rewardCents: report.cleanup_state === 'available' && report.funding_eligibility === 'eligible' ? Math.max(0, report.funded_amount_cents || 0) : 0,
+    state: expired ? 'expired' : report.cleanup_state === 'completed' ? 'completed' : report.cleanup_state === 'available' ? 'available' : 'in_progress',
+    fundingEligible: !expired && report.cleanup_state === 'available' && report.funding_eligibility === 'eligible' && report.renewal_status === 'active' && !report.funding_frozen_at && !report.funding_locked_at && !report.cancelled_at && !report.expired_at,
+    rewardCents: !expired && report.cleanup_state === 'available' && report.funding_eligibility === 'eligible' ? Math.max(0, report.funded_amount_cents || 0) : 0,
     title: report.title?.trim() || 'Litter Report',
-    generalLocation: 'Exact location shown only in Litterbugs',
+    generalLocation: community?.label ?? 'Exact location shown only in Litterbugs',
+    communitySlug: community?.slug,
+    localityLabel: community?.localityLabel,
     severity: report.severity,
+    reporterName: displayName(reporter) || 'Community member',
+    reporterId: report.user_id,
     notes: reportNotes(report),
     litterTypes: litterTypes(report),
     reportDate: report.created_at,
+    expiredDate: expired ? report.expired_at ?? report.expires_at : null,
     cleanerName: displayName(cleaner),
     completionDate: attempt?.completed_at ?? null,
     cleanupDescription: submission?.description ?? null,
@@ -143,24 +158,39 @@ export async function loadPublicReportShare(
   }
 
   const supabase = createPublicClient();
+  const preview = data.model.state === 'expired' && data.beforePath
+    ? await loadLocalHistoryPhotoPreview(reportId, data.beforePath, 1080) : null;
   const [beforePhotoUrl, afterPhotoUrl] = await Promise.all([
-    embedSocialCardPhoto(supabase, 'report_photos', data.beforePath),
+    preview ? Promise.resolve(`data:image/jpeg;base64,${preview.toString('base64')}`)
+      : embedSocialCardPhoto(supabase, 'report_photos', data.beforePath),
     embedSocialCardPhoto(supabase, 'cleanup_photos', data.afterPath),
   ]);
   return { ...data.model, beforePhotoUrl, afterPhotoUrl };
 }
 
-export async function loadPublicReportPhoto(reportId: string, kind: 'before' | 'after') {
-  const data = await loadPublicReportData(reportId);
-  if (!data) return null;
-
-  // Only the first public report photo or the completed attempt's final evidence
-  // is addressable. Callers cannot supply a Storage bucket, path or submission.
-  const path = kind === 'before' ? data.beforePath : data.afterPath;
+export async function loadPublicReportPhoto(reportId: string, kind: 'before' | 'after', width: 640 | 1080 = 1080) {
+  if (!UUID_PATTERN.test(reportId)) return null;
+  const supabase = createPublicClient();
+  const { data: report, error } = await supabase.from('reports')
+    .select('*').eq('id', reportId).eq('is_sample', false).eq('is_published', true).maybeSingle();
+  if (error) throw error;
+  if (!report || !isPubliclyShareableReport(report)) return null;
+  let path = report.photo_paths?.[0];
+  if (kind === 'after') {
+    if (report.cleanup_state !== 'completed') return null;
+    const { data: attempt } = await supabase.from('cleanup_attempts')
+      .select('id, final_submission_id').eq('report_id', reportId).eq('status', 'completed')
+      .not('final_submission_id', 'is', null).order('completed_at', { ascending: false }).limit(1).maybeSingle();
+    if (!attempt?.final_submission_id) return null;
+    const { data: photo } = await supabase.from('cleanup_submission_photos')
+      .select('storage_path').eq('submission_id', attempt.final_submission_id)
+      .order('display_order', { ascending: true }).limit(1).maybeSingle();
+    path = photo?.storage_path;
+  }
   if (!path) return null;
-  return loadSocialCardPhoto(
-    createPublicClient(),
-    kind === 'before' ? 'report_photos' : 'cleanup_photos',
-    path,
-  );
+  if (kind === 'before' && isExpiredPublicReport(report)) {
+    const preview = await loadLocalHistoryPhotoPreview(reportId, path, width);
+    if (preview) return preview;
+  }
+  return loadSocialCardPhoto(supabase, kind === 'before' ? 'report_photos' : 'cleanup_photos', path, width);
 }

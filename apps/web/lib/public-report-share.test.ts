@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { from, embed, loadImage, createPublicClient } = vi.hoisted(() => ({
-  from: vi.fn(), embed: vi.fn(), loadImage: vi.fn(), createPublicClient: vi.fn(),
+const { from, embed, loadImage, createPublicClient, localPreview } = vi.hoisted(() => ({
+  from: vi.fn(), embed: vi.fn(), loadImage: vi.fn(), createPublicClient: vi.fn(), localPreview: vi.fn(),
 }));
+vi.mock('@/lib/local-history-photo-preview', () => ({ loadLocalHistoryPhotoPreview: localPreview }));
 vi.mock('server-only', () => ({}));
 vi.mock('@/lib/env', () => ({ getSiteUrl: () => 'https://litterbugs.app' }));
 vi.mock('@/lib/supabase/public', () => ({ createPublicClient }));
@@ -36,6 +37,7 @@ function fixture(report: unknown = base) {
 }
 beforeEach(() => {
   vi.clearAllMocks(); queries.clear(); fixture();
+  localPreview.mockResolvedValue(null);
   from.mockImplementation((table: string) => queries.get(table));
   createPublicClient.mockReturnValue({ from });
   embed.mockImplementation(async (_client, _bucket, path) => path ? 'data:image/jpeg;base64,AQID' : null);
@@ -64,7 +66,7 @@ describe('public report photo delivery', () => {
   it('serves only the selected public photo, with completed evidence tied to its final submission', async () => {
     fixture({ ...base, cleanup_state: 'completed', expires_at: '2020-01-01' });
     expect(await loadPublicReportPhoto(id, 'after')).toEqual(Buffer.from([1, 2, 3]));
-    expect(loadImage).toHaveBeenCalledExactlyOnceWith(expect.anything(), 'cleanup_photos', afterPath);
+    expect(loadImage).toHaveBeenCalledExactlyOnceWith(expect.anything(), 'cleanup_photos', afterPath, 1080);
     expect(queries.get('cleanup_attempts')?.eq).toHaveBeenCalledWith('report_id', id);
     expect(queries.get('cleanup_attempts')?.eq).toHaveBeenCalledWith('status', 'completed');
     expect(queries.get('cleanup_submission_photos')?.eq).toHaveBeenCalledWith('submission_id', 'final');
@@ -80,7 +82,7 @@ describe('public report photo delivery', () => {
 
   it.each([
     { is_published: false }, { is_sample: true }, { cancelled_at: '2026-01-01' },
-    { expired_at: '2026-01-01' }, { expires_at: '2020-01-01' }, { cleanup_state: 'cancelled' },
+    { cleanup_state: 'cancelled' },
   ])('does not load photos for an excluded report: %j', async changes => {
     fixture({ ...base, ...changes });
     expect(await loadPublicReportPhoto(id, 'before')).toBeNull();
@@ -112,4 +114,37 @@ describe('public report photo delivery', () => {
     await expect(loadPublicReportPhoto(id, 'before')).rejects.toThrow('unavailable');
     expect(loadImage).not.toHaveBeenCalled();
   });
+});
+
+it('loads a card photo without fetching profiles or unrelated cleanup details', async () => {
+  fixture({ ...base, cleanup_state: 'completed' });
+  await loadPublicReportPhoto(id, 'before', 640);
+  expect(from).toHaveBeenCalledExactlyOnceWith('reports');
+  expect(loadImage).toHaveBeenCalledWith(expect.anything(), 'report_photos', expect.any(String), 640);
+});
+
+it.each([
+  { expires_at: '2020-01-01' },
+  { expired_at: '2020-01-01' },
+  { expired_at: '2020-01-01', cancelled_at: '2020-01-08', renewal_status: 'closed' },
+])('keeps expired original evidence without offering a reward or unfinished after evidence: %j', async changes => {
+  fixture({ ...base, ...changes, funding_eligibility: 'eligible', funded_amount_cents: 1000 });
+  expect(await loadPublicReportShare(id, 'linked')).toMatchObject({ state: 'expired', fundingEligible: false, rewardCents: 0 });
+  expect(await loadPublicReportPhoto(id, 'before')).not.toBeNull();
+  expect(await loadPublicReportPhoto(id, 'after')).toBeNull();
+});
+it('does not revive an expired record erased by account anonymization', async () => {
+  fixture({ ...base, title: null, expires_at: '2020-01-01', photo_paths: null });
+  expect(await loadPublicReportShare(id, 'linked')).toBeNull();
+});
+
+it('only uses local history copies after checking current anonymous publication and expiry', async () => {
+  fixture({ ...base, expires_at: '2020-01-01' });
+  localPreview.mockResolvedValue(Buffer.from([1, 2, 3]));
+  expect(await loadPublicReportPhoto(id, 'before', 640)).toEqual(Buffer.from([1, 2, 3]));
+  expect(localPreview).toHaveBeenCalledWith(id, beforePath, 640);
+  expect(loadImage).not.toHaveBeenCalled();
+  fixture({ ...base, expires_at: '2020-01-01', is_published: false });
+  expect(await loadPublicReportPhoto(id, 'before', 640)).toBeNull();
+  expect(localPreview).toHaveBeenCalledTimes(1);
 });

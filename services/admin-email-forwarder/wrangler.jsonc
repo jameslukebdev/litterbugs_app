@@ -1,0 +1,9 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "litterbugs-admin-email-forwarder",
+  "account_id": "faccfcc33a9c5b3800416063b6f8bfa5",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-21",
+  "workers_dev": false,
+  "observability": { "enabled": true }
+}

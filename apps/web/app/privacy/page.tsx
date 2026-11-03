@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import { LegalPage } from '@/components/legal-page';
+import { AnalyticsPreferences } from '@/components/website-analytics';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/privacy' },
@@ -15,7 +16,7 @@ export default function PrivacyPage() {
       eyebrow="LITTERBUGS PRIVACY"
       title="Privacy policy"
       summary="This policy explains how Litterbugs collects, uses, shares, and protects information when providing our services."
-      effectiveDate="September 9, 2026"
+      effectiveDate="October 31, 2026"
       sections={[
         {
           title: 'Scope and responsible company',
@@ -73,6 +74,14 @@ export default function PrivacyPage() {
           </>,
         },
         {
+          title: 'Optional website analytics',
+          content: <>
+            <p>PostHog helps us understand visits using cookieless measurement, without placing analytics cookies or using browser storage for its analytics identifiers. Google Analytics and Microsoft Clarity also help us understand site usage and may use cookies. Clarity may reconstruct masked sessions and interactions. These services may operate with limited functionality in some locations until you allow analytics. Turning analytics off does not affect your ability to use Litterbugs. We honor browser Do Not Track and Global Privacy Control signals.</p>
+            <p>Analytics providers may process online identifiers, pages, referring websites, and basic device or network information. We exclude report content, account identifiers, and payment details from the events we send to Google Analytics and PostHog. Clarity uses masking for sensitive content, but may process other page content, page URLs and interactions. Google Analytics and Clarity may store cookies depending on your settings and location. We do not enable advertising personalization or Google signals.</p>
+            <p><AnalyticsPreferences /> lets you enable, decline, or withdraw optional analytics. Withdrawing stops further measurement on this browser; it does not automatically delete events already processed by a provider. Contact us for privacy requests.</p>
+          </>,
+        },
+        {
           title: 'Public and member-visible information',
           content: <p>Report facts, general locations, report photos, cleanup status, and accepted cleanup evidence may be visible to other members or the public as part of the community map and completed-cleanup history. Pending private cleanup evidence is limited to the cleaner, reporter, authorized reviewers, and service providers needed for review. Do not submit information you do not want processed for these purposes.</p>,
         },
@@ -88,7 +97,7 @@ export default function PrivacyPage() {
           title: 'Your choices and privacy requests',
           content: <>
             <p>You may review or update profile information in the app, control device permissions and notifications, block other accounts, and request account deletion from Profile. Account deletion removes the account and identity-linked uploaded photos where permitted. Community report facts may remain after de-identification, and financial, dispute, safety, fraud, tax, and legal records may be retained when required.</p>
-            <p>Depending on where you live and whether an applicable law&apos;s thresholds are met, you may have rights to request access, correction, deletion, or a copy of certain personal information, or to appeal a denied request. Litterbugs does not sell personal information or process it for targeted advertising. Send requests to <strong>support@litterbugs.app</strong>. We may verify your identity before acting.</p>
+            <p>Depending on where you live and whether an applicable law&apos;s thresholds are met, you may have rights to request access, correction, deletion, or a copy of certain personal information, or to appeal a denied request. Litterbugs does not sell personal information or process it for targeted advertising. Send requests to <a href="mailto:admin@litterbugs.app">admin@litterbugs.app</a>. We may verify your identity before acting.</p>
           </>,
         },
         {
@@ -106,7 +115,7 @@ export default function PrivacyPage() {
           title: 'Changes and contact',
           content: <>
             <p>We may update this policy as Litterbugs or applicable requirements change. We will post the updated policy with a new effective date and provide additional notice when appropriate.</p>
-            <p>For privacy questions or requests, contact Litterbugs at <strong>support@litterbugs.app</strong>.</p>
+            <p>For privacy questions or requests, contact Litterbugs at <a href="mailto:admin@litterbugs.app">admin@litterbugs.app</a>.</p>
           </>,
         },
       ]}

@@ -1,0 +1,43 @@
+.panel.panel.panel { --green: #5146ed; --green-dark: #4438bb; --green-soft: #efedff; --line: #e3dff0; background: #fff; border-color: #e3dff0; }
+.panel.panel.panel :global(.report-browser-header) { position: relative; z-index: 8; padding: 14px 16px 12px; background: #fff; border-bottom: 1px solid #eeeaf8; overflow: visible; max-height: none; }
+.panel.panel.panel :global(.report-browser-heading-row) { gap: 12px; }
+.panel.panel.panel :global(.report-browser-filters) { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; overflow: visible; }
+.panel.panel.panel :global(.report-browser-filters) button { min-height: 40px; padding: 8px 12px; border: 1px solid #e3dff0; color: #514b61; background: #fff; }
+.panel.panel.panel :global(.report-browser-filters) button:hover { color: #4438bb; border-color: #b3a6e5; background: #f7f5ff; }
+.panel.panel.panel :global(.report-browser-filters) button[aria-pressed='true'] { color: #4438bb; border-color: #b3a6e5; background: #efedff; }
+.panel.panel.panel :global(.report-browser-list) { padding-top: 12px; }
+.panel.panel.panel :global(.report-browser-empty) { min-height: 0; padding: 20px 4px; gap: 8px; }
+.panel.panel.panel :global(.report-browser-empty) :global(.primary-button) { background: #5146ed; border-color: #5146ed; border-radius: 12px; }
+.panel.panel.panel :global(.report-browser-empty) :global(.primary-button):hover { background: #4438bb; }
+.panel.panel.panel :global(.report-browser-empty) :global(.secondary-button) { border-color: #e3dff0; border-radius: 12px; }
+.panel.panel.panel :global(.report-browser-empty) :global(.secondary-button):hover { background: #f4f1ff; }
+.panel.panel.panel button:focus-visible { outline: 3px solid #b3a6e5; outline-offset: 2px; }
+.sort.sort { position: relative; flex: 0 0 auto; }
+.trigger { display: inline-flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 44px; min-width: 130px; padding: 10px 14px; border: 1px solid #d8d1ee; border-radius: 12px; background: #fff; color: #4438bb; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
+.trigger svg { width: 18px; height: 18px; flex: none; }
+.trigger:hover, .trigger[aria-expanded='true'] { background: #f4f1ff; border-color: #b3a6e5; }
+.menu { position: absolute; z-index: 20; top: calc(100% + 8px); right: 0; width: 190px; padding: 6px; border: 1px solid #d8d1ee; border-radius: 16px; background: #fff; box-shadow: 0 4px 0 #ede9f6, 0 8px 24px #29293212; }
+.menu button { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 44px; padding: 10px 12px; gap: 12px; border: 0; border-radius: 10px; background: white; color: #292932; font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+.menu button:hover, .menu button:focus-visible, .menu button[aria-checked='true'] { background: #f1edff; color: #4438bb; }
+.menu svg { width: 18px; height: 18px; flex: none; }
+
+.panel.panel.panel :global(.report-result) { border: 0; box-shadow: none; border-radius: 18px; }
+.panel.panel.panel :global(.report-result):hover { background: #faf8ff; box-shadow: none; }
+.panel.panel.panel :global(.report-result-reward) { background: #efedff; color: #5146bf; }
+
+.toolbarFilters.toolbarFilters.toolbarFilters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; overflow: visible; }
+.toolbarFilters.toolbarFilters button { flex: none; min-height: 40px; padding: 8px 12px; border: 1px solid #e3dff0; border-radius: 12px; background: #fff; color: #514b61; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.toolbarFilters.toolbarFilters button:hover { background: #f7f5ff; border-color: #b3a6e5; color: #4438bb; }
+.toolbarFilters.toolbarFilters button[aria-pressed='true'] { background: #efedff; border-color: #b3a6e5; color: #4438bb; }
+.toolbarFilters.toolbarFilters button:focus-visible { outline: 3px solid #b3a6e5; outline-offset: 2px; }
+
+/* One outer card frame contains both the report action and author footer. */
+.panel.panel.panel :global(.report-card-container) { border: 1px solid #e3dff0; border-radius: 18px; box-shadow: 0 3px 0 #eeeaf8; background: #fff; }
+.panel.panel.panel :global(.report-card-container):is(:hover,:focus-within) { border-color: #b3a6e5; box-shadow: 0 3px 0 #d8d1ee; }
+.panel.panel.panel :global(.report-card-container):has(:global(.report-author)) :global(.report-result) { border-radius: 17px 17px 0 0; }
+.panel.panel.panel :global(.report-card-container) > :global(.report-author) { border: 0; border-top: 1px solid #eeeaf8; border-radius: 0 0 17px 17px; }
+.panel.panel.panel :global(.report-card-container):has(:global(.report-result-selected)) { border-color: #5146ed; box-shadow: 0 0 0 2px #b3a6e5; }
+
+@media (max-width: 760px) {
+  .toolbarFilters.toolbarFilters.toolbarFilters { gap: 8px; }
+}

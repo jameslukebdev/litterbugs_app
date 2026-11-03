@@ -2,27 +2,35 @@
 
 /* eslint-disable @next/next/no-img-element -- The route delivers bounded JPEGs and rechecks visibility on every request. */
 import { useState } from 'react';
+import type { publicReportPhotoDescription } from '@/lib/public-report-content';
 import styles from './report-share.module.css';
 
-export function ReportPhotos({ beforePhotoUrl, afterPhotoUrl, completed }: {
+type PhotoDescription = ReturnType<typeof publicReportPhotoDescription>;
+export function ReportPhotos({ beforePhotoUrl, afterPhotoUrl, beforeDescription, afterDescription }: {
   beforePhotoUrl: string | null;
   afterPhotoUrl: string | null;
-  completed: boolean;
+  beforeDescription: PhotoDescription;
+  afterDescription: PhotoDescription;
 }) {
   const [failed, setFailed] = useState<string[]>([]);
   const photos = [
-    { url: afterPhotoUrl, alt: 'Location after the cleanup', label: 'After' },
-    { url: beforePhotoUrl, alt: completed ? 'Location before the cleanup' : 'Reported litter', label: completed ? 'Before' : 'Report photo' },
-  ].filter((photo): photo is { url: string; alt: string; label: string } => Boolean(photo.url) && !failed.includes(photo.url!));
+    { url: beforePhotoUrl, ...beforeDescription },
+    { url: afterPhotoUrl, ...afterDescription },
+  ].filter((photo): photo is typeof photo & { url: string } => Boolean(photo.url) && !failed.includes(photo.url!));
 
   if (!photos.length) return null;
   return (
     <div className={`${styles.photos} ${photos.length === 1 ? styles.singlePhoto : ''}`}>
       {photos.map(photo => (
-        <div className={styles.photo} key={photo.url}>
-          <img src={photo.url} alt={photo.alt} onError={() => setFailed(current => [...current, photo.url])} />
-          <span className={styles.photoLabel}>{photo.label}</span>
-        </div>
+        <figure className={styles.photo} key={photo.url}>
+          <div className={styles.photoFrame}>
+            <img src={photo.url} alt={photo.alt} width={1080} height={810}
+              sizes="(max-width: 700px) calc(100vw - 40px), 480px"
+              srcSet={`${photo.url}?width=640 640w, ${photo.url} 1080w`}
+              onError={() => setFailed(current => [...current, photo.url])} />
+          </div>
+          <figcaption className={styles.photoLabel}><strong>{photo.label}</strong><span>{photo.caption}</span></figcaption>
+        </figure>
       ))}
     </div>
   );

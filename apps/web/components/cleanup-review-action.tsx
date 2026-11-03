@@ -1,4 +1,5 @@
 'use client';
+import { trackWebsiteOutcome } from '@/lib/website-analytics';
 
 /* eslint-disable @next/next/no-img-element -- Review evidence uses short-lived signed Storage URLs. */
 
@@ -65,7 +66,7 @@ export function CleanupReviewAction({
   }
 
   const refreshNotice = attemptFailed ? <p role="alert" className="form-message error-message">Cleanup review could not be refreshed. {attempt ? 'Your last confirmed review and feedback are still here. Retry before sending a decision.' : 'Retry to check whether evidence needs your review.'} <button type="button" className="secondary-button" onClick={() => void refreshAttempt()}>Retry cleanup review</button></p> : null;
-  if (!attempt) return <>{refreshNotice}{attemptLoading && <span role="status">Checking cleanup review…</span>}{message && <span className="cleanup-action-message" role="status">{message}</span>}</>;
+  if (!attempt) return <>{refreshNotice}{attemptLoading && <span className="sr-only" role="status">Checking cleanup review…</span>}{message && <span className="cleanup-action-message" role="status">{message}</span>}</>;
 
   async function openReview() {
     if (!attempt) return;
@@ -136,35 +137,51 @@ export function CleanupReviewAction({
   }
 
   async function completeReview(decision: 'approved' | 'changes_requested') {
-    if (attemptFailed || !attempt || !context) return;
+    if (attemptFailed || !attempt || !context || busy || !isOwner || !userId) return;
+    if (attempt.is_paid && (decision !== 'approved' || !paidReviewAvailable || Date.parse(attempt.review_due_at!) <= Date.now())) {
+      setMessage('This funded cleanup is not available for approval. Refresh the review before trying again.');
+      void refreshAttempt();
+      return;
+    }
     if (decision === 'changes_requested' && !reasons.length) {
       setMessage('Choose at least one reason for requesting changes.');
       return;
     }
-    if (!window.confirm(decision === 'approved' ? 'Approve this cleanup?' : 'Request updated cleanup evidence?')) return;
+    if (!window.confirm(decision === 'approved'
+      ? attempt.is_paid
+        ? 'Approve this funded cleanup? This ends your remaining dispute window. Payment will still require all payout and eligibility checks.'
+        : 'Approve this cleanup?'
+      : 'Request updated cleanup evidence?')) return;
     setBusy(decision);
-    const { data: reviewedAttempt, error } = await createClient().rpc('review_cleanup', {
-      target_cleanup_id: attempt.id,
-      target_submission_id: context.submission.id,
-      review_decision: decision,
-      request_change_reasons: decision === 'changes_requested' ? reasons : undefined,
-      reviewer_note: note.trim() || undefined,
-    });
-    setBusy('');
-    if (error) {
-      setMessage('The cleanup decision could not be saved. Try again.');
-      return;
-    }
-    if (reviewedAttempt?.status !== 'completed' && reviewedAttempt?.status !== 'changes_requested') {
-      setMessage('The cleanup is still awaiting review. Your feedback has been kept.');
-      return;
-    }
-    if (userId && context) { try { clearCleanupReviewDraft(userId, context.submission.id); } catch { /* The server decision remains authoritative. */ } }
-    notifyDataChanged();
-    setOpen(false);
-    clearAttempt();
-    setMessage(reviewedAttempt.status === 'completed' ? 'Cleanup approved.' : 'The cleaner has been asked for updated evidence.');
-    await Promise.resolve().then(() => onChanged?.()).catch(() => undefined);
+    try {
+      const { data: reviewedAttempt, error } = await createClient().rpc('review_cleanup', {
+        target_cleanup_id: attempt.id,
+        target_submission_id: context.submission.id,
+        review_decision: decision,
+        request_change_reasons: decision === 'changes_requested' ? reasons : undefined,
+        // The funded textarea is a dispute reason, not an approval note.
+        reviewer_note: attempt.is_paid ? undefined : note.trim() || undefined,
+      });
+      if (error) {
+        setMessage('The cleanup decision could not be saved. Try again.');
+        return;
+      }
+      if (reviewedAttempt?.status !== 'completed' && reviewedAttempt?.status !== 'changes_requested') {
+        setMessage('The cleanup is still awaiting review. Your feedback has been kept.');
+        return;
+      }
+      if (userId && context) { try { clearCleanupReviewDraft(userId, context.submission.id); } catch { /* The server decision remains authoritative. */ } }
+      if (reviewedAttempt.status === 'completed') trackWebsiteOutcome('cleanup_approved', attempt.id);
+      notifyDataChanged();
+      setOpen(false);
+      clearAttempt();
+      setMessage(reviewedAttempt.status === 'completed'
+        ? attempt.is_paid ? 'Cleanup approved. Payment still depends on the remaining payout and eligibility checks.' : 'Cleanup approved.'
+        : 'The cleaner has been asked for updated evidence.');
+      await Promise.resolve().then(() => onChanged?.()).catch(() => undefined);
+    } catch {
+      setMessage('The cleanup decision could not be confirmed. Refresh the review before trying again. Your feedback has been kept.');
+    } finally { setBusy(''); }
   }
 
   async function disputePaidCleanup() {
@@ -192,6 +209,13 @@ export function CleanupReviewAction({
     await Promise.resolve().then(() => onChanged?.()).catch(() => undefined);
   }
 
+  const paidReviewAvailable = attempt.is_paid
+    && attempt.status === 'completion_submitted'
+    && attempt.first_paid_admin_status !== 'rejected'
+    && attempt.financial_review_status === 'passed'
+    && attempt.dispute_status !== 'open'
+    && Boolean(attempt.review_due_at && Date.parse(attempt.review_due_at) > checkedAt);
+
   const paidDisputeAvailable = attempt.is_paid
     && attempt.financial_review_status === 'passed'
     && attempt.dispute_status === 'none'
@@ -200,8 +224,8 @@ export function CleanupReviewAction({
   return (
     <>
       {!(open && context) && refreshNotice}
-      {message && <span className="cleanup-action-message" role="status">{message}</span>}
-      <button className="secondary-button compact-button" onClick={openReview} disabled={busy === 'load'}>{busy === 'load' ? 'Loading…' : attempt.is_paid ? 'Review or dispute' : 'Review cleanup'}</button>
+      {message && !open && <span className="cleanup-action-message" role="status">{message}</span>}
+      <button className="secondary-button compact-button" onClick={openReview} disabled={busy === 'load'}>{busy === 'load' ? 'Loading…' : 'Review cleanup'}</button>
 
       {open && context && (
         <ModalShell embedded={workspace} onClose={() => setOpen(false)} label="Review submitted cleanup evidence" className="cleanup-flow-dialog cleanup-review-dialog" closeDisabled={Boolean(busy)}>
@@ -224,7 +248,8 @@ export function CleanupReviewAction({
           </div>
           {attempt.is_paid ? (
             <div className="cleanup-flow-actions">
-              <span className="cleanup-paid-review-note">The 48-hour review window begins after the photos pass review. No response is needed unless you see a problem.</span>
+              <span className="cleanup-paid-review-note">After the photos pass review, you have up to 48 hours to approve or dispute the cleanup. Approving ends your remaining dispute window. If you do nothing, approval happens automatically when the window ends. Payment still requires all remaining checks.</span>
+              <button className="primary-button" onClick={() => completeReview('approved')} disabled={attemptFailed || !paidReviewAvailable || Boolean(busy)}>{busy === 'approved' ? 'Approving…' : 'Approve cleanup'}</button>
               <button className="danger-button" onClick={disputePaidCleanup} disabled={attemptFailed || !paidDisputeAvailable || Boolean(busy)}>{paidDisputeAvailable ? (busy === 'dispute' ? 'Submitting…' : 'Dispute cleanup') : 'Dispute unavailable'}</button>
             </div>
           ) : (

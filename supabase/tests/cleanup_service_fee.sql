@@ -31,7 +31,7 @@ declare c public.cleanup_contributions;
 begin
   c := public.reserve_cleanup_contribution('92000000-0000-4000-8000-000000000001',
     '91000000-0000-4000-8000-000000000001','93000000-0000-4000-8000-000000000099',105,2);
-  assert c.platform_fee_cents=61 and c.total_amount_cents=166 and c.pricing_version=2, 'service role can reserve new combined-fee payment';
+  assert c.platform_fee_cents=71 and c.total_amount_cents=176 and c.pricing_version=2, 'service role can reserve new combined-fee payment';
 end $$;
 reset role;
 update public.cleanup_pricing_config set pricing_version=1;
@@ -56,8 +56,8 @@ begin
     perform public.reserve_cleanup_contribution(c.report_id,c.contributor_id,c.client_request_id,1000,2);
     raise exception 'changed principal accepted';
   exception when check_violation then assert sqlerrm='cleanup_contribution_idempotency_mismatch'; end;
-  foreach cents in array array[100,104,105,109,500,505,100000] loop
-    expected_fee := case cents when 100 then 60 when 104 then 60 when 105 then 61 when 109 then 61 when 500 then 100 when 505 then 101 when 100000 then 10050 end;
+  foreach cents in array array[100,104,105,109,300,499,500,505,10000,100000] loop
+    expected_fee := case cents when 100 then 70 when 104 then 71 when 105 then 71 when 109 then 72 when 300 then 110 when 499 then 150 when 500 then 100 when 505 then 101 when 10000 then 2000 when 100000 then 20000 end;
     c := public.reserve_cleanup_contribution('92000000-0000-4000-8000-000000000001','91000000-0000-4000-8000-000000000001',gen_random_uuid(),cents,2,'receipt@example.com');
     assert c.pricing_version=2 and c.platform_fee_cents=expected_fee and c.total_amount_cents=cents+expected_fee, 'v2 fee and total';
     assert c.stripe_payment_intent_id is null and c.stripe_receipt_email='receipt@example.com', 'reserve before Stripe';
@@ -77,7 +77,7 @@ begin
   -- Finalization adds principal only; refund requests preserve the entire fee.
   perform public.finalize_cleanup_contribution('pi_fee_'||c.id::text,'ch_fee_test',true,null);
   assert (select funded_amount_cents=100000 from public.reports where id=c.report_id), 'cleaner gets full principal';
-  assert (select total_amount_cents=110050 from public.cleanup_contributions where id=c.id), 'full refund amount';
+  assert (select total_amount_cents=120000 from public.cleanup_contributions where id=c.id), 'full refund amount';
   update public.cleanup_pricing_config set pricing_version=1;
   d := public.reserve_cleanup_contribution(c.report_id,c.contributor_id,c.client_request_id,c.principal_amount_cents,1);
   assert d.pricing_version=2 and d.total_amount_cents=c.total_amount_cents, 'rollback preserves existing charge';
@@ -92,9 +92,9 @@ begin
     exception when check_violation then assert sqlerrm='cleanup_contribution_invalid'; end;
   end loop;
   perform private.close_expired_report(c.report_id, now(), null, 'system');
-  assert (select status='refund_pending' and total_amount_cents=110050 from public.cleanup_contributions where id=c.id), 'refund includes combined service fee';
+  assert (select status='refund_pending' and total_amount_cents=120000 from public.cleanup_contributions where id=c.id), 'refund includes combined service fee';
   perform public.mark_cleanup_refund_result(c.id,true,'re_fee_test',null);
-  assert (select status='refunded' and platform_fee_cents=10050 from public.cleanup_contributions where id=c.id), 'refund retains fee ledger';
+  assert (select status='refunded' and platform_fee_cents=20000 from public.cleanup_contributions where id=c.id), 'refund retains fee ledger';
   assert not has_function_privilege('authenticated','public.reserve_cleanup_contribution(uuid,uuid,uuid,bigint,integer,text)','execute');
   assert not has_function_privilege('anon','public.attach_cleanup_payment_intent(uuid,text)','execute');
   assert not has_table_privilege('authenticated','public.cleanup_pricing_config','update');

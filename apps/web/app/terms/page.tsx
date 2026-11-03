@@ -15,7 +15,7 @@ export default function TermsPage() {
       eyebrow="LITTERBUGS TERMS"
       title="Terms of use"
       summary="These terms govern Litterbugs accounts, community reports, cleanup funding, cleaner rewards, safety, reviews, disputes, and refunds."
-      effectiveDate="September 30, 2026"
+      effectiveDate="October 21, 2026"
       sections={[
         {
           title: 'Agreement and who may use Litterbugs',
@@ -42,9 +42,16 @@ export default function TermsPage() {
           title: 'Contributions and the service fee',
           content: <>
             <p>A logged-in member may add between <strong>$1 and $1,000 per transaction</strong> to an active, eligible cleanup report. The reporter does not have to contribute. Before payment, Litterbugs shows the principal added to the cleaner reward, one service fee per checkout, and the total charge. The current service fee and total are confirmed at secure checkout before you pay.</p>
-            <p>The displayed cleaner reward is the total contribution principal, not the total charged. If an eligible cleanup is approved, the cleaner receives that exact frozen principal. Litterbugs retains the service fee and absorbs standard Stripe processing, payout, refund, and chargeback costs. Existing payments and pending payment attempts keep their original fee and total. Selecting “No contribution now” creates no fee. Contributions are not charitable donations and are not represented as tax deductible.</p>
+            <p>The displayed cleaner reward is the total contribution principal, not the total charged. If an eligible cleanup is approved, the cleaner receives that exact frozen principal. The service fee is 20% of the contribution, plus $0.50 for contributions below $5. Litterbugs pays 5% of eligible contributed principal to the reporter from that fee, retains the remainder, and covers standard processing costs. Existing payments and pending payment attempts keep their original fee and total. Selecting “No contribution now” creates no fee. Contributions are not charitable donations and are not represented as tax deductible.</p>
             <p>By confirming a contribution, you authorize Litterbugs and Stripe to charge the selected payment method for the displayed total. A contribution is successful only after the payment is confirmed and reconciled. A pending, failed, canceled, reversed, duplicated, or mismatched payment may be blocked or sent to administrator review.</p>
             <p>A successful contribution remains assigned to the report until paid to an approved cleaner or refunded under the published rules. A contributor cannot cancel, withdraw, or opt out merely because they changed their mind. This does not limit rights that cannot be waived under applicable law or governing payment-network rules.</p>
+          </>,
+        },
+        {
+          title: 'Reporter rewards',
+          content: <>
+            <p>Reporting is free. Contributions made under the fee introduced October 21, 2026 qualify for a reporter reward after the cleanup is approved. The reward is 5% of that cleanup&apos;s eligible principal, rounded once to the nearest cent. It does not reduce the cleaner&apos;s reward. A person who both reports and cleans may receive both rewards.</p>
+            <p>The existing evidence, review, and dispute requirements apply. No reward is earned for a rejected cleanup or refunded funding. Reporter transfers follow the cleaner&apos;s successful transfer. Receiving a reward requires age 18 or older and an eligible US Stripe payout account. An earned reporter reward waits if setup is incomplete; this does not hold up the cleaner. Both rewards use the same payout settings. A transfer to Stripe is separate from its arrival in your bank.</p>
           </>,
         },
         {
@@ -65,9 +72,8 @@ export default function TermsPage() {
               <li>Gemini performs an initial structured photo review and may request better photos or send the case to an administrator. It never releases money.</li>
               <li>A funded cleaner may be asked for better photos twice. A third inconclusive result is escalated to an administrator.</li>
               <li>After evidence passes, the reporter has up to 48 hours to approve the cleanup or dispute it. Reporter approval ends the remaining dispute window and allows protected payout processing to begin once every other required review and eligibility check has passed. If the reporter does nothing, the cleanup is automatically approved when the 48-hour window expires.</li>
-              <li>The cleaner&apos;s first paid cleanup receives a lightweight administrator check.</li>
             </ul>
-            <p>A reporter may clean their own report and receive the reward, but receives no preferential treatment. The same evidence, Gemini, review-window, first-paid-cleanup, and administrator rules apply, and any self-approval remains recorded as such.</p>
+            <p>A reporter may clean their own report and receive the reward, but receives no preferential treatment. The same evidence, Gemini, review-window and administrator rules apply, and any self-approval remains recorded as such.</p>
           </>,
         },
         {
@@ -127,7 +133,7 @@ export default function TermsPage() {
         {
           title: 'Governing law and disputes with Litterbugs',
           content: <>
-            <p>Before filing a claim against Litterbugs, you agree to send a written description to <strong>support@litterbugs.app</strong> and allow 30 days for an informal resolution, unless immediate relief is legally necessary. These terms are governed by North Carolina law, without regard to conflict-of-law rules.</p>
+            <p>Before filing a claim against Litterbugs, you agree to send a written description to <a href="mailto:admin@litterbugs.app">admin@litterbugs.app</a> and allow 30 days for an informal resolution, unless immediate relief is legally necessary. These terms are governed by North Carolina law, without regard to conflict-of-law rules.</p>
             <p>Unless applicable law requires otherwise, disputes between you and Litterbugs will be brought individually in the state or federal courts having jurisdiction in North Carolina. Nothing in these terms limits rights that cannot legally be waived, including eligible small-claims or consumer-protection rights.</p>
           </>,
         },
@@ -137,7 +143,7 @@ export default function TermsPage() {
             <p>We may update these terms as the service changes. Material changes will be posted with a new effective date and, when appropriate, require notice or renewed acceptance. Changes to fees, refunds, disputes, or reward calculations apply prospectively and do not retroactively change a completed contribution or reduce a frozen reward, except where required by law or needed to correct an error.</p>
             <p>A click, tap, checkbox, or button press intended to show agreement may serve as your electronic signature. Litterbugs may preserve the accepted version, timestamp, account ID, report or transaction ID, and limited device or network facts reasonably needed to document acceptance, prevent fraud, and maintain an audit record. If Litterbugs discontinues a funded feature, it will resolve active pools, pending refunds, and pending rewards under the Cleanup Policy, provider requirements, and applicable law.</p>
             <p>If a provision is unenforceable, the remaining provisions continue to the extent permitted by law. A failure to enforce a provision is not a waiver. These terms and the policies they incorporate are the entire agreement about the service and may not be assigned by you without our consent.</p>
-            <p>Contact Litterbugs at <strong>support@litterbugs.app</strong>.</p>
+            <p>Contact Litterbugs at <a href="mailto:admin@litterbugs.app">admin@litterbugs.app</a>.</p>
           </>,
         },
       ]}

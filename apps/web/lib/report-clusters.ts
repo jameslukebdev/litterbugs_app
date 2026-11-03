@@ -1,4 +1,4 @@
-import { MarkerClusterer, SuperClusterAlgorithm, type Marker } from '@googlemaps/markerclusterer';
+import { MarkerClusterer, ClusterStats, SuperClusterAlgorithm, type Marker, type AlgorithmInput, type AlgorithmOutput } from '@googlemaps/markerclusterer';
 import type { MappableReport } from '@litterbugs/report-contract';
 
 export function clusterSummary(reports: MappableReport[]) {
@@ -15,10 +15,54 @@ export function coincidentReports(reports: MappableReport[]) {
   return reports.every(report => Math.abs(report.latitude - reports[0].latitude) < .000001 && Math.abs(report.longitude - reports[0].longitude) < .000001);
 }
 
-class MovingReportAlgorithm extends SuperClusterAlgorithm {
+export class MovingReportAlgorithm extends SuperClusterAlgorithm {
+  private renderedSignature: string | null = null;
+  private identities = new WeakMap<object, number>();
+  private nextIdentity = 0;
+  private renderedClusters: AlgorithmOutput['clusters'] = [];
+  calculate(input: AlgorithmInput): AlgorithmOutput {
+    const result = super.calculate(input);
+    // Zoom changes alone do not require replacing the rendered marker DOM.
+    // Compare member identities and centers, preserving redraws for real splits,
+    // merges, additions, removals, and moved reports.
+    const signature = result.clusters.map(cluster => {
+      const members = (cluster.markers ?? []).map(marker => {
+        if (!this.identities.has(marker)) this.identities.set(marker, ++this.nextIdentity);
+        return this.identities.get(marker)!;
+      }).sort((a, b) => a - b);
+      return `${members.join(',')}@${cluster.position.lat()},${cluster.position.lng()}`;
+    }).sort().join('|');
+    if (signature === this.renderedSignature) return { clusters: this.renderedClusters, changed: false };
+    this.renderedSignature = signature;
+    this.renderedClusters = result.clusters;
+    return { ...result, changed: true };
+  }
   // Marker instances are intentionally stable; invalidate the spatial index only
   // when a report actually moves, not on status changes or background refreshes.
   invalidate() { this.markers = []; }
+}
+
+/** Do not detach/re-attach an individual pin that is already on the map. */
+export function attachReportMarker(marker: google.maps.marker.AdvancedMarkerElement, map: google.maps.Map | null) {
+  if ((marker.map ?? null) !== map) marker.map = map;
+}
+
+export class StableReportClusterer extends MarkerClusterer {
+  protected renderClusters() {
+    const map = this.getMap() as google.maps.Map | null;
+    if (!map) return;
+    const stats = new ClusterStats(this.markers, this.clusters);
+    for (const cluster of this.clusters) {
+      if (cluster.markers.length === 1) {
+        cluster.marker = cluster.markers[0];
+      } else {
+        cluster.marker = this.renderer.render(cluster, stats, map);
+        for (const marker of cluster.markers) attachReportMarker(marker as google.maps.marker.AdvancedMarkerElement, null);
+      }
+      // Our renderer uses AdvancedMarkerElement and owns its gmp-click handler.
+      attachReportMarker(cluster.marker as google.maps.marker.AdvancedMarkerElement, map);
+    }
+  }
 }
 
 export function createReportClusters(map: google.maps.Map, AdvancedMarker: typeof google.maps.marker.AdvancedMarkerElement, choose: (ids: string[]) => void) {
@@ -36,7 +80,7 @@ export function createReportClusters(map: google.maps.Map, AdvancedMarker: typeo
     const text = `${members.length}`;
     if (visual.glyph.textContent !== text) visual.glyph.textContent = text;
   };
-  const clusterer = new MarkerClusterer({
+  const clusterer = new StableReportClusterer({
     map, algorithm,
     renderer: { render: cluster => {
       const glyph = document.createElement('span');

@@ -29,7 +29,7 @@ export function MemberReports({ profileId }: { profileId: string }) {
   }, [profileId, view, page, retry]);
   return <section><h3>Reports</h3>
     <div className="activity-tabs" role="group" aria-label="Member reports">{(['active', 'completed'] as const).map(value => <button key={value} aria-pressed={value === view} onClick={() => { setView(value); setPage(0); setRows([]); setLoading(true); }}>{value === 'active' ? 'Active reports' : 'Completed reports'}</button>)}</div>
-    {rows.map(report => <a key={report.id} className="member-activity-row" href={`/?report=${encodeURIComponent(report.id)}`}><span><strong>{report.title || 'Litter report'}</strong><small>{report.severity} severity</small></span></a>)}
+    {rows.map(report => <a key={report.id} className="member-activity-row" href={`/map?report=${encodeURIComponent(report.id)}`}><span><strong>{report.title || 'Litter report'}</strong><small>{report.severity} severity</small></span></a>)}
     {loading && <p role="status">Loading reports…</p>}
     {!loading && !error && !rows.length && <p className="member-empty">No {view} reports</p>}
     {error && <button className="secondary-button" onClick={() => { setLoading(true); setRetry(value => value + 1); }}>Couldn’t load reports. Retry</button>}

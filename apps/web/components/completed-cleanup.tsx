@@ -31,17 +31,18 @@ export function CompletedCleanup({ reportId }: { reportId: string }) {
     void load().catch(() => { if (!cancelled) setError(true); });
     return () => { cancelled = true; };
   }, [reportId, retry]);
+  if (!impact && !error) return <section className="completed-cleanup-story completed-cleanup-loading" aria-busy="true"><h3>Cleanup complete</h3><p role="status">Loading cleanup details…</p><div className="cleanup-evidence-placeholder" aria-hidden="true" /></section>;
   return <section className="completed-cleanup-story">
     <h3>Cleanup complete</h3>
-    {error ? <><p>Cleanup details unavailable.</p><button className="secondary-button" onClick={() => { setError(false); setRetry(value => value + 1); }}>Try again</button></> : !impact ? <p role="status">Loading cleanup details…</p> : <>
+    {error ? <><p>Cleanup details unavailable.</p><button className="secondary-button" onClick={() => { setError(false); setRetry(value => value + 1); }}>Try again</button></> : impact && <>
+      <h4>After cleanup</h4>
+      <div className="cleanup-after-photos">{impact.photos.map((src, index) => <img key={src} src={src} alt={`After-cleanup photo ${index + 1}`} loading="lazy" />)}</div>
+      {!impact.photos.length && <p>After-cleanup photos unavailable.</p>}
       <ReportAuthor profileId={impact.cleanerId} />
       {impact.completedAt && <p>Cleaned {new Date(impact.completedAt).toLocaleDateString()}</p>}
       {impact.rewardCents > 0 && <p>Funded cleanup · ${(impact.rewardCents / 100).toFixed(2)} cleanup reward</p>}
       <p>{impact.description}</p>
       <div className="cleanup-impact-facts">{impact.bags !== null && <span><strong>{impact.bags}</strong> bags/items removed</span>}{impact.weight !== null && <span><strong>{impact.weight} lb</strong> removed</span>}</div>
-      <h4>After cleanup</h4>
-      <div className="cleanup-after-photos">{impact.photos.map((src, index) => <img key={src} src={src} alt={`After-cleanup photo ${index + 1}`} loading="lazy" />)}</div>
-      {!impact.photos.length && <p>After-cleanup photos unavailable.</p>}
     </>}
   </section>;
 }

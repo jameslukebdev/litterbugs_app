@@ -17,3 +17,15 @@ it('provides a direct account recovery destination when receipt parameters are m
   expect(screen.getByRole('link', { name: 'View payments' }).getAttribute('href')).toBe('/account/payments');
   expect(screen.getByRole('link', { name: 'Return to map' }).getAttribute('href')).toBe('/');
 });
+
+it('returns both receipt actions to the same community report and offers the community itself', () => {
+  render(<PaymentReturnContent contribution="receipt" report="closed-report" returnTo="/communities/us/nc/boone" />);
+  fireEvent.click(screen.getByRole('button', { name: 'View report' }));
+  const href = screen.getByRole('link', { name: 'Return to report' }).getAttribute('href');
+  expect(push).toHaveBeenCalledWith(href);
+  const url = new URL(href!, 'https://litterbugs.app');
+  expect(url.pathname).toBe('/map');
+  expect(url.searchParams.get('report')).toBe('closed-report');
+  expect(url.searchParams.get('returnTo')).toBe('/communities/us/nc/boone');
+  expect(screen.getByRole('link', { name: 'Back to community' }).getAttribute('href')).toBe('/communities/us/nc/boone');
+});

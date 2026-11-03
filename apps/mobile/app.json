@@ -2,7 +2,7 @@
   "expo": {
     "name": "Litterbugs",
     "slug": "litterbugs-partner",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -71,6 +71,19 @@
         "projectId": "df0d0855-71d9-4943-b278-d1f083ab6b06"
       }
     },
-    "owner": "litterbugs-community-cleanup"
+    "owner": "litterbugs-community-cleanup",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/df0d0855-71d9-4943-b278-d1f083ab6b06",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "platforms": [
+      "ios",
+      "android"
+    ]
   }
 }

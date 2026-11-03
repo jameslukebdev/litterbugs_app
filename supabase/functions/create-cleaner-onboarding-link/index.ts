@@ -5,6 +5,7 @@ import {
   corsHeaders,
   createStripeRecipientOnboardingLink,
   jsonResponse,
+  LITTERBUGS_REWARD_ACTIVITY_DESCRIPTION,
   retrieveStripeRecipientAccount,
   serviceClient,
   stripeRecipientState,
@@ -73,10 +74,7 @@ Deno.serve(async (request: Request) => {
     if (existing?.stripe_account_id) {
       account = await retrieveStripeRecipientAccount(existing.stripe_account_id);
       if (mode === "link") {
-        account = await configureStripeRecipientAsIndividual(
-          account.id,
-          account.identity?.country ?? "us",
-        );
+        account = await configureStripeRecipientAsIndividual(account);
       }
     } else {
       account = await stripeV2<StripeRecipientAccount>("/core/accounts", {
@@ -84,12 +82,9 @@ Deno.serve(async (request: Request) => {
         headers: { "Idempotency-Key": `litterbugs-cleaner-individual-${user.id}` },
         body: JSON.stringify({
           contact_email: user.email,
-          display_name: user.user_metadata?.display_name ?? user.user_metadata?.full_name ?? "Litterbugs cleaner",
+          display_name: user.user_metadata?.display_name ?? user.user_metadata?.full_name ?? "Litterbugs member",
           defaults: {
-            profile: {
-              business_url: "https://litterbugs.app/cleanup-policy",
-              product_description: "Individual litter cleanup services coordinated and rewarded through the Litterbugs community cleanup platform.",
-            },
+            profile: { product_description: LITTERBUGS_REWARD_ACTIVITY_DESCRIPTION },
             responsibilities: {
               fees_collector: "application",
               losses_collector: "application",
@@ -136,6 +131,7 @@ Deno.serve(async (request: Request) => {
         onboardingStatus: state.onboardingStatus,
         payoutsEnabled: state.payoutsEnabled,
         requirementsDue: state.requirementsDue,
+        age18Confirmed: Boolean(existing?.age_18_confirmed_at || body.confirmAge18 === true),
       });
     }
 

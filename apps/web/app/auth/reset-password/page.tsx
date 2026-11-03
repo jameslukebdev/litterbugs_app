@@ -52,7 +52,7 @@ export default function ResetPasswordPage() {
           <>
             <h1>Password updated</h1>
             <p>Your new password is ready to use.</p>
-            <Link className="primary-button button-link" href="/">Return to the map</Link>
+            <Link className="primary-button button-link" href="/map">Return to the map</Link>
           </>
         ) : (
           <form onSubmit={updatePassword}>

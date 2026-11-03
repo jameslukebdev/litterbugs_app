@@ -10,6 +10,7 @@ const { convert, sharp, rotate, resize, jpeg, toBuffer } = vi.hoisted(() => ({
 }));
 
 vi.mock('server-only', () => ({}));
+vi.mock('next/cache', () => ({ unstable_cache: (generate: () => Promise<string>) => generate }));
 vi.mock('heic-convert', () => ({ default: convert }));
 vi.mock('sharp', () => ({ default: sharp }));
 

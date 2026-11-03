@@ -14,7 +14,8 @@
         "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app.qa"
       },
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "development"
     },
     "development-simulator": {
       "environment": "development",
@@ -29,14 +30,17 @@
       "distribution": "internal",
       "ios": {
         "simulator": true
-      }
+      },
+      "channel": "development"
     },
     "production-simulator": {
       "environment": "production",
       "env": {
         "APP_VARIANT": "production",
+        "EXPO_PUBLIC_APPLE_SIGN_IN_ENABLED": "true",
         "EXPO_PUBLIC_FACEBOOK_LOGIN_ENABLED": "true",
         "ENABLE_APPLE_PAY": "false",
+        "ENABLE_IOS_ASSOCIATED_DOMAINS": "false",
         "IOS_BUNDLE_IDENTIFIER": "com.litterbugs.app",
         "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app"
       },
@@ -44,7 +48,8 @@
       "distribution": "internal",
       "ios": {
         "simulator": true
-      }
+      },
+      "channel": "production-preview"
     },
     "development-primary": {
       "environment": "production",
@@ -57,7 +62,8 @@
         "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app"
       },
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "development"
     },
     "preview": {
       "environment": "preview",
@@ -68,19 +74,22 @@
         "IOS_BUNDLE_IDENTIFIER": "com.gegibson.litterbugs.qa",
         "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app.qa"
       },
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "preview"
     },
     "production-internal": {
       "environment": "production",
       "env": {
         "APP_VARIANT": "production",
+        "EXPO_PUBLIC_APPLE_SIGN_IN_ENABLED": "true",
         "EXPO_PUBLIC_FACEBOOK_LOGIN_ENABLED": "true",
         "ENABLE_APPLE_PAY": "false",
         "ENABLE_IOS_ASSOCIATED_DOMAINS": "false",
         "IOS_BUNDLE_IDENTIFIER": "com.litterbugs.app",
         "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app"
       },
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "production-preview"
     },
     "production": {
       "environment": "production",
@@ -93,7 +102,16 @@
         "IOS_BUNDLE_IDENTIFIER": "com.litterbugs.app",
         "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app"
       },
-      "autoIncrement": true
+      "autoIncrement": true,
+      "channel": "production"
+    },
+    "production-acceptance-android": {
+      "extends": "production",
+      "distribution": "internal",
+      "autoIncrement": false,
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {

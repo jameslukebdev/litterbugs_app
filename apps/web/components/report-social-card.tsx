@@ -42,7 +42,7 @@ export function ReportSocialCard({ report, logoUrl }: { report: PublicReportShar
 
         </div>
         <span style={{ color: '#2F7D32', fontSize: 34, fontWeight: 700, letterSpacing: 1.5 }}>
-          {completed ? 'CLEANUP COMPLETE' : 'CLEANUP NEEDED'}
+          {report.state === 'expired' ? 'REPORT EXPIRED' : report.state === 'in_progress' ? 'CLEANUP IN PROGRESS' : completed ? 'CLEANUP COMPLETE' : 'CLEANUP NEEDED'}
         </span>
       </div>
 
@@ -78,7 +78,7 @@ export function ReportSocialCard({ report, logoUrl }: { report: PublicReportShar
       </div>
 
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 18, paddingTop: 16, paddingBottom: 16 }}>
-        {!completed ? (
+        {report.state === 'available' ? (
           <div style={{ display: 'flex', gap: 40, alignItems: 'flex-start' }}>
             <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, gap: 6, maxWidth: report.rewardCents ? 600 : 300 }}>
               <span style={{ color: '#202625', fontSize: report.rewardCents ? 72 : 52, fontWeight: 700, lineHeight: 1.05 }}>
@@ -94,6 +94,7 @@ export function ReportSocialCard({ report, logoUrl }: { report: PublicReportShar
             ) : null}
           </div>
         ) : null}
+        {report.state === 'expired' && <span style={{ color: '#687178', fontSize: 30 }}>A cleanup has not been confirmed.</span>}
         <span style={{ fontSize: title.length > 60 ? 46 : 52, fontWeight: 700, lineHeight: 1.12, letterSpacing: -1.5, overflowWrap: 'anywhere' }}>
           {title}
         </span>

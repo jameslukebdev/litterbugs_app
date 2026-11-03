@@ -1,9 +1,11 @@
 'use client';
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import type { Database } from '@litterbugs/report-contract';
 import { createClient } from '@/lib/supabase/client';
 import { useDataRefresh } from '@/lib/use-data-refresh';
 import { formatUsd } from '@/lib/funding';
+import { trackWebsiteOutcome } from '@/lib/website-analytics';
 
 type Contribution = Database['public']['Tables']['cleanup_contributions']['Row'];
 const messages: Record<string, string> = {
@@ -33,7 +35,10 @@ export function PaymentDetail({ contributionId, onOpenReport, standalone = false
       }
       const { data, error } = await client.from('cleanup_contributions').select('*').eq('id', contributionId).eq('contributor_id', auth.user.id).maybeSingle();
       if (error || !data) throw new Error('Payment details could not be loaded.');
-      if (!cancelled) { setItem(data); setMessage(''); }
+      if (!cancelled) {
+        setItem(data); setMessage('');
+        if (data.status === 'succeeded') trackWebsiteOutcome('contribution_confirmed', data.id);
+      }
     }
     void load().catch(error => { if (!cancelled) setMessage(error.message); });
     return () => { cancelled = true; };
@@ -54,6 +59,6 @@ export function PaymentDetail({ contributionId, onOpenReport, standalone = false
     {item ? <><AmountHeading>{formatUsd(item.total_amount_cents)}</AmountHeading><p>{messages[item.status] || 'Payment status unavailable.'}</p><p>{new Date(item.created_at).toLocaleString()}</p><dl className="funding-summary"><div><dt>Cleanup contribution</dt><dd>{formatUsd(item.principal_amount_cents)}</dd></div><div><dt>Service fee</dt><dd>{formatUsd(item.platform_fee_cents)}</dd></div></dl>{item.refunded_at && <p>Refunded {new Date(item.refunded_at).toLocaleString()}</p>}{item.status === 'payment_pending' && <button className="secondary-button" disabled={busy} onClick={check}>{busy ? 'Checking…' : 'Check payment status'}</button>}<button className="primary-button" onClick={() => onOpenReport(item.report_id)}>View report</button></> : !message && <p role="status">Loading payment details…</p>}
     {message && <p role="status">{message}</p>}
     {!item && message && <button className="secondary-button" onClick={() => setRetry(value => value + 1)}>Retry</button>}
-    <a href="/help">Payment help</a>
+    <Link href="/help">Payment help</Link>
   </section>;
 }

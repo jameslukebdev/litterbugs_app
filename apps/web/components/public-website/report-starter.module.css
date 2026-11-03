@@ -1,0 +1,28 @@
+.starter { padding-block: var(--home-section-padding, 36px); }
+.starter h2 { margin: 0 0 var(--home-heading-gap, 32px); color: var(--green-dark); font-size: var(--home-heading-size, clamp(28px, 3vw, 36px)); line-height: 1.2; letter-spacing: -.025em; text-wrap: balance; scroll-margin-top: 110px; }
+.choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; }
+.choice { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; }
+.photo { width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 4px; display: block; margin-bottom: 24px; background: var(--soft); }
+.choice h3 { margin: 0 0 12px; font-size: var(--home-subheading-size, clamp(26px, 2.5vw, 30px)); line-height: 1.2; letter-spacing: -.02em; color: var(--green-dark); }
+.choice > p { margin: 0 0 24px; font-size: var(--home-body-size, 21px); line-height: 1.5; text-wrap: pretty; }
+.action { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin-top: auto; }
+.preview { width: 120px; height: 80px; object-fit: cover; border-radius: 4px; }
+.buttons { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.starter .cta { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 11px 20px; color: var(--ink); background: #fff; border: 1px solid #939d96; border-radius: 6px; font: inherit; font-size: var(--home-body-size, 21px); font-weight: 600; text-decoration: none; cursor: pointer; }
+.starter .cta:hover { background: var(--soft); border-color: var(--green-dark); }
+.cta:focus-visible, .remove:focus-visible { outline: 3px solid var(--green); outline-offset: 4px; }
+.cta:disabled { opacity: .6; cursor: wait; }
+.remove { border: 0; background: none; color: var(--ink); padding: 8px 0; font: inherit; font-size: 18px; cursor: pointer; }
+.action p { font-size: 16px; line-height: 1.5; margin: 0; }
+@media (max-width: 850px) {
+  .choices { grid-template-columns: 1fr; gap: 48px; }
+  .choice { display: grid; grid-template-columns: minmax(0, 1fr) minmax(120px, 32%); column-gap: 24px; align-items: start; }
+  .photo { grid-column: 2; grid-row: 1 / 4; height: 100%; max-height: 220px; margin: 0; }
+  .choice h3, .choice > p, .action { grid-column: 1; }
+  .choice > p { font-size: var(--home-body-size, 20px); }
+}
+@media (max-width: 480px) {
+  .starter { padding-block: var(--home-section-padding, 28px); }
+  .choice { display: flex; }
+  .photo { width: 100%; height: auto; max-height: none; aspect-ratio: 16 / 9; margin-bottom: 18px; }
+}

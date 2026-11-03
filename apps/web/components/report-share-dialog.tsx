@@ -197,8 +197,7 @@ export function ReportShareDialog({
         <a ref={downloadLinkRef} href={imageUrl} download={imageFilename} hidden aria-hidden="true" tabIndex={-1}>Download share image</a>
         <header className={styles.header}>
           <div>
-            <p className={styles.eyebrow}>Share a Litterbugs report</p>
-            <h2 id="report-share-title">{dialogTitle}</h2>
+            <h2 id="report-share-title">{report.cleanup_state === 'completed' ? 'Share this cleanup' : dialogTitle}</h2>
           </div>
           <button className={styles.close} type="button" onClick={closeDialog} aria-label="Close share options">
             <Icon name="close" />

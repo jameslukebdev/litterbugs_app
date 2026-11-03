@@ -47,7 +47,7 @@ export function NeedsAttention({ userId, reports, renewals, attempts, incomplete
   }, [hasPaidWork, attempts]);
   const items = attentionItems(reports, renewals, attempts);
   if (payoutNeeded && hasPaidWork) items.push({ id: 'setup', title: 'Cleanup payouts', reason: 'Finish payout setup so you can receive eligible rewards.', action: 'Set up payouts', href: '/account/connect' });
-  if (!incomplete && !items.length && !draftIssue) return <p className="attention-empty">No actions are due in the activity loaded here.</p>;
+  if (!incomplete && !items.length && !draftIssue) return null;
   return <section className="needs-attention member-panel" aria-label="Needs your attention"><h2>Needs your attention</h2><p>Current tasks and deadlines. Reading a notification does not complete a task.</p>
     {incomplete && <p role="status">Some activity could not be refreshed. Tasks shown may be out of date; retry the affected sections before assuming there are no actions due.</p>}
     {items.map(item => <article key={item.id}><div><h3>{item.title}</h3><p>{item.reason}</p>{item.due && <time dateTime={item.due}>Due {new Date(item.due).toLocaleString()}</time>}</div><Link className="secondary-button" href={item.href}>{item.action}</Link></article>)}

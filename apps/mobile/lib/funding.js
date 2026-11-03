@@ -143,3 +143,15 @@ export async function requestGeminiReview(target) {
   if (error) throw new Error(data?.error || error.message);
   return data;
 }
+
+export async function loadReporterRewards(userId) {
+  const rewards = [];
+  for (let start = 0; ; start += 100) {
+    const { data, error } = await supabase.from('reporter_rewards')
+      .select('cleanup_attempt_id, report_id, amount_cents, status, created_at, report:reports(title)')
+      .eq('reporter_id', userId).order('created_at', { ascending: false }).order('cleanup_attempt_id').range(start, start + 99);
+    if (error) throw error;
+    rewards.push(...(data ?? []));
+    if (!data || data.length < 100) return rewards;
+  }
+}

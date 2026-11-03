@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
+import * as Updates from 'expo-updates';
 import { openSupport } from './lib/support';
 
 const pages = {
@@ -54,10 +55,11 @@ export default function SettingsInfoScreen({ navigation, route }) {
       </View>
       {topic === 'photos' ? <TouchableOpacity style={styles.secondary} accessibilityRole="button" onPress={() => navigation.push('SettingsInfo', { topic: 'help' })}><Text style={styles.secondaryText}>Have a question? Get help</Text><Ionicons name="chevron-forward" size={18} color="#2F7D32" /></TouchableOpacity> : null}
       {topic === 'help' ? <>
-        <Text selectable style={styles.email}>support@litterbugs.app</Text>
+        <Text selectable style={styles.email}>admin@litterbugs.app</Text>
         <TouchableOpacity style={styles.button} accessibilityRole="button" onPress={openSupport}><Ionicons name="mail-outline" size={19} color="#FFFFFF" /><Text style={styles.buttonText}>Email support</Text></TouchableOpacity>
-        <Text style={styles.note}>Opens your email app. You can review your message before sending.</Text>
+        <Text style={styles.note}>Review your message in your email app before sending.</Text>
         <Text style={styles.note}>Litterbugs · Version {Constants.expoConfig?.version || 'unavailable'}</Text>
+        {Updates.isEnabled ? <Text style={styles.note}>App update: {Updates.isEmbeddedLaunch ? 'Included with install' : Updates.updateId?.slice(0, 8) || 'Downloaded update'}</Text> : null}
       </> : null}
       {topic === 'support' ? <>
         <TouchableOpacity style={styles.button} accessibilityRole="button" onPress={() => navigation.popTo('App', { screen: 'Map' })}><Text style={styles.buttonText}>Explore nearby cleanups</Text><Ionicons name="map-outline" size={18} color="#FFFFFF" /></TouchableOpacity>

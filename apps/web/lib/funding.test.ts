@@ -20,14 +20,15 @@ describe('web cleanup funding amounts', () => {
     expect(parseContributionAmount('abc')).toBeNull();
   });
 
-  it('matches the backend half-up 10 percent fee calculation', () => {
+  it('matches the backend half-up 20 percent fee calculation', () => {
     expect(calculatePlatformFee(0)).toBe(0);
-    expect(calculatePlatformFee(100)).toBe(60);
-    expect(calculatePlatformFee(104)).toBe(60);
-    expect(calculatePlatformFee(105)).toBe(61);
+    expect(calculatePlatformFee(100)).toBe(70);
+    expect(calculatePlatformFee(104)).toBe(71);
+    expect(calculatePlatformFee(105)).toBe(71);
+    expect(calculatePlatformFee(499)).toBe(150);
     expect(calculatePlatformFee(500)).toBe(100);
     expect(calculatePlatformFee(505)).toBe(101);
-    expect(calculatePlatformFee(100_000)).toBe(10_050);
+    expect(calculatePlatformFee(100_000)).toBe(20_000);
   });
 
   it('shows the Edge Function response instead of Supabase transport language', async () => {

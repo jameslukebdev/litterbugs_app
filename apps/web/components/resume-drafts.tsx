@@ -12,7 +12,7 @@ import { DraftSummaryView } from './draft-comparison';
 type Attempt = { id: string; report_id: string };
 type Resume = { key: string; href: string; account?: DraftSummary; device?: DraftSummary; accountStale?: boolean; deviceStale?: boolean };
 type Snapshot = { owner: string; rows: Resume[]; message: string };
-export function ResumeDrafts({ userId, attempts }: { userId: string; attempts: Attempt[] }) {
+export function ResumeDrafts({ userId, attempts, onReady }: { userId: string; attempts: Attempt[]; onReady?: (ready: boolean) => void }) {
   const [snapshot, setSnapshot] = useState<Snapshot>({ owner: '', rows: [], message: '' });
   const [retry, setRetry] = useState(0);
   const rows = snapshot.owner === userId ? snapshot.rows : [];
@@ -61,9 +61,14 @@ export function ResumeDrafts({ userId, attempts }: { userId: string; attempts: A
         }
         return { owner: userId, rows: [...merged.values()], message: incomplete ? 'Some saved versions could not be checked. Available copies are shown below; sync is checked when you resume.' : '' };
       });
-    })();
+    })().catch(() => {
+      if (active) setSnapshot(previous => ({ owner: userId, rows: previous.owner === userId ? previous.rows : [], message: 'Saved drafts could not be checked. Retry to see your saved work.' }));
+    });
     return () => { active = false; };
   }, [userId, attempts, refresh, retry]);
+  useEffect(() => {
+    if (snapshot.owner === userId && userId) onReady?.(true);
+  }, [snapshot.owner, userId, onReady]);
   if (!rows.length && !message) return null;
   return <section className="resume-drafts member-panel" aria-label="Resume your work"><h2>Resume your work</h2>{message && <p role="status">{message} <button type="button" className="secondary-button" onClick={() => setRetry(value => value + 1)}>Retry saved drafts</button></p>}{rows.map(row => <article key={row.key}>
     <div className="resume-draft-copies">{row.account && <div><span className="resume-copy-label">Account copy</span><strong>{row.account.title}</strong><span>{row.account.photos} photo{row.account.photos === 1 ? '' : 's'}</span></div>}{row.device && <div><span className="resume-copy-label">Device copy</span><strong>{row.device.title}</strong><span>{row.device.photos} photo{row.device.photos === 1 ? '' : 's'}</span></div>}</div>

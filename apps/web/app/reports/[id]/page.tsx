@@ -1,10 +1,15 @@
-/* eslint-disable @next/next/no-img-element -- Private Supabase images use short-lived signed URLs. */
-
+import journey from '@/components/communities/community-journey.module.css';
+import { communityReportMapHref } from '@/lib/community-journey';
+import { communityListingHref } from '@/lib/community-listings';
+import { communityHref, getCommunity } from '@/lib/community-directory';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { publicReportShareDescription } from '@/lib/public-report-share-model';
+import { Website } from '@/components/public-website';
+import { CommunityRank } from '@/components/community-rank';
+import { publicReportSearchTitle, publicReportSearchDescription, publicReportSummary, publicReportPhotoDescription, reportDateLabel as formatDate } from '@/lib/public-report-content';
+import { loadRelatedPublicReports } from '@/lib/related-public-reports';
 import { loadPublicReportShare } from '@/lib/public-report-share';
 import { OpenReportAction } from './open-report-action';
 import { ReportPhotos } from './report-photos';
@@ -17,35 +22,27 @@ type Props = {
   params: Promise<{ id: string }>;
 };
 
-const formatDate = (value: string | null) => value
-  ? new Intl.DateTimeFormat('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(new Date(value))
-  : null;
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const report = await loadPublicReportShare(id, 'linked');
-  if (!report) return { title: 'Report unavailable | Litterbugs' };
+  if (!report) return { title: 'Report unavailable | Litterbugs', robots: { index: false, follow: false } };
 
-  const description = publicReportShareDescription(report);
+  const description = publicReportSearchDescription(report);
+  const title = publicReportSearchTitle(report);
   return {
-    title: `${report.title} | Litterbugs`,
+    title: `${title} | Litterbugs`,
     description,
     alternates: { canonical: report.canonicalUrl },
     openGraph: {
       type: 'article',
-      title: report.title,
+      title,
       description,
       url: report.canonicalUrl,
       siteName: 'Litterbugs',
     },
     twitter: {
       card: 'summary_large_image',
-      title: report.title,
+      title,
       description,
     },
     itunes: {
@@ -60,8 +57,12 @@ export default async function SharedReportPage({ params }: Props) {
   const report = await loadPublicReportShare(id, 'linked');
   if (!report) notFound();
 
+  const related = await loadRelatedPublicReports(report.id, report.communitySlug);
   const completed = report.state === 'completed';
   const inProgress = report.state === 'in_progress';
+  const expired = report.state === 'expired';
+  const community = report.communitySlug ? getCommunity(report.communitySlug) : undefined;
+  const localCommunityHref = report.communitySlug ? communityHref(report.communitySlug) : null;
   const impactFacts = [
     report.bagsOrItemsRemoved != null
       ? `${report.bagsOrItemsRemoved} ${report.bagsOrItemsRemoved === 1 ? 'bag/item' : 'bags/items'} removed`
@@ -72,64 +73,59 @@ export default async function SharedReportPage({ params }: Props) {
   ].filter(Boolean);
 
   return (
-    <main className={styles.page}>
+    <Website><main data-community-slug={community?.slug} id="main-content" tabIndex={-1} className={styles.page}>
       <div className={styles.shell}>
-        <header className={styles.header}>
-          <Link href="/" aria-label="Litterbugs home">
-            <img className={styles.logo} src="/brand/litterbugs-logo.png" alt="Litterbugs" />
-          </Link>
-          <Link className={styles.mapLink} href="/">Back to search</Link>
-        </header>
+        <nav className={styles.header} aria-label="Report navigation"><Link href="/map">Back to map</Link><Link href={community ? communityListingHref(community, 'completed') : '/cleanups'}>{community ? `Results in ${community.name}` : 'Completed cleanups'}</Link></nav>
 
         <article className={styles.story}>
-          <section className={`${styles.hero} ${completed ? styles.heroCompleted : ''}`}>
-            <p className={styles.shareLabel}>Shared Litterbugs report</p>
-            <p className={styles.eyebrow}>{completed ? 'Cleanup complete' : inProgress ? 'Cleanup in progress' : 'Cleanup needed'}</p>
+          <section className={styles.hero}>
             <h1>{report.title}</h1>
-            <p className={styles.heroDescription}>
-              {completed
-                ? 'A Litterbugs community member finished this cleanup. See the public impact summary below.'
-                : inProgress
-                  ? 'A member is working on this cleanup or its evidence is under review. Open the report for the latest status.'
-                : report.rewardCents && report.rewardCents > 0
-                  ? `This report has a $${(report.rewardCents / 100).toFixed(2)} cleanup reward. View the report for the current funding and cleanup details.`
-                  : 'A community member reported litter that is available for volunteer cleanup.'}
-            </p>
+            <p className={styles.summary}>{publicReportSummary(report)}</p>
+            {!completed && !inProgress && !expired && <p className={styles.heroDescription}>
+              {report.rewardCents && report.rewardCents > 0
+                ? `$${(report.rewardCents / 100).toFixed(2)} cleanup reward`
+                : 'Volunteer cleanup'}
+            </p>}
+            <div className={styles.reporter}>
+              <span>Reported by</span>
+              {report.reporterId ? <Link href={`/members/${report.reporterId}`} className={styles.reporterLink}>
+                <span>{report.reporterName || 'Community member'}</span>
+                <CommunityRank userId={report.reporterId} compact />
+              </Link> : <span>{report.reporterName || 'Community member'}</span>}
+            </div>
             <div className={styles.heroMeta}>
+              <span>{expired ? 'Report expired' : completed ? 'Cleanup complete' : inProgress ? 'Cleanup in progress' : 'Cleanup needed'}</span>
+              {localCommunityHref && <Link href={localCommunityHref}>{report.generalLocation}</Link>}
               {completed && report.cleanerName ? <span>Cleaned by {report.cleanerName}</span> : null}
-              {!completed && report.severity ? <span>{report.severity} priority</span> : null}
-              {completed && report.completionDate ? <span>{formatDate(report.completionDate)}</span> : null}
-              {!completed && report.reportDate ? <span>Reported {formatDate(report.reportDate)}</span> : null}
+              {!completed && !expired && report.severity ? <span>{report.severity} priority</span> : null}
+              {completed && report.completionDate ? <time dateTime={report.completionDate}>{formatDate(report.completionDate)}</time> : null}
+              {expired && report.expiredDate && formatDate(report.expiredDate) ? <span>Expired <time dateTime={report.expiredDate}>{formatDate(report.expiredDate)}</time></span> : null}
+              {!completed && report.reportDate ? <span>Reported <time dateTime={report.reportDate}>{formatDate(report.reportDate)}</time></span> : null}
             </div>
           </section>
 
-          <ReportPhotos
-            key={report.id}
-            beforePhotoUrl={report.beforePhotoUrl}
-            afterPhotoUrl={report.afterPhotoUrl}
-            completed={completed}
+          <div className={`${styles.detailsLayout} ${completed || (!report.beforePhotoUrl && !report.afterPhotoUrl) ? styles.fullWidth : ''}`}>
+          <ReportPhotos key={report.id}
+            beforePhotoUrl={report.beforePhotoUrl} afterPhotoUrl={report.afterPhotoUrl}
+            beforeDescription={publicReportPhotoDescription(report, 'before')}
+            afterDescription={publicReportPhotoDescription(report, 'after')}
           />
 
           <div className={styles.content}>
             <div className={styles.reportCopy}>
-              {completed ? (
-                <section className={styles.section}>
-                  <p className={styles.sectionLabel}>Impact story</p>
-                  <h2>Cleanup completed</h2>
-                  <p>{report.cleanupDescription || 'A Litterbugs member completed this cleanup.'}</p>
-                </section>
-              ) : (
-                <section className={styles.section}>
-                  <p className={styles.sectionLabel}>Report details</p>
-                  <h2>What needs attention</h2>
-                  <p>{report.notes || 'Open this report on the Litterbugs map to see the public details and help clean the area.'}</p>
-                </section>
-              )}
+              {report.notes && <section className={styles.section} aria-labelledby="original-report-heading">
+                <h2 id="original-report-heading">{completed || expired ? 'The original report' : 'About this report'}</h2>
+                <p>{report.notes}</p>
+              </section>}
+              {completed && report.cleanupDescription && <section className={styles.section} aria-labelledby="cleanup-result-heading">
+                <h2 id="cleanup-result-heading">The cleanup</h2>
+                <p>{report.cleanupDescription}</p>
+              </section>}
 
               <div className={styles.facts}>
                 {impactFacts.map((fact) => (
                   <div className={styles.fact} key={fact}>
-                    <strong>Cleanup impact</strong>
+                    <strong>Removed</strong>
                     <span>{fact}</span>
                   </div>
                 ))}
@@ -142,29 +138,48 @@ export default async function SharedReportPage({ params }: Props) {
                 {report.reportDate ? (
                   <div className={styles.fact}>
                     <strong>Reported</strong>
-                    <span>{formatDate(report.reportDate)}</span>
+                    <span><time dateTime={report.reportDate}>{formatDate(report.reportDate)}</time></span>
                   </div>
                 ) : null}
               </div>
+              {impactFacts.length > 0 && <p className={styles.outcomeNote}>Amounts reported by the cleaner.</p>}
             </div>
 
-            <aside className={styles.actionCard}>
-              <p className={styles.sectionLabel}>{completed || inProgress ? 'Explore the report' : 'Help clean up'}</p>
-              <h2>{completed || inProgress ? 'See it on the map' : 'Ready to help?'}</h2>
-              <p>
-                {completed
-                  ? 'View the report in context on the Litterbugs map.'
-                  : 'View the report on the map for the location and current cleanup status.'}
-              </p>
+            <aside className={styles.nextSteps}>
+            {expired ? <Link className="primary-button button-link" href="/reports">Find a current cleanup</Link> : !completed && !inProgress && localCommunityHref ? <div className={journey.reportActions}>
+              {report.fundingEligible && <Link className="primary-button button-link" href={communityReportMapHref(report.id, report.communitySlug, 'fund')}>Fund this cleanup</Link>}
+              <Link className="primary-button button-link" href={communityReportMapHref(report.id, report.communitySlug, 'clean')}>Clean up this report</Link>
+            </div> : <Link className="primary-button button-link" href={communityReportMapHref(report.id, report.communitySlug)}>View on map</Link>}
+            {localCommunityHref && <Link className={styles.textAction} href={localCommunityHref}>Back to {report.generalLocation}</Link>}
               <div className={styles.actions}>
-                <Link className={styles.primaryAction} href={`/?report=${encodeURIComponent(report.id)}`}>View on map</Link>
-                <OpenReportAction reportId={report.id} className={styles.secondaryAction} />
+                <Link className={styles.textAction} href={expired ? "/report-litter" : completed ? community ? communityListingHref(community) : "/cleaner" : "/fund-a-cleanup"}>{expired ? "Report a spot" : completed ? community ? `Find another cleanup in ${community.name}` : "Find another cleanup" : "How funding works"}</Link>
+                <Link className={styles.textAction} href="/report-litter">How reporting works</Link>
+                {!expired && <OpenReportAction reportId={report.id} className={styles.textAction} />}
               </div>
-              <small>{report.generalLocation}. Private profile details are not included on this shared page.</small>
             </aside>
           </div>
+          </div>
         </article>
+        <section className={styles.related} aria-labelledby="related-reports-heading">
+          <h2 id="related-reports-heading">{community ? `More reports in ${community.name}` : 'Explore more litter reports'}</h2>
+          {related.length > 0 && <ul className={styles.relatedList}>
+            {related.map(item => <li key={item.id}>
+              <Link prefetch={false} href={`/reports/${item.id}`}>{item.title}</Link>
+              <span>{item.state === 'completed' ? 'Cleanup complete' : 'Cleanup needed'}</span>
+            </li>)}
+          </ul>}
+          <div className={styles.browseLinks}>
+            {community && <>
+              <Link href={communityListingHref(community)}>Reports needing cleanup in {community.name}</Link>
+              <Link href={communityListingHref(community, 'completed')}>Completed cleanups in {community.name}</Link>
+            </>}
+            <Link href="/reports">Browse reports needing cleanup</Link>
+            <Link href="/reports/history">Past reports</Link>
+            <Link href="/cleanups">Browse all completed cleanups</Link>
+            <Link href="/communities">Explore communities</Link>
+          </div>
+        </section>
       </div>
-    </main>
+    </main></Website>
   );
 }

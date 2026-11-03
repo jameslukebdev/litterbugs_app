@@ -11,4 +11,4 @@ export function parseContributionAmount(value) {
 }
 
 export const calculatePlatformFee = (principalAmountCents) =>
-  Number(principalAmountCents) === 0 ? 0 : Math.floor((Number(principalAmountCents) + 5) / 10) + 50;
+  Number(principalAmountCents) === 0 ? 0 : Math.floor((Number(principalAmountCents) + 2) / 5) + (Number(principalAmountCents) < 500 ? 50 : 0);

@@ -67,11 +67,11 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
 
   return (
     <>
-      <button className={`secondary-button${compact ? ' compact-button' : ''}`} onClick={show}>Cleanup payouts</button>
+      <button className={`secondary-button${compact ? ' compact-button' : ''}`} onClick={show}>Payout settings</button>
       {open && (
-        <ModalShell onClose={() => setOpen(false)} label="Cleanup payout setup" className="payout-dialog" closeDisabled={busy}>
-          <h2>{status?.payoutsEnabled ? 'Payouts are ready' : 'Set up cleanup payouts'}</h2>
-          <p>{status?.payoutsEnabled ? 'Review your payout details securely with Stripe.' : 'Stripe securely verifies your identity and bank details.'}</p>
+        <ModalShell onClose={() => setOpen(false)} label="Payout setup" className="payout-dialog" closeDisabled={busy}>
+          <h2>{status?.payoutsEnabled ? 'Payouts are ready' : 'Set up payouts'}</h2>
+          <p>{status?.payoutsEnabled ? 'Review your payout details securely with Stripe.' : 'Use one Stripe account for cleanup and reporter rewards. Stripe securely verifies your identity and bank details.'}</p>
           {!status?.payoutsEnabled && status && (
             <label className="payout-confirmation">
               <input type="checkbox" checked={eligibleConfirmed} onChange={(event) => setEligibleConfirmed(event.target.checked)} />

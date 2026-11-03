@@ -10,13 +10,14 @@ const isNullComposite = (row: OperationRow) =>
 
 export const claimedOperationRow = <T extends object>(
   data: unknown,
+  idField = "id",
 ): T | null => {
   if (Array.isArray(data)) {
     if (data.length === 0) return null;
     if (data.length > 1) {
       throw new Error("Financial operation claim returned multiple rows");
     }
-    return claimedOperationRow<T>(data[0]);
+    return claimedOperationRow<T>(data[0], idField);
   }
 
   if (data === null || data === undefined) return null;
@@ -25,7 +26,7 @@ export const claimedOperationRow = <T extends object>(
   }
   const row = data as OperationRow;
   if (isNullComposite(row)) return null;
-  if (typeof row.id !== "string" || row.id.length === 0) {
+  if (typeof row[idField] !== "string" || (row[idField] as string).length === 0) {
     throw new Error("Financial operation claim returned a row without an ID");
   }
   return data as T;

@@ -61,3 +61,9 @@ export function mapUrl(url: URL, value: Omit<DiscoveryMemory, 'place'>) {
   next.searchParams.set('zoom', value.zoom.toFixed(1));
   return `${next.pathname}${next.search}${next.hash}`;
 }
+
+/** Explicit links win; phones start on Map, like the native app. */
+export function readDiscoveryView(search: string, mobile: boolean): 'map' | 'reports' {
+  const view = new URLSearchParams(search).get('view');
+  return view === 'map' || view === 'reports' ? view : mobile ? 'map' : 'reports';
+}

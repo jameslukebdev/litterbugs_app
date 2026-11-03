@@ -1,192 +1,385 @@
-.header {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  height: 80px;
-  border-bottom: 1px solid #d8ddd9;
-  background: #fff;
-  font-family: inherit;
+/* One row of actions, with an optional search row inside the same header. */
+.header { position: sticky; top: 0; z-index: 50; background: #fff; border-bottom: 0; font-family: inherit; }
+.inner { position: relative; display: grid; grid-template-areas: "brand map report funding cleaning . help app search account"; grid-template-columns: auto auto auto auto auto minmax(16px, 1fr) auto auto auto auto; align-items: center; column-gap: clamp(12px, 1.5vw, 24px); width: min(1400px, 100%); min-height: 88px; padding: 10px clamp(12px, 2vw, 32px); margin: 0 auto; }
+.brandLink { grid-area: brand; display: inline-flex; align-items: center; }
+.brandLink img { width: clamp(80px, 8vw, 104px); height: auto; aspect-ratio: 636 / 433; object-fit: contain; }
+.desktopNav { display: contents; }
+.mapLink { grid-area: map; }
+.reportAction { grid-area: report; }
+.funding { grid-area: funding; }
+.cleaning { grid-area: cleaning; }
+.help { grid-area: help; }
+.appLink { grid-area: app; }
+.account { grid-area: account; min-width: 0; }
+.navLink, .menuTrigger { display: inline-flex; position: relative; align-items: center; min-height: 44px; color: #111116; font: inherit; font-size: 18px; font-weight: 500; line-height: 1.3; text-decoration: none; white-space: nowrap; }
+.menuTrigger { padding: 0; border: 0; background: transparent; cursor: pointer; }
+.navLink:hover, .menuTrigger:hover, .menuTrigger[aria-expanded='true'] { color: var(--green-dark); }
+.navLink[aria-current='page']::after, .menuTrigger[data-active='true']::after { position: absolute; right: 0; bottom: 2px; left: 0; height: 2px; background: var(--green); content: ''; }
+.navLink:focus-visible, .brandLink:focus-visible, .menuTrigger:focus-visible { outline: 3px solid #2f7d3266; outline-offset: 3px; border-radius: 4px; }
+.mobileMenu, .smallAppLink { display: none; }
+.dropdown { position: relative; }
+.dropdownLinks { position: absolute; top: calc(100% + 12px); left: -16px; z-index: 2; width: 280px; margin: 0; padding: 12px 18px; list-style: none; border: 1px solid var(--line); background: #fff; box-shadow: 0 8px 20px #18251c12; }
+.dropdownLinks .navLink { width: 100%; min-height: 48px; font-size: 18px; white-space: normal; }
+.help .dropdownLinks { left: auto; right: 0; }
+.helpLinks li:nth-child(4) { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+/* Keep the app panel inside the viewport at the right end of the header. */
+.appLink > div > section { left: auto; right: 0; }
+
+@media (max-width: 1239px) {
+  .inner { grid-template-areas: "brand . map app search account menu"; grid-template-columns: auto minmax(12px, 1fr) auto auto auto auto auto; gap: 12px; min-height: 88px; }
+  .funding, .cleaning, .help, .reportAction { display: none; }
+  .appLink > div { display: none; }
+  .smallAppLink { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; color: var(--green-dark); font-size: 18px; font-weight: 650; white-space: nowrap; text-decoration: none; }
+  .smallAppLink svg { width: 19px; height: 19px; }
+  .mobileMenu { grid-area: menu; display: block; }
+  .mobileMenu > .menuTrigger { min-width: 48px; min-height: 48px; justify-content: center; gap: 8px; }
+  .mobileMenu .menuTrigger svg { width: 32px; height: 32px; flex: none; }
+  .menuLabel { font-weight: 600; }
+  .mobilePrimaryLinks { display: grid; gap: 4px; padding: 16px 12px; overflow-y: auto; overscroll-behavior: contain; }
+  .mobilePrimaryLinks > .navLink, .mobilePrimaryLinks .menuTrigger { min-height: 48px; padding: 12px 16px; width: 100%; }
+  .mobilePrimaryLinks .menuTrigger { justify-content: space-between; }
+  .mobilePrimaryLinks .dropdownLinks { position: static; width: auto; margin: 0 0 8px; padding: 0 16px 0 28px; border: 0; box-shadow: none; }
+  .mobilePrimaryLinks .navLink[aria-current='page'] { color: var(--green-dark); }
+  .mobilePrimaryLinks .navLink[aria-current='page']::after { display: none; }
+  .account :global(.public-account-actions) { min-width: 0; }
+  .mapHeader .inner { grid-template-areas: "brand report . app account menu"; grid-template-columns: auto auto minmax(0, 1fr) auto auto auto; }
+  .mapHeader .mapLink { display: none; }
+  .mapHeader .reportAction { display: block; }
+}
+@media (max-width: 600px) {
+  .menuLabel { display: none; }
+  .inner { column-gap: 6px; }
+  .appLink { display: none; }
+  .mapHeader .appLink { display: none; }
+  .mapHeader .inner { column-gap: 6px; }
+}
+@media (max-width: 360px) {
+  .inner { column-gap: 4px; }
+  .mobileMenu > .menuTrigger { width: 44px; min-width: 44px; }
+  .mapHeader .smallAppLink { font-size: 13px; gap: 3px; }
 }
 
-.inner {
-  position: relative;
-  width: min(1180px, 100%);
-  height: 100%;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  padding: 0 32px;
-}
-
-.desktopNav {
-  justify-self: end;
-  display: flex;
-  align-items: center;
-  gap: 26px;
-  padding-right: clamp(88px, 8vw, 104px);
-}
-
-.navLink,
-.menuTrigger {
-  color: #111116;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 1;
-  text-decoration: none;
-}
-
-.navLink,
-.menuTrigger {
-  position: relative;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-}
-
-.navLink:hover,
-.menuTrigger:hover,
-.menuTrigger[aria-expanded='true'] {
-  color: var(--green-dark);
-}
-
-.navLink[aria-current='page']::after,
-.menuTrigger[data-active='true']::after {
-  position: absolute;
-  right: 0;
-  bottom: 2px;
-  left: 0;
-  height: 2px;
-  border-radius: 999px;
-  background: var(--green);
-  content: '';
-}
-
-.infoMenu,
-.mobileMenu {
-  position: relative;
-}
-
-.menuTrigger {
+/* A top-layer drawer keeps navigation above the map and sticky page controls. */
+.mobileDrawer {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: min(320px, calc(100vw - 48px));
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
   padding: 0;
   border: 0;
-  background: transparent;
-  cursor: pointer;
-}
-
-.navLink:focus-visible,
-.brandLink:focus-visible,
-.menuTrigger:focus-visible {
-  border-radius: 5px;
-  outline: 3px solid rgba(47, 125, 50, 0.28);
-  outline-offset: 4px;
-}
-
-.infoPopover,
-.mobilePopover {
-  border: 1px solid #dfe5df;
-  border-radius: 14px;
+  border-right: 1px solid #d8ddd9;
   background: #fff;
-  box-shadow: 0 16px 42px rgba(20, 35, 24, 0.16);
+  color: #111116;
+  box-shadow: 12px 0 36px rgba(20, 35, 24, 0.14);
+  overflow: hidden;
+  transform: translateX(-100%);
+  transition: transform 240ms ease-in-out, overlay 240ms allow-discrete, display 240ms allow-discrete;
 }
 
-.infoPopover {
-  position: absolute;
-  top: 48px;
-  right: 0;
-  width: 310px;
-  padding: 10px;
+.mobileDrawer[open] {
+  display: flex;
+  flex-direction: column;
+  transform: translateX(0);
 }
 
-.menuLabel {
-  display: block;
-  padding: 7px 10px 5px;
-  color: #59655c;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.mobileDrawer::backdrop {
+  background: rgba(17, 25, 19, 0);
+  transition: background-color 240ms ease-in-out, overlay 240ms allow-discrete, display 240ms allow-discrete;
 }
 
-.policyLink {
-  display: grid;
-  gap: 2px;
-  padding: 10px;
-  border-radius: 9px;
-  color: #243129;
-  text-decoration: none;
+.mobileDrawer[open]::backdrop { background: rgba(17, 25, 19, 0.36); }
+
+.drawerHeader {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  min-height: 65px;
+  padding: env(safe-area-inset-top, 0px) 14px 0;
+  border-bottom: 1px solid #e4e8e4;
 }
 
-.policyLinks {
-  display: grid;
-}
-
-.policyLink:hover {
-  background: var(--green-soft);
-}
-
-.policyLink[aria-current='page'] {
-  background: #f5f7f5;
-}
-
-.policyLink strong {
-  font-size: 14px;
-}
-
-.policyLink span {
-  color: #667168;
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.brandLink {
-  grid-column: 2;
-  justify-self: center;
+.drawerBrand {
   display: inline-flex;
   align-items: center;
-  height: 78px;
+  min-height: 56px;
 }
 
-.brandLink img {
-  width: auto;
-  height: 74px;
-  max-width: 176px;
-  object-fit: contain;
+.drawerBrand img { width: 96px; height: 66px; object-fit: contain; }
+.drawerBrand:focus-visible { outline: 3px solid #2f7d3266; outline-offset: 2px; border-radius: 5px; }
+.mobileDrawer .mobilePrimaryLinks { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+.mobilePrimaryLinks .navLink:hover { color: var(--green-dark); background: #f4f7f4; }
+
+@starting-style {
+  .mobileDrawer[open] { transform: translateX(-100%); }
+  .mobileDrawer[open]::backdrop { background: rgba(17, 25, 19, 0); }
 }
 
-.desktopActions {
-  grid-column: 3;
-  justify-self: start;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding-left: clamp(88px, 8vw, 104px);
+@media (max-width: 600px) {
+  .drawerHeader { padding-inline: 8px; gap: 4px; }
+  .drawerBrand img { width: 88px; height: 60px; }
 }
 
-.action {
-  display: flex;
-  align-items: center;
+@media (prefers-reduced-motion: reduce) {
+  .mobileDrawer, .mobileDrawer::backdrop { transition: none; }
 }
 
-.mobileMenu {
-  display: none;
+@media (max-width: 760px) and (max-height: 500px) and (orientation: landscape) {
+  .compactMobile { min-height: 56px; }
+  .compactMobile .inner { height: 55px; min-height: 55px; padding-block: 4px; }
+  .compactMobile .brandLink img { width: 60px; height: 42px; }
 }
 
+
+/* Reporting is a peer navigation action; the map still exposes its pressed state. */
+.reportAction :global(.header-report-button) { min-height: 44px; padding: 0; border: 0; border-radius: 0; background: transparent; color: #111116; font-size: 18px; font-weight: 500; }
+.reportAction :global(.header-report-button):hover { background: transparent; color: var(--green-dark); }
+.reportAction :global(.header-report-button)[aria-pressed='true'] { color: var(--green-dark); text-decoration: underline; text-underline-offset: 8px; }
+.reportAction :global(.header-report-button):disabled { opacity: .5; }
+@media (max-width: 360px) { .mapHeader .reportAction :global(.header-report-button) { font-size: 14px; } }
+@media (max-width: 320px) {
+  .inner { column-gap: 6px; }
+  .mapLink .navLink { font-size: 14px; }
+  .mobileMenu > .menuTrigger { width: 44px; }
+}
+
+/* Keep the smallest phones usable without squeezing the logo or account controls.
+   Map remains the first link in the navigation drawer. */
+@media (max-width: 380px) {
+  .inner { grid-template-areas: "brand . search account menu"; grid-template-columns: auto minmax(0, 1fr) auto auto auto; column-gap: 4px; }
+  .mapLink { display: none; }
+  .mapHeader .inner { grid-template-areas: "brand . account menu"; grid-template-columns: auto minmax(0, 1fr) auto auto; }
+  .mapHeader .reportAction { display: none; }
+}
+
+/* Match the utility action to the navigation type scale. */
+.appLink > div > a { font-size: 18px; font-weight: 500; }
+.account :global(.public-account-control-signed-out) { font-size: 18px; }
+.account :global(.public-account-control-signed-out .public-account-label) { font-size: inherit; }
+
+/* The core product has one clear, neutral entry point on the public pages. */
+.mapEntry { gap: 8px; padding: 0 12px; border: 1px solid #9ba89c; border-radius: 6px; color: var(--green-dark); font-weight: 650; }
+.mapEntry svg { width: 21px; height: 21px; flex: none; }
+.mapEntry:hover { border-color: var(--green-dark); background: #f7f9f7; }
+.mapMobileLabel { display: none; }
+@media (max-width: 600px) {
+  .mapEntry { gap: 5px; padding-inline: 8px; }
+  .mapDesktopLabel { display: none; }
+  .mapMobileLabel { display: inline; }
+}
+
+/* A transparent bridge makes the visual gap to the panel safe to cross. */
+@media (min-width: 1240px) {
+  .dropdownLinks::before { content: ''; position: absolute; left: 0; right: 0; top: -13px; height: 13px; }
+}
+
+/* Reserve real space for the signed-in alert and avatar controls. Let optional
+   labels move into the drawer before the grid can squeeze utility hit targets. */
+.header:not(.mapHeader) .account,
+.header:not(.mapHeader) .account :global(.public-account-actions) { min-width: max-content; }
+@media (min-width: 521px) and (max-width: 860px) {
+  .header:not(.mapHeader) .inner { grid-template-areas: "brand . map search account menu"; grid-template-columns: auto minmax(0, 1fr) auto 44px max-content auto; }
+  .header:not(.mapHeader) .appLink { display: none; }
+}
+@media (max-width: 760px) {
+  .header:not(.mapHeader) .mapDesktopLabel { display: none; }
+  .header:not(.mapHeader) .mapMobileLabel { display: inline; }
+  .header:not(.mapHeader) .mapEntry { gap: 5px; padding-inline: 8px; }
+}
+@media (max-width: 700px) {
+  .header:not(.mapHeader) .menuLabel { display: none; }
+}
+@media (max-width: 520px) {
+  .header:not(.mapHeader) .inner { grid-template-areas: "brand . search account menu"; grid-template-columns: auto minmax(0, 1fr) 44px max-content auto; column-gap: 6px; }
+  .header:not(.mapHeader) .mapLink,
+  .header:not(.mapHeader) .appLink { display: none; }
+}
+
+.header { --green: #5146ed; --green-dark: #4438bb; --green-soft: #efedff; border-bottom: 1px solid #eeeaf8; }
+.header .navLink, .header .menuTrigger { border-radius: 12px; font-weight: 700; text-decoration: none; }
+.header .navLink::after, .header .menuTrigger::after { display: none; }
+.header .navLink:hover, .header .menuTrigger:hover, .header .menuTrigger[aria-expanded='true'] { background: #f1eeff; color: #4438bb; box-shadow: none; text-decoration: none; }
+.header .dropdownLinks { border: 2px solid #e7e3ef; border-radius: 18px; padding: 10px; box-shadow: 0 4px 0 #ece8f2; }
+.header .dropdownLinks .navLink { padding: 10px 12px; }
+.header .appLink > div > a { padding-inline: 12px; border-radius: 12px; }
+.header :global(.public-account-control-signed-out) { border: 2px solid #5146ed; border-radius: 14px; color: #5146ed; background: white; box-shadow: 0 3px 0 #d9d4f5; }
+.header :global(.public-account-avatar), .header :global(.public-account-initials) { border: 2px solid #b3a6e5; padding: 3px; background: white; }
+@media (min-width:1240px) { .header .menuTrigger { padding-inline: 12px; min-height: 46px; } }
+
+/* Logo colors identify navigation families without changing their layout. */
+.header .mapLink { --nav-tint: #fff4cc; --nav-ink: #775700; }
+.header .reportAction, .header [data-nav-family='Report'] { --nav-tint: #fff0ee; --nav-ink: #ac343b; }
+.header .funding, .header [data-nav-family='Donate'] { --nav-tint: #fff4cc; --nav-ink: #775700; }
+.header .cleaning, .header [data-nav-family='Earn'] { --nav-tint: #efedff; --nav-ink: #5146bf; }
+.header .help, .header [data-nav-family='Support'] { --nav-tint: #f7ebfb; --nav-ink: #783398; }
+.header .appLink { --nav-tint: #fff0ee; --nav-ink: #ac343b; }
+.header.header .mapLink .navLink { padding-inline: 14px; min-height: 44px; justify-content: center; border: 2px solid #ead89c; border-radius: 12px; color: #775700; box-shadow: none; }
+.header.header :is(.mapLink, .reportAction, .funding, .cleaning, .help) :is(.navLink, .menuTrigger):is(:hover, [aria-expanded='true']),
+.header.header .mapLink .navLink[aria-current='page'],
+.header.header .appLink a:hover { background: var(--nav-tint); color: var(--nav-ink); box-shadow: none; }
+.header.header .appLink a { padding-inline: 12px; border-radius: 12px; }
+.header.header .mobilePrimaryLinks a[href='/map']:hover { background: #fff4cc; color: #775700; }
+.header.header .mobilePrimaryLinks a[href='/report-litter']:hover { background: #fff0ee; color: #ac343b; }
+.header.header .mobilePrimaryLinks a[href='/cleaner']:hover { background: #efedff; color: #5146bf; }
+
+/* Map toolbar: style only, preserving search/filter/view behavior and sizing. */
+.header + :global(.discovery-toolbar) { border-bottom-color: #ece6d5; background: #fff; }
+.header + :global(.discovery-toolbar) input { border: 2px solid #e4dfd1; border-radius: 12px; }
+.header + :global(.discovery-toolbar) input:focus-visible { outline: 3px solid #e6bc38; outline-offset: 2px; }
+.header + :global(.discovery-toolbar) :global(.place-search-submit) { background: #ffce38; border: 2px solid #ffce38; border-radius: 12px; color: #493a10; font-weight: 750; }
+.header + :global(.discovery-toolbar) :global(.place-search-submit):hover:not(:disabled) { background: #f4bd20; border-color: #f4bd20; }
+.header + :global(.discovery-toolbar) :global(.place-search-submit):disabled { opacity: .55; }
+.header + :global(.discovery-toolbar) :global(.discovery-filters) { position: relative; border: 2px solid #e4c9ed; border-radius: 12px; color: #783398; background: #fff; }
+.header + :global(.discovery-toolbar) :global(.discovery-filters):hover { background: #f7ebfb; }
+.header + :global(.discovery-toolbar) :global(.discovery-view-toggle) { border: 2px solid #e3dff0; border-radius: 12px; background: #faf9fe; }
+.header + :global(.discovery-toolbar) :global(.discovery-view-toggle) button { border-radius: 8px; }
+.header + :global(.discovery-toolbar) :global(.discovery-view-toggle) button:hover { background: #efedff; }
+.header + :global(.discovery-toolbar) :global(.discovery-view-toggle) button[aria-pressed='true'] { background: #efedff; color: #5146bf; box-shadow: none; }
+
+/* Unified map search: one field with an inset, accessible icon action. */
+.header + :global(.discovery-toolbar) :global(.place-search-input-row) { gap: 4px; align-items: center; padding: 3px; border: 2px solid #e3dff0; border-radius: 28px; background: #fff; transition: border-color 150ms ease, box-shadow 150ms ease; }
+.header + :global(.discovery-toolbar) :global(.place-search-input-row):focus-within { border-color: #a89ae0; box-shadow: 0 0 0 3px #f0edff; }
+.header + :global(.discovery-toolbar) :global(.place-search-field) input { border: 0; border-radius: 24px; padding: 10px 14px; min-height: 44px; background: transparent; box-shadow: none; outline: none; }
+.header + :global(.discovery-toolbar) :global(.place-search-field.has-selected-place) input { padding-right: 42px; }
+.header + :global(.discovery-toolbar) :global(.place-search-submit) { position: static; display: grid; place-items: center; flex: 0 0 44px; width: 44px; height: 44px; min-height: 44px; padding: 0; border: 0; border-radius: 50%; background: #5146ed; color: #fff; box-shadow: none; }
+.header + :global(.discovery-toolbar) :global(.place-search-submit) span { display: none; }
+.header + :global(.discovery-toolbar) :global(.place-search-submit) svg { display: block; width: 21px; height: 21px; }
+.header + :global(.discovery-toolbar) :global(.place-search-submit):hover:not(:disabled) { background: #4438bb; }
+.header + :global(.discovery-toolbar) :global(.place-search-submit):disabled { opacity: 1; background: #f2effa; color: #8b82aa; }
+.header + :global(.discovery-toolbar) :global(.place-search-submit):focus-visible { outline: 3px solid #5146ed; outline-offset: 3px; }
+.header + :global(.discovery-toolbar) :global(.place-search-dropdown) { top: calc(100% + 8px); border-color: #e3dff0; }
+.header + :global(.discovery-toolbar) :global(.place-search-results) [role='option']:is(:hover,[aria-selected='true']) { background: #f4f1ff; }
+.header + :global(.discovery-toolbar) :global(.place-search-results) [role='option'] > svg { color: #5146bf; }
+
+/* The active count belongs to Filters at every breakpoint, not the toolbar. */
+.header + :global(.discovery-toolbar) :global(.discovery-filter-count) { position: absolute; top: -8px; right: -6px; display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 4px; border: 2px solid #fff; border-radius: 12px; background: #f2e5fa; color: #783398; font-size: 12px; line-height: 1; font-variant-numeric: tabular-nums; pointer-events: none; }
+.header + :global(.discovery-toolbar) :global(.discovery-filter-count[data-empty]) { visibility: hidden; }
+.header + :global(.discovery-toolbar) :global(.discovery-filters):focus-visible { outline: 3px solid #b3a6e5; outline-offset: 3px; }
+
+/* Compact map header uses the drawer for Report, avoiding a duplicate action. */
+@media (max-width: 1239px) {
+  .header.mapHeader .reportAction { display: none; }
+  .header.mapHeader .inner { grid-template-areas: "brand . app account menu"; grid-template-columns: auto minmax(0, 1fr) auto auto auto; }
+  .header.header .mobileMenu > .menuTrigger { padding: 10px 14px; width: auto; gap: 10px; border-radius: 12px; }
+}
+@media (max-width: 600px) {
+  .header.mapHeader .inner { grid-template-areas: "brand . account menu"; grid-template-columns: auto minmax(0, 1fr) auto auto; }
+}
+
+/* Compact search and full-width quick filters share the map's top toolbar. */
+.header + :global(.discovery-toolbar) { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 16px; }
+.header + :global(.discovery-toolbar) > :global(.place-search) { width: 230px; flex: 0 0 230px; }
+.header + :global(.discovery-toolbar) :global(.place-search-input-row) { padding: 1px; border-radius: 14px; }
+.header + :global(.discovery-toolbar) :global(.place-search-field) input { min-height: 40px; padding: 8px 10px; font-size: 14px; }
+.header + :global(.discovery-toolbar) :global(.place-search-submit) { width: 40px; height: 40px; min-height: 40px; flex-basis: 40px; border-radius: 11px; }
+.header + :global(.discovery-toolbar) :global(.discovery-quick-filters) { flex: 1 1 500px; min-width: 0; }
+.header + :global(.discovery-toolbar) :global(.discovery-toolbar-actions) { width: auto; margin-left: auto; flex: 0 0 auto; }
 @media (max-width: 1100px) {
-  .header { height: auto; min-height: 66px; }
-  .inner { min-height: 65px; padding: 4px 12px; display: flex; flex-wrap: wrap; gap: 8px; }
-  .desktopNav { display: none; }
-  .mobileMenu { grid-column: 1; justify-self: start; display: block; position: static; }
-  .mobileMenu .menuTrigger { min-height: 44px; color: #111116; font-size: 16px; font-weight: 600; }
-  .mobileMenu .menuTrigger[aria-expanded='true'] { color: var(--green-dark); }
-  .mobilePopover { position: absolute; top: 100%; right: 14px; left: 14px; max-height: calc(100dvh - 80px); overflow-y: auto; padding: 10px; }
-  .mobilePrimaryLinks { display: grid; grid-template-columns: 1fr; gap: 2px; padding: 0 0 9px; margin-bottom: 2px; border-bottom: 1px solid #e4e8e4; }
-  .mobilePrimaryLinks .navLink { min-height: 44px; padding: 7px 10px; border-radius: 8px; }
-  .mobilePrimaryLinks .navLink[aria-current='page'] { color: var(--green-dark); background: var(--green-soft); }
-  .mobilePrimaryLinks .navLink[aria-current='page']::after { display: none; }
-  .brandLink { height: 56px; flex: none; }
-  .brandLink img { width: 56px; height: 46px; max-width: 100%; }
-  .desktopActions { grid-column: 3; display: contents; }
-  .infoMenu { display: none; }
-  .action { min-width: 0; margin-left: auto; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .header + :global(.discovery-toolbar) :global(.discovery-quick-filters) { order: 3; flex: 1 0 100%; }
+}
+@media (max-width: 600px) {
+  .header + :global(.discovery-toolbar) { gap: 8px; padding: 8px 14px; }
+  .header + :global(.discovery-toolbar) > :global(.place-search) { width: auto; flex: 1 1 170px; }
+  .header + :global(.discovery-toolbar) :global(.place-search-field) input { font-size: 16px; }
+  .header + :global(.discovery-toolbar) :global(.place-search-submit) { width: 44px; height: 44px; min-height: 44px; flex-basis: 44px; }
+}
+
+/* Priority navigation: app promotion yields before primary destinations. */
+@media (min-width: 900px) and (max-width: 1239px) {
+  .header.header .inner { grid-template-areas: "brand map report funding cleaning . help search account"; grid-template-columns: auto auto auto auto auto minmax(8px, 1fr) auto 44px max-content; column-gap: 10px; padding-inline: 20px; }
+  .header.header.mapHeader .inner { grid-template-areas: "brand map report funding cleaning . help account"; grid-template-columns: auto auto auto auto auto minmax(8px, 1fr) auto max-content; }
+  .header.header :is(.mapLink,.reportAction,.funding,.cleaning,.help) { display: block; }
+  .header.header :is(.appLink,.mobileMenu) { display: none; }
+  .header.header .menuTrigger { padding-inline: 10px; min-height: 46px; }
+  .header.header .brandLink img { width: 88px; }
+}
+@media (min-width: 760px) and (max-width: 899px) {
+  .header.header .inner { grid-template-areas: "brand map report funding cleaning . search account menu"; grid-template-columns: auto auto auto auto auto minmax(0, 1fr) 44px max-content auto; column-gap: 4px; padding-inline: 14px; }
+  .header.header.mapHeader .inner { grid-template-areas: "brand map funding cleaning . account menu"; grid-template-columns: auto auto auto auto minmax(0, 1fr) max-content auto; }
+  .header.header :is(.mapLink,.reportAction,.funding,.cleaning) { display: block; }
+  .header.header.mapHeader .reportAction, .header.header :is(.appLink,.help) { display: none; }
+  .header.header .menuTrigger { padding-inline: 9px; font-size: 16px; }
+  .header.header .menuLabel, .header.header .mapDesktopLabel { display: none; }
+  .header.header .mapMobileLabel { display: inline; }
+  .header.header .brandLink img { width: 80px; }
+}
+@media (max-width: 759px) {
+  .header.header .appLink { display: none; }
+  .header.header:not(.mapHeader) .inner { grid-template-areas: "brand . map search account menu"; grid-template-columns: auto minmax(0, 1fr) auto 44px max-content auto; column-gap: 6px; }
+  .header.header.mapHeader .inner { grid-template-areas: "brand . account menu"; grid-template-columns: auto minmax(0, 1fr) max-content auto; }
+}
+@media (max-width: 520px) {
+  .header.header:not(.mapHeader) .inner { grid-template-areas: "brand . search account menu"; grid-template-columns: auto minmax(0, 1fr) 44px max-content auto; }
+}
+@media (min-width: 760px) {
+  .header .dropdownLinks::before { content: ''; position: absolute; left: 0; right: 0; top: -13px; height: 13px; }
+  .header .mobileDrawer .dropdownLinks::before { display: none; }
+}
+.header .brandLink { transition: transform 160ms ease; }
+@media (hover: hover) and (pointer: fine) { .header .brandLink:hover { transform: rotate(-3deg); background: transparent; } }
+@media (prefers-reduced-motion: reduce) { .header .brandLink, .header .brandLink:hover { transform: none; transition: none; } }
+/* Use the available middle-width space before collapsing navigation. */
+@media (min-width: 1100px) and (max-width: 1239px) {
+ .header.header .inner { grid-template-areas: "brand map report funding cleaning . help app search account"; grid-template-columns: auto auto auto auto auto minmax(0,1fr) auto auto 44px max-content; column-gap: 6px; padding-inline: 16px; }
+ .header.header.mapHeader .inner { grid-template-areas: "brand map report funding cleaning . help app account"; grid-template-columns: auto auto auto auto auto minmax(0,1fr) auto auto max-content; }
+ .header.header .appLink { display: block; }
+ .header.header .appLink > div { display: block; }
+ .header.header .smallAppLink { display: none; }
+ .header.header .menuTrigger { padding-inline: 8px; }
+}
+@media (min-width: 840px) and (max-width: 899px) {
+ .header.header:not(.mapHeader) .inner { grid-template-areas: "brand map report funding cleaning . help search account"; grid-template-columns: auto auto auto auto auto minmax(0,1fr) auto 44px max-content; gap: 4px; padding-inline: 14px; }
+ .header.header:not(.mapHeader) .help { display: block; }
+ .header.header:not(.mapHeader) .mobileMenu { display: none; }
+}
+@media (min-width: 760px) and (max-width: 899px) {
+ .header.header.mapHeader .inner { grid-template-areas: "brand map report funding cleaning . help account"; grid-template-columns: auto auto auto auto auto minmax(0,1fr) auto max-content; }
+ .header.header.mapHeader :is(.reportAction,.help) { display: block; }
+ .header.header.mapHeader .mobileMenu { display: none; }
+}
+@media (min-width: 600px) and (max-width: 759px) {
+ .header.header.mapHeader .inner { grid-template-areas: "brand map report funding cleaning . account menu"; grid-template-columns: auto auto auto auto auto minmax(0,1fr) max-content auto; gap: 4px; padding-inline: 14px; }
+ .header.header.mapHeader :is(.mapLink,.reportAction,.funding,.cleaning) { display: block; }
+ .header.header.mapHeader .menuTrigger { font-size: 16px; padding-inline: 8px; }
+ .header.header.mapHeader .menuLabel { display: none; }
+}
+
+@media (max-width: 600px) {
+ .header + :global(.discovery-toolbar) :global(.place-search-field) input::placeholder { font-size: 14px; }
+}
+
+/* Drawer categories inherit the same family colors as desktop navigation. */
+.header.header .mobilePrimaryLinks { gap: 6px; padding-inline: 16px; }
+.header.header .mobilePrimaryLinks :is(.menuTrigger,.navLink) { min-height: 48px; padding: 12px 14px; border-radius: 12px; }
+.header.header .mobilePrimaryLinks [data-nav-family] :is(.menuTrigger,.navLink):is(:hover,:focus-visible,[aria-expanded='true'],[aria-current='page'],[data-active='true']) {
+ color: var(--nav-ink); background: var(--nav-tint); box-shadow: none;
+}
+.header.header .mobilePrimaryLinks [data-nav-family] :is(.menuTrigger,.navLink):focus-visible { outline-color: var(--nav-ink); outline-offset: 2px; }
+.header.header .mobilePrimaryLinks .dropdownLinks { margin: 4px 0 8px 12px; padding: 4px 0 4px 10px; border: 0; border-left: 2px solid var(--nav-tint); border-radius: 0; box-shadow: none; }
+.header.header .mobilePrimaryLinks > a[href='/map'] { color: #775700; border-color: #ead89c; }
+.header.header .mobilePrimaryLinks > a[href='/map']:is(:hover,:focus-visible,[aria-current='page']) { color: #775700; background: #fff4cc; }
+
+.header :global(.public-account-control-signed-out) { padding-inline: 18px; color: #fff; background: #5146ed; border-color: #5146ed; box-shadow: 0 3px 0 #d9d4f5; }
+.header :global(.public-account-control-signed-out:hover) { color: #fff; background: #4036c9; border-color: #4036c9; }
+@media (max-width: 600px) {
+  .header :global(.public-account-control-signed-out) { padding-inline: 10px; font-size: 14px; }
+}
+
+@media (max-width: 360px) {
+  .header:not(.mapHeader) .mobileMenu > .menuTrigger { width: 44px; min-width: 44px; padding-inline: 4px; }
+}
+
+@media (max-width: 360px) {
+  .header:not(.mapHeader) .inner { grid-template-columns: auto minmax(0, 1fr) 36px max-content 44px; column-gap: 4px; padding-inline: 8px; }
+  .header:not(.mapHeader) .brandLink img { width: 64px; }
+  .header :global(.public-account-control-signed-out) { padding-inline: 8px; }
+}
+
+.header.header .mobilePrimaryLinks > .mapEntry { border: 1px solid #ead89c; border-radius: 12px; gap: 8px; }
+
+@media (min-width: 760px) and (max-width: 899px) {
+  .header.header .brandLink { margin-right: 12px; }
 }

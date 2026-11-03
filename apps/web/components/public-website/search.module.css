@@ -1,0 +1,116 @@
+.search {
+  padding: 28px 0 0;
+  position: relative;
+}
+.searchForm {
+  display: flex;
+  gap: 12px;
+}
+.searchField {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  flex: 1;
+  min-width: 0;
+  background: white;
+}
+.searchField svg {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  color: var(--muted);
+}
+.searchField input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  height: 54px;
+  color: var(--ink);
+}
+.button {
+  border: 1px solid #939d96;
+  border-radius: 6px;
+  background: white;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  font-size: 20px;
+  padding: 12px 24px;
+  cursor: pointer;
+}
+.button:hover {
+  background: var(--soft);
+}
+.searchMessage {
+  font-size: 14px;
+  color: var(--muted);
+}
+.searchMessage:not(:empty) {
+  padding-top: 12px;
+}
+.searchResults {
+  padding: 8px 0;
+  margin: 12px 0 0;
+  list-style: none;
+  border-block: 1px solid var(--line);
+  background: #fff;
+}
+.searchResults a {
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+}
+.searchResults a:hover {
+  background: var(--green-soft);
+}
+.textLink {
+  color: var(--green-dark);
+  font-weight: 600;
+}
+@media (max-width: 700px) {
+  .searchForm {
+    gap: 8px;
+  }
+  .searchField {
+    padding-inline: 12px;
+    gap: 8px;
+  }
+  .searchField input {
+    font-size: 18px;
+  }
+  .searchField svg {
+    width: 18px;
+  }
+  .button {
+    padding: 10px 14px;
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 500px) {
+  .searchForm {
+    flex-direction: column;
+  }
+  .searchField input {
+    font-size: 18px;
+  }
+  .button {
+    min-height: 48px;
+    font-size: 18px;
+  }
+}
+
+.compact .searchForm { position: relative; display: flex; flex-direction: row; gap: 0; }
+.compact .searchField { padding-right: 60px; }
+.compact .searchField input { font-size: 18px; height: 60px; }
+.compact .button { position: absolute; right: 6px; top: 6px; width: 48px; min-height: 48px; height: 48px; padding: 0; display: grid; place-items: center; border-radius: 8px; }
+.compact .button svg { width: 23px; height: 23px; }
+.compact .searchResults a { color: var(--green-dark); }
+.compact .searchField:focus-within { outline: 2px solid var(--green); outline-offset: 2px; }
