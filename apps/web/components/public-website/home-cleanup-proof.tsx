@@ -3,7 +3,7 @@ import type { PublicReportShareModel } from '@/lib/public-report-share-model';
 import { PublicPhoto } from './public-photo';
 import styles from './home-cleanup-proof.module.css';
 
-export function HomeCleanupProof({ report, heading = 'Most Recent Cleanup', showHeading = true }: { report: PublicReportShareModel; heading?: string; showHeading?: boolean }) {
+export function HomeCleanupProof({ report, heading = 'Most recent cleanup', showHeading = true }: { report: PublicReportShareModel; heading?: string; showHeading?: boolean }) {
   return (
     <section className={styles.proof} aria-labelledby={showHeading ? "home-cleanup-title" : undefined} aria-label={showHeading ? undefined : report.title} data-cleanup-proof="true">
       {showHeading && <div className={styles.heading}>
