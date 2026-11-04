@@ -31,6 +31,20 @@ until Claude hands back. Notes in this file are always welcome.
 
 ## Log
 
+### 2026-11-04 — Claude (Claude Code desktop on Grant's Mac; local review setup)
+
+- Grant moved Claude work from Cowork to Claude Code running directly in this
+  folder. Rules for this session: no pushing and no deploying.
+- Committed Codex's four 2026-11-04 log entries on `live-site-2026-11-03`
+  (7320793). Then checked out `claude/ui-finish` and merged that branch in
+  (c854426) so the handoff log is current. The merge only touched docs:
+  `claude/ui-finish` still differs from the live site only in `brand.module.css`
+  and `home-cleanup-proof.tsx`.
+- Added `.claude/launch.json` ("website" runs `npm run web:dev` on port 3000).
+  The site is running at http://localhost:3000 for Grant's review.
+  Analytics load only on `litterbugs.app`, so local visits aren't tracked.
+- Nothing pushed or deployed. Next: Grant reviews `claude/ui-finish` locally.
+
 ### 2026-11-04 — Codex (visitor recording review)
 
 - Reviewed one 2:34 mobile Clarity recording: a completed report, map, Boone
