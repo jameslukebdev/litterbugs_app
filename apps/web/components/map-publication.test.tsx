@@ -446,3 +446,20 @@ it('exits the map loading state when tiles time out and recovers if they arrive 
     expect(document.querySelector('.map-loading-complete')).toBeTruthy();
   } finally { vi.useRealTimers(); }
 });
+
+it('opens map-first links minimized, reveals details and dismisses them onto the map', async () => {
+  state.published = true;
+  window.history.replaceState({}, '', '/map?report=test-report&intent=locate&view=map&returnTo=%2Fcommunities%2Fus%2Fnc%2Fboone');
+  render(<MapExperience initialReports={[report() as MappableReport]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" initialPlace={{id:'community-us-nc-boone',label:'Boone',subtitle:'Boone boundary',latitude:36,longitude:-81,bounds:{north:37,south:35,east:-80,west:-82}}} />);
+  const summary = await screen.findByRole('button', {name:/Open report details:/});
+  expect(screen.queryByLabelText('Linked report')).toBeNull();
+  await waitFor(() => expect(state.panTo).toHaveBeenCalledWith({lat:0.5,lng:0}));
+  expect(state.fitBounds).not.toHaveBeenCalled();
+  expect(state.markerInstances.some(marker => marker.title === report().title)).toBe(true);
+  fireEvent.click(summary);
+  expect(screen.getByLabelText('Linked report')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', {name:'Back to discovery'}));
+  expect(screen.getByRole('button', {name:/Open report details:/})).toBeTruthy();
+  expect(window.location.pathname).toBe('/map');
+  expect(new URL(window.location.href).searchParams.get('report')).toBe('test-report');
+});

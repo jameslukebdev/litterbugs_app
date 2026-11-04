@@ -11,11 +11,12 @@ export function reportEntryContext(slug: unknown) {
   if (!community || community.publication !== 'published') return null;
   return { community, next: communityReportHref(community), area: `community-${community.slug}`, returnTo: community.href };
 }
-export function communityReportMapHref(reportId: string, communitySlug?: string, intent?: 'fund' | 'clean') {
+export function communityReportMapHref(reportId: string, communitySlug?: string, intent?: 'fund' | 'clean' | 'locate') {
   const query = new URLSearchParams({ report: reportId });
   const context = reportEntryContext(communitySlug);
   if (context) { query.set('area', context.area); query.set('returnTo', context.returnTo); }
   if (intent) query.set('intent', intent);
+  if (intent === 'locate') query.set('view', 'map');
   return `/map?${query}`;
 }
 export function contributionReturnPath(report: string, contribution: string, returnTo: unknown) {

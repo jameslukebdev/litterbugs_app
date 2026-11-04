@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { ANALYTICS_EVENT } from '@/lib/website-analytics';
 import styles from './monthly-support.module.css';
 
 export type SupportOption = { amount: number; url: string };
@@ -21,7 +22,7 @@ export function MonthlySupport({ options, portalUrl }: { options: SupportOption[
       </div>
     </fieldset>
     <p className={styles.details}>USD. Charged today and every month until you cancel. Cancel before your next billing date to stop future charges.</p>
-    {ready ? <a className={styles.checkout} href={selected!.url}>Support with ${amount} / month</a> : <p role="status">Monthly support will be available soon. Please check back.</p>}
+    {ready ? <a className={styles.checkout} href={selected!.url} onClick={() => window.dispatchEvent(new CustomEvent(ANALYTICS_EVENT, { detail: { event: 'support_checkout_clicked', amount, currency: 'USD', billing_interval: 'month' } }))}>Support with ${amount} / month</a> : <p role="status">Monthly support will be available soon. Please check back.</p>}
     {ready && <p className={styles.details}>Secure checkout with Stripe. No Litterbugs account needed.</p>}
     {portalUrl && <p className={styles.manage}>Already supporting us? <a href={portalUrl}>Manage or cancel your support</a>.</p>}
   </div>;

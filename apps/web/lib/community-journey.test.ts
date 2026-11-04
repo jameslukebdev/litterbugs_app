@@ -39,3 +39,10 @@ describe('community participation journeys', () => {
     expect(communityReturnFromEntry('//evil.example/report?community=us-nc-boone')).toBeNull();
   });
 });
+
+it('gives View on map an explicit map-first entry without changing receipts', () => {
+  const url = new URL(communityReportMapHref('spot', 'us-nc-boone', 'locate'), 'https://litterbugs.app');
+  expect(url.searchParams.get('view')).toBe('map');
+  expect(url.searchParams.get('intent')).toBe('locate');
+  expect(communityReceiptReportHref('spot', '/communities/us/nc/boone')).not.toContain('locate');
+});

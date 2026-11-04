@@ -8,6 +8,7 @@ import type { PostHog } from 'posthog-js';
 import { ANALYTICS_CONSENT_KEY, ANALYTICS_EVENT, ANALYTICS_PREFERENCES, ANALYTICS_REPLAY_CHOICE_KEY, analyticsAllowed, analyticsPage, analyticsReferrer, type AnalyticsConfig } from '@/lib/website-analytics';
 import { COMMUNITY_ENGAGEMENT_EVENTS, communityClick, communityForPath, communityProperties } from '@/lib/community-metrics';
 import styles from './website-analytics.module.css';
+import { supportCheckoutProperties } from '@/lib/monthly-support';
 
 type AnalyticsWindow = Window & { dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void; clarity?: ((...args: unknown[]) => void) & { q?: unknown[][] } };
 function google(...args: unknown[]) { (window as AnalyticsWindow).gtag?.(...args); }
@@ -78,9 +79,11 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
           if (!event || !permitted.current || privacySignal()) return null;
           const keep = new Set(['distinct_id', 'token', '$cookieless_mode', '$raw_user_agent', '$host', '$session_id', '$window_id', '$lib', '$lib_version', '$process_person_profile', '$current_url', '$pathname', '$referrer', '$referring_domain', '$device_type', '$device', '$os', '$browser', '$pageview_id', 'page_type']);
           const community = communityProperties(event.properties);
+          const support = event.event === 'support_checkout_clicked' ? supportCheckoutProperties(event.properties) : null;
           const previousDuration = event.properties.$prev_pageview_duration;
           event.properties = Object.fromEntries(Object.entries(event.properties).filter(([key]) => keep.has(key)));
           if (community) Object.assign(event.properties, community);
+          if (support) Object.assign(event.properties, support);
           const page = event.event === '$pageleave' && typeof event.properties.page_type === 'string'
             ? analyticsPage(event.properties.page_type) : analyticsPage(window.location.pathname);
           if ((event.event === '$pageleave' || event.event === '$autocapture') && !page) return null;
@@ -172,6 +175,13 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
       if (!detail) return;
       const communityContext = communityProperties(detail) ?? {};
       const currentPage = analyticsPage(window.location.pathname) ?? '/private';
+      if (detail.event === 'support_checkout_clicked') {
+        const support = supportCheckoutProperties(detail);
+        if (!support) return;
+        if (active && gaReady) google('event', detail.event, { page_type: currentPage, ...support });
+        if (aggregate && ready) posthog.current?.capture(detail.event, { page_type: currentPage, ...support });
+        return;
+      }
       if (COMMUNITY_ENGAGEMENT_EVENTS.includes(detail.event)) {
         if (!('community_id' in communityContext)) return;
         if (active && gaReady) google('event', detail.event, { page_type: currentPage, ...communityContext });

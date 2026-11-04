@@ -272,3 +272,21 @@ it('keeps leave timing while removing private interaction and route details', as
   expect(beforeSend({ event: '$autocapture', properties: { '$elements': [{ text: 'private text' }] } })).toBeNull();
   window.history.replaceState({}, '', '/');
 });
+
+it('measures support checkout intent with allowlisted properties and respects analytics exclusion', async () => {
+  mock.allowed = true;
+  const view = render(<WebsiteAnalytics config={config} />);
+  await waitFor(() => expect(mock.capture).toHaveBeenCalledWith('$pageview', {page_type:'/'}));
+  act(() => window.dispatchEvent(new CustomEvent(ANALYTICS_EVENT, {detail:{event:'support_checkout_clicked',amount:5,currency:'USD',billing_interval:'month',email:'private@example.com'}})));
+  expect(mock.capture).toHaveBeenCalledWith('support_checkout_clicked', {page_type:'/',amount:5,currency:'USD',billing_interval:'month'});
+  const beforeSend = mock.init.mock.calls[0][1].before_send;
+  const sanitized = beforeSend({event:'support_checkout_clicked',properties:{amount:5,currency:'USD',billing_interval:'month',email:'private@example.com'}});
+  expect(sanitized.properties.amount).toBe(5); expect(sanitized.properties.email).toBeUndefined();
+  mock.capture.mockClear();
+  act(() => window.dispatchEvent(new CustomEvent(ANALYTICS_EVENT, {detail:{event:'support_checkout_clicked',amount:999,currency:'USD',billing_interval:'month'}})));
+  expect(mock.capture).not.toHaveBeenCalled();
+  view.unmount(); mock.allowed = false;
+  render(<WebsiteAnalytics config={config} />);
+  act(() => window.dispatchEvent(new CustomEvent(ANALYTICS_EVENT, {detail:{event:'support_checkout_clicked',amount:5,currency:'USD',billing_interval:'month'}})));
+  expect(mock.capture).not.toHaveBeenCalled();
+});

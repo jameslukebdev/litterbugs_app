@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render } from '@testing-library/react';
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import { MonthlySupport } from './monthly-support';
 
 afterEach(cleanup);
@@ -17,4 +17,15 @@ it('does not offer checkout without a cancellation portal', () => {
   const view = render(<MonthlySupport options={options} portalUrl="" />);
   expect(view.queryByRole('link', { name: /Support with/ })).toBeNull();
   expect(view.getByRole('status').textContent).toContain('available soon');
+});
+
+it('emits checkout intent with the chosen amount and no payment-completed claim', () => {
+  const listener = vi.fn(); window.addEventListener('litterbugs:analytics-event', listener);
+  const view = render(<MonthlySupport options={options} portalUrl={portalUrl} />);
+  fireEvent.click(view.getByRole('radio', {name:'$10 / month'}));
+  const link = view.getByRole('link', {name:'Support with $10 / month'});
+  link.addEventListener('click', e => e.preventDefault()); fireEvent.click(link);
+  expect(listener).toHaveBeenCalledTimes(1);
+  expect(listener.mock.calls[0][0].detail).toEqual({event:'support_checkout_clicked',amount:10,currency:'USD',billing_interval:'month'});
+  window.removeEventListener('litterbugs:analytics-event', listener);
 });

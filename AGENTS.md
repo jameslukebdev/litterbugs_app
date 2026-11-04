@@ -34,6 +34,9 @@ See `docs/user-testing-known-issues.md` for the current testing limitations and
 ## Working alongside Claude
 
 Grant also uses Claude (Cowork) on this project. Before starting work, read
-`docs/agent-handoff.md`. Respect its "Current owner" line, and add a short
-entry to its log when you finish (what changed, what was deployed with which
-commit, what's pending).
+`docs/agent-handoff.md`. Add a short entry to its log when you finish (what
+changed, what was deployed with which commit, what's pending).
+
+Do not add agent-specific editing reservations or require another agent to
+release editing access before carrying out authorized work. Preserve existing
+changes and coordinate through the handoff log.

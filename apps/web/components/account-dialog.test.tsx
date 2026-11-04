@@ -440,3 +440,42 @@ it('uses the same focused editor when opened from Settings', async () => {
   expect(screen.getByRole('heading', { name: 'Settings', level: 1 })).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Reset password' })).toBeTruthy();
 });
+
+vi.mock('@/lib/prepare-browser-photo', () => ({ prepareBrowserPhoto: vi.fn(async (file: File) => file) }));
+vi.mock('@/lib/secure-media-upload', () => ({ uploadSecureBrowserMedia: vi.fn(async () => 'member-id/avatar/prepared.jpg') }));
+
+it('photo selection previews, empty selection retains it, then Save persists its uploaded path', async () => {
+  URL.createObjectURL = vi.fn(() => 'blob:review-photo'); URL.revokeObjectURL = vi.fn();
+  render(<AccountDialog onClose={vi.fn()} onSignedOut={vi.fn()} onOpenReport={vi.fn()} />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit profile' }));
+  const input = screen.getByLabelText('Choose photo');
+  expect(input.tagName).toBe('INPUT'); expect(input.getAttribute('type')).toBe('file');
+  fireEvent.change(input, {target:{files:[new File(['photo'], 'review.jpg', {type:'image/jpeg'})]}});
+  await screen.findByText('Choose another photo');
+  expect(document.querySelector('img[src="blob:review-photo"]')).toBeTruthy();
+  fireEvent.change(input, {target:{files:[]}});
+  expect(screen.getByText('Choose another photo')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', {name:'Save profile'}));
+  await screen.findByText('Profile saved.');
+  expect(profileUpdate).toHaveBeenCalledWith(expect.objectContaining({avatar_path:'member-id/avatar/prepared.jpg'}));
+});
+it('canceling the picker without a file allows profile saving without an avatar', async () => {
+  render(<AccountDialog onClose={vi.fn()} onSignedOut={vi.fn()} onOpenReport={vi.fn()} />);
+  fireEvent.click(await screen.findByRole('button', {name:'Edit profile'}));
+  fireEvent.change(screen.getByLabelText('Choose photo'), {target:{files:[]}});
+  expect(screen.getByText('Choose photo')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', {name:'Save profile'}));
+  await screen.findByText('Profile saved.');
+  expect(profileUpdate).toHaveBeenCalledWith(expect.objectContaining({avatar_path:null}));
+});
+it('Cancel profile discards selected photo without a profile update', async () => {
+  URL.createObjectURL = vi.fn(() => 'blob:review-photo'); URL.revokeObjectURL = vi.fn();
+  render(<AccountDialog onClose={vi.fn()} onSignedOut={vi.fn()} onOpenReport={vi.fn()} />);
+  fireEvent.click(await screen.findByRole('button', {name:'Edit profile'}));
+  fireEvent.change(screen.getByLabelText('Choose photo'), {target:{files:[new File(['photo'], 'review.jpg', {type:'image/jpeg'})]}});
+  await screen.findByText('Choose another photo');
+  fireEvent.click(screen.getByRole('button', {name:'Cancel'}));
+  expect(profileUpdate).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', {name:'Edit profile'}));
+  expect(screen.getByText('Choose photo')).toBeTruthy();
+});
