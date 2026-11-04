@@ -31,6 +31,33 @@ until Claude hands back. Notes in this file are always welcome.
 
 ## Log
 
+### 2026-11-04 — Codex (visitor recording review)
+
+- Reviewed one 2:34 mobile Clarity recording: a completed report, map, Boone
+  community and completed results, then the homepage. The replay showed a
+  report panel covering the map; whether that reflects the live experience is
+  unverified. One session may include testing. No code, database or deployment
+  changes; Claude remains the current owner.
+
+### 2026-11-04 — Codex (website behavior review)
+
+- Reviewed recent PostHog page and device breakdowns and a Clarity session;
+  reporting may include staff visits. No site, database, code or deployment
+  changes. Claude remains the current owner.
+
+### 2026-11-04 — Codex (app activity check)
+
+- Checked Google Play daily active users: the newest displayed row is October
+  29, with one Android user. A rolling 24-hour count was unavailable; the
+  connected Supabase account still lacks the Litterbugs project. No code,
+  database or deployment changes; Claude remains the current owner.
+
+### 2026-11-04 — Codex (website traffic check)
+
+- Read PostHog's rolling 24-hour website overview: 5 visitors, 6 sessions,
+  and 10 pageviews, with test-account filtering enabled. No code or deployment
+  changes; Claude remains the current owner. No follow-up pending.
+
 ### 2026-11-03 — Claude (direction correction)
 
 - Grant rejected `claude/ui-polish`, which flattened the playful style; it is
