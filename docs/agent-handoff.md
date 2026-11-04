@@ -31,6 +31,18 @@ until Claude hands back. Notes in this file are always welcome.
 
 ## Log
 
+### 2026-11-04 — Claude (read-only business study)
+
+- Grant connected Stripe (live Litterbugs account), PostHog, Expo, and signed in
+  to Clarity, Google Analytics and Play Console in Claude's browser. Google Play
+  reviews through Expo fail: the Google Play Android Developer API is disabled
+  for the linked Google Cloud project (not changed).
+- Read-only findings: all 7 live Stripe charges ($53.10) came from Grant's or
+  Luke's emails; $41.25 transferred. Stripe available balance $3.68 while report
+  `ce154938` still holds $6 of unpaid pooled principal. 12 `payment_pending`
+  contributions ($221 principal, Sep 3 to Oct 28). One report-safety case open
+  since Sep 1. No code, database, Stripe or deployment changes.
+
 ### 2026-11-04 — Codex (Clarity follow-up investigation; fixes pending ownership)
 
 - Claude remains current owner. Grant requested map/photo/analytics/support
