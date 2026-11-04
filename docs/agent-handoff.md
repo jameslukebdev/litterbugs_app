@@ -24,6 +24,14 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-04 — Codex (support test email)
+
+- At Grant's request sent “Litterbugs support email delivery test” from
+  `gegibson@icloud.com` to `support@litterbugs.app`. It appeared in Sent, but
+  not in the iCloud inbox or Junk after about 90 seconds and a mail refresh.
+  End-to-end forwarding remains unverified; same-account forwarding or delay
+  may affect this test. No configuration or deployment changes.
+
 ### 2026-11-04 — Codex (support delivery verification attempt)
 
 - Public MX records currently point to Cloudflare. Mail on this Mac can view
