@@ -31,6 +31,91 @@ until Claude hands back. Notes in this file are always welcome.
 
 ## Log
 
+### 2026-11-04 — Codex (visitor recording review)
+
+- Reviewed one 2:34 mobile Clarity recording: a completed report, map, Boone
+  community and completed results, then the homepage. The replay showed a
+  report panel covering the map; whether that reflects the live experience is
+  unverified. One session may include testing. No code, database or deployment
+  changes; Claude remains the current owner.
+
+### 2026-11-04 — Codex (website behavior review)
+
+- Reviewed recent PostHog page and device breakdowns and a Clarity session;
+  reporting may include staff visits. No site, database, code or deployment
+  changes. Claude remains the current owner.
+
+### 2026-11-04 — Codex (app activity check)
+
+- Checked Google Play daily active users: the newest displayed row is October
+  29, with one Android user. A rolling 24-hour count was unavailable; the
+  connected Supabase account still lacks the Litterbugs project. No code,
+  database or deployment changes; Claude remains the current owner.
+
+### 2026-11-04 — Codex (website traffic check)
+
+- Read PostHog's rolling 24-hour website overview: 5 visitors, 6 sessions,
+  and 10 pageviews, with test-account filtering enabled. No code or deployment
+  changes; Claude remains the current owner. No follow-up pending.
+
+### 2026-11-03 — Claude (direction correction)
+
+- Grant rejected `claude/ui-polish`, which flattened the playful style; it is
+  **shelved**. The live site's direction stays: playful colors, logo stickers,
+  raised buttons, stock photos and the current layout.
+- Current candidate: `claude/ui-finish` (9b563ce), based on
+  `live-site-2026-11-03`. It is a subtle finishing layer at the end of
+  `brand.module.css`: hero copy tone and measure, body copy at 19px instead of
+  22px, legible report-card metadata, a "Browse all" link with an arrow,
+  quieter captions and footer, and the heading "Most recent cleanup". Not
+  deployed or pushed.
+
+### 2026-11-03 — Claude (app screens and owner preferences)
+
+- `claude/ui-polish` is now at 3466cbe. The three "Explore" cards show real app
+  screens (`public/app-screens/{report,fund,claim}.webp`, cropped from
+  `release-assets/apple-app-store/2026-10-30-prepared/source/iphone/01-03`)
+  instead of stock photos. Card copy is shorter.
+- **Owner preferences to keep everywhere:** no eyebrows, badges or clutter. No
+  technical, meta or instructional language on the site. Show the product
+  (real app screens) rather than explaining it with step lists. Reporters,
+  donors and cleaners are equal audiences.
+- Observation for Grant: the app's brand color is green and the website's is
+  purple.
+
+### 2026-11-03 — Claude (visual polish; question for Codex)
+
+- Grant's feedback: no eyebrows, badges or clutter; polish the overall UI first
+  and add sections later. **`claude/homepage-polish` is shelved** (it added
+  FAQ/how-it-works sections, which Grant had already asked to remove on
+  10/29).
+- New branch `claude/ui-polish` (commit dcbd83b+, based on
+  `live-site-2026-11-03`). It is CSS only: a "Refined finish" layer at the end
+  of `components/public-website/brand.module.css`, plus the heading
+  "Most recent cleanup" in sentence case. It removes the logo stickers,
+  hard offset shadows, colored photo underlines, multi-colored headings and
+  buttons, the status and rank badges on report cards, and the reward pill
+  background. It adds soft elevation, a single accent color, and consistent
+  16px/10px radii. No content or layout changes. Not deployed or pushed.
+- **Question for Codex:** Grant says the site has three equal audiences:
+  reporters, donors and cleaners. Is the hero's reporter-first message
+  ("Get paid to report it") intentional? Are there positioning decisions Claude
+  should respect beyond what's in docs/reviews? Please answer here.
+
+### 2026-11-03 — Claude (homepage polish, waiting for Grant's approval)
+
+- Branch `claude/homepage-polish` (commit b2738dd), built on `live-site-2026-11-03`.
+  Built and tested in a separate copy; this folder's working tree is untouched.
+- Homepage additions, keeping the current design: a trust line under the store
+  badges, live impact stats (published reports and completed cleanups, both
+  read with anonymous access), a "How you get paid" 3-step section with a $10
+  example, an FAQ, and a dark closing call-to-action band. New files are
+  `components/public-website/home-{impact,how-it-works,faq,closing}.tsx` and
+  `home-sections.module.css`; `app/page.tsx` is edited.
+- Screenshots: `~/Desktop/Litterbugs Homepage Preview/`.
+- Not deployed. Not pushed (no GitHub login in Claude's sandbox).
+- Next: image weight (rank PNGs about 1 MB each, avatar resizing).
+
 ### 2026-11-03 — Claude (git rescue; Grant asked Claude to take over)
 
 - Did the steps of the request below myself; Codex didn't need to act.
