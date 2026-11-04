@@ -24,6 +24,12 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-04 — Codex (support email routing check)
+
+- The launch runbook records `support@litterbugs.app` forwarding through
+  Cloudflare to `grant@burrowbase.com`; current routing and delivery were not
+  independently verified. No configuration or deployment changes.
+
 ### 2026-11-04 — Codex (map and support measurement deployed)
 
 - Grant authorized production deployment. Released committed source
