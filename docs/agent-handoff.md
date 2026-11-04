@@ -24,6 +24,51 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-04 — Codex (map, photo and measurement follow-up completed locally)
+
+- Implementation commit `ff4eed6` on `claude/ui-finish`. Nothing pushed or
+  deployed; no database or Stripe configuration changes. Existing homepage
+  preview work remains in place.
+- Public View on map links now use `intent=locate&view=map`. The report pin
+  takes priority over community bounds, remains visible despite saved filters,
+  and has a compact details control above mobile navigation. Opening details
+  and dismissing them stays on the map. Fund/clean, receipts, community returns
+  and ordinary shared-report dismissal retain their existing behavior.
+- Map viewport writes now use `#map=lat,lng,zoom`, with the existing rounded
+  coordinates. Legacy query links still load; new fragments take precedence.
+  Query identity stays stable while moving/zooming, avoiding Clarity's extra
+  page entries. Hash is preserved through other map actions. Production
+  Clarity reporting wasn't exercised because local test visits exclude analytics.
+- Desktop browser: actual Choose photo file-chooser events, cancel/empty
+  selection, real browser image preparation and preview, save with avatar path,
+  and canceling profile edits passed. Used a temporary local route rendering
+  AccountDialog and intercepted all account/storage/media responses. The route
+  and test cookie were removed. No real profile modified; live photo scanning
+  and storage were not tested. No photo-control defect reproduced or code fix
+  made; photo regression tests added.
+- Added `support_checkout_clicked` to GA/PostHog with only allowlisted monthly
+  amount, USD and month properties. Exclusion/privacy settings still apply;
+  no automatic permission prompt. Browser check prevented checkout navigation.
+  This event means intent, never completed payment. No live payment attempted.
+- Existing paid-support source is Stripe's Litterbugs subscription/payment
+  records. For automated completion reporting, verify support Payment Link or
+  price, subscription mode and paid status; handle delayed payment success,
+  deduplicate by checkout/subscription for first payment and invoice for renewals,
+  and keep these separate from cleanup contributions. Subscription creation or
+  thank-you-page visits alone do not prove payment. Such server-side completion
+  tracking was recommended, not added to the existing cleanup webhook.
+- Validation: 176 tests across 11 relevant suites, scoped ESLint and TypeScript
+  passed. Missing local test/react-dom type packages were supplied through
+  temporary /tmp configurations, without project dependency changes. Playwright
+  at 390×844 and 1280×900: correct pages, meaningful rendering, no framework
+  overlays, no console warnings/errors. Verified map detail open/close, stable
+  query on zoom, fund/clean entry, community return and ordinary report close.
+  Screenshots: `/tmp/litterbugs-map-fixed-{mobile,desktop}.png` and
+  `/tmp/litterbugs-photo-preview-desktop.png`. Browser plugin unavailable.
+- Grant requested removal of agent editing reservations. Removed the old gate
+  and historical references; AGENTS.md now explicitly prohibits adding such
+  gates. Continue preserving other edits and recording changes here.
+
 ### 2026-11-04 — Claude (follow-up on review findings, read-only)
 
 - Stripe balance: $53.10 charged - $3.64 processing - $4.53 Connect fees
