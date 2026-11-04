@@ -24,6 +24,15 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-04 — Codex (support delivery verification attempt)
+
+- Public MX records currently point to Cloudflare. Mail on this Mac can view
+  messages addressed to `grant@burrowbase.com`, but a search for the support
+  address found only two outgoing Litterbugs password-reset messages from
+  August, not evidence of forwarded support mail. Browser access was disabled;
+  current Cloudflare rule and end-to-end delivery remain unverified. No email
+  sent and no configuration or deployment changes.
+
 ### 2026-11-04 — Codex (support email routing check)
 
 - The launch runbook records `support@litterbugs.app` forwarding through
