@@ -24,6 +24,20 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-04 — Claude (Stripe payout cost analysis, read-only)
+
+- Stripe docs: a connected account is "monthly active" ($2) in any month it
+  receives at least one successful bank payout; each payout also costs
+  0.25% + 25c. Transfers into the connected balance alone do not count.
+- Cleaner accounts use Stripe's default daily automatic payouts (2-day delay),
+  with Litterbugs as controller (Express dashboard), so every reward reaches the
+  bank within days and triggers that month's $2. The platform can switch these
+  to manual payouts (US holding limit: 2 years).
+- Correction to earlier notes: the Greenwood $25 cleaner and today's $5 payout
+  went to an outside cleaner, not to Grant or Luke.
+- Proposal discussed with Grant (not implemented): a member "cash out" with a
+  minimum, plus optionally 20% + 50c on every donation. No changes made.
+
 ### 2026-11-04 — Codex (map, photo and measurement follow-up completed locally)
 
 - Implementation commit `ff4eed6` on `claude/ui-finish`. Nothing pushed or
