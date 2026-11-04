@@ -31,6 +31,56 @@ until Claude hands back. Notes in this file are always welcome.
 
 ## Log
 
+### 2026-11-04 — Codex (Clarity follow-up investigation; fixes pending ownership)
+
+- Claude remains current owner. Grant requested map/photo/analytics/support
+  investigation and fixes; ownership clarification is pending. No application
+  code, database, Stripe configuration or deployment changes. This entry is a
+  documentation-only change.
+- Reproduced locally at localhost:3000, 390×844: completed report
+  `7b20f1ec-41a8-4eba-be86-f3608250638e` → View on map opens a full-height
+  report sheet covering the map. Close explicitly returns to Boone community;
+  verified actual navigation. URL settled at zoom 10 with selected report in a
+  14-report cluster. Screenshot: `/tmp/litterbugs-mobile-map-before.png`.
+- Proposed bounded fix: give public View on map its own location-only entry
+  mode, show a small report-details action, prioritize report coordinates/zoom
+  after community bounds are applied, and keep closing those details on the
+  map. Preserve fund/clean, community receipts, account returns, shared-report
+  links, ordinary pin/list clicks and browser Back behavior.
+- Map idle writes lat/lng/zoom query parameters via replaceState. Clarity's
+  official history implementation restarts page tracking on changed URLs,
+  ignoring only the fragment: https://raw.githubusercontent.com/microsoft/clarity/master/packages/clarity-js/src/core/history.ts
+  Thus viewport movement inflates Clarity page entries. PostHog manual
+  pageviews depend on pathname; query-only movement doesn't increment them.
+  GA application tracking is pathname-based too; GA dashboard enhanced-history
+  settings weren't checked. Recommend viewport in fragment or session memory,
+  preserving legacy query links and share/reload behavior; don't suppress all
+  history tracking or disable visitor analytics.
+- Photo picker is a native file input inside a label. No confirmed dead-click
+  bug. Existing profile edit/save/cancel tests pass, but full desktop OS-picker,
+  photo processing/upload/save reproduction remains unverified. Additional
+  temporary photo-specific tests couldn't load outside the project; do not
+  treat that as an application failure or a passing photo test.
+- Support uses 3 live Stripe Payment Links in lib/monthly-support.ts. No
+  dedicated support click event; analytics sanitization also removes arbitrary
+  autocapture link details. Existing stripe-webhook handles cleanup payments,
+  refunds/transfers/disputes, not subscription completions. Stripe dashboard
+  for Litterbugs acct_1U2HZe40KMkUKMFW is the existing paid-support source;
+  Stripe MCP is documented as connected to another business. No payment was
+  attempted and no claim is made that the recorded visitor paid. Recommend
+  allowlisted support_checkout_clicked (amount/currency only), then distinct
+  server-confirmed first paid subscription and renewal metrics, deduplicated
+  and restricted to support prices/links. Checkout completion can still be
+  unpaid for delayed methods; use verified paid status/invoice, not a thank-you
+  page visit: https://docs.stripe.com/payment-links/post-payment
+- Validation: 81 existing tests passed across account-dialog,
+  website-analytics, map-publication, community-journey and monthly-support.
+  Missing @testing-library/react was supplied temporarily under /tmp, with a
+  temporary test config; project dependencies unchanged. Local rendered map
+  journey had meaningful content, correct titles, no framework error overlay
+  or console warnings/errors. Browser plugin unavailable; used Playwright.
+  Local analytics are disabled by hostname, so testing added no visitor traffic.
+
 ### 2026-11-04 — Claude (Claude Code desktop on Grant's Mac; local review setup)
 
 - Grant moved Claude work from Cowork to Claude Code running directly in this
