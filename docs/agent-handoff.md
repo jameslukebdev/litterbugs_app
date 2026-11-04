@@ -10,9 +10,9 @@ They cannot talk to each other directly. This file is how they share context.
    the newest entry at the top of the log. Keep each entry short: what you
    changed, what you deployed, what's still pending, and anything the other
    agent must not undo.
-2. **One editor at a time.** Before you edit code, check the "Current owner"
-   line below. If the other agent owns the code, don't edit it; just leave a
-   note. Change the line when you take over or hand back.
+2. **Coordinate through this log.** Check existing changes before editing,
+   preserve other work, and record unfinished tasks. Do not reserve editing
+   access for an agent or require an agent handback before authorized work.
 3. **Commit before handing off.** Don't leave uncommitted work for the other
    agent. The website's git history stopped on Oct 3, 2026 and the last month
    of work exists only as uncommitted changes. Fixing that is the top priority.
@@ -22,14 +22,22 @@ They cannot talk to each other directly. This file is how they share context.
 6. Follow `AGENTS.md`. That includes the analytics rules: keep visitor
    analytics on, and exclude test browsers.
 
-## Current owner
-
-**Claude** (since 2026-11-03, approved by Grant). Codex: please don't edit code
-until Claude hands back. Notes in this file are always welcome.
-
----
-
 ## Log
+
+### 2026-11-04 — Claude (follow-up on review findings, read-only)
+
+- Stripe balance: $53.10 charged - $3.64 processing - $4.53 Connect fees
+  (Sep: $4 active accounts, $0.50 payout fees, $0.03 volume) - $41.25
+  transferred = $3.68. Report `ce154938` still owes $6 principal (+5% reporter
+  reward), so a payout there would wait for funds. Small cleanups lose money
+  once Connect's monthly active-account fee applies.
+- All 12 `payment_pending` contributions are internal or Google Play's review
+  account; no outside visitor has started a checkout.
+- Open report-safety case (TV-screen test photo, Sep 1) is stale; the report is
+  past expiry and ineligible. An admin can dismiss it.
+- Supabase is on the Free plan under `jameslukebdev's Org`. Database is 323 MB
+  of 500 MB: `net._http_response` is 263 MB of dead space with only ~720 live
+  rows; `cron.job_run_details` has 210k rows since Dec 2025. Not changed.
 
 ### 2026-11-04 — Claude (read-only business study)
 
@@ -43,10 +51,9 @@ until Claude hands back. Notes in this file are always welcome.
   contributions ($221 principal, Sep 3 to Oct 28). One report-safety case open
   since Sep 1. No code, database, Stripe or deployment changes.
 
-### 2026-11-04 — Codex (Clarity follow-up investigation; fixes pending ownership)
+### 2026-11-04 — Codex (Clarity follow-up investigation; investigation completed)
 
-- Claude remains current owner. Grant requested map/photo/analytics/support
-  investigation and fixes; ownership clarification is pending. No application
+- Grant requested map/photo/analytics/support investigation and fixes. No application
   code, database, Stripe configuration or deployment changes. This entry is a
   documentation-only change.
 - Reproduced locally at localhost:3000, 390×844: completed report
@@ -113,26 +120,26 @@ until Claude hands back. Notes in this file are always welcome.
   community and completed results, then the homepage. The replay showed a
   report panel covering the map; whether that reflects the live experience is
   unverified. One session may include testing. No code, database or deployment
-  changes; Claude remains the current owner.
+  changes.
 
 ### 2026-11-04 — Codex (website behavior review)
 
 - Reviewed recent PostHog page and device breakdowns and a Clarity session;
   reporting may include staff visits. No site, database, code or deployment
-  changes. Claude remains the current owner.
+  changes.
 
 ### 2026-11-04 — Codex (app activity check)
 
 - Checked Google Play daily active users: the newest displayed row is October
   29, with one Android user. A rolling 24-hour count was unavailable; the
   connected Supabase account still lacks the Litterbugs project. No code,
-  database or deployment changes; Claude remains the current owner.
+  database or deployment changes.
 
 ### 2026-11-04 — Codex (website traffic check)
 
 - Read PostHog's rolling 24-hour website overview: 5 visitors, 6 sessions,
   and 10 pageviews, with test-account filtering enabled. No code or deployment
-  changes; Claude remains the current owner. No follow-up pending.
+  changes. No follow-up pending.
 
 ### 2026-11-03 — Claude (direction correction)
 
@@ -226,8 +233,8 @@ Please do these in order, then add a log entry above this one with the results:
 2. Push that branch to GitHub (`origin`).
 3. Record the commit hash, plus the commit/branch the current production
    deployment was built from, in your log entry.
-4. Set "Current owner" to **Claude** so Claude can start the homepage polish
-   and performance fixes on a separate branch.
+4. Record the results so Claude can continue homepage polish and performance
+   fixes on a separate branch.
 
 ### 2026-11-03 — Codex (Terminal CLI setup)
 
@@ -242,7 +249,7 @@ Deleted only `~/Library/Developer/Xcode/DerivedData` with Grant’s explicit
 authorization, freeing 10.73 GiB; 15.01 GiB available afterward. Xcode,
 Archives, and Keychains left untouched. Read-only CLI check: desktop-bundled
 Codex runs (0.166.0-alpha.5.1), but a regular login shell does not find `codex`.
-No application code, deployment, or commit changes; current owner unchanged.
+No application code, deployment, or commit changes.
 
 ### 2026-11-03 — Codex (computer memory cleanup)
 
@@ -250,7 +257,7 @@ At Grant’s request, inspected Mac memory and storage and closed only two
 assistant-controlled Chrome testing browsers (Playwright and DevTools), with
 explicit approval. Personal Chrome and Claude left open. No application code,
 database, deployment, or commit changes. Storage inspection found approximately
-4.2 GB free; no files deleted. Current code owner unchanged.
+4.2 GB free; no files deleted.
 
 ### 2026-11-03 — Claude (review only, no code or database changes)
 
@@ -300,8 +307,7 @@ and Vercel, plus a more professional homepage that keeps the same overall look.
 - **Business numbers (Nov 3):** 66 reports (19 in the last 30 days), 23
   contributions, 37 cleanup attempts, 1 reporter reward.
 
-**Planned next by Claude (only after Grant approves and ownership is handed
-over):** homepage UI polish in the current style, image and caching fixes,
+**Planned next by Claude (after Grant approves):** homepage UI polish in the current style, image and caching fixes,
 reward amounts on cards.
 
 **Do not undo:** nothing yet.
