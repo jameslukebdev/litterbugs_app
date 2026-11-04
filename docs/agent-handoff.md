@@ -24,6 +24,31 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-04 — Codex (map and support measurement deployed)
+
+- Grant authorized production deployment. Released committed source
+  `30e4ad8d5a878a20a76e8a3b3d5f0102a1618562` from
+  `codex/map-measurement-release` (worktree `/tmp/litterbugs-map-measurement-release`).
+  This contains `ff4eed6` fixes and restores the two homepage preview files to
+  their live-site versions. `claude/ui-finish` retains its homepage preview;
+  that preview was NOT deployed. No source push or database/Stripe changes.
+- Vercel project `litterbugs-web`, deployment
+  `dpl_EEUEyUE8M54AXbpcGsbg6NHwCy6j`, built remotely with production settings,
+  passed build/TypeScript and HTTP 200 checks for report, map and support,
+  then promoted to https://litterbugs.app. Previous deployment for reference:
+  `dpl_AzEFiuUnqbwFbuMjZKKWmPLJRL92`.
+- Live mobile verification: View on map shows the pin and compact details;
+  opening/closing details stays on `/map`; zoom changes only `#map` viewport.
+  Live support clicks emitted `support_checkout_clicked` with $5/$10 selected
+  amounts. Checkout navigation was prevented; no live payment attempted.
+- Test browser excluded through saved Analytics choices before navigation;
+  no Clarity/GA scripts loaded and no tracked test click was sent. Genuine
+  visitor analytics remain enabled. Event ingestion into dashboards was not
+  tested with live tracked traffic; paid-subscription reporting remains Stripe.
+- Browser: no errors; only CSS preload warnings. Deployment error log query
+  returned no entries. Screenshot `/tmp/litterbugs-live-map-mobile.png`.
+  Nothing else pending for this deployment.
+
 ### 2026-11-04 — Claude (Stripe payout cost analysis, read-only)
 
 - Stripe docs: a connected account is "monthly active" ($2) in any month it
