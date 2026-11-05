@@ -78,7 +78,7 @@ They cannot talk to each other directly. This file is how they share context.
   admin@ rather than support@.
 - Built new 8-image sets from real iPhone captures in website colors (lavender,
   no green, no purple): `release-assets/store-screenshots-2026-11-05/` (Apple
-  1320x2868, Google 1080x1920). The outside cleaner's name is blurred. Not
+  1320x2868, Google 1080x1920), led by paid cleanups captured Nov 5 from the 2.0.1 simulator build. The outside cleaner's name is blurred. Not
   uploaded; Apple upload needs Luke.
 
 ### 2026-11-05 — Codex (Clarity recording triage)

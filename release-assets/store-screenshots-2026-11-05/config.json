@@ -46,51 +46,69 @@
    ]
   },
   {
-   "name": "apple-1320x2868/02-see-it-cleaned",
+   "name": "apple-1320x2868/02-find-paid-cleanups",
    "theme": "lavender",
-   "file": "06-cleanup-impact.png",
+   "file": "/Users/grantgibson/Desktop/Burrow Base/LItterbugs Partner/release-assets/store-screenshots-2026-11-05/source/map-paid-cleanup-6.png",
+   "W": 1320,
+   "H": 2868,
+   "headline": "Find *paid cleanups* near you.",
+   "redact": []
+  },
+  {
+   "name": "google-1080x1920/02-find-paid-cleanups",
+   "theme": "lavender",
+   "file": "/Users/grantgibson/Desktop/Burrow Base/LItterbugs Partner/release-assets/store-screenshots-2026-11-05/source/map-paid-cleanup-6.png",
+   "W": 1080,
+   "H": 1920,
+   "headline": "Find *paid cleanups* near you.",
+   "redact": []
+  },
+  {
+   "name": "apple-1320x2868/03-see-it-cleaned",
+   "theme": "lavender",
+   "file": "/Users/grantgibson/Desktop/Burrow Base/LItterbugs Partner/release-assets/store-screenshots-2026-11-05/source/reports-funded-25-completed.png",
    "W": 1320,
    "H": 2868,
    "headline": "*See trash* picked up in your town.",
    "redact": [
     {
-     "left": 84,
-     "top": 608,
-     "width": 170,
-     "height": 170
+     "left": 108,
+     "top": 1695,
+     "width": 120,
+     "height": 125
     },
     {
-     "left": 276,
-     "top": 632,
-     "width": 180,
-     "height": 66
+     "left": 236,
+     "top": 1735,
+     "width": 150,
+     "height": 75
     }
    ]
   },
   {
-   "name": "google-1080x1920/02-see-it-cleaned",
+   "name": "google-1080x1920/03-see-it-cleaned",
    "theme": "lavender",
-   "file": "06-cleanup-impact.png",
+   "file": "/Users/grantgibson/Desktop/Burrow Base/LItterbugs Partner/release-assets/store-screenshots-2026-11-05/source/reports-funded-25-completed.png",
    "W": 1080,
    "H": 1920,
    "headline": "*See trash* picked up in your town.",
    "redact": [
     {
-     "left": 84,
-     "top": 608,
-     "width": 170,
-     "height": 170
+     "left": 108,
+     "top": 1695,
+     "width": 120,
+     "height": 125
     },
     {
-     "left": 276,
-     "top": 632,
-     "width": 180,
-     "height": 66
+     "left": 236,
+     "top": 1735,
+     "width": 150,
+     "height": 75
     }
    ]
   },
   {
-   "name": "apple-1320x2868/03-report-litter",
+   "name": "apple-1320x2868/04-report-litter",
    "theme": "lavender",
    "file": "01-report-litter.png",
    "W": 1320,
@@ -99,30 +117,12 @@
    "redact": []
   },
   {
-   "name": "google-1080x1920/03-report-litter",
+   "name": "google-1080x1920/04-report-litter",
    "theme": "lavender",
    "file": "01-report-litter.png",
    "W": 1080,
    "H": 1920,
    "headline": "Report litter. *Earn* when it’s cleaned.",
-   "redact": []
-  },
-  {
-   "name": "apple-1320x2868/04-find-paid-cleanups",
-   "theme": "lavender",
-   "file": "04-boone-map.png",
-   "W": 1320,
-   "H": 2868,
-   "headline": "Find *paid cleanups* near you.",
-   "redact": []
-  },
-  {
-   "name": "google-1080x1920/04-find-paid-cleanups",
-   "theme": "lavender",
-   "file": "04-boone-map.png",
-   "W": 1080,
-   "H": 1920,
-   "headline": "Find *paid cleanups* near you.",
    "redact": []
   },
   {
@@ -144,22 +144,48 @@
    "redact": []
   },
   {
-   "name": "apple-1320x2868/06-local-reports",
+   "name": "apple-1320x2868/06-before-after",
    "theme": "lavender",
-   "file": "05-reports.png",
+   "file": "06-cleanup-impact.png",
    "W": 1320,
    "H": 2868,
-   "headline": "Browse *local reports*.",
-   "redact": []
+   "headline": "Proof of every *cleanup*.",
+   "redact": [
+    {
+     "left": 84,
+     "top": 608,
+     "width": 170,
+     "height": 170
+    },
+    {
+     "left": 276,
+     "top": 632,
+     "width": 180,
+     "height": 66
+    }
+   ]
   },
   {
-   "name": "google-1080x1920/06-local-reports",
+   "name": "google-1080x1920/06-before-after",
    "theme": "lavender",
-   "file": "05-reports.png",
+   "file": "06-cleanup-impact.png",
    "W": 1080,
    "H": 1920,
-   "headline": "Browse *local reports*.",
-   "redact": []
+   "headline": "Proof of every *cleanup*.",
+   "redact": [
+    {
+     "left": 84,
+     "top": 608,
+     "width": 170,
+     "height": 170
+    },
+    {
+     "left": 276,
+     "top": 632,
+     "width": 180,
+     "height": 66
+    }
+   ]
   },
   {
    "name": "apple-1320x2868/07-share",

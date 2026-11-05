@@ -15,7 +15,7 @@ const themes = {
 };
 
 async function cropped(file, redact = []) {
-  const srcPath = path.join(SRC, file);
+  const srcPath = path.isAbsolute(file) ? file : path.join(SRC, file);
   const { width, height } = await sharp(srcPath).metadata();
   // Blur private details (for example a member's name) before cropping.
   const overlays = await Promise.all(redact.map(async (r) => ({
