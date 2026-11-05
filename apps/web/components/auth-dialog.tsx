@@ -1,11 +1,12 @@
 'use client';
 import Link from 'next/link';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 
 import { ModalShell } from '@/components/modal-shell';
 import brandStyles from '@/components/public-website/brand.module.css';
+import { googleBrowserHandoff, isEmbeddedSocialBrowser } from '@/lib/google-browser-handoff';
 import { createClient } from '@/lib/supabase/client';
 
 export type AuthIntent = 'clean' | 'fund' | 'report' | null;
@@ -20,6 +21,7 @@ type AuthDialogProps = {
   intent?: AuthIntent;
   facebookLoginEnabled?: boolean;
   initialMode?: 'login' | 'signup';
+  initialMessage?: string;
 };
 
 export function AuthDialog({
@@ -29,25 +31,54 @@ export function AuthDialog({
   embedded = false,
   intent = null,
   initialMode = 'login',
+  initialMessage = '',
   facebookLoginEnabled = true,
 }: AuthDialogProps) {
   const [mode, setMode] = useState<EmailMode>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState(initialMessage);
   const [loading, setLoading] = useState('');
   const [sentReason, setSentReason] = useState<'signup' | 'recovery'>('signup');
+
+  useEffect(() => {
+    if (loading !== 'google' && loading !== 'facebook') return;
+    const recover = () => {
+      setLoading('');
+      setMessage('Sign in hasn’t opened. Try again, use your email, or open this page in Safari or Chrome.');
+    };
+    const timer = window.setTimeout(recover, 15000);
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) recover();
+    };
+    window.addEventListener('pageshow', onPageShow);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('pageshow', onPageShow);
+    };
+  }, [loading]);
 
   const cleanEmail = email.trim().toLowerCase();
   const providerLabel = loading ? loading.charAt(0).toUpperCase() + loading.slice(1) : '';
 
   function authCallbackUrl() {
-    const nextPath = returnPath ?? `${window.location.pathname}${window.location.search}`;
+    const nextPath = returnPath ?? `${window.location.pathname}${window.location.search}${window.location.hash}`;
     return `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
   }
 
   async function startProvider(provider: 'google' | 'facebook') {
+    if (provider === 'google' && isEmbeddedSocialBrowser(navigator.userAgent)) {
+      const next = returnPath ?? `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      const handoff = googleBrowserHandoff(window.location.origin, next, navigator.userAgent);
+      setMessage('If your browser doesn’t open, use the app’s menu to open this page in Safari or Chrome, then continue with Google. You can also use your email here.');
+      // Keep this synchronous with the tap so the phone can open its browser.
+      // Do not create a Supabase client or PKCE verifier before handing off.
+      if (handoff) {
+        try { window.location.assign(handoff); } catch { /* Email and manual fallback remain available. */ }
+      }
+      return;
+    }
     setMessage('');
     setLoading(provider);
     try {

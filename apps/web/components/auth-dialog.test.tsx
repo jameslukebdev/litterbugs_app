@@ -1,13 +1,14 @@
 // @vitest-environment jsdom
 /* eslint-disable @next/next/no-img-element -- Native image mock for component tests. */
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AuthDialog } from './auth-dialog';
+import * as browserHandoff from '@/lib/google-browser-handoff';
 
 const { signInWithOAuth, signUp } = vi.hoisted(() => ({ signInWithOAuth: vi.fn(), signUp: vi.fn() }));
 vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({ auth: { signInWithOAuth, signUp } }) }));
 vi.mock('next/image', () => ({ default: ({ src, alt }: { src: string; alt: string }) => <img src={src} alt={alt} /> }));
-afterEach(() => { cleanup(); vi.resetAllMocks(); vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); vi.resetAllMocks(); vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 
 describe('website social sign-in', () => {
   it.each(['google', 'facebook'] as const)('starts %s with the selected return destination', async (provider) => {
@@ -96,4 +97,63 @@ it.each(['login', 'signup'] as const)('does not offer Apple or an app workaround
   expect(screen.getByLabelText('Email')).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Continue with Facebook' })).toBeTruthy();
+});
+
+
+it.each(['Instagram 400.0', 'Mozilla/5.0 [FBAN/FBIOS;FBAV/400]'])('keeps email available and explains Google sign-in in %s', (userAgent) => {
+  vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(userAgent);
+  render(<AuthDialog onClose={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Continue with Google' }));
+  expect(signInWithOAuth).not.toHaveBeenCalled();
+  expect(screen.getByRole('alert').textContent).toContain('Safari or Chrome');
+  expect((screen.getByLabelText('Email') as HTMLInputElement).disabled).toBe(false);
+  expect((screen.getByRole('button', { name: 'Close' }) as HTMLButtonElement).disabled).toBe(false);
+});
+
+it('recovers a stalled redirect and restores the dialog controls', async () => {
+  vi.useFakeTimers();
+  signInWithOAuth.mockResolvedValue({ error: null });
+  render(<AuthDialog onClose={vi.fn()} />);
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Continue with Google' })); });
+  expect((screen.getByLabelText('Email') as HTMLInputElement).disabled).toBe(true);
+  act(() => { vi.advanceTimersByTime(15000); });
+  expect(screen.getByRole('alert').textContent).toContain('Sign in hasn’t opened');
+  expect((screen.getByLabelText('Email') as HTMLInputElement).disabled).toBe(false);
+  expect((screen.getByRole('button', { name: 'Close' }) as HTMLButtonElement).disabled).toBe(false);
+});
+
+it('recovers when returning from OAuth through the back-forward cache', async () => {
+  signInWithOAuth.mockResolvedValue({ error: null });
+  render(<AuthDialog onClose={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Continue with Google' }));
+  await act(async () => { window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })); });
+  expect((screen.getByLabelText('Email') as HTMLInputElement).disabled).toBe(false);
+});
+
+
+it('retains a funding anchor through OAuth when no return path overrides it', async () => {
+  window.history.replaceState(null, '', '/fund-a-cleanup#fundable-reports');
+  try {
+    signInWithOAuth.mockResolvedValue({ error: null });
+    render(<AuthDialog onClose={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Continue with Google' }));
+    await waitFor(() => expect(signInWithOAuth).toHaveBeenCalledWith({
+      provider: 'google', options: { redirectTo: `${window.location.origin}/auth/callback?next=%2Ffund-a-cleanup%23fundable-reports` },
+    }));
+  } finally {
+    window.history.replaceState(null, '', '/');
+  }
+});
+
+
+it.each(['Android Instagram', 'iPhone Instagram'])('requests an external-browser entry before starting OAuth in %s', userAgent => {
+  vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(userAgent);
+  // Do not launch a phone app from jsdom. URL formats are tested separately.
+  const handoff = vi.spyOn(browserHandoff, 'googleBrowserHandoff').mockReturnValue(null);
+  const next = '/map?report=abc&intent=fund#map=36,-81,12';
+  render(<AuthDialog onClose={vi.fn()} returnPath={next} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Continue with Google' }));
+  expect(handoff).toHaveBeenCalledWith(window.location.origin, next, userAgent);
+  expect(signInWithOAuth).not.toHaveBeenCalled();
+  expect((screen.getByLabelText('Email') as HTMLInputElement).disabled).toBe(false);
 });
