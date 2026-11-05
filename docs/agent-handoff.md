@@ -24,6 +24,15 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-04 — Codex (website source location)
+
+- Confirmed current website source is `apps/web` in this local project on
+  `claude/ui-finish`; its only website differences from release `30e4ad8`
+  are the two homepage preview files. Latest recorded production source is
+  `codex/map-measurement-release`, commit `30e4ad8`, in
+  `/private/tmp/litterbugs-map-measurement-release`. No deployment or push.
+
+
 ### 2026-11-04 — Claude (Stripe pricing request)
 
 - Grant emailed Stripe on 2026-11-04 asking about a lower Connect monthly
