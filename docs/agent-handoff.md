@@ -24,6 +24,17 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Claude (store screenshot upload prep)
+
+- Google upload not done: Claude in Chrome wasn't connected, and the built-in
+  browser can't upload files. Grant to upload
+  `release-assets/store-screenshots-2026-11-05/google-1080x1920/` (Main store
+  listing > Phone screenshots). Grant reports trader status is declared. The
+  staged all-countries change is still in Publishing overview and would go out
+  with any review submission unless discarded.
+- Gmail draft to Luke (jameslukeb.evj@gmail.com) with App Store upload steps,
+  not sent. Attach `Litterbugs-AppStore-screenshots-1320x2868.zip` (same folder).
+
 ### 2026-11-05 — Codex (Google external-browser handoff, local only)
 
 - Replaced the Instagram/Facebook Google warning-only path with a synchronous
