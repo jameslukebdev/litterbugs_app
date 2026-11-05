@@ -24,6 +24,18 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Claude (Stripe cases and Play staging)
+
+- Grant replied to Stripe case sco_VJarfjNbi0QKE3 (Global Payouts / pooled
+  model) answering Stacy's four questions factually: Litterbugs is merchant of
+  record; no money-transmitter license or exemption opinion. Awaiting Stripe.
+  Separate 2026-11-04 Connect pricing email also awaiting reply.
+- Play Console: a change adding all countries (176 + rest of world) is saved
+  but NOT sent for review; it is blocked until the trader-status declaration is
+  done. Grant wants a business address first (no home address public).
+  Cleaner payouts remain US-only in code. Goal: South America pilot (Ecuador or
+  Peru suggested) pending Stripe and a payments-lawyer consult.
+
 ### 2026-11-05 — Codex (authorized reply sent to Stacy)
 
 - Sent Grant’s exact supplied answers to the four review questions in original
