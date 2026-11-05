@@ -24,6 +24,15 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Codex (older Stripe support reply checked)
+
+- Read case `sco_VJarfjNbi0QKE3` (created September 23). Latest reply is
+  November 3 from Stacy; status Action required. Stripe asks who is merchant
+  of record, who legally owns contributions before payout, how unused funds /
+  refunds / disputes work, and whether a money-transmission licence or exemption
+  applies. Internal classification and supportability review remains pending.
+- No reply sent, settings changed, or deployment made.
+
 ### 2026-11-04 — Codex (live website source backed up to GitHub)
 
 - At Grant's request pushed the exact live deployment commit
