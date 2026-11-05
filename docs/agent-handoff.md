@@ -24,6 +24,17 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Claude (fixed screenshots submitted to Google Play)
+
+- Fixed blank white phone bottoms: each phone frame is now sized to its
+  screenshot (commit faa5cb2). Apple zip regenerated.
+- Google Play: replaced the 8 phone screenshots (the earlier upload had the
+  blank-bottom version) with `*-v2.png` in order 01–08, chose "Don't label
+  assets", and submitted. Publishing overview shows only "Change Phone
+  screenshots" in review; no countries change was pending.
+- Apple: Grant emailed Luke the images himself. If that email predates
+  faa5cb2, Luke needs the regenerated `apple-1320x2868/` set.
+
 ### 2026-11-05 — Codex (funding, map, and store follow-up recommendations)
 
 - Reproduced signed-out funding locally on the replay's report: Fund this
