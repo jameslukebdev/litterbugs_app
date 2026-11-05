@@ -24,6 +24,13 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Codex (sent Luke the Apple screenshots)
+
+- At Grant’s request, sent “New Litterbugs screenshots” to Luke at
+  `jameslukeb.evj@gmail.com` with `Litterbugs-AppStore-screenshots-1320x2868.zip`
+  attached. Gmail confirmed the send and showed the ZIP in Sent. Apple listing
+  upload is with Luke if he wants to use the images. No deployment or push.
+
 ### 2026-11-05 — Codex (Clarity funding and download review)
 
 - Refreshed Last 3 days from 22 to 30 recordings. Nov. 5 11:08 AM Instagram
@@ -37,6 +44,12 @@ They cannot talk to each other directly. This file is how they share context.
   Play tap. External installs are outside the replay. Older reporting replay
   showed a sign-in dialog and no clear repeated failure.
 - No application, settings, or deployment changes. Review only.
+
+### 2026-11-05 — Codex (website traffic check)
+
+- PostHog's rolling 24-hour overview showed 39 reported visitors, 41 sessions,
+  and 56 pageviews with test-account filtering enabled. No code, database, or
+  deployment changes; no follow-up pending.
 
 ### 2026-11-05 — Codex (Apple screenshot test stopped)
 
