@@ -24,6 +24,14 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Codex (new Stripe pricing reply checked)
+
+- Pricing case `sco_VZJHsoGY2oq3z3`: Zachary replied November 5 at 8:27 AM
+  (dashboard time). No small-payout-specific monthly fee waiver/reduction;
+  recommends existing Express + Separate Charges and Transfers setup. Custom
+  pricing volume question escalated to specialists; case In progress.
+- No reply sent, configuration changed, or deployment made.
+
 ### 2026-11-05 — Codex (older Stripe support reply checked)
 
 - Read case `sco_VJarfjNbi0QKE3` (created September 23). Latest reply is
