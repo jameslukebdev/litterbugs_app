@@ -24,6 +24,26 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Codex (Google browser handoff deployed)
+
+- Grant authorized production deployment for phone/Instagram testing. Released
+  commit 70633a6 on codex/google-browser-release from isolated worktree
+  /tmp/litterbugs-google-browser-release, based on live 30e4ad8. Only the eight
+  auth implementation/test files from the current branch were added; homepage
+  preview and store screenshot work remain excluded. No push/database changes.
+- Vercel litterbugs-web production build passed compilation and TypeScript;
+  staged, checked, then promoted deployment dpl_59fVVvYo3tdMdh2CVBpS7jPawo6N
+  (litterbugs-7lh5z552o-grant-9890s-projects.vercel.app) to litterbugs.app.
+  Previous production: dpl_EEUEyUE8M54AXbpcGsbg6NHwCy6j, commit 30e4ad8.
+- Staged and live checks: /auth/google returns 303 to Google via Supabase,
+  s256 challenge + verifier cookie, no-store, correct same-origin callback;
+  embedded Instagram UA gets /sign-in fallback without starting Google.
+  Live mobile sign-in renders usable Google/email controls. Test browser
+  excluded via existing saved analytics choices before navigation; no Clarity
+  script loaded. No real login or credential changes.
+- Physical Instagram iOS/Android handoff and completed Google login remain for
+  Grant's test; iOS scheme can be blocked by Instagram. Manual fallback retained.
+
 ### 2026-11-05 — Claude (store screenshot upload prep)
 
 - Google upload not done: Claude in Chrome wasn't connected, and the built-in
