@@ -24,6 +24,15 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Codex (store upload blocker revalidated)
+
+- Rechecked the same live Chrome handle: system Go to Folder sheet remains
+  open; dismiss/raise/cancel attempts had no effect. Requested Grant close the
+  sheet and cancel the picker so browser work can resume. No store change saved
+  or submitted. All eight Google files are below 8 MB; size is not the blocker.
+- Country discard and both screenshot submissions remain pending. No deployment
+  or push. Previous upload-attempt log remains accurate.
+
 ### 2026-11-05 — Codex (store screenshot upload attempt blocked)
 
 - Read screenshot README; confirmed both ordered 01–08 sets. Google default
