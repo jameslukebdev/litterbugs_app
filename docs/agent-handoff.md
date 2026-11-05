@@ -24,6 +24,23 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Codex (Clarity recording triage)
+
+- Checked live Clarity Last 3 days: 22 completed results; newest listed Nov. 4
+  11:52 PM (dashboard times; timezone not verified), plus one live user.
+  Yesterday's reviewed 2:34 recording is still listed at Nov. 4 06:35 AM.
+- Four newer Instagram mobile recordings: 23:52 / 50s / no clicks;
+  21:20 / 18s / fund-a-cleanup / no clicks; 21:19 / 20s / one click;
+  21:05 / 10s / two clicks. Inspected event timelines of both clicking sessions:
+  oxilgr clicked Choose a spot at 19s; m7l1l6 clicked Log in / Sign up at 6s,
+  then Continue with Google at 8s. Google authentication completion is not
+  established; Instagram in-app Google login is the main follow-up candidate.
+  No failure confirmed. Separate visitor IDs do not prove separate people.
+- Review was recording-list/event-timeline triage, not full playback of all
+  sessions. Repeated desktop visitor 7fojoo may be staff; identity unverified.
+  No site visit, code, settings, database or deployment changes. Documentation
+  only; no push. Pending: follow Google sign-in outcome if investigating further.
+
 ### 2026-11-05 — Claude (Stripe cases and Play staging)
 
 - Grant replied to Stripe case sco_VJarfjNbi0QKE3 (Global Payouts / pooled
