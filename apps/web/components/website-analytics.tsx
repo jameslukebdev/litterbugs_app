@@ -8,6 +8,7 @@ import type { PostHog } from 'posthog-js';
 import { ANALYTICS_CONSENT_KEY, ANALYTICS_EVENT, ANALYTICS_PREFERENCES, ANALYTICS_REPLAY_CHOICE_KEY, analyticsAllowed, analyticsPage, analyticsReferrer, type AnalyticsConfig } from '@/lib/website-analytics';
 import { COMMUNITY_ENGAGEMENT_EVENTS, communityClick, communityForPath, communityProperties } from '@/lib/community-metrics';
 import styles from './website-analytics.module.css';
+import { isInstagramStoreVisit, storeBadgeDestination, storeBadgeProperties } from '@/lib/app-links';
 import { supportCheckoutProperties } from '@/lib/monthly-support';
 
 type AnalyticsWindow = Window & { dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void; clarity?: ((...args: unknown[]) => void) & { q?: unknown[][] } };
@@ -80,10 +81,12 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
           const keep = new Set(['distinct_id', 'token', '$cookieless_mode', '$raw_user_agent', '$host', '$session_id', '$window_id', '$lib', '$lib_version', '$process_person_profile', '$current_url', '$pathname', '$referrer', '$referring_domain', '$device_type', '$device', '$os', '$browser', '$pageview_id', 'page_type']);
           const community = communityProperties(event.properties);
           const support = event.event === 'support_checkout_clicked' ? supportCheckoutProperties(event.properties) : null;
+          const store = event.event === 'app_store_badge_clicked' ? storeBadgeProperties(event.properties) : null;
           const previousDuration = event.properties.$prev_pageview_duration;
           event.properties = Object.fromEntries(Object.entries(event.properties).filter(([key]) => keep.has(key)));
           if (community) Object.assign(event.properties, community);
           if (support) Object.assign(event.properties, support);
+          if (store) Object.assign(event.properties, store);
           const page = event.event === '$pageleave' && typeof event.properties.page_type === 'string'
             ? analyticsPage(event.properties.page_type) : analyticsPage(window.location.pathname);
           if ((event.event === '$pageleave' || event.event === '$autocapture') && !page) return null;
@@ -212,6 +215,14 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
       if (!permitted.current || privacySignal() || event.defaultPrevented || event.button !== 0) return;
       const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href]') : null;
       if (!link) return;
+      const store = storeBadgeDestination(link.href);
+      const page = analyticsPage(window.location.pathname);
+      if (store && page) {
+        const instagram = isInstagramStoreVisit(new URLSearchParams(window.location.search).get('utm_source'));
+        const properties = { page_type: page, store, ...(instagram ? { campaign: 'instagram' } : {}) };
+        if (active && gaReady) google('event', 'app_store_badge_clicked', properties);
+        if (aggregate && ready) posthog.current?.capture('app_store_badge_clicked', properties);
+      }
       const slug = link.closest<HTMLElement>('[data-community-slug]')?.dataset.communitySlug;
       const observation = communityClick(link.href, window.location.origin, slug, link.dataset.communityResource);
       if (observation) outcome(new CustomEvent(ANALYTICS_EVENT, { detail: { event: observation.event, ...observation.properties } }));

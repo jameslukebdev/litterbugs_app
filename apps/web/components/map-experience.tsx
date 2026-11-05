@@ -704,6 +704,7 @@ export function MapExperience({
     selectedReportIdRef.current = report.id;
     setSelectedReport(report);
     const url = new URL(window.location.href);
+    if (url.searchParams.get('report') !== report.id && url.searchParams.get('intent') === 'fund') url.searchParams.delete('intent');
     url.searchParams.set('report', report.id);
     window.history[selectedReport ? 'replaceState' : 'pushState']({ ...window.history.state, litterbugsReportNavigation: true }, '', `${url.pathname}${url.search}${url.hash}`);
   }
@@ -742,6 +743,7 @@ export function MapExperience({
     } else {
       const url = new URL(window.location.href);
       url.searchParams.delete('report');
+      if (url.searchParams.get('intent') === 'fund') url.searchParams.delete('intent');
       window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
     }
   }
@@ -1061,7 +1063,7 @@ export function MapExperience({
 
 
         </section>
-        {selectedReport && !detailsMinimized && <ReportDetail closeLabel={communityReturn && !mapFirstEntry ? "Close report and return to community" : undefined} entryIntent={entryIntent} inline={desktopDetail} key={selectedReport.id} report={selectedReport} userId={userId} isOwner={canManageReport(selectedReport, userId)} favorite={reportPreferences.favorites.has(selectedReport.id)} hidden={reportPreferences.hidden.has(selectedReport.id)} onFavoriteChange={(favorite) => updateReportPreference('favorites', selectedReport.id, favorite)} onHiddenChange={(hidden) => updateReportPreference('hidden', selectedReport.id, hidden)} onNotify={setToast} onRequireSignIn={(intent) => { const url = new URL(window.location.href); url.searchParams.set('report', selectedReport.id); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`); accountActionRef.current?.openAuth(intent); }} onReportChanged={refreshReports} onClose={closeReport} onEdit={() => { void editSelectedReport(); }} onDelete={() => { void deleteSelectedReport(); }} />}
+        {selectedReport && !detailsMinimized && <ReportDetail closeLabel={communityReturn && !mapFirstEntry ? "Close report and return to community" : undefined} entryIntent={selectedReport.id === searchParams.get('report') ? entryIntent : null} inline={desktopDetail} key={selectedReport.id} report={selectedReport} userId={userId} isOwner={canManageReport(selectedReport, userId)} favorite={reportPreferences.favorites.has(selectedReport.id)} hidden={reportPreferences.hidden.has(selectedReport.id)} onFavoriteChange={(favorite) => updateReportPreference('favorites', selectedReport.id, favorite)} onHiddenChange={(hidden) => updateReportPreference('hidden', selectedReport.id, hidden)} onNotify={setToast} onRequireSignIn={(intent) => { const url = new URL(window.location.href); url.searchParams.set('report', selectedReport.id); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`); accountActionRef.current?.openAuth(intent); }} onReportChanged={refreshReports} onClose={closeReport} onEdit={() => { void editSelectedReport(); }} onDelete={() => { void deleteSelectedReport(); }} />}
       </div>
 
       <footer className="discovery-footer">

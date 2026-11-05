@@ -265,3 +265,20 @@ it('preserves quick-filter positions and horizontal scroll after selection', () 
   expect(Array.from(strip.querySelectorAll('button')).map(button => button.textContent)).toEqual(order);
   expect(strip.scrollLeft).toBe(160);
 });
+
+it('restores browse filters without rewriting the entry URL, then writes an explicit filter change', async () => {
+  window.history.replaceState(null, '', '/map?report=shared&intent=fund#map=36,-81,12');
+  sessionStorage.setItem('litterbugs.results.v1', JSON.stringify({
+    filters: { status: 'completed', funding: 'all', severity: 'all', radius: 0, query: '', scope: 'all' },
+    sort: 'newest', scroll: 0,
+  }));
+  render(<ReportBrowser reports={[report]} open onToggle={vi.fn()} onSelect={vi.fn()} />);
+  await screen.findByText('No matching cleanup opportunities');
+  expect(window.location.search).toBe('?report=shared&intent=fund');
+  fireEvent.click(screen.getByRole('button', { name: 'Available' }));
+  const query = new URLSearchParams(window.location.search);
+  expect(query.get('browse')).toBe('1');
+  expect(query.get('status')).toBe('available');
+  expect(query.get('report')).toBe('shared');
+  expect(window.location.hash).toBe('#map=36,-81,12');
+});

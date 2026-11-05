@@ -252,7 +252,18 @@ export function ReportBrowser({
   const applied = useMemo(() => filter === 'custom' ? advanced : quickFilters(activeFilter), [filter, advanced, activeFilter]);
   const selectedQuickFilter = filters.find(item => (Object.keys(DEFAULT_DISCOVERY_FILTERS) as (keyof DiscoveryFilters)[]).every(key => quickFilters(item.value)[key] === applied[key]))?.value;
   useEffect(() => { if (memoryReady) onDiscoveryFiltersChange?.(applied); }, [applied, onDiscoveryFiltersChange, memoryReady]);
-  useEffect(() => { if (memoryReady) { const memory = { filters: applied, sort, scroll: restoringScrollRef.current ?? listRef.current?.scrollTop ?? 0, displayLimit }; saveBrowserMemory(memory); window.history.replaceState(window.history.state, '', browserUrl(new URL(window.location.href), memory)); } }, [applied, sort, memoryReady, displayLimit]);
+  useEffect(() => {
+    if (!memoryReady) return;
+    saveBrowserMemory({ filters: applied, sort, scroll: restoringScrollRef.current ?? listRef.current?.scrollTop ?? 0, displayLimit });
+  }, [applied, sort, memoryReady, displayLimit]);
+
+  function writeBrowseUrl(filters: DiscoveryFilters, nextSort: ReportSort) {
+    const current = new URL(window.location.href);
+    const next = browserUrl(current, { filters, sort: nextSort, scroll: 0 });
+    if (next !== `${current.pathname}${current.search}${current.hash}`) {
+      window.history.replaceState(window.history.state, '', next);
+    }
+  }
   function updateFilter<K extends keyof DiscoveryFilters>(key: K, value: DiscoveryFilters[K]) {
     setDraftFilters(current => ({ ...current, [key]: value }));
   }
@@ -309,7 +320,7 @@ export function ReportBrowser({
                 key={value}
                 type="button"
                 aria-pressed={selectedQuickFilter === value}
-                onClick={() => { setDisplayLimit(50); setFilter(value); setAdvanced(quickFilters(value)); setDraftFilters(quickFilters(value)); }}
+                onClick={() => { writeBrowseUrl(quickFilters(value), sort); setDisplayLimit(50); setFilter(value); setAdvanced(quickFilters(value)); setDraftFilters(quickFilters(value)); }}
               >
                 {label}
               </button>
@@ -328,7 +339,7 @@ export function ReportBrowser({
               <h1 className="reports-screen-title">Litter reports</h1>
             </div>
             <ReportSortMenu value={sort} options={[{ value: 'newest', label: 'Newest' }, { value: 'closest', label: 'Nearest' }, { value: 'reward-high', label: 'Top reward' }, { value: 'severity', label: 'Severity' }]} onChange={value => {
-                const next = value as ReportSort; setSort(next); setDisplayLimit(50);
+                const next = value as ReportSort; writeBrowseUrl(applied, next); setSort(next); setDisplayLimit(50);
                 if (next === 'closest') { setLocationMessage('Finding your location…'); void getBrowserLocation().then(origin => { setLocationOrigin(origin); setLocationMessage(''); }).catch(() => { setLocationOrigin(null); setLocationMessage('Location unavailable. Showing newest first. Allow location access in your browser to sort by distance.'); }); }
               }} />
             <button className="icon-button report-browser-close" onClick={onToggle} aria-label="Close report list"><Icon name="close" /></button>
@@ -345,7 +356,7 @@ export function ReportBrowser({
               <label>Distance from map center<select disabled={!mapCenter} value={draftFilters.radius} onChange={event => updateFilter('radius', Number(event.target.value) as DiscoveryFilters['radius'])}><option value={0}>Any distance</option><option value={5}>5 miles</option><option value={25}>25 miles</option><option value={50}>50 miles</option></select></label>
               <label>Saved reports<select value={draftFilters.scope} onChange={event => updateFilter('scope', event.target.value as DiscoveryFilters['scope'])}><option value="all">All visible reports</option><option value="favorites">Favorites only</option><option value="hidden">Hidden reports</option></select></label>
               <button className="secondary-button" onClick={() => { setDraftFilters(quickFilters('all')); }}>Reset filters</button>
-              <div className="account-actions"><button className="secondary-button" onClick={close}>Cancel</button><button className="primary-button" onClick={() => { setDisplayLimit(50); setAdvanced(draftFilters); setFilter('custom'); close(); }}>Apply filters</button></div>
+              <div className="account-actions"><button className="secondary-button" onClick={close}>Cancel</button><button className="primary-button" onClick={() => { writeBrowseUrl(draftFilters, sort); setDisplayLimit(50); setAdvanced(draftFilters); setFilter('custom'); close(); }}>Apply filters</button></div>
             </div>
           </>}</ModalShell>}
           {sort === 'closest' && locationMessage && <p role="status">{locationMessage}</p>}
@@ -397,7 +408,7 @@ export function ReportBrowser({
               {!loading && <div className="empty-discovery-actions">
                 {discoveryError ? onRetry && <button className="primary-button" onClick={onRetry}>Try again</button> : <>
                   {onChooseArea && <button className="primary-button" onClick={onChooseArea}>Search another area</button>}
-                  <button className="secondary-button" onClick={() => { setFilter('all'); setAdvanced(quickFilters('all')); setDraftFilters(quickFilters('all')); setDisplayLimit(50); }}>Clear filters</button>
+                  <button className="secondary-button" onClick={() => { writeBrowseUrl(quickFilters('all'), sort); setFilter('all'); setAdvanced(quickFilters('all')); setDraftFilters(quickFilters('all')); setDisplayLimit(50); }}>Clear filters</button>
                   {onWidenArea && <button className="secondary-button" onClick={onWidenArea}>Search a wider area</button>}
                   {onStartReport && <button className="secondary-button" onClick={onStartReport}>Report litter</button>}
                 </>}
