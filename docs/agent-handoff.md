@@ -24,6 +24,15 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Codex (Google screenshots submitted)
+
+- Grant authorized submitting both existing queued changes. Google confirmed
+  “2 changes sent for review”; Publishing overview lists only the ordered 01–08
+  phone screenshot replacement and app-level trader declaration under Changes
+  in review. Automated checks running. No country expansion included.
+- Apple PPO still pending access to a signed-in App Store Connect session.
+  No code, deployment, database or push.
+
 ### 2026-11-05 — Codex (Google screenshots saved; countries restored)
 
 - Recovered native file picker after Grant dismissed prior dialog. Uploaded all
