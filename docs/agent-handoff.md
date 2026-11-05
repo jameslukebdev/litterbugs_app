@@ -24,6 +24,25 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-04 — Claude (Stripe pricing request)
+
+- Grant emailed Stripe on 2026-11-04 asking about a lower Connect monthly
+  active-account fee for small payouts, a better-suited setup, and the volume
+  that qualifies for custom pricing. Awaiting reply. Decision so far: keep
+  Stripe as the core; consider Venmo/PayPal later for reporter rewards only.
+
+### 2026-11-04 — Codex (traffic sources)
+
+- PostHog's rolling 24-hour breakdown showed 9 direct, 5 Facebook and 1
+  Instagram reported visitors. A separate Clarity last-day report showed
+  approximate locations for some sessions. No site or deployment changes.
+
+### 2026-11-04 — Codex (website traffic check)
+
+- Queried PostHog's rolling 24-hour website overview: 15 reported visitors,
+  16 sessions and 27 pageviews with test-account filtering enabled. No code,
+  database or deployment changes; no follow-up pending.
+
 ### 2026-11-04 — Codex (support test email)
 
 - At Grant's request sent “Litterbugs support email delivery test” from
