@@ -24,6 +24,22 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Codex (funding, map, and store tracking deployed)
+
+- Grant authorized release. Deployed commit 73ff529464211dbd79ff803cf0bbc1563a92338b
+  from codex/funding-discovery-release at /tmp/litterbugs-funding-discovery-release.
+  Based on production 70633a6 with the 12 scoped web files from f5fcddb.
+- Vercel dpl_9YKnaEU5K1aGBs1VvMpfLvMjEdAR passed the production build and
+  staged smoke checks, then was promoted to litterbugs.app. Previous production
+  deployment was dpl_59fVVvYo3tdMdh2CVBpS7jPawo6N.
+- Live mobile-sized browser verified direct funding sign-in from the shared
+  report, preserved report destination, existing map sign-in, no browse=1
+  on load, and Instagram Play campaign link. Test analytics excluded before
+  navigation. Zero tracker requests, browser errors, or deployment error logs.
+- Signed-in checkout, physical store handoffs, and live analytics ingestion
+  were not exercised. Apple campaign attribution awaits a generated campaign
+  link. No database migrations or push.
+
 ### 2026-11-05 — Codex (funding, map, and download changes ready locally)
 
 - Public report funding now goes directly through the existing sign-in route,
