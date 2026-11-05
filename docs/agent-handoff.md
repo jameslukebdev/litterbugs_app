@@ -24,6 +24,24 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-04 — Codex (live website source backed up to GitHub)
+
+- At Grant's request pushed the exact live deployment commit
+  `30e4ad8d5a878a20a76e8a3b3d5f0102a1618562` to origin branch
+  `codex/map-measurement-release`. Verified the remote ref matches. GitHub
+  `main` remains `e00973a`; unpublished `claude/ui-finish` homepage polish was
+  not pushed. Scanned 685 new Git blobs for common credential patterns;
+  no matches, and only example env files are tracked.
+- Before pushing verified Vercel project has no Git repository link and
+  GitHub Pages builds only `main`. After pushing: zero Actions runs or GitHub
+  deployments for the release branch/commit; Vercel's newest deployment and
+  production target both remain `dpl_EEUEyUE8M54AXbpcGsbg6NHwCy6j`, READY,
+  commit `30e4ad8`. No deployment, application code, database or settings changed.
+- This handoff entry is committed locally on `claude/ui-finish`; the remote
+  release branch intentionally points at the exact deployed source. No pending
+  work for this backup; merging into `main` remains separate work.
+
+
 ### 2026-11-04 — Codex (website source location)
 
 - Confirmed current website source is `apps/web` in this local project on
