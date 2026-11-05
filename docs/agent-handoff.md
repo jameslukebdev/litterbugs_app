@@ -24,6 +24,15 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Codex (GitHub handoff)
+
+- Grant requested GitHub access for Claude. Publish the latest committed
+  working branch claude/ui-finish and the exact production commit 73ff529
+  on codex/funding-discovery-release to jameslukebdev/litterbugs_app.
+- The working branch includes the unpublished homepage preview and handoff
+  notes. Uncommitted edits in the shared workspace are outside this push.
+  No production deployment or merge to main.
+
 ### 2026-11-05 — Codex (funding, map, and store tracking deployed)
 
 - Grant authorized release. Deployed commit 73ff529464211dbd79ff803cf0bbc1563a92338b
