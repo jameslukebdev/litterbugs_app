@@ -24,6 +24,24 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Codex (four Instagram replays watched)
+
+- Watched the four recordings identified above through playback, including
+  replaying the funding-page start. m7l1l6: account modal renders, Google click
+  shows disabled Signing in with Google state; recording ends about two seconds
+  later. No visible error; external OAuth is outside this replay, so failure
+  is not established. Instagram Google login remains a verification candidate.
+- oxilgr: normal homepage scrolling to funding card, Choose a spot click near
+  the end; no destination captured. qbnxkg: funding page appears already deep
+  in fee/refund prose at the beginning, then shows fee explanation before page
+  becomes hidden. Candidate: check anchor landing/scroll restoration on mobile;
+  replay reconstruction can affect this, so no confirmed live defect. Source
+  puts fundable-reports section after the long explanation and refund sections.
+- 4ni8ri: homepage renders, visitor scrolls to completed-cleanup/footer and
+  returns to hero; hidden after about 20s through end at 50s. No visible error,
+  repeated failed click, clipped dialog or broken layout observed in these
+  sampled replay frames. No app changes or deployment; documentation only.
+
 ### 2026-11-05 — Claude (store listing review and new screenshots)
 
 - Reviewed live Google Play and App Store listings. Findings: the Play set uses a
