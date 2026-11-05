@@ -24,6 +24,19 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Claude (store listing review and new screenshots)
+
+- Reviewed live Google Play and App Store listings. Findings: the Play set uses a
+  stock photo and website (not app) screens; Apple still shows older plain
+  screenshots (new set only in an Oct 31 PPO test); Play is rated 17+ vs Apple
+  4+; the Apple privacy label says "Not Linked to You"; listings say "Donate"
+  while the terms say contributions are not donations; the support email is
+  admin@ rather than support@.
+- Built new 8-image sets from real iPhone captures in website colors (lavender,
+  no green, no purple): `release-assets/store-screenshots-2026-11-05/` (Apple
+  1320x2868, Google 1080x1920). The outside cleaner's name is blurred. Not
+  uploaded; Apple upload needs Luke.
+
 ### 2026-11-05 — Codex (Clarity recording triage)
 
 - Checked live Clarity Last 3 days: 22 completed results; newest listed Nov. 4

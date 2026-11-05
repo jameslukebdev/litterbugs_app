@@ -1,0 +1,201 @@
+{
+ "out": "/Users/grantgibson/Desktop/Burrow Base/LItterbugs Partner/release-assets/store-screenshots-2026-11-05",
+ "jobs": [
+  {
+   "name": "apple-1320x2868/01-get-paid",
+   "theme": "lavender",
+   "file": "02-paid-cleanup.png",
+   "W": 1320,
+   "H": 2868,
+   "headline": "*Get paid* to clean up your community.",
+   "redact": [
+    {
+     "left": 92,
+     "top": 758,
+     "width": 160,
+     "height": 154
+    },
+    {
+     "left": 278,
+     "top": 776,
+     "width": 180,
+     "height": 60
+    }
+   ]
+  },
+  {
+   "name": "google-1080x1920/01-get-paid",
+   "theme": "lavender",
+   "file": "02-paid-cleanup.png",
+   "W": 1080,
+   "H": 1920,
+   "headline": "*Get paid* to clean up your community.",
+   "redact": [
+    {
+     "left": 92,
+     "top": 758,
+     "width": 160,
+     "height": 154
+    },
+    {
+     "left": 278,
+     "top": 776,
+     "width": 180,
+     "height": 60
+    }
+   ]
+  },
+  {
+   "name": "apple-1320x2868/02-see-it-cleaned",
+   "theme": "lavender",
+   "file": "06-cleanup-impact.png",
+   "W": 1320,
+   "H": 2868,
+   "headline": "*See trash* picked up in your town.",
+   "redact": [
+    {
+     "left": 84,
+     "top": 608,
+     "width": 170,
+     "height": 170
+    },
+    {
+     "left": 276,
+     "top": 632,
+     "width": 180,
+     "height": 66
+    }
+   ]
+  },
+  {
+   "name": "google-1080x1920/02-see-it-cleaned",
+   "theme": "lavender",
+   "file": "06-cleanup-impact.png",
+   "W": 1080,
+   "H": 1920,
+   "headline": "*See trash* picked up in your town.",
+   "redact": [
+    {
+     "left": 84,
+     "top": 608,
+     "width": 170,
+     "height": 170
+    },
+    {
+     "left": 276,
+     "top": 632,
+     "width": 180,
+     "height": 66
+    }
+   ]
+  },
+  {
+   "name": "apple-1320x2868/03-report-litter",
+   "theme": "lavender",
+   "file": "01-report-litter.png",
+   "W": 1320,
+   "H": 2868,
+   "headline": "Report litter. *Earn* when it’s cleaned.",
+   "redact": []
+  },
+  {
+   "name": "google-1080x1920/03-report-litter",
+   "theme": "lavender",
+   "file": "01-report-litter.png",
+   "W": 1080,
+   "H": 1920,
+   "headline": "Report litter. *Earn* when it’s cleaned.",
+   "redact": []
+  },
+  {
+   "name": "apple-1320x2868/04-find-paid-cleanups",
+   "theme": "lavender",
+   "file": "04-boone-map.png",
+   "W": 1320,
+   "H": 2868,
+   "headline": "Find *paid cleanups* near you.",
+   "redact": []
+  },
+  {
+   "name": "google-1080x1920/04-find-paid-cleanups",
+   "theme": "lavender",
+   "file": "04-boone-map.png",
+   "W": 1080,
+   "H": 1920,
+   "headline": "Find *paid cleanups* near you.",
+   "redact": []
+  },
+  {
+   "name": "apple-1320x2868/05-fund-a-cleanup",
+   "theme": "lavender",
+   "file": "03-donate.png",
+   "W": 1320,
+   "H": 2868,
+   "headline": "*Fund* a cleanup you care about.",
+   "redact": []
+  },
+  {
+   "name": "google-1080x1920/05-fund-a-cleanup",
+   "theme": "lavender",
+   "file": "03-donate.png",
+   "W": 1080,
+   "H": 1920,
+   "headline": "*Fund* a cleanup you care about.",
+   "redact": []
+  },
+  {
+   "name": "apple-1320x2868/06-local-reports",
+   "theme": "lavender",
+   "file": "05-reports.png",
+   "W": 1320,
+   "H": 2868,
+   "headline": "Browse *local reports*.",
+   "redact": []
+  },
+  {
+   "name": "google-1080x1920/06-local-reports",
+   "theme": "lavender",
+   "file": "05-reports.png",
+   "W": 1080,
+   "H": 1920,
+   "headline": "Browse *local reports*.",
+   "redact": []
+  },
+  {
+   "name": "apple-1320x2868/07-share",
+   "theme": "lavender",
+   "file": "07-share.png",
+   "W": 1320,
+   "H": 2868,
+   "headline": "Share it to *get it funded*.",
+   "redact": []
+  },
+  {
+   "name": "google-1080x1920/07-share",
+   "theme": "lavender",
+   "file": "07-share.png",
+   "W": 1080,
+   "H": 1920,
+   "headline": "Share it to *get it funded*.",
+   "redact": []
+  },
+  {
+   "name": "apple-1320x2868/08-track-impact",
+   "theme": "lavender",
+   "file": "08-track-litter.png",
+   "W": 1320,
+   "H": 2868,
+   "headline": "Track *your impact*.",
+   "redact": []
+  },
+  {
+   "name": "google-1080x1920/08-track-impact",
+   "theme": "lavender",
+   "file": "08-track-litter.png",
+   "W": 1080,
+   "H": 1920,
+   "headline": "Track *your impact*.",
+   "redact": []
+  }
+ ]
+}
