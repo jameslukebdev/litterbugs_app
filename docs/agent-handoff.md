@@ -24,6 +24,24 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Codex (store screenshot upload attempt blocked)
+
+- Read screenshot README; confirmed both ordered 01–08 sets. Google default
+  listing editor: removed old eight images in unsaved editor only, attempted
+  uploading all eight new Google files. Console reported “Couldn’t upload.
+  Try again.” No save or review submission completed; live images unchanged.
+- Native picker fallback stalled in Go to Folder and would not accept navigation
+  or dismiss through automation. Requested reload to restore saved listing,
+  but subsequent browser observation timed out with picker still open; verify
+  editor state before continuing. Store tabs retained for continuation.
+- Country expansion was NOT discarded yet and MUST be removed before any
+  review submission. No Google changes submitted.
+- Apple opened App Store Connect but redirected to login with authResult=FAILED;
+  login iframe remained blank/loading. PPO not accessed, edited, or canceled.
+  No conclusion established about whether PPO is editable or needs a version.
+- User informed of upload failure and extension file-URL access setting. No
+  application changes, store publication, deployment, database change or push.
+
 ### 2026-11-05 — Codex (Google browser handoff deployed)
 
 - Grant authorized production deployment for phone/Instagram testing. Released
