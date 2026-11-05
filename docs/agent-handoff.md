@@ -24,6 +24,20 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Codex (Clarity funding and download review)
+
+- Refreshed Last 3 days from 22 to 30 recordings. Nov. 5 11:08 AM Instagram
+  replay: Fund this cleanup at 00:06 opened the map at 00:07, briefly showed
+  a loading shell, then repeated the report with Sign in to fund. No further
+  tap before the replay ended. Same Clarity visitor's next clip opened Boone.
+  Candidate: carry funding intent directly to sign-in for signed-out visitors.
+- Funding and older desktop View on map both recorded an extra page entry
+  when the URL gained browse=1. This is separate from map viewport tracking.
+- Sampled download replays and timelines: three App Store taps and one Google
+  Play tap. External installs are outside the replay. Older reporting replay
+  showed a sign-in dialog and no clear repeated failure.
+- No application, settings, or deployment changes. Review only.
+
 ### 2026-11-05 — Codex (Apple screenshot test stopped)
 
 - Grant signed in. Verified the October PPO test `a046d8a4-36f0-40f2-9be4-b4c3e7f1db45`
