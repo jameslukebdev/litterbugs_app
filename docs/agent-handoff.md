@@ -24,6 +24,26 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Codex (Google screenshots saved; countries restored)
+
+- Recovered native file picker after Grant dismissed prior dialog. Uploaded all
+  eight November 5 Google 1080x1920 files through native picker; removed old set
+  and added new library assets individually to guarantee 01–08 filename order.
+  Verified ordered review screen and “Change saved” confirmation. No review
+  contact sheets uploaded. Listing is saved, not yet submitted.
+- Restored Production targeting to United States only and saved. Publishing
+  overview confirms both “Add 176 countries / regions” and “Add rest of world”
+  are gone; no country change remains pending.
+- Publishing overview now has TWO pending changes: phone screenshots and
+  Grant's existing app-level trader-status declaration. Menus offer only View
+  change, no separate submission control; Send dialog bundles both. Canceled
+  dialog without submitting. Asked Grant whether to submit both; awaiting reply.
+- App Store Connect still redirects to login authResult=FAILED with blank login
+  iframe. Prior listing-copy/status.json independently records expired session
+  Nov 1. PPO not accessible, edited, canceled or resubmitted; cannot determine
+  current editability. No request for Luke's developer-account credentials.
+- No application code, database, deployment or push. Store tabs retained.
+
 ### 2026-11-05 — Codex (store upload blocker revalidated)
 
 - Rechecked the same live Chrome handle: system Go to Folder sheet remains
