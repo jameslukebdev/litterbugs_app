@@ -178,3 +178,17 @@ it('preserves only the canonical community return in the Stripe confirmation URL
   expect(url.searchParams.has('payment_intent_client_secret')).toBe(false);
   window.history.replaceState({}, '', '/');
 });
+
+it('opens amount review after sign-in and eligibility, without starting payment or reopening after dismissal', async () => {
+  loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
+  const view = render(<FundingContributionAction report={report} userId={null} autoOpen />);
+  await screen.findByRole('button', { name: 'Sign in to fund' });
+  expect(screen.queryByRole('dialog')).toBeNull();
+  view.rerender(<FundingContributionAction report={report} userId="member" autoOpen />);
+  expect(await screen.findByRole('dialog')).toBeTruthy();
+  expect(screen.getByText('Roadside bottles')).toBeTruthy();
+  expect(createContribution).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+  view.rerender(<FundingContributionAction report={{ ...report }} userId="member" autoOpen />);
+  expect(screen.queryByRole('dialog')).toBeNull();
+});

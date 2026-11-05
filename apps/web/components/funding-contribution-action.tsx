@@ -84,6 +84,7 @@ export function FundingContributionAction({
   onChanged,
   initialAmountCents,
   startOpen = false,
+  autoOpen = false,
   onDismiss,
   onRefreshFunding,
 }: {
@@ -93,11 +94,20 @@ export function FundingContributionAction({
   onChanged?: () => void | Promise<void>;
   initialAmountCents?: number;
   startOpen?: boolean;
+  autoOpen?: boolean;
   onDismiss?: () => void;
   onRefreshFunding?: () => Promise<void>;
 }) {
   const [enabled, setEnabled] = useState<boolean | null>(null);
-  const [open, setOpen] = useState(startOpen);
+  const [manuallyOpen, setOpen] = useState(startOpen);
+  const [dismissed, setDismissed] = useState(false);
+  const eligible = report.cleanup_state === 'available'
+    && report.funding_eligibility === 'eligible'
+    && report.renewal_status === 'active'
+    && !report.funding_frozen_at
+    && !report.cancelled_at
+    && !report.expired_at;
+  const open = manuallyOpen || (autoOpen && !dismissed && Boolean(userId) && enabled === true && eligible);
   const [amount, setAmount] = useState(() => initialAmountCents == null ? '25' : (initialAmountCents / 100).toFixed(2));
   const [previousContribution, setPreviousContribution] = useState<string | null>(null);
   const [intent, setIntent] = useState<ContributionIntent | null>(null);
@@ -136,16 +146,13 @@ export function FundingContributionAction({
     return () => { cancelled = true; };
   }, []);
 
-  const eligible = report.cleanup_state === 'available'
-    && report.funding_eligibility === 'eligible'
-    && report.renewal_status === 'active'
-    && !report.funding_frozen_at
-    && !report.cancelled_at
-    && !report.expired_at;
   if (!startOpen && enabled === null && eligible) return <span className="primary-button compact-button funding-action-pending" role="status" aria-label="Checking funding availability"><span aria-hidden="true">{userId ? 'Add funds' : 'Sign in to fund'}</span></span>;
-  if (!startOpen && (!enabled || !eligible)) return null;
+  if (!startOpen && (!enabled || !eligible)) {
+    return autoOpen && userId ? <p role="status">This cleanup isn’t accepting contributions right now.</p> : null;
+  }
 
   function dismiss() {
+    setDismissed(true);
     setOpen(false);
     onDismiss?.();
   }

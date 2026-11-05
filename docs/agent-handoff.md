@@ -24,6 +24,23 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Codex (funding, map, and download changes ready locally)
+
+- Public report funding now goes directly through the existing sign-in route,
+  preserving the report and community return. Existing members skip the form.
+  The eligible report opens its named amount review once after auth and funding
+  checks. Changing reports clears the funding intent. No payment attempted.
+- Map restores saved browse state without adding browse=1 at load. Explicit
+  filter and sort changes still update shareable URLs and preserve map hash.
+- Added privacy-filtered app_store_badge_clicked events with platform and
+  allowlisted Instagram campaign. Tagged Google Play outbound link on Instagram
+  get-app arrivals. Apple App Store campaign attribution needs a real generated
+  campaign link/provider token. Store clicks remain distinct from installs.
+- Local browser verified direct funding sign-in, map hydration URL, and tagged
+  Play destination. 90 focused tests, TypeScript, scoped ESLint passed.
+  Physical Instagram/store checks and real signed-in checkout remain untested.
+  No app store settings, database changes, push, or deployment.
+
 ### 2026-11-05 — Claude (fixed screenshots submitted to Google Play)
 
 - Fixed blank white phone bottoms: each phone frame is now sized to its

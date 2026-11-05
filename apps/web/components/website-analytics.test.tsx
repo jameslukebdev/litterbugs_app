@@ -290,3 +290,24 @@ it('measures support checkout intent with allowlisted properties and respects an
   act(() => window.dispatchEvent(new CustomEvent(ANALYTICS_EVENT, {detail:{event:'support_checkout_clicked',amount:5,currency:'USD',billing_interval:'month'}})));
   expect(mock.capture).not.toHaveBeenCalled();
 });
+
+it('counts a store badge tap without forwarding raw campaign or link data', async () => {
+  mock.allowed = true;
+  mock.path = '/get-app';
+  window.history.replaceState({}, '', '/get-app?utm_source=ig&fbclid=private');
+  try {
+    render(<><WebsiteAnalytics config={config} /><a href="https://play.google.com/store/apps/details?id=com.litterbugs.app&utm_source=instagram" onClick={event => event.preventDefault()}>Google Play</a></>);
+    await waitFor(() => expect(mock.capture).toHaveBeenCalledWith('$pageview', { page_type: '/get-app' }));
+    fireEvent.click(screen.getByText('Google Play'));
+    expect(mock.capture).toHaveBeenCalledWith('app_store_badge_clicked', {
+      page_type: '/get-app', store: 'google_play', campaign: 'instagram',
+    });
+    const beforeSend = mock.init.mock.calls[0][1].before_send;
+    const event = beforeSend({ event: 'app_store_badge_clicked', properties: { store: 'google_play', campaign: 'instagram', href: 'private' } });
+    expect(event.properties.store).toBe('google_play');
+    expect(event.properties.campaign).toBe('instagram');
+    expect(JSON.stringify(event)).not.toContain('private');
+  } finally {
+    window.history.replaceState({}, '', '/');
+  }
+});
