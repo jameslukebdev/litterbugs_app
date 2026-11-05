@@ -24,6 +24,17 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Codex (Apple screenshot test stopped)
+
+- Grant signed in. Verified the October PPO test `a046d8a4-36f0-40f2-9be4-b4c3e7f1db45`
+  was running since November 2 and its screenshot upload controls were disabled.
+  Stopped it as requested and verified the test ended November 5.
+- The eight November 5 Apple images are ready for the next app version's main
+  listing. No Apple assets submitted and no new version created. App Store
+  Connect also displayed an updated developer agreement for the account holder.
+- Google screenshots and trader status were sent for review in the prior entry.
+  No deployment or push.
+
 ### 2026-11-05 — Codex (Google screenshots submitted)
 
 - Grant authorized submitting both existing queued changes. Google confirmed
