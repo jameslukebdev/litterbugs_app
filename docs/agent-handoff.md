@@ -24,6 +24,25 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Codex (funding, map, and store follow-up recommendations)
+
+- Reproduced signed-out funding locally on the replay's report: Fund this
+  cleanup opens the map, then Sign in to fund opens the auth dialog. The
+  entry intent currently focuses the detail footer. Recommend starting
+  sign-in directly, preserving report/community through auth, then opening
+  amount review once after eligibility checks. Signed-in donors can go
+  straight to amount review. No payment attempted.
+- Confirmed ReportBrowser adds browse=1 when restoring/persisting browse
+  state. Avoid writing hydration-only state into the URL and preserve
+  explicit filter and legacy link semantics. Use pathname-based PostHog
+  page views for counts and Clarity for qualitative review.
+- Get-app page points to both expected listings and offers website fallback.
+  Recommend a real iOS/Android Instagram store handoff check, one campaign
+  per source/store, and separating website badge taps from first downloads
+  and device acquisitions. No store redesign justified by this sample.
+- Review only. Local browser used without production analytics. No app,
+  database, analytics configuration, or deployment changes.
+
 ### 2026-11-05 — Codex (sent Luke the Apple screenshots)
 
 - At Grant’s request, sent “New Litterbugs screenshots” to Luke at
