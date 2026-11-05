@@ -24,6 +24,32 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Codex (Clarity follow-up fixes, local only)
+
+- Investigated funding anchor: homepage Choose a spot and direct loads at
+  widths 360/390/1280 land fundable-reports at ~112px below the header, stable
+  after loading. No anchor defect reproduced; no funding-layout changes.
+- Google docs confirm embedded-user-agent restrictions. AuthDialog now detects
+  Instagram/Facebook embedded UA on Google click and explains opening this page
+  in Safari/Chrome or using email; no OAuth request is started in those known
+  embedded browsers. No cross-browser OAuth URL/PKCE handoff attempted.
+- Confirmed code had no recovery if social redirect stalled: added 15-second
+  recovery and persisted pageshow recovery, restoring email/retry/close. Also
+  retain current URL hash in fallback OAuth return destination.
+- 25 focused tests passed (auth dialog/public account), TypeScript and scoped
+  ESLint passed. Existing missing local testing-library/react/react-dom types
+  supplied via prior /tmp test config; dependencies unchanged. Browser plugin
+  not available; used Playwright localhost. Browser confirmed Instagram guidance
+  and enabled controls; normal Google redirect intercepted before provider,
+  with expected callback and s256 challenge. No real login/account changes.
+- Screenshot .playwright-mcp/instagram-auth-guidance.png. No browser errors;
+  Next development warning recommends eager loading for an above-fold report
+  photo after anchor navigation, unrelated to anchor correctness. Local visits
+  do not load production analytics. No Supabase/settings changes, push or deploy.
+- Remaining limitation: physical Instagram iOS/Android Google completion is
+  unverified; replay ending after two seconds does not establish a failed login.
+  Changes are committed locally on claude/ui-finish alongside existing preview.
+
 ### 2026-11-05 — Codex (four Instagram replays watched)
 
 - Watched the four recordings identified above through playback, including

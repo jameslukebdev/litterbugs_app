@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 
 import { ModalShell } from '@/components/modal-shell';
@@ -39,15 +39,38 @@ export function AuthDialog({
   const [loading, setLoading] = useState('');
   const [sentReason, setSentReason] = useState<'signup' | 'recovery'>('signup');
 
+  useEffect(() => {
+    if (loading !== 'google' && loading !== 'facebook') return;
+    const recover = () => {
+      setLoading('');
+      setMessage('Sign in hasn’t opened. Try again, use your email, or open this page in Safari or Chrome.');
+    };
+    const timer = window.setTimeout(recover, 15000);
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) recover();
+    };
+    window.addEventListener('pageshow', onPageShow);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('pageshow', onPageShow);
+    };
+  }, [loading]);
+
   const cleanEmail = email.trim().toLowerCase();
   const providerLabel = loading ? loading.charAt(0).toUpperCase() + loading.slice(1) : '';
 
   function authCallbackUrl() {
-    const nextPath = returnPath ?? `${window.location.pathname}${window.location.search}`;
+    const nextPath = returnPath ?? `${window.location.pathname}${window.location.search}${window.location.hash}`;
     return `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
   }
 
   async function startProvider(provider: 'google' | 'facebook') {
+    // Google rejects OAuth inside embedded social-app browsers. Start the
+    // flow in the browser that will also receive the PKCE callback instead.
+    if (provider === 'google' && /Instagram|FBAN|FBAV|FB_IAB/i.test(navigator.userAgent)) {
+      setMessage('To use Google, open this page in Safari or Chrome from the app’s menu. You can also sign in with your email here.');
+      return;
+    }
     setMessage('');
     setLoading(provider);
     try {
