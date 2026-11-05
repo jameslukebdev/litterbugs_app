@@ -25,18 +25,23 @@ async function cropped(file, redact = []) {
   const base = await sharp(srcPath).composite(overlays).png().toBuffer();
   const top = Math.round(height * 0.062);
   const bottom = Math.round(height * 0.012);
-  const buf = await sharp(base).extract({ left: 0, top, width, height: height - top - bottom }).png().toBuffer();
-  return 'data:image/png;base64,' + buf.toString('base64');
+  const cropH = height - top - bottom;
+  const buf = await sharp(base).extract({ left: 0, top, width, height: cropH }).png().toBuffer();
+  return { uri: 'data:image/png;base64,' + buf.toString('base64'), ratio: width / cropH };
 }
 
-function html(job, shotUri, photoUri) {
+function html(job, shot, photoUri) {
   const { W, H } = job;
   const t = themes[job.theme];
   const wide = W / H > 0.5;
   const pad = Math.round(W * 0.085);
   const headSize = Math.round(W * (wide ? 0.08 : 0.088));
-  const devW = Math.round(W * (wide ? 0.64 : 0.76));
-  const bezel = Math.round(devW * 0.022);
+  // Size the whole phone (screen plus bezel) to the screenshot so no blank screen shows.
+  const devTop = Math.round(H * (wide ? 0.23 : 0.215));
+  const avail = H - devTop - Math.round(H * 0.035);
+  const bezelK = 0.022;
+  const devW = Math.round(Math.min(W * (wide ? 0.66 : 0.76), (avail * shot.ratio) / (1 + 2 * bezelK * (shot.ratio - 1))));
+  const bezel = Math.round(devW * bezelK);
   const radius = Math.round(devW * 0.11);
   const markStyle = t.mark ? `;background:linear-gradient(transparent 62%,${t.mark} 62%, ${t.mark} 92%,transparent 92%)` : '';
   const headline = job.headline.replace(/\*(.+?)\*/g, `<span style="color:${t.accent}${markStyle}">$1</span>`);
@@ -46,9 +51,9 @@ function html(job, shotUri, photoUri) {
   body{width:${W}px;height:${H}px;overflow:hidden;background:${t.bg};position:relative;font-family:NB}
   .photo{position:absolute;inset:-4%;background:url(${photoUri}) center/cover;filter:blur(${Math.round(W * 0.012)}px) brightness(.45)}
   h1{position:absolute;left:${pad}px;right:${pad}px;top:${Math.round(H * 0.06)}px;color:${t.head};font-size:${headSize}px;line-height:1.05;letter-spacing:-0.01em}
-  .dev{position:absolute;left:50%;transform:translateX(-50%);bottom:0;top:${Math.round(H * (wide ? 0.25 : 0.215))}px;width:${devW}px;background:#111;border-radius:${radius}px ${radius}px 0 0;padding:${bezel}px ${bezel}px 0;box-shadow:0 ${Math.round(W * 0.02)}px ${Math.round(W * 0.06)}px rgba(0,0,0,.28)}
-  .scr{width:100%;height:100%;border-radius:${radius - bezel}px ${radius - bezel}px 0 0;background:url(${shotUri}) top center/100% auto no-repeat #fff}
-  </style></head><body>${t.photo ? '<div class="photo"></div>' : ''}<h1>${headline}</h1><div class="dev"><div class="scr"></div></div></body></html>`;
+  .dev{position:absolute;left:50%;transform:translateX(-50%);top:${devTop}px;width:${devW}px;background:#111;border-radius:${radius}px;padding:${bezel}px;box-shadow:0 ${Math.round(W * 0.02)}px ${Math.round(W * 0.06)}px rgba(0,0,0,.28)}
+  .scr{display:block;width:100%;height:auto;border-radius:${radius - bezel}px}
+  </style></head><body>${t.photo ? '<div class="photo"></div>' : ''}<h1>${headline}</h1><div class="dev"><img class="scr" src="${shot.uri}"></div></body></html>`;
 }
 
 (async () => {
