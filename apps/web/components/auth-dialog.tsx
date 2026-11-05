@@ -6,6 +6,7 @@ import Image from 'next/image';
 
 import { ModalShell } from '@/components/modal-shell';
 import brandStyles from '@/components/public-website/brand.module.css';
+import { googleBrowserHandoff, isEmbeddedSocialBrowser } from '@/lib/google-browser-handoff';
 import { createClient } from '@/lib/supabase/client';
 
 export type AuthIntent = 'clean' | 'fund' | 'report' | null;
@@ -20,6 +21,7 @@ type AuthDialogProps = {
   intent?: AuthIntent;
   facebookLoginEnabled?: boolean;
   initialMode?: 'login' | 'signup';
+  initialMessage?: string;
 };
 
 export function AuthDialog({
@@ -29,13 +31,14 @@ export function AuthDialog({
   embedded = false,
   intent = null,
   initialMode = 'login',
+  initialMessage = '',
   facebookLoginEnabled = true,
 }: AuthDialogProps) {
   const [mode, setMode] = useState<EmailMode>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState(initialMessage);
   const [loading, setLoading] = useState('');
   const [sentReason, setSentReason] = useState<'signup' | 'recovery'>('signup');
 
@@ -65,10 +68,15 @@ export function AuthDialog({
   }
 
   async function startProvider(provider: 'google' | 'facebook') {
-    // Google rejects OAuth inside embedded social-app browsers. Start the
-    // flow in the browser that will also receive the PKCE callback instead.
-    if (provider === 'google' && /Instagram|FBAN|FBAV|FB_IAB/i.test(navigator.userAgent)) {
-      setMessage('To use Google, open this page in Safari or Chrome from the app’s menu. You can also sign in with your email here.');
+    if (provider === 'google' && isEmbeddedSocialBrowser(navigator.userAgent)) {
+      const next = returnPath ?? `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      const handoff = googleBrowserHandoff(window.location.origin, next, navigator.userAgent);
+      setMessage('If your browser doesn’t open, use the app’s menu to open this page in Safari or Chrome, then continue with Google. You can also use your email here.');
+      // Keep this synchronous with the tap so the phone can open its browser.
+      // Do not create a Supabase client or PKCE verifier before handing off.
+      if (handoff) {
+        try { window.location.assign(handoff); } catch { /* Email and manual fallback remain available. */ }
+      }
       return;
     }
     setMessage('');

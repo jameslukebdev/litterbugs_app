@@ -3,6 +3,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AuthDialog } from './auth-dialog';
+import * as browserHandoff from '@/lib/google-browser-handoff';
 
 const { signInWithOAuth, signUp } = vi.hoisted(() => ({ signInWithOAuth: vi.fn(), signUp: vi.fn() }));
 vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({ auth: { signInWithOAuth, signUp } }) }));
@@ -142,4 +143,17 @@ it('retains a funding anchor through OAuth when no return path overrides it', as
   } finally {
     window.history.replaceState(null, '', '/');
   }
+});
+
+
+it.each(['Android Instagram', 'iPhone Instagram'])('requests an external-browser entry before starting OAuth in %s', userAgent => {
+  vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(userAgent);
+  // Do not launch a phone app from jsdom. URL formats are tested separately.
+  const handoff = vi.spyOn(browserHandoff, 'googleBrowserHandoff').mockReturnValue(null);
+  const next = '/map?report=abc&intent=fund#map=36,-81,12';
+  render(<AuthDialog onClose={vi.fn()} returnPath={next} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Continue with Google' }));
+  expect(handoff).toHaveBeenCalledWith(window.location.origin, next, userAgent);
+  expect(signInWithOAuth).not.toHaveBeenCalled();
+  expect((screen.getByLabelText('Email') as HTMLInputElement).disabled).toBe(false);
 });

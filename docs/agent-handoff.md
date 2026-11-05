@@ -24,6 +24,31 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Codex (Google external-browser handoff, local only)
+
+- Replaced the Instagram/Facebook Google warning-only path with a synchronous
+  browser-launch attempt: Android Chrome intent (with safe fallback); iPhone/iPad
+  x-safari-https scheme. iOS scheme is best effort, not an Apple-documented
+  universal guarantee; Instagram can block it. Manual/email fallback remains.
+- External browser opens same-origin /auth/google?next=..., then server starts
+  Google OAuth and sets PKCE cookie in that browser. Never transport verifier,
+  OAuth authorization URL, credentials or session from Instagram. Query/fragment,
+  report and intent retained in next; unsafe/looping return paths rejected.
+- /auth/google refuses to start OAuth in recognized embedded social UA and
+  returns a usable sign-in page; startup errors give retry/email fallback.
+  No caching of authorization redirect. Normal-browser Google flow unchanged.
+- Validation: 47 focused tests passed, then one extra unsafe-next case added
+  (18 handoff/route tests passed); TypeScript and scoped ESLint passed. Prior
+  /tmp testing dependency/config workaround retained; no dependencies changed.
+  Browser plugin absent; used localhost Playwright. Actual route returned Google
+  redirect with s256 + Set-Cookie for verifier; embedded route returned fallback
+  without verifier. Mobile fallback rendered with enabled email/Google, no
+  runtime errors/warnings or overlay. Screenshot in ignored .playwright-mcp/
+  browser-handoff-fallback.png. React component review completed.
+- Physical Instagram on iOS/Android app-switch and real Google completion remain
+  unverified. No real sign-in, account/settings/database change, push or deploy.
+  Existing homepage preview is preserved. Changes committed on claude/ui-finish.
+
 ### 2026-11-05 — Codex (Clarity follow-up fixes, local only)
 
 - Investigated funding anchor: homepage Choose a spot and direct loads at
