@@ -15,15 +15,19 @@ it('returns an abandoned community report entry to Boone while success resumes t
   const next = communityReportHref(getCommunity('us-nc-boone')!);
   render(<SignInForm next={next} />);
   fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-  expect(router.push).toHaveBeenCalledWith('/communities/us/nc/boone');
+  expect(router.replace).toHaveBeenCalledWith('/communities/us/nc/boone');
   fireEvent.click(screen.getByRole('button', { name: 'Success' }));
   expect(router.replace).toHaveBeenCalledWith(next);
   expect(router.refresh).toHaveBeenCalled();
 });
-it('retains the existing ordinary sign-in close destination', () => {
-  render(<SignInForm next="/account" />);
+it('closes onto the map already behind it, without navigating', () => {
+  window.history.replaceState(null, '', '/sign-in?next=%2Freport&view=map#map=36.2,-81.6,12.0');
+  render(<SignInForm next="/report" />);
   fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-  expect(router.push).toHaveBeenCalledWith('/');
+  expect(router.replace).not.toHaveBeenCalled();
+  expect(router.push).not.toHaveBeenCalled();
+  expect(`${window.location.pathname}${window.location.search}${window.location.hash}`).toBe('/map?view=map#map=36.2,-81.6,12.0');
+  expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
 });
 it('opens report sign-in on account creation', () => {
   render(<SignInForm next="/report" />);

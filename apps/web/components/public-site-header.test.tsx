@@ -25,7 +25,7 @@ describe('PublicSiteHeader', () => {
     const main = within(screen.getByRole('navigation', { name: 'Main navigation' }));
     expect(main.getByRole('link', { name: 'Open map' }).getAttribute('href')).toBe('/map');
     fireEvent.click(main.getByRole('button', { name: 'Report' }));
-    expect(main.getByRole('link', { name: 'Start a report' }).getAttribute('href')).toBe('/report');
+    expect(main.getByRole('link', { name: 'Report trash' }).getAttribute('href')).toBe('/sign-in?next=%2Freport&view=map');
     expect(main.getByRole('link', { name: 'Reporter reward details' }).getAttribute('href')).toBe('/report-litter');
     fireEvent.click(main.getByRole('button', { name: 'Donate' }));
     expect(screen.getByRole('link', { name: 'Fees, rewards & refunds' }).getAttribute('href')).toBe('/fund-a-cleanup');
@@ -57,7 +57,7 @@ describe('PublicSiteHeader', () => {
     const drawer = within(screen.getByRole('dialog', { name: 'Site menu' }));
     const mobile = within(drawer.getByRole('navigation', { name: 'Mobile navigation' }));
     fireEvent.click(mobile.getByRole('button', { name: 'Report' }));
-    expect(mobile.getByRole('link', { name: 'Start a report' }).getAttribute('href')).toBe('/report');
+    expect(mobile.getByRole('link', { name: 'Report trash' }).getAttribute('href')).toBe('/sign-in?next=%2Freport&view=map');
     expect(mobile.getByRole('link', { name: 'Reporter reward details' }).getAttribute('href')).toBe('/report-litter');
     expect(mobile.queryByRole('link', { name: /Get the app|Profile|Updates/ })).toBeNull();
     expect(mobile.getByRole('link', { name: 'Open map' }).getAttribute('href')).toBe('/map');
@@ -222,7 +222,7 @@ it('uses the same Report menu in map navigation without a Report litter label', 
   const main = within(screen.getByRole('navigation', { name: 'Main navigation' }));
   expect(main.queryByRole('link', { name: 'Report litter' })).toBeNull();
   fireEvent.click(main.getByRole('button', { name: /^Report$/ }));
-  expect(main.getByRole('link', { name: 'Start a report' }).getAttribute('href')).toBe('/report');
+  expect(main.getByRole('link', { name: 'Report trash' }).getAttribute('href')).toBe('/sign-in?next=%2Freport&view=map');
 });
 
 
@@ -234,7 +234,7 @@ it('keeps a hover-open menu open on the first click and allows an explicit secon
   act(() => vi.advanceTimersByTime(350));
   fireEvent.click(report);
   expect(report.getAttribute('aria-expanded')).toBe('true');
-  expect(screen.getByRole('link', { name: 'Start a report' })).toBeTruthy();
+  expect(screen.getByRole('link', { name: 'Report trash' })).toBeTruthy();
   fireEvent.click(report);
   expect(report.getAttribute('aria-expanded')).toBe('false');
 });

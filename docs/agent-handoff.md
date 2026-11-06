@@ -24,6 +24,49 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Claude (map-first navigation and report flow polish, local and uncommitted)
+
+- Why: PostHog showed 1 of 28 phone homepage visits reached /map in 7 days;
+  phones had no visible map entry and 41% left before 25% scroll (Clarity).
+- Homepage: Choose a spot and Find a cleanup now open the map
+  (/map?view=map&browse=1&status=available, lib/home-map-link.ts). Report
+  litter card is now one "Start a report" link to /report (no homepage photo
+  picker). Hero has a "See litter near you" map button under the app badges.
+- Phone header (≤520px, non-map pages): the standard gold-outline Map button
+  (same as wider screens, per Grant) replaces the search icon; fits at 360px.
+  Map pages unchanged (bottom tabs).
+- Map loading placeholder now reads the destination view (useSearchParams) so
+  it no longer shows the report list before switching to the map (desktop
+  jump Grant reported); phone placeholder toolbar matches real height.
+- Report flow: purple theme for pin, "Where is the litter?" box (subheading
+  removed), wizard and draft dialogs; one heading per wizard step (step name;
+  old "New Litter Report" title and step sub-headings removed); "Keep your
+  report?" subheading removed. Any leftover homepage photo auto-imports.
+- Completed cleanup cards show /reports/{id}/photo/after first ("After
+  cleanup" tag), falling back to the original photo.
+- PostHog: saved favorited insight "Phone visits that reach the map"
+  (1kdPlWal), weekly session funnel; baseline ~15% this week.
+- Tests: 718/719 pass (only the stale Codex funding test). Typecheck/lint
+  clean. Checked on iPhone simulator + localhost. Signed-in wizard/pin box not
+  visually checked (needs a login). Not committed or deployed.
+- Follow-up same session: hero "See litter near you" removed at Grant's
+  request (hero back to live). /sign-in now renders the live map (forced
+  view=map) behind the sign-up form as a pop-up; close/"Keep exploring the
+  map" go to /map?view=map (or the community page). Map sign-up pop-ups with a
+  report/fund/clean intent also offer "Keep exploring the map".
+- Later: "Start a report" renamed "Report trash" (homepage card and header
+  Report menu); both link straight to /sign-in?next=%2Freport&view=map
+  (REPORT_ENTRY_HREF) to skip the blank /report redirect hop; signed-in users
+  are forwarded to /report by the sign-in page. /report and /sign-in now have
+  the map loading shell (always map view). "Keep exploring the map" button
+  removed. Closing the sign-in pop-up keeps the same map mounted and just
+  replaceState()s the URL to /map?view=map (no reload); community entries
+  still navigate back to the community page.
+- Brand bug icons: cut from the logo into public/brand/bugs/*.png with a
+  BrandBug component; used for report-list loading (hovering bee), empty
+  (butterfly), error (ladybug), notifications empty, auth email-sent, and the
+  keep-exploring button.
+
 ### 2026-11-05 — Claude (report sign-up, notifications, phone pills deployed)
 
 - Grant authorized release. Deployed commit 363dc75 on

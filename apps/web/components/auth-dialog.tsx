@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 
 import { ModalShell } from '@/components/modal-shell';
+import { BrandBug } from '@/components/brand-bug';
 import brandStyles from '@/components/public-website/brand.module.css';
 import { googleBrowserHandoff, isEmbeddedSocialBrowser } from '@/lib/google-browser-handoff';
 import { createClient } from '@/lib/supabase/client';
@@ -178,7 +179,7 @@ export function AuthDialog({
     <ModalShell embedded={embedded} onClose={onClose} label={mode === 'signup' ? 'Create your Litterbugs account' : 'Sign in to Litterbugs'} className={`auth-dialog auth-dialog-simple ${brandStyles.brand}`} closeDisabled={Boolean(loading)}>
       {mode === 'sent' ? (
         <div className="auth-sent">
-          <span className="success-mark" aria-hidden>✓</span>
+          <span className="success-mark success-mark-bug" aria-hidden><BrandBug kind="bee" size={40} /></span>
           <h2>Check your email</h2>
           <p>{sentReason === 'signup'
             ? <>If <strong>{cleanEmail}</strong> is new, a verification link is on its way. If you’ve used this email before, sign in or reset your password.</>
@@ -195,7 +196,7 @@ export function AuthDialog({
           <div className="auth-heading">
             <h2>{mode === 'signup' ? signupHeading(intent) : mode === 'forgot' ? 'Reset your password' : intent === 'clean' ? 'Sign in to clean up' : intent === 'fund' ? 'Sign in to fund a cleanup' : intent === 'report' ? 'Sign in to report litter' : 'Sign in to Litterbugs'}</h2>
             {mode === 'forgot' && <p>We’ll email you a secure password reset link.</p>}
-            {mode === 'signup' && intent === 'report' && <p>It’s free and takes a minute. Then pin the spot and add a photo.</p>}
+            {mode === 'signup' && intent === 'report' && <p>It’s free and takes a minute. Then pin the spot and add photos.</p>}
           </div>
 
           <form className="auth-form" onSubmit={submitEmail}>

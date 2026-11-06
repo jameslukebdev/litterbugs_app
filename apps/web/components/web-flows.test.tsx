@@ -59,7 +59,7 @@ describe('web product boundaries', () => {
     );
 
     expect(screen.getByText('Step 1 of 5')).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'New Litter Report' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Add photos' })).toBeTruthy();
     expect(screen.getAllByRole('button', { name: /Add report photo [1-3]/ })).toHaveLength(3);
     expect(document.querySelector('.photo-picker')).toBeNull();
     expect(screen.getByLabelText('Report title (optional)')).toBeTruthy();

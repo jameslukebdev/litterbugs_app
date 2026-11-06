@@ -23,3 +23,6 @@
 .inlineRoot .panel { background: white; border: 1px solid var(--line); border-radius: 8px; padding: 10px; box-shadow: 0 8px 24px #18251c18; }
 .inlineTrigger:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; border-radius: 4px; }
 .inlineTrigger { font-size: 18px; }
+
+/* On phones the header shows a Map pill here instead; the map has its own place search. */
+@media (max-width: 520px) { .trigger { display: none; } }
