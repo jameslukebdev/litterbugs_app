@@ -7,7 +7,8 @@
 .panel.panel.panel :global(.report-browser-filters) button[aria-pressed='true'] { color: #4438bb; border-color: #b3a6e5; background: #efedff; }
 .panel.panel.panel :global(.report-browser-list) { padding-top: 12px; }
 .panel.panel.panel :global(.report-browser-empty) { min-height: 0; padding: 20px 4px; gap: 8px; }
-.loadingBee { animation: showLoadingBee .18s .35s both; }
+.panel.panel.panel .loadingList { flex: 1; grid-template-columns: minmax(0, 1fr); align-content: center; justify-items: center; }
+.loadingBee { display: block; animation: showLoadingBee .18s .35s both; }
 @keyframes showLoadingBee { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .loadingBee { animation-timing-function: step-end; } }
 .emptyPanel { grid-column: 1 / -1; width: 100%; max-width: 440px; margin: 0 auto; padding: clamp(20px, 4vw, 40px) 4px 20px; }
