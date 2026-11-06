@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element -- Signed Supabase URLs are short-lived runtime images. */
 
 import { createPortal } from 'react-dom';
-import { IoMapOutline } from 'react-icons/io5';
+import Image from 'next/image';
 import { ReportSortMenu } from './report-sort';
 import controls from './report-controls.module.css';
 import { BrandBug } from './brand-bug';
@@ -174,14 +174,13 @@ export function ReportBrowser({
   discoveryError = '',
   filtersRequest = 0,
   filterToolbar,
-  emptyPlaceSearch, onWidenArea, onRetry, onStartReport,
+  emptyPlaceSearch, onWidenArea, onRetry,
 }: {
   filtersRequest?: number;
   filterToolbar?: HTMLElement | null;
   emptyPlaceSearch?: ReactNode;
   onWidenArea?: () => void;
   onRetry?: () => void;
-  onStartReport?: () => void;
   mapCenter?: Coordinates | null;
   placeSearch?: ReactNode;
   boundary?: BoundaryGeometry;
@@ -429,19 +428,21 @@ export function ReportBrowser({
           ) : (
             <section className={controls.emptyPanel} aria-label="No results">
               <div className={controls.emptyIntro} role="status">
-                <span className={controls.emptyMapIcon} aria-hidden="true"><IoMapOutline /><BrandBug kind="butterfly" size={24} /></span>
+                <Image className={controls.emptyCaterpillar} src="/brand/ranks/caterpillar.svg" width={48} height={48} alt="" />
                 <h2>{rewardedOnly ? 'No rewarded cleanups match your search' : hasFilters ? 'No reports match your filters' : 'No reports in this map area'}</h2>
               </div>
               {(rewardedOnly || canWiden || hasFilters) && <div className={controls.emptyActions}>
                 {rewardedOnly && <button className="primary-button" onClick={() => applyFilters({ ...applied, funding: 'all' })}>Include volunteer cleanups</button>}
-                {canWiden && <button className={rewardedOnly ? 'secondary-button' : 'primary-button'} onClick={() => {
+                {canWiden && <button className={`${controls.emptyWiden} ${rewardedOnly ? 'secondary-button' : 'primary-button'}`} onClick={() => {
                   if (applied.radius) applyFilters({ ...applied, radius: 0 });
                   onWidenArea?.();
-                }}><Icon name="minus" />Search a wider area</button>}
+                }}>Search a wider area</button>}
                 {hasFilters && <button className={controls.emptyTextAction} onClick={() => applyFilters(quickFilters('all'), 'all')}>Clear filters</button>}
               </div>}
-              {emptyPlaceSearch && <div className={controls.emptyPlaceSearch}>{emptyPlaceSearch}</div>}
-              {onStartReport && <button className={controls.emptyReport} onClick={onStartReport}><BrandBug kind="ladybug" size={19} />Report litter</button>}
+              {emptyPlaceSearch && <div className={controls.emptyPlaceSearch}>
+                {canWiden && <div className={controls.emptyOr}>or</div>}
+                {emptyPlaceSearch}
+              </div>}
             </section>
           )}
           {displayedReports.length < visibleReports.length && <button className="secondary-button load-more-reports" onClick={() => setDisplayLimit(value => value + 50)}>Show more reports ({displayedReports.length} of {visibleReports.length})</button>}

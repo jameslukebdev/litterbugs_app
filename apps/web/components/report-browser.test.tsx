@@ -295,18 +295,16 @@ it('lets visitors include volunteer cleanups without clearing their area or othe
   expect(params.get('funding')).toBeNull();
 });
 
-it('offers location search inside an unfiltered empty result with a way to widen or report', async () => {
+it('offers location search and widening inside an unfiltered empty result', async () => {
   const onWidenArea = vi.fn();
-  const onStartReport = vi.fn();
   render(<ReportBrowser reports={[]} open onToggle={vi.fn()} onSelect={vi.fn()} onWidenArea={onWidenArea}
-    emptyPlaceSearch={<label>Search another location<input /></label>} onStartReport={onStartReport} />);
+    emptyPlaceSearch={<label>Search another location<input /></label>} />);
   expect(await screen.findByRole('heading', { name: 'No reports in this map area' })).toBeTruthy();
   expect(screen.getByRole('textbox', { name: 'Search another location' })).toBeTruthy();
+  expect(screen.getByText('or', { exact: true })).toBeTruthy();
   expect(screen.queryByRole('button', { name: 'Clear filters' })).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Search a wider area' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Report litter' }));
   expect(onWidenArea).toHaveBeenCalledOnce();
-  expect(onStartReport).toHaveBeenCalledOnce();
 });
 
 it('removes a distance limit when widening while keeping the other filters', async () => {

@@ -1026,7 +1026,6 @@ export function MapExperience({
           emptyPlaceSearch={<PlaceSearch label="Search another location" selected={null} onSelect={selectSearchPlace} onClear={clearSearchPlace} geocode={geocodeAddress} disabled={checkingLocation} />}
           onWidenArea={mapReady && !mapError && (searchPlace || (mapZoom ?? 3) > 3) ? widenSearchArea : undefined}
           onRetry={() => void refreshReports()}
-          onStartReport={() => void toggleReportMode()}
           showAuthors
           onMemberBlocked={() => { void refreshReports(); }}
           onFavoriteChange={(id, favorite) => updateReportPreference('favorites', id, favorite)}
