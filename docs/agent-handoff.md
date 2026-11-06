@@ -24,6 +24,13 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-06 — Codex (reporter rewards copy deployed)
+
+- Report sign-in and signup now say “Put litter on the map and earn cash
+  rewards from funded cleanups.” Production release `06af10a`, Vercel
+  `dpl_2MGE7wywr5y6nXFGUHnv4KwjpTjh`. Verified both live prompts with
+  analytics disabled. 21 auth tests passed.
+
 ### 2026-11-06 — Codex (fund and report sign-in copy deployed)
 
 - Shortened the fund and report subheadings. Production release `cd9e63b`,
