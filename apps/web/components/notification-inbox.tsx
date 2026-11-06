@@ -2,7 +2,7 @@
 import { reportContext } from '@/lib/report-context';
 import Link from 'next/link';
 import { AccountSectionSkeleton } from './account-section-skeleton';
-import { IoNotificationsOutline } from 'react-icons/io5';
+import { IoChevronForward, IoNotificationsOutline } from 'react-icons/io5';
 import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { notificationHref, notificationPresentation, type CleanupNotification } from '@/lib/cleanup-notifications';
@@ -83,8 +83,9 @@ function AccountNotificationInbox({ userId, view }: { userId: string; view: Noti
     <ul className="notification-list">{notices.map(notice => {
       const copy = notificationPresentation(notice);
       return <li key={notice.id} id={`notification-${notice.id}`} data-unread={!notice.read_at}>
-        <div>{!notice.read_at && <span className="notification-unread">Unread</span>}<Link href={notificationHref(notice, view)} onClick={() => { if (!notice.read_at) void markRead([notice.id]); }}><strong>{copy.title}</strong></Link>{notice.report?.title && <p className="notification-report">{notice.report.title}</p>}{notice.report && <p className="report-context">{reportContext(notice.report)}</p>}<p>{copy.message}</p><time dateTime={notice.created_at}>{new Date(notice.created_at).toLocaleString()}</time></div>
+        <div>{!notice.read_at && <span className="notification-unread">Unread</span>}<Link className="notification-row-link" href={notificationHref(notice, view)} onClick={() => { if (!notice.read_at) void markRead([notice.id]); }}><strong>{copy.title}</strong></Link>{notice.report?.title && <p className="notification-report">{notice.report.title}</p>}{notice.report && <p className="report-context">{reportContext(notice.report)}</p>}<p>{copy.message}</p><time dateTime={notice.created_at}>{new Date(notice.created_at).toLocaleString()}</time></div>
         {!notice.read_at && <button className="secondary-button compact-button" disabled={busy} onClick={() => void markRead([notice.id])}>Mark read</button>}
+        <IoChevronForward className="notification-chevron" aria-hidden />
       </li>;
     })}</ul>
     <nav className="account-actions" aria-label="Notification pages">

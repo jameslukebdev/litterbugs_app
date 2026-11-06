@@ -800,6 +800,14 @@ a.report-result { text-decoration: none; color: inherit; }
 .notification-list a { color: #203b25; text-decoration: none; }
 .notification-list p { margin: 6px 0; }
 .notification-list time { font-size: 12px; color: #667169; }
+/* The whole row opens the notification; "Mark read" stays its own control above the link. */
+.notification-list li { position: relative; cursor: pointer; transition: background-color .15s ease; }
+.notification-list .notification-row-link::after { content: ''; position: absolute; inset: 0; border-radius: inherit; }
+.notification-list .notification-row-link:focus-visible { outline: none; }
+.notification-list li:has(.notification-row-link:focus-visible) { outline: 2px solid currentColor; outline-offset: -2px; }
+.notification-list li > button { position: relative; z-index: 1; }
+.notification-chevron { flex: none; align-self: center; width: 20px; height: 20px; color: #8a8597; }
+@media(max-width: 500px) { .notification-chevron { display: none; } }
 .notification-link { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex: none; border: 0; border-radius: 12px; color: #686477; background: transparent; text-decoration: none; }
 .notification-link:hover { color: var(--green); }
 .notification-label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

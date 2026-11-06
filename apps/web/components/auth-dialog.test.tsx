@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element -- Native image mock for component tests. */
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { AuthDialog } from './auth-dialog';
+import { AuthDialog, authEntryMode } from './auth-dialog';
 import * as browserHandoff from '@/lib/google-browser-handoff';
 
 const { signInWithOAuth, signUp } = vi.hoisted(() => ({ signInWithOAuth: vi.fn(), signUp: vi.fn() }));
@@ -156,4 +156,20 @@ it.each(['Android Instagram', 'iPhone Instagram'])('requests an external-browser
   expect(handoff).toHaveBeenCalledWith(window.location.origin, next, userAgent);
   expect(signInWithOAuth).not.toHaveBeenCalled();
   expect((screen.getByLabelText('Email') as HTMLInputElement).disabled).toBe(false);
+});
+
+describe('report entry', () => {
+  it('leads signed-out reporters with a free account and keeps sign in one tap away', () => {
+    render(<AuthDialog onClose={vi.fn()} intent="report" initialMode={authEntryMode('report')} />);
+    expect(screen.getByRole('heading', { name: 'Create a free account to report litter' })).toBeTruthy();
+    expect(screen.getByLabelText('Password').getAttribute('autocomplete')).toBe('new-password');
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    expect(screen.getByRole('heading', { name: 'Sign in to report litter' })).toBeTruthy();
+  });
+
+  it('keeps other entry points on sign in', () => {
+    expect(authEntryMode('fund')).toBe('login');
+    expect(authEntryMode('clean')).toBe('login');
+    expect(authEntryMode(null)).toBe('login');
+  });
 });
