@@ -134,7 +134,7 @@ export function ResumableReportWizard({ userId, submissionProgress, coordinates,
   return <>
     <ReportWizard key={generation} draftSync={syncStatus} draftLocked={locked} submissionProgress={submissionProgress} draftSaveMessage={message} initialDraft={{ ...EMPTY_REPORT_DRAFT }} initialState={saved} onStateChange={saveSnapshot} onPreparePhotos={prepareAndSavePhotos} isEditing={false} fundingEnabled={fundingEnabled} coordinates={coordinates} selectingLocation={selectingLocation || mode === 'close'} onChangeLocation={onChangeLocation} onClose={() => setMode('close')} onSubmit={submitReport} />
     {mode === 'close' && <ModalShell className="draft-dialog" label="Keep your report?" onClose={() => { if (!busy) setMode('editing'); }} closeDisabled={busy}>
-      <div className="draft-dialog-content"><h2>Keep your report?</h2><p>Save your photos and details to finish later.</p>
+      <div className="draft-dialog-content"><h2>Keep your report?</h2>
         <div className="draft-recovery-actions"><button className="primary-button" disabled={busy} onClick={() => void closeDraft(false)}>Save for later</button>
         <button className="secondary-button" disabled={busy} onClick={() => setMode('editing')}>Keep editing</button>
         <button className="secondary-button draft-dialog-discard" disabled={busy} onClick={() => void closeDraft(true)}>Discard draft</button></div>

@@ -9,6 +9,7 @@ import { AppLink } from '@/components/app-link';
 import { GetAppNavigation } from '@/components/app-promotion';
 
 import { HeaderAreaSearch } from './header-area-search';
+import { REPORT_ENTRY_HREF } from '@/lib/home-map-link';
 
 import { PublicAccountAction } from '@/components/public-account-action';
 import { getHeaderProfile, getServerHeaderProfile, subscribeHeaderProfile } from '@/lib/header-profile-cache';
@@ -23,7 +24,7 @@ function HeaderLink({
   children,
   onNavigate,
 }: {
-  href: PublicPath | '/report' | `/map?${string}`;
+  href: PublicPath | '/report' | `/map?${string}` | `/sign-in?${string}`;
   activePath: PublicPath;
   children: ReactNode;
   onNavigate?: () => void;
@@ -42,7 +43,7 @@ function HeaderLink({
 }
 
 const reportingLinks = [
-  ['/report', 'Start a report'],
+  [REPORT_ENTRY_HREF, 'Report trash'],
   ['/report-litter', 'Reporter reward details'],
 ] as const;
 const fundingLinks = [
@@ -64,7 +65,7 @@ const informationLinks = [
   ['/about', 'About Litterbugs'],
   ['/support', 'Support Litterbugs'],
 ] as const;
-type NavigationLinks = ReadonlyArray<readonly [PublicPath | '/report' | `/map?${string}`, string]>;
+type NavigationLinks = ReadonlyArray<readonly [PublicPath | '/report' | `/map?${string}` | `/sign-in?${string}`, string]>;
 
 function NavigationDropdown({ label, links, activePath, open, onToggle, onClose, onNavigate }: {
   label: string;

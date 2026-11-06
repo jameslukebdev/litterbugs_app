@@ -8,6 +8,6 @@ export default async function Page({ searchParams }: { searchParams?: Promise<{ 
   const context = reportEntryContext((await searchParams)?.community);
   const client = await createClient();
   const { data } = await client.auth.getClaims();
-  if (!realUserIdFromClaims(data?.claims)) redirect(`/sign-in?next=${encodeURIComponent(context?.next ?? '/report')}`);
+  if (!realUserIdFromClaims(data?.claims)) redirect(`/sign-in?next=${encodeURIComponent(context?.next ?? '/report')}&view=map`);
   return <MapPage searchParams={context ? Promise.resolve({ area: context.area, returnTo: context.returnTo }) : undefined} />;
 }

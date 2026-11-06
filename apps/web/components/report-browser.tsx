@@ -5,6 +5,7 @@
 import { createPortal } from 'react-dom';
 import { ReportSortMenu } from './report-sort';
 import controls from './report-controls.module.css';
+import { BrandBug } from './brand-bug';
 import { ReportCardContent } from './report-card-content';
 import { reportWorkflowTone } from '@/lib/report-visibility';
 import { getDistanceMiles, type Coordinates, type MappableReport } from '@litterbugs/report-contract';
@@ -108,7 +109,11 @@ function reportTiming(report: MappableReport) {
 
 function ReportThumbnail({ report, priority, retry, onError }: { report: MappableReport; priority: boolean; retry: number; onError: () => void }) {
   const photoPath = report.photo_paths?.[0];
-  const src = photoPath ? getReportCardPhotoUrl(photoPath) : null;
+  const beforeSrc = photoPath ? getReportCardPhotoUrl(photoPath) : null;
+  // Completed cleanups lead with the cleaned-up result; fall back to the original photo when there is no after photo.
+  const [afterUnavailable, setAfterUnavailable] = useState(false);
+  const showingAfter = report.cleanup_state === 'completed' && !afterUnavailable;
+  const src = showingAfter ? `/reports/${encodeURIComponent(report.id)}/photo/after?width=640` : beforeSrc;
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -128,15 +133,16 @@ function ReportThumbnail({ report, priority, retry, onError }: { report: Mappabl
         className="report-card-image"
         data-loaded={loaded}
         onLoad={() => setLoaded(true)}
-        src={retryReportPhotoUrl(src, retry)}
+        src={showingAfter ? src : retryReportPhotoUrl(src, retry)}
         alt=""
         decoding="async"
         loading={priority ? 'eager' : 'lazy'}
         fetchPriority={priority ? 'high' : 'auto'}
-        onError={() => { setFailed(true); onError(); }}
+        onError={() => { if (showingAfter) { setLoaded(false); setAfterUnavailable(true); return; } setFailed(true); onError(); }}
       />
       <span className="report-result-workflow" data-tone={reportWorkflowTone(report)}>{workflowStatus(report)}</span>
-      {(report.photo_paths?.length ?? 0) > 1 && (
+      {showingAfter && <span className="report-result-photo-count">After cleanup</span>}
+      {!showingAfter && (report.photo_paths?.length ?? 0) > 1 && (
         <span className="report-result-photo-count">{report.photo_paths?.length} photos</span>
       )}
     </span>
@@ -403,6 +409,7 @@ export function ReportBrowser({
             );
           }) : (
             <div className="report-browser-empty">
+              <BrandBug kind={loading ? 'bee' : discoveryError ? 'ladybug' : 'butterfly'} size={36} className={`brand-bug-state${loading ? ' brand-bug-busy' : ''}`} />
               <strong>{loading ? 'Looking for cleanup opportunities…' : discoveryError ? 'Reports could not be loaded' : 'No matching cleanup opportunities'}</strong>
               <span>{loading ? 'Checking the selected area.' : discoveryError ? 'Check your connection, then try again.' : 'Try a wider area or clear your filters. You can also report litter you have found.'}</span>
               {!loading && <div className="empty-discovery-actions">

@@ -3,6 +3,7 @@ import { reportContext } from '@/lib/report-context';
 import Link from 'next/link';
 import { AccountSectionSkeleton } from './account-section-skeleton';
 import { IoChevronForward, IoNotificationsOutline } from 'react-icons/io5';
+import { BrandBug } from './brand-bug';
 import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { notificationHref, notificationPresentation, type CleanupNotification } from '@/lib/cleanup-notifications';
@@ -79,7 +80,7 @@ function AccountNotificationInbox({ userId, view }: { userId: string; view: Noti
     {!!failedReadIds.length && <p role="alert">Could not mark these updates as read. <button disabled={busy} onClick={() => void markRead(failedReadIds)}>Retry marking read</button></p>}
     {message && <p role="alert">{message} <button onClick={() => setRetry(value => value + 1)}>Retry updates</button></p>}
     {!loaded && <AccountSectionSkeleton section="notifications" />}
-    {loaded && !notices.length && !message && <p>{page > 1 ? 'No updates on this page.' : filter === 'unread' ? 'You’re caught up. No unread updates.' : 'No updates yet.'}</p>}
+    {loaded && !notices.length && !message && <p className="notification-empty"><BrandBug kind="butterfly" size={32} className="brand-bug-state" />{page > 1 ? 'No updates on this page.' : filter === 'unread' ? 'You’re caught up. No unread updates.' : 'No updates yet.'}</p>}
     <ul className="notification-list">{notices.map(notice => {
       const copy = notificationPresentation(notice);
       return <li key={notice.id} id={`notification-${notice.id}`} data-unread={!notice.read_at}>

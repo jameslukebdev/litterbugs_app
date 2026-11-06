@@ -1042,7 +1042,6 @@ export function MapExperience({
               <button type="button" className="icon-button report-placement-close" aria-label={selectingDraftLocation ? 'Cancel location change' : 'Cancel reporting'} title="Close" onClick={cancelLocationSelection}><Icon name="close" /></button>
               <div className="report-placement-instructions">
               <h1>Where is the litter?</h1>
-              <p>Move the map to place the pin.</p>
               {locationError && <p role="alert">{locationError}</p>}
               </div>
               <button className="primary-button" aria-busy={checkingLocation} disabled={!mapReady || checkingLocation} onClick={() => void confirmReportLocation()}>Use this location</button>

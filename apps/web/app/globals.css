@@ -1465,3 +1465,29 @@ a.member-activity-row { color: inherit; text-decoration: none; }
 .map-report-summary span { font-size: 13px; font-weight: 400; }
 
 @media (max-width: 760px) { .map-report-summary { bottom: calc(105px + env(safe-area-inset-bottom)); } }
+
+/* Report flow uses the site's purple theme (pin, location popup, wizard and draft boxes), not the old green. */
+:is(.report-placement-pin, .report-placement-confirm, .report-wizard, .draft-dialog) { --green: #5146ed; --green-dark: #4438bb; --green-soft: #efedff; --line: #e3dff0; --soft: #f8f7fc; }
+.report-placement-pin { color: #5146ed; }
+.report-placement-confirm { border-color: #e3dff0; border-radius: 18px; box-shadow: 0 3px 0 #eeeaf8, 0 10px 28px #29293214; }
+.report-placement-confirm h1 { color: #292932; margin-bottom: 4px; }
+:is(.report-placement-confirm, .report-wizard, .draft-dialog) .primary-button { background: #5146ed; border-color: #5146ed; border-radius: 12px; color: #fff; }
+:is(.report-placement-confirm, .report-wizard, .draft-dialog) .primary-button:hover:not(:disabled) { background: #4438bb; border-color: #4438bb; }
+:is(.report-wizard, .draft-dialog) .secondary-button { border-color: #d8d1ee; border-radius: 12px; color: #292932; }
+:is(.report-wizard, .draft-dialog) .secondary-button:hover:not(:disabled) { background: #f4f1ff; border-color: #b3a6e5; }
+.report-placement-draft { color: #4438bb; }
+/* Phone map placeholder matches the real toolbar (search, Filters, bell; no pills) so the map doesn't shift when it loads. */
+@media (max-width: 760px) {
+  .map-route-loading .discovery-toolbar { min-height: 87px; align-items: center; }
+  .map-route-loading .map-loading-filters span:first-child { width: 112px; }
+  .map-route-loading .map-loading-filters span:nth-child(2) { width: 44px; background: transparent; }
+}
+
+/* Litterbugs characters as small state icons (loading, empty, success), like the password bee. */
+.brand-bug-state { display: block; margin: 0 auto 8px; }
+.notification-empty { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 28px 12px; color: var(--muted); text-align: center; }
+.notification-empty .brand-bug-state { margin-bottom: 4px; }
+.success-mark.success-mark-bug { background: #fff7d6; }
+@keyframes brand-bug-hover { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-5px) rotate(4deg); } }
+.brand-bug-busy { animation: brand-bug-hover 1.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .brand-bug-busy { animation: none; } }

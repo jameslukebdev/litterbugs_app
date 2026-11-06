@@ -383,3 +383,12 @@
 @media (min-width: 760px) and (max-width: 899px) {
   .header.header .brandLink { margin-right: 12px; }
 }
+
+/* Phones: the map is the site's most useful page, so the standard Map button takes the search icon's place
+   (the map has its own search). Map pages keep their bottom tabs instead. */
+@media (max-width: 520px) {
+  .header.header:not(.mapHeader) .inner { grid-template-areas: "brand . map account menu"; grid-template-columns: auto minmax(0, 1fr) auto max-content auto; column-gap: 6px; }
+  .header.header:not(.mapHeader) .mapLink { display: block; }
+  .header.header:not(.mapHeader) .mapDesktopLabel { display: none; }
+  .header.header:not(.mapHeader) .mapMobileLabel { display: inline; }
+}

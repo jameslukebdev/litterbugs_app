@@ -9,6 +9,8 @@ import { useEffect, useRef, useState } from 'react';
 import { IoCheckmarkCircle, IoEllipseOutline, IoLeafOutline, IoTrashOutline, IoLayersOutline, IoArrowBackCircle, IoArrowForwardCircle } from 'react-icons/io5';
 import { ReportOptionIcon, reportOptionLabel } from './report-option-icon';
 import styles from './report-wizard.module.css';
+
+const STEP_TITLES = ['Add photos', 'Type of litter', 'Severity', 'Site conditions', 'Review report'] as const;
 import {
   LITTER_OPTIONS,
   MAX_REPORT_NOTES_LENGTH,
@@ -205,7 +207,8 @@ export function ReportWizard({
   return (
     <ModalShell onClose={onClose} label={isEditing ? 'Edit litter report' : 'Create litter report'} className={`report-wizard ${styles.wizard}`} closeDisabled={saving || preparing}>
       <header className="wizard-header">
-        <h2>{step === 4 ? 'Review report' : isEditing ? 'Edit Litter Report' : 'New Litter Report'}</h2>
+        {/* One heading per step: the step name replaces the old title plus sub-heading. */}
+        <h2>{STEP_TITLES[step]}{step === 3 && <span className={styles.optionalTag}>Optional</span>}</h2>
       </header>
 
       {!isEditing && <ReportStartPhotoImport onAdd={async files => { const added = await addPhotos(files); if (added) setStep(0); return added; }} disabled={saving || preparing || draftLocked} />}
@@ -213,7 +216,6 @@ export function ReportWizard({
       {draftSaveMessage && <p role="alert" className="form-error">{draftSaveMessage}</p>}
       <div className="wizard-content" key={step}><fieldset className="wizard-fields" disabled={saving || preparing || draftLocked}>
         {step === 0 && <section className="wizard-step">
-          <h3>Add photos</h3>
           {isEditing && existingPhotoCount > 0 && <div className={styles.existingPhotos}>
             <strong>{draft.photos.length ? 'New photo set selected' : 'Existing photos will stay attached'}</strong>
             {draft.photos.length > 0 && <button type="button" onClick={() => setDraft(current => ({ ...current, photos: [] }))}>Keep existing photos instead</button>}
@@ -234,14 +236,12 @@ export function ReportWizard({
         </section>}
 
         {step === 1 && <section className="wizard-step">
-          <h3>Type of litter</h3>
           <div className={styles.optionGrid}>{LITTER_OPTIONS.map(option => <button type="button" className={styles.optionTile} aria-pressed={draft.selectedTypes.includes(option)} onClick={() => toggleArray('selectedTypes', option)} key={option}>{draft.selectedTypes.includes(option) ? <IoCheckmarkCircle aria-hidden="true" /> : <ReportOptionIcon label={option} />}<span>{option}</span></button>)}</div>
           <label className="field-label">Other type of litter<input value={draft.types} placeholder="Add another type" onChange={(event) => setDraft({ ...draft, types: event.target.value })} /></label>
           {errors.types && <p className="required-hint" role="alert">{errors.types}</p>}
         </section>}
 
         {step === 2 && <section className="wizard-step">
-          <h3>Severity</h3>
           <div className={styles.severityList}>{SEVERITY_LEVELS.map((severity, index) => {
             const SeverityIcon = [IoLeafOutline, IoTrashOutline, IoLayersOutline][index];
             return <button type="button" className={styles.severityOption} data-severity={severity.toLowerCase()} aria-pressed={draft.severity === severity} onClick={() => setDraft({ ...draft, severity })} key={severity}><SeverityIcon aria-hidden="true" /><span><strong>{severity}</strong><small>{['A few items', 'A noticeable buildup', 'A large amount'][index]}</small></span>{draft.severity === severity ? <IoCheckmarkCircle aria-hidden="true" /> : <IoEllipseOutline aria-hidden="true" />}</button>;
@@ -250,7 +250,6 @@ export function ReportWizard({
         </section>}
 
         {step === 3 && <section className="wizard-step">
-          <div className={styles.optionalHeading}><h3>Site conditions</h3><span>Optional</span></div>
           <div className={styles.optionGrid}>{NOTE_OPTIONS.map(option => <button type="button" className={styles.optionTile} aria-pressed={draft.selectedNotes.includes(option)} onClick={() => toggleArray('selectedNotes', option)} key={option}>{draft.selectedNotes.includes(option) ? <IoCheckmarkCircle aria-hidden="true" /> : <ReportOptionIcon label={option} />}<span>{reportOptionLabel(option)}</span></button>)}</div>
           <label className="field-label">Extra details<textarea value={draft.notes} maxLength={MAX_REPORT_NOTES_LENGTH} placeholder="Add any extra details" onChange={event => setDraft({ ...draft, notes: event.target.value })} /></label>
         </section>}
