@@ -24,6 +24,29 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-06 — Codex (report experience and participation analytics deployed)
+
+- Production `litterbugs.app` is release commit `ed5af57` on Vercel deployment
+  `dpl_A676pdDE91TnjBBM2ZhjK7uiSnrb`. It includes `17131bd` plus the homepage
+  button icons. The release was based on live `2a78638` and applies the
+  participation fixes and this pass's web changes. The local Claude homepage
+  preview remains in its branch. No GitHub push or database changes.
+- The expanded report photo fills its column and details scroll above the
+  footer. Mobile sheets support a handle swipe and a visible Back to map
+  button. Report CTAs are Fund and Clean with logo characters and two brand
+  colors. Shared report actions use the same labels. The homepage action
+  buttons and completed cleanup link use logo marks. Web rank badges use
+  smooth logo-style art and show the next rank's icon in the progress panel.
+- The report, fund, and clean sign-in prompts explain the benefits. The release
+  also includes the Rewarded empty result recovery and direct cleanup sign-in.
+- 150 focused tests and TypeScript passed. Confirmed the medium-width report
+  layout, touch emulation, explicit back button, and direct clean sign-in.
+  PostHog project 695338 recorded all nine labeled QA events, one each of
+  action_tapped, auth_shown, and auth_closed for report, fund, and clean.
+  Test ran at 10:06 ET with referrer `qa-report-release-20261106.invalid`.
+  Restored analytics exclusion and closed the test context. Real publication,
+  payment, and cleanup claim/evidence outcomes were outside the live smoke test.
+
 ### 2026-11-06 — Codex (cleanup continuation and participation tracking)
 
 - Shared public report Clean up this report now goes through direct sign-in,
