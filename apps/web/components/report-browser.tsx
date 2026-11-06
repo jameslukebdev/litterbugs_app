@@ -431,18 +431,18 @@ export function ReportBrowser({
                 <Image className={controls.emptyCaterpillar} src="/brand/ranks/caterpillar.svg" width={48} height={48} alt="" />
                 <h2>{rewardedOnly ? 'No rewarded cleanups match your search' : hasFilters ? 'No reports match your filters' : 'No reports in this map area'}</h2>
               </div>
-              {(rewardedOnly || canWiden || hasFilters) && <div className={controls.emptyActions}>
+              {(rewardedOnly || canWiden) && <div className={controls.emptyActions}>
                 {rewardedOnly && <button className="primary-button" onClick={() => applyFilters({ ...applied, funding: 'all' })}>Include volunteer cleanups</button>}
                 {canWiden && <button className={`${controls.emptyWiden} ${rewardedOnly ? 'secondary-button' : 'primary-button'}`} onClick={() => {
                   if (applied.radius) applyFilters({ ...applied, radius: 0 });
                   onWidenArea?.();
                 }}>Search a wider area</button>}
-                {hasFilters && <button className={controls.emptyTextAction} onClick={() => applyFilters(quickFilters('all'), 'all')}>Clear filters</button>}
               </div>}
               {emptyPlaceSearch && <div className={controls.emptyPlaceSearch}>
                 {canWiden && <div className={controls.emptyOr}>or</div>}
                 {emptyPlaceSearch}
               </div>}
+              {hasFilters && <button className={controls.emptyTextAction} onClick={() => applyFilters(quickFilters('all'), 'all')}>Clear filters</button>}
             </section>
           )}
           {displayedReports.length < visibleReports.length && <button className="secondary-button load-more-reports" onClick={() => setDisplayLimit(value => value + 50)}>Show more reports ({displayedReports.length} of {visibleReports.length})</button>}

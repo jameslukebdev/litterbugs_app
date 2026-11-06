@@ -7,19 +7,20 @@
 .panel.panel.panel :global(.report-browser-filters) button[aria-pressed='true'] { color: #4438bb; border-color: #b3a6e5; background: #efedff; }
 .panel.panel.panel :global(.report-browser-list) { padding-top: 12px; }
 .panel.panel.panel :global(.report-browser-empty) { min-height: 0; padding: 20px 4px; gap: 8px; }
-.emptyPanel { grid-column: 1 / -1; width: 100%; max-width: 490px; margin: 0 auto; padding: clamp(20px, 4vw, 40px) 4px 20px; }
+.emptyPanel { grid-column: 1 / -1; width: 100%; max-width: 440px; margin: 0 auto; padding: clamp(20px, 4vw, 40px) 4px 20px; }
 .emptyIntro { display: flex; align-items: center; gap: 14px; }
 .emptyCaterpillar { flex: none; }
 .emptyIntro h2 { margin: 0; color: #292932; font-family: 'Playful Nunito', sans-serif; font-size: clamp(22px, 2.4vw, 28px); font-weight: 900; line-height: 1.15; letter-spacing: -.02em; text-wrap: balance; }
-.emptyActions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 16px; }
+.emptyActions { display: grid; gap: 8px; margin-top: 16px; }
 .emptyActions button { min-height: 44px; }
 .emptyWiden:global(.primary-button) { color: #493a10; background: #ffda61; border-color: #d9ac19; }
 .emptyWiden:global(.primary-button):hover { background: #ffce38; }
 .emptyWiden:global(.secondary-button) { color: #493a10; border-color: #e8ca71; }
 .emptyWiden:global(.secondary-button):hover { background: #fff4cc; }
-.emptyTextAction { padding: 0 4px; border: 0; border-radius: 4px; background: transparent; color: #4438bb; font: inherit; font-size: 14px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
-.emptyPlaceSearch { margin-top: 16px; }
-.emptyOr { margin-bottom: 8px; color: #5c566b; font-size: 14px; text-align: center; }
+.emptyTextAction { min-height: 44px; padding: 0 4px; border: 0; border-radius: 4px; background: transparent; color: #4438bb; font: inherit; font-size: 14px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.emptyPlaceSearch { margin-top: 12px; }
+.emptyOr { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; color: #5c566b; font-size: 14px; }
+.emptyOr::before, .emptyOr::after { content: ''; flex: 1; height: 1px; background: #e3dff0; }
 .emptyPlaceSearch :global(.place-search) { margin: 0; padding: 0; border: 0; }
 .emptyPlaceSearch :global(.place-search) label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .emptyPlaceSearch.emptyPlaceSearch :global(.place-search-field) input { padding: 8px 10px; border-color: #d8d1ee; }
