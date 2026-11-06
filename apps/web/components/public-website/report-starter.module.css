@@ -10,6 +10,8 @@
 .buttons { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .starter .cta { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 11px 20px; color: var(--ink); background: #fff; border: 1px solid #939d96; border-radius: 6px; font: inherit; font-size: var(--home-body-size, 21px); font-weight: 600; text-decoration: none; cursor: pointer; }
 .starter .cta:hover { background: var(--soft); border-color: var(--green-dark); }
+.fundIcon { filter: brightness(.42) saturate(.8); }
+.cleanIcon { filter: brightness(0) invert(1); }
 .cta:focus-visible, .remove:focus-visible { outline: 3px solid var(--green); outline-offset: 4px; }
 .cta:disabled { opacity: .6; cursor: wait; }
 .remove { border: 0; background: none; color: var(--ink); padding: 8px 0; font: inherit; font-size: 18px; cursor: pointer; }
