@@ -24,6 +24,22 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-06 — Codex (steadier map discovery and centered loader deployed)
+
+- The empty panel uses the caterpillar, a honey-yellow full-width wider-area
+  action, an aligned location form separated by “or,” and a lavender Clear
+  filters button. Removed the minus and the extra report action. Released
+  in `fb342a8` and `9f9738c`.
+- Discovery waits for restored filters and only renders matching responses.
+  Panning keeps the previous cards while the new viewport loads for the same
+  filter and place selection. The textless honeybee is delayed, centered, and
+  64px wide on cold loads and filter changes. Production release `75c3714`,
+  Vercel `dpl_2RS3Sa6512CazvnDEUqHbBZcH9p7`.
+- Verified live with analytics disabled and delayed requests. Dragging
+  preserved the existing cards, changing filters and reloading showed no
+  unfiltered cards, and the bee centered on desktop and phone widths.
+  101 focused tests and TypeScript passed.
+
 ### 2026-11-06 — Codex (flat map empty state deployed)
 
 - Replaced the focus jump with a city/address search in the results panel.
