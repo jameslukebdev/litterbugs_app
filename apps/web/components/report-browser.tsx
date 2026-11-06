@@ -44,6 +44,7 @@ const FILTERS: { value: ReportFilter; label: string }[] = [
 const SEVERITY_ORDER: Record<string, number> = { high: 3, medium: 2, low: 1 };
 const preloadedDetailPhotos = new Set<string>();
 const EMPTY_REPORT_IDS = new Set<string>();
+const EMPTY_RESULTS: MappableReport[] = [];
 
 function preloadReportPhoto(report: MappableReport) {
   const path = report.photo_paths?.[0];
@@ -169,7 +170,9 @@ export function ReportBrowser({
   placeSearch,
   boundary,
   onDiscoveryFiltersChange,
+  resultFilters,
   loading = false,
+  refreshing = false,
   truncated = false,
   discoveryError = '',
   filtersRequest = 0,
@@ -185,7 +188,9 @@ export function ReportBrowser({
   placeSearch?: ReactNode;
   boundary?: BoundaryGeometry;
   onDiscoveryFiltersChange?: (filters: DiscoveryFilters) => void;
+  resultFilters?: DiscoveryFilters | null;
   loading?: boolean;
+  refreshing?: boolean;
   truncated?: boolean;
   discoveryError?: string;
   reports: MappableReport[];
@@ -256,6 +261,7 @@ export function ReportBrowser({
     ? 'available'
     : filter;
   const applied = useMemo(() => filter === 'custom' ? advanced : quickFilters(activeFilter), [filter, advanced, activeFilter]);
+  const resultsLoading = loading || (resultFilters !== undefined && (!memoryReady || resultFilters !== applied));
   const selectedQuickFilter = filters.find(item => (Object.keys(DEFAULT_DISCOVERY_FILTERS) as (keyof DiscoveryFilters)[]).every(key => quickFilters(item.value)[key] === applied[key]))?.value;
   const hasFilters = selectedQuickFilter !== 'all';
   const rewardedOnly = applied.funding === 'funded';
@@ -285,6 +291,7 @@ export function ReportBrowser({
     setDisplayLimit(50);
   }
   const visibleReports = useMemo(() => {
+    if (resultsLoading) return EMPTY_RESULTS;
     const filtered = reports.filter((report) => matchesDiscovery(report, applied, mapCenter, favoriteReportIds, hiddenReportIds, boundary));
     return filtered.sort((left, right) => {
       if (sort === 'closest' && locationOrigin) return getDistanceMiles(locationOrigin, left) - getDistanceMiles(locationOrigin, right);
@@ -295,7 +302,7 @@ export function ReportBrowser({
       }
       return new Date(right.created_at ?? 0).getTime() - new Date(left.created_at ?? 0).getTime();
     });
-  }, [applied, mapCenter, favoriteReportIds, hiddenReportIds, reports, sort, boundary, locationOrigin]);
+  }, [resultsLoading, applied, mapCenter, favoriteReportIds, hiddenReportIds, reports, sort, boundary, locationOrigin]);
 
   const displayedReports = useMemo(() => visibleReports.slice(0, displayLimit), [visibleReports, displayLimit]);
   useEffect(() => {
@@ -325,10 +332,10 @@ export function ReportBrowser({
   }, [filter, sort]);
 
   useEffect(() => {
-    if (memoryReady && !loading && reports.length && listRef.current && restoringScrollRef.current !== null) {
+    if (memoryReady && !resultsLoading && reports.length && listRef.current && restoringScrollRef.current !== null) {
       listRef.current.scrollTop = restoringScrollRef.current; restoringScrollRef.current = null;
     }
-  }, [memoryReady, loading, reports]);
+  }, [memoryReady, resultsLoading, reports]);
 
   const filterPills = (<div className={`report-browser-filters ${filterToolbar ? controls.toolbarFilters : ''}`} aria-label="Filter cleanup opportunities">
             {!selectedQuickFilter && <button aria-pressed="true" onClick={() => { setDraftFilters(applied); setFiltersOpen(true); }}>Custom filters</button>}
@@ -379,7 +386,7 @@ export function ReportBrowser({
           {sort === 'closest' && locationMessage && <p role="status">{locationMessage}</p>}
           <p className="discovery-status" role="status">{discoveryError || (truncated ? 'Showing up to 1,000 matches. Zoom in or narrow your filters to see more.' : '')}</p>
         </header>
-        <div className="report-browser-list" ref={listRef} onScroll={() => { if (memoryReady) saveBrowserMemory({ filters: applied, sort, scroll: listRef.current?.scrollTop ?? 0, displayLimit }); }} aria-busy={loading}>
+        <div className="report-browser-list" ref={listRef} onScroll={() => { if (memoryReady && !resultsLoading) saveBrowserMemory({ filters: applied, sort, scroll: listRef.current?.scrollTop ?? 0, displayLimit }); }} aria-busy={resultsLoading || refreshing}>
           {visibleReports.length ? displayedReports.map((report, index) => {
             const selected = report.id === selectedReportId;
             const previewed = report.id === previewedReportId;
@@ -418,12 +425,16 @@ export function ReportBrowser({
               {showAuthors && report.user_id && (authors[report.user_id] ? <ReportAuthor key={report.user_id} profileId={report.user_id} initialProfile={authors[report.user_id]} sourceReportId={report.id} onBlocked={onMemberBlocked} /> : <div className="report-author report-author-placeholder" aria-hidden="true"><span className="report-author-initial" /><span className="report-author-copy"><span>Community member</span></span></div>)}
               </article>
             );
-          }) : loading || discoveryError ? (
+          }) : resultsLoading ? (
+            <div className="report-browser-empty" role="status" aria-label="Loading reports">
+              <BrandBug kind="bee" size={36} className={controls.loadingBee} />
+            </div>
+          ) : discoveryError ? (
             <div className="report-browser-empty">
-              <BrandBug kind={loading ? 'bee' : 'ladybug'} size={36} className={`brand-bug-state${loading ? ' brand-bug-busy' : ''}`} />
-              <strong>{loading ? 'Looking for cleanup opportunities…' : 'Reports could not be loaded'}</strong>
-              <span>{loading ? 'Checking the selected area.' : 'Check your connection, then try again.'}</span>
-              {!loading && onRetry && <button className="primary-button" onClick={onRetry}>Try again</button>}
+              <BrandBug kind="ladybug" size={36} className="brand-bug-state" />
+              <strong>Reports could not be loaded</strong>
+              <span>Check your connection, then try again.</span>
+              {onRetry && <button className="primary-button" onClick={onRetry}>Try again</button>}
             </div>
           ) : (
             <section className={controls.emptyPanel} aria-label="No results">

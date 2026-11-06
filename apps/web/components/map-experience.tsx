@@ -14,7 +14,7 @@ import {
   type ReportDraft,
 } from '@litterbugs/report-contract';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Icon } from '@/components/icon';
 import { ClusterReports } from '@/components/cluster-reports';
@@ -117,10 +117,8 @@ export function MapExperience({
   const mapClickRef = useRef<(coordinates: Coordinates) => void>(() => undefined);
   const [filtersRequest, setFiltersRequest] = useState(0);
   const [filterToolbar, setFilterToolbar] = useState<HTMLDivElement | null>(null);
-  const [reports, setReports] = useState<MappableReport[]>(initialReports.filter(hasReportCoordinates));
-  const [visibleReports, setVisibleReports] = useState<MappableReport[]>(
-    initialReports.filter(hasReportCoordinates),
-  );
+  const [initialMapReports] = useState(() => initialReports.filter(hasReportCoordinates));
+  const [visibleReports, setVisibleReports] = useState<MappableReport[]>(EMPTY_MAP_REPORTS);
   const [userId, setUserId] = useState(initialUserId);
   const preferenceOwnerRef = useRef(userId ?? 'guest');
   useEffect(() => { preferenceOwnerRef.current = userId ?? 'guest'; }, [userId]);
@@ -135,10 +133,8 @@ export function MapExperience({
     if (memory && mapRef.current) saveDiscoveryMemory({ ...memory, place: searchPlace });
   }, [searchPlace]);
   const [discoveryArea, setDiscoveryArea] = useState<DiscoveryArea | null>(null);
-  const [discoveryFilters, setDiscoveryFilters] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
-  const [discoveryLoading, setDiscoveryLoading] = useState(true);
-  const [discoveryTruncated, setDiscoveryTruncated] = useState(false);
-  const [discoveryError, setDiscoveryError] = useState('');
+  const [restoredFilters, setDiscoveryFilters] = useState<DiscoveryFilters | null>(null);
+  const discoveryFilters = restoredFilters ?? DEFAULT_DISCOVERY_FILTERS;
   const discoveryRequest = useRef<AbortController | null>(null);
   const [mapError, setMapError] = useState(
     googleMapsKey && googleMapsMapId
@@ -197,25 +193,51 @@ export function MapExperience({
     favorites: new Set<string>(),
     hidden: new Set<string>(),
   });
+  const canSearchReports = Boolean(discoveryArea || mapError);
+  const geometry = searchPlace?.geometry;
+  const placeId = searchPlace?.id;
+  const discoverySearch = useMemo(() => canSearchReports && restoredFilters ? {
+    filters: restoredFilters, area: discoveryArea, geometry, placeId,
+    favorites: reportPreferences.favorites, hidden: reportPreferences.hidden,
+  } : null, [canSearchReports, discoveryArea, geometry, placeId, reportPreferences, restoredFilters]);
+  const [discoveryResponse, setDiscoveryResponse] = useState<{
+    search: NonNullable<typeof discoverySearch>;
+    reports: MappableReport[];
+    truncated: boolean;
+    error: string;
+  } | null>(null);
+  const currentResponse = discoveryResponse?.search === discoverySearch ? discoveryResponse : null;
+  // Keep the last result on a pan or zoom, but never across a filter or location search change.
+  const displayResponse = currentResponse ?? (discoveryResponse && discoverySearch && !discoveryResponse.error
+    && discoveryResponse.search.filters === discoverySearch.filters
+    && discoveryResponse.search.placeId === discoverySearch.placeId
+    && discoveryResponse.search.geometry === discoverySearch.geometry
+    && discoveryResponse.search.favorites === discoverySearch.favorites
+    && discoveryResponse.search.hidden === discoverySearch.hidden ? discoveryResponse : null);
+  const reports = discoveryResponse?.reports ?? initialMapReports;
+  const discoveryTruncated = displayResponse?.truncated ?? false;
 
   const refreshReports = useCallback(async () => {
+    if (!discoverySearch) return;
     discoveryRequest.current?.abort();
     const controller = new AbortController();
     discoveryRequest.current = controller;
-    setDiscoveryLoading(true);
-    setDiscoveryError('');
+    setDiscoveryResponse(current => current?.error ? null : current);
+    const showDiscoveryError = (error: string) => {
+      setDiscoveryResponse(current => current?.search === discoverySearch
+        ? { ...current, error }
+        : { search: discoverySearch, reports: discoverySearch.area ? EMPTY_MAP_REPORTS : initialMapReports, truncated: false, error });
+    };
     const requestTimeout = window.setTimeout(() => {
       if (controller.signal.aborted) return;
       controller.abort();
-      setDiscoveryError('Reports are taking too long to load. Check your connection and try again.');
-      setDiscoveryLoading(false);
+      showDiscoveryError('Reports are taking too long to load. Check your connection and try again.');
     }, 15000);
     try {
-      const result = await loadDiscoveryReports(createClient(), { filters: discoveryFilters, area: discoveryArea, favorites: reportPreferences.favorites, hidden: reportPreferences.hidden, signal: controller.signal, geometry: searchPlace?.geometry });
+      const result = await loadDiscoveryReports(createClient(), { ...discoverySearch, signal: controller.signal });
       if (controller.signal.aborted) return;
       const nextReports = result.reports;
-      setReports(nextReports);
-      setDiscoveryTruncated(result.truncated);
+      setDiscoveryResponse({ search: discoverySearch, reports: nextReports, truncated: result.truncated, error: '' });
       setReportFunding(current => current ? { ...current, report: nextReports.find(({ id }) => id === current.report.id) ?? current.report } : null);
       const selectedId = selectedReportIdRef.current;
       if (selectedId) {
@@ -233,18 +255,17 @@ export function MapExperience({
         } else setSelectedReport(data);
       }
     } catch {
-      if (!controller.signal.aborted) setDiscoveryError('Reports could not be refreshed. Check your connection and move the map or try another filter.');
+      if (!controller.signal.aborted) showDiscoveryError('Reports could not be refreshed. Check your connection and move the map or try another filter.');
     } finally {
       window.clearTimeout(requestTimeout);
-      if (!controller.signal.aborted) setDiscoveryLoading(false);
     }
-  }, [discoveryArea, discoveryFilters, reportPreferences, searchPlace]);
+  }, [discoverySearch, initialMapReports]);
 
   useEffect(() => {
-    if (!discoveryArea && !mapError) return;
+    if (!discoverySearch) return;
     const timer = window.setTimeout(() => { void refreshReports(); }, 250);
     return () => { window.clearTimeout(timer); discoveryRequest.current?.abort(); };
-  }, [discoveryArea, mapError, refreshReports, refreshRevision]);
+  }, [discoverySearch, refreshReports, refreshRevision]);
 
   useEffect(() => () => discoveryRequest.current?.abort(), []);
 
@@ -400,7 +421,6 @@ export function MapExperience({
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
-  const initialMapReports = useRef(initialReports.filter(hasReportCoordinates));
   useEffect(() => {
     if (!googleMapsKey || !googleMapsMapId || !mapElementRef.current || mapRef.current) return;
     let cancelled = false;
@@ -412,7 +432,7 @@ export function MapExperience({
     const previousAuthFailure = window.gm_authFailure;
     window.gm_authFailure = () => {
       window.clearTimeout(startupTimeout);
-      if (!cancelled) { mapAuthFailed.current = true; discoveryRequest.current?.abort(); setDiscoveryArea(null); setReports(initialMapReports.current); setMapReady(false); setMapError('The map is unavailable on this address. You can still browse reports.'); }
+      if (!cancelled) { mapAuthFailed.current = true; discoveryRequest.current?.abort(); setDiscoveryArea(null); setMapReady(false); setMapError('The map is unavailable on this address. You can still browse reports.'); }
     };
     async function startMap() {
       try {
@@ -440,7 +460,7 @@ export function MapExperience({
           ? { latitude: selectedWhileLoading.latitude, longitude: selectedWhileLoading.longitude, zoom: 12, place: selectedWhileLoading }
           : sharedMap ? { ...sharedMap, place: stored?.place?.id === areaId ? stored.place : null } : stored;
         if (memory) { searchPlaceRef.current = memory.place; setSearchPlace(memory.place); }
-        const linkedReport = initialMapReports.current.find(report => report.id === new URLSearchParams(window.location.search).get('report'));
+        const linkedReport = initialMapReports.find(report => report.id === new URLSearchParams(window.location.search).get('report'));
         const map = new Map(mapElementRef.current, {
           center: { lat: linkedReport?.latitude ?? memory?.latitude ?? DEFAULT_WEB_MAP_CENTER.latitude, lng: linkedReport?.longitude ?? memory?.longitude ?? DEFAULT_WEB_MAP_CENTER.longitude },
           zoom: linkedReport ? Math.max(14, memory?.zoom ?? 14) : memory?.zoom ?? 12,
@@ -496,7 +516,7 @@ export function MapExperience({
     }
     void startMap();
     return () => { cancelled = true; window.clearTimeout(startupTimeout); window.gm_authFailure = previousAuthFailure; clustersRef.current?.dispose(); clustersRef.current = null; mapRef.current = null; };
-  }, [googleMapsKey, googleMapsMapId]);
+  }, [googleMapsKey, googleMapsMapId, initialMapReports]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1021,7 +1041,8 @@ export function MapExperience({
       <div className={`map-workspace${desktopDetail && selectedReport && !detailsMinimized ? ' has-report-detail' : ''}`}>
         <ReportBrowser
           filterToolbar={filterToolbar}
-          reports={discoveryArea || mapError ? reports : EMPTY_MAP_REPORTS}
+          reports={displayResponse?.reports ?? EMPTY_MAP_REPORTS}
+          resultFilters={displayResponse?.search.filters ?? null}
           filtersRequest={filtersRequest}
           emptyPlaceSearch={<PlaceSearch label="Search another location" selected={null} onSelect={selectSearchPlace} onClear={clearSearchPlace} geocode={geocodeAddress} disabled={checkingLocation} />}
           onWidenArea={mapReady && !mapError && (searchPlace || (mapZoom ?? 3) > 3) ? widenSearchArea : undefined}
@@ -1030,12 +1051,13 @@ export function MapExperience({
           onMemberBlocked={() => { void refreshReports(); }}
           onFavoriteChange={(id, favorite) => updateReportPreference('favorites', id, favorite)}
           onHiddenChange={(id, hidden) => updateReportPreference('hidden', id, hidden)}
-          mapCenter={discoveryArea}
+          mapCenter={displayResponse?.search.area ?? discoveryArea}
           boundary={searchPlace?.geometry}
           onDiscoveryFiltersChange={setDiscoveryFilters}
-          loading={discoveryLoading}
+          loading={!displayResponse}
+          refreshing={Boolean(displayResponse && !currentResponse)}
           truncated={discoveryTruncated}
-          discoveryError={discoveryError}
+          discoveryError={currentResponse?.error}
           open={reportListOpen}
           onToggle={() => setReportListOpen((open) => !open)}
           onSelect={openReport}
