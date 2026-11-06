@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element -- Signed Supabase URLs are short-lived runtime images. */
 
 import { createPortal } from 'react-dom';
-import Image from 'next/image';
+import NextImage from 'next/image';
 import { ReportSortMenu } from './report-sort';
 import controls from './report-controls.module.css';
 import { BrandBug } from './brand-bug';
@@ -428,7 +428,7 @@ export function ReportBrowser({
           ) : (
             <section className={controls.emptyPanel} aria-label="No results">
               <div className={controls.emptyIntro} role="status">
-                <Image className={controls.emptyCaterpillar} src="/brand/ranks/caterpillar.svg" width={48} height={48} alt="" />
+                <NextImage className={controls.emptyCaterpillar} src="/brand/ranks/caterpillar.svg" width={48} height={48} alt="" />
                 <h2>{rewardedOnly ? 'No rewarded cleanups match your search' : hasFilters ? 'No reports match your filters' : 'No reports in this map area'}</h2>
               </div>
               {(rewardedOnly || canWiden) && <div className={controls.emptyActions}>
