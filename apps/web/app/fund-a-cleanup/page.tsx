@@ -1,3 +1,4 @@
+import { AVAILABLE_CLEANUPS_MAP_HREF } from '@/lib/home-map-link';
 import { publicPageMetadata } from '@/lib/public-page-metadata';
 import Link from 'next/link';
 import {
@@ -27,8 +28,8 @@ export default async function FundingPage() {
       activePath="/fund-a-cleanup"
       title="Help pay for a cleaner place."
       intro="You don’t have to pick up the litter to help get it cleaned up. Contribute to a report and build a reward for someone who can do the work."
-      action="Choose a report"
-      href="/map?view=reports&browse=1&status=available"
+      action="Find a cleanup to fund"
+      href={AVAILABLE_CLEANUPS_MAP_HREF}
     >
       <section>
         <h2>Choose a real spot</h2>

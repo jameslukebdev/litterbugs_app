@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { HeaderAreaSearch } from '../header-area-search';
 import Link from 'next/link';
+import { AVAILABLE_CLEANUPS_MAP_HREF } from '@/lib/home-map-link';
 import styles from './report-carousel.module.css';
 
 export function ReportCarousel({ children, enabled, className }: { children: ReactNode; enabled: boolean; className: string }) {
@@ -32,7 +33,7 @@ export function ReportCarousel({ children, enabled, className }: { children: Rea
       <h2>Reports needing a cleanup</h2>
       <div className={styles.controls}>
       <HeaderAreaSearch label="Find your area" open={areaSearchOpen} onOpenChange={setAreaSearchOpen} />
-      <Link href="/map?view=reports&browse=1&status=available">View reports</Link>
+      <Link href={AVAILABLE_CLEANUPS_MAP_HREF}>See on map</Link>
       <button type="button" onClick={() => move(-1)} disabled={edges.start} aria-label="Previous reports" aria-controls={id}>←</button>
       <button type="button" onClick={() => move(1)} disabled={edges.end} aria-label="Next reports" aria-controls={id}>→</button>
       </div>

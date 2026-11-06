@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { LITTER_MAP_HREF } from '@/lib/home-map-link';
 import { Website, ReportCards, styles } from '@/components/public-website';
 import { publishedCommunities } from '@/lib/community-directory';
 import { loadOpenReportDirectory, openReportPage } from '@/lib/open-report-directory';
@@ -30,7 +31,7 @@ export default async function ReportsPage({ searchParams }: Props) {
           <Link href="/reports" aria-current="page">Open reports</Link>
           <Link href="/cleanups">Completed cleanups</Link>
           <Link href="/reports/history">Past reports</Link>
-          <Link href="/map">View the map</Link>
+          <Link href={LITTER_MAP_HREF}>View the map</Link>
         </nav>
         <nav className={styles.directoryLinks} aria-label="Browse by city">
           <span>Browse by city</span>

@@ -169,6 +169,7 @@ export function ReportBrowser({
   mapCenter,
   placeSearch,
   boundary,
+  navigationSearch,
   onDiscoveryFiltersChange,
   resultFilters,
   loading = false,
@@ -187,6 +188,7 @@ export function ReportBrowser({
   mapCenter?: Coordinates | null;
   placeSearch?: ReactNode;
   boundary?: BoundaryGeometry;
+  navigationSearch?: string;
   onDiscoveryFiltersChange?: (filters: DiscoveryFilters) => void;
   resultFilters?: DiscoveryFilters | null;
   loading?: boolean;
@@ -227,30 +229,33 @@ export function ReportBrowser({
   const [sort, setSort] = useState<ReportSort>('newest');
   const [memoryReady, setMemoryReady] = useState(false);
   const restoringScrollRef = useRef<number | null>(null);
+  const restoredBrowseUrl = useRef<string>(undefined);
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const stored = readBrowserMemory();
+    const restore = () => {
+      setMemoryReady(true);
       const fromUrl = readBrowserUrl(window.location.search);
+      // Next links can change the map's filters without remounting the browser.
+      const signature = JSON.stringify(fromUrl);
+      if (signature === restoredBrowseUrl.current) return;
+      const initial = restoredBrowseUrl.current === undefined;
+      restoredBrowseUrl.current = signature;
+      const stored = readBrowserMemory();
       const sameSearch = stored && fromUrl && stored.sort === fromUrl.sort && (Object.keys(DEFAULT_DISCOVERY_FILTERS) as (keyof DiscoveryFilters)[]).every(key => stored.filters[key] === fromUrl.filters[key]);
-      const memory = fromUrl ? { ...fromUrl, scroll: sameSearch ? stored.scroll : 0, displayLimit: sameSearch ? stored.displayLimit : 50 } : stored;
+      const memory = fromUrl ? { ...fromUrl, scroll: sameSearch ? stored.scroll : 0, displayLimit: sameSearch ? stored.displayLimit : 50 } : initial ? stored : null;
       if (memory) {
         setAdvanced(memory.filters); setDraftFilters(memory.filters); setFilter('custom'); setSort(memory.sort);
         restoringScrollRef.current = memory.scroll;
         setDisplayLimit(memory.displayLimit ?? 50);
         if (memory.sort === 'closest') void getBrowserLocation().then(setLocationOrigin).catch(() => setLocationMessage('Allow location access to sort by distance.'));
       }
-      setMemoryReady(true);
-    }, 0);
-    return () => clearTimeout(timer);
-  }, []);
-  useEffect(() => {
-    const restore = () => {
-      const memory = readBrowserUrl(window.location.search);
-      if (memory) { setAdvanced(memory.filters); setDraftFilters(memory.filters); setFilter('custom'); setSort(memory.sort); }
     };
+    const timer = setTimeout(restore, 0);
     window.addEventListener('popstate', restore);
-    return () => window.removeEventListener('popstate', restore);
-  }, []);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('popstate', restore);
+    };
+  }, [navigationSearch]);
   const filters = useMemo(() => [
     ...FILTERS,
     ...(favoriteReportIds.size ? [{ value: 'favorites' as const, label: `Favorites (${favoriteReportIds.size})` }] : []),
@@ -276,6 +281,7 @@ export function ReportBrowser({
     const current = new URL(window.location.href);
     const next = browserUrl(current, { filters, sort: nextSort, scroll: 0 });
     if (next !== `${current.pathname}${current.search}${current.hash}`) {
+      restoredBrowseUrl.current = JSON.stringify(readBrowserUrl(new URL(next, current).search));
       window.history.replaceState(window.history.state, '', next);
     }
   }

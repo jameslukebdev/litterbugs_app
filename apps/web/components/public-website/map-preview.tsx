@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { IoMapOutline } from 'react-icons/io5';
-import { HOME_MAP_HREF } from '@/lib/home-map-link';
+import { AVAILABLE_CLEANUPS_MAP_HREF } from '@/lib/home-map-link';
 import { BOONE_PREVIEW, type MapPreviewPin } from '@/lib/map-preview';
 import { MapPreviewPins } from './map-preview-pins';
 import { MapPinBug } from './map-pin-bug';
@@ -24,11 +24,11 @@ export function MapPreview({ pins }: { pins: MapPreviewPin[] | null }) {
     <section className={styles.preview} aria-labelledby="map-preview-title">
       <div className={styles.head}>
         <h2 id="map-preview-title">Find litter on the map</h2>
-        <Link className={styles.open} href={HOME_MAP_HREF}><IoMapOutline aria-hidden />Open map</Link>
+        <Link className={styles.open} href={AVAILABLE_CLEANUPS_MAP_HREF}><IoMapOutline aria-hidden />Open map</Link>
       </div>
       <div className={styles.frame}>
         <div className={styles.stage}>
-          <Link className={styles.backdrop} href={HOME_MAP_HREF} aria-label="Open the litter map" tabIndex={-1}>
+          <Link className={styles.backdrop} href={AVAILABLE_CLEANUPS_MAP_HREF} aria-label="Open the litter map" tabIndex={-1}>
             <Image src={BOONE_PREVIEW.image} alt="" fill sizes="(max-width: 1244px) 100vw, 1180px" />
           </Link>
         </div>

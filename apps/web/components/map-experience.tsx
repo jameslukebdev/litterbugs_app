@@ -1073,6 +1073,7 @@ export function MapExperience({
           onHiddenChange={(id, hidden) => updateReportPreference('hidden', id, hidden)}
           mapCenter={displayResponse?.search.area ?? discoveryArea}
           boundary={searchPlace?.geometry}
+          navigationSearch={searchParams.toString()}
           onDiscoveryFiltersChange={setDiscoveryFilters}
           loading={!displayResponse}
           refreshing={Boolean(displayResponse && !currentResponse)}

@@ -20,19 +20,19 @@ beforeEach(() => {
 afterEach(() => { cleanup(); setHeaderProfile(null); vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('PublicSiteHeader', () => {
-  it('provides one direct report action and keeps every existing destination under the new categories', () => {
+  it('provides direct reporting and map actions alongside the guides', () => {
     render(<PublicSiteHeader activePath="/report-litter" />);
     const main = within(screen.getByRole('navigation', { name: 'Main navigation' }));
-    expect(main.getByRole('link', { name: 'Open map' }).getAttribute('href')).toBe('/map');
+    expect(main.getByRole('link', { name: 'Open map' }).getAttribute('href')).toBe('/map?view=map');
     fireEvent.click(main.getByRole('button', { name: 'Report' }));
     expect(main.getByRole('link', { name: 'Report trash' }).getAttribute('href')).toBe('/sign-in?next=%2Freport&view=map');
     expect(main.getByRole('link', { name: 'Reporter reward details' }).getAttribute('href')).toBe('/report-litter');
     fireEvent.click(main.getByRole('button', { name: 'Donate' }));
     expect(screen.getByRole('link', { name: 'Fees, rewards & refunds' }).getAttribute('href')).toBe('/fund-a-cleanup');
-    expect(screen.getByRole('link', { name: 'Choose a report to fund' }).getAttribute('href')).toBe('/map?view=reports&browse=1&status=available');
+    expect(screen.getByRole('link', { name: 'Find a cleanup to fund' }).getAttribute('href')).toBe('/map?view=map&browse=1&status=available');
     fireEvent.click(main.getByRole('button', { name: 'Earn' }));
     expect(screen.queryByRole('link', { name: 'Fees, rewards & refunds' })).toBeNull();
-    for (const [name, href] of [['Find litter to clean', '/map?view=reports&browse=1&status=available'], ['Claiming & getting paid', '/cleaner'], ['Completed cleanups', '/cleanups'], ['Communities', '/communities'], ['Safety guidelines', '/cleanup-safety']]) {
+    for (const [name, href] of [['Find a cleanup on the map', '/map?view=map&browse=1&status=available'], ['Claiming & getting paid', '/cleaner'], ['Completed cleanups', '/cleanups'], ['Communities', '/communities'], ['Safety guidelines', '/cleanup-safety']]) {
       expect(screen.getByRole('link', { name }).getAttribute('href')).toBe(href);
     }
     fireEvent.click(screen.getByRole('button', { name: 'Support' }));
@@ -60,7 +60,12 @@ describe('PublicSiteHeader', () => {
     expect(mobile.getByRole('link', { name: 'Report trash' }).getAttribute('href')).toBe('/sign-in?next=%2Freport&view=map');
     expect(mobile.getByRole('link', { name: 'Reporter reward details' }).getAttribute('href')).toBe('/report-litter');
     expect(mobile.queryByRole('link', { name: /Get the app|Profile|Updates/ })).toBeNull();
-    expect(mobile.getByRole('link', { name: 'Open map' }).getAttribute('href')).toBe('/map');
+    expect(mobile.getByRole('link', { name: 'Open map' }).getAttribute('href')).toBe('/map?view=map');
+    fireEvent.click(mobile.getByRole('button', { name: 'Earn' }));
+    expect(mobile.getByRole('link', { name: 'Find a cleanup on the map' }).getAttribute('href')).toBe('/map?view=map&browse=1&status=available');
+    expect(mobile.queryByRole('link', { name: 'Browse litter reports' })).toBeNull();
+    fireEvent.click(mobile.getByRole('button', { name: 'Donate' }));
+    expect(mobile.getByRole('link', { name: 'Find a cleanup to fund' }).getAttribute('href')).toBe('/map?view=map&browse=1&status=available');
     fireEvent.click(mobile.getByRole('button', { name: 'Support' }));
     expect(mobile.getByRole('link', { name: 'About Litterbugs' }).getAttribute('aria-current')).toBe('page');
     expect(document.body.style.overflow).toBe('hidden');
@@ -291,7 +296,7 @@ it.each(['/', '/map'] as const)('keeps the outlined Open map entry with its icon
   fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
   const menu = within(screen.getByRole('navigation', { name: 'Mobile navigation' }));
   const map = menu.getByRole('link', { name: 'Open map' });
-  expect(map.getAttribute('href')).toBe('/map');
+  expect(map.getAttribute('href')).toBe('/map?view=map');
   expect(map.querySelector('svg')).toBeTruthy();
   expect(map.getAttribute('aria-current')).toBe(activePath === '/map' ? 'page' : null);
   expect(menu.getByRole('link', { name: 'Log in / Sign up' }).getAttribute('href')).toBe('/sign-in');

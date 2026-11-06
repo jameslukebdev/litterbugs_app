@@ -24,6 +24,20 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-06 — Codex (map-first discovery links)
+
+- On `codex/map-first-navigation`, based on `claude/ui-finish` at `78aabcc`.
+  Earn now has one “Find a cleanup on the map” action. Donate uses “Find a
+  cleanup to fund.” Both open the interactive map with Available selected.
+  Aligned the guide actions, homepage carousel, and header map entry.
+  The Reports tab and the footer's report directory link remain available.
+- Clarity's 3-day recording list showed a Mobile Safari session ending on
+  the list-first URL. The summary did not establish which link sent it there.
+  Fixed stale filters when using a menu link from the map's Reports view.
+- Verified locally in Chrome at phone and desktop sizes with Google map
+  tiles, report pins, and zero tracker requests. 76 focused tests, TypeScript,
+  and scoped lint passed. Pending release. No push or deployment.
+
 ### 2026-11-06 — Claude (homepage, header, footer and map redesign deployed)
 
 - Grant authorized release. Deployed commit `207a057` on `claude/ui-finish`

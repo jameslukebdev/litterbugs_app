@@ -9,7 +9,7 @@ import { AppLink } from '@/components/app-link';
 import { GetAppNavigation } from '@/components/app-promotion';
 
 import { HeaderAreaSearch } from './header-area-search';
-import { REPORT_ENTRY_HREF } from '@/lib/home-map-link';
+import { AVAILABLE_CLEANUPS_MAP_HREF, LITTER_MAP_HREF, REPORT_ENTRY_HREF } from '@/lib/home-map-link';
 
 import { PublicAccountAction } from '@/components/public-account-action';
 import { getHeaderProfile, getServerHeaderProfile, subscribeHeaderProfile } from '@/lib/header-profile-cache';
@@ -47,12 +47,11 @@ const reportingLinks = [
   ['/report-litter', 'Reporter reward details'],
 ] as const;
 const fundingLinks = [
-  ['/map?view=reports&browse=1&status=available', 'Choose a report to fund'],
+  [AVAILABLE_CLEANUPS_MAP_HREF, 'Find a cleanup to fund'],
   ['/fund-a-cleanup', 'Fees, rewards & refunds'],
 ] as const;
 const cleanupLinks = [
-  ['/reports', 'Browse litter reports'],
-  ['/map?view=reports&browse=1&status=available', 'Find litter to clean'],
+  [AVAILABLE_CLEANUPS_MAP_HREF, 'Find a cleanup on the map'],
   ['/cleaner', 'Claiming & getting paid'],
   ['/cleanups', 'Completed cleanups'],
   ['/communities', 'Communities'],
@@ -250,7 +249,7 @@ function NavigationMenu({ activePath }: { activePath: PublicPath }) {
           </Link>
         </div>
         <nav className={styles.mobilePrimaryLinks} aria-label="Mobile navigation">
-          <Link href="/map" prefetch={true} className={`${styles.navLink} ${styles.mapEntry}`} aria-current={activePath === '/map' ? 'page' : undefined} onClick={closeMenu}><IoMapOutline aria-hidden /><span>Open map</span></Link>
+          <Link href={LITTER_MAP_HREF} prefetch={true} className={`${styles.navLink} ${styles.mapEntry}`} aria-current={activePath === '/map' ? 'page' : undefined} onClick={closeMenu}><IoMapOutline aria-hidden /><span>Open map</span></Link>
           <NavigationDropdown label="Report" links={reportingLinks} activePath={activePath}
             open={openCategory === 'reporting'} onToggle={() => setOpenCategory(openCategory === 'reporting' ? null : 'reporting')} onClose={() => setOpenCategory(current => current === 'reporting' ? null : current)} onNavigate={closeMenu} />
           {([['Donate', fundingLinks], ['Earn', cleanupLinks], ['Support', informationLinks]] as const).map(([label, links]) =>
@@ -277,7 +276,7 @@ export function PublicSiteHeader({ activePath, action, reportAction, reportId, c
           <Image src="/brand/litterbugs-logo.png" alt="Litterbugs" width={636} height={433} priority />
         </Link>
         <nav className={styles.desktopNav} aria-label="Main navigation">
-          <div className={styles.mapLink}>{activePath === '/map' ? <HeaderLink href="/map" activePath={activePath}>Map</HeaderLink> : <Link href="/map" aria-label="Open map" className={`${styles.navLink} ${styles.mapEntry}`}><IoMapOutline aria-hidden /><span className={styles.mapDesktopLabel}>Open map</span><span className={styles.mapMobileLabel}>Map</span></Link>}</div>
+          <div className={styles.mapLink}>{activePath === '/map' ? <HeaderLink href={LITTER_MAP_HREF} activePath={activePath}>Map</HeaderLink> : <Link href={LITTER_MAP_HREF} aria-label="Open map" className={`${styles.navLink} ${styles.mapEntry}`}><IoMapOutline aria-hidden /><span className={styles.mapDesktopLabel}>Open map</span><span className={styles.mapMobileLabel}>Map</span></Link>}</div>
           <div className={styles.reportAction}>{reportAction ?? (<NavigationDropdown label="Report" links={reportingLinks} activePath={activePath} open={openMenu === 'reporting'} onToggle={() => toggleMenu('reporting')} onClose={() => setOpenMenu(null)} />)}</div>
           <div className={styles.funding}><NavigationDropdown label="Donate" links={fundingLinks} activePath={activePath} open={openMenu === 'funding'} onToggle={() => toggleMenu('funding')} onClose={() => setOpenMenu(null)} /></div>
           <div className={styles.cleaning}><NavigationDropdown label="Earn" links={cleanupLinks} activePath={activePath} open={openMenu === 'cleaning'} onToggle={() => toggleMenu('cleaning')} onClose={() => setOpenMenu(null)} /></div>

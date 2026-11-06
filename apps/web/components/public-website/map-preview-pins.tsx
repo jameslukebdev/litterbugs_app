@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useMemo, useRef, useState } from 'react';
 import { IoChevronForward, IoClose } from 'react-icons/io5';
 import { MapPinBug } from './map-pin-bug';
-import { HOME_MAP_HREF } from '@/lib/home-map-link';
+import { AVAILABLE_CLEANUPS_MAP_HREF } from '@/lib/home-map-link';
 import type { MapPreviewPin } from '@/lib/map-preview';
 import styles from './map-preview.module.css';
 
@@ -34,7 +34,7 @@ const reportHref = (pin: MapPreviewPin) => `/map?report=${encodeURIComponent(pin
 const groupHref = (group: Group) => {
   const lat = group.pins.reduce((sum, pin) => sum + pin.lat, 0) / group.pins.length;
   const lng = group.pins.reduce((sum, pin) => sum + pin.lng, 0) / group.pins.length;
-  return `${HOME_MAP_HREF}#map=${lat.toFixed(3)},${lng.toFixed(3)},16.0`;
+  return `${AVAILABLE_CLEANUPS_MAP_HREF}#map=${lat.toFixed(3)},${lng.toFixed(3)},16.0`;
 };
 const isTouch = (event: React.MouseEvent, last: string) => {
   const type = (event.nativeEvent as PointerEvent).pointerType || last;

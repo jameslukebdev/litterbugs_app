@@ -266,6 +266,22 @@ it('preserves quick-filter positions and horizontal scroll after selection', () 
   expect(strip.scrollLeft).toBe(160);
 });
 
+it('applies explicit filters when a navigation link reopens the current map', async () => {
+  const initialSearch = '?view=reports&browse=1&status=progress';
+  window.history.replaceState(null, '', `/map${initialSearch}`);
+  const props = { reports: [report], open: true, onToggle: vi.fn(), onSelect: vi.fn() };
+  const view = render(<ReportBrowser {...props} navigationSearch={initialSearch} />);
+  const inProgress = screen.getByRole('button', { name: 'In progress' });
+  await waitFor(() => expect(inProgress.getAttribute('aria-pressed')).toBe('true'));
+
+  const mapSearch = '?view=map&browse=1&status=available';
+  window.history.replaceState(null, '', `/map${mapSearch}`);
+  view.rerender(<ReportBrowser {...props} navigationSearch={mapSearch} />);
+  const available = screen.getByRole('button', { name: 'Available' });
+  await waitFor(() => expect(available.getAttribute('aria-pressed')).toBe('true'));
+  expect(inProgress.getAttribute('aria-pressed')).toBe('false');
+});
+
 it('restores browse filters without rewriting the entry URL, then writes an explicit filter change', async () => {
   window.history.replaceState(null, '', '/map?report=shared&intent=fund#map=36,-81,12');
   sessionStorage.setItem('litterbugs.results.v1', JSON.stringify({

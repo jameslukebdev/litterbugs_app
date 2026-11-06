@@ -1,3 +1,4 @@
+import { AVAILABLE_CLEANUPS_MAP_HREF } from '@/lib/home-map-link';
 import { publicPageMetadata } from '@/lib/public-page-metadata';
 import Link from 'next/link';
 import { Guide, ReportCards } from '@/components/public-website';
@@ -16,8 +17,8 @@ export default async function CleanerPage() {
       activePath="/cleaner"
       title="Find your next cleanup."
       intro="Find funded and volunteer cleanups near you."
-      action="Find a cleanup"
-      href="/map?view=reports&browse=1&status=available"
+      action="Find a cleanup on the map"
+      href={AVAILABLE_CLEANUPS_MAP_HREF}
     >
       <section>
         <h2>Find the right fit</h2>
