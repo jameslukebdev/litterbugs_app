@@ -24,6 +24,23 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Claude (report sign-up, notifications, phone pills deployed)
+
+- Grant authorized release. Deployed commit 363dc75 on
+  claude/review-fixes-release (worktree /tmp/litterbugs-claude-review-release),
+  based on live 73ff529 plus only the 10 web files from 40dcbb2 (entry below).
+  Homepage preview on claude/ui-finish was NOT deployed.
+- Vercel remote production build dpl_J48BBiaqV9bqDDNpqHVHtzNpfAtj staged,
+  checked (/sign-in?next=/report shows new sign-up heading), then promoted to
+  litterbugs.app. Rollback target: dpl_9YKnaEU5K1aGBs1VvMpfLvMjEdAR (73ff529).
+  Live: /, /map, /reports, /get-app, /support return 200; zero runtime errors.
+- Tests: 718/720 pass. display-photo-cache timed out only under full-suite load
+  (passes alone). FOR CODEX: app/reports/[id]/page.test.tsx still expects
+  "Fund this cleanup" to link to /map; since 73ff529 it links to /sign-in.
+  Stale test from the funding release, not this change; left untouched.
+- No push, database or settings changes. Live check was server-side only, so
+  no analytics visits; signed-in notifications page not exercised.
+
 ### 2026-11-05 — Claude (Clarity/PostHog review fixes, local and uncommitted)
 
 - From replays: signed-out Report opened a generic login-first box and one
