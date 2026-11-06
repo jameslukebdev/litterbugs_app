@@ -24,6 +24,13 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-06 — Codex (GitHub handoff)
+
+- Grant requested the latest code on GitHub. The working branch is
+  `claude/ui-finish`, with the recent website changes, handoff notes, and
+  Claude's homepage preview. The exact deployed website source is commit
+  `75c3714` on `codex/report-discovery-release`.
+
 ### 2026-11-06 — Codex (steadier map discovery and centered loader deployed)
 
 - The empty panel uses the caterpillar, a honey-yellow full-width wider-area
