@@ -55,7 +55,9 @@ it('connects an available Boone report to its own web funding and cleanup contro
   loadReport.mockResolvedValue({ ...report, communitySlug: 'us-nc-boone', generalLocation: 'Boone', fundingEligible: true });
   render(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
   for (const [name, intent] of [['Fund this cleanup', 'fund'], ['Clean up this report', 'clean']]) {
-    const url = new URL(screen.getByRole('link', { name }).getAttribute('href')!, 'https://litterbugs.app');
+    const entry = new URL(screen.getByRole('link', { name }).getAttribute('href')!, 'https://litterbugs.app');
+    expect(entry.pathname).toBe(intent === 'fund' ? '/sign-in' : '/map');
+    const url = intent === 'fund' ? new URL(entry.searchParams.get('next')!, entry.origin) : entry;
     expect(url.pathname).toBe('/map');
     expect(url.searchParams.get('report')).toBe(report.id);
     expect(url.searchParams.get('intent')).toBe(intent);

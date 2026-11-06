@@ -410,11 +410,19 @@ export function ReportBrowser({
           }) : (
             <div className="report-browser-empty">
               <BrandBug kind={loading ? 'bee' : discoveryError ? 'ladybug' : 'butterfly'} size={36} className={`brand-bug-state${loading ? ' brand-bug-busy' : ''}`} />
-              <strong>{loading ? 'Looking for cleanup opportunities…' : discoveryError ? 'Reports could not be loaded' : 'No matching cleanup opportunities'}</strong>
-              <span>{loading ? 'Checking the selected area.' : discoveryError ? 'Check your connection, then try again.' : 'Try a wider area or clear your filters. You can also report litter you have found.'}</span>
+              <strong>{loading ? 'Looking for cleanup opportunities…' : discoveryError ? 'Reports could not be loaded' : applied.funding === 'funded' ? 'No rewarded cleanups match your search' : 'No matching cleanup opportunities'}</strong>
+              <span>{loading ? 'Checking the selected area.' : discoveryError ? 'Check your connection, then try again.' : applied.funding === 'funded' ? 'Include volunteer cleanups in this area or search farther away.' : 'Try a wider area or clear your filters. You can also report litter you have found.'}</span>
               {!loading && <div className="empty-discovery-actions">
                 {discoveryError ? onRetry && <button className="primary-button" onClick={onRetry}>Try again</button> : <>
-                  {onChooseArea && <button className="primary-button" onClick={onChooseArea}>Search another area</button>}
+                  {applied.funding === 'funded' && <button className="primary-button" onClick={() => {
+                    const next: DiscoveryFilters = { ...applied, funding: 'all' };
+                    writeBrowseUrl(next, sort);
+                    setAdvanced(next);
+                    setDraftFilters(next);
+                    setFilter('custom');
+                    setDisplayLimit(50);
+                  }}>Include volunteer cleanups</button>}
+                  {onChooseArea && <button className={applied.funding === 'funded' ? 'secondary-button' : 'primary-button'} onClick={onChooseArea}>Search another area</button>}
                   <button className="secondary-button" onClick={() => { writeBrowseUrl(quickFilters('all'), sort); setFilter('all'); setAdvanced(quickFilters('all')); setDraftFilters(quickFilters('all')); setDisplayLimit(50); }}>Clear filters</button>
                   {onWidenArea && <button className="secondary-button" onClick={onWidenArea}>Search a wider area</button>}
                   {onStartReport && <button className="secondary-button" onClick={onStartReport}>Report litter</button>}

@@ -41,8 +41,16 @@ export function communityClick(href: string, origin: string, slug: unknown, reso
     return resource ? { event: 'community_resource_opened' as const, properties: { ...properties, resource_id: resource.id } } : null;
   }
   if (/^\/reports\/[^/]+$/.test(url.pathname)) return { event: 'community_report_opened' as const, properties };
-  if (url.pathname === '/report') return { event: 'community_action_started' as const, properties: { ...properties, action: 'report' as const } };
-  const action = url.searchParams.get('intent');
-  if (url.pathname === '/map' && (action === 'fund' || action === 'clean')) return { event: 'community_action_started' as const, properties: { ...properties, action } };
+  // Participation links may pass through sign-in before opening the report or map.
+  let destination = url;
+  if (url.pathname === '/sign-in') {
+    const next = url.searchParams.get('next');
+    if (!next?.startsWith('/') || next.startsWith('//')) return null;
+    try { destination = new URL(next, origin); } catch { return null; }
+    if (destination.origin !== origin) return null;
+  }
+  if (destination.pathname === '/report') return { event: 'community_action_started', properties: { ...properties, action: 'report' } };
+  const action = destination.searchParams.get('intent');
+  if (destination.pathname === '/map' && (action === 'fund' || action === 'clean')) return { event: 'community_action_started', properties: { ...properties, action } };
   return null;
 }

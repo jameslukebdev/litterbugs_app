@@ -282,3 +282,15 @@ it('restores browse filters without rewriting the entry URL, then writes an expl
   expect(query.get('report')).toBe('shared');
   expect(window.location.hash).toBe('#map=36,-81,12');
 });
+
+it('lets visitors include volunteer cleanups without clearing their area or other filters', async () => {
+  window.history.replaceState(null, '', '/map?area=boone&browse=1&status=available&funding=funded&severity=high');
+  render(<ReportBrowser reports={[{ ...report, funded_amount_cents: 0 }]} open onToggle={vi.fn()} onSelect={vi.fn()} />);
+  await screen.findByText('No rewarded cleanups match your search');
+  fireEvent.click(screen.getByRole('button', { name: 'Include volunteer cleanups' }));
+  expect(await screen.findByText('Roadside bottles')).toBeTruthy();
+  const params = new URLSearchParams(window.location.search);
+  expect(params.get('area')).toBe('boone');
+  expect(params.get('severity')).toBe('high');
+  expect(params.get('funding')).toBeNull();
+});

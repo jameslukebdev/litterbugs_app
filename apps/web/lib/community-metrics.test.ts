@@ -23,3 +23,13 @@ it('measures only exact reviewed resource destinations', () => {
   expect(communityClick('https://www.townofboone.net/214/Adopt-a-Street-Program', origin, slug, 'adopt-a-street')?.event).toBe('community_resource_opened');
   expect(communityClick('https://evil.example/?email=secret', origin, slug, 'adopt-a-street')).toBeNull();
 });
+
+it('counts intent through sign-in while discarding private destination data', () => {
+  const signIn = (next: string) => '/sign-in?' + new URLSearchParams({ next });
+  expect(communityClick(signIn('/map?report=private-id&intent=fund'), origin, slug)).toEqual({
+    event: 'community_action_started', properties: { community_id: slug, action: 'fund' },
+  });
+  expect(communityClick(signIn('/report?community=us-nc-boone'), origin, slug)?.properties.action).toBe('report');
+  expect(communityClick(signIn('/account'), origin, slug)).toBeNull();
+  expect(communityClick(signIn('/\t/elsewhere.example/report'), origin, slug)).toBeNull();
+});

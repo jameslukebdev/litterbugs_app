@@ -24,6 +24,32 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-06 — Codex (map activation and participation review)
+
+- Fetched GitHub. Working source matched origin/claude/ui-finish 8349fe3 before
+  edits. Production remains 2a78638. Verified PostHog watcher 1kdPlWal tracks
+  mobile sessions reaching /map, not specifically homepage entries.
+- Directional raw tracked sample over 3 days through Nov. 6 ~9:30 AM ET, with
+  no watcher test-account filters: before the 10:39 PM Nov. 5 build, 1/24 mobile
+  homepage-entry sessions reached /map, 8/49 mobile sessions reached it from
+  anywhere and 15/49 began at /get-app. Eight pageviews in three desktop
+  sessions since build start, zero mobile pageviews. No rollout inference yet.
+- Clarity: Nov. 5 12:13 Instagram visitor used Continue on the website, opened
+  two reports, selected Rewarded at 05:05 and saw no results. 12:59 Instagram
+  visitor tapped Clean up this report and saw the repeated report with a second
+  sign-in button. 1:23 Google referral read about/policy/support/funding without
+  selecting a cleanup. 9:32 PM showed older report login, before new signup.
+  PostHog website replay query empty and website SDK has recording disabled.
+- Local changes: funded-empty results explain the shortage and offer Include
+  volunteer cleanups without losing area/other filters. Restore community action
+  intent counting through validated same-origin sign-in next paths. Correct
+  stale public funding link test. 53 focused tests, TypeScript, lint passed.
+- Outcome events named by web source absent from PostHog taxonomy. Add and
+  verify action-stage coverage before interpreting lack of outcome events.
+  Recommend continuing watcher, separate /get-app acquisition traffic and
+  direct map entries, and carry shared-report cleanup intent through sign-in to
+  explicit safety/claim review. No push, deployment or account changes.
+
 ### 2026-11-05 — Claude (map-first navigation and report flow deployed)
 
 - Grant authorized release. Deployed 2a78638 on claude/review-fixes-release
