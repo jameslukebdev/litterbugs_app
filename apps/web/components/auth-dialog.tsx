@@ -8,6 +8,7 @@ import { ModalShell } from '@/components/modal-shell';
 import { BrandBug } from '@/components/brand-bug';
 import brandStyles from '@/components/public-website/brand.module.css';
 import { googleBrowserHandoff, isEmbeddedSocialBrowser } from '@/lib/google-browser-handoff';
+import { trackParticipation } from '@/lib/website-analytics';
 import { createClient } from '@/lib/supabase/client';
 
 export type AuthIntent = 'clean' | 'fund' | 'report' | null;
@@ -80,7 +81,17 @@ export function AuthDialog({
     return `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
   }
 
+  useEffect(() => {
+    if (intent) trackParticipation(intent, 'auth_shown');
+  }, [intent]);
+
+  function closeAuth() {
+    if (intent) trackParticipation(intent, 'auth_closed');
+    onClose();
+  }
+
   async function startProvider(provider: 'google' | 'facebook') {
+    if (intent) trackParticipation(intent, 'auth_submitted');
     if (provider === 'google' && isEmbeddedSocialBrowser(navigator.userAgent)) {
       const next = returnPath ?? `${window.location.pathname}${window.location.search}${window.location.hash}`;
       const handoff = googleBrowserHandoff(window.location.origin, next, navigator.userAgent);
@@ -113,6 +124,7 @@ export function AuthDialog({
     if (mode === 'login' && !password) return setMessage('Enter your password.');
     if (mode === 'signup' && password.length < 8) return setMessage('Use at least 8 characters for your new password.');
 
+    if (intent && (mode === 'login' || mode === 'signup')) trackParticipation(intent, 'auth_submitted');
     setLoading('email');
     const supabase = createClient();
 
@@ -176,7 +188,7 @@ export function AuthDialog({
   }
 
   return (
-    <ModalShell embedded={embedded} onClose={onClose} label={mode === 'signup' ? 'Create your Litterbugs account' : 'Sign in to Litterbugs'} className={`auth-dialog auth-dialog-simple ${brandStyles.brand}`} closeDisabled={Boolean(loading)}>
+    <ModalShell embedded={embedded} onClose={closeAuth} label={mode === 'signup' ? 'Create your Litterbugs account' : 'Sign in to Litterbugs'} className={`auth-dialog auth-dialog-simple ${brandStyles.brand}`} closeDisabled={Boolean(loading)}>
       {mode === 'sent' ? (
         <div className="auth-sent">
           <span className="success-mark success-mark-bug" aria-hidden><BrandBug kind="bee" size={40} /></span>

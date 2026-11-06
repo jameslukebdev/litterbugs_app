@@ -1,7 +1,7 @@
 'use client';
 import { contributionReturnPath } from '@/lib/community-journey';
 
-import { rememberContributionAttempt } from '@/lib/website-analytics';
+import { rememberContributionAttempt, trackParticipation } from '@/lib/website-analytics';
 
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
@@ -43,6 +43,7 @@ function ContributionPaymentForm({
     setError('');
     onBusyChange(true);
     rememberContributionAttempt(intent.contributionId);
+    trackParticipation('fund', 'payment_submitted');
     try {
     const result = await stripe.confirmPayment({
       elements,
@@ -128,6 +129,11 @@ export function FundingContributionAction({
     }, 200);
     return () => { cancelled = true; window.clearTimeout(timer); };
   }, [open, userId, principalAmountCents, intent, quoteRetry]);
+  useEffect(() => {
+    if (open && enabled === true && eligible && userId && !previousContribution) {
+      trackParticipation('fund', intent ? 'payment_form' : 'amount_review');
+    }
+  }, [open, enabled, eligible, userId, intent, previousContribution]);
   const publishableKey = intent?.publishableKey;
   const stripe = useMemo(
     () => publishableKey ? loadStripe(publishableKey) : null,
@@ -167,6 +173,7 @@ export function FundingContributionAction({
   }
 
   function begin() {
+    trackParticipation('fund', 'action_tapped');
     if (!userId) {
       onRequireSignIn?.();
       return;

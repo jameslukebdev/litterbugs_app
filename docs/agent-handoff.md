@@ -24,6 +24,27 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-06 — Codex (cleanup continuation and participation tracking)
+
+- Shared public report Clean up this report now goes through direct sign-in,
+  preserving report and community. After auth, eligible unclaimed reports open
+  the existing safety review once. Explicit site confirmation and claim still
+  required. Map sign-in now also preserves selected funding/cleanup intent.
+- Added participation_step with allowlisted action, stage and normalized
+  page type. Report tracks location/wizard/publication, fund tracks amount/
+  payment/observed confirmation, clean tracks safety/claim/evidence submission.
+  Tracks relevant entry taps and auth shown/submitted/closed, with bounded
+  memory queue for events before PostHog starts. Existing privacy controls
+  apply. No contact details, report IDs, or input values in event payloads.
+- Local browser verified public cleanup link opens clean-specific sign-in,
+  retains report and Boone, and Rewarded empty result CTA preserves severity.
+  Screenshot .playwright-mcp/rewarded-empty-results.png. Browser had existing
+  favicon.ico 404. 122 focused tests, TypeScript and scoped ESLint passed.
+  No real sign-in, claim, payment, live analytics ingestion, or deployment.
+- Funnel analysis should use session counts and separate signed-in starts from
+  auth paths. External browser handoffs can split sessions. Cleanup evidence
+  submitted and payment observed confirmed are distinct from approval/ledger.
+
 ### 2026-11-06 — Codex (map activation and participation review)
 
 - Fetched GitHub. Working source matched origin/claude/ui-finish 8349fe3 before

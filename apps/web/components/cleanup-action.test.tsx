@@ -132,3 +132,12 @@ it('keeps entered evidence through refresh failure and restores submission after
   expect((screen.getByRole('button', { name: 'Submit cleanup', exact: true }) as HTMLButtonElement).disabled).toBe(false);
   expect(screen.getByText('My latest evidence', { selector: 'p' })).toBeTruthy();
 });
+
+it('opens safety review after sign-in without accepting an agreement or claiming', async () => {
+  const view = render(<CleanupAction report={report} userId={null} autoOpen />);
+  expect(screen.queryByRole('dialog')).toBeNull();
+  view.rerender(<CleanupAction report={report} userId="cleaner-1" autoOpen />);
+  const confirm = await screen.findByRole('button', { name: 'Confirm and claim cleanup' }) as HTMLButtonElement;
+  expect(confirm.disabled).toBe(true);
+  expect(rpc).not.toHaveBeenCalled();
+});

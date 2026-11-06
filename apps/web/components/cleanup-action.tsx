@@ -1,4 +1,5 @@
 'use client';
+import { trackParticipation } from '@/lib/website-analytics';
 import { trackDeviceSave } from '@/lib/device-save-state';
 import { prepareBrowserPhotos } from '@/lib/prepare-browser-photo';
 
@@ -10,7 +11,7 @@ import { cloudDrafts } from '@/lib/cloud-drafts';
 import { CloudDraftStatus } from '@/components/cloud-draft-status';
 import { loadCleanupDraft, saveCleanupDraft, clearCleanupDraft } from '@/lib/saved-cleanup-draft';
 import type { Database, Report } from '@litterbugs/report-contract';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { CleanupFeedback } from '@/components/cleanup-feedback';
 import { Icon } from '@/components/icon';
@@ -63,8 +64,10 @@ export function CleanupAction({
   onRequireSignIn,
   onChanged,
   workspace = false,
+  autoOpen = false,
 }: {
   workspace?: boolean;
+  autoOpen?: boolean;
   report: Report;
   userId: string | null;
   onRequireSignIn?: () => void;
@@ -125,12 +128,8 @@ export function CleanupAction({
     return value ? new Date(value).toLocaleString() : '';
   }, [attempt]);
 
-  async function beginClaim() {
-    if (attemptFailed) return;
-    if (!userId) {
-      onRequireSignIn?.();
-      return;
-    }
+  const openSafetyReview = useCallback(async () => {
+    if (!userId || attemptFailed) return;
     setBusy('waiver');
     setMessage('');
     const { data, error } = await createClient()
@@ -161,7 +160,26 @@ export function CleanupAction({
     setSiteConfirmed(false);
     setWaiverAccepted(false);
     setWaiverOpen(true);
+    trackParticipation('clean', 'safety_review');
+  }, [userId, attemptFailed]);
+
+  const openedFromEntry = useRef(false);
+  useEffect(() => {
+    if (!autoOpen || !userId || attemptLoading || attemptFailed || attempt
+      || report.cleanup_state !== 'available' || openedFromEntry.current) return;
+    openedFromEntry.current = true;
+    void openSafetyReview();
+  }, [autoOpen, userId, attemptLoading, attemptFailed, attempt, report.cleanup_state, openSafetyReview]);
+
+  function beginClaim() {
+    trackParticipation('clean', 'action_tapped');
+    if (!userId) onRequireSignIn?.();
+    else void openSafetyReview();
   }
+
+  useEffect(() => {
+    if (submissionOpen && canSubmit) trackParticipation('clean', 'evidence_form');
+  }, [submissionOpen, canSubmit]);
 
   async function acceptAndClaim() {
     if (attemptFailed) return;
@@ -192,6 +210,7 @@ export function CleanupAction({
       return;
     }
     setWaiverOpen(false);
+    trackParticipation('clean', 'claim_confirmed');
     setMessage('Cleanup claimed. Submit after-cleanup photos before the deadline.');
     await refreshAttempt();
     await onChanged?.();
@@ -284,6 +303,7 @@ export function CleanupAction({
       return;
     }
 
+    trackParticipation('clean', 'evidence_submitted');
     notifyDataChanged();
     // A UI refresh or local-storage failure cannot turn a committed submission into a failure.
     await clearCleanupDraft(userId, attempt.id).catch(() => undefined);

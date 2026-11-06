@@ -7,8 +7,9 @@ export function SignInForm({ next, message }: { next: string; message?: string }
   const router = useRouter();
   const [open, setOpen] = useState(true);
   const destination = new URL(next, 'https://litterbugs.app');
-  const funding = destination.pathname === '/map' && destination.searchParams.has('report') && destination.searchParams.get('intent') === 'fund';
-  const intent = funding ? 'fund' : destination.pathname === '/report' ? 'report' : null;
+  const action = destination.searchParams.get('intent');
+  const intent = destination.pathname === '/map' && destination.searchParams.has('report') && (action === 'fund' || action === 'clean')
+    ? action : destination.pathname === '/report' ? 'report' : null;
   // The form sits over the live map. Closing leaves that map in place (no reload) and just
   // updates the address to the map's, so visitors keep exploring without a jump.
   const close = () => {

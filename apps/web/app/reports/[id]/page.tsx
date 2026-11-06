@@ -148,7 +148,7 @@ export default async function SharedReportPage({ params }: Props) {
             <aside className={styles.nextSteps}>
             {expired ? <Link className="primary-button button-link" href="/reports">Find a current cleanup</Link> : !completed && !inProgress && localCommunityHref ? <div className={journey.reportActions}>
               {report.fundingEligible && <Link className="primary-button button-link" prefetch={false} href={`/sign-in?next=${encodeURIComponent(communityReportMapHref(report.id, report.communitySlug, 'fund'))}`}>Fund this cleanup</Link>}
-              <Link className="primary-button button-link" href={communityReportMapHref(report.id, report.communitySlug, 'clean')}>Clean up this report</Link>
+              <Link className="primary-button button-link" prefetch={false} href={`/sign-in?next=${encodeURIComponent(communityReportMapHref(report.id, report.communitySlug, 'clean'))}`}>Clean up this report</Link>
             </div> : <Link className="primary-button button-link" href={communityReportMapHref(report.id, report.communitySlug, 'locate')}>View on map</Link>}
             {localCommunityHref && <Link className={styles.textAction} href={localCommunityHref}>Back to {report.generalLocation}</Link>}
               <div className={styles.actions}>
