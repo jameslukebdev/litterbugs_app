@@ -70,13 +70,13 @@ describe('FundingContributionAction', () => {
     loadFlags.mockResolvedValue({ payments_enabled: false, gemini_financial_review_enabled: false });
     render(<FundingContributionAction report={report} userId="member-id" />);
     await waitFor(() => expect(loadFlags).toHaveBeenCalled());
-    expect(screen.queryByRole('button', { name: 'Add funds' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Fund', exact: true })).toBeNull();
   });
 
   it('shows the exact reward, fee, and total before opening Stripe', async () => {
     loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
     render(<FundingContributionAction report={report} userId="member-id" />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Add funds' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Fund', exact: true }));
     expect(await screen.findByText('Cleaner reward')).toBeTruthy();
     expect(screen.getByText('$25.00')).toBeTruthy();
     expect(screen.getByText('$3.00')).toBeTruthy();
@@ -152,10 +152,10 @@ it('reserves the funding action while flags load without enabling payment premat
   const signIn = vi.fn();
   render(<FundingContributionAction report={report} userId={null} onRequireSignIn={signIn} />);
   expect(screen.getByRole('status', { name: 'Checking funding availability' })).toBeTruthy();
-  expect(screen.queryByRole('button', { name: 'Sign in to fund' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Fund', exact: true })).toBeNull();
   await act(async () => resolve({ payments_enabled: true, gemini_financial_review_enabled: true }));
   expect(screen.queryByRole('status', { name: 'Checking funding availability' })).toBeNull();
-  fireEvent.click(screen.getByRole('button', { name: 'Sign in to fund' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Fund', exact: true }));
   expect(signIn).toHaveBeenCalledTimes(1);
 });
 
@@ -182,7 +182,7 @@ it('preserves only the canonical community return in the Stripe confirmation URL
 it('opens amount review after sign-in and eligibility, without starting payment or reopening after dismissal', async () => {
   loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
   const view = render(<FundingContributionAction report={report} userId={null} autoOpen />);
-  await screen.findByRole('button', { name: 'Sign in to fund' });
+  await screen.findByRole('button', { name: 'Fund', exact: true });
   expect(screen.queryByRole('dialog')).toBeNull();
   view.rerender(<FundingContributionAction report={report} userId="member" autoOpen />);
   expect(await screen.findByRole('dialog')).toBeTruthy();

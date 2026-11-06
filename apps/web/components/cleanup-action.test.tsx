@@ -40,7 +40,7 @@ afterEach(() => { cleanup(); vi.clearAllMocks(); });
 describe('cleanup agreement and site confirmation', () => {
   it('skips an already accepted document but still requires this site confirmation', async () => {
     render(<CleanupAction report={report} userId="cleaner-1" />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Claim cleanup' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Clean', exact: true }));
     await screen.findByRole('dialog');
     expect(screen.queryByText('Full versioned agreement')).toBeNull();
     const confirm = screen.getByRole('button', { name: 'Confirm and claim cleanup' }) as HTMLButtonElement;
@@ -53,7 +53,7 @@ describe('cleanup agreement and site confirmation', () => {
   it('requires both the new agreement and a site confirmation', async () => {
     state.accepted = false;
     render(<CleanupAction report={report} userId="cleaner-1" />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Claim cleanup' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Clean', exact: true }));
     await screen.findByText('Full versioned agreement');
     const boxes = screen.getAllByRole('checkbox');
     const confirm = screen.getByRole('button', { name: 'Confirm and claim cleanup' }) as HTMLButtonElement;
@@ -67,7 +67,7 @@ describe('cleanup agreement and site confirmation', () => {
   it('does not claim when saved acceptance cannot be checked', async () => {
     state.error = true;
     render(<CleanupAction report={report} userId="cleaner-1" />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Claim cleanup' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Clean', exact: true }));
     await screen.findByText('Your saved agreement could not be checked. Try again.');
     expect(rpc).not.toHaveBeenCalled();
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -105,7 +105,7 @@ it('never offers a claim when the initial task check fails, and recovers with Re
   state.attemptError = true;
   render(<CleanupAction report={report} userId="cleaner-1" />);
   await screen.findByRole('alert');
-  expect(screen.queryByRole('button', { name: 'Claim cleanup' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Clean', exact: true })).toBeNull();
   state.attemptError = false; state.claimed = true;
   fireEvent.click(screen.getByRole('button', { name: 'Retry cleanup status' }));
   await screen.findByRole('button', { name: 'Submit cleanup photos' });
@@ -123,7 +123,7 @@ it('keeps entered evidence through refresh failure and restores submission after
   view.rerender(<CleanupAction report={report} userId="cleaner-1" workspace />);
   await screen.findByRole('alert');
   expect((screen.getByLabelText(/Cleanup description/) as HTMLTextAreaElement).value).toBe('My latest evidence');
-  expect(screen.queryByRole('button', { name: 'Claim cleanup' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Clean', exact: true })).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Review cleanup' }));
   expect((screen.getByRole('button', { name: 'Submit cleanup', exact: true }) as HTMLButtonElement).disabled).toBe(true);
   state.attemptError = false;

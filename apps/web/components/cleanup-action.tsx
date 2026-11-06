@@ -14,6 +14,7 @@ import type { Database, Report } from '@litterbugs/report-contract';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { CleanupFeedback } from '@/components/cleanup-feedback';
+import { BrandBug } from '@/components/brand-bug';
 import { Icon } from '@/components/icon';
 import { ModalShell } from '@/components/modal-shell';
 import { submitCleanupEvidence } from '@/lib/cleanup-submission';
@@ -345,11 +346,11 @@ export function CleanupAction({
   const action = (() => {
     if (report.cleanup_state === 'completed') return null;
     if (attemptFailed && !attempt) return null;
-    if (attemptLoading) return <button className="primary-button compact-button" aria-label="Checking cleanup" disabled>{report.cleanup_state === 'available' ? 'Claim cleanup' : 'Cleanup details'}</button>;
+    if (attemptLoading) return <button className="primary-button compact-button report-action-clean" aria-label="Checking cleanup" disabled><BrandBug kind="butterfly" size={21} />{report.cleanup_state === 'available' ? 'Clean' : 'Cleanup details'}</button>;
     if (canSubmit) return <button className="primary-button compact-button" onClick={() => setSubmissionOpen(true)}>{attempt?.status === 'changes_requested' ? 'Update cleanup photos' : 'Submit cleanup photos'}</button>;
     if (isMyAttempt && attempt?.status === 'completion_submitted') return <button className="secondary-button compact-button" disabled>Cleanup under review</button>;
     if (attempt && !isMyAttempt) return <span className="cleanup-unavailable-note">Another member is cleaning this report</span>;
-    return <button className="primary-button compact-button" onClick={beginClaim} disabled={attemptFailed || Boolean(busy) || preparing}>{userId ? (busy === 'waiver' ? 'Loading…' : 'Claim cleanup') : 'Sign in to clean'}</button>;
+    return <button className="primary-button compact-button report-action-clean" onClick={beginClaim} disabled={attemptFailed || Boolean(busy) || preparing}><BrandBug kind="butterfly" size={21} />{busy === 'waiver' ? 'Loading…' : 'Clean'}</button>;
   })();
 
   const attemptNotice = attemptFailed && <p role="alert" className="form-message error-message">Cleanup status could not be refreshed. {attempt ? 'Your last confirmed task and entered work are still here. Reconnect and retry before sending changes.' : 'Retry before starting a cleanup.'} <button type="button" className="secondary-button" onClick={() => void refreshAttempt()}>Retry cleanup status</button></p>;

@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
+import { BrandBug } from '@/components/brand-bug';
 import { HOME_MAP_HREF, REPORT_ENTRY_HREF } from '@/lib/home-map-link';
 import styles from './report-starter.module.css';
 
@@ -13,7 +14,7 @@ export function ReportStarter() {
         <h3 id="report-choice-title">Report litter</h3>
         <p>See trash? Pin the spot, add photos, and earn money when it’s cleaned up.</p>
         {/* Same flow as the map's Report Litter button: sign in if needed, pin the spot, then add photos. */}
-        <div className={styles.action}><Link className={styles.cta} href={REPORT_ENTRY_HREF}>Report trash</Link></div>
+        <div className={styles.action}><Link className={styles.cta} href={REPORT_ENTRY_HREF}><BrandBug kind="ladybug" size={23} className="brand-action-icon" />Report trash</Link></div>
       </article>
       <article className={styles.choice} aria-labelledby="fund-choice-title">
         <Image className={styles.photo} src="/homepage-photos/action-fund.webp" alt="A person holding a payment card while using a laptop" width={900} height={600} sizes="(max-width: 700px) calc(100vw - 40px), (max-width: 1244px) 30vw, 375px" loading="lazy" />

@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { resumeOrCreatePayment } from '@/lib/payment-attempt';
 import { PaymentDetail } from '@/components/payment-detail';
 import { ModalShell } from '@/components/modal-shell';
+import { BrandBug } from '@/components/brand-bug';
 import {
   loadContributionQuote,
   type ContributionQuote,
@@ -152,7 +153,7 @@ export function FundingContributionAction({
     return () => { cancelled = true; };
   }, []);
 
-  if (!startOpen && enabled === null && eligible) return <span className="primary-button compact-button funding-action-pending" role="status" aria-label="Checking funding availability"><span aria-hidden="true">{userId ? 'Add funds' : 'Sign in to fund'}</span></span>;
+  if (!startOpen && enabled === null && eligible) return <span className="primary-button compact-button report-action-fund funding-action-pending" role="status" aria-label="Checking funding availability"><BrandBug kind="bee" size={21} /><span aria-hidden="true">Fund</span></span>;
   if (!startOpen && (!enabled || !eligible)) {
     return autoOpen && userId ? <p role="status">This cleanup isn’t accepting contributions right now.</p> : null;
   }
@@ -213,7 +214,7 @@ export function FundingContributionAction({
   return (
     <>
       {message && <span className="cleanup-action-message" role="status">{message}</span>}
-      {!startOpen && <button className="primary-button compact-button" onClick={begin}>{userId ? 'Add funds' : 'Sign in to fund'}</button>}
+      {!startOpen && <button className="primary-button compact-button report-action-fund" onClick={begin}><BrandBug kind="bee" size={21} />Fund</button>}
       {open && (
         <ModalShell onClose={dismiss} label="Add money to this cleanup reward" className="funding-dialog" closeDisabled={busy}>
           <h2>{intent ? 'Secure payment' : 'Add to the cleanup reward'}</h2>
