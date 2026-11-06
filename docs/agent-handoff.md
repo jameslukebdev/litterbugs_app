@@ -24,6 +24,27 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Claude (map-first navigation and report flow deployed)
+
+- Grant authorized release. Deployed 2a78638 on claude/review-fixes-release
+  (/tmp/litterbugs-claude-review-release) = live 363dc75 + the 29 web files
+  from 39eee49 + Suspense build fix a2db52c. Homepage preview NOT deployed.
+- First staging build failed: useSearchParams in MapLoading needed a Suspense
+  boundary for prerendering /sign-in (dev server doesn't catch this). Fixed;
+  /sign-in is now force-dynamic. Run a production build before releases.
+- dpl_HvqxR1Q3txzT5uqWextd9VqyEu42 promoted to litterbugs.app. Rollback:
+  dpl_J48BBiaqV9bqDDNpqHVHtzNpfAtj (363dc75).
+- Live checks (test browser opted out via saved analytics choices on
+  robots.txt first; 0 tracker requests): Report trash → map shell → sign-up
+  over the live map; X keeps the same map and switches URL/title to the map;
+  phone header shows the gold Map button, no overflow at 402px; main pages 200;
+  zero Vercel runtime errors. /report now streams the map shell then
+  redirects in-page (HTTP 200) for signed-out visitors.
+- Tests 718/719 (stale Codex funding test). Staging can't show Google tiles
+  (key is restricted to litterbugs.app) — expected.
+- Pending/not done: homepage map preview (Grant deciding; Maps Static API is
+  not enabled on the project). Signed-in wizard not visually checked.
+
 ### 2026-11-05 — Claude (map-first navigation and report flow polish, local and uncommitted)
 
 - Why: PostHog showed 1 of 28 phone homepage visits reached /map in 7 days;
