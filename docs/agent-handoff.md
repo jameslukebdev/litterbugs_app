@@ -30,7 +30,9 @@ They cannot talk to each other directly. This file is how they share context.
   separate support routing. Cloudflare dashboard requires Grant's sign-in.
   Luke confirmed Gmail web/app. Google Workspace is the durable Gmail option
   given Google’s announced January 2027 removal of third-party Send As. Pending
-  choice of paid Workspace setup. No mail, DNS, account, or deployment changes.
+  free mailbox decision after Grant declined a paid subscription. Zoho Free
+  supports a hosted domain in eligible regions, with external forwarding on
+  paid plans. No mail, DNS, account, or deployment changes.
 
 ### 2026-11-06 — Codex (admin email sending options)
 
