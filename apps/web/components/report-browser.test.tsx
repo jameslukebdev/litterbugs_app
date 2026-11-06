@@ -317,3 +317,32 @@ it('removes a distance limit when widening while keeping the other filters', asy
   expect(query.get('status')).toBe('available');
   expect(query.get('severity')).toBe('high');
 });
+
+it('waits for results for the restored filters and keeps those cards visible during a map refresh', async () => {
+  window.history.replaceState(null, '', '/map?browse=1&status=available');
+  const onDiscoveryFiltersChange = vi.fn();
+  const props = {
+    reports: [report, { ...report, id: 'done', title: 'Completed bottles', cleanup_state: 'completed' as const }],
+    open: true,
+    onToggle: vi.fn(),
+    onSelect: vi.fn(),
+    onDiscoveryFiltersChange,
+  };
+  const view = render(<ReportBrowser {...props} resultFilters={null} />);
+  expect(screen.getByRole('status', { name: 'Loading reports' }).textContent).toBe('');
+  expect(screen.queryByText('Completed bottles')).toBeNull();
+  await waitFor(() => expect(onDiscoveryFiltersChange).toHaveBeenCalledWith(expect.objectContaining({ status: 'available' })));
+  const available = onDiscoveryFiltersChange.mock.lastCall![0];
+  view.rerender(<ReportBrowser {...props} resultFilters={available} />);
+  const card = screen.getByRole('link', { name: /roadside bottles/i });
+  view.rerender(<ReportBrowser {...props} resultFilters={available} refreshing />);
+  expect(screen.getByRole('link', { name: /roadside bottles/i })).toBe(card);
+  expect(screen.queryByRole('status', { name: 'Loading reports' })).toBeNull();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Completed' }));
+  expect(screen.queryByText('Completed bottles')).toBeNull();
+  const completed = onDiscoveryFiltersChange.mock.lastCall![0];
+  view.rerender(<ReportBrowser {...props} resultFilters={completed} />);
+  expect(screen.getByRole('link', { name: /completed bottles/i })).toBeTruthy();
+  expect(screen.queryByText('Roadside bottles')).toBeNull();
+});

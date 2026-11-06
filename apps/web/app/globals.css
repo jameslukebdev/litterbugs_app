@@ -1487,9 +1487,6 @@ a.member-activity-row { color: inherit; text-decoration: none; }
 .notification-empty { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 28px 12px; color: var(--muted); text-align: center; }
 .notification-empty .brand-bug-state { margin-bottom: 4px; }
 .success-mark.success-mark-bug { background: #fff7d6; }
-@keyframes brand-bug-hover { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-5px) rotate(4deg); } }
-.brand-bug-busy { animation: brand-bug-hover 1.2s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) { .brand-bug-busy { animation: none; } }
 
 /* Match report surfaces to the website palette. Status and severity retain their own colors. */
 :is(.report-detail, .funding-dialog, .cleanup-flow-dialog) {

@@ -2,6 +2,8 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { EMPTY_REPORT_DRAFT, type ReportDraft, type MappableReport } from '@litterbugs/report-contract';
+import { useEffect } from 'react';
+import { DEFAULT_DISCOVERY_FILTERS, type DiscoveryFilters } from '@/lib/report-discovery';
 import { MapExperience } from './map-experience';
 
 const state = vi.hoisted(() => ({
@@ -51,7 +53,10 @@ vi.mock('@googlemaps/js-api-loader', () => ({
 }));
 vi.mock('@/components/public-site-header', () => ({ PublicSiteHeader: ({ action, reportAction }: { action: React.ReactNode; reportAction: React.ReactNode }) => <>{reportAction}{action}</> }));
 vi.mock('@/components/public-account-action', () => ({ PublicAccountAction: ({ onOpenReport }: { onOpenReport: (id: string) => void }) => <button onClick={() => onOpenReport('test-report')}>Open report from history</button> }));
-vi.mock('@/components/report-browser', () => ({ ReportBrowser: ({ reports, onVisibleReportsChange, onDiscoveryFiltersChange, placeSearch }: { onVisibleReportsChange: (reports: MappableReport[]) => void; placeSearch: React.ReactNode; reports: Array<{ title: string }>; onDiscoveryFiltersChange: (filters: unknown) => void }) => <>{placeSearch}<button onClick={() => onVisibleReportsChange(state.markerReports)}>Refresh visible pins</button><output aria-label="Discovery results">{reports.map(report => report.title).join(',')}</output><button onClick={() => onDiscoveryFiltersChange({ status: 'available', funding: 'all', severity: 'high', radius: 0, query: '', scope: 'all' })}>High severity filter</button></> }));
+vi.mock('@/components/report-browser', () => ({ ReportBrowser: ({ reports, onVisibleReportsChange, onDiscoveryFiltersChange, placeSearch }: { onVisibleReportsChange: (reports: MappableReport[]) => void; placeSearch: React.ReactNode; reports: Array<{ title: string }>; onDiscoveryFiltersChange: (filters: DiscoveryFilters) => void }) => {
+  useEffect(() => { onDiscoveryFiltersChange(DEFAULT_DISCOVERY_FILTERS); }, [onDiscoveryFiltersChange]);
+  return <>{placeSearch}<button onClick={() => onVisibleReportsChange(state.markerReports)}>Refresh visible pins</button><output aria-label="Discovery results">{reports.map(report => report.title).join(',')}</output><button onClick={() => onDiscoveryFiltersChange({ ...DEFAULT_DISCOVERY_FILTERS, status: 'available', severity: 'high' })}>High severity filter</button></>;
+} }));
 vi.mock('@/components/place-search', () => ({ PlaceSearch: ({onSelect}: {onSelect: (place: unknown) => void}) => <button onClick={() => onSelect({id:'chosen',label:'Chosen area',latitude:1,longitude:2,bounds:{north:2,south:0,west:1,east:3}})}>Choose map area</button> }));
 vi.mock('@/lib/synced-report-preferences', () => ({ reportPreferenceSync: { load: async () => ({ preferences: { favorites: [], hidden: [] } }), sync: async () => ({ preferences: { favorites: [], hidden: [] }, offline: false }) } }));
 vi.mock('@/lib/report-discovery', async (importOriginal) => ({ ...await importOriginal<typeof import('@/lib/report-discovery')>(), loadDiscoveryReports: (...args: unknown[]) => state.discovery(...args) }));
@@ -373,6 +378,8 @@ it('keeps pins attached during refresh and reorder, updates changed artwork, and
 it('keeps the website usable when the map provider fails to create a pin', async () => {
   state.markerFailure = true; state.markerReports = [{ ...report(), is_published: true } as MappableReport];
   render(<MapExperience initialReports={state.markerReports} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+  await waitFor(() => expect(state.idle).toBeTruthy());
+  fireEvent.click(screen.getByRole('button', { name: 'Refresh visible pins' }));
   await screen.findByText(/map could not display its pins/);
   expect(screen.getByRole('button', { name: 'Report Litter' })).toBeTruthy();
 });
