@@ -24,6 +24,12 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-06 — Codex (admin email sending options)
+
+- Confirmed public MX records point to Cloudflare Email Routing. Reviewed options
+  for Luke to send as `admin@litterbugs.app`. No mail, DNS, or deployment changes.
+  Pending choice of Luke's mail client and outgoing mail setup.
+
 ### 2026-11-06 — Codex (GitHub handoff)
 
 - Grant requested the latest code on GitHub. The working branch is
