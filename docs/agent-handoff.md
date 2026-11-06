@@ -28,8 +28,9 @@ They cannot talk to each other directly. This file is how they share context.
 
 - Confirmed the runbook documents admin mail forwarding to both owners and
   separate support routing. Cloudflare dashboard requires Grant's sign-in.
-  Pending mail-client confirmation and outgoing provider setup. No mail,
-  DNS, account, or deployment changes.
+  Luke confirmed Gmail web/app. Google Workspace is the durable Gmail option
+  given Google’s announced January 2027 removal of third-party Send As. Pending
+  choice of paid Workspace setup. No mail, DNS, account, or deployment changes.
 
 ### 2026-11-06 — Codex (admin email sending options)
 
