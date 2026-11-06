@@ -1,5 +1,5 @@
 'use client';
-import { useSyncExternalStore } from 'react';
+import { Suspense, useSyncExternalStore } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { readDiscoveryView } from '@/lib/discovery-memory';
 import { PublicSiteHeader } from './public-site-header';
@@ -7,8 +7,15 @@ import { PublicSiteHeader } from './public-site-header';
 const subscribe = () => () => {};
 const isPhone = () => window.matchMedia?.('(max-width: 760px)').matches ?? false;
 
+const DEFAULT_VIEW_CLASS = 'showing-reports discovery-default-view';
+
 /** Matches the map workspace rather than flashing a generic page card. */
 export function MapLoading() {
+  // Reading the address needs a Suspense boundary for production prerendering; the fallback keeps the CSS default view.
+  return <Suspense fallback={<MapLoadingShell viewClass={DEFAULT_VIEW_CLASS} />}><MapLoadingForAddress /></Suspense>;
+}
+
+function MapLoadingForAddress() {
   // The router's params already point at the destination while it loads; window.location lags a frame.
   const search = useSearchParams().toString();
   const phone = useSyncExternalStore(subscribe, isPhone, () => null);
@@ -18,7 +25,11 @@ export function MapLoading() {
   const explicit = new URLSearchParams(search).has('view');
   const view = mapOnly ? 'map' : explicit || phone !== null ? readDiscoveryView(search, phone ?? false) : null;
   // No explicit view during server render: keep the CSS default (map on phones, list on wider screens).
-  const viewClass = view === null ? 'showing-reports discovery-default-view' : view === 'reports' ? 'showing-reports' : '';
+  const viewClass = view === null ? DEFAULT_VIEW_CLASS : view === 'reports' ? 'showing-reports' : '';
+  return <MapLoadingShell viewClass={viewClass} />;
+}
+
+function MapLoadingShell({ viewClass }: { viewClass: string }) {
   return <main className={`map-page website-experience ${viewClass} map-route-loading`} aria-busy="true">
     <PublicSiteHeader activePath="/map" compactMobile />
     <div className="discovery-toolbar" aria-hidden="true">
