@@ -369,7 +369,7 @@ it('keeps pins attached during refresh and reorder, updates changed artwork, and
   expect(pin.map).toBe(attachedMap);
   expect(pin.title).toBe('Cleaned bottles');
   expect(pin.position.lat).toBe(0.6);
-  expect(glyph.textContent).toBe('Done');
+  expect(glyph.querySelector('.sr-only')?.textContent).toBe('Done');
   expect(glyph.classList.contains('report-map-marker-completed')).toBe(true);
   expect(glyph.classList.contains('report-map-marker-available')).toBe(false);
   expect(other.map).toBeNull();

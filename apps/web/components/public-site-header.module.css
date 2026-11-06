@@ -21,7 +21,7 @@
 .dropdownLinks { position: absolute; top: calc(100% + 12px); left: -16px; z-index: 2; width: 280px; margin: 0; padding: 12px 18px; list-style: none; border: 1px solid var(--line); background: #fff; box-shadow: 0 8px 20px #18251c12; }
 .dropdownLinks .navLink { width: 100%; min-height: 48px; font-size: 18px; white-space: normal; }
 .help .dropdownLinks { left: auto; right: 0; }
-.helpLinks li:nth-child(4) { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.helpLinks li:nth-child(5) { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
 /* Keep the app panel inside the viewport at the right end of the header. */
 .appLink > div > section { left: auto; right: 0; }
 
@@ -213,7 +213,7 @@
 .header .mapLink { --nav-tint: #fff4cc; --nav-ink: #775700; }
 .header .reportAction, .header [data-nav-family='Report'] { --nav-tint: #fff0ee; --nav-ink: #ac343b; }
 .header .funding, .header [data-nav-family='Donate'] { --nav-tint: #fff4cc; --nav-ink: #775700; }
-.header .cleaning, .header [data-nav-family='Earn'] { --nav-tint: #efedff; --nav-ink: #5146bf; }
+.header .cleaning, .header [data-nav-family='Earn'] { --nav-tint: #ecf6e3; --nav-ink: #2f6b3a; }
 .header .help, .header [data-nav-family='Support'] { --nav-tint: #f7ebfb; --nav-ink: #783398; }
 .header .appLink { --nav-tint: #fff0ee; --nav-ink: #ac343b; }
 .header.header .mapLink .navLink { padding-inline: 14px; min-height: 44px; justify-content: center; border: 2px solid #ead89c; border-radius: 12px; color: #775700; box-shadow: none; }
@@ -223,7 +223,7 @@
 .header.header .appLink a { padding-inline: 12px; border-radius: 12px; }
 .header.header .mobilePrimaryLinks a[href='/map']:hover { background: #fff4cc; color: #775700; }
 .header.header .mobilePrimaryLinks a[href='/report-litter']:hover { background: #fff0ee; color: #ac343b; }
-.header.header .mobilePrimaryLinks a[href='/cleaner']:hover { background: #efedff; color: #5146bf; }
+.header.header .mobilePrimaryLinks a[href='/cleaner']:hover { background: #ecf6e3; color: #2f6b3a; }
 
 /* Map toolbar: style only, preserving search/filter/view behavior and sizing. */
 .header + :global(.discovery-toolbar) { border-bottom-color: #ece6d5; background: #fff; }
@@ -391,4 +391,62 @@
   .header.header:not(.mapHeader) .mapLink { display: block; }
   .header.header:not(.mapHeader) .mapDesktopLabel { display: none; }
   .header.header:not(.mapHeader) .mapMobileLabel { display: inline; }
+}
+
+/* Menus announce themselves: a chevron on every trigger, and each panel opens with its family's bug
+   and a one-line purpose (the same icon-plus-label pattern as the homepage steps). */
+.triggerLabel { min-width: 0; }
+.chevron { flex: none; width: 14px; height: 14px; margin-left: 5px; opacity: .55; transition: rotate 160ms ease, opacity 160ms ease; }
+.menuTrigger:hover .chevron, .menuTrigger[aria-expanded='true'] .chevron { opacity: 1; }
+.menuTrigger[aria-expanded='true'] .chevron { rotate: 180deg; }
+.triggerBug { display: none; }
+.header .dropdownLinks .panelIntro { display: flex; align-items: center; gap: 10px; margin: 0 0 6px; padding: 6px 12px 12px; border-bottom: 2px solid var(--nav-tint, #efedff); color: var(--nav-ink, #4438bb); font-family: 'Playful Nunito', sans-serif; font-size: 15px; font-weight: 900; line-height: 1.25; }
+.header .dropdownLinks .panelIntro img { flex: none; width: 30px; height: 30px; object-fit: contain; }
+/* The drawer is compact: the bug moves onto the trigger itself and the intro line is dropped. */
+.header .mobilePrimaryLinks .panelIntro { display: none; }
+.header .mobilePrimaryLinks .triggerBug { display: block; flex: none; width: 26px; height: 26px; margin-right: 12px; object-fit: contain; }
+.header .mobilePrimaryLinks .triggerLabel { flex: 1; text-align: left; }
+.header .mobilePrimaryLinks .chevron { width: 18px; height: 18px; }
+.header.header .mobilePrimaryLinks > .mapEntry svg { width: 26px; height: 26px; margin-right: 4px; }
+@media (prefers-reduced-motion: reduce) { .chevron { transition: none; } }
+/* Chevrons add ~76px to the bar; tighten the spacing so wide layouts still fit on one row. */
+@media (min-width: 1240px) and (max-width: 1439px) {
+  .header .inner { column-gap: 12px; }
+  .header .menuTrigger { padding-inline: 9px; }
+}
+.chevron { margin-left: 4px; }
+/* Mid-size bars have no spare room; the drawer and wide bar keep the chevrons. */
+@media (min-width: 760px) and (max-width: 1099px) {
+  .header .desktopNav .chevron, .header .help .chevron { display: none; }
+}
+
+/* Account call to action: the same raised "toy key" as the site's other primary buttons —
+   a solid deep-purple ledge instead of a pale halo, so it reads as pressable and presses down. */
+.header.header :global(.public-account-control-signed-out) {
+  position: relative; min-height: 46px; padding-inline: 20px;
+  border: 0; border-radius: 14px;
+  background: #5146ed; color: #fff;
+  font-family: 'Playful Nunito', sans-serif; font-weight: 900; letter-spacing: .005em;
+  box-shadow: 0 4px 0 #3528ac;
+  transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .header.header :global(.public-account-control-signed-out:hover) { background: #5d53f7; color: #fff; transform: translateY(-1px); box-shadow: 0 5px 0 #3528ac; }
+}
+.header.header :global(.public-account-control-signed-out:active) { transform: translateY(3px); box-shadow: 0 1px 0 #3528ac; }
+.header.header :global(.public-account-control-signed-out:focus-visible) { outline: 3px solid #b3a6e5; outline-offset: 3px; }
+@media (max-width: 600px) {
+  .header.header :global(.public-account-control-signed-out) { min-height: 42px; padding-inline: 12px; border-radius: 12px; box-shadow: 0 3px 0 #3528ac; }
+}
+@media (max-width: 360px) {
+  .header.header :global(.public-account-control-signed-out) { padding-inline: 9px; }
+}
+/* Phones: the menu trigger's tablet padding pushed the row ~22px past a 375px screen. */
+@media (max-width: 600px) {
+  .header.header .mobileMenu > .menuTrigger { min-width: 44px; padding: 8px 4px; }
+  .header.header :global(.public-account-control-signed-out) { padding-inline: 10px; }
+}
+@media (max-width: 400px) {
+  .header.header:not(.mapHeader) .inner { column-gap: 4px; padding-inline: 8px; }
+  .header.header:not(.mapHeader) .brandLink img { width: 70px; }
 }

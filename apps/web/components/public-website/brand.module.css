@@ -8,14 +8,6 @@
 .brand > header a, .brand > header button { font-weight: 700; }
 .brand :global(.header-report-button), .brand :global(.public-account-control) { border-radius: 14px; border-color: #5146ed; box-shadow: 0 3px 0 #d9d4f5; }
 .brand :global(.header-report-button) { background: #5146ed; color: #fff; box-shadow: 0 4px 0 #3528ac; }
-.brand main > section[aria-labelledby="home-title"] > div:nth-child(2) { position: relative; }
-.brand main > section[aria-labelledby="home-title"] > div:nth-child(2) > div > div { border-radius: 24px; box-shadow: 0 5px 0 #ffca30; }
-.brand main > section[aria-labelledby="home-title"] > div:nth-child(2) > div:first-child > div:nth-child(2) { box-shadow: 0 5px 0 #b645d3; }
-.brand main > section[aria-labelledby="home-title"] > div:nth-child(2) > div:nth-child(2) > div:first-child { box-shadow: 0 5px 0 #5146ff; }
-.brand main > section[aria-labelledby="home-title"] > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) { box-shadow: 0 5px 0 #ed3f48; }
-/* Out-of-flow logo motifs add no text or layout space. */
-.brand main > section[aria-labelledby="home-title"] > div:nth-child(2)::before { content: ''; position: absolute; z-index: 1; pointer-events: none; width: 75px; height: 75px; top: -18px; left: -18px; transform: rotate(-18deg); background-image: url('/brand/litterbugs-logo.png'); }
-.brand main > section[aria-labelledby="home-title"] > div:nth-child(2)::after { content: ''; position: absolute; z-index: 1; pointer-events: none; width: 64px; height: 64px; bottom: -22px; right: -12px; transform: rotate(18deg); background-image: url('/brand/litterbugs-logo.png'); }
 .brand section[aria-labelledby='report-starter-title'] article > img { border-radius: 22px; box-shadow: 0 5px 0 #e3bdef; }
 .brand section[aria-labelledby='report-starter-title'] article:nth-child(2) > img { box-shadow: 0 5px 0 #ffce38; }
 .brand section[aria-labelledby='report-starter-title'] article:nth-child(3) > img { box-shadow: 0 5px 0 #bbb5ff; }
@@ -29,7 +21,6 @@
 .brand :global(.report-result-photo) { border-radius: 20px 20px 0 0; }
 .brand :global(.report-result-reward) { border-radius: 10px; }
 .brand a:focus-visible, .brand button:focus-visible { outline: 3px solid #5146ed; outline-offset: 4px; }
-@media (max-width: 700px) { .brand main > section[aria-labelledby="home-title"] > div:nth-child(2)::before { width: 55px; height: 55px; left: -8px; top: -5px; }.brand main > section[aria-labelledby="home-title"] > div:nth-child(2)::after { width: 48px; height: 48px; right: -5px; bottom: -18px; } }
 
 /* Shared interaction language: raised controls, quiet links, visible focus. */
 .brand {
@@ -287,17 +278,9 @@
 
 /* Reuse the four original logo silhouettes as a CSS sprite, not redrawn icons.
    The slight brightness correction blends the source's near-white canvas into white. */
-.brand main > section[aria-labelledby='home-title'] > div:nth-child(2)::before,
-.brand main > section[aria-labelledby='home-title'] > div:nth-child(2)::after,
 .brand section[aria-labelledby='home-cleanup-title']::before,
 .brand > main > header::after, .brand > main > h1::after, .brand > footer::before {
   background-repeat: no-repeat; filter: brightness(1.045); pointer-events: none;
-}
-.brand main > section[aria-labelledby='home-title'] > div:nth-child(2)::before {
-  background-size: 605.714% 416.346%; background-position: 0% 57.751%;
-}
-.brand main > section[aria-labelledby='home-title'] > div:nth-child(2)::after {
-  background-size: 908.571% 636.765%; background-position: 54.77% 100%;
 }
 .brand section[aria-labelledby='home-cleanup-title']::before,
 .brand > main > h1::after {

@@ -60,23 +60,18 @@ button:disabled { cursor: not-allowed; opacity: .6; }
 .map-stage { position: relative; grid-column: 1; grid-row: 1; height: 100%; min-width: 0; overflow: hidden; background: #e9eee9; }
 .map-stage-reporting .google-map { cursor: crosshair; }
 .google-map { position: absolute; inset: 0; }
-.report-map-marker { min-width: 46px; min-height: 34px; display: inline-flex; align-items: center; justify-content: center; padding: 0 11px; border: 1px solid #ccd5ce; border-radius: 999px; color: #17201a; background: #fff; box-shadow: 0 4px 12px rgba(17,38,27,.22); font-size: 12px; font-weight: 900; line-height: 1; transition: transform .15s ease, color .15s ease, background .15s ease; }
-.report-map-marker:hover, .report-map-marker-previewed { border-color: var(--green); transform: scale(1.06); }
-.report-map-marker-selected { color: #fff; background: var(--green-dark); border-color: var(--green-dark); transform: scale(1.08); }
 .map-loading, .map-error { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: #59655c; background: #eef2ee; z-index: 2; }
 .map-error svg { width: 34px; color: #a45a12; }
 .map-error strong { font-size: 18px; }
 .map-error span { max-width: 360px; text-align: center; }
 .spinner { width: 28px; height: 28px; border: 3px solid #cfd9d0; border-top-color: var(--green); border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.zoom-controls, .map-action-controls { position: absolute; z-index: 5; display: flex; flex-direction: column; gap: 1px; }
-.zoom-controls { top: 18px; left: 18px; background: #fff; border: 1px solid #d8dfd9; border-radius: 12px; box-shadow: 0 7px 18px rgba(35,55,40,.13); overflow: hidden; }
+.map-action-controls { position: absolute; z-index: 5; display: flex; flex-direction: column; gap: 1px; }
 .map-action-controls { right: 20px; bottom: 24px; gap: 12px; }
-.zoom-controls button, .map-action-controls button { width: 46px; height: 46px; border: 0; background: rgba(255,255,255,.98); display: grid; place-items: center; cursor: pointer; }
-.zoom-controls button + button { border-top: 1px solid #e3e7e3; }
+.map-action-controls button { width: 46px; height: 46px; border: 0; background: rgba(255,255,255,.98); display: grid; place-items: center; cursor: pointer; }
 .map-action-controls button { border: 1px solid #d8dfd9; border-radius: 50%; box-shadow: 0 7px 18px rgba(35,55,40,.18); }
-.zoom-controls button:hover, .map-action-controls button:hover { color: var(--green); background: var(--green-soft); }
-.zoom-controls svg, .map-action-controls svg { width: 22px; height: 22px; }
+.map-action-controls button:hover { color: var(--green); background: var(--green-soft); }
+.map-action-controls svg { width: 22px; height: 22px; }
 .report-browser-toggle { display: none; }
 .report-browser { z-index: 6; grid-column: 2; grid-row: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; overflow: hidden; background: #f6f7f6; border-left: 1px solid #d8ddd9; }
 .report-browser-header { flex: none; padding: 18px 18px 14px; background: #f6f7f6; }
@@ -494,7 +489,7 @@ button.member-activity-row:hover { background: var(--green-soft); }
   .map-stage { height: 100%; }
   .map-header-actions { gap: 6px; }
   .header-report-button, .public-account-control { min-height: 44px; padding: 0 10px; font-size: 13px; }
-  .zoom-controls { top: 12px; left: 12px; }.zoom-controls button { width: 42px; height: 42px; }
+
   .map-action-controls { right: 13px; bottom: 85px; }.map-action-controls button { width: 45px; height: 45px; }
   .toast { bottom: 76px; }
   .report-browser-toggle { position: absolute; z-index: 34; left: 50%; bottom: 16px; transform: translateX(-50%); display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 18px; border: 0; border-radius: 999px; color: #fff; background: #17201a; box-shadow: 0 7px 18px rgba(35,55,40,.22); font-size: 13px; font-weight: 900; cursor: pointer; }
@@ -622,9 +617,6 @@ button.member-activity-row:hover { background: var(--green-soft); }
 :is(.website-experience, .public-report-cards) .report-result-workflow { color: #fff; background: #ad302b; }
 :is(.website-experience, .public-report-cards) .report-result-workflow[data-tone="active"] { color: #573500; background: #ffdf96; }
 :is(.website-experience, .public-report-cards) .report-result-workflow[data-tone="completed"] { color: #fff; background: #256329; }
-.website-experience .report-map-marker { background: #dc4545; color: #fff; border: 2px solid #fff; }
-.website-experience .report-map-marker-completed { background: #2f7d32; }
-.website-experience .report-map-marker-claimed, .website-experience .report-map-marker-completion_submitted, .website-experience .report-map-marker-changes_requested { background: #a66314; }
 .website-experience .toast { bottom: 24px; }
 .discovery-footer { flex: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 44px; padding: 10px 24px; border-top: 1px solid var(--line); background: #fff; color: var(--muted); font-size: 12px; }
 .discovery-footer nav { display: flex; flex-wrap: wrap; gap: 16px; }
@@ -714,8 +706,6 @@ button.member-activity-row:hover { background: var(--green-soft); }
 .report-card-container .report-result { height: auto; flex: 1; }
 .report-card-container:has(.report-author) .report-result { border-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
 .report-card-container > .report-author { border: 1px solid #d8ddd9; border-top: 1px solid #edf0ed; border-radius: 0 0 22px 22px; }
-.report-map-cluster { display: flex; align-items: center; justify-content: center; min-width: 48px; height: 48px; padding: 0 10px; border: 3px solid white; border-radius: 50%; background: #244d30; color: white; font: 800 15px/1 system-ui, sans-serif; box-shadow: 0 2px 8px #17201a50; }
-.report-map-cluster-selected { box-shadow: 0 0 0 2px #b3a6e5, 0 2px 8px #17201a50; }
 .cluster-report-dialog { width: min(560px, calc(100vw - 24px)); }
 .cluster-report-list { list-style: none; padding: 0; margin: 16px 0; }
 .cluster-report-list li + li { border-top: 1px solid #dce4de; }
@@ -1558,3 +1548,71 @@ a.member-activity-row { color: inherit; text-decoration: none; }
   .report-detail-backdrop .report-detail-footer { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
   .report-detail-backdrop .report-detail-footer > .primary-button { flex-basis: 135px; }
 }
+
+/* Map pins and groups in the bug style shared with the homepage map preview: a white pill or circle
+   with the bug (ladybug = needs a cleanup, caterpillar = being cleaned, flower = cleaned up), visible text only
+   for money, and a pointed tail whose tip is the exact spot. Advanced Markers anchor at the bottom centre,
+   so the bottom margin makes room for the tail. */
+:is(.report-map-marker, .report-map-cluster) {
+  --pin-edge: #ece8f8; --pin-fill: #fff;
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  height: 34px; min-width: 34px; margin-bottom: 9px; padding: 0 12px 0 7px;
+  border: 2px solid var(--pin-edge); border-radius: 999px; background: var(--pin-fill); color: #292932;
+  font: 900 15px/1 'Playful Nunito', system-ui, sans-serif; white-space: nowrap; cursor: pointer;
+  filter: drop-shadow(0 3px 3px #2a225a29); transition: transform .14s ease, background-color .14s ease, border-color .14s ease;
+}
+:is(.report-map-marker, .report-map-cluster)::before, :is(.report-map-marker, .report-map-cluster)::after { content: ''; position: absolute; left: 50%; translate: -50% 0; clip-path: polygon(0 0, 100% 0, 50% 100%); pointer-events: none; }
+:is(.report-map-marker, .report-map-cluster)::before { top: calc(100% + 1px); width: 16px; height: 10px; background: var(--pin-edge); }
+:is(.report-map-marker, .report-map-cluster)::after { top: calc(100% - 1px); width: 12px; height: 8px; background: var(--pin-fill); }
+:is(.report-map-marker, .report-map-cluster) img { flex: none; display: block; }
+.report-map-marker.map-pin-icon-only { width: 34px; padding: 0; }
+.report-map-marker[data-kind='done'].map-pin-icon-only { width: 30px; min-width: 30px; height: 30px; }
+.report-map-marker:hover, .report-map-marker-previewed { --pin-fill: #fff0f1; --pin-edge: #f7c4c9; transform: translateY(-2px); }
+.report-map-cluster:hover { --pin-fill: #f4f1ff; --pin-edge: #d3ccf5; transform: translateY(-2px); }
+.report-map-marker[data-kind='busy']:is(:hover, .report-map-marker-previewed) { --pin-fill: #fff8dc; --pin-edge: #ecd99b; }
+.report-map-marker[data-kind='done']:is(:hover, .report-map-marker-previewed) { --pin-fill: #f0eeff; --pin-edge: #d3ccf5; }
+.report-map-marker-selected { --pin-fill: #fff0f1; --pin-edge: #ed8f97; transform: translateY(-3px) scale(1.08); }
+.report-map-marker-selected[data-kind='busy'] { --pin-fill: #fff8dc; --pin-edge: #d9b84a; }
+.report-map-marker-selected[data-kind='done'] { --pin-fill: #f0eeff; --pin-edge: #a99bea; }
+.report-map-cluster { padding: 0 11px 0 7px; }
+.report-map-cluster-selected { --pin-fill: #f4f1ff; --pin-edge: #a99bea; }
+@media (prefers-reduced-motion: reduce) { :is(.report-map-marker, .report-map-cluster) { transition: none; } }
+
+/* Hover cards on map pins and groups: same look as the homepage map preview. Mouse only;
+   taps open the report panel instead. The card lives inside the pin, so reset the pin's type. */
+.map-pin-card { position: absolute; bottom: calc(100% + 14px); left: 50%; translate: -50% 6px; z-index: 2; display: flex; align-items: center; gap: 12px; width: 280px; padding: 8px 14px 8px 8px; border: 2px solid #ece8f8; border-radius: 18px; background: #fff; color: #292932; font: 600 13px/1.3 system-ui, -apple-system, sans-serif; text-align: left; white-space: normal; box-shadow: 0 4px 0 #ebe7f8, 0 16px 32px #2a225a1f; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .14s ease, translate .14s ease, visibility 0s .14s; }
+.map-pin-card[data-side='start'] { left: -10px; translate: 0 6px; }
+.map-pin-card[data-side='end'] { left: auto; right: -10px; translate: 0 6px; }
+.map-pin-card[data-below] { bottom: auto; top: calc(100% + 16px); }
+@media (hover: hover) and (pointer: fine) {
+  :is(.report-map-marker, .report-map-cluster):hover > .map-pin-card { opacity: 1; visibility: visible; translate: -50% 0; transition: opacity .14s ease, translate .14s ease; }
+  :is(.report-map-marker, .report-map-cluster):hover > .map-pin-card:is([data-side='start'], [data-side='end']) { translate: 0 0; }
+}
+.map-pin-thumb { flex: none; display: grid; place-items: center; width: 64px; height: 64px; overflow: hidden; border-radius: 12px; background: #f4f1ff; }
+.map-pin-thumb img[data-src] { width: 100%; height: 100%; object-fit: cover; }
+.map-pin-card-text { display: grid; gap: 6px; min-width: 0; }
+.map-pin-card-text strong { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font: 900 15px/1.25 'Playful Nunito', system-ui, sans-serif; color: #292932; }
+.map-pin-chip { justify-self: start; padding: 3px 9px; border-radius: 8px; font-size: 13px; font-weight: 700; line-height: 1.3; white-space: nowrap; }
+.map-pin-chip[data-tone='paid'] { background: #fff0f1; color: #a8323b; }
+.map-pin-chip[data-tone='volunteer'] { background: #efedff; color: #4438bb; }
+.map-pin-chip[data-tone='busy'] { background: #fff4cc; color: #6d5000; }
+.map-pin-chip[data-tone='done'] { background: #eaf6e4; color: #2f6b3a; }
+.map-group-card { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; width: 340px; padding: 10px; }
+.map-group-title { padding: 2px 6px 4px; color: #6b6878; font-size: 13px; font-weight: 700; }
+.map-group-rows { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; }
+.map-group-row { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 40px; padding: 6px 8px; border-radius: 12px; }
+.map-group-row img { flex: none; }
+.map-group-row-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 900 14px/1.2 'Playful Nunito', system-ui, sans-serif; }
+.map-group-row .map-pin-chip { flex: none; font-size: 12px; padding: 2px 8px; }
+.map-group-more { padding: 4px 8px 2px; color: #4438bb; font-size: 14px; font-weight: 700; }
+
+/* Map key, where the zoom buttons used to be: each bug and how many are in view. */
+.map-key { position: absolute; top: 14px; left: 14px; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; max-width: calc(100% - 200px); margin: 0; padding: 7px 14px 7px 12px; border-radius: 16px; background: #ffffffeb; color: #3d3a4a; font-size: 14px; font-weight: 600; list-style: none; box-shadow: 0 0 0 1px #ece8f8, 0 3px 0 #ebe7f8; pointer-events: none; }
+.map-key li { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.map-key img { width: 18px; height: 18px; object-fit: contain; }
+.map-key b { font-weight: 800; color: #292932; }
+@media (max-width: 760px) {
+  .map-key { top: 10px; left: 10px; max-width: calc(100% - 184px); gap: 2px 10px; padding: 5px 10px; font-size: 12px; }
+  .map-key img { width: 15px; height: 15px; }
+}
+@media (prefers-reduced-motion: reduce) { .map-pin-card { transition: none; } }

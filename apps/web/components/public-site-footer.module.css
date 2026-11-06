@@ -1,0 +1,50 @@
+/* A light lavender band closes the page. Pastel tints only; the logo keeps the strong colours.
+   Repeated class selectors outrank the older global .discovery-footer rules without !important. */
+.footer.footer.footer {
+  display: block; min-height: 0; margin-top: 16px; padding: 0;
+  border-top: 0; border-radius: 32px 32px 0 0;
+  background: #f7f5ff; color: #6b6878; font-size: 15px; line-height: 1.5;
+}
+.inner {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 32px 64px;
+  width: min(1180px, calc(100% - 64px)); margin: 0 auto; padding: 40px 0 44px;
+}
+.brand { display: grid; justify-items: start; gap: 10px; }
+.logo { display: inline-flex; border-radius: 12px; }
+.logo img { display: block; width: 92px; height: auto; mix-blend-mode: multiply; }
+.logo:focus-visible { outline: 3px solid #b3a6e5; outline-offset: 4px; }
+.copyright { color: #6b6878; font-size: 14px; }
+
+.footer.footer.footer .links { display: grid; grid-template-columns: repeat(3, max-content); justify-content: end; gap: 8px 48px; }
+.group { display: grid; align-content: start; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.group[data-tone='lavender'] { --tint: #ebe7ff; --ink: #4438bb; }
+.group[data-tone='sun'] { --tint: #fff1c2; --ink: #6d5000; }
+.group[data-tone='blush'] { --tint: #ffe9ec; --ink: #a8323b; }
+.footer.footer.footer .group :is(a, button) {
+  display: inline-flex; align-items: center; min-height: 40px; margin-left: -12px; padding: 6px 12px;
+  border: 0; border-radius: 12px; background: transparent; color: #4a4857;
+  font: inherit; font-size: 15px; font-weight: 600; text-decoration: none; cursor: pointer;
+}
+.footer.footer.footer .group :is(a, button):is(:hover, :focus-visible) { background: var(--tint); color: var(--ink); box-shadow: none; text-decoration: none; }
+.footer.footer.footer .group :is(a, button):focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+@media (max-width: 760px) {
+  .footer.footer.footer { margin-top: 12px; border-radius: 24px 24px 0 0; }
+  .inner { grid-template-columns: 1fr; gap: 24px; width: calc(100% - 40px); padding: 32px 0 36px; }
+  .brand { grid-auto-flow: column; align-items: center; justify-content: space-between; width: 100%; }
+  .logo img { width: 76px; }
+  .footer.footer.footer .links { grid-template-columns: repeat(2, minmax(0, 1fr)); justify-content: stretch; gap: 16px 24px; }
+  .footer.footer.footer .group :is(a, button) { min-height: 44px; }
+}
+
+/* Compact: one row under the map, same lavender band, logo, groups and pastel tints. Phones hide it;
+   the map has its own bottom tabs there. */
+.footer.footer.footer.compact { flex: none; margin-top: 0; border-radius: 0; box-shadow: 0 -1px 0 #ece8f8; }
+.compact .inner { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 24px; width: auto; padding: 6px 24px; }
+.compact .brand { grid-auto-flow: column; align-items: center; gap: 12px; }
+.compact .logo img { width: 52px; }
+.compact .copyright { font-size: 13px; }
+.footer.footer.footer.compact .links { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0 18px; }
+.compact .group { display: flex; gap: 0; }
+.footer.footer.footer.compact .group :is(a, button) { min-height: 36px; margin-left: 0; padding: 4px 10px; font-size: 14px; }
+@media (max-width: 760px) { .footer.footer.footer.compact { display: none; } }

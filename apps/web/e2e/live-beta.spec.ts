@@ -13,8 +13,9 @@ test('public map, report detail, controls, and signed-out boundaries work', asyn
   await expect.poll(() => page.locator('.report-map-marker').count()).toBeGreaterThan(0);
   await expect(page.getByText(/Google Maps could not load/i)).toHaveCount(0);
 
-  const zoomOut = page.getByRole('button', { name: 'Zoom out' });
-  for (let index = 0; index < 7; index += 1) await zoomOut.click();
+  // The map has no zoom buttons; zoom out with the scroll wheel instead.
+  await page.getByLabel('Litterbugs report map').hover();
+  for (let index = 0; index < 7; index += 1) await page.mouse.wheel(0, 400);
 
   await page.locator('gmp-advanced-marker').first().evaluate((marker) =>
     (marker as HTMLElement).click(),

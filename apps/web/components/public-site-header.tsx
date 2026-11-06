@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { IoMenuOutline, IoPhonePortraitOutline, IoMapOutline } from 'react-icons/io5';
+import { IoChevronDown, IoMenuOutline, IoPhonePortraitOutline, IoMapOutline } from 'react-icons/io5';
 import Link from 'next/link';
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 
@@ -67,6 +67,14 @@ const informationLinks = [
 ] as const;
 type NavigationLinks = ReadonlyArray<readonly [PublicPath | '/report' | `/map?${string}` | `/sign-in?${string}`, string]>;
 
+/** Each menu family is labelled by one logo bug, matching the homepage story and the family's colour. */
+const familyIntros: Record<string, { bug: string; text: string }> = {
+  Report: { bug: '/brand/bugs/ladybug.png', text: 'Pin litter, earn cash' },
+  Donate: { bug: '/brand/bugs/bee.png', text: 'Fund a cleanup nearby' },
+  Earn: { bug: '/brand/ranks/caterpillar.svg', text: 'Get paid to clean up litter' },
+  Support: { bug: '/brand/bugs/butterfly.png', text: 'Help, safety and our story' },
+};
+
 function NavigationDropdown({ label, links, activePath, open, onToggle, onClose, onNavigate }: {
   label: string;
   links: NavigationLinks;
@@ -83,6 +91,7 @@ function NavigationDropdown({ label, links, activePath, open, onToggle, onClose,
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isOpen = useRef(open);
   const openedByHover = useRef(false);
+  const intro = familyIntros[label];
   function clearTimers() {
     if (openTimer.current) clearTimeout(openTimer.current);
     if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -144,9 +153,12 @@ function NavigationDropdown({ label, links, activePath, open, onToggle, onClose,
       }}>
       <button ref={trigger} className={styles.menuTrigger} type="button"
         aria-expanded={open} aria-controls={id} data-active={links.some(([href]) => href === activePath)} onClick={() => { clearTimers(); if (open && openedByHover.current) { openedByHover.current = false; return; } openedByHover.current = false; onToggle(); }}>
-        {label}
+        {intro && <Image className={styles.triggerBug} src={intro.bug} alt="" width={64} height={64} unoptimized />}
+        <span className={styles.triggerLabel}>{label}</span>
+        <IoChevronDown className={styles.chevron} aria-hidden />
       </button>
       <ul id={id} className={`${styles.dropdownLinks}${label === 'Support' ? ` ${styles.helpLinks}` : ''}`} hidden={!open}>
+        {intro && <li className={styles.panelIntro}><Image src={intro.bug} alt="" width={64} height={64} unoptimized />{intro.text}</li>}
         {links.map(([href, text]) => <li key={href}><HeaderLink href={href} activePath={activePath} onNavigate={() => { close(); onNavigate?.(); }}>{text}</HeaderLink></li>)}
       </ul>
     </div>

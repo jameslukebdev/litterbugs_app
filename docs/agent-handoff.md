@@ -24,6 +24,20 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-06 — Claude (homepage hero redesign, local and uncommitted)
+
+- Grant asked for a local preview only; nothing committed or deployed.
+- Hero collage is now a four-step story (Spot litter, Snap a report, It gets
+  cleaned up, Reward earned). Each step is labelled by its bug (lightning bug,
+  ladybug, caterpillar, butterfly), following the icon-plus-label pattern of the
+  map empty state, which Grant likes. The bee flies a dotted trail between the
+  photos once on load, then the reward card appears. Reduced motion shows
+  them at rest.
+- Files: `apps/web/app/page.tsx`, `components/public-website/home-hero.module.css`,
+  and the old hero collage overrides removed from `brand.module.css`.
+- Pending: Grant's review. "Reward earned / Your report was cleaned up" copy
+  needs confirming against how reporter rewards actually work.
+
 ### 2026-11-06 — Codex (Luke's admin sending setup)
 
 - Confirmed the runbook documents admin mail forwarding to both owners and

@@ -1,5 +1,6 @@
-import { MarkerClusterer, ClusterStats, SuperClusterAlgorithm, type Marker, type AlgorithmInput, type AlgorithmOutput } from '@googlemaps/markerclusterer';
+import { MarkerClusterer, MarkerClustererEvents, ClusterStats, SuperClusterAlgorithm, type Cluster, type Marker, type AlgorithmInput, type AlgorithmOutput } from '@googlemaps/markerclusterer';
 import type { MappableReport } from '@litterbugs/report-contract';
+import { prepareCard, renderGroupCard, renderPinGlyph } from './map-marker-glyph';
 
 export function clusterSummary(reports: MappableReport[]) {
   const counts = { available: 0, active: 0, completed: 0 };
@@ -48,6 +49,17 @@ export function attachReportMarker(marker: google.maps.marker.AdvancedMarkerElem
 }
 
 export class StableReportClusterer extends MarkerClusterer {
+  private memberIds = new WeakMap<object, number>();
+  private nextMemberId = 0;
+  /** Group bubbles from the previous pass, keyed by membership; renderClusters takes the ones it reuses. */
+  private reusableGroups = new Map<string, Marker>();
+  private groupKey(cluster: Cluster) {
+    return cluster.markers.map(marker => {
+      if (!this.memberIds.has(marker)) this.memberIds.set(marker, ++this.nextMemberId);
+      return this.memberIds.get(marker)!;
+    }).sort((a, b) => a - b).join(',');
+  }
+
   protected renderClusters() {
     const map = this.getMap() as google.maps.Map | null;
     if (!map) return;
@@ -56,12 +68,48 @@ export class StableReportClusterer extends MarkerClusterer {
       if (cluster.markers.length === 1) {
         cluster.marker = cluster.markers[0];
       } else {
-        cluster.marker = this.renderer.render(cluster, stats, map);
+        const key = this.groupKey(cluster);
+        const kept = this.reusableGroups.get(key) as google.maps.marker.AdvancedMarkerElement | undefined;
+        if (kept) {
+          this.reusableGroups.delete(key);
+          kept.position = cluster.position;
+          cluster.marker = kept;
+        } else cluster.marker = this.renderer.render(cluster, stats, map);
         for (const marker of cluster.markers) attachReportMarker(marker as google.maps.marker.AdvancedMarkerElement, null);
       }
       // Our renderer uses AdvancedMarkerElement and owns its gmp-click handler.
       attachReportMarker(cluster.marker as google.maps.marker.AdvancedMarkerElement, map);
     }
+  }
+
+  /**
+   * Same as MarkerClusterer.render, except a group whose members are unchanged keeps its existing
+   * bubble instead of being redrawn. Zooming or panning re-runs clustering often; without this every
+   * unchanged group (and its icon) blinks out and back in. Single pins were already kept.
+   */
+  render() {
+    const map = this.getMap();
+    if (!(map instanceof google.maps.Map) || !map.getProjection()) return;
+    google.maps.event.trigger(this, MarkerClustererEvents.CLUSTERING_BEGIN, this);
+    const { clusters, changed } = this.algorithm.calculate({ markers: this.markers, map, mapCanvasProjection: this.getProjection() });
+    if (changed || changed === undefined) {
+      const singles = new Set(clusters.filter(cluster => cluster.markers.length === 1).map(cluster => cluster.markers[0]));
+      const previousGroups = new Map<string, Marker>();
+      for (const cluster of this.clusters) {
+        if (!cluster.marker) continue;
+        if (cluster.markers.length === 1) {
+          if (!singles.has(cluster.marker)) attachReportMarker(cluster.marker as google.maps.marker.AdvancedMarkerElement, null);
+        } else previousGroups.set(this.groupKey(cluster), cluster.marker);
+      }
+      this.clusters = clusters;
+      this.reusableGroups = previousGroups;
+      this.renderClusters();
+      // Only groups that really split or merged are removed, a frame later to avoid a gap.
+      const stale = [...previousGroups.values()];
+      this.reusableGroups = new Map();
+      requestAnimationFrame(() => stale.forEach(marker => attachReportMarker(marker as google.maps.marker.AdvancedMarkerElement, null)));
+    }
+    google.maps.event.trigger(this, MarkerClustererEvents.CLUSTERING_END, this);
   }
 }
 
@@ -77,8 +125,9 @@ export function createReportClusters(map: google.maps.Map, AdvancedMarker: typeo
     const selected = Boolean(selectedId && visual.ids.includes(selectedId));
     visual.marker.title = `${summary.label}${selected ? '. Contains selected report' : ''}. Zoom in or choose a report`;
     visual.glyph.classList.toggle('report-map-cluster-selected', selected);
-    const text = `${members.length}`;
-    if (visual.glyph.textContent !== text) visual.glyph.textContent = text;
+    // The group shows the bug of its most useful member (open litter first) next to the count.
+    renderPinGlyph(visual.glyph, summary.available ? 'open' : summary.active ? 'busy' : 'done', `${members.length}`, true);
+    renderGroupCard(visual.glyph, members);
   };
   const clusterer = new StableReportClusterer({
     map, algorithm,
@@ -87,6 +136,13 @@ export function createReportClusters(map: google.maps.Map, AdvancedMarker: typeo
       glyph.className = 'report-map-cluster';
       const marker = new AdvancedMarker({ position: cluster.position, gmpClickable: true, zIndex: 1000 + cluster.count });
       marker.append(glyph);
+      const restingZ = 1000 + cluster.count;
+      glyph.addEventListener('pointerenter', (event) => {
+        if (event.pointerType !== 'mouse') return;
+        marker.zIndex = 5000;
+        prepareCard(glyph);
+      });
+      glyph.addEventListener('pointerleave', () => { marker.zIndex = restingZ; });
       marker.addEventListener('gmp-click', () => {
         const members = cluster.markers.map(item => reportsByMarker.get(item)).filter((report): report is MappableReport => Boolean(report));
         if ((map.getZoom() ?? 0) >= 20 || coincidentReports(members)) choose(members.map(report => report.id));

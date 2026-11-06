@@ -19,8 +19,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '@/components/icon';
 import { ClusterReports } from '@/components/cluster-reports';
 import type { createReportClusters } from '@/lib/report-clusters';
+import { pinKind, prepareCard, renderPinCard, renderPinGlyph, reportPinText, type PinKind } from '@/lib/map-marker-glyph';
+import { getReportCardPhotoUrl } from '@/lib/report-photo';
+import { PublicSiteFooter } from '@/components/public-site-footer';
 import { PublicAccountAction, type PublicAccountActionHandle } from '@/components/public-account-action';
-import Link from 'next/link';
 import { NotificationLink } from '@/components/notification-inbox';
 import { PublicSiteHeader } from '@/components/public-site-header';
 import { IoMapOutline, IoListOutline, IoOptionsOutline, IoAddCircleOutline, IoCloseCircleOutline, IoLocationOutline } from 'react-icons/io5';
@@ -53,20 +55,10 @@ const EMPTY_MAP_REPORTS: MappableReport[] = [];
 // Website starting viewport only: no city boundary or discovery filter.
 const DEFAULT_WEB_MAP_CENTER = { latitude: 36.2168, longitude: -81.6746 };
 const MAP_TYPES = ['roadmap', 'satellite', 'hybrid', 'terrain'] as const;
+const sameIds = (current: ReadonlySet<string>, next: readonly string[]) => current.size === new Set(next).size && next.every(id => current.has(id));
+/** Same bugs as the pins: ladybug = needs a cleanup, caterpillar = being cleaned, flower = cleaned up. */
+const MAP_KEY_BUGS: Record<PinKind, string> = { open: '/brand/bugs/ladybug.png', busy: '/brand/ranks/caterpillar.svg', done: '/brand/bugs/flower.png' };
 let mapsConfigured = false;
-
-function markerLabel(report: MappableReport) {
-  if (report.cleanup_state === 'completed') return 'Done';
-  if (report.cleanup_state === 'claimed') return 'Busy';
-  if (report.funded_amount_cents > 0) {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0,
-    }).format(report.funded_amount_cents / 100);
-  }
-  return 'Open';
-}
 
 export function MapExperience({
   initialReports,
@@ -338,7 +330,12 @@ export function MapExperience({
     let cancelled = false;
     const owner = userId ?? 'guest';
     const show = (value: { preferences: { favorites: string[]; hidden: string[] } }) => {
-      if (!cancelled && preferenceOwnerRef.current === owner) setReportPreferences({ favorites: new Set(value.preferences.favorites), hidden: new Set(value.preferences.hidden) });
+      if (cancelled || preferenceOwnerRef.current !== owner) return;
+      // The background refresh reloads these every 30 seconds. Keep the same Sets when nothing changed:
+      // new Sets would count as a new search, which blanks the pins and map key until reports reload.
+      setReportPreferences(current => sameIds(current.favorites, value.preferences.favorites) && sameIds(current.hidden, value.preferences.hidden)
+        ? current
+        : { favorites: new Set(value.preferences.favorites), hidden: new Set(value.preferences.hidden) });
     };
     void reportPreferenceSync.load(owner).then(show).then(() => reportPreferenceSync.sync(owner)).then(show)
       .catch(() => { if (!cancelled) setToast('Saved preferences could not be loaded. Please try again.'); });
@@ -553,8 +550,16 @@ export function MapExperience({
         marker.append(markerGlyph);
         markersRef.current.set(report.id, marker);
         markerGlyphsRef.current.set(report.id, markerGlyph);
-        markerGlyph.addEventListener('pointerenter', () => setPreviewedReportId(report.id));
+        const hovered = marker;
+        markerGlyph.addEventListener('pointerenter', (event) => {
+          setPreviewedReportId(report.id);
+          if (event.pointerType !== 'mouse') return;
+          // Lift the hovered pin above its neighbours so its card isn't covered.
+          hovered.zIndex = 5000;
+          prepareCard(event.currentTarget as HTMLElement);
+        });
         markerGlyph.addEventListener('pointerleave', () => {
+          hovered.zIndex = null;
           setPreviewedReportId((current) => current === report.id ? null : current);
         });
         marker.addEventListener('gmp-click', () => {
@@ -568,8 +573,12 @@ export function MapExperience({
       }
       const title = report.title || 'Litter Report';
       if (marker.title !== title) marker.title = title;
-      const label = markerLabel(report);
-      if (markerGlyph.textContent !== label) markerGlyph.textContent = label;
+      const pin = reportPinText(report);
+      renderPinGlyph(markerGlyph, pin.kind, pin.text, pin.visible);
+      const photoPath = report.photo_paths?.[0];
+      renderPinCard(markerGlyph, report, report.cleanup_state === 'completed'
+        ? `/reports/${encodeURIComponent(report.id)}/photo/after?width=640`
+        : photoPath ? getReportCardPhotoUrl(photoPath) : null);
       // Preserve hover/selection while changing just the report's status class.
       const statusClass = `report-map-marker-${report.cleanup_state ?? 'available'}`;
       if (markerGlyph.dataset.statusClass !== statusClass) {
@@ -593,6 +602,17 @@ export function MapExperience({
       );
     });
   }, [previewedReportId, selectedReport?.id]);
+
+  // The map key doubles as a live count of what's in view, like the homepage preview.
+  const mapKey = useMemo(() => {
+    const counts: Record<PinKind, number> = { open: 0, busy: 0, done: 0 };
+    for (const report of visibleReports) counts[pinKind(report.cleanup_state)]++;
+    return ([
+      ['open', counts.open, 'need a cleanup', 'needs a cleanup'],
+      ['busy', counts.busy, 'being cleaned', 'being cleaned'],
+      ['done', counts.done, 'cleaned up', 'cleaned up'],
+    ] as const).filter(([, count]) => count > 0);
+  }, [visibleReports]);
 
   const beginReport = useCallback((coordinates: Coordinates) => {
     if (!userId) {
@@ -1094,10 +1114,14 @@ export function MapExperience({
           {selectedReport && detailsMinimized && <button type="button" className="secondary-button map-report-summary" onClick={() => setDetailsMinimized(false)} aria-label={`Open report details: ${selectedReport.title || 'Litter report'}`}>
             <strong>{selectedReport.title || 'Litter report'}</strong><span>View report details</span>
           </button>}
-          <div className="zoom-controls" aria-label="Map zoom controls">
-            <button onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() ?? 12) + 1)} aria-label="Zoom in"><Icon name="plus" /></button>
-            <button onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() ?? 12) - 1)} aria-label="Zoom out"><Icon name="minus" /></button>
-          </div>
+          {mapKey.length > 0 && (
+            <ul className="map-key" aria-label="Map key">
+              {mapKey.map(([kind, count, many, one]) => (
+                // eslint-disable-next-line @next/next/no-img-element -- tiny brand marks, like BrandBug.
+                <li key={kind}><img src={MAP_KEY_BUGS[kind]} alt="" aria-hidden="true" width={18} height={18} /><span><b>{count}</b> {count === 1 ? one : many}</span></li>
+              ))}
+            </ul>
+          )}
           <div className="map-action-controls">
             <button onClick={toggleMapType} aria-label={`Change map type. Current: ${MAP_TYPES[mapTypeIndex]}`} title="Change map type"><Icon name="layers" /></button>
             <button onClick={centerOnUser} aria-label="Center map on your location" title="My location"><Icon name="location" /></button>
@@ -1108,13 +1132,7 @@ export function MapExperience({
         {selectedReport && !detailsMinimized && <ReportDetail closeLabel={communityReturn && !mapFirstEntry ? "Close report and return to community" : undefined} entryIntent={selectedReport.id === searchParams.get('report') ? entryIntent : null} inline={desktopDetail} key={selectedReport.id} report={selectedReport} userId={userId} isOwner={canManageReport(selectedReport, userId)} favorite={reportPreferences.favorites.has(selectedReport.id)} hidden={reportPreferences.hidden.has(selectedReport.id)} onFavoriteChange={(favorite) => updateReportPreference('favorites', selectedReport.id, favorite)} onHiddenChange={(hidden) => updateReportPreference('hidden', selectedReport.id, hidden)} onNotify={setToast} onRequireSignIn={(intent) => { const url = new URL(window.location.href); url.searchParams.set('report', selectedReport.id); if (intent) url.searchParams.set('intent', intent); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`); accountActionRef.current?.openAuth(intent); }} onReportChanged={refreshReports} onClose={closeReport} onEdit={() => { void editSelectedReport(); }} onDelete={() => { void deleteSelectedReport(); }} />}
       </div>
 
-      <footer className="discovery-footer">
-        <span>© {new Date().getFullYear()} Litterbugs</span>
-        <nav aria-label="Footer navigation">
-          <Link href="/about">About</Link><Link href="/help">Help</Link><Link href="/support">Support</Link>
-          <Link href="/cleanup-safety">Safety</Link><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link>
-        </nav>
-      </footer>
+      <PublicSiteFooter compact />
 
 
       {draftCoordinates && userId && <ResumableReportWizard submissionProgress={reportUploadProgress} key={userId} userId={userId} onCoordinatesChange={setDraftCoordinates} onRestorePublication={restorePublication} fundingEnabled={fundingEnabled} coordinates={draftCoordinates} selectingLocation={selectingDraftLocation} onChangeLocation={publicationUncertain ? undefined : changeDraftLocation} onClose={closeReportTask} onSubmit={saveReport} />}
