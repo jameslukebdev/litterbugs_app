@@ -547,7 +547,7 @@ describe('ReportDetail photos', () => {
 it('shows a closed historical report without inviting a new cleanup claim', () => {
   render(<ReportDetail report={{ ...report, expired_at: '2026-08-31', expires_at: '2026-08-31' }} isOwner={false} onClose={vi.fn()} onEdit={vi.fn()} onDelete={vi.fn()} />);
   expect(screen.getByText('Report closed')).toBeTruthy();
-  expect(screen.queryByRole('button', { name: 'Clean', exact: true })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Clean' })).toBeNull();
 });
 
 

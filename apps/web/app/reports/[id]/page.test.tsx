@@ -55,7 +55,7 @@ it('connects an available Boone report to its own web funding and cleanup contro
   loadReport.mockResolvedValue({ ...report, communitySlug: 'us-nc-boone', generalLocation: 'Boone', fundingEligible: true });
   render(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
   for (const [name, intent] of [['Fund', 'fund'], ['Clean', 'clean']]) {
-    const entry = new URL(screen.getByRole('link', { name, exact: true }).getAttribute('href')!, 'https://litterbugs.app');
+    const entry = new URL(screen.getByRole('link', { name }).getAttribute('href')!, 'https://litterbugs.app');
     expect(entry.pathname).toBe('/sign-in');
     const url = new URL(entry.searchParams.get('next')!, entry.origin);
     expect(url.pathname).toBe('/map');
@@ -68,15 +68,15 @@ it('connects an available Boone report to its own web funding and cleanup contro
 it.each(['completed', 'in_progress'])('does not offer a new cleanup or payment on a %s report', async state => {
   loadReport.mockResolvedValue({ ...report, state, communitySlug: 'us-nc-boone', fundingEligible: true });
   render(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
-  expect(screen.queryByRole('link', { name: 'Fund', exact: true })).toBeNull();
-  expect(screen.queryByRole('link', { name: 'Clean', exact: true })).toBeNull();
+  expect(screen.queryByRole('link', { name: 'Fund' })).toBeNull();
+  expect(screen.queryByRole('link', { name: 'Clean' })).toBeNull();
   expect(screen.getByRole('link', { name: 'View on map' })).toBeTruthy();
 });
 it('does not advertise funding when the report is ineligible', async () => {
   loadReport.mockResolvedValue({ ...report, communitySlug: 'us-nc-boone', fundingEligible: false });
   render(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
-  expect(screen.queryByRole('link', { name: 'Fund', exact: true })).toBeNull();
-  expect(screen.getByRole('link', { name: 'Clean', exact: true })).toBeTruthy();
+  expect(screen.queryByRole('link', { name: 'Fund' })).toBeNull();
+  expect(screen.getByRole('link', { name: 'Clean' })).toBeTruthy();
 });
 it('keeps completed Boone evidence connected to more local opportunities and results', async () => {
   loadReport.mockResolvedValue({ ...report, state: 'completed', communitySlug: 'us-nc-boone', generalLocation: 'Boone', completionDate: '2026-10-28T12:00:00Z', cleanerName: 'Local cleaner', bagsOrItemsRemoved: 2, weightPounds: 12 });
@@ -118,6 +118,6 @@ it('keeps an expired report readable without advertising current cleanup, fundin
   expect(screen.getByText('Report expired')).toBeTruthy();
   expect(screen.getByText(/A cleanup has not been confirmed/)).toBeTruthy();
   expect(screen.getByRole('link', { name: 'Find a current cleanup' }).getAttribute('href')).toBe('/reports');
-  for (const name of ['Fund', 'Clean', 'Open in Litterbugs', 'View on map']) expect(screen.queryByRole('link', { name, exact: true })).toBeNull();
+  for (const name of ['Fund', 'Clean', 'Open in Litterbugs', 'View on map']) expect(screen.queryByRole('link', { name })).toBeNull();
   expect(screen.queryByText(/cleanup reward/)).toBeNull();
 });
