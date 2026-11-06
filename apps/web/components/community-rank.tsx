@@ -48,7 +48,14 @@ export function CommunityRank({ userId, compact = false }: { userId: string; com
       <div><h3>{points === null ? error ? 'Unavailable' : <span className="account-skeleton account-skeleton-name" role="status" aria-label="Loading rank" /> : rank.name}</h3></div>
       {points !== null && <strong>{points} {points === 1 ? 'point' : 'points'}</strong>}
     </div>
-    <div className="community-rank-progress" style={points === null ? { visibility: 'hidden' } : undefined} aria-hidden={points === null}><p>{next ? `Next rank: ${next.name}` : 'Highest rank reached'} <strong>{progress}%</strong></p><progress max={100} value={progress} aria-label="Progress toward next rank" />{next && <small>{next.points - (points ?? 0)} points to go</small>}</div>
+    <div className="community-rank-progress" style={points === null ? { visibility: 'hidden' } : undefined} aria-hidden={points === null}>
+      <p>
+        {next ? <span className="community-rank-badge">{points !== null && <Image src={`/brand/ranks/${next.id}.png`} width={22} height={22} alt="" />}Next rank: {next.name}</span> : 'Highest rank reached'}
+        <strong>{progress}%</strong>
+      </p>
+      <progress max={100} value={progress} aria-label="Progress toward next rank" />
+      {next && <small>{next.points - (points ?? 0)} points to go</small>}
+    </div>
     {error && <button className="secondary-button" onClick={() => { setError(false); setAttempt(value => value + 1); }}>Retry loading rank</button>}
     <details><summary>How points work</summary><p>Earn 1 point when a report is accepted after review, and 3 points when a cleanup is confirmed complete.</p><p>You can earn up to 5 report points in a rolling 24 hours. Another report within 25 metres of a location credited to you in the previous 7 days does not earn another point. You can still report new litter there.</p></details>
   </section>;
