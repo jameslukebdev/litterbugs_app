@@ -83,7 +83,11 @@ export function trackWebsiteOutcome(event: WebsiteEvent, id: string) {
       : communityForEntry(window.location.search ?? '');
     const properties = communityProperties({ community_id: community });
     window.dispatchEvent(new CustomEvent(ANALYTICS_EVENT, { detail: { event, id, ...properties } }));
-    if (event === 'contribution_confirmed') pendingContributionAttempts.delete(id);
+    if (event === 'contribution_confirmed') {
+      trackParticipation('fund', 'payment_confirmed');
+      pendingContributionAttempts.delete(id);
+    }
+    if (event === 'report_published') trackParticipation('report', 'published');
   } catch { /* Analytics must never interrupt reporting or payment. */ }
 }
 
@@ -94,4 +98,37 @@ export function trackCommunityEngagement(event: CommunityEngagementEvent, proper
     const safe = communityProperties(properties);
     if (safe) window.dispatchEvent(new CustomEvent(ANALYTICS_EVENT, { detail: { event, ...safe } }));
   } catch { /* Optional measurement must not affect navigation or saves. */ }
+}
+
+const PARTICIPATION_STAGES = {
+  report: ['location_picker', 'location_confirmed', 'photos', 'litter_type', 'severity', 'details', 'review', 'published'],
+  fund: ['amount_review', 'payment_form', 'payment_submitted', 'payment_confirmed'],
+  clean: ['safety_review', 'claim_confirmed', 'evidence_form', 'evidence_submitted'],
+} as const;
+const COMMON_STAGES = ['action_tapped', 'auth_shown', 'auth_submitted', 'auth_closed'] as const;
+type ParticipationAction = keyof typeof PARTICIPATION_STAGES;
+type ParticipationStage = typeof COMMON_STAGES[number] | typeof PARTICIPATION_STAGES[ParticipationAction][number];
+
+export function participationProperties(value: { action?: unknown; stage?: unknown }) {
+  const { action, stage } = value;
+  if ((action !== 'report' && action !== 'fund' && action !== 'clean') || typeof stage !== 'string') return null;
+  if (!(COMMON_STAGES as readonly string[]).includes(stage)
+    && !(PARTICIPATION_STAGES[action] as readonly string[]).includes(stage)) return null;
+  return { action, stage };
+}
+
+const pendingParticipation: Array<NonNullable<ReturnType<typeof participationProperties>> & { page_type: string }> = [];
+export function drainParticipation() {
+  return pendingParticipation.splice(0);
+}
+
+export function trackParticipation(action: ParticipationAction, stage: ParticipationStage) {
+  try {
+    if (!analyticsProductionBrowser()) return;
+    const safe = participationProperties({ action, stage });
+    if (!safe) return;
+    if (pendingParticipation.length >= 30) pendingParticipation.shift();
+    pendingParticipation.push({ ...safe, page_type: analyticsPage(window.location.pathname) ?? '/private' });
+    window.dispatchEvent(new CustomEvent(ANALYTICS_EVENT, { detail: { event: 'participation_step' } }));
+  } catch { /* Optional measurement must not interrupt participation. */ }
 }

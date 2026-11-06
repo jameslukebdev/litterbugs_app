@@ -151,7 +151,7 @@ describe('ReportDetail photos', () => {
 
     expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Back' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Back to map' })).toBeTruthy();
   });
 
   it('shows the cleaner-facing reward and cleanup status', () => {
@@ -219,7 +219,7 @@ describe('ReportDetail photos', () => {
     );
 
     const dialog = screen.getByRole('dialog', { name: 'Photo report' });
-    const closeButton = screen.getByRole('button', { name: 'Back' });
+    const closeButton = screen.getByRole('button', { name: 'Back to map' });
     expect(dialog.getAttribute('aria-modal')).toBe('true');
     expect(document.activeElement).toBe(closeButton);
 
@@ -547,7 +547,7 @@ describe('ReportDetail photos', () => {
 it('shows a closed historical report without inviting a new cleanup claim', () => {
   render(<ReportDetail report={{ ...report, expired_at: '2026-08-31', expires_at: '2026-08-31' }} isOwner={false} onClose={vi.fn()} onEdit={vi.fn()} onDelete={vi.fn()} />);
   expect(screen.getByText('Report closed')).toBeTruthy();
-  expect(screen.queryByRole('button', { name: 'Sign in to clean' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Clean' })).toBeNull();
 });
 
 
@@ -574,7 +574,7 @@ it.each([false, true])('restores desktop return focus without stealing an indepe
   const origin = screen.getByRole('button', { name: 'Open report card' });
   origin.focus();
   rerender(view(true));
-  expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Back' }));
+  expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Back to map' }));
   const other = screen.getByRole('button', { name: 'Another report card' });
   if (movedElsewhere) other.focus();
   rerender(view(false));
@@ -678,6 +678,12 @@ describe('mobile report sheet dismissal', () => {
     fireEvent(target, new Event(cancel ? 'touchcancel' : 'touchend', { bubbles: true }));
   }
 
+  function pointer(target: Element, type: string, x: number, y: number) {
+    const event = new MouseEvent(type, { bubbles: true, button: 0, clientX: x, clientY: y });
+    Object.defineProperty(event, 'pointerId', { value: 1 });
+    fireEvent(target, event);
+  }
+
   it('focuses the report without selecting the handle and keeps the tap alternative', () => {
     const { panel, handle, onClose } = openSheet();
     expect(document.activeElement).toBe(panel);
@@ -690,10 +696,10 @@ describe('mobile report sheet dismissal', () => {
   it('follows a downward drag and dismisses after the slide-out', () => {
     vi.useFakeTimers();
     const { panel, handle, onClose } = openSheet();
-    fireEvent.touchStart(handle, { touches: [{ clientX: 100, clientY: 100 }] });
-    fireEvent.touchMove(handle, { touches: [{ clientX: 105, clientY: 220 }] });
+    pointer(handle, 'pointerdown', 100, 100);
+    pointer(handle, 'pointermove', 105, 220);
     expect(panel.style.getPropertyValue('--sheet-drag-y')).toBe('120px');
-    fireEvent.touchEnd(handle);
+    pointer(handle, 'pointerup', 105, 220);
     fireEvent.click(handle); // A synthesized click after dragging must not close twice.
     expect(onClose).not.toHaveBeenCalled();
     vi.advanceTimersByTime(200);
@@ -702,13 +708,15 @@ describe('mobile report sheet dismissal', () => {
 
   it.each([
     ['short drag', 100, 140, false],
-    ['horizontal swipe', 240, 120, false],
+    ['horizontal swipe', 250, 200, false],
     ['upward scroll', 100, 0, false],
     ['cancelled drag', 100, 240, true],
   ])('does not dismiss for a %s', (_name, x, y, cancel) => {
     vi.useFakeTimers();
     const { panel, handle, onClose } = openSheet();
-    swipe(handle, 100, 100, x as number, y as number, cancel as boolean);
+    pointer(handle, 'pointerdown', 100, 100);
+    pointer(handle, 'pointermove', x as number, y as number);
+    pointer(handle, cancel ? 'pointercancel' : 'pointerup', x as number, y as number);
     vi.advanceTimersByTime(250);
     expect(onClose).not.toHaveBeenCalled();
     expect(panel.style.getPropertyValue('--sheet-drag-y')).toBe('');
@@ -734,7 +742,9 @@ describe('mobile report sheet dismissal', () => {
     const { handle, onClose } = openSheet();
     swipe(screen.getByRole('button', { name: 'Share' }), 100, 100, 100, 250);
     Object.defineProperty(window, 'matchMedia', { configurable: true, value: vi.fn(() => ({ matches: false })) });
-    swipe(handle, 100, 100, 100, 250);
+    pointer(handle, 'pointerdown', 100, 100);
+    pointer(handle, 'pointermove', 100, 250);
+    pointer(handle, 'pointerup', 100, 250);
     vi.advanceTimersByTime(250);
     expect(onClose).not.toHaveBeenCalled();
     cleanup();

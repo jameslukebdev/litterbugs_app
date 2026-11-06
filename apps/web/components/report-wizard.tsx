@@ -1,4 +1,6 @@
 'use client';
+
+import { trackParticipation } from '@/lib/website-analytics';
 import { ReportStartPhotoImport } from './report-start-photo-import';
 import { prepareBrowserPhotos } from '@/lib/prepare-browser-photo';
 
@@ -109,6 +111,10 @@ export function ReportWizard({
   onSubmit: (draft: ReportDraft, startingContributionCents: number | null) => Promise<string | null>;
 }) {
   const [step, setStep] = useState(initialState?.step ?? 0);
+  useEffect(() => {
+    const stage = (['photos', 'litter_type', 'severity', 'details', 'review'] as const)[step];
+    if (!isEditing && stage) trackParticipation('report', stage);
+  }, [step, isEditing]);
   const [draft, setDraft] = useState<ReportDraft>(initialState?.draft ?? initialDraft);
   const [saving, setSaving] = useState(false);
   const [preparing, setPreparing] = useState(false);

@@ -1,7 +1,7 @@
 'use client';
 
 import { communityReturnPath } from '@/lib/community-journey';
-import { trackWebsiteOutcome } from '@/lib/website-analytics';
+import { trackParticipation, trackWebsiteOutcome } from '@/lib/website-analytics';
 
 import { importLibrary, setOptions } from '@googlemaps/js-api-loader';
 import {
@@ -172,6 +172,7 @@ export function MapExperience({
     window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
   }
   const [reportMode, setReportMode] = useState(false);
+  useEffect(() => { if (reportMode) trackParticipation('report', 'location_picker'); }, [reportMode]);
   const [placement, setPlacement] = useState<Coordinates | null>(null);
   const [checkingLocation, setCheckingLocation] = useState(false);
   const locationCheck = useRef(0);
@@ -635,6 +636,7 @@ export function MapExperience({
     setReportListOpen(false);
     setLocationError('');
     if(checkingDraft) return;
+    if (!reportMode && !selectingDraftLocation) trackParticipation('report', 'action_tapped');
     if (!userId) {
       const url = new URL(window.location.href); url.pathname = '/report'; url.searchParams.delete('report');
       window.history.pushState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
@@ -675,6 +677,7 @@ export function MapExperience({
       if (check !== locationCheck.current) return;
       const current = mapRef.current?.getCenter();
       if (current && (Math.abs(current.lat() - chosen.latitude) > 0.00001 || Math.abs(current.lng() - chosen.longitude) > 0.00001)) { setLocationError('The pin moved while checking. Confirm the new location.'); return; }
+      trackParticipation('report', 'location_confirmed');
       beginReport(chosen);
     }
     catch (error) { if (check === locationCheck.current) setLocationError(error instanceof Error ? error.message : 'Location could not be checked. Try again.'); }
@@ -704,7 +707,7 @@ export function MapExperience({
     selectedReportIdRef.current = report.id;
     setSelectedReport(report);
     const url = new URL(window.location.href);
-    if (url.searchParams.get('report') !== report.id && url.searchParams.get('intent') === 'fund') url.searchParams.delete('intent');
+    if (url.searchParams.get('report') !== report.id && ['fund', 'clean'].includes(url.searchParams.get('intent') ?? '')) url.searchParams.delete('intent');
     url.searchParams.set('report', report.id);
     window.history[selectedReport ? 'replaceState' : 'pushState']({ ...window.history.state, litterbugsReportNavigation: true }, '', `${url.pathname}${url.search}${url.hash}`);
   }
@@ -743,7 +746,7 @@ export function MapExperience({
     } else {
       const url = new URL(window.location.href);
       url.searchParams.delete('report');
-      if (url.searchParams.get('intent') === 'fund') url.searchParams.delete('intent');
+      if (['fund', 'clean'].includes(url.searchParams.get('intent') ?? '')) url.searchParams.delete('intent');
       window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
     }
   }
@@ -1062,7 +1065,7 @@ export function MapExperience({
 
 
         </section>
-        {selectedReport && !detailsMinimized && <ReportDetail closeLabel={communityReturn && !mapFirstEntry ? "Close report and return to community" : undefined} entryIntent={selectedReport.id === searchParams.get('report') ? entryIntent : null} inline={desktopDetail} key={selectedReport.id} report={selectedReport} userId={userId} isOwner={canManageReport(selectedReport, userId)} favorite={reportPreferences.favorites.has(selectedReport.id)} hidden={reportPreferences.hidden.has(selectedReport.id)} onFavoriteChange={(favorite) => updateReportPreference('favorites', selectedReport.id, favorite)} onHiddenChange={(hidden) => updateReportPreference('hidden', selectedReport.id, hidden)} onNotify={setToast} onRequireSignIn={(intent) => { const url = new URL(window.location.href); url.searchParams.set('report', selectedReport.id); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`); accountActionRef.current?.openAuth(intent); }} onReportChanged={refreshReports} onClose={closeReport} onEdit={() => { void editSelectedReport(); }} onDelete={() => { void deleteSelectedReport(); }} />}
+        {selectedReport && !detailsMinimized && <ReportDetail closeLabel={communityReturn && !mapFirstEntry ? "Close report and return to community" : undefined} entryIntent={selectedReport.id === searchParams.get('report') ? entryIntent : null} inline={desktopDetail} key={selectedReport.id} report={selectedReport} userId={userId} isOwner={canManageReport(selectedReport, userId)} favorite={reportPreferences.favorites.has(selectedReport.id)} hidden={reportPreferences.hidden.has(selectedReport.id)} onFavoriteChange={(favorite) => updateReportPreference('favorites', selectedReport.id, favorite)} onHiddenChange={(hidden) => updateReportPreference('hidden', selectedReport.id, hidden)} onNotify={setToast} onRequireSignIn={(intent) => { const url = new URL(window.location.href); url.searchParams.set('report', selectedReport.id); if (intent) url.searchParams.set('intent', intent); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`); accountActionRef.current?.openAuth(intent); }} onReportChanged={refreshReports} onClose={closeReport} onEdit={() => { void editSelectedReport(); }} onDelete={() => { void deleteSelectedReport(); }} />}
       </div>
 
       <footer className="discovery-footer">

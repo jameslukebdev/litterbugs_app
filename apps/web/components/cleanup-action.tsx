@@ -1,4 +1,5 @@
 'use client';
+import { trackParticipation } from '@/lib/website-analytics';
 import { trackDeviceSave } from '@/lib/device-save-state';
 import { prepareBrowserPhotos } from '@/lib/prepare-browser-photo';
 
@@ -10,9 +11,10 @@ import { cloudDrafts } from '@/lib/cloud-drafts';
 import { CloudDraftStatus } from '@/components/cloud-draft-status';
 import { loadCleanupDraft, saveCleanupDraft, clearCleanupDraft } from '@/lib/saved-cleanup-draft';
 import type { Database, Report } from '@litterbugs/report-contract';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { CleanupFeedback } from '@/components/cleanup-feedback';
+import { BrandBug } from '@/components/brand-bug';
 import { Icon } from '@/components/icon';
 import { ModalShell } from '@/components/modal-shell';
 import { submitCleanupEvidence } from '@/lib/cleanup-submission';
@@ -63,8 +65,10 @@ export function CleanupAction({
   onRequireSignIn,
   onChanged,
   workspace = false,
+  autoOpen = false,
 }: {
   workspace?: boolean;
+  autoOpen?: boolean;
   report: Report;
   userId: string | null;
   onRequireSignIn?: () => void;
@@ -125,12 +129,8 @@ export function CleanupAction({
     return value ? new Date(value).toLocaleString() : '';
   }, [attempt]);
 
-  async function beginClaim() {
-    if (attemptFailed) return;
-    if (!userId) {
-      onRequireSignIn?.();
-      return;
-    }
+  const openSafetyReview = useCallback(async () => {
+    if (!userId || attemptFailed) return;
     setBusy('waiver');
     setMessage('');
     const { data, error } = await createClient()
@@ -161,7 +161,26 @@ export function CleanupAction({
     setSiteConfirmed(false);
     setWaiverAccepted(false);
     setWaiverOpen(true);
+    trackParticipation('clean', 'safety_review');
+  }, [userId, attemptFailed]);
+
+  const openedFromEntry = useRef(false);
+  useEffect(() => {
+    if (!autoOpen || !userId || attemptLoading || attemptFailed || attempt
+      || report.cleanup_state !== 'available' || openedFromEntry.current) return;
+    openedFromEntry.current = true;
+    void openSafetyReview();
+  }, [autoOpen, userId, attemptLoading, attemptFailed, attempt, report.cleanup_state, openSafetyReview]);
+
+  function beginClaim() {
+    trackParticipation('clean', 'action_tapped');
+    if (!userId) onRequireSignIn?.();
+    else void openSafetyReview();
   }
+
+  useEffect(() => {
+    if (submissionOpen && canSubmit) trackParticipation('clean', 'evidence_form');
+  }, [submissionOpen, canSubmit]);
 
   async function acceptAndClaim() {
     if (attemptFailed) return;
@@ -192,6 +211,7 @@ export function CleanupAction({
       return;
     }
     setWaiverOpen(false);
+    trackParticipation('clean', 'claim_confirmed');
     setMessage('Cleanup claimed. Submit after-cleanup photos before the deadline.');
     await refreshAttempt();
     await onChanged?.();
@@ -284,6 +304,7 @@ export function CleanupAction({
       return;
     }
 
+    trackParticipation('clean', 'evidence_submitted');
     notifyDataChanged();
     // A UI refresh or local-storage failure cannot turn a committed submission into a failure.
     await clearCleanupDraft(userId, attempt.id).catch(() => undefined);
@@ -325,11 +346,11 @@ export function CleanupAction({
   const action = (() => {
     if (report.cleanup_state === 'completed') return null;
     if (attemptFailed && !attempt) return null;
-    if (attemptLoading) return <button className="primary-button compact-button" aria-label="Checking cleanup" disabled>{report.cleanup_state === 'available' ? 'Claim cleanup' : 'Cleanup details'}</button>;
+    if (attemptLoading) return <button className="primary-button compact-button report-action-clean" aria-label="Checking cleanup" disabled><BrandBug kind="butterfly" size={21} />{report.cleanup_state === 'available' ? 'Clean' : 'Cleanup details'}</button>;
     if (canSubmit) return <button className="primary-button compact-button" onClick={() => setSubmissionOpen(true)}>{attempt?.status === 'changes_requested' ? 'Update cleanup photos' : 'Submit cleanup photos'}</button>;
     if (isMyAttempt && attempt?.status === 'completion_submitted') return <button className="secondary-button compact-button" disabled>Cleanup under review</button>;
     if (attempt && !isMyAttempt) return <span className="cleanup-unavailable-note">Another member is cleaning this report</span>;
-    return <button className="primary-button compact-button" onClick={beginClaim} disabled={attemptFailed || Boolean(busy) || preparing}>{userId ? (busy === 'waiver' ? 'Loading…' : 'Claim cleanup') : 'Sign in to clean'}</button>;
+    return <button className="primary-button compact-button report-action-clean" onClick={beginClaim} disabled={attemptFailed || Boolean(busy) || preparing}><BrandBug kind="butterfly" size={21} />{busy === 'waiver' ? 'Loading…' : 'Clean'}</button>;
   })();
 
   const attemptNotice = attemptFailed && <p role="alert" className="form-message error-message">Cleanup status could not be refreshed. {attempt ? 'Your last confirmed task and entered work are still here. Reconnect and retry before sending changes.' : 'Retry before starting a cleanup.'} <button type="button" className="secondary-button" onClick={() => void refreshAttempt()}>Retry cleanup status</button></p>;

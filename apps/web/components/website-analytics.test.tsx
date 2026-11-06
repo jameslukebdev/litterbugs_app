@@ -311,3 +311,18 @@ it('counts a store badge tap without forwarding raw campaign or link data', asyn
     window.history.replaceState({}, '', '/');
   }
 });
+
+it('keeps only known participation stages and strips private payloads', async () => {
+  mock.allowed = true;
+  render(<WebsiteAnalytics config={config} />);
+  await waitFor(() => expect(mock.init).toHaveBeenCalled());
+  const beforeSend = mock.init.mock.calls[0][1].before_send;
+  const event = beforeSend({
+    event: 'participation_step',
+    properties: { action: 'clean', stage: 'safety_review', report_id: 'private-id', email: 'private@example.com' },
+  });
+  expect(event.properties.action).toBe('clean');
+  expect(event.properties.stage).toBe('safety_review');
+  expect(JSON.stringify(event)).not.toMatch(/private-id|private@example/);
+  expect(beforeSend({ event: 'participation_step', properties: { action: 'fund', stage: 'safety_review' } })).toBeNull();
+});
