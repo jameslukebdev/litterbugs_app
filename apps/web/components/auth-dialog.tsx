@@ -22,6 +22,12 @@ function signupHeading(intent: AuthIntent) {
   return 'Create your account';
 }
 
+const participationBenefits = {
+  clean: 'Give a local spot a fresh start. Eligible funded cleanups can earn you a reward after approval.',
+  fund: 'Help cover the cost of cleaning up a spot in your community.',
+  report: 'Put litter on the map so neighbors can find the spot and help get it cleaned up.',
+};
+
 /** New visitors usually start a report without an account, so lead with sign-up there. */
 export function authEntryMode(intent: AuthIntent): 'login' | 'signup' {
   return intent === 'report' ? 'signup' : 'login';
@@ -208,7 +214,7 @@ export function AuthDialog({
           <div className="auth-heading">
             <h2>{mode === 'signup' ? signupHeading(intent) : mode === 'forgot' ? 'Reset your password' : intent === 'clean' ? 'Sign in to clean up' : intent === 'fund' ? 'Sign in to fund a cleanup' : intent === 'report' ? 'Sign in to report litter' : 'Sign in to Litterbugs'}</h2>
             {mode === 'forgot' && <p>We’ll email you a secure password reset link.</p>}
-            {mode === 'signup' && intent === 'report' && <p>It’s free and takes a minute. Then pin the spot and add photos.</p>}
+            {mode !== 'forgot' && intent && <p>{participationBenefits[intent]}</p>}
           </div>
 
           <form className="auth-form" onSubmit={submitEmail}>
