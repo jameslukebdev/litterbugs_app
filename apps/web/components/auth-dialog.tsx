@@ -23,7 +23,7 @@ function signupHeading(intent: AuthIntent) {
 }
 
 const participationBenefits = {
-  clean: 'Give a local spot a fresh start. Eligible funded cleanups can earn you a reward after approval.',
+  clean: 'Make your neighborhood cleaner and earn money along the way.',
   fund: 'Help cover the cost of cleaning up a spot in your community.',
   report: 'Put litter on the map so neighbors can find the spot and help get it cleaned up.',
 };
