@@ -7,7 +7,7 @@ import type { SearchPlace } from '@/lib/place-geography';
 
 type Suggestion = TownResult | SearchPlace;
 
-export function PlaceSearch({ selected, onSelect, onClear, geocode, disabled = false }: { selected: SearchPlace | null; onSelect: (place: SearchPlace) => void; onClear: () => void; geocode: (text: string) => Promise<SearchPlace[]>; disabled?: boolean }) {
+export function PlaceSearch({ selected, onSelect, onClear, geocode, disabled = false, label }: { selected: SearchPlace | null; onSelect: (place: SearchPlace) => void; onClear: () => void; geocode: (text: string) => Promise<SearchPlace[]>; disabled?: boolean; label?: string }) {
   const inputId = useId();
   const listId = `${inputId}-suggestions`;
   const container = useRef<HTMLElement>(null);
@@ -116,7 +116,7 @@ export function PlaceSearch({ selected, onSelect, onClear, geocode, disabled = f
   }
 
   const showSuggestions = open && (busy || !!message || results.length > 0);
-  return <section ref={container} className="place-search" aria-label="Find a city or address" onBlur={event => {
+  return <section ref={container} className="place-search" aria-label={label ?? 'Find a city or address'} onBlur={event => {
     if (!event.currentTarget.contains(event.relatedTarget as Node | null)) { invalidate(); setOpen(false); }
   }}>
     <form onSubmit={event => {
@@ -124,7 +124,7 @@ export function PlaceSearch({ selected, onSelect, onClear, geocode, disabled = f
       if (showSuggestions && results.length) void choose(results[active >= 0 ? active : 0]);
       else void search(text);
     }}>
-      <label htmlFor={inputId}>City or address</label>
+      <label htmlFor={inputId}>{label ?? 'City or address'}</label>
       <div className="place-search-input-row">
         <div className={`place-search-field${selected ? ' has-selected-place' : ''}`}><input id={inputId} type="search" role="combobox" aria-autocomplete="list" aria-expanded={showSuggestions} aria-controls={listId}
           aria-activedescendant={showSuggestions && active >= 0 ? `${listId}-${active}` : undefined}

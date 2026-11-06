@@ -228,7 +228,7 @@ it('keeps all 1,000 map matches while rendering results in accessible batches', 
   fireEvent.click(screen.getByRole('button', { name: 'Show more reports (50 of 1000)' }));
   expect(document.querySelectorAll('.report-result')).toHaveLength(100);
   fireEvent.click(screen.getByRole('button', { name: 'Completed' }));
-  expect(screen.getByText('No matching cleanup opportunities')).toBeTruthy();
+  expect(screen.getByText('No reports match your filters')).toBeTruthy();
 });
 
 it('restores expanded results when URL filters match device memory regardless of key order', async () => {
@@ -273,7 +273,7 @@ it('restores browse filters without rewriting the entry URL, then writes an expl
     sort: 'newest', scroll: 0,
   }));
   render(<ReportBrowser reports={[report]} open onToggle={vi.fn()} onSelect={vi.fn()} />);
-  await screen.findByText('No matching cleanup opportunities');
+  await screen.findByText('No reports match your filters');
   expect(window.location.search).toBe('?report=shared&intent=fund');
   fireEvent.click(screen.getByRole('button', { name: 'Available' }));
   const query = new URLSearchParams(window.location.search);
@@ -293,4 +293,29 @@ it('lets visitors include volunteer cleanups without clearing their area or othe
   expect(params.get('area')).toBe('boone');
   expect(params.get('severity')).toBe('high');
   expect(params.get('funding')).toBeNull();
+});
+
+it('offers location search inside an unfiltered empty result with a way to widen or report', async () => {
+  const onWidenArea = vi.fn();
+  const onStartReport = vi.fn();
+  render(<ReportBrowser reports={[]} open onToggle={vi.fn()} onSelect={vi.fn()} onWidenArea={onWidenArea}
+    emptyPlaceSearch={<label>Search another location<input /></label>} onStartReport={onStartReport} />);
+  expect(await screen.findByRole('heading', { name: 'No reports in this map area' })).toBeTruthy();
+  expect(screen.getByRole('textbox', { name: 'Search another location' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Clear filters' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Search a wider area' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Report litter' }));
+  expect(onWidenArea).toHaveBeenCalledOnce();
+  expect(onStartReport).toHaveBeenCalledOnce();
+});
+
+it('removes a distance limit when widening while keeping the other filters', async () => {
+  window.history.replaceState(null, '', '/map?browse=1&status=available&severity=high&radius=5');
+  render(<ReportBrowser reports={[]} open onToggle={vi.fn()} onSelect={vi.fn()} />);
+  await screen.findByRole('heading', { name: 'No reports match your filters' });
+  fireEvent.click(screen.getByRole('button', { name: 'Search a wider area' }));
+  const query = new URLSearchParams(window.location.search);
+  expect(query.get('radius')).toBeNull();
+  expect(query.get('status')).toBe('available');
+  expect(query.get('severity')).toBe('high');
 });
