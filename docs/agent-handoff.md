@@ -24,6 +24,14 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-06 — Codex (cleanup sign-in copy deployed)
+
+- Shortened the cleanup sign-in and signup subheading to “Make your
+  neighborhood cleaner and earn money along the way.”
+- Production release `b226330`, Vercel `dpl_BE8emZPrpmywDKSi3pzR3LC68DBY`.
+  Verified both prompts on the live site with analytics disabled. 29 focused
+  tests passed.
+
 ### 2026-11-06 — Codex (report experience and participation analytics deployed)
 
 - Production `litterbugs.app` is release commit `ed5af57` on Vercel deployment
