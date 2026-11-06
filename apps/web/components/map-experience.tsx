@@ -125,6 +125,7 @@ export function MapExperience({
   const preferenceOwnerRef = useRef(userId ?? 'guest');
   useEffect(() => { preferenceOwnerRef.current = userId ?? 'guest'; }, [userId]);
   const [mapReady, setMapReady] = useState(false);
+  const [mapZoom, setMapZoom] = useState<number | null>(null);
   const [mapTilesReady, setMapTilesReady] = useState(false);
   const [searchPlace, setSearchPlace] = useState<SearchPlace | null>(initialPlace);
   const searchPlaceRef = useRef<SearchPlace | null>(initialPlace);
@@ -271,6 +272,22 @@ export function MapExperience({
     setSearchPlace(place);
     setDiscoveryArea({ ...place.bounds, latitude: place.latitude, longitude: place.longitude });
     mapRef.current?.fitBounds(place.bounds, 60);
+  }
+
+  function clearSearchPlace() {
+    searchPlaceRef.current = null;
+    setSearchPlace(null);
+    const url = new URL(window.location.href);
+    url.searchParams.delete('area');
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+  }
+
+  function widenSearchArea() {
+    const map = mapRef.current;
+    if (!map) return;
+    if (searchPlaceRef.current) clearSearchPlace();
+    const zoom = map.getZoom();
+    if (zoom != null && zoom > 3) map.setZoom(Math.max(3, zoom - 2));
   }
 
   useEffect(() => {
@@ -452,8 +469,10 @@ export function MapExperience({
           if (!bounds || !center) return;
           const area = { ...bounds, latitude: center.lat(), longitude: center.lng() };
           setPlacement({ latitude: area.latitude, longitude: area.longitude });
-          window.history.replaceState(window.history.state, '', mapUrl(new URL(window.location.href), { latitude: area.latitude, longitude: area.longitude, zoom: map.getZoom() ?? 12 }));
-          saveDiscoveryMemory({ latitude: area.latitude, longitude: area.longitude, zoom: map.getZoom() ?? 12, place: searchPlaceRef.current });
+          const zoom = map.getZoom() ?? 12;
+          setMapZoom(zoom);
+          window.history.replaceState(window.history.state, '', mapUrl(new URL(window.location.href), { latitude: area.latitude, longitude: area.longitude, zoom }));
+          saveDiscoveryMemory({ latitude: area.latitude, longitude: area.longitude, zoom, place: searchPlaceRef.current });
           setDiscoveryArea(current => current && Object.keys(area).every(key => current[key as keyof DiscoveryArea] === area[key as keyof DiscoveryArea]) ? current : area);
         });
         clustersRef.current = createReportClusters(map, AdvancedMarkerElement, ids => setClusterIds(ids));
@@ -986,7 +1005,7 @@ export function MapExperience({
             onResumeDraft={() => { void toggleReportMode(); }} /></div>
       )} />
       <div className="discovery-toolbar">
-        <PlaceSearch selected={searchPlace} onSelect={selectSearchPlace} onClear={() => { setSearchPlace(null); const url = new URL(window.location.href); url.searchParams.delete('area'); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`); }} geocode={geocodeAddress} disabled={checkingLocation} />
+        <PlaceSearch selected={searchPlace} onSelect={selectSearchPlace} onClear={clearSearchPlace} geocode={geocodeAddress} disabled={checkingLocation} />
         {!reportMode && <div className="discovery-quick-filters" ref={setFilterToolbar} />}
         {!reportMode && <div className="discovery-toolbar-actions">
           <button className="secondary-button discovery-filters" onClick={() => { switchDiscoveryView('reports'); setFiltersRequest(value => value + 1); }}><IoOptionsOutline aria-hidden />Filters<span className="discovery-filter-count" data-empty={Object.entries(discoveryFilters).every(([key, value]) => value === DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]) || undefined}>{Object.entries(discoveryFilters).filter(([key, value]) => value !== DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]).length || ''}</span></button>
@@ -1004,8 +1023,8 @@ export function MapExperience({
           filterToolbar={filterToolbar}
           reports={discoveryArea || mapError ? reports : EMPTY_MAP_REPORTS}
           filtersRequest={filtersRequest}
-          onChooseArea={() => document.querySelector<HTMLInputElement>('.discovery-toolbar input')?.focus()}
-          onWidenArea={() => { setSearchPlace(null); const url = new URL(window.location.href); url.searchParams.delete('area'); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`); mapRef.current?.setZoom(Math.max(3, (mapRef.current?.getZoom() ?? 12) - 2)); }}
+          emptyPlaceSearch={<PlaceSearch label="Search another location" selected={null} onSelect={selectSearchPlace} onClear={clearSearchPlace} geocode={geocodeAddress} disabled={checkingLocation} />}
+          onWidenArea={mapReady && !mapError && (searchPlace || (mapZoom ?? 3) > 3) ? widenSearchArea : undefined}
           onRetry={() => void refreshReports()}
           onStartReport={() => void toggleReportMode()}
           showAuthors

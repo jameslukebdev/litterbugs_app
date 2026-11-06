@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element -- Signed Supabase URLs are short-lived runtime images. */
 
 import { createPortal } from 'react-dom';
+import { IoMapOutline } from 'react-icons/io5';
 import { ReportSortMenu } from './report-sort';
 import controls from './report-controls.module.css';
 import { BrandBug } from './brand-bug';
@@ -173,11 +174,11 @@ export function ReportBrowser({
   discoveryError = '',
   filtersRequest = 0,
   filterToolbar,
-  onChooseArea, onWidenArea, onRetry, onStartReport,
+  emptyPlaceSearch, onWidenArea, onRetry, onStartReport,
 }: {
   filtersRequest?: number;
   filterToolbar?: HTMLElement | null;
-  onChooseArea?: () => void;
+  emptyPlaceSearch?: ReactNode;
   onWidenArea?: () => void;
   onRetry?: () => void;
   onStartReport?: () => void;
@@ -257,6 +258,9 @@ export function ReportBrowser({
     : filter;
   const applied = useMemo(() => filter === 'custom' ? advanced : quickFilters(activeFilter), [filter, advanced, activeFilter]);
   const selectedQuickFilter = filters.find(item => (Object.keys(DEFAULT_DISCOVERY_FILTERS) as (keyof DiscoveryFilters)[]).every(key => quickFilters(item.value)[key] === applied[key]))?.value;
+  const hasFilters = selectedQuickFilter !== 'all';
+  const rewardedOnly = applied.funding === 'funded';
+  const canWiden = Boolean(onWidenArea || applied.radius);
   useEffect(() => { if (memoryReady) onDiscoveryFiltersChange?.(applied); }, [applied, onDiscoveryFiltersChange, memoryReady]);
   useEffect(() => {
     if (!memoryReady) return;
@@ -272,6 +276,14 @@ export function ReportBrowser({
   }
   function updateFilter<K extends keyof DiscoveryFilters>(key: K, value: DiscoveryFilters[K]) {
     setDraftFilters(current => ({ ...current, [key]: value }));
+  }
+
+  function applyFilters(next: DiscoveryFilters, nextFilter: ReportFilter = 'custom') {
+    writeBrowseUrl(next, sort);
+    setAdvanced(next);
+    setDraftFilters(next);
+    setFilter(nextFilter);
+    setDisplayLimit(50);
   }
   const visibleReports = useMemo(() => {
     const filtered = reports.filter((report) => matchesDiscovery(report, applied, mapCenter, favoriteReportIds, hiddenReportIds, boundary));
@@ -326,7 +338,7 @@ export function ReportBrowser({
                 key={value}
                 type="button"
                 aria-pressed={selectedQuickFilter === value}
-                onClick={() => { writeBrowseUrl(quickFilters(value), sort); setDisplayLimit(50); setFilter(value); setAdvanced(quickFilters(value)); setDraftFilters(quickFilters(value)); }}
+                onClick={() => applyFilters(quickFilters(value), value)}
               >
                 {label}
               </button>
@@ -362,7 +374,7 @@ export function ReportBrowser({
               <label>Distance from map center<select disabled={!mapCenter} value={draftFilters.radius} onChange={event => updateFilter('radius', Number(event.target.value) as DiscoveryFilters['radius'])}><option value={0}>Any distance</option><option value={5}>5 miles</option><option value={25}>25 miles</option><option value={50}>50 miles</option></select></label>
               <label>Saved reports<select value={draftFilters.scope} onChange={event => updateFilter('scope', event.target.value as DiscoveryFilters['scope'])}><option value="all">All visible reports</option><option value="favorites">Favorites only</option><option value="hidden">Hidden reports</option></select></label>
               <button className="secondary-button" onClick={() => { setDraftFilters(quickFilters('all')); }}>Reset filters</button>
-              <div className="account-actions"><button className="secondary-button" onClick={close}>Cancel</button><button className="primary-button" onClick={() => { writeBrowseUrl(draftFilters, sort); setDisplayLimit(50); setAdvanced(draftFilters); setFilter('custom'); close(); }}>Apply filters</button></div>
+              <div className="account-actions"><button className="secondary-button" onClick={close}>Cancel</button><button className="primary-button" onClick={() => { applyFilters(draftFilters); close(); }}>Apply filters</button></div>
             </div>
           </>}</ModalShell>}
           {sort === 'closest' && locationMessage && <p role="status">{locationMessage}</p>}
@@ -407,28 +419,30 @@ export function ReportBrowser({
               {showAuthors && report.user_id && (authors[report.user_id] ? <ReportAuthor key={report.user_id} profileId={report.user_id} initialProfile={authors[report.user_id]} sourceReportId={report.id} onBlocked={onMemberBlocked} /> : <div className="report-author report-author-placeholder" aria-hidden="true"><span className="report-author-initial" /><span className="report-author-copy"><span>Community member</span></span></div>)}
               </article>
             );
-          }) : (
+          }) : loading || discoveryError ? (
             <div className="report-browser-empty">
-              <BrandBug kind={loading ? 'bee' : discoveryError ? 'ladybug' : 'butterfly'} size={36} className={`brand-bug-state${loading ? ' brand-bug-busy' : ''}`} />
-              <strong>{loading ? 'Looking for cleanup opportunities…' : discoveryError ? 'Reports could not be loaded' : applied.funding === 'funded' ? 'No rewarded cleanups match your search' : 'No matching cleanup opportunities'}</strong>
-              <span>{loading ? 'Checking the selected area.' : discoveryError ? 'Check your connection, then try again.' : applied.funding === 'funded' ? 'Include volunteer cleanups in this area or search farther away.' : 'Try a wider area or clear your filters. You can also report litter you have found.'}</span>
-              {!loading && <div className="empty-discovery-actions">
-                {discoveryError ? onRetry && <button className="primary-button" onClick={onRetry}>Try again</button> : <>
-                  {applied.funding === 'funded' && <button className="primary-button" onClick={() => {
-                    const next: DiscoveryFilters = { ...applied, funding: 'all' };
-                    writeBrowseUrl(next, sort);
-                    setAdvanced(next);
-                    setDraftFilters(next);
-                    setFilter('custom');
-                    setDisplayLimit(50);
-                  }}>Include volunteer cleanups</button>}
-                  {onChooseArea && <button className={applied.funding === 'funded' ? 'secondary-button' : 'primary-button'} onClick={onChooseArea}>Search another area</button>}
-                  <button className="secondary-button" onClick={() => { writeBrowseUrl(quickFilters('all'), sort); setFilter('all'); setAdvanced(quickFilters('all')); setDraftFilters(quickFilters('all')); setDisplayLimit(50); }}>Clear filters</button>
-                  {onWidenArea && <button className="secondary-button" onClick={onWidenArea}>Search a wider area</button>}
-                  {onStartReport && <button className="secondary-button" onClick={onStartReport}>Report litter</button>}
-                </>}
-              </div>}
+              <BrandBug kind={loading ? 'bee' : 'ladybug'} size={36} className={`brand-bug-state${loading ? ' brand-bug-busy' : ''}`} />
+              <strong>{loading ? 'Looking for cleanup opportunities…' : 'Reports could not be loaded'}</strong>
+              <span>{loading ? 'Checking the selected area.' : 'Check your connection, then try again.'}</span>
+              {!loading && onRetry && <button className="primary-button" onClick={onRetry}>Try again</button>}
             </div>
+          ) : (
+            <section className={controls.emptyPanel} aria-label="No results">
+              <div className={controls.emptyIntro} role="status">
+                <span className={controls.emptyMapIcon} aria-hidden="true"><IoMapOutline /><BrandBug kind="butterfly" size={24} /></span>
+                <h2>{rewardedOnly ? 'No rewarded cleanups match your search' : hasFilters ? 'No reports match your filters' : 'No reports in this map area'}</h2>
+              </div>
+              {(rewardedOnly || canWiden || hasFilters) && <div className={controls.emptyActions}>
+                {rewardedOnly && <button className="primary-button" onClick={() => applyFilters({ ...applied, funding: 'all' })}>Include volunteer cleanups</button>}
+                {canWiden && <button className={rewardedOnly ? 'secondary-button' : 'primary-button'} onClick={() => {
+                  if (applied.radius) applyFilters({ ...applied, radius: 0 });
+                  onWidenArea?.();
+                }}><Icon name="minus" />Search a wider area</button>}
+                {hasFilters && <button className={controls.emptyTextAction} onClick={() => applyFilters(quickFilters('all'), 'all')}>Clear filters</button>}
+              </div>}
+              {emptyPlaceSearch && <div className={controls.emptyPlaceSearch}>{emptyPlaceSearch}</div>}
+              {onStartReport && <button className={controls.emptyReport} onClick={onStartReport}><BrandBug kind="ladybug" size={19} />Report litter</button>}
+            </section>
           )}
           {displayedReports.length < visibleReports.length && <button className="secondary-button load-more-reports" onClick={() => setDisplayLimit(value => value + 50)}>Show more reports ({displayedReports.length} of {visibleReports.length})</button>}
         </div>
