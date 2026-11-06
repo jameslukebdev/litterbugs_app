@@ -24,19 +24,39 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
-### 2026-11-06 — Claude (homepage hero redesign, local and uncommitted)
+### 2026-11-06 — Claude (homepage, header, footer and map redesign deployed)
 
-- Grant asked for a local preview only; nothing committed or deployed.
-- Hero collage is now a four-step story (Spot litter, Snap a report, It gets
-  cleaned up, Reward earned). Each step is labelled by its bug (lightning bug,
-  ladybug, caterpillar, butterfly), following the icon-plus-label pattern of the
-  map empty state, which Grant likes. The bee flies a dotted trail between the
-  photos once on load, then the reward card appears. Reduced motion shows
-  them at rest.
-- Files: `apps/web/app/page.tsx`, `components/public-website/home-hero.module.css`,
-  and the old hero collage overrides removed from `brand.module.css`.
-- Pending: Grant's review. "Reward earned / Your report was cleaned up" copy
-  needs confirming against how reporter rewards actually work.
+- Grant authorized release. Deployed commit `207a057` on `claude/ui-finish`
+  (= live `75c3714` + the 2026-11-03 text-polish pass + this redesign), built
+  from a clean worktree. Vercel `dpl_Bm4K9MuPHbDQNuTTtL61wkbcqzXA` promoted to
+  litterbugs.app. Rollback: `dpl_2RS3Sa6512CazvnDEUqHbBZcH9p7` (75c3714) AND set
+  `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` back to `4efcb52b499b446d8643528`.
+- Homepage: hero is a four-step photo story labelled by bugs with a bee flight
+  path and a "You earned cash" card; new "Find litter on the map" preview under
+  Explore (self-hosted OpenStreetMap snapshot `public/map-preview/boone.webp`,
+  live pins from `lib/map-preview.ts`, credit shown). Explore cards unchanged
+  (Grant rejected a redesign there).
+- Header: menu chevrons, bug + one-line intro in each dropdown, bugs in the
+  phone menu, raised "Get started" button, phone header no longer overflows.
+- Footer: lavender band with grouped links; compact one-row version on /map.
+- Map page: bug-and-label pins (ladybug + "$5" only when funded; ladybug,
+  caterpillar = in progress, flower = cleaned up), pointed tails, hover cards,
+  group hover lists (3 + "N more spots here"), map key replaces zoom buttons
+  (e2e now zooms with the wheel). Shared code in `lib/map-marker-glyph.ts`.
+- Google Maps: new style "Litterbugs calm" + map ID "Litterbugs Web Map calm"
+  (`4efcb52b499b446d52151a19`) in project litterbugs-auth; production env var
+  now points to it. The old map ID and its style are untouched.
+- Flicker fixes: preference refresh keeps unchanged Sets (stopped 30s blanking);
+  `StableReportClusterer` reuses group bubbles whose members are unchanged.
+- Grant's wording/colour preferences: avoid "reward" in new copy (use cash /
+  earn); logo colours only for logo and bug icons, UI in light pastels.
+- Checks: eslint clean; lib tests pass except two pre-existing failures in
+  `lib/website-outcomes.test.ts` (fail on 75c3714 too). Component tests can't
+  run locally (`@testing-library/react` missing). Live: /, /map, /reports,
+  /about, /help, /support, /get-app 200; map verified with analytics declined
+  in the test browser (0 tracker requests).
+- Pending: "Reporter reward details" and other existing menu links still say
+  "reward"; tablet-width compact footer wraps to two rows.
 
 ### 2026-11-06 — Codex (Luke's admin sending setup)
 
