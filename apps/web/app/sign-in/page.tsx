@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { realUserIdFromClaims } from '@/lib/report-access';
 import { safeNextPath } from '@/lib/safe-next-path';
 import { SignInForm } from './sign-in-form';
+export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Sign in | Litterbugs', robots: { index: false, follow: false } };
 export default async function Page({ searchParams }: { searchParams: Promise<{ next?: string; google?: string; view?: string }> }) {
   const params = await searchParams;
