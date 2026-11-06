@@ -24,6 +24,33 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-05 — Claude (Clarity/PostHog review fixes, local and uncommitted)
+
+- From replays: signed-out Report opened a generic login-first box and one
+  visitor gave up. Map report prompts now pass the report intent, and report
+  sign-in (map dialog and /sign-in?next=/report) opens on account creation:
+  "Create a free account to report litter". Fund, clean and header sign-in
+  are unchanged.
+- Notifications: the whole row now opens the notification (stretched title
+  link, chevron, hover/focus state). "Mark read" stays separate. Dead clicks
+  on message text were seen in Clarity.
+- Files: auth-dialog(+test), public-account-action, map-experience,
+  sign-in-form(+test), notification-inbox, globals.css, account-theme.css.
+  Built on fb7d785; edited files match live 73ff529. 36 focused tests pass
+  (temporary testing-library config in Claude's scratchpad; dependencies
+  unchanged). Typecheck/lint clean for these files. Report screen checked on
+  localhost at phone width; notifications not checked visually (needs sign-in).
+- Not committed, deployed or pushed. Please don't sweep these into an unrelated
+  commit. Still recommended: exclude Clarity from /admin and /account, filter
+  browserless bot pageviews from PostHog, keep element labels on autocapture.
+- Added Refero MCP to Claude user config (OAuth, no key stored); Grant must
+  sign in once.
+- Grant's request: phones (≤760px) no longer show the All reports/Available/
+  Rewarded/Volunteer/In progress/Completed pills on Map or Reports, matching
+  the iOS app. CSS only (report-controls.module.css); every choice remains in
+  the Filters panel. Desktop unchanged. Checked in iPhone simulator Safari
+  against localhost: Map, Reports and Filters panel.
+
 ### 2026-11-05 — Codex (GitHub handoff)
 
 - Grant requested GitHub access for Claude. Publish the latest committed

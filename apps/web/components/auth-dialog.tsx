@@ -13,6 +13,18 @@ export type AuthIntent = 'clean' | 'fund' | 'report' | null;
 
 type EmailMode = 'login' | 'signup' | 'forgot' | 'sent';
 
+function signupHeading(intent: AuthIntent) {
+  if (intent === 'report') return 'Create a free account to report litter';
+  if (intent === 'fund') return 'Create a free account to fund a cleanup';
+  if (intent === 'clean') return 'Create a free account to clean up';
+  return 'Create your account';
+}
+
+/** New visitors usually start a report without an account, so lead with sign-up there. */
+export function authEntryMode(intent: AuthIntent): 'login' | 'signup' {
+  return intent === 'report' ? 'signup' : 'login';
+}
+
 type AuthDialogProps = {
   onClose: () => void;
   onSuccess?: () => void;
@@ -181,8 +193,9 @@ export function AuthDialog({
       ) : (
         <>
           <div className="auth-heading">
-            <h2>{mode === 'signup' ? 'Create your account' : mode === 'forgot' ? 'Reset your password' : intent === 'clean' ? 'Sign in to clean up' : intent === 'fund' ? 'Sign in to fund a cleanup' : intent === 'report' ? 'Sign in to report litter' : 'Sign in to Litterbugs'}</h2>
+            <h2>{mode === 'signup' ? signupHeading(intent) : mode === 'forgot' ? 'Reset your password' : intent === 'clean' ? 'Sign in to clean up' : intent === 'fund' ? 'Sign in to fund a cleanup' : intent === 'report' ? 'Sign in to report litter' : 'Sign in to Litterbugs'}</h2>
             {mode === 'forgot' && <p>We’ll email you a secure password reset link.</p>}
+            {mode === 'signup' && intent === 'report' && <p>It’s free and takes a minute. Then pin the spot and add a photo.</p>}
           </div>
 
           <form className="auth-form" onSubmit={submitEmail}>

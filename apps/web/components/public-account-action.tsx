@@ -7,7 +7,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useSta
 
 import { NotificationLink } from '@/components/notification-inbox';
 import { AccountDialog } from '@/components/account-dialog';
-import { AuthDialog, type AuthIntent } from '@/components/auth-dialog';
+import { AuthDialog, authEntryMode, type AuthIntent } from '@/components/auth-dialog';
 import { getProfileAvatarUrl, getProfileLabel, type Profile } from '@/lib/profile';
 import { getHeaderProfile, getServerHeaderProfile, setHeaderProfile, subscribeHeaderProfile } from '@/lib/header-profile-cache';
 import { realUserId } from '@/lib/report-access';
@@ -92,7 +92,7 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
 
   useImperativeHandle(ref, () => ({
     openAccount: () => { if (userId) router.push('/account'); else { setAuthIntent(null); setEntryMode('login'); setAuthOpen(true); } },
-    openAuth: (intent = null) => { setAuthIntent(intent); setEntryMode('login'); setAuthOpen(true); },
+    openAuth: (intent = null) => { setAuthIntent(intent); setEntryMode(authEntryMode(intent)); setAuthOpen(true); },
   }), [userId, router]);
 
   const avatarUrl = getProfileAvatarUrl(createClient(), profile ?? (cached?.userId === userId ? cached.profile : null));

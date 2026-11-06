@@ -38,6 +38,9 @@
 .panel.panel.panel :global(.report-card-container) > :global(.report-author) { border: 0; border-top: 1px solid #eeeaf8; border-radius: 0 0 17px 17px; }
 .panel.panel.panel :global(.report-card-container):has(:global(.report-result-selected)) { border-color: #5146ed; box-shadow: 0 0 0 2px #b3a6e5; }
 
+/* Phones match the app: no quick-filter pills. Every pill choice remains in the Filters panel,
+   whose button shows how many filters are active. */
 @media (max-width: 760px) {
-  .toolbarFilters.toolbarFilters.toolbarFilters { gap: 8px; }
+  .toolbarFilters.toolbarFilters.toolbarFilters,
+  .panel.panel.panel :global(.report-browser-filters) { display: none; }
 }

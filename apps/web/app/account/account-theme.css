@@ -134,6 +134,10 @@ body:has(.account-theme) > .modal-backdrop .form-message.success-message {
 .account-theme .notification-list li[data-unread='true'] { border-left:4px solid #a452bd; background:#fcf8ff; }
 .account-theme .notification-list li > div { min-width:0; flex:1; overflow-wrap:anywhere; }
 .account-theme .notification-list li > button { flex:none; }
+.account-theme .notification-list li:hover { background:var(--soft); }
+.account-theme .notification-list li[data-unread='true']:hover { background:#f7effc; }
+.account-theme .notification-list li:hover .notification-chevron { color:#783398; }
+.account-theme .notification-list li:has(.notification-row-link:focus-visible) { outline-color:#783398; }
 .account-theme .notification-list p { line-height:1.5; margin:6px 0; }
 .account-theme .notification-list .notification-report { color:#783398; font-weight:600; }
 .account-theme .notification-list time { display:block; margin-top:10px; font-size:12px; color:var(--muted); }

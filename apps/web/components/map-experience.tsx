@@ -557,7 +557,7 @@ export function MapExperience({
   const beginReport = useCallback((coordinates: Coordinates) => {
     if (!userId) {
       setToast('Sign in to submit a litter report. You can keep browsing without an account.');
-      accountActionRef.current?.openAuth();
+      accountActionRef.current?.openAuth('report');
       return;
     }
     setDraftCoordinates(coordinates);
@@ -638,7 +638,7 @@ export function MapExperience({
     if (!userId) {
       const url = new URL(window.location.href); url.pathname = '/report'; url.searchParams.delete('report');
       window.history.pushState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
-      accountActionRef.current?.openAuth();
+      accountActionRef.current?.openAuth('report');
       return;
     }
     if (selectingDraftLocation) {
@@ -786,7 +786,7 @@ export function MapExperience({
     if (!authenticatedUserId) {
       setDraftCoordinates(null);
       setEditingReport(null);
-      accountActionRef.current?.openAuth();
+      accountActionRef.current?.openAuth('report');
       return 'Sign in with a real account to save this report.';
     }
 
