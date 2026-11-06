@@ -386,7 +386,7 @@ export function ReportBrowser({
           {sort === 'closest' && locationMessage && <p role="status">{locationMessage}</p>}
           <p className="discovery-status" role="status">{discoveryError || (truncated ? 'Showing up to 1,000 matches. Zoom in or narrow your filters to see more.' : '')}</p>
         </header>
-        <div className="report-browser-list" ref={listRef} onScroll={() => { if (memoryReady && !resultsLoading) saveBrowserMemory({ filters: applied, sort, scroll: listRef.current?.scrollTop ?? 0, displayLimit }); }} aria-busy={resultsLoading || refreshing}>
+        <div className={`report-browser-list${resultsLoading ? ` ${controls.loadingList}` : ''}`} ref={listRef} onScroll={() => { if (memoryReady && !resultsLoading) saveBrowserMemory({ filters: applied, sort, scroll: listRef.current?.scrollTop ?? 0, displayLimit }); }} aria-busy={resultsLoading || refreshing}>
           {visibleReports.length ? displayedReports.map((report, index) => {
             const selected = report.id === selectedReportId;
             const previewed = report.id === previewedReportId;
@@ -426,8 +426,8 @@ export function ReportBrowser({
               </article>
             );
           }) : resultsLoading ? (
-            <div className="report-browser-empty" role="status" aria-label="Loading reports">
-              <BrandBug kind="bee" size={36} className={controls.loadingBee} />
+            <div role="status" aria-label="Loading reports">
+              <BrandBug kind="bee" size={64} className={controls.loadingBee} />
             </div>
           ) : discoveryError ? (
             <div className="report-browser-empty">
