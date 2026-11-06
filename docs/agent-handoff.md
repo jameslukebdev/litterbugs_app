@@ -24,6 +24,19 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-06 — Codex (flat map empty state deployed)
+
+- Replaced the focus jump with a city/address search in the results panel.
+  Widening zooms out and removes a distance limit while keeping other report
+  filters. Filter recovery is contextual. Removed the boxed backgrounds and
+  explanatory copy, kept a small Report litter link, and branded the search
+  focus and butterfly map icon. Reporter copy now says “earn cash from
+  funded cleanups.”
+- Production release `c9c87a2`, Vercel `dpl_GZnE79qZGnhXTs3zcMBtGcPJqTUD`.
+  Verified desktop widening, mobile Boone autocomplete, purple focus, and
+  updated reporting copy live with analytics disabled. 51 tests and
+  TypeScript passed.
+
 ### 2026-11-06 — Codex (reporter rewards copy deployed)
 
 - Report sign-in and signup now say “Put litter on the map and earn cash
