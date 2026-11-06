@@ -24,6 +24,13 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-06 — Codex (Luke's admin sending setup)
+
+- Confirmed the runbook documents admin mail forwarding to both owners and
+  separate support routing. Cloudflare dashboard requires Grant's sign-in.
+  Pending mail-client confirmation and outgoing provider setup. No mail,
+  DNS, account, or deployment changes.
+
 ### 2026-11-06 — Codex (admin email sending options)
 
 - Confirmed public MX records point to Cloudflare Email Routing. Reviewed options
