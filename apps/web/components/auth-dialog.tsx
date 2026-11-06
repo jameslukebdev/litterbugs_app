@@ -24,8 +24,8 @@ function signupHeading(intent: AuthIntent) {
 
 const participationBenefits = {
   clean: 'Make your neighborhood cleaner and earn money along the way.',
-  fund: 'Help cover the cost of cleaning up a spot in your community.',
-  report: 'Put litter on the map so neighbors can find the spot and help get it cleaned up.',
+  fund: 'Put your dollars to work cleaning up this spot.',
+  report: 'Put litter on the map and get a cleanup started.',
 };
 
 /** New visitors usually start a report without an account, so lead with sign-up there. */
