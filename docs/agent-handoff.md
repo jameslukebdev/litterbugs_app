@@ -24,6 +24,13 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-06 — Codex (fund and report sign-in copy deployed)
+
+- Shortened the fund and report subheadings. Production release `cd9e63b`,
+  Vercel `dpl_1gZwp468preQtofcgAGTYc6AS7sy`. Verified both intents in
+  sign-in and signup on the live site with analytics disabled. 32 focused
+  tests passed.
+
 ### 2026-11-06 — Codex (cleanup sign-in copy deployed)
 
 - Shortened the cleanup sign-in and signup subheading to “Make your
