@@ -1,7 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-import { IoPersonOutline } from 'react-icons/io5';
 import { useRouter } from 'next/navigation';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, useSyncExternalStore } from 'react';
 
@@ -123,9 +122,9 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
         </>}
       </div>
 
-      {compactOnMobile && (
-        <button type="button" className="mobile-profile-button" aria-label={userId ? 'Your profile' : 'Sign in'} onClick={() => { if (userId) router.push('/account'); else { setAuthIntent(null); setEntryMode('login'); setAuthOpen(true); } }}>
-          {avatar || <IoPersonOutline aria-hidden />}
+      {compactOnMobile && userId && (
+        <button type="button" className="mobile-profile-button" aria-label="Your profile" onClick={() => router.push('/account')}>
+          {avatar}
         </button>
       )}
 

@@ -102,12 +102,10 @@ it('keeps sign in available if the initial session check fails', async () => {
   expect(screen.queryByLabelText('Loading profile')).toBeNull();
 });
 
-it('opens sign-in from the compact map header', () => {
+it('omits the compact map profile button for signed-out visitors', async () => {
   const { container } = render(<PublicAccountAction compactOnMobile />);
-  const trigger = container.querySelector('.mobile-profile-button')!;
-  expect(trigger.getAttribute('aria-label')).toBe('Sign in');
-  fireEvent.click(trigger);
-  expect(screen.getByRole('dialog', { name: 'Sign in' })).toBeTruthy();
+  await screen.findByRole('button', { name: 'Sign in' });
+  expect(container.querySelector('.mobile-profile-button')).toBeNull();
 });
 
 it('opens the account from the compact map header for a signed-in member', async () => {
