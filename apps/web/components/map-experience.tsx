@@ -24,7 +24,7 @@ import { getReportCardPhotoUrl } from '@/lib/report-photo';
 import { PublicSiteFooter } from '@/components/public-site-footer';
 import { PublicAccountAction, type PublicAccountActionHandle } from '@/components/public-account-action';
 import { PublicSiteHeader } from '@/components/public-site-header';
-import { IoMapOutline, IoListOutline, IoOptionsOutline, IoAddCircleOutline, IoCloseCircleOutline, IoLocationOutline } from 'react-icons/io5';
+import { IoMapOutline, IoListOutline, IoOptionsOutline, IoCloseCircleOutline, IoLocationOutline } from 'react-icons/io5';
 import { PlaceSearch } from '@/components/place-search';
 import type { SearchPlace } from '@/lib/place-geography';
 import { ReportBrowser } from '@/components/report-browser';
@@ -1093,7 +1093,7 @@ export function MapExperience({
             onClick={() => { setReportListOpen(false); void toggleReportMode(); }}
             disabled={checkingDraft || checkingLocation} aria-busy={checkingDraft || checkingLocation}
             aria-label={selectingDraftLocation ? 'Keep location' : reportMode ? 'Cancel reporting' : 'Report Litter'}>
-            {selectingDraftLocation ? <IoLocationOutline aria-hidden="true" /> : reportMode ? <IoCloseCircleOutline aria-hidden="true" /> : <IoAddCircleOutline aria-hidden="true" />}<span>{checkingDraft ? 'Opening…' : selectingDraftLocation ? 'Keep location' : reportMode ? 'Cancel' : 'Report Litter'}</span>
+            {selectingDraftLocation ? <IoLocationOutline aria-hidden="true" /> : reportMode ? <IoCloseCircleOutline aria-hidden="true" /> : <span className="map-report-bug" aria-hidden="true" />}<span>{checkingDraft ? 'Opening…' : selectingDraftLocation ? 'Keep location' : reportMode ? 'Cancel' : 'Report Litter'}</span>
           </button>
           {!mapError && <div className={`map-loading map-loading-cover${mapTilesReady ? ' map-loading-complete' : ''}`} aria-hidden={mapTilesReady} role="status" aria-label="Loading map"><span className="sr-only">Loading map…</span></div>}
           {mapError && <div className="map-error"><Icon name="warning" /><strong>Map unavailable</strong><span>{mapError}</span></div>}
