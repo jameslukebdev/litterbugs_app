@@ -24,6 +24,13 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-06 — Codex (local website rebuilt)
+
+- Production-mode build passed for `1e94298`. Started the local development
+  server on port 3000 with its existing local map configuration. Verified home,
+  map, and both discovery dropdowns in Chrome at phone and desktop sizes with
+  analytics excluded. No application changes or deployment.
+
 ### 2026-11-06 — Codex (map-first discovery links)
 
 - On `codex/map-first-navigation`, based on `claude/ui-finish` at `78aabcc`.
