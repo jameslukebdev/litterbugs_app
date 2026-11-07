@@ -24,6 +24,18 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-06 — Codex (public page reachability audit)
+
+- Confirmed the live homepage links to /reports under the carousel as
+  “Browse all litter reports” and in the footer as “Litter reports.”
+  Clicked through to the report grid at 390px and 1280px with analytics
+  excluded.
+- Checked 19 public directory, community and guide URLs. All returned 200
+  and were reachable from the homepage within three links. Checked all four
+  directory/pagination pages and found links to all 27 report detail URLs
+  in the live sitemap. No orphan pages found within this scope.
+  No website edits or deployment were needed.
+
 ### 2026-11-06 — Codex (dragonfly Report Litter button released)
 
 - Pushed and deployed `e791bc5` on `codex/map-first-navigation` as
