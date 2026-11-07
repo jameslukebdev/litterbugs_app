@@ -24,6 +24,32 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-07 — Codex (completed report draft recovery on phone)
+
+- Pushed source `e17fe6a` on `codex/map-first-navigation` and promoted production
+  `dpl_BatGTozi4U1jxHQCABieYgGtaBiN` to litterbugs.app. Includes Claude's latest
+  card-photo release. Rollback: `dpl_2A1A4uqGMcnkKnNtMQs1NZzF6eQD`.
+  No database migrations; shared local server untouched.
+- Report recovery now checks the exact account-owned publication ID from the
+  local journal/sync metadata before offering Resume. Confirmed publication
+  retires its cloud revision and atomic local draft/journal; newer account
+  drafts and unsynced edits remain protected. Location inspection skips completed
+  drafts without replacing another tab's editor. Read the journal after sync
+  reconciliation to avoid restoring an already-cleared checkpoint. Optional
+  shared sync hooks are enabled only by the web adapter; native adapter unchanged.
+- Verified the Beacon Heights ID `3906e5ce-cd04-4ccf-8e9f-4fa754546019` is published
+  via the live public API. Could not inspect the physical phone's IndexedDB.
+  Tests cover stale phone copies, lost responses, legacy journals, newer account
+  work, offline edits, cleanup races, and fresh submission IDs. Shared tests:
+  165 pass; web scoped: 56 pass; full web: 746/748 (only the same two existing
+  website-outcomes analytics expectation failures). TypeScript, scoped lint,
+  remote production build and staged /report HTTP 200 passed.
+- Live browser /report entry hydrates its map and account prompt with no console
+  errors; deployment error logs empty. Turned Analytics choices off before report
+  navigation. Initial homepage landing before that toggle may be assistant traffic.
+  User should reload/reopen the phone web app to receive the new code; physical
+  phone confirmation remains pending. No real report/cleanup/payment submitted.
+
 ### 2026-11-07 — Claude (website card photo arrows released)
 
 - Pushed and deployed `863ae70` on `codex/map-first-navigation` as
