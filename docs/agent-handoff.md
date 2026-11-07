@@ -24,6 +24,34 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-07 — Codex (stable reporting navigation; phone behavior review, NOT deployed)
+
+- Local commit `0e62657` keeps the map's quick-filter host, Filters, Reports/Map
+  controls and phone header controls mounted during report placement. Owner's
+  screenshots showed toolbar removal changing the map height. Verified identical
+  map top/height before and after entry: desktop 196/552px, phone 122/729px;
+  phone header stayed 59px. 36 scoped tests, TypeScript, scoped lint and local
+  signed-in desktop/phone enter/cancel checks passed. No report submitted.
+- **Not pushed or deployed**, per the owner's current instruction. Production
+  remains `9d35422` / `dpl_DrrjEV9yHJ26aLtu13u14hePFsus`. Preserved Claude's
+  concurrent cleanup-review changes, including globals.css; those were not
+  included in this commit. Shared local server not restarted.
+- Reviewed five phone sessions through Clarity playback samples and timelines;
+  current 3-day list has 57 recordings across devices. PostHog website replay
+  query remains empty; SDK recording is disabled intentionally. One phone
+  report/auth sequence closed the prompt in ~1.9s without submission. Old
+  search/empty-area clips predate current fixes and are not new regressions.
+  Nov 7 Android 5-second clip clicked Google Play: a handoff, not a proven
+  failed website flow/install. No new payment/claim submission failure confirmed.
+- PostHog 3-day sample: 21 participation events, including 9 explicitly labeled
+  QA events; only one remaining phone session (3 events), other traffic not
+  verified as non-staff. Too sparse for deep conversion conclusions. Saved map
+  watcher was read, not changed. No analytics configuration changes.
+- Evidence, queries, scope limits, and recommendations are in
+  `docs/reviews/2026-11-07-phone-website-participation-review.md`. Local screenshots:
+  `/tmp/litterbugs-report-stable-nav-desktop.jpg` and
+  `/tmp/litterbugs-report-stable-nav-phone.jpg`. Viewport reset after testing.
+
 ### 2026-11-07 — Codex (phone website follow-up and report-button smoothing)
 
 - Owner clarified this is Chrome on a Pixel 5, using the website. The previous
