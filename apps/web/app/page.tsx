@@ -75,7 +75,7 @@ export default async function HomePage({
                 <div className={heroStyles.photo}>
                   <Image src="/homepage-photos/reported-litter.webp" alt="Discarded cardboard on a grassy verge, photographed in a Litterbugs report" fill sizes="(max-width:700px) 42vw, 250px" loading="eager" />
                 </div>
-                <span className={heroStyles.tag}><Image className={heroStyles.tagBug} src="/brand/bugs/ladybug.png" alt="" width={64} height={64} unoptimized />Snap a report</span>
+                <span className={heroStyles.tag}><Image className={heroStyles.tagBug} src="/brand/ranks/dragonfly.svg" alt="" width={64} height={64} unoptimized />Snap a report</span>
               </li>
               <li className={`${heroStyles.step} ${heroStyles.clean}`}>
                 <div className={heroStyles.photo}>

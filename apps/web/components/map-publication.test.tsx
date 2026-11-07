@@ -47,6 +47,10 @@ vi.mock('@googlemaps/js-api-loader', () => ({
       if (state.markerFailure) throw new Error('Map renderer unavailable');
       this.map = options.map; this.position = options.position; this.title = options.title; state.markerInstances.push(this);
     }
+    private attributes = new Map<string, string>();
+    getAttribute(name: string) { return this.attributes.get(name) ?? null; }
+    setAttribute(name: string, value: string) { this.attributes.set(name, value); }
+    removeAttribute(name: string) { this.attributes.delete(name); }
     append(glyph: HTMLElement) { this.glyph = glyph; }
     addEventListener(name: string, callback: () => void) { if (name === 'gmp-click') this.click = callback; }
   } }; },

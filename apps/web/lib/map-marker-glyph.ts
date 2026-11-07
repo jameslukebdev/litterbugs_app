@@ -49,6 +49,17 @@ export function reportPinText(report: Pick<MappableReport, 'cleanup_state' | 'fu
   return { kind, text: 'Open', visible: false };
 }
 
+/**
+ * Advanced Markers copy `title` into both aria-label (kept, for screen readers) and the native title
+ * attribute, whose grey browser tooltip would sit on top of our hover card. Drop only the attribute.
+ */
+export function hideNativeTooltip(marker: HTMLElement, label: string) {
+  queueMicrotask(() => {
+    marker.removeAttribute('title');
+    marker.setAttribute('aria-label', label);
+  });
+}
+
 /* ---------- Hover cards (mouse and trackpad only; taps open the report panel) ---------- */
 
 const money = (cents: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(cents / 100);

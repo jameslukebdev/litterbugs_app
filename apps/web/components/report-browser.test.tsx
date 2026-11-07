@@ -46,7 +46,7 @@ describe('ReportBrowser', () => {
     expect(screen.getByText('Map')).toBeTruthy();
     expect(document.querySelectorAll('.report-card-container')).toHaveLength(1);
     expect(screen.getByText('Roadside bottles')).toBeTruthy();
-    expect(screen.getByText('$125 reward')).toBeTruthy();
+    expect(screen.getByText('Pays $125')).toBeTruthy();
     expect(screen.getByText(/(?:day|hr|min).*ago|Just now/)).toBeTruthy();
     expect(screen.getByText('No photo yet')).toBeTruthy();
     expect(screen.getAllByText('Available')[1]).toBeTruthy();
@@ -73,7 +73,7 @@ describe('ReportBrowser', () => {
 
     const card = screen.getByRole('link', { name: /roadside bottles/i });
     const title = screen.getByText('Roadside bottles');
-    const reward = screen.getByText('$125 reward');
+    const reward = screen.getByText('Pays $125');
 
     expect(title.compareDocumentPosition(reward) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByText('Bottles · Cans · Broken glass')).toBeTruthy();
@@ -166,12 +166,12 @@ describe('ReportBrowser', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Rewarded' }));
     expect(document.querySelectorAll('.report-card-container')).toHaveLength(1);
-    expect(screen.getByText('$125 reward')).toBeTruthy();
+    expect(screen.getByText('Pays $125')).toBeTruthy();
     expect(screen.queryByText('Volunteer park cleanup')).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'In progress' }));
     expect(screen.getByText('Claimed cleanup')).toBeTruthy();
-    expect(screen.getByText('$35 reward')).toBeTruthy();
+    expect(screen.getByText('Pays $35')).toBeTruthy();
     expect(document.querySelector('.report-result-workflow')?.textContent).toBe('In progress');
     expect(onVisibleReportsChange).toHaveBeenCalled();
   });

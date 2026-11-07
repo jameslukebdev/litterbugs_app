@@ -8,15 +8,15 @@
 .brand > header a, .brand > header button { font-weight: 700; }
 .brand :global(.header-report-button), .brand :global(.public-account-control) { border-radius: 14px; border-color: #5146ed; box-shadow: 0 3px 0 #d9d4f5; }
 .brand :global(.header-report-button) { background: #5146ed; color: #fff; box-shadow: 0 4px 0 #3528ac; }
-.brand section[aria-labelledby='report-starter-title'] article > img { border-radius: 22px; box-shadow: 0 5px 0 #e3bdef; }
+.brand section[aria-labelledby='report-starter-title'] article > img { border-radius: 22px; box-shadow: 0 5px 0 #9bbbf3; }
 .brand section[aria-labelledby='report-starter-title'] article:nth-child(2) > img { box-shadow: 0 5px 0 #ffce38; }
-.brand section[aria-labelledby='report-starter-title'] article:nth-child(3) > img { box-shadow: 0 5px 0 #bbb5ff; }
-.brand section[aria-labelledby='report-starter-title'] article h3 { color: #783398; }
+.brand section[aria-labelledby='report-starter-title'] article:nth-child(3) > img { box-shadow: 0 5px 0 #9fd17a; }
+.brand section[aria-labelledby='report-starter-title'] article h3 { color: #2e539e; }
 .brand section[aria-labelledby='report-starter-title'] article:nth-child(2) h3 { color: #826200; }
-.brand section[aria-labelledby='report-starter-title'] article:nth-child(3) h3 { color: #5146bf; }
-.brand section[aria-labelledby='report-starter-title'] article button, .brand section[aria-labelledby='report-starter-title'] article a { border-radius: 14px; border-color: #e3c3f0; background: #f2e5fa; color: #71328e; box-shadow: 0 4px 0 #d9b7ec; font-weight: 700; }
+.brand section[aria-labelledby='report-starter-title'] article:nth-child(3) h3 { color: #2f6b3a; }
+.brand section[aria-labelledby='report-starter-title'] article button, .brand section[aria-labelledby='report-starter-title'] article a { border-radius: 14px; border-color: #9bbbf3; background: #c2d8ff; color: #234485; box-shadow: 0 4px 0 #9bbbf3; font-weight: 700; }
 .brand section[aria-labelledby='report-starter-title'] article:nth-child(2) a { background: #ffce38; color: #493a10; border-color: #ffce38; box-shadow: 0 4px 0 #d9ac19; }
-.brand section[aria-labelledby='report-starter-title'] article:nth-child(3) a { background: #5146ed; color: #fff; border-color: #5146ed; box-shadow: 0 4px 0 #3528ac; }
+.brand section[aria-labelledby='report-starter-title'] article:nth-child(3) a { background: #b8e198; color: #24521f; border-color: #9fd17a; box-shadow: 0 4px 0 #8cc366; }
 .brand :global(.report-result) { border-radius: 20px; border-color: #e1dcf0; box-shadow: 0 4px 0 #eeeaf8; }
 .brand :global(.report-result-photo) { border-radius: 20px 20px 0 0; }
 .brand :global(.report-result-reward) { border-radius: 10px; }
@@ -59,10 +59,10 @@
 
 /* The final section uses the same soft corners and tactile action treatment. */
 .brand section[aria-labelledby='home-cleanup-title'] figure img { border-radius: 22px; box-shadow: 0 5px 0 #e3dff0; }
-.brand section[aria-labelledby='home-cleanup-title'] figure:nth-child(2) img { box-shadow: 0 5px 0 #bdb6fa; }
+.brand section[aria-labelledby='home-cleanup-title'] figure:nth-child(2) img { box-shadow: 0 5px 0 #8ed7c5; }
 .brand section[aria-labelledby='home-cleanup-title'] figcaption { color: #5c566b; font-weight: 600; }
 .brand section[aria-labelledby='home-cleanup-title'] > div:last-child > a {
-  border-radius: 14px; color: #4438bb; border-color: #d8d1f0; background: #f4f1ff; box-shadow: 0 4px 0 #d8d1f0;
+  border-radius: 14px; color: #125443; border-color: #8ed7c5; background: #b9e9dd; box-shadow: 0 4px 0 #8ed7c5;
 }
 .brand :global(.discovery-footer) { border-color: #e5dff2; }
 .brand :global(.discovery-footer) :is(a, button) { border-radius: 4px; text-decoration-thickness: 2px; text-underline-offset: 4px; }
@@ -73,13 +73,13 @@
   .brand > header ul a:hover { background: var(--playful-hover); box-shadow: -3px 0 0 #b645d3; }
   .brand :global(.public-account-control):hover { border-color: #5146ed; background: var(--playful-hover); box-shadow: 0 4px 0 #d9d4f5; transform: translateY(-1px); }
   .brand :global(.header-report-button):hover { background: #4436d4; color: #fff; }
-  .brand section[aria-labelledby='report-starter-title'] article :is(button, a):hover:not(:disabled) { background: #e8d2f7; color: #60237e; border-color: #d4a2e8; transform: translateY(-2px); box-shadow: 0 6px 0 #cfa2e5; }
+  .brand section[aria-labelledby='report-starter-title'] article :is(button, a):hover:not(:disabled) { background: #b2cfff; color: #234485; border-color: #84aaeb; transform: translateY(-2px); box-shadow: 0 6px 0 #84aaeb; }
   .brand section[aria-labelledby='report-starter-title'] article:nth-child(2) a:hover { background: #ffd95b; color: #493a10; border-color: #ffce38; box-shadow: 0 6px 0 #d9ac19; }
-  .brand section[aria-labelledby='report-starter-title'] article:nth-child(3) a:hover { background: #4436d4; color: #fff; border-color: #4436d4; box-shadow: 0 6px 0 #3528ac; }
+  .brand section[aria-labelledby='report-starter-title'] article:nth-child(3) a:hover { background: #aedb8b; color: #24521f; border-color: #8cc366; box-shadow: 0 6px 0 #8cc366; }
   .brand main > section[aria-labelledby="home-title"] a:hover { transform: translateY(-2px); filter: brightness(1.08); }
   .brand section[aria-roledescription='carousel'] button[aria-controls]:hover:not(:disabled) { background: var(--playful-hover); border-color: #a79ce8; box-shadow: 0 4px 0 #d8d1f0; transform: translateY(-1px); }
   .brand :global(.public-card-options) summary:hover, .brand :global(.public-card-options-panel) button:hover { background: var(--playful-hover); color: #4438bb; }
-  .brand section[aria-labelledby='home-cleanup-title'] > div:last-child > a:hover { background: #eae4ff; border-color: #bcb0e6; box-shadow: 0 6px 0 #d8d1f0; transform: translateY(-2px); }
+  .brand section[aria-labelledby='home-cleanup-title'] > div:last-child > a:hover { background: #abe3d5; color: #125443; border-color: #6cc6af; box-shadow: 0 6px 0 #6cc6af; transform: translateY(-2px); }
   .brand section[aria-labelledby='home-cleanup-title'] > div:first-child > a:hover,
   .brand section[aria-roledescription='carousel'] > div:first-child a:hover,
   .brand :global(.discovery-footer) :is(a, button):hover { color: #4438bb; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
@@ -257,10 +257,10 @@
 .brand > footer::before { content: ''; position: absolute; width: 26px; height: 26px; right: 24px; top: -19px; background-image: url('/brand/litterbugs-logo.png'); transform: rotate(-15deg); pointer-events: none; }
 
 /* Match feature links to their navigation colors on the explanatory pages. */
-.brand.brand main strong a[href='/report-litter'] { color: #ac343b; }
+.brand.brand main strong a[href='/report-litter'] { color: #2e539e; }
 .brand.brand main strong a[href='/fund-a-cleanup'] { color: #775700; }
 .brand.brand main strong a[href='/cleaner'] { color: #5146bf; }
-.brand.brand main strong a[href='/report-litter']:hover { background: #fff0ee; }
+.brand.brand main strong a[href='/report-litter']:hover { background: #e5efff; }
 .brand.brand main strong a[href='/fund-a-cleanup']:hover { background: #fff4cc; }
 .brand.brand main strong a[href='/cleaner']:hover { background: #efedff; }
 .brand > main > h1 { position: relative; }
@@ -283,14 +283,14 @@
 /* Decorative touches stay in separated page regions, outside interactive targets. */
 .brand > footer::before { right: 32px; top: -28px; }
 .brand.brand section[aria-labelledby='home-cleanup-title'] > div:first-child a {
-  padding: 8px 12px; min-height: 44px; border-radius: 12px; color: #5146bf;
+  padding: 8px 12px; min-height: 44px; border-radius: 12px; color: #176350;
 }
-.brand.brand section[aria-labelledby='home-cleanup-title'] > div:first-child a:hover { color: #4438bb; background: #efedff; }
+.brand.brand section[aria-labelledby='home-cleanup-title'] > div:first-child a:hover { color: #125443; background: #e2f8f3; }
 .brand.brand section[aria-roledescription='carousel'] > div:first-child a { padding: 8px 12px; margin-right: 0; min-height: 44px; }
 
 /* Public-page consistency pass: retain prose and layout, unify interactive surfaces. */
-.brand.brand main strong a[href='/report-litter'] { color: #783398; }
-.brand.brand main strong a[href='/report-litter']:hover { background: #f2e5fa; }
+.brand.brand main strong a[href='/report-litter'] { color: #2e539e; }
+.brand.brand main strong a[href='/report-litter']:hover { background: #e5efff; }
 .brand.brand > main > section:nth-of-type(3n + 2) > h2,
 .brand.brand > main > section:nth-of-type(3n + 3) > h2 { color: #292932; }
 .brand.brand > main:not(:has(> section[aria-labelledby='home-title'])) :is(p,li) a:not(:has(img)):not(:global(.primary-button)):not(:global(.secondary-button)) {
@@ -384,3 +384,9 @@
 .brand.brand > footer { padding-block: 28px; color: var(--fin-muted); font-size: 15px; }
 .brand.brand > footer nav :is(a, button) { color: var(--fin-body); font-size: 15px; }
 .brand.brand section[aria-labelledby='home-cleanup-title'] > div:last-child > a { font-size: 18px; }
+
+/* Reporting family = dragonfly. The reporting page's heading bug is the dragonfly, not the bee sprite. */
+.brand[data-public-page='/report-litter'] > main > header::after { background: url('/brand/ranks/dragonfly.svg') no-repeat center / contain; filter: none; }
+
+/* Cleaned up = flower, mint family. The cleanup section's heading bug is the flower. */
+.brand section[aria-labelledby='home-cleanup-title']::before { background: url('/brand/bugs/flower.png') no-repeat center / contain; filter: none; width: 30px; height: 30px; }

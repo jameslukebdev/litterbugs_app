@@ -68,7 +68,7 @@ function rewardLabel(report: MappableReport) {
     return reward == null ? 'Cleanup completed' : reward > 0 ? `${formatUsd(reward)} funded cleanup` : 'Volunteer cleanup completed';
   }
   return report.funded_amount_cents > 0
-    ? `${formatUsd(report.funded_amount_cents)} reward`
+    ? `Pays ${formatUsd(report.funded_amount_cents)}`
     : 'Volunteer cleanup';
 }
 
@@ -109,17 +109,29 @@ function reportTiming(report: MappableReport) {
   return `${days} day${days === 1 ? '' : 's'} ago`;
 }
 
-function ReportThumbnail({ report, priority, retry, onError }: { report: MappableReport; priority: boolean; retry: number; onError: () => void }) {
-  const photoPath = report.photo_paths?.[0];
-  const beforeSrc = photoPath ? getReportCardPhotoUrl(photoPath) : null;
-  // Completed cleanups lead with the cleaned-up result; fall back to the original photo when there is no after photo.
-  const [afterUnavailable, setAfterUnavailable] = useState(false);
-  const showingAfter = report.cleanup_state === 'completed' && !afterUnavailable;
-  const src = showingAfter ? `/reports/${encodeURIComponent(report.id)}/photo/after?width=640` : beforeSrc;
-  const [failed, setFailed] = useState(false);
-  const [loaded, setLoaded] = useState(false);
+/** Card photos in carousel order: the after photo first for completed cleanups, then the report photos. */
+/** Only one card's "•••" menu stays open: opening another closes the rest. */
+function closeOtherCardMenus(menu: HTMLDetailsElement) {
+  if (!menu.open) return;
+  document.querySelectorAll<HTMLDetailsElement>('details.card-options[open]').forEach(other => { if (other !== menu) other.open = false; });
+}
 
-  if (!src || failed) {
+function cardPhotoSources(report: MappableReport, includeAfter: boolean) {
+  const after = includeAfter && report.cleanup_state === 'completed' ? [{ src: `/reports/${encodeURIComponent(report.id)}/photo/after?width=640`, after: true }] : [];
+  const photos = (report.photo_paths ?? []).map(path => getReportCardPhotoUrl(path)).filter((src): src is string => Boolean(src)).map(src => ({ src, after: false }));
+  return [...after, ...photos];
+}
+
+function ReportThumbnail({ report, priority, retry, index, onError }: { report: MappableReport; priority: boolean; retry: number; index: number; onError: () => void }) {
+  // Completed cleanups lead with the cleaned-up result; drop it when there is no after photo.
+  const [afterUnavailable, setAfterUnavailable] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
+  const sources = cardPhotoSources(report, !afterUnavailable);
+  const count = sources.length;
+  const current = count ? sources[((index % count) + count) % count] : null;
+
+  if (!current || failed) {
     return (
       <span className="report-result-photo report-result-photo-empty">
         <Icon name="image" />
@@ -129,23 +141,30 @@ function ReportThumbnail({ report, priority, retry, onError }: { report: Mappabl
     );
   }
 
+  const position = sources.indexOf(current);
   return (
     <span className="report-result-photo">
       <img
+        key={current.src}
         className="report-card-image"
-        data-loaded={loaded}
-        onLoad={() => setLoaded(true)}
-        src={showingAfter ? src : retryReportPhotoUrl(src, retry)}
+        data-loaded={loadedSrc === current.src}
+        onLoad={() => setLoadedSrc(current.src)}
+        src={current.after ? current.src : retryReportPhotoUrl(current.src, retry)}
         alt=""
         decoding="async"
         loading={priority ? 'eager' : 'lazy'}
-        fetchPriority={priority ? 'high' : 'auto'}
-        onError={() => { if (showingAfter) { setLoaded(false); setAfterUnavailable(true); return; } setFailed(true); onError(); }}
+        fetchPriority={priority && position === 0 ? 'high' : 'auto'}
+        onError={() => {
+          if (current.after) { setAfterUnavailable(true); return; }
+          if (position <= (sources[0]?.after ? 1 : 0)) { setFailed(true); onError(); }
+        }}
       />
       <span className="report-result-workflow" data-tone={reportWorkflowTone(report)}>{workflowStatus(report)}</span>
-      {showingAfter && <span className="report-result-photo-count">After cleanup</span>}
-      {!showingAfter && (report.photo_paths?.length ?? 0) > 1 && (
-        <span className="report-result-photo-count">{report.photo_paths?.length} photos</span>
+      {current.after && <span className="report-result-photo-count">After cleanup</span>}
+      {count > 1 && (
+        <span className="report-result-dots" aria-hidden="true">
+          {sources.slice(0, 5).map((source, dot) => <i key={source.src} data-active={dot === Math.min(position, 4) || undefined} />)}
+        </span>
       )}
     </span>
   );
@@ -212,6 +231,24 @@ export function ReportBrowser({
 }) {
   const [photoFailures, setPhotoFailures] = useState<Record<string, string>>({});
   const [photoRetries, setPhotoRetries] = useState<Record<string, number>>({});
+  // Clicking anywhere outside an open "•••" menu closes it.
+  useEffect(() => {
+    function closeOnOutside(event: PointerEvent) {
+      document.querySelectorAll<HTMLDetailsElement>('details.card-options[open]').forEach(menu => { if (!menu.contains(event.target as Node)) menu.open = false; });
+    }
+    document.addEventListener('pointerdown', closeOnOutside);
+    return () => document.removeEventListener('pointerdown', closeOnOutside);
+  }, []);
+  // Which photo each card shows; the arrows over the photo step through them (like a listing carousel).
+  const [photoIndex, setPhotoIndex] = useState<Record<string, number>>({});
+  function stepPhoto(report: MappableReport, step: number) {
+    const sources = cardPhotoSources(report, true);
+    if (sources.length < 2) return;
+    const next = (((photoIndex[report.id] ?? 0) + step) % sources.length + sources.length) % sources.length;
+    setPhotoIndex(current => ({ ...current, [report.id]: next }));
+    const ahead = sources[(next + step + sources.length) % sources.length];
+    if (ahead) { const image = new Image(); image.decoding = 'async'; image.src = ahead.src; }
+  }
   const [locationOrigin, setLocationOrigin] = useState<Coordinates | null>(null);
   const [locationMessage, setLocationMessage] = useState('');
   const [authors, setAuthors] = useState<Record<string, PublicProfile>>({});
@@ -415,7 +452,7 @@ export function ReportBrowser({
                 aria-current={selected ? 'true' : undefined}
               >
                 <ReportCardContent
-                  photo={<ReportThumbnail key={`${report.photo_paths?.[0]}:${photoRetries[report.id] ?? 0}`} report={report} priority={index < 4} retry={photoRetries[report.id] ?? 0} onError={() => setPhotoFailures(current => ({ ...current, [report.id]: report.photo_paths?.[0] ?? '' }))} />}
+                  photo={<ReportThumbnail key={`${report.photo_paths?.[0]}:${photoRetries[report.id] ?? 0}`} report={report} priority={index < 4} retry={photoRetries[report.id] ?? 0} index={photoIndex[report.id] ?? 0} onError={() => setPhotoFailures(current => ({ ...current, [report.id]: report.photo_paths?.[0] ?? '' }))} />}
                   title={report.title || 'Litter report'}
                   reward={rewardLabel(report)} funded={funded}
                   summary={reportSummary(report)} severity={report.severity ?? 'Medium'}
@@ -426,8 +463,14 @@ export function ReportBrowser({
                 setPhotoFailures(current => ({ ...current, [report.id]: '' }));
                 setPhotoRetries(current => ({ ...current, [report.id]: (current[report.id] ?? 0) + 1 }));
               }}>Retry photo</button>}
+              {cardPhotoSources(report, true).length > 1 && (
+                <div className="card-photo-nav">
+                  <button type="button" aria-label={`Previous photo of ${report.title || 'report'}`} onClick={() => stepPhoto(report, -1)}><Icon name="chevron-left" /></button>
+                  <button type="button" aria-label={`Next photo of ${report.title || 'report'}`} onClick={() => stepPhoto(report, 1)}><Icon name="chevron-right" /></button>
+                </div>
+              )}
               {onFavoriteChange && <button className="card-favorite" aria-label={`${favoriteReportIds.has(report.id) ? 'Unfavorite' : 'Favorite'} ${report.title || 'report'}`} aria-pressed={favoriteReportIds.has(report.id)} onClick={() => onFavoriteChange(report.id, !favoriteReportIds.has(report.id))}><Icon name="heart" /></button>}
-              {onHiddenChange && <details className="card-options"><summary aria-label={`Options for ${report.title || 'report'}`}>•••</summary><button onClick={() => onHiddenChange(report.id, !hiddenReportIds.has(report.id))}>{hiddenReportIds.has(report.id) ? 'Unhide report' : 'Hide report'}</button></details>}
+              {onHiddenChange && <details className="card-options" onToggle={event => closeOtherCardMenus(event.currentTarget)}><summary aria-label={`Options for ${report.title || 'report'}`}>•••</summary><button onClick={() => onHiddenChange(report.id, !hiddenReportIds.has(report.id))}>{hiddenReportIds.has(report.id) ? 'Unhide report' : 'Hide report'}</button></details>}
               {showAuthors && report.user_id && (authors[report.user_id] ? <ReportAuthor key={report.user_id} profileId={report.user_id} initialProfile={authors[report.user_id]} sourceReportId={report.id} onBlocked={onMemberBlocked} /> : <div className="report-author report-author-placeholder" aria-hidden="true"><span className="report-author-initial" /><span className="report-author-copy"><span>Community member</span></span></div>)}
               </article>
             );

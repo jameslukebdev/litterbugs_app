@@ -1,11 +1,12 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { IoMapOutline } from 'react-icons/io5';
+import { IoChevronForward, IoMapOutline } from 'react-icons/io5';
 import type { CSSProperties } from 'react';
 import { AVAILABLE_CLEANUPS_MAP_HREF } from '@/lib/home-map-link';
 import { BOONE_PREVIEW, type MapPreviewPin } from '@/lib/map-preview';
 import { MapPreviewPins } from './map-preview-pins';
 import { MapPinBug } from './map-pin-bug';
+import { MapPreviewNudge } from './map-preview-nudge';
 import styles from './map-preview.module.css';
 
 /**
@@ -32,7 +33,6 @@ export function MapPreview({ pins }: { pins: MapPreviewPin[] | null }) {
     <section className={styles.preview} aria-labelledby="map-preview-title">
       <div className={styles.head}>
         <h2 id="map-preview-title">Find litter on the map</h2>
-        <Link className={styles.open} href={AVAILABLE_CLEANUPS_MAP_HREF}><IoMapOutline aria-hidden />Open map</Link>
       </div>
       <div className={styles.frame}>
         {key.length > 0 && (
@@ -43,17 +43,22 @@ export function MapPreview({ pins }: { pins: MapPreviewPin[] | null }) {
           </ul>
         )}
         <div className={styles.mapArea} style={{
-          '--mobile-map-ratio': 2.5 * visibleWidth / 100,
+          '--mobile-map-ratio': (BOONE_PREVIEW.width / BOONE_PREVIEW.height) * visibleWidth / 100,
           '--mobile-stage-width': `${mobileStageWidth}%`,
           '--mobile-stage-offset': mobileStageOffset,
         } as CSSProperties}>
           <div className={styles.stage}>
-            <Link className={styles.backdrop} href={AVAILABLE_CLEANUPS_MAP_HREF} aria-label="Open the litter map" tabIndex={-1}>
-              <Image src={BOONE_PREVIEW.image} alt="" fill sizes="(max-width: 700px) 125vw, (max-width: 1244px) 100vw, 1180px" />
+            <Link className={styles.backdrop} href={AVAILABLE_CLEANUPS_MAP_HREF} aria-label="Open the litter map" tabIndex={-1} draggable={false} data-map-backdrop>
+              <Image src={BOONE_PREVIEW.image} alt="" fill sizes="(max-width: 700px) 125vw, (max-width: 1244px) 100vw, 1180px" draggable={false} />
             </Link>
           </div>
           {pins && <MapPreviewPins pins={pins} />}
         </div>
+        {/* The picture is a doorway to the real map, so say so on the map itself. */}
+        <Link className={styles.explore} href={AVAILABLE_CLEANUPS_MAP_HREF}>
+          <IoMapOutline aria-hidden />Explore the full map<IoChevronForward aria-hidden />
+        </Link>
+        <MapPreviewNudge />
         <a className={styles.credit} href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a>
       </div>
     </section>

@@ -15,9 +15,9 @@
 .photo { position: absolute; inset: 0; overflow: hidden; border-radius: 22px; background: #efedff; box-shadow: 0 6px 0 var(--accent); }
 .photo img { display: block; object-fit: cover; }
 .spot   { --accent: #ffca30; left: 1%;  top: 7%;  width: 40%; height: 47%; rotate: -3deg; }
-.report { --accent: #ed3f48; left: 57%; top: 0;   width: 41%; height: 40%; rotate: 2.5deg; }
-.clean  { --accent: #77b847; left: 3%;  top: 63%; width: 45%; height: 31%; rotate: 2deg; }
-.paid   { --accent: #b645d3; left: 56%; top: 47%; width: 40%; height: 47%; rotate: -2deg; z-index: 2; }
+.report { --accent: #9bbbf3; left: 57%; top: 0;   width: 41%; height: 40%; rotate: 2.5deg; }
+.clean  { --accent: #9fd17a; left: 3%;  top: 63%; width: 45%; height: 31%; rotate: 2deg; }
+.paid   { --accent: #d7a8ee; left: 56%; top: 47%; width: 40%; height: 47%; rotate: -2deg; z-index: 2; }
 .spot img   { object-position: 50% 62%; }
 .report img { object-position: 50% 72%; }
 .clean img  { object-position: 50% 45%; }

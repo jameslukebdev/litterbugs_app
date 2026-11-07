@@ -6,16 +6,19 @@ import { loadPublicReportShare } from './public-report-share';
 /**
  * The homepage map preview is a one-time OpenStreetMap snapshot (public/map-preview/boone.webp),
  * so pins are placed with the same Web Mercator maths the snapshot was cut with.
- * Frame: zoom 14, world-pixel origin (1145002, 1643572), 1600 × 640 px.
+ * Frame: zoom 14, world-pixel origin (1145002, 1643342), 1600 × 1100 px. Wide screens show the middle band;
+ * phones show more of the height. Pins only come from the middle 640 px band, which every screen shows.
  */
 export const BOONE_PREVIEW = {
   place: 'Boone',
   image: '/map-preview/boone.webp',
   zoom: 14,
   left: 1145002,
-  top: 1643572,
+  top: 1643342,
   width: 1600,
-  height: 640,
+  height: 1100,
+  pinTop: 1643572,
+  pinHeight: 640,
 } as const;
 
 /** Recent cleanups stay on the preview this long, so finished spots don't crowd out open ones. */
@@ -62,8 +65,8 @@ export async function loadBooneMapPreview(): Promise<MapPreviewPin[]> {
   const bounds = {
     west: lngAt(f.left, f.zoom),
     east: lngAt(f.left + f.width, f.zoom),
-    north: latAt(f.top, f.zoom),
-    south: latAt(f.top + f.height, f.zoom),
+    north: latAt(f.pinTop, f.zoom),
+    south: latAt(f.pinTop + f.pinHeight, f.zoom),
   };
   const client = createPublicClient();
   const base = () =>

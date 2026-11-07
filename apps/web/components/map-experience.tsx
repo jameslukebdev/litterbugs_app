@@ -19,7 +19,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '@/components/icon';
 import { ClusterReports } from '@/components/cluster-reports';
 import type { createReportClusters } from '@/lib/report-clusters';
-import { pinKind, prepareCard, renderPinCard, renderPinGlyph, reportPinText, type PinKind } from '@/lib/map-marker-glyph';
+import { hideNativeTooltip, pinKind, prepareCard, renderPinCard, renderPinGlyph, reportPinText, type PinKind } from '@/lib/map-marker-glyph';
 import { getReportCardPhotoUrl } from '@/lib/report-photo';
 import { PublicSiteFooter } from '@/components/public-site-footer';
 import { PublicAccountAction, type PublicAccountActionHandle } from '@/components/public-account-action';
@@ -54,6 +54,16 @@ const EMPTY_MAP_REPORTS: MappableReport[] = [];
 // Website starting viewport only: no city boundary or discovery filter.
 const DEFAULT_WEB_MAP_CENTER = { latitude: 36.2168, longitude: -81.6746 };
 const MAP_TYPES = ['roadmap', 'satellite', 'hybrid', 'terrain'] as const;
+const NO_FAVORITES: ReadonlySet<string> = new Set();
+/**
+ * Swap in new favourite or hidden lists only when their contents changed. A new list counts as a new
+ * search, which blanks the cards and pins until reports reload, so a heart tap must not touch `hidden`.
+ */
+function keepUnchanged<T extends { favorites: Set<string>; hidden: Set<string> }>(current: T, next: { favorites: string[]; hidden: string[] }): T {
+  const favorites = sameIds(current.favorites, next.favorites) ? current.favorites : new Set(next.favorites);
+  const hidden = sameIds(current.hidden, next.hidden) ? current.hidden : new Set(next.hidden);
+  return favorites === current.favorites && hidden === current.hidden ? current : { ...current, favorites, hidden };
+}
 const sameIds = (current: ReadonlySet<string>, next: readonly string[]) => current.size === new Set(next).size && next.every(id => current.has(id));
 /** Same bugs as the pins: ladybug = needs a cleanup, caterpillar = being cleaned, flower = cleaned up. */
 const MAP_KEY_BUGS: Record<PinKind, string> = { open: '/brand/bugs/ladybug.png', busy: '/brand/ranks/caterpillar.svg', done: '/brand/bugs/flower.png' };
@@ -187,10 +197,13 @@ export function MapExperience({
   const canSearchReports = Boolean(discoveryArea || mapError);
   const geometry = searchPlace?.geometry;
   const placeId = searchPlace?.id;
+  // Favourites only change the search when the Favourites filter is on. Otherwise tapping a heart would
+  // count as a new search and blank the whole list while the same reports reload.
+  const searchFavorites = restoredFilters?.scope === 'favorites' ? reportPreferences.favorites : NO_FAVORITES;
   const discoverySearch = useMemo(() => canSearchReports && restoredFilters ? {
     filters: restoredFilters, area: discoveryArea, geometry, placeId,
-    favorites: reportPreferences.favorites, hidden: reportPreferences.hidden,
-  } : null, [canSearchReports, discoveryArea, geometry, placeId, reportPreferences, restoredFilters]);
+    favorites: searchFavorites, hidden: reportPreferences.hidden,
+  } : null, [canSearchReports, discoveryArea, geometry, placeId, searchFavorites, reportPreferences.hidden, restoredFilters]);
   const [discoveryResponse, setDiscoveryResponse] = useState<{
     search: NonNullable<typeof discoverySearch>;
     reports: MappableReport[];
@@ -332,9 +345,7 @@ export function MapExperience({
       if (cancelled || preferenceOwnerRef.current !== owner) return;
       // The background refresh reloads these every 30 seconds. Keep the same Sets when nothing changed:
       // new Sets would count as a new search, which blanks the pins and map key until reports reload.
-      setReportPreferences(current => sameIds(current.favorites, value.preferences.favorites) && sameIds(current.hidden, value.preferences.hidden)
-        ? current
-        : { favorites: new Set(value.preferences.favorites), hidden: new Set(value.preferences.hidden) });
+      setReportPreferences(current => keepUnchanged(current, value.preferences));
     };
     void reportPreferenceSync.load(owner).then(show).then(() => reportPreferenceSync.sync(owner)).then(show)
       .catch(() => { if (!cancelled) setToast('Saved preferences could not be loaded. Please try again.'); });
@@ -346,11 +357,11 @@ export function MapExperience({
     try {
       const value = await reportPreferenceSync.set(owner, kind, reportId, enabled);
       if (preferenceOwnerRef.current !== owner) return;
-      setReportPreferences({ favorites: new Set(value.preferences.favorites), hidden: new Set(value.preferences.hidden) });
+      setReportPreferences(current => keepUnchanged(current, value.preferences));
       if (kind === 'hidden') setToast(enabled ? 'Report hidden. Use the Hidden filter to restore it.' : 'Report restored to search.');
       const synced = await reportPreferenceSync.sync(owner);
       if (preferenceOwnerRef.current !== owner) return;
-      setReportPreferences({ favorites: new Set(synced.preferences.favorites), hidden: new Set(synced.preferences.hidden) });
+      setReportPreferences(current => keepUnchanged(current, synced.preferences));
       if (synced.offline) setToast('Saved on this device. Changes will sync when you reconnect.');
     } catch { if (preferenceOwnerRef.current === owner) setToast('Your preference could not be saved. Please try again.'); }
   }
@@ -546,6 +557,7 @@ export function MapExperience({
           setMapError('The map could not display its pins. You can still browse reports. Reload to try the map again.');
           return;
         }
+        hideNativeTooltip(marker, report.title || 'Litter Report');
         marker.append(markerGlyph);
         markersRef.current.set(report.id, marker);
         markerGlyphsRef.current.set(report.id, markerGlyph);
@@ -571,7 +583,7 @@ export function MapExperience({
         marker.position = { lat: report.latitude, lng: report.longitude };
       }
       const title = report.title || 'Litter Report';
-      if (marker.title !== title) marker.title = title;
+      if (marker.getAttribute('aria-label') !== title) { marker.title = title; hideNativeTooltip(marker, title); }
       const pin = reportPinText(report);
       renderPinGlyph(markerGlyph, pin.kind, pin.text, pin.visible);
       const photoPath = report.photo_paths?.[0];

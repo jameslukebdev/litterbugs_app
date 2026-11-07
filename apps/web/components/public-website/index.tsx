@@ -3,6 +3,7 @@ import seoStyles from './seo-pages.module.css';
 import { HomeCleanupProof } from './home-cleanup-proof';
 import { ReportAuthor } from '../report-author';
 import { ReportCardOptions } from './report-card-options';
+import { CardPhotoSwitch } from './card-photo-switch';
 import { ReportCarousel } from './report-carousel';
 import { ReportCardContent } from '../report-card-content';
 import { PublicPhoto } from './public-photo';
@@ -111,27 +112,34 @@ export function ReportCards({
         const amount = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format((report.rewardCents ?? 0) / 100);
         const reward = report.state === 'expired' ? 'Report expired' : report.state === 'in_progress' ? 'Cleanup in progress' : report.state === 'completed'
           ? report.rewardCents == null ? 'Cleanup completed' : funded ? `${amount} funded cleanup` : 'Volunteer cleanup completed'
-          : funded ? `${amount} cleanup reward` : 'Volunteer cleanup';
-        const photo = report.state === 'completed' ? report.afterPhotoUrl || report.beforePhotoUrl : report.beforePhotoUrl;
+          : funded ? `Pays ${amount}` : 'Volunteer cleanup';
+        // Cleaned-up spots lead with the after photo and can flip back to the before photo, like the map list.
+        const photos = (report.state === 'completed' ? [{ src: report.afterPhotoUrl, after: true }, { src: report.beforePhotoUrl, after: false }] : [{ src: report.beforePhotoUrl, after: false }])
+          .filter((item): item is { src: string; after: boolean } => Boolean(item.src));
+        const timing = report.state === 'completed' ? 'Cleanup complete' : report.reportDate ? new Date(report.reportDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '';
         const status = report.state === 'expired' ? 'Expired' : report.state === 'completed' ? 'Cleaned' : report.state === 'available' ? 'Available' : 'In progress';
         return <article className="report-card-container" key={report.id}>
           <Link prefetch={false} className="report-result" href={`/reports/${report.id}`}>
             <ReportCardContent
-              photo={<span className={`report-result-photo${photo ? '' : ' report-result-photo-empty'}`}>
-                {photo ? <PublicPhoto src={photo} alt="" width={600} height={400} eager={showLocation && index < 3} /> : <span>No photo yet</span>}
+              photo={<span className={`report-result-photo${photos.length ? '' : ' report-result-photo-empty'}`}>
+                {photos.length ? photos.map((item, slide) => <span className="card-slide" data-slide={slide} key={item.src}>
+                  <PublicPhoto src={item.src} alt="" width={600} height={400} eager={slide === 0 && showLocation && index < 3} />
+                  {item.after && photos.length > 1 && <span className="report-result-photo-count">After cleanup</span>}
+                </span>) : <span>No photo yet</span>}
                 <span className="report-result-workflow" data-tone={report.state === 'completed' ? 'completed' : report.state === 'available' ? 'available' : 'active'}>{status}</span>
+                {photos.length > 1 && <span className="report-result-dots" aria-hidden="true">{photos.map((item, dot) => <i key={item.src} data-dot={dot} />)}</span>}
               </span>}
               title={report.title}
               reward={reward}
               funded={funded}
-              summary={[showLocation ? report.localityLabel : null, report.litterTypes.join(' · ') || 'General litter'].filter(Boolean).join(' · ')}
-              reporterName={report.reporterName || 'Community member'}
-              timing={report.state === 'completed' ? 'Cleanup complete' : report.reportDate ? new Date(report.reportDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : ''}
+              summary={[showLocation ? report.localityLabel : null, (report.litterTypes.length > 2 ? `${report.litterTypes.slice(0, 2).join(' · ')} +${report.litterTypes.length - 2}` : report.litterTypes.join(' · ')) || 'General litter'].filter(Boolean).join(' · ')}
+              severity={report.severity ?? 'Medium'}
+              timing={timing}
             />
           </Link>
+          {photos.length > 1 && <CardPhotoSwitch count={photos.length} title={report.title} />}
           <div className="public-card-footer">
             {report.reporterId ? <ReportAuthor profileId={report.reporterId} sourceReportId={report.id} /> : <span className="public-card-author-fallback">{report.reporterName || 'Community member'}</span>}
-            <span className="public-card-date">{report.state === 'completed' ? 'Cleanup complete' : report.reportDate ? new Date(report.reportDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : ''}</span>
             <ReportCardOptions reportId={report.id} title={report.title} />
           </div>
         </article>;

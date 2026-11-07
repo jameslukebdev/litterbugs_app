@@ -1,6 +1,6 @@
 import { MarkerClusterer, MarkerClustererEvents, ClusterStats, SuperClusterAlgorithm, type Cluster, type Marker, type AlgorithmInput, type AlgorithmOutput } from '@googlemaps/markerclusterer';
 import type { MappableReport } from '@litterbugs/report-contract';
-import { prepareCard, renderGroupCard, renderPinGlyph } from './map-marker-glyph';
+import { hideNativeTooltip, prepareCard, renderGroupCard, renderPinGlyph } from './map-marker-glyph';
 
 export function clusterSummary(reports: MappableReport[]) {
   const counts = { available: 0, active: 0, completed: 0 };
@@ -123,7 +123,8 @@ export function createReportClusters(map: google.maps.Map, AdvancedMarker: typeo
     const members = visual.ids.map(id => currentReports.get(id)).filter((report): report is MappableReport => Boolean(report));
     const summary = clusterSummary(members);
     const selected = Boolean(selectedId && visual.ids.includes(selectedId));
-    visual.marker.title = `${summary.label}${selected ? '. Contains selected report' : ''}. Zoom in or choose a report`;
+    const label = `${summary.label}${selected ? '. Contains selected report' : ''}. Zoom in or choose a report`;
+    if (visual.marker.getAttribute('aria-label') !== label) { visual.marker.title = label; hideNativeTooltip(visual.marker, label); }
     visual.glyph.classList.toggle('report-map-cluster-selected', selected);
     // The group shows the bug of its most useful member (open litter first) next to the count.
     renderPinGlyph(visual.glyph, summary.available ? 'open' : summary.active ? 'busy' : 'done', `${members.length}`, true);

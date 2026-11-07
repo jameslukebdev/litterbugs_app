@@ -148,8 +148,8 @@ export default async function SharedReportPage({ params }: Props) {
 
             <aside className={styles.nextSteps}>
             {expired ? <Link className="primary-button button-link" href="/reports">Find a current cleanup</Link> : !completed && !inProgress && localCommunityHref ? <div className={journey.reportActions}>
-              {report.fundingEligible && <Link className="report-action-link button-link report-action-fund" prefetch={false} href={`/sign-in?next=${encodeURIComponent(communityReportMapHref(report.id, report.communitySlug, 'fund'))}`}><BrandBug kind="bee" size={21} />Fund</Link>}
-              <Link className="report-action-link button-link report-action-clean" prefetch={false} href={`/sign-in?next=${encodeURIComponent(communityReportMapHref(report.id, report.communitySlug, 'clean'))}`}><BrandBug kind="butterfly" size={21} />Clean</Link>
+              {report.fundingEligible && <Link className="report-action-link button-link report-action-fund" prefetch={false} href={`/sign-in?next=${encodeURIComponent(communityReportMapHref(report.id, report.communitySlug, 'fund'))}`}><BrandBug kind="bee" size={21} className="bug-hop" />Fund</Link>}
+              <Link className="report-action-link button-link report-action-clean" prefetch={false} href={`/sign-in?next=${encodeURIComponent(communityReportMapHref(report.id, report.communitySlug, 'clean'))}`}><BrandBug kind="butterfly" size={21} className="bug-hop" />Clean</Link>
             </div> : <Link className="primary-button button-link" href={communityReportMapHref(report.id, report.communitySlug, 'locate')}>View on map</Link>}
             {localCommunityHref && <Link className={styles.textAction} href={localCommunityHref}>Back to {report.generalLocation}</Link>}
               <div className={styles.actions}>

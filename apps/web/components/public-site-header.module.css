@@ -211,7 +211,7 @@
 
 /* Logo colors identify navigation families without changing their layout. */
 .header .mapLink { --nav-tint: #fff4cc; --nav-ink: #775700; }
-.header .reportAction, .header [data-nav-family='Report'] { --nav-tint: #fff0ee; --nav-ink: #ac343b; }
+.header .reportAction, .header [data-nav-family='Report'] { --nav-tint: #e5efff; --nav-ink: #2e539e; }
 .header .funding, .header [data-nav-family='Donate'] { --nav-tint: #fff4cc; --nav-ink: #775700; }
 .header .cleaning, .header [data-nav-family='Earn'] { --nav-tint: #ecf6e3; --nav-ink: #2f6b3a; }
 .header .help, .header [data-nav-family='Support'] { --nav-tint: #f7ebfb; --nav-ink: #783398; }
@@ -222,7 +222,7 @@
 .header.header .appLink a:hover { background: var(--nav-tint); color: var(--nav-ink); box-shadow: none; }
 .header.header .appLink a { padding-inline: 12px; border-radius: 12px; }
 .header.header .mobilePrimaryLinks a[href='/map']:hover { background: #fff4cc; color: #775700; }
-.header.header .mobilePrimaryLinks a[href='/report-litter']:hover { background: #fff0ee; color: #ac343b; }
+.header.header .mobilePrimaryLinks a[href='/report-litter']:hover { background: #e5efff; color: #2e539e; }
 .header.header .mobilePrimaryLinks a[href='/cleaner']:hover { background: #ecf6e3; color: #2f6b3a; }
 
 /* Map toolbar: style only, preserving search/filter/view behavior and sizing. */
@@ -479,3 +479,8 @@
   .mobileMapControls :global(.discovery-view-toggle) button { font-size: 12px; padding-inline: 2px; }
   .mobileMapControls :global(.discovery-view-toggle) svg { display: none; }
 }
+
+/* Phone menu: the section's bug hops on hover or focus, like the map's dragonfly. */
+.header .mobilePrimaryLinks .triggerBug { transition: transform .2s ease; }
+.header .mobilePrimaryLinks .menuTrigger:is(:hover, :focus-visible, [aria-expanded='true']) .triggerBug { transform: translate(1px, -2px) rotate(-8deg); }
+@media (prefers-reduced-motion: reduce) { .header .mobilePrimaryLinks .triggerBug { transition: none; transform: none !important; } }

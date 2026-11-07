@@ -66,9 +66,9 @@ const informationLinks = [
 ] as const;
 type NavigationLinks = ReadonlyArray<readonly [PublicPath | '/report' | `/map?${string}` | `/sign-in?${string}`, string]>;
 
-/** Each menu family is labelled by one logo bug, matching the homepage story and the family's colour. */
+/** Each menu family is labelled by one bug and its colour. Report is the dragonfly (periwinkle), same as the map's Report Litter button. */
 const familyIntros: Record<string, { bug: string; text: string }> = {
-  Report: { bug: '/brand/bugs/ladybug.png', text: 'Pin litter, earn cash' },
+  Report: { bug: '/brand/ranks/dragonfly.svg', text: 'Pin litter, earn cash' },
   Donate: { bug: '/brand/bugs/bee.png', text: 'Fund a cleanup nearby' },
   Earn: { bug: '/brand/ranks/caterpillar.svg', text: 'Get paid to clean up litter' },
   Support: { bug: '/brand/bugs/butterfly.png', text: 'Help, safety and our story' },
