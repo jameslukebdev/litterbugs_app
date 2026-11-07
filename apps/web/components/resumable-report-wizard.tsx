@@ -39,7 +39,13 @@ export function ResumableReportWizard({ userId, submissionProgress, coordinates,
   useEffect(() => {
     if(editorLock !== 'ready') return;
     active.current = true;
-    void Promise.all([loadReportDraft(userId), loadReportPublication(userId)]).then(([draft, journal]) => {
+    void (async () => {
+      // Loading reconciles a completed submission and clears its checkpoint.
+      // Read the journal afterwards so a stale checkpoint cannot reopen it.
+      const draft = await loadReportDraft(userId);
+      const journal = await loadReportPublication(userId);
+      return { draft, journal };
+    })().then(({draft, journal}) => {
       if (!active.current) return;
       onRestorePublication(journal);
       setPending(Boolean(journal));

@@ -3,7 +3,7 @@ import { createCloudDraftSync, DraftConflictError, type CloudDraft, type DraftWr
 
 type Draft = { text: string; photos: string[] };
 function fixture() {
-  const remote = new Map<string, CloudDraft>(); let sequence=0; let offline=false; let loseResponse=false;
+  const remote = new Map<string, CloudDraft>(); const published = new Set<string>(); let sequence=0; let offline=false; let loseResponse=false;
   const write = vi.fn(async (op: DraftWrite) => {
     if(offline) throw Error('offline');
     const key=`${op.target_user_id}:${op.target_key}`;
@@ -17,18 +17,20 @@ function fixture() {
     return structuredClone(row);
   });
   function device() {
-    const local=new Map<string,Draft>(); const meta=new Map<string,string>();
+    const local=new Map<string,Draft>(); const meta=new Map<string,string>(); const journals=new Map<string,string>();
     const sync=createCloudDraftSync<Draft>({
-      readLocal:async(o,k)=>local.get(`${o}:${k}`),writeLocal:async(o,k,d)=>{local.set(`${o}:${k}`,d);},clearLocal:async(o,k)=>{local.delete(`${o}:${k}`);},
+      readLocal:async(o,k)=>local.get(`${o}:${k}`),writeLocal:async(o,k,d)=>{local.set(`${o}:${k}`,d);},clearLocal:async(o,k)=>{local.delete(`${o}:${k}`);journals.delete(`${o}:${k}`);},
       readMeta:async(o,k)=>meta.get(`${o}:${k}`)??null,writeMeta:async(o,k,m)=>{meta.set(`${o}:${k}`,m);},
+      localSubmissionId:async(o,k)=>journals.get(`${o}:${k}`),
+      isSubmitted:async(o,k,id)=>{if(offline)throw Error('offline');return published.has(`${o}:${k}:${id}`);},
       fingerprint:async d=>JSON.stringify(d),id:()=>`operation-${++sequence}`,
       upload:async(o,_k,d)=>{if(offline)throw Error('offline');return {payload:d,paths:d.photos.map(p=>`${o}/${p}`)};},
       download:async(_o,_k,r)=>r.payload as Draft,
       loadRemote:async(o,k)=>{if(offline)throw Error('offline');return structuredClone(remote.get(`${o}:${k}`)??null);},writeRemote:write,
     });
-    return {sync,local,meta,edit:(text:string,owner='alice',key='report')=>local.set(`${owner}:${key}`,{text,photos:['photo.jpg']})};
+    return {sync,local,meta,journals,edit:(text:string,owner='alice',key='report')=>local.set(`${owner}:${key}`,{text,photos:['photo.jpg']})};
   }
-  return {device,remote,write,setOffline:(v:boolean)=>{offline=v;},loseNextResponse:()=>{loseResponse=true;}};
+  return {device,remote,write,publish:(owner:string,key:string,id:string)=>published.add(`${owner}:${key}:${id}`),setOffline:(v:boolean)=>{offline=v;},loseNextResponse:()=>{loseResponse=true;}};
 }
 afterEach(()=>vi.useRealTimers());
 describe('account draft continuity',()=>{
@@ -137,5 +139,106 @@ describe('account draft continuity',()=>{
   it('does not replace a local submission checkpoint when the cloud revision is unchanged',async()=>{
     const f=fixture(),a=f.device();a.edit('Ready');await a.sync.save('alice','report');const local=a.local.get('alice:report');
     expect(await a.sync.load('alice','report')).toBe(local);
+  });
+});
+
+
+describe('completed report recovery on another browser',()=>{
+  it('retires a published submission after the publish response or cleanup was lost',async()=>{
+    const f=fixture(),phone=f.device();phone.edit('Beacon Heights');
+    const id=await phone.sync.begin('alice','report');
+    phone.journals.set('alice:report',id);f.publish('alice','report',id);
+    expect(await phone.sync.load('alice','report')).toBeUndefined();
+    expect(phone.local.size).toBe(0);expect(phone.journals.size).toBe(0);
+    expect(f.remote.get('alice:report')?.state).toBe('deleted');
+    expect(phone.sync.status('alice','report')).toBe('unsaved');
+    phone.edit('A new litter spot');
+    expect(await phone.sync.begin('alice','report')).not.toBe(id);
+  });
+  it('clears an unchanged phone copy after another device published and deleted the draft',async()=>{
+    const f=fixture(),phone=f.device(),computer=f.device();phone.edit('Beacon Heights');
+    const id=await phone.sync.begin('alice','report');await computer.sync.load('alice','report');
+    f.publish('alice','report',id);await computer.sync.discard('alice','report');
+    expect(await phone.sync.load('alice','report')).toBeUndefined();
+    expect(phone.sync.status('alice','report')).toBe('unsaved');
+  });
+  it('inspects a completed saved location without replacing or deleting an editor copy',async()=>{
+    const f=fixture(),phone=f.device();phone.edit('Beacon Heights');
+    const id=await phone.sync.begin('alice','report');f.publish('alice','report',id);
+    const writes=f.write.mock.calls.length;
+    expect(await phone.sync.isLocalSubmitted('alice','report')).toBe(true);
+    expect(phone.local.get('alice:report')?.text).toBe('Beacon Heights');
+    expect(f.write.mock.calls.length).toBe(writes);
+    phone.edit('Unsent changes');
+    expect(await phone.sync.isLocalSubmitted('alice','report')).toBe(false);
+  });
+  it('keeps the device recovery copy if a newer account revision wins the cleanup race',async()=>{
+    const f=fixture(),phone=f.device();phone.edit('Beacon Heights');
+    const id=await phone.sync.begin('alice','report');f.publish('alice','report',id);
+    const write=f.write.getMockImplementation()!;
+    f.write.mockImplementationOnce(async op=>{
+      const current=f.remote.get('alice:report')!;
+      current.revision++;current.submission_id='new-id';current.state='editing';
+      current.payload={text:'New account work',photos:['new.jpg']};
+      return write(op);
+    });
+    expect(await phone.sync.load('alice','report')).toMatchObject({text:'Beacon Heights'});
+    expect(phone.sync.status('alice','report')).toBe('conflict');
+    expect(f.remote.get('alice:report')?.payload).toMatchObject({text:'New account work'});
+    expect(await phone.sync.load('alice','report')).toMatchObject({text:'New account work'});
+  });
+  it('restores a newer account draft while retiring the completed phone copy',async()=>{
+    const f=fixture(),phone=f.device(),computer=f.device();phone.edit('Beacon Heights');
+    const id=await phone.sync.begin('alice','report');await computer.sync.load('alice','report');
+    f.publish('alice','report',id);await computer.sync.discard('alice','report');
+    computer.edit('New report');const next=await computer.sync.save('alice','report');
+    expect(await phone.sync.load('alice','report')).toMatchObject({text:'New report'});
+    expect(f.remote.get('alice:report')?.submission_id).toBe(next?.submission_id);
+    expect(f.remote.get('alice:report')?.state).toBe('editing');
+  });
+  it('checks a legacy local publication journal without cloud metadata',async()=>{
+    const f=fixture(),phone=f.device();phone.edit('Beacon Heights');
+    phone.journals.set('alice:report','legacy-id');f.publish('alice','report','legacy-id');
+    expect(await phone.sync.load('alice','report')).toBeUndefined();
+    expect(phone.journals.size).toBe(0);expect(f.write).not.toHaveBeenCalled();
+  });
+  it('clears a completed journal even if its draft bytes are already gone',async()=>{
+    const f=fixture(),phone=f.device();phone.journals.set('alice:report','legacy-id');
+    f.publish('alice','report','legacy-id');
+    expect(await phone.sync.load('alice','report')).toBeUndefined();
+    expect(phone.journals.size).toBe(0);
+  });
+  it('removes an orphaned published account draft on a fresh browser without restoring photos',async()=>{
+    const f=fixture(),phone=f.device(),fresh=f.device();phone.edit('Beacon Heights');
+    const id=await phone.sync.begin('alice','report');f.publish('alice','report',id);
+    expect(await fresh.sync.load('alice','report')).toBeUndefined();
+    expect(fresh.local.size).toBe(0);expect(f.remote.get('alice:report')?.payload).toBeNull();
+  });
+  it('preserves unsent offline edits even when the previous account version was published',async()=>{
+    const f=fixture(),phone=f.device(),computer=f.device();phone.edit('Original');
+    await phone.sync.save('alice','report');await computer.sync.load('alice','report');
+    const id=await computer.sync.begin('alice','report');f.publish('alice','report',id);
+    phone.edit('Unsent new details');
+    expect(await phone.sync.load('alice','report')).toMatchObject({text:'Unsent new details'});
+    expect(phone.sync.status('alice','report')).toBe('conflict');
+  });
+  it('keeps recovery while publication is unconfirmed or the phone is offline',async()=>{
+    const f=fixture(),phone=f.device();phone.edit('Beacon Heights');
+    const id=await phone.sync.begin('alice','report');phone.journals.set('alice:report',id);
+    expect(await phone.sync.load('alice','report')).toMatchObject({text:'Beacon Heights'});
+    expect(phone.sync.status('alice','report')).toBe('submitting');
+    f.publish('alice','report',id);f.setOffline(true);
+    expect(await phone.sync.load('alice','report')).toMatchObject({text:'Beacon Heights'});
+    expect(phone.journals.get('alice:report')).toBe(id);
+    f.setOffline(false);expect(await phone.sync.load('alice','report')).toBeUndefined();
+  });
+  it('does not replay a stale pending mutation after confirmed publication',async()=>{
+    const f=fixture(),phone=f.device();phone.edit('Beacon Heights');
+    f.loseNextResponse();await expect(phone.sync.begin('alice','report')).rejects.toThrow('response lost');
+    const record=f.remote.get('alice:report')!;
+    phone.journals.set('alice:report',record.submission_id);f.publish('alice','report',record.submission_id);
+    const writes=f.write.mock.calls.length;
+    expect(await phone.sync.load('alice','report')).toBeUndefined();
+    expect(f.write.mock.calls.slice(writes).map(([op])=>op.action)).toEqual(['delete']);
   });
 });

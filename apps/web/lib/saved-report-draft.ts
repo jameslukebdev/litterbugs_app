@@ -1,6 +1,7 @@
 import { trackDeviceSave, forgetDeviceSave } from './device-save-state';
 import { hasReportDraftContent } from './report-draft-content';
 import { cloudDrafts } from './cloud-drafts';
+import { isReportPublished } from './report-submission-state';
 import type { Coordinates, ReportDraft } from '@litterbugs/report-contract';
 
 export type ReportWizardSnapshot = {
@@ -87,13 +88,14 @@ export async function clearReportDraft(userId: string) { await cloudDrafts.disca
 /** Inspect a remote draft's location without replacing another tab's local editor. */
 export async function reportDraftLocation(userId: string): Promise<Coordinates | undefined> {
   const local = await loadLocalReportDraft(userId);
-  if(local && (hasReportDraftContent(local) || await loadReportPublication(userId)
+  if(local && !await cloudDrafts.isLocalSubmitted(userId, 'report').catch(() => false) && (hasReportDraftContent(local) || await loadReportPublication(userId)
     || ['submitting', 'conflict'].includes(cloudDrafts.status(userId, 'report')))) return local.coordinates;
   const { createClient } = await import('./supabase/client');
   const { accountDraftPayload } = await import('@litterbugs/report-contract');
-  const {data,error} = await createClient().from('customer_drafts').select('payload,expires_at,photo_paths,state').eq('user_id',userId).eq('draft_key','report').abortSignal(AbortSignal.timeout(8000)).maybeSingle();
+  const {data,error} = await createClient().from('customer_drafts').select('payload,expires_at,photo_paths,state,submission_id').eq('user_id',userId).eq('draft_key','report').abortSignal(AbortSignal.timeout(8000)).maybeSingle();
   if(error) throw error;
   if(!data?.payload || Date.parse(data.expires_at)<=Date.now()) return undefined;
+  if(await isReportPublished(userId,data.submission_id)) return undefined;
   const parsed = accountDraftPayload(data.payload,'report');
   return parsed.kind==='report' && (data.state === 'submitting' || hasReportDraftContent(parsed, data.photo_paths.length)) ? parsed.coordinates : undefined;
 }

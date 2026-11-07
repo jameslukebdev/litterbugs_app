@@ -70,6 +70,18 @@ it('does not overwrite a draft when loading storage fails', async () => {
   storage.load.mockRejectedValue(new Error('Unavailable'));open();
   await screen.findByText('Draft unavailable');expect(storage.save).not.toHaveBeenCalled();
 });
+it('reads the recovery journal after retiring a completed phone submission', async () => {
+  storage.journal.mockResolvedValue({ userId: 'owner', reportId: 'completed', paths: ['owner/photo.jpg'] });
+  storage.load.mockImplementation(async () => {
+    storage.journal.mockResolvedValue(undefined);
+    return undefined;
+  });
+  const props = open();
+  await screen.findByRole('heading', { name: 'Add photos' });
+  expect(screen.queryByRole('button', { name: 'Resume draft' })).toBeNull();
+  expect(props.onRestorePublication).toHaveBeenCalledWith(undefined);
+  expect(storage.save).not.toHaveBeenCalled();
+});
 
 it('clears a pending publication only after confirmed server cancellation', async () => {
   storage.load.mockResolvedValue(saved());storage.journal.mockResolvedValue({ userId:'owner',reportId:'report',paths:[] });

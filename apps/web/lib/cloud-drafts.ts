@@ -1,7 +1,8 @@
 'use client';
 import { createCloudDraftSync, accountDraftPayload, accountDraftJson, type CloudDraft, type Json } from '@litterbugs/report-contract';
 import { createClient } from './supabase/client';
-import { loadLocalReportDraft, saveLocalReportDraft, clearLocalReportDraft, type SavedReportDraft } from './saved-report-draft';
+import { loadLocalReportDraft, saveLocalReportDraft, clearPublishedReport, loadReportPublication, type SavedReportDraft } from './saved-report-draft';
+import { isReportPublished } from './report-submission-state';
 import { loadLocalCleanupDraft, saveLocalCleanupDraft, clearLocalCleanupDraft, type CleanupDraft } from './saved-cleanup-draft';
 type Draft = SavedReportDraft | CleanupDraft;
 const bucket = 'customer_draft_photos';
@@ -20,7 +21,9 @@ async function hash(bytes: BufferSource) { return Array.from(new Uint8Array(awai
 export const cloudDrafts = createCloudDraftSync<Draft>({
   readLocal: (owner,key) => key==='report' ? loadLocalReportDraft(owner) : loadLocalCleanupDraft(owner,key.slice(8)),
   writeLocal: (owner,key,value) => key==='report' ? saveLocalReportDraft(owner,value as SavedReportDraft) : saveLocalCleanupDraft(owner,key.slice(8),value as CleanupDraft),
-  clearLocal: (owner,key) => key==='report' ? clearLocalReportDraft(owner) : clearLocalCleanupDraft(owner,key.slice(8)),
+  clearLocal: (owner,key) => key==='report' ? clearPublishedReport(owner) : clearLocalCleanupDraft(owner,key.slice(8)),
+  localSubmissionId: async (owner,key) => key==='report' ? (await loadReportPublication(owner))?.reportId : undefined,
+  isSubmitted: (owner,key,id) => key==='report' ? isReportPublished(owner,id) : Promise.resolve(false),
   readMeta: async (owner,key) => localStorage.getItem(metaKey(owner,key)),
   writeMeta: async (owner,key,value) => localStorage.setItem(metaKey(owner,key),value),
   id: () => crypto.randomUUID(),
