@@ -24,6 +24,16 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-06 — Codex (guest mobile map header)
+
+- Pushed and deployed `add4d62` on `codex/map-first-navigation` as
+  `dpl_CwT7PFxYNXTsCR21yArXKM6iJccX`. Previous live deployment for rollback
+  is `dpl_35d8y1M4DFLZwpNVPxduAUVoDhZB`.
+- The compact map profile button appears for signed-in members. Guests use
+  Log in / Sign up from the menu. Verified the guest flow on the live mobile
+  layout with analytics excluded and the signed-in button in component tests.
+  All 27 focused tests passed. Separate Report Litter styling edits are local.
+
 ### 2026-11-06 — Codex (mobile map layout and navigation released)
 
 - Pushed `codex/map-first-navigation` and deployed commit `49bfa82` to
