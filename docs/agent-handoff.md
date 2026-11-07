@@ -24,6 +24,21 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-06 — Codex (mobile map layout and navigation released)
+
+- Pushed `codex/map-first-navigation` and deployed commit `49bfa82` to
+  litterbugs.app as `dpl_35d8y1M4DFLZwpNVPxduAUVoDhZB`. Previous live
+  deployment for rollback is `dpl_Bm4K9MuPHbDQNuTTtL61wkbcqzXA`.
+  The earlier `7c650be` staging deployment was never promoted.
+- Mobile map uses a compact two-row header with Reports/Map, profile and
+  menu above search, filters and updates. Removed the bottom dock. The
+  homepage preview frames the pins, and mobile report card dates sit below
+  author badges. Includes the earlier map-first Earn and Donate links.
+- 84 focused tests, build and lint passed. Verified 320–760px and desktop
+  locally, plus the live toggle and layout at 486px and the live dropdowns
+  on phone and desktop. Analytics excluded during testing. Concurrent
+  uncommitted Report Litter styling edits remain outside this release.
+
 ### 2026-11-06 — Codex (local website rebuilt)
 
 - Production-mode build passed for `1e94298`. Started the local development
