@@ -24,6 +24,34 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-06 — Codex (Boone map entry and concurrent regression review)
+
+- Main desktop/mobile Map entry and homepage Explore the full map now open
+  the shared Boone preview bounds with All reports and no saved discovery
+  filters. Clicking Map from an already-open map resets its place, report,
+  filters and viewport without restarting the map. Modified/new-tab clicks
+  keep normal link behavior. Homepage group links include all report statuses.
+- Preview geography lives in `lib/map-preview-frame.ts`, shared by the image
+  preview and map entry so future framing changes stay aligned. Earn/Donate
+  actions retain their explicit Available intent.
+- Reviewed Claude's in-progress indexed-photo changes separately. The new API
+  retains visibility checks, private/no-store responses and index bounds. Do not
+  deploy those unfinished local edits as part of the map-entry release.
+- Photo-gallery follow-up for Claude: the three width-route tests still expect
+  three loader arguments; indexed delivery now supplies a fourth (`0` by default).
+  Before exposing >2 card photos, update the CSS visibility/dots rules (currently
+  only positions 0 and 1) or use a dynamic single-active-slide mechanism. Add
+  coverage for ?photo=2&width=640, absent/invalid indexes, withdrawn reports and
+  URL query preservation. A tested draft of that coverage is saved locally at
+  `/tmp/litterbugs-photo-gallery-review-tests.patch`; it is not in this release.
+- Regression scan before the Map-entry change: 744/749 tests passed. Two header
+  picker tests had stale Census mocks after the Google picker change; updated
+  these to the real current contract. Two website-outcomes failures are the
+  previously documented baseline; display-photo-cache has the known concurrent
+  timeout and passed in the focused run. Map/search checks passed.
+- Map-entry focused checks: 89 tests passed, plus scoped lint and TypeScript.
+  Production deployment verification and exact release identifier follow below.
+
 ### 2026-11-06 — Codex (location search and empty-map recovery)
 
 - Implemented the owner-approved proposal on top of Claude's `03dc70b` release

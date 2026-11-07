@@ -29,6 +29,8 @@ import { PlaceSearch } from '@/components/place-search';
 import { ClosestReportsAction } from '@/components/closest-reports-action';
 import { MapEmptyState } from '@/components/map-empty-state';
 import { findClosestReport, type ClosestReport } from '@/lib/closest-report';
+import { LITTER_MAP_HREF, MAP_HOME_EVENT } from '@/lib/home-map-link';
+import { BOONE_MAP_BOUNDS } from '@/lib/map-preview-frame';
 import type { SearchPlace } from '@/lib/place-geography';
 import { ReportBrowser } from '@/components/report-browser';
 import { canManageReport, realUserId } from '@/lib/report-access';
@@ -327,6 +329,23 @@ export function MapExperience({
     mapRef.current.panTo({ lat: report.latitude, lng: report.longitude });
   }
 
+  useEffect(() => {
+    function openHomeMap(event: Event) {
+      event.preventDefault();
+      const map = mapRef.current;
+      searchPlaceRef.current = null;
+      setSearchPlace(null);
+      linkedReportFocusRef.current = null;
+      setSelectedReport(null);
+      setReportListOpen(false);
+      window.history.replaceState(window.history.state, '', LITTER_MAP_HREF);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      map?.fitBounds(BOONE_MAP_BOUNDS, 32);
+    }
+    window.addEventListener(MAP_HOME_EVENT, openHomeMap);
+    return () => window.removeEventListener(MAP_HOME_EVENT, openHomeMap);
+  }, []);
+
   const handleUserChange = useCallback((nextUserId: string | null) => {
     locationCheck.current++; reportEntry.current++; setCheckingLocation(false); setCheckingDraft(false);
     setUserId(nextUserId);
@@ -508,6 +527,7 @@ export function MapExperience({
         clustersRef.current = createReportClusters(map, AdvancedMarkerElement, ids => setClusterIds(ids));
         mapRef.current = map;
         if (selectedWhileLoading && !new URLSearchParams(window.location.search).has('report')) map.fitBounds(selectedWhileLoading.bounds, 60);
+        else if (new URLSearchParams(window.location.search).get('entry') === 'boone' && !window.location.hash && !linkedReport) map.fitBounds(BOONE_MAP_BOUNDS, 32);
         setMapReady(true);
         if (areaId && memory?.place?.id !== areaId) {
           const restore = /^[45]:\d{5,12}$/.test(areaId)

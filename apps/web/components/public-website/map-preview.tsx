@@ -2,7 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { IoChevronForward, IoMapOutline } from 'react-icons/io5';
 import type { CSSProperties } from 'react';
-import { AVAILABLE_CLEANUPS_MAP_HREF } from '@/lib/home-map-link';
+import { LITTER_MAP_HREF } from '@/lib/home-map-link';
 import { BOONE_PREVIEW, type MapPreviewPin } from '@/lib/map-preview';
 import { MapPreviewPins } from './map-preview-pins';
 import { MapPinBug } from './map-pin-bug';
@@ -48,14 +48,14 @@ export function MapPreview({ pins }: { pins: MapPreviewPin[] | null }) {
           '--mobile-stage-offset': mobileStageOffset,
         } as CSSProperties}>
           <div className={styles.stage}>
-            <Link className={styles.backdrop} href={AVAILABLE_CLEANUPS_MAP_HREF} aria-label="Open the litter map" tabIndex={-1} draggable={false} data-map-backdrop>
+            <Link className={styles.backdrop} href={LITTER_MAP_HREF} aria-label="Open the litter map" tabIndex={-1} draggable={false} data-map-backdrop>
               <Image src={BOONE_PREVIEW.image} alt="" fill sizes="(max-width: 700px) 125vw, (max-width: 1244px) 100vw, 1180px" draggable={false} />
             </Link>
           </div>
           {pins && <MapPreviewPins pins={pins} />}
         </div>
         {/* The picture is a doorway to the real map, so say so on the map itself. */}
-        <Link className={styles.explore} href={AVAILABLE_CLEANUPS_MAP_HREF}>
+        <Link className={styles.explore} href={LITTER_MAP_HREF}>
           <IoMapOutline aria-hidden />Explore the full map<IoChevronForward aria-hidden />
         </Link>
         <MapPreviewNudge />

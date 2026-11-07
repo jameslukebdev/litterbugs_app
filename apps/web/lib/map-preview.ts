@@ -2,6 +2,8 @@ import 'server-only';
 import { createPublicClient } from './supabase/public';
 import { reportDiscoveryWindow } from './report-visibility';
 import { loadPublicReportShare } from './public-report-share';
+import { BOONE_PREVIEW, BOONE_MAP_BOUNDS } from './map-preview-frame';
+export { BOONE_PREVIEW } from './map-preview-frame';
 
 /**
  * The homepage map preview is a one-time OpenStreetMap snapshot (public/map-preview/boone.webp),
@@ -9,17 +11,6 @@ import { loadPublicReportShare } from './public-report-share';
  * Frame: zoom 14, world-pixel origin (1145002, 1643342), 1600 × 1100 px. Wide screens show the middle band;
  * phones show more of the height. Pins only come from the middle 640 px band, which every screen shows.
  */
-export const BOONE_PREVIEW = {
-  place: 'Boone',
-  image: '/map-preview/boone.webp',
-  zoom: 14,
-  left: 1145002,
-  top: 1643342,
-  width: 1600,
-  height: 1100,
-  pinTop: 1643572,
-  pinHeight: 640,
-} as const;
 
 /** Recent cleanups stay on the preview this long, so finished spots don't crowd out open ones. */
 const CLEANUP_WINDOW_DAYS = 90;
@@ -48,11 +39,6 @@ const worldY = (lat: number, zoom: number) => {
   const sin = Math.sin((lat * Math.PI) / 180);
   return (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * 256 * 2 ** zoom;
 };
-const lngAt = (x: number, zoom: number) => (x / (256 * 2 ** zoom)) * 360 - 180;
-const latAt = (y: number, zoom: number) => {
-  const n = Math.PI - (2 * Math.PI * y) / (256 * 2 ** zoom);
-  return (180 / Math.PI) * Math.atan(Math.sinh(n));
-};
 const money = (cents: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(cents / 100);
 
@@ -62,12 +48,7 @@ const money = (cents: number) =>
  */
 export async function loadBooneMapPreview(): Promise<MapPreviewPin[]> {
   const f = BOONE_PREVIEW;
-  const bounds = {
-    west: lngAt(f.left, f.zoom),
-    east: lngAt(f.left + f.width, f.zoom),
-    north: latAt(f.pinTop, f.zoom),
-    south: latAt(f.pinTop + f.pinHeight, f.zoom),
-  };
+  const bounds = BOONE_MAP_BOUNDS;
   const client = createPublicClient();
   const base = () =>
     client

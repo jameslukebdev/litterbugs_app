@@ -489,3 +489,29 @@ it('opens map-first links minimized, reveals details and dismisses them onto the
   expect(window.location.pathname).toBe('/map');
   expect(new URL(window.location.href).searchParams.get('report')).toBe('test-report');
 });
+
+it('returns the main Map entry to the homepage Boone frame and clears every discovery filter', async () => {
+  const { LITTER_MAP_HREF, MAP_HOME_EVENT } = await import('@/lib/home-map-link');
+  const { BOONE_MAP_BOUNDS } = await import('@/lib/map-preview-frame');
+  window.history.replaceState({}, '', '/map?view=reports&browse=1&status=available&funding=funded&radius=5&severity=high&scope=favorites&q=bottles&sort=closest&lat=40.7&lng=-74&zoom=15');
+  render(<MapExperience initialReports={[]} initialUserId={null} googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+  await waitFor(() => expect(state.idle).toBeTruthy());
+  const event = new Event(MAP_HOME_EVENT, { cancelable: true });
+  act(() => { window.dispatchEvent(event); });
+  expect(event.defaultPrevented).toBe(true);
+  expect(`${window.location.pathname}${window.location.search}`).toBe(LITTER_MAP_HREF);
+  expect(state.fitBounds).toHaveBeenLastCalledWith(BOONE_MAP_BOUNDS, 32);
+  const { readBrowserUrl } = await import('@/lib/discovery-memory');
+  expect(readBrowserUrl(window.location.search)?.filters).toEqual(DEFAULT_DISCOVERY_FILTERS);
+  expect(window.location.search).not.toMatch(/status=|funding=|severity=|radius=|scope=|q=|sort=|area=/);
+});
+
+it('fits the homepage Boone bounds on a fresh main Map entry', async () => {
+  const { LITTER_MAP_HREF } = await import('@/lib/home-map-link');
+  const { BOONE_MAP_BOUNDS, BOONE_MAP_CENTER } = await import('@/lib/map-preview-frame');
+  window.history.replaceState({}, '', LITTER_MAP_HREF);
+  render(<MapExperience initialReports={[]} initialUserId={null} googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+  await waitFor(() => expect(state.fitBounds).toHaveBeenCalledWith(BOONE_MAP_BOUNDS, 32));
+  expect(state.mapOptions.mock.calls[0][0].center.lat).toBeCloseTo(BOONE_MAP_CENTER.latitude, 5);
+  expect(state.mapOptions.mock.calls[0][0].center.lng).toBeCloseTo(BOONE_MAP_CENTER.longitude, 5);
+});

@@ -4,15 +4,16 @@ import { act, createEvent, cleanup, fireEvent, render, screen, within, waitFor }
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PublicSiteHeader } from './public-site-header';
 import { setHeaderProfile } from '@/lib/header-profile-cache';
+import { LITTER_MAP_HREF, MAP_HOME_EVENT } from '@/lib/home-map-link';
 
 const places = vi.hoisted(() => ({ search: vi.fn(), resolve: vi.fn(), push: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: places.push }) }));
 vi.mock('next/image', () => ({ default: ({ src, alt }: { src: string; alt: string }) => <img src={src} alt={alt} /> }));
 vi.mock('@/components/public-account-action', () => ({ PublicAccountAction: () => <button>Sign in</button> }));
 vi.mock('@/lib/env', () => ({ getGoogleMapsKey: () => '' }));
-vi.mock('@/lib/place-search', () => ({ searchPlaces: places.search, resolvePlace: places.resolve }));
+vi.mock('@/lib/location-suggestions', () => ({ createLocationSearch: () => ({ search: places.search, reset: () => {} }) }));
 beforeEach(() => {
-  places.search.mockResolvedValue([{ id: 'test-place', label: 'Boone, NC', latitude: 36.2, longitude: -81.6 }]);
+  places.search.mockResolvedValue([{ id: 'test-place', label: 'Boone, NC', subtitle: 'City / town', resolve: places.resolve }]);
   vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
   Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value: function (this: HTMLDialogElement) { this.setAttribute('open', ''); this.querySelector('button')?.focus(); } });
   Object.defineProperty(HTMLDialogElement.prototype, 'close', { configurable: true, value: function (this: HTMLDialogElement) { this.removeAttribute('open'); this.dispatchEvent(new Event('close')); } });
@@ -23,7 +24,7 @@ describe('PublicSiteHeader', () => {
   it('provides direct reporting and map actions alongside the guides', () => {
     render(<PublicSiteHeader activePath="/report-litter" />);
     const main = within(screen.getByRole('navigation', { name: 'Main navigation' }));
-    expect(main.getByRole('link', { name: 'Open map' }).getAttribute('href')).toBe('/map?view=map');
+    expect(main.getByRole('link', { name: 'Open map' }).getAttribute('href')).toBe(LITTER_MAP_HREF);
     fireEvent.click(main.getByRole('button', { name: 'Report' }));
     expect(main.getByRole('link', { name: 'Report trash' }).getAttribute('href')).toBe('/sign-in?next=%2Freport&view=map');
     expect(main.getByRole('link', { name: 'Reporter reward details' }).getAttribute('href')).toBe('/report-litter');
@@ -60,7 +61,7 @@ describe('PublicSiteHeader', () => {
     expect(mobile.getByRole('link', { name: 'Report trash' }).getAttribute('href')).toBe('/sign-in?next=%2Freport&view=map');
     expect(mobile.getByRole('link', { name: 'Reporter reward details' }).getAttribute('href')).toBe('/report-litter');
     expect(mobile.queryByRole('link', { name: /Get the app|Profile|Updates/ })).toBeNull();
-    expect(mobile.getByRole('link', { name: 'Open map' }).getAttribute('href')).toBe('/map?view=map');
+    expect(mobile.getByRole('link', { name: 'Open map' }).getAttribute('href')).toBe(LITTER_MAP_HREF);
     fireEvent.click(mobile.getByRole('button', { name: 'Earn' }));
     expect(mobile.getByRole('link', { name: 'Find a cleanup on the map' }).getAttribute('href')).toBe('/map?view=map&browse=1&status=available');
     expect(mobile.queryByRole('link', { name: 'Browse litter reports' })).toBeNull();
@@ -128,7 +129,7 @@ describe('PublicSiteHeader', () => {
     expect(document.body.style.overflow).toBe('');
     fireEvent.change(input, { target: { value: 'Boo' } });
     expect(await screen.findByRole('option', { name: /Boone, NC/ })).toBeTruthy();
-    expect(places.search).toHaveBeenCalledWith('Boo', expect.any(Object));
+    expect(places.search).toHaveBeenCalledWith('Boo', undefined);
     fireEvent.keyDown(input, { key: 'Escape' });
     expect(screen.queryByRole('option')).toBeNull();
     expect(screen.getByRole('region', { name: 'Search your area' })).toBeTruthy();
@@ -296,8 +297,27 @@ it.each(['/', '/map'] as const)('keeps the outlined Open map entry with its icon
   fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
   const menu = within(screen.getByRole('navigation', { name: 'Mobile navigation' }));
   const map = menu.getByRole('link', { name: 'Open map' });
-  expect(map.getAttribute('href')).toBe('/map?view=map');
+  expect(map.getAttribute('href')).toBe(LITTER_MAP_HREF);
   expect(map.querySelector('svg')).toBeTruthy();
   expect(map.getAttribute('aria-current')).toBe(activePath === '/map' ? 'page' : null);
   expect(menu.getByRole('link', { name: 'Log in / Sign up' }).getAttribute('href')).toBe('/sign-in');
+});
+
+it('resets the already-open map without intercepting modified clicks', () => {
+  window.history.replaceState({}, '', '/map?view=map&browse=1&status=completed');
+  const reset = vi.fn((event: Event) => event.preventDefault());
+  window.addEventListener(MAP_HOME_EVENT, reset);
+  try {
+    render(<PublicSiteHeader activePath="/map" />);
+    const map = within(screen.getByRole('navigation', { name: 'Main navigation' })).getByRole('link', { name: 'Map' });
+    const click = createEvent.click(map, { button: 0 });
+    fireEvent(map, click);
+    expect(reset).toHaveBeenCalledOnce();
+    expect(click.defaultPrevented).toBe(true);
+    fireEvent.click(map, { ctrlKey: true });
+    expect(reset).toHaveBeenCalledOnce();
+  } finally {
+    window.removeEventListener(MAP_HOME_EVENT, reset);
+    window.history.replaceState({}, '', '/');
+  }
 });

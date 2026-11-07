@@ -9,7 +9,7 @@ import { AppLink } from '@/components/app-link';
 import { GetAppNavigation } from '@/components/app-promotion';
 
 import { HeaderAreaSearch } from './header-area-search';
-import { AVAILABLE_CLEANUPS_MAP_HREF, LITTER_MAP_HREF, REPORT_ENTRY_HREF } from '@/lib/home-map-link';
+import { AVAILABLE_CLEANUPS_MAP_HREF, LITTER_MAP_HREF, MAP_HOME_EVENT, REPORT_ENTRY_HREF } from '@/lib/home-map-link';
 
 import { PublicAccountAction } from '@/components/public-account-action';
 import { getHeaderProfile, getServerHeaderProfile, subscribeHeaderProfile } from '@/lib/header-profile-cache';
@@ -270,7 +270,12 @@ export function PublicSiteHeader({ activePath, action, reportAction, reportId, c
     setOpenMenu(openMenu === label ? null : label);
   }
   return (
-    <header className={`${styles.header}${compactMobile ? ` ${styles.compactMobile}` : ''}${activePath === '/map' ? ` ${styles.mapHeader}` : ''}`}>
+    <header className={`${styles.header}${compactMobile ? ` ${styles.compactMobile}` : ''}${activePath === '/map' ? ` ${styles.mapHeader}` : ''}`} onClickCapture={event => {
+      const link = event.target instanceof Element ? event.target.closest('a') : null;
+      if (window.location.pathname !== '/map' || link?.getAttribute('href') !== LITTER_MAP_HREF
+        || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      if (!window.dispatchEvent(new Event(MAP_HOME_EVENT, { cancelable: true }))) event.preventDefault();
+    }}>
       <div className={styles.inner}>
         <Link href="/" prefetch={true} className={styles.brandLink} aria-label="Litterbugs home">
           <Image src="/brand/litterbugs-logo.png" alt="Litterbugs" width={636} height={433} priority />
