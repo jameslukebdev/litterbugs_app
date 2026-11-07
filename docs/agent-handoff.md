@@ -24,6 +24,16 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-06 — Codex (dragonfly Report Litter button released)
+
+- Pushed and deployed `e791bc5` on `codex/map-first-navigation` as
+  `dpl_Gi9n38UYt43vhuh5jb4cSVt69y1a`. Previous live deployment for rollback
+  is `dpl_ByCGZy3BTVtDuNy9fsmEJgvbd1Q1`.
+- Released the existing dragonfly and sky-blue Report Litter styling. Verified
+  the asset and signed-out reporting entry on live phone and desktop layouts
+  with analytics excluded. Production build and 31 map tests passed. Other
+  local homepage and header edits remain outside this release.
+
 ### 2026-11-06 — Codex (map controls and footer polish)
 
 - Pushed and deployed `b3632c0` on `codex/map-first-navigation` as
