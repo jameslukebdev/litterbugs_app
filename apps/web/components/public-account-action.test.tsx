@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /* eslint-disable @next/next/no-img-element -- The test mock intentionally renders a native image. */
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { setHeaderProfile } from '@/lib/header-profile-cache';
@@ -105,16 +105,17 @@ it('keeps sign in available if the initial session check fails', async () => {
 it('omits the compact map profile button for signed-out visitors', async () => {
   const { container } = render(<PublicAccountAction compactOnMobile />);
   await screen.findByRole('button', { name: 'Sign in' });
-  expect(container.querySelector('.mobile-profile-button')).toBeNull();
+  const mobile = within(container.querySelector<HTMLElement>('.mobile-map-account')!);
+  expect(mobile.queryByRole('button', { name: 'Your profile' })).toBeNull();
+  expect(mobile.getByRole('link', { name: 'Updates' }).getAttribute('href')).toBe('/account/notifications');
 });
 
 it('opens the account from the compact map header for a signed-in member', async () => {
   currentUser.value = { id: 'member-id', email: 'member@example.com' };
   const { container } = render(<PublicAccountAction compactOnMobile />);
-  await waitFor(() => expect(screen.getByRole('link', { name: 'Notifications, 3 unread' })).toBeTruthy());
-  const trigger = container.querySelector('.mobile-profile-button')!;
-  expect(trigger.getAttribute('aria-label')).toBe('Your profile');
-  fireEvent.click(trigger);
+  const mobile = within(container.querySelector<HTMLElement>('.mobile-map-account')!);
+  await mobile.findByRole('link', { name: 'Notifications, 3 unread' });
+  fireEvent.click(mobile.getByRole('button', { name: 'Your profile' }));
   expect(push).toHaveBeenCalledWith('/account');
 });
 

@@ -23,7 +23,6 @@ import { pinKind, prepareCard, renderPinCard, renderPinGlyph, reportPinText, typ
 import { getReportCardPhotoUrl } from '@/lib/report-photo';
 import { PublicSiteFooter } from '@/components/public-site-footer';
 import { PublicAccountAction, type PublicAccountActionHandle } from '@/components/public-account-action';
-import { NotificationLink } from '@/components/notification-inbox';
 import { PublicSiteHeader } from '@/components/public-site-header';
 import { IoMapOutline, IoListOutline, IoOptionsOutline, IoAddCircleOutline, IoCloseCircleOutline, IoLocationOutline } from 'react-icons/io5';
 import { PlaceSearch } from '@/components/place-search';
@@ -608,9 +607,9 @@ export function MapExperience({
     const counts: Record<PinKind, number> = { open: 0, busy: 0, done: 0 };
     for (const report of visibleReports) counts[pinKind(report.cleanup_state)]++;
     return ([
-      ['open', counts.open, 'need a cleanup', 'needs a cleanup'],
-      ['busy', counts.busy, 'being cleaned', 'being cleaned'],
-      ['done', counts.done, 'cleaned up', 'cleaned up'],
+      ['open', counts.open, 'need a cleanup', 'needs a cleanup', 'Open'],
+      ['busy', counts.busy, 'being cleaned', 'being cleaned', 'Cleaning'],
+      ['done', counts.done, 'cleaned up', 'cleaned up', 'Done'],
     ] as const).filter(([, count]) => count > 0);
   }, [visibleReports]);
 
@@ -1052,7 +1051,6 @@ export function MapExperience({
         {!reportMode && <div className="discovery-quick-filters" ref={setFilterToolbar} />}
         {!reportMode && <div className="discovery-toolbar-actions">
           <button className="secondary-button discovery-filters" onClick={() => { switchDiscoveryView('reports'); setFiltersRequest(value => value + 1); }}><IoOptionsOutline aria-hidden />Filters<span className="discovery-filter-count" data-empty={Object.entries(discoveryFilters).every(([key, value]) => value === DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]) || undefined}>{Object.entries(discoveryFilters).filter(([key, value]) => value !== DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]).length || ''}</span></button>
-          <NotificationLink key={userId ?? 'guest'} userId={userId} className="mobile-toolbar-updates" />
           {viewToggle}
         </div>}
       </div>
@@ -1117,9 +1115,12 @@ export function MapExperience({
           </button>}
           {mapKey.length > 0 && (
             <ul className="map-key" aria-label="Map key">
-              {mapKey.map(([kind, count, many, one]) => (
-                // eslint-disable-next-line @next/next/no-img-element -- tiny brand marks, like BrandBug.
-                <li key={kind}><img src={MAP_KEY_BUGS[kind]} alt="" aria-hidden="true" width={18} height={18} /><span><b>{count}</b> {count === 1 ? one : many}</span></li>
+              {mapKey.map(([kind, count, many, one, short]) => (
+                <li key={kind}>
+                  {/* eslint-disable-next-line @next/next/no-img-element -- tiny brand marks, like BrandBug. */}
+                  <img src={MAP_KEY_BUGS[kind]} alt="" aria-hidden="true" width={18} height={18} />
+                  <span><b>{count}</b>{' '}<span className="map-key-label">{count === 1 ? one : many}</span><span className="map-key-short" aria-hidden="true">{short}</span></span>
+                </li>
               ))}
             </ul>
           )}

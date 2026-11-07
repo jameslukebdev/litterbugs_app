@@ -122,10 +122,13 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
         </>}
       </div>
 
-      {compactOnMobile && userId && (
-        <button type="button" className="mobile-profile-button" aria-label="Your profile" onClick={() => router.push('/account')}>
-          {avatar}
-        </button>
+      {compactOnMobile && (
+        <div className="mobile-map-account">
+          <NotificationLink key={userId ?? 'guest'} userId={userId} />
+          {userId && <button type="button" className="mobile-profile-button" aria-label="Your profile" onClick={() => router.push('/account')}>
+            {avatar}
+          </button>}
+        </div>
       )}
 
       {authOpen && <AuthDialog initialMode={entryMode} returnPath={entryMode === 'signup' && !authIntent ? '/account' : undefined} onSuccess={() => { setAuthOpen(false); if (entryMode === 'signup' && !authIntent) router.push('/account'); }} intent={authIntent} onClose={() => setAuthOpen(false)} />}

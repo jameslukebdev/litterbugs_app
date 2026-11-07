@@ -474,5 +474,8 @@
   .mobileMapControls :global(.discovery-view-toggle) button:focus-visible { outline: 2px solid #5146ed; outline-offset: -2px; }
 }
 @media (max-width: 380px) {
+  .header.header.mapHeader.compactMobile .inner { gap: 4px; padding-inline: 8px; }
+  .mobileMapControls :global(.discovery-view-toggle) { grid-template-columns: 1.15fr 1fr; }
+  .mobileMapControls :global(.discovery-view-toggle) button { font-size: 12px; padding-inline: 2px; }
   .mobileMapControls :global(.discovery-view-toggle) svg { display: none; }
 }

@@ -16,6 +16,8 @@
 .copyright { color: #6b6878; font-size: 14px; }
 
 .footer.footer.footer .links { display: grid; grid-template-columns: repeat(3, max-content); justify-content: end; gap: 8px 48px; }
+.secondary { display: contents; }
+.more { display: none; }
 .group { display: grid; align-content: start; gap: 2px; margin: 0; padding: 0; list-style: none; }
 .group[data-tone='lavender'] { --tint: #ebe7ff; --ink: #4438bb; }
 .group[data-tone='sun'] { --tint: #fff1c2; --ink: #6d5000; }
@@ -37,14 +39,26 @@
   .footer.footer.footer .group :is(a, button) { min-height: 44px; }
 }
 
-/* Compact: one row under the map, same lavender band, logo, groups and pastel tints. Phones hide it;
-   the map has its own bottom tabs there. */
+/* Compact: one row under the map, with secondary links in a disclosure when space is tight. */
 .footer.footer.footer.compact { flex: none; margin-top: 0; border-radius: 0; box-shadow: 0 -1px 0 #ece8f8; }
 .compact .inner { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 24px; width: auto; padding: 6px 24px; }
 .compact .brand { grid-auto-flow: column; align-items: center; gap: 12px; }
 .compact .logo img { width: 52px; }
 .compact .copyright { font-size: 13px; }
-.footer.footer.footer.compact .links { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0 18px; }
+.footer.footer.footer.compact .links { display: flex; justify-content: flex-end; align-items: center; gap: 0 18px; white-space: nowrap; }
 .compact .group { display: flex; gap: 0; }
 .footer.footer.footer.compact .group :is(a, button) { min-height: 36px; margin-left: 0; padding: 4px 10px; font-size: 14px; }
+@media (max-width: 1180px) {
+  .compact .secondary { display: none; }
+  .footer.footer.footer.compact .links { gap: 8px; }
+  .compact .more { position: relative; display: block; }
+  .more summary { display: flex; align-items: center; gap: 5px; min-height: 36px; padding: 4px 10px; border-radius: 12px; color: #4a4857; font-size: 14px; font-weight: 600; cursor: pointer; list-style: none; }
+  .more summary::-webkit-details-marker { display: none; }
+  .more summary:is(:hover, :focus-visible), .more[open] summary { background: #ebe7ff; color: #4438bb; }
+  .more summary:focus-visible { outline: 2px solid #4438bb; outline-offset: 2px; }
+  .more summary svg { width: 15px; height: 15px; }
+  .more[open] summary svg { rotate: 180deg; }
+  .moreLinks { position: absolute; bottom: calc(100% + 8px); right: 0; z-index: 30; display: grid; grid-template-columns: repeat(2, max-content); gap: 8px; padding: 8px; border: 1px solid #e3dff0; border-radius: 14px; background: #fff; box-shadow: 0 8px 24px #2a225a24; }
+  .moreLinks .group { flex-direction: column; }
+}
 @media (max-width: 760px) { .footer.footer.footer.compact { display: none; } }
