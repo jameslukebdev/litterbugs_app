@@ -24,6 +24,33 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-06 — Codex (Boone / All reports release verified)
+
+- Pushed source commit `38bc5bd` on `codex/map-first-navigation`, including the
+  earlier `381208d` location-search/empty-map work. Built from a clean detached
+  checkout, staged and promoted production deployment
+  `dpl_121ifRGPcPRM24wTKnuosmveUoKF` to litterbugs.app. Previous live deployment:
+  `dpl_EadGATcuiVS6ZkWvsEAky8qgixht`. No database migrations.
+- Verified live desktop Map resets an old city and filters to the exact shared
+  Boone preview bounds, with All reports selected and no filter-count/custom
+  pill. Verified Google suggestions (one New York city result), then the phone
+  menu's Open map returning from New York to Boone and clearing the searched
+  place. Runtime error scan and browser console were clean for this smoke test.
+- Release regression run: 741/743 tests passed under Node 22.22.0. The only
+  failures were the same two previously documented website-outcomes tests;
+  those implementation/test files are unchanged from the previous live source.
+  Remote production build, TypeScript, scoped lint and targeted map/header
+  tests passed. The temporary checkout initially used Homebrew Node 26, which
+  breaks jsdom localStorage; the definitive rerun used the project's Node 22.
+- Claude's four unfinished indexed-photo source edits remain local and were
+  excluded from this deployment. Keep the photo-gallery follow-up in the entry
+  below when finishing those edits. The shared local server was not restarted.
+- Analytics QA note: the first live landing around 11:10–11:12 p.m. ET had
+  analytics allowed in the browser. Treat the visit to
+  `/map?view=map&browse=1&status=completed&radius=5&lat=40.7&lng=-74&zoom=13`
+  in that window as assistant test traffic. Turned analytics off immediately
+  after checking the preference; subsequent live navigation stayed excluded.
+
 ### 2026-11-06 — Codex (Boone map entry and concurrent regression review)
 
 - Main desktop/mobile Map entry and homepage Explore the full map now open
