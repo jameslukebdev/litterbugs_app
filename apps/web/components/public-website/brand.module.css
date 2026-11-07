@@ -186,10 +186,6 @@
 .brand section[aria-labelledby='report-starter-title'] article p[role='alert'] a { padding: 0; min-height: auto; border: 0; background: none; box-shadow: none; text-decoration: underline; }
 .brand section[aria-labelledby='home-cleanup-title'] > div:last-child > a { padding: 12px 24px; min-height: 54px; border-width: 2px; }
 .brand section[aria-roledescription='carousel'] > div:first-child button[aria-expanded] { border-radius: 12px; padding-inline: 12px; }
-@media (max-width: 600px) {
-  .brand :global(.public-report-cards .public-card-date) { font-size: 10px; }
-  .brand :global(.public-report-cards .public-card-footer) { gap: 8px; padding-left: 14px; }
-}
 /* Give the member name its own clear line; metadata sits beside the rank. */
 .brand :global(.public-report-cards .public-card-date) { position: absolute; right: 52px; bottom: 12px; line-height: 20px; }
 .brand :global(.public-report-cards .report-author) { align-self: flex-start; }
@@ -197,12 +193,6 @@
 .brand :global(.public-report-cards .public-card-options[open] summary) { background: #eeebff; }
 /* Never expose an avatar that has not finished loading on hover. */
 .brand :global(.public-account-control-profile):hover :global(.public-account-avatar:not([data-loaded='true'])) { opacity: 0; }
-@media (max-width: 600px) {
-  /* Small cards keep rank and date on separate lines instead of squeezing names. */
-  .brand :global(.public-report-cards .public-card-footer) { height: 90px; }
-  .brand :global(.public-report-cards .public-card-date) { left: 59px; right: auto; bottom: 8px; font-size: 11px; }
-  .brand :global(.public-report-cards .public-card-options) { top: 14px; bottom: auto; }
-}
 
 /* Public guides share the homepage's type, action, and section rhythm. */
 .brand { --public-section-gap: 72px; }
@@ -368,6 +358,14 @@
 .brand.brand :global(.public-report-cards .report-author-copy > span:first-child) { font-size: 14px; color: #33313d; }
 .brand.brand :global(.public-report-cards .community-rank-badge) { font-size: 12px; }
 .brand.brand :global(.public-report-cards .public-card-date) { font-size: 12px; color: var(--fin-muted); bottom: 14px; }
+@media (max-width: 760px) {
+  .brand.brand :global(.public-report-cards .public-card-footer) { height: auto; min-height: 88px; flex-direction: column; align-items: flex-start; gap: 2px; }
+  .brand.brand :global(.public-report-cards .public-card-footer .report-author) { height: auto; flex: none; width: 100%; }
+  .brand.brand :global(.public-report-cards .public-card-date) { position: static; line-height: 1.3; }
+  .brand :global(.public-report-cards .report-author + .public-card-date) { margin-inline-start: 44px; }
+  .brand :global(.public-report-cards .public-card-date:empty) { display: none; }
+  .brand :global(.public-report-cards .public-card-options) { top: 14px; bottom: auto; }
+}
 .brand.brand :global(.public-report-cards .report-result-workflow) { min-height: 26px; padding: 0 10px; font-size: 12px; }
 
 /* "Browse all" reads as a deliberate link, not a stray caption. */

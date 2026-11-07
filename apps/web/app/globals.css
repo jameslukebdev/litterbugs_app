@@ -37,7 +37,6 @@ button:disabled { cursor: not-allowed; opacity: .6; }
 .brand-link img { width: auto; height: 90px; max-width: 210px; object-fit: contain; }
 
 .map-header-actions, .public-account-actions { display: flex; align-items: center; flex-wrap: nowrap; gap: 8px; flex: none; }
-.map-header-account { display: flex; flex: none; }
 .header-report-button, .public-account-control { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: 12px; font: inherit; font-size: 14px; white-space: nowrap; cursor: pointer; transition: border-color .16s ease, background .16s ease, box-shadow .16s ease; }
 .header-report-button { padding: 0 16px; border: 1px solid var(--green); color: #fff; background: var(--green); font-weight: 800; text-decoration: none; }
 .header-report-button:hover { border-color: var(--green-dark); background: var(--green-dark); }
@@ -588,8 +587,8 @@ button.member-activity-row:hover { background: var(--green-soft); }
 .selected-place button { flex: none; border: 1px solid #cfd8d0; border-radius: 10px; background: #fff; min-height: 40px; padding: 8px; cursor: pointer; }
 .report-browser-header:has(.place-search) { max-height: min(62dvh, 600px); overflow-y: auto; }
 
-/* Website discovery uses app-style navigation on phones. */
-.website-experience { --nav-clearance: 0px; min-height: 560px; display: flex; flex-direction: column; }
+/* Website discovery keeps the controls above the workspace. */
+.website-experience { min-height: 560px; display: flex; flex-direction: column; }
 .website-experience > header { flex: none; }
 .discovery-toolbar { position: relative; z-index: 15; flex: none; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 12px 24px; border-bottom: 1px solid var(--line); background: #fff; }
 .discovery-toolbar > .place-search { width: min(620px, 65%); margin: 0; border: 0; padding: 0; }
@@ -1015,23 +1014,17 @@ a.member-activity-row { color: inherit; text-decoration: none; }
 .member-contributions-panel .member-activity-row strong { white-space: normal; overflow-wrap: anywhere; }
 .member-contributions-panel .member-activity-row small { font-size: 12px; }
 
-/* Mirror the native Reports / Map / Profile hierarchy on the mobile website. */
-.mobile-discovery-navigation { display: none; }
+.mobile-profile-button { display: none; }
 @media (max-width: 760px) {
-  .website-experience .discovery-view-toggle, .website-experience .discovery-footer { display: none; }
-  .website-experience.website-experience .discovery-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 10px; align-items: center; padding: 12px 14px; }
-  .website-experience .discovery-quick-filters { grid-column: 1 / -1; min-width: 0; }
+  .website-experience .discovery-toolbar .discovery-view-toggle,
+  .website-experience .discovery-quick-filters,
+  .website-experience .discovery-footer { display: none; }
+  .website-experience.website-experience .discovery-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 8px; align-items: center; padding: 6px 10px; }
   .website-experience .discovery-toolbar > .place-search { flex: 1; width: auto; min-width: 0; }
   .website-experience .discovery-toolbar-actions { width: auto; flex: none; }
   .website-experience .discovery-filters { min-height: 44px; padding-inline: 12px; }
   .website-experience .place-search-input-row input { min-width: 0; }
-  .mobile-discovery-navigation { display: block; flex: none; padding: 8px 18px calc(max(env(safe-area-inset-bottom), 8px) + 24px); background: transparent; pointer-events: none; }
-  .mobile-discovery-tabs { pointer-events: auto; display: grid; grid-template-columns: repeat(3, 1fr); height: 64px; max-width: 420px; margin-inline: auto; padding: 6px; border: 1px solid rgba(47,125,50,.16); border-radius: 28px; background: #fff; box-shadow: 0 4px 16px #17201a0a; }
-  .mobile-discovery-tabs button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 44px; border: 0; border-radius: 22px; background: transparent; color: #4b5563; font-size: 11px; font-weight: 600; cursor: pointer; }
-  .mobile-discovery-tabs svg { width: 23px; height: 23px; }
-  .mobile-discovery-tabs button[aria-pressed='true'] { color: #2f7d32; background: #eaf5ea; font-weight: 750; }
-  .mobile-discovery-tabs button:focus-visible { outline: 3px solid #2f7d32; outline-offset: 2px; }
-  .website-experience .map-action-controls { bottom: calc(var(--mobile-navigation-clearance) + 12px); }
+  .website-experience .map-action-controls { bottom: calc(26px + env(safe-area-inset-bottom)); }
   .website-experience .map-stage-reporting .map-action-controls { bottom: auto; }
 }
 
@@ -1042,12 +1035,11 @@ a.member-activity-row { color: inherit; text-decoration: none; }
   .website-experience .place-search-submit span { display: none; }
 }
 
-/* Float navigation over the full-height map, leaving map attribution visible. */
+/* Leave room for the phone safe area and map attribution. */
 @media (max-width: 760px) {
-  .website-experience { --mobile-navigation-clearance: calc(96px + max(env(safe-area-inset-bottom), 8px)); min-height: 0; padding-bottom: 0; }
-  .website-experience .report-browser-list { padding-bottom: calc(var(--mobile-navigation-clearance) + 16px); }
-  .website-experience .toast { bottom: calc(var(--mobile-navigation-clearance) + 12px); }
-  .mobile-discovery-navigation { position: fixed; z-index: 20; bottom: 0; left: 0; right: 0; }
+  .website-experience { min-height: 0; padding-bottom: 0; }
+  .website-experience .report-browser-list { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+  .website-experience .toast { bottom: calc(26px + env(safe-area-inset-bottom)); }
   .website-experience .header-report-button { min-height: 44px; }
   .website-experience .report-browser-header { max-height: 45dvh; overflow-y: auto; }
 }
@@ -1126,10 +1118,13 @@ a.member-activity-row { color: inherit; text-decoration: none; }
 .report-open-app:hover { text-decoration: underline; }
 .report-open-app:focus-visible { outline: 3px solid #2f7d3266; outline-offset: 2px; }
 
-/* Compact mobile discovery: two header rows, with account utilities in the dock. */
+/* Keep search and account controls compact on mobile discovery. */
 @media (max-width: 760px) {
-  .website-experience .map-header-account { display: contents; }
-  .website-experience .map-header-account .public-account-actions { display: none; }
+  .public-account-actions.public-account-actions-desktop { display: none; }
+  .mobile-profile-button { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; color: #4438bb; background: #efedff; cursor: pointer; }
+  .mobile-profile-button > svg { width: 20px; height: 20px; }
+  .mobile-profile-button :is(.public-account-avatar-frame, .public-account-avatar, .public-account-initials) { width: 36px; height: 36px; }
+  .mobile-profile-button:focus-visible { outline: 3px solid #b3a6e5; outline-offset: 2px; }
   .website-experience .place-search-input-row { position: relative; }
   .website-experience .place-search-field input { padding-left: 42px; padding-right: 10px; width: 100%; font-size: 16px; }
   .website-experience .place-search-field.has-selected-place input { padding-right: 40px; }
@@ -1137,10 +1132,6 @@ a.member-activity-row { color: inherit; text-decoration: none; }
   .website-experience .place-search-submit:disabled { opacity: 1; color: #69776d; }
   .website-experience .place-search-submit:not(:disabled):hover { background: #eaf5ea; }
   .website-experience .place-search-clear { right: 0; top: 0; width: 40px; height: 44px; background: transparent; }
-  .mobile-discovery-tabs .mobile-profile-button .public-account-avatar-frame,
-  .mobile-discovery-tabs .mobile-profile-button .public-account-avatar,
-  .mobile-discovery-tabs .mobile-profile-button .public-account-initials { width: 32px; height: 32px; }
-  .mobile-discovery-tabs .mobile-profile-button { gap: 1px; }
 }
 
 .mobile-toolbar-updates { display: none; }
@@ -1244,7 +1235,6 @@ a.member-activity-row { color: inherit; text-decoration: none; }
   .modal-backdrop > .modal-shell { animation: mobile-sheet-in 200ms ease-out both; }
   .modal-backdrop[data-closing] { animation: mobile-backdrop-out 160ms ease-in both; }
   .modal-backdrop[data-closing] > .modal-shell { pointer-events: none; animation: mobile-sheet-out 160ms ease-in both; }
-  .mobile-discovery-tabs button { transition: color 160ms ease, background-color 160ms ease; }
 }
 
 @keyframes mobile-backdrop-in { from { background-color: rgba(13,22,16,0); } }
@@ -1254,7 +1244,6 @@ a.member-activity-row { color: inherit; text-decoration: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .modal-backdrop, .modal-backdrop > .modal-shell { animation: none; }
-  .mobile-discovery-tabs button { transition: none; }
 }
 
 /* A profile edit is one focused form, with the overview restored on cancel. */
@@ -1280,17 +1269,12 @@ a.member-activity-row { color: inherit; text-decoration: none; }
 
 /* Landscape phones keep controls available while leaving room for report content. */
 @media (max-width: 760px) and (max-height: 500px) and (orientation: landscape) {
-  .website-experience { --mobile-navigation-clearance: calc(60px + env(safe-area-inset-bottom)); }
   .website-experience .discovery-toolbar { padding-block: 6px; }
   .website-experience .report-browser-header { padding: 8px 14px; max-height: none; overflow: visible; }
   .website-experience .report-browser-header h1 { font-size: 18px; }
   .website-experience .report-browser-header p { display: none; }
   .website-experience .report-browser-filters { margin-top: 6px; }
   .website-experience .report-browser-filters button { min-height: 32px; }
-  .mobile-discovery-navigation { padding: 4px 18px max(4px, env(safe-area-inset-bottom)); }
-  .mobile-discovery-tabs { height: 52px; padding: 4px; }
-  .mobile-discovery-tabs button { flex-direction: row; gap: 7px; min-height: 44px; }
-  .mobile-discovery-tabs .mobile-profile-button { gap: 7px; }
   .website-experience .report-result { display: grid; grid-template-columns: 132px minmax(0, 1fr); }
   .website-experience .report-result-photo { height: 100%; min-height: 132px; aspect-ratio: auto; }
   .website-experience .report-result-copy { min-height: 132px; }
@@ -1361,8 +1345,7 @@ a.member-activity-row { color: inherit; text-decoration: none; }
 .discovery-footer.discovery-footer.discovery-footer nav :is(a,button):focus-visible { outline: 2px solid var(--footer-ink); outline-offset: 2px; }
 
 /* Complete the playful map controls, including portaled filter dialogs. */
-.website-experience.website-experience .discovery-quick-filters button[aria-pressed='true'],
-.website-experience .mobile-discovery-tabs button[aria-pressed='true'] { background:#efedff; color:#4438bb; border-color:#b3a6e5; }
+.website-experience.website-experience .discovery-quick-filters button[aria-pressed='true'] { background:#efedff; color:#4438bb; border-color:#b3a6e5; }
 .website-experience .map-report-button { color:#4438bb; border-color:#b3a6e5; }
 .website-experience .map-report-button:hover { background:#efedff; }
 .website-experience .map-report-button:focus-visible { outline-color:#a99ae4; }
@@ -1453,7 +1436,7 @@ a.member-activity-row { color: inherit; text-decoration: none; }
 .map-report-summary strong { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .map-report-summary span { font-size: 13px; font-weight: 400; }
 
-@media (max-width: 760px) { .map-report-summary { bottom: calc(105px + env(safe-area-inset-bottom)); } }
+@media (max-width: 760px) { .map-report-summary { bottom: calc(26px + env(safe-area-inset-bottom)); } }
 
 /* Report flow uses the site's purple theme (pin, location popup, wizard and draft boxes), not the old green. */
 :is(.report-placement-pin, .report-placement-confirm, .report-wizard, .draft-dialog) { --green: #5146ed; --green-dark: #4438bb; --green-soft: #efedff; --line: #e3dff0; --soft: #f8f7fc; }

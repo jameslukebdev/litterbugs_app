@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /* eslint-disable @next/next/no-img-element -- The test mock intentionally renders a native image. */
 
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { setHeaderProfile } from '@/lib/header-profile-cache';
@@ -102,21 +102,21 @@ it('keeps sign in available if the initial session check fails', async () => {
   expect(screen.queryByLabelText('Loading profile')).toBeNull();
 });
 
-it('keeps signed-out mobile profile accessible in the three-item discovery dock', async () => {
-  render(<PublicAccountAction mobileTabs={<><button>Reports</button><button>Map</button></>} />);
-  const dock = within(screen.getByRole('navigation', { name: 'Main app navigation' }));
-  expect(dock.queryByRole('link', { name: /Updates|Notifications/ })).toBeNull();
-  expect(dock.getAllByRole('button')).toHaveLength(3);
-  fireEvent.click(dock.getByRole('button', { name: 'Profile' }));
+it('opens sign-in from the compact map header', () => {
+  const { container } = render(<PublicAccountAction compactOnMobile />);
+  const trigger = container.querySelector('.mobile-profile-button')!;
+  expect(trigger.getAttribute('aria-label')).toBe('Sign in');
+  fireEvent.click(trigger);
   expect(screen.getByRole('dialog', { name: 'Sign in' })).toBeTruthy();
 });
 
-it('keeps signed-in mobile profile in the dock and unread updates outside it', async () => {
+it('opens the account from the compact map header for a signed-in member', async () => {
   currentUser.value = { id: 'member-id', email: 'member@example.com' };
-  render(<PublicAccountAction mobileTabs={<><button>Reports</button><button>Map</button></>} />);
-  const dock = within(screen.getByRole('navigation', { name: 'Main app navigation' }));
+  const { container } = render(<PublicAccountAction compactOnMobile />);
   await waitFor(() => expect(screen.getByRole('link', { name: 'Notifications, 3 unread' })).toBeTruthy());
-  fireEvent.click(dock.getByRole('button', { name: 'Profile' }));
+  const trigger = container.querySelector('.mobile-profile-button')!;
+  expect(trigger.getAttribute('aria-label')).toBe('Your profile');
+  fireEvent.click(trigger);
   expect(push).toHaveBeenCalledWith('/account');
 });
 

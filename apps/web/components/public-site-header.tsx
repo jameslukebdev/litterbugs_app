@@ -180,7 +180,7 @@ function NavigationMenu({ activePath }: { activePath: PublicPath }) {
     if (!open) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const desktop = window.matchMedia(activePath === '/map' ? '(min-width: 760px)' : '(min-width: 840px)');
+    const desktop = window.matchMedia(activePath === '/map' ? '(width > 760px)' : '(min-width: 840px)');
     function closeOnDesktop() {
       if (desktop.matches) dialogRef.current?.close();
     }
@@ -262,7 +262,7 @@ function NavigationMenu({ activePath }: { activePath: PublicPath }) {
   );
 }
 
-export function PublicSiteHeader({ activePath, action, reportAction, reportId, compactMobile = false }: { activePath: PublicPath; action?: ReactNode; reportAction?: ReactNode; reportId?: string; compactMobile?: boolean }) {
+export function PublicSiteHeader({ activePath, action, reportAction, reportId, compactMobile = false, mobileMapControls }: { activePath: PublicPath; action?: ReactNode; reportAction?: ReactNode; reportId?: string; compactMobile?: boolean; mobileMapControls?: ReactNode }) {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   function toggleMenu(label: string) {
@@ -284,6 +284,7 @@ export function PublicSiteHeader({ activePath, action, reportAction, reportId, c
         <div className={styles.help}><NavigationDropdown label="Support" links={informationLinks} activePath={activePath} open={openMenu === 'help'} onToggle={() => toggleMenu('help')} onClose={() => setOpenMenu(null)} /></div>
         <div className={styles.appLink}><GetAppNavigation /><AppLink reportId={reportId} className={styles.smallAppLink}><IoPhonePortraitOutline aria-hidden />Get the app</AppLink></div>
         {activePath !== '/map' && <HeaderAreaSearch open={searchOpen} onOpenChange={value => { setSearchOpen(value); if (value) setOpenMenu(null); }} />}
+        {mobileMapControls && <div className={styles.mobileMapControls}>{mobileMapControls}</div>}
         <div className={styles.account}>{action ?? <PublicAccountAction />}</div>
         <NavigationMenu activePath={activePath} />
       </div>

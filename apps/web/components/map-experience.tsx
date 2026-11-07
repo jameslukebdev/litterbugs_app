@@ -1033,16 +1033,19 @@ export function MapExperience({
     notes: editingReport.notes_other ?? '',
   } : EMPTY_REPORT_DRAFT;
 
+  const viewToggle = !reportMode && (
+    <div className="discovery-view-toggle" role="group" aria-label="Browse reports">
+      <button type="button" aria-controls="active-report-list" aria-pressed={reportListOpen} onClick={() => switchDiscoveryView('reports')}><IoListOutline aria-hidden /><span>Reports</span></button>
+      <button type="button" aria-controls="report-map" aria-pressed={!reportListOpen} onClick={() => switchDiscoveryView('map')}><IoMapOutline aria-hidden /><span>Map</span></button>
+    </div>
+  );
+
   return (
     <main className={`map-page website-experience${!viewRestored && !requestedView ? ' discovery-default-view' : ''}${reportListOpen ? ' showing-reports' : ''}`}>
-      <PublicSiteHeader activePath="/map" compactMobile reportId={selectedReport?.id} action={(
-          <div className="map-header-account"><PublicAccountAction ref={accountActionRef} initialUserId={initialUserId}
-            mobileTabs={!reportMode ? <>
-              <button type="button" aria-pressed={reportListOpen} onClick={() => switchDiscoveryView('reports')}><IoListOutline aria-hidden /><span>Reports</span></button>
-              <button type="button" aria-pressed={!reportListOpen} onClick={() => switchDiscoveryView('map')}><IoMapOutline aria-hidden /><span>Map</span></button>
-            </> : undefined}
-            onAccountDataChanged={refreshReports} onOpenReport={openReportById} onUserChange={handleUserChange}
-            onResumeDraft={() => { void toggleReportMode(); }} /></div>
+      <PublicSiteHeader activePath="/map" compactMobile mobileMapControls={viewToggle} reportId={selectedReport?.id} action={(
+        <PublicAccountAction ref={accountActionRef} initialUserId={initialUserId} compactOnMobile
+          onAccountDataChanged={refreshReports} onOpenReport={openReportById} onUserChange={handleUserChange}
+          onResumeDraft={() => { void toggleReportMode(); }} />
       )} />
       <div className="discovery-toolbar">
         <PlaceSearch selected={searchPlace} onSelect={selectSearchPlace} onClear={clearSearchPlace} geocode={geocodeAddress} disabled={checkingLocation} />
@@ -1050,10 +1053,7 @@ export function MapExperience({
         {!reportMode && <div className="discovery-toolbar-actions">
           <button className="secondary-button discovery-filters" onClick={() => { switchDiscoveryView('reports'); setFiltersRequest(value => value + 1); }}><IoOptionsOutline aria-hidden />Filters<span className="discovery-filter-count" data-empty={Object.entries(discoveryFilters).every(([key, value]) => value === DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]) || undefined}>{Object.entries(discoveryFilters).filter(([key, value]) => value !== DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]).length || ''}</span></button>
           <NotificationLink key={userId ?? 'guest'} userId={userId} className="mobile-toolbar-updates" />
-          <div className="discovery-view-toggle" role="group" aria-label="Browse reports">
-            <button aria-pressed={reportListOpen} onClick={() => switchDiscoveryView('reports')}><IoListOutline aria-hidden /><span>Reports</span></button>
-            <button aria-pressed={!reportListOpen} onClick={() => switchDiscoveryView('map')}><IoMapOutline aria-hidden /><span>Map</span></button>
-          </div>
+          {viewToggle}
         </div>}
       </div>
 
@@ -1089,7 +1089,7 @@ export function MapExperience({
           favoriteReportIds={reportPreferences.favorites}
           hiddenReportIds={reportPreferences.hidden}
         />
-        <section aria-busy={!mapTilesReady && !mapError} className={`map-stage${reportMode ? ' map-stage-reporting' : ''}`} aria-label="Litterbugs report map">
+        <section id="report-map" aria-busy={!mapTilesReady && !mapError} className={`map-stage${reportMode ? ' map-stage-reporting' : ''}`} aria-label="Litterbugs report map">
           <div ref={mapElementRef} className="google-map" />
           <button type="button" className="map-report-button"
             onClick={() => { setReportListOpen(false); void toggleReportMode(); }}

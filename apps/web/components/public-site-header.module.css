@@ -450,3 +450,29 @@
   .header.header:not(.mapHeader) .inner { column-gap: 4px; padding-inline: 8px; }
   .header.header:not(.mapHeader) .brandLink img { width: 70px; }
 }
+
+.mobileMapControls { display: none; }
+@media (max-width: 760px) {
+  .header.header.mapHeader.compactMobile .inner {
+    grid-template-areas: "brand view account menu";
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    gap: 6px;
+    height: auto;
+    min-height: 58px;
+    padding: 4px 10px;
+  }
+  .header.header.mapHeader.compactMobile .brandLink { margin: 0; }
+  .header.header.mapHeader.compactMobile .brandLink img { width: 60px; height: 42px; }
+  .header.header.mapHeader.compactMobile :is(.mapLink,.reportAction,.funding,.cleaning,.help,.appLink,.menuLabel) { display: none; }
+  .header.header.mapHeader.compactMobile .mobileMenu { display: block; }
+  .header.header.mapHeader.compactMobile .mobileMenu > .menuTrigger { width: 44px; min-height: 44px; padding: 0; }
+  .header.header.mapHeader.compactMobile .mobileMenu > .menuTrigger svg { width: 24px; height: 24px; }
+  .mobileMapControls { display: block; grid-area: view; justify-self: center; width: min(100%, 244px); min-width: 0; }
+  .mobileMapControls :global(.discovery-view-toggle) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 2px; border-color: #e3dff0; border-radius: 12px; background: #faf9fe; }
+  .mobileMapControls :global(.discovery-view-toggle) button { min-height: 44px; gap: 4px; padding-inline: 4px; border-radius: 9px; }
+  .mobileMapControls :global(.discovery-view-toggle) button[aria-pressed='true'] { background: #efedff; color: #4438bb; box-shadow: none; }
+  .mobileMapControls :global(.discovery-view-toggle) button:focus-visible { outline: 2px solid #5146ed; outline-offset: -2px; }
+}
+@media (max-width: 380px) {
+  .mobileMapControls :global(.discovery-view-toggle) svg { display: none; }
+}

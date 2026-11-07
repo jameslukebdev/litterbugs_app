@@ -2,6 +2,7 @@
 import { Suspense, useSyncExternalStore } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { readDiscoveryView } from '@/lib/discovery-memory';
+import { PublicAccountAction } from './public-account-action';
 import { PublicSiteHeader } from './public-site-header';
 
 const subscribe = () => () => {};
@@ -31,7 +32,7 @@ function MapLoadingForAddress() {
 
 function MapLoadingShell({ viewClass }: { viewClass: string }) {
   return <main className={`map-page website-experience ${viewClass} map-route-loading`} aria-busy="true">
-    <PublicSiteHeader activePath="/map" compactMobile />
+    <PublicSiteHeader activePath="/map" compactMobile action={<PublicAccountAction compactOnMobile />} />
     <div className="discovery-toolbar" aria-hidden="true">
       <span className="map-loading-search" />
       <div className="map-loading-filters"><span /><span /><span /><span /></div>

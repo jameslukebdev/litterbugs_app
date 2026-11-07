@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { IoPersonOutline } from 'react-icons/io5';
 import { useRouter } from 'next/navigation';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, useSyncExternalStore } from 'react';
 
 import { NotificationLink } from '@/components/notification-inbox';
 import { AccountDialog } from '@/components/account-dialog';
@@ -20,12 +20,12 @@ export type PublicAccountActionHandle = {
 
 export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
   initialUserId?: string | null;
-  mobileTabs?: ReactNode;
+  compactOnMobile?: boolean;
   onAccountDataChanged?: () => void | Promise<void>;
   onOpenReport?: (reportId: string) => void;
   onResumeDraft?: () => void;
   onUserChange?: (userId: string | null) => void;
-}>(function PublicAccountAction({ initialUserId = null, onAccountDataChanged, onOpenReport, onUserChange, onResumeDraft, mobileTabs }, ref) {
+}>(function PublicAccountAction({ initialUserId = null, onAccountDataChanged, onOpenReport, onUserChange, onResumeDraft, compactOnMobile }, ref) {
   const router = useRouter();
   const cached = useSyncExternalStore(subscribeHeaderProfile, getHeaderProfile, getServerHeaderProfile);
   const [resolvedUserId, setUserId] = useState(initialUserId);
@@ -110,7 +110,7 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
 
   return (
     <>
-      <div className="public-account-actions">
+      <div className={`public-account-actions${compactOnMobile ? ' public-account-actions-desktop' : ''}`}>
         {userId && <NotificationLink key={userId} userId={userId} />}
         {!authChecked && !userId ? <span className="public-account-placeholder" role="status" aria-label="Loading profile" /> : userId ? <button
           type="button" className="public-account-control public-account-control-profile" title="Your profile" onClick={() => router.push('/account')}>
@@ -123,14 +123,11 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
         </>}
       </div>
 
-      {mobileTabs && <nav className="mobile-discovery-navigation" aria-label="Main app navigation">
-        <div className="mobile-discovery-tabs">
-          {mobileTabs}
-          <button type="button" className="mobile-profile-button" title={userId ? 'Your profile' : 'Sign in'} onClick={() => { if (userId) router.push('/account'); else { setAuthIntent(null); setEntryMode('login'); setAuthOpen(true); } }}>
-            {avatar || <IoPersonOutline aria-hidden />}<span>Profile</span>
-          </button>
-        </div>
-      </nav>}
+      {compactOnMobile && (
+        <button type="button" className="mobile-profile-button" aria-label={userId ? 'Your profile' : 'Sign in'} onClick={() => { if (userId) router.push('/account'); else { setAuthIntent(null); setEntryMode('login'); setAuthOpen(true); } }}>
+          {avatar || <IoPersonOutline aria-hidden />}
+        </button>
+      )}
 
       {authOpen && <AuthDialog initialMode={entryMode} returnPath={entryMode === 'signup' && !authIntent ? '/account' : undefined} onSuccess={() => { setAuthOpen(false); if (entryMode === 'signup' && !authIntent) router.push('/account'); }} intent={authIntent} onClose={() => setAuthOpen(false)} />}
       {accountOpen && userId && (

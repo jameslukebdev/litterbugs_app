@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable @next/next/no-img-element -- card thumbnails use the report photo route directly, like PublicPhoto. */
 import Link from 'next/link';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, type CSSProperties } from 'react';
 import { IoChevronForward, IoClose } from 'react-icons/io5';
 import { MapPinBug } from './map-pin-bug';
 import { AVAILABLE_CLEANUPS_MAP_HREF } from '@/lib/home-map-link';
@@ -106,6 +106,7 @@ export function MapPreviewPins({ pins }: { pins: MapPreviewPin[] }) {
     <>
       <ul className={`${styles.stage} ${styles.pins}`} aria-label="Litter reports and recent cleanups on the map">
         {groups.map((group) => {
+          const position = { '--pin-x': `${group.x}%`, '--pin-y': `${group.y}%` } as CSSProperties;
           const side = group.x < 16 ? 'start' : group.x > 84 ? 'end' : 'center';
           // Group lists are taller than a single card, so they open downward unless the group sits low on the map.
           const below = group.y < (group.pins.length > 1 ? 62 : 38) || undefined;
@@ -113,7 +114,7 @@ export function MapPreviewPins({ pins }: { pins: MapPreviewPin[] }) {
             const key = `group:${group.pins[0].id}`;
             const lead = group.pins.some((pin) => pin.kind === 'open') ? 'open' : group.pins.some((pin) => pin.kind === 'busy') ? 'busy' : 'done';
             return (
-              <li key={key} className={`${styles.pinSpot} ${styles.groupSpot}`} style={{ left: `${group.x}%`, top: `${group.y}%` }} data-kind={lead}>
+              <li key={key} className={`${styles.pinSpot} ${styles.groupSpot}`} style={position} data-kind={lead}>
                 <Link
                   href={groupHref(group)}
                   className={styles.group}
@@ -137,7 +138,7 @@ export function MapPreviewPins({ pins }: { pins: MapPreviewPin[] }) {
           }
           const pin = group.pins[0];
           return (
-            <li key={pin.id} className={styles.pinSpot} style={{ left: `${pin.x}%`, top: `${pin.y}%` }} data-kind={pin.kind}>
+            <li key={pin.id} className={styles.pinSpot} style={position} data-kind={pin.kind}>
               <Link
                 href={reportHref(pin)}
                 className={styles.pin}

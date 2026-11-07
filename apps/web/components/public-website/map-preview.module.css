@@ -9,7 +9,8 @@
 .preview .head .open:focus-visible { outline: 3px solid #e6bc38; outline-offset: 3px; }
 
 /* The frame crops the 1600 × 640 picture like object-fit: cover; both map layers share that geometry. */
-.frame { position: relative; container-type: size; aspect-ratio: 2.6; overflow: hidden; border-radius: 24px; background: #f4f2fb; box-shadow: 0 0 0 2px #ece8f8, 0 5px 0 #e6e1f5; isolation: isolate; }
+.frame { position: relative; overflow: hidden; border-radius: 24px; background: #f4f2fb; box-shadow: 0 0 0 2px #ece8f8, 0 5px 0 #e6e1f5; isolation: isolate; }
+.mapArea { position: relative; container-type: size; aspect-ratio: 2.6; }
 .stage { position: absolute; left: 50%; top: 50%; width: max(100cqw, 250cqh); height: max(100cqh, 40cqw); translate: -50% -50%; }
 .backdrop { position: absolute; inset: 0; display: block; cursor: pointer; }
 .backdrop img { object-fit: cover; filter: saturate(.7) contrast(.97); }
@@ -20,7 +21,7 @@
 /* Pins: a white pill with the bug for what it is (ladybug = litter, flower = cleaned up) and
    the same short text as the map page ("$5", "Open", "Done"). A small tail points at the spot. */
 .pins { margin: 0; padding: 0; list-style: none; pointer-events: none; }
-.pinSpot { position: absolute; width: 0; height: 0; z-index: 2; }
+.pinSpot { position: absolute; left: var(--pin-x); top: var(--pin-y); width: 0; height: 0; z-index: 2; }
 .pinSpot[data-kind='done'] { z-index: 1; }
 .pinSpot:has(:is(.pin, .group):is(:hover, :focus-visible, [data-selected])) { z-index: 5; }
 .pin, .group { position: absolute; left: 0; top: 0; translate: -50% calc(-100% - 8px); pointer-events: auto; color: inherit; text-decoration: none; }
@@ -74,7 +75,15 @@
 @media (max-width: 700px) {
   .head { margin-bottom: 18px; }
   .preview .head .open { min-height: 44px; padding: 8px 12px; font-size: 16px; }
-  .frame { aspect-ratio: 1.4; border-radius: 20px; }
+  .frame { border-radius: 20px; }
+  .mapArea { aspect-ratio: var(--mobile-map-ratio); }
+  .stage { left: calc(var(--mobile-stage-offset) * 1cqw); top: 0; width: var(--mobile-stage-width); height: 100%; translate: none; }
+  .pinSpot {
+    --visible-left: calc(-1cqw * var(--mobile-stage-offset));
+    left: clamp(calc(var(--visible-left) + 32px), var(--pin-x), calc(var(--visible-left) + 100cqw - 32px));
+    top: clamp(42px, var(--pin-y), calc(100% - 4px));
+  }
+  .credit { position: static; display: block; width: fit-content; margin: 2px 8px 2px auto; background: transparent; }
   .pill, .group { height: 30px; font-size: 13px; padding: 0 9px 0 5px; }
   .pin[data-kind='done'] .pill { height: 28px; font-size: 12px; }
   .panel .cardText strong { -webkit-line-clamp: 1; }
@@ -148,6 +157,6 @@
 .chip[data-tone='busy'] { background: #fff4cc; color: #6d5000; }
 .pin[data-kind='busy']:is(:hover, :focus-visible, [data-selected]) .pill { background: #fff8dc; --pin-edge: #ecd99b; }
 @media (max-width: 700px) {
-  .key { left: 10px; top: 10px; max-width: calc(100% - 20px); gap: 2px 10px; padding: 5px 10px; font-size: 12px; }
+  .key { position: static; max-width: none; gap: 4px 10px; padding: 8px 12px; border-radius: 0; background: transparent; box-shadow: none; font-size: 12px; }
   .key img { width: 15px; height: auto; }
 }
