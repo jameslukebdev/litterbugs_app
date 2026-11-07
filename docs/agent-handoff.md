@@ -24,6 +24,24 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-07 — Claude (website card photo arrows released)
+
+- Pushed and deployed `863ae70` on `codex/map-first-navigation` as
+  `dpl_2A1A4uqGMcnkKnNtMQs1NZzF6eQD`. This is Codex's live `38bc5bd` plus
+  this fix only. Previous live deployment for rollback:
+  `dpl_121ifRGPcPRM24wTKnuosmveUoKF`.
+- These are the four indexed-photo edits mentioned below, now finished.
+  Website cards (home, /reports, /cleanups) only ever got the first report
+  photo, so hover arrows never showed on open reports.
+  `/reports/[id]/photo/before?photo=N` serves photo N (max 10) with the same
+  visibility checks. `PublicReportShareModel.photoCount` carries the count.
+  `card-photo-switch.tsx` steps through all photos, with dots and preloading.
+  Cleaned-up spots still lead with the after photo.
+- Checks: typecheck clean; photo route, public-report and public-website
+  tests pass (41), including a new `?photo=N` route test. Verified live with
+  analytics excluded: 8 of 12 /reports cards and 5 of 9 homepage cards have
+  arrows, and the second photo loads.
+
 ### 2026-11-06 — Codex (Boone / All reports release verified)
 
 - Pushed source commit `38bc5bd` on `codex/map-first-navigation`, including the
