@@ -11,7 +11,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (kind !== 'before' && kind !== 'after') return new Response('Photo not found', { status: 404, headers });
 
   try {
-    const photo = await loadPublicReportPhoto(id, kind, new URL(request.url).searchParams.get('width') === '640' ? 640 : 1080);
+    const search = new URL(request.url).searchParams;
+    // ?photo=N picks one of the report's photos (cards page through them); the same visibility checks apply.
+    const index = search.has('photo') ? Number(search.get('photo')) : 0;
+    const photo = await loadPublicReportPhoto(id, kind, search.get('width') === '640' ? 640 : 1080, index);
     if (!photo) return new Response('Photo not found', { status: 404, headers });
 
     return new Response(new Uint8Array(photo), {

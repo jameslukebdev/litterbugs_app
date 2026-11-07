@@ -24,6 +24,8 @@ export type PublicReportShareModel = {
   bagsOrItemsRemoved: number | null;
   weightPounds: number | null;
   beforePhotoUrl: string | null;
+  /** How many report photos there are; linked cards page through them with `?photo=N`. */
+  photoCount?: number;
   afterPhotoUrl: string | null;
   canonicalUrl: string;
 };

@@ -135,6 +135,7 @@ const loadPublicReportData = cache(async (reportId: string) => {
     weightPounds: submission?.weight_pounds ?? null,
     beforePhotoUrl: null,
     afterPhotoUrl: null,
+    photoCount: Math.min(MAX_PUBLIC_PHOTOS, (report.photo_paths ?? []).filter(Boolean).length),
     canonicalUrl: `${getSiteUrl()}/reports/${encodeURIComponent(report.id)}`,
   };
 
@@ -168,14 +169,17 @@ export async function loadPublicReportShare(
   return { ...data.model, beforePhotoUrl, afterPhotoUrl };
 }
 
-export async function loadPublicReportPhoto(reportId: string, kind: 'before' | 'after', width: 640 | 1080 = 1080) {
-  if (!UUID_PATTERN.test(reportId)) return null;
+/** Report cards page through at most this many report photos. */
+export const MAX_PUBLIC_PHOTOS = 10;
+
+export async function loadPublicReportPhoto(reportId: string, kind: 'before' | 'after', width: 640 | 1080 = 1080, index = 0) {
+  if (!UUID_PATTERN.test(reportId) || !Number.isInteger(index) || index < 0 || index >= MAX_PUBLIC_PHOTOS) return null;
   const supabase = createPublicClient();
   const { data: report, error } = await supabase.from('reports')
     .select('*').eq('id', reportId).eq('is_sample', false).eq('is_published', true).maybeSingle();
   if (error) throw error;
   if (!report || !isPubliclyShareableReport(report)) return null;
-  let path = report.photo_paths?.[0];
+  let path: string | undefined = (report.photo_paths ?? []).filter(Boolean)[kind === 'before' ? index : 0];
   if (kind === 'after') {
     if (report.cleanup_state !== 'completed') return null;
     const { data: attempt } = await supabase.from('cleanup_attempts')

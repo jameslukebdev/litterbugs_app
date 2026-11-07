@@ -1736,13 +1736,9 @@ body .public-report-cards .report-card-container.report-card-container .report-r
 body .public-report-cards .report-card-container.report-card-container .report-result-meta { display: flex; }
 /* The footer already draws the divider; the reporter inside it doesn't need its own. */
 body .public-report-cards .report-card-container.report-card-container .public-card-footer .report-author { border-top: 0; }
-/* Before/after photos: the arrows set data-photo on the card; slide 0 shows until then. */
+/* Card photos: only the active slide shows; the arrows move data-active along the slides and dots. */
 .public-report-cards .card-slide { display: contents; }
-.public-report-cards .report-card-container:not([data-photo]) .card-slide:not([data-slide="0"]),
-.public-report-cards .report-card-container[data-photo="0"] .card-slide:not([data-slide="0"]),
-.public-report-cards .report-card-container[data-photo="1"] .card-slide:not([data-slide="1"]) { display: none; }
-.public-report-cards .report-card-container:is(:not([data-photo]), [data-photo="0"]) .report-result-dots i[data-dot="0"],
-.public-report-cards .report-card-container[data-photo="1"] .report-result-dots i[data-dot="1"] { background: #fff; }
+.public-report-cards .card-slide:not([data-active]) { display: none; }
 /* Same sizes and colours as the map list card (report-controls.module.css), overriding the older website card styles. */
 body .public-report-cards .report-card-container.report-card-container.report-card-container { border: 1px solid #e3dff0; border-radius: 18px; box-shadow: 0 3px 0 #eeeaf8; color: #202428; }
 body .public-report-cards .report-card-container.report-card-container.report-card-container:is(:hover, :focus-within) { border-color: #b3a6e5; box-shadow: 0 3px 0 #d8d1ee; }

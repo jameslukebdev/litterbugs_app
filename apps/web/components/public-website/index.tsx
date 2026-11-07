@@ -114,20 +114,23 @@ export function ReportCards({
           ? report.rewardCents == null ? 'Cleanup completed' : funded ? `${amount} funded cleanup` : 'Volunteer cleanup completed'
           : funded ? `Pays ${amount}` : 'Volunteer cleanup';
         // Cleaned-up spots lead with the after photo and can flip back to the before photo, like the map list.
-        const photos = (report.state === 'completed' ? [{ src: report.afterPhotoUrl, after: true }, { src: report.beforePhotoUrl, after: false }] : [{ src: report.beforePhotoUrl, after: false }])
-          .filter((item): item is { src: string; after: boolean } => Boolean(item.src));
+        // Like the map list: cleaned-up spots lead with the after photo, then every report photo.
+        const reportPhotos = report.beforePhotoUrl
+          ? Array.from({ length: Math.max(1, report.photoCount ?? 1) }, (_, n) => ({ src: n ? `${report.beforePhotoUrl}?photo=${n}` : report.beforePhotoUrl!, after: false }))
+          : [];
+        const photos = [...(report.state === 'completed' && report.afterPhotoUrl ? [{ src: report.afterPhotoUrl, after: true }] : []), ...reportPhotos];
         const timing = report.state === 'completed' ? 'Cleanup complete' : report.reportDate ? new Date(report.reportDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '';
         const status = report.state === 'expired' ? 'Expired' : report.state === 'completed' ? 'Cleaned' : report.state === 'available' ? 'Available' : 'In progress';
         return <article className="report-card-container" key={report.id}>
           <Link prefetch={false} className="report-result" href={`/reports/${report.id}`}>
             <ReportCardContent
               photo={<span className={`report-result-photo${photos.length ? '' : ' report-result-photo-empty'}`}>
-                {photos.length ? photos.map((item, slide) => <span className="card-slide" data-slide={slide} key={item.src}>
+                {photos.length ? photos.map((item, slide) => <span className="card-slide" data-active={slide === 0 || undefined} key={item.src}>
                   <PublicPhoto src={item.src} alt="" width={600} height={400} eager={slide === 0 && showLocation && index < 3} />
                   {item.after && photos.length > 1 && <span className="report-result-photo-count">After cleanup</span>}
                 </span>) : <span>No photo yet</span>}
                 <span className="report-result-workflow" data-tone={report.state === 'completed' ? 'completed' : report.state === 'available' ? 'available' : 'active'}>{status}</span>
-                {photos.length > 1 && <span className="report-result-dots" aria-hidden="true">{photos.map((item, dot) => <i key={item.src} data-dot={dot} />)}</span>}
+                {photos.length > 1 && <span className="report-result-dots" aria-hidden="true">{photos.slice(0, 5).map((item, dot) => <i key={item.src} data-active={dot === 0 || undefined} />)}</span>}
               </span>}
               title={report.title}
               reward={reward}
