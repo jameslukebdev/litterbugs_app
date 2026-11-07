@@ -24,6 +24,35 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-06 — Claude (cards, colours and homepage map preview released)
+
+- Pushed and deployed `03dc70b` on `codex/map-first-navigation` as
+  `dpl_EadGATcuiVS6ZkWvsEAky8qgixht`. Previous live deployment for rollback
+  is `dpl_Gi9n38UYt43vhuh5jb4cSVt69y1a`.
+- Website report cards (home, /reports, /cleanups, communities) now match
+  the map list card exactly: two-line titles, severity + date row, reporter
+  and ••• under one divider, before/after arrows on cleaned-up spots
+  (`card-photo-switch.tsx`). Map list cards: one unified card, photo arrows
+  and dots, menus close each other, heart taps no longer reload the list
+  (`keepUnchanged` in map-experience).
+- Homepage map preview: top "Open map" button removed; "Explore the full
+  map" button on the map; hover lights it; drag/pinch shows a hint
+  (`map-preview-nudge.tsx`). Snapshot `boone.webp` is now 1600 × 1100
+  (origin 1145002, 1643342) so phones fill the frame. Pins still come only
+  from the middle 640 px band (`pinTop`/`pinHeight` in `lib/map-preview.ts`).
+- Colour families: periwinkle dragonfly = Report, green caterpillar =
+  Earn/in progress, mint flower = cleaned up; bugs hop on button hover.
+- Codex's uncommitted closest-report / map empty state / place-search work
+  in the same checkout was left out of this commit and is still uncommitted.
+  I committed only the marker attribute stubs from its
+  `map-publication.test.tsx` change, which the tooltip fix needs.
+- Checks: typecheck and lint clean. Tests: 2 pre-existing
+  `website-outcomes` failures. `display-photo-cache` passes when run alone.
+  Verified on live phone layout with analytics excluded.
+
+**Do not undo:** the card styles are in the last blocks of `globals.css`;
+they intentionally override older `brand.module.css` card rules.
+
 ### 2026-11-06 — Codex (public page reachability audit)
 
 - Confirmed the live homepage links to /reports under the carousel as
