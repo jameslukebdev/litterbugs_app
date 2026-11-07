@@ -24,6 +24,29 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-07 — Codex (phone website follow-up and report-button smoothing)
+
+- Owner clarified this is Chrome on a Pixel 5, using the website. The previous
+  automatic recovery release did NOT clear their existing Beacon Heights copy.
+  Owner then chose Start new, closed/reopened report creation, and confirmed
+  "It stays cleared." This establishes current recovery, not the exact cause of
+  that old copy's missing/mismatched submission association. No additional draft
+  deletion heuristics or native-app changes were added in this follow-up.
+- Pushed source `9d35422` and promoted `dpl_DrrjEV9yHJ26aLtu13u14hePFsus` to
+  litterbugs.app. Rollback: `dpl_BatGTozi4U1jxHQCABieYgGtaBiN`. Map Report Litter
+  now keeps its label/icon during draft checks, stays fully opaque while busy,
+  avoids active-state scale and Android tap flash, and reserves its width through
+  the Cancel transition (168px phone / 184px desktop minimums). Busy taps remain
+  blocked and accessibility busy/focus states preserved. No migrations.
+- Targeted map-publication/resumable-wizard regression tests: 54 pass, including
+  delayed lookup and duplicate-tap prevention. TypeScript, scoped lint, remote
+  production build, staged map HTTP 200 and live compiled CSS checks passed.
+  Browser: local signed-in Chrome at 393x851, repeated enter/cancel; button width
+  stayed 168px, opacity 1, no console errors. No report/photos/payment submitted;
+  local server not restarted; viewport reset. Screenshot retained at
+  `/tmp/litterbugs-report-button-pixel5.jpg`. Physical-phone button confirmation
+  remains with the owner after refreshing their website tab.
+
 ### 2026-11-07 — Codex (completed report draft recovery on phone)
 
 - Pushed source `e17fe6a` on `codex/map-first-navigation` and promoted production
