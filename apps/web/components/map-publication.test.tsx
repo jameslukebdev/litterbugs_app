@@ -129,6 +129,23 @@ async function choosePin(latitude = 0.5, valid = true) {
 }
 
 describe('map publication and funding handoff', () => {
+  it('keeps the navigation and filter hosts mounted when entering and canceling report placement', async () => {
+    render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+    await waitFor(() => expect(state.click).toBeTruthy());
+    const filters = screen.getByRole('button', { name: /^Filters$/ });
+    const navigation = screen.getByRole('group', { name: 'Browse reports' });
+    const quickFilters = document.querySelector('.discovery-quick-filters');
+    const mapStarts = state.mapOptions.mock.calls.length;
+    fireEvent.click(screen.getByRole('button', { name: 'Report Litter' }));
+    await screen.findByLabelText('Choose report location');
+    expect(screen.getByRole('button', { name: /^Filters$/ })).toBe(filters);
+    expect(screen.getByRole('group', { name: 'Browse reports' })).toBe(navigation);
+    expect(document.querySelector('.discovery-quick-filters')).toBe(quickFilters);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Cancel reporting' })[0]);
+    await screen.findByRole('button', { name: 'Report Litter' });
+    expect(screen.getByRole('group', { name: 'Browse reports' })).toBe(navigation);
+    expect(state.mapOptions.mock.calls.length).toBe(mapStarts);
+  });
   it('keeps the report button label and icon steady while checking a saved phone draft', async () => {
     let finish!: (value: undefined) => void;
     state.draftLocation.mockImplementation(() => new Promise<undefined>(resolve => { finish = resolve; }));
@@ -286,7 +303,7 @@ describe('map publication and funding handoff', () => {
     render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
     await screen.findByRole('button', { name: 'Use this location' });
     expect(document.querySelector('main')?.classList.contains('showing-reports')).toBe(false);
-    expect(screen.queryByRole('group', { name: 'Browse reports' })).toBeNull();
+    expect(screen.getByRole('group', { name: 'Browse reports' })).toBeTruthy();
   });
 
   it('checks fresh GPS again at publication after a valid selection', async () => {

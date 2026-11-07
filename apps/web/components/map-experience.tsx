@@ -1076,7 +1076,7 @@ export function MapExperience({
   /> : null;
   const hasDiscoveryFilters = Object.entries(discoveryFilters).some(([key, value]) => value !== DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]);
 
-  const viewToggle = !reportMode && (
+  const viewToggle = (
     <div className="discovery-view-toggle" role="group" aria-label="Browse reports">
       <button type="button" aria-controls="active-report-list" aria-pressed={reportListOpen} onClick={() => switchDiscoveryView('reports')}><IoListOutline aria-hidden /><span>Reports</span></button>
       <button type="button" aria-controls="report-map" aria-pressed={!reportListOpen} onClick={() => switchDiscoveryView('map')}><IoMapOutline aria-hidden /><span>Map</span></button>
@@ -1092,11 +1092,11 @@ export function MapExperience({
       )} />
       <div className="discovery-toolbar">
         <PlaceSearch selected={searchPlace} onSelect={selectSearchPlace} onClear={clearSearchPlace} bias={discoveryArea} disabled={checkingLocation} />
-        {!reportMode && <div className="discovery-quick-filters" ref={setFilterToolbar} />}
-        {!reportMode && <div className="discovery-toolbar-actions">
+        <div className="discovery-quick-filters" ref={setFilterToolbar} />
+        <div className="discovery-toolbar-actions">
           <button className="secondary-button discovery-filters" onClick={() => { switchDiscoveryView('reports'); setFiltersRequest(value => value + 1); }}><IoOptionsOutline aria-hidden />Filters<span className="discovery-filter-count" data-empty={Object.entries(discoveryFilters).every(([key, value]) => value === DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]) || undefined}>{Object.entries(discoveryFilters).filter(([key, value]) => value !== DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]).length || ''}</span></button>
           {viewToggle}
-        </div>}
+        </div>
       </div>
 
       {(initialError || toast) && <div className="toast" role="status">{toast || 'Some reports could not be loaded. Try refreshing the results.'}</div>}
