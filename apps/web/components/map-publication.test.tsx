@@ -26,6 +26,7 @@ const state = vi.hoisted(() => ({
   upload: vi.fn(),
   review: vi.fn(),
   saveResult: vi.fn(),
+  draftLocation: vi.fn(),
   journal: undefined as { userId: string; reportId: string; paths: string[] } | undefined,
 }));
 const report = () => ({ id: 'test-report', title: 'Test bottles', latitude: 0.5, longitude: 0, user_id: 'test-user', is_published: state.published, photo_paths: ['test-user/test-report/photo.jpg'], cleanup_state: 'available', funding_eligibility: 'eligible', renewal_status: 'active', expires_at: '2099-01-01', cancelled_at: null, expired_at: null, is_sample: false });
@@ -71,7 +72,7 @@ vi.mock('@/components/resumable-report-wizard', () => ({ ResumableReportWizard: 
   return <div role="dialog" aria-label="Report form"><output aria-label="Selected latitude">{coordinates.latitude}</output><button disabled={!onChangeLocation} onClick={onChangeLocation}>Change report location</button><button onClick={() => void onSubmit(draft, null).then(state.saveResult)}>Post without funds</button><button onClick={() => void onSubmit(draft, 500).then(state.saveResult)}>Post with $5</button></div>;
 } }));
 vi.mock('@/lib/saved-report-draft', () => ({
-  reportDraftLocation: async () => undefined,
+  reportDraftLocation: (...args: unknown[]) => state.draftLocation(...args),
   loadReportPublication: async () => state.journal,
   saveReportPublication: async (journal: typeof state.journal) => { state.journal = journal; },
   clearReportPublication: async () => { state.journal = undefined; },
@@ -108,6 +109,7 @@ beforeEach(() => {
   vi.clearAllMocks(); state.discovery.mockReset().mockResolvedValue({ reports: [], truncated: false }); state.idle = null; state.tiles = null; state.journal = undefined; state.click = null; state.published = false; state.lostResponse = false;
   state.upload.mockResolvedValue('test-user/test-report/photo.jpg');
   state.review.mockResolvedValue(undefined);
+  state.draftLocation.mockReset().mockResolvedValue(undefined);
   Object.defineProperty(navigator, 'geolocation', { configurable: true, value: {
     getCurrentPosition: (success: PositionCallback) => success({ coords: { latitude: 0, longitude: 0 }, timestamp: Date.now() } as GeolocationPosition),
   } });
@@ -127,6 +129,22 @@ async function choosePin(latitude = 0.5, valid = true) {
 }
 
 describe('map publication and funding handoff', () => {
+  it('keeps the report button label and icon steady while checking a saved phone draft', async () => {
+    let finish!: (value: undefined) => void;
+    state.draftLocation.mockImplementation(() => new Promise<undefined>(resolve => { finish = resolve; }));
+    render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+    await waitFor(() => expect(state.click).toBeTruthy());
+    const button = screen.getByRole('button', { name: 'Report Litter' });
+    fireEvent.click(button);
+    expect(button.textContent).toBe('Report Litter');
+    expect(button.getAttribute('aria-busy')).toBe('true');
+    expect(button.querySelector('.map-report-bug')).toBeTruthy();
+    fireEvent.click(button);
+    expect(state.draftLocation).toHaveBeenCalledTimes(1);
+    await act(async () => finish(undefined));
+    await screen.findByLabelText('Choose report location');
+    expect(screen.queryByText('Opening…')).toBeNull();
+  });
   it('centers a linked report even when its details load before the map', async () => {
     let finishMapLoad!: () => void;
     state.mapLoadGate = new Promise<void>(resolve => { finishMapLoad = resolve; });

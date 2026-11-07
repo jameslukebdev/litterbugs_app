@@ -1614,10 +1614,11 @@ a.member-activity-row { color: inherit; text-decoration: none; }
    outline and text (no shadow), the dragonfly sitting straight on the button, and a dotted flight trail behind it
    like the homepage bee. */
 .website-experience .map-report-button, .map-report-button {
-  overflow: visible; width: auto; min-width: 160px; height: 50px; padding: 0 20px 0 14px; gap: 8px;
+  overflow: visible; width: auto; min-width: 184px; height: 50px; padding: 0 20px 0 14px; gap: 8px;
   border: 2px solid #9bbbf3; border-radius: 999px; background: #fff; color: #2e539e;
   font: 900 17px/1 'Playful Nunito', system-ui, sans-serif; letter-spacing: .005em;
   box-shadow: none;
+  -webkit-tap-highlight-color: transparent;
   transition: background-color .12s ease, border-color .12s ease;
 }
 .map-report-button::before { content: ''; position: absolute; right: calc(100% - 6px); top: -10px; width: 70px; height: 40px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='70' height='40' viewBox='0 0 70 40'%3E%3Cpath d='M2 34 C 20 4, 40 40, 66 12' fill='none' stroke='%2396b6ee' stroke-width='2.5' stroke-linecap='round' stroke-dasharray='0.1 7'/%3E%3C/svg%3E") no-repeat center / contain; pointer-events: none; }
@@ -1628,12 +1629,14 @@ a.member-activity-row { color: inherit; text-decoration: none; }
   .map-report-button:hover:not(:disabled) .map-report-bug { transform: translate(1px, -2px) rotate(-8deg); }
 }
 .website-experience .map-report-button:active:not(:disabled), .map-report-button:active:not(:disabled) { background: #e5efff; }
+.website-experience .map-report-button[aria-busy='true'] { opacity: 1; cursor: progress; }
+.website-experience .map-report-button:active { transform: none; }
 .website-experience .map-report-button:focus-visible, .map-report-button:focus-visible { outline: 3px solid #84aaeb; outline-offset: 4px; }
 /* While placing a pin, the same button reads as a quiet "Cancel" (no dragonfly, no trail). */
 .map-stage-reporting .map-report-button { padding-left: 16px; background: #fff; color: #4a4857; border-color: #e3dff0; }
 .map-stage-reporting .map-report-button::before { display: none; }
 @media (max-width: 760px) {
-  .website-experience .map-report-button, .map-report-button { height: 46px; min-width: 0; padding: 0 16px 0 12px; font-size: 16px; }
+  .website-experience .map-report-button, .map-report-button { height: 46px; min-width: 168px; padding: 0 16px 0 12px; font-size: 16px; }
   .map-report-button .map-report-bug { width: 26px; height: 26px; }
   .map-report-button::before { display: none; }
 }
