@@ -330,6 +330,21 @@ it('preserves a shared map viewport instead of resetting it to Boone', async () 
   expect(state.mapOptions).toHaveBeenCalledWith(expect.objectContaining({ center: { lat: 35.994, lng: -78.899 }, zoom: 13 }));
 });
 
+it('uses the visible map after restoring a legacy town boundary, including later pans', async () => {
+  const initialPlace = { id: 'legacy-town', label: 'A town', subtitle: 'Town', latitude: 0, longitude: 0,
+    bounds: { north: .1, south: -.1, west: -.1, east: .1 },
+    geometry: { type: 'Polygon' as const, coordinates: [[[-.1, -.1], [.1, -.1], [.1, .1], [-.1, .1], [-.1, -.1]]] } };
+  render(<MapExperience initialReports={[]} initialUserId={null} googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" initialPlace={initialPlace} />);
+  await waitFor(() => expect(state.idle).toBeTruthy());
+  act(() => state.idle!());
+  await waitFor(() => expect(state.discovery).toHaveBeenCalled());
+  expect(state.discovery.mock.calls.at(-1)?.[1]).toMatchObject({ geometry: undefined, area: { north: 1, south: -1 } });
+  state.center = { lat: 2, lng: 2 };
+  act(() => state.idle!());
+  await waitFor(() => expect(state.discovery.mock.calls.at(-1)?.[1].area.latitude).toBe(2));
+  expect(state.discovery.mock.calls.at(-1)?.[1].geometry).toBeUndefined();
+});
+
 it('keeps a location selected while the map library is still loading', async () => {
   window.history.replaceState({}, '', '/?lat=39.799&lng=-98.649&zoom=11');
   render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);

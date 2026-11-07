@@ -24,6 +24,41 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-06 — Codex (location search and empty-map recovery)
+
+- Implemented the owner-approved proposal on top of Claude's `03dc70b` release
+  and `f584164` handoff. No website deployment or database migration in this pass.
+  Preserved Claude's cards, header, map preview, colours and pin changes; did not
+  restart the shared localhost:3000 server.
+- Header/home area pickers and map pickers now use one Google Place Autocomplete
+  (New) list with session tokens, correct place types, selection-time details and
+  required attribution. Geocoding remains an outage fallback; Census results are
+  no longer mixed into the picker. Enter highlights an ambiguous result before
+  selecting it. Late responses and dismissed searches are ignored.
+- City searches frame the map without a persistent town/postal boundary. Legacy
+  area links still restore, but discovery follows the viewport after panning.
+  Empty map mode shows the caterpillar and honey-yellow Find closest reports.
+  Reports mode retains the flat layout, inline location picker and “or.”
+- Closest lookup exhausts paginated expanding geographic rings, preserves report
+  filters and hidden/favorite preferences, and previews the nearest report's
+  distance before View on map. A radius is removed only on that confirmation.
+  Loading errors remain distinct from genuine empty results.
+- Google configuration: enabled `places.googleapis.com` in `litterbugs-auth` and
+  appended it to `litterbugs-web-local` and the existing Litterbugs Web Maps key
+  (`5528ba95-42db-4d24-bc0e-076ddad81f59`). All existing referrer restrictions and
+  Maps/Geocoding targets were preserved. Android keys were not changed. Updated
+  the historical Places exclusion in the boundary check and setup documents to
+  reflect this explicit authorization.
+- Verification: 85 focused tests, scoped lint, TypeScript and an isolated Next
+  16.3 production build passed (existing libheif bundling warnings remain).
+  Build exposed optional page-props signatures in /map and /report; removed
+  their default arguments and updated the direct-call report test.
+- Chrome verified real autocomplete responses (200), New York city selection,
+  map/list empty states, phone layout at 390px, and closest navigation. A funded
+  match 517 miles away was previewed before navigation; funding/status stayed
+  selected and the 5-mile radius cleared only after confirmation. Analytics was
+  off in the test browser. Pending: deploy this source change when requested.
+
 ### 2026-11-06 — Claude (cards, colours and homepage map preview released)
 
 - Pushed and deployed `03dc70b` on `codex/map-first-navigation` as

@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { realUserIdFromClaims } from '@/lib/report-access';
 import MapPage from '@/components/map-page';
 export const metadata = { title: 'Report litter | Litterbugs', robots: { index: false, follow: false } };
-export default async function Page({ searchParams }: { searchParams?: Promise<{ community?: string | string[] }> } = {}) {
+export default async function Page({ searchParams }: { searchParams?: Promise<{ community?: string | string[] }> }) {
   const context = reportEntryContext((await searchParams)?.community);
   const client = await createClient();
   const { data } = await client.auth.getClaims();

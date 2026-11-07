@@ -26,6 +26,9 @@ import { PublicAccountAction, type PublicAccountActionHandle } from '@/component
 import { PublicSiteHeader } from '@/components/public-site-header';
 import { IoMapOutline, IoListOutline, IoOptionsOutline, IoCloseCircleOutline, IoLocationOutline } from 'react-icons/io5';
 import { PlaceSearch } from '@/components/place-search';
+import { ClosestReportsAction } from '@/components/closest-reports-action';
+import { MapEmptyState } from '@/components/map-empty-state';
+import { findClosestReport, type ClosestReport } from '@/lib/closest-report';
 import type { SearchPlace } from '@/lib/place-geography';
 import { ReportBrowser } from '@/components/report-browser';
 import { canManageReport, realUserId } from '@/lib/report-access';
@@ -44,7 +47,7 @@ import { saveReportEdit } from '@/lib/save-report-edit';
 import { isDiscoverableReport } from '@/lib/report-visibility';
 import { resolvePlaceId } from '@/lib/place-search';
 import { DEFAULT_DISCOVERY_FILTERS, loadDiscoveryReports, type DiscoveryArea, type DiscoveryFilters } from '@/lib/report-discovery';
-import { readDiscoveryMemory, saveDiscoveryMemory, readMapUrl, mapUrl, readDiscoveryView } from '@/lib/discovery-memory';
+import { readDiscoveryMemory, saveDiscoveryMemory, readMapUrl, mapUrl, readDiscoveryView, readBrowserUrl, browserUrl } from '@/lib/discovery-memory';
 import { useDataRefresh } from '@/lib/use-data-refresh';
 import { createClient } from '@/lib/supabase/client';
 
@@ -124,7 +127,6 @@ export function MapExperience({
   const preferenceOwnerRef = useRef(userId ?? 'guest');
   useEffect(() => { preferenceOwnerRef.current = userId ?? 'guest'; }, [userId]);
   const [mapReady, setMapReady] = useState(false);
-  const [mapZoom, setMapZoom] = useState<number | null>(null);
   const [mapTilesReady, setMapTilesReady] = useState(false);
   const [searchPlace, setSearchPlace] = useState<SearchPlace | null>(initialPlace);
   const searchPlaceRef = useRef<SearchPlace | null>(initialPlace);
@@ -195,7 +197,9 @@ export function MapExperience({
     hidden: new Set<string>(),
   });
   const canSearchReports = Boolean(discoveryArea || mapError);
-  const geometry = searchPlace?.geometry;
+  // A searched place frames the map; its old Census/postal boundary must never
+  // hide reports after the visitor pans or zooms beyond it.
+  const geometry = undefined;
   const placeId = searchPlace?.id;
   // Favourites only change the search when the Favourites filter is on. Otherwise tapping a heart would
   // count as a new search and blank the whole list while the same reports reload.
@@ -307,21 +311,21 @@ export function MapExperience({
     window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
   }
 
-  function widenSearchArea() {
-    const map = mapRef.current;
-    if (!map) return;
-    if (searchPlaceRef.current) clearSearchPlace();
-    const zoom = map.getZoom();
-    if (zoom != null && zoom > 3) map.setZoom(Math.max(3, zoom - 2));
+  function showClosestReport({ report }: ClosestReport) {
+    if (!mapRef.current) return;
+    clearSearchPlace();
+    const url = new URL(window.location.href);
+    url.searchParams.set('view', 'map');
+    const memory = readBrowserUrl(url.search);
+    const next = browserUrl(url, { filters: { ...discoveryFilters, radius: 0 }, sort: memory?.sort ?? 'newest', scroll: 0 });
+    window.history.replaceState(window.history.state, '', next);
+    // Keep the existing URL-backed filter controls in sync with the explicitly
+    // confirmed distance change, including the hidden Reports panel.
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    setReportListOpen(false);
+    mapRef.current.setZoom(14);
+    mapRef.current.panTo({ lat: report.latitude, lng: report.longitude });
   }
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!mapReady || !map?.data || !searchPlace?.geometry) return;
-    const features = map.data.addGeoJson({ type: 'Feature', properties: {}, geometry: searchPlace.geometry });
-    map.data.setStyle({ fillColor: '#2f7d32', fillOpacity: 0.08, strokeColor: '#2f7d32', strokeWeight: 2, clickable: false });
-    return () => { features.forEach(feature => map.data.remove(feature)); };
-  }, [mapReady, searchPlace]);
 
   const handleUserChange = useCallback((nextUserId: string | null) => {
     locationCheck.current++; reportEntry.current++; setCheckingLocation(false); setCheckingDraft(false);
@@ -497,7 +501,6 @@ export function MapExperience({
           const area = { ...bounds, latitude: center.lat(), longitude: center.lng() };
           setPlacement({ latitude: area.latitude, longitude: area.longitude });
           const zoom = map.getZoom() ?? 12;
-          setMapZoom(zoom);
           window.history.replaceState(window.history.state, '', mapUrl(new URL(window.location.href), { latitude: area.latitude, longitude: area.longitude, zoom }));
           saveDiscoveryMemory({ latitude: area.latitude, longitude: area.longitude, zoom, place: searchPlaceRef.current });
           setDiscoveryArea(current => current && Object.keys(area).every(key => current[key as keyof DiscoveryArea] === area[key as keyof DiscoveryArea]) ? current : area);
@@ -1044,6 +1047,15 @@ export function MapExperience({
     notes: editingReport.notes_other ?? '',
   } : EMPTY_REPORT_DRAFT;
 
+  const closestAction = mapReady && !mapError && discoverySearch?.area ? <ClosestReportsAction
+    key={JSON.stringify([discoverySearch.area, discoverySearch.filters, [...searchFavorites], [...reportPreferences.hidden]])}
+    radius={discoveryFilters.radius}
+    find={signal => findClosestReport(createClient(), { center: discoverySearch.area!, filters: discoverySearch.filters,
+      favorites: searchFavorites, hidden: reportPreferences.hidden, signal })}
+    onShow={showClosestReport}
+  /> : null;
+  const hasDiscoveryFilters = Object.entries(discoveryFilters).some(([key, value]) => value !== DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]);
+
   const viewToggle = !reportMode && (
     <div className="discovery-view-toggle" role="group" aria-label="Browse reports">
       <button type="button" aria-controls="active-report-list" aria-pressed={reportListOpen} onClick={() => switchDiscoveryView('reports')}><IoListOutline aria-hidden /><span>Reports</span></button>
@@ -1059,7 +1071,7 @@ export function MapExperience({
           onResumeDraft={() => { void toggleReportMode(); }} />
       )} />
       <div className="discovery-toolbar">
-        <PlaceSearch selected={searchPlace} onSelect={selectSearchPlace} onClear={clearSearchPlace} geocode={geocodeAddress} disabled={checkingLocation} />
+        <PlaceSearch selected={searchPlace} onSelect={selectSearchPlace} onClear={clearSearchPlace} bias={discoveryArea} disabled={checkingLocation} />
         {!reportMode && <div className="discovery-quick-filters" ref={setFilterToolbar} />}
         {!reportMode && <div className="discovery-toolbar-actions">
           <button className="secondary-button discovery-filters" onClick={() => { switchDiscoveryView('reports'); setFiltersRequest(value => value + 1); }}><IoOptionsOutline aria-hidden />Filters<span className="discovery-filter-count" data-empty={Object.entries(discoveryFilters).every(([key, value]) => value === DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]) || undefined}>{Object.entries(discoveryFilters).filter(([key, value]) => value !== DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]).length || ''}</span></button>
@@ -1074,15 +1086,14 @@ export function MapExperience({
           reports={displayResponse?.reports ?? EMPTY_MAP_REPORTS}
           resultFilters={displayResponse?.search.filters ?? null}
           filtersRequest={filtersRequest}
-          emptyPlaceSearch={<PlaceSearch label="Search another location" selected={null} onSelect={selectSearchPlace} onClear={clearSearchPlace} geocode={geocodeAddress} disabled={checkingLocation} />}
-          onWidenArea={mapReady && !mapError && (searchPlace || (mapZoom ?? 3) > 3) ? widenSearchArea : undefined}
+          emptyPlaceSearch={<PlaceSearch label="Search another location" selected={null} onSelect={selectSearchPlace} onClear={clearSearchPlace} bias={discoveryArea} disabled={checkingLocation} />}
+          closestAction={closestAction}
           onRetry={() => void refreshReports()}
           showAuthors
           onMemberBlocked={() => { void refreshReports(); }}
           onFavoriteChange={(id, favorite) => updateReportPreference('favorites', id, favorite)}
           onHiddenChange={(id, hidden) => updateReportPreference('hidden', id, hidden)}
           mapCenter={displayResponse?.search.area ?? discoveryArea}
-          boundary={searchPlace?.geometry}
           navigationSearch={searchParams.toString()}
           onDiscoveryFiltersChange={setDiscoveryFilters}
           loading={!displayResponse}
@@ -1109,6 +1120,11 @@ export function MapExperience({
           </button>
           {!mapError && <div className={`map-loading map-loading-cover${mapTilesReady ? ' map-loading-complete' : ''}`} aria-hidden={mapTilesReady} role="status" aria-label="Loading map"><span className="sr-only">Loading map…</span></div>}
           {mapError && <div className="map-error"><Icon name="warning" /><strong>Map unavailable</strong><span>{mapError}</span></div>}
+          {!reportListOpen && !reportMode && !selectedReport && mapTilesReady && !mapError && displayResponse && (currentResponse?.error || !displayResponse.reports.length) && <MapEmptyState
+            error={currentResponse?.error} filtered={hasDiscoveryFilters} closestAction={closestAction}
+            onRetry={() => void refreshReports()}
+            onFilters={() => { switchDiscoveryView('reports'); setFiltersRequest(value => value + 1); }}
+          />}
 
           {reportMode && <>
             <div className="report-placement-pin" aria-hidden="true"><Icon name="location" /></div>

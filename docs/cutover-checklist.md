@@ -127,8 +127,10 @@ gate passes.
       its TLS certificate, and verify the new deployment returns HTTP 200 at
       `https://beta.litterbugs.app`.
 - [x] Confirm no MapLibre/OpenFreeMap, Stripe, old-project reference,
-      marketplace systems, or Places API usage exists in source, the production
+      marketplace systems, or Places API usage existed at the original cutover in source, the production
       build, or the isolated deployment's JavaScript assets.
+      Grant later authorized website Place Autocomplete (New) on November 6, 2026;
+      see `docs/web-replacement.md` for its restricted browser-key configuration.
 - [x] Enforce those exclusions and public-key-only configuration in the root
       `npm run check` gate for future source and compiled web output.
 - [x] After acceptance, attach `litterbugs.app` and `www.litterbugs.app` to

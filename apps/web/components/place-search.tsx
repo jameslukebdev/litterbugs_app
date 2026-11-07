@@ -2,12 +2,15 @@
 
 import { IoCloseOutline, IoLocationOutline, IoSearchOutline } from 'react-icons/io5';
 import { useEffect, useId, useRef, useState } from 'react';
-import { resolvePlace, searchPlaces, type TownResult } from '@/lib/place-search';
+import { createLocationSearch, type LocationSuggestion } from '@/lib/location-suggestions';
+import type { Coordinates } from '@litterbugs/report-contract';
 import type { SearchPlace } from '@/lib/place-geography';
+import styles from './place-search.module.css';
 
-type Suggestion = TownResult | SearchPlace;
+type Suggestion = LocationSuggestion;
 
-export function PlaceSearch({ selected, onSelect, onClear, geocode, disabled = false, label }: { selected: SearchPlace | null; onSelect: (place: SearchPlace) => void; onClear: () => void; geocode: (text: string) => Promise<SearchPlace[]>; disabled?: boolean; label?: string }) {
+export function PlaceSearch({ selected, onSelect, onClear, bias, disabled = false, label }: { selected: SearchPlace | null; onSelect: (place: SearchPlace) => void; onClear: () => void; bias?: Coordinates | null; disabled?: boolean; label?: string }) {
+  const [provider] = useState(createLocationSearch);
   const inputId = useId();
   const listId = `${inputId}-suggestions`;
   const container = useRef<HTMLElement>(null);
@@ -26,7 +29,7 @@ export function PlaceSearch({ selected, onSelect, onClear, geocode, disabled = f
       if (!container.current?.contains(event.target as Node)) {
         sequence.current++; request.current?.abort();
         if (debounce.current) clearTimeout(debounce.current);
-        setBusy(false); setOpen(false);
+        setBusy(false); setOpen(false); provider.reset();
       }
     }
     document.addEventListener('pointerdown', dismiss);
@@ -34,11 +37,11 @@ export function PlaceSearch({ selected, onSelect, onClear, geocode, disabled = f
       // Invalidate the latest request, including requests started after this effect mounted.
       // eslint-disable-next-line react-hooks/exhaustive-deps
       sequence.current++;
-      request.current?.abort();
+      request.current?.abort(); provider.reset();
       if (debounce.current) clearTimeout(debounce.current);
       document.removeEventListener('pointerdown', dismiss);
     };
-  }, []);
+  }, [provider]);
 
   useEffect(() => {
     if (open && active >= 0) document.getElementById(`${listId}-${active}`)?.scrollIntoView?.({ block: 'nearest' });
@@ -64,26 +67,13 @@ export function PlaceSearch({ selected, onSelect, onClear, geocode, disabled = f
     setResults([]);
     setOpen(true);
     try {
-      // Both providers feed one location picker. Show completed results immediately,
-      // so a slow boundary service never holds up an available address result.
-      const found: Suggestion[] = [];
       const timeout = new Promise<never>((_, reject) => controller.signal.addEventListener('abort', () => reject(new Error('Search timed out')), { once: true }));
-      const providers = [searchPlaces(query.trim(), { signal: controller.signal }), geocode(query.trim())];
-      const responses = await Promise.allSettled(providers.map(async provider => {
-        const places = await Promise.race([provider, timeout]);
-        if (seq !== sequence.current) return;
-        for (const place of places ?? []) {
-          if (!found.some(item => item.id === place.id || (
-            item.label.split(',')[0].toLowerCase() === place.label.split(',')[0].toLowerCase()
-            && Math.abs(item.latitude - place.latitude) < 0.03 && Math.abs(item.longitude - place.longitude) < 0.03
-          ))) found.push(place);
-        }
-        setResults(found.slice(0, 8));
-      }));
+      const places = await Promise.race([provider.search(query.trim(), bias), timeout]);
       if (seq !== sequence.current) return;
-      if (responses.some(result => result.status === 'rejected')) {
-        setMessage(found.length ? 'Some locations could not load. Choose a result or search again.' : 'Location search could not load. Please try again.');
-      } else if (!found.length) setMessage('No location found. Try a city and state or a full address.');
+      setResults(places);
+      if (!places.length) setMessage('No location found. Try a city and state or a full address.');
+    } catch {
+      if (seq === sequence.current) setMessage('Location search could not load. Please try again.');
     } finally {
       window.clearTimeout(timer);
       if (seq === sequence.current) setBusy(false);
@@ -100,7 +90,7 @@ export function PlaceSearch({ selected, onSelect, onClear, geocode, disabled = f
     setMessage('Opening location…');
     try {
       const timeout = new Promise<never>((_, reject) => controller.signal.addEventListener('abort', () => reject(new Error('Area search timed out')), { once: true }));
-      const resolved = await Promise.race(['bounds' in place ? Promise.resolve(place) : resolvePlace(place, { signal: controller.signal }), timeout]);
+      const resolved = await Promise.race([place.resolve(), timeout]);
       if (seq !== sequence.current) return;
       onSelect(resolved);
       setResults([]);
@@ -117,11 +107,12 @@ export function PlaceSearch({ selected, onSelect, onClear, geocode, disabled = f
 
   const showSuggestions = open && (busy || !!message || results.length > 0);
   return <section ref={container} className="place-search" aria-label={label ?? 'Find a city or address'} onBlur={event => {
-    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) { invalidate(); setOpen(false); }
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) { invalidate(); provider.reset(); setOpen(false); }
   }}>
     <form onSubmit={event => {
       event.preventDefault();
-      if (showSuggestions && results.length) void choose(results[active >= 0 ? active : 0]);
+      if (showSuggestions && active >= 0 && results[active]) void choose(results[active]);
+      else if (showSuggestions && results.length) { setActive(0); setMessage('Choose a location below.'); }
       else void search(text);
     }}>
       <label htmlFor={inputId}>{label ?? 'City or address'}</label>
@@ -137,7 +128,7 @@ export function PlaceSearch({ selected, onSelect, onClear, geocode, disabled = f
             if (value.trim().length >= 2) debounce.current = setTimeout(() => { void search(value); }, 300);
           }}
           onKeyDown={event => {
-            if (event.key === 'Escape') { event.preventDefault(); invalidate(); setOpen(false); }
+            if (event.key === 'Escape') { event.preventDefault(); invalidate(); provider.reset(); setOpen(false); }
             if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && results.length) {
               event.preventDefault(); setOpen(true);
               setActive(index => event.key === 'ArrowDown' ? (index + 1) % results.length : (index <= 0 ? results.length - 1 : index - 1));
@@ -152,9 +143,12 @@ export function PlaceSearch({ selected, onSelect, onClear, geocode, disabled = f
       <ul id={listId} role="listbox" aria-label="Location suggestions" className="place-search-results">
         {results.map((place, index) => <li id={`${listId}-${index}`} role="option" aria-selected={active === index} key={place.id}
           onMouseDown={event => event.preventDefault()} onMouseEnter={() => setActive(index)} onClick={() => void choose(place)}>
-          <IoLocationOutline aria-hidden /><div><strong>{place.label}</strong><span>{'bounds' in place ? 'Address' : 'Town / city'}</span></div>
+          <IoLocationOutline aria-hidden /><div><strong>{place.label}</strong><span>{place.subtitle}</span></div>
         </li>)}
       </ul>
+      {/* Google's required attribution also covers pickers outside the map. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {!!results.length && <img className={styles.attribution} src="https://maps.gstatic.com/mapfiles/api-3/images/powered-by-google-on-white3.png" width="120" height="14" alt="Powered by Google" />}
       {(message || (busy && !results.length)) && <p className="place-search-status" role="status">{message || 'Finding locations…'}</p>}
     </div>}
   </section>;

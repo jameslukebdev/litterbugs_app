@@ -9,7 +9,7 @@ vi.mock('@/components/map-page', () => ({ default: () => null }));
 beforeEach(() => { identity.claims = null; });
 it('preserves Boone through sign-in while ordinary reporting retains its destination', async () => {
   await expect(Page({ searchParams: Promise.resolve({ community: 'us-nc-boone' }) })).rejects.toThrow(`redirect:/sign-in?next=${encodeURIComponent(communityReportHref(getCommunity('us-nc-boone')!))}`);
-  await expect(Page()).rejects.toThrow(`redirect:/sign-in?next=${encodeURIComponent('/report')}`);
+  await expect(Page({})).rejects.toThrow(`redirect:/sign-in?next=${encodeURIComponent('/report')}`);
 });
 it('starts the authenticated report picker in the area, without setting an exact report location', async () => {
   identity.claims = { sub: 'member' };

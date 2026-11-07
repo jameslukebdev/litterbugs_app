@@ -46,7 +46,7 @@ export async function collectDiscoveryMatches<T>(fetchPage: (offset: number, siz
   return { reports: matches.slice(0, limit), truncated: matches.length > limit };
 }
 
-export async function loadDiscoveryReports(client: SupabaseClient<Database>, { filters, area, favorites = EMPTY_IDS, hidden = EMPTY_IDS, signal, geometry }: { filters: DiscoveryFilters; area?: DiscoveryArea | null; favorites?: ReadonlySet<string>; hidden?: ReadonlySet<string>; signal?: AbortSignal; geometry?: BoundaryGeometry }) {
+export async function loadDiscoveryReports(client: SupabaseClient<Database>, { filters, area, favorites = EMPTY_IDS, hidden = EMPTY_IDS, signal, geometry, limit = DISCOVERY_LIMIT }: { filters: DiscoveryFilters; area?: DiscoveryArea | null; favorites?: ReadonlySet<string>; hidden?: ReadonlySet<string>; signal?: AbortSignal; geometry?: BoundaryGeometry; limit?: number }) {
   const window = reportDiscoveryWindow();
   const result = await collectDiscoveryMatches<Report>(async (offset, size) => {
     if (signal?.aborted) throw new Error('Obsolete report search');
@@ -68,6 +68,6 @@ export async function loadDiscoveryReports(client: SupabaseClient<Database>, { f
     if (signal?.aborted) throw new Error('Obsolete report search');
     if (error) throw error;
     return withCompletedRewards(client, data ?? []);
-  }, report => hasReportCoordinates(report) && matchesDiscovery(report, filters, area, favorites, hidden, geometry));
+  }, report => hasReportCoordinates(report) && matchesDiscovery(report, filters, area, favorites, hidden, geometry), limit);
   return { ...result, reports: result.reports.filter(hasReportCoordinates) };
 }

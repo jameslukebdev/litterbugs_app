@@ -34,8 +34,8 @@ const forbiddenEverywhere = [
 ];
 const forbiddenInProjectSource = [
   ...forbiddenEverywhere,
-  ['google.maps.places', 'Google Places API'],
-  ['places.googleapis.com', 'Google Places API'],
+  // Website Place Autocomplete (New) was authorized for location discovery on
+  // 2026-11-06. Browser referrer restrictions still apply to its public keys.
   ['service_role', 'a Supabase service-role credential'],
   ['supabase_secret', 'a Supabase secret key'],
   ['stripe_secret_key', 'a Stripe secret-key variable'],

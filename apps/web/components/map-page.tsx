@@ -1,7 +1,5 @@
 import { communityReturnPath } from '@/lib/community-journey';
 import { communityMapPlace } from '@/lib/community-map-place';
-import { hasReportCoordinates } from '@litterbugs/report-contract';
-import { inBoundary } from '@/lib/place-geography';
 import type { Report } from '@litterbugs/report-contract';
 
 import { withCompletedRewards } from '@/lib/cleanup-reward';
@@ -11,7 +9,7 @@ import { realUserIdFromClaims } from '@/lib/report-access';
 import { reportDiscoveryWindow } from '@/lib/report-visibility';
 import { createClient } from '@/lib/supabase/server';
 
-export default async function MapPage({ searchParams }: { searchParams?: Promise<{ area?: string | string[]; returnTo?: string | string[] }> } = {}) {
+export default async function MapPage({ searchParams }: { searchParams?: Promise<{ area?: string | string[]; returnTo?: string | string[] }> }) {
   const params = await searchParams;
   const initialPlace = communityMapPlace(params?.area);
   const returnToCommunity = communityReturnPath(params?.returnTo);
@@ -43,7 +41,7 @@ export default async function MapPage({ searchParams }: { searchParams?: Promise
 
   return (
     <MapExperience
-      initialReports={initialPlace?.geometry ? reports.filter(report => hasReportCoordinates(report) && inBoundary(report, initialPlace.geometry!)) : reports}
+      initialReports={reports}
       initialPlace={initialPlace}
       returnToCommunity={returnToCommunity}
       initialUserId={userId}
