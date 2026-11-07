@@ -24,6 +24,20 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-06 — Codex (map controls and footer polish)
+
+- Pushed and deployed `b3632c0` on `codex/map-first-navigation` as
+  `dpl_ByCGZy3BTVtDuNy9fsmEJgvbd1Q1`. Previous live deployment for rollback
+  is `dpl_CwT7PFxYNXTsCR21yArXKM6iJccX`.
+- Mobile updates bell moved to the top row. Filters aligns with search in
+  the second row. Compact map footer fits in one row with More at middle
+  widths. Phone legend uses shorter labels or icon counts when tight. Map
+  type and location controls use lavender hover and focus styles.
+- 58 focused tests, TypeScript, lint and production build passed. Verified
+  live mobile at 320px and 390px and footer/hover at 950px and 1280px with
+  test analytics excluded. Concurrent dragonfly Report Litter styling
+  remains local.
+
 ### 2026-11-06 — Codex (guest mobile map header)
 
 - Pushed and deployed `add4d62` on `codex/map-first-navigation` as
