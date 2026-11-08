@@ -24,6 +24,22 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (original photo-scanner sign-in investigation)
+
+- Original Cloudmersive account confirmed from its older first-key email; its
+  reset message confirms Google/Microsoft SSO, so no Cloudmersive password reset
+  is needed. Do not onboard another account or purchase a replacement plan.
+- Microsoft email-code sign-in succeeded, but the first return failed on
+  Cloudmersive's `/signin-oidc` callback. A fresh official sign-in then reached
+  verified Cloudmersive portal consent for profile/read and continued access;
+  awaiting the browser-required owner confirmation before granting it. Google
+  work-account sign-in recognizes the account but needs its existing password.
+- Original account plan/key still unverified. No account credential, permission,
+  billing, app source, deployment, DNS or database changes. No scanner key is
+  configured in either checkout's current local web environment files. Preview
+  still uses the documented exact-host Vercel upload relay; live remains Vercel.
+  Claude's untracked dev-review-preview work preserved.
+
 ### 2026-11-08 — Codex (Cloudflare workflow analytics verified; no live switch)
 
 - Isolated preview source `5b2a435`, Worker version
