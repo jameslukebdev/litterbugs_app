@@ -24,6 +24,22 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (other Vercel projects paused at owner request)
+
+- Paused littlefarmfinder, burrowbase-down and reviewhiker-web-live in
+  grant-9890s-projects; their public URLs now return 503 DEPLOYMENT_PAUSED.
+  Retirement Lists remains paused. Disabled all six Little Farm Finder legacy
+  Cron Jobs, verified disabledAt and UI Disabled; new Schedules shows setup state.
+- web and retire-next have no active production deployment (pause API rejects
+  that state); disabled automatic production domain assignment on both instead.
+  No deletion, new deployment, Git unlink, database or domain ownership change.
+- Kept litterbugs-web AND legacy litterbugs unpaused; mobile source uses
+  litterbugs.app for photo processing/sharing and auth.litterbugs.app for login.
+  Supabase, auth bridge, stores and mobile services untouched. Live homepage 200.
+- Pro subscription unchanged; pausing sites does not cancel its base charge.
+  Owner's active goal: fully test Cloudflare including analytics, **do not switch**.
+  Continuing in the isolated test worktree; production/Claude source preserved.
+
 ### 2026-11-08 — Codex (Cloudflare switch and Vercel cancellation readiness, read-only)
 
 - Rechecked grant-9890s-projects: eight projects, Retirement Lists/retirecityfinder
