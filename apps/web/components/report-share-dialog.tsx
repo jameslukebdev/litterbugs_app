@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import type { Report } from '@litterbugs/report-contract';
-import { FiCheck, FiCopy, FiDownload, FiExternalLink, FiMail, FiShare2 } from 'react-icons/fi';
+import { FiCheck, FiCopy, FiExternalLink, FiMail, FiShare2 } from 'react-icons/fi';
 
 import { Icon } from '@/components/icon';
 import { moveDialogFocus } from '@/lib/dialog-focus';
@@ -25,7 +25,18 @@ type ShareableReport = Pick<
 type ShareFeedback = {
   message: string;
   tone: 'error' | 'success';
+  /** Announced to screen readers only, because the button or panel already shows it. */
+  quiet?: boolean;
 };
+
+/** Same bugs and words as the map pins: ladybug = needs a cleanup, caterpillar = being cleaned, flower = cleaned up. */
+function shareStatus(state: ShareableReport['cleanup_state']) {
+  if (state === 'completed') return { label: 'Cleaned up', bug: '/brand/bugs/flower.png', tone: 'done' as const };
+  if (state === 'available') return { label: 'Needs a cleanup', bug: '/brand/bugs/ladybug.png', tone: 'open' as const };
+  return { label: 'Being cleaned', bug: '/brand/ranks/caterpillar.svg', tone: 'busy' as const };
+}
+
+const formatUsd = (cents: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
 
 export function ReportShareDialog({
   open,
@@ -49,18 +60,14 @@ export function ReportShareDialog({
   const [emailOptionsOpen, setEmailOptionsOpen] = useState(false);
   const [instagramPrepared, setInstagramPrepared] = useState(false);
   const nativeShareAvailable = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
-  const { dialogTitle, title, eyebrow, message } = reportShareCopy(report);
+  const { dialogTitle, title, message } = reportShareCopy(report);
   const shareMessage = `${message}\n\n${shareUrl}`;
   const imageUrl = reportShareImageUrl(shareUrl);
   const imageFilename = reportShareImageFilename(title);
-  const litterTypes = [...(report.litter_types ?? []), ...(report.types ? [report.types] : [])];
-  const details = [
-    report.severity ? `${report.severity} priority` : null,
-    report.funded_amount_cents > 0
-      ? `${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(report.funded_amount_cents / 100)} reward`
-      : null,
-    litterTypes[0] ?? null,
-  ].filter(Boolean).join(' · ');
+  const status = shareStatus(report.cleanup_state);
+  const showFund = report.funded_amount_cents > 0 && report.cleanup_state !== 'completed';
+  const displayUrl = shareUrl.replace(/^https?:\/\//, '');
+  const linkCopied = feedback?.message === 'Link copied.';
 
   useEffect(() => {
     if (!open) return;
@@ -111,9 +118,9 @@ export function ReportShareDialog({
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(shareUrl);
-      setFeedback({ message: 'Link copied. Choose a destination or close this window.', tone: 'success' });
+      setFeedback({ message: 'Link copied.', tone: 'success', quiet: true });
     } catch {
-      setFeedback({ message: 'The link could not be copied. Try Email or another sharing option.', tone: 'error' });
+      setFeedback({ message: 'The link couldn’t be copied. Select it and copy it, or pick an app below.', tone: 'error' });
     }
   }
 
@@ -122,12 +129,12 @@ export function ReportShareDialog({
       try {
         await navigator.clipboard.writeText(shareUrl);
         setFeedback({
-          message: `${destination} sharing is not available in this browser. The report link was copied instead.`,
+          message: `This browser can’t open the ${destination} share menu, so the link was copied instead.`,
           tone: 'success',
         });
       } catch {
         setFeedback({
-          message: `${destination} sharing is not available in this browser. Try Copy link or Email.`,
+          message: `This browser can’t open the ${destination} share menu. Use Copy link or Email.`,
           tone: 'error',
         });
       }
@@ -145,7 +152,7 @@ export function ReportShareDialog({
       closeDialog();
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
-      setFeedback({ message: 'Your device share menu could not be opened. Choose another option.', tone: 'error' });
+      setFeedback({ message: 'Your device’s share menu didn’t open. Pick another option.', tone: 'error' });
     }
   }
 
@@ -155,12 +162,13 @@ export function ReportShareDialog({
     try {
       await navigator.clipboard.writeText(shareMessage);
       setFeedback({
-        message: 'Instagram card downloaded and caption copied. Add the image in Instagram, then paste the caption and review your post.',
+        message: 'Instagram card downloaded and caption copied.',
         tone: 'success',
+        quiet: true,
       });
     } catch {
       setFeedback({
-        message: 'Instagram card downloaded, but the caption could not be copied. Use Copy link before posting.',
+        message: 'The card downloaded, but the caption couldn’t be copied. Use Copy link before you post.',
         tone: 'error',
       });
     }
@@ -169,9 +177,9 @@ export function ReportShareDialog({
   async function copyEmailMessage() {
     try {
       await navigator.clipboard.writeText(`Subject: ${title} | Litterbugs\n\n${shareMessage}`);
-      setFeedback({ message: 'Email text copied. Paste it into any new email.', tone: 'success' });
+      setFeedback({ message: 'Email text copied. Paste it into a new email.', tone: 'success' });
     } catch {
-      setFeedback({ message: 'The email text could not be copied. Choose an email service instead.', tone: 'error' });
+      setFeedback({ message: 'The email text couldn’t be copied. Pick Gmail, Outlook or your email app instead.', tone: 'error' });
     }
   }
 
@@ -196,9 +204,7 @@ export function ReportShareDialog({
       >
         <a ref={downloadLinkRef} href={imageUrl} download={imageFilename} hidden aria-hidden="true" tabIndex={-1}>Download share image</a>
         <header className={styles.header}>
-          <div>
-            <h2 id="report-share-title">{report.cleanup_state === 'completed' ? 'Share this cleanup' : dialogTitle}</h2>
-          </div>
+          <h2 id="report-share-title">{report.cleanup_state === 'completed' ? 'Share this cleanup' : dialogTitle}</h2>
           <button className={styles.close} type="button" onClick={closeDialog} aria-label="Close share options">
             <Icon name="close" />
           </button>
@@ -213,108 +219,89 @@ export function ReportShareDialog({
             )}
           </div>
           <div className={styles.previewCopy}>
-            <span>{eyebrow}</span>
+            <span className={styles.status} data-tone={status.tone}>
+              <img src={status.bug} alt="" aria-hidden="true" width={16} height={16} />{status.label}
+            </span>
             <strong>{title}</strong>
-            {details ? <small>{details}</small> : null}
+            {showFund ? (
+              <span className={styles.fund}>
+                <img src="/brand/bugs/bee.png" alt="" aria-hidden="true" width={14} height={14} />{formatUsd(report.funded_amount_cents)} in its cleanup fund
+              </span>
+            ) : null}
           </div>
         </article>
 
-        <div className={styles.options} aria-label="Sharing destinations">
+        <div className={styles.linkRow}>
+          <span className={styles.linkText} title={shareUrl}>{displayUrl}</span>
+          <button className={styles.copy} type="button" onClick={() => { void copyLink(); }}>
+            {linkCopied ? <FiCheck aria-hidden="true" /> : <FiCopy aria-hidden="true" />}
+            {linkCopied ? 'Copied' : 'Copy link'}
+          </button>
+        </div>
+
+        <div className={styles.tiles} aria-label="Sharing destinations">
           {nativeShareAvailable ? (
-            <button className={`${styles.option} ${styles.primaryOption}`} type="button" onClick={() => { void openNativeShare(); }}>
-              <span className={`${styles.optionIcon} ${styles.primaryIcon}`} aria-hidden="true"><FiShare2 /></span>
-              <span className={styles.optionCopy}><strong>Share with another app</strong><span>Messages, AirDrop, Mail, and installed apps</span></span>
+            <button className={styles.tile} type="button" onClick={() => { void openNativeShare(); }}>
+              <span className={`${styles.tileIcon} ${styles.tileUtility}`} aria-hidden="true"><FiShare2 /></span>
+              <span>More apps</span>
             </button>
           ) : null}
-          <button className={styles.option} type="button" onClick={() => { void copyLink(); }}>
-            <span className={`${styles.optionIcon} ${styles.copyIcon}`} aria-hidden="true">
-              {feedback?.message.startsWith('Link copied') ? <FiCheck /> : <FiCopy />}
-            </span>
-            <span className={styles.optionCopy}>
-              <strong>{feedback?.message.startsWith('Link copied') ? 'Link copied' : 'Copy link'}</strong>
-              <span>Copy the public report URL</span>
-            </span>
-          </button>
-          <button
-            className={styles.option}
-            type="button"
-            aria-expanded={emailOptionsOpen}
-            onClick={() => setEmailOptionsOpen((current) => !current)}
-          >
-            <span className={`${styles.optionIcon} ${styles.utilityIcon}`} aria-hidden="true"><FiMail /></span>
-            <span className={styles.optionCopy}><strong>Email</strong><span>Choose your email service</span></span>
-          </button>
-          {emailOptionsOpen ? (
-            <div className={styles.helperPanel} role="group" aria-label="Email sharing choices">
-              <div className={styles.helperHeading}>
-                <strong>Choose where to compose</strong>
-                <span>Your subject, message, and report link are prepared.</span>
-              </div>
-              <div className={styles.helperActions}>
-                <a href={destinationUrls.email}>Default email app</a>
-                <a href={destinationUrls.gmail} target="_blank" rel="noopener noreferrer">Gmail <FiExternalLink aria-hidden="true" /></a>
-                <a href={destinationUrls.outlook} target="_blank" rel="noopener noreferrer">Outlook <FiExternalLink aria-hidden="true" /></a>
-                <button type="button" onClick={() => { void copyEmailMessage(); }}>Copy email text</button>
-              </div>
-            </div>
-          ) : null}
-          <a className={styles.option} href={destinationUrls.whatsapp} target="_blank" rel="noopener noreferrer">
-            <span className={`${styles.optionIcon} ${styles.brandIcon}`} aria-hidden="true">
-              <img className={styles.brandMark} src="/brand/social/whatsapp-glyph.png" alt="" />
-            </span>
-            <span className={styles.optionCopy}><strong>WhatsApp</strong><span>Share to a chat</span></span>
+          <a className={styles.tile} href={destinationUrls.whatsapp} target="_blank" rel="noopener noreferrer">
+            <span className={styles.tileIcon} aria-hidden="true"><img src="/brand/social/whatsapp-glyph.png" alt="" /></span>
+            <span>WhatsApp</span>
           </a>
-          <a className={styles.option} href={destinationUrls.facebook} target="_blank" rel="noopener noreferrer">
-            <span className={`${styles.optionIcon} ${styles.brandIcon}`} aria-hidden="true">
-              <img className={styles.brandMark} src="/brand/social/facebook-logo.png" alt="" />
-            </span>
-            <span className={styles.optionCopy}><strong>Facebook</strong><span>Start a new post</span></span>
+          <a className={styles.tile} href={destinationUrls.facebook} target="_blank" rel="noopener noreferrer">
+            <span className={styles.tileIcon} aria-hidden="true"><img src="/brand/social/facebook-logo.png" alt="" /></span>
+            <span>Facebook</span>
           </a>
-          <button
-            className={styles.option}
-            type="button"
-            onClick={() => { void prepareInstagramCard(); }}
-          >
-            <span className={`${styles.optionIcon} ${styles.brandIcon}`} aria-hidden="true">
-              <img className={styles.brandMark} src="/brand/social/instagram-glyph.png" alt="" />
-            </span>
-            <span className={styles.optionCopy}>
-              <strong>Prepare for Instagram</strong>
-              <span>Download the branded card and copy its caption</span>
-            </span>
-            <span className={styles.trailingIcon} aria-hidden="true"><FiDownload /></span>
+          <button className={styles.tile} type="button" aria-expanded={instagramPrepared} onClick={() => { void prepareInstagramCard(); }}>
+            <span className={styles.tileIcon} aria-hidden="true"><img src="/brand/social/instagram-glyph.png" alt="" /></span>
+            <span>Instagram</span>
           </button>
-          {instagramPrepared ? (
-            <div className={styles.helperPanel} role="group" aria-label="Instagram sharing instructions">
-              <div className={styles.helperHeading}>
-                <strong>Your Instagram post is ready</strong>
-                <span>Card downloaded and caption copied.</span>
-              </div>
-              <ol className={styles.steps}>
-                <li>Open Instagram and choose <strong>Create</strong>, then <strong>Post</strong>.</li>
-                <li>Upload the downloaded Litterbugs card.</li>
-                <li>Paste the caption, review it, and share.</li>
-              </ol>
-              <div className={styles.helperActions}>
-                <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer">Open Instagram <FiExternalLink aria-hidden="true" /></a>
-                <button type="button" onClick={() => downloadLinkRef.current?.click()}>Download card again</button>
-              </div>
-            </div>
-          ) : null}
-          <a className={styles.option} href={destinationUrls.x} target="_blank" rel="noopener noreferrer">
-            <span className={`${styles.optionIcon} ${styles.brandIcon}`} aria-hidden="true">
-              <img className={styles.brandMark} src="/brand/social/x-logo.png" alt="" />
-            </span>
-            <span className={styles.optionCopy}><strong>X</strong><span>Start a new post</span></span>
+          <button className={styles.tile} type="button" aria-expanded={emailOptionsOpen} onClick={() => setEmailOptionsOpen((current) => !current)}>
+            <span className={`${styles.tileIcon} ${styles.tileUtility}`} aria-hidden="true"><FiMail /></span>
+            <span>Email</span>
+          </button>
+          <a className={styles.tile} href={destinationUrls.x} target="_blank" rel="noopener noreferrer">
+            <span className={styles.tileIcon} aria-hidden="true"><img src="/brand/social/x-logo.png" alt="" /></span>
+            <span>X</span>
           </a>
         </div>
 
-        <div className={styles.footer}>
-          <p className={styles.privacy}>The shared page excludes exact coordinates and private account details.</p>
-          <p className={`${styles.status} ${feedback?.tone === 'error' ? styles.statusError : ''}`} role="status" aria-live="polite">
-            {feedback?.message ?? ''}
-          </p>
-        </div>
+        {emailOptionsOpen ? (
+          <div className={styles.helperPanel} role="group" aria-label="Email sharing choices">
+            <strong>Your message and link are filled in. Open it in:</strong>
+            <div className={styles.helperActions}>
+              <a href={destinationUrls.email}>Default email app</a>
+              <a href={destinationUrls.gmail} target="_blank" rel="noopener noreferrer">Gmail <FiExternalLink aria-hidden="true" /></a>
+              <a href={destinationUrls.outlook} target="_blank" rel="noopener noreferrer">Outlook <FiExternalLink aria-hidden="true" /></a>
+              <button type="button" onClick={() => { void copyEmailMessage(); }}>Copy email text</button>
+            </div>
+          </div>
+        ) : null}
+        {instagramPrepared ? (
+          <div className={styles.helperPanel} role="group" aria-label="Instagram sharing instructions">
+            <strong>Card downloaded and caption copied</strong>
+            <ol className={styles.steps}>
+              <li>In Instagram, tap <b>Create</b>, then <b>Post</b>.</li>
+              <li>Pick the Litterbugs card you just downloaded.</li>
+              <li>Paste the caption and share.</li>
+            </ol>
+            <div className={styles.helperActions}>
+              <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer">Open Instagram <FiExternalLink aria-hidden="true" /></a>
+              <button type="button" onClick={() => downloadLinkRef.current?.click()}>Download card again</button>
+            </div>
+          </div>
+        ) : null}
+
+        <p
+          className={`${styles.feedback} ${feedback?.tone === 'error' ? styles.feedbackError : ''} ${!feedback || feedback.quiet ? styles.srOnly : ''}`}
+          role="status"
+          aria-live="polite"
+        >
+          {feedback?.message ?? ''}
+        </p>
+        <p className={styles.privacy}>People who open the link won’t see the exact location or anyone’s account details.</p>
       </div>
     </div>,
     document.body,

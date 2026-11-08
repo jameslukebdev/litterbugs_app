@@ -26,16 +26,23 @@ function loadRank(userId: string) {
   pendingRanks.set(userId, work);
   return work;
 }
-export function CommunityRank({ userId, compact = false }: { userId: string; compact?: boolean }) {
+/**
+ * `hold` keeps the loading look even after the points arrive, so a page can reveal this card together
+ * with the rest of its content; `onReady` says the points (or an error) have arrived.
+ */
+export function CommunityRank({ userId, compact = false, hold = false, onReady }: { userId: string; compact?: boolean; hold?: boolean; onReady?: () => void }) {
   const refreshRevision = useDataRefresh();
-  const [points, setPoints] = useState<number | null>(null);
-  const [error, setError] = useState(false);
+  const [loadedPoints, setPoints] = useState<number | null>(null);
+  const [loadError, setError] = useState(false);
+  const points = hold ? null : loadedPoints;
+  const error = hold ? false : loadError;
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
-    void loadRank(userId).then(value => { if (!cancelled) { setError(false); setPoints(value); } }).catch(() => { if (!cancelled) { setError(true); setPoints(null); } });
+    void loadRank(userId).then(value => { if (!cancelled) { setError(false); setPoints(value); onReady?.(); } }).catch(() => { if (!cancelled) { setError(true); setPoints(null); onReady?.(); } });
     return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- onReady is a notification, not an input.
   }, [userId, attempt, refreshRevision]);
   const index = ranks.reduce((current, rank, index) => (points ?? 0) >= rank.points ? index : current, 0);
   const rank = ranks[index];
@@ -50,7 +57,7 @@ export function CommunityRank({ userId, compact = false }: { userId: string; com
     </div>
     <div className="community-rank-progress" style={points === null ? { visibility: 'hidden' } : undefined} aria-hidden={points === null}>
       <p>
-        {next ? <span className="community-rank-badge">{points !== null && <Image src={next.artwork} width={22} height={22} alt="" />}Next rank: {next.name}</span> : 'Highest rank reached'}
+        {next ? <span className="community-rank-badge">{points !== null ? <Image src={next.artwork} width={22} height={22} alt="" /> : <span aria-hidden style={{ display: 'inline-block', width: 22, height: 22, flex: 'none' }} />}Next rank: {next.name}</span> : 'Highest rank reached'}
         <strong>{progress}%</strong>
       </p>
       <progress max={100} value={progress} aria-label="Progress toward next rank" />

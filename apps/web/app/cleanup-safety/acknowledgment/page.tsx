@@ -24,6 +24,7 @@ export default function CleanupSafetyPage() {
       title="Safety and cleanup acknowledgment"
       summary="A public reference copy of the safety rules, assumption of risk, release, and funded reward acknowledgment shown before a cleanup claim."
       effectiveDate="September 23, 2026"
+      showContents
       sections={[
         {
           title: 'Before every cleanup claim',

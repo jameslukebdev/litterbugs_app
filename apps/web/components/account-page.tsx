@@ -23,7 +23,7 @@ export function AccountPage({ destination, userId, activityView = 'current', not
   }, [router, userId]);
   if (!sessionMatches) return <AccountLoading destination={destination} />;
   const section = destination === 'reports' ? 'activity' : destination === 'connect' ? 'payments' : destination === 'activity' || destination === 'payments' || destination === 'settings' ? destination : 'profile';
-  return <main className="account-page-layout">
+  return <main className="account-page-layout account-v2">
     <AccountNavigation destination={destination} />
     {destination === 'notifications' ? <NotificationInbox key={userId} userId={userId} view={notificationView} /> : <AccountDialog key={`${destination}:${activityView}`} embedded initialRenewalId={renewalId} initialSection={section} initialActivityTab={destination === 'reports' ? 'reports' : activityView}
       onClose={() => router.push('/')} onSignedOut={() => { router.replace('/sign-in'); router.refresh(); }}

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { MappableReport } from '@litterbugs/report-contract';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -203,18 +203,19 @@ it('combines status, reward, severity, text, and radius independently', async ()
     { ...report, id: 'other', title: 'Cans' },
   ]} mapCenter={{ latitude: 36.21, longitude: -81.67 }} open onToggle={vi.fn()} onSelect={vi.fn()} onDiscoveryFiltersChange={onDiscoveryFiltersChange} />);
   fireEvent.click(screen.getByRole('button', { name: 'Search and filters' }));
-  fireEvent.change(screen.getByLabelText('Cleanup status'), { target: { value: 'available' } });
-  fireEvent.change(screen.getByLabelText('Reward'), { target: { value: 'funded' } });
-  fireEvent.change(screen.getByLabelText('Severity'), { target: { value: 'high' } });
-  fireEvent.change(screen.getByLabelText('Distance from map center'), { target: { value: '5' } });
+  const group = (name: string) => within(screen.getByRole('group', { name }));
+  fireEvent.click(group('Cleanup status').getByRole('radio', { name: 'Needs a cleanup' }));
+  fireEvent.click(group('Cleanup fund').getByRole('radio', { name: 'Has a fund' }));
+  fireEvent.click(group('Priority').getByRole('radio', { name: 'High' }));
+  fireEvent.click(group('Distance from map center').getByRole('radio', { name: '5 mi' }));
   fireEvent.change(screen.getByLabelText('Search report titles and notes'), { target: { value: 'bottles' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Show results' }));
   expect(document.querySelectorAll('.report-card-container')).toHaveLength(1);
   await waitFor(() => expect(onDiscoveryFiltersChange).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'available', funding: 'funded', severity: 'high', radius: 5, query: 'bottles' })));
   expect(screen.queryByText('Far bottles')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Search and filters' }));
   fireEvent.click(screen.getByRole('button', { name: 'Reset filters' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Show results' }));
   expect(document.querySelectorAll('.report-card-container')).toHaveLength(5);
 });
 

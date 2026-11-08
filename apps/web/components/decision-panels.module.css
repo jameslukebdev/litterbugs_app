@@ -1,0 +1,69 @@
+/* Confirmations for permanent actions. White surfaces; red only in text, icon and button outline.
+   Doubled class names outrank the account/report sheet rules for p, h3, input and buttons. */
+.panel.panel { display: grid; gap: 12px; width: 100%; color: #292932; text-align: left; }
+.panel.panel h3 { margin: 0; color: #292932; font-size: 19px; font-weight: 800; line-height: 1.25; }
+.panel.panel p { margin: 0; color: #45434d; font-size: 15px; line-height: 1.5; }
+.panel.panel .warning { display: flex; align-items: center; gap: 8px; color: #a8323b; font-weight: 800; }
+.warning svg { width: 18px; height: 18px; flex: none; }
+.panel.panel .error { color: #a8323b; font-size: 14px; font-weight: 700; }
+
+.account.account { padding-top: 18px; border-top: 1px solid #ece8f8; }
+
+.lists { display: grid; gap: 12px; }
+.panel.panel h4 { margin: 0 0 4px; color: #292932; font-size: 14px; font-weight: 800; }
+.panel.panel ul { display: grid; gap: 4px; margin: 0; padding-left: 20px; color: #45434d; font-size: 15px; line-height: 1.45; }
+
+.typed { display: grid; gap: 6px; color: #45434d; font-size: 14px; font-weight: 700; }
+.typed b { color: #a8323b; letter-spacing: .04em; }
+.panel.panel .typed input {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 2px solid #e3dff0;
+  border-radius: 14px;
+  color: #292932;
+  background: #fff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+.panel.panel .typed input:focus { outline: none; border-color: #a8323b; }
+
+.buttons { display: flex; gap: 10px; }
+.panel.panel .buttons > button {
+  min-height: 48px;
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border: 2px solid #e3dff0;
+  border-radius: 14px;
+  background: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.panel.panel .buttons > .cancel { color: #45434d; box-shadow: 0 3px 0 #ece8f8; }
+.panel.panel .buttons > .danger { border-color: #ef9aa3; color: #a8323b; box-shadow: 0 3px 0 #f7c4c9; }
+.panel.panel .buttons > button:disabled { cursor: not-allowed; opacity: .5; }
+.panel.panel .buttons > button:focus-visible,
+.panel.panel .typed input:focus-visible { outline: 3px solid #5146ed; outline-offset: 2px; }
+
+@media (hover: hover) and (pointer: fine) {
+  .panel.panel .buttons > .danger:hover:not(:disabled) { border-color: #e2737e; }
+  .panel.panel .buttons > .cancel:hover:not(:disabled) { border-color: #c9c2f2; }
+}
+
+@media (min-width: 601px) {
+  .lists { grid-template-columns: 1fr 1fr; }
+}
+
+/* The button that opens a confirmation (Delete / Delete account): white with red text and outline, no fill. */
+.trigger.trigger.trigger { border: 2px solid #f7c4c9; color: #a8323b; background: #fff; box-shadow: 0 3px 0 #fbe1e4; }
+@media (hover: hover) and (pointer: fine) {
+  .trigger.trigger.trigger:hover:not(:disabled) { border-color: #ef9aa3; color: #8f2730; background: #fff; }
+}

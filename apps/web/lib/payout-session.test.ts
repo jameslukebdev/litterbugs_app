@@ -33,6 +33,6 @@ it('rejects expired, malformed, and failed sessions without revealing server err
     { data: { error: 'Secret provider message' } },
   ]) {
     invoke.mockResolvedValue(result);
-    await expect(createPayoutSession()).rejects.toThrow('Please retry or continue on Stripe');
+    await expect(createPayoutSession()).rejects.toThrow('Try again, or continue on Stripe’s website.');
   }
 });

@@ -16,7 +16,7 @@ export default function PayoutEmbedded({ instance, busy, message, onExit, onFall
   useEffect(() => { instance.update({ appearance: payoutConnectAppearance }); }, [instance]);
   return (
     <div className="payout-flow payout-embedded">
-      <PayoutHeading />
+      <PayoutHeading onBack={busy ? undefined : onBack} />
       {message && <p className="form-message error-message" role="alert">{message}</p>}
       {message && <button className="secondary-button" disabled={busy} onClick={onExit}>Check payout status</button>}
       {failed ? <p className="payout-note" role="alert">The secure form couldn&rsquo;t load. You can continue on Stripe and return to Litterbugs afterward.</p> : (
@@ -42,7 +42,6 @@ export default function PayoutEmbedded({ instance, busy, message, onExit, onFall
         </div>
       )}
       {(failed || message) && <div className="payout-embedded-actions">
-        <button className="secondary-button" disabled={busy} onClick={onBack}>Back</button>
         <button className="primary-button payout-go" disabled={busy} onClick={onFallback}>{busy ? 'Checking…' : 'Continue on Stripe'}</button>
       </div>}
     </div>

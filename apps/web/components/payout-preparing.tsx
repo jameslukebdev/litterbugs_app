@@ -1,4 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- existing decorative payout artwork. */
+import { FiChevronLeft } from 'react-icons/fi';
+import { PayoutTrust } from '@/components/payout-trust';
+import payoutStyles from '@/components/payout-trust.module.css';
 export function PayoutProgress() {
   return <div role="status" className="payout-preparing">
     <span className="sr-only">Preparing your payout setup</span>
@@ -13,12 +16,14 @@ export function PayoutPreparing() {
   </div>;
 }
 
-export function PayoutHeading() {
+/** `onBack` adds a Back button that returns to the payout steps (shown while Stripe's form is open). */
+export function PayoutHeading({ onBack }: { onBack?: () => void } = {}) {
   return <>
-    <header className="payout-head">
+    <header className={`payout-head ${payoutStyles.head}`}>
+      {onBack && <button type="button" className={payoutStyles.back} onClick={onBack}><FiChevronLeft aria-hidden="true" />Back</button>}
       <img src="/brand/ranks/caterpillar.svg" alt="" aria-hidden="true" width={42} height={42} />
       <h2>Set up your payouts</h2>
     </header>
-    <p className="payout-lead">Your payout details go securely to Stripe. You can connect your bank or enter details manually through its Link window.</p>
+    <PayoutTrust compact />
   </>;
 }

@@ -1,0 +1,211 @@
+/* Account area redesign (Nov 2026). Scoped to .account-v2 (set on AccountPage) so it layers over
+   globals.css and account-theme.css without changing anything else.
+   Rules: white surfaces, one row style, colour only in text and icons, no repeated headings. */
+
+/* ---------- Section tabs (phones: icon row; wider screens: side list) ---------- */
+.account-theme .account-v2 .account-v2-nav { display: grid; gap: 4px; position: sticky; top: 112px; align-self: start; }
+.account-theme .account-v2 .account-v2-nav a {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  color: #45434d;
+  background: none;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.account-v2-nav svg { width: 20px; height: 20px; flex: none; color: var(--section-ink); }
+.account-theme .account-v2 .account-v2-nav a[aria-current='page'] { color: var(--section-ink); font-weight: 900; }
+.account-v2-nav-short { display: none; }
+.account-theme .account-v2 .account-v2-nav a:hover { color: var(--section-ink); background: none; }
+.account-v2-nav a:focus-visible { outline: 3px solid #5146ed; outline-offset: 2px; }
+
+/* The tabs already name the section, so the big repeated page heading is for screen readers only. */
+.account-theme .account-v2 .account-screen-title {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.account-theme .account-v2 .account-v2-repeat {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ---------- Profile header: photo, name, details, counts and Edit together ---------- */
+.account-theme .account-v2 .member-dashboard-header {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 4px 16px;
+  margin: 0 0 20px;
+  padding: 20px;
+  border: 1px solid #e3dff0;
+  border-radius: 18px;
+  text-align: left;
+  background: #fff;
+}
+.account-theme .account-v2 .member-dashboard-header .account-avatar { width: 76px; height: 76px; margin: 0; border: 0; box-shadow: none; }
+.account-theme .account-v2 .member-dashboard-header h2 { margin: 2px 0 2px; color: #292932; font-size: 22px; line-height: 1.2; }
+.account-theme .account-v2 .member-profile-summary p { margin: 2px 0 0; color: #686477; font-size: 14px; line-height: 1.4; }
+.account-theme .account-v2 .member-profile-summary .member-profile-bio { color: #45434d; font-size: 15px; }
+.account-theme .account-v2 .member-profile-location { display: flex; align-items: center; gap: 5px; }
+.account-theme .account-v2 .member-profile-location svg { width: 14px; height: 14px; }
+.account-theme .account-v2 .member-profile-summary .account-v2-counts { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 10px; color: #45434d; font-size: 15px; }
+.account-v2-counts strong { color: #292932; font-size: 17px; font-weight: 900; }
+.account-theme .account-v2 .member-edit-profile {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 6px 14px;
+  border: 2px solid #e3dff0;
+  border-radius: 12px;
+  color: #3f36c4;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 800;
+}
+.member-edit-profile svg { width: 15px; height: 15px; }
+
+/* ---------- Tabs inside a section (My activity, notification filters) ---------- */
+.account-theme .account-v2 .activity-tabs { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; margin: 0 0 18px; }
+.account-theme .account-v2 .activity-tabs :is(a, button) {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 6px;
+  border: 2px solid #e3dff0;
+  border-radius: 14px;
+  color: #45434d;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+}
+.account-theme .account-v2 .activity-tabs :is(a, button):is([aria-current='page'], [aria-pressed='true']) { border-color: #5146ed; color: #3f36c4; background: #fff; }
+.account-theme .account-v2 .activity-tabs :is(a, button):hover { border-color: #c9c2f2; background: #fff; color: #3f36c4; }
+
+/* ---------- Panels and rows ---------- */
+.account-theme .account-v2 .member-panel { border: 1px solid #e3dff0; border-radius: 18px; background: #fff; }
+.account-theme .account-v2 .member-panel > header { padding: 16px 18px 6px; border: 0; }
+.account-theme .account-v2 .member-panel h3 { color: #292932; font-size: 17px; font-weight: 800; }
+.account-theme .account-v2 .member-activity-row { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-color: #ece8f8; }
+.account-theme .account-v2 a.member-activity-row:hover { background: #fff; }
+.account-theme .account-v2 a.member-activity-row:hover strong { color: #3f36c4; }
+.account-theme .account-v2 .member-activity-row > span:first-child { flex: 1; display: grid; gap: 3px; }
+.account-theme .account-v2 .member-activity-row strong { color: #292932; font-size: 15px; line-height: 1.3; }
+.account-theme .account-v2 .member-activity-row small { color: #686477; font-size: 13px; line-height: 1.4; }
+.account-theme .account-v2 .member-activity-row > svg:last-child { display: block; width: 18px; height: 18px; flex: none; color: #b8b4c4; }
+.account-theme .account-v2 .member-empty { padding: 18px; color: #686477; }
+
+/* Status: the map's bug + coloured text, no chips */
+.account-theme .account-v2 .account-v2-status { display: inline-flex; align-items: center; gap: 5px; font-weight: 800; }
+.account-v2-status img { flex: none; object-fit: contain; }
+.account-theme .account-v2 .account-v2-status[data-tone='open'] { color: #a8323b; }
+.account-theme .account-v2 .account-v2-status[data-tone='busy'] { color: #2f6b3a; }
+.account-theme .account-v2 .account-v2-status[data-tone='done'] { color: #176350; }
+.account-theme .account-v2 .account-v2-status[data-tone='stopped'] { color: #8a5a00; }
+.account-theme .account-v2 .account-v2-status[data-tone='muted'] { color: #686477; }
+.account-v2-amount { flex: none; color: #292932; font-size: 16px; font-weight: 900; }
+
+/* Needs your attention: same white panel as the rest */
+.account-theme .account-v2 .needs-attention { padding: 18px; }
+.account-theme .account-v2 .needs-attention h2 { margin: 0 0 10px; font-size: 18px; }
+
+/* ---------- Settings: one list style for everything ---------- */
+.account-v2-group { display: grid; margin: 0 0 16px; overflow: hidden; border: 1px solid #e3dff0; border-radius: 18px; background: #fff; }
+.account-theme .account-v2 .account-v2-row,
+.account-theme .account-v2 .account-v2-group > details > summary {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 18px;
+  border: 0;
+  border-top: 1px solid #ece8f8;
+  color: #292932;
+  background: #fff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: left;
+  list-style: none;
+  cursor: pointer;
+}
+.account-v2-group > :first-child,
+.account-theme .account-v2 .account-v2-group > :first-child > summary { border-top: 0; }
+.account-theme .account-v2 .account-v2-group > details > summary::-webkit-details-marker { display: none; }
+.account-theme .account-v2 .account-v2-group > details > summary::after { content: ''; width: 8px; height: 8px; margin-right: 4px; border-right: 2px solid #b8b4c4; border-bottom: 2px solid #b8b4c4; transform: rotate(-45deg); transition: transform 150ms ease; }
+.account-theme .account-v2 .account-v2-group > details[open] > summary::after { transform: rotate(45deg); }
+.account-theme .account-v2 .account-v2-group > details.member-panel { margin: 0; padding: 0; border: 0; border-radius: 0; }
+.account-theme .account-v2 .account-v2-group > details > :not(summary) { padding: 0 18px 14px; }
+.account-theme .account-v2 .account-v2-group > details > .member-activity-list { padding: 0; }
+.account-theme .account-v2 .account-v2-email { cursor: default; }
+.account-v2-email span { color: #686477; font-weight: 700; }
+.account-v2-email strong { min-width: 0; overflow: hidden; color: #292932; text-overflow: ellipsis; white-space: nowrap; }
+.account-v2-row svg { width: 18px; height: 18px; flex: none; color: #b8b4c4; }
+
+.account-theme .account-v2 .member-setting-links { margin: 0 0 16px; overflow: hidden; border: 1px solid #e3dff0; border-radius: 18px; background: #fff; }
+.account-theme .account-v2 .member-setting-links { display: grid; gap: 0; padding: 0; }
+.account-theme .account-v2 .member-setting-links a { min-height: 52px; margin: 0; padding: 12px 18px; border: 0; border-top: 1px solid #ece8f8; border-radius: 0; box-shadow: none; color: #292932; background: #fff; font-size: 15px; font-weight: 700; }
+.account-theme .account-v2 .member-setting-links a:first-child { border-top: 0; }
+.account-theme .account-v2 .member-setting-links a:hover { background: #fff; color: #3f36c4; }
+.account-theme .account-v2 .member-setting-links svg { color: #686477; }
+
+/* ---------- Notifications ---------- */
+.account-theme .account-v2 .notification-list li { border-color: #e3dff0; background: #fff; }
+.account-theme .account-v2 .notification-list li[data-unread='true'] { border-left: 1px solid #e3dff0; }
+.account-theme .account-v2 .notification-list .notification-unread { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 4px; padding: 0; color: #783398; background: none; font-size: 12px; font-weight: 800; }
+.account-theme .account-v2 .notification-list .notification-unread::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #a452bd; }
+.account-theme .account-v2 .notification-list .notification-report { color: #3f36c4; font-weight: 700; }
+.account-theme .account-v2 .notification-list time { color: #686477; font-size: 13px; }
+
+/* ---------- Phones ---------- */
+@media (max-width: 760px) {
+  .account-theme .account-v2 .account-v2-nav {
+    position: static;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 2px;
+    margin: 0 0 4px;
+    padding: 4px;
+    border: 1px solid #e3dff0;
+    border-radius: 18px;
+    background: #fff;
+  }
+  .account-theme .account-v2 .account-v2-nav a {
+    min-height: 58px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px 2px;
+    border-radius: 14px;
+    color: #686477;
+    font-size: 12px;
+  }
+  .account-theme .account-v2 .account-v2-nav a svg { color: #8b879a; }
+  .account-theme .account-v2 .account-v2-nav a[aria-current='page'] { color: var(--section-ink); }
+  .account-theme .account-v2 .account-v2-nav a[aria-current='page'] svg { color: var(--section-ink); }
+  .account-v2-nav-short { display: block; }
+  .account-v2-nav-long { display: none; }
+  .account-theme .account-v2 .member-dashboard-header { grid-template-columns: 64px minmax(0, 1fr); padding: 16px; }
+  .account-theme .account-v2 .member-dashboard-header .account-avatar { width: 64px; height: 64px; }
+  .account-theme .account-v2 .member-edit-profile { position: absolute; top: 14px; right: 14px; }
+  .account-theme .account-v2 .member-profile-summary { padding-right: 70px; }
+  .account-theme .account-v2 .activity-tabs :is(a, button) { font-size: 13px; }
+}
+
+/* Profile photos always fill their circle (an older rule pinned the image at 64px inside larger circles). */
+.account-theme .account-v2 .account-avatar img,
+.account-theme .account-v2 .member-dashboard .member-dashboard-header .account-avatar img { width: 100%; height: auto; aspect-ratio: 1 / 1; display: block; border-radius: 50%; object-fit: cover; object-position: center; }
+
+/* Rank card placeholder: the name bar needs a real width (it was 0 wide, so only the circle showed). */
+.account-theme .community-rank .community-rank-summary h3 .account-skeleton-name { display: inline-block; width: 120px; max-width: 100%; vertical-align: middle; }
+
+/* No fade-in: it made the rank card blink while the profile card above stayed solid. The placeholders
+   are the same size and colour as the real cards, so content can swap in instantly. */
+.account-theme .account-v2 .account-section-ready { animation: none; }

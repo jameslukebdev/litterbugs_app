@@ -40,8 +40,8 @@ describe('web product boundaries', () => {
   it('shows Facebook when its website setting is enabled', () => {
     render(<AuthDialog onClose={vi.fn()} facebookLoginEnabled />);
 
-    expect(screen.getByRole('button', { name: /continue with facebook/i })).toBeTruthy();
-    const facebookMark = document.querySelector('.facebook-provider-icon');
+    const facebookButton = screen.getByRole('button', { name: /continue with facebook/i });
+    const facebookMark = facebookButton.querySelector('svg');
     expect(facebookMark?.getAttribute('viewBox')).toBe('0 0 512 512');
     expect(facebookMark?.querySelector('path')?.getAttribute('fill')).toBe('currentColor');
     expect(facebookMark?.querySelector('path')?.getAttribute('fill-rule')).toBe('evenodd');

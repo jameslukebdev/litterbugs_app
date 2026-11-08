@@ -10,6 +10,6 @@ export function MemberPage({ profile }: { profile: PublicProfile }) {
   return <main className="info-page"><Link href="/map">Browse cleanups</Link><h1>{profile.display_name || 'Community member'}</h1>
     {profile.username && <p>@{profile.username}</p>}{profile.location && <p>{profile.location}</p>}{profile.bio && <p>{profile.bio}</p>}
     <p>Joined {new Date(profile.created_at).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</p>
-    <CommunityRank userId={profile.id} /><MemberReports profileId={profile.id} /><MemberSafetyActions profileId={profile.id} onBlocked={() => router.push('/')} />
+    <CommunityRank userId={profile.id} /><MemberReports profileId={profile.id} /><MemberSafetyActions profileId={profile.id} memberName={profile.display_name} onBlocked={() => router.push('/')} />
   </main>;
 }

@@ -4,6 +4,7 @@ import { ImageResponse } from 'next/og';
 import { ReportSocialCard } from '@/components/report-social-card';
 import { loadSocialCardFonts } from '@/lib/social-card-fonts';
 import { loadSocialCardLogo } from '@/lib/social-card-logo';
+import { loadSocialCardBugs } from '@/lib/social-card-bugs';
 import { loadPublicReportShare } from '@/lib/public-report-share';
 
 export const runtime = 'nodejs';
@@ -17,6 +18,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     createElement(ReportSocialCard, {
       report,
       logoUrl: await loadSocialCardLogo(),
+      bugs: await loadSocialCardBugs().catch(() => undefined),
     }),
     {
       width: 1080,

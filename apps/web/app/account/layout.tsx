@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import './account-theme.css';
+import './account-v2.css';
 import { PublicAccountAction } from '@/components/public-account-action';
 import { PublicSiteHeader } from '@/components/public-site-header';
 export const metadata = { title: 'Your account | Litterbugs', robots: { index: false, follow: false } };

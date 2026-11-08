@@ -80,7 +80,7 @@ export function NeedsAttention({ userId, reports, renewals, attempts, incomplete
   if (finish) items.push(finish);
   else if (payoutNeeded && hasPaidWork) items.push({ id: 'setup', title: 'Cleanup payouts', reason: 'Set up payouts so you can be paid for cleanups.', action: 'Set up payouts', href: FINISH_PAYOUT_HREF });
   if (!incomplete && !items.length && !draftIssue) return null;
-  return <section className="needs-attention member-panel" aria-label="Needs your attention"><h2>Needs your attention</h2><p>Current tasks and deadlines. Reading a notification does not complete a task.</p>
+  return <section className="needs-attention member-panel" aria-label="Needs your attention"><h2>Needs your attention</h2>
     {incomplete && <p role="status">Some activity could not be refreshed. Tasks shown may be out of date; retry the affected sections before assuming there are no actions due.</p>}
     {items.map(item => <article key={item.id}><div><h3>{item.title}</h3><p>{item.reason}</p>{item.due && <time dateTime={item.due}>Due {new Date(item.due).toLocaleString()}</time>}</div><Link className="secondary-button" href={item.href}>{item.action}</Link></article>)}
     {draftIssue && <p role="status">A draft needs saving or syncing. Open its entry in Resume your work to check the saved copies.</p>}

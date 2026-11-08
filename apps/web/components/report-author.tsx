@@ -27,7 +27,7 @@ export function ReportAuthor({ profileId, sourceReportId, onBlocked, initialProf
   const avatar = getProfileAvatarUrl(createClient(), profile);
   return <>
     <button className="report-author" onClick={() => setOpen(true)} aria-label={`View ${profile.display_name || 'member'}’s profile`}>
-      {avatar ? <Image src={avatar} alt="" width={36} height={36} unoptimized /> : <span className="report-author-initial">{profile.display_name?.[0] || '?'}</span>}
+      {avatar ? <Image src={avatar} alt="" width={36} height={36} unoptimized referrerPolicy="no-referrer" /> : <span className="report-author-initial">{profile.display_name?.[0] || '?'}</span>}
       <span className="report-author-copy"><span>{profile.display_name || 'Community member'}</span><CommunityRank userId={profile.id} compact /></span>
     </button>
     {open && <ModalShell label="Member profile" onClose={() => setOpen(false)} className="member-profile-dialog">
@@ -39,7 +39,7 @@ export function ReportAuthor({ profileId, sourceReportId, onBlocked, initialProf
       <CommunityRank userId={profile.id} />
       <Link href={`/members/${profile.id}`} className="secondary-button">Open full profile</Link>
       <MemberReports profileId={profile.id} />
-      <MemberSafetyActions profileId={profile.id} sourceReportId={sourceReportId} onBlocked={() => { setOpen(false); onBlocked?.(); }} />
+      <MemberSafetyActions profileId={profile.id} memberName={profile.display_name} sourceReportId={sourceReportId} onBlocked={() => { setOpen(false); onBlocked?.(); }} />
     </ModalShell>}
   </>;
 }

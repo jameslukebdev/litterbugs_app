@@ -127,7 +127,7 @@ export async function loadPayoutStatus(): Promise<PayoutStatus> {
     body: { mode: 'status' },
   });
   if (error || data?.error) {
-    throw new Error(await edgeFunctionErrorMessage(data, error, 'Payout status could not be loaded. Please try again.'));
+    throw new Error(await edgeFunctionErrorMessage(data, error, 'We couldn’t load your payout status. Please try again.'));
   }
   return data as PayoutStatus;
 }
@@ -171,7 +171,7 @@ export async function createPayoutSession(): Promise<PayoutSession> {
   const { data, error } = await createClient().functions.invoke('create-cleaner-onboarding-link', {
     body: { mode: 'session', returnTarget: 'web', confirmAge18: true },
   });
-  if (error) throw new Error('Payout setup could not load here. Please retry or continue on Stripe.');
+  if (error) throw new Error('The secure payout form didn’t load here. Try again, or continue on Stripe’s website.');
   return verifiedPayoutSession(data);
 }
 
@@ -179,7 +179,7 @@ function verifiedPayoutSession(data: Partial<PayoutSession> & { error?: unknown 
   if (!data || data.error || typeof data.clientSecret !== 'string' || !data.clientSecret
     || typeof data?.publishableKey !== 'string' || !/^pk_(test|live)_/.test(data.publishableKey)
     || typeof data.expiresAt !== 'number' || !Number.isFinite(data.expiresAt) || data.expiresAt * 1000 <= Date.now()) {
-    throw new Error('Payout setup could not load here. Please retry or continue on Stripe.');
+    throw new Error('The secure payout form didn’t load here. Try again, or continue on Stripe’s website.');
   }
   return data as PayoutSession;
 }

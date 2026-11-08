@@ -1,23 +1,26 @@
 'use client';
 import Link from 'next/link';
-import { IoChevronDownOutline } from 'react-icons/io5';
-import { useRouter } from 'next/navigation';
+import type { IconType } from 'react-icons';
+import { FiBell, FiCreditCard, FiList, FiSettings, FiUser } from 'react-icons/fi';
 
-const destinations = [
-  ['', 'Profile'], ['activity', 'My activity'],
-  ['payments', 'Payments & payouts'], ['notifications', 'Notifications'], ['settings', 'Settings'],
-] as const;
+/** Each section keeps its own colour, shown on its icon (no tinted backgrounds). */
+const destinations: ReadonlyArray<readonly [path: string, label: string, short: string, icon: IconType, ink: string]> = [
+  ['', 'Profile', 'Profile', FiUser, '#4438bb'],
+  ['activity', 'My activity', 'Activity', FiList, '#ac343b'],
+  ['payments', 'Payments & payouts', 'Payments', FiCreditCard, '#775700'],
+  ['notifications', 'Notifications', 'Updates', FiBell, '#783398'],
+  ['settings', 'Settings', 'Settings', FiSettings, '#45434d'],
+];
+
 export function AccountNavigation({ destination }: { destination: string }) {
-  const router = useRouter();
   const selected = destination === 'reports' ? 'activity' : destination === 'connect' ? 'payments' : destination;
-  return <>
-    <label className="account-page-mobile-nav">Your account
-      <span className="account-select-field"><select value={selected} onChange={event => router.push(`/account${event.target.value ? `/${event.target.value}` : ''}`)}>
-        {destinations.map(([path, label]) => <option key={path} value={path}>{label}</option>)}
-      </select><IoChevronDownOutline aria-hidden="true" /></span>
-    </label>
-    <nav className="account-page-nav" aria-label="Your account">
-      {destinations.map(([path, label]) => <Link key={path} href={`/account${path ? `/${path}` : ''}`} aria-current={selected === path ? 'page' : undefined}>{label}</Link>)}
-    </nav>
-  </>;
+  return <nav className="account-v2-nav" aria-label="Your account">
+    {destinations.map(([path, label, short, Icon, ink]) => (
+      <Link key={path} href={`/account${path ? `/${path}` : ''}`} aria-current={selected === path ? 'page' : undefined} aria-label={label} style={{ '--section-ink': ink } as React.CSSProperties}>
+        <Icon aria-hidden="true" />
+        <span className="account-v2-nav-short" aria-hidden="true">{short}</span>
+        <span className="account-v2-nav-long" aria-hidden="true">{label}</span>
+      </Link>
+    ))}
+  </nav>;
 }

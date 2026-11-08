@@ -1,0 +1,13 @@
+/* "Resume your report?" and "Keep your report?" prompts. White, colour only in text and the bug. */
+.card { display: flex; align-items: center; gap: 12px; margin-top: 14px; padding: 14px; border: 2px solid #ece8f8; border-radius: 16px; background: #fff; }
+.card img { flex: none; }
+.card > div { min-width: 0; display: grid; gap: 3px; }
+.card strong { color: #292932; font-size: 16px; line-height: 1.3; overflow-wrap: anywhere; }
+.card span { color: #686477; font-size: 14px; }
+
+.actions.actions { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 18px; }
+.actions.actions > button { width: 100%; min-height: 48px; border-radius: 14px; font-weight: 800; }
+.actions.actions > :global(.secondary-button) { border: 2px solid #e3dff0; background: #fff; color: #292932; }
+.actions.actions > .discard { border-color: #f7c4c9; color: #a8323b; box-shadow: 0 3px 0 #fbe1e4; }
+
+.hint.hint { margin: 8px 0 0; color: #686477; font-size: 13px; text-align: center; }

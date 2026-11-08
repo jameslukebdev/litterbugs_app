@@ -180,7 +180,7 @@ describe('AccountDialog expired report decisions', () => {
     expect(await screen.findByText(/^Profile saved\.$/)).toBeTruthy();
     expect(screen.queryByText('7')).toBeNull();
     expect(screen.getByLabelText('Reports submitted').textContent).toContain('0');
-    expect(screen.getByText('Reports')).toBeTruthy();
+    expect(screen.getByLabelText('Reports submitted').textContent).toContain('reports');
   });
 
   it('loads and unblocks the same blocked accounts used by the mobile app', async () => {
@@ -214,7 +214,8 @@ describe('AccountDialog expired report decisions', () => {
     render(<AccountDialog onClose={vi.fn()} onSignedOut={vi.fn()} onOpenReport={vi.fn()} />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Payments' }));
-    expect(screen.getByText('$2.50 fee · $27.50 total')).toBeTruthy();
+    expect(screen.getByText('$25.00 contribution · $2.50 fee')).toBeTruthy();
+    expect(screen.getByLabelText('$27.50 total')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Back to profile' }));
     fireEvent.click(screen.getByRole('button', { name: 'My activity' }));
     fireEvent.click(screen.getByRole('button', { name: 'My reports' }));
@@ -259,10 +260,20 @@ describe('saved report cleanup after account deletion', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Settings' }));
     return onSignedOut;
   }
+  /** Opens the on-page confirmation, types DELETE and confirms. */
+  function confirmDelete() {
+    fireEvent.click(screen.getByRole('button', { name: 'Delete account' }));
+    const confirmButton = screen.getByRole('button', { name: 'Delete account' }) as HTMLButtonElement;
+    expect(screen.getByRole('heading', { name: 'Delete your account?' })).toBeTruthy();
+    expect(confirmButton.disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText(/to confirm/), { target: { value: 'delete' } });
+    expect(confirmButton.disabled).toBe(false);
+    fireEvent.click(confirmButton);
+  }
   it('clears only the deleted account’s draft and journal after confirmed deletion', async () => {
     invoke.mockResolvedValue({ data: { deleted: true }, error: null });
     const onSignedOut = await account();
-    fireEvent.click(screen.getByRole('button', { name: 'Delete account' }));
+    confirmDelete();
     await waitFor(() => expect(onSignedOut).toHaveBeenCalled());
     expect(clearDraft).toHaveBeenCalledExactlyOnceWith('member-id');
     expect(clearDraft.mock.invocationCallOrder[0]).toBeGreaterThan(invoke.mock.invocationCallOrder[0]);
@@ -271,23 +282,35 @@ describe('saved report cleanup after account deletion', () => {
   it('preserves local photos when account deletion fails', async () => {
     invoke.mockResolvedValue({ data: null, error: new Error('Network failure') });
     const onSignedOut = await account();
-    fireEvent.click(screen.getByRole('button', { name: 'Delete account' }));
-    await screen.findByText(/Couldn’t delete account/);
+    confirmDelete();
+    await screen.findByText(/Couldn’t delete your account/);
     expect(clearDraft).not.toHaveBeenCalled();expect(onSignedOut).not.toHaveBeenCalled();
   });
   it('reports failed local cleanup without claiming the deleted account still exists', async () => {
     invoke.mockResolvedValue({ data: { deleted: true }, error: null });
     clearDraft.mockRejectedValue(new Error('Browser storage unavailable'));
     const onSignedOut = await account();
-    fireEvent.click(screen.getByRole('button', { name: 'Delete account' }));
-    await waitFor(() => expect(onSignedOut).toHaveBeenCalled());
-    expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('Your account was deleted'));
+    confirmDelete();
+    expect(await screen.findByRole('heading', { name: 'Your account is deleted' })).toBeTruthy();
     expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(onSignedOut).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+    expect(onSignedOut).toHaveBeenCalled();
+    expect(window.alert).not.toHaveBeenCalled();
+  });
+  it('keeps the account when the deletion is cancelled', async () => {
+    const onSignedOut = await account();
+    fireEvent.click(screen.getByRole('button', { name: 'Delete account' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Keep my account' }));
+    expect(screen.queryByRole('heading', { name: 'Delete your account?' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy();
+    expect(invoke).not.toHaveBeenCalled(); expect(onSignedOut).not.toHaveBeenCalled();
   });
   it('retains drafts on ordinary sign-out', async () => {
     const onSignedOut = await account();
     fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
     await waitFor(() => expect(onSignedOut).toHaveBeenCalled());
+    expect(window.confirm).not.toHaveBeenCalled();
     expect(clearDraft).not.toHaveBeenCalled();expect(invoke).not.toHaveBeenCalled();
   });
 });
@@ -355,7 +378,7 @@ it('keeps activity navigation before saved work in document and keyboard order',
 it('identifies unconfirmed contributions separately from cleanup earnings', async () => {
   dashboard.paymentStatus = 'payment_pending';
   render(<AccountPage destination="payments" userId="member-id" />);
-  const receipt = await screen.findByRole('link', { name: /Creek cleanup.*25.00 contribution.*Payment unconfirmed/ });
+  const receipt = await screen.findByRole('link', { name: /Creek cleanup.*25.00 contribution.*Payment not finished/ });
   expect(receipt.getAttribute('href')).toBe('/account/payments/contribution-id');
   expect(screen.queryByText(/^Processing/)).toBeNull();
   const contributions = screen.getByRole('heading', { name: 'Your contributions' });
@@ -391,7 +414,9 @@ describe('quiet profile loading', () => {
     expect(await screen.findByRole('heading', { name: 'Member' })).toBeTruthy();
     expect(screen.queryByRole('region', { name: 'Resume your work' })).toBeNull();
     expect(screen.queryByText(/No actions are due/)).toBeNull();
-    expect(screen.getByRole('navigation', { name: 'Profile sections' })).toBeTruthy();
+    // The account page's own section tabs replace the in-panel section links.
+    expect(screen.queryByRole('navigation', { name: 'Profile sections' })).toBeNull();
+    expect(screen.getByRole('navigation', { name: 'Your account' })).toBeTruthy();
   });
 });
 

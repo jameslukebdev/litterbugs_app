@@ -1,0 +1,69 @@
+/* Report sheet redesign. `.v2` sits on the sheet root (aside.report-detail) and outranks the older
+   globals.css rules. White surfaces; colour only in text, bugs and icons. */
+
+/* Toolbar: Back and the icon actions are plain, purple text, no fills */
+.v2.v2 :global(.report-detail-toolbar) button { color: #45434d; background: none; }
+.v2.v2 :global(.report-detail-toolbar-back) { color: #3f36c4; font-weight: 800; }
+.v2.v2 :global(.report-detail-toolbar) button:hover { color: #3f36c4; background: none; }
+.v2.v2 :global(.report-detail-toolbar) button[aria-pressed='true'] { color: #a8323b; background: none; }
+.v2.v2 :global(.report-detail-toolbar) button:focus-visible { outline: 3px solid #5146ed; outline-offset: 2px; }
+
+/* Header: title, status, fund, then the small details line */
+.v2.v2 :global(.report-detail-header) h2 { margin-bottom: 10px; color: #292932; }
+.status,
+.fund { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font-size: 16px; font-weight: 800; line-height: 1.35; }
+.status img,
+.fund img { flex: none; object-fit: contain; }
+.status[data-tone='open'] { color: #a8323b; }
+.status[data-tone='busy'] { color: #2f6b3a; }
+.status[data-tone='done'] { color: #176350; }
+.status[data-tone='muted'] { color: #686477; }
+.fund { color: #8a5a00; }
+
+.meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin: 8px 0 0; color: #686477; font-size: 13px; }
+.v2.v2 .meta :global(.report-detail-severity) { font-weight: 800; }
+
+/* Body facts: label above value, light dividers */
+.v2.v2 :global(.report-detail-fact) { border-color: #ece8f8; color: #45434d !important; font-size: 15px; }
+.v2.v2 :global(.report-detail-fact) strong { color: #292932; font-size: 13px; font-weight: 800; }
+.v2.v2 :global(.report-directions) { border: 2px solid #e3dff0; border-radius: 14px; color: #3f36c4; background: #fff; font-weight: 800; }
+
+/* Payout prompt lives in the body, not squeezed into the action bar */
+.payout { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px solid #ece8f8; color: #45434d; font-size: 14px; line-height: 1.4; }
+.payout > span { flex: 1 1 200px; }
+
+.footnote { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 18px 0 0; color: #8b879a; font-size: 12px; }
+.v2.v2 .footnote :global(.report-open-app) { margin: 0; color: #3f36c4; font-size: 12px; font-weight: 800; text-decoration: none; }
+
+/* "Reported by" label, shown only when there is a reporter to show */
+.byline:has(:global(.report-author))::before { content: 'Reported by'; display: block; padding: 14px 16px 0; color: #686477; font-size: 12px; font-weight: 800; }
+
+/* Cleaned-up reports: one segmented After / Before control above the main photo, and a label on the photo. */
+.v2.v2 :global(.report-detail-visual):has(.sideSwitch) { display: flex; flex-direction: column; gap: 12px; }
+.v2.v2 :global(.report-detail-visual):has(.sideSwitch) :global(.report-photo-region) { flex: 1 1 auto; }
+.sideSwitch { flex: none; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 0; padding: 4px; border: 1px solid #e3dff0; border-radius: 16px; background: #fff; }
+.sideSwitch button { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 6px 10px; border: 2px solid transparent; border-radius: 12px; color: #686477; background: transparent; font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; }
+.sideSwitch button img { flex: none; object-fit: contain; }
+.sideSwitch button[data-side='after'][aria-pressed='true'] { border-color: #8ed7c5; color: #176350; }
+.sideSwitch button[data-side='before'][aria-pressed='true'] { border-color: #f2a8b0; color: #a8323b; }
+.sideSwitch button:hover:not([aria-pressed='true']) { color: #292932; }
+.sideSwitch button:focus { outline: none; }
+.sideSwitch button:focus-visible { outline: 2px solid #5146ed; outline-offset: -4px; }
+.sideLabel { position: absolute; left: 12px; top: 12px; z-index: 4; padding: 5px 12px; border-radius: 999px; background: #fff; box-shadow: 0 2px 8px rgba(41, 41, 50, .18); font-size: 13px; font-weight: 800; pointer-events: none; }
+.sideLabel[data-side='after'] { color: #176350; }
+.sideLabel[data-side='before'] { color: #a8323b; }
+
+/* Toolbar in one row: Back on the left; Favorite, Share, Hide and Larger view as icons on the right.
+   The icons carry the meaning, so their words are kept for screen readers and tooltips only. */
+.v2.v2 :global(.report-detail-toolbar) { display: flex; flex-wrap: nowrap; align-items: center; gap: 2px; min-height: 56px; padding: 8px 12px; }
+.v2.v2 :global(.report-detail-toolbar-logo) { display: none; }
+.v2.v2 :global(.report-detail-toolbar-back) { order: 1; margin-right: auto; padding: 0 10px 0 4px; white-space: nowrap; }
+.v2.v2 :global(.report-detail-toolbar-actions) { order: 2; display: flex; flex-wrap: nowrap; gap: 2px; margin: 0; }
+.v2.v2 :global(.report-layout-toggle) { order: 3; }
+.v2.v2 :global(.report-detail-toolbar-actions) button,
+.v2.v2 :global(.report-layout-toggle) { width: 40px; min-width: 40px; padding: 0; }
+.v2.v2 :global(.report-detail-toolbar-actions) button span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.v2.v2 :global(.report-layout-toggle) svg { width: 18px; height: 18px; }
+
+/* Breathing room between the toolbar and the first thing in the photo area (switch or photo). */
+.v2.v2 :global(.report-detail-visual) { padding-top: 14px; }

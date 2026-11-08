@@ -54,3 +54,5 @@
   .capture { padding: 10px; }
   .pager { padding: 14px; }
 }
+.changeNumber { padding: 0; border: 0; background: none; color: #3f36c4; font: inherit; font-weight: 800; cursor: pointer; }
+.codeInput { letter-spacing: .5em; font-size: 20px !important; font-weight: 800; text-align: center; color: #292932 !important; }

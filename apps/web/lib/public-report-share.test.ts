@@ -23,7 +23,7 @@ const queries = new Map<string, ReturnType<typeof query>>();
 function query(data: unknown, error: unknown = null) {
   const q = {
     select: vi.fn(() => q), eq: vi.fn(() => q), not: vi.fn(() => q),
-    order: vi.fn(() => q), limit: vi.fn(() => q),
+    order: vi.fn(() => q), limit: vi.fn(() => q), range: vi.fn(() => q),
     maybeSingle: vi.fn(async () => ({ data, error })),
   };
   return q;
@@ -70,7 +70,14 @@ describe('public report photo delivery', () => {
     expect(queries.get('cleanup_attempts')?.eq).toHaveBeenCalledWith('report_id', id);
     expect(queries.get('cleanup_attempts')?.eq).toHaveBeenCalledWith('status', 'completed');
     expect(queries.get('cleanup_submission_photos')?.eq).toHaveBeenCalledWith('submission_id', 'final');
+    expect(queries.get('cleanup_submission_photos')?.range).toHaveBeenCalledWith(0, 0);
     expect(embed).not.toHaveBeenCalled();
+  });
+
+  it('serves a later after-cleanup photo when one is asked for', async () => {
+    fixture({ ...base, cleanup_state: 'completed' });
+    await loadPublicReportPhoto(id, 'after', 640, 2);
+    expect(queries.get('cleanup_submission_photos')?.range).toHaveBeenCalledWith(2, 2);
   });
 
   it.each(['claimed', 'completion_submitted', 'changes_requested'])('does not expose unfinished after-evidence for %s', async cleanup_state => {

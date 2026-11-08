@@ -154,6 +154,23 @@ describe('ReportDetail photos', () => {
     expect(screen.getByRole('button', { name: 'Back to map' })).toBeTruthy();
   });
 
+  it('confirms on the page before deleting a report', async () => {
+    const onDelete = vi.fn().mockResolvedValue(undefined);
+    const confirm = vi.spyOn(window, 'confirm');
+    render(<ReportDetail report={report} isOwner onClose={vi.fn()} onEdit={vi.fn()} onDelete={onDelete} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    expect(screen.getByRole('heading', { name: 'Delete this report?' })).toBeTruthy();
+    expect(onDelete).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Keep it' }));
+    expect(screen.queryByRole('heading', { name: 'Delete this report?' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete report' }));
+    await waitFor(() => expect(onDelete).toHaveBeenCalledTimes(1));
+    expect(confirm).not.toHaveBeenCalled();
+  });
+
   it('shows the cleaner-facing reward and cleanup status', () => {
     render(
       <ReportDetail
@@ -165,7 +182,7 @@ describe('ReportDetail photos', () => {
       />,
     );
 
-    expect(screen.getByText('$125.00 reward')).toBeTruthy();
+    expect(screen.getByText('$125.00 in its cleanup fund')).toBeTruthy();
     expect(screen.getByText('Cleanup in progress')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Share' })).toBeTruthy();
   });
@@ -268,14 +285,14 @@ describe('ReportDetail photos', () => {
     expect(screen.getByRole('button', { name: /Email/ })).toBeTruthy();
     expect(screen.getByRole('link', { name: /WhatsApp/ })).toBeTruthy();
     expect(screen.getByRole('link', { name: /Facebook/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Prepare for Instagram/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Instagram/ })).toBeTruthy();
     expect(screen.getByRole('link', { name: /^X/ })).toBeTruthy();
 
     expect(screen.getByRole('link', { name: /WhatsApp/ }).querySelector('img')?.getAttribute('src'))
       .toBe('/brand/social/whatsapp-glyph.png');
     expect(screen.getByRole('link', { name: /Facebook/ }).querySelector('img')?.getAttribute('src'))
       .toBe('/brand/social/facebook-logo.png');
-    expect(screen.getByRole('button', { name: /Prepare for Instagram/ }).querySelector('img')?.getAttribute('src'))
+    expect(screen.getByRole('button', { name: /Instagram/ }).querySelector('img')?.getAttribute('src'))
       .toBe('/brand/social/instagram-glyph.png');
     expect(screen.getByRole('link', { name: /^X/ }).querySelector('img')?.getAttribute('src'))
       .toBe('/brand/social/x-logo.png');
@@ -300,7 +317,8 @@ describe('ReportDetail photos', () => {
     fireEvent.click(screen.getByRole('button', { name: /Copy link/ }));
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(2));
     expect(writeText.mock.calls[1][0]).toBe('http://localhost:3000/reports/report-id');
-    expect(screen.getByText('Link copied. Choose a destination or close this window.')).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toBe('Link copied.');
+    expect(screen.getByRole('button', { name: /Copied/ })).toBeTruthy();
     expect(onNotify).not.toHaveBeenCalled();
   });
 
@@ -324,7 +342,7 @@ describe('ReportDetail photos', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Share cleanup' }));
     expect(screen.getByRole('dialog', { name: 'Share this cleanup' })).toBeTruthy();
-    expect(within(screen.getByRole('dialog', { name: 'Share this cleanup' })).getByText('Cleanup complete')).toBeTruthy();
+    expect(within(screen.getByRole('dialog', { name: 'Share this cleanup' })).getByText('Cleaned up')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Close share options' }));
 
     Object.defineProperty(window, 'matchMedia', {
@@ -404,8 +422,7 @@ describe('ReportDetail photos', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));
-    const instagramButton = screen.getByRole('button', { name: /Prepare for Instagram/ });
-    expect(instagramButton.textContent).toContain('Download the branded card and copy its caption');
+    const instagramButton = screen.getByRole('button', { name: /Instagram/ });
     const downloadLink = document.querySelector<HTMLAnchorElement>('a[download]');
     expect(downloadLink?.getAttribute('href')).toBe('http://localhost:3000/reports/report-id/share-image');
     expect(downloadLink?.getAttribute('download')).toBe('litterbugs-photo-report.png');
@@ -473,7 +490,7 @@ describe('ReportDetail photos', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));
     const downloadLink = document.querySelector<HTMLAnchorElement>('a[download]');
     vi.spyOn(downloadLink as HTMLAnchorElement, 'click').mockImplementation(() => undefined);
-    fireEvent.click(screen.getByRole('button', { name: /Prepare for Instagram/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Instagram/ }));
 
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
     expect(nativeShare).not.toHaveBeenCalled();
@@ -506,7 +523,7 @@ describe('ReportDetail photos', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));
     await waitFor(() => expect(canShare).toHaveBeenCalledTimes(1));
-    fireEvent.click(screen.getByRole('button', { name: /Share with another app/ }));
+    fireEvent.click(screen.getByRole('button', { name: /More apps/ }));
 
     await waitFor(() => expect(nativeShare).toHaveBeenCalledTimes(1));
     expect(fetchImage).toHaveBeenCalledWith('http://localhost:3000/reports/report-id/share-image');
@@ -536,7 +553,7 @@ describe('ReportDetail photos', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));
-    fireEvent.click(screen.getByRole('button', { name: /Share with another app/ }));
+    fireEvent.click(screen.getByRole('button', { name: /More apps/ }));
 
     await waitFor(() => expect(nativeShare).toHaveBeenCalledTimes(1));
     expect(screen.getByRole('dialog', { name: 'Share this cleanup report' })).toBeTruthy();

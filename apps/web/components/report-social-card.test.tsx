@@ -69,7 +69,7 @@ describe('ReportSocialCard', () => {
 
 it.each(['expired', 'in_progress'] as const)('does not advertise an available reward or volunteer opportunity for %s work', state => {
   render(<ReportSocialCard report={{ ...report, state, rewardCents: 600 }} logoUrl="/logo.png" />);
-  expect(screen.getByText(state === 'expired' ? 'REPORT EXPIRED' : 'CLEANUP IN PROGRESS')).toBeTruthy();
+  expect(screen.getByText(state === 'expired' ? 'Report expired' : 'Being cleaned')).toBeTruthy();
   expect(screen.queryByText('Volunteer cleanup')).toBeNull();
   expect(screen.queryByText(/cleanup reward/i)).toBeNull();
   expect(screen.queryByText('$6.00')).toBeNull();

@@ -104,7 +104,7 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
 
   const avatar = userId && <span className="public-account-avatar-frame" aria-hidden="true">
     <span className="public-account-initials">{(!avatarUrl || failedAvatar === avatarUrl) && (profile || cached?.profile) ? profileLabel.charAt(0).toUpperCase() : null}</span>
-    {avatarUrl && failedAvatar !== avatarUrl && <Image className="public-account-avatar" data-loaded="true" src={avatarUrl} alt="" width={52} height={52} unoptimized loading="eager" onError={() => setFailedAvatar(avatarUrl)} />}
+    {avatarUrl && failedAvatar !== avatarUrl && <Image className="public-account-avatar" data-loaded="true" src={avatarUrl} alt="" width={52} height={52} unoptimized referrerPolicy="no-referrer" loading="eager" onError={() => setFailedAvatar(avatarUrl)} />}
   </span>;
 
   return (

@@ -21,6 +21,9 @@ export default function Preview() {
   const [step, setStep] = useState(0);
   const [eligible, setEligible] = useState(false);
   const [phoneScreen, setPhoneScreen] = useState<'number' | 'code'>('number');
+  const [phone, setPhone] = useState('');
+  const [code, setCode] = useState('');
+  const phoneDigits = phone.replace(/\D/g, '');
   const current = steps[step];
   function selectStep(next: number) { setStep(next); window.scrollTo({ top: 0, behavior: 'auto' }); }
   return <main className={styles.page}>
@@ -42,19 +45,17 @@ export default function Preview() {
           {step === 0 && <PayoutPanel status={{ onboardingStatus: 'not_started', payoutsEnabled: false, requirementsDue: [] }} eligibleConfirmed={eligible} onEligible={setEligible} busy={false} message="" onContinue={() => selectStep(1)} />}
           {step === 1 && <div className="payout-flow"><PayoutHeading /><div className={styles.sampleCard}>
             <span className={styles.exampleTag}>Illustration only · no SMS sent</span>
-            <div className={styles.phoneScreens} role="group" aria-label="Phone verification preview screens">
-              <button aria-pressed={phoneScreen === 'number'} onClick={() => setPhoneScreen('number')}>1. Enter phone number</button>
-              <button aria-pressed={phoneScreen === 'code'} onClick={() => setPhoneScreen('code')}>2. Enter code</button>
-            </div>
-            {phoneScreen === 'number' ? <>
-              <h3>Enter your mobile number</h3><p>In the real setup, Stripe asks for the number where the cleaner can receive a verification code.</p>
-              <label className={styles.phoneField} htmlFor="preview-phone">Mobile phone number<input id="preview-phone" type="tel" placeholder="Enter your mobile number" disabled /></label>
-              <button className="primary-button payout-go" disabled>Send code</button>
-            </> : <>
-              <h3>Enter the verification code</h3><p>This screen comes after phone entry. No code has been sent in this preview.</p>
-              <div className={styles.code} aria-label="Example verification-code fields">{Array.from({ length: 6 }, (_, index) => <span key={index}>—</span>)}</div>
-              <button className="primary-button payout-go" disabled>Verify</button>
-            </>}
+            {/* Flows like the real step: number, then Send code moves to the code screen; nothing is sent. */}
+            {phoneScreen === 'number' ? <form onSubmit={event => { event.preventDefault(); if (phoneDigits.length >= 10) setPhoneScreen('code'); }}>
+              <h3>Enter your mobile number</h3><p>Stripe texts a code to this number to confirm it&rsquo;s you.</p>
+              <label className={styles.phoneField} htmlFor="preview-phone">Mobile phone number<input id="preview-phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="(555) 555-0123" value={phone} onChange={event => setPhone(event.target.value)} /></label>
+              <button type="submit" className="primary-button payout-go" disabled={phoneDigits.length < 10}>Send code</button>
+            </form> : <form onSubmit={event => { event.preventDefault(); if (code.length === 6) { setPhoneScreen('number'); setCode(''); selectStep(2); } }}>
+              <h3>Enter the 6-digit code</h3>
+              <p>Sent to (•••) •••-{phoneDigits.slice(-4)}. <button type="button" className={styles.changeNumber} onClick={() => { setPhoneScreen('number'); setCode(''); }}>Change number</button></p>
+              <label className={styles.phoneField} htmlFor="preview-code">Verification code<input id="preview-code" className={styles.codeInput} inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="••••••" value={code} onChange={event => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))} autoFocus /></label>
+              <button type="submit" className="primary-button payout-go" disabled={code.length !== 6}>Verify</button>
+            </form>}
           </div></div>}
           {step === 5 && <div className="payout-flow"><PayoutHeading /><div className={styles.sampleCard}>
             <span className={styles.exampleTag}>Illustration · fictional information</span><h3>Review your payout details</h3>

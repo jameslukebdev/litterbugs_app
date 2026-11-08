@@ -1075,7 +1075,7 @@ export function MapExperience({
   async function deleteSelectedReport() {
     if (!selectedReport || !userId || selectedReport.user_id !== userId) return;
     const ownerId = userId;
-    if (!window.confirm('Delete report? This action cannot be undone.')) return;
+    // Confirmed on the page in the report sheet (DeleteReportConfirm), not with a browser pop-up.
     const supabase = createClient();
     if (selectedReport.photo_paths?.length) {
       const { error: storageError } = await supabase.storage.from('report_photos').remove(selectedReport.photo_paths);

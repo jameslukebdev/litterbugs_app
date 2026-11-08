@@ -1,5 +1,8 @@
 /* eslint-disable @next/next/no-img-element -- tiny decorative brand marks, like BrandBug. */
+import { FiCheckCircle } from 'react-icons/fi';
 import { BugCelebration } from '@/components/bug-celebration';
+import { PayoutTrust } from '@/components/payout-trust';
+import payoutStyles from '@/components/payout-trust.module.css';
 import type { PayoutStatus } from '@/lib/funding';
 
 type Stage = 'loading' | 'not_started' | 'pending' | 'restricted' | 'enabled';
@@ -14,7 +17,7 @@ const STAGE: Record<Exclude<Stage, 'loading'>, { title: string; button: string }
     button: 'Review details',
   },
   restricted: {
-    title: 'Stripe needs a little more',
+    title: 'Stripe needs a few more details',
     button: 'Finish setup',
   },
   enabled: {
@@ -58,11 +61,12 @@ export function PayoutPanel({ status, eligibleConfirmed, onEligible, busy, messa
       {/* No intro line under the title: each screen says only what the title doesn't. */}
       {stage !== 'loading' && stage !== 'enabled' && (
         <ol className="payout-steps">
-          <li data-done={stage !== 'not_started' || undefined} data-current={stage === 'not_started' || undefined}><span aria-hidden="true">1</span><div><strong>Confirm you can be paid</strong><small>You&rsquo;re 18 or older and in the United States.</small></div></li>
+          <li data-done={stage !== 'not_started' || undefined} data-current={stage === 'not_started' || undefined}><span aria-hidden="true">1</span><div><strong>Confirm you can be paid</strong></div></li>
           <li data-current={stage !== 'not_started' || undefined}><span aria-hidden="true">2</span><div><strong>Verify your name and choose your bank</strong><small>Then review and accept Stripe&rsquo;s terms. Phone verification is part of Stripe&rsquo;s setup.</small></div></li>
-          <li><span aria-hidden="true">3</span><div><strong>Get paid</strong><small>Cash from approved cleanups is paid out to you.</small></div></li>
+          <li><span aria-hidden="true">3</span><div><strong>Get paid</strong></div></li>
         </ol>
       )}
+      {stage === 'enabled' && <p className={payoutStyles.readyLine}><FiCheckCircle aria-hidden="true" />Cash from approved cleanups goes to the bank account you added with Stripe.</p>}
       {stage === 'restricted' && status && status.requirementsDue.length > 0 && <p className="payout-note">Stripe is asking for {status.requirementsDue.length} more {status.requirementsDue.length === 1 ? 'detail' : 'details'}.</p>}
       {needsConfirm && (
         <label className="cleaner-check payout-check">
@@ -71,11 +75,12 @@ export function PayoutPanel({ status, eligibleConfirmed, onEligible, busy, messa
         </label>
       )}
       {message && <p className="form-message error-message" role="alert">{message}</p>}
-      <button className="primary-button payout-go" onClick={onContinue} disabled={busy || (needsConfirm && !eligibleConfirmed)}>
+      {/* Nothing is left to do once payouts are ready, so Manage is a quieter button. */}
+      <button className={stage === 'enabled' ? `secondary-button ${payoutStyles.manage}` : 'primary-button payout-go'} onClick={onContinue} disabled={busy || (needsConfirm && !eligibleConfirmed)}>
         {copy?.button ?? 'Try again'}
       </button>
       {message && onFallback && <button className="secondary-button" disabled={busy || !status || (needsConfirm && !eligibleConfirmed)} onClick={onFallback}>Continue on Stripe</button>}
-      <p className="payout-stripe-note">Your details go securely to Stripe for verification and payouts.</p>
+      <PayoutTrust />
     </div>
   );
 }

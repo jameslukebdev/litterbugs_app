@@ -1,70 +1,59 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
 
+import { ResetPasswordView, type ResetStage } from '@/components/reset-password-view';
 import { createClient } from '@/lib/supabase/client';
 
 export default function ResetPasswordPage() {
+  const [stage, setStage] = useState<ResetStage>('checking');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [ready, setReady] = useState(false);
-  const [hasSession, setHasSession] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [complete, setComplete] = useState(false);
+  const [email, setEmail] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const exchangeRecoveryCode = async () => {
       const code = new URL(window.location.href).searchParams.get('code');
       if (code) {
-        const { error } = await createClient().auth.exchangeCodeForSession(code);
-        if (error) setMessage('This reset link is invalid or has expired.');
+        await createClient().auth.exchangeCodeForSession(code);
         window.history.replaceState({}, '', '/auth/reset-password');
       }
       const { data } = await createClient().auth.getSession();
-      setHasSession(Boolean(data.session));
-      if (!data.session) setMessage((current) => current || 'Request a new password reset link to continue.');
-      setReady(true);
+      // No session means the link was used, expired, or opened without one: offer a new link here.
+      setStage(data.session ? 'choose' : 'expired');
     };
     void exchangeRecoveryCode();
   }, []);
 
-  async function updatePassword(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setMessage('');
-    if (password.length < 8) return setMessage('Use at least 8 characters for your new password.');
-    if (password !== confirmPassword) return setMessage('The passwords do not match.');
-
-    setLoading(true);
-    const { error } = await createClient().auth.updateUser({ password });
-    setLoading(false);
-    if (error) return setMessage('We couldn’t update your password. Request a new link and try again.');
-    setComplete(true);
+  async function updatePassword() {
+    setError('');
+    if (password.length < 8) return setError('Use at least 8 characters.');
+    setBusy(true);
+    const { error: updateError } = await createClient().auth.updateUser({ password });
+    setBusy(false);
+    if (updateError) return setError('We couldn’t save your password. Check your connection and try again.');
+    setStage('done');
   }
 
-  return (
-    <main className="standalone-page">
-      <section className="standalone-card">
-        <Image src="/brand/litterbugs-logo.png" width={636} height={433} className="standalone-logo" alt="Litterbugs" priority />
-        {complete ? (
-          <>
-            <h1>Password updated</h1>
-            <p>Your new password is ready to use.</p>
-            <Link className="primary-button button-link" href="/map">Return to the map</Link>
-          </>
-        ) : (
-          <form onSubmit={updatePassword}>
-            <h1>Choose a new password</h1>
-            <p>Enter a new password for your Litterbugs account.</p>
-            <label>New password<input type="password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} disabled={!ready || loading} /></label>
-            <label>Confirm new password<input type="password" autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} disabled={!ready || loading} /></label>
-            {message && <p className="form-message error-message" role="alert">{message}</p>}
-            <button className="primary-button" disabled={!ready || !hasSession || loading}>{loading ? 'Saving…' : 'Save password'}</button>
-          </form>
-        )}
-      </section>
-    </main>
-  );
+  async function sendNewLink() {
+    setError('');
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail.includes('@')) return setError('Enter the email you use for Litterbugs.');
+    setBusy(true);
+    try {
+      const { error: sendError } = await createClient().auth.resetPasswordForEmail(cleanEmail, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+      if (sendError) return setError('We couldn’t send a new link. Check your connection and try again.');
+      setStage('sent');
+    } catch {
+      setError('We couldn’t send a new link. Check your connection and try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return <ResetPasswordView stage={stage} password={password} onPassword={setPassword} email={email} onEmail={setEmail}
+    busy={busy} error={error} onSave={() => { void updatePassword(); }} onSendLink={() => { void sendNewLink(); }} />;
 }

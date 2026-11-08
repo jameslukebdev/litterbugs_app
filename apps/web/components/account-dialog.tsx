@@ -1,19 +1,22 @@
 'use client';
+/* eslint-disable @next/next/no-img-element -- tiny status bugs, like BrandBug. */
 import { reportContext } from '@/lib/report-context';
 
 import type { Database, Report } from '@litterbugs/report-contract';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FiCheckCircle, FiExternalLink, FiFileText, FiHeart, FiKey, FiLogOut, FiMapPin, FiShield, FiTrash2 } from 'react-icons/fi';
+import { FiChevronRight, FiEdit2, FiCheckCircle, FiExternalLink, FiFileText, FiHeart, FiKey, FiLogOut, FiMapPin, FiShield, FiTrash2 } from 'react-icons/fi';
 
 import { loadAccountReports, loadAccountPages, accountReportStatus } from '@/lib/account-reports';
 import { NeedsAttention } from '@/components/needs-attention';
 import { ResumeDrafts } from '@/components/resume-drafts';
 import { PaymentDetail } from '@/components/payment-detail';
 import { LinkSignInMethod } from '@/components/link-sign-in-method';
+import { AccountDeletedNotice, DeleteAccountPanel, dangerTriggerClass } from '@/components/decision-panels';
 import { AccountActivityTabs } from './account-activity-tabs';
 import { AccountSectionSkeleton } from './account-section-skeleton';
+import { ProfileHeaderSkeleton } from './account-loading';
 import { CommunityRank } from '@/components/community-rank';
 import { Icon } from '@/components/icon';
 import { ModalShell } from '@/components/modal-shell';
@@ -101,9 +104,27 @@ function cleanupApprovalLabel(approvalMethod: string | null) {
   return 'Reporter approved';
 }
 
+function contributionTone(status: string) {
+  if (status === 'paid_out' || status === 'succeeded') return 'done';
+  if (status === 'failed' || status === 'payment_pending') return 'stopped';
+  return 'muted';
+}
+
+const shortDate = (value: string) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+/** Same bugs and words as the map pins; closed reports are plain grey. */
+function ReportStatus({ report }: { report: Report }) {
+  const status = accountReportStatus(report);
+  const view = status === 'Closed' ? { tone: 'muted', label: 'Closed', bug: '' }
+    : report.cleanup_state === 'completed' ? { tone: 'done', label: 'Cleaned up', bug: '/brand/bugs/flower.png' }
+    : report.cleanup_state === 'available' ? { tone: 'open', label: 'Needs a cleanup', bug: '/brand/bugs/ladybug.png' }
+    : { tone: 'busy', label: 'Being cleaned', bug: '/brand/ranks/caterpillar.svg' };
+  return <small className="account-v2-status" data-tone={view.tone}>{view.bug ? <img src={view.bug} alt="" aria-hidden="true" width={14} height={14} /> : null}{view.label}</small>;
+}
+
 function contributionStatusLabel(status: string) {
   return ({
-    payment_pending: 'Payment unconfirmed',
+    payment_pending: 'Payment not finished',
     succeeded: 'In cleanup fund',
     refund_pending: 'Refund requested',
     refund_processing: 'Refund processing',
@@ -173,9 +194,16 @@ export function AccountDialog({
   const [cleanups, setCleanups] = useState<CleanupAttempt[]>([]);
   const [contributions, setContributions] = useState<CompletedContribution[]>([]);
   const [blockedAccounts, setBlockedAccounts] = useState<BlockedAccount[]>([]);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  // The profile card and rank card appear together (no staggered pop-in); never wait more than 4s for the rank.
+  const [rankReady, setRankReady] = useState(false);
+  useEffect(() => { const timer = window.setTimeout(() => setRankReady(true), 4000); return () => window.clearTimeout(timer); }, []);
+  const [deleteError, setDeleteError] = useState('');
+  const [accountDeletedNotice, setAccountDeletedNotice] = useState(false);
   const [message, setMessage] = useState('');
   const [busyAction, setBusyAction] = useState('');
   const [dataLoading, setDataLoading] = useState(true);
+  const profileReady = !dataLoading && rankReady;
   const [draftsReady, setDraftsReady] = useState(false);
   const activityLoading = embedded && section === 'activity' && !unavailable.includes('Account') && !draftsReady;
   const focusedRenewal = useRef('');
@@ -297,8 +325,8 @@ export function AccountDialog({
     [cleanups],
   );
 
+  // Signing out is harmless and easy to undo (drafts stay on this device), so it needs no confirmation.
   async function signOut() {
-    if (!window.confirm('Are you sure you want to sign out?')) return;
     setBusyAction('signout');
     const { error } = await createClient().auth.signOut();
     setBusyAction('');
@@ -316,16 +344,17 @@ export function AccountDialog({
     setMessage(error ? 'We couldn’t send a reset link. Try again.' : 'Password reset email sent.');
   }
 
+  // Confirmed on the page in DeleteAccountPanel (typed DELETE), not with a browser pop-up.
   async function deleteAccount() {
-    const confirmed = window.confirm('This permanently deletes your account and uploaded photos. Community report locations, categories, severity, status, and dates will remain without your identity. This cannot be undone.');
-    if (!confirmed) return;
     setBusyAction('delete');
+    setDeleteError('');
     const supabase = createClient();
     const { data, error } = await supabase.functions.invoke('delete-account', { body: { confirmation: 'DELETE' } });
     if (error || !data?.deleted) {
       setBusyAction('');
-      return setMessage('Couldn’t delete account. No additional changes were made. Check your connection and try again.');
+      return setDeleteError('Couldn’t delete your account. Nothing was changed. Check your connection and try again.');
     }
+    let browserCleanupFailed = false;
     try {
       await reportPreferenceSync.retire(userId);
       await cloudDrafts.retire(userId);
@@ -335,9 +364,12 @@ export function AccountDialog({
       await clearSavedReportData(userId);
         await clearAccountCleanupDrafts(userId);
     } catch {
-      window.alert('Your account was deleted, but this browser could not remove its saved report photos. Clear site data for litterbugs.app in your browser settings to remove them.');
+      browserCleanupFailed = true;
     }
     await supabase.auth.signOut({ scope: 'local' });
+    setBusyAction('');
+    // The account is gone either way; only stay open to explain the leftover photos on this browser.
+    if (browserCleanupFailed) return setAccountDeletedNotice(true);
     onSignedOut();
   }
 
@@ -503,10 +535,10 @@ export function AccountDialog({
         {!embedded && section !== 'profile' && <button className="icon-button" onClick={() => navigateSection('profile')} aria-label="Back to profile"><Icon name="chevron-left" /></button>}
         <Heading ref={headingRef} tabIndex={-1}>{profileEditing ? (profile?.profile_completed_at ? 'Edit profile' : 'Finish your profile') : section === 'profile' ? 'Profile' : section === 'activity' ? 'My activity' : section === 'payments' ? 'Payments' : 'Settings'}</Heading>
       </header>
-      {section === 'profile' && !profileEditing && <header className="member-dashboard-header" aria-busy={dataLoading}>
-        {dataLoading ? <><span className="account-avatar account-skeleton" aria-hidden /><div className="member-profile-summary" role="status" aria-label="Loading profile"><span className="account-skeleton account-skeleton-name" /><span className="account-skeleton account-skeleton-line" /></div></> : <>
+      {section === 'profile' && !profileEditing && <header className="member-dashboard-header" aria-busy={!profileReady}>
+        {!profileReady ? <ProfileHeaderSkeleton /> : <>
         <div className="account-avatar" aria-hidden>
-          {visibleAvatarUrl ? <Image src={visibleAvatarUrl} alt="" width={64} height={64} unoptimized /> : (initial || <Icon name="account" />)}
+          {visibleAvatarUrl ? <Image src={visibleAvatarUrl} alt="" width={64} height={64} unoptimized referrerPolicy="no-referrer" /> : (initial || <Icon name="account" />)}
         </div>
         <div className="member-profile-summary">
           <h2>{displayName}</h2>
@@ -514,8 +546,12 @@ export function AccountDialog({
           {profile?.location ? <p className="member-profile-location"><FiMapPin aria-hidden />{profile.location}</p> : null}
           {profile?.bio ? <p className="member-profile-bio">{profile.bio}</p> : null}
           {joinedLabel ? <p className="member-profile-joined">Joined {joinedLabel}</p> : null}
+          <p className="account-v2-counts">
+            <span aria-label="Reports submitted"><strong>{reportsAvailable && !unavailable.includes('Account') ? reports.length : '—'}</strong> {reports.length === 1 ? 'report' : 'reports'}</span>
+            <span aria-label="Cleanups completed"><strong>{unavailable.includes('Cleanups') || unavailable.includes('Account') ? '—' : completedCleanups.length}</strong> {completedCleanups.length === 1 ? 'cleanup' : 'cleanups'}</span>
+          </p>
         </div>
-        {!profileEditing && <button className="secondary-button member-edit-profile" onClick={startProfileEdit}>Edit profile</button>}
+        {!profileEditing && <button className="secondary-button member-edit-profile" onClick={startProfileEdit} aria-label="Edit profile"><FiEdit2 aria-hidden="true" /><span aria-hidden="true">Edit</span></button>}
         </>}
       </header>}
 
@@ -529,7 +565,7 @@ export function AccountDialog({
           <form className="member-profile-form" onSubmit={saveProfile}>
             <div className="member-avatar-editor">
               <div className="account-avatar account-avatar-large" aria-hidden>
-                {visibleAvatarUrl ? <Image src={visibleAvatarUrl} alt="" width={88} height={88} unoptimized /> : initial}
+                {visibleAvatarUrl ? <Image src={visibleAvatarUrl} alt="" width={88} height={88} unoptimized referrerPolicy="no-referrer" /> : initial}
               </div>
               <div className="member-avatar-actions">
                 <label className="secondary-button member-photo-picker">
@@ -594,16 +630,13 @@ export function AccountDialog({
           {embedded && section === 'activity' && <NeedsAttention userId={userId} reports={reports} renewals={expiredReports} attempts={cleanups} incomplete={unavailable.some(name => ['Account', 'Reports', 'Renewals', 'Cleanups'].includes(name))} />}
           {embedded && section === 'activity' && <ResumeDrafts userId={userId} attempts={activeCleanups} onReady={setDraftsReady} />}
           {section === 'profile' && <>
-          <CommunityRank userId={userId} />
-          <nav className="account-section-links" aria-label="Profile sections" style={dataLoading ? { visibility: 'hidden' } : undefined}>
+          <CommunityRank userId={userId} hold={!profileReady} onReady={() => setRankReady(true)} />
+          {!embedded && <nav className="account-section-links" aria-label="Profile sections" style={dataLoading ? { visibility: 'hidden' } : undefined}>
             <button onClick={() => navigateSection('activity')}>My activity<Icon name="chevron-right" /></button>
             <button onClick={() => navigateSection('payments')}>Payments<Icon name="chevron-right" /></button>
             <button onClick={() => navigateSection('settings')}>Settings<Icon name="chevron-right" /></button>
-          </nav>
-          <section className="member-stats" aria-label="Community activity">
-            <div aria-label="Reports submitted"><strong>{dataLoading ? <span className="account-skeleton account-skeleton-count" aria-label="Loading report count" /> : reportsAvailable && !unavailable.includes('Account') ? reports.length : '—'}</strong><span>Reports</span></div>
-            <div><strong>{dataLoading ? <span className="account-skeleton account-skeleton-count" aria-label="Loading cleanup count" /> : unavailable.includes('Cleanups') || unavailable.includes('Account') ? '—' : completedCleanups.length}</strong><span>Cleanups</span></div>
-          </section>
+          </nav>}
+{/* Report and cleanup counts now sit in the profile header. */}
 
           </>}
 
@@ -633,11 +666,11 @@ export function AccountDialog({
             ) : null}
 
             {section === 'activity' && activityTab === 'reports' && <section className="member-panel">
-              <header><div><h3>My reports</h3></div></header>
+              <header className="account-v2-repeat"><div><h3>My reports</h3></div></header>
               <div className="member-activity-list">
                 {reports.length ? reports.map((report) => (
                   <ActivityLink embedded={embedded} href={`/account/reports/${report.id}?from=${activityTab}`} key={report.id} className="member-activity-row" onClick={() => openReport(report.id)}>
-                    <span><strong>{report.title || 'Litter Report'}</strong><small className="report-context">{reportContext(report)}</small><small>{accountReportStatus(report)} · {report.severity || 'Medium'} severity</small></span>
+                    <span><strong>{report.title || 'Litter Report'}</strong><small className="report-context">{reportContext(report, true, false)}</small><ReportStatus report={report} /></span>
                     <Icon name="chevron-right" />
                   </ActivityLink>
                 )) : !unavailable.includes('Reports') && !unavailable.includes('Account') && <p className="member-empty">No reports yet.</p>}
@@ -645,12 +678,12 @@ export function AccountDialog({
             </section>}
 
             {section === 'activity' && activityTab === 'current' && <section className="member-panel">
-              <header><div><h3>Current cleanups</h3></div></header>
+              <header className="account-v2-repeat"><div><h3>Current cleanups</h3></div></header>
               <div className="member-activity-list">
                 {activeCleanups.map((attempt) => (
                   <ActivityLink embedded={embedded} href={`/account/reports/${attempt.report_id}?from=${activityTab}`} key={attempt.id} className="member-activity-row" onClick={() => openReport(attempt.report_id)}>
                     <span>
-                      <strong>{attempt.report?.title || 'Litter cleanup'}</strong><small className="report-context">{reportContext(attempt.report)}</small>
+                      <strong>{attempt.report?.title || 'Litter cleanup'}</strong><small className="report-context">{reportContext(attempt.report, true, false)}</small>
                       <small>{cleanupStatus(attempt)}{attempt.is_paid ? ` · ${formatUsd(attempt.reward_amount_cents)}` : ''}</small>
                       {attempt.is_paid ? <small className="member-reward-status">{cleanupRewardStatus(attempt)}</small> : null}
                       {attempt.status === 'claimed' && attempt.claim_expires_at ? (
@@ -671,10 +704,10 @@ export function AccountDialog({
                   <ActivityLink embedded={embedded} href={`/account/payments/${contribution.id}`} key={contribution.id} className="member-activity-row" onClick={() => setSelectedPayment(contribution.id)}>
                     <span>
                       <strong>{contribution.report?.title || 'Litter report'}</strong>
-                      <small>{formatUsd(contribution.principal_amount_cents)} contribution</small>
-                      <small>{contributionStatusLabel(contribution.status)} · {new Date(contribution.created_at).toLocaleString()}</small>
-                      <small>{formatUsd(contribution.platform_fee_cents)} fee · {formatUsd(contribution.total_amount_cents)} total</small>
+                      <small>{formatUsd(contribution.principal_amount_cents)} contribution · {formatUsd(contribution.platform_fee_cents)} fee</small>
+                      <small><span className="account-v2-status" data-tone={contributionTone(contribution.status)}>{contributionStatusLabel(contribution.status)}</span> · {shortDate(contribution.created_at)}</small>
                     </span>
+                    <span className="account-v2-amount" aria-label={`${formatUsd(contribution.total_amount_cents)} total`}>{formatUsd(contribution.total_amount_cents)}</span>
                     <Icon name="chevron-right" />
                   </ActivityLink>
                 ))}
@@ -686,20 +719,20 @@ export function AccountDialog({
             {section === 'payments' && <ReporterEarnings key={userId} userId={userId} />}
 
             {((section === 'activity' && activityTab === 'history') || section === 'payments') && <section className="member-panel">
-              <header><div><h3>{section === 'payments' ? 'Cleanup earnings' : 'Completed cleanups'}</h3></div></header>
+              <header className={section === 'payments' ? undefined : 'account-v2-repeat'}><div><h3>{section === 'payments' ? 'Cleanup earnings' : 'Completed cleanups'}</h3></div></header>
               {section === 'payments' && <div className="member-payout-action"><PayoutSetupAction /></div>}
               <div className="member-activity-list">
                 {(section === 'payments' ? completedCleanups.filter(attempt => attempt.is_paid) : completedCleanups).map((attempt) => (
                   <ActivityLink embedded={embedded} href={`/account/reports/${attempt.report_id}?from=${section === 'payments' ? 'payments' : activityTab}`} key={attempt.id} className="member-activity-row member-completed-row" onClick={() => openReport(attempt.report_id)}>
                     <span>
-                      <strong>{attempt.report?.title || 'Completed litter cleanup'}</strong><small className="report-context">{reportContext(attempt.report)}</small>
+                      <strong>{attempt.report?.title || 'Completed litter cleanup'}</strong><small className="report-context">{reportContext(attempt.report, true, false)}</small>
                       <small>{attempt.completed_at ? new Date(attempt.completed_at).toLocaleDateString() : 'Date unavailable'} · {cleanupApprovalLabel(attempt.approval_method)}</small>
                       {attempt.is_paid ? <small className="member-reward-status">{formatUsd(attempt.reward_amount_cents)} · {cleanupRewardStatus(attempt)}</small> : null}
                     </span>
                     <Icon name="chevron-right" />
                   </ActivityLink>
                 ))}
-                {!(section === 'payments' ? completedCleanups.some(attempt => attempt.is_paid) : completedCleanups.length) && !unavailable.includes('Cleanups') && !unavailable.includes('Account') && <p className="member-empty">{section === 'payments' ? 'No cleanup rewards yet.' : 'No completed cleanups yet.'}</p>}
+                {!(section === 'payments' ? completedCleanups.some(attempt => attempt.is_paid) : completedCleanups.length) && !unavailable.includes('Cleanups') && !unavailable.includes('Account') && <p className="member-empty">{section === 'payments' ? 'No cleanup earnings yet.' : 'No completed cleanups yet.'}</p>}
               </div>
             </section>}
 
@@ -709,10 +742,9 @@ export function AccountDialog({
       ))}
 
       {!profileEditing && !dataLoading && section === 'settings' && <section className="member-settings account-section-ready">
-        <div className="member-settings-heading"><p>{email || 'Email unavailable for this account'}</p></div>
-        <div className="account-section-links">
-          <button onClick={startProfileEdit}>Edit profile<Icon name="chevron-right" /></button>
-        </div>
+        <div className="account-v2-group" role="group" aria-label="Your account">
+        <div className="account-v2-row account-v2-email"><span>Email</span><strong>{email || 'Not shared'}</strong></div>
+        <button type="button" className="account-v2-row" onClick={startProfileEdit}><span>Edit profile</span><FiChevronRight aria-hidden="true" /></button>
         <details className="member-panel"><summary>Sign-in methods</summary><p>{email || 'No email shared'}</p>{signInMethods.length ? signInMethods.map(provider => <p key={provider}>{provider === 'email' ? 'Email and password' : provider.charAt(0).toUpperCase() + provider.slice(1)} · Connected</p>) : <p>Sign-in method information is unavailable.</p>}<LinkSignInMethod connected={signInMethods} /></details>
             <details className="member-panel member-blocked-panel">
               <summary>Blocked accounts</summary>
@@ -722,7 +754,7 @@ export function AccountDialog({
                   return (
                     <div key={blocked_id} className="member-activity-row member-blocked-row">
                       <span className="member-blocked-avatar" aria-hidden>
-                        {blockedAvatarUrl ? <Image src={blockedAvatarUrl} alt="" width={44} height={44} unoptimized /> : (blocked?.display_name?.charAt(0).toUpperCase() || '?')}
+                        {blockedAvatarUrl ? <Image src={blockedAvatarUrl} alt="" width={44} height={44} unoptimized referrerPolicy="no-referrer" /> : (blocked?.display_name?.charAt(0).toUpperCase() || '?')}
                       </span>
                       <span>
                         <strong>{blocked?.display_name || 'Profile unavailable'}</strong>
@@ -742,6 +774,7 @@ export function AccountDialog({
                 {!blockedAccounts.length && !unavailable.includes('Blocked accounts') && !unavailable.includes('Account') && <p className="member-empty">No blocked accounts.</p>}
               </div>
             </details>
+        </div>
         <div className="member-setting-links">
           <Link href="/help"><FiHeart aria-hidden /><span>Get help</span><FiExternalLink aria-hidden /></Link>
           <Link href="/cleanup-safety"><FiShield aria-hidden /><span>Cleanup safety</span><FiExternalLink aria-hidden /></Link>
@@ -751,11 +784,13 @@ export function AccountDialog({
           <Link href="/photo-review"><FiExternalLink aria-hidden /><span>About photo review</span><FiExternalLink aria-hidden /></Link>
           <Link href="/support"><FiHeart aria-hidden /><span>Support Litterbugs</span><FiExternalLink aria-hidden /></Link>
         </div>
-        <div className="account-actions member-account-actions">
+        {accountDeletedNotice ? <AccountDeletedNotice onDone={onSignedOut} />
+          : confirmingDelete ? <DeleteAccountPanel busy={busyAction === 'delete'} error={deleteError} onCancel={() => { setConfirmingDelete(false); setDeleteError(''); }} onConfirm={() => { void deleteAccount(); }} />
+          : <div className="account-actions member-account-actions">
           <button className="secondary-button" onClick={sendRecovery} disabled={Boolean(busyAction)}><FiKey aria-hidden />{busyAction === 'recovery' ? 'Sending…' : 'Reset password'}</button>
           <button className="secondary-button" onClick={signOut} disabled={Boolean(busyAction)}><FiLogOut aria-hidden />{busyAction === 'signout' ? 'Signing out…' : 'Sign out'}</button>
-          <button className="danger-button" onClick={deleteAccount} disabled={Boolean(busyAction)}><FiTrash2 aria-hidden />{busyAction === 'delete' ? 'Deleting account…' : 'Delete account'}</button>
-        </div>
+          <button className={`danger-button ${dangerTriggerClass}`} onClick={() => setConfirmingDelete(true)} disabled={Boolean(busyAction)}><FiTrash2 aria-hidden />Delete account</button>
+        </div>}
       </section>}
       {selectedPayment && <ModalShell label="Payment details" onClose={() => setSelectedPayment(null)}><PaymentDetail contributionId={selectedPayment} onOpenReport={openReport} /></ModalShell>}
     </ModalShell>

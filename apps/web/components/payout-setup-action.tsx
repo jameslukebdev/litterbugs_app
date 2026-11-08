@@ -99,7 +99,7 @@ export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, 
     lastRefresh.current = refresh;
     if (!open) return;
     let cancelled = false;
-    void loadPayoutStatus().then(value => { if (!cancelled) { setStatus(value); observeStatus(value); } }).catch(() => { if (!cancelled) { trackPayoutSetup('status_failed'); setMessage('Payout status could not be refreshed. Reopen this window to retry.'); } });
+    void loadPayoutStatus().then(value => { if (!cancelled) { setStatus(value); observeStatus(value); } }).catch(() => { if (!cancelled) { trackPayoutSetup('status_failed'); setMessage('We couldn’t check your payout status. Close this window and open it again to retry.'); } });
     return () => { cancelled = true; };
   }, [open, refresh, observeStatus]);
 
@@ -143,7 +143,7 @@ export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, 
     } catch (error) {
       if (version !== opening.current) return;
       trackPayoutSetup(startingForm ? 'start_failed' : 'status_failed');
-      setMessage(error instanceof Error ? error.message : 'Payout status could not be loaded.');
+      setMessage(error instanceof Error ? error.message : 'We couldn’t load your payout status. Check your connection and try again.');
     } finally {
       if (version === opening.current) { requestBusy.current = false; setBusy(false); }
     }
@@ -201,7 +201,7 @@ export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, 
     } catch (error) {
       if (version !== opening.current) return;
       trackPayoutSetup('start_failed');
-      setMessage(error instanceof Error ? error.message : 'Payout setup could not be opened.');
+      setMessage(error instanceof Error ? error.message : 'Payout setup didn’t open. Check your connection and try again.');
     } finally {
       if (version === opening.current) { requestBusy.current = false; setBusy(false); }
     }
@@ -226,7 +226,7 @@ export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, 
     } catch {
       if (version !== opening.current) return;
       trackPayoutSetup('status_failed');
-      setMessage('Your details may be saved. We couldn’t refresh your payout status. Please try again.');
+      setMessage('Your details may already be saved with Stripe. We just couldn’t refresh your payout status, so please try again.');
     } finally {
       if (version === opening.current) { requestBusy.current = false; setBusy(false); }
     }

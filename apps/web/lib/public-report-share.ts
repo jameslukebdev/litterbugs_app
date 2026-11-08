@@ -188,7 +188,7 @@ export async function loadPublicReportPhoto(reportId: string, kind: 'before' | '
     if (!attempt?.final_submission_id) return null;
     const { data: photo } = await supabase.from('cleanup_submission_photos')
       .select('storage_path').eq('submission_id', attempt.final_submission_id)
-      .order('display_order', { ascending: true }).limit(1).maybeSingle();
+      .order('display_order', { ascending: true }).range(index, index).maybeSingle();
     path = photo?.storage_path;
   }
   if (!path) return null;

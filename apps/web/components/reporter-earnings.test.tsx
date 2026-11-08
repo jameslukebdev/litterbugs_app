@@ -22,7 +22,7 @@ describe('reporter earnings', () => {
     render(<ReporterEarnings userId="reporter" />);
     expect(await screen.findByText('$5.00 · Sent to Stripe')).toBeTruthy();
     expect(screen.getByRole('link', { name: /Riverside/ }).getAttribute('href')).toBe('/account/reports/report?from=payments');
-    expect(screen.getByText(/Bank arrival follows/)).toBeTruthy();
+    expect(screen.getByText(/reaches your bank on your Stripe payout schedule/)).toBeTruthy();
   });
   it('offers a retry instead of showing an empty account on errors', async () => {
     load.mockResolvedValueOnce({ data: [], error: new Error('offline') }).mockResolvedValue({ data: [], error: null });

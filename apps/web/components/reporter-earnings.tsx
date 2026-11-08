@@ -38,16 +38,16 @@ export function ReporterEarnings({ userId }: { userId: string }) {
   }, [userId, refresh, retry]);
   return <section className="member-panel" aria-label="Reporter earnings">
     <header><div><h3>Reporter earnings</h3></div></header>
-    <p style={{ padding: '0 18px', fontSize: 14, lineHeight: 1.5 }}>Earn 5% of eligible contributions when a report you create leads to an approved, funded cleanup. Your reward comes from the service fee, so the cleaner keeps the full cleanup reward.</p>
+    <p style={{ padding: '0 18px', fontSize: 14, lineHeight: 1.5 }}>Earn 5% of eligible contributions when a report you made is funded and its cleanup is approved. It comes out of the service fee, so the cleaner still gets the full amount.</p>
     <div className="member-activity-list">
       {loading ? <p className="member-empty" role="status">Loading reporter earnings…</p> : failed ? <button className="secondary-button" onClick={() => setRetry(value => value + 1)}>Retry loading reporter earnings</button> : rewards.length ? rewards.map(reward =>
         <Link key={reward.cleanup_attempt_id} href={`/account/reports/${reward.report_id}?from=payments`} className="member-activity-row member-completed-row">
           <span><strong>{reward.report?.title || 'Completed litter cleanup'}</strong>
-            <small>{new Date(reward.created_at).toLocaleDateString()} · Reporter reward</small>
+            <small>{new Date(reward.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · Your 5% share</small>
             <small className="member-reward-status">{formatUsd(reward.amount_cents)} · {statusLabel[reward.status]}</small></span>
           <Icon name="chevron-right" />
         </Link>) : <p className="member-empty">No reporter earnings yet.</p>}
     </div>
-    <p style={{ padding: '0 18px', fontSize: 13, lineHeight: 1.5, color: 'var(--muted)' }}>Receiving rewards requires an eligible US Stripe account and age 18 or older. Bank arrival follows your Stripe payout schedule.</p>
+    <p style={{ padding: '0 18px', fontSize: 13, lineHeight: 1.5, color: 'var(--muted)' }}>To get paid you need an eligible US Stripe account and to be 18 or older. Money reaches your bank on your Stripe payout schedule.</p>
   </section>;
 }

@@ -24,7 +24,9 @@ it('uses site appearance and Stripe-managed current requirements without bypassi
   expect(f.update).toHaveBeenCalledWith({ appearance: { variables: { colorPrimary: '#5146ed' } } });
   expect(screen.getByText('{"fields":"currently_due","futureRequirements":"omit","requirements":{"exclude":["business_profile.product_description","defaults.profile.product_description","business_type","identity.entity_type"]}}')).toBeTruthy();
   expect(screen.queryByRole('button', { name: 'Continue on Stripe' })).toBeNull();
-  expect(screen.queryByRole('button', { name: 'Back' })).toBeNull();
+  // Back is always available while Stripe's form is open, and returns to the payout steps.
+  fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+  expect(f.onBack).toHaveBeenCalledOnce();
   fireEvent.click(screen.getByRole('button', { name: 'Exit Stripe form' }));
   expect(f.onExit).toHaveBeenCalledOnce();
   expect(tracking).toHaveBeenCalledWith('form_exited');

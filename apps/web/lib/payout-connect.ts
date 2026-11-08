@@ -16,7 +16,15 @@ export const payoutConnectAppearance = {
     formBorderRadius: '14px', inputFieldPaddingY: '12px',
     buttonPrimaryColorBackground: '#5146ed', buttonPrimaryColorBorder: '#5146ed', buttonPrimaryColorText: '#ffffff',
     buttonSecondaryColorBackground: '#ffffff', buttonSecondaryColorBorder: '#d6ceef', buttonSecondaryColorText: '#4438bb',
-    headingLgFontSize: '24px', headingMdFontSize: '20px',
+    // Stripe's step titles sit one size below our own "Set up your payouts" bar.
+    headingXlFontSize: '24px', headingLgFontSize: '22px', headingMdFontSize: '18px',
+    // Links in our darker purple with no underline, like the rest of the site.
+    actionPrimaryColorText: '#3f36c4', actionPrimaryTextDecorationLine: 'none',
+    actionSecondaryColorText: '#45434d', actionSecondaryTextDecorationLine: 'none',
+    // Focus outline, checkboxes and placeholder text in the site's colours.
+    formHighlightColorBorder: '#5146ed', formAccentColor: '#5146ed', formPlaceholderTextColor: '#8b879a',
+    // Stripe's own pop-ups match ours: rounded, on the same dim backdrop.
+    overlayBorderRadius: '20px', overlayBackdropColor: 'rgba(41, 41, 50, 0.5)',
   },
 };
 
@@ -88,7 +96,7 @@ export async function createPayoutConnect(firstSession: PayoutSession, onInvalid
       const next = initial && initial.expiresAt * 1000 > Date.now() ? initial : await createPayoutSession();
       initial = null;
       if (!valid || next.publishableKey !== firstSession.publishableKey) {
-        throw new Error('Payout session has changed. Please reopen payout setup.');
+        throw new Error('Your payout session changed. Close this window and open payout setup again.');
       }
       return next.clientSecret;
     },

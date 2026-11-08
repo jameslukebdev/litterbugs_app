@@ -1,6 +1,5 @@
 'use client';
 import { AppLink } from '@/components/app-link';
-import { reportTypeSummary } from '@/lib/report-context';
 
 import { moveDialogFocus } from '@/lib/dialog-focus';
 import Link from 'next/link';
@@ -8,12 +7,15 @@ import Link from 'next/link';
 /* eslint-disable @next/next/no-img-element -- Signed Supabase URLs are short-lived runtime images. */
 
 import { useEffect, useRef, useState } from 'react';
+import { DeleteReportConfirm, dangerTriggerClass } from '@/components/decision-panels';
+import { FiMaximize2, FiMinimize2 } from 'react-icons/fi';
+import styles from './report-detail.module.css';
 import type { Report } from '@litterbugs/report-contract';
 
 import { isReportClosed } from '@/lib/report-visibility';
 import { useReportSheetDismiss } from '@/components/use-report-sheet-dismiss';
 import { ModalShell } from '@/components/modal-shell';
-import { CompletedCleanup } from '@/components/completed-cleanup';
+import { AfterPhotos, CompletedCleanup, useCleanupImpact } from '@/components/completed-cleanup';
 import { ReportAuthor } from '@/components/report-author';
 import { CleanupAction } from '@/components/cleanup-action';
 import { CleanupReviewAction } from '@/components/cleanup-review-action';
@@ -77,7 +79,7 @@ export function ReportDetail({
   isOwner: boolean;
   onClose: () => void;
   onEdit?: () => void;
-  onDelete?: () => void;
+  onDelete?: () => void | Promise<void>;
   userId?: string | null;
   onRequireSignIn?: (intent?: 'clean' | 'fund') => void;
   onReportChanged?: () => void | Promise<void>;
@@ -116,6 +118,12 @@ export function ReportDetail({
   }
 
   const [photoZoomed, setPhotoZoomed] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  // Remembered per report, so opening another report starts on its after photo again.
+  const [photoChoice, setPhotoChoice] = useState<{ id: string; side: 'after' | 'before' }>({ id: report.id, side: 'after' });
+  const photoSide = photoChoice.id === report.id ? photoChoice.side : 'after';
+  const setPhotoSide = (side: 'after' | 'before') => setPhotoChoice({ id: report.id, side });
   const [photoIndex, setPhotoIndex] = useState(0);
   const [photoRetry, setPhotoRetry] = useState(0);
   type ReadyPhoto = { reportId: string; src: string; index: number };
@@ -196,6 +204,15 @@ export function ReportDetail({
 
   const [openedAt] = useState(() => Date.now());
   const closed = isReportClosed(report, openedAt);
+  // Cleaned-up reports lead with the after photo; the switch flips the same frame to the before photo.
+  const cleanup = useCleanupImpact(report.cleanup_state === 'completed' ? report.id : null);
+  const hasAfterPhotos = report.cleanup_state === 'completed' && (cleanup.impact?.photoPaths.length ?? 0) > 0;
+  const showAfter = hasAfterPhotos && photoSide === 'after';
+  // Same bugs and colours as the map pins: ladybug = needs a cleanup, caterpillar = being cleaned, flower = cleaned up.
+  const statusView = closed ? { tone: 'muted', bug: '' }
+    : report.cleanup_state === 'completed' ? { tone: 'done', bug: '/brand/bugs/flower.png' }
+    : report.cleanup_state === 'available' ? { tone: 'open', bug: '/brand/bugs/ladybug.png' }
+    : { tone: 'busy', bug: '/brand/ranks/caterpillar.svg' };
   const severity = report.severity ?? 'Medium';
   const hasLitterTypes = Boolean(report.litter_types?.length || report.types);
   const shareable = isPubliclyShareableReport(report);
@@ -296,7 +313,7 @@ export function ReportDetail({
     <div className={embedded ? "report-detail-embedded" : inline && !expandedLayout ? "report-detail-pane report-detail-context" : `report-detail-backdrop${expandedLayout ? ' report-detail-expanded' : ' report-detail-context'}`} role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <aside
         ref={dialogRef}
-        className={`report-detail${photoPaths.length ? '' : ' report-detail-without-photo'}`}
+        className={`report-detail ${styles.v2}${photoPaths.length ? '' : ' report-detail-without-photo'}`}
         role={embedded || (inline && !expandedLayout) ? "region" : "dialog"}
         aria-modal={embedded || (inline && !expandedLayout) ? undefined : true}
         tabIndex={-1}
@@ -314,10 +331,10 @@ export function ReportDetail({
             <Icon name="chevron-left" />
             <span>{closeLabel.includes('community') ? 'Back to community' : 'Back to map'}</span>
           </button>
-          {!embedded && <button className="report-layout-toggle" onClick={() => setExpandedLayout(value => !value)} aria-pressed={expandedLayout}>{expandedLayout ? 'Compact view' : 'Larger view'}</button>}
+          {!embedded && <button className="report-layout-toggle" onClick={() => setExpandedLayout(value => !value)} aria-pressed={expandedLayout} aria-label={expandedLayout ? 'Compact view' : 'Larger view'} title={expandedLayout ? 'Compact view' : 'Larger view'}>{expandedLayout ? <FiMinimize2 aria-hidden="true" /> : <FiMaximize2 aria-hidden="true" />}</button>}
           <img className="report-detail-toolbar-logo" src="/brand/litterbugs-logo.png" alt="" aria-hidden />
           <nav className="report-detail-toolbar-actions" aria-label="Report actions">
-            {onFavoriteChange && <button type="button" aria-pressed={favorite} onClick={() => onFavoriteChange?.(!favorite)}>
+            {onFavoriteChange && <button type="button" aria-pressed={favorite} title={favorite ? 'Saved' : 'Favorite'} onClick={() => onFavoriteChange?.(!favorite)}>
               <Icon name="heart" />
               <span>{favorite ? 'Saved' : 'Favorite'}</span>
             </button>}
@@ -327,13 +344,14 @@ export function ReportDetail({
                 type="button"
                 aria-haspopup="dialog"
                 aria-expanded={shareDialogOpen}
+                title={report.cleanup_state === 'completed' ? 'Share cleanup' : shareCopy.actionLabel}
                 onClick={() => { void shareReport(); }}
               >
                 <Icon name="share" />
                 <span>{report.cleanup_state === 'completed' ? 'Share cleanup' : shareCopy.actionLabel}</span>
               </button>
             )}
-            {onHiddenChange && <button type="button" aria-pressed={hidden} onClick={() => onHiddenChange?.(!hidden)}>
+            {onHiddenChange && <button type="button" aria-pressed={hidden} title={hidden ? 'Hidden' : 'Hide'} onClick={() => onHiddenChange?.(!hidden)}>
               <Icon name="eye-off" />
               <span>{hidden ? 'Hidden' : 'Hide'}</span>
             </button>}
@@ -342,8 +360,14 @@ export function ReportDetail({
         </header>
         <div className="report-detail-layout">
           <div className="report-detail-visual">
-            {report.cleanup_state === 'completed' && photoPaths.length > 0 && <p className="report-photo-label">Before cleanup</p>}
-            <div className="report-photo-region" aria-busy={photoPaths.length > 0 && !photoLoaded && !photoFailed}>
+            {hasAfterPhotos && photoPaths.length > 0 && <div className={styles.sideSwitch} role="group" aria-label="Choose photos">
+              <button type="button" aria-pressed={photoSide === 'after'} data-side="after" onClick={() => setPhotoSide('after')}><img src="/brand/bugs/flower.png" alt="" aria-hidden="true" width={16} height={16} />After cleanup</button>
+              <button type="button" aria-pressed={photoSide === 'before'} data-side="before" onClick={() => setPhotoSide('before')}><img src="/brand/bugs/ladybug.png" alt="" aria-hidden="true" width={16} height={16} />Before</button>
+            </div>}
+            <div className="report-photo-region" aria-busy={showAfter ? undefined : photoPaths.length > 0 && !photoLoaded && !photoFailed}>
+              {/* The switch already names the photo; label it only when there is no switch (no after photos). */}
+              {report.cleanup_state === 'completed' && !hasAfterPhotos && photoPaths.length > 0 && <span className={styles.sideLabel} data-side="before">Before cleanup</span>}
+              {showAfter ? <AfterPhotos key={report.id} reportId={report.id} paths={cleanup.impact!.photoPaths} fill /> : <>
               {photoSrc && (photoLoaded || retained) && !photoFailed && <button disabled={!photoLoaded} className="photo-expand-button" onClick={openPhoto}>View full photo</button>}
               {photoPaths.length ? (
                 <>
@@ -394,6 +418,7 @@ export function ReportDetail({
               ) : (
                 <div className="photo-placeholder"><Icon name="image" /><strong>No photo added</strong><span>This report was submitted without a photo.</span></div>
               )}
+              </>}
             </div>
           </div>
 
@@ -401,19 +426,18 @@ export function ReportDetail({
             <div className="report-detail-scroll">
               <header className="report-detail-header">
                 <h2 id="report-detail-title">{report.title || 'Litter Report'}</h2>
-                <p className="report-context">{reportTypeSummary(report)}</p>
-                <div className="report-summary-line">
-                  <span className={`report-detail-severity report-detail-severity-${severity.toLowerCase()}`}><span />{severity}</span>
-                  {report.created_at && <span>{formatDate(report.created_at)}</span>}
-                  {!closed && report.cleanup_state === 'available' && report.expires_at && <span>Expires {formatDate(report.expires_at)}</span>}
-                </div>
-                <div className="report-status-row">
-                  <span>{closed ? 'Report closed' : cleanupStatusLabel(report.cleanup_state)}</span>
-                  {report.cleanup_state !== 'completed' && report.funded_amount_cents > 0 && <strong>{formatUsd(report.funded_amount_cents)} reward</strong>}
-                </div>
-                <AppLink reportId={report.id} className="report-open-app">Open in app</AppLink>
+                <p className={styles.status} data-tone={statusView.tone}>
+                  {statusView.bug ? <img src={statusView.bug} alt="" aria-hidden="true" width={18} height={18} /> : null}
+                  {closed ? 'Report closed' : cleanupStatusLabel(report.cleanup_state)}
+                </p>
+                {!closed && report.cleanup_state !== 'completed' && report.funded_amount_cents > 0 && <p className={styles.fund}><img src="/brand/bugs/bee.png" alt="" aria-hidden="true" width={18} height={18} />{formatUsd(report.funded_amount_cents)} in its cleanup fund</p>}
+                <p className={styles.meta}>
+                  <span className={`report-detail-severity report-detail-severity-${severity.toLowerCase()}`}><span />{severity} priority</span>
+                  {report.created_at && <span>Reported {formatDate(report.created_at)}</span>}
+                  {!closed && report.cleanup_state === 'available' && report.expires_at && <span>Open until {formatDate(report.expires_at)}</span>}
+                </p>
               </header>
-              {report.cleanup_state === 'completed' && <CompletedCleanup key={report.id} reportId={report.id} />}
+              {report.cleanup_state === 'completed' && <CompletedCleanup key={report.id} reportId={report.id} cleanup={cleanup} showPhotos={!hasAfterPhotos || photoPaths.length === 0} />}
 
 
 
@@ -422,18 +446,23 @@ export function ReportDetail({
                 {hasLitterTypes && <p className="report-detail-fact"><strong>Litter</strong><span>{[...(report.litter_types ?? []), ...(report.types ? [report.types] : [])].join(', ')}</span></p>}
                 {!!report.notes_presets?.length && <p className="report-detail-fact"><strong>Notes</strong><span>{report.notes_presets.join(', ')}</span></p>}
                 {report.notes_other && <p className="report-detail-fact"><strong>Details</strong><span>{report.notes_other}</span></p>}
-                <details className="report-reference"><summary>Report details</summary><p>Report reference: {report.id}</p></details>
+                {!closed && userId && report.funded_amount_cents > 0 && report.cleanup_state !== 'completed' && <div className={styles.payout}><span>Cleaning this up? Set up payouts so you can get paid.</span><PayoutSetupAction compact /></div>}
+                <p className={styles.footnote}><AppLink reportId={report.id} className="report-open-app">Open in the app</AppLink><span aria-hidden="true"> · </span><span>Report ID {report.id.slice(0, 8)}</span></p>
               </div>
-              <ReportAuthor profileId={report.user_id} sourceReportId={report.id} onBlocked={() => { onClose(); void onReportChanged?.(); }} />
+              <div className={styles.byline}><ReportAuthor profileId={report.user_id} sourceReportId={report.id} onBlocked={() => { onClose(); void onReportChanged?.(); }} /></div>
             </div>
 
             <footer className="report-detail-footer" tabIndex={entryIntent ? -1 : undefined} aria-label="Cleanup and funding options">
-              {onDelete && isOwner && !closed && report.cleanup_state === 'available' && !report.funding_locked_at && <button className="danger-button compact-button" onClick={onDelete}><Icon name="trash" />Delete</button>}
+              {confirmingDelete && onDelete ? <DeleteReportConfirm busy={deleting} onCancel={() => setConfirmingDelete(false)} onConfirm={() => {
+                setDeleting(true);
+                void Promise.resolve(onDelete()).finally(() => { setDeleting(false); setConfirmingDelete(false); });
+              }} /> : <>
+              {onDelete && isOwner && !closed && report.cleanup_state === 'available' && !report.funding_locked_at && <button className={`danger-button compact-button ${dangerTriggerClass}`} onClick={() => setConfirmingDelete(true)}><Icon name="trash" />Delete</button>}
               {onEdit && isOwner && !closed && report.cleanup_state === 'available' && !report.funding_locked_at && <button className="secondary-button compact-button" onClick={onEdit}><Icon name="edit" />Edit</button>}
               {taskBase && isOwner && !closed && report.cleanup_state === 'completion_submitted' ? <Link className="secondary-button" href={`${taskBase}&task=review`}>Review cleanup</Link> : <CleanupReviewAction report={report} userId={userId} isOwner={isOwner} onChanged={onReportChanged} />}
               <FundingContributionAction report={report} userId={userId} autoOpen={entryIntent === 'fund'} onRequireSignIn={() => onRequireSignIn?.('fund')} onChanged={onReportChanged} />
-              {!closed && userId && report.funded_amount_cents > 0 && report.cleanup_state !== 'completed' && <PayoutSetupAction compact />}
               {!closed && (taskBase ? <Link className="primary-button" href={`${taskBase}&task=cleanup`}>Open cleanup workspace</Link> : <CleanupAction report={report} userId={userId} autoOpen={entryIntent === 'clean'} onRequireSignIn={() => onRequireSignIn?.('clean')} onChanged={onReportChanged} />)}
+              </>}
             </footer>
           </div>
         </div>

@@ -19,6 +19,8 @@ import { reportRewardCents } from '@/lib/cleanup-reward';
 import { getBrowserLocation } from '@/lib/geolocation';
 import { createClient } from '@/lib/supabase/client';
 import { ReportAuthor, publicFields, type PublicProfile } from '@/components/report-author';
+import { FilterChoices } from '@/components/filter-choices';
+import filterStyles from '@/components/filter-choices.module.css';
 import { ModalShell } from '@/components/modal-shell';
 import { Icon } from '@/components/icon';
 import { getReportCardPhotoUrl, getReportDetailPhotoUrl, retryReportPhotoUrl } from '@/lib/report-photo';
@@ -418,13 +420,27 @@ export function ReportBrowser({
           {filtersOpen && <ModalShell label="Search and filters" className="discovery-filter-dialog" onClose={() => { setDraftFilters(applied); setFiltersOpen(false); }}>{close => <><h2>Search and filters</h2>
             <div className="discovery-filter-fields">
               <label className="discovery-query">Search report titles and notes<input type="search" value={draftFilters.query} onChange={event => updateFilter('query', event.target.value)} placeholder="Bottles, roadside…" /></label>
-              <label>Cleanup status<select value={draftFilters.status} onChange={event => updateFilter('status', event.target.value as DiscoveryFilters['status'])}><option value="all">All</option><option value="available">Available</option><option value="progress">In progress</option><option value="completed">Completed</option></select></label>
-              <label>Reward<select value={draftFilters.funding} onChange={event => updateFilter('funding', event.target.value as DiscoveryFilters['funding'])}><option value="all">Any reward</option><option value="funded">Funded</option><option value="volunteer">Volunteer</option></select></label>
-              <label>Severity<select value={draftFilters.severity} onChange={event => updateFilter('severity', event.target.value as DiscoveryFilters['severity'])}><option value="all">All</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>
-              <label>Distance from map center<select disabled={!mapCenter} value={draftFilters.radius} onChange={event => updateFilter('radius', Number(event.target.value) as DiscoveryFilters['radius'])}><option value={0}>Any distance</option><option value={5}>5 miles</option><option value={25}>25 miles</option><option value={50}>50 miles</option></select></label>
-              <label>Saved reports<select value={draftFilters.scope} onChange={event => updateFilter('scope', event.target.value as DiscoveryFilters['scope'])}><option value="all">All visible reports</option><option value="favorites">Favorites only</option><option value="hidden">Hidden reports</option></select></label>
-              <button className="secondary-button" onClick={() => { setDraftFilters(quickFilters('all')); }}>Reset filters</button>
-              <div className="account-actions"><button className="secondary-button" onClick={close}>Cancel</button><button className="primary-button" onClick={() => { applyFilters(draftFilters); close(); }}>Apply filters</button></div>
+              <FilterChoices legend="Cleanup status" name="filter-status" value={draftFilters.status} onChange={value => updateFilter('status', value)} choices={[
+                { value: 'all', label: 'All' },
+                { value: 'available', label: 'Needs a cleanup', bug: '/brand/bugs/ladybug.png' },
+                { value: 'progress', label: 'Being cleaned', bug: '/brand/ranks/caterpillar.svg' },
+                { value: 'completed', label: 'Cleaned up', bug: '/brand/bugs/flower.png' },
+              ]} />
+              <FilterChoices legend="Cleanup fund" name="filter-funding" value={draftFilters.funding} onChange={value => updateFilter('funding', value)} choices={[
+                { value: 'all', label: 'Any' },
+                { value: 'funded', label: 'Has a fund', bug: '/brand/bugs/bee.png' },
+                { value: 'volunteer', label: 'Volunteer' },
+              ]} />
+              <FilterChoices legend="Priority" name="filter-severity" value={draftFilters.severity} onChange={value => updateFilter('severity', value)} choices={[
+                { value: 'all', label: 'All' }, { value: 'low', label: 'Low' }, { value: 'medium', label: 'Medium' }, { value: 'high', label: 'High' },
+              ]} />
+              <FilterChoices legend="Distance from map center" name="filter-radius" disabled={!mapCenter} value={draftFilters.radius} onChange={value => updateFilter('radius', value)} choices={[
+                { value: 0, label: 'Any' }, { value: 5, label: '5 mi' }, { value: 25, label: '25 mi' }, { value: 50, label: '50 mi' },
+              ]} />
+              <FilterChoices legend="Saved reports" name="filter-scope" value={draftFilters.scope} onChange={value => updateFilter('scope', value)} choices={[
+                { value: 'all', label: 'All' }, { value: 'favorites', label: 'Favorites' }, { value: 'hidden', label: 'Hidden' },
+              ]} />
+              <div className={`account-actions ${filterStyles.actions}`}><button className="secondary-button" onClick={() => { setDraftFilters(quickFilters('all')); }}>Reset filters</button><button className="primary-button" onClick={() => { applyFilters(draftFilters); close(); }}>Show results</button></div>
             </div>
           </>}</ModalShell>}
           {sort === 'closest' && locationMessage && <p role="status">{locationMessage}</p>}

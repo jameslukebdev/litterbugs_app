@@ -48,7 +48,7 @@ it('restores the saved review and custom contribution without saving over it dur
 it('prevents starting over when a submission needs recovery', async () => {
   storage.load.mockResolvedValue(saved());storage.journal.mockResolvedValue({ userId: 'owner', reportId: 'report', paths: [] });
   const props=open();await screen.findByRole('button', { name: 'Resume draft' });
-  expect(screen.queryByRole('button', { name: 'Start new' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Start over' })).toBeNull();
   expect(props.onRestorePublication).toHaveBeenCalledWith(expect.objectContaining({ reportId: 'report' }));
 });
 it('keeps the form open and reports an explicit save failure', async () => {
@@ -162,7 +162,7 @@ it('starts a blank report after clearing the old draft and omits the removed sub
   const props = open();
   await screen.findByRole('button', { name: 'Resume draft' });
   expect(screen.queryByText('Starting new replaces this draft.')).toBeNull();
-  fireEvent.click(screen.getByRole('button', { name: 'Start new' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Start over' }));
   await screen.findByRole('heading', { name: 'Add photos' });
   expect(storage.clear).toHaveBeenCalledExactlyOnceWith('owner');
   expect((screen.getByLabelText('Report title (optional)') as HTMLInputElement).value).toBe('');
