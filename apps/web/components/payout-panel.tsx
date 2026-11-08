@@ -60,7 +60,7 @@ export function PayoutPanel({ status, eligibleConfirmed, onEligible, busy, messa
       {stage !== 'loading' && stage !== 'enabled' && (
         <ol className="payout-steps">
           <li data-done={stage !== 'not_started' || undefined} data-current={stage === 'not_started' || undefined}><span aria-hidden="true">1</span><div><strong>Confirm you can be paid</strong><small>You&rsquo;re 18 or older and in the United States.</small></div></li>
-          <li data-current={stage !== 'not_started' || undefined}><span aria-hidden="true">2</span><div><strong>Verify your details and add your bank</strong><small>Your legal name and a bank account for cleanup payouts. Stripe may also need your address or ID.</small></div></li>
+          <li data-current={stage !== 'not_started' || undefined}><span aria-hidden="true">2</span><div><strong>Verify your name and choose your bank</strong><small>Then review and accept Stripe&rsquo;s terms. Phone verification is part of Stripe&rsquo;s setup.</small></div></li>
           <li><span aria-hidden="true">3</span><div><strong>Get paid</strong><small>Cash from approved cleanups is paid out to you.</small></div></li>
         </ol>
       )}
