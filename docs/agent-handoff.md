@@ -24,6 +24,37 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-07 — Claude (workflow redesign + Codex's local commits released)
+
+- Pushed and deployed `f08518c` on `codex/map-first-navigation` as
+  `dpl_HgNgjXJMLnpf7Ur15xApJegWnbLd`. Previous live deployment for rollback:
+  `dpl_DrrjEV9yHJ26aLtu13u14hePFsus` (`9d35422`).
+- **Grant chose to release Codex's 9 previously held local commits in the
+  same release** (location-first reporting before signup, Fund/Clean guest
+  continuation, stable reporting navigation, review docs).
+- `1bd6489`: redesigned workflows. The reporter review, cleaner flow
+  (claim/evidence/give back), report wizard, funding, payout setup and
+  renewal now share the white full-page style, family bugs and matching
+  buttons, with no "reward" wording. Also: payout stages and a "Your payouts"
+  reminder in Needs your attention (`/account/connect?payout=finish` opens the
+  payout screen); bug celebration at each finish (`bug-celebration.tsx`,
+  `flow-done.tsx`, `celebration-toast.tsx`); on-page confirmations replace
+  `window.confirm` for approve (paid), give back, and close/refund. Fixed
+  success messages shown red, the phone-only camera button showing on desktop,
+  and the grey strip under account pages.
+- `f08518c`: Vercel's `next build` rejected `React.Ref<unknown>` in
+  `map-publication.test.tsx` (from `1aaa5d7`). Typed it with `Ref` imported
+  from `react`; same test logic, 41/41 pass.
+- Checks: typecheck and lint clean; 784/786 tests (the same two
+  website-outcomes failures). Live /map checked with analytics excluded: 40
+  pins, new styles served, no console errors. Signed-in flows not exercised
+  live (no test account used).
+- **Not released, still local in the shared checkout:** social card restyle
+  (`report-social-card.tsx`, `share-image/route.ts`, `lib/social-card-bugs.ts`).
+  Unverified because share-image returns 500 on localhost even for the old
+  card. Also the temporary `apps/web/app/dev-review-preview/`; never commit it.
+  The share dialog redesign has not started yet.
+
 ### 2026-11-07 — Codex (five remaining phone sessions; review only, LOCAL)
 
 - Clarity 30-day list: 97 recordings, 62 Mobile, 27 Mobile with ≥1 click;
