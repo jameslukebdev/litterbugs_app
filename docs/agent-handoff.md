@@ -24,6 +24,41 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-07 — Codex (participation tracking verified and extended, LOCAL ONLY)
+
+- Source `5c137c5`, **not pushed or deployed**. Preserved Claude's current
+  workflows, embedded payout commits, social-card/share-image edits, helper,
+  preview and handoff entries. No server restart, migration, real login/signup,
+  report/photo submission, payment, claim or production analytics test.
+- `participation_step` now distinguishes `auth_succeeded`, `verification_sent`
+  and `payment_ready`. OAuth/email callback adds a bounded one-use measurement
+  hint; destination consumes it before the resumed form step and retains the pin,
+  task intent, community return and hash. General account auth is unchanged.
+  Hints are measurement only, never authorization; cross-browser cookieless
+  sessions still cannot be assumed to represent one joined person.
+- Added `participation_failure` with allowlisted `action`, `stage`, `reason`
+  and normalized page only: auth start/return/rejection/network/stall; GPS
+  permission/timeout/unavailable/stale/range; photo prepare/upload/device-save;
+  quote/payment start/form/rejection/confirmation unavailable; safety/claim;
+  evidence lookup/unconfirmed submission. No raw error text, file names, IDs,
+  coordinates, entered content or financial details in analytics properties.
+- Buffer confirmed outcomes until the SDK is ready. Non-redirecting funding
+  observes the existing server status-check result in the background, only when
+  measurement is allowed; only `succeeded` counts. Processing and uncertain
+  responses do not count as confirmed payments/failed charges. Existing receipt
+  confirmation and publication/approval deduplication remain in place.
+- **225 targeted tests pass in 19 files**, TypeScript/scoped lint/diff checks
+  pass. Mocked SDK/backend tests cover all report stages, auth return/failures,
+  funding/confirmation, claim/evidence, recovery, exclusion and payload privacy.
+  Full shared web suite: 829/832; two untouched social-card casing assertions
+  conflict with in-progress styling, plus one display-cache timeout. Isolated
+  display-cache rerun: 6/6 pass. Social-card work left intact.
+- Local guest browser 393x851: Report → choose pin → signup → close/cancel
+  works; header/navigation retained, no console warnings/errors observed; viewport
+  reset. Analytics remains excluded on localhost. Actual PostHog ingestion of
+  the new events awaits a later authorized release/verification; no live lift or
+  actual payment/provider integration completion claimed.
+
 ### 2026-11-07 — Codex (cleaner wording / required verification preserved, LOCAL)
 
 - Owner confirmed: keep everything Stripe requires for payouts; keep this
