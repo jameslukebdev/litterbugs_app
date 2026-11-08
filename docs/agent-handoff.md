@@ -24,6 +24,36 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (two newest Connect attempts traced, read-only)
+
+- Stripe uses UTC. Nov 5 account/link requests actually occurred Nov 4 at
+  10:38 p.m. EST; Nov 3 account/link requests occurred Nov 2 at 10:32 p.m. EST.
+  Both signed return-state payloads say mobile. No form opened or submitted in
+  this investigation; no onboarding URLs/signatures or identity values saved.
+- Nov 5: account creation 03:38:49Z HTTP 200; setup link 03:38:54Z HTTP 200,
+  request req_v2zOzn8CeCygTyJmE; four successful account reads through 03:39:26Z.
+  Nov 3: account creation 03:32:49Z HTTP 200; setup link request 03:32:53Z HTTP
+  200, req_v2Oyv9aoIbR0NRJWy; five successful reads through 03:33:09Z.
+  One setup-link request per target appeared in Nov 1 onward endpoint-filtered
+  results. Link success proves Stripe issued a URL, not mobile browser opening,
+  SMS delivery, completion, or absence of a later client-side error.
+- Clarity custom Nov 2–5 EST list: 63 recordings, no recording at either exact
+  attempt window. PostHog project 695338: no replay in that window; exact
+  03:20–03:50Z Nov 3 / 03:25–03:55Z Nov 5 event windows empty. No payout-route,
+  participation-step/failure or exception record found across Nov 2–5; missing
+  event families are not evidence of error-free visits. Website analytics use
+  anonymous/cookieless events; no account-to-visitor identity match established.
+- Supabase connector still lacks Litterbugs permission. Signed-in dashboard
+  does expose Litterbugs logs, but selecting the Nov 4 evening window opens
+  the retention dialog: current Free plan retains logs for 1 day. Historical
+  server logs unavailable; do not describe them as checked and error-free.
+  Native source has no centralized replay/crash reporting integration found.
+- Evidence supports early unfinished mobile onboarding, not a diagnosed SMS,
+  browser, rejection, or abandonment cause. Stripe status checks shortly after
+  link creation are consistent with app return/resume but do not prove it.
+  No source/config changes, sends, account updates, push or deployment. Preserved
+  concurrent preview/SEO work; documentation-only investigation commit.
+
 ### 2026-11-08 — Codex (cheaper hosting recommendations only)
 
 - Compared current official Netlify, Cloudflare Workers and Render plans with
