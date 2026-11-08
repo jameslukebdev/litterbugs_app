@@ -61,6 +61,35 @@ callback, secret, mobile setting, or other Auth provider was changed.
 
 Custom SMTP is configured with a new Resend credential created specifically for this Partner app. The root `litterbugs.app` sending domain is verified in Resend, and Supabase Auth is configured with sender `support@litterbugs.app`, sender name `Litterbugs`, host `smtp.resend.com`, port `465`, and username `resend`. Supabase's live Auth configuration response confirms that the encrypted SMTP password is present. The isolated DKIM, `send`-subdomain MX/SPF, and monitoring-only DMARC records were added to Cloudflare without changing website or inbox routing. No other SMTP key, domain record, or credential was changed or reused.
 
+## Resend Forge activated on 2026-11-08
+
+At the owner's request, added two Cloudflare CNAME records with DNS-only proxy
+status and Auto TTL:
+
+| Name | Target |
+| --- | --- |
+| `mail.litterbugs.app` | `send.forge.rmta.net` |
+| `mail.auth.litterbugs.app` | `send.forge.rmta.net` |
+
+Both resolve publicly to the specified CNAME target. Resend's Domains page
+confirms both `litterbugs.app` and `auth.litterbugs.app` are Verified with Forge
+Enabled. Existing DKIM, legacy `send`/`send.auth` MX/SPF, root inbox routing,
+website records and the Facebook bridge's Worker routing were preserved.
+No SMTP credential, provider callback or application code changed.
+
+A fresh owner password-reset email requested through localhost account Settings
+after root-domain activation was delivered in Resend. No password was changed
+or recovery link opened. The auth subdomain's Forge status was verified, but
+no separate email was sent from that otherwise unused sending registration.
+Forge routing is managed by Resend; this test confirms delivery, not which
+internal sending engine handled that particular email.
+
+Transactional Pro cancellation is scheduled for December 8, 2026 through
+Resend's Downgrade to Free flow. It did not require domain deletion. The final
+domain list contains three registrations (root, auth and failed retirementlists);
+the assistant did not delete the two registrations that disappeared during the
+owner's concurrent dashboard use.
+
 ## Manual rollback
 
 Because this Free project has no Auth-settings backup, rollback is manual:

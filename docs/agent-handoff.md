@@ -24,6 +24,22 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (Resend Forge enabled for both Litterbugs domains)
+
+- Owner authorized Forge activation for root/auth only. Added DNS-only, Auto TTL
+  CNAMEs mail.litterbugs.app and mail.auth.litterbugs.app to send.forge.rmta.net
+  in Cloudflare; no conflicting hostnames. Both resolve publicly. Resend Domains
+  confirms both Verified / Forge Enabled. Existing website, auth bridge, inbox,
+  DKIM, legacy MX/SPF and credential configuration preserved. No app deployment.
+- Fresh owner recovery email through localhost account Settings after root
+  activation is delivered in Resend. No password changed, reset link opened,
+  visitor email or auth-subdomain test send. Delivery engine not inferred.
+- Final Resend list now has root/auth/failed retirementlists only (3 domains,
+  within published Free limit). The assistant did not remove divinedms or
+  retirecityfinder; they disappeared during concurrent owner dashboard use.
+  Pro cancellation remains scheduled Dec 8 from the prior billing task.
+  Updated auth baseline with exact DNS records; concurrent preview work intact.
+
 ### 2026-11-08 — Codex (Resend downgrade scheduled without domain removal)
 
 - Resend accepted Downgrade to Free without deleting domains. Completed the
