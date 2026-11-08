@@ -24,6 +24,31 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (preview source synchronized; payment sandbox risk verified)
+
+- Cherry-picked approved main change `9c52d14` into isolated Cloudflare branch as
+  `165d89c`; this was the only main app source change absent from the preview.
+  23 focused tests and Next/OpenNext build/TypeScript passed. Preview Worker
+  `9e338877-e3b9-4740-a73c-cd0754f1dbb6` renders the new factual expired-report
+  history. X-Robots-Tag remains noindex/nofollow; labeled preview analytics off.
+  Live HEAD 200 / Server Vercel. No push, main source, DNS or production deploy.
+- Found existing Litterbugs Stripe sandbox `acct_1U2HaBKUBoEpySr6`; authenticated
+  read-only API verification passed. **Its enabled test webhook still targets
+  the production Supabase stripe-webhook function.** No test transactions,
+  connected accounts, webhook edits or new keys created. Do not exercise real
+  Stripe test payments until the destination is independently isolated. Audit:
+  `/tmp/litterbugs-cf-sandbox-webhook-audit.json`; temporary key copies removed.
+- Inspected existing local launch QA stack; only two newer migrations are absent
+  from its copied source. No local/remote schema or fixture mutations. Starting
+  existing Colima also resumed old local containers; all resumed containers and
+  Colima stopped afterward, retaining their volumes. Original Stripe dashboard
+  account restored. Claude's untracked dev-review-preview preserved.
+- Still pending: Cloudmersive owner access confirmation/key, independent safe
+  scanner, isolated payment webhook/backend, full workflow and physical-phone
+  verification. No switch authorized. Updated preview evidence:
+  `/tmp/litterbugs-cloudflare-current-source-smoke.json` and
+  `/tmp/litterbugs-cloudflare-synced-preview.png`.
+
 ### 2026-11-08 — Codex (original photo-scanner sign-in investigation)
 
 - Original Cloudmersive account confirmed from its older first-key email; its

@@ -6,6 +6,27 @@ Do not move the live site yet. Google login, Maps, report entry, funding quotes,
 
 Preview: https://litterbugs-cloudflare-compat-test.gegibson3113.workers.dev
 
+## Latest source and test-isolation follow-up
+
+- Current isolated source `165d89c`, Worker `9e338877-e3b9-4740-a73c-cd0754f1dbb6`.
+  Includes main's factual report-history change `9c52d14`; no other main app
+  source commits were missing. 23 focused report/analytics tests and production
+  Next/OpenNext build/TypeScript pass. Deployed expired report renders the new
+  history and original evidence. Preview remains noindex via X-Robots-Tag and
+  analytics disabled by default. Live remains Vercel (HTTP 200).
+- Labeled preview analytics delivery and actual entry/failure events were
+  verified earlier at source `0cd9bc5`; default exclusion restored at `5b2a435`.
+  See the handoff log for the 18 actual workflow events and test limits. This
+  does not prove successful payment, publication or cleanup outcomes.
+- Existing Litterbugs Stripe sandbox `acct_1U2HaBKUBoEpySr6` is accessible, but
+  its enabled test payment webhook points to the live Supabase project. This
+  was verified from Stripe's API, not just older notes. No test transactions
+  were made and no Stripe configuration changed. Isolate the webhook/backend
+  before provider payment tests; test cards alone do not isolate this setup.
+- Original Cloudmersive account uses SSO; Microsoft sign-in reached portal
+  permission consent, awaiting owner confirmation. Its plan/key remain
+  unverified. Preview uploads still depend on the exact-host Vercel relay.
+
 ## Photo repair follow-up (supersedes initial photo failures below)
 
 - Final isolated source `6debd25`, Worker version `c75c4687-5b90-4284-8643-de49eb4f7d9d`; preview only. Cloudflare Images binding replaces native image processing in this branch; named internal Cache API storage retains encoded photo bytes, with visibility/ownership checked on every request. Brand/font assets use the asset binding. No Vercel, DNS, plan or main application change.
