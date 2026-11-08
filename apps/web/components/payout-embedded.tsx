@@ -18,6 +18,7 @@ export default function PayoutEmbedded({ instance, busy, message, onExit, onFall
       </header>
       <p className="payout-lead">Get paid for approved cleanups. Stripe securely collects your identity and bank details here on Litterbugs.</p>
       {message && <p className="form-message error-message" role="alert">{message}</p>}
+      {message && <button className="secondary-button" disabled={busy} onClick={onExit}>Check payout status</button>}
       {failed ? <p className="payout-note" role="alert">The secure form couldn&rsquo;t load. You can continue on Stripe and return to Litterbugs afterward.</p> : (
         <>
           {loading && <p className="payout-lead" role="status">Loading your secure payout form…</p>}
@@ -36,7 +37,7 @@ export default function PayoutEmbedded({ instance, busy, message, onExit, onFall
       <p className="payout-stripe-note">Stripe may open a sign-in window to verify it&rsquo;s you.</p>
       <div className="payout-embedded-actions">
         <button className="secondary-button" disabled={busy} onClick={onBack}>Back</button>
-        <button className={failed ? 'primary-button payout-go' : 'text-button'} disabled={busy} onClick={onFallback}>{busy ? 'Checking…' : 'Continue on Stripe'}</button>
+        <button className={failed ? 'primary-button payout-go' : 'secondary-button'} disabled={busy} onClick={onFallback}>{busy ? 'Checking…' : 'Continue on Stripe'}</button>
       </div>
     </div>
   );

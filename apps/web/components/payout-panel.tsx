@@ -75,7 +75,7 @@ export function PayoutPanel({ status, eligibleConfirmed, onEligible, busy, messa
       <button className="primary-button payout-go" onClick={onContinue} disabled={busy || !status || (needsConfirm && !eligibleConfirmed)}>
         {busy ? 'Loading…' : copy?.button ?? 'Set up payouts'}
       </button>
-      {message && onFallback && <button className="text-button" disabled={busy || !status || (needsConfirm && !eligibleConfirmed)} onClick={onFallback}>Continue on Stripe</button>}
+      {message && onFallback && <button className="secondary-button" disabled={busy || !status || (needsConfirm && !eligibleConfirmed)} onClick={onFallback}>Continue on Stripe</button>}
       <p className="payout-stripe-note">Stripe handles your identity and payment details securely.</p>
     </div>
   );

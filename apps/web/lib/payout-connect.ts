@@ -12,6 +12,8 @@ export const payoutConnectAppearance = {
     colorSecondaryText: '#686477', colorDanger: '#a8323b', colorBorder: '#e3dff0',
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
     fontSizeBase: '16px', spacingUnit: '8px', borderRadius: '14px', buttonBorderRadius: '14px',
+    buttonPaddingX: '18px', buttonPaddingY: '12px', buttonLabelFontSize: '16px', buttonLabelFontWeight: '700',
+    formBorderRadius: '14px', inputFieldPaddingY: '12px',
     buttonPrimaryColorBackground: '#5146ed', buttonPrimaryColorBorder: '#5146ed', buttonPrimaryColorText: '#ffffff',
     buttonSecondaryColorBackground: '#ffffff', buttonSecondaryColorBorder: '#d6ceef', buttonSecondaryColorText: '#4438bb',
     headingLgFontSize: '24px', headingMdFontSize: '20px',

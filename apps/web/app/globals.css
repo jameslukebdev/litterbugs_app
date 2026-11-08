@@ -2099,7 +2099,7 @@ body .modal-backdrop > .modal-shell.flow-page.payout-page.payout-page { --flow-w
 .payout-connect-form { min-width: 0; min-height: 220px; }
 .payout-embedded-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .payout-embedded-actions .payout-go { width: auto; flex: 1; }
-.payout-embedded-actions .text-button { min-height: 44px; color: #4438bb; }
+.payout-embedded-actions .secondary-button { min-height: 46px; border-color: #d6ceef; color: #4438bb; }
 
 /* Renew or close an ending report: dragonfly (Report family) card, one clear choice, honest deadline. */
 .renew-list { display: grid; gap: 12px; padding: 4px 0 2px; }
