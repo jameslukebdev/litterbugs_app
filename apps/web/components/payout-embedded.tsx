@@ -1,8 +1,9 @@
 'use client';
 /* eslint-disable @next/next/no-img-element -- existing decorative payout family artwork. */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { StripeConnectInstance } from '@stripe/connect-js';
 import { ConnectAccountOnboarding, ConnectComponentsProvider } from '@stripe/react-connect-js';
+import { payoutConnectAppearance } from '@/lib/payout-connect';
 
 export default function PayoutEmbedded({ instance, busy, message, onExit, onFallback, onBack }: {
   instance: StripeConnectInstance; busy: boolean; message: string;
@@ -10,6 +11,7 @@ export default function PayoutEmbedded({ instance, busy, message, onExit, onFall
 }) {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  useEffect(() => { instance.update({ appearance: payoutConnectAppearance }); }, [instance]);
   return (
     <div className="payout-flow payout-embedded">
       <header className="payout-head">
