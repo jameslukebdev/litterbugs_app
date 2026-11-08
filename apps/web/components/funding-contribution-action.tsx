@@ -1,7 +1,7 @@
 'use client';
 import { contributionReturnPath } from '@/lib/community-journey';
 
-import { rememberContributionAttempt, trackParticipation, trackParticipationFailure } from '@/lib/website-analytics';
+import { rememberContributionAttempt, trackParticipation, trackParticipationFailure, trackParticipationExit } from '@/lib/website-analytics';
 import { useGuestParticipationEntry } from '@/lib/use-guest-participation-entry';
 
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
@@ -171,6 +171,7 @@ export function FundingContributionAction({
   }
 
   function dismiss() {
+    trackParticipationExit('fund', intent ? 'payment_form' : previousContribution ? 'payment_submitted' : 'amount_review', 'cancelled');
     setDismissed(true);
     setOpen(false);
     onDismiss?.();

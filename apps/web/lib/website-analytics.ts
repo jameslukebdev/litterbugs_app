@@ -1,5 +1,7 @@
 import { AUTH_RESULT_PARAM } from './participation-auth';
 import { communityForEntry, communityForPath, communityProperties, type CommunityEngagementEvent, type CommunityProperties } from './community-metrics';
+// Bump when participation semantics/workflows change; compiled into each browser bundle.
+export const WORKFLOW_VERSION = 'web-participation-2026-11-07-v2';
 export const ANALYTICS_CONSENT_KEY = 'litterbugs:analytics-consent:v1';
 export const ANALYTICS_REPLAY_CHOICE_KEY = 'litterbugs:analytics-replay-consent:v1';
 export const ANALYTICS_EVENT = 'litterbugs:analytics-event';
@@ -116,12 +118,12 @@ const COMMON_STAGES = ['action_tapped', 'auth_shown', 'auth_submitted', 'auth_su
 export type ParticipationAction = keyof typeof PARTICIPATION_STAGES;
 export type ParticipationStage = typeof COMMON_STAGES[number] | typeof PARTICIPATION_STAGES[ParticipationAction][number];
 
-export function participationProperties(value: { action?: unknown; stage?: unknown }) {
+export function participationProperties(value: { action?: unknown; stage?: unknown; source?: unknown }) {
   const { action, stage } = value;
   if ((action !== 'report' && action !== 'fund' && action !== 'clean') || typeof stage !== 'string') return null;
   if (!(COMMON_STAGES as readonly string[]).includes(stage)
     && !(PARTICIPATION_STAGES[action] as readonly string[]).includes(stage)) return null;
-  return { action: action as ParticipationAction, stage };
+  return { action: action as ParticipationAction, stage, ...(isEntrySource(value.source) ? { source: value.source } : {}) };
 }
 
 const pendingParticipation: Array<NonNullable<ReturnType<typeof participationProperties>> & { page_type: string }> = [];
@@ -129,11 +131,12 @@ export function drainParticipation() {
   return pendingParticipation.splice(0);
 }
 
-export function trackParticipation(action: ParticipationAction, stage: ParticipationStage) {
+export function trackParticipation(action: ParticipationAction, stage: ParticipationStage, source?: EntrySource) {
   try {
     consumeParticipationAuthResult();
     if (!analyticsProductionBrowser()) return;
-    const safe = participationProperties({ action, stage });
+    if (stage === 'action_tapped') participationSources.set(action, source ?? currentEntrySource());
+    const safe = participationProperties({ action, stage, source: source ?? participationSources.get(action) });
     if (!safe) return;
     if (pendingParticipation.length >= 30) pendingParticipation.shift();
     pendingParticipation.push({ ...safe, page_type: analyticsPage(window.location.pathname) ?? '/private' });
@@ -148,7 +151,7 @@ const FAILURE_REASONS = {
   clean: ['auth_start_failed', 'auth_return_failed', 'auth_rejected', 'auth_network_failed', 'auth_redirect_stalled', 'safety_load_failed', 'safety_save_failed', 'claim_failed', 'photo_prepare_failed', 'photo_upload_failed', 'draft_save_failed', 'evidence_check_failed', 'evidence_submit_unconfirmed'],
 } as const;
 export type ParticipationFailureReason = typeof FAILURE_REASONS[ParticipationAction][number];
-export function participationFailureProperties(value: { action?: unknown; stage?: unknown; reason?: unknown }) {
+export function participationFailureProperties(value: { action?: unknown; stage?: unknown; reason?: unknown; source?: unknown }) {
   const step = participationProperties(value);
   if (!step || typeof value.reason !== 'string'
     || !(FAILURE_REASONS[step.action] as readonly string[]).includes(value.reason)) return null;
@@ -160,7 +163,7 @@ export function trackParticipationFailure(action: ParticipationAction, stage: Pa
   try {
     consumeParticipationAuthResult();
     if (!analyticsProductionBrowser()) return;
-    const safe = participationFailureProperties({ action, stage, reason });
+    const safe = participationFailureProperties({ action, stage, reason, source: participationSources.get(action) });
     if (!safe) return;
     if (pendingFailures.length >= 30) pendingFailures.shift();
     pendingFailures.push({ ...safe, page_type: analyticsPage(window.location.pathname) ?? '/private' });
@@ -190,4 +193,82 @@ export function consumeParticipationAuthResult() {
     else trackParticipationFailure(action, 'auth_submitted', 'auth_return_failed');
   } catch { /* Optional measurement must not affect the return destination. */ }
   finally { consumingAuthResult = false; }
+}
+
+const ENTRY_SOURCES = ['homepage', 'map_action', 'map_pin', 'report_list', 'report_link', 'cluster', 'report_detail', 'community', 'landing_page', 'account', 'direct'] as const;
+export type EntrySource = typeof ENTRY_SOURCES[number];
+function isEntrySource(value: unknown): value is EntrySource {
+  return typeof value === 'string' && (ENTRY_SOURCES as readonly string[]).includes(value);
+}
+export function entrySourceForPath(path: string): EntrySource {
+  if (path === '/') return 'homepage';
+  if (path === '/reports' || path === '/cleanups') return 'report_list';
+  if (path.startsWith('/reports/')) return 'report_detail';
+  if (path.startsWith('/communities/')) return 'community';
+  if (['/report-litter', '/fund-a-cleanup', '/cleaner'].includes(path)) return 'landing_page';
+  if (path.startsWith('/account')) return 'account';
+  return path === '/map' ? 'map_action' : 'direct';
+}
+const participationSources = new Map<ParticipationAction, EntrySource>();
+let reportEntrySource: EntrySource = 'report_detail';
+function currentEntrySource(): EntrySource {
+  if (window.location.pathname === '/map' && new URLSearchParams(window.location.search).has('report')) return reportEntrySource;
+  return entrySourceForPath(window.location.pathname);
+}
+
+const MAP_STAGES = ['search_submitted', 'location_selected', 'location_search_empty', 'location_search_failed', 'results_loaded', 'results_empty', 'results_failed', 'closest_requested', 'closest_found', 'closest_empty', 'closest_failed', 'closest_viewed', 'report_opened'] as const;
+const PAYOUT_STAGES = ['opened', 'form_opened', 'form_loading_started', 'form_loaded', 'form_exited', 'closed', 'back', 'hosted_requested', 'already_ready', 'ready', 'status_failed', 'start_failed', 'load_failed', 'session_ended'] as const;
+const EXIT_TYPES = ['cancelled', 'saved_for_later', 'draft_resumed', 'draft_discarded', 'started_new'] as const;
+const SEARCH_SURFACES = ['toolbar_search', 'empty_search', 'map', 'closest_reports'] as const;
+const RESULT_BUCKETS = ['0', '1', '2-5', '6-20', '21+'] as const;
+const DISTANCE_BUCKETS = ['under_1', '1-10', '10-50', 'over_50'] as const;
+export type JourneyEvent = 'map_discovery' | 'payout_setup' | 'participation_decision';
+type JourneyInput = { stage?: unknown; source?: unknown; surface?: unknown; result_bucket?: unknown; distance_bucket?: unknown; filtered?: unknown; truncated?: unknown; action?: unknown; exit_type?: unknown };
+function inList(value: unknown, list: readonly string[]): value is string { return typeof value === 'string' && list.includes(value); }
+export function journeyProperties(event: JourneyEvent, value: JourneyInput) {
+  if (event === 'participation_decision') {
+    const step = participationProperties(value);
+    return step && inList(value.exit_type, EXIT_TYPES) ? { ...step, exit_type: value.exit_type } : null;
+  }
+  if (event === 'payout_setup') return inList(value.stage, PAYOUT_STAGES) ? { stage: value.stage } : null;
+  if (event !== 'map_discovery' || !inList(value.stage, MAP_STAGES)) return null;
+  return { stage: value.stage,
+    ...(isEntrySource(value.source) ? { source: value.source } : {}),
+    ...(inList(value.surface, SEARCH_SURFACES) ? { surface: value.surface } : {}),
+    ...(inList(value.result_bucket, RESULT_BUCKETS) ? { result_bucket: value.result_bucket } : {}),
+    ...(inList(value.distance_bucket, DISTANCE_BUCKETS) ? { distance_bucket: value.distance_bucket } : {}),
+    ...(typeof value.filtered === 'boolean' ? { filtered: value.filtered } : {}),
+    ...(typeof value.truncated === 'boolean' ? { truncated: value.truncated } : {}),
+  };
+}
+export function reportResultBucket(count: number) {
+  return count <= 0 ? '0' : count === 1 ? '1' : count <= 5 ? '2-5' : count <= 20 ? '6-20' : '21+';
+}
+export function reportDistanceBucket(miles: number) {
+  return miles < 1 ? 'under_1' : miles <= 10 ? '1-10' : miles <= 50 ? '10-50' : 'over_50';
+}
+const pendingJourneys: Array<{ event: JourneyEvent; properties: NonNullable<ReturnType<typeof journeyProperties>> & { page_type: string } }> = [];
+export function drainJourneys() { return pendingJourneys.splice(0); }
+function trackJourney(event: JourneyEvent, input: JourneyInput) {
+  try {
+    if (!analyticsProductionBrowser()) return;
+    const safe = journeyProperties(event, input);
+    if (!safe) return;
+    if (event === 'map_discovery' && input.stage === 'report_opened' && isEntrySource(input.source)) reportEntrySource = input.source;
+    if (pendingJourneys.length >= 50) pendingJourneys.shift();
+    pendingJourneys.push({ event, properties: { ...safe, page_type: analyticsPage(window.location.pathname) ?? '/private' } });
+    window.dispatchEvent(new CustomEvent(ANALYTICS_EVENT, { detail: { event } }));
+  } catch { /* Measurement cannot change navigation, saves or payouts. */ }
+}
+export function trackMapDiscovery(stage: typeof MAP_STAGES[number], properties: Omit<JourneyInput, 'stage'> = {}) {
+  trackJourney('map_discovery', { ...properties, stage });
+}
+export function trackPayoutSetup(stage: typeof PAYOUT_STAGES[number]) { trackJourney('payout_setup', { stage }); }
+export function trackParticipationExit(action: ParticipationAction, stage: ParticipationStage, exit_type: typeof EXIT_TYPES[number]) {
+  trackJourney('participation_decision', { action, stage, exit_type, source: participationSources.get(action) });
+}
+
+export function clearParticipationContext() {
+  participationSources.clear();
+  reportEntrySource = 'report_detail';
 }

@@ -1,5 +1,5 @@
 'use client';
-import { trackParticipation, trackParticipationFailure } from '@/lib/website-analytics';
+import { trackParticipation, trackParticipationFailure, trackParticipationExit } from '@/lib/website-analytics';
 import { useGuestParticipationEntry } from '@/lib/use-guest-participation-entry';
 import { trackDeviceSave } from '@/lib/device-save-state';
 import { prepareBrowserPhotos } from '@/lib/prepare-browser-photo';
@@ -103,7 +103,9 @@ export function CleanupAction({
       setDraftStorageFailed(false);
       setUploadedPaths((draft?.correctionDueAt ?? null) === (attempt.correction_due_at ?? null) ? draft?.uploadedPaths ?? [] : []);
       setSubmissionId(draft?.submissionId && (draft.correctionDueAt ?? null) === (attempt.correction_due_at ?? null) ? draft.submissionId : crypto.randomUUID());
-      if (draft) { setPhotos(draft.photos); setDescription(draft.description); setBagsOrItems(draft.bagsOrItems); setWeightPounds(draft.weightPounds); setDraftMessage('Your saved cleanup draft is ready.'); }
+      if (draft) {
+        if (draft.photos.length || draft.description.trim()) trackParticipationExit('clean', 'evidence_form', 'draft_resumed');
+        setPhotos(draft.photos); setDescription(draft.description); setBagsOrItems(draft.bagsOrItems); setWeightPounds(draft.weightPounds); setDraftMessage('Your saved cleanup draft is ready.'); }
       setDraftReady(attempt.id);
     }).catch(() => { if (!cancelled) { setSubmissionId(crypto.randomUUID()); setDraftStorageFailed(true); setDraftReady(attempt.id); setDraftMessage('Draft storage is unavailable. Keep this page open until you submit.'); } });
     return () => { cancelled = true; };
@@ -389,7 +391,7 @@ export function CleanupAction({
         : <button className="secondary-button compact-button" onClick={() => setReleaseConfirming(true)} disabled={attemptFailed || Boolean(busy) || preparing}>I can&rsquo;t do this cleanup</button>)}
 
       {waiverOpen && waiver && (
-        <ModalShell onClose={() => setWaiverOpen(false)} label="Cleanup safety and funded reward acknowledgment" className="cleanup-flow-dialog cleanup-waiver-dialog" closeDisabled={busy === 'claim'}>
+        <ModalShell onClose={() => { trackParticipationExit('clean', 'safety_review', 'cancelled'); setWaiverOpen(false); }} label="Cleanup safety and funded reward acknowledgment" className="cleanup-flow-dialog cleanup-waiver-dialog" closeDisabled={busy === 'claim'}>
           <CleanupSafetyPanel
             notice={attemptNotice}
             reportTitle={report.title}
@@ -408,7 +410,7 @@ export function CleanupAction({
       )}
 
       {submissionOpen && attempt && (
-        <ModalShell embedded={workspace} onClose={() => setSubmissionOpen(false)} label="Submit cleanup evidence" className="cleanup-flow-dialog cleanup-evidence-workspace" closeDisabled={busy === 'submit' || preparing}>
+        <ModalShell embedded={workspace} onClose={() => { trackParticipationExit('clean', 'evidence_form', 'cancelled'); setSubmissionOpen(false); }} label="Submit cleanup evidence" className="cleanup-flow-dialog cleanup-evidence-workspace" closeDisabled={busy === 'submit' || preparing}>
           <CleanupEvidencePanel
             notice={<>{attemptNotice}{editorLock === 'unavailable' && <p role="alert">This cleanup draft is open in another tab. Close that editor before continuing here.</p>}</>}
             correction={attempt.status === 'changes_requested'}

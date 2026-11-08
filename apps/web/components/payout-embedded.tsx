@@ -1,6 +1,6 @@
 'use client';
-/* eslint-disable @next/next/no-img-element -- existing decorative payout family artwork. */
-import { useEffect, useState } from 'react';
+import { trackPayoutSetup } from '@/lib/website-analytics';
+import { useEffect, useRef, useState } from 'react';
 import type { StripeConnectInstance } from '@stripe/connect-js';
 import { ConnectAccountOnboarding, ConnectComponentsProvider } from '@stripe/react-connect-js';
 import { payoutConnectAppearance } from '@/lib/payout-connect';
@@ -10,6 +10,7 @@ export default function PayoutEmbedded({ instance, busy, message, onExit, onFall
   instance: StripeConnectInstance; busy: boolean; message: string;
   onExit: () => void; onFallback: () => void; onBack: () => void;
 }) {
+  const observed = useRef({ loader: false, form: false, error: false });
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   useEffect(() => { instance.update({ appearance: payoutConnectAppearance }); }, [instance]);
@@ -35,9 +36,10 @@ export default function PayoutEmbedded({ instance, busy, message, onExit, onFall
                   // never exclude name, address, DOB, tax/ID details, bank accounts or terms.
                   exclude: ['business_profile.product_description', 'defaults.profile.product_description', 'business_type', 'identity.entity_type'],
                 } }}
-                onLoaderStart={() => setLoading(false)}
-                onLoadError={() => { setLoading(false); setFailed(true); }}
-                onExit={onExit}
+                onLoaderStart={() => { setLoading(false); if (!observed.current.loader) { observed.current.loader = true; trackPayoutSetup('form_loading_started'); } }}
+                onStepChange={() => { if (!observed.current.form) { observed.current.form = true; trackPayoutSetup('form_loaded'); } }}
+                onLoadError={() => { setLoading(false); setFailed(true); if (!observed.current.error) { observed.current.error = true; trackPayoutSetup('load_failed'); } }}
+                onExit={() => { trackPayoutSetup('form_exited'); onExit(); }}
               />
             </ConnectComponentsProvider>
           </div>

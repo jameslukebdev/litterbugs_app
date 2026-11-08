@@ -1,5 +1,6 @@
 'use client';
 
+import { trackMapDiscovery } from '@/lib/website-analytics';
 import { IoCloseOutline, IoLocationOutline, IoSearchOutline } from 'react-icons/io5';
 import { useEffect, useId, useRef, useState } from 'react';
 import { createLocationSearch, type LocationSuggestion } from '@/lib/location-suggestions';
@@ -9,7 +10,7 @@ import styles from './place-search.module.css';
 
 type Suggestion = LocationSuggestion;
 
-export function PlaceSearch({ selected, onSelect, onClear, bias, disabled = false, label }: { selected: SearchPlace | null; onSelect: (place: SearchPlace) => void; onClear: () => void; bias?: Coordinates | null; disabled?: boolean; label?: string }) {
+export function PlaceSearch({ selected, onSelect, onClear, bias, disabled = false, label, trackingSurface = 'toolbar_search' }: { selected: SearchPlace | null; onSelect: (place: SearchPlace) => void; onClear: () => void; bias?: Coordinates | null; disabled?: boolean; label?: string; trackingSurface?: 'toolbar_search' | 'empty_search' }) {
   const [provider] = useState(createLocationSearch);
   const inputId = useId();
   const listId = `${inputId}-suggestions`;
@@ -71,9 +72,10 @@ export function PlaceSearch({ selected, onSelect, onClear, bias, disabled = fals
       const places = await Promise.race([provider.search(query.trim(), bias), timeout]);
       if (seq !== sequence.current) return;
       setResults(places);
+      if (!places.length) trackMapDiscovery('location_search_empty', { surface: trackingSurface });
       if (!places.length) setMessage('No location found. Try a city and state or a full address.');
     } catch {
-      if (seq === sequence.current) setMessage('Location search could not load. Please try again.');
+      if (seq === sequence.current) { trackMapDiscovery('location_search_failed', { surface: trackingSurface }); setMessage('Location search could not load. Please try again.'); }
     } finally {
       window.clearTimeout(timer);
       if (seq === sequence.current) setBusy(false);
@@ -92,13 +94,14 @@ export function PlaceSearch({ selected, onSelect, onClear, bias, disabled = fals
       const timeout = new Promise<never>((_, reject) => controller.signal.addEventListener('abort', () => reject(new Error('Area search timed out')), { once: true }));
       const resolved = await Promise.race([place.resolve(), timeout]);
       if (seq !== sequence.current) return;
+      trackMapDiscovery('location_selected', { surface: trackingSurface });
       onSelect(resolved);
       setResults([]);
       setText('');
       setMessage('');
       setOpen(false);
     } catch {
-      if (seq === sequence.current) setMessage('The area could not be loaded. Try selecting it again.');
+      if (seq === sequence.current) { trackMapDiscovery('location_search_failed', { surface: trackingSurface }); setMessage('The area could not be loaded. Try selecting it again.'); }
     } finally {
       window.clearTimeout(timer);
       if (seq === sequence.current) setBusy(false);
@@ -111,6 +114,7 @@ export function PlaceSearch({ selected, onSelect, onClear, bias, disabled = fals
   }}>
     <form onSubmit={event => {
       event.preventDefault();
+      if (text.trim().length >= 2) trackMapDiscovery('search_submitted', { surface: trackingSurface });
       if (showSuggestions && active >= 0 && results[active]) void choose(results[active]);
       else if (showSuggestions && results.length) { setActive(0); setMessage('Choose a location below.'); }
       else void search(text);

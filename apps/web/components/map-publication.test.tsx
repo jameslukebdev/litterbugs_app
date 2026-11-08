@@ -6,8 +6,8 @@ import { useEffect, useImperativeHandle, type Ref } from 'react';
 import { DEFAULT_DISCOVERY_FILTERS, type DiscoveryFilters } from '@/lib/report-discovery';
 import { MapExperience } from './map-experience';
 
-const telemetry = vi.hoisted(() => ({ step: vi.fn(), failure: vi.fn(), outcome: vi.fn() }));
-vi.mock('@/lib/website-analytics', async original => ({ ...await original<object>(), trackParticipation: telemetry.step, trackParticipationFailure: telemetry.failure, trackWebsiteOutcome: telemetry.outcome }));
+const telemetry = vi.hoisted(() => ({ step: vi.fn(), failure: vi.fn(), outcome: vi.fn(), discovery: vi.fn() }));
+vi.mock('@/lib/website-analytics', async original => ({ ...await original<object>(), trackParticipation: telemetry.step, trackParticipationFailure: telemetry.failure, trackWebsiteOutcome: telemetry.outcome, trackMapDiscovery: telemetry.discovery }));
 
 const state = vi.hoisted(() => ({
   center: { lat: 0, lng: 0 },
@@ -564,6 +564,7 @@ it('opens a pin directly in report details, using the latest refreshed report da
   fireEvent.click(screen.getByRole('button', { name: 'Refresh visible pins' }));
   act(() => state.markerInstances[0].click!());
   expect(screen.getByLabelText('Linked report').textContent).toBe('Updated cleanup');
+  expect(telemetry.discovery).toHaveBeenCalledWith('report_opened', { source: 'map_pin' });
   expect(screen.queryByLabelText('Selected map report')).toBeNull();
   expect(new URLSearchParams(window.location.search).get('report')).toBe('test-report');
   fireEvent.click(screen.getByRole('button', { name: 'Back to discovery' }));
@@ -624,4 +625,22 @@ it('fits the homepage Boone bounds on a fresh main Map entry', async () => {
   await waitFor(() => expect(state.fitBounds).toHaveBeenCalledWith(BOONE_MAP_BOUNDS, 32));
   expect(state.mapOptions.mock.calls[0][0].center.lat).toBeCloseTo(BOONE_MAP_CENTER.latitude, 5);
   expect(state.mapOptions.mock.calls[0][0].center.lng).toBeCloseTo(BOONE_MAP_CENTER.longitude, 5);
+});
+
+it('does not count pending or failed map loads as empty, and records only settled results', async () => {
+  let finish!: (result: { reports: MappableReport[]; truncated: boolean }) => void;
+  state.discovery.mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+  render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+  await waitFor(() => expect(state.tiles).toBeTruthy());
+  act(() => { state.tiles!(); state.idle!(); });
+  await waitFor(() => expect(state.discovery).toHaveBeenCalled());
+  expect(telemetry.discovery).not.toHaveBeenCalled();
+  await act(async () => finish({ reports: [], truncated: false }));
+  await waitFor(() => expect(telemetry.discovery).toHaveBeenCalledWith('results_empty', expect.objectContaining({ result_bucket: '0', truncated: false })));
+  telemetry.discovery.mockClear();
+  state.discovery.mockRejectedValue(new Error('private backend message'));
+  state.center = { lat: 0.3, lng: 0.3 };
+  act(() => state.idle!());
+  await waitFor(() => expect(telemetry.discovery).toHaveBeenCalledWith('results_failed', expect.objectContaining({ surface: 'map' })));
+  expect(telemetry.discovery).not.toHaveBeenCalledWith('results_empty', expect.anything());
 });

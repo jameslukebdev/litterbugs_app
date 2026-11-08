@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { WebsiteAnalytics, AnalyticsPreferences } from './website-analytics';
-import { ANALYTICS_CONSENT_KEY, ANALYTICS_EVENT, ANALYTICS_PREFERENCES } from '@/lib/website-analytics';
+import { WORKFLOW_VERSION, ANALYTICS_CONSENT_KEY, ANALYTICS_EVENT, ANALYTICS_PREFERENCES } from '@/lib/website-analytics';
 
 const mock = vi.hoisted(() => ({ allowed: false, googleReady: true, path: '/', init: vi.fn(), capture: vi.fn(), optOut: vi.fn(), optIn: vi.fn(), scriptMount: vi.fn() }));
 vi.mock('next/navigation', () => ({ usePathname: () => mock.path }));
@@ -164,7 +164,7 @@ it('sends confirmed contribution once to both providers without payment details'
     .toEqual([['contribution_confirmed', { page_type: '/' }]]);
   const events = gtag.mock.calls.filter(([command, event]) => command === 'event' && event === 'contribution_confirmed');
   expect(events).toHaveLength(1);
-  expect(events[0][2]).toEqual({ page_type: '/', page_location: 'https://litterbugs.app/', page_title: 'Litterbugs', page_referrer: '' });
+  expect(events[0][2]).toEqual({ page_type: '/', page_location: 'https://litterbugs.app/', page_title: 'Litterbugs', page_referrer: '', workflow_version: WORKFLOW_VERSION });
   expect(JSON.stringify(events)).not.toMatch(/private|600/);
   delete (window as Window & { gtag?: unknown }).gtag;
 });

@@ -5,7 +5,7 @@ import { EMPTY_REPORT_DRAFT, type Report } from '@litterbugs/report-contract';
 import { ReportWizard } from './report-wizard';
 import { CleanupAction } from './cleanup-action';
 const f = vi.hoisted(() => ({ step: vi.fn(), failure: vi.fn(), submit: vi.fn(), begin: vi.fn(), prepare: vi.fn() }));
-vi.mock('@/lib/website-analytics', () => ({ trackParticipation: f.step, trackParticipationFailure: f.failure }));
+vi.mock('@/lib/website-analytics', async original => ({ ...await original<object>(), trackParticipation: f.step, trackParticipationFailure: f.failure }));
 vi.mock('@/lib/prepare-browser-photo', () => ({ prepareBrowserPhotos: f.prepare }));
 vi.mock('@/lib/use-draft-editor-lock', () => ({ useDraftEditorLock: () => 'ready' }));
 vi.mock('@/lib/cloud-drafts', () => ({ cloudDrafts: { begin: f.begin, subscribe: () => () => {}, status: () => 'saved' } }));

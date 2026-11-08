@@ -1,7 +1,7 @@
 'use client';
 
 import { communityReturnPath } from '@/lib/community-journey';
-import { trackParticipation, trackParticipationFailure, trackWebsiteOutcome } from '@/lib/website-analytics';
+import { trackParticipation, trackParticipationFailure, trackWebsiteOutcome, trackMapDiscovery, reportResultBucket, trackParticipationExit, type EntrySource } from '@/lib/website-analytics';
 
 import { importLibrary, setOptions } from '@googlemaps/js-api-loader';
 import {
@@ -232,6 +232,15 @@ export function MapExperience({
     && discoveryResponse.search.geometry === discoverySearch.geometry
     && discoveryResponse.search.favorites === discoverySearch.favorites
     && discoveryResponse.search.hidden === discoverySearch.hidden ? discoveryResponse : null);
+  const measuredDiscovery = useRef<typeof discoveryResponse>(null);
+  useEffect(() => {
+    if (!currentResponse || !mapTilesReady || mapError || measuredDiscovery.current === currentResponse) return;
+    measuredDiscovery.current = currentResponse;
+    const filtered = Object.entries(currentResponse.search.filters).some(([key, value]) => value !== DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]);
+    trackMapDiscovery(currentResponse.error ? 'results_failed' : currentResponse.reports.length ? 'results_loaded' : 'results_empty', {
+      surface: 'map', filtered, ...(currentResponse.error ? {} : { result_bucket: reportResultBucket(currentResponse.reports.length), truncated: currentResponse.truncated }),
+    });
+  }, [currentResponse, mapTilesReady, mapError]);
   const reports = discoveryResponse?.reports ?? initialMapReports;
   const discoveryTruncated = displayResponse?.truncated ?? false;
 
@@ -415,9 +424,11 @@ export function MapExperience({
     return () => window.removeEventListener('popstate', navigate);
   }, []);
 
+  const measuredLinkedReport = useRef<string | null>(null);
   useEffect(() => {
     const url = new URL(window.location.href);
     const reportId = url.searchParams.get('report') ?? '';
+    if (!reportId) measuredLinkedReport.current = null;
     let cancelled = false;
     if (reportId && selectedReportIdRef.current === reportId) return;
     async function openLinkedReport() {
@@ -433,6 +444,10 @@ export function MapExperience({
       } else await Promise.resolve();
       if (cancelled) return;
       if (!report) { setToast('This report is no longer available.'); return; }
+      if (measuredLinkedReport.current !== reportId) {
+        measuredLinkedReport.current = reportId;
+        trackMapDiscovery('report_opened', { source: 'report_link' });
+      }
       linkedReportFocusRef.current = report;
       setDetailsMinimized(url.searchParams.get('intent') === 'locate');
       if (url.searchParams.get('intent') === 'locate') setReportListOpen(false);
@@ -724,6 +739,7 @@ export function MapExperience({
       setReportMode(false);
       setLocationError('');
     } else {
+      trackParticipationExit('report', 'location_picker', 'cancelled');
       closeReportTask();
       window.requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('.map-report-button')?.focus());
     }
@@ -746,14 +762,14 @@ export function MapExperience({
     setReportListOpen(false);
     setLocationError('');
     if(checkingDraft) return;
-    if (!reportMode && !selectingDraftLocation) trackParticipation('report', 'action_tapped');
+    if (!reportMode && !selectingDraftLocation) trackParticipation('report', 'action_tapped', 'map_action');
     if (selectingDraftLocation) {
       setSelectingDraftLocation(false);
       setReportMode(false);
       setToast('');
       return;
     }
-    if (reportMode) { closeReportTask(); return; }
+    if (reportMode) { trackParticipationExit('report', 'location_picker', 'cancelled'); closeReportTask(); return; }
     const url = new URL(window.location.href); url.pathname = '/report'; url.searchParams.delete('report');
     window.history.pushState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
     await enterReportTask();
@@ -810,7 +826,8 @@ export function MapExperience({
     mapRef.current?.setMapTypeId(MAP_TYPES[nextIndex] as google.maps.MapTypeId);
   }
 
-  function openReport(report: MappableReport) {
+  function openReport(report: MappableReport, source: EntrySource = 'report_list') {
+    trackMapDiscovery('report_opened', { source });
     setDetailsMinimized(false);
     returnToReportList.current = reportListOpen;
     selectedReportIdRef.current = report.id;
@@ -824,18 +841,18 @@ export function MapExperience({
   useEffect(() => {
     openMapReportRef.current = id => {
       const report = visibleReports.find(item => item.id === id) ?? (mapFirstEntry && selectedReport?.id === id && hasReportCoordinates(selectedReport) ? selectedReport : undefined);
-      if (report) openReport(report);
+      if (report) openReport(report, 'map_pin');
     };
   });
 
   async function openReportById(reportId: string) {
     const report = reports.find(({ id }) => id === reportId);
-    if (report) { openReport(report); return; }
+    if (report) { openReport(report, 'account'); return; }
     setToast('Loading report…');
     try {
       const { data, error } = await createClient().from('reports').select('*').eq('id', reportId).eq('is_published', true).eq('is_sample', false).maybeSingle();
       if (error || !data || !hasReportCoordinates(data)) throw new Error();
-      setToast(''); openReport(data);
+      setToast(''); openReport(data, 'account');
     } catch { setToast('This report could not be opened. Try again from your activity.'); }
   }
 
@@ -1129,7 +1146,7 @@ export function MapExperience({
           reports={displayResponse?.reports ?? EMPTY_MAP_REPORTS}
           resultFilters={displayResponse?.search.filters ?? null}
           filtersRequest={filtersRequest}
-          emptyPlaceSearch={<PlaceSearch label="Search another location" selected={null} onSelect={selectSearchPlace} onClear={clearSearchPlace} bias={discoveryArea} disabled={checkingLocation} />}
+          emptyPlaceSearch={<PlaceSearch trackingSurface="empty_search" label="Search another location" selected={null} onSelect={selectSearchPlace} onClear={clearSearchPlace} bias={discoveryArea} disabled={checkingLocation} />}
           closestAction={closestAction}
           onRetry={() => void refreshReports()}
           showAuthors
@@ -1209,7 +1226,7 @@ export function MapExperience({
 
 
       {draftCoordinates && userId && <ResumableReportWizard submissionProgress={reportUploadProgress} key={userId} userId={userId} onCoordinatesChange={setDraftCoordinates} onRestorePublication={restorePublication} fundingEnabled={fundingEnabled} coordinates={draftCoordinates} selectingLocation={selectingDraftLocation} onChangeLocation={publicationUncertain ? undefined : changeDraftLocation} onClose={closeReportTask} onSubmit={saveReport} />}
-      {clusterIds && <ClusterReports reports={visibleReports.filter(report => clusterIds.includes(report.id))} truncated={discoveryTruncated} onClose={() => setClusterIds(null)} onChoose={report => { setClusterIds(null); openReport(report); }} />}
+      {clusterIds && <ClusterReports reports={visibleReports.filter(report => clusterIds.includes(report.id))} truncated={discoveryTruncated} onClose={() => setClusterIds(null)} onChoose={report => { setClusterIds(null); openReport(report, 'cluster'); }} />}
       {reportFunding && <FundingContributionAction key={reportFunding.report.id} report={reportFunding.report} userId={userId} initialAmountCents={reportFunding.amountCents} startOpen onDismiss={() => setReportFunding(null)} onChanged={refreshReports} onRefreshFunding={() => refreshFundingReview(reportFunding.report.id)} />}
       {editingReport && <ReportWizard submissionProgress={reportUploadProgress} initialDraft={editDraft} isEditing existingPhotoCount={editingReport.photo_paths?.length ?? 0} existingPhotoUrls={editPhotoUrls} onClose={() => { setEditingReport(null); setEditPhotoUrls([]); }} onSubmit={saveReport} />}
     </main>

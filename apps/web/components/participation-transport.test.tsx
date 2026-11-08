@@ -3,7 +3,7 @@
 import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { WebsiteAnalytics } from './website-analytics';
-import { drainParticipation, drainParticipationFailures, drainWebsiteOutcomes, rememberContributionAttempt, trackParticipation, trackParticipationFailure, trackWebsiteOutcome } from '@/lib/website-analytics';
+import { WORKFLOW_VERSION, clearParticipationContext, drainJourneys, trackMapDiscovery, trackPayoutSetup, trackParticipationExit, drainParticipation, drainParticipationFailures, drainWebsiteOutcomes, rememberContributionAttempt, trackParticipation, trackParticipationFailure, trackWebsiteOutcome } from '@/lib/website-analytics';
 
 const sdk = vi.hoisted(() => ({ init: vi.fn(), capture: vi.fn() }));
 vi.mock('posthog-js', () => ({ default: sdk }));
@@ -12,7 +12,7 @@ vi.mock('next/script', () => ({ default: () => null }));
 const config = { enabled: true, production: true, gaId: 'G-TEST', posthogKey: 'phc_test', posthogHost: 'https://us.i.posthog.com' };
 beforeEach(() => {
   vi.clearAllMocks(); localStorage.clear();
-  drainParticipation(); drainParticipationFailures(); drainWebsiteOutcomes();
+  drainParticipation(); drainParticipationFailures(); drainWebsiteOutcomes(); drainJourneys(); clearParticipationContext();
   window.history.replaceState({}, '', '/map');
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
@@ -85,9 +85,52 @@ it.each(['declined', 'doNotTrack', 'globalPrivacyControl'])('does not queue or t
   trackParticipation('clean', 'claim_confirmed');
   trackParticipationFailure('clean', 'safety_review', 'claim_failed');
   trackWebsiteOutcome('cleanup_approved', 'private-attempt');
+  trackMapDiscovery('results_empty', { result_bucket: '0' });
+  trackPayoutSetup('opened');
+  trackParticipationExit('clean', 'safety_review', 'cancelled');
   render(<WebsiteAnalytics config={config} />);
   await act(async () => {});
   expect(sdk.init).not.toHaveBeenCalled();
   expect(sdk.capture).not.toHaveBeenCalled();
-  expect([...drainParticipation(), ...drainParticipationFailures(), ...drainWebsiteOutcomes()]).toEqual([]);
+  expect([...drainParticipation(), ...drainParticipationFailures(), ...drainWebsiteOutcomes(), ...drainJourneys()]).toEqual([]);
+});
+
+it('buffers new journey signals before SDK readiness and labels the actual bundle version', async () => {
+  trackMapDiscovery('results_empty', { surface: 'map', result_bucket: '0', filtered: true });
+  trackPayoutSetup('opened');
+  trackParticipationExit('report', 'review', 'saved_for_later');
+  render(<WebsiteAnalytics config={config} />);
+  await waitFor(() => expect(sdk.capture).toHaveBeenCalledWith('participation_decision', { action: 'report', stage: 'review', exit_type: 'saved_for_later', page_type: '/map' }));
+  const beforeSend = sdk.init.mock.calls[0][1].before_send;
+  for (const [event, properties] of sdk.capture.mock.calls) {
+    const result = beforeSend({ event, properties: { ...properties, workflow_version: 'forged-version', query: 'private address', account: 'secret' } });
+    expect(result.properties.workflow_version).toBe(WORKFLOW_VERSION);
+    expect(JSON.stringify(result)).not.toMatch(/private address|forged-version|secret/);
+  }
+  expect(sdk.capture.mock.calls.filter(([event]) => event === 'payout_setup')).toHaveLength(1);
+});
+it('keeps the known entry source through action steps and replaces it on the next explicit action', async () => {
+  render(<WebsiteAnalytics config={config} />);
+  await waitFor(() => expect(sdk.init).toHaveBeenCalled());
+  window.history.replaceState({}, '', '/map?report=private-id');
+  act(() => {
+    trackMapDiscovery('report_opened', { source: 'map_pin' });
+    trackParticipation('fund', 'action_tapped');
+    trackParticipation('fund', 'amount_review');
+  });
+  expect(sdk.capture).toHaveBeenCalledWith('participation_step', { action: 'fund', stage: 'amount_review', source: 'map_pin', page_type: '/map' });
+  act(() => trackParticipation('fund', 'action_tapped', 'homepage'));
+  act(() => trackParticipation('fund', 'auth_shown'));
+  expect(sdk.capture).toHaveBeenCalledWith('participation_step', { action: 'fund', stage: 'auth_shown', source: 'homepage', page_type: '/map' });
+  expect(JSON.stringify(sdk.capture.mock.calls)).not.toContain('private-id');
+});
+it('rejects unknown journey stages and keeps payout events free of provider details', async () => {
+  render(<WebsiteAnalytics config={config} />);
+  await waitFor(() => expect(sdk.init).toHaveBeenCalled());
+  const send = sdk.init.mock.calls[0][1].before_send;
+  expect(send({ event: 'map_discovery', properties: { stage: 'raw address', source: 'private address' } })).toBeNull();
+  expect(send({ event: 'participation_decision', properties: { action: 'fund', stage: 'review', exit_type: 'cancelled' } })).toBeNull();
+  const safe = send({ event: 'payout_setup', properties: { stage: 'form_exited', account_id: 'private', bank_account: 'private', step: 'private' } });
+  expect(safe.properties.stage).toBe('form_exited');
+  expect(JSON.stringify(safe)).not.toMatch(/account_id|bank_account|private/);
 });

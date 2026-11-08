@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import Script from 'next/script';
 import Link from 'next/link';
 import type { PostHog } from 'posthog-js';
-import { ANALYTICS_CONSENT_KEY, ANALYTICS_EVENT, ANALYTICS_PREFERENCES, ANALYTICS_REPLAY_CHOICE_KEY, analyticsAllowed, analyticsPage, analyticsReferrer, drainParticipation, drainParticipationFailures, drainWebsiteOutcomes, participationProperties, participationFailureProperties, consumeParticipationAuthResult, trackParticipation, trackParticipationFailure, type AnalyticsConfig } from '@/lib/website-analytics';
+import { WORKFLOW_VERSION, clearParticipationContext, drainJourneys, journeyProperties, entrySourceForPath, ANALYTICS_CONSENT_KEY, ANALYTICS_EVENT, ANALYTICS_PREFERENCES, ANALYTICS_REPLAY_CHOICE_KEY, analyticsAllowed, analyticsPage, analyticsReferrer, drainParticipation, drainParticipationFailures, drainWebsiteOutcomes, participationProperties, participationFailureProperties, consumeParticipationAuthResult, trackParticipation, trackParticipationFailure, type AnalyticsConfig } from '@/lib/website-analytics';
 import { COMMUNITY_ENGAGEMENT_EVENTS, communityClick, communityForPath, communityProperties, participationLinkAction } from '@/lib/community-metrics';
 import styles from './website-analytics.module.css';
 import { isInstagramStoreVisit, storeBadgeDestination, storeBadgeProperties } from '@/lib/app-links';
@@ -13,7 +13,10 @@ import { participationIntent } from '@/lib/participation-auth';
 import { supportCheckoutProperties } from '@/lib/monthly-support';
 
 type AnalyticsWindow = Window & { dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void; clarity?: ((...args: unknown[]) => void) & { q?: unknown[][] } };
-function google(...args: unknown[]) { (window as AnalyticsWindow).gtag?.(...args); }
+function google(...args: unknown[]) {
+  if (args[0] === 'event' && args[2] && typeof args[2] === 'object') args[2] = { ...args[2], workflow_version: WORKFLOW_VERSION };
+  (window as AnalyticsWindow).gtag?.(...args);
+}
 function privacySignal() { return navigator.doNotTrack === '1' || (navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl === true; }
 // Google applies these regional defaults by visitor location.
 const CONSENT_REQUIRED_REGIONS = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IS', 'IE', 'IT', 'LV', 'LI', 'LT', 'LU', 'MT', 'NL', 'NO', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'GB', 'CH'];
@@ -94,13 +97,17 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
           const participation = event.event === 'participation_step' ? participationProperties(event.properties)
             : event.event === 'participation_failure' ? participationFailureProperties(event.properties) : null;
           if (['participation_step', 'participation_failure'].includes(event.event) && !participation) return null;
+          const journey = ['map_discovery', 'payout_setup', 'participation_decision'].includes(event.event) ? journeyProperties(event.event as 'map_discovery' | 'payout_setup' | 'participation_decision', event.properties) : null;
+          if (['map_discovery', 'payout_setup', 'participation_decision'].includes(event.event) && !journey) return null;
           const previousDuration = event.properties.$prev_pageview_duration;
           event.properties = Object.fromEntries(Object.entries(event.properties).filter(([key]) => keep.has(key)));
           if (community) Object.assign(event.properties, community);
           if (support) Object.assign(event.properties, support);
           if (store) Object.assign(event.properties, store);
           if (participation) Object.assign(event.properties, participation);
-          const page = (event.event === '$pageleave' || participation) && typeof event.properties.page_type === 'string'
+          if (journey) Object.assign(event.properties, journey);
+          event.properties.workflow_version = WORKFLOW_VERSION;
+          const page = (event.event === '$pageleave' || participation || journey) && typeof event.properties.page_type === 'string'
             ? analyticsPage(event.properties.page_type) : analyticsPage(window.location.pathname);
           if ((event.event === '$pageleave' || event.event === '$autocapture') && !page) return null;
           if (event.event === '$pageleave' && page && typeof previousDuration === 'number' && Number.isFinite(previousDuration) && previousDuration >= 0) {
@@ -187,6 +194,10 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
     if (!active && !aggregate) return;
     const flushParticipation = () => {
       if (!aggregate || !ready || !permitted.current || privacySignal()) return;
+      for (const item of drainJourneys()) {
+        posthog.current?.capture(item.event, item.properties);
+        if (active && gaReady) google('event', item.event, item.properties);
+      }
       for (const failure of drainParticipationFailures()) {
         posthog.current?.capture('participation_failure', failure);
         if (active && gaReady) google('event', 'participation_failure', failure);
@@ -202,7 +213,7 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
       if (!detail) return;
       const communityContext = communityProperties(detail) ?? {};
       const currentPage = analyticsPage(window.location.pathname) ?? '/private';
-      if (detail.event === 'participation_step' || detail.event === 'participation_failure') {
+      if (['participation_step', 'participation_failure', 'map_discovery', 'payout_setup', 'participation_decision'].includes(detail.event)) {
         flushParticipation();
         return;
       }
@@ -252,7 +263,7 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
         if (aggregate && ready) posthog.current?.capture('app_store_badge_clicked', properties);
       }
       const action = participationLinkAction(new URL(link.href), window.location.origin);
-      if (action && page) trackParticipation(action, 'action_tapped');
+      if (action && page) trackParticipation(action, 'action_tapped', entrySourceForPath(window.location.pathname));
       const slug = link.closest<HTMLElement>('[data-community-slug]')?.dataset.communitySlug;
       const observation = communityClick(link.href, window.location.origin, slug, link.dataset.communityResource);
       if (observation) outcome(new CustomEvent(ANALYTICS_EVENT, { detail: { event: observation.event, ...observation.properties } }));
@@ -273,6 +284,8 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
       permitted.current = false;
       drainParticipation();
       drainParticipationFailures();
+      drainJourneys();
+      clearParticipationContext();
       drainWebsiteOutcomes();
       (window as AnalyticsWindow).clarity?.('consentv2', { ad_Storage: 'denied', analytics_Storage: 'denied' });
       (window as unknown as Record<string, unknown>)[`ga-disable-${config.gaId}`] = true;

@@ -4,6 +4,9 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { PayoutStatus } from '@/lib/funding';
 import { PayoutSetupAction } from './payout-setup-action';
 
+const tracking = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/website-analytics', () => ({ trackPayoutSetup: tracking }));
+
 const { state, createPayoutLink, createPayoutSession, createPayoutConnect, notifyDataChanged } = vi.hoisted(() => ({
   state: { status: { onboardingStatus: 'not_started', payoutsEnabled: false, requirementsDue: [] } as PayoutStatus },
   createPayoutLink: vi.fn(),
@@ -48,6 +51,8 @@ it('explains a first-time setup and only continues after the eligibility confirm
   fireEvent.click(go);
   await waitFor(() => expect(createPayoutSession).toHaveBeenCalledOnce());
   await screen.findByText('Stripe is unavailable in tests.');
+  expect(tracking).toHaveBeenCalledWith('start_failed');
+  expect(tracking).not.toHaveBeenCalledWith('ready');
 });
 
 it('takes returning cleaners directly into the embedded form without another continuation screen', async () => {
@@ -107,16 +112,21 @@ it('opens embedded onboarding after confirmation and only celebrates server-conf
   await screen.findByRole('heading', { name: 'Set up your payouts' });
   expect(createPayoutConnect).toHaveBeenCalledOnce();
   expect(createPayoutLink).not.toHaveBeenCalled();
+  expect(tracking).toHaveBeenCalledWith('opened');
+  expect(tracking).toHaveBeenCalledWith('form_opened');
+  expect(tracking).not.toHaveBeenCalledWith('ready');
   state.status = { onboardingStatus: 'pending', payoutsEnabled: false, requirementsDue: [], age18Confirmed: true };
   fireEvent.click(screen.getByRole('button', { name: 'Exit secure form' }));
   await screen.findByRole('heading', { name: 'Almost there' });
   expect(screen.queryByText('You’re all set to earn cash')).toBeNull();
   expect(notifyDataChanged).toHaveBeenCalled();
+  expect(tracking).not.toHaveBeenCalledWith('ready');
   fireEvent.click(screen.getByRole('button', { name: 'Review details' }));
   await screen.findByRole('heading', { name: 'Set up your payouts' });
   state.status = { onboardingStatus: 'enabled', payoutsEnabled: true, requirementsDue: [] };
   fireEvent.click(screen.getByRole('button', { name: 'Exit secure form' }));
   await screen.findByRole('heading', { name: 'You’re all set to earn cash' });
+  expect(tracking.mock.calls.filter(([stage]) => stage === 'ready')).toHaveLength(1);
 });
 
 it('offers hosted recovery after an embedded session fails without redirecting automatically', async () => {

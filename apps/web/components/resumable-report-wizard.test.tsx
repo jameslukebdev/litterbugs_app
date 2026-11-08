@@ -4,6 +4,8 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { EMPTY_REPORT_DRAFT } from '@litterbugs/report-contract';
 import { ResumableReportWizard } from './resumable-report-wizard';
 
+const decisions = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/website-analytics', async original => ({ ...await original<object>(), trackParticipationExit: decisions }));
 const storage = vi.hoisted(() => ({ load: vi.fn(), journal: vi.fn(), save: vi.fn(), clear: vi.fn() }));
 vi.mock('@/lib/saved-report-draft', () => ({ loadReportDraft: storage.load, loadReportPublication: storage.journal, saveReportDraft: storage.save, clearReportDraft: storage.clear }));
 const sync = vi.hoisted(() => ({
@@ -38,6 +40,7 @@ it('restores the saved review and custom contribution without saving over it dur
   storage.load.mockResolvedValue(saved());const props=open();
   fireEvent.click(await screen.findByRole('button', { name: 'Resume draft' }));
   expect(props.onCoordinatesChange).toHaveBeenCalledWith(saved().coordinates);
+  expect(decisions).toHaveBeenCalledExactlyOnceWith('report', 'review', 'draft_resumed');
   expect(screen.getByText('Step 5 of 5')).toBeTruthy();
   expect(screen.getByDisplayValue('12.34')).toBeTruthy();
   expect(storage.save).toHaveBeenCalledWith('owner', expect.objectContaining({ draft: expect.objectContaining({ title: 'Saved bottles' }) }));
@@ -56,6 +59,7 @@ it('keeps the form open and reports an explicit save failure', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Save for later' }));
   await screen.findByText('Draft could not be saved. Keep this screen open and try again.');
   expect(props.onClose).not.toHaveBeenCalled();
+  expect(decisions).not.toHaveBeenCalledWith('report', expect.anything(), 'saved_for_later');
 });
 it('keeps the recovery draft open when server cancellation cannot be confirmed', async () => {
   storage.clear.mockRejectedValue(new Error('Offline'));
@@ -200,4 +204,16 @@ it('saves the first entered detail and still saves when the user clears it', asy
   await waitFor(() => expect(storage.save).toHaveBeenCalledWith('owner', expect.objectContaining({ draft: expect.objectContaining({ title: 'Draft title' }) })));
   fireEvent.change(title, { target: { value: '' } });
   await waitFor(() => expect(storage.save).toHaveBeenLastCalledWith('owner', expect.objectContaining({ draft: expect.objectContaining({ title: '' }) })));
+});
+
+it('records Save for later only after the explicit save succeeds', async () => {
+  storage.load.mockResolvedValue({ ...saved(), fundingChoice: 'none' });
+  const props = open();
+  fireEvent.click(await screen.findByRole('button', { name: 'Resume draft' }));
+  expect(decisions).toHaveBeenCalledWith('report', 'review', 'draft_resumed');
+  fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+  expect(decisions).not.toHaveBeenCalledWith('report', 'review', 'saved_for_later');
+  fireEvent.click(screen.getByRole('button', { name: 'Save for later' }));
+  await waitFor(() => expect(props.onClose).toHaveBeenCalledOnce());
+  expect(decisions).toHaveBeenCalledWith('report', 'review', 'saved_for_later');
 });

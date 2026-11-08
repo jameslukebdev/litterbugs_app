@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { trackPayoutSetup } from '@/lib/website-analytics';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import type { StripeConnectInstance } from '@stripe/connect-js';
 
@@ -43,6 +44,11 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
   const requestBusy = useRef(false);
   const opening = useRef(0);
   const lastRefresh = useRef(refresh);
+  const observedReady = useRef<boolean | null>(null);
+  const observeStatus = useCallback((next: PayoutStatus) => {
+    if (next.payoutsEnabled && observedReady.current !== true) trackPayoutSetup(observedReady.current === false ? 'ready' : 'already_ready');
+    observedReady.current = next.payoutsEnabled;
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -59,9 +65,9 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
     lastRefresh.current = refresh;
     if (!open) return;
     let cancelled = false;
-    void loadPayoutStatus().then(value => { if (!cancelled) { setStatus(value); } }).catch(() => { if (!cancelled) { setMessage('Payout status could not be refreshed. Reopen this window to retry.'); } });
+    void loadPayoutStatus().then(value => { if (!cancelled) { setStatus(value); observeStatus(value); } }).catch(() => { if (!cancelled) { trackPayoutSetup('status_failed'); setMessage('Payout status could not be refreshed. Reopen this window to retry.'); } });
     return () => { cancelled = true; };
-  }, [open, refresh]);
+  }, [open, refresh, observeStatus]);
 
   // Arriving from the "Finish payout setup" reminder opens the payout screen straight away.
   useEffect(() => {
@@ -79,22 +85,28 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
   async function show() {
     const version = ++opening.current;
     requestBusy.current = true;
+    observedReady.current = null;
+    trackPayoutSetup('opened');
     setConnectInstance(null);
     setStatus(null);
     setEligibleConfirmed(false);
     setOpen(true);
     setBusy(true);
     setMessage('');
+    let startingForm = false;
     try {
       const next = await loadPayoutStatus();
       if (version !== opening.current) return;
       setStatus(next);
+      observeStatus(next);
       setCelebrate(next.payoutsEnabled && firstPayoutsReady());
       if (!next.payoutsEnabled && !payoutNeedsConfirmation(next)) {
+        startingForm = true;
         await openEmbedded(version);
       }
     } catch (error) {
       if (version !== opening.current) return;
+      trackPayoutSetup(startingForm ? 'start_failed' : 'status_failed');
       setMessage(error instanceof Error ? error.message : 'Payout status could not be loaded.');
     } finally {
       if (version === opening.current) { requestBusy.current = false; setBusy(false); }
@@ -108,10 +120,11 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
     if (version !== opening.current) return;
     const instance = await createPayoutConnect(session, () => {
       if (version !== opening.current) return;
-      close();
+      trackPayoutSetup('session_ended'); close();
     });
     if (version !== opening.current) return;
     setConnectInstance(instance);
+    trackPayoutSetup('form_opened');
   }
 
   function close() {
@@ -130,6 +143,7 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
     const version = opening.current;
     try {
       if (hosted || status.payoutsEnabled) {
+        trackPayoutSetup('hosted_requested');
         const link = await createPayoutLink(status.payoutsEnabled ? 'dashboard' : 'link');
         if (version !== opening.current) return;
         window.location.assign(link.url);
@@ -138,6 +152,7 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
       }
     } catch (error) {
       if (version !== opening.current) return;
+      trackPayoutSetup('start_failed');
       setMessage(error instanceof Error ? error.message : 'Payout setup could not be opened.');
     } finally {
       if (version === opening.current) { requestBusy.current = false; setBusy(false); }
@@ -155,11 +170,13 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
       const next = await loadPayoutStatus();
       if (version !== opening.current) return;
       setStatus(next);
+      observeStatus(next);
       setCelebrate(next.payoutsEnabled && firstPayoutsReady());
       setConnectInstance(null);
       notifyDataChanged();
     } catch {
       if (version !== opening.current) return;
+      trackPayoutSetup('status_failed');
       setMessage('Your details may be saved. We couldn’t refresh your payout status. Please try again.');
     } finally {
       if (version === opening.current) { requestBusy.current = false; setBusy(false); }
@@ -170,7 +187,7 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
     <>
       <button className={`secondary-button${compact ? ' compact-button' : ''}`} onClick={show}>Payout settings</button>
       {open && (
-        <ModalShell onClose={close} label="Payout setup" className="payout-dialog flow-page payout-page">
+        <ModalShell onClose={() => { trackPayoutSetup('closed'); close(); }} label="Payout setup" className="payout-dialog flow-page payout-page">
           {!connectInstance && busy ? <PayoutPreparing /> : connectInstance ? <PayoutEmbedded
             key="embedded"
             instance={connectInstance}
@@ -178,7 +195,7 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
             message={message}
             onExit={() => void finishEmbedded()}
             onFallback={() => void continueToStripe(true)}
-            onBack={() => { setConnectInstance(null); setMessage(''); }}
+            onBack={() => { trackPayoutSetup('back'); setConnectInstance(null); setMessage(''); }}
           /> : <PayoutPanel
             status={status}
             eligibleConfirmed={eligibleConfirmed}
