@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { StripeConnectInstance } from '@stripe/connect-js';
 import { ConnectAccountOnboarding, ConnectComponentsProvider } from '@stripe/react-connect-js';
 import { payoutConnectAppearance } from '@/lib/payout-connect';
-import { PayoutProgress } from '@/components/payout-preparing';
+import { PayoutHeading, PayoutProgress } from '@/components/payout-preparing';
 
 export default function PayoutEmbedded({ instance, busy, message, onExit, onFallback, onBack }: {
   instance: StripeConnectInstance; busy: boolean; message: string;
@@ -16,15 +16,11 @@ export default function PayoutEmbedded({ instance, busy, message, onExit, onFall
   useEffect(() => { instance.update({ appearance: payoutConnectAppearance }); }, [instance]);
   return (
     <div className="payout-flow payout-embedded">
-      <header className="payout-head">
-        <img src="/brand/ranks/caterpillar.svg" alt="" aria-hidden="true" width={42} height={42} />
-        <h2>Set up your payouts</h2>
-      </header>
-      <p className="payout-lead">Verify your legal name, add your bank account, then review and accept Stripe&rsquo;s terms to receive cleanup payouts.</p>
+      <PayoutHeading />
       {message && <p className="form-message error-message" role="alert">{message}</p>}
       {message && <button className="secondary-button" disabled={busy} onClick={onExit}>Check payout status</button>}
       {failed ? <p className="payout-note" role="alert">The secure form couldn&rsquo;t load. You can continue on Stripe and return to Litterbugs afterward.</p> : (
-        <>
+        <div className="payout-connect-stage" aria-busy={loading}>
           {loading && <PayoutProgress />}
           <div className="payout-connect-form">
             <ConnectComponentsProvider connectInstance={instance}>
@@ -43,7 +39,7 @@ export default function PayoutEmbedded({ instance, busy, message, onExit, onFall
               />
             </ConnectComponentsProvider>
           </div>
-        </>
+        </div>
       )}
       {(failed || message) && <div className="payout-embedded-actions">
         <button className="secondary-button" disabled={busy} onClick={onBack}>Back</button>

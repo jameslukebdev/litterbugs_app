@@ -1,6 +1,6 @@
 'use client';
 
-import { loadConnectAndInitialize, type StripeConnectInstance } from '@stripe/connect-js/pure';
+import { loadConnectAndInitialize, type StripeConnectInstance } from '@stripe/connect-js';
 import { createClient } from '@/lib/supabase/client';
 import { createPayoutSession, type PayoutSession } from '@/lib/funding';
 
@@ -22,17 +22,20 @@ export const payoutConnectAppearance = {
 
 // Stripe says to logout on app sign-out, not on ordinary modal closure. Retain this listener
 // after the form unmounts so closed forms' sessions are also invalidated on sign-out/account change.
-const sessions = new Map<StripeConnectInstance, { userId: string; invalidate: () => void }>();
+const sessions = new Map<StripeConnectInstance, { userId: string; publishableKey: string; onInvalidated: () => void; invalidate: () => void }>();
 let watchingAuth = false;
 let authRevision = 0;
+let pendingOwner: { userId: string; onInvalidated: () => void } | null = null;
 
-export async function createPayoutConnect(firstSession: PayoutSession, onInvalidated: () => void) {
-  const supabase = createClient();
+function watchPayoutAuth() {
   if (!watchingAuth) {
     watchingAuth = true;
-    supabase.auth.onAuthStateChange((event, session) => {
+    createClient().auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
         authRevision++;
+        if (pendingOwner && (event === 'SIGNED_OUT' || pendingOwner.userId !== session?.user.id)) {
+          const owner = pendingOwner; pendingOwner = null; owner.onInvalidated();
+        }
         for (const [instance, owner] of sessions) {
           if (event === 'SIGNED_OUT' || owner.userId !== session?.user.id) {
             void instance.logout().catch(() => undefined);
@@ -43,10 +46,38 @@ export async function createPayoutConnect(firstSession: PayoutSession, onInvalid
       }
     });
   }
+}
+
+/** Reuse the signed-in member's Connect instance. Secrets still refresh through Stripe's callback. */
+export async function reusePayoutConnect(onInvalidated: () => void) {
+  watchPayoutAuth();
+  const revision = authRevision;
+  const { data } = await createClient().auth.getSession();
+  if (!data.session || revision !== authRevision) throw new Error('Please sign in again to set up payouts.');
+  for (const [instance, owner] of sessions) {
+    if (owner.userId === data.session.user.id) {
+      owner.onInvalidated = onInvalidated;
+      return instance;
+    }
+  }
+  pendingOwner = { userId: data.session.user.id, onInvalidated };
+  return null;
+}
+
+export async function createPayoutConnect(firstSession: PayoutSession, onInvalidated: () => void) {
+  const supabase = createClient();
+  watchPayoutAuth();
   const revision = authRevision;
   const { data } = await supabase.auth.getSession();
   if (!data.session || revision !== authRevision) throw new Error('Please sign in again to set up payouts.');
   const userId = data.session.user.id;
+  if (pendingOwner?.userId === userId) pendingOwner = null;
+  for (const [instance, owner] of sessions) {
+    if (owner.userId === userId && owner.publishableKey === firstSession.publishableKey) {
+      owner.onInvalidated = onInvalidated;
+      return instance;
+    }
+  }
   let initial: PayoutSession | null = firstSession;
   let valid = true;
   const instance = loadConnectAndInitialize({
@@ -54,7 +85,7 @@ export async function createPayoutConnect(firstSession: PayoutSession, onInvalid
     appearance: payoutConnectAppearance,
     fetchClientSecret: async () => {
       if (!valid) throw new Error('Payout session has ended. Please sign in again.');
-      const next = initial ?? await createPayoutSession();
+      const next = initial && initial.expiresAt * 1000 > Date.now() ? initial : await createPayoutSession();
       initial = null;
       if (!valid || next.publishableKey !== firstSession.publishableKey) {
         throw new Error('Payout session has changed. Please reopen payout setup.');
@@ -62,6 +93,8 @@ export async function createPayoutConnect(firstSession: PayoutSession, onInvalid
       return next.clientSecret;
     },
   });
-  sessions.set(instance, { userId, invalidate: () => { valid = false; initial = null; onInvalidated(); } });
+  const owner = { userId, publishableKey: firstSession.publishableKey, onInvalidated,
+    invalidate: () => { valid = false; initial = null; owner.onInvalidated(); } };
+  sessions.set(instance, owner);
   return instance;
 }

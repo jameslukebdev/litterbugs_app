@@ -8,11 +8,17 @@ export function PayoutProgress() {
 
 export function PayoutPreparing() {
   return <div className="payout-flow">
+    <PayoutHeading />
+    <div className="payout-connect-stage"><PayoutProgress /></div>
+  </div>;
+}
+
+export function PayoutHeading() {
+  return <>
     <header className="payout-head">
       <img src="/brand/ranks/caterpillar.svg" alt="" aria-hidden="true" width={42} height={42} />
       <h2>Set up your payouts</h2>
     </header>
-    <p className="payout-lead">Verify your legal name, add your bank account, then review and accept Stripe&rsquo;s terms to receive cleanup payouts.</p>
-    <PayoutProgress />
-  </div>;
+    <p className="payout-lead">Your payout details go securely to Stripe. You can connect your bank or enter details manually through its Link window.</p>
+  </>;
 }

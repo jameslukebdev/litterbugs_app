@@ -25,8 +25,12 @@ export async function localPayoutSession(request: Request, deps: Dependencies) {
     if (authError || !user || user.is_anonymous) return reply({ error: 'Please sign in again to set up payouts.' }, 401);
     const body = await request.json();
     if (body.confirmAge18 !== true) return reply({ error: 'Please confirm your payout eligibility first.' }, 400);
-    const { data: flag, error: flagError } = await client.from('cleanup_feature_flags')
-      .select('enabled').eq('name', 'payments_enabled').single();
+    const readAccount = () => client.from('cleaner_payout_accounts')
+      .select('stripe_account_id, age_18_confirmed_at').eq('user_id', user.id).maybeSingle();
+    const [{ data: flag, error: flagError }, initialAccount] = await Promise.all([
+      client.from('cleanup_feature_flags').select('enabled').eq('name', 'payments_enabled').single(),
+      readAccount(),
+    ]);
     if (flagError || !flag?.enabled) return reply({ error: 'Payout setup is unavailable right now.' }, 409);
 
     async function stripe(path: string, body?: URLSearchParams) {
@@ -43,9 +47,7 @@ export async function localPayoutSession(request: Request, deps: Dependencies) {
     const platform = await stripe('account');
     if (platform.id !== PLATFORM) throw new Error('Wrong platform');
 
-    const readAccount = () => client.from('cleaner_payout_accounts')
-      .select('stripe_account_id, age_18_confirmed_at').eq('user_id', user.id).maybeSingle();
-    let account = await readAccount();
+    let account = initialAccount;
     if (account.error) throw new Error('Account lookup failed');
     if (!account.data?.stripe_account_id || !account.data.age_18_confirmed_at) {
       // The existing authenticated service creates the recipient and records eligibility.

@@ -14,6 +14,14 @@ const PayoutEmbedded = dynamic(() => import('@/components/payout-embedded'), {
   loading: () => <PayoutPreparing />,
 });
 
+let warming: Promise<unknown> | null = null;
+function warmPayoutSetup() {
+  // Loading code on intent starts Stripe's SDK early, without creating an account/session.
+  warming ??= Promise.all([import('@/lib/payout-connect'), import('@/components/payout-embedded')])
+    .catch(() => { warming = null; });
+  return warming;
+}
+
 /** The payouts-ready celebration plays once per device, the first time setup is seen as finished. */
 const CELEBRATED_KEY = 'litterbugs.payouts-ready-celebrated.v1';
 function firstPayoutsReady() {
@@ -61,6 +69,17 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
   }, []);
 
   useEffect(() => {
+    if (!available || window.location.pathname !== '/account/payments') return;
+    // Prepare code while this dedicated screen is idle; never create a payout account/session here.
+    if (window.requestIdleCallback) {
+      const task = window.requestIdleCallback(() => void warmPayoutSetup(), { timeout: 1500 });
+      return () => window.cancelIdleCallback(task);
+    }
+    const task = window.setTimeout(() => void warmPayoutSetup(), 500);
+    return () => window.clearTimeout(task);
+  }, [available]);
+
+  useEffect(() => {
     if (lastRefresh.current === refresh) return;
     lastRefresh.current = refresh;
     if (!open) return;
@@ -83,6 +102,7 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
   if (!available) return null;
 
   async function show() {
+    void warmPayoutSetup();
     const version = ++opening.current;
     requestBusy.current = true;
     observedReady.current = null;
@@ -114,14 +134,18 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
   }
 
   async function openEmbedded(version: number) {
-    const [session, { createPayoutConnect }] = await Promise.all([
-      createPayoutSession(), import('@/lib/payout-connect'),
-    ]);
-    if (version !== opening.current) return;
-    const instance = await createPayoutConnect(session, () => {
+    const { createPayoutConnect, reusePayoutConnect } = await import('@/lib/payout-connect');
+    const onInvalidated = () => {
       if (version !== opening.current) return;
       trackPayoutSetup('session_ended'); close();
-    });
+    };
+    if (version !== opening.current) return;
+    let instance = await reusePayoutConnect(onInvalidated);
+    if (!instance) {
+      const session = await createPayoutSession();
+      if (version !== opening.current) return;
+      instance = await createPayoutConnect(session, onInvalidated);
+    }
     if (version !== opening.current) return;
     setConnectInstance(instance);
     trackPayoutSetup('form_opened');
@@ -185,7 +209,7 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
 
   return (
     <>
-      <button className={`secondary-button${compact ? ' compact-button' : ''}`} onClick={show}>Payout settings</button>
+      <button className={`secondary-button${compact ? ' compact-button' : ''}`} onPointerEnter={() => void warmPayoutSetup()} onFocus={() => void warmPayoutSetup()} onPointerDown={() => void warmPayoutSetup()} onClick={show}>Payout settings</button>
       {open && (
         <ModalShell onClose={() => { trackPayoutSetup('closed'); close(); }} label="Payout setup" className="payout-dialog flow-page payout-page">
           {!connectInstance && busy ? <PayoutPreparing /> : connectInstance ? <PayoutEmbedded

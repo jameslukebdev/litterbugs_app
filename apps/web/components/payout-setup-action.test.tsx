@@ -7,15 +7,16 @@ import { PayoutSetupAction } from './payout-setup-action';
 const tracking = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/website-analytics', () => ({ trackPayoutSetup: tracking }));
 
-const { state, createPayoutLink, createPayoutSession, createPayoutConnect, notifyDataChanged } = vi.hoisted(() => ({
+const { state, createPayoutLink, createPayoutSession, createPayoutConnect, reusePayoutConnect, notifyDataChanged } = vi.hoisted(() => ({
   state: { status: { onboardingStatus: 'not_started', payoutsEnabled: false, requirementsDue: [] } as PayoutStatus },
   createPayoutLink: vi.fn(),
   createPayoutSession: vi.fn(),
   createPayoutConnect: vi.fn(),
+  reusePayoutConnect: vi.fn(),
   notifyDataChanged: vi.fn(),
 }));
 vi.mock('@/lib/use-data-refresh', () => ({ useDataRefresh: () => 0, notifyDataChanged }));
-vi.mock('@/lib/payout-connect', () => ({ createPayoutConnect }));
+vi.mock('@/lib/payout-connect', () => ({ createPayoutConnect, reusePayoutConnect }));
 vi.mock('@/components/payout-embedded', () => ({ default: ({ onExit, onFallback }: { onExit: () => void; onFallback: () => void }) => <div><h2>Set up your payouts</h2><button onClick={onExit}>Exit secure form</button><button onClick={onFallback}>Continue on Stripe</button></div> }));
 vi.mock('@/components/modal-shell', () => ({ ModalShell: ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => <div role="dialog"><button onClick={onClose}>Close</button>{children}</div> }));
 vi.mock('@/lib/funding', () => ({
@@ -31,6 +32,7 @@ beforeEach(() => {
   state.status = { onboardingStatus: 'not_started', payoutsEnabled: false, requirementsDue: [] };
   createPayoutSession.mockRejectedValue(new Error('Stripe is unavailable in tests.'));
   createPayoutConnect.mockResolvedValue({});
+  reusePayoutConnect.mockResolvedValue(null);
   createPayoutLink.mockRejectedValue(new Error('Stripe is unavailable in tests.'));
 });
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
@@ -173,4 +175,20 @@ it('can retry a failed automatic entry without confirming eligibility again', as
   await screen.findByRole('button', { name: 'Exit secure form' });
   expect(createPayoutSession).toHaveBeenCalledTimes(2);
   expect(screen.queryByRole('checkbox')).toBeNull();
+});
+
+it('reopens using the signed-in cleaner’s existing instance without creating another session', async () => {
+  state.status = { onboardingStatus: 'pending', payoutsEnabled: false, requirementsDue: [], age18Confirmed: true };
+  reusePayoutConnect.mockResolvedValue({});
+  await open();
+  await screen.findByRole('button', { name: 'Exit secure form' });
+  expect(createPayoutSession).not.toHaveBeenCalled();
+  expect(createPayoutConnect).not.toHaveBeenCalled();
+});
+
+it('warms the code on intent without opening setup or creating an account session', async () => {
+  render(<PayoutSetupAction />);
+  fireEvent.focus(await screen.findByRole('button', { name: 'Payout settings' }));
+  expect(screen.queryByRole('dialog')).toBeNull();
+  expect(createPayoutSession).not.toHaveBeenCalled();
 });

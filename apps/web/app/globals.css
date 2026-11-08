@@ -2097,6 +2097,10 @@ body .modal-backdrop > .modal-shell.flow-page.payout-page.payout-page { --flow-w
 .payout-head .bug-celebration { left: 21px; top: 21px; }
 .payout-flow .payout-need { margin: 0; padding: 12px 14px; border-radius: 14px; background: #f6fbf1; color: #2f5a28; font-size: 14px; line-height: 1.5; }
 .payout-connect-form { min-width: 0; min-height: 220px; }
+.payout-page { scrollbar-gutter: stable; overflow-anchor: none; }
+.payout-page .payout-head { position: sticky; top: 0; z-index: 2; background: #fff; box-shadow: 0 -24px 0 #fff, 0 8px 0 #fff; }
+.payout-connect-stage { position: relative; min-height: 520px; }
+.payout-connect-stage > .payout-preparing { position: absolute; inset: 0; z-index: 1; background: #fff; pointer-events: none; }
 .payout-placeholder { display: grid; gap: 18px; padding-block: 12px; }
 .payout-placeholder > span { display: block; height: 48px; border-radius: 14px; background: #f5f3fc; }
 .payout-placeholder > span:first-child { height: 16px; width: 38%; }
