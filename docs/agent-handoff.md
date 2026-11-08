@@ -24,6 +24,30 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (Vercel bill audit; Retirement Lists paused by owner request)
+
+- Owner requested bill reduction, then explicitly asked to stop retirementlists.
+  Confirmed retirecityfinder project prj_7iGvtvYEB4Q1Ytt1zF8LNepe47xT under
+  grant-9890s-projects serves root/www retirementlists and retirecityfinder
+  redirects. Paused only that project via official API and disabled all 15
+  legacy Cron Jobs in dashboard. Fresh API: paused=true, autoAssignCustomDomains
+  false, crons.disabledAt set, definitions retained. No new Schedules configured;
+  Git link already null. Public retirementlists returns 503 DEPLOYMENT_PAUSED.
+- Preserve code, deployments, data, credentials, DNS and domain ownership.
+  Resume Service and re-enable Cron Jobs only on explicit restart request.
+  Other providers/domain renewals not cancelled. Both Litterbugs projects remain
+  unpaused with auto domain assignment enabled; no app deployment/code changes.
+- Shared Pro cycle Oct 21–Nov 21: next invoice $20, one Pro charge, no extra fixed
+  seats/add-ons. $9.09 usage entirely offset by credit, overage $0. Retirement
+  project consumes $6.716 (~74%), litterbugs-web $2.3586; these are usage credit,
+  not separate invoices. Pausing reduces future usage, not the $20 base fee.
+  Oct invoice $20; Sep $23.74 ($3.74 overage, later $0.72 refund); Aug $31.63.
+  Observability Plus is enabled at usage pricing ($1.09 within credit); paid
+  monitoring/plan settings untouched. Hobby is personal/non-commercial only:
+  https://vercel.com/docs/limits/fair-use-guidelines . Recommend retaining Pro
+  for active business sites. No source push, DB change or Litterbugs test traffic;
+  concurrent preview and handoff entries preserved.
+
 ### 2026-11-08 — Codex (report and cleanup page indexing verified)
 
 - Audited live sitemap, every one of its 29 report/cleanup pages, all 38 listed
