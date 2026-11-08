@@ -167,3 +167,5 @@ body:has(.account-theme) > .modal-backdrop .form-message.success-message {
 
 .account-theme .community-rank-progress > p { display:flex; justify-content:space-between; align-items:baseline; gap:16px; width:100%; }
 .account-theme .community-rank-progress > p > strong { margin-left:auto; flex-shrink:0; }
+/* Keep the page's bottom margin inside the white page, so no grey strip shows under long account pages. */
+.account-theme { display: flow-root; }

@@ -13,6 +13,8 @@ import { resumeOrCreatePayment } from '@/lib/payment-attempt';
 import { PaymentDetail } from '@/components/payment-detail';
 import { ModalShell } from '@/components/modal-shell';
 import { BrandBug } from '@/components/brand-bug';
+import { FlowDone } from '@/components/flow-done';
+import { FundingAmountPanel, FundingPayLayout, FundingUnavailablePanel } from '@/components/funding-panel';
 import {
   loadContributionQuote,
   type ContributionQuote,
@@ -25,11 +27,13 @@ import {
 function ContributionPaymentForm({
   intent,
   reportId,
+  reportTitle,
   onComplete,
   onBusyChange,
 }: {
   intent: ContributionIntent;
   reportId: string;
+  reportTitle?: string | null;
   onComplete: () => void | Promise<void>;
   onBusyChange: (busy: boolean) => void;
 }) {
@@ -66,16 +70,10 @@ function ContributionPaymentForm({
 
   return (
     <form className="funding-payment-form" onSubmit={submit}>
-      <dl className="funding-summary">
-        <div><dt>Cleanup contribution</dt><dd>{formatUsd(intent.principalAmountCents)}</dd></div>
-        <div><dt>Service fee</dt><dd>{formatUsd(intent.platformFeeCents)}</dd></div>
-        <div><dt>Total payment</dt><dd>{formatUsd(intent.totalAmountCents)}</dd></div>
-      </dl>
-      <PaymentElement options={{ layout: 'tabs' }} />
-      {error && <p className="form-message error-message" role="alert">{error}</p>}
-      <button className="primary-button" type="submit" disabled={!stripe || busy}>
-        {busy ? 'Processing…' : `Pay ${formatUsd(intent.totalAmountCents)}`}
-      </button>
+      <FundingPayLayout reportTitle={reportTitle} principalCents={intent.principalAmountCents} feeCents={intent.platformFeeCents} error={error}
+        button={<button className="primary-button fund-pay" type="submit" disabled={!stripe || busy}>{busy ? 'Processing…' : `Pay ${formatUsd(intent.totalAmountCents)}`}</button>}>
+        <PaymentElement options={{ layout: 'tabs' }} />
+      </FundingPayLayout>
     </form>
   );
 }
@@ -116,6 +114,7 @@ export function FundingContributionAction({
   const [intent, setIntent] = useState<ContributionIntent | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [paid, setPaid] = useState(false);
   const [quote, setQuote] = useState<ContributionQuote | null>(null);
   const [quoteError, setQuoteError] = useState('');
   const [quoteRetry, setQuoteRetry] = useState(0);
@@ -187,6 +186,7 @@ export function FundingContributionAction({
     setIntent(null);
     setPreviousContribution(null);
     setMessage('');
+    setPaid(false);
     setOpen(true);
   }
 
@@ -211,6 +211,7 @@ export function FundingContributionAction({
   async function complete() {
     setIntent(null);
     setOpen(false);
+    setPaid(true);
     setMessage('Payment submitted. Check Payments for confirmation before paying again.');
     await onChanged?.();
     onDismiss?.();
@@ -218,48 +219,47 @@ export function FundingContributionAction({
 
   return (
     <>
-      {message && <span className="cleanup-action-message" role="status">{message}</span>}
+      {message && (paid
+        ? <FlowDone bug="bee" title="Thank you!">{message}</FlowDone>
+        : <span className="cleanup-action-message" role="status">{message}</span>)}
       {!startOpen && <button className="primary-button compact-button report-action-fund" onClick={begin}><BrandBug kind="bee" size={21} className="bug-hop" />Fund</button>}
       {open && (
-        <ModalShell onClose={dismiss} label="Add money to this cleanup reward" className="funding-dialog" closeDisabled={busy}>
-          <h2>{intent ? 'Secure payment' : 'Add to the cleanup reward'}</h2>
-          <p className="funding-dialog-report">{report.title || 'Litter cleanup'}</p>
-          {previousContribution ? <PaymentDetail contributionId={previousContribution} onOpenReport={() => dismiss()} /> : enabled !== true || !eligible ? <>
-            <p role="status">{enabled === null ? 'Checking funding availability…' : !enabled
-              ? 'Your report is saved. Funding is temporarily unavailable. No payment has been made.'
-              : report.funding_eligibility === 'pending'
-                ? 'Your report is saved. Its photos are being reviewed before funding opens. No payment has been made.'
-                : 'Your report is saved. Funding is not available yet. Open the report to see its review status. No payment has been made.'}</p>
-            <p>Your selected contribution is {formatUsd(initialAmountCents ?? 0)}. You can close this screen and add funds later.</p>
-            {message && <p className="form-message error-message" role="alert">{message}</p>}
-            {enabled && onRefreshFunding && <button className="secondary-button" disabled={busy} onClick={refreshFunding}>{busy ? 'Checking…' : 'Check funding status'}</button>}
-            <button className="primary-button" disabled={busy} onClick={dismiss}>Done</button>
-          </> : !intent ? (
-            <>
-              <div className="funding-amount-presets" aria-label="Suggested contribution amounts">{['5', '25', '50'].map(preset => <button key={preset} className="secondary-button" aria-pressed={principalAmountCents === Number(preset) * 100} onClick={() => setAmount(preset)}>${preset}</button>)}</div>
-              <label className="funding-amount-label">Contribution amount
-                <span className="funding-amount-input"><b>$</b><input value={amount} onChange={(event) => { setAmount(event.target.value); setMessage(''); }} inputMode="decimal" aria-label="Cleanup fund contribution amount" /></span>
-                <small>Minimum $1 · Maximum $1,000</small>
-              </label>
-              {principalAmountCents != null && platformFeeCents != null && (
-                <dl className="funding-summary">
-                  <div><dt>Cleaner reward</dt><dd>{formatUsd(principalAmountCents)}</dd></div>
-                  <div><dt>Service fee</dt><dd>{formatUsd(platformFeeCents)}</dd></div>
-                  <div><dt>Total</dt><dd>{formatUsd(principalAmountCents + platformFeeCents)}</dd></div>
-                </dl>
-              )}
-              {principalAmountCents != null && !currentQuote && <p role="status">{quoteError || 'Checking the current service fee…'}</p>}
-              {quoteError && <button className="secondary-button" onClick={() => setQuoteRetry(value => value + 1)}>Retry pricing</button>}
-              <p className="funding-refund-note">If this report closes before payout, your full charge—including the fee—is refunded.</p>
+        <ModalShell onClose={dismiss} label="Add to this cleanup fund" className="funding-dialog flow-page fund-page" closeDisabled={busy}>
+          {previousContribution ? <div className="fund-flow"><PaymentDetail contributionId={previousContribution} onOpenReport={() => dismiss()} /></div> : enabled !== true || !eligible ? (
+            <FundingUnavailablePanel reportTitle={report.title || 'Litter cleanup'}>
+              <p role="status">{enabled === null ? 'Checking funding availability…' : !enabled
+                ? 'Your report is saved. Funding is temporarily unavailable. No payment has been made.'
+                : report.funding_eligibility === 'pending'
+                  ? 'Your report is saved. Its photos are being reviewed before funding opens. No payment has been made.'
+                  : 'Your report is saved. Funding is not available yet. Open the report to see its review status. No payment has been made.'}</p>
+              <p>Your selected contribution is {formatUsd(initialAmountCents ?? 0)}. You can close this screen and add funds later.</p>
               {message && <p className="form-message error-message" role="alert">{message}</p>}
-              <button className="primary-button funding-continue" onClick={continueToPayment} disabled={principalAmountCents == null || busy || !currentQuote}>{busy ? 'Opening payment…' : 'Continue'}</button>
-            </>
+              <div className="cleaner-buttons">
+                {enabled && onRefreshFunding && <button className="secondary-button" disabled={busy} onClick={refreshFunding}>{busy ? 'Checking…' : 'Check funding status'}</button>}
+                <button className="primary-button" disabled={busy} onClick={dismiss}>Done</button>
+              </div>
+            </FundingUnavailablePanel>
+          ) : !intent ? (
+            <FundingAmountPanel
+              reportTitle={report.title || 'Litter cleanup'}
+              presets={['5', '25', '50']}
+              amount={amount}
+              onAmount={value => { setAmount(value); setMessage(''); }}
+              principalCents={principalAmountCents}
+              feeCents={platformFeeCents}
+              quoteStatus={principalAmountCents != null && !currentQuote ? quoteError || 'Checking the current service fee…' : null}
+              quoteError={quoteError}
+              onRetryQuote={() => setQuoteRetry(value => value + 1)}
+              message={message}
+              busy={busy}
+              onContinue={() => void continueToPayment()}
+            />
           ) : stripe ? (
             <Elements stripe={stripe} options={{
               clientSecret: intent.paymentIntentClientSecret,
-              appearance: { variables: { colorPrimary: '#2f7d32', borderRadius: '12px' } },
+              appearance: { variables: { colorPrimary: '#5146ed', borderRadius: '14px', fontFamily: 'system-ui, sans-serif' } },
             }}>
-              <ContributionPaymentForm intent={intent} reportId={report.id} onComplete={complete} onBusyChange={setBusy} />
+              <ContributionPaymentForm intent={intent} reportId={report.id} reportTitle={report.title || 'Litter cleanup'} onComplete={complete} onBusyChange={setBusy} />
             </Elements>
           ) : <p className="form-message error-message">Payment could not be loaded.</p>}
         </ModalShell>

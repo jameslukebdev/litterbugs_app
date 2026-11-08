@@ -4,6 +4,17 @@ import { useEffect, useState } from 'react';
 
 import { useDataRefresh } from '@/lib/use-data-refresh';
 import { ModalShell } from '@/components/modal-shell';
+import { PayoutPanel, payoutNeedsConfirmation } from '@/components/payout-panel';
+
+/** The payouts-ready celebration plays once per device, the first time setup is seen as finished. */
+const CELEBRATED_KEY = 'litterbugs.payouts-ready-celebrated.v1';
+function firstPayoutsReady() {
+  try {
+    if (localStorage.getItem(CELEBRATED_KEY)) return false;
+    localStorage.setItem(CELEBRATED_KEY, '1');
+    return true;
+  } catch { return false; }
+}
 import {
   createPayoutLink,
   loadCleanupFeatureFlags,
@@ -19,6 +30,7 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
   const [eligibleConfirmed, setEligibleConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [celebrate, setCelebrate] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -37,6 +49,17 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
     return () => { cancelled = true; };
   }, [open, refresh]);
 
+  // Arriving from the "Finish payout setup" reminder opens the payout screen straight away.
+  useEffect(() => {
+    if (!available || open) return;
+    if (new URLSearchParams(window.location.search).get('payout') !== 'finish') return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete('payout');
+    window.history.replaceState(window.history.state, '', url);
+    queueMicrotask(() => void show());
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, when payouts become available
+  }, [available]);
+
   if (!available) return null;
 
   async function show() {
@@ -44,7 +67,9 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
     setBusy(true);
     setMessage('');
     try {
-      setStatus(await loadPayoutStatus());
+      const next = await loadPayoutStatus();
+      setStatus(next);
+      setCelebrate(next.payoutsEnabled && firstPayoutsReady());
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Payout status could not be loaded.');
     } finally {
@@ -53,7 +78,7 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
   }
 
   async function continueToStripe() {
-    if (!status || busy || (!status.payoutsEnabled && !eligibleConfirmed)) return;
+    if (!status || busy || (payoutNeedsConfirmation(status) && !eligibleConfirmed)) return;
     setBusy(true);
     setMessage('');
     try {
@@ -69,19 +94,16 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
     <>
       <button className={`secondary-button${compact ? ' compact-button' : ''}`} onClick={show}>Payout settings</button>
       {open && (
-        <ModalShell onClose={() => setOpen(false)} label="Payout setup" className="payout-dialog" closeDisabled={busy}>
-          <h2>{status?.payoutsEnabled ? 'Payouts are ready' : 'Set up payouts'}</h2>
-          <p>{status?.payoutsEnabled ? 'Review your payout details securely with Stripe.' : 'Use one Stripe account for cleanup and reporter rewards. Stripe securely verifies your identity and bank details.'}</p>
-          {!status?.payoutsEnabled && status && (
-            <label className="payout-confirmation">
-              <input type="checkbox" checked={eligibleConfirmed} onChange={(event) => setEligibleConfirmed(event.target.checked)} />
-              <span>I confirm that I am at least 18 and eligible to receive payouts in the United States.</span>
-            </label>
-          )}
-          {message && <p className="form-message error-message" role="alert">{message}</p>}
-          <button className="primary-button" onClick={continueToStripe} disabled={busy || !status || (!status.payoutsEnabled && !eligibleConfirmed)}>
-            {busy ? 'Loading…' : status?.payoutsEnabled ? 'Review with Stripe' : 'Continue to Stripe'}
-          </button>
+        <ModalShell onClose={() => setOpen(false)} label="Payout setup" className="payout-dialog flow-page payout-page" closeDisabled={busy}>
+          <PayoutPanel
+            status={status}
+            eligibleConfirmed={eligibleConfirmed}
+            onEligible={setEligibleConfirmed}
+            busy={busy}
+            message={message}
+            onContinue={() => void continueToStripe()}
+            celebrate={celebrate}
+          />
         </ModalShell>
       )}
     </>

@@ -35,6 +35,8 @@ export type PayoutStatus = {
   onboardingStatus: 'not_started' | 'pending' | 'restricted' | 'enabled';
   payoutsEnabled: boolean;
   requirementsDue: string[];
+  /** Whether this member already confirmed age and eligibility (the server records it). */
+  age18Confirmed?: boolean;
 };
 
 export function formatUsd(cents = 0) {

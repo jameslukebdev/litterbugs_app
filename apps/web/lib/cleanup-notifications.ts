@@ -29,8 +29,8 @@ const CLEANUP_NOTIFICATION_CONTENT: Record<string, { title: string; message: str
     message: 'Your cleanup claim expired and is available to other volunteers again.',
   },
   completion_submitted: {
-    title: 'Cleanup ready for review',
-    message: 'A cleanup was submitted for your review.',
+    title: 'Your spot was cleaned up',
+    message: 'Check the before and after photos, then approve the cleanup or ask for changes.',
   },
   changes_requested: {
     title: 'Changes requested',

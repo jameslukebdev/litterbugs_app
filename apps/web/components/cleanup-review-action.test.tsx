@@ -33,7 +33,6 @@ beforeEach(() => {
   state.paid = false; state.attemptError = false; state.revision = 0;
   state.financial = 'passed'; state.dispute = 'none'; state.admin = 'not_required'; state.deadline = Date.now() + 86400000;
   rpc.mockResolvedValue({ data: { status: 'changes_requested' }, error: null });
-  vi.spyOn(window, 'confirm').mockReturnValue(true);
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.clearAllMocks(); });
 
@@ -43,38 +42,60 @@ async function openReview() {
   await screen.findByRole('dialog');
 }
 
+const click = (name: string) => fireEvent.click(screen.getByRole('button', { name }));
+/** Funded approval asks once, on the page, before sending. */
+const approvePaid = () => { click('Approve cleanup'); click('Yes, approve'); };
+
+it('opens straight to the photos on the review page, without an extra button', async () => {
+  render(<CleanupReviewAction workspace report={{ id: 'report', photo_paths: ['before.jpg'] } as Report} userId="owner" isOwner />);
+  await screen.findByRole('dialog');
+  expect(screen.getByRole('heading', { name: 'Cleaner cleaned up this spot' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Review cleanup' })).toBeNull();
+});
+
 it('sends a valid change-request reason and a bounded note', async () => {
   await openReview();
+  click('Request changes');
   const input = screen.getByRole('textbox') as HTMLTextAreaElement;
   expect(input.maxLength).toBe(500);
   fireEvent.change(input, { target: { value: 'Please show the remaining area.' } });
   fireEvent.click(screen.getByRole('checkbox', { name: 'Need another photo' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Request changes' }));
+  click('Send change request');
   await waitFor(() => expect(rpc).toHaveBeenCalledWith('review_cleanup', expect.objectContaining({
     review_decision: 'changes_requested', request_change_reasons: ['additional_photo_needed'], reviewer_note: 'Please show the remaining area.',
   })));
   await screen.findByText('The cleaner has been asked for updated evidence.');
+  expect(screen.getByRole('heading', { name: 'Change request sent' })).toBeTruthy();
+});
+
+it('asks for a reason before sending a change request', async () => {
+  await openReview();
+  click('Request changes');
+  click('Send change request');
+  await screen.findByText('Choose at least one reason for requesting changes.');
+  expect(rpc).not.toHaveBeenCalled();
 });
 
 it('keeps feedback when a response has not actually transitioned the cleanup', async () => {
   rpc.mockResolvedValue({ data: { status: 'completion_submitted' }, error: null });
   await openReview();
   fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Saved feedback' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Approve cleanup' }));
+  click('Approve cleanup');
   await screen.findByRole('alert');
   expect(screen.getByRole('alert').textContent).toContain('still awaiting review');
   expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('Saved feedback');
-  expect(screen.queryByText('Cleanup approved.')).toBeNull();
+  expect(screen.queryByText('Cleanup approved')).toBeNull();
   expect(trackOutcome).not.toHaveBeenCalled();
 });
 
 it('reports actual completion if the deadline passed during a change request', async () => {
   rpc.mockResolvedValue({ data: { status: 'completed' }, error: null });
   await openReview();
+  click('Request changes');
   fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Please check this area.' } });
   fireEvent.click(screen.getByRole('checkbox', { name: 'Need another photo' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Request changes' }));
-  await screen.findByText('Cleanup approved.');
+  click('Send change request');
+  await screen.findByText('Cleanup approved');
   expect(screen.queryByText('The cleaner has been asked for updated evidence.')).toBeNull();
   expect(trackOutcome).toHaveBeenCalledWith('cleanup_approved', 'cleanup');
 });
@@ -82,16 +103,16 @@ it('reports actual completion if the deadline passed during a change request', a
 it('keeps the separate 1000-character dispute allowance', async () => {
   state.paid = true;
   await openReview();
+  click('Report a problem');
   expect((screen.getByRole('textbox') as HTMLTextAreaElement).maxLength).toBe(1000);
 });
-
 
 it('shows a retry state instead of a blank review on initial failure', async () => {
   state.attemptError = true;
   render(<CleanupReviewAction report={{ id: 'report' } as Report} userId="owner" isOwner />);
   await screen.findByRole('alert');
   state.attemptError = false;
-  fireEvent.click(screen.getByRole('button', { name: 'Retry cleanup review' }));
+  click('Retry cleanup review');
   await screen.findByRole('button', { name: 'Review cleanup' });
 });
 
@@ -107,25 +128,28 @@ it('retains unsent feedback through a failed poll and retry', async () => {
   expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('Please photograph the far side');
   expect((screen.getByRole('button', { name: 'Approve cleanup' }) as HTMLButtonElement).disabled).toBe(true);
   state.attemptError = false;
-  fireEvent.click(screen.getByRole('button', { name: 'Retry cleanup review' }));
+  click('Retry cleanup review');
   await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
   expect((screen.getByRole('button', { name: 'Approve cleanup' }) as HTMLButtonElement).disabled).toBe(false);
   expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('Please photograph the far side');
 });
 
-
 it('approves funded evidence using the existing protected RPC, without submitting a dispute reason as an approval note', async () => {
   state.paid = true;
   rpc.mockResolvedValue({ data: { status: 'completed', payout_status: 'pending' }, error: null });
   await openReview();
+  click('Report a problem');
   fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Draft dispute reason'.repeat(40) } });
-  fireEvent.click(screen.getByRole('button', { name: 'Approve cleanup' }));
-  expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('ends your remaining dispute window'));
+  click('Back');
+  click('Approve cleanup');
+  expect(screen.getByText(/ends your remaining dispute window/)).toBeTruthy();
+  expect(rpc).not.toHaveBeenCalled();
+  click('Yes, approve');
   await waitFor(() => expect(rpc).toHaveBeenCalledWith('review_cleanup', {
     target_cleanup_id: 'cleanup', target_submission_id: 'submission', review_decision: 'approved',
     request_change_reasons: undefined, reviewer_note: undefined,
   }));
-  await screen.findByText('Cleanup approved. Payment still depends on the remaining payout and eligibility checks.');
+  await screen.findByText('Thanks for checking. Payment still depends on the remaining payout and eligibility checks.');
   expect(screen.queryByRole('dialog')).toBeNull();
   expect(rpc).toHaveBeenCalledTimes(1);
 });
@@ -147,32 +171,38 @@ it('preserves feedback and allows retry after a rejected approval request', asyn
   state.paid = true;
   rpc.mockRejectedValue(new Error('offline'));
   await openReview();
+  click('Report a problem');
   fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Unsent feedback' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Approve cleanup' }));
+  click('Back');
+  approvePaid();
   await screen.findByText(/decision could not be confirmed/);
+  expect((screen.getByRole('button', { name: 'Yes, approve' }) as HTMLButtonElement).disabled).toBe(false);
+  click('Not yet');
+  click('Report a problem');
   expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('Unsent feedback');
-  expect((screen.getByRole('button', { name: 'Approve cleanup' }) as HTMLButtonElement).disabled).toBe(false);
 });
 
 it('keeps dispute submission on its separate RPC', async () => {
   state.paid = true;
   rpc.mockResolvedValue({ data: null, error: null });
   await openReview();
+  click('Report a problem');
   fireEvent.change(screen.getByRole('textbox'), { target: { value: 'The litter remains' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Dispute cleanup' }));
+  click('Send to Litterbugs team');
   await waitFor(() => expect(rpc).toHaveBeenCalledWith('dispute_paid_cleanup', {
     target_cleanup_id: 'cleanup', dispute_reason: 'The litter remains',
   }));
+  await screen.findByRole('heading', { name: 'Problem reported' });
 });
 
-it('does not approve when the reporter cancels confirmation', async () => {
+it('does not approve when the reporter chooses Not yet', async () => {
   state.paid = true;
   await openReview();
-  vi.mocked(window.confirm).mockReturnValue(false);
-  fireEvent.click(screen.getByRole('button', { name: 'Approve cleanup' }));
+  click('Approve cleanup');
+  click('Not yet');
   expect(rpc).not.toHaveBeenCalled();
+  expect(screen.getByRole('button', { name: 'Approve cleanup' })).toBeTruthy();
 });
-
 
 it('allows the legacy pending administrator flag without bypassing payout checks', async () => {
   state.paid = true; state.admin = 'pending';
@@ -184,7 +214,7 @@ it('does not show paid approval success for an unchanged server response', async
   state.paid = true;
   rpc.mockResolvedValue({ data: { status: 'completion_submitted' }, error: null });
   await openReview();
-  fireEvent.click(screen.getByRole('button', { name: 'Approve cleanup' }));
+  approvePaid();
   await screen.findByText(/still awaiting review/);
   expect(screen.queryByText(/Cleanup approved/)).toBeNull();
   expect(screen.getByRole('dialog')).toBeTruthy();
@@ -195,11 +225,11 @@ it('blocks another decision while funded approval is pending', async () => {
   let resolve!: (value: unknown) => void;
   rpc.mockReturnValue(new Promise(done => { resolve = done; }));
   await openReview();
-  fireEvent.click(screen.getByRole('button', { name: 'Approve cleanup' }));
+  approvePaid();
   expect((screen.getByRole('button', { name: 'Approving…' }) as HTMLButtonElement).disabled).toBe(true);
-  expect((screen.getByRole('button', { name: 'Dispute cleanup' }) as HTMLButtonElement).disabled).toBe(true);
+  expect((screen.getByRole('button', { name: 'Not yet' }) as HTMLButtonElement).disabled).toBe(true);
   fireEvent.click(screen.getByRole('button', { name: 'Approving…' }));
   expect(rpc).toHaveBeenCalledTimes(1);
   resolve({ data: { status: 'completed', payout_status: 'pending' }, error: null });
-  await screen.findByText(/Cleanup approved. Payment still depends/);
+  await screen.findByText(/Payment still depends/);
 });

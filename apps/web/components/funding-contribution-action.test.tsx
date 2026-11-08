@@ -101,7 +101,7 @@ describe('FundingContributionAction', () => {
     loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
     render(<FundingContributionAction report={report} userId="member-id" />);
     fireEvent.click(await screen.findByRole('button', { name: 'Fund' }));
-    expect(await screen.findByText('Cleaner reward')).toBeTruthy();
+    expect(await screen.findByText('Goes to the cleaner')).toBeTruthy();
     expect(screen.getByText('$25.00')).toBeTruthy();
     expect(screen.getByText('$3.00')).toBeTruthy();
     expect(screen.getByText('$28.00')).toBeTruthy();

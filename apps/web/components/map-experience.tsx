@@ -38,6 +38,7 @@ import { getBrowserLocation, requireReportLocation } from '@/lib/geolocation';
 import { clearReportEntryLocation, readReportEntryLocation, reportEntryLocationHref } from '@/lib/report-entry-location';
 import { ReportDetail } from '@/components/report-detail';
 import { ResumableReportWizard } from '@/components/resumable-report-wizard';
+import { CelebrationToast } from '@/components/celebration-toast';
 import { cloudDrafts } from '@/lib/cloud-drafts';
 import { clearPublishedReport, clearReportPublication, reportDraftLocation, loadReportPublication, saveReportPublication, type ReportPublicationJournal } from '@/lib/saved-report-draft';
 import { ReportWizard } from '@/components/report-wizard';
@@ -58,6 +59,7 @@ declare global { interface Window { gm_authFailure?: () => void; } }
 
 const EMPTY_MAP_REPORTS: MappableReport[] = [];
 // Website starting viewport only: no city boundary or discovery filter.
+const REPORT_POSTED_TOAST = 'Report posted. Thanks for helping keep the community clean!';
 const DEFAULT_WEB_MAP_CENTER = { latitude: 36.2168, longitude: -81.6746 };
 const MAP_TYPES = ['roadmap', 'satellite', 'hybrid', 'terrain'] as const;
 const NO_FAVORITES: ReadonlySet<string> = new Set();
@@ -186,6 +188,8 @@ export function MapExperience({
   const [checkingDraft, setCheckingDraft] = useState(false);
   const [previewedReportId, setPreviewedReportId] = useState<string | null>(null);
   const [toast, setToast] = useState('');
+  // A newly posted report ends with the bug celebration instead of the plain toast.
+  const [postedToast, setPostedToast] = useState('');
   const [reportUploadProgress, setReportUploadProgress] = useState('');
   const [fundingEnabled, setFundingEnabled] = useState(false);
   const [reportFunding, setReportFunding] = useState<{ report: Report; amountCents: number } | null>(null);
@@ -880,7 +884,8 @@ export function MapExperience({
     setDraftCoordinates(null);
     if (contributionCents != null) setReportFunding({ report, amountCents: contributionCents });
     closeReportTask();
-    setToast('Report saved. Thanks for helping keep the community clean!');
+    setToast(REPORT_POSTED_TOAST);
+    setPostedToast(REPORT_POSTED_TOAST);
     void refreshReports();
     if (fundingEnabled) void refreshFundingReview(report.id).catch(() => undefined);
   }
@@ -1110,7 +1115,9 @@ export function MapExperience({
         </div>
       </div>
 
-      {(initialError || toast) && <div className="toast" role="status">{toast || 'Some reports could not be loaded. Try refreshing the results.'}</div>}
+      {toast && toast === postedToast
+        ? <CelebrationToast title="Report posted">Thanks for helping keep the community clean!</CelebrationToast>
+        : (initialError || toast) && <div className="toast" role="status">{toast || 'Some reports could not be loaded. Try refreshing the results.'}</div>}
       <div className={`map-workspace${desktopDetail && selectedReport && !detailsMinimized ? ' has-report-detail' : ''}`}>
         <ReportBrowser
           filterToolbar={filterToolbar}

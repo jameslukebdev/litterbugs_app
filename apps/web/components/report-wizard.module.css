@@ -94,3 +94,55 @@
 .stepDots span[data-active="true"] { background: #4438bb; }
 .footerSpacer { width: 48px; }
 .submitButton { width: 100%; min-height: 50px; margin-top: 24px; }
+
+/* Consistency pass: same look as the cleanup flows. Report family = periwinkle dragonfly;
+   severity uses the site's green/amber/red dots as pastel tints; real Back/Next buttons. */
+.wizard :global(.wizard-header) { justify-content: flex-start; }
+.flowBug { flex: none; width: 40px; height: 40px; object-fit: contain; }
+.wizard :global(.wizard-header h2) { font-family: 'Playful Nunito', system-ui, sans-serif; font-size: clamp(21px, 2.4vw, 25px); font-weight: 900; letter-spacing: 0; color: #292932; }
+.optionalTag { font-family: system-ui, sans-serif; }
+/* Photos */
+.photoSlot { border: 2px solid #c2d8ff; border-radius: 18px; background: #fff; }
+.photoSlot:has(.emptyPhoto) { border-style: dashed; border-color: #9bbbf3; background: #f2f7ff; }
+.emptyPhoto { color: #2e539e; }
+.emptyPhoto:hover { background: #e5efff; }
+.removePhoto { top: 6px; right: 6px; width: 32px; height: 32px; border-radius: 50%; background: #fffffff0; color: #292932; box-shadow: 0 1px 4px #0003; }
+.removePhoto svg { width: 16px; }
+.photoAction { min-height: 48px; border: 2px solid #c2d8ff; border-radius: 14px; color: #2e539e; font-weight: 800; box-shadow: 0 3px 0 #e5efff; }
+.photoAction:hover { background: #f2f7ff; border-color: #9bbbf3; }
+/* Choices: one Report-family highlight instead of rotating colours */
+.optionTile { min-height: 56px; border: 2px solid #ece8f8; border-radius: 14px; }
+.optionTile:hover { border-color: #c2d8ff; }
+.optionTile[aria-pressed="true"], .optionTile:nth-child(n)[aria-pressed="true"] { --tile-bg: #e5efff; --tile-border: #9bbbf3; --tile-fg: #234485; box-shadow: none; }
+.severityOption { border: 2px solid #ece8f8; border-radius: 16px; }
+.severityOption:hover { border-color: #d8d1f0; }
+.severityOption[aria-pressed="true"] { box-shadow: none; }
+.wizard [data-severity="low"] { --severity-bg: #ecf6e3; --severity-border: #9fd17a; --severity-fg: #2f6b3a; }
+.wizard [data-severity="medium"] { --severity-bg: #fff4dc; --severity-border: #f2a93b; --severity-fg: #7a4a00; }
+.wizard [data-severity="high"] { --severity-bg: #fff0f1; --severity-border: #ed3f48; --severity-fg: #a8323b; }
+.severityOption[data-severity="low"] > svg:first-child { color: #77b847; }
+.severityOption[data-severity="medium"] > svg:first-child { color: #f2a93b; }
+.severityOption[data-severity="high"] > svg:first-child { color: #ed3f48; }
+.severityOption[aria-pressed="true"] > svg:last-child { color: var(--severity-border); }
+/* Review */
+.wizard :global(.review-row) { border-color: #f0edf7; }
+.wizard :global(.review-row-header h4) { font-family: 'Playful Nunito', system-ui, sans-serif; font-size: 16px; font-weight: 900; color: #292932; }
+.wizard :global(.review-row-header button) { color: #2e539e; font-weight: 800; }
+.wizard :global(.detail-chip) { padding: 5px 11px; border: 0; border-radius: 999px; background: #e5efff; color: #234485; font-weight: 700; }
+.wizard :global(.review-photos img) { border: 2px solid #c2d8ff; border-radius: 14px; }
+.locationMap { border: 2px solid #c2d8ff; border-radius: 16px; }
+.wizard :global(.starting-fund-card) { padding: 16px; border: 2px solid #ffe08a; border-radius: 18px; background: #fffbea; }
+.wizard :global(.starting-fund-card h4) { font-family: 'Playful Nunito', system-ui, sans-serif; font-weight: 900; color: #5f4600; }
+.wizard :global(.starting-fund-card h4 > img) { width: 22px; height: 22px; object-fit: contain; }
+.submitButton { min-height: 52px; font-size: 16px; }
+/* Footer: real buttons, same shape as the cleanup flows */
+.navButton { display: inline-flex; align-items: center; gap: 4px; min-width: 112px; min-height: 48px; padding: 10px 16px; border-width: 2px; border-style: solid; border-radius: 14px; font-size: 15px; font-weight: 800; }
+.navButton svg { width: 18px; height: 18px; flex: none; }
+.navButton:global(.secondary-button) { border-color: #e3dff0; box-shadow: 0 3px 0 #e3dff0; }
+.stepDots span { width: 8px; height: 8px; }
+.stepDots span[data-active="true"] { width: 22px; border-radius: 999px; background: #9bbbf3; }
+.footerSpacer { width: 112px; }
+@media (max-width: 420px) { .navButton { min-width: 0; padding-inline: 12px; } .footerSpacer { width: 72px; } }
+.wizard :global(.field-label input), .wizard :global(.field-label textarea) { border: 2px solid #e3dff0; border-radius: 14px; background: #fff; }
+.wizard :global(.field-label input:focus), .wizard :global(.field-label textarea:focus) { border-color: #9bbbf3; outline: none; box-shadow: 0 0 0 3px #e5efff; }
+.wizard :global(.starting-fund-card .step-optional) { margin-left: 4px; color: #7a5d00; font-family: system-ui, sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; }

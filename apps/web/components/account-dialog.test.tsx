@@ -218,30 +218,35 @@ describe('AccountDialog expired report decisions', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Back to profile' }));
     fireEvent.click(screen.getByRole('button', { name: 'My activity' }));
     fireEvent.click(screen.getByRole('button', { name: 'My reports' }));
-    expect(await screen.findByRole('heading', { name: 'Renew or close reports' })).toBeTruthy();
-    expect(screen.getByText('$125.00 reward', { exact: false })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Keep this report open?' })).toBeTruthy();
+    expect(screen.getByText('$125.00 in its cleanup fund', { exact: false })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Renew 30 days' }));
 
     await waitFor(() => expect(rpc).toHaveBeenCalledWith('renew_report', {
       target_report_id: expiredReport.id,
     }));
     expect(await screen.findByText(/renewed for 30 days/i)).toBeTruthy();
-    expect(screen.queryByRole('heading', { name: 'Renew or close reports' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Keep this report open?' })).toBeNull();
   });
 
   it('requires confirmation before closing and queuing full refunds', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     render(<AccountDialog onClose={vi.fn()} onSignedOut={vi.fn()} onOpenReport={vi.fn()} />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'My activity' }));
     fireEvent.click(screen.getByRole('button', { name: 'My reports' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Close and refund' }));
-
-    expect(window.confirm).toHaveBeenCalledWith(expect.stringMatching(/including the service fee/i));
+    // Asks on the page first; Keep it open backs out without closing anything.
+    expect(screen.getByText(/including the service fee/i)).toBeTruthy();
+    expect(rpc).not.toHaveBeenCalledWith('close_expired_report', expect.anything());
+    fireEvent.click(screen.getByRole('button', { name: 'Keep it open' }));
+    expect(rpc).not.toHaveBeenCalledWith('close_expired_report', expect.anything());
+    fireEvent.click(screen.getByRole('button', { name: 'Close and refund' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close and refund' }));
     await waitFor(() => expect(rpc).toHaveBeenCalledWith('close_expired_report', {
       target_report_id: expiredReport.id,
     }));
-    expect(await screen.findByText(/full contribution refunds have been queued/i)).toBeTruthy();
+    expect(await screen.findByText(/gets a full refund, including the service fee/i)).toBeTruthy();
+    expect(screen.getByText('Report closed')).toBeTruthy();
   });
 });
 

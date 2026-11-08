@@ -10,7 +10,7 @@ export function cleanupProgress(report: Report, attempt: ProgressAttempt | null,
     add('Cleanup evidence submitted', attempt.first_submitted_at);
     if (attempt.latest_submitted_at !== attempt.first_submitted_at) add('Updated evidence submitted', attempt.latest_submitted_at);
     add('Cleanup completed', attempt.completed_at);
-    add('Claim released', attempt.released_at);
+    add('Cleanup given back', attempt.released_at);
     add('Cleanup cancelled', attempt.cancelled_at);
     add('Claim expired', attempt.expired_at);
   }

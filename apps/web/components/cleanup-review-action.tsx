@@ -1,14 +1,13 @@
 'use client';
 import { trackWebsiteOutcome } from '@/lib/website-analytics';
 
-/* eslint-disable @next/next/no-img-element -- Review evidence uses short-lived signed Storage URLs. */
-
 import type { Database, Report } from '@litterbugs/report-contract';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { ModalShell } from '@/components/modal-shell';
+import { CleanupReviewDone, CleanupReviewPanel, type ReviewMode } from '@/components/cleanup-review-panel';
 import { getWebCompatibleReportPhotoUrl } from '@/lib/report-photo';
-import { CLEANUP_CHANGE_REASONS, loadCleanupReviewDraft, saveCleanupReviewDraft, clearCleanupReviewDraft } from '@/lib/cleanup-review';
+import { loadCleanupReviewDraft, saveCleanupReviewDraft, clearCleanupReviewDraft } from '@/lib/cleanup-review';
 import { useDataRefresh, notifyDataChanged } from '@/lib/use-data-refresh';
 import { useCleanupAttempt } from '@/lib/use-cleanup-attempt';
 import { createClient } from '@/lib/supabase/client';
@@ -21,17 +20,6 @@ type ReviewContext = {
   beforeUrls: string[];
   afterUrls: string[];
 };
-
-function EvidencePhotos({ title, urls }: { title: string; urls: string[] }) {
-  return (
-    <section className="cleanup-evidence-section">
-      <h3>{title}</h3>
-      <div className="cleanup-evidence-grid">
-        {urls.map((url, index) => <img key={url} src={url} alt={`${title} ${index + 1} of ${urls.length}`} />)}
-      </div>
-    </section>
-  );
-}
 
 export function CleanupReviewAction({
   report,
@@ -56,18 +44,19 @@ export function CleanupReviewAction({
   const [draftMessage, setDraftMessage] = useState('');
   const [draftUnreadable, setDraftUnreadable] = useState(false);
   const [message, setMessage] = useState('');
+  const [mode, setMode] = useState<ReviewMode>('choose');
+  const [confirming, setConfirming] = useState(false);
+  const [outcome, setOutcome] = useState<'approved' | 'changes' | 'dispute' | null>(null);
   function updateFeedback(nextNote: string, nextReasons: string[]) {
     setNote(nextNote); setReasons(nextReasons); setMessage('');
     if (!context || !userId || draftUnreadable) return;
     try {
       saveCleanupReviewDraft(userId, context.submission.id, { note: nextNote, reasons: nextReasons });
-      setDraftMessage('Feedback saved on this device.');
+      setDraftMessage('');
     } catch { setDraftMessage('Feedback could not be saved on this device. Keep this page open.'); }
   }
 
   const refreshNotice = attemptFailed ? <p role="alert" className="form-message error-message">Cleanup review could not be refreshed. {attempt ? 'Your last confirmed review and feedback are still here. Retry before sending a decision.' : 'Retry to check whether evidence needs your review.'} <button type="button" className="secondary-button" onClick={() => void refreshAttempt()}>Retry cleanup review</button></p> : null;
-  if (!attempt) return <>{refreshNotice}{attemptLoading && <span className="sr-only" role="status">Checking cleanup review…</span>}{message && <span className="cleanup-action-message" role="status">{message}</span>}</>;
-
   async function openReview() {
     if (!attempt) return;
     setBusy('load');
@@ -132,9 +121,23 @@ export function CleanupReviewAction({
         setDraftMessage('Saved feedback could not be read. Keep this page open until you submit.');
       }
     }
+    setMode('choose');
+    setConfirming(false);
     setBusy('');
     setOpen(true);
   }
+
+  // On the review page the photos open straight away: no extra "Review cleanup" click.
+  const ready = Boolean(attempt) && !attemptFailed;
+  useEffect(() => {
+    if (workspace && ready && !open && !context && !outcome) queueMicrotask(() => void openReview());
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open once when the attempt first loads
+  }, [workspace, ready]);
+
+  const done = outcome && message
+    ? <CleanupReviewDone kind={outcome}>{message}</CleanupReviewDone>
+    : message && !open ? <span className="cleanup-action-message" role="status">{message}</span> : null;
+  if (!attempt) return <>{refreshNotice}{attemptLoading && <span className="sr-only" role="status">Checking cleanup review…</span>}{done}</>;
 
   async function completeReview(decision: 'approved' | 'changes_requested') {
     if (attemptFailed || !attempt || !context || busy || !isOwner || !userId) return;
@@ -147,11 +150,6 @@ export function CleanupReviewAction({
       setMessage('Choose at least one reason for requesting changes.');
       return;
     }
-    if (!window.confirm(decision === 'approved'
-      ? attempt.is_paid
-        ? 'Approve this funded cleanup? This ends your remaining dispute window. Payment will still require all payout and eligibility checks.'
-        : 'Approve this cleanup?'
-      : 'Request updated cleanup evidence?')) return;
     setBusy(decision);
     try {
       const { data: reviewedAttempt, error } = await createClient().rpc('review_cleanup', {
@@ -174,9 +172,11 @@ export function CleanupReviewAction({
       if (reviewedAttempt.status === 'completed') trackWebsiteOutcome('cleanup_approved', attempt.id);
       notifyDataChanged();
       setOpen(false);
+      setConfirming(false);
       clearAttempt();
+      setOutcome(reviewedAttempt.status === 'completed' ? 'approved' : 'changes');
       setMessage(reviewedAttempt.status === 'completed'
-        ? attempt.is_paid ? 'Cleanup approved. Payment still depends on the remaining payout and eligibility checks.' : 'Cleanup approved.'
+        ? attempt.is_paid ? 'Thanks for checking. Payment still depends on the remaining payout and eligibility checks.' : 'Thanks for checking. This spot now shows as cleaned up.'
         : 'The cleaner has been asked for updated evidence.');
       await Promise.resolve().then(() => onChanged?.()).catch(() => undefined);
     } catch {
@@ -190,7 +190,6 @@ export function CleanupReviewAction({
       setMessage('Briefly explain what does not look right.');
       return;
     }
-    if (!window.confirm('Submit this dispute for review? The reward will remain paused.')) return;
     setBusy('dispute');
     const { error } = await createClient().rpc('dispute_paid_cleanup', {
       target_cleanup_id: attempt.id,
@@ -205,6 +204,7 @@ export function CleanupReviewAction({
     notifyDataChanged();
     setOpen(false);
     clearAttempt();
+    setOutcome('dispute');
     setMessage('Dispute submitted. A Litterbugs team member will review the photos and details.');
     await Promise.resolve().then(() => onChanged?.()).catch(() => undefined);
   }
@@ -224,40 +224,40 @@ export function CleanupReviewAction({
   return (
     <>
       {!(open && context) && refreshNotice}
-      {message && !open && <span className="cleanup-action-message" role="status">{message}</span>}
-      <button className="secondary-button compact-button" onClick={openReview} disabled={busy === 'load'}>{busy === 'load' ? 'Loading…' : 'Review cleanup'}</button>
+      {!open && done}
+      {!(workspace && (open || busy === 'load')) && <button className="secondary-button compact-button" onClick={openReview} disabled={busy === 'load'}>{busy === 'load' ? 'Loading…' : 'Review cleanup'}</button>}
+      {workspace && busy === 'load' && <p className="cleanup-review-loading" role="status">Loading the cleanup photos…</p>}
 
       {open && context && (
         <ModalShell embedded={workspace} onClose={() => setOpen(false)} label="Review submitted cleanup evidence" className="cleanup-flow-dialog cleanup-review-dialog" closeDisabled={Boolean(busy)}>
-          {refreshNotice}
-          <span className="eyebrow">CLEANUP REVIEW</span>
-          <h2>Compare the cleanup photos</h2>
-          <p className="cleanup-review-summary">Submitted by {context.cleanerName}{attempt.review_due_at ? ` · Automatic approval after ${new Date(attempt.review_due_at).toLocaleString()}` : ''}</p>
-          <div className="cleanup-review-scroll">
-            <div className="cleanup-evidence-comparison"><EvidencePhotos title="Before" urls={context.beforeUrls} />
-            <EvidencePhotos title="After" urls={context.afterUrls} /></div>
-            <section className="cleanup-submission-summary">
-              <h3>Cleaner’s description</h3>
-              <p>{context.submission.description}</p>
-              {(context.submission.bags_or_items_removed != null || context.submission.weight_pounds != null) && <small>{context.submission.bags_or_items_removed != null ? `${context.submission.bags_or_items_removed} bags/items` : ''}{context.submission.bags_or_items_removed != null && context.submission.weight_pounds != null ? ' · ' : ''}{context.submission.weight_pounds != null ? `${context.submission.weight_pounds} lb removed` : ''}</small>}
-            </section>
-            {!attempt.is_paid && <fieldset className="cleanup-change-reasons"><legend>Reasons for requesting changes</legend>{CLEANUP_CHANGE_REASONS.map(reason => <label key={reason.code}><input type="checkbox" checked={reasons.includes(reason.code)} onChange={event => updateFeedback(note, event.target.checked ? [...reasons, reason.code] : reasons.filter(code => code !== reason.code))} />{reason.label}</label>)}</fieldset>}
-            <label className="cleanup-review-note">{attempt.is_paid ? 'Why are you disputing this cleanup?' : 'Feedback for the cleaner'}<textarea value={note} maxLength={attempt.is_paid ? 1000 : 500} onChange={event => updateFeedback(event.target.value, reasons)} placeholder={attempt.is_paid ? 'Explain what does not look right.' : 'Optional details to help the cleaner.'} /></label>
-            {draftMessage && <p className="form-message" role="status">{draftMessage}</p>}
-            {message && <p className="form-message error-message" role="alert">{message}</p>}
-          </div>
-          {attempt.is_paid ? (
-            <div className="cleanup-flow-actions">
-              <span className="cleanup-paid-review-note">After the photos pass review, you have up to 48 hours to approve or dispute the cleanup. Approving ends your remaining dispute window. If you do nothing, approval happens automatically when the window ends. Payment still requires all remaining checks.</span>
-              <button className="primary-button" onClick={() => completeReview('approved')} disabled={attemptFailed || !paidReviewAvailable || Boolean(busy)}>{busy === 'approved' ? 'Approving…' : 'Approve cleanup'}</button>
-              <button className="danger-button" onClick={disputePaidCleanup} disabled={attemptFailed || !paidDisputeAvailable || Boolean(busy)}>{paidDisputeAvailable ? (busy === 'dispute' ? 'Submitting…' : 'Dispute cleanup') : 'Dispute unavailable'}</button>
-            </div>
-          ) : (
-            <div className="cleanup-flow-actions cleanup-review-actions">
-              <button className="secondary-button" onClick={() => completeReview('changes_requested')} disabled={attemptFailed || Boolean(busy)}>{busy === 'changes_requested' ? 'Saving…' : 'Request changes'}</button>
-              <button className="primary-button" onClick={() => completeReview('approved')} disabled={attemptFailed || Boolean(busy)}>{busy === 'approved' ? 'Approving…' : 'Approve cleanup'}</button>
-            </div>
-          )}
+          <CleanupReviewPanel
+            notice={refreshNotice}
+            cleanerName={context.cleanerName}
+            submittedAt={context.submission.created_at ?? null}
+            description={context.submission.description}
+            bags={context.submission.bags_or_items_removed ?? null}
+            weight={context.submission.weight_pounds ?? null}
+            beforeUrls={context.beforeUrls}
+            afterUrls={context.afterUrls}
+            paid={attempt.is_paid}
+            reviewDueAt={attempt.review_due_at ?? null}
+            mode={mode}
+            onMode={next => { setMode(next); setConfirming(false); setMessage(''); }}
+            confirming={confirming}
+            onConfirming={value => { setConfirming(value); setMessage(''); }}
+            reasons={reasons}
+            note={note}
+            onFeedback={updateFeedback}
+            busy={busy}
+            disabled={attemptFailed}
+            paidApproveAvailable={paidReviewAvailable}
+            paidDisputeAvailable={paidDisputeAvailable}
+            draftMessage={draftMessage}
+            message={message}
+            onApprove={() => void completeReview('approved')}
+            onRequestChanges={() => void completeReview('changes_requested')}
+            onDispute={() => void disputePaidCleanup()}
+          />
         </ModalShell>
       )}
     </>

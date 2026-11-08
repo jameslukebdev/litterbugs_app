@@ -34,6 +34,13 @@ import { reportDraftLocation, clearPublishedReport as clearSavedReportData } fro
 import { useDataRefresh } from '@/lib/use-data-refresh';
 import { reportPreferenceSync } from '@/lib/synced-report-preferences';
 import { createClient } from '@/lib/supabase/client';
+import { FlowDone } from '@/components/flow-done';
+import { RenewalDecision } from '@/components/renewal-decision';
+import { getReportCardPhotoUrl } from '@/lib/report-photo';
+
+const REPORT_RENEWED = 'Report renewed for 30 days with its cleanup fund preserved.';
+const REPORT_CLOSED_REFUND = 'Everyone who added money to its cleanup fund gets a full refund, including the service fee. Refunds usually show up within 5–10 business days.';
+const REPORT_CLOSED_NO_FUND = 'It’s off the map now.';
 
 type CleanupAttemptRow = Database['public']['Tables']['cleanup_attempts']['Row'];
 type CleanupAttempt = Pick<
@@ -439,11 +446,10 @@ export function AccountDialog({
       return;
     }
     setExpiredReports((current) => current.filter(({ id }) => id !== reportId));
-    setMessage('Report renewed for 30 days with its cleanup fund preserved.');
+    setMessage(REPORT_RENEWED);
   }
 
   async function closeExpiredReport(reportId: string) {
-    if (!window.confirm('Close this report and refund every active contribution, including the service fee?')) return;
     setBusyAction(`close:${reportId}`);
     const { error } = await createClient().rpc('close_expired_report', { target_report_id: reportId });
     setBusyAction('');
@@ -451,8 +457,9 @@ export function AccountDialog({
       setMessage('The report could not be closed. Refresh and try again.');
       return;
     }
+    const hadFund = (expiredReports.find(({ id }) => id === reportId)?.funded_amount_cents ?? 0) > 0;
     setExpiredReports((current) => current.filter(({ id }) => id !== reportId));
-    setMessage('Report closed. Full contribution refunds have been queued.');
+    setMessage(hadFund ? REPORT_CLOSED_REFUND : REPORT_CLOSED_NO_FUND);
   }
 
   async function unblockAccount(profileId: string) {
@@ -512,7 +519,9 @@ export function AccountDialog({
         </>}
       </header>}
 
-      {message && <p className={`form-message ${message.includes('sent') || message.includes('saved') ? 'success-message' : 'error-message'}`} role="status">{message}</p>}
+      {message === REPORT_RENEWED ? <FlowDone bug="dragonfly" title="Report renewed">{message}</FlowDone>
+        : message === REPORT_CLOSED_REFUND || message === REPORT_CLOSED_NO_FUND ? <FlowDone bug="dragonfly" title="Report closed" celebrate={false}>{message}</FlowDone>
+        : message && <p className={`form-message ${message.includes('sent') || message.includes('saved') ? 'success-message' : 'error-message'}`} role="status">{message}</p>}
 
       {profileEditing && (
         <section className="member-profile-editor" aria-label="Profile editor">
@@ -602,34 +611,22 @@ export function AccountDialog({
           <div className="member-dashboard-grid">
             {initialRenewalId && section === 'activity' && activityTab === 'reports' && !dataLoading && !unavailable.some(name => ['Account', 'Renewals'].includes(name)) && !expiredReports.some(report => report.id === initialRenewalId) && <p role="status">This report no longer needs renewal.</p>}
             {section === 'activity' && activityTab === 'reports' && expiredReports.length ? (
-              <section className="member-panel">
-                <header><div><h3>Renew or close reports</h3></div></header>
-                <div className="member-activity-list">
+              <section className="member-panel renew-panel">
+                <header><div><h3>{expiredReports.length === 1 ? 'Keep this report open?' : 'Keep these reports open?'}</h3></div></header>
+                <div className="renew-list">
                   {expiredReports.map((report) => (
-                    <div key={report.id} id={`renewal-${report.id}`} tabIndex={-1} className="member-activity-row member-completed-row renewal-decision">
-                      <span>
-                        <strong>{report.title || 'Litter Report'}</strong><small className="report-context">{reportContext(report)}</small>
-                        <small>
-                          {formatUsd(report.funded_amount_cents)} reward · Decide by {new Date(report.renewal_decision_due_at ?? '').toLocaleDateString()}
-                        </small>
-                      </span>
-                      <div className="account-actions">
-                        <button
-                          className="secondary-button compact-button"
-                          onClick={() => renewReport(report.id)}
-                          disabled={Boolean(busyAction)}
-                        >
-                          {busyAction === `renew:${report.id}` ? 'Renewing…' : 'Renew 30 days'}
-                        </button>
-                        <button
-                          className="danger-button compact-button"
-                          onClick={() => closeExpiredReport(report.id)}
-                          disabled={Boolean(busyAction)}
-                        >
-                          {busyAction === `close:${report.id}` ? 'Closing…' : 'Close and refund'}
-                        </button>
-                      </div>
-                    </div>
+                    <RenewalDecision
+                      key={report.id}
+                      id={report.id}
+                      title={report.title || 'Litter Report'}
+                      place={reportContext(report)}
+                      photo={report.photo_paths?.[0] ? getReportCardPhotoUrl(report.photo_paths[0], report.id) : null}
+                      fundCents={report.funded_amount_cents ?? 0}
+                      due={report.renewal_decision_due_at ?? ''}
+                      busy={busyAction === `renew:${report.id}` ? 'renew' : busyAction === `close:${report.id}` ? 'close' : busyAction ? 'other' : ''}
+                      onRenew={() => void renewReport(report.id)}
+                      onClose={() => void closeExpiredReport(report.id)}
+                    />
                   ))}
                 </div>
               </section>

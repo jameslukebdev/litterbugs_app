@@ -43,7 +43,7 @@ describe('cleanup agreement and site confirmation', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Clean' }));
     await screen.findByRole('dialog');
     expect(screen.queryByText('Full versioned agreement')).toBeNull();
-    const confirm = screen.getByRole('button', { name: 'Confirm and claim cleanup' }) as HTMLButtonElement;
+    const confirm = screen.getByRole('button', { name: 'Claim this cleanup' }) as HTMLButtonElement;
     expect(confirm.disabled).toBe(true);
     fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(confirm);
@@ -56,7 +56,7 @@ describe('cleanup agreement and site confirmation', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Clean' }));
     await screen.findByText('Full versioned agreement');
     const boxes = screen.getAllByRole('checkbox');
-    const confirm = screen.getByRole('button', { name: 'Confirm and claim cleanup' }) as HTMLButtonElement;
+    const confirm = screen.getByRole('button', { name: 'Claim this cleanup' }) as HTMLButtonElement;
     fireEvent.click(boxes[0]);
     expect(confirm.disabled).toBe(true);
     fireEvent.click(boxes[1]);
@@ -80,14 +80,14 @@ describe('cleanup evidence recovery', () => {
     loadDraft.mockResolvedValue({ photos: [new File(['photo'], 'after.jpg', { type: 'image/jpeg' })], description: 'Removed roadside bottles', bagsOrItems: '2', weightPounds: '4' });
     render(<CleanupAction report={report} userId="cleaner-1" />);
     fireEvent.click(await screen.findByRole('button', { name: 'Submit cleanup photos' }));
-    await waitFor(() => expect((screen.getByLabelText(/Cleanup description/) as HTMLTextAreaElement).value).toBe('Removed roadside bottles'));
-    expect(screen.queryByRole('button', { name: 'Submit cleanup' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Review cleanup' }));
-    expect(screen.getByRole('heading', { name: 'Review your cleanup' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Submit cleanup' })).toBeTruthy();
+    await waitFor(() => expect((screen.getByLabelText(/What did you clean up/) as HTMLTextAreaElement).value).toBe('Removed roadside bottles'));
+    expect(screen.queryByRole('button', { name: 'Send cleanup' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Check before sending' }));
+    expect(screen.getByRole('heading', { name: 'Ready to send?' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Send cleanup' })).toBeTruthy();
     expect(rpc).not.toHaveBeenCalledWith('submit_cleanup', expect.anything());
-    fireEvent.click(screen.getByRole('button', { name: 'Edit cleanup' }));
-    expect((screen.getByLabelText(/Cleanup description/) as HTMLTextAreaElement).value).toBe('Removed roadside bottles');
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    expect((screen.getByLabelText(/What did you clean up/) as HTMLTextAreaElement).value).toBe('Removed roadside bottles');
   });
   it('does not overwrite an unreadable saved draft', async () => {
     state.claimed = true;
@@ -95,7 +95,7 @@ describe('cleanup evidence recovery', () => {
     render(<CleanupAction report={report} userId="cleaner-1" />);
     fireEvent.click(await screen.findByRole('button', { name: 'Submit cleanup photos' }));
     await screen.findByText(/Draft storage is unavailable/);
-    fireEvent.change(screen.getByLabelText(/Cleanup description/), { target: { value: 'New text' } });
+    fireEvent.change(screen.getByLabelText(/What did you clean up/), { target: { value: 'New text' } });
     expect(saveDraft).not.toHaveBeenCalled();
   });
 });
@@ -116,20 +116,20 @@ it('keeps entered evidence through refresh failure and restores submission after
   state.claimed = true;
   loadDraft.mockResolvedValue({ photos: [new File(['photo'], 'after.jpg', { type: 'image/jpeg' })], description: 'Initial notes', bagsOrItems: '2', weightPounds: '' });
   const view = render(<CleanupAction report={report} userId="cleaner-1" workspace />);
-  const description = await screen.findByLabelText(/Cleanup description/);
+  const description = await screen.findByLabelText(/What did you clean up/);
   await waitFor(() => expect((description as HTMLTextAreaElement).value).toBe('Initial notes'));
   fireEvent.change(description, { target: { value: 'My latest evidence' } });
   state.attemptError = true; state.revision++;
   view.rerender(<CleanupAction report={report} userId="cleaner-1" workspace />);
   await screen.findByRole('alert');
-  expect((screen.getByLabelText(/Cleanup description/) as HTMLTextAreaElement).value).toBe('My latest evidence');
+  expect((screen.getByLabelText(/What did you clean up/) as HTMLTextAreaElement).value).toBe('My latest evidence');
   expect(screen.queryByRole('button', { name: 'Clean' })).toBeNull();
-  fireEvent.click(screen.getByRole('button', { name: 'Review cleanup' }));
-  expect((screen.getByRole('button', { name: 'Submit cleanup' }) as HTMLButtonElement).disabled).toBe(true);
+  fireEvent.click(screen.getByRole('button', { name: 'Check before sending' }));
+  expect((screen.getByRole('button', { name: 'Send cleanup' }) as HTMLButtonElement).disabled).toBe(true);
   state.attemptError = false;
   fireEvent.click(screen.getByRole('button', { name: 'Retry cleanup status' }));
   await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
-  expect((screen.getByRole('button', { name: 'Submit cleanup' }) as HTMLButtonElement).disabled).toBe(false);
+  expect((screen.getByRole('button', { name: 'Send cleanup' }) as HTMLButtonElement).disabled).toBe(false);
   expect(screen.getByText('My latest evidence', { selector: 'p' })).toBeTruthy();
 });
 
@@ -137,7 +137,20 @@ it('opens safety review after sign-in without accepting an agreement or claiming
   const view = render(<CleanupAction report={report} userId={null} autoOpen />);
   expect(screen.queryByRole('dialog')).toBeNull();
   view.rerender(<CleanupAction report={report} userId="cleaner-1" autoOpen />);
-  const confirm = await screen.findByRole('button', { name: 'Confirm and claim cleanup' }) as HTMLButtonElement;
+  const confirm = await screen.findByRole('button', { name: 'Claim this cleanup' }) as HTMLButtonElement;
   expect(confirm.disabled).toBe(true);
   expect(rpc).not.toHaveBeenCalled();
+});
+
+it('asks on the page before giving a cleanup back, and Keep it cancels', async () => {
+  state.claimed = true;
+  render(<CleanupAction report={report} userId="cleaner-1" />);
+  fireEvent.click(await screen.findByRole('button', { name: 'I can’t do this cleanup' }));
+  expect(screen.getByText(/Give this cleanup back\?/)).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Keep it' }));
+  expect(rpc).not.toHaveBeenCalledWith('release_cleanup', expect.anything());
+  fireEvent.click(screen.getByRole('button', { name: 'I can’t do this cleanup' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Give it back' }));
+  await waitFor(() => expect(rpc).toHaveBeenCalledWith('release_cleanup', { target_cleanup_id: 'attempt-1' }));
+  await screen.findByText('Cleanup given back');
 });

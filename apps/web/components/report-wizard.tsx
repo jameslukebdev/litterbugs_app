@@ -8,7 +8,7 @@ import { prepareBrowserPhotos } from '@/lib/prepare-browser-photo';
 
 import { usePhotoPreviews } from '@/lib/use-photo-previews';
 import { useEffect, useRef, useState } from 'react';
-import { IoCheckmarkCircle, IoEllipseOutline, IoLeafOutline, IoTrashOutline, IoLayersOutline, IoArrowBackCircle, IoArrowForwardCircle } from 'react-icons/io5';
+import { IoCheckmarkCircle, IoEllipseOutline, IoLeafOutline, IoTrashOutline, IoLayersOutline, IoChevronBack, IoChevronForward } from 'react-icons/io5';
 import { ReportOptionIcon, reportOptionLabel } from './report-option-icon';
 import styles from './report-wizard.module.css';
 
@@ -211,9 +211,10 @@ export function ReportWizard({
   if (selectingLocation) return null;
 
   return (
-    <ModalShell onClose={onClose} label={isEditing ? 'Edit litter report' : 'Create litter report'} className={`report-wizard ${styles.wizard}`} closeDisabled={saving || preparing}>
+    <ModalShell onClose={onClose} label={isEditing ? 'Edit litter report' : 'Create litter report'} className={`report-wizard flow-page report-flow ${styles.wizard}`} closeDisabled={saving || preparing}>
       <header className="wizard-header">
         {/* One heading per step: the step name replaces the old title plus sub-heading. */}
+        <img className={styles.flowBug} src="/brand/ranks/dragonfly.svg" alt="" aria-hidden="true" width={40} height={40} />
         <h2>{STEP_TITLES[step]}{step === 3 && <span className={styles.optionalTag}>Optional</span>}</h2>
       </header>
 
@@ -270,7 +271,7 @@ export function ReportWizard({
             <ReviewRow label="Site conditions" onEdit={() => editStep(3)}><div className="chip-row">{draft.selectedNotes.map((note) => <span className="detail-chip note-chip" key={note}><ReportOptionIcon label={note} />{reportOptionLabel(note)}</span>)}</div>{draft.notes.trim() && <p>{draft.notes.trim()}</p>}{!draft.selectedNotes.length && !draft.notes.trim() && <span>No notes added</span>}</ReviewRow>
           </div>
           {fundingEnabled && !isEditing && <section className="starting-fund-card" aria-label="Optional cleanup funding">
-            <h4><Icon name="heart" />Start the cleanup fund <span className="step-optional">Optional</span></h4>
+            <h4><img src="/brand/bugs/bee.png" alt="" aria-hidden="true" width={22} height={22} />Start the cleanup fund <span className="step-optional">Optional</span></h4>
             <div className="choice-grid" role="group" aria-label="Starting contribution">
               {[['none', 'No contribution now'], ['1', '$1'], ['5', '$5'], ['10', '$10'], ['25', '$25'], ['other', 'Other']].map(([value, label]) => (
                 <button type="button" className={`choice-chip ${fundingChoice === value ? 'choice-selected' : ''}`} aria-pressed={fundingChoice === value} onClick={() => { setFundingChoice(value); setMessage(''); }} key={value}>{label}</button>
@@ -291,9 +292,9 @@ export function ReportWizard({
 
       {message && <p className="form-message error-message wizard-message" role="alert">{message}</p>}
       <footer className="wizard-footer">
-        <button type="button" className={styles.arrowButton} aria-label={step === 0 && !returnToReview ? 'Cancel' : 'Back'} onClick={() => { if (returnToReview) { setStep(4); setReturnToReview(false); } else if (step === 0) onClose(); else setStep(step - 1); }} disabled={saving || preparing}><IoArrowBackCircle aria-hidden="true" /></button>
+        <button type="button" className={`secondary-button ${styles.navButton}`} aria-label={step === 0 && !returnToReview ? 'Cancel' : 'Back'} onClick={() => { if (returnToReview) { setStep(4); setReturnToReview(false); } else if (step === 0) onClose(); else setStep(step - 1); }} disabled={saving || preparing}><IoChevronBack aria-hidden="true" />{step === 0 && !returnToReview ? 'Cancel' : 'Back'}</button>
         <div className={styles.stepProgress} aria-live="polite"><span>Step {step + 1} of {REPORT_STEPS.length}</span><div className={styles.stepDots} aria-hidden="true">{REPORT_STEPS.map((label, index) => <span key={label} data-active={index === step} />)}</div></div>
-        {step < REPORT_STEPS.length - 1 ? <button type="button" className={styles.arrowButton} aria-label={returnToReview ? 'Back to review' : 'Next'} onClick={next} disabled={saving || preparing || !currentCanAdvance}><IoArrowForwardCircle aria-hidden="true" /></button> : <span className={styles.footerSpacer} />}
+        {step < REPORT_STEPS.length - 1 ? <button type="button" className={`primary-button ${styles.navButton}`} aria-label={returnToReview ? 'Back to review' : 'Next'} onClick={next} disabled={saving || preparing || !currentCanAdvance}>{returnToReview ? 'Back to review' : 'Next'}<IoChevronForward aria-hidden="true" /></button> : <span className={styles.footerSpacer} />}
       </footer>
     </ModalShell>
   );

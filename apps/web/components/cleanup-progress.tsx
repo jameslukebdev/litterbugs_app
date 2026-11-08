@@ -5,7 +5,7 @@ import type { Report } from '@litterbugs/report-contract';
 import { createClient } from '@/lib/supabase/client';
 import { useDataRefresh } from '@/lib/use-data-refresh';
 import { cleanupProgress, type ProgressAttempt } from '@/lib/cleanup-progress';
-export function CleanupProgress({ report, userId, taskBase }: { report: Report; userId: string; taskBase: string }) {
+export function CleanupProgress({ report, userId, taskBase, currentTask }: { report: Report; userId: string; taskBase: string; currentTask?: string }) {
   const revision = useDataRefresh();
   const [checkedAt,setCheckedAt] = useState(() => Date.now());
   const [retry,setRetry] = useState(0);
@@ -29,7 +29,7 @@ export function CleanupProgress({ report, userId, taskBase }: { report: Report; 
     {current && <><p className="cleanup-progress-timezone">Dates and deadlines use your local time.</p><ol>{progress.events.map((event,index)=><li key={`${event.label}:${index}`}><strong>{event.label}</strong><time dateTime={event.at}>{new Date(event.at).toLocaleString()}</time></li>)}</ol></>}
     <p>{progress.next}</p>
     {progress.due && <p><strong>Due {new Date(progress.due).toLocaleString()}</strong>{Date.parse(progress.due)<=checkedAt?' — This deadline has passed. Refresh the task before proceeding.':''}</p>}
-    {progress.task && <Link className="secondary-button" href={`${taskBase}&task=${progress.task}`}>{progress.task==='review'?'Review cleanup':'Continue cleanup'}</Link>}
+    {progress.task && progress.task !== currentTask && <Link className="secondary-button" href={`${taskBase}&task=${progress.task}`}>{progress.task==='review'?'Review cleanup':'Continue cleanup'}</Link>}
     {progress.payment && <div className="cleanup-progress-payment"><h3>Reward status</h3><p>{progress.payment}</p><Link href="/account/connect">View payout account</Link></div>}
   </section>;
 }
