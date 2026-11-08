@@ -24,6 +24,25 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-07 — Codex (minimal payout flow confirmed, LOCAL / HELD)
+
+- Owner reaffirmed local review before any deployment. Updated the two payout
+  components' copy to legal name → bank → review/accept Stripe terms, with
+  phone verification retained. Removed the speculative address/ID lead text.
+  No new fields, no address requirement, no change to current-only collection
+  or existing business-prefill exclusions. All provider-issued identity, bank,
+  tax and terms requirements remain collectible. Corrected earlier generic
+  advice: home address is not a baseline requirement for this specific setup.
+- Existing authenticated localhost preview verified: legal-name fields remain,
+  one Continue, terms links, no business questions/extra address field. Preview
+  left open. Screenshot `/tmp/litterbugs-payout-minimal-flow.jpg`. 18 focused
+  payout/session tests, TypeScript, scoped lint and diff checks pass. No identity
+  or bank details submitted and no agreement accepted; final completion untested.
+- Source committed locally only. No push/deploy, backend change, migration,
+  mobile edit, analytics change or server restart. Preserved concurrent social
+  card/share-image and dev-preview edits. Prior restored live backend and release
+  hold remain in force.
+
 ### 2026-11-07 — Codex (exact Stripe cleaner requirements checked, read-only)
 
 - Matched code to Stripe's requirements selector/API: Accounts v2, platform US,
