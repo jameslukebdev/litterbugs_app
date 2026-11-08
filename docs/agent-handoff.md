@@ -24,6 +24,27 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (Cloudflare preview photo repairs; live unchanged)
+
+- Isolated branch `codex/cloudflare-compatibility`, final source `6debd25`, Worker
+  version `c75c4687-5b90-4284-8643-de49eb4f7d9d`. Native photo conversion replaced
+  by Images binding, internal encoded-photo cache added, share-image assets fixed.
+  No merge/push/Vercel/DNS/plan changes; Claude's main app/untracked preview preserved.
+- Real JPEG/PNG/WebP and browser-prepared HEIC uploads pass. HEIC decoder pinned
+  2.1.0 fixes existing `dispose()` mismatch; consider a separate minimal main
+  backport. Raw managed-codec HEIC variant still unsupported; client conversion
+  passes. Temporary diagnostics/fixtures/QA secret/private credentials removed;
+  sample report, test account, objects and audit fixtures cleaned up. No claims,
+  agreements, report publication or money movement. No database migrations.
+- Upload safety explicitly relays to the existing Vercel processor, retaining
+  its auth/ownership/scan controls; **not an independent replacement for Vercel**.
+  Held payout-session backend still unverified/unavailable; do not deploy it as
+  a shortcut. Physical phone/file chooser and full transaction tests pending.
+- 58 focused tests, scoped lint, build/TypeScript and final API/browser photo
+  checks pass, including phone-sized before/after switching. Small warm HTTP
+  sample: map CF184/Vercel303 ms; photo CF183/Vercel93 ms. Not phone load times;
+  no overall speed winner established. Updated compatibility review with evidence.
+
 ### 2026-11-08 — Codex (separate Cloudflare compatibility test; Vercel retained)
 
 - Review: `docs/reviews/2026-11-08-cloudflare-compatibility.md`. Isolated worktree

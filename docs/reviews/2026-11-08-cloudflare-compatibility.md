@@ -2,9 +2,20 @@
 
 ## Decision
 
-Do not move the live site yet. A separate Workers preview is running, with working Google login, Maps, report entry, funding quotes and volunteer safety entry. Real report photos fail in Workers, the upload service lacks its private safety configuration, and funded cleanup reaches an unavailable embedded-payout service. Completed report publication, payment, cleanup evidence, approval and payout are **not verified** on Cloudflare.
+Do not move the live site yet. Google login, Maps, report entry, funding quotes, volunteer safety entry, report/cleanup photos, generated share images and authenticated photo uploads now work in the separate preview. Upload safety processing still explicitly relays through the existing Vercel service; the preview is not independent of Vercel. Funded embedded-payout setup remains unavailable. Completed report publication, payment, cleanup evidence submission, approval and payout are **not verified** on Cloudflare.
 
 Preview: https://litterbugs-cloudflare-compat-test.gegibson3113.workers.dev
+
+## Photo repair follow-up (supersedes initial photo failures below)
+
+- Final isolated source `6debd25`, Worker version `c75c4687-5b90-4284-8643-de49eb4f7d9d`; preview only. Cloudflare Images binding replaces native image processing in this branch; named internal Cache API storage retains encoded photo bytes, with visibility/ownership checked on every request. Brand/font assets use the asset binding. No Vercel, DNS, plan or main application change.
+- JPEG/PNG/WebP authenticated uploads passed through the preview's exact-host-only relay to the existing Vercel safety service. Existing bearer validation, destination ownership, quarantine, scanning and sanitization retained; no privileged service key copied to Workers. A temporary unpublished sample report and disposable internal user were removed, along with uploaded objects and scan audit fixtures. Wrong-destination upload denied 403. Direct cleanup fixture insertion was correctly denied; no real claim/waiver was created or bypassed.
+- Found an existing browser HEIC dependency mismatch: workspace `heic-decode` 2.0.0 lacks the `dispose()` method used by the client. Pinning 2.1.0 fixes conversion. Actual browser conversion of the official libheif sample produced a 1280×854 JPEG; its authenticated preview upload passed, with metadata removed and hash verified. This fix is isolated and is a candidate for a separate minimal main-branch backport. Cloudflare's managed decoder still rejects that raw HEIC variant (9516); the website converts it before upload. Current public inventory: 86 photos across 42 reports, no HEIC originals.
+- 58 focused tests, scoped ESLint, production Next/OpenNext build and TypeScript passed. Final live API checks pass: report detail WebP, before/after JPEG, share PNG, missing/invalid authentication denied. Temporary diagnostic route, browser test page, public fixtures and QA secret removed. Browser carousel and phone-sized before/after switching render without console errors. File chooser was blocked by extension file-URL permission; tested the real browser conversion with a public fixture instead. Physical camera/file selection remains unverified.
+- Small speed comparison: four warm HTTP-body responses per host after one warmup, from one computer. Map median Cloudflare 184 ms vs Vercel 303 ms; detail photo Cloudflare 183 ms vs Vercel 93 ms. Different deployment builds, not browser/phone load times or a general hosting benchmark. Evidence: `/tmp/litterbugs-host-speed-after-photo-cache.json`, `/tmp/litterbugs-cloudflare-final-smoke.json`, `/tmp/litterbugs-cloudflare-heic-upload-result.json`. Repaired screenshots: `/tmp/litterbugs-cloudflare-photos-fixed.png`, `/tmp/litterbugs-cloudflare-phone-photos-fixed.png`.
+- No schema migrations, actual report publication, charge, cleanup claim, approval or payout. Live HEAD remains HTTP 200 / Server Vercel. Keep held payout backend and Claude's changes untouched. Standalone upload configuration, isolated transaction/workflow tests and physical phones remain migration gates.
+
+The sections below preserve the **initial** compatibility pass and its limitations; the follow-up above records the subsequent repairs.
 
 ## Isolation and release
 
