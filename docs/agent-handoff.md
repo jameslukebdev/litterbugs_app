@@ -24,6 +24,22 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (Cloudflare testing blocked on account access/isolation)
+
+- Revalidated Microsoft Cloudmersive consent: still awaits owner confirmation;
+  no approval received and no account access granted. This access blocker has
+  persisted through three goal turns. Existing request remains pending; do not
+  create another scanner account or bypass consent.
+- Preview remains source `165d89c` / Worker
+  `9e338877-e3b9-4740-a73c-cd0754f1dbb6`. No new app or deployment changes.
+  Full independent uploads still require the original scanner key; full Stripe
+  tests require an isolated destination because sandbox events currently reach
+  production. Existing local fixture/simulated-provider checks do not prove
+  those gates. Cloudflare is not ready for a live switch.
+- Goal blocked pending account access/test isolation. Leave Vercel/DNS, held
+  payout backend, Stripe webhook and Claude's work unchanged. No publication,
+  payment, claim, waiver or new provider account created during this pass.
+
 ### 2026-11-08 — Codex (preview source synchronized; payment sandbox risk verified)
 
 - Cherry-picked approved main change `9c52d14` into isolated Cloudflare branch as
