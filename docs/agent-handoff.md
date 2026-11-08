@@ -24,6 +24,28 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (new phone clips reviewed; five tracking additions LOCAL)
+
+- Source/review commit `d38bd79`, not pushed/deployed. Added map search/results/
+  closest recovery, payout stages and server-confirmed readiness, fixed workflow
+  version, coarse entry sources, and explicit cancel/save/resume/discard/new
+  decisions. No raw search, location, draft, identity or payment data added.
+  Existing analytics exclusions and replay settings preserved.
+- Two available Clarity phone clips after the Nov 7 9:54 p.m. release cutoff:
+  Nov 8 midnight and 9:44 a.m., both homepage-only, zero taps, hidden at 00:01.
+  No new map/report/fund/clean blocker or conversion improvement established.
+  Newer PostHog Chrome phone session browsed home/About/Support/Communities;
+  no map or participation events; no matching Clarity replay available yet.
+- Shared local tree: 165 tests across 12 focused files passed with one worker/
+  capped heap; TypeScript passed; scoped lint zero errors (one unused image-rule
+  suppression from concurrent payout heading refactor). Whitespace checks pass.
+  Earlier full-suite run was interrupted; no full-suite claim. New production
+  events require post-release verification. No server restart or financial work.
+- Staged tracking hunks only in shared payout/map files. Preserved concurrent
+  payout prewarming/reuse/layout, deletion confirmation, auth/profile/share/
+  support changes without committing them. Details:
+  `docs/reviews/2026-11-08-participation-tracking-and-recordings.md`.
+
 ### 2026-11-08 — Codex (local Stripe connection resolved; real embedded form verified)
 
 - Owner supplied the approved restricted key in a screenshot after confirming
