@@ -24,6 +24,26 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (report and cleanup page indexing verified)
+
+- Audited live sitemap, every one of its 29 report/cleanup pages, all 38 listed
+  photos, and all four directory/pagination pages. All accessible; report pages
+  allow indexing, have matching canonicals and directory links. Automatic sitemap
+  and request-time page creation work; cleanup results update the original URL.
+- Google URL Inspection completed all 29 report URLs plus four hubs: reports
+  17 indexed (including 7/11 cleanups), 9 discovered/not indexed, 3 unknown in API;
+  all four hubs indexed. Sitemap registered, Success, last read Nov 7. Broader
+  content crawl capped at 120; this is not a whole-site all-clear.
+- Requested indexing for the three API-unknown URLs (library cleanup, New Market,
+  Pinnacle Storage follow-up); Google accepted all three into its priority crawl
+  queue. Requests are not proof of indexing. Some older discovered pages also
+  remain unindexed; do not call all exclusions new-page delays.
+- Saved exact evidence and findings in docs/reviews/2026-11-08-report-cleanup-*.
+  Documentation only; no app/database changes, migrations, push or deployment.
+  HTTP checks did not run visitor analytics; browser use confined to Google.
+  Pending: Google crawl/inclusion decisions and later reinspection. No recurring
+  automation created. Concurrent untracked dev-review-preview preserved.
+
 ### 2026-11-08 — Codex (restricted Connect accounts investigated, read-only)
 
 - Inspected all five restricted recipients in the signed-in Litterbugs Stripe
