@@ -24,6 +24,26 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (complete notification inventory, read-only)
+
+- Audited notification catalog, latest SQL producers/timers, native sender and
+  foreground/rank prompts, website account reminders, auth and payment email
+  wiring. Found 21 user workflow events plus 2 admin events; website/native/push
+  type sets match and equal the last recorded web release `f08518c`.
+- Website delivery is account inbox/bell; native apps additionally support
+  registered-device pushes and grouped foreground unread prompts. No web push
+  implementation found. Claim reminder is 2 hours before the 24-hour deadline;
+  correction window 24 hours, review window 48 hours, renewal choice 7 days.
+- Account-only draft/cleanup/review/renewal/payout/sync reminders are separate.
+  Auth wires signup verification/resend and password reset; contributions supply
+  Stripe receipt_email. Stripe docs confirm live successful-payment receipts
+  from that parameter. Stripe subscription/refund/security email settings were
+  not audited; do not present dashboard-dependent emails as confirmed enabled.
+- No new user delivery test, source change, push or deployment. Native rank-up
+  celebrations are on-screen, not separate push events. No dedicated reporter
+  reward inbox event or off-site abandoned-report/funding/payout reminders found.
+  Concurrent local changes preserved.
+
 ### 2026-11-08 — Codex (funded Clean checks payouts before safety, LOCAL)
 
 - Source `8dfbb71`, not pushed/deployed. Funded Clean now checks payout status
