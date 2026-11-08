@@ -141,6 +141,33 @@ analytics setting change, or shared-server restart. Ran focused regression check
 against the shared working tree because Claude's funding/cleanup components had
 changed since the preceding pass; result recorded in the handoff entry.
 
+## Remaining-session review: five additional phone recordings
+
+Expanded the list to [Last 30 days](https://clarity.microsoft.com/projects/view/z60itnrbpn/impressions?date=Last%2030%20days):
+**97 recording cards, 62 marked Mobile, 27 of those with at least one click**.
+These are recording-list counts, not unique people or conversion rates. The
+wider window added only six recordings beyond the seven-day view; just one was
+Mobile (a one-second Oct 31 `/get-app` visit). Most useful older phone action
+sessions had already been inspected in the preceding passes. Five additional
+sessions were inspected with timelines and playback samples:
+
+| Visit (ET) | Visitor | Duration | Observed sequence and limits |
+| --- | --- | --- | --- |
+| Nov 5, 9:14 p.m. | `13712ra` | 29:23 | Available cleanup list loaded. Hidden 00:16–04:12 and 04:21–28:38; homepage visits 28:43/28:50; no recorded clicks. Sample at 00:35 showed the loaded list in hidden-page state. This was not 29 minutes waiting for results. No participation attempt established. |
+| Nov 6, 8:20 p.m. | `1bec4zq` | 0:21 | Instagram `/get-app`: App Store outbound tap 00:02, hidden 00:16. Sample 00:11 showed the landing page with store and website buttons. Dead-click flag also present, but no independent evidence of a broken store link or completed install. |
+| Nov 5, 5:46 p.m. | `1q8yqup` | 0:35 | Chrome Mobile `/get-app`: Google Play outbound tap 00:32, hidden 00:34. Sample 00:25 showed the entry page; no report/fund/clean action. Do not classify the outbound transition as failed website participation. |
+| Nov 6, 2:10 p.m. | `188k9nc` | 0:38 | Homepage, hidden at 00:03, no clicks. Sample 00:28 showed the dimmed homepage. No evidence of a stalled report, payment or cleanup flow. |
+| Nov 1, 12:17 p.m. | `2vv88u` | 0:06 | Mobile Safari: Continue on the website 00:01 → `/map?view=map` 00:02 → browse normalization 00:02 → viewport URL 00:03. Final 00:06 snapshot showed the map and report markers loaded. Four page entries represent one map-entry sequence, not four distinct tasks. No further action or error observed. |
+
+No new current blocker was confirmed. These sessions add evidence about hidden
+time, outbound taps and entry transitions; they do not test deep payment or
+cleanup submission reliability. A temporary spinner while seeking the short map
+replay belonged to Clarity; the final recorded map snapshot loaded. No production
+site testing, settings changes, application edits, tests rerun, push or deployment
+in this pass. All concurrent Claude code remains untouched. Avoid further UI
+changes based solely on these inactive or outbound-only clips; prioritize future
+recordings with actual participation steps.
+
 ## Findings and recommendations
 
 1. **Reporting layout jump: confirmed and fixed locally.** Conditional removal
