@@ -24,6 +24,22 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (Resend downgrade scheduled without domain removal)
+
+- Resend accepted Downgrade to Free without deleting domains. Completed the
+  cancellation flow; reloaded Billing confirms Transactional "Cancels on Dec 8"
+  and success notice says no renewal after current cycle. Current paid quota
+  remains 50,000 until then. All five domain registrations remain; no keys,
+  hosting, DNS or website code changed in this billing task.
+- Fresh owner password-reset email requested through localhost Settings using
+  the existing Supabase SMTP connection. UI confirmed sent; Resend shows the new
+  message delivered "just now" beside the older recovery email. No password
+  changed or recovery link opened. This verifies current delivery, not the
+  future Free-plan handling of five existing domains (published limit is three).
+- Earlier assumption that domain removal was prerequisite to scheduling was
+  incorrect. Owner now requests Forge for root/auth domains as a separate task;
+  do not delete either. No application push or deployment.
+
 ### 2026-11-08 — Codex (auth subdomain clarification; removal cancelled)
 
 - Owner questioned whether auth.litterbugs.app is needed rather than confirming
