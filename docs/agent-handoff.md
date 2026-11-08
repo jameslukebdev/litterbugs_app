@@ -24,6 +24,24 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-07 — Codex (read-only phone funnel/replay review, about 10:20 p.m. ET)
+
+- Reviewed PostHog website 695338 records Nov 1–7 and ran ordered Mobile
+  entry/auth diagnostic funnels with internal/test filtering. Report: one person
+  tapped, saw auth, closed ~2s later; no auth submission/deeper stages captured.
+  Fund/Clean: no Mobile participation-step funnel data. Nine explicit QA rows
+  and unknown desktop traffic excluded from phone conclusions. No Mobile events
+  captured after the 9:54:03 p.m. deployment cutoff as of the query.
+- Clarity Last 3 days remains 59 recordings; latest phone still 9:05 p.m., before
+  release. Revisited report `1tfut0e`, Clean `1ykugca`, Fund `198lbhr` timelines
+  and playback states. Historical immediate auth and repeat action entry are
+  already addressed by the released changes; no new deep-form defect proven.
+- Recommendations only: preserve Claude's workflows, verify post-auth/outcome
+  measurement and bounded failure reasons, then assess new phone attempts and
+  empty-area recovery. No application edits, tests, push/deploy, database or
+  analytics-setting changes, production-site test or server restart. Preserved
+  current embedded-payout and social-card work. Documentation only.
+
 ### 2026-11-07 — Codex (post-release phone check, about 10:07 p.m. ET)
 
 - Vercel read-only inspect: `dpl_HgNgjXJMLnpf7Ur15xApJegWnbLd` READY,
