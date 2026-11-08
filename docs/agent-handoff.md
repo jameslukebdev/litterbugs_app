@@ -24,6 +24,30 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (hosting estimates include actual usage and release cadence)
+
+- Saved inspectable assumptions/rates/calculations in
+  docs/reviews/2026-11-08-hosting-cost-model.json. Vercel litterbugs-web Usage:
+  Oct21–Nov8 ~64.01k requests, rounded 2GB outbound, 6.73GB-h memory, 50.49k
+  function calls, 111 image transforms. CLI pagination complete (5 pages): 88
+  READY production-target deployments, projected ~142/30 days. These are a
+  publishing proxy, not proof each went live on the custom domain.
+- Padded 30-day model: 110k requests, 4GB outward, 15GB-h Netlify compute,
+  3h Workers CPU; cross-runtime compute not benchmarked. Browser Netlify price
+  currently $9 Personal/$20 Pro. At 140 live publishes, ~2,352 credits: Personal
+  $24 with packs, Pro $20. At 30 publishes, ~702 credits => Personal $9.
+  Earlier Netlify-cheaper recommendation is conditional on reducing publishes.
+- Workers model $5, planning $5–7 incl contingency; request/CPU/build/image
+  allowances cover modeled usage, conditional on compatible photo processing
+  without a separate paid processor. Render $7 instance + $0–6 build/bandwidth
+  allowance => $7–13; 512MB must be tested, next 2GB plan starts $25. Vercel $20.
+  Existing external services/tax/migration effort excluded; shared Vercel fee
+  only goes away after remaining active business projects are addressed.
+- GitHub connector confirms jameslukebdev/litterbugs_app is public, so private
+  Git contributor restrictions aren't assumed in the Netlify model. No hosting
+  changes, account signups, compatibility build, app edit, push or deployment.
+  Concurrent work preserved; documentation/model only.
+
 ### 2026-11-08 — Codex (two newest Connect attempts traced, read-only)
 
 - Stripe uses UTC. Nov 5 account/link requests actually occurred Nov 4 at
