@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { EMPTY_REPORT_DRAFT, type ReportDraft, type MappableReport } from '@litterbugs/report-contract';
-import { useEffect, useImperativeHandle } from 'react';
+import { useEffect, useImperativeHandle, type Ref } from 'react';
 import { DEFAULT_DISCOVERY_FILTERS, type DiscoveryFilters } from '@/lib/report-discovery';
 import { MapExperience } from './map-experience';
 
@@ -58,7 +58,7 @@ vi.mock('@googlemaps/js-api-loader', () => ({
   } }; },
 }));
 vi.mock('@/components/public-site-header', () => ({ PublicSiteHeader: ({ action, reportAction }: { action: React.ReactNode; reportAction: React.ReactNode }) => <>{reportAction}{action}</> }));
-vi.mock('@/components/public-account-action', () => ({ PublicAccountAction: ({ ref, onOpenReport, onUserChange }: { ref: React.Ref<unknown>; onOpenReport: (id: string) => void; onUserChange: (id: string) => void }) => {
+vi.mock('@/components/public-account-action', () => ({ PublicAccountAction: ({ ref, onOpenReport, onUserChange }: { ref: Ref<unknown>; onOpenReport: (id: string) => void; onUserChange: (id: string) => void }) => {
   useImperativeHandle(ref, () => ({ openAuth: state.openAuth }));
   return <><button onClick={() => onOpenReport('test-report')}>Open report from history</button><button onClick={() => onUserChange('test-user')}>Finish test sign-in</button></>;
 } }));
