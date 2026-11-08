@@ -24,6 +24,41 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-07 — Codex (embedded website Connect, LOCAL / RELEASE HELD)
+
+- **Owner explicitly says do not release this yet. Website only; native app
+  onboarding unchanged.** Local source ends at `dddd423` (earlier `619f5ea`,
+  `0eb5eb6`, `64ecc41`, `97235b1`); none pushed. Uses Claude's existing white
+  full-page payout flow, caterpillar, purple actions and rounded controls.
+- Real Litterbugs v2 recipient / Express-dashboard account accepted an
+  onboarding-only AccountSession. Grant completed phone verification; actual
+  Stripe fields rendered on localhost. No identity/bank fields or agreement
+  submitted by Codex; no payments, payouts, new Stripe account or migrations.
+  Normal existing payout-account status/profile reconciliation ran during QA.
+- Server support was temporarily deployed from `619f5ea` as function v30 to
+  verify compatibility. **Restored original server source from `2dcaef6` as
+  v31 after owner's hold; downloaded source matches pre-change v29 byte for
+  byte.** Live website remains `f08518c` / `dpl_HgNgjXJMLnpf7Ur15xApJegWnbLd`.
+  Staged, unpromoted `dpl_FF8D3A7WJydt8JVVygzpFFTCTvNs` is older `0eb5eb6`,
+  NOT the final candidate. Do not promote it. New local embedded sessions need
+  the held server support; the open verified local form uses its existing session.
+- Owner requested entire Product description section and business-type question
+  removed. Stripe-supported requirement exclusions now hide those v1/v2 fields,
+  preserving existing entity types; individual setup is preconfigured. Server
+  preserves existing activity descriptions and supplies a missing one only when
+  Stripe explicitly requires it. Duplicate bottom Back/Continue row removed from
+  normal form; hosted recovery remains on errors only. Identity/bank/terms remain.
+- QA: actual final desktop and 393×851 form starts “Verify your personal
+  details”; product section, business question and duplicate continuation absent.
+  No horizontal overflow. No browser errors; expected localhost HTTPS warning.
+  47 adjacent web tests, final 18 focused tests, 32 shared/server tests before
+  activity refinement plus final 7 handler tests passed; TypeScript, scoped lint,
+  diff checks and isolated production build of `dddd423` passed. Source check
+  passed for server entry. No full new-customer identity/bank/terms completion.
+  Final screenshots `/tmp/litterbugs-embedded-connect-cleaner-{desktop,phone}.jpg`.
+  Viewport reset; verified local form left open. Claude's social/share and dev
+  preview work preserved; shared local server not restarted; analytics unchanged.
+
 ### 2026-11-07 — Codex (read-only phone funnel/replay review, about 10:20 p.m. ET)
 
 - Reviewed PostHog website 695338 records Nov 1–7 and ran ordered Mobile
