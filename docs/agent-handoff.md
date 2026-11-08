@@ -24,6 +24,31 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-07 — Codex (exact Stripe cleaner requirements checked, read-only)
+
+- Matched code to Stripe's requirements selector/API: Accounts v2, platform US,
+  account US, dashboard express, full agreement, individual, transfers ONLY
+  (no card_payments). Lookup returned no validation/build errors. Published US
+  update returned the same fields; no website/MCC supplemental restrictions
+  for transfers. Do not apply card-payment merchant requirements to cleaners.
+- Baseline: legal first/last name, external payout account, terms acceptance,
+  and activity/web-profile information. Litterbugs supplies email, US/individual
+  configuration and cleanup description; Express phone authentication is a
+  separate sign-in step. No personal address in this exact baseline table.
+- Read-only inspection of Grant's `acct_1UDyXQQMFUkXRe5p` independently confirmed
+  current tasks: bank account, terms acceptance, missing representative name.
+  Later tasks explicitly require DOB and SSN last four at **$3,000 volume**.
+  No outstanding address or activity-profile task. Nothing submitted/changed.
+- Exact selector: https://docs.stripe.com/connect/required-verification-information?accountSetupKeys=account-setup-A&account-setup-A%5BapiVersion%5D=v2&account-setup-A%5BplatformCountry%5D=US&account-setup-A%5BaccountCountry%5D=US&account-setup-A%5BdashboardType%5D=express&account-setup-A%5BtosType%5D=full&account-setup-A%5BlegalEntityType%5D=individual&account-setup-A%5Bcapabilities%5D=transfers
+  API snapshots `/tmp/litterbugs-stripe-exact-requirements{,-us2023}.json` show
+  300000 minor-unit payout threshold, confirmed as $3,000 in rendered public
+  table and actual account tasks. No threshold hardcoded in app; provider
+  requirements/capabilities stay authoritative. Keep name step; no extra home
+  address requirement. App's 18+/US eligibility is separate. Account-specific
+  risk reviews remain possible; this is not a guarantee of future requests.
+- Documentation only; no source edits/tests/push/deploy or production changes.
+  Release hold and restored live backend remain intact.
+
 ### 2026-11-07 — Codex (participation tracking verified and extended, LOCAL ONLY)
 
 - Source `5c137c5`, **not pushed or deployed**. Preserved Claude's current
