@@ -11,7 +11,7 @@ const STAGE: Record<Exclude<Stage, 'loading'>, { title: string; button: string }
   },
   pending: {
     title: 'Almost there',
-    button: 'Continue setup',
+    button: 'Review details',
   },
   restricted: {
     title: 'Stripe needs a little more',
@@ -56,7 +56,6 @@ export function PayoutPanel({ status, eligibleConfirmed, onEligible, busy, messa
         <h2>{celebrate && stage === 'enabled' ? 'You’re all set to earn cash' : copy?.title ?? 'Payout settings'}</h2>
       </header>
       {/* No intro line under the title: each screen says only what the title doesn't. */}
-      {stage === 'loading' && !message && <p className="payout-lead" role="status">Checking your payout status…</p>}
       {stage !== 'loading' && stage !== 'enabled' && (
         <ol className="payout-steps">
           <li data-done={stage !== 'not_started' || undefined} data-current={stage === 'not_started' || undefined}><span aria-hidden="true">1</span><div><strong>Confirm you can be paid</strong><small>You&rsquo;re 18 or older and in the United States.</small></div></li>
@@ -72,8 +71,8 @@ export function PayoutPanel({ status, eligibleConfirmed, onEligible, busy, messa
         </label>
       )}
       {message && <p className="form-message error-message" role="alert">{message}</p>}
-      <button className="primary-button payout-go" onClick={onContinue} disabled={busy || !status || (needsConfirm && !eligibleConfirmed)}>
-        {busy ? 'Loading…' : copy?.button ?? 'Set up payouts'}
+      <button className="primary-button payout-go" onClick={onContinue} disabled={busy || (needsConfirm && !eligibleConfirmed)}>
+        {copy?.button ?? 'Try again'}
       </button>
       {message && onFallback && <button className="secondary-button" disabled={busy || !status || (needsConfirm && !eligibleConfirmed)} onClick={onFallback}>Continue on Stripe</button>}
       <p className="payout-stripe-note">Your details go securely to Stripe for verification and payouts.</p>

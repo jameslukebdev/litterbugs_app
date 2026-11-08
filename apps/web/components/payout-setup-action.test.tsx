@@ -14,7 +14,7 @@ const { state, createPayoutLink, createPayoutSession, createPayoutConnect, notif
 vi.mock('@/lib/use-data-refresh', () => ({ useDataRefresh: () => 0, notifyDataChanged }));
 vi.mock('@/lib/payout-connect', () => ({ createPayoutConnect }));
 vi.mock('@/components/payout-embedded', () => ({ default: ({ onExit, onFallback }: { onExit: () => void; onFallback: () => void }) => <div><h2>Set up your payouts</h2><button onClick={onExit}>Exit secure form</button><button onClick={onFallback}>Continue on Stripe</button></div> }));
-vi.mock('@/components/modal-shell', () => ({ ModalShell: ({ children }: { children: React.ReactNode }) => <div role="dialog">{children}</div> }));
+vi.mock('@/components/modal-shell', () => ({ ModalShell: ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => <div role="dialog"><button onClick={onClose}>Close</button>{children}</div> }));
 vi.mock('@/lib/funding', () => ({
   loadCleanupFeatureFlags: async () => ({ payments_enabled: true }),
   loadPayoutStatus: async () => state.status,
@@ -23,6 +23,7 @@ vi.mock('@/lib/funding', () => ({
 }));
 
 beforeEach(() => {
+  window.history.replaceState({}, '', '/account/payments');
   localStorage.clear();
   state.status = { onboardingStatus: 'not_started', payoutsEnabled: false, requirementsDue: [] };
   createPayoutSession.mockRejectedValue(new Error('Stripe is unavailable in tests.'));
@@ -49,23 +50,21 @@ it('explains a first-time setup and only continues after the eligibility confirm
   await screen.findByText('Stripe is unavailable in tests.');
 });
 
-it('tells someone halfway through that they can pick up where they left off', async () => {
+it('takes returning cleaners directly into the embedded form without another continuation screen', async () => {
   state.status = { onboardingStatus: 'pending', payoutsEnabled: false, requirementsDue: [], age18Confirmed: true };
+  createPayoutSession.mockResolvedValue({ clientSecret: 'test_secret', publishableKey: 'pk_test_fixture', expiresAt: 1900000000 });
   await open();
-  await screen.findByRole('heading', { name: 'Almost there' });
-  // Already confirmed when they started: no checkbox, straight back to Stripe.
+  await screen.findByRole('button', { name: 'Exit secure form' });
   expect(screen.queryByRole('checkbox')).toBeNull();
-  const go = screen.getByRole('button', { name: 'Continue setup' }) as HTMLButtonElement;
-  expect(go.disabled).toBe(false);
-  fireEvent.click(go);
-  await waitFor(() => expect(createPayoutSession).toHaveBeenCalledOnce());
+  expect(screen.queryByRole('button', { name: 'Continue setup' })).toBeNull();
+  expect(createPayoutSession).toHaveBeenCalledOnce();
 });
 
-it('says how many details Stripe still needs', async () => {
+it('opens required follow-up details directly for a restricted cleaner', async () => {
   state.status = { onboardingStatus: 'restricted', payoutsEnabled: false, requirementsDue: ['bank', 'id'], age18Confirmed: true };
+  createPayoutSession.mockResolvedValue({ clientSecret: 'test_secret', publishableKey: 'pk_test_fixture', expiresAt: 1900000000 });
   await open();
-  await screen.findByRole('heading', { name: 'Stripe needs a little more' });
-  expect(screen.getByText('Stripe is asking for 2 more details.')).toBeTruthy();
+  await screen.findByRole('button', { name: 'Exit secure form' });
   expect(screen.queryByRole('checkbox')).toBeNull();
 });
 
@@ -86,15 +85,16 @@ it('still asks for the confirmation when an in-progress member has none on recor
   state.status = { onboardingStatus: 'pending', payoutsEnabled: false, requirementsDue: [], age18Confirmed: false };
   await open();
   await screen.findByRole('heading', { name: 'Almost there' });
-  expect((screen.getByRole('button', { name: 'Continue setup' }) as HTMLButtonElement).disabled).toBe(true);
+  expect((screen.getByRole('button', { name: 'Review details' }) as HTMLButtonElement).disabled).toBe(true);
   expect(screen.getByRole('checkbox')).toBeTruthy();
 });
 
 it('opens straight to payout setup when arriving from the Finish payout setup reminder', async () => {
   state.status = { onboardingStatus: 'pending', payoutsEnabled: false, requirementsDue: ['external_account'], age18Confirmed: true };
+  createPayoutSession.mockResolvedValue({ clientSecret: 'test_secret', publishableKey: 'pk_test_fixture', expiresAt: 1900000000 });
   window.history.replaceState({}, '', '/account/connect?payout=finish');
   render(<PayoutSetupAction />);
-  await screen.findByRole('heading', { name: 'Almost there' });
+  await screen.findByRole('button', { name: 'Exit secure form' });
   expect(window.location.search).toBe('');
 });
 
@@ -112,7 +112,7 @@ it('opens embedded onboarding after confirmation and only celebrates server-conf
   await screen.findByRole('heading', { name: 'Almost there' });
   expect(screen.queryByText('You’re all set to earn cash')).toBeNull();
   expect(notifyDataChanged).toHaveBeenCalled();
-  fireEvent.click(screen.getByRole('button', { name: 'Continue setup' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Review details' }));
   await screen.findByRole('heading', { name: 'Set up your payouts' });
   state.status = { onboardingStatus: 'enabled', payoutsEnabled: true, requirementsDue: [] };
   fireEvent.click(screen.getByRole('button', { name: 'Exit secure form' }));
@@ -136,4 +136,31 @@ it('invalidating the signed-in session closes the embedded payout form', async (
   const { act } = await import('@testing-library/react');
   act(() => createPayoutConnect.mock.calls[0][1]());
   expect(screen.queryByRole('dialog')).toBeNull();
+});
+
+it('keeps preparation quiet and lets a cleaner close without a delayed form reopening', async () => {
+  const { act } = await import('@testing-library/react');
+  let resolveSession!: (value: unknown) => void;
+  createPayoutSession.mockReturnValue(new Promise(resolve => { resolveSession = resolve; }));
+  state.status = { onboardingStatus: 'pending', payoutsEnabled: false, requirementsDue: [], age18Confirmed: true };
+  await open();
+  await waitFor(() => expect(createPayoutSession).toHaveBeenCalledOnce());
+  expect(screen.queryByText('Checking your payout status…')).toBeNull();
+  expect(screen.queryByRole('button', { name: /Loading|Continue setup/ })).toBeNull();
+  expect(screen.getByRole('status').querySelector('.sr-only')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: /^Close$/ }));
+  await act(async () => resolveSession({ clientSecret: 'secret', publishableKey: 'pk_test_fixture', expiresAt: 1900000000 }));
+  expect(screen.queryByRole('dialog')).toBeNull();
+  expect(createPayoutConnect).not.toHaveBeenCalled();
+});
+
+it('can retry a failed automatic entry without confirming eligibility again', async () => {
+  state.status = { onboardingStatus: 'pending', payoutsEnabled: false, requirementsDue: [], age18Confirmed: true };
+  await open();
+  await screen.findByText('Stripe is unavailable in tests.');
+  createPayoutSession.mockResolvedValue({ clientSecret: 'secret', publishableKey: 'pk_test_fixture', expiresAt: 1900000000 });
+  fireEvent.click(screen.getByRole('button', { name: 'Review details' }));
+  await screen.findByRole('button', { name: 'Exit secure form' });
+  expect(createPayoutSession).toHaveBeenCalledTimes(2);
+  expect(screen.queryByRole('checkbox')).toBeNull();
 });

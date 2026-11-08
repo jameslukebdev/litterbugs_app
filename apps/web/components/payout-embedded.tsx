@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import type { StripeConnectInstance } from '@stripe/connect-js';
 import { ConnectAccountOnboarding, ConnectComponentsProvider } from '@stripe/react-connect-js';
 import { payoutConnectAppearance } from '@/lib/payout-connect';
+import { PayoutProgress } from '@/components/payout-preparing';
 
 export default function PayoutEmbedded({ instance, busy, message, onExit, onFallback, onBack }: {
   instance: StripeConnectInstance; busy: boolean; message: string;
@@ -23,7 +24,7 @@ export default function PayoutEmbedded({ instance, busy, message, onExit, onFall
       {message && <button className="secondary-button" disabled={busy} onClick={onExit}>Check payout status</button>}
       {failed ? <p className="payout-note" role="alert">The secure form couldn&rsquo;t load. You can continue on Stripe and return to Litterbugs afterward.</p> : (
         <>
-          {loading && <p className="payout-lead" role="status">Loading your secure payout form…</p>}
+          {loading && <PayoutProgress />}
           <div className="payout-connect-form">
             <ConnectComponentsProvider connectInstance={instance}>
               <ConnectAccountOnboarding

@@ -7,9 +7,10 @@ import type { StripeConnectInstance } from '@stripe/connect-js';
 import { notifyDataChanged, useDataRefresh } from '@/lib/use-data-refresh';
 import { ModalShell } from '@/components/modal-shell';
 import { PayoutPanel, payoutNeedsConfirmation } from '@/components/payout-panel';
+import { PayoutPreparing } from '@/components/payout-preparing';
 
 const PayoutEmbedded = dynamic(() => import('@/components/payout-embedded'), {
-  loading: () => <p className="payout-lead" role="status">Loading your secure payout form…</p>,
+  loading: () => <PayoutPreparing />,
 });
 
 /** The payouts-ready celebration plays once per device, the first time setup is seen as finished. */
@@ -40,6 +41,8 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
   const [celebrate, setCelebrate] = useState(false);
   const [connectInstance, setConnectInstance] = useState<StripeConnectInstance | null>(null);
   const requestBusy = useRef(false);
+  const opening = useRef(0);
+  const lastRefresh = useRef(refresh);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,9 +55,11 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
   }, []);
 
   useEffect(() => {
+    if (lastRefresh.current === refresh) return;
+    lastRefresh.current = refresh;
     if (!open) return;
     let cancelled = false;
-    void loadPayoutStatus().then(value => { if (!cancelled) setStatus(value); }).catch(() => { if (!cancelled) setMessage('Payout status could not be refreshed. Reopen this window to retry.'); });
+    void loadPayoutStatus().then(value => { if (!cancelled) { setStatus(value); } }).catch(() => { if (!cancelled) { setMessage('Payout status could not be refreshed. Reopen this window to retry.'); } });
     return () => { cancelled = true; };
   }, [open, refresh]);
 
@@ -72,19 +77,49 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
   if (!available) return null;
 
   async function show() {
+    const version = ++opening.current;
+    requestBusy.current = true;
     setConnectInstance(null);
+    setStatus(null);
+    setEligibleConfirmed(false);
     setOpen(true);
     setBusy(true);
     setMessage('');
     try {
       const next = await loadPayoutStatus();
+      if (version !== opening.current) return;
       setStatus(next);
       setCelebrate(next.payoutsEnabled && firstPayoutsReady());
+      if (!next.payoutsEnabled && !payoutNeedsConfirmation(next)) {
+        await openEmbedded(version);
+      }
     } catch (error) {
+      if (version !== opening.current) return;
       setMessage(error instanceof Error ? error.message : 'Payout status could not be loaded.');
     } finally {
-      setBusy(false);
+      if (version === opening.current) { requestBusy.current = false; setBusy(false); }
     }
+  }
+
+  async function openEmbedded(version: number) {
+    const [session, { createPayoutConnect }] = await Promise.all([
+      createPayoutSession(), import('@/lib/payout-connect'),
+    ]);
+    if (version !== opening.current) return;
+    const instance = await createPayoutConnect(session, () => {
+      if (version !== opening.current) return;
+      close();
+    });
+    if (version !== opening.current) return;
+    setConnectInstance(instance);
+  }
+
+  function close() {
+    opening.current += 1;
+    requestBusy.current = false;
+    setOpen(false);
+    setBusy(false);
+    setConnectInstance(null);
   }
 
   async function continueToStripe(hosted = false) {
@@ -92,22 +127,20 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
     requestBusy.current = true;
     setBusy(true);
     setMessage('');
+    const version = opening.current;
     try {
       if (hosted || status.payoutsEnabled) {
         const link = await createPayoutLink(status.payoutsEnabled ? 'dashboard' : 'link');
+        if (version !== opening.current) return;
         window.location.assign(link.url);
       } else {
-        const [session, { createPayoutConnect }] = await Promise.all([
-          createPayoutSession(), import('@/lib/payout-connect'),
-        ]);
-        const instance = await createPayoutConnect(session, () => { setConnectInstance(null); setOpen(false); });
-        setConnectInstance(instance);
+        await openEmbedded(version);
       }
     } catch (error) {
+      if (version !== opening.current) return;
       setMessage(error instanceof Error ? error.message : 'Payout setup could not be opened.');
     } finally {
-      requestBusy.current = false;
-      setBusy(false);
+      if (version === opening.current) { requestBusy.current = false; setBusy(false); }
     }
   }
 
@@ -116,18 +149,20 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
     requestBusy.current = true;
     setBusy(true);
     setMessage('');
+    const version = opening.current;
     try {
       // Exiting the form is not proof of verification. Reconcile the server's Stripe capabilities.
       const next = await loadPayoutStatus();
+      if (version !== opening.current) return;
       setStatus(next);
       setCelebrate(next.payoutsEnabled && firstPayoutsReady());
       setConnectInstance(null);
       notifyDataChanged();
     } catch {
+      if (version !== opening.current) return;
       setMessage('Your details may be saved. We couldn’t refresh your payout status. Please try again.');
     } finally {
-      requestBusy.current = false;
-      setBusy(false);
+      if (version === opening.current) { requestBusy.current = false; setBusy(false); }
     }
   }
 
@@ -135,8 +170,8 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
     <>
       <button className={`secondary-button${compact ? ' compact-button' : ''}`} onClick={show}>Payout settings</button>
       {open && (
-        <ModalShell onClose={() => setOpen(false)} label="Payout setup" className="payout-dialog flow-page payout-page" closeDisabled={busy}>
-          {connectInstance ? <PayoutEmbedded
+        <ModalShell onClose={close} label="Payout setup" className="payout-dialog flow-page payout-page">
+          {!connectInstance && busy ? <PayoutPreparing /> : connectInstance ? <PayoutEmbedded
             key="embedded"
             instance={connectInstance}
             busy={busy}
@@ -150,7 +185,7 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
             onEligible={setEligibleConfirmed}
             busy={busy}
             message={message}
-            onContinue={() => void continueToStripe()}
+            onContinue={() => void (status ? continueToStripe() : show())}
             onFallback={() => void continueToStripe(true)}
             celebrate={celebrate}
           />}
