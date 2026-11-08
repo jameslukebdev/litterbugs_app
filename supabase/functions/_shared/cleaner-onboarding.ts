@@ -163,9 +163,27 @@ export async function cleanerOnboardingResponse(request: Request, deps = depende
     }
 
     if (mode === "session") {
+      const stripe = stripeClient();
+      // Cleaners do not sell a product. Keep their existing description, or supply the known
+      // activity only when Stripe explicitly requires a missing description/website.
+      // Checking requirements avoids overwriting a value Stripe has merely redacted.
+      const profile = await stripe.accounts.retrieve(account.id);
+      const activityDue = [
+        ...(profile.requirements?.currently_due ?? []),
+        ...(profile.requirements?.past_due ?? []),
+        ...(profile.requirements?.eventually_due ?? []),
+      ].some((field) => field === "business_profile.product_description" || field === "business_profile.url");
+      if (!profile.business_profile?.product_description?.trim() && activityDue) {
+        if (account.identity?.entity_type !== "individual") {
+          throw new Error("Non-individual activity details need hosted onboarding");
+        }
+        await stripe.accounts.update(account.id, {
+          business_profile: { product_description: LITTERBUGS_REWARD_ACTIVITY_DESCRIPTION },
+        });
+      }
       // Only the caller's server-owned payout account can receive this short-lived session.
       // Accounts v2 IDs work with AccountSessions v1; enable only onboarding, with Stripe authentication.
-      const session = await stripeClient().accountSessions.create({
+      const session = await stripe.accountSessions.create({
         account: account.id,
         components: {
           account_onboarding: {

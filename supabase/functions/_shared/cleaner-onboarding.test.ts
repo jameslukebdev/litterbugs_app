@@ -9,6 +9,9 @@ function fixture() {
   let payments = true;
   let existing = true;
   let ready = false;
+  let profileDescription: string | null = 'Member-supplied description';
+  let activityDue: string[] = [];
+  let descriptionUpdate: unknown;
   let key = 'pk_test_fixture';
   const account = () => ({ id: 'acct_owned', identity: { entity_type: 'individual' }, configuration: { recipient: { capabilities: { stripe_balance: {
     stripe_transfers: { status: ready ? 'active' : 'pending' }, payouts: { status: ready ? 'active' : 'pending' },
@@ -39,7 +42,9 @@ function fixture() {
     },
     stripeClient: () => ({
       accountSessions: { create: async (params: Record<string, any>) => { calls.session = params; return { client_secret: 'test_session_secret', expires_at: 1900000000 }; } },
-      accounts: { createLoginLink: async (id: string) => { calls.linked = id; return { url: 'https://connect.stripe.com/dashboard' }; } },
+      accounts: { retrieve: async (id: string) => { assert(id === 'acct_owned'); return { business_profile: { product_description: profileDescription }, requirements: { currently_due: activityDue } }; },
+        update: async (id: string, params: unknown) => { assert(id === 'acct_owned'); descriptionUpdate = params; return {}; },
+        createLoginLink: async (id: string) => { calls.linked = id; return { url: 'https://connect.stripe.com/dashboard' }; } },
     }),
     createStripeRecipientOnboardingLink: async (id: string, target: string) => { assert(id === 'acct_owned'); calls.target = target; return { url: 'https://connect.stripe.com/setup', expires_at: 'later' }; },
   } as unknown as NonNullable<Parameters<typeof cleanerOnboardingResponse>[1]>;
@@ -47,7 +52,7 @@ function fixture() {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ mode: 'session', returnTarget: 'web', confirmAge18: true, ...body }),
   }), deps);
-  return { call, calls, set signedIn(v: boolean) { signedIn = v; }, set anonymous(v: boolean) { anonymous = v; },
+  return { call, calls, get descriptionUpdate() { return descriptionUpdate; }, set profileDescription(v: string | null) { profileDescription = v; }, set activityDue(v: string[]) { activityDue = v; }, set signedIn(v: boolean) { signedIn = v; }, set anonymous(v: boolean) { anonymous = v; },
     set payments(v: boolean) { payments = v; }, set existing(v: boolean) { existing = v; }, set ready(v: boolean) { ready = v; }, set key(v: string) { key = v; } };
 }
 
@@ -108,4 +113,20 @@ Deno.test('invalid public configuration fails before creating or altering a reci
   const response = await f.call();
   assert(response.status === 500 && !(await response.text()).includes('sk_secret'));
   assert(!f.calls.session && !f.calls.accountCreates && !f.calls.updates);
+});
+
+
+Deno.test('embedded setup preserves a member description and fills required activity behind the scenes', async () => {
+  const existing = fixture();
+  assert((await existing.call()).status === 200);
+  assert(!existing.descriptionUpdate, 'Existing member description was overwritten');
+  const missing = fixture(); missing.profileDescription = null; missing.activityDue = ['business_profile.product_description'];
+  assert((await missing.call()).status === 200);
+  assert(JSON.stringify(missing.descriptionUpdate).includes('Individual participation in litter reporting'));
+  const website = fixture(); website.profileDescription = null; website.activityDue = ['business_profile.url'];
+  assert((await website.call()).status === 200);
+  assert(website.descriptionUpdate, 'Activity description was not provided for the website alternative');
+  const redacted = fixture(); redacted.profileDescription = null;
+  assert((await redacted.call()).status === 200);
+  assert(!redacted.descriptionUpdate, 'A redacted value without a requirement was overwritten');
 });

@@ -27,7 +27,12 @@ export default function PayoutEmbedded({ instance, busy, message, onExit, onFall
           <div className="payout-connect-form">
             <ConnectComponentsProvider connectInstance={instance}>
               <ConnectAccountOnboarding
-                collectionOptions={{ fields: 'currently_due', futureRequirements: 'omit' }}
+                key="without-product-description"
+                collectionOptions={{ fields: 'currently_due', futureRequirements: 'omit', requirements: {
+                  // Stripe documents v1 and v2 requirement names. The server ensures missing
+                  // activity details are supplied; keep identity, bank and terms collection intact.
+                  exclude: ['business_profile.product_description', 'defaults.profile.product_description'],
+                } }}
                 onLoaderStart={() => setLoading(false)}
                 onLoadError={() => { setLoading(false); setFailed(true); }}
                 onExit={onExit}
@@ -36,11 +41,10 @@ export default function PayoutEmbedded({ instance, busy, message, onExit, onFall
           </div>
         </>
       )}
-      <p className="payout-stripe-note">Stripe may open a sign-in window to verify it&rsquo;s you.</p>
-      <div className="payout-embedded-actions">
+      {(failed || message) && <div className="payout-embedded-actions">
         <button className="secondary-button" disabled={busy} onClick={onBack}>Back</button>
-        <button className={failed ? 'primary-button payout-go' : 'secondary-button'} disabled={busy} onClick={onFallback}>{busy ? 'Checking…' : 'Continue on Stripe'}</button>
-      </div>
+        <button className="primary-button payout-go" disabled={busy} onClick={onFallback}>{busy ? 'Checking…' : 'Continue on Stripe'}</button>
+      </div>}
     </div>
   );
 }
