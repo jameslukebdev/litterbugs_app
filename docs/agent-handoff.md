@@ -24,6 +24,33 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (Cloudflare workflow analytics verified; no live switch)
+
+- Isolated preview source `5b2a435`, Worker version
+  `751d4b9d-6c0c-4161-8c90-166ae2be4975`. Added explicit exact-preview test-run
+  analytics gate and test labels; normal live host/defaults unchanged. Test run
+  source `0cd9bc5` / Worker `9c1bea76-e27e-4495-8fd0-0e484b8aaf54`; now off again.
+  No merge/push/Vercel/custom-domain change. Claude's main code preserved.
+- PostHog project 695338 received actual report location/photo entry, funding
+  amount review/cancel, funded payout check/setup/start_failed/close, volunteer
+  safety review/cancel, and empty test draft discard. Location freshness failed
+  with location_stale; existing draft fallback works. All 18 workflow records
+  labeled is_test / cf-20261108-participation-qa. No synthetic success events.
+  Network observed PostHog 200, GA and Clarity 204; this is delivery evidence,
+  not proof all downstream reports/replay processing completed. Test browser
+  exclusion restored; server preview analytics disabled after the bounded run.
+- All 63 photos from 26 currently discoverable reports plus completed after
+  images passed 74 bounded public API/decoder checks. 32 analytics tests,
+  scoped lint, production build/TypeScript passed. Evidence in
+  /tmp/litterbugs-cloudflare-{analytics-final-evidence,public-photo-audit}.json.
+- Still not migration-ready: independent upload safety key/config unavailable;
+  existing exact-preview relay to Vercel remains. Original scanner account
+  identified from older receipts; owner sign-in pending. Personal sign-in
+  reached an unused separate Free account; do not create replacement keys or
+  purchase a plan before checking the original. Held payout backend unchanged;
+  full publication/payment/claim/evidence/payout and physical phone tests pending.
+  No agreements, payment attempt/charge, real claim, or report publication made.
+
 ### 2026-11-08 — Codex (other Vercel projects paused at owner request)
 
 - Paused littlefarmfinder, burrowbase-down and reviewhiker-web-live in
