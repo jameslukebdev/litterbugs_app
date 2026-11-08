@@ -24,6 +24,22 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (Resend use confirmed in setup records; usage pending)
+
+- Auth baseline/checklist/cutover evidence confirms dedicated Resend SMTP for
+  Litterbugs signup verification/resends and password recovery. Credentials live
+  only in Supabase; none read. No custom cleanup/reminder email sender found;
+  Stripe receipts and native push are separate. Earlier inventory did not name
+  the SMTP provider; do not infer Resend is unused from missing SDK imports.
+- Resend browser is signed out. Opened normal Google login, which offers three
+  existing accounts; asked owner which owns the paid subscription before choosing
+  and risking a separate account. No account selected, email sent, key accessed,
+  setting/plan changed or current sending volume verified. Sign-in tab retained.
+- Current public transactional pricing: Free 3,000/month, 100/day, 3 domains;
+  Pro $20/month, 50,000/month, no daily cap. Check aggregate account volume/peak
+  daily usage and other sites before recommending a downgrade. Source:
+  https://resend.com/pricing?product=transactional . Local work preserved.
+
 ### 2026-11-08 — Codex (complete notification inventory, read-only)
 
 - Audited notification catalog, latest SQL producers/timers, native sender and
