@@ -24,6 +24,31 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-07 — Codex (cleaner wording / required verification preserved, LOCAL)
+
+- Owner confirmed: keep everything Stripe requires for payouts; keep this
+  website-only work local. Source `21815cf`, not pushed or deployed. No backend
+  redeploy, migrations, mobile edits, analytics changes or server restart.
+- Kept legal-name / personal-details page and `currently_due` collection; no
+  extra address requirement. Existing four prefilled business-field exclusions
+  unchanged. Stripe can still request address, DOB, tax details, ID and terms.
+  Its docs explicitly say excluding fields does not remove their requirements:
+  https://docs.stripe.com/connect/supported-embedded-components/account-onboarding
+- Existing authenticated localhost form reviewed: personal-details menu, bank
+  selection, optional Link prompt (Not now), and manual routing/account/confirm
+  fields with Stripe's bank-debit authorization. No identity/bank data entered,
+  bank linked or terms accepted. Final submission/review not exercised.
+  Stripe-owned bank/legal wording retained. Our copy explains legal-name
+  verification and possible address/ID; ready-account action is “Manage payouts”.
+- Desktop and 393×851 checked; no horizontal overflow or browser errors (one
+  expected localhost HTTPS warning). 18 payout/session tests, scoped lint and
+  diff checks pass. Typecheck passed in isolated checkout of `21815cf`; shared
+  checkout's concurrent `lib/website-analytics.ts:152` TS7053 prevented its full
+  typecheck at check time. Left that and all other concurrent work untouched.
+  Screenshots `/tmp/litterbugs-payout-required-details-{desktop,phone}.jpg`.
+  Viewport reset; existing local form left open. Live/server rollback and older
+  unpromoted deployment cautions in the entry below still apply.
+
 ### 2026-11-07 — Codex (embedded website Connect, LOCAL / RELEASE HELD)
 
 - **Owner explicitly says do not release this yet. Website only; native app
