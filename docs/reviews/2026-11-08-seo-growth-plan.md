@@ -45,6 +45,19 @@ The owner explicitly approved a weekly SEO check in this chat on November 8. Cre
 
 ## Verification and sources
 
+**Later November 8 repair:** At the owner's request, release `f3995d7` on the
+exact live `f08518c` baseline was staged, checked and promoted as
+`dpl_9ESdGAzEhqQTBG92YFcsSoXyh8sD`. Expired pages now present actual report
+evidence and dated history while retaining the expired status and unconfirmed
+outcome. No photos or facts were fabricated and no database records changed.
+Google accepted the repaired Sand trash indexing request. The repaired patio
+page's separate live test now says “URL is available to Google” and “Page can be
+indexed”; its manual submission hit the daily quota and remains pending a quota
+reset. These clear the observed soft-404 eligibility failures, not proof of
+actual indexing. Preserve the preceding request results as historical evidence;
+future weekly checks should use this post-repair baseline and inspect actual
+index states. No automated submission retry was scheduled.
+
 - Current evidence: `2026-11-08-report-cleanup-indexing.md`, its saved crawl data and Google inspection JSON.
 - Google automatic discovery and SEO guidance: https://developers.google.com/search/docs/fundamentals/seo-starter-guide . Validate growth work against actual search and participation outcomes over several weeks rather than promising immediate ranking gains.
 - Crawl requests, timing, quotas and lack of inclusion guarantees: https://developers.google.com/search/docs/crawling-indexing/ask-google-to-recrawl . Verify requests through Search Console's explicit acceptance state and later verify indexing through URL Inspection.

@@ -24,6 +24,36 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (expired-report soft 404 repair released)
+
+- Changed expired report pages to factual report history: historical search
+  titles, original litter/details/priority, and dated reporting-period history.
+  Expiry and unconfirmed cleanup remain explicit; no invented photos, geography,
+  reporter details or cleanup results. Both affected records have null stored
+  photo_paths, not a broken photo loader. No database edits or migration.
+- Shared-checkout source `9c52d14`; isolated release `f3995d7` on
+  `codex/expired-report-history-seo`, pushed to origin. Release is based on exact
+  live `f08518c` and changes only four report content/page/test files, excluding
+  all held payout/share/other local work. Staged and promoted
+  `dpl_9ESdGAzEhqQTBG92YFcsSoXyh8sD`; previous live/rollback deployment is
+  `dpl_HgNgjXJMLnpf7Ur15xApJegWnbLd`.
+- 43 focused tests, scoped lint, production remote build/TypeScript passed.
+  Both pages rendered locally without console errors; Find a current cleanup
+  navigates to /reports. Six authenticated staged HTTP checks and both live
+  target HTTP checks passed; production canonicals match, no noindex. Bounded
+  10-minute deployment error-log query returned no entries.
+- Google accepted repaired Sand trash into priority crawl queue. Patio request
+  hit daily submission quota; separate post-release Google live test reports
+  “URL is available to Google” / “Page can be indexed” (Nov 8, 4:51 p.m. EST).
+  Both soft-404 eligibility failures cleared; actual indexing remains unconfirmed.
+  Patio manual resubmission must wait for quota reset; sitemap already lists it.
+  No repeated quota retries or schedule changes. Existing weekly SEO monitoring
+  will read this new baseline. Local/staged tests did not execute live visitor
+  scripts; Google live tests around 4:50–4:52 p.m. EST are test traffic.
+- Evidence: /tmp/litterbugs-expired-{stage,live}-check.json and
+  /tmp/litterbugs-history-{sand-accepted,patio-quota}.jpg. Concurrent untracked
+  dev-review-preview preserved. Native/store and held backend work untouched.
+
 ### 2026-11-08 — Codex (remaining indexing requests and weekly SEO check)
 
 - Submitted manual indexing requests for all nine previously discovered/not
