@@ -24,6 +24,30 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (local Stripe connection resolved; real embedded form verified)
+
+- Owner supplied the approved restricted key in a screenshot after confirming
+  it was saved. Extracted it locally without logging its value, verified the
+  Litterbugs platform identity, and saved it to ignored web `.env.development.local`
+  with mode 0600. Accounts Read + Account Sessions Write only; no replacement key
+  needed. No credential committed. This resolves the pending connection below.
+- Current local server picked up the settings without a restart. Actual fresh
+  embedded sessions now open the legal-first/last-name page in the website.
+  Closing/reopening works directly, with no old Continue setup gate. Business
+  type/product description and duplicate normal footer controls remain absent;
+  current-only requirements, bank collection, terms and Stripe auth stay intact.
+- Desktop and 393×851 reviewed; phone root width/content both 393, one Continue,
+  quiet preparation state, no framework overlay. Browser's old concurrent auth
+  stylesheet errors preceded its creation; stylesheet now exists. Expected local
+  HTTP warning only for Stripe. Screenshots:
+  `/tmp/litterbugs-payout-local-embedded-{desktop,phone}.png`. Viewport restored.
+- Website source remains `840409c`, local only. Previous 28 focused tests,
+  TypeScript/scoped lint/diff checks passed; no source change since those checks.
+  No full build or overlapping tests; free-memory reading was 59%. No deployment,
+  backend redeploy, migration, bank/identity entry, agreement acceptance or payout.
+  Concurrent analytics/social/profile/auth/support work preserved. Final bank and
+  terms submission remains for the owner's local review.
+
 ### 2026-11-08 — Codex (seamless local embedded payout entry; connection pending)
 
 - Local source `840409c`, not pushed/deployed. Returning eligible cleaners open
