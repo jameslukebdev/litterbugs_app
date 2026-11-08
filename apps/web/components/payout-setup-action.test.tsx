@@ -192,3 +192,44 @@ it('warms the code on intent without opening setup or creating an account sessio
   expect(screen.queryByRole('dialog')).toBeNull();
   expect(createPayoutSession).not.toHaveBeenCalled();
 });
+
+it('opens from a cleanup without another settings button and resumes only after server-confirmed readiness', async () => {
+  state.status = { onboardingStatus: 'pending', payoutsEnabled: false, requirementsDue: [], age18Confirmed: true };
+  createPayoutSession.mockResolvedValue({ clientSecret: 'secret', publishableKey: 'pk_test_fixture', expiresAt: 1900000000 });
+  const onReady = vi.fn(); const onDismiss = vi.fn();
+  render(<PayoutSetupAction autoOpen onReady={onReady} onDismiss={onDismiss} />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Exit secure form' }));
+  await screen.findByRole('heading', { name: 'Almost there' });
+  expect(screen.queryByRole('button', { name: 'Payout settings' })).toBeNull();
+  expect(onReady).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Review details' }));
+  await screen.findByRole('button', { name: 'Exit secure form' });
+  state.status = { onboardingStatus: 'enabled', payoutsEnabled: true, requirementsDue: [], age18Confirmed: true };
+  fireEvent.click(screen.getByRole('button', { name: 'Exit secure form' }));
+  await waitFor(() => expect(onReady).toHaveBeenCalledOnce());
+  expect(onDismiss).not.toHaveBeenCalled();
+  expect(screen.queryByRole('dialog')).toBeNull();
+});
+
+it('dismisses cleanup entry without claiming readiness', async () => {
+  const onReady = vi.fn(); const onDismiss = vi.fn();
+  render(<PayoutSetupAction autoOpen onReady={onReady} onDismiss={onDismiss} />);
+  await screen.findByRole('heading', { name: 'Get paid for cleanups' });
+  fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+  expect(onDismiss).toHaveBeenCalledOnce();
+  expect(onDismiss).toHaveBeenCalledWith('closed');
+  expect(onReady).not.toHaveBeenCalled();
+  expect(createPayoutSession).not.toHaveBeenCalled();
+});
+
+it('distinguishes an invalidated payout session from an explicit cleanup cancellation', async () => {
+  state.status = { onboardingStatus: 'pending', payoutsEnabled: false, requirementsDue: [], age18Confirmed: true };
+  createPayoutSession.mockResolvedValue({ clientSecret: 'secret', publishableKey: 'pk_test_fixture', expiresAt: 1900000000 });
+  const onReady = vi.fn(); const onDismiss = vi.fn();
+  render(<PayoutSetupAction autoOpen onReady={onReady} onDismiss={onDismiss} />);
+  await screen.findByRole('button', { name: 'Exit secure form' });
+  const { act } = await import('@testing-library/react');
+  act(() => createPayoutConnect.mock.calls[0][1]());
+  expect(onDismiss).toHaveBeenCalledExactlyOnceWith('session_ended');
+  expect(onReady).not.toHaveBeenCalled();
+});

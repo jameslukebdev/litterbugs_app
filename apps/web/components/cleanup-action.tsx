@@ -21,6 +21,8 @@ import { submitCleanupEvidence } from '@/lib/cleanup-submission';
 import { useDataRefresh, notifyDataChanged } from '@/lib/use-data-refresh';
 import { useCleanupAttempt } from '@/lib/use-cleanup-attempt';
 import { createClient } from '@/lib/supabase/client';
+import { loadPayoutStatus } from '@/lib/funding';
+import { PayoutSetupAction } from '@/components/payout-setup-action';
 
 type WaiverRow = Database['public']['Tables']['cleanup_waiver_versions']['Row'];
 type CleanupWaiver = WaiverRow & {
@@ -47,7 +49,12 @@ export function validateCleanupEvidence(files: File[], description: string) {
   return '';
 }
 
-export function CleanupAction({
+export function CleanupAction(props: Parameters<typeof CleanupActionForReport>[0]) {
+  // A different member/report must not inherit an outstanding check or open payout flow.
+  return <CleanupActionForReport key={`${props.userId ?? 'guest'}:${props.report.id}`} {...props} />;
+}
+
+function CleanupActionForReport({
   report,
   userId,
   onRequireSignIn,
@@ -87,6 +94,10 @@ export function CleanupAction({
   const [uploadProgress, setUploadProgress] = useState('');
   const [releaseConfirming, setReleaseConfirming] = useState(false);
   const [doneKind, setDoneKind] = useState<'claimed' | 'sent' | 'released' | null>(null);
+  const [payoutEntry, setPayoutEntry] = useState<{ userId: string; reportId: string } | null>(null);
+  const entryRequest = useRef(0);
+  const openedFromEntry = useRef(false);
+  useEffect(() => () => { entryRequest.current += 1; openedFromEntry.current = false; }, [userId, report.id]);
   const previewUrls = usePhotoPreviews(photos);
   const reporterPhoto = report.photo_paths?.[0] ? getReportCardPhotoUrl(report.photo_paths[0]) : null;
 
@@ -125,6 +136,7 @@ export function CleanupAction({
 
   const openSafetyReview = useCallback(async () => {
     if (!userId || attemptFailed) return;
+    const request = ++entryRequest.current;
     setBusy('waiver');
     setMessage('');
     try {
@@ -134,6 +146,7 @@ export function CleanupAction({
         .eq('is_active', true)
         .is('retired_at', null)
         .maybeSingle();
+      if (request !== entryRequest.current) return;
       if (error || !data) {
         trackParticipationFailure('clean', 'safety_review', 'safety_load_failed');
         setBusy('');
@@ -147,6 +160,7 @@ export function CleanupAction({
         .eq('waiver_version', data.waiver_version)
         .eq('guidelines_version', data.guidelines_version)
         .maybeSingle();
+      if (request !== entryRequest.current) return;
       setBusy('');
       if (acceptanceError) {
         trackParticipationFailure('clean', 'safety_review', 'safety_load_failed');
@@ -160,25 +174,53 @@ export function CleanupAction({
       setWaiverOpen(true);
       trackParticipation('clean', 'safety_review');
     } catch {
+      if (request !== entryRequest.current) return;
       trackParticipationFailure('clean', 'safety_review', 'safety_load_failed');
       setBusy('');
       setMessage('The cleanup safety acknowledgment is temporarily unavailable. Try again.');
     }
   }, [userId, attemptFailed]);
 
-  const openedFromEntry = useRef(false);
+  const beginCleanup = useCallback(async () => {
+    if (!userId || attemptFailed) return;
+    if (report.funded_amount_cents > 0) {
+      const request = ++entryRequest.current;
+      setBusy('payout');
+      setMessage('');
+      trackParticipation('clean', 'payout_check');
+      try {
+        const status = await loadPayoutStatus();
+        if (request !== entryRequest.current) return;
+        setBusy('');
+        if (!status.payoutsEnabled || status.onboardingStatus !== 'enabled') {
+          trackParticipation('clean', 'payout_setup');
+          setPayoutEntry({ userId, reportId: report.id });
+          return;
+        }
+        trackParticipation('clean', 'payout_ready');
+      } catch {
+        if (request !== entryRequest.current) return;
+        setBusy('');
+        trackParticipationFailure('clean', 'payout_check', 'payout_status_load_failed');
+        setMessage('Your payout setup could not be checked. Please try Clean again.');
+        return;
+      }
+    }
+    await openSafetyReview();
+  }, [userId, attemptFailed, report.id, report.funded_amount_cents, openSafetyReview]);
+
   useEffect(() => {
     if (!autoOpen || !userId || attemptLoading || attemptFailed || attempt
       || report.cleanup_state !== 'available' || openedFromEntry.current) return;
     openedFromEntry.current = true;
-    void openSafetyReview();
-  }, [autoOpen, userId, attemptLoading, attemptFailed, attempt, report.cleanup_state, openSafetyReview]);
+    void beginCleanup();
+  }, [autoOpen, userId, attemptLoading, attemptFailed, attempt, report.cleanup_state, beginCleanup]);
 
   function beginClaim() {
     markEntryPrompted();
     trackParticipation('clean', 'action_tapped');
     if (!userId) onRequireSignIn?.();
-    else void openSafetyReview();
+    else void beginCleanup();
   }
 
   useEffect(() => {
@@ -209,6 +251,12 @@ export function CleanupAction({
           setWaiverOpen(false);
           await beginClaim();
           setMessage('The safety agreement has changed. Please review the current version.');
+          return;
+        }
+        if (/cleaner_payout_onboarding_required/i.test(claim.error.message)) {
+          setWaiverOpen(false);
+          setPayoutEntry({ userId: userId!, reportId: report.id });
+          trackParticipation('clean', 'payout_setup');
           return;
         }
         setMessage(report.funded_amount_cents > 0
@@ -370,7 +418,7 @@ export function CleanupAction({
     if (canSubmit) return <button className="primary-button compact-button" onClick={() => setSubmissionOpen(true)}>{attempt?.status === 'changes_requested' ? 'Update cleanup photos' : 'Submit cleanup photos'}</button>;
     if (isMyAttempt && attempt?.status === 'completion_submitted') return <button className="secondary-button compact-button" disabled>Cleanup under review</button>;
     if (attempt && !isMyAttempt) return <span className="cleanup-unavailable-note">Another member is cleaning this report</span>;
-    return <button className="primary-button compact-button report-action-clean" onClick={beginClaim} disabled={attemptFailed || Boolean(busy) || preparing}><BrandBug kind="butterfly" size={21} className="bug-hop" />{busy === 'waiver' ? 'Loading…' : 'Clean'}</button>;
+    return <button className="primary-button compact-button report-action-clean" onClick={beginClaim} aria-busy={Boolean(busy)} disabled={attemptFailed || Boolean(busy) || preparing || Boolean(payoutEntry)}><BrandBug kind="butterfly" size={21} className="bug-hop" />{busy === 'waiver' ? 'Loading…' : 'Clean'}</button>;
   })();
 
   const attemptNotice = attemptFailed && <p role="alert" className="form-message error-message">Cleanup status could not be refreshed. {attempt ? 'Your last confirmed task and entered work are still here. Reconnect and retry before sending changes.' : 'Retry before starting a cleanup.'} <button type="button" className="secondary-button" onClick={() => void refreshAttempt()}>Retry cleanup status</button></p>;
@@ -380,6 +428,13 @@ export function CleanupAction({
       {message && (doneKind ? <CleanupDone kind={doneKind}>{message}</CleanupDone> : <span className="cleanup-action-message" role="status">{message}</span>)}
       {!waiverOpen && !(submissionOpen && attempt) && attemptNotice}
       {action}
+      {payoutEntry?.userId === userId && payoutEntry.reportId === report.id && <PayoutSetupAction autoOpen onDismiss={reason => {
+        if (reason === 'closed') trackParticipationExit('clean', 'payout_setup', 'cancelled');
+        setPayoutEntry(null);
+      }} onReady={() => {
+        setPayoutEntry(null);
+        void beginCleanup();
+      }} />}
       {canSubmit && !(submissionOpen && attempt) && (releaseConfirming
         ? <div className="cleaner-release-confirm cleaner-release-inline" role="group" aria-label="Give this cleanup back">
             <p>Give this cleanup back? It goes back on the map so someone else can clean it.</p>

@@ -2,10 +2,14 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { Report } from '@litterbugs/report-contract';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { StrictMode } from 'react';
 import { CleanupAction } from './cleanup-action';
 
 const telemetry = vi.hoisted(() => ({ step: vi.fn(), failure: vi.fn() }));
 vi.mock('@/lib/website-analytics', async original => ({ ...await original<object>(), trackParticipation: telemetry.step, trackParticipationFailure: telemetry.failure }));
+const payout = vi.hoisted(() => ({ status: vi.fn() }));
+vi.mock('@/lib/funding', async original => ({ ...await original<object>(), loadPayoutStatus: payout.status }));
+vi.mock('@/components/payout-setup-action', () => ({ PayoutSetupAction: ({ onReady, onDismiss }: { onReady: () => void; onDismiss: (reason: 'closed') => void }) => <div role="dialog" aria-label="Payout setup"><button onClick={onReady}>Finish payout fixture</button><button onClick={() => onDismiss('closed')}>Close payout setup</button></div> }));
 
 const { from, rpc, state } = vi.hoisted(() => ({
   from: vi.fn(), rpc: vi.fn(), state: { accepted: true, error: false, claimed: false, attemptError: false, revision: 0 },
@@ -18,6 +22,7 @@ vi.mock('@/lib/use-data-refresh', () => ({ useDataRefresh: () => state.revision,
 const report = { id: 'report-1', cleanup_state: 'available', funded_amount_cents: 0 } as Report;
 beforeEach(() => {
   state.claimed = false; state.attemptError = false; state.revision = 0;
+  payout.status.mockResolvedValue({ onboardingStatus: 'not_started', payoutsEnabled: false, requirementsDue: [] });
   loadDraft.mockResolvedValue(undefined);
   saveDraft.mockResolvedValue(undefined);
   Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:evidence') });
@@ -52,6 +57,7 @@ describe('cleanup agreement and site confirmation', () => {
     fireEvent.click(confirm);
     await waitFor(() => expect(rpc).toHaveBeenCalledWith('claim_cleanup', { target_report_id: 'report-1' }));
     expect(rpc).not.toHaveBeenCalledWith('accept_cleanup_waiver', expect.anything());
+    expect(payout.status).not.toHaveBeenCalled();
     expect(telemetry.step).toHaveBeenCalledWith('clean', 'safety_review');
     await waitFor(() => expect(telemetry.step).toHaveBeenCalledWith('clean', 'claim_confirmed'));
   });
@@ -171,4 +177,90 @@ it.each(['returned', 'thrown'])('records a %s claim failure without a confirmed-
   fireEvent.click(screen.getByRole('button', { name: 'Claim this cleanup' }));
   await waitFor(() => expect(telemetry.failure).toHaveBeenCalledWith('clean', 'safety_review', 'claim_failed'));
   expect(telemetry.step).not.toHaveBeenCalledWith('clean', 'claim_confirmed');
+});
+
+const fundedReport = { ...report, funded_amount_cents: 100 } as Report;
+const readyPayout = { onboardingStatus: 'enabled', payoutsEnabled: true, age18Confirmed: true, requirementsDue: [] };
+
+it('opens payout setup before safety for a funded cleanup, then rechecks readiness before returning', async () => {
+  render(<CleanupAction report={fundedReport} userId="cleaner-1" />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Clean' }));
+  await screen.findByRole('dialog', { name: 'Payout setup' });
+  expect(screen.queryByRole('button', { name: 'Claim this cleanup' })).toBeNull();
+  expect(from.mock.calls.some(([table]) => table === 'cleanup_waiver_versions')).toBe(false);
+  expect(rpc).not.toHaveBeenCalled();
+  payout.status.mockResolvedValue(readyPayout);
+  fireEvent.click(screen.getByRole('button', { name: 'Finish payout fixture' }));
+  await screen.findByRole('button', { name: 'Claim this cleanup' });
+  expect(payout.status).toHaveBeenCalledTimes(2);
+  expect(screen.queryByRole('dialog', { name: 'Payout setup' })).toBeNull();
+  expect(rpc).not.toHaveBeenCalled();
+  expect(telemetry.step).toHaveBeenCalledWith('clean', 'payout_setup');
+  expect(telemetry.step).toHaveBeenCalledWith('clean', 'payout_ready');
+});
+
+it('goes straight to safety when the funded cleaner already has enabled payouts', async () => {
+  payout.status.mockResolvedValue(readyPayout);
+  render(<CleanupAction report={fundedReport} userId="cleaner-1" />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Clean' }));
+  await screen.findByRole('button', { name: 'Claim this cleanup' });
+  expect(screen.queryByRole('dialog', { name: 'Payout setup' })).toBeNull();
+  expect(rpc).not.toHaveBeenCalled();
+});
+
+it('keeps the claim closed when payout status fails and allows another check', async () => {
+  payout.status.mockRejectedValue(new Error('private Stripe detail'));
+  render(<CleanupAction report={fundedReport} userId="cleaner-1" />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Clean' }));
+  await screen.findByText('Your payout setup could not be checked. Please try Clean again.');
+  expect(screen.queryByRole('dialog')).toBeNull();
+  expect(rpc).not.toHaveBeenCalled();
+  expect(telemetry.failure).toHaveBeenCalledWith('clean', 'payout_check', 'payout_status_load_failed');
+  payout.status.mockResolvedValue(readyPayout);
+  fireEvent.click(screen.getByRole('button', { name: 'Clean' }));
+  await screen.findByRole('button', { name: 'Claim this cleanup' });
+});
+
+it('cancels payout setup without opening safety or claiming and checks again on the next Clean', async () => {
+  render(<CleanupAction report={fundedReport} userId="cleaner-1" autoOpen />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Close payout setup' }));
+  expect(screen.queryByRole('dialog')).toBeNull();
+  expect(rpc).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Clean' }));
+  await screen.findByRole('dialog', { name: 'Payout setup' });
+  expect(payout.status).toHaveBeenCalledTimes(2);
+});
+
+it('does not open a stale funded flow after switching reports', async () => {
+  let finish!: (value: typeof readyPayout) => void;
+  payout.status.mockReturnValue(new Promise(resolve => { finish = resolve; }));
+  const view = render(<CleanupAction report={fundedReport} userId="cleaner-1" />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Clean' }));
+  await waitFor(() => expect(payout.status).toHaveBeenCalledOnce());
+  view.rerender(<CleanupAction report={{ ...report, id: 'different-report' }} userId="cleaner-1" />);
+  const { act } = await import('@testing-library/react');
+  await act(async () => finish(readyPayout));
+  expect(screen.queryByRole('dialog')).toBeNull();
+  fireEvent.click(await screen.findByRole('button', { name: 'Clean' }));
+  await screen.findByRole('button', { name: 'Claim this cleanup' });
+  expect(payout.status).toHaveBeenCalledOnce();
+});
+
+it('returns to payout setup if readiness changes between safety and the server claim', async () => {
+  payout.status.mockResolvedValue(readyPayout);
+  rpc.mockResolvedValue({ error: new Error('cleaner_payout_onboarding_required') });
+  render(<CleanupAction report={fundedReport} userId="cleaner-1" />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Clean' }));
+  fireEvent.click(await screen.findByRole('checkbox'));
+  fireEvent.click(screen.getByRole('button', { name: 'Claim this cleanup' }));
+  await screen.findByRole('dialog', { name: 'Payout setup' });
+  expect(screen.queryByRole('button', { name: 'Claim this cleanup' })).toBeNull();
+  expect(telemetry.step).not.toHaveBeenCalledWith('clean', 'claim_confirmed');
+});
+
+it('opens the funded sign-in continuation under the development Strict Mode lifecycle', async () => {
+  render(<StrictMode><CleanupAction report={fundedReport} userId="cleaner-1" autoOpen /></StrictMode>);
+  await screen.findByRole('dialog', { name: 'Payout setup' });
+  expect(screen.queryByRole('button', { name: 'Claim this cleanup' })).toBeNull();
+  expect(rpc).not.toHaveBeenCalled();
 });

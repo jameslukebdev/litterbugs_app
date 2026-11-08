@@ -39,9 +39,13 @@ import {
   type PayoutStatus,
 } from '@/lib/funding';
 
-export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
+export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, onDismiss }: {
+  compact?: boolean; autoOpen?: boolean; onReady?: () => void; onDismiss?: (reason: 'closed' | 'session_ended') => void;
+}) {
   const refresh = useDataRefresh();
-  const [available, setAvailable] = useState(false);
+  // Cleanup entry has just checked the server's status endpoint, including its payments flag.
+  // Opening still rechecks status; normal account/settings buttons retain their flag check.
+  const [available, setAvailable] = useState(autoOpen);
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<PayoutStatus | null>(null);
   const [eligibleConfirmed, setEligibleConfirmed] = useState(false);
@@ -59,6 +63,7 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
   }, []);
 
   useEffect(() => {
+    if (autoOpen) return;
     let cancelled = false;
     void loadCleanupFeatureFlags()
       .then((flags) => {
@@ -66,7 +71,17 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
       })
       .catch(() => undefined);
     return () => { cancelled = true; };
-  }, []);
+  }, [autoOpen]);
+
+  useEffect(() => () => { opening.current += 1; }, []);
+
+  useEffect(() => {
+    if (!autoOpen) return;
+    let cancelled = false;
+    queueMicrotask(() => { if (!cancelled) void show(); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one opening per mounted cleanup entry
+  }, [autoOpen]);
 
   useEffect(() => {
     if (!available || window.location.pathname !== '/account/payments') return;
@@ -90,7 +105,7 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
 
   // Arriving from the "Finish payout setup" reminder opens the payout screen straight away.
   useEffect(() => {
-    if (!available || open) return;
+    if (autoOpen || !available || open) return;
     if (new URLSearchParams(window.location.search).get('payout') !== 'finish') return;
     const url = new URL(window.location.href);
     url.searchParams.delete('payout');
@@ -119,6 +134,7 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
       if (version !== opening.current) return;
       setStatus(next);
       observeStatus(next);
+      if (resumeCleanup(next)) return;
       setCelebrate(next.payoutsEnabled && firstPayoutsReady());
       if (!next.payoutsEnabled && !payoutNeedsConfirmation(next)) {
         startingForm = true;
@@ -137,7 +153,7 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
     const { createPayoutConnect, reusePayoutConnect } = await import('@/lib/payout-connect');
     const onInvalidated = () => {
       if (version !== opening.current) return;
-      trackPayoutSetup('session_ended'); close();
+      trackPayoutSetup('session_ended'); close('session_ended');
     };
     if (version !== opening.current) return;
     let instance = await reusePayoutConnect(onInvalidated);
@@ -151,12 +167,20 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
     trackPayoutSetup('form_opened');
   }
 
-  function close() {
+  function close(reason: 'closed' | 'session_ended' | null = 'closed') {
     opening.current += 1;
     requestBusy.current = false;
     setOpen(false);
     setBusy(false);
     setConnectInstance(null);
+    if (reason) onDismiss?.(reason);
+  }
+
+  function resumeCleanup(next: PayoutStatus) {
+    if (!onReady || !next.payoutsEnabled || next.onboardingStatus !== 'enabled') return false;
+    close(null);
+    onReady();
+    return true;
   }
 
   async function continueToStripe(hosted = false) {
@@ -195,6 +219,7 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
       if (version !== opening.current) return;
       setStatus(next);
       observeStatus(next);
+      if (resumeCleanup(next)) { notifyDataChanged(); return; }
       setCelebrate(next.payoutsEnabled && firstPayoutsReady());
       setConnectInstance(null);
       notifyDataChanged();
@@ -209,7 +234,7 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
 
   return (
     <>
-      <button className={`secondary-button${compact ? ' compact-button' : ''}`} onPointerEnter={() => void warmPayoutSetup()} onFocus={() => void warmPayoutSetup()} onPointerDown={() => void warmPayoutSetup()} onClick={show}>Payout settings</button>
+      {!autoOpen && <button className={`secondary-button${compact ? ' compact-button' : ''}`} onPointerEnter={() => void warmPayoutSetup()} onFocus={() => void warmPayoutSetup()} onPointerDown={() => void warmPayoutSetup()} onClick={show}>Payout settings</button>}
       {open && (
         <ModalShell onClose={() => { trackPayoutSetup('closed'); close(); }} label="Payout setup" className="payout-dialog flow-page payout-page">
           {!connectInstance && busy ? <PayoutPreparing /> : connectInstance ? <PayoutEmbedded

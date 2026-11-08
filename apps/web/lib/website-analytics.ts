@@ -1,7 +1,7 @@
 import { AUTH_RESULT_PARAM } from './participation-auth';
 import { communityForEntry, communityForPath, communityProperties, type CommunityEngagementEvent, type CommunityProperties } from './community-metrics';
 // Bump when participation semantics/workflows change; compiled into each browser bundle.
-export const WORKFLOW_VERSION = 'web-participation-2026-11-07-v2';
+export const WORKFLOW_VERSION = 'web-participation-2026-11-08-v3';
 export const ANALYTICS_CONSENT_KEY = 'litterbugs:analytics-consent:v1';
 export const ANALYTICS_REPLAY_CHOICE_KEY = 'litterbugs:analytics-replay-consent:v1';
 export const ANALYTICS_EVENT = 'litterbugs:analytics-event';
@@ -112,7 +112,7 @@ export function trackCommunityEngagement(event: CommunityEngagementEvent, proper
 const PARTICIPATION_STAGES = {
   report: ['location_picker', 'location_confirmed', 'photos', 'litter_type', 'severity', 'details', 'review', 'published'],
   fund: ['amount_review', 'payment_form', 'payment_ready', 'payment_submitted', 'payment_confirmed'],
-  clean: ['safety_review', 'claim_confirmed', 'evidence_form', 'evidence_submitted'],
+  clean: ['payout_check', 'payout_setup', 'payout_ready', 'safety_review', 'claim_confirmed', 'evidence_form', 'evidence_submitted'],
 } as const;
 const COMMON_STAGES = ['action_tapped', 'auth_shown', 'auth_submitted', 'auth_succeeded', 'verification_sent', 'auth_closed'] as const;
 export type ParticipationAction = keyof typeof PARTICIPATION_STAGES;
@@ -148,7 +148,7 @@ export function trackParticipation(action: ParticipationAction, stage: Participa
 const FAILURE_REASONS = {
   report: ['auth_start_failed', 'auth_return_failed', 'auth_rejected', 'auth_network_failed', 'auth_redirect_stalled', 'location_denied', 'location_timeout', 'location_unavailable', 'location_stale', 'location_out_of_range', 'photo_prepare_failed', 'photo_upload_failed', 'draft_save_failed', 'publication_unconfirmed'],
   fund: ['auth_start_failed', 'auth_return_failed', 'auth_rejected', 'auth_network_failed', 'auth_redirect_stalled', 'payment_quote_failed', 'payment_start_failed', 'payment_form_failed', 'payment_rejected', 'payment_confirmation_unavailable'],
-  clean: ['auth_start_failed', 'auth_return_failed', 'auth_rejected', 'auth_network_failed', 'auth_redirect_stalled', 'safety_load_failed', 'safety_save_failed', 'claim_failed', 'photo_prepare_failed', 'photo_upload_failed', 'draft_save_failed', 'evidence_check_failed', 'evidence_submit_unconfirmed'],
+  clean: ['auth_start_failed', 'auth_return_failed', 'auth_rejected', 'auth_network_failed', 'auth_redirect_stalled', 'payout_status_load_failed', 'safety_load_failed', 'safety_save_failed', 'claim_failed', 'photo_prepare_failed', 'photo_upload_failed', 'draft_save_failed', 'evidence_check_failed', 'evidence_submit_unconfirmed'],
 } as const;
 export type ParticipationFailureReason = typeof FAILURE_REASONS[ParticipationAction][number];
 export function participationFailureProperties(value: { action?: unknown; stage?: unknown; reason?: unknown; source?: unknown }) {
