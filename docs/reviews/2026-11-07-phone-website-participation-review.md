@@ -1,5 +1,53 @@
 # Phone website participation review — November 7, 2026
 
+## Post-release availability check — November 7, about 10:07 p.m. ET
+
+Read-only Vercel inspection confirmed deployment
+`dpl_HgNgjXJMLnpf7Ur15xApJegWnbLd` is **READY**, target production, created
+**9:54:03 p.m. ET** (`2026-11-08T02:54:03.248Z`). Creation is not the exact domain
+promotion time. Used creation as a conservative earlier cutoff: if no phone
+records exist since then, there are none in the narrower live-release interval.
+Owner/Claude's handoff establishes that this is the released `f08518c` build.
+
+- Clarity's refreshed Last 3 days list still has 59 recordings across devices.
+  Newest phone recording remains Nov 7 **9:05 p.m.**, duration 4:02, visitor
+  `11eh64m`; next is 8:56 p.m. `1ymvo8y`. Both were already inspected and predate
+  the release. **No post-deployment phone recording is available yet.** This is
+  available-recording evidence, not proof that no phone visited.
+- PostHog record inspection from 9:45–10:05:13 p.m. found one phone pageview at
+  **9:49:12 p.m.**, before deployment creation. Final query from **9:54:03 p.m.
+  through query time (~10:07 p.m.) returned no Mobile event rows**, including
+  sessions that might have started before release. No phone participation steps
+  are captured in that interval to compare with earlier behavior.
+- The wider 9:45–10:05:13 p.m. audit did find 33 `participation_step` records,
+  all in one **Desktop / Chrome** session, `01a1b912-e088-7886-b46e-47718727eceb`,
+  spanning 9:53:08–9:56:13 p.m. Its sequence changes from immediate report auth
+  to location_picker → location_confirmed → auth, plus Fund/Clean auth prompts.
+  Some events predate deployment creation. Identity/test status is unverified;
+  do not count this as phone-user improvement or call all 33 post-release.
+
+It is too early to assess whether reporting, funding or cleaning completion has
+improved. Missing captured phone events do not establish zero backend outcomes.
+[PostHog's replay/funnel guidance](https://posthog.com/tutorials/explore-insights-session-recordings)
+supports comparing actual step events with relevant recordings; there is no new
+phone sequence for that comparison yet. No new defect identified or application
+fix made. No push/deployment, production-site test, database write, analytics
+configuration change, shared-server restart, or test rerun. Claude's local social
+card/share image, package and lockfile changes remain untouched.
+
+Read-only record query (not a conversion rate):
+
+```sql
+SELECT timestamp, event, properties.$device_type, properties.$browser,
+       properties.$pathname, properties.action, properties.stage, $session_id
+FROM events
+WHERE timestamp >= toDateTime('2026-11-08 02:54:03', 'UTC')
+  AND timestamp < now()
+  AND properties.$device_type = 'Mobile'
+ORDER BY timestamp
+LIMIT 100;
+```
+
 ## Release baseline update
 
 Owner confirmed Claude pushed and deployed the previously local changes. The
