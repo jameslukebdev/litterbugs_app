@@ -24,6 +24,36 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-07 — Codex (five more phone journeys; direct action fix, LOCAL ONLY)
+
+- Local source `bbe405c` removes the repeated guest action tap after an explicit
+  Fund/Clean report link. Both action components open their matching account
+  prompt once when available; funding still waits for feature flags/eligibility.
+  Dismissal stays closed across re-renders, manual taps do not duplicate prompts
+  or participation tracking, and normal report browsing does not open auth.
+  Existing signed-in amount/safety review remains; no automatic payment,
+  agreement acceptance or claim. Location-first reporting preserved.
+- **Not pushed or deployed**; production stays `9d35422` /
+  `dpl_DrrjEV9yHJ26aLtu13u14hePFsus`. Preserved Claude's active cleanup, payment,
+  wizard and style work. Only the three small guest-entry additions in
+  cleanup-action.tsx were staged; the rest of that file remains Claude's work.
+  Shared server untouched. No migrations or analytics configuration changes.
+- Five additional Nov 5 phone sessions reviewed via timelines/playback samples:
+  explicit Clean/Fund links landed on a second action; another visitor reached
+  the old Rewarded empty state; two were policy browsing/shared-report viewing.
+  Reproduced the duplicate Clean tap on current localhost before fixing.
+  Historical empty state predates nearest-report recovery, not a new regression.
+  PostHog event audit remains the same 21 rows with 9 explicit QA rows; no newer
+  deep payment/claim/evidence sequence to diagnose. Evidence in existing phone
+  participation review doc; no new conversion rate claim.
+- Phone QA 393×851: Clean/Fund links open correct sign-in without another tap;
+  dismissal works, no console errors/warnings or framework overlay observed.
+  No credentials, reports, payments, claims or GPS permission submitted. 131
+  scoped tests, TypeScript, scoped lint and diff checks pass; viewport reset.
+  Screenshots `/tmp/litterbugs-direct-clean-signin-phone.jpg` and
+  `/tmp/litterbugs-direct-fund-signin-phone.jpg`. Real sign-in, payment and claim
+  completion not performed; existing mocked continuation tests passed.
+
 ### 2026-11-07 — Codex (location before signup; continued phone review, LOCAL ONLY)
 
 - Local source commit `1aaa5d7` lets guests choose a report location before
