@@ -19,7 +19,7 @@ const STAGE: Record<Exclude<Stage, 'loading'>, { title: string; button: string }
   },
   enabled: {
     title: 'Payouts are ready',
-    button: 'Review with Stripe',
+    button: 'Manage payouts',
   },
 };
 
@@ -60,7 +60,7 @@ export function PayoutPanel({ status, eligibleConfirmed, onEligible, busy, messa
       {stage !== 'loading' && stage !== 'enabled' && (
         <ol className="payout-steps">
           <li data-done={stage !== 'not_started' || undefined} data-current={stage === 'not_started' || undefined}><span aria-hidden="true">1</span><div><strong>Confirm you can be paid</strong><small>You&rsquo;re 18 or older and in the United States.</small></div></li>
-          <li data-current={stage !== 'not_started' || undefined}><span aria-hidden="true">2</span><div><strong>Add your details with Stripe</strong><small>Your legal name, a code sent to your phone, and your bank details. It takes a few minutes.</small></div></li>
+          <li data-current={stage !== 'not_started' || undefined}><span aria-hidden="true">2</span><div><strong>Verify your details and add your bank</strong><small>Your legal name and a bank account for cleanup payouts. Stripe may also need your address or ID.</small></div></li>
           <li><span aria-hidden="true">3</span><div><strong>Get paid</strong><small>Cash from approved cleanups is paid out to you.</small></div></li>
         </ol>
       )}
@@ -76,7 +76,7 @@ export function PayoutPanel({ status, eligibleConfirmed, onEligible, busy, messa
         {busy ? 'Loading…' : copy?.button ?? 'Set up payouts'}
       </button>
       {message && onFallback && <button className="secondary-button" disabled={busy || !status || (needsConfirm && !eligibleConfirmed)} onClick={onFallback}>Continue on Stripe</button>}
-      <p className="payout-stripe-note">Stripe handles your identity and payment details securely.</p>
+      <p className="payout-stripe-note">Your details go securely to Stripe for verification and payouts.</p>
     </div>
   );
 }

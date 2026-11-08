@@ -74,7 +74,7 @@ it('opens the Stripe dashboard for ready payouts without asking again, and celeb
   await open();
   await screen.findByRole('heading', { name: 'You’re all set to earn cash' });
   expect(screen.queryByRole('checkbox')).toBeNull();
-  fireEvent.click(screen.getByRole('button', { name: 'Review with Stripe' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Manage payouts' }));
   await waitFor(() => expect(createPayoutLink).toHaveBeenCalledWith('dashboard'));
   cleanup();
   await open();

@@ -18,7 +18,7 @@ export default function PayoutEmbedded({ instance, busy, message, onExit, onFall
         <img src="/brand/ranks/caterpillar.svg" alt="" aria-hidden="true" width={42} height={42} />
         <h2>Set up your payouts</h2>
       </header>
-      <p className="payout-lead">Get paid for approved cleanups. Stripe securely collects your identity and bank details here on Litterbugs.</p>
+      <p className="payout-lead">Stripe verifies your legal name and sends your cleanup payouts to your bank account. It may also need your address or ID.</p>
       {message && <p className="form-message error-message" role="alert">{message}</p>}
       {message && <button className="secondary-button" disabled={busy} onClick={onExit}>Check payout status</button>}
       {failed ? <p className="payout-note" role="alert">The secure form couldn&rsquo;t load. You can continue on Stripe and return to Litterbugs afterward.</p> : (
