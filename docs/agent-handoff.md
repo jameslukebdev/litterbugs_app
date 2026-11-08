@@ -24,6 +24,41 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (separate Cloudflare compatibility test; Vercel retained)
+
+- Review: `docs/reviews/2026-11-08-cloudflare-compatibility.md`. Isolated worktree
+  `/Users/grantgibson/Desktop/Burrow Base/Litterbugs Cloudflare Test`, branch
+  `codex/cloudflare-compatibility`, base `e2da91f`. Test-only commits `018a0ec`,
+  `9ea86c9`, `0900e6c`; none merged/pushed. Worker `litterbugs-cloudflare-compat-test`
+  at its `gegibson3113.workers.dev` address (see exact URL in review), final version
+  `ecb70550-acd0-4dd5-96ed-817bc5b3bc81`, source `0900e6c`. No Vercel/DNS/plan changes;
+  final live HEAD remains 200 / Server Vercel. Main app, dev server, untracked
+  dev-review-preview and concurrent Claude/SEO changes preserved.
+- Next16.3 retained; OpenNext1.19 needs older Edge middleware convention. Eager
+  HEIC decoder crashed all pages in Workers; test branch defers decoders. Build
+  now works, but fresh public JPEG conversion still fails (sharp-related runtime
+  error), before/after photos unavailable, and uploads lack private safety config.
+  No safety/auth bypass or production secrets copied. 78 focused tests passed.
+- Browser: Google login + refresh persistence pass; real map/guest location entry
+  and signed-in phone report photo step work. Location freshness timed out here;
+  existing draft fallback works. Real funding quote $5+$1=$6 pass; stopped before
+  live payment-intent creation. Volunteer safety renders; no agreement/claim.
+  Funded Clean reaches payout setup but held backend session support fails—local
+  development bridge is intentionally unavailable in deployments; do not release
+  held backend as a shortcut. No report submission, charge, claim or evidence.
+- Development Maps key only: added exact preview origin and localhost:8787,
+  preserving old referrers/API targets. Owner approved preview auth return:
+  appended exact `/auth/callback` and `/auth/callback?next=**` on that worker;
+  production Site URL and old redirects untouched. No broad hostname wildcard.
+  Preview analytics off/noindex. Two failed pre-query-pattern login returns hit
+  live home ~4:48–4:49pm EST; mark as tests if recorded. Browser analytics excluded
+  through existing choices afterwards; normal visitor defaults unchanged.
+- Not migration-ready. Need compatible secure photo processing/config, held
+  payout rollout decision, isolated payment/claim completion tests, and physical
+  phone checks. See review for limits, exact preview URL and evidence. No schema
+  changes. Keep Cloudflare-only source changes out of the main Vercel branch.
+
+
 ### 2026-11-08 — Codex (expired-report soft 404 repair released)
 
 - Changed expired report pages to factual report history: historical search

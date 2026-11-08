@@ -1,0 +1,59 @@
+# Cloudflare compatibility test — November 8, 2026
+
+## Decision
+
+Do not move the live site yet. A separate Workers preview is running, with working Google login, Maps, report entry, funding quotes and volunteer safety entry. Real report photos fail in Workers, the upload service lacks its private safety configuration, and funded cleanup reaches an unavailable embedded-payout service. Completed report publication, payment, cleanup evidence, approval and payout are **not verified** on Cloudflare.
+
+Preview: https://litterbugs-cloudflare-compat-test.gegibson3113.workers.dev
+
+## Isolation and release
+
+- Main checkout and Claude's localhost:3000 server preserved. Source snapshot `e2da91f`; isolated worktree `/Users/grantgibson/Desktop/Burrow Base/Litterbugs Cloudflare Test`, branch `codex/cloudflare-compatibility`.
+- Test-only compatibility commits: `018a0ec`, `9ea86c9`, `0900e6c`. None merged or pushed. Final deployed source `0900e6c`, Worker version `ecb70550-acd0-4dd5-96ed-817bc5b3bc81`.
+- New worker only: `litterbugs-cloudflare-compat-test`, account `faccfcc33a9c5b3800416063b6f8bfa5`, workers.dev. No custom routes or DNS changes. Existing auth bridge unchanged. No billing-plan upgrade or purchase made.
+- Actual HEAD request to https://litterbugs.app/ after testing: HTTP 200, Server Vercel, x-vercel-id present. No Vercel deployment or alias change made.
+- Copied public Supabase/Maps connection values only into ignored test environment. No production service-role, malware-scanner or Stripe secret copied. Build-file inventory found no .env/.dev.vars/private-key files. Analytics disabled in preview; noindex remains on non-live hosts. This preview connects to the real Litterbugs backend: it is not a disposable data/payment sandbox.
+- Original untracked `apps/web/app/dev-review-preview/` remains untouched and was not copied to or published in this worktree.
+
+## Compatibility adjustments in the isolated branch
+
+- Next 16.3 / React 19.1 kept. OpenNext Cloudflare 1.19.0 supports the installed Next version; Wrangler 4.125.0. Compatibility date 2026-08-27 matches the installed workerd binary.
+- Original Next proxy cannot build in this adapter (Node middleware unsupported). Same validated Supabase session-refresh/noindex logic moved to the older Edge middleware convention, with its tests adjusted. Authentication protection was not removed. This is an adapter-specific branch; do not copy this rename into Vercel without a separate decision.
+- Literal social-card asset paths avoid tracing the whole checkout into the server bundle.
+- Original eager HEIC imports caused every dynamic page to fail at runtime: WebAssembly code generation disallowed by the Workers embedder. Decoder imports now occur only when processing an image. This permits the rest of the site to run; **it does not fix photo processing**.
+- Two Next build workers / 4 GB Node heap used. Existing main dependencies and server left alone. Local workerd test at port 8787 stopped after testing.
+
+## Browser results
+
+Desktop and 393×851 Chrome viewport; this is responsive desktop Chrome testing, not a physical Android/iPhone camera test.
+
+| Area | Observed result | Limit |
+| --- | --- | --- |
+| Static photos/branding | Homepage marketing images, logo and bug assets render | No IMAGES binding; Next image handler returns originals with a missing-binding warning locally, so optimization is not configured |
+| Report photos | Failed: cards/detail show Photo unavailable; public before/after endpoints return missing photo | Local Workers API for a known public JPEG returns 500 conversion error; temporary generated-bundle diagnostic identifies a sharp-related runtime error. Diagnostic removed afterwards; deployed code unchanged |
+| Google sign-in | Real existing owner login returns to preview /account and persists after refresh | Email/password and password-reset delivery not tested; separate-user Facebook remains owner-excluded/unverified |
+| Map/location | Google Maps renders with markers; location selection opens report authentication as guest | Real location freshness check timed out in this desktop environment; existing Continue as draft fallback opens the photo step |
+| Reporting | Signed-in phone layout reaches Add photos, step 1 of 5 | No photo selected, draft content entered or report submitted. Upload handler returns 503 MEDIA_PROCESSOR_UNAVAILABLE in local production-mode Workers test with a deliberately invalid dummy bearer, because privileged configuration is absent; this does not verify authenticated upload |
+| Funding | $5 selection fetches a real quote: $5 to cleaner + $1 fee = $6 total; Continue enabled | Stopped before Continue, which creates a live contribution/payment attempt. No Stripe PaymentElement completion, charge, return, webhook or refund test |
+| Funded cleaning | Reads payout status; owner without completed payouts enters setup first | Embedded setup reports that secure form could not load. Existing handoff records backend session support is held; localhost works through a development-only bridge. This is not proven to be Cloudflare-specific. Hosted fallback not followed; no identity/bank entry or account-completion action |
+| Volunteer cleaning | Quick safety check renders, unchecked consent and disabled Claim this cleanup | No consent accepted, claim made, evidence uploaded, approval or payout performed |
+
+78 existing focused tests passed across middleware, media safety, social photos, photo route, Google/callback, funding and cleanup components. They are application regression checks, not proof of completed provider flows under Workers.
+
+## Narrow test configuration changes
+
+1. Existing development Maps key `litterbugs-web-local` received exactly two extra referrers: `http://localhost:8787/*` and `https://litterbugs-cloudflare-compat-test.gegibson3113.workers.dev/*`. Both existing localhost:3000 entries and all three API targets retained. Production/native keys unchanged. Initial RefererNotAllowedMapError resolved after propagation.
+2. Owner explicitly approved allowing preview sign-in. Added the exact preview `/auth/callback` and its `/auth/callback?next=**` return-parameter pattern to Supabase redirects. Existing 13 entries and production Site URL retained. First exact-path-only tests fell back to the live homepage because Supabase matches the full redirect including its query; approved callback with return parameters fixed login. No broad workers.dev wildcard.
+3. Two failed redirect tests landed on the live homepage around 4:48–4:49 p.m. EST. Treat these as assistant testing if recorded. Browser analytics turned off through the existing Analytics choices UI afterwards; normal visitor defaults unchanged. Preview never loads visitor analytics.
+
+## Before a migration decision
+
+1. Replace native sharp/image conversion with a Workers-compatible implementation or a separate narrowly authenticated image service. Preserve authorization, malware scanning, metadata stripping, MIME/size/pixel limits, rotation and HEIC handling. Do not bypass those controls to get uploads passing.
+2. Configure the private upload/scanner secrets only after validating the compatible processor and reviewing the preview security boundary. Re-test fresh (uncached) report and cleanup photos, including HEIC, and generated share cards. Configure/price image optimization and persistent cache separately.
+3. Preserve the held Stripe rollout. When authorized, validate its deployed session endpoint and supported return origin, then verify unfinished payouts resume the same cleanup. Do not deploy backend work as a hosting-test shortcut.
+4. Use an isolated Supabase/Stripe test environment and disposable accounts for report creation through publication, payment success/decline/return/webhook, cleanup claim/evidence/approval and payout. Current production project guard needs an explicit test-safe strategy; do not simply weaken it globally.
+5. Test on physical Android Chrome and iPhone Safari before replacing Vercel. Supabase dashboard also displays a prior-cycle quota warning with potential restrictions starting Dec 1; hosting migration does not resolve backend quota usage.
+
+Screenshots (local temporary evidence): `/tmp/litterbugs-cloudflare-preview-result.png`, `/tmp/litterbugs-cloudflare-phone-report-ready.png`, `/tmp/litterbugs-cloudflare-phone-funding.png`, `/tmp/litterbugs-cloudflare-phone-payout.png`, `/tmp/litterbugs-cloudflare-phone-safety.png`.
+
+Official references: [Cloudflare OpenNext guide](https://developers.cloudflare.com/workers/framework-guides/web-apps/opennext/), [OpenNext setup](https://opennext.js.org/cloudflare/get-started), [image binding](https://opennext.js.org/cloudflare/howtos/image), [Supabase redirects](https://supabase.com/docs/guides/auth/redirect-urls), [Supabase redirect matcher](https://github.com/supabase/auth/blob/master/internal/utilities/request.go).
