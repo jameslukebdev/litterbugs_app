@@ -24,6 +24,17 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (funded cleanup before Stripe setup, read-only)
+
+- Checked current claim SQL and website flow: funded claims require enabled US
+  payout onboarding and the age confirmation; missing setup rejects the claim.
+  Website then says to finish payout setup. Volunteer claims do not require
+  Stripe. There is no current earn-first/connect-later funded claim path.
+- No application changes, tests, push, deployment or financial actions. This is
+  source inspection, not a fresh production database verification: the connected
+  Supabase project list exposed only the unrelated Retire City Finder project.
+  Preserved all concurrent local work.
+
 ### 2026-11-08 — Codex (banking/review audit and smoother loading, LOCAL ONLY)
 
 - Source `be4ff02`, not pushed/deployed. Kept the existing Litterbugs white page,
