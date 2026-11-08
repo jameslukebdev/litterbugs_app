@@ -24,6 +24,48 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (seamless local embedded payout entry; connection pending)
+
+- Local source `840409c`, not pushed/deployed. Returning eligible cleaners open
+  directly into embedded onboarding; first-time eligibility remains. Replaced
+  visible checking/loading text and disabled loading button with quiet branded
+  placeholders and a screen-reader status. Closing cancels stale UI work;
+  failed openings can be retried. Required Stripe fields and terms unchanged.
+- Development-only `/api/local/payout-session` bridge avoids changing the held
+  live backend. Requires loopback host/same origin, verified non-anonymous
+  Supabase user, payments flag, eligibility, and the member's RLS payout row.
+  Checks Litterbugs platform identity before account initialization; creates
+  onboarding-only sessions with external-account collection and Stripe auth on.
+  Production/deployed requests fail closed; responses are no-store. Keys belong
+  only in ignored local env; no service-role key needed or bank data handled.
+- Owner approved a restricted local key: Accounts Read + Account Sessions Write,
+  all other resources None. Owner completed email verification; key was created,
+  but the one-time reveal was closed before saving. Awaiting whether owner saved
+  it or approves a replacement. Public key saved locally; no private key saved
+  yet. Do not claim fresh-session integration is verified until this is resolved.
+- 28 focused tests passed (final changed subset 20/20), TypeScript/scoped lint/
+  diff checks passed; one worker and capped Node heap, no overlapping builds.
+  Current localhost page confirms quiet preparation and missing-key recovery;
+  actual fresh embedded form still pending. Existing dev server was already
+  running and preserved. No payout, bank/identity submission, terms acceptance,
+  migration or deployment. Concurrent analytics and social/profile work preserved;
+  staged only our changes in the two concurrently instrumented payout components.
+
+### 2026-11-08 — Codex (computer crash; keep resource use low)
+
+- Owner reported a crash during local Stripe work and asked to manage memory.
+  After restart, macOS reported 86% free memory; no test runner, build or local
+  dev server remained. Browser automation stopped. Do not launch overlapping
+  builds/tests; use one lightweight check at a time and one test worker.
+- Stripe edits remain local and unfinished: direct embedded entry for returning
+  eligible cleaners, quiet branded preparation state, and a development-only
+  authenticated session bridge. Initial 19 payout tests and typecheck passed;
+  later bridge/security tests were interrupted and need verification. No push,
+  deployment, migration, new credential, bank submission or terms acceptance.
+- Fresh local sessions still require a Litterbugs Stripe server key; none found
+  locally. Do not redeploy the held live backend as a shortcut. Local server
+  needs restarting after the crash. Preserve concurrent analytics/social edits.
+
 ### 2026-11-07 — Codex (minimal payout flow confirmed, LOCAL / HELD)
 
 - Owner reaffirmed local review before any deployment. Updated the two payout
