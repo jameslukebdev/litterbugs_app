@@ -24,6 +24,33 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-07 — Codex (location before signup; continued phone review, LOCAL ONLY)
+
+- Local source commit `1aaa5d7` lets guests choose a report location before
+  signup, including direct `/report` and homepage/header entries. Confirming
+  the pin opens the existing account prompt. Explicit pin parameters survive
+  reload/email/OAuth/Instagram handoff and restore the report at the chosen spot;
+  community/viewport restoration cannot override it. Cancel clears the pin.
+  No anonymous account draft/backend write before signup; publication account
+  and geolocation checks remain. Existing stable navigation fix preserved.
+- **Not pushed or deployed**, per owner. Production remains `9d35422` /
+  `dpl_DrrjEV9yHJ26aLtu13u14hePFsus`. Preserved Claude's concurrent cleanup UI,
+  notifications, account styles and globals.css work; excluded it from commit.
+  Shared local server not restarted. No migrations or analytics changes.
+- Signed-out localhost phone-size picker → confirm → signup and reload checks
+  passed without creating an account/report or granting GPS. Tests cover auth
+  returns, exact pin preservation, community context, cancellation and existing
+  publication guards. Full web: 770/772 pass; only the same two pre-existing
+  website-outcomes event-expectation failures. TypeScript, scoped lint and diff
+  checks pass. Auth completion tested with mocks, not real new accounts.
+- Reviewed three more Clarity phone sessions with playback samples/timelines:
+  one historical Nov 5 looped home/list/map and opened the same report twice;
+  two long durations were largely hidden-page/store-handoff time. No new current
+  payment/cleanup submission defect established. Detailed evidence/limitations:
+  `docs/reviews/2026-11-07-phone-website-participation-review.md`. Phone screenshots
+  `/tmp/litterbugs-guest-location-first-phone.jpg` and
+  `/tmp/litterbugs-guest-pin-signup-phone.jpg`; temporary viewport reset.
+
 ### 2026-11-07 — Codex (stable reporting navigation; phone behavior review, NOT deployed)
 
 - Local commit `0e62657` keeps the map's quick-filter host, Filters, Reports/Map
