@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { ANALYTICS_CONSENT_KEY, rememberContributionAttempt, trackWebsiteOutcome } from './website-analytics';
+import { ANALYTICS_CONSENT_KEY, rememberContributionAttempt, trackWebsiteOutcome, drainParticipation, drainWebsiteOutcomes } from './website-analytics';
 let storage: Map<string, string>;
 let dispatch: ReturnType<typeof vi.fn>;
 beforeEach(() => {
+  drainParticipation(); drainWebsiteOutcomes();
   storage = new Map([[ANALYTICS_CONSENT_KEY, 'accepted']]);
   dispatch = vi.fn();
   vi.stubGlobal('window', { location: { hostname: 'litterbugs.app' }, dispatchEvent: dispatch });
@@ -17,7 +18,8 @@ it('does not count an old receipt or a payment without a recent consented attemp
   expect(dispatch).not.toHaveBeenCalled();
   rememberContributionAttempt('receipt');
   trackWebsiteOutcome('contribution_confirmed', 'receipt');
-  expect(dispatch).toHaveBeenCalledOnce();
+  expect(dispatch.mock.calls.filter(([event]) => event.detail.event === 'contribution_confirmed')).toHaveLength(1);
+  expect(drainParticipation()).toEqual([{ action: 'fund', stage: 'payment_confirmed', page_type: '/private' }]);
 });
 it.each(['localhost', '127.0.0.1', 'preview.vercel.app'])('does not record or emit outcomes on %s', hostname => {
   window.location.hostname = hostname;
@@ -55,5 +57,6 @@ it('records new-visitor outcomes without persisting analytics attempt IDs', () =
   rememberContributionAttempt('new-payment');
   expect(storage.has('litterbugs:analytics-attempt:new-payment')).toBe(false);
   trackWebsiteOutcome('contribution_confirmed', 'new-payment');
-  expect(dispatch.mock.calls.map(([event]) => event.detail.event)).toEqual(['report_published', 'contribution_confirmed']);
+  expect(dispatch.mock.calls.map(([event]) => event.detail.event)).toEqual(['report_published', 'participation_step', 'contribution_confirmed', 'participation_step']);
+  expect(drainParticipation().map(step => step.stage)).toEqual(['published', 'payment_confirmed']);
 });

@@ -1,5 +1,5 @@
 'use client';
-import { trackParticipation } from '@/lib/website-analytics';
+import { trackParticipation, trackParticipationFailure } from '@/lib/website-analytics';
 import { useGuestParticipationEntry } from '@/lib/use-guest-participation-entry';
 import { trackDeviceSave } from '@/lib/device-save-state';
 import { prepareBrowserPhotos } from '@/lib/prepare-browser-photo';
@@ -125,35 +125,43 @@ export function CleanupAction({
     if (!userId || attemptFailed) return;
     setBusy('waiver');
     setMessage('');
-    const { data, error } = await createClient()
-      .from('cleanup_waiver_versions')
-      .select('*')
-      .eq('is_active', true)
-      .is('retired_at', null)
-      .maybeSingle();
-    if (error || !data) {
+    try {
+      const { data, error } = await createClient()
+        .from('cleanup_waiver_versions')
+        .select('*')
+        .eq('is_active', true)
+        .is('retired_at', null)
+        .maybeSingle();
+      if (error || !data) {
+        trackParticipationFailure('clean', 'safety_review', 'safety_load_failed');
+        setBusy('');
+        setMessage('The cleanup safety acknowledgment is temporarily unavailable. Try again.');
+        return;
+      }
+      const { data: acceptance, error: acceptanceError } = await createClient()
+        .from('cleanup_waiver_acceptances')
+        .select('waiver_version')
+        .eq('user_id', userId)
+        .eq('waiver_version', data.waiver_version)
+        .eq('guidelines_version', data.guidelines_version)
+        .maybeSingle();
+      setBusy('');
+      if (acceptanceError) {
+        trackParticipationFailure('clean', 'safety_review', 'safety_load_failed');
+        setMessage('Your saved agreement could not be checked. Try again.');
+        return;
+      }
+      setWaiver(data as CleanupWaiver);
+      setAgreementSaved(Boolean(acceptance));
+      setSiteConfirmed(false);
+      setWaiverAccepted(false);
+      setWaiverOpen(true);
+      trackParticipation('clean', 'safety_review');
+    } catch {
+      trackParticipationFailure('clean', 'safety_review', 'safety_load_failed');
       setBusy('');
       setMessage('The cleanup safety acknowledgment is temporarily unavailable. Try again.');
-      return;
     }
-    const { data: acceptance, error: acceptanceError } = await createClient()
-      .from('cleanup_waiver_acceptances')
-      .select('waiver_version')
-      .eq('user_id', userId)
-      .eq('waiver_version', data.waiver_version)
-      .eq('guidelines_version', data.guidelines_version)
-      .maybeSingle();
-    setBusy('');
-    if (acceptanceError) {
-      setMessage('Your saved agreement could not be checked. Try again.');
-      return;
-    }
-    setWaiver(data as CleanupWaiver);
-    setAgreementSaved(Boolean(acceptance));
-    setSiteConfirmed(false);
-    setWaiverAccepted(false);
-    setWaiverOpen(true);
-    trackParticipation('clean', 'safety_review');
   }, [userId, attemptFailed]);
 
   const openedFromEntry = useRef(false);
@@ -179,34 +187,42 @@ export function CleanupAction({
     if (attemptFailed) return;
     if (!waiver || (!agreementSaved && !waiverAccepted) || !siteConfirmed) return;
     setBusy('claim');
-    const supabase = createClient();
-    const acceptance = agreementSaved ? { error: null } : await supabase.rpc('accept_cleanup_waiver', {
-      accepted_waiver_version: waiver.waiver_version,
-      accepted_guidelines_version: waiver.guidelines_version,
-    });
-    if (acceptance.error) {
-      setBusy('');
-      setMessage('The acknowledgment could not be saved. Try again.');
-      return;
-    }
-    const claim = await supabase.rpc('claim_cleanup', { target_report_id: report.id });
-    setBusy('');
-    if (claim.error) {
-      if (/cleanup_waiver_outdated|cleanup_waiver_required/i.test(claim.error.message)) {
-        setWaiverOpen(false);
-        await beginClaim();
-        setMessage('The safety agreement has changed. Please review the current version.');
+    try {
+      const supabase = createClient();
+      const acceptance = agreementSaved ? { error: null } : await supabase.rpc('accept_cleanup_waiver', {
+        accepted_waiver_version: waiver.waiver_version,
+        accepted_guidelines_version: waiver.guidelines_version,
+      });
+      if (acceptance.error) {
+        trackParticipationFailure('clean', 'safety_review', 'safety_save_failed');
+        setBusy('');
+        setMessage('The acknowledgment could not be saved. Try again.');
         return;
       }
-      setMessage(report.funded_amount_cents > 0
-        ? 'Finish cleanup payout setup before claiming this funded cleanup.'
-        : 'This cleanup is no longer available to claim. Refresh the report and try again.');
+      const claim = await supabase.rpc('claim_cleanup', { target_report_id: report.id });
+      setBusy('');
+      if (claim.error) {
+        trackParticipationFailure('clean', 'safety_review', 'claim_failed');
+        if (/cleanup_waiver_outdated|cleanup_waiver_required/i.test(claim.error.message)) {
+          setWaiverOpen(false);
+          await beginClaim();
+          setMessage('The safety agreement has changed. Please review the current version.');
+          return;
+        }
+        setMessage(report.funded_amount_cents > 0
+          ? 'Finish cleanup payout setup before claiming this funded cleanup.'
+          : 'This cleanup is no longer available to claim. Refresh the report and try again.');
+        return;
+      }
+      setWaiverOpen(false);
+      trackParticipation('clean', 'claim_confirmed');
+      setDoneKind('claimed');
+      setMessage('Cleanup claimed. Submit after-cleanup photos before the deadline.');
+    } catch {
+      trackParticipationFailure('clean', 'safety_review', 'claim_failed');
+      setMessage('This cleanup could not be claimed. Refresh the report and try again.');
       return;
-    }
-    setWaiverOpen(false);
-    trackParticipation('clean', 'claim_confirmed');
-    setDoneKind('claimed');
-    setMessage('Cleanup claimed. Submit after-cleanup photos before the deadline.');
+    } finally { setBusy(''); }
     await refreshAttempt();
     await onChanged?.();
   }
@@ -270,6 +286,7 @@ export function CleanupAction({
     setBusy('submit');
     setSubmissionError('');
     setUploadProgress('Saving and syncing your draft and photos…');
+    let submittingEvidence = false;
     try {
       // Await a durable ID before any network mutation, including after a reload.
       await saveCleanupDraft(userId, attempt.id, {
@@ -278,6 +295,7 @@ export function CleanupAction({
       });
       const syncedSubmissionId = await cloudDrafts.begin(userId, `cleanup:${attempt.id}`);
       setSubmissionId(syncedSubmissionId);
+      submittingEvidence = true;
       await submitCleanupEvidence({
         cleanupId: attempt.id, userId, submissionId: syncedSubmissionId, photos, description,
         bagsOrItems: bags.value, weightPounds: weight.value, isPaid: attempt.is_paid,
@@ -292,6 +310,7 @@ export function CleanupAction({
         },
       });
     } catch (error) {
+      if (!submittingEvidence) trackParticipationFailure('clean', 'evidence_form', 'draft_save_failed');
       setSubmissionError(error instanceof Error
         ? error.message
         : 'We could not confirm the cleanup. Your draft is preserved; retry to check its status.');
@@ -326,17 +345,19 @@ export function CleanupAction({
     if (!selected.length) return;
     if (photos.length + selected.length > MAX_CLEANUP_PHOTOS) { setSubmissionError('Choose no more than 3 photos.'); return; }
     setPreparing(true); setSubmissionError('Preparing photos…');
+    let photoFailure: 'photo_prepare_failed' | 'draft_save_failed' = 'photo_prepare_failed';
     try {
       if (!userId || !attempt) return;
       const nextPhotos = await trackDeviceSave(userId, `cleanup:${attempt.id}`, async () => {
         const prepared = await prepareBrowserPhotos(selected, (done, total) => setSubmissionError(`Preparing photos ${done} of ${total}…`));
+        photoFailure = 'draft_save_failed';
         const nextPhotos = [...photos, ...prepared];
         setPhotos(nextPhotos);
         await saveCleanupDraft(userId, attempt.id, { photos: nextPhotos, description, bagsOrItems, weightPounds, submissionId, uploadedPaths, correctionDueAt: attempt.correction_due_at });
         return nextPhotos;
       });
       setPhotos(nextPhotos); setSubmissionError('');
-    } catch (error) { setSubmissionError(error instanceof Error ? error.message : 'The photos could not be prepared.'); }
+    } catch (error) { trackParticipationFailure('clean', 'evidence_form', photoFailure); setSubmissionError(error instanceof Error ? error.message : 'The photos could not be prepared.'); }
     finally { setPreparing(false); }
   }
 

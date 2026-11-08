@@ -1,6 +1,6 @@
 'use client';
 
-import { trackParticipation } from '@/lib/website-analytics';
+import { trackParticipation, trackParticipationFailure } from '@/lib/website-analytics';
 import { ReportStartPhotoImport } from './report-start-photo-import';
 import { prepareBrowserPhotos } from '@/lib/prepare-browser-photo';
 
@@ -185,6 +185,7 @@ export function ReportWizard({
       const error = await onSubmit(draft, contributionCents);
       if (error) setMessage(error);
     } catch {
+      if (!isEditing) trackParticipationFailure('report', 'review', 'publication_unconfirmed');
       setMessage('Your report could not be confirmed. Check your connection and try again.');
     } finally {
       setSaving(false);
@@ -202,7 +203,7 @@ export function ReportWizard({
       else { const prepared = await prepareBrowserPhotos(selected, progress); setDraft(current => ({ ...current, photos: [...current.photos, ...prepared] })); }
       setMessage('');
       return true;
-    } catch (error) { setMessage(error instanceof Error ? error.message : 'The photos could not be prepared.'); return false; }
+    } catch (error) { if (!isEditing && !onPreparePhotos) trackParticipationFailure('report', 'photos', 'photo_prepare_failed'); setMessage(error instanceof Error ? error.message : 'The photos could not be prepared.'); return false; }
     finally { setPreparing(false); }
   }
 

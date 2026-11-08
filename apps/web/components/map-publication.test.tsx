@@ -6,6 +6,9 @@ import { useEffect, useImperativeHandle, type Ref } from 'react';
 import { DEFAULT_DISCOVERY_FILTERS, type DiscoveryFilters } from '@/lib/report-discovery';
 import { MapExperience } from './map-experience';
 
+const telemetry = vi.hoisted(() => ({ step: vi.fn(), failure: vi.fn(), outcome: vi.fn() }));
+vi.mock('@/lib/website-analytics', async original => ({ ...await original<object>(), trackParticipation: telemetry.step, trackParticipationFailure: telemetry.failure, trackWebsiteOutcome: telemetry.outcome }));
+
 const state = vi.hoisted(() => ({
   center: { lat: 0, lng: 0 },
   markerFailure: false,
@@ -265,6 +268,8 @@ describe('map publication and funding handoff', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Post with $5' }));
     await waitFor(() => expect(state.saveResult).toHaveBeenCalled());
     expect(state.journal).toBeTruthy();
+    expect(telemetry.outcome).not.toHaveBeenCalled();
+    expect(telemetry.failure).toHaveBeenCalledWith('report', 'review', 'publication_unconfirmed');
     cleanup();
     await choosePin();
     fireEvent.click(await screen.findByRole('button', { name: 'Post with $5' }));
@@ -282,11 +287,14 @@ describe('map publication and funding handoff', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(screen.queryByLabelText('Funding handoff')).toBeNull();
     expect(state.publish).toHaveBeenCalledWith('publish_report', expect.objectContaining({ current_latitude: 0, current_longitude: 0 }));
+    expect(telemetry.outcome).toHaveBeenCalledExactlyOnceWith('report_published', 'test-report');
+    expect(telemetry.step).toHaveBeenCalledWith('report', 'location_confirmed');
   });
 
   it('rejects a distant selection before opening the form or uploading', async () => {
     await choosePin(1, false);
     expect((await screen.findByRole('alert')).textContent).toContain('within 50 miles');
+    expect(telemetry.failure).toHaveBeenCalledWith('report', 'location_picker', 'location_out_of_range');
     expect(screen.queryByRole('dialog', { name: 'Report form' })).toBeNull();
     expect(state.upload).not.toHaveBeenCalled();
     expect(state.inserts).not.toHaveBeenCalled();
@@ -358,6 +366,7 @@ describe('map publication and funding handoff', () => {
     Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { getCurrentPosition } });
     await choosePin(0.5, false);
     expect((await screen.findByRole('alert')).textContent).toContain('Allow location access');
+    expect(telemetry.failure).toHaveBeenCalledWith('report', 'location_picker', 'location_denied');
     expect(screen.queryByRole('dialog', { name: 'Report form' })).toBeNull();
     expect(state.upload).not.toHaveBeenCalled();
     expect(state.inserts).not.toHaveBeenCalled();
@@ -376,6 +385,7 @@ describe('map publication and funding handoff', () => {
     Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { getCurrentPosition: (_success: PositionCallback, failure: PositionErrorCallback) => failure({ code: 1 } as GeolocationPositionError) } });
     fireEvent.click(screen.getByRole('button', { name: 'Post without funds' }));
     await waitFor(() => expect(state.saveResult).toHaveBeenCalledWith(expect.stringContaining('Allow location access')));
+    expect(telemetry.failure).toHaveBeenCalledWith('report', 'review', 'location_denied');
     expect(state.upload).not.toHaveBeenCalled();
   });
 

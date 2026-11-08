@@ -4,6 +4,9 @@ import type { Report } from '@litterbugs/report-contract';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CleanupAction } from './cleanup-action';
 
+const telemetry = vi.hoisted(() => ({ step: vi.fn(), failure: vi.fn() }));
+vi.mock('@/lib/website-analytics', async original => ({ ...await original<object>(), trackParticipation: telemetry.step, trackParticipationFailure: telemetry.failure }));
+
 const { from, rpc, state } = vi.hoisted(() => ({
   from: vi.fn(), rpc: vi.fn(), state: { accepted: true, error: false, claimed: false, attemptError: false, revision: 0 },
 }));
@@ -49,6 +52,8 @@ describe('cleanup agreement and site confirmation', () => {
     fireEvent.click(confirm);
     await waitFor(() => expect(rpc).toHaveBeenCalledWith('claim_cleanup', { target_report_id: 'report-1' }));
     expect(rpc).not.toHaveBeenCalledWith('accept_cleanup_waiver', expect.anything());
+    expect(telemetry.step).toHaveBeenCalledWith('clean', 'safety_review');
+    await waitFor(() => expect(telemetry.step).toHaveBeenCalledWith('clean', 'claim_confirmed'));
   });
   it('requires both the new agreement and a site confirmation', async () => {
     state.accepted = false;
@@ -71,6 +76,7 @@ describe('cleanup agreement and site confirmation', () => {
     await screen.findByText('Your saved agreement could not be checked. Try again.');
     expect(rpc).not.toHaveBeenCalled();
     expect(screen.queryByRole('dialog')).toBeNull();
+    expect(telemetry.failure).toHaveBeenCalledWith('clean', 'safety_review', 'safety_load_failed');
   });
 });
 
@@ -153,4 +159,16 @@ it('asks on the page before giving a cleanup back, and Keep it cancels', async (
   fireEvent.click(screen.getByRole('button', { name: 'Give it back' }));
   await waitFor(() => expect(rpc).toHaveBeenCalledWith('release_cleanup', { target_cleanup_id: 'attempt-1' }));
   await screen.findByText('Cleanup given back');
+});
+
+it.each(['returned', 'thrown'])('records a %s claim failure without a confirmed-claim event', async mode => {
+  if (mode === 'returned') rpc.mockResolvedValue({ error: new Error('private backend message') });
+  else rpc.mockRejectedValue(new Error('private backend message'));
+  render(<CleanupAction report={report} userId="cleaner-1" />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Clean' }));
+  await screen.findByRole('dialog');
+  fireEvent.click(screen.getByRole('checkbox'));
+  fireEvent.click(screen.getByRole('button', { name: 'Claim this cleanup' }));
+  await waitFor(() => expect(telemetry.failure).toHaveBeenCalledWith('clean', 'safety_review', 'claim_failed'));
+  expect(telemetry.step).not.toHaveBeenCalledWith('clean', 'claim_confirmed');
 });

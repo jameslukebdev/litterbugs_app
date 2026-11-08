@@ -5,10 +5,11 @@ import { usePathname } from 'next/navigation';
 import Script from 'next/script';
 import Link from 'next/link';
 import type { PostHog } from 'posthog-js';
-import { ANALYTICS_CONSENT_KEY, ANALYTICS_EVENT, ANALYTICS_PREFERENCES, ANALYTICS_REPLAY_CHOICE_KEY, analyticsAllowed, analyticsPage, analyticsReferrer, drainParticipation, participationProperties, trackParticipation, type AnalyticsConfig } from '@/lib/website-analytics';
+import { ANALYTICS_CONSENT_KEY, ANALYTICS_EVENT, ANALYTICS_PREFERENCES, ANALYTICS_REPLAY_CHOICE_KEY, analyticsAllowed, analyticsPage, analyticsReferrer, drainParticipation, drainParticipationFailures, drainWebsiteOutcomes, participationProperties, participationFailureProperties, consumeParticipationAuthResult, trackParticipation, trackParticipationFailure, type AnalyticsConfig } from '@/lib/website-analytics';
 import { COMMUNITY_ENGAGEMENT_EVENTS, communityClick, communityForPath, communityProperties, participationLinkAction } from '@/lib/community-metrics';
 import styles from './website-analytics.module.css';
 import { isInstagramStoreVisit, storeBadgeDestination, storeBadgeProperties } from '@/lib/app-links';
+import { participationIntent } from '@/lib/participation-auth';
 import { supportCheckoutProperties } from '@/lib/monthly-support';
 
 type AnalyticsWindow = Window & { dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void; clarity?: ((...args: unknown[]) => void) & { q?: unknown[][] } };
@@ -23,6 +24,14 @@ export function AnalyticsPreferences() {
 
 export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
   const pathname = usePathname();
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    consumeParticipationAuthResult();
+    if (url.pathname === '/sign-in' && url.searchParams.get('google') === 'retry') {
+      const action = participationIntent(url.searchParams.get('next') ?? '');
+      if (action) trackParticipationFailure(action, 'auth_submitted', 'auth_start_failed');
+    }
+  }, [pathname]);
   const [consent, setConsent] = useState<'accepted' | 'declined' | null>(null);
   const [show, setShow] = useState(false);
   const [allowed, setAllowed] = useState(false);
@@ -82,15 +91,16 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
           const community = communityProperties(event.properties);
           const support = event.event === 'support_checkout_clicked' ? supportCheckoutProperties(event.properties) : null;
           const store = event.event === 'app_store_badge_clicked' ? storeBadgeProperties(event.properties) : null;
-          const participation = event.event === 'participation_step' ? participationProperties(event.properties) : null;
-          if (event.event === 'participation_step' && !participation) return null;
+          const participation = event.event === 'participation_step' ? participationProperties(event.properties)
+            : event.event === 'participation_failure' ? participationFailureProperties(event.properties) : null;
+          if (['participation_step', 'participation_failure'].includes(event.event) && !participation) return null;
           const previousDuration = event.properties.$prev_pageview_duration;
           event.properties = Object.fromEntries(Object.entries(event.properties).filter(([key]) => keep.has(key)));
           if (community) Object.assign(event.properties, community);
           if (support) Object.assign(event.properties, support);
           if (store) Object.assign(event.properties, store);
           if (participation) Object.assign(event.properties, participation);
-          const page = event.event === '$pageleave' && typeof event.properties.page_type === 'string'
+          const page = (event.event === '$pageleave' || participation) && typeof event.properties.page_type === 'string'
             ? analyticsPage(event.properties.page_type) : analyticsPage(window.location.pathname);
           if ((event.event === '$pageleave' || event.event === '$autocapture') && !page) return null;
           if (event.event === '$pageleave' && page && typeof previousDuration === 'number' && Number.isFinite(previousDuration) && previousDuration >= 0) {
@@ -177,19 +187,22 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
     if (!active && !aggregate) return;
     const flushParticipation = () => {
       if (!aggregate || !ready || !permitted.current || privacySignal()) return;
+      for (const failure of drainParticipationFailures()) {
+        posthog.current?.capture('participation_failure', failure);
+        if (active && gaReady) google('event', 'participation_failure', failure);
+      }
       for (const step of drainParticipation()) {
         posthog.current?.capture('participation_step', step);
         if (active && gaReady) google('event', 'participation_step', step);
       }
     };
-    flushParticipation();
     const outcome = (raw: Event) => {
       if (privacySignal()) return;
       const detail = (raw as CustomEvent).detail;
       if (!detail) return;
       const communityContext = communityProperties(detail) ?? {};
       const currentPage = analyticsPage(window.location.pathname) ?? '/private';
-      if (detail.event === 'participation_step') {
+      if (detail.event === 'participation_step' || detail.event === 'participation_failure') {
         flushParticipation();
         return;
       }
@@ -244,6 +257,10 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
       const observation = communityClick(link.href, window.location.origin, slug, link.dataset.communityResource);
       if (observation) outcome(new CustomEvent(ANALYTICS_EVENT, { detail: { event: observation.event, ...observation.properties } }));
     };
+    flushParticipation();
+    if (aggregate && ready) {
+      for (const detail of drainWebsiteOutcomes()) outcome(new CustomEvent(ANALYTICS_EVENT, { detail }));
+    }
     window.addEventListener(ANALYTICS_EVENT, outcome);
     document.addEventListener('click', click, true);
     return () => { window.removeEventListener(ANALYTICS_EVENT, outcome); document.removeEventListener('click', click, true); };
@@ -255,6 +272,8 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
     if (value === 'declined') {
       permitted.current = false;
       drainParticipation();
+      drainParticipationFailures();
+      drainWebsiteOutcomes();
       (window as AnalyticsWindow).clarity?.('consentv2', { ad_Storage: 'denied', analytics_Storage: 'denied' });
       (window as unknown as Record<string, unknown>)[`ga-disable-${config.gaId}`] = true;
       for (const cookie of document.cookie.split(';')) {

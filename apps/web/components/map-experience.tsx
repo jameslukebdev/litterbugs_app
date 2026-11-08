@@ -1,7 +1,7 @@
 'use client';
 
 import { communityReturnPath } from '@/lib/community-journey';
-import { trackParticipation, trackWebsiteOutcome } from '@/lib/website-analytics';
+import { trackParticipation, trackParticipationFailure, trackWebsiteOutcome } from '@/lib/website-analytics';
 
 import { importLibrary, setOptions } from '@googlemaps/js-api-loader';
 import {
@@ -34,6 +34,7 @@ import { BOONE_MAP_BOUNDS } from '@/lib/map-preview-frame';
 import type { SearchPlace } from '@/lib/place-geography';
 import { ReportBrowser } from '@/components/report-browser';
 import { canManageReport, realUserId } from '@/lib/report-access';
+import { reportLocationFailureReason } from '@/lib/report-location-error';
 import { getBrowserLocation, requireReportLocation } from '@/lib/geolocation';
 import { clearReportEntryLocation, readReportEntryLocation, reportEntryLocationHref } from '@/lib/report-entry-location';
 import { ReportDetail } from '@/components/report-detail';
@@ -788,7 +789,7 @@ export function MapExperience({
       trackParticipation('report', 'location_confirmed');
       beginReport(chosen);
     }
-    catch (error) { if (check === locationCheck.current) setLocationError(error instanceof Error ? error.message : 'Location could not be checked. Try again.'); }
+    catch (error) { if (check === locationCheck.current) { trackParticipationFailure('report', 'location_picker', reportLocationFailureReason(error)); setLocationError(error instanceof Error ? error.message : 'Location could not be checked. Try again.'); } }
     finally { if (check === locationCheck.current) setCheckingLocation(false); }
   }
 
@@ -913,6 +914,7 @@ export function MapExperience({
         }, path => { paths.push(path); completed += 1; setReportUploadProgress(`Uploading photos ${completed} of ${draft.photos.length}…`); });
         return { paths: ordered, error: '' };
       } catch (error) {
+        if (!editingReport) trackParticipationFailure('report', 'review', 'photo_upload_failed');
         if (paths.length) await supabase.storage.from('report_photos').remove(paths);
         return { paths: [] as string[], error: error instanceof Error ? error.message : 'One or more photos could not be uploaded. Please try again.' };
       }
@@ -966,9 +968,9 @@ export function MapExperience({
         // evidence: the RPC locks the row and returns an already published report.
         let origin;
         try { origin = await requireReportLocation(previous); }
-        catch (error) { return error instanceof Error ? error.message : 'Your current location is required.'; }
+        catch (error) { trackParticipationFailure('report', 'review', reportLocationFailureReason(error)); return error instanceof Error ? error.message : 'Your current location is required.'; }
         try { await saveReportPublication(pending); }
-        catch { return 'Your browser could not save the submission recovery record. Please try again.'; }
+        catch { trackParticipationFailure('report', 'review', 'draft_save_failed'); return 'Your browser could not save the submission recovery record. Please try again.'; }
         const { data: retriedReport, error: retryError } = await supabase.rpc('publish_report', {
           target_report_id: pending.reportId,
           target_photo_paths: pending.paths,
@@ -976,7 +978,7 @@ export function MapExperience({
           current_longitude: origin.longitude,
           location_captured_at: origin.capturedAt,
         });
-        if (retryError) return 'Your report has not been confirmed yet. Check your connection and try again.';
+        if (retryError) { trackParticipationFailure('report', 'review', 'publication_unconfirmed'); return 'Your report has not been confirmed yet. Check your connection and try again.'; }
         await finishPublication(retriedReport, startingContributionCents);
         return null;
       }
@@ -986,10 +988,10 @@ export function MapExperience({
     }
     if (!draft.photos.length) return 'Add at least one clear photo before saving this report.';
     try { await requireReportLocation(draftCoordinates); }
-    catch (error) { return error instanceof Error ? error.message : 'Your current location is required to post.'; }
+    catch (error) { trackParticipationFailure('report', 'review', reportLocationFailureReason(error)); return error instanceof Error ? error.message : 'Your current location is required to post.'; }
     let reportId: string;
     try { reportId = await cloudDrafts.begin(authenticatedUserId, 'report'); }
-    catch(error) { return error instanceof Error ? error.message : 'Your draft must sync before submission. Please try again.'; }
+    catch(error) { trackParticipationFailure('report', 'review', 'draft_save_failed'); return error instanceof Error ? error.message : 'Your draft must sync before submission. Please try again.'; }
     // The media processor verifies that the destination report belongs to the
     // caller, so create the report row before sending its photos through the
     // quarantine pipeline. Keep the reservation so another device can recover it.
@@ -1001,7 +1003,7 @@ export function MapExperience({
         is_published: false,
         photo_paths: [],
       }, { onConflict: 'id', ignoreDuplicates: true });
-    if (createError) return `Save failed: ${createError.message}`;
+    if (createError) { trackParticipationFailure('report', 'review', 'publication_unconfirmed'); return `Save failed: ${createError.message}`; }
 
     const { data: reserved, error: reserveError } = await supabase.from('reports').select('*').eq('id', reportId).eq('user_id', authenticatedUserId).single();
     if (reserveError) return 'Your report reservation could not be checked. Retry to recover it.';
@@ -1013,6 +1015,7 @@ export function MapExperience({
     let origin;
     try { origin = await requireReportLocation(draftCoordinates); }
     catch (error) {
+      trackParticipationFailure('report', 'review', reportLocationFailureReason(error));
       await supabase.storage.from('report_photos').remove(uploaded.paths);
       return error instanceof Error ? error.message : 'Your current location is required to post.';
     }
@@ -1020,6 +1023,7 @@ export function MapExperience({
     setPublicationUncertain(true);
     try { await saveReportPublication(pendingPublication.current); }
     catch {
+      trackParticipationFailure('report', 'review', 'draft_save_failed');
       return 'Your browser could not save the submission recovery record. Keep this draft open and try again.';
     }
     const { data: report, error } = await supabase.rpc('publish_report', {
@@ -1030,6 +1034,7 @@ export function MapExperience({
       location_captured_at: origin.capturedAt,
     });
     if (error) {
+      trackParticipationFailure('report', 'review', 'publication_unconfirmed');
       // Keep the evidence until a retry establishes whether publication committed.
       return 'We could not confirm publication. Your photos are saved. Try again to check the result without creating a duplicate.';
     }

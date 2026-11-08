@@ -5,8 +5,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AuthDialog, authEntryMode } from './auth-dialog';
 import * as browserHandoff from '@/lib/google-browser-handoff';
 
-const { signInWithOAuth, signUp } = vi.hoisted(() => ({ signInWithOAuth: vi.fn(), signUp: vi.fn() }));
-vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({ auth: { signInWithOAuth, signUp } }) }));
+const { signInWithOAuth, signUp, signInWithPassword, step, failure } = vi.hoisted(() => ({ signInWithOAuth: vi.fn(), signUp: vi.fn(), signInWithPassword: vi.fn(), step: vi.fn(), failure: vi.fn() }));
+vi.mock('@/lib/website-analytics', () => ({ trackParticipation: step, trackParticipationFailure: failure }));
+vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({ auth: { signInWithOAuth, signUp, signInWithPassword } }) }));
 vi.mock('next/image', () => ({ default: ({ src, alt }: { src: string; alt: string }) => <img src={src} alt={alt} /> }));
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); vi.resetAllMocks(); vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 
@@ -195,4 +196,38 @@ describe('report entry', () => {
     expect(authEntryMode('clean')).toBe('login');
     expect(authEntryMode(null)).toBe('login');
   });
+});
+
+it('records successful email sign-in before returning to the chosen cleanup', async () => {
+  signInWithPassword.mockResolvedValue({ data: { session: {} }, error: null });
+  const success = vi.fn();
+  render(<AuthDialog intent="clean" onClose={vi.fn()} onSuccess={success} />);
+  fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'private@example.com' } });
+  fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'private-password' } });
+  fireEvent.submit(document.querySelector('form')!);
+  await waitFor(() => expect(success).toHaveBeenCalledOnce());
+  expect(step.mock.calls).toEqual([['clean', 'auth_shown'], ['clean', 'auth_submitted'], ['clean', 'auth_succeeded']]);
+  expect(failure).not.toHaveBeenCalled();
+});
+it('separates verification email sent from an authenticated report return', async () => {
+  signUp.mockResolvedValue({ data: { user: { identities: [{}] }, session: null }, error: null });
+  const success = vi.fn();
+  render(<AuthDialog intent="report" initialMode="signup" onClose={vi.fn()} onSuccess={success} />);
+  fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'private@example.com' } });
+  fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'private-password' } });
+  fireEvent.submit(document.querySelector('form')!);
+  await screen.findByRole('heading', { name: 'Check your email' });
+  expect(step).toHaveBeenCalledWith('report', 'verification_sent');
+  expect(step).not.toHaveBeenCalledWith('report', 'auth_succeeded');
+  expect(success).not.toHaveBeenCalled();
+});
+it('records a rejected credential attempt without any credential or provider text', async () => {
+  signInWithPassword.mockResolvedValue({ error: new Error('private credential detail') });
+  render(<AuthDialog intent="fund" onClose={vi.fn()} />);
+  fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'private@example.com' } });
+  fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'private-password' } });
+  fireEvent.submit(document.querySelector('form')!);
+  await screen.findByRole('alert');
+  expect(failure).toHaveBeenCalledExactlyOnceWith('fund', 'auth_submitted', 'auth_rejected');
+  expect(step).not.toHaveBeenCalledWith('fund', 'auth_succeeded');
 });

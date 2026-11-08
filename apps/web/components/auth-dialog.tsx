@@ -8,7 +8,7 @@ import { ModalShell } from '@/components/modal-shell';
 import { BrandBug } from '@/components/brand-bug';
 import brandStyles from '@/components/public-website/brand.module.css';
 import { googleBrowserHandoff, isEmbeddedSocialBrowser } from '@/lib/google-browser-handoff';
-import { trackParticipation } from '@/lib/website-analytics';
+import { trackParticipation, trackParticipationFailure } from '@/lib/website-analytics';
 import { createClient } from '@/lib/supabase/client';
 
 export type AuthIntent = 'clean' | 'fund' | 'report' | null;
@@ -64,7 +64,11 @@ export function AuthDialog({
 
   useEffect(() => {
     if (loading !== 'google' && loading !== 'facebook') return;
+    let recovered = false;
     const recover = () => {
+      if (recovered) return;
+      recovered = true;
+      if (intent) trackParticipationFailure(intent, 'auth_submitted', 'auth_redirect_stalled');
       setLoading('');
       setMessage('Sign in hasn’t opened. Try again, use your email, or open this page in Safari or Chrome.');
     };
@@ -77,7 +81,7 @@ export function AuthDialog({
       window.clearTimeout(timer);
       window.removeEventListener('pageshow', onPageShow);
     };
-  }, [loading]);
+  }, [loading, intent]);
 
   const cleanEmail = email.trim().toLowerCase();
   const providerLabel = loading ? loading.charAt(0).toUpperCase() + loading.slice(1) : '';
@@ -118,6 +122,7 @@ export function AuthDialog({
       });
       if (error) throw error;
     } catch {
+      if (intent) trackParticipationFailure(intent, 'auth_submitted', 'auth_start_failed');
       setMessage(`We couldn’t start ${provider} sign in. Check your connection and try again.`);
       setLoading('');
     }
@@ -132,15 +137,18 @@ export function AuthDialog({
 
     if (intent && (mode === 'login' || mode === 'signup')) trackParticipation(intent, 'auth_submitted');
     setLoading('email');
-    const supabase = createClient();
-
     try {
+      const supabase = createClient();
       if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
         setLoading('');
-        if (error) return setMessage(error.message.toLowerCase().includes('email not confirmed')
+        if (error) {
+          if (intent) trackParticipationFailure(intent, 'auth_submitted', 'auth_rejected');
+          return setMessage(error.message.toLowerCase().includes('email not confirmed')
           ? 'Please verify your email before signing in.'
           : 'That email and password did not match. Try again or reset your password.');
+        }
+        if (intent) trackParticipation(intent, 'auth_succeeded');
         onSuccess();
         return;
       }
@@ -153,10 +161,17 @@ export function AuthDialog({
         });
         setLoading('');
         const hiddenDuplicate = Array.isArray(data.user?.identities) && data.user.identities.length === 0;
-        if (error || hiddenDuplicate) return setMessage(hiddenDuplicate
+        if (error || hiddenDuplicate) {
+          if (intent) trackParticipationFailure(intent, 'auth_submitted', 'auth_rejected');
+          return setMessage(hiddenDuplicate
           ? 'An account may already exist for this email. Try signing in or reset your password.'
           : 'We couldn’t create your account. Check your connection and try again.');
-        if (data.session) return onSuccess();
+        }
+        if (data.session) {
+          if (intent) trackParticipation(intent, 'auth_succeeded');
+          return onSuccess();
+        }
+        if (intent) trackParticipation(intent, 'verification_sent');
         setSentReason('signup');
         setMode('sent');
         return;
@@ -170,6 +185,7 @@ export function AuthDialog({
       setSentReason('recovery');
       setMode('sent');
     } catch {
+      if (intent && (mode === 'login' || mode === 'signup')) trackParticipationFailure(intent, 'auth_submitted', 'auth_network_failed');
       setMessage('We couldn’t connect. Check your connection and try again.');
     } finally {
       setLoading('');

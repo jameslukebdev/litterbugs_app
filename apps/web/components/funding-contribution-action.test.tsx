@@ -8,6 +8,10 @@ import { FundingContributionAction } from './funding-contribution-action';
 
 const { loadFlags, createContribution, quote, stripeMock } = vi.hoisted(() => ({ loadFlags: vi.fn(), createContribution: vi.fn(), quote: vi.fn(), stripeMock: { ready: false, confirmPayment: vi.fn() } }));
 
+const telemetry = vi.hoisted(() => ({ step: vi.fn(), failure: vi.fn(), observe: vi.fn() }));
+vi.mock('@/lib/website-analytics', async original => ({ ...await original<object>(), trackParticipation: telemetry.step, trackParticipationFailure: telemetry.failure }));
+vi.mock('@/lib/observe-contribution', () => ({ observeContributionConfirmation: telemetry.observe }));
+
 vi.mock('@/lib/payment-attempt', () => ({ resumeOrCreatePayment: (_user: string, report: string, amount: number) => createContribution(report, amount).then((intent: unknown) => ({ intent, amount })) }));
 
 vi.mock('@/lib/funding', async (importOriginal) => ({
@@ -157,6 +161,7 @@ describe('server-confirmed pricing', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     expect((await screen.findByRole('alert')).textContent).toContain('Refresh the website');
     expect(screen.queryByText('Secure card form')).toBeNull();
+    expect(telemetry.failure).toHaveBeenCalledWith('fund', 'amount_review', 'payment_start_failed');
   });
 });
 
@@ -168,6 +173,7 @@ it('blocks new payment creation while pricing is unavailable', async () => {
   await screen.findByText('Pricing is unavailable.');
   expect((screen.getByRole('button', { name: 'Continue' }) as HTMLButtonElement).disabled).toBe(true);
   expect(createContribution).not.toHaveBeenCalled();
+  expect(telemetry.failure).toHaveBeenCalledWith('fund', 'amount_review', 'payment_quote_failed');
 });
 
 it('reserves the funding action while flags load without enabling payment prematurely', async () => {
@@ -215,4 +221,21 @@ it('opens amount review after sign-in and eligibility, without starting payment 
   fireEvent.click(screen.getByRole('button', { name: 'Close' }));
   view.rerender(<FundingContributionAction report={{ ...report }} userId="member" autoOpen />);
   expect(screen.queryByRole('dialog')).toBeNull();
+});
+
+it('tracks the new funding flow through payment submission and observes confirmation separately', async () => {
+  stripeMock.ready = true;
+  stripeMock.confirmPayment.mockResolvedValue({ paymentIntent: { status: 'succeeded' } });
+  loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
+  createContribution.mockResolvedValue({ contributionId: 'receipt', publishableKey: 'pk_test_fixture', paymentIntentClientSecret: 'test_secret', principalAmountCents: 500, platformFeeCents: 100, totalAmountCents: 600, pricingVersion: 2 });
+  render(<FundingContributionAction report={report} userId="member" initialAmountCents={500} startOpen />);
+  await waitFor(() => expect((screen.getByRole('button', { name: 'Continue' }) as HTMLButtonElement).disabled).toBe(false));
+  expect(telemetry.step).toHaveBeenCalledWith('fund', 'amount_review');
+  fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Pay $6.00' }));
+  await screen.findByText('Thank you!');
+  expect(telemetry.step).toHaveBeenCalledWith('fund', 'payment_form');
+  expect(telemetry.step).toHaveBeenCalledWith('fund', 'payment_submitted');
+  expect(telemetry.observe).toHaveBeenCalledExactlyOnceWith('receipt');
+  expect(telemetry.step).not.toHaveBeenCalledWith('fund', 'payment_confirmed');
 });

@@ -1,7 +1,7 @@
 'use client';
 import { contributionReturnPath } from '@/lib/community-journey';
 
-import { rememberContributionAttempt, trackParticipation } from '@/lib/website-analytics';
+import { rememberContributionAttempt, trackParticipation, trackParticipationFailure } from '@/lib/website-analytics';
 import { useGuestParticipationEntry } from '@/lib/use-guest-participation-entry';
 
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
@@ -9,6 +9,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import type { Report } from '@litterbugs/report-contract';
 import { useEffect, useMemo, useState } from 'react';
 
+import { observeContributionConfirmation } from '@/lib/observe-contribution';
 import { resumeOrCreatePayment } from '@/lib/payment-attempt';
 import { PaymentDetail } from '@/components/payment-detail';
 import { ModalShell } from '@/components/modal-shell';
@@ -59,12 +60,14 @@ function ContributionPaymentForm({
       redirect: 'if_required',
     });
     if (result.error) {
+      trackParticipationFailure('fund', 'payment_submitted', 'payment_rejected');
       setError(result.error.message || 'Payment was not completed.');
       setBusy(false);
       return;
     }
+    void observeContributionConfirmation(intent.contributionId);
     await onComplete();
-    } catch { setError('We couldn’t confirm this payment. Check Payments before trying again.'); }
+    } catch { trackParticipationFailure('fund', 'payment_submitted', 'payment_confirmation_unavailable'); setError('We couldn’t confirm this payment. Check Payments before trying again.'); }
     finally { setBusy(false); onBusyChange(false); }
   }
 
@@ -72,7 +75,7 @@ function ContributionPaymentForm({
     <form className="funding-payment-form" onSubmit={submit}>
       <FundingPayLayout reportTitle={reportTitle} principalCents={intent.principalAmountCents} feeCents={intent.platformFeeCents} error={error}
         button={<button className="primary-button fund-pay" type="submit" disabled={!stripe || busy}>{busy ? 'Processing…' : `Pay ${formatUsd(intent.totalAmountCents)}`}</button>}>
-        <PaymentElement options={{ layout: 'tabs' }} />
+        <PaymentElement options={{ layout: 'tabs' }} onReady={() => trackParticipation('fund', 'payment_ready')} onLoadError={() => trackParticipationFailure('fund', 'payment_form', 'payment_form_failed')} />
       </FundingPayLayout>
     </form>
   );
@@ -129,7 +132,7 @@ export function FundingContributionAction({
     if (!open || !userId || !principalAmountCents || intent) return;
     let cancelled = false;
     const timer = window.setTimeout(() => {
-      void loadContributionQuote(principalAmountCents).then(value => { if (!cancelled) { setQuote(value); setQuoteError(''); } }).catch(error => { if (!cancelled) { setQuote(null); setQuoteError(error.message); } });
+      void loadContributionQuote(principalAmountCents).then(value => { if (!cancelled) { setQuote(value); setQuoteError(''); } }).catch(error => { if (!cancelled) { setQuote(null); setQuoteError(error.message); trackParticipationFailure('fund', 'amount_review', 'payment_quote_failed'); } });
     }, 200);
     return () => { cancelled = true; window.clearTimeout(timer); };
   }, [open, userId, principalAmountCents, intent, quoteRetry]);
@@ -140,7 +143,13 @@ export function FundingContributionAction({
   }, [open, enabled, eligible, userId, intent, previousContribution]);
   const publishableKey = intent?.publishableKey;
   const stripe = useMemo(
-    () => publishableKey ? loadStripe(publishableKey) : null,
+    () => publishableKey ? loadStripe(publishableKey).then(client => {
+      if (!client) trackParticipationFailure('fund', 'payment_form', 'payment_form_failed');
+      return client;
+    }).catch(() => {
+      trackParticipationFailure('fund', 'payment_form', 'payment_form_failed');
+      return null;
+    }) : null,
     [publishableKey],
   );
 
@@ -200,6 +209,7 @@ export function FundingContributionAction({
       if (result.contributionId) setPreviousContribution(result.contributionId);
       else { setIntent(result.intent ?? null); if (result.amount !== principalAmountCents) setMessage('Resuming your previous unpaid contribution with its original amount.'); }
     } catch (error) {
+      trackParticipationFailure('fund', 'amount_review', 'payment_start_failed');
       setMessage(error instanceof Error ? error.message : 'Payment could not be started.');
       setQuote(null);
       setQuoteRetry(value => value + 1);

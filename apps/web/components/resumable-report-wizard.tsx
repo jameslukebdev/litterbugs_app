@@ -1,5 +1,6 @@
 'use client';
 
+import { trackParticipationFailure } from '@/lib/website-analytics';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { EMPTY_REPORT_DRAFT, type Coordinates, type ReportDraft } from '@litterbugs/report-contract';
 import { trackDeviceSave } from '@/lib/device-save-state';
@@ -90,11 +91,14 @@ export function ResumableReportWizard({ userId, submissionProgress, coordinates,
 
   async function prepareAndSavePhotos(selected: File[], current: ReportWizardSnapshot, progress: (done: number, total: number) => void, onPrepared: (draft: ReportDraft) => void) {
     return trackDeviceSave(userId, 'report', async () => {
-      const photos = await prepareBrowserPhotos(selected, progress);
+      let photos: File[];
+      try { photos = await prepareBrowserPhotos(selected, progress); }
+      catch (error) { trackParticipationFailure('report', 'photos', 'photo_prepare_failed'); throw error; }
       const next = { ...current, draft: { ...current.draft, photos: [...current.draft.photos, ...photos] } };
       snapshot.current = next;
       onPrepared(next.draft);
-      await saveReportDraft(userId, { ...next, coordinates });
+      try { await saveReportDraft(userId, { ...next, coordinates }); }
+      catch (error) { trackParticipationFailure('report', 'photos', 'draft_save_failed'); throw error; }
       return next.draft;
     });
   }
