@@ -24,6 +24,46 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (banking/review audit and smoother loading, LOCAL ONLY)
+
+- Source `be4ff02`, not pushed/deployed. Kept the existing Litterbugs white page,
+  caterpillar/Nunito heading, purple actions and rounded controls. Shared header
+  explains manual bank entry and Stripe's Link window. Selection and manual-bank
+  screens reviewed without entered/saved bank data; Link's own logo, controls and
+  bank-debit authorization remain intact. No live Dashboard branding change.
+- Owner explicitly chose review WITHOUT saving banking details. Inspected Stripe's
+  official test-data “Review and confirm” demo, its edit/confirmation controls and
+  onboarding docs. This is a generic COMPANY demo, not proof of cleaner requirements;
+  do not apply its address/EIN/ownership questions to our US transfers-only setup.
+  The exact live-account final screen remains unexercised until the owner supplies
+  required details. Current-only collection/exclusions and terms remain unchanged.
+- Fixed loading reflow: preparation overlays a reserved 520px form stage instead
+  of inserting/removing an extra grid row; shared header/copy and stable scrollbar
+  space keep geometry constant; heading stays visible when scrolling. Browser
+  measurements matched x/y/width/height exactly before/after the initial form.
+- Reuse one authenticated member's Connect instance across openings, update its
+  invalidation callback, retain expiry refresh, and invalidate on sign-out/account
+  switch (including pending startup). Expired unused initial secrets refresh.
+  Warm the SDK/React code on intent and during idle on /account/payments only;
+  no account/session created by prewarming. Local server overlaps flag/account
+  reads after authentication; feature/eligibility/platform/RLS checks preserved.
+- Actual reopen loaded the legal-name form with ZERO new local AccountSession
+  requests. Desktop and 393x851 banking checked; mobile width/content both 393.
+  Screenshots `/tmp/litterbugs-payout-banking-{desktop,phone}-after.png`; empty
+  manual form `/tmp/litterbugs-payout-manual-bank-before.png`; generic demo
+  `/tmp/litterbugs-stripe-official-review-reference.png`. Concurrent local saves
+  caused occasional dev reloads closing the modal; no release-performance claim.
+- 34 focused cases passed across final scoped runs, TypeScript/scoped lint/diff
+  checks passed. One worker/capped Node heaps, no full build or server restart.
+  No native-app change, backend deploy, migration, real bank/identity submission,
+  agreement acceptance, payment or payout. Other agents' local edits preserved.
+- Sources: https://docs.stripe.com/connect/get-started-connect-embedded-components
+  (performance: one instance, early script loading, avoid unnecessary remounts)
+  and https://docs.stripe.com/connect/supported-embedded-components/account-onboarding
+  (exclude vs only, standard summary; StepChange is analytics-only). Refero's
+  Vivid and Open Collective informed CTA restraint/contained layout; the existing
+  Litterbugs style remains the primary reference and all token roles are preserved.
+
 ### 2026-11-08 — Codex (new phone clips reviewed; five tracking additions LOCAL)
 
 - Source/review commit `d38bd79`, not pushed/deployed. Added map search/results/
