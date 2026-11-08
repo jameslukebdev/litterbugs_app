@@ -108,6 +108,39 @@ rate was calculated; [event capture](https://posthog.com/docs/data/events) and
 interactions, not independent proof of backend completion or failure. No PostHog
 settings, saved insights, or recording configuration were changed.
 
+## Broader review: six additional phone sessions
+
+Expanded the Clarity view to [Last 7 days](https://clarity.microsoft.com/projects/view/z60itnrbpn/impressions?date=Last%207%20days),
+which showed **91 recordings across devices**, versus 57 in the three-day view.
+This is a wider window, not 34 newly arrived recordings. Inspected six previously
+unreviewed phone sessions below using full available timelines and selected
+playback frames. No inference of non-staff identity or person-level continuity
+between different visitor IDs is made.
+
+| Visit (ET) | Visitor | Duration | Observed behavior and limits |
+| --- | --- | --- | --- |
+| Nov 1, 12:42 p.m. | `wx1wvt` | 4:46 | Chrome Mobile: Continue on website at 00:01, extensive map pans/zooms, View full photo at 01:07 and 02:38, repeated Next photo taps 02:41–02:47. Samples at 00:16, 02:42 and 02:44 showed different photos; controls responded. No Report/Fund/Clean/auth action observed. The 37 historical page entries include viewport URL updates and must not be called 37 distinct content pages. Hidden 01:32–01:49 and 03:03–04:14. |
+| Nov 4, 6:35 a.m. | `12n0oi1` | 2:34 | Mobile Safari: completed Greenwood report → View on map 00:26 → community 00:43 → All Boone results 01:50 → completed community listing 01:52 → home 02:24. At 01:49 playback showed the link directly under Completed cleanups, so its completed-only destination was contextual, not evidence of the Available filter failing. No claim/funding/report attempt observed. |
+| Nov 4, 9:05 p.m. | `m7l1l6` | 0:10 | Instagram: Log in / Sign up at 00:06, Continue with Google at 00:08; final snapshot has Signing in with Google / Opening Google sign in. Only about two seconds after the tap are recorded. This predates the external-browser changes and does not show a provider rejection, successful login, or what happened in the other browser. |
+| Nov 4, 9:19 p.m. | `oxilgr` | 0:20 | Instagram home: Choose a spot at 00:19, recording ends 00:20 with no next-page evidence. Sample at 00:10 showed the old homepage cards. Historical home markup linked that button through funding information; current local homepage links directly to the available-report map. Do not classify a recording ending one second after a link tap as a confirmed navigation failure. |
+| Nov 4, 9:20 p.m. | `qbnxkg` | 0:18 | Instagram `/fund-a-cleanup`, no clicks; page hidden at 00:14. Sample at 00:08 showed contribution/fee information. No payment form or payment attempt observed. Despite adjacent timing, do not assert this is the same person as the preceding row. |
+| Nov 5, 1:46 p.m. | `1e37km6` | 0:12 | Instagram home: App Store outbound click at 00:09, also labeled Dead click by Clarity. Sample at 00:02 showed visible store links. Store handoff is observed; an install or failed website task is not established. |
+
+No new current reporting, payment or cleanup-submission defect was confirmed in
+this set. The evidence supports retaining the already implemented direct map
+entries and explicit Fund/Clean continuation. Repeated photo taps alone are not
+a reason to disable cycling or redesign the gallery: the inspected images changed.
+Completed-cleanup visitors should not automatically be classified as attempting
+to claim a new cleanup. Google handoff endings require post-return evidence before
+diagnosing an auth failure. No extra UI changes were made from these clips.
+
+Preserved all concurrent Claude changes, including funding/cleanup panels, payout,
+report wizard and shared styles. This pass changes review/handoff documentation
+only, with no application edit, push, deployment, database write, production test,
+analytics setting change, or shared-server restart. Ran focused regression checks
+against the shared working tree because Claude's funding/cleanup components had
+changed since the preceding pass; result recorded in the handoff entry.
+
 ## Findings and recommendations
 
 1. **Reporting layout jump: confirmed and fixed locally.** Conditional removal
