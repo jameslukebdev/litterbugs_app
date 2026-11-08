@@ -149,3 +149,22 @@ export async function createPayoutLink(mode: 'link' | 'dashboard') {
   }
   return data as PayoutStatus & { url: string };
 }
+
+export type PayoutSession = {
+  clientSecret: string;
+  publishableKey: string;
+  expiresAt: number;
+};
+
+/** A fresh, short-lived session for the signed-in member. Never persist or track its secret. */
+export async function createPayoutSession(): Promise<PayoutSession> {
+  const { data, error } = await createClient().functions.invoke('create-cleaner-onboarding-link', {
+    body: { mode: 'session', returnTarget: 'web', confirmAge18: true },
+  });
+  if (error || data?.error || typeof data?.clientSecret !== 'string' || !data.clientSecret
+    || typeof data?.publishableKey !== 'string' || !/^pk_(test|live)_/.test(data.publishableKey)
+    || !Number.isFinite(data?.expiresAt) || data.expiresAt * 1000 <= Date.now()) {
+    throw new Error('Payout setup could not load here. Please retry or continue on Stripe.');
+  }
+  return data as PayoutSession;
+}

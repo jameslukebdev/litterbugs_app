@@ -7,15 +7,15 @@ type Stage = 'loading' | 'not_started' | 'pending' | 'restricted' | 'enabled';
 const STAGE: Record<Exclude<Stage, 'loading'>, { title: string; button: string }> = {
   not_started: {
     title: 'Get paid for cleanups',
-    button: 'Continue to Stripe',
+    button: 'Set up payouts',
   },
   pending: {
     title: 'Almost there',
-    button: 'Continue with Stripe',
+    button: 'Continue setup',
   },
   restricted: {
     title: 'Stripe needs a little more',
-    button: 'Finish with Stripe',
+    button: 'Finish setup',
   },
   enabled: {
     title: 'Payouts are ready',
@@ -38,9 +38,9 @@ export function payoutStage(status: PayoutStatus | null): Stage {
  * Payout setup in plain words: where you are (not set up / in progress / needs info / ready), what the
  * three steps are, one confirmation, and one button to Stripe. Earn family green, like the cleaner flow.
  */
-export function PayoutPanel({ status, eligibleConfirmed, onEligible, busy, message, onContinue, celebrate = false }: {
+export function PayoutPanel({ status, eligibleConfirmed, onEligible, busy, message, onContinue, onFallback, celebrate = false }: {
   status: PayoutStatus | null; eligibleConfirmed: boolean; onEligible: (value: boolean) => void;
-  busy: boolean; message: string; onContinue: () => void; celebrate?: boolean;
+  busy: boolean; message: string; onContinue: () => void; onFallback?: () => void; celebrate?: boolean;
 }) {
   const stage = payoutStage(status);
   const copy = stage === 'loading' ? null : STAGE[stage];
@@ -73,8 +73,9 @@ export function PayoutPanel({ status, eligibleConfirmed, onEligible, busy, messa
       )}
       {message && <p className="form-message error-message" role="alert">{message}</p>}
       <button className="primary-button payout-go" onClick={onContinue} disabled={busy || !status || (needsConfirm && !eligibleConfirmed)}>
-        {busy ? 'Loading…' : copy?.button ?? 'Continue to Stripe'}
+        {busy ? 'Loading…' : copy?.button ?? 'Set up payouts'}
       </button>
+      {message && onFallback && <button className="text-button" disabled={busy || !status || (needsConfirm && !eligibleConfirmed)} onClick={onFallback}>Continue on Stripe</button>}
       <p className="payout-stripe-note">Stripe handles your identity and payment details securely.</p>
     </div>
   );
