@@ -24,6 +24,26 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (restricted Connect accounts investigated, read-only)
+
+- Inspected all five restricted recipients in the signed-in Litterbugs Stripe
+  Dashboard. Connector remains linked to Review Hiker; do not use it for this
+  platform. Newest Nov 5/Nov 3 entries lack external payout accounts, accepted
+  terms and submitted representative information (identity task Not Started).
+  Google Play reviewer likewise lacks bank/representative/terms completion.
+- Joseph's Oct 28 account has accepted terms and active transfers; its sole
+  current task is an external payout account. Stripe shows a Nov 5 reminder as
+  Opened. Grant's Sep 10 account currently lacks bank and terms; DOB/SSN last
+  four are future $3,000-volume tasks, not current blockers. It is separate
+  from Grant's enabled Aug 29 entry. No identity values copied or submitted.
+- Source creates the Stripe account before issuing onboarding, so list entries
+  establish creation, not successful form opening or completion. Missing fields
+  do not establish abandonment versus SMS/browser/technical failure; historical
+  attempt logs/replays were not correlated. No rejection/review shown in list.
+- No account changes, reminder sends, banking/terms actions, app source changes,
+  production-site test traffic, push or deployment. Documentation-only commit;
+  concurrent untracked dev-review-preview preserved.
+
 ### 2026-11-08 — Codex (Resend Forge enabled for both Litterbugs domains)
 
 - Owner authorized Forge activation for root/auth only. Added DNS-only, Auto TTL
