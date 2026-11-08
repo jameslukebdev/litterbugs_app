@@ -24,6 +24,27 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (cheaper hosting recommendations only)
+
+- Compared current official Netlify, Cloudflare Workers and Render plans with
+  app source. Litterbugs is Next 16.3 with Node route handlers, sharp and HEIC
+  processing, auth callbacks, and Supabase-hosted workflows. Small traffic does
+  not make this a static-site-only migration. No compatibility build attempted.
+- Recommend a separate Netlify preview first: supports Next App Router/SSR/route
+  handlers, permits commercial Free sites; Free 300 credits, Personal $9/1,000.
+  Live production deploys cost 15 credits, sharing quota with traffic/compute;
+  Free pauses when exhausted. Do not promise Free fits frequent live releases.
+- Workers paid starts $5 plus usage; Free's 10ms CPU/request and current photo
+  code require compatibility assessment. Cloudflare's default Next path now
+  vinext beta (Nov 5 docs), with OpenNext still documented; no migration chosen.
+  Render paid starts $7 for 512MB; assess photo memory. Free sleeps after 15min
+  and may take ~1min to wake, unsuitable for this visitor flow.
+- Prices are frontend hosting only, not Supabase/Maps/Stripe fees. Replacing
+  one project alone does not eliminate shared Vercel Pro if other business sites
+  remain. No app/config/account changes, trial signup, push or deployment.
+  Sources: Netlify pricing/Next docs, developers.cloudflare.com Workers pricing/
+  Next/limits, render.com pricing/free docs. Concurrent preview preserved.
+
 ### 2026-11-08 — Codex (Vercel bill audit; Retirement Lists paused by owner request)
 
 - Owner requested bill reduction, then explicitly asked to stop retirementlists.
