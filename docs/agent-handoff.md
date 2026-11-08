@@ -24,6 +24,28 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (funded Clean checks payouts before safety, LOCAL)
+
+- Source `8dfbb71`, not pushed/deployed. Funded Clean now checks payout status
+  before safety: unfinished accounts open the existing embedded payout setup;
+  ready accounts go to safety. Server-confirmed readiness returns to the same
+  report's safety check without accepting or claiming. Volunteer entry, server
+  claim rules and Stripe collection/terms unchanged. Hosted fallback keeps its
+  existing account-page return; automatic continuation covers embedded setup.
+- Close returns to the report. Session invalidation differs from explicit cancel;
+  stale checks cannot open a different report/member's flow. Clean payout check/
+  setup/ready and check failures tracked; workflow tag is now
+  `web-participation-2026-11-08-v3` (supersedes held v2 batch).
+- 107 tests / 7 focused files, TypeScript, scoped lint and whitespace checks pass;
+  one worker/capped heap. Actual localhost $1 Winkler's Creek Clean opened the
+  blank Stripe name form on desktop and 393x851; close/reopen worked. Fresh reload
+  had no overlay or warning/error logs. Viewport restored. Evidence:
+  `/tmp/litterbugs-funded-cleanup-payout-first{,-phone}.png`.
+- No identity/bank entry, terms acceptance, claim, submission, payout, migration,
+  server restart or production test. Readiness-to-safety uses test fixtures;
+  no real account completion. Only our five source/test files committed; all
+  concurrent account/style/preview/Claude changes preserved.
+
 ### 2026-11-08 — Codex (corrected phone verification illustration, LOCAL)
 
 - The owner spotted that the preview showed code entry without first collecting
