@@ -24,6 +24,24 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-07 — Codex (clicked-phone backlog triaged; release baseline updated)
+
+- Owner confirmed Claude released the held changes; using `f08518c` /
+  `dpl_HgNgjXJMLnpf7Ur15xApJegWnbLd` as the live baseline. Read-only GitHub
+  branch lookup matched local `02f8f66` release handoff. No independent live
+  authenticated-flow test or deployment inspection in this pass.
+- Refreshed Clarity: 99 recordings, 64 Mobile, 28 Mobile with clicks. Inspected
+  two newly available phone sessions plus eight remaining clicked phone cards.
+  Newest tapped session reached loaded Boone map, then home, without a task;
+  other new session hid homepage; remaining eight were app-store taps. All 28
+  clicked phone cards now triaged via timelines and playback samples across
+  passes, not every frame/all 64 phone recordings. No new blocker confirmed.
+  These inspected sessions predate the latest release; no outcome-lift claim.
+- Documentation only; no new application edits/tests/push/deployment, production
+  testing, database or analytics changes, or server restart. Preserved Claude's
+  social-card/share-image changes, helper and dev preview. Existing review doc
+  now distinguishes historical local-only status from the released baseline.
+
 ### 2026-11-07 — Claude (workflow redesign + Codex's local commits released)
 
 - Pushed and deployed `f08518c` on `codex/map-first-navigation` as

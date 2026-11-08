@@ -1,5 +1,17 @@
 # Phone website participation review — November 7, 2026
 
+## Release baseline update
+
+Owner confirmed Claude pushed and deployed the previously local changes. The
+handoff records live source **`f08518c`**, deployment
+**`dpl_HgNgjXJMLnpf7Ur15xApJegWnbLd`**, including the location-first reporting,
+guest Fund/Clean continuation, stable reporting navigation and Claude's workflow
+redesign. A read-only `git ls-remote` confirmed GitHub's branch head matches local
+**`02f8f66`**, the release handoff commit. This pass did not independently run a
+live authenticated journey or deployment inspection. Earlier local-only status
+notes below describe their original review times and are superseded by this
+release update. No new changes in this pass were pushed or deployed.
+
 ## Scope and release status
 
 Investigated phone-browser reporting, funding, and cleanup journeys using current
@@ -167,6 +179,43 @@ site testing, settings changes, application edits, tests rerun, push or deployme
 in this pass. All concurrent Claude code remains untouched. Avoid further UI
 changes based solely on these inactive or outbound-only clips; prioritize future
 recordings with actual participation steps.
+
+## Clicked-phone backlog completion and two newer sessions
+
+The refreshed 30-day list now has **99 recordings, 64 Mobile, 28 Mobile with
+recorded clicks**. Two phone recordings became available since the preceding
+97-recording snapshot. Both were captured before the release above; neither
+provides post-release participation evidence. Compared recording cards with the
+existing reviewed-session ledger, then inspected the two newer sessions and all
+eight remaining clicked phone sessions with event timelines and playback samples.
+
+| Visit (ET) | Visitor | Duration | Observed outcome |
+| --- | --- | --- | --- |
+| Nov 7, 9:05 p.m. | `11eh64m` | 4:02 | Home → Map tap 00:33 → Boone map URL 00:34 → home 04:01. Sample 01:47 showed loaded map, report pins and Report Litter. Hidden 01:48–02:48 and 03:06–03:34. No Report/Fund/Clean/auth attempt observed. |
+| Nov 7, 8:56 p.m. | `1ymvo8y` | 1:46 | Homepage; hidden at 00:01 and 00:15, no recorded taps. Sample around 00:59 showed hidden homepage. No task attempt established. |
+| Nov 5, 9:01 a.m. | `1ui6k88` | 0:25 | App Store outbound tap 00:01, hidden 00:01, visible 00:22, hidden 00:24. Sample 00:15 showed hidden `/get-app` page. |
+| Nov 5, 9:29 a.m. | `t3je6d` | 4:19 | App Store tap 00:01, hidden 00:08, no later interaction in the timeline. Sample 01:11 showed hidden entry page. |
+| Nov 5, 8:45 a.m. | `19jrhww` | 0:16 | Google Play outbound tap 00:03, hidden 00:04, visible 00:15, hidden 00:16. Entry page sampled 00:06. |
+| Nov 5, 12:49 p.m. | `rdoj71` | 0:08 | Google Play outbound tap 00:01, hidden 00:02, visible 00:07, hidden 00:08. Entry page sampled at start. |
+| Nov 5, 9:25 p.m. | `1jfbzi3` | 0:04 | App Store outbound tap 00:02, also marked Dead click. Entry page sampled at start; no participation action. |
+| Nov 5, 9:49 a.m. | `jnbpll` | 0:03 | App Store outbound tap 00:02, also marked Dead click. Entry page sampled at start. |
+| Nov 5, 12:22 p.m. | `4syaq9` | 0:02 | Google Play outbound tap and page hidden at 00:01. Entry page sampled at start. |
+| Nov 5, 5:46 p.m. | `oa2dlx` | 0:02 | Chrome Mobile: Google Play outbound tap and page hidden at 00:01. Entry page sampled at start. Separate from this ID's one-second zero-click visit. |
+
+All **28 currently listed clicked phone recording cards** are now represented in
+the review ledger. This means timeline triage and sampled playback, not every
+second watched or all 64 phone recordings fully reviewed. Remaining unreviewed
+phone cards have no recorded clicks; that does not prove no reading, scrolling,
+map gestures or missed instrumentation. Different visitor IDs are not joined as
+the same person, and staff identity is unverified. Store taps do not prove installs
+or broken website tasks. No additional Report/Fund/Clean attempt was found in
+this remaining clicked set, and no new reproducible blocker was established.
+
+No application edits or test reruns in this pass. Preserved Claude's uncommitted
+social-card/share-image changes and dev preview; shared server untouched. No
+production-site tests, database writes, analytics-setting changes, Git push or
+deployment. Future review should prioritize actual post-release participation
+events/recordings rather than reclassifying these older outbound-only visits.
 
 ## Findings and recommendations
 
