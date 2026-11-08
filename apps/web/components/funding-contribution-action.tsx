@@ -2,6 +2,7 @@
 import { contributionReturnPath } from '@/lib/community-journey';
 
 import { rememberContributionAttempt, trackParticipation } from '@/lib/website-analytics';
+import { useGuestParticipationEntry } from '@/lib/use-guest-participation-entry';
 
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
@@ -122,6 +123,9 @@ export function FundingContributionAction({
   const currentQuote = quote?.principalAmountCents === principalAmountCents ? quote : null;
   const platformFeeCents = currentQuote?.platformFeeCents ?? null;
 
+  const markEntryPrompted = useGuestParticipationEntry({ action: 'fund', reportId: report.id, autoOpen, userId,
+    available: enabled === true && eligible && !dismissed, onRequireSignIn });
+
   useEffect(() => {
     if (!open || !userId || !principalAmountCents || intent) return;
     let cancelled = false;
@@ -174,6 +178,7 @@ export function FundingContributionAction({
   }
 
   function begin() {
+    markEntryPrompted();
     trackParticipation('fund', 'action_tapped');
     if (!userId) {
       onRequireSignIn?.();

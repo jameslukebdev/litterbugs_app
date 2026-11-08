@@ -66,6 +66,30 @@ afterEach(() => {
 });
 
 describe('FundingContributionAction', () => {
+  it('continues a guest Fund link to auth once after availability loads, without starting payment', async () => {
+    loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
+    const signIn = vi.fn();
+    const view = render(<FundingContributionAction report={report} userId={null} autoOpen onRequireSignIn={signIn} />);
+    await waitFor(() => expect(signIn).toHaveBeenCalledTimes(1));
+    view.rerender(<FundingContributionAction report={{ ...report }} userId={null} autoOpen onRequireSignIn={() => signIn()} />);
+    expect(signIn).toHaveBeenCalledTimes(1);
+    expect(createContribution).not.toHaveBeenCalled();
+    expect(quote).not.toHaveBeenCalled();
+  });
+
+  it('does not open auth for a Fund link when funding is disabled or unavailable', async () => {
+    loadFlags.mockResolvedValue({ payments_enabled: false, gemini_financial_review_enabled: false });
+    const signIn = vi.fn();
+    const view = render(<FundingContributionAction report={report} userId={null} autoOpen onRequireSignIn={signIn} />);
+    await waitFor(() => expect(loadFlags).toHaveBeenCalled());
+    expect(signIn).not.toHaveBeenCalled();
+    loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
+    view.unmount();
+    render(<FundingContributionAction report={{ ...report, cleanup_state: 'completed' }} userId={null} autoOpen onRequireSignIn={signIn} />);
+    await waitFor(() => expect(loadFlags).toHaveBeenCalledTimes(2));
+    expect(signIn).not.toHaveBeenCalled();
+  });
+
   it('stays hidden while the production funding flags are off', async () => {
     loadFlags.mockResolvedValue({ payments_enabled: false, gemini_financial_review_enabled: false });
     render(<FundingContributionAction report={report} userId="member-id" />);

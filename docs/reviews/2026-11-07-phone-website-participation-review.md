@@ -62,6 +62,52 @@ and nearby inventory remain candidates to watch after the redesign; these three
 sessions do not prove a current payment, cleanup, or upload defect. No additional
 UI changes were made solely from these historical clips.
 
+## Continued pass: explicit Fund/Clean links (local fix)
+
+Five more phone sessions were inspected from the same 57-recording list using
+event timelines and playback samples. All five were recorded Nov 5, before the
+recent redesign. Historical friction was reproduced against localhost before
+changing behavior; visitor identity/non-staff status is not established.
+
+| Visit (ET) | Visitor | Duration | Observed sequence |
+| --- | --- | --- | --- |
+| Nov 5, 1:23 p.m. | `17v1y31` | 2:55 | Home → Support/About at 00:17/00:21 → cleanup policy at 00:47 → Support at 02:18 → Donate → Fees, rewards & refunds at 02:35 → `/fund-a-cleanup` at 02:36. Sampled policy at 01:07 and funding information at 02:36. No checkout or authentication attempt observed; this is policy/information browsing, not a proven failed donation. |
+| Nov 5, 12:59 p.m. | `1ykugca` | 0:27 | Instagram shared cemetery report → Clean up this report at 00:09 → map with `intent=clean` at 00:10. Sampled map report at 00:19; it still offered Sign in to clean rather than continuing the explicit action. One unlabeled click at 00:27; no safety review or claim established. |
+| Nov 5, 11:08 a.m. | `198lbhr` | 0:14 | Instagram shared report → Fund this cleanup at 00:06 → map with `intent=fund` at 00:07, then browse URL normalization. At 00:11 the detail/footer still offered Sign in to fund. No payment form/submission observed. |
+| Nov 5, 12:13 p.m. | `xy74z7` | 16:33 | Instagram `/get-app` → Continue on the website at 00:03 → map at 00:04 → two reports at 00:18/04:21 → Earn/Find litter to clean at 04:44/04:49 → Rewarded at 05:05 → old No matching cleanup opportunities state at 05:06. Page hidden 00:32–03:59 and again after 05:15; do not treat elapsed duration as active engagement. Empty-results snapshot sampled at 05:06. This predates closest-report recovery, so does not establish that recovery is broken now. |
+| Nov 5, 9:24 p.m. | `1c3a7j4` | 0:20 | Instagram shared cemetery report, no clicks; sampled 00:09 showed the scrolled report information and cleanup link. No evidence of a particular blocked action. |
+
+**Confirmed current issue and local fix:** a signed-out visitor opening an
+explicit `intent=clean` link still landed on the report and had to tap Clean
+again. Reproduced at localhost 393 × 851 before editing; second tap opened auth.
+Fund used the same guest-entry omission. Both action components now honor the
+explicit link with a single account prompt once the action is available. Funding
+still waits for enabled feature flags/eligibility. Ordinary report browsing does
+not open auth. Dismissal stays dismissed on re-render; manual taps do not duplicate
+auth prompts or action tracking when intent is added to the URL. Existing
+post-sign-in amount/safety review remains; no payment is created and no agreement
+accepted or cleanup claimed automatically. No location-first reporting change.
+
+Verified local phone Clean and Fund links → matching sign-in headings without
+another action tap; closing each returns to the report. No framework overlay or
+console warning/error observed. No credentials, agreement, report, payment, claim,
+or GPS permission submitted. Screenshots:
+`/tmp/litterbugs-direct-clean-signin-phone.jpg` and
+`/tmp/litterbugs-direct-fund-signin-phone.jpg`. Viewport reset; server untouched.
+Six scoped test files: **131 pass**, including existing signed-in continuation and
+publication safeguards plus new entry deduplication/availability coverage.
+TypeScript, scoped lint and diff checks passed. Claude's concurrent cleanup UI
+changes were preserved; only the guest-entry additions belong to this fix.
+
+The existing PostHog participation-event audit was re-run over the rolling three
+days: still the same 21 rows/four sessions, including nine explicitly labeled QA
+events and the one phone report/auth close sequence. No newer payment/safety/
+claim/evidence stage sequence appeared in this inspected sample. No new funnel
+rate was calculated; [event capture](https://posthog.com/docs/data/events) and
+[funnel steps](https://posthog.com/docs/product-analytics/funnels) describe tracked
+interactions, not independent proof of backend completion or failure. No PostHog
+settings, saved insights, or recording configuration were changed.
+
 ## Findings and recommendations
 
 1. **Reporting layout jump: confirmed and fixed locally.** Conditional removal

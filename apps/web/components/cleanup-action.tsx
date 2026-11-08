@@ -1,5 +1,6 @@
 'use client';
 import { trackParticipation } from '@/lib/website-analytics';
+import { useGuestParticipationEntry } from '@/lib/use-guest-participation-entry';
 import { trackDeviceSave } from '@/lib/device-save-state';
 import { prepareBrowserPhotos } from '@/lib/prepare-browser-photo';
 
@@ -129,6 +130,9 @@ export function CleanupAction({
     return value ? new Date(value).toLocaleString() : '';
   }, [attempt]);
 
+  const markEntryPrompted = useGuestParticipationEntry({ action: 'clean', reportId: report.id, autoOpen, userId,
+    available: !attemptLoading && !attemptFailed && !attempt && report.cleanup_state === 'available', onRequireSignIn });
+
   const openSafetyReview = useCallback(async () => {
     if (!userId || attemptFailed) return;
     setBusy('waiver');
@@ -173,6 +177,7 @@ export function CleanupAction({
   }, [autoOpen, userId, attemptLoading, attemptFailed, attempt, report.cleanup_state, openSafetyReview]);
 
   function beginClaim() {
+    markEntryPrompted();
     trackParticipation('clean', 'action_tapped');
     if (!userId) onRequireSignIn?.();
     else void openSafetyReview();
