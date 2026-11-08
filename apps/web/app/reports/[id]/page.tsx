@@ -9,7 +9,7 @@ import { notFound } from 'next/navigation';
 import { Website } from '@/components/public-website';
 import { BrandBug } from '@/components/brand-bug';
 import { CommunityRank } from '@/components/community-rank';
-import { publicReportSearchTitle, publicReportSearchDescription, publicReportSummary, publicReportPhotoDescription, reportDateLabel as formatDate } from '@/lib/public-report-content';
+import { publicReportSearchTitle, publicReportSearchDescription, publicReportSummary, publicReportOriginalSummary, publicReportHistorySummary, publicReportPhotoDescription, reportDateLabel as formatDate } from '@/lib/public-report-content';
 import { loadRelatedPublicReports } from '@/lib/related-public-reports';
 import { loadPublicReportShare } from '@/lib/public-report-share';
 import { OpenReportAction } from './open-report-action';
@@ -114,9 +114,13 @@ export default async function SharedReportPage({ params }: Props) {
 
           <div className={styles.content}>
             <div className={styles.reportCopy}>
-              {report.notes && <section className={styles.section} aria-labelledby="original-report-heading">
+              {(expired ? publicReportOriginalSummary(report) : report.notes) && <section className={styles.section} aria-labelledby="original-report-heading">
                 <h2 id="original-report-heading">{completed || expired ? 'The original report' : 'About this report'}</h2>
-                <p>{report.notes}</p>
+                <p>{expired ? publicReportOriginalSummary(report) : report.notes}</p>
+              </section>}
+              {expired && <section className={styles.section} aria-labelledby="report-history-heading">
+                <h2 id="report-history-heading">Report history</h2>
+                <p>{publicReportHistorySummary(report)}</p>
               </section>}
               {completed && report.cleanupDescription && <section className={styles.section} aria-labelledby="cleanup-result-heading">
                 <h2 id="cleanup-result-heading">The cleanup</h2>
