@@ -2,6 +2,8 @@
 
 The automatic public-page and sitemap pipeline is working. Google URL Inspection confirms 17 of the 29 report/cleanup URLs are indexed; 9 are discovered but not indexed and 3 are unknown in the API snapshot. This is a complete inspection of the 29 URLs in the live sitemap at audit time, not a promise of eventual inclusion.
 
+**Follow-up live-test finding:** The owner's subsequent request to submit the other nine URLs uncovered Google soft 404 classifications on the expired patio and Sand trash reports. Google successfully fetched both and allowed crawling/indexing, but rejected their manual indexing requests. The patio tested-page screenshot shows its actual report content. Google accepted the other seven requests. The earlier checks established HTTP/directive eligibility and Google's saved index snapshots; they did not rule out content-level exclusions in a live Google test. See `2026-11-08-seo-growth-plan.md` and the subsequent request evidence. Do not interpret this audit as proving every report is accepted by Google.
+
 ## Verified live
 
 - Sitemap: https://litterbugs.app/sitemap.xml . All 47 listed document URLs return HTTP 200. Sitemap health report: `crawl_09784538f4294ba99141a80ddea197ff`.

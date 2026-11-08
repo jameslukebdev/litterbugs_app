@@ -24,6 +24,28 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (remaining indexing requests and weekly SEO check)
+
+- Submitted manual indexing requests for all nine previously discovered/not
+  indexed reports. Google accepted seven into the priority crawl queue; rejected
+  expired patio `42dd5736…` and Sand trash `ed1500be…` as soft 404. Both Google
+  live tests fetched successfully and allow crawling/indexing. Patio screenshot
+  renders the actual report/history; no app error found. Limited content and no
+  report photos are review leads, not proven classification causes. Preserve
+  honest expiry/history; no filler or content-policy changes made.
+- Saved nine exact outcomes, screenshots, and SEO growth plan. Updated earlier
+  audit to distinguish HTTP/directive eligibility from live Google acceptance.
+  Baseline remains 17 indexed; accepted requests do not establish indexing.
+- Owner explicitly approved weekly SEO review. Created and verified ACTIVE
+  thread automation `weekly-litterbugs-seo-check`, Mondays 9 a.m. Eastern, reports
+  here: indexing, new pages, search traffic, priorities. Monitoring/recommendations
+  only; no automatic content edits, deployments or repeated URL submissions.
+- No app/database changes, migrations, push or deployment. Browser stayed in
+  Search Console; Google live tests may execute analytics—treat Nov 8 roughly
+  4:23–4:32 p.m. EST Inspection Tool traffic as testing. Normal visitor analytics
+  unchanged. Pending: Google inclusion and content decision for two sparse
+  expired pages. Concurrent preview and hosting-cost work preserved.
+
 ### 2026-11-08 — Codex (hosting estimates include actual usage and release cadence)
 
 - Saved inspectable assumptions/rates/calculations in
