@@ -24,6 +24,25 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (signed-in Resend plan review, read-only)
+
+- Owner signed into the `burrowbase` Pro team. Live Metrics, all domains,
+  Oct 10–Nov 8 (Last 30 days): 5 emails, all litterbugs.app, 100% delivered.
+  Email list confirms recent signup verification and password recovery delivery.
+  Current billing cycle: 1/50,000, renews Dec 8. No sender credentials accessed.
+- Free is sufficient for observed volume (3,000/month, 100/day), but team has
+  five registrations: litterbugs.app, auth.litterbugs.app, retirementlists.com
+  (failed), divinedms.com, retirecityfinder.com. Free allows three domains.
+  Auth subdomain and failed retirementlists registration are review candidates;
+  no sending from either appears in the 30-day metrics. Do not delete domains or
+  change other sites' email configuration without the owner's explicit choice.
+- Usage shows 0 marketing contacts, 0 automation runs, 0 AI credits, 0 inboxes;
+  Webhooks says none configured. No other paid dependency established. Reviewed
+  plan selector only: no downgrade, domain removal, settings/key changes or test
+  email. Recommend Free after deciding which three sending domains to retain.
+  Sources: signed-in /metrics, /domains, /settings, /webhooks; current pricing
+  https://resend.com/pricing?product=transactional . Local app work preserved.
+
 ### 2026-11-08 — Codex (Resend use confirmed in setup records; usage pending)
 
 - Auth baseline/checklist/cutover evidence confirms dedicated Resend SMTP for
