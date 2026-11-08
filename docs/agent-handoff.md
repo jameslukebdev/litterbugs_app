@@ -24,6 +24,23 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (read-only payout step preview, LOCAL)
+
+- Added `/local-payout-preview` in source `33f05b5`, with eligibility, optional
+  phone check, legal name, bank choice, alternative manual entry, illustrative
+  final review, and success. Real current blank Stripe captures are used for
+  name/bank/manual entry; phone/review/success are clearly labelled examples.
+  No Stripe session, auth, bank-saving or agreement action is wired to the gallery.
+- Page and allowlisted image route return 404 outside local development/loopback
+  hosts; noindex. Captures live in ignored `apps/web/work/payout-step-previews/`;
+  do not put key screenshots, emails or filled identity/bank data there. No
+  screenshot bytes or credentials committed. Real setup remains separate.
+- All seven view selectors and disabled final confirmation checked in browser;
+  desktop and narrow layout checked, image space reserved to avoid jumps.
+  TypeScript/scoped lint/diff checks passed; no full build or deployment.
+  Small follow-up includes image dimensions, top reset between views and a
+  horizontal step picker on phones. Existing shared edits preserved.
+
 ### 2026-11-08 — Codex (funded cleanup before Stripe setup, read-only)
 
 - Checked current claim SQL and website flow: funded claims require enabled US

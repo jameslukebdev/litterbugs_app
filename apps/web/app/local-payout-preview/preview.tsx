@@ -21,6 +21,7 @@ export default function Preview() {
   const [step, setStep] = useState(0);
   const [eligible, setEligible] = useState(false);
   const current = steps[step];
+  function selectStep(next: number) { setStep(next); window.scrollTo({ top: 0, behavior: 'auto' }); }
   return <main className={styles.page}>
     <header className={styles.header}>
       <div><span className={styles.eyebrow}>Local preview · no details saved</span><h1>Payout setup, step by step</h1></div>
@@ -28,16 +29,16 @@ export default function Preview() {
     </header>
     <div className={styles.layout}>
       <nav className={styles.nav} aria-label="Payout setup previews">
-        {steps.map((item, index) => <button key={item.title} aria-current={step === index ? 'step' : undefined} onClick={() => setStep(index)}>
+        {steps.map((item, index) => <button key={item.title} aria-current={step === index ? 'step' : undefined} onClick={() => selectStep(index)}>
           <span>{index + 1}</span><div><strong>{item.title}</strong><small>{item.label}</small></div>
         </button>)}
       </nav>
       <section className={styles.stage} aria-labelledby="preview-title">
         <div className={styles.caption}><h2 id="preview-title">{current.title}</h2><p>{current.note}</p></div>
         {captures[step] ? <figure className={styles.capture}>
-          <img src={`/local-payout-preview/capture/${captures[step]}`} alt={`Local Stripe ${current.title.toLowerCase()} screen`} />
+          <img width={393} height={851} src={`/local-payout-preview/capture/${captures[step]}`} alt={`Local Stripe ${current.title.toLowerCase()} screen`} />
         </figure> : <div className={styles.example}>
-          {step === 0 && <PayoutPanel status={{ onboardingStatus: 'not_started', payoutsEnabled: false, requirementsDue: [] }} eligibleConfirmed={eligible} onEligible={setEligible} busy={false} message="" onContinue={() => setStep(1)} />}
+          {step === 0 && <PayoutPanel status={{ onboardingStatus: 'not_started', payoutsEnabled: false, requirementsDue: [] }} eligibleConfirmed={eligible} onEligible={setEligible} busy={false} message="" onContinue={() => selectStep(1)} />}
           {step === 1 && <div className="payout-flow"><PayoutHeading /><div className={styles.sampleCard}>
             <span className={styles.exampleTag}>Illustration only</span><h3>Verify your phone number</h3><p>Enter the code Stripe sent to your phone.</p>
             <div className={styles.code} aria-label="Example verification-code fields">{Array.from({ length: 6 }, (_, index) => <span key={index}>—</span>)}</div>
@@ -51,7 +52,7 @@ export default function Preview() {
           </div></div>}
           {step === 6 && <fieldset disabled className={styles.disabled}><PayoutPanel status={{ onboardingStatus: 'enabled', payoutsEnabled: true, requirementsDue: [] }} eligibleConfirmed onEligible={() => undefined} busy={false} message="" onContinue={() => undefined} /></fieldset>}
         </div>}
-        <footer className={styles.pager}><button disabled={step === 0} onClick={() => setStep(step - 1)}>← Previous</button><span>{step + 1} of {steps.length}</span><button disabled={step === steps.length - 1} onClick={() => setStep(step + 1)}>Next preview →</button></footer>
+        <footer className={styles.pager}><button disabled={step === 0} onClick={() => selectStep(step - 1)}>← Previous</button><span>{step + 1} of {steps.length}</span><button disabled={step === steps.length - 1} onClick={() => selectStep(step + 1)}>Next preview →</button></footer>
       </section>
     </div>
   </main>;
