@@ -1,0 +1,51 @@
+@font-face { font-family: 'Playful Nunito'; src: url('/fonts/nunito/black.ttf') format('truetype'); font-weight: 700 900; font-display: swap; }
+.page { max-width: 1120px; margin: auto; padding: 30px 24px 48px; color: #292932; }
+.header { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 24px; }
+.eyebrow { color: #686477; font-size: 13px; }
+.header h1 { font: 900 clamp(23px, 3vw, 32px)/1.2 'Playful Nunito', system-ui, sans-serif; margin: 8px 0 0; }
+.header a { color: #4438bb; font-size: 14px; font-weight: 700; }
+.layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 24px; align-items: start; }
+.nav { display: grid; gap: 8px; position: sticky; top: 20px; }
+.nav button { display: flex; align-items: flex-start; gap: 12px; width: 100%; padding: 14px; background: #fff; border: 1px solid #e3dff0; border-radius: 14px; text-align: left; cursor: pointer; }
+.nav button[aria-current] { background: #eeecff; border-color: #5146ed; }
+.nav button > span { display: grid; place-items: center; flex: none; width: 25px; height: 25px; border-radius: 50%; background: #f4f2fc; color: #5146ed; font-weight: 800; }
+.nav button[aria-current] > span { background: #5146ed; color: #fff; }
+.nav strong { display: block; font-size: 15px; }
+.nav small { display: block; margin-top: 4px; color: #686477; font-size: 12px; line-height: 1.4; }
+.stage { min-width: 0; border: 1px solid #e3dff0; border-radius: 22px; background: #fff; overflow: hidden; }
+.caption { padding: 20px 24px; border-bottom: 1px solid #eeebf5; }
+.caption h2 { font: 900 21px/1.2 'Playful Nunito', system-ui, sans-serif; margin: 0 0 8px; }
+.caption p { margin: 0; color: #686477; font-size: 14px; line-height: 1.5; }
+.example { padding: 30px 24px; }
+.capture { margin: 0; display: flex; justify-content: center; background: #f8f7fc; padding: 20px; }
+.capture img { display: block; width: auto; max-width: 100%; max-height: 850px; height: auto; background: #fff; border: 1px solid #e3dff0; border-radius: 16px; }
+.sampleCard { padding: 22px; border: 1px solid #e3dff0; border-radius: 16px; }
+.sampleCard h3 { font-size: 23px; margin: 18px 0 12px; }
+.sampleCard p { color: #686477; font-size: 14px; line-height: 1.5; }
+.exampleTag { display: inline-block; padding: 5px 9px; border-radius: 8px; background: #fff4dc; color: #745300; font-size: 12px; font-weight: 700; }
+.summary { margin: 20px 0; }
+.summary > div { padding: 15px 0; border-bottom: 1px solid #eeebf5; }
+.summary dt { font-size: 13px; color: #686477; }
+.summary dd { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 7px 0 0; font-size: 16px; font-weight: 700; }
+.summary button { border: 0; padding: 6px; color: #5146ed; background: none; text-decoration: underline; font-size: 13px; }
+.code { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin: 24px 0; }
+.code span { text-align: center; padding: 12px 0; border: 1px solid #e3dff0; border-radius: 10px; color: #686477; }
+.disabled { padding: 0; margin: 0; border: 0; min-width: 0; }
+.pager { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 24px; border-top: 1px solid #eeebf5; }
+.pager button { padding: 10px 12px; color: #4438bb; background: #fff; border: 1px solid #d6ceef; border-radius: 10px; cursor: pointer; font-weight: 700; }
+.pager button:disabled { opacity: .45; cursor: default; }
+.pager span { color: #686477; font-size: 13px; }
+.page button:focus-visible, .page a:focus-visible { outline: 3px solid #9b92ff; outline-offset: 3px; }
+@media (max-width: 760px) {
+  .page { padding: 20px 12px 32px; }
+  .header { display: block; }
+  .header a { display: inline-block; margin-top: 14px; }
+  .layout { grid-template-columns: 1fr; gap: 16px; }
+  .nav { position: static; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .nav button { padding: 10px; gap: 8px; }
+  .nav strong { font-size: 13px; }
+  .nav small { font-size: 11px; }
+  .caption, .example { padding: 20px 16px; }
+  .capture { padding: 10px; }
+  .pager { padding: 14px; }
+}
