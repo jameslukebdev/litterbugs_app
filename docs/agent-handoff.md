@@ -24,6 +24,24 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (Cloudflare switch and Vercel cancellation readiness, read-only)
+
+- Rechecked grant-9890s-projects: eight projects, Retirement Lists/retirecityfinder
+  paused; littlefarmfinder and five legacy projects still unpaused, plus live
+  litterbugs-web. Unpaused does not establish current business use. Review/move
+  or retire remaining projects before canceling shared Pro; no project changed.
+- DNS: litterbugs.app already uses Cloudflare nameservers and Cloudflare mail
+  routing; www still targets Vercel. reviewhiker.com and retirecityfinder.com
+  use Vercel nameservers; preserve or relocate required DNS/email records before
+  account removal. All five listed domains have third-party registrars.
+- Remaining migration work: independent upload safety processing, held funded
+  payout service validation, full reporting/funding/cleanup tests and physical
+  phones, reconcile latest approved Claude source, production configuration and
+  deployment workflow, domain switch with rollback/observation. Temporary exact-
+  preview upload relay must be removed before switching the live hostname.
+- Official Pro downgrade guidance checked; stopping paid plan and deleting the
+  account are separate. No app, database, account, DNS, push or deployment change.
+
 ### 2026-11-08 — Codex (Cloudflare preview photo repairs; live unchanged)
 
 - Isolated branch `codex/cloudflare-compatibility`, final source `6debd25`, Worker
