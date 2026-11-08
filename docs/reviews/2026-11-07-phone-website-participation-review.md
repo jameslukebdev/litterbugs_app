@@ -13,6 +13,55 @@ locally: entering report placement now retains the quick-filter host, Filters,
 Reports/Map controls, and mobile header controls instead of removing them. The
 existing reporting pin and location confirmation remain available.
 
+## Follow-up: location before account prompt (local only)
+
+Owner authorized the location-first reporting change after the initial review.
+Homepage/header Report entries now open `/report` directly for visitors. A guest
+chooses a map location, then sees the existing account prompt after **Use this
+location**. The confirmed pin is separate from the viewport and survives reload,
+email verification, Google/Facebook returns, and the existing Instagram browser
+handoff. Returning with an account opens reporting at that pin. Cancel clears the
+selected pin. No anonymous account draft or report is written before signup;
+publication still requires an account and the existing location checks.
+
+Verified the signed-out localhost flow at phone size 393 × 851: picker before
+signup, signup only after confirmation, selected pin retained after reload, and
+dialog dismissal returns to the map. No browser errors observed. No real account,
+report, cleanup claim, payment, or location permission was created/granted. Auth
+return continuity was covered with tests rather than submitting real signups.
+Screenshots: `/tmp/litterbugs-guest-location-first-phone.jpg` and
+`/tmp/litterbugs-guest-pin-signup-phone.jpg`. Temporary viewport reset. Shared
+local server not restarted. No push, deployment, or analytics setting changes.
+
+Full web tests: **770 passed, 2 failed (772 total)**. Both failures are the
+previously documented `lib/website-outcomes.test.ts` event-expectation failures;
+they concern added participation events, not this report entry change. Reporting,
+auth-return, route, and navigation tests passed. TypeScript, scoped lint, and
+`git diff --check` passed.
+
+### Three additional phone recordings
+
+Continued the same Last 3 days list (57 recordings across devices); this does
+not mean three newly arrived sessions. Inspected playback samples plus full
+available event timelines, not every recorded second.
+
+| Visit (ET) | Visitor | Duration | Evidence and interpretation |
+| --- | --- | --- | --- |
+| Nov 5, 8:56 p.m. | `122p4dx` | 12:25 | Repeated home → Find a cleanup → list/map and status switches. Same cemetery report opened at 10:33 and again 10:44, returned to list at 10:35/10:46. Reporter name tapped at 11:22. No Fund/Clean/auth action observed. Playback sampled at 02:16, 03:38, 10:35 and 10:44. The old detail view showed View full photo overlapping bottom actions; this predates the Nov 6 redesign and is not evidence of a current regression. |
+| Nov 6, 5:30 p.m. | `198gf58` | 16:40 | Instagram `/get-app`, App Store outbound tap at 00:06, page hidden at 00:28; next recorded page visit at 16:39, hidden at 16:40. Playback showed the store landing page and hidden-page state. Long elapsed duration does not establish 16 minutes of engagement, a failed checkout, or an install. |
+| Nov 7, 3:32 p.m. | `1fh4rsk` | 14:47 | Homepage then page hidden at 00:01; no clicks or subsequent visible interaction in the available timeline. Playback sample showed the dimmed hidden-page state. Do not classify this as an engaged visitor abandoning a particular participation step. |
+
+Clarity flagged a dead click at 04:01 in the first session, but navigation to
+`/reports` followed at 04:03. The App Store click in the second session was also
+flagged dead while simultaneously marked outbound. Automated dead-click labels
+alone do not establish a broken control.
+
+The strongest additional behavior signal is repeated movement between homepage,
+cleanup list and map without starting a task. Better report/action discoverability
+and nearby inventory remain candidates to watch after the redesign; these three
+sessions do not prove a current payment, cleanup, or upload defect. No additional
+UI changes were made solely from these historical clips.
+
 ## Findings and recommendations
 
 1. **Reporting layout jump: confirmed and fixed locally.** Conditional removal
@@ -38,7 +87,8 @@ existing reporting pin and location confirmation remain available.
    at 10:32:58.850, with no `auth_submitted`. Do not describe this as a broken
    Google sign-in or failed report upload. A useful next experiment is allowing
    signed-out visitors to choose the report location before the account prompt,
-   preserving that choice through authentication. This is a recommendation only.
+   preserving that choice through authentication. Owner subsequently authorized
+   this change; it is implemented locally as described above, not deployed.
 
 3. **Local inventory remains relevant to the cleanup journey.** The November 6,
    9:40 a.m. visitor searched Frank, NC, returned to the homepage, tried Map and

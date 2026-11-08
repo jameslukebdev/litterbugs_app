@@ -16,7 +16,7 @@ beforeEach(() => {
 afterEach(cleanup);
 it('starts the real report flow and sends discovery cards to the map', () => {
   render(<ReportStarter />);
-  expect(screen.getByRole('link', { name: 'Report trash' }).getAttribute('href')).toBe('/sign-in?next=%2Freport&view=map');
+  expect(screen.getByRole('link', { name: 'Report trash' }).getAttribute('href')).toBe('/report');
   expect(screen.getByRole('link', { name: 'Choose a spot' }).getAttribute('href')).toBe('/map?view=map&browse=1&status=available');
   expect(screen.getByRole('link', { name: 'Find a cleanup' }).getAttribute('href')).toBe('/map?view=map&browse=1&status=available');
   expect(screen.queryByLabelText('Choose a litter photo')).toBeNull();

@@ -50,6 +50,29 @@ it('retains a specific Boone report, participation intent, and community return 
 });
 
 
+it.each(['google', 'facebook'])('preserves the confirmed report pin through %s without a separate returnPath', async provider => {
+  signInWithOAuth.mockResolvedValue({ error: null });
+  const next = '/report?community=us-nc-boone&report_lat=36.123456789&report_lng=-81.987654321#map=36.12,-81.98,14';
+  window.history.replaceState({}, '', next);
+  render(<AuthDialog onClose={vi.fn()} intent="report" initialMode="signup" />);
+  fireEvent.click(screen.getByRole('button', { name: `Continue with ${provider === 'google' ? 'Google' : 'Facebook'}` }));
+  await waitFor(() => expect(signInWithOAuth).toHaveBeenCalledWith({ provider, options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` } }));
+  window.history.replaceState({}, '', '/');
+});
+
+it('preserves the confirmed report pin in the email verification link', async () => {
+  signUp.mockResolvedValue({ data: { user: { identities: [{}] }, session: null }, error: null });
+  const next = '/report?report_lat=36.123456789&report_lng=-81.987654321';
+  window.history.replaceState({}, '', next);
+  render(<AuthDialog onClose={vi.fn()} intent="report" initialMode="signup" />);
+  fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@example.com' } });
+  fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'secure-test-password' } });
+  fireEvent.submit(document.querySelector('form')!);
+  await screen.findByRole('heading', { name: 'Check your email' });
+  expect(signUp).toHaveBeenCalledWith(expect.objectContaining({ options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` } }));
+  window.history.replaceState({}, '', '/');
+});
+
 it('shows creation immediately, keeps signup when opening email, and requests verification', async () => {
   signUp.mockResolvedValue({ data: { user: { identities: [{}] }, session: null }, error: null });
   render(<AuthDialog onClose={vi.fn()} initialMode="signup" returnPath="/account" />);

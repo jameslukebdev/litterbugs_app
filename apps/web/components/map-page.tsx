@@ -9,7 +9,7 @@ import { realUserIdFromClaims } from '@/lib/report-access';
 import { reportDiscoveryWindow } from '@/lib/report-visibility';
 import { createClient } from '@/lib/supabase/server';
 
-export default async function MapPage({ searchParams }: { searchParams?: Promise<{ area?: string | string[]; returnTo?: string | string[] }> }) {
+export default async function MapPage({ searchParams, initialView }: { searchParams?: Promise<{ area?: string | string[]; returnTo?: string | string[] }>; initialView?: 'map' }) {
   const params = await searchParams;
   const initialPlace = communityMapPlace(params?.area);
   const returnToCommunity = communityReturnPath(params?.returnTo);
@@ -41,6 +41,7 @@ export default async function MapPage({ searchParams }: { searchParams?: Promise
 
   return (
     <MapExperience
+      initialView={initialView}
       initialReports={reports}
       initialPlace={initialPlace}
       returnToCommunity={returnToCommunity}

@@ -35,6 +35,7 @@ import type { SearchPlace } from '@/lib/place-geography';
 import { ReportBrowser } from '@/components/report-browser';
 import { canManageReport, realUserId } from '@/lib/report-access';
 import { getBrowserLocation, requireReportLocation } from '@/lib/geolocation';
+import { clearReportEntryLocation, readReportEntryLocation, reportEntryLocationHref } from '@/lib/report-entry-location';
 import { ReportDetail } from '@/components/report-detail';
 import { ResumableReportWizard } from '@/components/resumable-report-wizard';
 import { cloudDrafts } from '@/lib/cloud-drafts';
@@ -82,7 +83,9 @@ export function MapExperience({
   initialError,
   initialPlace = null,
   returnToCommunity = null,
+  initialView,
 }: {
+  initialView?: 'map';
   returnToCommunity?: string | null;
   initialPlace?: SearchPlace | null;
   initialReports: Report[];
@@ -93,7 +96,7 @@ export function MapExperience({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const requestedView = searchParams.get('view');
+  const requestedView = searchParams.get('view') ?? initialView;
   const communityReturn = communityReturnPath(searchParams.get('returnTo')) ?? communityReturnPath(returnToCommunity);
   const entryIntent = searchParams.get('intent');
   const mapFirstEntry = entryIntent === 'locate';
@@ -491,8 +494,9 @@ export function MapExperience({
           : sharedMap ? { ...sharedMap, place: stored?.place?.id === areaId ? stored.place : null } : stored;
         if (memory) { searchPlaceRef.current = memory.place; setSearchPlace(memory.place); }
         const linkedReport = initialMapReports.find(report => report.id === new URLSearchParams(window.location.search).get('report'));
+        const confirmedPin = window.location.pathname === '/report' ? readReportEntryLocation(new URLSearchParams(window.location.search)) : null;
         const map = new Map(mapElementRef.current, {
-          center: { lat: linkedReport?.latitude ?? memory?.latitude ?? DEFAULT_WEB_MAP_CENTER.latitude, lng: linkedReport?.longitude ?? memory?.longitude ?? DEFAULT_WEB_MAP_CENTER.longitude },
+          center: { lat: linkedReport?.latitude ?? confirmedPin?.latitude ?? memory?.latitude ?? DEFAULT_WEB_MAP_CENTER.latitude, lng: linkedReport?.longitude ?? confirmedPin?.longitude ?? memory?.longitude ?? DEFAULT_WEB_MAP_CENTER.longitude },
           zoom: linkedReport ? Math.max(14, memory?.zoom ?? 14) : memory?.zoom ?? 12,
           mapId: googleMapsMapId,
           mapTypeId: 'roadmap',
@@ -526,8 +530,8 @@ export function MapExperience({
         });
         clustersRef.current = createReportClusters(map, AdvancedMarkerElement, ids => setClusterIds(ids));
         mapRef.current = map;
-        if (selectedWhileLoading && !new URLSearchParams(window.location.search).has('report')) map.fitBounds(selectedWhileLoading.bounds, 60);
-        else if (new URLSearchParams(window.location.search).get('entry') === 'boone' && !window.location.hash && !linkedReport) map.fitBounds(BOONE_MAP_BOUNDS, 32);
+        if (!confirmedPin && selectedWhileLoading && !new URLSearchParams(window.location.search).has('report')) map.fitBounds(selectedWhileLoading.bounds, 60);
+        else if (!confirmedPin && new URLSearchParams(window.location.search).get('entry') === 'boone' && !window.location.hash && !linkedReport) map.fitBounds(BOONE_MAP_BOUNDS, 32);
         setMapReady(true);
         if (areaId && memory?.place?.id !== areaId) {
           const restore = /^[45]:\d{5,12}$/.test(areaId)
@@ -535,7 +539,7 @@ export function MapExperience({
             : /^[A-Za-z0-9_-]{8,300}$/.test(areaId) ? geocodeAddress(areaId, true).then(places => places[0]) : Promise.resolve(null);
           void restore.then(place => {
             if (cancelled || new URLSearchParams(window.location.search).get('area') !== areaId) return;
-            if (place) { searchPlaceRef.current = place; setSearchPlace(place); if (!sharedMap && !new URLSearchParams(window.location.search).has('report')) map.fitBounds(place.bounds, 60); }
+            if (place) { searchPlaceRef.current = place; setSearchPlace(place); if (!confirmedPin && !sharedMap && !new URLSearchParams(window.location.search).has('report')) map.fitBounds(place.bounds, 60); }
             else setToast('This search area could not be restored. Choose a city or address.');
           }).catch(() => { if (!cancelled) setToast('This search area could not be restored. Choose a city or address.'); });
         }
@@ -650,7 +654,7 @@ export function MapExperience({
 
   const beginReport = useCallback((coordinates: Coordinates) => {
     if (!userId) {
-      setToast('Sign in to submit a litter report. You can keep browsing without an account.');
+      window.history.replaceState(window.history.state, '', reportEntryLocationHref(new URL(window.location.href), coordinates));
       accountActionRef.current?.openAuth('report');
       return;
     }
@@ -667,11 +671,18 @@ export function MapExperience({
   }, [reportMode, checkingLocation]);
 
   const enterReportTask = useCallback(async (resume = true, signal?: AbortSignal) => {
-    if (!userId) return;
     const entry = ++reportEntry.current;
     setCheckingDraft(true); setLocationError(''); setReportListOpen(false);
     setSelectedReport(null); selectedReportIdRef.current = null;
     try {
+      const confirmedPin = window.location.pathname === '/report' ? readReportEntryLocation(new URLSearchParams(window.location.search)) : null;
+      if (confirmedPin) {
+        setPlacement(confirmedPin);
+        if (userId) { setDraftCoordinates(confirmedPin); setReportMode(false); }
+        else { setReportMode(true); accountActionRef.current?.openAuth('report'); }
+        return;
+      }
+      if (!userId) { setReportMode(true); return; }
       const coordinates = await reportDraftLocation(userId);
       if (signal?.aborted || entry !== reportEntry.current) return;
       if (coordinates && resume) { setReportMode(false); setDraftCoordinates(coordinates); }
@@ -683,7 +694,7 @@ export function MapExperience({
   useEffect(() => {
     const url = new URL(window.location.href);
     const compose = url.searchParams.get('compose') ?? (url.pathname === '/report' ? 'resume' : null);
-    if (!userId || !compose) return;
+    if (!compose) return;
     const controller = new AbortController();
     queueMicrotask(() => { if (!controller.signal.aborted) void enterReportTask(compose === 'resume', controller.signal); });
     url.searchParams.delete('compose');
@@ -695,6 +706,7 @@ export function MapExperience({
     locationCheck.current++; reportEntry.current++; setCheckingDraft(false); setCheckingLocation(false); setSelectingDraftLocation(false);
     setDraftCoordinates(null); setReportMode(false); setLocationError('');
     const url = new URL(window.location.href);
+    clearReportEntryLocation(url);
     if (url.pathname === '/report' && communityReturn) { window.location.assign(communityReturn); return; }
     if (url.pathname === '/report') { url.pathname = '/map'; url.searchParams.delete('compose'); window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`); }
   }, [communityReturn]);
@@ -730,12 +742,6 @@ export function MapExperience({
     setLocationError('');
     if(checkingDraft) return;
     if (!reportMode && !selectingDraftLocation) trackParticipation('report', 'action_tapped');
-    if (!userId) {
-      const url = new URL(window.location.href); url.pathname = '/report'; url.searchParams.delete('report');
-      window.history.pushState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
-      accountActionRef.current?.openAuth('report');
-      return;
-    }
     if (selectingDraftLocation) {
       setSelectingDraftLocation(false);
       setReportMode(false);
@@ -763,6 +769,11 @@ export function MapExperience({
     const center = mapRef.current?.getCenter();
     const chosen = center ? { latitude: center.lat(), longitude: center.lng() } : placement;
     if (!chosen) return;
+    if (!userId) {
+      trackParticipation('report', 'location_confirmed');
+      beginReport(chosen);
+      return;
+    }
     const check = ++locationCheck.current;
     setCheckingLocation(true); setLocationError('');
     try {

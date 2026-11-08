@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { EMPTY_REPORT_DRAFT, type ReportDraft, type MappableReport } from '@litterbugs/report-contract';
-import { useEffect } from 'react';
+import { useEffect, useImperativeHandle } from 'react';
 import { DEFAULT_DISCOVERY_FILTERS, type DiscoveryFilters } from '@/lib/report-discovery';
 import { MapExperience } from './map-experience';
 
@@ -27,6 +27,7 @@ const state = vi.hoisted(() => ({
   review: vi.fn(),
   saveResult: vi.fn(),
   draftLocation: vi.fn(),
+  openAuth: vi.fn(),
   journal: undefined as { userId: string; reportId: string; paths: string[] } | undefined,
 }));
 const report = () => ({ id: 'test-report', title: 'Test bottles', latitude: 0.5, longitude: 0, user_id: 'test-user', is_published: state.published, photo_paths: ['test-user/test-report/photo.jpg'], cleanup_state: 'available', funding_eligibility: 'eligible', renewal_status: 'active', expires_at: '2099-01-01', cancelled_at: null, expired_at: null, is_sample: false });
@@ -57,7 +58,10 @@ vi.mock('@googlemaps/js-api-loader', () => ({
   } }; },
 }));
 vi.mock('@/components/public-site-header', () => ({ PublicSiteHeader: ({ action, reportAction }: { action: React.ReactNode; reportAction: React.ReactNode }) => <>{reportAction}{action}</> }));
-vi.mock('@/components/public-account-action', () => ({ PublicAccountAction: ({ onOpenReport }: { onOpenReport: (id: string) => void }) => <button onClick={() => onOpenReport('test-report')}>Open report from history</button> }));
+vi.mock('@/components/public-account-action', () => ({ PublicAccountAction: ({ ref, onOpenReport, onUserChange }: { ref: React.Ref<unknown>; onOpenReport: (id: string) => void; onUserChange: (id: string) => void }) => {
+  useImperativeHandle(ref, () => ({ openAuth: state.openAuth }));
+  return <><button onClick={() => onOpenReport('test-report')}>Open report from history</button><button onClick={() => onUserChange('test-user')}>Finish test sign-in</button></>;
+} }));
 vi.mock('@/components/report-browser', () => ({ ReportBrowser: ({ reports, onVisibleReportsChange, onDiscoveryFiltersChange, placeSearch }: { onVisibleReportsChange: (reports: MappableReport[]) => void; placeSearch: React.ReactNode; reports: Array<{ title: string }>; onDiscoveryFiltersChange: (filters: DiscoveryFilters) => void }) => {
   useEffect(() => { onDiscoveryFiltersChange(DEFAULT_DISCOVERY_FILTERS); }, [onDiscoveryFiltersChange]);
   return <>{placeSearch}<button onClick={() => onVisibleReportsChange(state.markerReports)}>Refresh visible pins</button><output aria-label="Discovery results">{reports.map(report => report.title).join(',')}</output><button onClick={() => onDiscoveryFiltersChange({ ...DEFAULT_DISCOVERY_FILTERS, status: 'available', severity: 'high' })}>High severity filter</button></>;
@@ -129,6 +133,67 @@ async function choosePin(latitude = 0.5, valid = true) {
 }
 
 describe('map publication and funding handoff', () => {
+  it('lets a guest choose and confirm a pin before account or GPS prompts, then continues at that pin', async () => {
+    const gps = vi.fn();
+    Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { getCurrentPosition: gps } });
+    render(<MapExperience initialReports={[]} initialUserId={null} googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+    await waitFor(() => expect(state.click).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: 'Report Litter' }));
+    await screen.findByLabelText('Choose report location');
+    expect(state.openAuth).not.toHaveBeenCalled();
+    await act(async () => { state.click!({ latLng: { lat: () => 36.123456789, lng: () => -81.987654321 } }); });
+    fireEvent.click(screen.getByRole('button', { name: 'Use this location' }));
+    expect(state.openAuth).toHaveBeenCalledExactlyOnceWith('report');
+    expect(gps).not.toHaveBeenCalled();
+    expect(state.draftLocation).not.toHaveBeenCalled();
+    expect(state.inserts).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog', { name: 'Report form' })).toBeNull();
+    const next = new URL(window.location.href);
+    expect(next.searchParams.get('report_lat')).toBe('36.123456789');
+    expect(next.searchParams.get('report_lng')).toBe('-81.987654321');
+    fireEvent.click(screen.getByRole('button', { name: 'Finish test sign-in' }));
+    await screen.findByRole('dialog', { name: 'Report form' });
+    expect(screen.getByLabelText('Selected latitude').textContent).toBe('36.123456789');
+    // Location checks are still required before a real publication.
+    fireEvent.click(screen.getByRole('button', { name: 'Post without funds' }));
+    await waitFor(() => expect(gps).toHaveBeenCalled());
+    expect(state.inserts).not.toHaveBeenCalled();
+  });
+  it('opens a signed-out direct report entry at the picker without reading an account draft', async () => {
+    window.history.replaceState({}, '', '/report?community=us-nc-boone');
+    render(<MapExperience initialReports={[]} initialUserId={null} googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+    await screen.findByLabelText('Choose report location');
+    expect(state.openAuth).not.toHaveBeenCalled();
+    expect(state.draftLocation).not.toHaveBeenCalled();
+  });
+  it('restores a confirmed pin after a full OAuth/email browser return, ahead of the old viewport', async () => {
+    window.history.replaceState({}, '', '/report?report_lat=36.123&report_lng=-81.987&lat=40&lng=-74&zoom=12#map=40,-74,12');
+    render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+    await screen.findByRole('dialog', { name: 'Report form' });
+    expect(screen.getByLabelText('Selected latitude').textContent).toBe('36.123');
+    await waitFor(() => expect(state.mapOptions).toHaveBeenCalledWith(expect.objectContaining({ center: { lat: 36.123, lng: -81.987 } })));
+    expect(state.inserts).not.toHaveBeenCalled();
+  });
+  it('does not fit a community or homepage area over the confirmed report pin on return', async () => {
+    window.history.replaceState({}, '', '/report?community=us-nc-boone&area=community-us-nc-boone&entry=boone&report_lat=36.123&report_lng=-81.987');
+    const initialPlace = { id: 'community-us-nc-boone', label: 'Boone', subtitle: 'North Carolina', latitude: 36.2, longitude: -81.6, bounds: { north: 36.3, south: 36.1, west: -81.8, east: -81.5 } };
+    render(<MapExperience initialReports={[]} initialPlace={initialPlace} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+    await screen.findByRole('dialog', { name: 'Report form' });
+    await waitFor(() => expect(state.mapOptions).toHaveBeenCalled());
+    expect(state.fitBounds).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Selected latitude').textContent).toBe('36.123');
+  });
+  it('clears a guest selection when canceling instead of reusing it for a new report', async () => {
+    window.history.replaceState({}, '', '/report?report_lat=36&report_lng=-81');
+    render(<MapExperience initialReports={[]} initialUserId={null} googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+    await screen.findByLabelText('Choose report location');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Cancel reporting' })[0]);
+    expect(window.location.pathname).toBe('/map');
+    expect(window.location.search).not.toContain('report_lat');
+    fireEvent.click(screen.getByRole('button', { name: 'Report Litter' }));
+    await screen.findByLabelText('Choose report location');
+    expect(state.openAuth).toHaveBeenCalledTimes(1);
+  });
   it('keeps the navigation and filter hosts mounted when entering and canceling report placement', async () => {
     render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
     await waitFor(() => expect(state.click).toBeTruthy());
