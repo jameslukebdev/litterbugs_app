@@ -30,6 +30,11 @@
 .summary button { border: 0; padding: 6px; color: #5146ed; background: none; text-decoration: underline; font-size: 13px; }
 .code { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin: 24px 0; }
 .code span { text-align: center; padding: 12px 0; border: 1px solid #e3dff0; border-radius: 10px; color: #686477; }
+.phoneScreens { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.phoneScreens button { padding: 9px 12px; border: 1px solid #d6ceef; border-radius: 10px; background: #fff; color: #4438bb; cursor: pointer; font-size: 13px; font-weight: 700; }
+.phoneScreens button[aria-pressed='true'] { background: #eeecff; border-color: #5146ed; }
+.phoneField { display: grid; gap: 8px; margin: 22px 0; font-size: 14px; font-weight: 700; }
+.phoneField input { padding: 14px; width: 100%; min-width: 0; border: 1px solid #e3dff0; border-radius: 14px; background: #fff; color: #686477; opacity: 1; }
 .disabled { padding: 0; margin: 0; border: 0; min-width: 0; }
 .pager { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 24px; border-top: 1px solid #eeebf5; }
 .pager button { padding: 10px 12px; color: #4438bb; background: #fff; border: 1px solid #d6ceef; border-radius: 10px; cursor: pointer; font-weight: 700; }

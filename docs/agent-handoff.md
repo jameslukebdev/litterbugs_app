@@ -24,6 +24,18 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (corrected phone verification illustration, LOCAL)
+
+- The owner spotted that the preview showed code entry without first collecting
+  a phone number. Added explicit “1. Enter phone number” and “2. Enter code”
+  examples, with phone entry first. The number field/Send code/Verify are disabled;
+  both views say no SMS is sent. This corrects the illustration, not Stripe auth.
+- The actual onboarding account creation prefills contact_email, not a phone
+  number. Stripe handles its own sign-in/phone verification. No provider settings,
+  required fields, account data, credentials, mobile app or real SMS changed.
+- Browser checked both views and disabled actions; scoped lint/diff checks pass.
+  Local preview only, no push/deploy. Preserved other agents' working changes.
+
 ### 2026-11-08 — Codex (read-only payout step preview, LOCAL)
 
 - Added `/local-payout-preview` in source `33f05b5`, with eligibility, optional

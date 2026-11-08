@@ -8,7 +8,7 @@ import styles from './preview.module.css';
 
 const steps = [
   { title: 'Eligibility', label: 'First-time setup', note: 'The Litterbugs confirmation that a cleaner is at least 18 and eligible for US payouts.' },
-  { title: 'Phone verification', label: 'When Stripe requests it · example', note: 'Stripe handles this in its own secure sign-in window. Its position in the flow depends on the current Stripe session.' },
+  { title: 'Phone verification', label: 'Phone entry, then code · example', note: 'A new cleaner enters their mobile number in Stripe’s own sign-in window before receiving a code. This illustration sends no text messages.' },
   { title: 'Legal name', label: 'Real Stripe screen', note: 'The current legal-name screen, captured locally with empty fields.' },
   { title: 'Choose your bank', label: 'Real Stripe screen', note: 'Choose a bank or use the manual-entry option. These are two ways to complete the same banking step.' },
   { title: 'Manual bank entry', label: 'Alternative · real Stripe screen', note: 'Stripe’s Link window asks for routing and account numbers, confirmation, and its required bank authorization.' },
@@ -20,6 +20,7 @@ const captures: Record<number, string> = { 2: 'legal-name', 3: 'bank-selection',
 export default function Preview() {
   const [step, setStep] = useState(0);
   const [eligible, setEligible] = useState(false);
+  const [phoneScreen, setPhoneScreen] = useState<'number' | 'code'>('number');
   const current = steps[step];
   function selectStep(next: number) { setStep(next); window.scrollTo({ top: 0, behavior: 'auto' }); }
   return <main className={styles.page}>
@@ -40,9 +41,20 @@ export default function Preview() {
         </figure> : <div className={styles.example}>
           {step === 0 && <PayoutPanel status={{ onboardingStatus: 'not_started', payoutsEnabled: false, requirementsDue: [] }} eligibleConfirmed={eligible} onEligible={setEligible} busy={false} message="" onContinue={() => selectStep(1)} />}
           {step === 1 && <div className="payout-flow"><PayoutHeading /><div className={styles.sampleCard}>
-            <span className={styles.exampleTag}>Illustration only</span><h3>Verify your phone number</h3><p>Enter the code Stripe sent to your phone.</p>
-            <div className={styles.code} aria-label="Example verification-code fields">{Array.from({ length: 6 }, (_, index) => <span key={index}>—</span>)}</div>
-            <button className="primary-button payout-go" disabled>Verify</button>
+            <span className={styles.exampleTag}>Illustration only · no SMS sent</span>
+            <div className={styles.phoneScreens} role="group" aria-label="Phone verification preview screens">
+              <button aria-pressed={phoneScreen === 'number'} onClick={() => setPhoneScreen('number')}>1. Enter phone number</button>
+              <button aria-pressed={phoneScreen === 'code'} onClick={() => setPhoneScreen('code')}>2. Enter code</button>
+            </div>
+            {phoneScreen === 'number' ? <>
+              <h3>Enter your mobile number</h3><p>In the real setup, Stripe asks for the number where the cleaner can receive a verification code.</p>
+              <label className={styles.phoneField} htmlFor="preview-phone">Mobile phone number<input id="preview-phone" type="tel" placeholder="Enter your mobile number" disabled /></label>
+              <button className="primary-button payout-go" disabled>Send code</button>
+            </> : <>
+              <h3>Enter the verification code</h3><p>This screen comes after phone entry. No code has been sent in this preview.</p>
+              <div className={styles.code} aria-label="Example verification-code fields">{Array.from({ length: 6 }, (_, index) => <span key={index}>—</span>)}</div>
+              <button className="primary-button payout-go" disabled>Verify</button>
+            </>}
           </div></div>}
           {step === 5 && <div className="payout-flow"><PayoutHeading /><div className={styles.sampleCard}>
             <span className={styles.exampleTag}>Illustration · fictional information</span><h3>Review your payout details</h3>
