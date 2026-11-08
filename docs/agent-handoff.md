@@ -24,6 +24,28 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-07 — Codex (Stripe branding saved directly in live Dashboard)
+
+- Updated Litterbugs `acct_1U2HZe40KMkUKMFW` in Chrome. Stripe MCP is still
+  connected to Review Hiker; do not use it to mutate Litterbugs. Existing icon
+  and logo already visually matched the requested local brand files; retained.
+  General brand color now `#5146ed`, accent `#ffce38`, prefer logo enabled.
+- Connect onboarding Customize independently saved the same colors; business
+  name already Litterbugs. Reopened to verify persistence and preview. Kept
+  Copy platform branding to new connected accounts off and support options intact.
+- Owner rejected tiny dark checkout logo on purple. Final Checkout styling is
+  custom white background `#ffffff`, purple button `#5146ed`, existing rounded
+  shapes/system font. Saved successfully and preview verified. This replaces
+  the briefly enabled Use brand colors setting. Logo remains small in Stripe's
+  scaled phone preview. Proof `/tmp/litterbugs-stripe-checkout-light.jpg`;
+  Connect proof `/tmp/litterbugs-stripe-connect-branding.jpg`.
+- Embedded toggle in this Dashboard is a preview, not an integration switch.
+  Current local website funding uses PaymentElement; recipient payout setup
+  uses Accounts v2 hosted account links. Embedded onboarding would be separate
+  implementation and needs compatibility verification for recipient accounts.
+  No integration change, transactions, migrations, website deployment or push.
+  Preserved Claude's concurrent application changes. No conversion lift tested.
+
 ### 2026-11-07 — Codex (six more phone sessions; review only, LOCAL)
 
 - Expanded Clarity to 7 days: 91 recordings across devices, not 34 new arrivals.
