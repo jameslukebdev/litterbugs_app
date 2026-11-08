@@ -121,3 +121,20 @@ it('keeps an expired report readable without advertising current cleanup, fundin
   for (const name of ['Fund', 'Clean', 'Open in Litterbugs', 'View on map']) expect(screen.queryByRole('link', { name })).toBeNull();
   expect(screen.queryByText(/cleanup reward/)).toBeNull();
 });
+
+it('renders the actual evidence and history of a photo-less expired report in server HTML', async () => {
+  loadReport.mockResolvedValue({ ...report, title: 'Basura en el patio', state: 'expired',
+    rewardCents: 0, reportDate: '2026-09-16T14:38:27Z', expiredDate: '2026-10-16T14:38:27Z',
+    litterTypes: ['Bottles', 'Cans', 'Paper products', 'Plastic bags'],
+    notes: 'Scattered · Broken glass', severity: 'Medium' });
+  const html = renderToStaticMarkup(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
+  expect(html).toContain('The report identified Bottles, Cans, Paper products, and Plastic bags.');
+  expect(html).toContain('Recorded details: Scattered; Broken glass.');
+  expect(html).toContain('The reported priority was medium.');
+  expect(html).toContain('Its active reporting period ended on October 16, 2026.');
+  expect(html).toContain('A cleanup has not been confirmed.');
+  expect(html).toContain('Report expired');
+  expect(html).not.toContain('This report is no longer active');
+  expect(html).not.toContain('Cleanup result photo');
+  expect((await generateMetadata({ params: Promise.resolve({ id: report.id }) })).alternates?.canonical).toBe(report.canonicalUrl);
+});

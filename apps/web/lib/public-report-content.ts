@@ -13,7 +13,7 @@ export function reportLocality(report: PublicReportShareModel) {
 }
 
 export function publicReportSearchTitle(report: PublicReportShareModel) {
-  const status = report.state === 'expired' ? 'Expired litter report' : report.state === 'completed' ? 'Completed cleanup'
+  const status = report.state === 'expired' ? 'Litter report history' : report.state === 'completed' ? 'Completed cleanup'
     : report.state === 'in_progress' ? 'Cleanup in progress' : 'Litter report';
   const locality = reportLocality(report);
   return `${report.title} — ${status}${locality ? ` near ${locality}` : ''}`;
@@ -24,7 +24,7 @@ export function publicReportSummary(report: PublicReportShareModel) {
   const where = locality ? ` near ${locality}` : '';
   if (report.state === 'expired') {
     const date = reportDateLabel(report.reportDate);
-    return `Litter reported${where}${date ? ` on ${date}` : ''}. This report is no longer active. A cleanup has not been confirmed.`;
+    return `Litter report recorded${where}${date ? ` on ${date}` : ''}.`;
   }
   if (report.state === 'completed') {
     const date = reportDateLabel(report.completionDate);
@@ -37,9 +37,37 @@ export function publicReportSummary(report: PublicReportShareModel) {
 }
 
 export function publicReportSearchDescription(report: PublicReportShareModel) {
+  if (report.state === 'expired') {
+    return `${report.title}. ${publicReportSummary(report)} ${publicReportOriginalSummary(report)}`.trim();
+  }
   const evidence = report.state === 'completed' && report.beforePhotoUrl && report.afterPhotoUrl
     ? ' See before-and-after photos from the cleanup.' : '';
   return `${report.title}. ${publicReportSummary(report)}${evidence}`;
+}
+
+/** Describe the retained evidence without supplying missing photos or geography. */
+export function publicReportOriginalSummary(report: PublicReportShareModel) {
+  const facts: string[] = [];
+  const types = report.litterTypes.map(value => value.trim()).filter(Boolean);
+  if (types.length) {
+    facts.push(`The report identified ${new Intl.ListFormat('en-US', { style: 'long', type: 'conjunction' }).format(types)}.`);
+  }
+  if (report.notes?.trim()) {
+    const notes = report.notes.trim().replace(/\s*·\s*/g, '; ');
+    facts.push(`Recorded details: ${notes}${/[.!?]$/.test(notes) ? '' : '.'}`);
+  }
+  if (report.severity?.trim()) facts.push(`The reported priority was ${report.severity.trim().toLowerCase()}.`);
+  return facts.join(' ');
+}
+
+export function publicReportHistorySummary(report: PublicReportShareModel) {
+  const reported = reportDateLabel(report.reportDate);
+  const expired = reportDateLabel(report.expiredDate ?? null);
+  return [
+    reported ? `The original report was submitted on ${reported}.` : null,
+    expired ? `Its active reporting period ended on ${expired}.` : 'Its active reporting period has ended.',
+    'A cleanup has not been confirmed.',
+  ].filter(Boolean).join(' ');
 }
 
 export function publicReportPhotoDescription(report: PublicReportShareModel, kind: 'before' | 'after') {
