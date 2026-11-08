@@ -24,6 +24,20 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (auth subdomain clarification; removal cancelled)
+
+- Owner questioned whether auth.litterbugs.app is needed rather than confirming
+  deletion. Cancelled the bulk deletion dialog and cleared all selections;
+  all five Resend registrations and Pro plan remain unchanged.
+- Rechecked mobile auth.js and auth-provider-setup.md: auth.litterbugs.app/start
+  is the Facebook sign-in bridge, and public request/privacy pages also live
+  there. Active email uses support@litterbugs.app through root-domain Resend
+  SMTP. Hosting and email sending registration are separate dependencies.
+- Recommend keeping auth.litterbugs.app in Resend as well: Free allows three
+  domains, so removing only the other three would leave two. No reason to remove
+  the auth registration merely to fit Free. Any irreversible domain removal
+  still requires concrete final confirmation. No app changes, push or deploy.
+
 ### 2026-11-08 — Codex (Resend cleanup prepared; final deletion confirmation pending)
 
 - Owner authorized removing unused Resend registrations and switching to Free.
