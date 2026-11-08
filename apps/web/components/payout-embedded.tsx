@@ -27,11 +27,11 @@ export default function PayoutEmbedded({ instance, busy, message, onExit, onFall
           <div className="payout-connect-form">
             <ConnectComponentsProvider connectInstance={instance}>
               <ConnectAccountOnboarding
-                key="without-product-description"
+                key="cleanup-participant-details"
                 collectionOptions={{ fields: 'currently_due', futureRequirements: 'omit', requirements: {
                   // Stripe documents v1 and v2 requirement names. The server ensures missing
-                  // activity details are supplied; keep identity, bank and terms collection intact.
-                  exclude: ['business_profile.product_description', 'defaults.profile.product_description'],
+                  // activity and entity type are supplied; keep personal identity, bank and terms collection intact.
+                  exclude: ['business_profile.product_description', 'defaults.profile.product_description', 'business_type', 'identity.entity_type'],
                 } }}
                 onLoaderStart={() => setLoading(false)}
                 onLoadError={() => { setLoading(false); setFailed(true); }}

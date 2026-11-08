@@ -20,7 +20,7 @@ function open(message = '') {
 it('uses site appearance and Stripe-managed current requirements without bypassing terms', () => {
   const f = open();
   expect(f.update).toHaveBeenCalledWith({ appearance: { variables: { colorPrimary: '#5146ed' } } });
-  expect(screen.getByText('{"fields":"currently_due","futureRequirements":"omit","requirements":{"exclude":["business_profile.product_description","defaults.profile.product_description"]}}')).toBeTruthy();
+  expect(screen.getByText('{"fields":"currently_due","futureRequirements":"omit","requirements":{"exclude":["business_profile.product_description","defaults.profile.product_description","business_type","identity.entity_type"]}}')).toBeTruthy();
   expect(screen.queryByRole('button', { name: 'Continue on Stripe' })).toBeNull();
   expect(screen.queryByRole('button', { name: 'Back' })).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Exit Stripe form' }));
