@@ -24,6 +24,24 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (Resend cleanup prepared; final deletion confirmation pending)
+
+- Owner authorized removing unused Resend registrations and switching to Free.
+  Active Partner Supabase Auth key is Sending access restricted to litterbugs.app;
+  used about two hours ago. All five emails in the last 30 days used that root
+  domain and delivered. Legacy Litterbugs/Retirement Lists keys last used about
+  three months ago; no secrets inspected or keys changed.
+- auth.litterbugs.app remains a Facebook OAuth bridge host. Preserve its hosting,
+  DNS and application URLs: only its unused Resend sending registration is in
+  scope. retirementlists.com is failed and has no observed 30-day sends. Owner
+  explicitly confirmed divinedms.com and retirecityfinder.com are unneeded.
+- Four non-root registrations selected in Resend's bulk deletion dialog; root
+  litterbugs.app excluded. Dialog says deletion cannot be undone, so requested
+  the required final confirmation. No domains deleted or plan changed yet.
+  Pending: confirmation, remove four, downgrade, verify fresh owner recovery email
+  delivery through existing Supabase SMTP. No app changes, push or deployment;
+  preserve concurrent dev-review-preview work.
+
 ### 2026-11-08 — Codex (signed-in Resend plan review, read-only)
 
 - Owner signed into the `burrowbase` Pro team. Live Metrics, all domains,
