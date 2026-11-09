@@ -24,6 +24,26 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (Cloudflare production candidate staged)
+
+- Isolated source `a67a844` includes committed website through `91e8223`,
+  including the latest committed payout flow. Separate production-mode
+  Worker `litterbugs-web-production`, version
+  `15e7d2f2-e608-4afe-87d6-7d7a86c07b8a`, has the canonical URL, production
+  Maps build values, and production analytics configuration. Its temporary
+  Worker hostname is noindex and outside the analytics allowlist.
+- Hosted home, map and report returned 200. Report canonical points to
+  litterbugs.app. Build and 132 focused tests passed. Private JPEG passed
+  scanning, sanitization, authorization and fixture cleanup with the existing
+  free scanner key. Evidence in
+  `/tmp/litterbugs-cloudflare-production-candidate-upload.json`.
+- Vercel export withholds the existing production scanner key. The original
+  Cloudmersive account recovery ticket has only acknowledgments. The free
+  portal shows 800 calls/month and one call/second for this key. Awaiting
+  owner's production credential choice and an upload check with that choice.
+  Neither the production hostname nor DNS was changed. Live still returns
+  HTTP 200 from Vercel.
+
 ### 2026-11-08 — Codex (transparent Stripe Express logo saved)
 
 - Grant approved the shared Stripe icon after the editor disclosed that it
