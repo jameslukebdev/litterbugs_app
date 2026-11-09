@@ -24,6 +24,22 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (overlapping free-tier scans passed on Cloudflare)
+
+- Tested production candidate `a67a844`, Worker
+  `15e7d2f2-e608-4afe-87d6-7d7a86c07b8a`, with the existing free scanner key.
+  Three batches covered one report with two simultaneous uploads and two
+  reports with four overlapping uploads, both simultaneous and staggered.
+  All 10 returned 200 with clean audits and sanitized JPEGs. Scanner tail
+  recorded zero warnings. This tests upload overlap rather than timing
+  inside Cloudmersive. No pacing or application change.
+- Removed both synthetic accounts, unpublished reports, audit rows and
+  photos. Evidence in `/tmp/litterbugs-cloudflare-overlap-evidence.json`.
+  Candidate is ready for the owner-authorized cutover with the tested free
+  key. Apex still returns 200 on Vercel and www still redirects to the apex.
+  Preserve that redirect and keep Vercel available for the live smoke check
+  and rollback. No deployment, DNS or billing change.
+
 ### 2026-11-08 — Codex (zero-balance Express branding reviewed)
 
 - Confirmed the saved transparent wordmark on the live $0 Express Home.
