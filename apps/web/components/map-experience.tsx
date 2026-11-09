@@ -644,7 +644,7 @@ export function MapExperience({
       const title = report.title || 'Litter Report';
       if (marker.getAttribute('aria-label') !== title) { marker.title = title; hideNativeTooltip(marker, title); }
       const pin = reportPinText(report);
-      renderPinGlyph(markerGlyph, pin.kind, pin.text, pin.visible, map);
+      renderPinGlyph(markerGlyph, pin.kind, pin.text, pin.visible);
       if (justPostedReport?.id === report.id && !markerGlyph.classList.contains('bug-pin-posted')) celebratePostedPin(markerGlyph);
       const photoPath = report.photo_paths?.[0];
       renderPinCard(markerGlyph, report, report.cleanup_state === 'completed'

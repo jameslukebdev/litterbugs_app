@@ -304,7 +304,7 @@ export function BugAnimations() {
       </div>
       <h2 className={s.group}>Smaller touches</h2>
       <div className={s.grid}>
-        <Demo n={6} title="Pins land on the map" where="Map, as results appear" why="A few at a time, with a tiny flutter."><PinsLand /></Demo>
+        <Demo n={6} title="Pins land on the map" where="Map, as you pan, zoom, or change filters" why="Newly visible pins and groups land a few at a time."><PinsLand /></Demo>
         <Demo n={7} title="The lightning bug glows" where="Map’s find-my-location button" why="Glows while it’s searching, then hands back to the usual icon."><LocateGlow /></Demo>
         <Demo n={8} title="The cocoon wiggles" where="“Reports needing a cleanup” heading on the homepage" why="A hint that it’s about to hatch."><CocoonWiggle /></Demo>
         <Demo n={9} title="The flower opens on the After photo" where="Report sheet’s After / Before switch" why="The before-and-after moment gets a little celebration."><AfterBloom /></Demo>

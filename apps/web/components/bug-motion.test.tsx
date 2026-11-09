@@ -2,7 +2,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { clearFundBeforeCheckout, peekFundBeforeCheckout, rememberFundBeforeCheckout, scurryFrom, flyBug } from '@/lib/bug-motion';
-import { celebratePostedPin, renderPinGlyph } from '@/lib/map-marker-glyph';
+import { celebratePostedPin, landPin, renderPinGlyph } from '@/lib/map-marker-glyph';
 import { EmptyBug, useBecame } from './bug-motion';
 
 afterEach(() => { cleanup(); window.sessionStorage.clear(); vi.unstubAllGlobals(); vi.useRealTimers(); });
@@ -48,15 +48,16 @@ it('never leaves bugs behind or fails where animation is unavailable', () => {
 it('stages the map entrance, blooms on a status change and removes the posted pin effects', () => {
   vi.stubGlobal('matchMedia', () => ({ matches: false }));
   vi.useFakeTimers();
-  const map = {};
   const open = document.createElement('span');
   const completed = document.createElement('span');
-  renderPinGlyph(open, 'open', 'Available', false, map);
-  renderPinGlyph(completed, 'done', 'Done', false, map);
+  renderPinGlyph(open, 'open', 'Available', false);
+  renderPinGlyph(completed, 'done', 'Done', false);
+  landPin(open, 0);
+  landPin(completed, 1);
   expect(open.style.animationDelay).toBe('0ms');
   expect(completed.style.animationDelay).toBe('60ms');
   expect(completed.querySelector('.bug-pin-bloom')).toBeNull();
-  renderPinGlyph(open, 'done', 'Done', false, map);
+  renderPinGlyph(open, 'done', 'Done', false);
   expect(open.querySelector('.bug-pin-bloom')).not.toBeNull();
 
   celebratePostedPin(completed);
@@ -65,4 +66,6 @@ it('stages the map entrance, blooms on a status change and removes the posted pi
   vi.advanceTimersByTime(2200);
   expect(completed.classList.contains('bug-pin-posted')).toBe(false);
   expect(completed.querySelector('.bug-pin-dragonfly, .bug-pin-ripple')).toBeNull();
+  landPin(completed, 0);
+  expect(completed.classList.contains('bug-pin-land')).toBe(false);
 });

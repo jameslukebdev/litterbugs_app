@@ -24,6 +24,16 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (map pin landings after pan, zoom and filters)
+
+- Replaced the initial-load cutoff with viewport tracking. Newly visible
+  individual pins and groups land on pan, zoom, filter changes and cluster
+  splits or merges. Pins already in view stay steady.
+- Local Chrome verified drag out and back, zoom in and out, Completed and
+  All reports filters, and an emulated phone drag. Reduced Motion skipped
+  the drop. The demo still lives at `/dev-review-preview/bug-animations`.
+- No push or deployment. Await Grant’s review.
+
 ### 2026-11-09 — Codex (touch behavior review)
 
 - In Chrome with an emulated touch-only iPhone SE, a homepage pin opened its

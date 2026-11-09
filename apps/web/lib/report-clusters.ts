@@ -1,6 +1,6 @@
 import { MarkerClusterer, MarkerClustererEvents, ClusterStats, SuperClusterAlgorithm, type Cluster, type Marker, type AlgorithmInput, type AlgorithmOutput } from '@googlemaps/markerclusterer';
 import type { MappableReport } from '@litterbugs/report-contract';
-import { hideNativeTooltip, prepareCard, renderGroupCard, renderPinGlyph } from './map-marker-glyph';
+import { hideNativeTooltip, landPin, prepareCard, renderGroupCard, renderPinGlyph } from './map-marker-glyph';
 
 export function clusterSummary(reports: MappableReport[]) {
   const counts = { available: 0, active: 0, completed: 0 };
@@ -51,6 +51,7 @@ export function attachReportMarker(marker: google.maps.marker.AdvancedMarkerElem
 export class StableReportClusterer extends MarkerClusterer {
   private memberIds = new WeakMap<object, number>();
   private nextMemberId = 0;
+  private visibleGlyphs = new Set<HTMLElement>();
   /** Group bubbles from the previous pass, keyed by membership; renderClusters takes the ones it reuses. */
   private reusableGroups = new Map<string, Marker>();
   private groupKey(cluster: Cluster) {
@@ -109,6 +110,20 @@ export class StableReportClusterer extends MarkerClusterer {
       this.reusableGroups = new Map();
       requestAnimationFrame(() => stale.forEach(marker => attachReportMarker(marker as google.maps.marker.AdvancedMarkerElement, null)));
     }
+    // Even when the cluster membership stays the same, a pan can bring
+    // already-rendered markers into view.
+    const bounds = map.getBounds();
+    if (bounds) {
+      const visibleGlyphs = new Set<HTMLElement>();
+      let landingOrder = 0;
+      for (const { marker, position } of this.clusters) {
+        const glyph = marker instanceof HTMLElement ? marker.firstElementChild : null;
+        if (!(glyph instanceof HTMLElement) || !bounds.contains(position)) continue;
+        visibleGlyphs.add(glyph);
+        if (!this.visibleGlyphs.has(glyph)) landPin(glyph, landingOrder++);
+      }
+      this.visibleGlyphs = visibleGlyphs;
+    }
     google.maps.event.trigger(this, MarkerClustererEvents.CLUSTERING_END, this);
   }
 }
@@ -127,7 +142,7 @@ export function createReportClusters(map: google.maps.Map, AdvancedMarker: typeo
     if (visual.marker.getAttribute('aria-label') !== label) { visual.marker.title = label; hideNativeTooltip(visual.marker, label); }
     visual.glyph.classList.toggle('report-map-cluster-selected', selected);
     // The group shows the bug of its most useful member (open litter first) next to the count.
-    renderPinGlyph(visual.glyph, summary.available ? 'open' : summary.active ? 'busy' : 'done', `${members.length}`, true, map);
+    renderPinGlyph(visual.glyph, summary.available ? 'open' : summary.active ? 'busy' : 'done', `${members.length}`, true);
     renderGroupCard(visual.glyph, members);
   };
   const clusterer = new StableReportClusterer({

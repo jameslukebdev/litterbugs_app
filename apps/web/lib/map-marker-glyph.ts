@@ -21,14 +21,13 @@ export function pinKind(state: string | null | undefined): PinKind {
 }
 
 /** Fills a marker or group glyph; only touches the DOM when what it shows has changed. */
-export function renderPinGlyph(glyph: HTMLElement, kind: PinKind, text: string, visibleText: boolean, map: object) {
+export function renderPinGlyph(glyph: HTMLElement, kind: PinKind, text: string, visibleText: boolean) {
   const key = `${kind}|${text}|${visibleText}`;
   if (glyph.dataset.render === key) return;
   const firstRender = glyph.dataset.render === undefined;
   const previousKind = glyph.dataset.kind as PinKind | undefined;
   glyph.dataset.render = key;
   glyph.dataset.kind = kind;
-  if (firstRender) landPin(glyph, map);
   glyph.classList.toggle('map-pin-icon-only', !visibleText);
   const bug = document.createElement('img');
   const art = BUGS[kind];
@@ -44,18 +43,12 @@ export function renderPinGlyph(glyph: HTMLElement, kind: PinKind, text: string, 
   glyph.replaceChildren(bug, label, ...(card ? [card] : []));
 }
 
-const mapLandings = new WeakMap<object, { first: number; last: number; count: number }>();
-/** Pins land a few at a time while the map first fills; later pans and zooms just show them. */
-function landPin(glyph: HTMLElement, map: object) {
-  if (prefersReducedMotion()) return;
-  const now = performance.now();
-  const landing = mapLandings.get(map) ?? { first: now, last: now, count: 0 };
-  if (now - landing.first > 3000) return;
-  if (now - landing.last > 50) landing.count = 0;
-  glyph.style.animationDelay = `${Math.min(landing.count, 8) * 60}ms`;
-  landing.count += 1;
-  landing.last = now;
-  mapLandings.set(map, landing);
+const postedLandings = new WeakSet<HTMLElement>();
+
+/** Stagger the pins that just entered the viewport. */
+export function landPin(glyph: HTMLElement, order: number) {
+  if (postedLandings.delete(glyph) || glyph.classList.contains('bug-pin-land') || prefersReducedMotion()) return;
+  glyph.style.animationDelay = `${Math.min(order, 8) * 60}ms`;
   glyph.classList.add('bug-pin-land');
   const finish = (event: AnimationEvent) => {
     if (event.target !== glyph || event.animationName !== 'bug-land') return;
@@ -71,6 +64,8 @@ function landPin(glyph: HTMLElement, map: object) {
 /** The dragonfly flies in and drops a just-posted report's pin, with a small ripple where it lands. */
 export function celebratePostedPin(glyph: HTMLElement) {
   if (prefersReducedMotion()) return;
+  // When this pin rejoins the clusters, its dragonfly has already landed it.
+  postedLandings.add(glyph);
   const dragonfly = document.createElement('img');
   dragonfly.src = BUG_ART.dragonfly; dragonfly.alt = ''; dragonfly.setAttribute('aria-hidden', 'true');
   dragonfly.className = 'bug-pin-dragonfly';
