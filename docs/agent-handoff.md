@@ -24,6 +24,19 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (Litterbugs Express theme saved)
+
+- Saved and reopened the live Express branding editor. It persisted
+  `#5146ED` for primary and primary-button background, `#EEECFF` for
+  secondary-button background, and 14 px radius. Stripe's preview shows the
+  theme and transparent wordmark. The wordmark already fills the width of
+  Stripe's fixed 32 px Express sidebar slot. No icon replacement in this pass.
+- Reloading the cleaner's $0 Express Home requested separate Express sign-in.
+  Stripe's admin “View Dashboard as” opens a different dashboard, so the
+  post-save $0 Express verification awaits the cleaner sign-in. Saved-preview
+  evidence is in `/tmp/litterbugs-express-theme-saved.jpg`. No website
+  changes or deployment.
+
 ### 2026-11-08 — Codex (overlapping free-tier scans passed on Cloudflare)
 
 - Tested production candidate `a67a844`, Worker
