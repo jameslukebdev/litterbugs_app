@@ -496,7 +496,11 @@
   .account :global(.public-account-actions) { min-width: 0; }
 }
 @media (max-width: 360px) {
-  .brandLink img { width: 60px; }
+  .header.header:not(.mapHeader) .brandLink img { width: 60px; }
+  /* The drawer's Map link keeps search and both account controls in reach. */
+  .header.header:not(.mapHeader) .inner:has(:global(.public-account-control-profile)) .mapLink { display: none; }
+}
+@media (max-width: 480px) {
   .header:not(.mapHeader) .mapEntry { width: 44px; padding: 0; justify-content: center; }
   .header:not(.mapHeader) .mapEntry .mapMobileLabel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }

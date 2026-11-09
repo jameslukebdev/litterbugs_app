@@ -39,7 +39,6 @@ export function HeaderAreaSearch({ open, onOpenChange, label }: { label?: string
     <button ref={trigger} type="button" className={label ? styles.inlineTrigger : styles.trigger} aria-label={label || "Search your area"} title={label || "Search your area"} aria-expanded={open} aria-controls={id}
       onClick={() => onOpenChange(!open)}><IoSearchOutline aria-hidden="true" />{label}</button>
     {open && <div id={id} className={styles.panel} role="region" aria-label="Search your area">
-      <IoSearchOutline className={styles.searchIcon} aria-hidden="true" />
       <PlaceSearch selected={null} onSelect={place => { onOpenChange(false); router.push(mapDestination(place)); }} onClear={() => {}} />
       <button type="button" className={styles.close} aria-label="Close area search" onClick={close}><IoCloseOutline aria-hidden="true" /></button>
     </div>}
