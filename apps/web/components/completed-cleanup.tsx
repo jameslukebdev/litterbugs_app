@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Icon } from '@/components/icon';
 import { ReportAuthor } from '@/components/report-author';
+import { AntWalk } from '@/components/bug-motion';
 import styles from './completed-cleanup.module.css';
 
 type Impact = { rewardCents: number; cleanerId: string | null; completedAt: string | null; description: string | null; bags: number | null; weight: number | null; photoPaths: string[] };
@@ -65,7 +66,7 @@ export function AfterPhotos({ reportId, paths, fill = false }: { reportId: strin
   return <div className={`${styles.viewer}${fill ? ` ${styles.fill}` : ''}`} aria-busy={!ready[index] && !failed[index]}>
     {ready[index] ? <img className={styles.photo} src={sources[index]} alt={`After-cleanup photo ${index + 1} of ${count}`} />
       : failed[index] ? <div className={styles.unavailable}><Icon name="image" /><span>Photo unavailable</span></div>
-      : <div className={styles.placeholder} role="status" aria-label="Loading photo" />}
+      : <div className={`${styles.placeholder} bug-ant-host`} role="status" aria-label="Loading photo"><AntWalk /></div>}
     {count > 1 && <>
       <button type="button" className={`${styles.arrow} ${styles.previous}`} onClick={() => go(-1)} aria-label="Previous photo"><Icon name="chevron-left" /></button>
       <button type="button" className={`${styles.arrow} ${styles.next}`} onClick={() => go(1)} aria-label="Next photo"><Icon name="chevron-right" /></button>

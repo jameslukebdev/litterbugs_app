@@ -270,7 +270,7 @@ export function PublicSiteHeader({ activePath, action, reportAction, reportId, c
     setOpenMenu(openMenu === label ? null : label);
   }
   return (
-    <header className={`${styles.header}${compactMobile ? ` ${styles.compactMobile}` : ''}${activePath === '/map' ? ` ${styles.mapHeader}` : ''}`} onClickCapture={event => {
+    <header data-site-header className={`${styles.header}${compactMobile ? ` ${styles.compactMobile}` : ''}${activePath === '/map' ? ` ${styles.mapHeader}` : ''}`} onClickCapture={event => {
       const link = event.target instanceof Element ? event.target.closest('a') : null;
       if (window.location.pathname !== '/map' || link?.getAttribute('href') !== LITTER_MAP_HREF
         || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -279,6 +279,8 @@ export function PublicSiteHeader({ activePath, action, reportAction, reportId, c
       <div className={styles.inner}>
         <Link href="/" prefetch={true} className={styles.brandLink} aria-label="Litterbugs home">
           <Image src="/brand/litterbugs-logo.png" alt="Litterbugs" width={636} height={433} priority />
+          {/* eslint-disable-next-line @next/next/no-img-element -- tiny decorative bee, like BrandBug. */}
+          <img className={styles.logoBee} src="/brand/bugs/bee.png" alt="" aria-hidden="true" width={18} height={18} draggable={false} />
         </Link>
         <nav className={styles.desktopNav} aria-label="Main navigation">
           <div className={styles.mapLink}>{activePath === '/map' ? <HeaderLink href={LITTER_MAP_HREF} activePath={activePath}>Map</HeaderLink> : <Link href={LITTER_MAP_HREF} aria-label="Open map" className={`${styles.navLink} ${styles.mapEntry}`}><IoMapOutline aria-hidden /><span className={styles.mapDesktopLabel}>Open map</span><span className={styles.mapMobileLabel}>Map</span></Link>}</div>

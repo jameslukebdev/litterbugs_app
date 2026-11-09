@@ -182,7 +182,7 @@ describe('ReportDetail photos', () => {
       />,
     );
 
-    expect(screen.getByText('$125.00 in its cleanup fund')).toBeTruthy();
+    expect(screen.getByText('in its cleanup fund').textContent).toBe('$125.00 in its cleanup fund');
     expect(screen.getByText('Cleanup in progress')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Share' })).toBeTruthy();
   });

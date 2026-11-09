@@ -10,21 +10,21 @@ export function ReportStarter() {
   return <section className={styles.starter} aria-labelledby="report-starter-title">
     <h2 id="report-starter-title" className="heading-with-bug"><img className="heading-bug" src="/brand/ranks/lightning-bug.svg" alt="" aria-hidden="true" width={32} height={32} />Explore what you can do with Litterbugs</h2>
     <div className={styles.choices}>
-      <article className={styles.choice} aria-labelledby="report-choice-title">
-        <Image className={styles.photo} src="/homepage-photos/action-report.webp" alt="A person taking a photograph with a phone outdoors" width={900} height={600} sizes="(max-width: 700px) calc(100vw - 40px), (max-width: 1244px) 30vw, 375px" loading="lazy" />
+      <article className={styles.choice} data-bug-hover aria-labelledby="report-choice-title">
+        <span className={styles.photoFrame}><Image className={styles.photo} src="/homepage-photos/action-report.webp" alt="A person taking a photograph with a phone outdoors" width={900} height={600} sizes="(max-width: 700px) calc(100vw - 40px), (max-width: 1244px) 30vw, 375px" loading="lazy" /></span>
         <h3 id="report-choice-title">Report litter</h3>
         <p>See trash? Pin the spot, add photos, and earn money when it’s cleaned up.</p>
         {/* Same flow as the map's Report Litter button: sign in if needed, pin the spot, then add photos. */}
         <div className={styles.action}><Link className={styles.cta} href={REPORT_ENTRY_HREF}><img src="/brand/ranks/dragonfly.svg" alt="" aria-hidden="true" width={24} height={24} className="brand-action-icon" />Report trash</Link></div>
       </article>
-      <article className={styles.choice} aria-labelledby="fund-choice-title">
-        <Image className={styles.photo} src="/homepage-photos/action-fund.webp" alt="A person holding a payment card while using a laptop" width={900} height={600} sizes="(max-width: 700px) calc(100vw - 40px), (max-width: 1244px) 30vw, 375px" loading="lazy" />
+      <article className={styles.choice} data-bug-hover aria-labelledby="fund-choice-title">
+        <span className={styles.photoFrame}><Image className={styles.photo} src="/homepage-photos/action-fund.webp" alt="A person holding a payment card while using a laptop" width={900} height={600} sizes="(max-width: 700px) calc(100vw - 40px), (max-width: 1244px) 30vw, 375px" loading="lazy" /></span>
         <h3 id="fund-choice-title">Fund a cleanup</h3>
         <p>Pick a spot and help pay someone to clean it up.</p>
         <div className={styles.action}><Link className={styles.cta} href={AVAILABLE_CLEANUPS_MAP_HREF}><BrandBug kind="bee" size={23} className={`brand-action-icon ${styles.fundIcon}`} />Choose a spot</Link></div>
       </article>
-      <article className={styles.choice} aria-labelledby="clean-choice-title">
-        <Image className={styles.photo} src="/homepage-photos/action-clean.webp" alt="A volunteer picking up litter outdoors" width={900} height={600} sizes="(max-width: 700px) calc(100vw - 40px), (max-width: 1244px) 30vw, 375px" loading="lazy" />
+      <article className={styles.choice} data-bug-hover aria-labelledby="clean-choice-title">
+        <span className={styles.photoFrame}><Image className={styles.photo} src="/homepage-photos/action-clean.webp" alt="A volunteer picking up litter outdoors" width={900} height={600} sizes="(max-width: 700px) calc(100vw - 40px), (max-width: 1244px) 30vw, 375px" loading="lazy" /></span>
         <h3 id="clean-choice-title">Earn money cleaning up</h3>
         <p>Find a spot that needs cleaning and see how much you could earn.</p>
         <div className={styles.action}><Link className={styles.cta} href={AVAILABLE_CLEANUPS_MAP_HREF}><img src="/brand/ranks/caterpillar.svg" alt="" aria-hidden="true" width={26} height={26} className="brand-action-icon" />Find a cleanup</Link></div>

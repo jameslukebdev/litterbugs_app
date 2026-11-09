@@ -405,3 +405,20 @@
 .brand.brand.brand section[data-cleanup-proof] > div:first-child a:hover { color: #0b3b2f; background: none; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
 .brand.brand.brand section[data-cleanup-proof] > div:first-child a:hover::after { transform: translateX(4px); }
 @media (prefers-reduced-motion: reduce) { .brand.brand.brand section[data-cleanup-proof] > div:first-child a::after { transition: none; } }
+
+/* Nov 2026: link arrows become a little ant that scurries forward while you hover ("See completed cleanups",
+   "Browse all litter reports"). */
+.brand.brand.brand main section:has(:global(.public-report-cards)) > a[href='/reports']::after,
+.brand.brand.brand section[data-cleanup-proof] > div:first-child a::after {
+  content: ''; display: inline-block; width: 20px; height: 20px; margin-left: 6px; vertical-align: -4px;
+  background: url('/brand/bugs/ant.svg') no-repeat center / contain; rotate: 108deg; transform: none; transition: none;
+}
+.brand.brand.brand main section:has(:global(.public-report-cards)) > a[href='/reports']:is(:hover, :focus-visible)::after,
+.brand.brand.brand section[data-cleanup-proof] > div:first-child a:is(:hover, :focus-visible)::after {
+  transform: none; animation: bug-scurry-on 700ms ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand.brand.brand main section:has(:global(.public-report-cards)) > a[href='/reports']:is(:hover, :focus-visible)::after,
+  .brand.brand.brand section[data-cleanup-proof] > div:first-child a:is(:hover, :focus-visible)::after { animation: none; }
+}
+@keyframes bug-scurry-on { 0%, 100% { translate: 0 0; } 25% { translate: 3px -1px; } 50% { translate: 6px 0; } 75% { translate: 3px -1px; } }

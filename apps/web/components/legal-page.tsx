@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import type { PublicPath } from './public-site-header';
 import { Website } from './public-website';
+import { ReadingProgress } from './reading-progress';
 import styles from './legal-page.module.css';
 
 type LegalSection = {
@@ -30,6 +31,7 @@ export function LegalPage({
   return (
     <Website activePath={activePath}>
       <main id="main-content" tabIndex={-1} className={styles.page}>
+        <ReadingProgress />
         <header className={styles.header}>
           <h1>{title}</h1>
           <p className={styles.summary}>{summary}</p>

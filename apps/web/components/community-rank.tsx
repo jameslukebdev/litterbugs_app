@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable @next/next/no-img-element -- the small crawling caterpillar, like the map's bugs. */
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { useDataRefresh } from '@/lib/use-data-refresh';
@@ -59,7 +60,12 @@ export function CommunityRank({ userId, compact = false, hold = false, onReady }
       </div>
     </div>
     <div className="community-rank-progress" style={points === null ? { visibility: 'hidden' } : undefined} aria-hidden={points === null}>
-      <progress max={100} value={progress} aria-label={next ? `${progress}% of the way to ${next.name}` : 'Highest rank reached'} />
+      <progress className="sr-only" max={100} value={progress} aria-label={next ? `${progress}% of the way to ${next.name}` : 'Highest rank reached'} />
+      {/* What you see: the bar fills while a caterpillar inches along it (it remounts when the points arrive). */}
+      <div className="community-rank-bar" aria-hidden="true" key={points === null ? 'waiting' : 'ready'}>
+        <span className="community-rank-bar-fill" style={{ width: `${progress}%` }} />
+        {points !== null && <img className="community-rank-bar-bug" src="/brand/ranks/caterpillar.svg" alt="" style={{ left: `${progress}%` }} />}
+      </div>
       <p className="community-rank-next">
         {next ? <>{points !== null ? <Image src={next.artwork} width={20} height={20} alt="" /> : <span aria-hidden style={{ display: 'inline-block', width: 20, height: 20, flex: 'none' }} />}<span><strong>{next.points - (points ?? 0)} {next.points - (points ?? 0) === 1 ? 'point' : 'points'}</strong> to {next.name}</span></> : 'Highest rank reached'}
       </p>

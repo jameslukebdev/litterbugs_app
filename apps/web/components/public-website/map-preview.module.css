@@ -183,3 +183,11 @@
 @media (prefers-reduced-motion: reduce) {
   .preview .explore, .preview .explore svg, .nudge { transition: none; }
 }
+
+/* Nov 2026: the lightning bug lights the way. On hover it glows; the button itself stays put. */
+.preview .explore:hover, .frame:has(.backdrop:hover) .explore { translate: none; box-shadow: none; }
+.exploreBug { flex: none; width: 24px; height: 24px; object-fit: contain; transition: filter .2s ease; }
+/* Glows whenever you're over the map: the picture, its pins, the key or the button. */
+.preview .explore:is(:hover, :focus-visible) .exploreBug, .frame:hover .exploreBug { animation: bug-glow 800ms ease-in-out infinite alternate; }
+@media (prefers-reduced-motion: reduce) { .preview .explore:is(:hover, :focus-visible) .exploreBug, .frame:hover .exploreBug { animation: none; filter: drop-shadow(0 0 6px rgba(255, 182, 0, .9)); } }
+@keyframes bug-glow { from { filter: drop-shadow(0 0 0 rgba(255, 182, 0, 0)); transform: scale(.94); } to { filter: drop-shadow(0 0 7px rgba(255, 182, 0, .95)); transform: scale(1.06); } }

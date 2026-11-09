@@ -1,4 +1,5 @@
 import type { MappableReport } from '@litterbugs/report-contract';
+import { BUG_ART, prefersReducedMotion } from './bug-motion';
 
 /**
  * Map pins in the site's bug style (same as the homepage map preview):
@@ -20,11 +21,14 @@ export function pinKind(state: string | null | undefined): PinKind {
 }
 
 /** Fills a marker or group glyph; only touches the DOM when what it shows has changed. */
-export function renderPinGlyph(glyph: HTMLElement, kind: PinKind, text: string, visibleText: boolean) {
+export function renderPinGlyph(glyph: HTMLElement, kind: PinKind, text: string, visibleText: boolean, map: object) {
   const key = `${kind}|${text}|${visibleText}`;
   if (glyph.dataset.render === key) return;
+  const firstRender = glyph.dataset.render === undefined;
+  const previousKind = glyph.dataset.kind as PinKind | undefined;
   glyph.dataset.render = key;
   glyph.dataset.kind = kind;
+  if (firstRender) landPin(glyph, map);
   glyph.classList.toggle('map-pin-icon-only', !visibleText);
   const bug = document.createElement('img');
   const art = BUGS[kind];
@@ -35,7 +39,48 @@ export function renderPinGlyph(glyph: HTMLElement, kind: PinKind, text: string, 
   label.textContent = text;
   // Keep any hover card that already lives inside the glyph.
   const card = glyph.querySelector(':scope > .map-pin-card');
+  // A spot that was waiting for a cleanup (ladybug or caterpillar) and is now done blooms into its flower.
+  if (!firstRender && previousKind && previousKind !== 'done' && kind === 'done' && !prefersReducedMotion()) bug.classList.add('bug-pin-bloom');
   glyph.replaceChildren(bug, label, ...(card ? [card] : []));
+}
+
+const mapLandings = new WeakMap<object, { first: number; last: number; count: number }>();
+/** Pins land a few at a time while the map first fills; later pans and zooms just show them. */
+function landPin(glyph: HTMLElement, map: object) {
+  if (prefersReducedMotion()) return;
+  const now = performance.now();
+  const landing = mapLandings.get(map) ?? { first: now, last: now, count: 0 };
+  if (now - landing.first > 3000) return;
+  if (now - landing.last > 50) landing.count = 0;
+  glyph.style.animationDelay = `${Math.min(landing.count, 8) * 60}ms`;
+  landing.count += 1;
+  landing.last = now;
+  mapLandings.set(map, landing);
+  glyph.classList.add('bug-pin-land');
+  const finish = (event: AnimationEvent) => {
+    if (event.target !== glyph || event.animationName !== 'bug-land') return;
+    glyph.classList.remove('bug-pin-land');
+    glyph.style.animationDelay = '';
+    glyph.removeEventListener('animationend', finish);
+    glyph.removeEventListener('animationcancel', finish);
+  };
+  glyph.addEventListener('animationend', finish);
+  glyph.addEventListener('animationcancel', finish);
+}
+
+/** The dragonfly flies in and drops a just-posted report's pin, with a small ripple where it lands. */
+export function celebratePostedPin(glyph: HTMLElement) {
+  if (prefersReducedMotion()) return;
+  const dragonfly = document.createElement('img');
+  dragonfly.src = BUG_ART.dragonfly; dragonfly.alt = ''; dragonfly.setAttribute('aria-hidden', 'true');
+  dragonfly.className = 'bug-pin-dragonfly';
+  const ripple = document.createElement('span');
+  ripple.className = 'bug-pin-ripple'; ripple.setAttribute('aria-hidden', 'true');
+  glyph.classList.remove('bug-pin-land');
+  glyph.style.animationDelay = '';
+  glyph.classList.add('bug-pin-posted');
+  glyph.append(dragonfly, ripple);
+  window.setTimeout(() => { dragonfly.remove(); ripple.remove(); glyph.classList.remove('bug-pin-posted'); }, 2200);
 }
 
 export function reportPinText(report: Pick<MappableReport, 'cleanup_state' | 'funded_amount_cents'>) {

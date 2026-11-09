@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { scurryFrom } from '@/lib/bug-motion';
 import { createClient } from '@/lib/supabase/client';
 import { reportPreferenceSync } from '@/lib/synced-report-preferences';
 
@@ -25,7 +26,10 @@ export function ReportCardOptions({ reportId, title }: { reportId: string; title
       const { data } = await createClient().auth.getUser();
       const owner = data.user?.id ?? 'guest';
       const value = await reportPreferenceSync.set(owner, 'hidden', reportId, !hidden);
-      setHidden(value.preferences.hidden.includes(reportId));
+      const isHidden = value.preferences.hidden.includes(reportId);
+      setHidden(isHidden);
+      const card = menu.current?.closest('article');
+      if (!hidden && isHidden && card) scurryFrom(card);
       setMessage(hidden ? 'Report restored to map results.' : 'Report hidden from map results. You can undo this here.');
       await reportPreferenceSync.sync(owner);
     } catch {

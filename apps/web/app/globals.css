@@ -2188,3 +2188,139 @@ body .public-report-cards .report-card-container.report-card-container.report-ca
 .community-rank.community-rank details { margin-top: 16px; padding-top: 12px; border-top: 1px solid #efedf4; color: #45434d; font-size: 14px; line-height: 1.6; }
 .community-rank.community-rank summary { color: #3f36c4; font-weight: 800; cursor: pointer; }
 .community-rank.community-rank summary:hover { color: #2c2496; }
+
+/* Safety net (Nov 2026): the page itself never pans sideways on phones, whatever a single element does.
+   `clip` (not `hidden`) keeps sticky headers working. */
+html, body { max-width: 100%; overflow-x: clip; }
+
+/* ---------------------------------------------------------------------------------------------------------
+   Bug motion (Nov 2026). Short, one-off animations tied to something happening; see lib/bug-motion.ts and
+   components/bug-motion.tsx. "Reduce motion" skips them (bottom of this block).
+   --------------------------------------------------------------------------------------------------------- */
+@keyframes bug-bloom-in { from { opacity: 0; transform: scale(0) rotate(90deg); } to { opacity: 1; transform: none; } }
+@keyframes bug-pop { 0% { transform: scale(1); } 50% { transform: scale(1.22); } 100% { transform: scale(1); } }
+@keyframes bug-land { 0% { opacity: 0; translate: 0 -20px; scale: .6; rotate: -8deg; } 70% { opacity: 1; translate: 0 2px; scale: 1.04; rotate: 4deg; } 100% { opacity: 1; translate: 0 0; scale: 1; rotate: 0deg; } }
+@keyframes bug-drop { from { opacity: 0; translate: 0 -28px; scale: .7; } to { opacity: 1; translate: 0 0; scale: 1; } }
+@keyframes bug-dragonfly-in { 0% { opacity: 0; transform: translate(-130px, -120px) rotate(30deg); } 15% { opacity: 1; } 80% { opacity: 1; transform: translate(-6px, -34px) rotate(10deg); } 100% { opacity: 0; transform: translate(0, -30px) rotate(0); } }
+@keyframes bug-ripple { 0% { opacity: .9; transform: translateX(-50%) scale(.3); } 100% { opacity: 0; transform: translateX(-50%) scale(2); } }
+@keyframes bug-glow { from { filter: drop-shadow(0 0 0 rgba(255, 182, 0, 0)); transform: scale(.94); } to { filter: drop-shadow(0 0 7px rgba(255, 182, 0, .95)); transform: scale(1.06); } }
+@keyframes bug-wiggle { 0%, 100% { rotate: 0deg; } 20% { rotate: -14deg; } 40% { rotate: 11deg; } 60% { rotate: -7deg; } 80% { rotate: 4deg; } }
+@keyframes bug-ant-walk { from { left: -30px; } to { left: calc(100% + 10px); } }
+@keyframes bug-bob { from { translate: 0 0; } to { translate: 0 -2px; } }
+@keyframes bug-walk-in { 0% { opacity: 0; transform: translateX(-120px) rotate(80deg); } 70% { opacity: 1; transform: translateX(5px) rotate(80deg); } 100% { opacity: 1; transform: none; } }
+@keyframes bug-look { 0%, 100% { rotate: 0deg; } 25% { rotate: -14deg; } 50% { rotate: 0deg; } 75% { rotate: 12deg; } }
+@keyframes bug-heart-hop { 0% { transform: scale(.6); } 60% { transform: scale(1.32); } 100% { transform: scale(1); } }
+@keyframes bug-fill { from { width: 0; } }
+@keyframes bug-crawl { from { left: -6px; } }
+@keyframes bug-inch { 0%, 100% { scale: 1 1; } 50% { scale: .78 1.18; } }
+
+/* 1 + 6 + 3: map pins land as results appear, a ladybug blooms into a flower, a new report's pin is dropped by the dragonfly. */
+.bug-pin-land { animation: bug-land 520ms cubic-bezier(.3, 1.5, .5, 1) both; }
+.bug-pin-bloom { animation: bug-bloom-in 560ms cubic-bezier(.3, 1.6, .5, 1) both; }
+.bug-pin-posted { animation: bug-drop 520ms cubic-bezier(.3, 1.5, .5, 1) 850ms both; }
+.bug-pin-dragonfly { position: absolute; left: 50%; top: 0; z-index: 3; width: 30px; height: 30px; margin-left: -15px; pointer-events: none; animation: bug-dragonfly-in 1000ms cubic-bezier(.45, 0, .25, 1) both; }
+.bug-pin-ripple { position: absolute; left: 50%; bottom: -12px; width: 30px; height: 10px; border: 2px solid #9b8cec; border-radius: 50%; pointer-events: none; animation: bug-ripple 700ms ease-out 1100ms both; }
+/* 1: the report sheet's status bug blooms too. */
+.bug-bloom { animation: bug-bloom-in 560ms cubic-bezier(.3, 1.6, .5, 1) both; }
+/* 2: the fund amount pops as the bee arrives. */
+.bug-fund-pop { display: inline-block; animation: bug-pop 380ms cubic-bezier(.3, 1.6, .5, 1); }
+/* 4: rank bar (see community-rank.tsx). */
+.community-rank-bar { position: relative; height: 10px; border-radius: 10px; background: #efedf4; }
+.community-rank-bar-fill { position: absolute; inset: 0 auto 0 0; border-radius: 10px; background: #5146ed; animation: bug-fill 1500ms cubic-bezier(.4, 0, .2, 1) 250ms both; }
+.community-rank-bar-bug { position: absolute; bottom: 6px; width: 28px; height: 20px; margin-left: -16px; object-fit: contain; transform-origin: 50% 100%; pointer-events: none; animation: bug-crawl 1500ms cubic-bezier(.4, 0, .2, 1) 250ms both, bug-inch 380ms ease-in-out 250ms 4; }
+/* 5: an ant walks along loading cards. */
+.bug-ant-host { position: relative; overflow: hidden; }
+.bug-ant-walk { position: absolute; left: 0; right: 0; bottom: 4px; height: 22px; pointer-events: none; }
+.bug-ant-walk img { position: absolute; left: -30px; bottom: 0; width: 22px; height: 22px; rotate: 108deg; animation: bug-ant-walk 2600ms linear infinite, bug-bob 220ms ease-in-out infinite alternate; }
+/* 7: the lightning bug glows while finding your location. */
+.bug-glow { animation: bug-glow 900ms ease-in-out infinite alternate; }
+/* 8: the cocoon wiggles on hover and once when it scrolls into view. */
+.bug-wiggle-arrival { transform-origin: 50% 10%; animation: bug-wiggle 900ms ease-in-out; }
+.heading-with-bug:hover .bug-wiggle { transform-origin: 50% 10%; animation: bug-wiggle 900ms ease-in-out both; }
+/* 9: the flower opens on the After photo. */
+[data-side='after'] img.bug-switch-bloom { animation: bug-bloom-in 560ms cubic-bezier(.3, 1.6, .5, 1) both; }
+/* 10: favourite hops. */
+.bug-heart-pop svg { animation: bug-heart-hop 440ms cubic-bezier(.3, 1.8, .5, 1); }
+/* 11: a ladybug walks into empty lists. */
+.bug-empty-walker { display: block; width: 36px; height: 36px; margin: 0 auto 8px; transform-origin: 50% 80%; animation: bug-walk-in 1100ms cubic-bezier(.3, 0, .3, 1) 200ms both, bug-look 1200ms ease-in-out 1400ms both; }
+/* 12: one underline glides between tabs (it replaces each tab's own underline once it is running). */
+[data-sliding-underline] { position: relative; }
+[data-sliding-underline][data-sliding-underline] [aria-current='page'] { border-bottom-color: transparent !important; }
+.bug-tab-underline { position: absolute; left: 0; top: 0; height: 3px; border-radius: 3px; background: #5146ed; opacity: 0; pointer-events: none; transition: transform 340ms cubic-bezier(.4, 0, .2, 1), width 340ms cubic-bezier(.4, 0, .2, 1); }
+@media (prefers-reduced-motion: reduce) {
+  :is(.bug-pin-land, .bug-pin-bloom, .bug-pin-posted, .bug-bloom, .bug-fund-pop, .community-rank-bar-fill, .community-rank-bar-bug, .bug-glow, .bug-wiggle, .bug-switch-bloom, .bug-heart-pop svg, .bug-empty-walker) { animation: none !important; }
+  .bug-pin-dragonfly, .bug-pin-ripple, .bug-ant-walk { display: none; }
+  .bug-tab-underline { transition: none; }
+}
+
+/* Every bug has its own move, played while you hover (or tap) the button, link, tab, card, heading or map pin it
+   sits on — so the site feels alive from the first visit. Ladybug waddles, bee buzzes, butterfly flaps, dragonfly
+   darts, caterpillar inches, flower spins open, lightning bug glows, cocoon rattles, ant scurries. */
+@keyframes bug-waddle { 0%, 100% { rotate: 0deg; translate: 0 0; } 25% { rotate: -12deg; translate: -1px 0; } 50% { rotate: 0deg; translate: 0 -1px; } 75% { rotate: 12deg; translate: 1px 0; } }
+@keyframes bug-buzz { 0%, 100% { translate: 0 0; rotate: 0deg; } 20% { translate: 1px -2px; rotate: -6deg; } 40% { translate: -1px -1px; rotate: 5deg; } 60% { translate: 1px -2px; rotate: -4deg; } 80% { translate: -1px 0; rotate: 3deg; } }
+@keyframes bug-flap { 0%, 100% { scale: 1 1; } 25% { scale: .55 1; } 50% { scale: 1 1; } 75% { scale: .6 1; } }
+@keyframes bug-dart { 0%, 100% { translate: 0 0; } 30% { translate: 7px -4px; } 55% { translate: -2px 1px; } 75% { translate: 2px -1px; } }
+/* Every move ends exactly where it started, so it reads as a loop: the flower spins a full turn. */
+@keyframes bug-spin-open { 0% { rotate: 0deg; scale: 1; } 50% { rotate: 180deg; scale: 1.22; } 100% { rotate: 360deg; scale: 1; } }
+/* Ants step forward the way they face (the artwork points up and a little left), then back. */
+@keyframes bug-ant-step { 0%, 100% { translate: 0 0; } 50% { translate: -1.5px -4px; } }
+@keyframes bug-scurry-on { 0%, 100% { translate: 0 0; } 25% { translate: 3px -1px; } 50% { translate: 6px 0; } 75% { translate: 3px -1px; } }
+:is(a, button, summary, label, [role='button'], .heading-with-bug, .report-card-container, [data-kind], [data-bug-hover]):is(:hover, :focus-visible) img[src*='ladybug'] { animation: bug-waddle 620ms ease-in-out; }
+:is(a, button, summary, label, [role='button'], .heading-with-bug, .report-card-container, [data-kind], [data-bug-hover]):is(:hover, :focus-visible) img[src*='bee.png'] { animation: bug-buzz 420ms linear 2; }
+:is(a, button, summary, label, [role='button'], .heading-with-bug, .report-card-container, [data-kind], [data-bug-hover]):is(:hover, :focus-visible) img[src*='butterfly'] { animation: bug-flap 520ms ease-in-out; }
+:is(a, button, summary, label, [role='button'], .heading-with-bug, .report-card-container, [data-kind], [data-bug-hover]):is(:hover, :focus-visible) img[src*='dragonfly'] { animation: bug-dart 460ms ease-out; }
+:is(a, button, summary, label, [role='button'], .heading-with-bug, .report-card-container, [data-kind], [data-bug-hover]):is(:hover, :focus-visible) img[src*='caterpillar'] { transform-origin: 50% 100%; animation: bug-inch 380ms ease-in-out 2; }
+:is(a, button, summary, label, [role='button'], .heading-with-bug, .report-card-container, [data-kind], [data-bug-hover]):is(:hover, :focus-visible) img[src*='flower']:not(.bug-switch-bloom) { animation: bug-spin-open 560ms cubic-bezier(.3, 1.4, .5, 1); }
+:is(a, button, summary, label, [role='button'], .heading-with-bug, .report-card-container, [data-kind], [data-bug-hover]):is(:hover, :focus-visible) img[src*='lightning-bug'] { animation: bug-glow 800ms ease-in-out infinite alternate; }
+:is(a, button, summary, label, [role='button'], .heading-with-bug, .report-card-container, [data-kind], [data-bug-hover]):is(:hover, :focus-visible) img[src*='cocoon'] { transform-origin: 50% 10%; animation: bug-wiggle 900ms ease-in-out; }
+:is(a, button, summary, label, [role='button'], .heading-with-bug, .report-card-container, [data-kind], [data-bug-hover]):is(:hover, :focus-visible) img[src*='ant.svg'] { animation: bug-ant-step 360ms ease-in-out infinite; }
+/* Status tags and the funded bee on report cards are painted bugs (not images); same moves on card hover. */
+.report-card-container:is(:hover, :focus-within) .report-result-workflow::before { animation: bug-waddle 620ms ease-in-out; }
+.report-card-container:is(:hover, :focus-within) .report-result-workflow[data-tone='active']::before { transform-origin: 50% 100%; animation: bug-inch 380ms ease-in-out 2; }
+.report-card-container:is(:hover, :focus-within) .report-result-workflow[data-tone='completed']::before { animation: bug-spin-open 560ms cubic-bezier(.3, 1.4, .5, 1); }
+.report-card-container:is(:hover, :focus-within) .report-result-reward-funded::before { animation: bug-buzz 420ms linear 2; }
+@media (prefers-reduced-motion: reduce) {
+  :is(a, button, summary, label, [role='button'], .heading-with-bug, .report-card-container, [data-kind], [data-bug-hover]):is(:hover, :focus-visible) img,
+  .report-card-container :is(.report-result-workflow, .report-result-reward-funded)::before { animation: none !important; }
+}
+
+/* Map key (homepage preview and full map): hovering a line of the key makes every pin of that kind do its
+   move, so it's clear which pins are which. */
+@media (hover: hover) and (pointer: fine) {
+  [data-map-key] li { pointer-events: auto; cursor: default; }
+  [data-map-key-scope]:has([data-map-key] [data-kind='open']:hover) [data-kind='open'] img[src*='ladybug'] { animation: bug-waddle 620ms ease-in-out 2; }
+  [data-map-key-scope]:has([data-map-key] [data-kind='busy']:hover) [data-kind='busy'] img[src*='caterpillar'] { transform-origin: 50% 100%; animation: bug-inch 380ms ease-in-out 3; }
+  [data-map-key-scope]:has([data-map-key] [data-kind='done']:hover) [data-kind='done'] img[src*='flower'] { animation: bug-spin-open 560ms cubic-bezier(.3, 1.4, .5, 1); }
+}
+
+/* Long reading pages (Terms, Privacy, policies): a caterpillar crawls along the bottom of the header as you read. */
+.reading-progress { position: absolute; left: 0; right: 0; bottom: -3px; z-index: 1; height: 3px; pointer-events: none; }
+.reading-progress-fill { position: absolute; inset: 0 auto 0 0; width: calc(var(--read, 0) * 100%); background: #5146ed; border-radius: 0 3px 3px 0; }
+.reading-progress-bug { position: absolute; bottom: 1px; left: clamp(0px, calc(var(--read, 0) * 100% - 20px), calc(100% - 26px)); width: 26px; height: 20px; object-fit: contain; opacity: 0; transition: opacity .25s ease; transform-origin: 50% 100%; }
+.reading-progress[data-started] .reading-progress-bug { opacity: 1; }
+.reading-progress[data-crawling] .reading-progress-bug { animation: bug-inch 380ms ease-in-out infinite; }
+
+/* Page not found: a lost ladybug wanders back and forth, looking around. It always faces the way it walks. */
+.lost-page { text-align: center; }
+.lost-ladybug-track { position: relative; width: min(320px, 100%); height: 44px; margin: 0 auto 12px; }
+.lost-ladybug { position: absolute; left: 8%; top: 6px; width: 32px; height: 32px; object-fit: contain; rotate: 90deg; animation: bug-lost-wander 7s ease-in-out infinite; }
+@keyframes bug-lost-wander {
+  0% { left: 8%; rotate: 90deg; }
+  30% { left: 72%; rotate: 90deg; }
+  36% { left: 72%; rotate: 0deg; }
+  40% { left: 72%; rotate: -20deg; }
+  44% { left: 72%; rotate: 0deg; }
+  50% { left: 72%; rotate: -90deg; }
+  80% { left: 8%; rotate: -90deg; }
+  86% { left: 8%; rotate: 0deg; }
+  90% { left: 8%; rotate: 20deg; }
+  94% { left: 8%; rotate: 0deg; }
+  100% { left: 8%; rotate: 90deg; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-map-key-scope] [data-kind] img { animation: none !important; }
+  .reading-progress-bug { transition: none; }
+  .reading-progress[data-crawling] .reading-progress-bug { animation: none; }
+  .lost-ladybug { animation: none; left: calc(50% - 16px); rotate: 0deg; }
+}

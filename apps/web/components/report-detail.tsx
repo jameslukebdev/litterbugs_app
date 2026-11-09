@@ -27,6 +27,8 @@ import { isPubliclyShareableReport } from '@/lib/public-report-share-model';
 import { reportShareCopy } from '@/lib/report-share-destinations';
 import { retryReportPhotoUrl, getReportCardPhotoUrl, getReportDetailPhotoUrl, getWebCompatibleReportPhotoUrl } from '@/lib/report-photo';
 import { createClient } from '@/lib/supabase/client';
+import { useBecame, useFundFlight } from '@/components/bug-motion';
+import { replayClass, scurryFrom } from '@/lib/bug-motion';
 
 const EMPTY_PHOTO_PATHS: string[] = [];
 
@@ -209,6 +211,12 @@ export function ReportDetail({
   const hasAfterPhotos = report.cleanup_state === 'completed' && (cleanup.impact?.photoPaths.length ?? 0) > 0;
   const showAfter = hasAfterPhotos && photoSide === 'after';
   // Same bugs and colours as the map pins: ladybug = needs a cleanup, caterpillar = being cleaned, flower = cleaned up.
+  // Bug motion: the status bug blooms when this report becomes a finished cleanup while it's open; the fund counts
+  // up after the bee flies in; the After switch's flower opens when chosen.
+  const bloomCount = useBecame(report.id, report.cleanup_state, (next, previous) => next === 'completed' && previous !== 'completed');
+  const fundLine = useRef<HTMLSpanElement>(null);
+  const shownFund = useFundFlight(report.id, report.funded_amount_cents, fundLine);
+  const [afterBloom, setAfterBloom] = useState(0);
   const statusView = closed ? { tone: 'muted', bug: '' }
     : report.cleanup_state === 'completed' ? { tone: 'done', bug: '/brand/bugs/flower.png' }
     : report.cleanup_state === 'available' ? { tone: 'open', bug: '/brand/bugs/ladybug.png' }
@@ -334,7 +342,7 @@ export function ReportDetail({
           {!embedded && <button className="report-layout-toggle" onClick={() => setExpandedLayout(value => !value)} aria-pressed={expandedLayout} aria-label={expandedLayout ? 'Compact view' : 'Larger view'} title={expandedLayout ? 'Compact view' : 'Larger view'}>{expandedLayout ? <FiMinimize2 aria-hidden="true" /> : <FiMaximize2 aria-hidden="true" />}</button>}
           <img className="report-detail-toolbar-logo" src="/brand/litterbugs-logo.png" alt="" aria-hidden />
           <nav className="report-detail-toolbar-actions" aria-label="Report actions">
-            {onFavoriteChange && <button type="button" aria-pressed={favorite} title={favorite ? 'Saved' : 'Favorite'} onClick={() => onFavoriteChange?.(!favorite)}>
+            {onFavoriteChange && <button type="button" aria-pressed={favorite} title={favorite ? 'Saved' : 'Favorite'} onClick={event => { if (!favorite) replayClass(event.currentTarget, 'bug-heart-pop'); onFavoriteChange?.(!favorite); }}>
               <Icon name="heart" />
               <span>{favorite ? 'Saved' : 'Favorite'}</span>
             </button>}
@@ -351,7 +359,7 @@ export function ReportDetail({
                 <span>{report.cleanup_state === 'completed' ? 'Share cleanup' : shareCopy.actionLabel}</span>
               </button>
             )}
-            {onHiddenChange && <button type="button" aria-pressed={hidden} title={hidden ? 'Hidden' : 'Hide'} onClick={() => onHiddenChange?.(!hidden)}>
+            {onHiddenChange && <button type="button" aria-pressed={hidden} title={hidden ? 'Hidden' : 'Hide'} onClick={event => { if (!hidden) scurryFrom(event.currentTarget); onHiddenChange?.(!hidden); }}>
               <Icon name="eye-off" />
               <span>{hidden ? 'Hidden' : 'Hide'}</span>
             </button>}
@@ -361,7 +369,7 @@ export function ReportDetail({
         <div className="report-detail-layout">
           <div className="report-detail-visual">
             {hasAfterPhotos && photoPaths.length > 0 && <div className={styles.sideSwitch} role="group" aria-label="Choose photos">
-              <button type="button" aria-pressed={photoSide === 'after'} data-side="after" onClick={() => setPhotoSide('after')}><img src="/brand/bugs/flower.png" alt="" aria-hidden="true" width={16} height={16} />After cleanup</button>
+              <button type="button" aria-pressed={photoSide === 'after'} data-side="after" onClick={() => { if (photoSide !== 'after') setAfterBloom(value => value + 1); setPhotoSide('after'); }}><img key={afterBloom} className={afterBloom ? 'bug-switch-bloom' : undefined} src="/brand/bugs/flower.png" alt="" aria-hidden="true" width={16} height={16} />After cleanup</button>
               <button type="button" aria-pressed={photoSide === 'before'} data-side="before" onClick={() => setPhotoSide('before')}><img src="/brand/bugs/ladybug.png" alt="" aria-hidden="true" width={16} height={16} />Before</button>
             </div>}
             <div className="report-photo-region" aria-busy={showAfter ? undefined : photoPaths.length > 0 && !photoLoaded && !photoFailed}>
@@ -427,10 +435,10 @@ export function ReportDetail({
               <header className="report-detail-header">
                 <h2 id="report-detail-title">{report.title || 'Litter Report'}</h2>
                 <p className={styles.status} data-tone={statusView.tone}>
-                  {statusView.bug ? <img src={statusView.bug} alt="" aria-hidden="true" width={18} height={18} /> : null}
+                  {statusView.bug ? <img key={bloomCount} className={statusView.tone === 'done' && bloomCount ? 'bug-bloom' : undefined} src={statusView.bug} alt="" aria-hidden="true" width={18} height={18} /> : null}
                   {closed ? 'Report closed' : cleanupStatusLabel(report.cleanup_state)}
                 </p>
-                {!closed && report.cleanup_state !== 'completed' && report.funded_amount_cents > 0 && <p className={styles.fund}><img src="/brand/bugs/bee.png" alt="" aria-hidden="true" width={18} height={18} />{formatUsd(report.funded_amount_cents)} in its cleanup fund</p>}
+                {!closed && report.cleanup_state !== 'completed' && report.funded_amount_cents > 0 && <p className={styles.fund}><img src="/brand/bugs/bee.png" alt="" aria-hidden="true" width={18} height={18} /><span><span ref={fundLine}>{formatUsd(shownFund)}</span> in its cleanup fund</span></p>}
                 <p className={styles.meta}>
                   <span className={`report-detail-severity report-detail-severity-${severity.toLowerCase()}`}><span />{severity} priority</span>
                   {report.created_at && <span>Reported {formatDate(report.created_at)}</span>}

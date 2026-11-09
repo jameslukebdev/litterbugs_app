@@ -24,16 +24,19 @@ import {
   parseContributionAmount,
   type ContributionIntent,
 } from '@/lib/funding';
+import { clearFundBeforeCheckout, rememberFundBeforeCheckout } from '@/lib/bug-motion';
 
 function ContributionPaymentForm({
   intent,
   reportId,
+  fundedCents,
   reportTitle,
   onComplete,
   onBusyChange,
 }: {
   intent: ContributionIntent;
   reportId: string;
+  fundedCents: number;
   reportTitle?: string | null;
   onComplete: () => void | Promise<void>;
   onBusyChange: (busy: boolean) => void;
@@ -50,6 +53,7 @@ function ContributionPaymentForm({
     setError('');
     onBusyChange(true);
     rememberContributionAttempt(intent.contributionId);
+    rememberFundBeforeCheckout(reportId, fundedCents);
     trackParticipation('fund', 'payment_submitted');
     try {
     const result = await stripe.confirmPayment({
@@ -60,6 +64,7 @@ function ContributionPaymentForm({
       redirect: 'if_required',
     });
     if (result.error) {
+      clearFundBeforeCheckout(reportId);
       trackParticipationFailure('fund', 'payment_submitted', 'payment_rejected');
       setError(result.error.message || 'Payment was not completed.');
       setBusy(false);
@@ -270,7 +275,7 @@ export function FundingContributionAction({
               clientSecret: intent.paymentIntentClientSecret,
               appearance: { variables: { colorPrimary: '#5146ed', borderRadius: '14px', fontFamily: 'system-ui, sans-serif' } },
             }}>
-              <ContributionPaymentForm intent={intent} reportId={report.id} reportTitle={report.title || 'Litter cleanup'} onComplete={complete} onBusyChange={setBusy} />
+              <ContributionPaymentForm intent={intent} reportId={report.id} fundedCents={report.funded_amount_cents} reportTitle={report.title || 'Litter cleanup'} onComplete={complete} onBusyChange={setBusy} />
             </Elements>
           ) : <p className="form-message error-message">Payment could not be loaded.</p>}
         </ModalShell>

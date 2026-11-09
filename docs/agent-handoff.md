@@ -24,6 +24,23 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (bug animations ready for local review)
+
+- Claude had wired up most animations. Finished the account status bloom,
+  report-list empty state, reading-page coverage, and cocoon entrance.
+  Kept new-report pins visible during their animation even in clustered areas.
+  Fixed funding animation cleanup and keyboard focus on the manual After switch.
+- Removed #13 hero hover and #16 automatic photo switching from the site and
+  gallery. The development-only gallery shows 18 demos at
+  `http://localhost:3000/dev-review-preview/bug-animations`.
+- Local Chrome checks covered desktop, 320px mobile, reduced motion, map,
+  report photos, and a simulated checkout return. 890 web tests, typecheck
+  and lint of the changed files passed. Workspace lint still reports errors
+  in unrelated, pre-existing preview routes.
+- Signed-in rank, publication and cleanup approval were not exercised end to
+  end. Committed the animation work locally. No push or deployment. Wait for
+  Grant’s approval before deploying.
+
 ### 2026-11-09 — Codex (weekly SEO check)
 
 - Google URL Inspection confirmed 11 of the 12 previously unindexed reports now

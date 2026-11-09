@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element -- Signed Supabase URLs are short-lived runtime images. */
 
 import { createPortal } from 'react-dom';
-import NextImage from 'next/image';
+import { EmptyBug } from '@/components/bug-motion';
 import { ReportSortMenu } from './report-sort';
 import controls from './report-controls.module.css';
 import { BrandBug } from './brand-bug';
@@ -17,6 +17,7 @@ import type { BoundaryGeometry } from '@/lib/place-geography';
 import { readBrowserMemory, saveBrowserMemory, readBrowserUrl, browserUrl } from '@/lib/discovery-memory';
 import { reportRewardCents } from '@/lib/cleanup-reward';
 import { getBrowserLocation } from '@/lib/geolocation';
+import { replayClass, scurryFrom } from '@/lib/bug-motion';
 import { createClient } from '@/lib/supabase/client';
 import { ReportAuthor, publicFields, type PublicProfile } from '@/components/report-author';
 import { FilterChoices } from '@/components/filter-choices';
@@ -486,8 +487,8 @@ export function ReportBrowser({
                   <button type="button" aria-label={`Next photo of ${report.title || 'report'}`} onClick={() => stepPhoto(report, 1)}><Icon name="chevron-right" /></button>
                 </div>
               )}
-              {onFavoriteChange && <button className="card-favorite" aria-label={`${favoriteReportIds.has(report.id) ? 'Unfavorite' : 'Favorite'} ${report.title || 'report'}`} aria-pressed={favoriteReportIds.has(report.id)} onClick={() => onFavoriteChange(report.id, !favoriteReportIds.has(report.id))}><Icon name="heart" /></button>}
-              {onHiddenChange && <details className="card-options" onToggle={event => closeOtherCardMenus(event.currentTarget)}><summary aria-label={`Options for ${report.title || 'report'}`}>•••</summary><button onClick={() => onHiddenChange(report.id, !hiddenReportIds.has(report.id))}>{hiddenReportIds.has(report.id) ? 'Unhide report' : 'Hide report'}</button></details>}
+              {onFavoriteChange && <button className="card-favorite" aria-label={`${favoriteReportIds.has(report.id) ? 'Unfavorite' : 'Favorite'} ${report.title || 'report'}`} aria-pressed={favoriteReportIds.has(report.id)} onClick={event => { if (!favoriteReportIds.has(report.id)) replayClass(event.currentTarget, 'bug-heart-pop'); onFavoriteChange(report.id, !favoriteReportIds.has(report.id)); }}><Icon name="heart" /></button>}
+              {onHiddenChange && <details className="card-options" onToggle={event => closeOtherCardMenus(event.currentTarget)}><summary aria-label={`Options for ${report.title || 'report'}`}>•••</summary><button onClick={event => { if (!hiddenReportIds.has(report.id)) scurryFrom(event.currentTarget.closest('article') ?? event.currentTarget); onHiddenChange(report.id, !hiddenReportIds.has(report.id)); }}>{hiddenReportIds.has(report.id) ? 'Unhide report' : 'Hide report'}</button></details>}
               {showAuthors && report.user_id && (authors[report.user_id] ? <ReportAuthor key={report.user_id} profileId={report.user_id} initialProfile={authors[report.user_id]} sourceReportId={report.id} onBlocked={onMemberBlocked} /> : <div className="report-author report-author-placeholder" aria-hidden="true"><span className="report-author-initial" /><span className="report-author-copy"><span>Community member</span></span></div>)}
               </article>
             );
@@ -505,7 +506,7 @@ export function ReportBrowser({
           ) : (
             <section className={controls.emptyPanel} aria-label="No results">
               <div className={controls.emptyIntro} role="status">
-                <NextImage className={controls.emptyCaterpillar} src="/brand/ranks/caterpillar.svg" width={48} height={48} alt="" />
+                <EmptyBug className={controls.emptyBug} />
                 <h2>{rewardedOnly ? 'No rewarded cleanups match your search' : hasFilters ? 'No reports match your filters' : 'No reports in this map area'}</h2>
               </div>
               {(closestAction || rewardedOnly || canWiden) && <div className={controls.emptyActions}>

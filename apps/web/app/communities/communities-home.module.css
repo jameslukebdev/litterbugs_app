@@ -193,3 +193,8 @@
   .home.home .heroPhoto > img { height: 220px; }
   .home.home .cardPhoto { min-height: 200px; }
 }
+
+/* Hovering a community card zooms its cleanup photo a little; the flower spins (globals: link hover moves). */
+.cardPhoto img { transition: scale .5s ease; }
+@media (hover: hover) and (pointer: fine) { .communityCard:hover .cardPhoto img { scale: 1.06; } }
+@media (prefers-reduced-motion: reduce) { .cardPhoto img { transition: none; } .communityCard:hover .cardPhoto img { scale: 1; } }

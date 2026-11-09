@@ -20,6 +20,7 @@ import {
 import heroStyles from '@/components/public-website/home-hero.module.css';
 import { APP_STORE_URL, GOOGLE_PLAY_URL } from '@/lib/app-links';
 import { WebsiteStructuredData } from '@/components/public-website/structured-data';
+import { AntWalk } from '@/components/bug-motion';
 
 /** The bee's dotted route through the hero, weaving down the gap between the photos (560 × 540 design box). */
 const BEE_FLIGHT = 'M 118 26 C 200 -8 300 36 272 118 S 226 236 282 278 S 334 352 276 380 S 238 466 295 498';
@@ -149,7 +150,8 @@ function HomeFeedLoading() {
       <span className="sr-only">Loading litter reports…</span>
       <div className={styles.cards} aria-hidden="true">
         {[1, 2, 3].map((key) => (
-          <div key={key} className={styles.card}>
+          <div key={key} className={`${styles.card} bug-ant-host`}>
+            {key === 1 && <AntWalk />}
             <div className={styles.cardPhoto} />
             <div className={styles.cardCopy} style={{ minHeight: 150 }}>
               Loading report…

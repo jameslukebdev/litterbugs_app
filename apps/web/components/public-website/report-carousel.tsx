@@ -10,8 +10,20 @@ import styles from './report-carousel.module.css';
 export function ReportCarousel({ children, enabled, className }: { children: ReactNode; enabled: boolean; className: string }) {
   const [areaSearchOpen, setAreaSearchOpen] = useState(false);
   const track = useRef<HTMLDivElement>(null);
+  const cocoon = useRef<HTMLImageElement>(null);
   const id = useId();
   const [edges, setEdges] = useState({ start: true, end: false });
+  useEffect(() => {
+    const bug = cocoon.current;
+    if (!enabled || !bug) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      bug.classList.add('bug-wiggle-arrival');
+      observer.disconnect();
+    });
+    observer.observe(bug);
+    return () => observer.disconnect();
+  }, [enabled]);
   useEffect(() => {
     const node = track.current;
     if (!enabled || !node) return;
@@ -31,7 +43,7 @@ export function ReportCarousel({ children, enabled, className }: { children: Rea
   }
   return <section className={styles.carousel} aria-label="Reports needing a cleanup" aria-roledescription="carousel">
     <div className={styles.heading}>
-      <h2 className="heading-with-bug"><img className="heading-bug" src="/brand/ranks/cocoon.svg" alt="" aria-hidden="true" width={32} height={32} />Reports needing a cleanup</h2>
+      <h2 className="heading-with-bug"><img ref={cocoon} className="heading-bug bug-wiggle" src="/brand/ranks/cocoon.svg" alt="" aria-hidden="true" width={32} height={32} />Reports needing a cleanup</h2>
       <div className={styles.controls}>
       <HeaderAreaSearch label="Find your area" open={areaSearchOpen} onOpenChange={setAreaSearchOpen} />
       <Link href={AVAILABLE_CLEANUPS_MAP_HREF}>See on map</Link>

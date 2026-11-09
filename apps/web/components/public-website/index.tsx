@@ -17,9 +17,12 @@ import styles from './website.module.css';
 import info from './info-pages.module.css';
 import { FiClock, FiImage, FiMap } from 'react-icons/fi';
 import { publicReportStatus } from '@/lib/public-report-status';
+import { EmptyBug, SlidingUnderline } from '@/components/bug-motion';
+import { ReadingProgress } from '../reading-progress';
 import { LITTER_MAP_HREF } from '@/lib/home-map-link';
 export { styles };
 
+const READING_PATHS: PublicPath[] = ['/photo-review', '/cleanup-safety', '/about', '/help', '/get-app', '/fund-a-cleanup', '/cleaner', '/report-litter', '/support'];
 const INFO_PATHS: PublicPath[] = ['/reports', '/cleanups', '/communities', '/photo-review', '/cleanup-safety', '/about', '/help', '/get-app', '/fund-a-cleanup', '/cleaner', '/report-litter'];
 
 export function Website({
@@ -40,6 +43,7 @@ export function Website({
         Skip to content
       </a>
       <PublicSiteHeader activePath={activePath} />
+      {READING_PATHS.includes(activePath) && <ReadingProgress />}
       {children}
       <PublicSiteFooter />
     </div>
@@ -59,6 +63,7 @@ export function DirectoryNav({ current, cities }: { current: 'open' | 'completed
         {tab.bug ? <img src={tab.bug} alt="" aria-hidden="true" width={18} height={18} /> : <FiClock aria-hidden="true" />}<span className={info.long}>{tab.label}</span><span className={info.short}>{tab.short}</span>
       </Link>)}
       <Link className={info.mapLink} href={LITTER_MAP_HREF}><FiMap aria-hidden="true" />View the map</Link>
+      <SlidingUnderline name="report-lists" />
     </nav>
     {cities}
   </div>;
@@ -190,6 +195,7 @@ export function ReportCards({
   ) : (
     <ReportCarousel enabled={carousel} className={styles.cards}>
     <div className={styles.empty}>
+      <EmptyBug />
       <p>
         {feed.unavailable
           ? 'Reports couldn’t load right now. Please try again shortly.'

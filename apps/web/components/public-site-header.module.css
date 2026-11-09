@@ -484,3 +484,12 @@
 .header .mobilePrimaryLinks .triggerBug { transition: transform .2s ease; }
 .header .mobilePrimaryLinks .menuTrigger:is(:hover, :focus-visible, [aria-expanded='true']) .triggerBug { transform: translate(1px, -2px) rotate(-8deg); }
 @media (prefers-reduced-motion: reduce) { .header .mobilePrimaryLinks .triggerBug { transition: none; transform: none !important; } }
+
+/* Hovering the logo sends a tiny bee once around it (ends where it starts, out of sight). */
+.header .brandLink { position: relative; }
+.header.header.header .brandLink img.logoBee { position: absolute; left: 0; top: 0; width: 18px; height: 18px; aspect-ratio: auto; opacity: 0; pointer-events: none; offset-path: path('M 52 -6 C 118 -10 120 82 52 80 C -16 78 -14 -2 52 -6'); offset-distance: 0%; offset-rotate: 0deg; }
+@media (hover: hover) and (pointer: fine) {
+  .header .brandLink:hover img.logoBee { animation: logo-bee-loop 1400ms ease-in-out; }
+}
+@keyframes logo-bee-loop { 0% { offset-distance: 0%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { offset-distance: 100%; opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .header.header.header .brandLink img.logoBee { display: none; } }

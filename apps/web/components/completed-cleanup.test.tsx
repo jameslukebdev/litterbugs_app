@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import { CompletedCleanup, afterPhotoUrl } from './completed-cleanup';
@@ -46,7 +46,7 @@ it('shows each resized photo only once it has fully loaded, with arrows between 
   render(<CompletedCleanup reportId="report-1" />);
   expect(await screen.findByRole('status', { name: 'Loading photo' })).toBeTruthy();
   expect(screen.queryByRole('img', { name: /After-cleanup photo/ })).toBeNull();
-  expect(pending.map(entry => entry.src)).toContain(afterPhotoUrl('report-1', 0));
+  await waitFor(() => expect(pending.map(entry => entry.src)).toContain(afterPhotoUrl('report-1', 0)));
 
   await loadUntil(afterPhotoUrl('report-1', 0));
   const first = screen.getByRole('img', { name: 'After-cleanup photo 1 of 2' });

@@ -6,6 +6,7 @@ import type { Database, Report } from '@litterbugs/report-contract';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { EmptyBug, useBecame } from '@/components/bug-motion';
 import { FiChevronRight, FiEdit2, FiCheckCircle, FiExternalLink, FiFileText, FiHeart, FiKey, FiLogOut, FiMapPin, FiShield, FiTrash2 } from 'react-icons/fi';
 
 import { loadAccountReports, loadAccountPages, accountReportStatus } from '@/lib/account-reports';
@@ -119,7 +120,8 @@ function ReportStatus({ report }: { report: Report }) {
     : report.cleanup_state === 'completed' ? { tone: 'done', label: 'Cleaned up', bug: '/brand/bugs/flower.png' }
     : report.cleanup_state === 'available' ? { tone: 'open', label: 'Needs a cleanup', bug: '/brand/bugs/ladybug.png' }
     : { tone: 'busy', label: 'Being cleaned', bug: '/brand/ranks/caterpillar.svg' };
-  return <small className="account-v2-status" data-tone={view.tone}>{view.bug ? <img src={view.bug} alt="" aria-hidden="true" width={14} height={14} /> : null}{view.label}</small>;
+  const bloom = useBecame(report.id, view.tone, (next, previous) => next === 'done' && previous !== 'done');
+  return <small className="account-v2-status" data-tone={view.tone}>{view.bug ? <img key={bloom} className={view.tone === 'done' && bloom ? 'bug-bloom' : undefined} src={view.bug} alt="" aria-hidden="true" width={14} height={14} /> : null}{view.label}</small>;
 }
 
 function contributionStatusLabel(status: string) {
@@ -675,7 +677,7 @@ export function AccountDialog({
                     <span><strong>{report.title || 'Litter Report'}</strong><small className="report-context">{reportContext(report, true, false)}</small><ReportStatus report={report} /></span>
                     <Icon name="chevron-right" />
                   </ActivityLink>
-                )) : !unavailable.includes('Reports') && !unavailable.includes('Account') && <p className="member-empty">No reports yet.</p>}
+                )) : !unavailable.includes('Reports') && !unavailable.includes('Account') && <p className="member-empty"><EmptyBug />No reports yet.</p>}
               </div>
             </section>}
 
@@ -695,7 +697,7 @@ export function AccountDialog({
                     <Icon name="chevron-right" />
                   </ActivityLink>
                 ))}
-                {!activeCleanups.length && !unavailable.includes('Cleanups') && !unavailable.includes('Account') && <p className="member-empty">No current cleanups.</p>}
+                {!activeCleanups.length && !unavailable.includes('Cleanups') && !unavailable.includes('Account') && <p className="member-empty"><EmptyBug />No current cleanups.</p>}
               </div>
             </section>}
 
@@ -714,7 +716,7 @@ export function AccountDialog({
                   </ActivityLink>
                 ))}
                 {embedded && contributions.length > contributionLimit && <button type="button" className="secondary-button member-show-more" onClick={() => setContributionLimit(value => value + 5)}>Show {Math.min(5, contributions.length - contributionLimit)} more contribution{contributions.length - contributionLimit === 1 ? '' : 's'}</button>}
-                {!contributions.length && !unavailable.includes('Payments') && !unavailable.includes('Account') && <p className="member-empty">No contributions yet.</p>}
+                {!contributions.length && !unavailable.includes('Payments') && !unavailable.includes('Account') && <p className="member-empty"><EmptyBug />No contributions yet.</p>}
               </div>
             </section>}
 
@@ -734,7 +736,7 @@ export function AccountDialog({
                     <Icon name="chevron-right" />
                   </ActivityLink>
                 ))}
-                {!(section === 'payments' ? completedCleanups.some(attempt => attempt.is_paid) : completedCleanups.length) && !unavailable.includes('Cleanups') && !unavailable.includes('Account') && <p className="member-empty">{section === 'payments' ? 'No cleanup earnings yet.' : 'No completed cleanups yet.'}</p>}
+                {!(section === 'payments' ? completedCleanups.some(attempt => attempt.is_paid) : completedCleanups.length) && !unavailable.includes('Cleanups') && !unavailable.includes('Account') && <p className="member-empty"><EmptyBug />{section === 'payments' ? 'No cleanup earnings yet.' : 'No completed cleanups yet.'}</p>}
               </div>
             </section>}
 

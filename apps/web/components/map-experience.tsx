@@ -19,7 +19,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '@/components/icon';
 import { ClusterReports } from '@/components/cluster-reports';
 import type { createReportClusters } from '@/lib/report-clusters';
-import { hideNativeTooltip, pinKind, prepareCard, renderPinCard, renderPinGlyph, reportPinText, type PinKind } from '@/lib/map-marker-glyph';
+import { celebratePostedPin, hideNativeTooltip, pinKind, prepareCard, renderPinCard, renderPinGlyph, reportPinText, type PinKind } from '@/lib/map-marker-glyph';
+import { prefersReducedMotion } from '@/lib/bug-motion';
 import { getReportCardPhotoUrl } from '@/lib/report-photo';
 import { PublicSiteFooter } from '@/components/public-site-footer';
 import { PublicAccountAction, type PublicAccountActionHandle } from '@/components/public-account-action';
@@ -189,6 +190,16 @@ export function MapExperience({
   const [checkingDraft, setCheckingDraft] = useState(false);
   const [previewedReportId, setPreviewedReportId] = useState<string | null>(null);
   const [toast, setToast] = useState('');
+  // Bug motion: the lightning bug glows while finding you; the dragonfly drops the pin of a report you just posted.
+  const [locating, setLocating] = useState(false);
+  const [justPostedReport, setJustPostedReport] = useState<MappableReport | null>(null);
+  useEffect(() => {
+    if (!mapReady || !justPostedReport) return;
+    const timer = window.setTimeout(() => setJustPostedReport(null), 2200);
+    return () => window.clearTimeout(timer);
+  }, [mapReady, justPostedReport]);
+  // eslint-disable-next-line @next/next/no-img-element -- the small glowing lightning bug.
+  const locatingBug = <img className="bug-glow" src="/brand/ranks/lightning-bug.svg" alt="" aria-hidden="true" width={24} height={24} />;
   // A newly posted report ends with the bug celebration instead of the plain toast.
   const [postedToast, setPostedToast] = useState('');
   const [reportUploadProgress, setReportUploadProgress] = useState('');
@@ -580,8 +591,9 @@ export function MapExperience({
     // Recreating unchanged pins makes the entire map flash on each result update.
     // A direct location request must retain its pin even when saved discovery
     // filters exclude that report (for example, Available versus Completed).
-    const mapReports = mapFirstEntry && selectedReport && hasReportCoordinates(selectedReport) && !visibleReports.some(report => report.id === selectedReport.id)
+    let mapReports = mapFirstEntry && selectedReport && hasReportCoordinates(selectedReport) && !visibleReports.some(report => report.id === selectedReport.id)
       ? [...visibleReports, selectedReport] : visibleReports;
+    if (justPostedReport && !mapReports.some(report => report.id === justPostedReport.id)) mapReports = [...mapReports, justPostedReport];
     const wanted = new Set(mapReports.map(report => report.id));
     markersRef.current.forEach((marker, id) => {
       if (wanted.has(id)) return;
@@ -632,7 +644,8 @@ export function MapExperience({
       const title = report.title || 'Litter Report';
       if (marker.getAttribute('aria-label') !== title) { marker.title = title; hideNativeTooltip(marker, title); }
       const pin = reportPinText(report);
-      renderPinGlyph(markerGlyph, pin.kind, pin.text, pin.visible);
+      renderPinGlyph(markerGlyph, pin.kind, pin.text, pin.visible, map);
+      if (justPostedReport?.id === report.id && !markerGlyph.classList.contains('bug-pin-posted')) celebratePostedPin(markerGlyph);
       const photoPath = report.photo_paths?.[0];
       renderPinCard(markerGlyph, report, report.cleanup_state === 'completed'
         ? `/reports/${encodeURIComponent(report.id)}/photo/after?width=640`
@@ -646,8 +659,8 @@ export function MapExperience({
       }
       markerGlyph.classList.toggle('report-map-marker-selected', selectedReportIdRef.current === report.id);
     });
-    clustersRef.current?.update(markersRef.current, mapReports, selectedReportIdRef.current);
-  }, [mapReady, visibleReports, mapFirstEntry, selectedReport]);
+    clustersRef.current?.update(markersRef.current, mapReports, selectedReportIdRef.current, justPostedReport?.id);
+  }, [mapReady, visibleReports, mapFirstEntry, selectedReport, justPostedReport]);
 
   useEffect(() => {
     selectedReportIdRef.current = selectedReport?.id ?? null;
@@ -810,6 +823,7 @@ export function MapExperience({
   }
 
   async function centerOnUser() {
+    setLocating(true);
     try {
       const location = await getBrowserLocation();
       if (!mapReady) setDiscoveryArea({ latitude: location.latitude, longitude: location.longitude, north: Math.min(90, location.latitude + 0.1), south: Math.max(-90, location.latitude - 0.1), east: Math.min(180, location.longitude + 0.1), west: Math.max(-180, location.longitude - 0.1) });
@@ -817,7 +831,7 @@ export function MapExperience({
       mapRef.current?.setZoom(14);
     } catch {
       setToast('Unable to find your location. Check your browser permission and try again.');
-    }
+    } finally { setLocating(false); }
   }
 
   function toggleMapType() {
@@ -902,6 +916,7 @@ export function MapExperience({
     setDraftCoordinates(null);
     if (contributionCents != null) setReportFunding({ report, amountCents: contributionCents });
     closeReportTask();
+    if (hasReportCoordinates(report) && !prefersReducedMotion()) setJustPostedReport(report);
     setToast(REPORT_POSTED_TOAST);
     setPostedToast(REPORT_POSTED_TOAST);
     void refreshReports();
@@ -1170,7 +1185,7 @@ export function MapExperience({
           favoriteReportIds={reportPreferences.favorites}
           hiddenReportIds={reportPreferences.hidden}
         />
-        <section id="report-map" aria-busy={!mapTilesReady && !mapError} className={`map-stage${reportMode ? ' map-stage-reporting' : ''}`} aria-label="Litterbugs report map">
+        <section id="report-map" aria-busy={!mapTilesReady && !mapError} data-map-key-scope className={`map-stage${reportMode ? ' map-stage-reporting' : ''}`} aria-label="Litterbugs report map">
           <div ref={mapElementRef} className="google-map" />
           <button type="button" className="map-report-button"
             onClick={() => { setReportListOpen(false); void toggleReportMode(); }}
@@ -1202,9 +1217,9 @@ export function MapExperience({
             <strong>{selectedReport.title || 'Litter report'}</strong><span>View report details</span>
           </button>}
           {mapKey.length > 0 && (
-            <ul className="map-key" aria-label="Map key">
+            <ul className="map-key" aria-label="Map key" data-map-key>
               {mapKey.map(([kind, count, many, one, short]) => (
-                <li key={kind}>
+                <li key={kind} data-kind={kind}>
                   {/* eslint-disable-next-line @next/next/no-img-element -- tiny brand marks, like BrandBug. */}
                   <img src={MAP_KEY_BUGS[kind]} alt="" aria-hidden="true" width={18} height={18} />
                   <span><b>{count}</b>{' '}<span className="map-key-label">{count === 1 ? one : many}</span><span className="map-key-short" aria-hidden="true">{short}</span></span>
@@ -1214,7 +1229,7 @@ export function MapExperience({
           )}
           <div className="map-action-controls">
             <button onClick={toggleMapType} aria-label={`Change map type. Current: ${MAP_TYPES[mapTypeIndex]}`} title="Change map type"><Icon name="layers" /></button>
-            <button onClick={centerOnUser} aria-label="Center map on your location" title="My location"><Icon name="location" /></button>
+            <button onClick={centerOnUser} disabled={locating} aria-label={locating ? 'Finding your location' : 'Center map on your location'} aria-busy={locating} title="My location">{locating ? locatingBug : <Icon name="location" />}</button>
           </div>
 
 

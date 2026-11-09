@@ -127,7 +127,7 @@ export function createReportClusters(map: google.maps.Map, AdvancedMarker: typeo
     if (visual.marker.getAttribute('aria-label') !== label) { visual.marker.title = label; hideNativeTooltip(visual.marker, label); }
     visual.glyph.classList.toggle('report-map-cluster-selected', selected);
     // The group shows the bug of its most useful member (open litter first) next to the count.
-    renderPinGlyph(visual.glyph, summary.available ? 'open' : summary.active ? 'busy' : 'done', `${members.length}`, true);
+    renderPinGlyph(visual.glyph, summary.available ? 'open' : summary.active ? 'busy' : 'done', `${members.length}`, true, map);
     renderGroupCard(visual.glyph, members);
   };
   const clusterer = new StableReportClusterer({
@@ -158,15 +158,15 @@ export function createReportClusters(map: google.maps.Map, AdvancedMarker: typeo
     onClusterClick: null!,
   });
   return {
-    update(markers: Map<string, google.maps.marker.AdvancedMarkerElement>, reports: MappableReport[], selected: string | null) {
+    update(markers: Map<string, google.maps.marker.AdvancedMarkerElement>, reports: MappableReport[], selected: string | null, postedPinId?: string) {
       currentReports = new Map(reports.map(report => [report.id, report])); selectedId = selected;
       let moved = false;
       for (const [marker, previous] of reportsByMarker) {
-        if (!markers.has(previous.id)) { clusterer.removeMarker(marker, true); reportsByMarker.delete(marker); }
+        if (!markers.has(previous.id) || previous.id === postedPinId) { clusterer.removeMarker(marker, true); reportsByMarker.delete(marker); }
       }
       for (const report of reports) {
         const marker = markers.get(report.id);
-        if (!marker) continue;
+        if (!marker || report.id === postedPinId) continue;
         const previous = reportsByMarker.get(marker);
         if (previous && (previous.latitude !== report.latitude || previous.longitude !== report.longitude)) moved = true;
         if (!previous) clusterer.addMarker(marker, true);
@@ -174,6 +174,8 @@ export function createReportClusters(map: google.maps.Map, AdvancedMarker: typeo
       }
       if (moved) algorithm.invalidate();
       clusterer.render();
+      const postedPin = postedPinId ? markers.get(postedPinId) : undefined;
+      if (postedPin) attachReportMarker(postedPin, map);
       for (const visual of visuals) {
         if (visual.marker.map !== map) visuals.delete(visual);
         else updateVisual(visual);

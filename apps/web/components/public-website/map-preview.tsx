@@ -1,7 +1,6 @@
 /* eslint-disable @next/next/no-img-element -- small heading bug, like the map's bugs. */
 import Image from 'next/image';
 import Link from 'next/link';
-import { IoChevronForward, IoMapOutline } from 'react-icons/io5';
 import type { CSSProperties } from 'react';
 import { LITTER_MAP_HREF } from '@/lib/home-map-link';
 import { BOONE_PREVIEW, type MapPreviewPin } from '@/lib/map-preview';
@@ -35,11 +34,11 @@ export function MapPreview({ pins }: { pins: MapPreviewPin[] | null }) {
       <div className={styles.head}>
         <h2 id="map-preview-title" className="heading-with-bug"><img className="heading-bug" src="/brand/bugs/ant.svg" alt="" aria-hidden="true" width={32} height={32} />Find litter on the map</h2>
       </div>
-      <div className={styles.frame}>
+      <div className={styles.frame} data-map-key-scope>
         {key.length > 0 && (
-          <ul className={styles.key} aria-label="Map key">
+          <ul className={styles.key} aria-label="Map key" data-map-key>
             {key.map(([kind, n, many, one]) => (
-              <li key={kind}><MapPinBug kind={kind} size={18} /><span><b>{n}</b> {n === 1 ? one : many}</span></li>
+              <li key={kind} data-kind={kind}><MapPinBug kind={kind} size={18} /><span><b>{n}</b> {n === 1 ? one : many}</span></li>
             ))}
           </ul>
         )}
@@ -57,7 +56,7 @@ export function MapPreview({ pins }: { pins: MapPreviewPin[] | null }) {
         </div>
         {/* The picture is a doorway to the real map, so say so on the map itself. */}
         <Link className={styles.explore} href={LITTER_MAP_HREF}>
-          <IoMapOutline aria-hidden />Explore the full map<IoChevronForward aria-hidden />
+          <img className={styles.exploreBug} src="/brand/ranks/lightning-bug.svg" alt="" aria-hidden="true" width={24} height={24} />Explore the full map
         </Link>
         <MapPreviewNudge />
         <a className={styles.credit} href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a>
