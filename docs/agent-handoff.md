@@ -24,6 +24,20 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (Cloudflare readiness and current speed comparison)
+
+- Confirmed preview Worker `5dfda076-a16e-4202-bed3-4292d47952bd` and live
+  Vercel release `dpl_7kN4zDvVnschF7F5EyqRgq19WFkB` still serve HTTP 200.
+  Production scanner credential and live-domain configuration remain open.
+  Newer local payout fixes are outside the tested release.
+- Compared 10 warm, interleaved HTTP body downloads per host and route from
+  one computer. Cloudflare/Vercel medians in ms: home 459/491, Boone map
+  151/228, report detail 190/291, one report image 137/325. That image's
+  first sample was 1352/1103. Zero HTTP failures. This does not measure
+  rendering, Maps readiness or phone networks. Analytics scripts did not run.
+  Raw results: `/tmp/litterbugs-cloudflare-vercel-release-timings.json`.
+  No application, configuration or deployment changes.
+
 ### 2026-11-08 — Codex (Express logo background verified)
 
 - Verified the website wordmark is a transparent PNG and the local Express
