@@ -24,6 +24,25 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (browser checkout passed in local Cloudflare runtime)
+
+- Built disposable OpenNext/Workerd source `165d89c` with a scratch-only
+  loopback Supabase guard and exact local test configuration. Desktop Chrome
+  signed in with the synthetic contributor, rendered a $6 payment return
+  receipt, opened Fund from report activity and loaded Stripe Payment Element.
+- Entered Stripe's decline test card, saw the inline error, then successfully
+  retried with its success test card. Both signed events delivered HTTP 200 to
+  the local backend. The $5 principal raised the fixture fund from $5 to $10.
+  Both contributions rendered in Payments after completing the synthetic
+  profile. Anonymous return preserves report/contribution IDs and strips the
+  provider secret. This is local browser/Workers evidence, not hosted checkout.
+- Workerd, listener and local Supabase stopped with disposable fixtures saved.
+  Removed temporary login/runtime secret copies. No app source, hosted deploy,
+  live data or Stripe settings changed. Evidence: `/tmp/litterbugs-cloudflare-
+  local-browser-funding-evidence.json`, payment-history screenshot in `/tmp`.
+  Pending: independent scanner key, hosted workflow/analytics outcome checks,
+  payout/cleanup end to end and physical phones.
+
 ### 2026-11-08 — Codex (real Stripe funding verified against disposable local backend)
 
 - Litterbugs' separate Stripe Test mode (live platform ID with `sk_test_` keys)
