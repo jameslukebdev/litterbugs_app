@@ -57,3 +57,9 @@
   .toast strong { font-size: 14px; }
   .toastNote { display: none; }
 }
+
+/* Narrow two-column hero (701–900px): the "You earned cash" card is pinned to its photo's right side so it
+   extends left over the collage instead of running off the screen. */
+@media (min-width: 701px) and (max-width: 900px) {
+  .toast { left: auto; right: -4%; }
+}

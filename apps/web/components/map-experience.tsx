@@ -25,7 +25,7 @@ import { getReportCardPhotoUrl } from '@/lib/report-photo';
 import { PublicSiteFooter } from '@/components/public-site-footer';
 import { PublicAccountAction, type PublicAccountActionHandle } from '@/components/public-account-action';
 import { PublicSiteHeader } from '@/components/public-site-header';
-import { IoMapOutline, IoListOutline, IoOptionsOutline, IoCloseCircleOutline, IoLocationOutline } from 'react-icons/io5';
+import { IoMapOutline, IoGridOutline, IoOptionsOutline, IoCloseCircleOutline, IoLocationOutline } from 'react-icons/io5';
 import { PlaceSearch } from '@/components/place-search';
 import { ClosestReportsAction } from '@/components/closest-reports-action';
 import { MapEmptyState } from '@/components/map-empty-state';
@@ -1131,7 +1131,7 @@ export function MapExperience({
 
   const viewToggle = (
     <div className="discovery-view-toggle" role="group" aria-label="Browse reports">
-      <button type="button" aria-controls="active-report-list" aria-pressed={reportListOpen} onClick={() => switchDiscoveryView('reports')}><IoListOutline aria-hidden /><span>Reports</span></button>
+      <button type="button" aria-controls="active-report-list" aria-pressed={reportListOpen} onClick={() => switchDiscoveryView('reports')}><IoGridOutline aria-hidden /><span>Reports</span></button>
       <button type="button" aria-controls="report-map" aria-pressed={!reportListOpen} onClick={() => switchDiscoveryView('map')}><IoMapOutline aria-hidden /><span>Map</span></button>
     </div>
   );

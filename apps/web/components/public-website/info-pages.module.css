@@ -90,7 +90,7 @@
 .short { display: none; }
 @media (max-width: 560px) {
   /* Phones: short tab names so all three fit; the header already has a Map button. */
-  .info.info .tabs { gap: 0 20px; overflow: visible; }
+  .info.info .tabs { gap: 0 16px; overflow-x: auto; }
   .info.info .tabs .long, .info.info .tabs a.mapLink { display: none; }
   .info.info .tabs .short { display: inline; }
 }

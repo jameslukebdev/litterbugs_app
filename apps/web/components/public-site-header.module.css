@@ -485,6 +485,61 @@
 .header .mobilePrimaryLinks .menuTrigger:is(:hover, :focus-visible, [aria-expanded='true']) .triggerBug { transform: translate(1px, -2px) rotate(-8deg); }
 @media (prefers-reduced-motion: reduce) { .header .mobilePrimaryLinks .triggerBug { transition: none; transform: none !important; } }
 
+/* Phones (Nov 2026): the header must fit the screen even with Android's larger text or display size.
+   "Log in / Sign up" stacks on two short lines, the profile photo is a little smaller, and on the
+   narrowest screens the logo shrinks and the Map button shows just its icon (Map is also first in the menu). */
+@media (max-width: 440px) {
+  .account :global(.public-account-control-signed-out) { max-width: 76px; min-height: 44px; padding: 4px 8px; line-height: 1.1; white-space: normal; text-align: center; }
+  .account :global(.public-account-control-signed-out .account-label-mobile) { white-space: normal; }
+  .header:not(.mapHeader) .account,
+  .header:not(.mapHeader) .account :global(.public-account-actions) { min-width: 0; }
+  .account :global(.public-account-actions) { min-width: 0; }
+}
+@media (max-width: 360px) {
+  .brandLink img { width: 60px; }
+  .header:not(.mapHeader) .mapEntry { width: 44px; padding: 0; justify-content: center; }
+  .header:not(.mapHeader) .mapEntry .mapMobileLabel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+
+/* Phone menu (Nov 2026): matches the redesigned site. Open map is the all-yellow map button, every row keeps
+   its bug, text is ink with the family colour on hover, and Log in / Sign up is the purple main button. */
+.header.header.header .mobilePrimaryLinks > .mapEntry { min-height: 52px; margin-bottom: 6px; padding: 12px 16px; border: 2px solid #ead89c; border-radius: 14px; color: #775700; background: #fff4cc; box-shadow: 0 3px 0 #ead89c; font-size: 17px; font-weight: 800; }
+.header.header.header .mobilePrimaryLinks > .mapEntry svg { color: #775700; }
+.header.header.header .mobilePrimaryLinks > .mapEntry:is(:hover, :focus-visible) { border-color: #d9be63; color: #5f4500; background: #ffecaa; }
+.header.header.header .mobilePrimaryLinks > .mapEntry:active { box-shadow: none; transform: translateY(2px); }
+.header.header.header .mobilePrimaryLinks :is(.menuTrigger, .navLink) { color: #292932; font-size: 17px; font-weight: 800; }
+.header.header.header .mobilePrimaryLinks .chevron { color: #8b879a; }
+.header.header.header .mobilePrimaryLinks .dropdownLinks .navLink { color: #45434d; font-size: 16px; font-weight: 700; }
+.header.header.header .mobilePrimaryLinks > a[href='/sign-in'] { justify-content: center; margin-top: 10px; border-radius: 14px; color: #fff; background: #5146ed; box-shadow: 0 4px 0 #3528ac; }
+.header.header.header .mobilePrimaryLinks > a[href='/sign-in']:is(:hover, :focus-visible) { color: #fff; background: #4438bb; }
+@media (prefers-reduced-motion: reduce) { .header.header.header .mobilePrimaryLinks > .mapEntry:active { transform: none; } }
+
+/* Phones and tablets (Nov 2026): whenever the menu button shows, it sits at the far left, then the logo and any
+   navigation; a spacer pushes Support, the app link, search and the account to the right. A simple row replaces
+   the grid areas here, so nothing can fall off either edge. Wide screens (1240px+) keep their layout. */
+@media (max-width: 1239px) {
+  .header.header .inner { display: flex; align-items: center; justify-content: flex-start; flex-wrap: nowrap; }
+  .header.header .inner > * { flex: none; min-width: 0; }
+  .header.header .inner::before { content: ''; order: 1; flex: 1 1 0; min-width: 0; }
+  .header.header .mobileMenu { order: -1; margin-right: 2px; }
+  .header.header :is(.help, .appLink, .account) { order: 2; }
+  .header.header .inner > :global(.header-area-search), .header.header .inner > [class*='search'] { order: 2; }
+  /* Map page: a spacer on each side keeps the Reports | Map switch (phones only) in the middle; where the
+     switch isn't shown, the two spacers simply push the right-hand group to the edge. */
+  .header.header.mapHeader .inner::after { content: ''; order: 1; flex: 1 1 0; min-width: 0; }
+  .header.header.mapHeader .mobileMapControls { order: 1; flex: 0 1 244px; }
+}
+/* Phones: only the Map button shows from the navigation, so it joins the right-hand group. */
+@media (max-width: 759px) { .header.header .mapLink { order: 2; } }
+/* The menu button is just the three lines; its name stays available to screen readers. */
+.header.header .menuLabel { display: none; }
+
+/* Profile photo (Nov 2026): the same 52px photo with the thin purple ring at every width; no pale circle behind it. */
+.header.header .account :global(.mobile-profile-button) { width: 52px; height: 52px; background: transparent; }
+.header.header .account :global(.mobile-profile-button) :is(:global(.public-account-avatar-frame), :global(.public-account-avatar), :global(.public-account-initials)) { width: 52px; height: 52px; }
+.header.header .account :global(.mobile-profile-button) :is(:global(.public-account-avatar), :global(.public-account-initials)) { border: 2px solid #b3a6e5; padding: 3px; background: #fff; }
+.header.header .account :global(.mobile-profile-button):hover :is(:global(.public-account-avatar), :global(.public-account-initials)) { border-color: #5146ed; }
+
 /* Hovering the logo sends a tiny bee once around it (ends where it starts, out of sight). */
 .header .brandLink { position: relative; }
 .header.header.header .brandLink img.logoBee { position: absolute; left: 0; top: 0; width: 18px; height: 18px; aspect-ratio: auto; opacity: 0; pointer-events: none; offset-path: path('M 52 -6 C 118 -10 120 82 52 80 C -16 78 -14 -2 52 -6'); offset-distance: 0%; offset-rotate: 0deg; }
