@@ -24,6 +24,16 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (zero-balance Express branding reviewed)
+
+- Confirmed the saved transparent wordmark on the live $0 Express Home.
+  Stripe renders the sidebar icon at 32 × 32 px and the artwork already uses
+  31.8 px of its width. The Express editor has no logo size control.
+- Pending Stripe admin sign-in to apply the Express-only theme. Use Litterbugs
+  purple `#5146ED` for primary and primary buttons, lavender `#EEECFF` for
+  secondary buttons and 14 px corner radius. Check Home navigation and
+  controls after saving. No Stripe or website changes in this pass.
+
 ### 2026-11-08 — Codex (Cloudflare production candidate staged)
 
 - Isolated source `a67a844` includes committed website through `91e8223`,
