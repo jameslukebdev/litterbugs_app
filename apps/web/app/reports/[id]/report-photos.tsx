@@ -29,7 +29,8 @@ export function ReportPhotos({ beforePhotoUrl, afterPhotoUrl, beforeDescription,
               srcSet={`${photo.url}?width=640 640w, ${photo.url} 1080w`}
               onError={() => setFailed(current => [...current, photo.url])} />
           </div>
-          <figcaption className={styles.photoLabel}><strong>{photo.label}</strong><span>{photo.caption}</span></figcaption>
+          {/* One photo needs no label: the page header already gives its date. */}
+          {photos.length > 1 && <figcaption className={styles.photoLabel}><strong>{photo.label}</strong><span>{photo.caption}</span></figcaption>}
         </figure>
       ))}
     </div>

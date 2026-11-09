@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable @next/next/no-img-element -- small heading bug, like the map's bugs. */
 
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { HeaderAreaSearch } from '../header-area-search';
@@ -30,7 +31,7 @@ export function ReportCarousel({ children, enabled, className }: { children: Rea
   }
   return <section className={styles.carousel} aria-label="Reports needing a cleanup" aria-roledescription="carousel">
     <div className={styles.heading}>
-      <h2>Reports needing a cleanup</h2>
+      <h2 className="heading-with-bug"><img className="heading-bug" src="/brand/ranks/cocoon.svg" alt="" aria-hidden="true" width={32} height={32} />Reports needing a cleanup</h2>
       <div className={styles.controls}>
       <HeaderAreaSearch label="Find your area" open={areaSearchOpen} onOpenChange={setAreaSearchOpen} />
       <Link href={AVAILABLE_CLEANUPS_MAP_HREF}>See on map</Link>

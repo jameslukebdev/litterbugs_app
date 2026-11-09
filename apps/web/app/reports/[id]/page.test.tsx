@@ -21,7 +21,7 @@ describe('public shared report funding copy', () => {
   it('shows the actual reward on the visible page instead of labeling a funded cleanup volunteer-only', async () => {
     loadReport.mockResolvedValue(report);
     render(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
-    expect(screen.getByText(/\$6.00 cleanup reward/)).toBeTruthy();
+    expect(screen.getByText(/\$6.00 in its cleanup fund/)).toBeTruthy();
     expect(screen.queryByText(/Volunteer cleanup/)).toBeNull();
     expect(screen.getByRole('link', { name: 'Open in Litterbugs' }).getAttribute('href'))
       .toBe('litterbugs://reports/report-id');
@@ -82,7 +82,7 @@ it('keeps completed Boone evidence connected to more local opportunities and res
   loadReport.mockResolvedValue({ ...report, state: 'completed', communitySlug: 'us-nc-boone', generalLocation: 'Boone', completionDate: '2026-10-28T12:00:00Z', cleanerName: 'Local cleaner', bagsOrItemsRemoved: 2, weightPounds: 12 });
   render(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
   expect(screen.getByRole('link', { name: 'Find another cleanup in Boone' }).getAttribute('href')).toBe('/communities/us/nc/boone/cleanups?status=available');
-  expect(screen.getByRole('link', { name: 'Results in Boone' }).getAttribute('href')).toBe('/communities/us/nc/boone/cleanups?status=completed');
+  expect(screen.getByRole('link', { name: 'Completed cleanups in Boone' }).getAttribute('href')).toBe('/communities/us/nc/boone/cleanups?status=completed');
   expect(screen.getByText('Cleaned by Local cleaner')).toBeTruthy();
 });
 

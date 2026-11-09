@@ -1,6 +1,7 @@
 import { publicPageMetadata } from '@/lib/public-page-metadata';
 import Link from 'next/link';
-import { Website, ReportCards, styles } from '@/components/public-website';
+import { Website, ReportCards, DirectoryNav, styles } from '@/components/public-website';
+import info from '@/components/public-website/info-pages.module.css';
 import { archivePageNumber, loadCleanupArchive } from '@/lib/cleanup-archive';
 import { notFound } from 'next/navigation';
 type Props = { searchParams: Promise<{ page?: string | string[] }> };
@@ -31,10 +32,7 @@ export default async function CleanupsPage({ searchParams }: Props) {
       <main id="main-content" tabIndex={-1} className={styles.wide}>
         <header className={styles.directoryIntro}>
           <h1>Completed litter cleanups.</h1>
-          <p>
-            Real places. Real progress. Cleanups by the Litterbugs community.
-          </p>
-          <Link href="/report-litter">See how a report starts it</Link>
+          <DirectoryNav current="completed" />
         </header>
         <ReportCards
           feed={feed}
@@ -58,11 +56,7 @@ export default async function CleanupsPage({ searchParams }: Props) {
             <Link href={`/cleanups?page=${page + 1}`}>Older reports</Link>
           )}
         </nav>
-        <div className={styles.more}>
-          <Link href="/reports">Find your next cleanup</Link>
-          <Link href="/reports/history">Past reports</Link>
-          <Link href="/communities">Explore communities</Link>
-        </div>
+        <p className={info.closing}>Know a spot that needs the same? <Link href="/report-litter">Report a spot</Link> or <Link href="/communities">explore communities</Link>.</p>
       </main>
     </Website>
   );

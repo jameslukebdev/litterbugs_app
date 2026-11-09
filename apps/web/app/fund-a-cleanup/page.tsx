@@ -17,7 +17,7 @@ export const metadata = publicPageMetadata({
 });
 export default async function FundingPage() {
   const [available, completed] = await Promise.all([
-    loadPublicReportFeed('fundable', 3),
+    loadPublicReportFeed('fundable', 4),
     loadPublicReportFeed('completed', 6),
   ]);
   const proof = completed.reports.find(

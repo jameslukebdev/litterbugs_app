@@ -11,7 +11,7 @@ export const metadata = publicPageMetadata({
   alternates: { canonical: '/cleaner' },
 });
 export default async function CleanerPage() {
-  const available = await loadPublicReportFeed('available', 3);
+  const available = await loadPublicReportFeed('available', 4);
   return (
     <Guide
       activePath="/cleaner"

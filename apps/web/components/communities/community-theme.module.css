@@ -1,54 +1,55 @@
-/* Communities use Inter typography, ocean-blue actions, and coral accents. */
+/* Community pages share the main site look: purple actions, colour through text and bugs, white surfaces. */
 .theme:global(#main-content) {
- --green:#176b96; --green-dark:#155b80; --green-soft:#edf6fb; --brand-green-tint:#edf6fb;
- --ink:#28343c; --muted:#61717b; --line:#dce4e8; --border:#dce4e8;
- --community-purple:#176b96; --community-ink:#28343c; --community-muted:#61717b;
+ --green:#3f36c4; --green-dark:#2c2496; --green-soft:#f4f2ff; --brand-green-tint:#f4f2ff;
+ --ink:#292932; --muted:#686477; --line:#efedf4; --border:#efedf4;
+ --community-purple:#3f36c4; --community-ink:#292932; --community-muted:#686477;
 }
-.theme:global(#main-content) :is(a,button,summary,input,select,textarea):focus-visible { outline:3px solid #3684ad; outline-offset:3px; }
-.theme:global(#main-content) form[role='search'] > label { border:1px solid #bccdd7; border-radius:12px; background:#fff; }
-.theme:global(#main-content) form[role='search'] > label:focus-within { outline:3px solid #3684ad; outline-offset:3px; border-color:#176b96; }
+.theme:global(#main-content) :is(a,button,summary,input,select,textarea):focus-visible { outline:3px solid #5146ed; outline-offset:3px; }
+.theme:global(#main-content) form[role='search'] > label { border:1px solid #e3dff0; border-radius:12px; background:#fff; }
+.theme:global(#main-content) form[role='search'] > label:focus-within { outline:3px solid #5146ed; outline-offset:3px; border-color:#3f36c4; }
 .theme:global(#main-content) form[role='search'] input:focus-visible { outline:none; box-shadow:none; }
 .theme:global(#main-content) form[role='search'] input { border:0; border-radius:0; background:transparent; }
-.theme:global(#main-content) form[role='search'] > button { background:#176b96; border:1px solid #176b96; color:#fff; box-shadow:none; border-radius:12px; }
-.theme:global(#main-content) form[role='search'] > button:hover { background:#155b80; }
-.theme:global(#main-content) :global(.primary-button) { background:#176b96; border-color:#176b96; color:white; box-shadow:none; }
-.theme:global(#main-content) :global(.primary-button):hover { background:#155b80; }
-.theme:global(#main-content) :global(.public-report-cards .report-card-container) { border-color:#dce4e8; box-shadow:none; }
-.theme:global(#main-content) :global(.public-report-cards .report-card-container):hover { border-color:#176b96; background:#f7fafc; }
+.theme:global(#main-content) form[role='search'] > button { background:#3f36c4; border:1px solid #3f36c4; color:#fff; box-shadow:none; border-radius:12px; }
+.theme:global(#main-content) form[role='search'] > button:hover { background:#2c2496; }
+.theme:global(#main-content) :global(.primary-button) { background:#3f36c4; border-color:#3f36c4; color:white; box-shadow:none; }
+.theme:global(#main-content) :global(.primary-button):hover { background:#2c2496; }
+.theme:global(#main-content) :global(.public-report-cards .report-card-container) { border-color:#efedf4; box-shadow:none; }
+.theme:global(#main-content) :global(.public-report-cards .report-card-container):hover { border-color:#3f36c4; background:#fcfbff; }
 .theme:global(#main-content) :global(.public-report-cards .report-result) { color:var(--ink); }
 
-.theme:global(#main-content) :global(.report-result-workflow) { display:none; }
-.theme:global(#main-content) :global(.public-report-cards .report-result .report-result-reward) { background:transparent; border:0; border-radius:0; padding:0; color:#176b96; }
-.theme:global(#main-content) :global(.public-card-footer) { border-color:#dce4e8; }
-.theme:global(#main-content) form[role='search'] ~ ul { border-color:#dce4e8; }
-.theme:global(#main-content) form[role='search'] ~ ul a:hover { background:#edf6fb; }
+.theme:global(#main-content) :global(.public-card-footer) { border-color:#efedf4; }
+.theme:global(#main-content) form[role='search'] ~ ul { border-color:#efedf4; }
+.theme:global(#main-content) form[role='search'] ~ ul a:hover { background:#f4f2ff; }
 
 /* The community root wins over shared marketing rules regardless of CSS load order. */
-.theme:global(#main-content) a:not(:global(.primary-button)) { color:#176b96; }
-.theme:global(#main-content) :is(nav,header) a:not(:global(.primary-button)):hover { background:#edf6fb; color:#155b80; }
-.theme:global(#main-content) :global(.primary-button):is(:hover,:active):not(:disabled) { background:#155b80; border-color:#155b80; box-shadow:none; transform:none; }
-.theme:global(#main-content) :global(.secondary-button) { background:#fff; color:#176b96; border-color:#bccdd7; box-shadow:none; }
-.theme:global(#main-content) :global(.secondary-button):hover { background:#edf6fb; color:#155b80; box-shadow:none; }
-.theme:global(#main-content) :global(.public-report-cards .report-card-container):is(:hover,:focus-within) { border-color:#176b96; background:#f7fafc; box-shadow:none; }
+.theme:global(#main-content) a:not(:global(.primary-button)) { color:#3f36c4; }
+.theme:global(#main-content) :is(nav,header) a:not(:global(.primary-button)):hover { background:#f4f2ff; color:#2c2496; }
+.theme:global(#main-content) :global(.primary-button):is(:hover,:active):not(:disabled) { background:#2c2496; border-color:#2c2496; box-shadow:none; transform:none; }
+.theme:global(#main-content) :global(.secondary-button) { background:#fff; color:#3f36c4; border-color:#e3dff0; box-shadow:none; }
+.theme:global(#main-content) :global(.secondary-button):hover { background:#f4f2ff; color:#2c2496; box-shadow:none; }
+.theme:global(#main-content) :global(.public-report-cards .report-card-container):is(:hover,:focus-within) { border-color:#3f36c4; background:#fcfbff; box-shadow:none; }
 .theme:global(#main-content) :global(.public-report-cards .report-result):is(:hover,:active) { background:transparent; box-shadow:none; }
-.theme:global(#main-content) :global(.public-report-cards .report-result-copy) { color:#28343c; }
-.theme:global(#main-content) :global(.public-report-cards .public-card-options[open] summary) { background:#edf6fb; }
+.theme:global(#main-content) :global(.public-report-cards .report-result-copy) { color:#292932; }
+.theme:global(#main-content) :global(.public-report-cards .public-card-options[open] summary) { background:#f4f2ff; }
 
 @font-face { font-family:'Community Inter'; src:url('/fonts/Inter-Regular.ttf') format('truetype'); font-weight:400; font-display:swap; }
 @font-face { font-family:'Community Inter'; src:url('/fonts/Inter-Bold.ttf') format('truetype'); font-weight:600 800; font-display:swap; }
-.theme:global(#main-content) { font-family:'Community Inter', sans-serif; }
-.theme:global(#main-content) :is(h1,h2,h3,h4) { font-family:'Community Inter', sans-serif; font-weight:700; letter-spacing:-.035em; color:#28343c; }
 .theme:global(#main-content) section[data-cleanup-proof] figure img { border-radius:16px; box-shadow:none; }
-.theme:global(#main-content) section[data-cleanup-proof] > div:last-child > a { background:white; color:#176b96; border:1px solid #bccdd7; border-radius:12px; box-shadow:none; }
-.theme:global(#main-content) section[data-cleanup-proof] > div:last-child > a:hover { background:#edf6fb; border-color:#176b96; }
-.theme:global(#main-content) :global(.public-card-options) summary { color:#176b96; }
-.theme:global(#main-content) :global(.public-card-options-panel) { border-color:#dce4e8; box-shadow:0 8px 24px #173e561a; }
-.theme:global(#main-content) :global(.public-card-options-panel) button:hover { background:#edf6fb; color:#155b80; }
-.theme:global(#main-content) :global(.public-report-cards .public-card-footer) { height:90px; padding-bottom:28px; }
-.theme:global(#main-content) :global(.public-report-cards .public-card-date) { left:16px; right:auto; bottom:6px; color:#61717b; }
+.theme:global(#main-content) section[data-cleanup-proof] > div:last-child > a { background:white; color:#3f36c4; border:1px solid #e3dff0; border-radius:12px; box-shadow:none; }
+.theme:global(#main-content) section[data-cleanup-proof] > div:last-child > a:hover { background:#f4f2ff; border-color:#3f36c4; }
+.theme:global(#main-content) :global(.public-card-options) summary { color:#3f36c4; }
+.theme:global(#main-content) :global(.public-card-options-panel) { border-color:#efedf4; box-shadow:0 8px 24px #29293214; }
+.theme:global(#main-content) :global(.public-card-options-panel) button:hover { background:#f4f2ff; color:#2c2496; }
 
 .theme:global(#main-content) section[data-cleanup-proof] { margin-top:24px; margin-bottom:32px; }
 /* A single real border encloses the complete card; child borders create seams. */
-.theme:global(#main-content) :global(.public-report-cards .report-card-container) { border:1px solid #dce4e8; }
+.theme:global(#main-content) :global(.public-report-cards .report-card-container) { border:1px solid #efedf4; }
 .theme:global(#main-content) :global(.public-report-cards .report-result),
 .theme:global(#main-content) :global(.public-report-cards .public-card-footer) { border:0; }
+
+/* Cards and links match the rest of the site: hover changes text colour, not the background. */
+.theme:global(#main-content) :global(.public-report-cards .report-card-container):is(:hover,:focus-within) { border-color:#c9c2f2; background:#fff; }
+.theme:global(#main-content) :is(nav,header) a:not(:global(.primary-button)):hover { background:transparent; color:#2c2496; }
+.theme:global(#main-content) :global(.primary-button) { box-shadow:0 4px 0 #3528ac; border-radius:14px; }
+.theme:global(#main-content) form[role='search'] > button { box-shadow:0 4px 0 #3528ac; border-radius:14px; }
+.theme:global(#main-content) :is(h1,h2,h3) { color:#292932; }

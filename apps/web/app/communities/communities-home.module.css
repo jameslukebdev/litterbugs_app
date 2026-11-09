@@ -133,28 +133,63 @@
 /* Photo-led discovery; white surfaces replace pastel panels. */
 .home.home .heroPhoto > img { height:380px; border-radius:18px; box-shadow:none; object-position:58% center; }
 .home.home .heroCopy h1 { margin-bottom:30px; }
-.home.home .quietLink,.home.home .cardAction,.home.home .resourceCount strong,.home.home .networks a { color:#176b96; }
-.home.home .quietLink:hover,.home.home .networks a:hover { background:#edf6fb; }
-.home.home .communityCard { border:1px solid #dce4e8; border-radius:18px; box-shadow:none; }
-.home.home .communityCard:hover { background:#f7fafc; border-color:#176b96; }
+.home.home .quietLink,.home.home .cardAction,.home.home .resourceCount strong,.home.home .networks a { color:#3f36c4; }
+.home.home .quietLink:hover,.home.home .networks a:hover { background:#f4f2ff; }
+.home.home .communityCard { border:1px solid #efedf4; border-radius:18px; box-shadow:none; }
+.home.home .communityCard:hover { background:#fcfbff; border-color:#3f36c4; }
 .home.home .cardCopy h3 { margin-top:0; }
-.home.home .cardPhoto { background:#f2f6f8; }
-.home.home .otherPlace { background:#fff; border:0; border-left:3px solid #eb735f; border-radius:0; padding:16px 0 16px 28px; }
-.home.home .outlineAction { color:#176b96; border-color:#bccdd7; background:#fff; }
-.home.home .outlineAction:hover { background:#edf6fb; border-color:#176b96; }
-.home.home .ways > div { background:#fff; border-radius:0; border-top:2px solid #eb735f; padding:24px 0 0; }
-.home.home .ways > div:nth-child(2) { border-color:#176b96; }
-.home.home .ways > div:nth-child(3) { border-color:#aebfc8; }
+.home.home .cardPhoto { background:#f7f6fb; }
+.home.home .otherPlace { background:#fff; border:0; border-left:0; border-radius:0; padding:16px 0 16px 28px; }
+.home.home .outlineAction { color:#3f36c4; border-color:#e3dff0; background:#fff; }
+.home.home .outlineAction:hover { background:#f4f2ff; border-color:#3f36c4; }
+.home.home .ways > div { background:#fff; border-radius:0; border-top:1px solid #efedf4; padding:24px 0 0; }
+.home.home .ways > div:nth-child(2) { border-color:#3f36c4; }
+.home.home .ways > div:nth-child(3) { border-color:#e3dff0; }
 .home.home .ways h3 { margin-top:0; }
-.home.home .organization { border:0; border-top:1px solid #dce4e8; border-bottom:1px solid #dce4e8; border-radius:0; padding:36px 0; }
-.home.home .organizationAction > button { background:#176b96; color:#fff; border-color:#176b96; box-shadow:none; border-radius:12px; }
-.home.home .organizationAction > button:hover { background:#155b80; }
-.home.home .faq details,.home.home .networks,.home.home .recentResult { border-color:#dce4e8; }
-.home.home .faq summary:hover { background:#edf6fb; }
+.home.home .organization { border:0; border-top:1px solid #efedf4; border-bottom:1px solid #efedf4; border-radius:0; padding:36px 0; }
+.home.home .organizationAction > button { background:#3f36c4; color:#fff; border-color:#3f36c4; box-shadow:none; border-radius:12px; }
+.home.home .organizationAction > button:hover { background:#2c2496; }
+.home.home .faq details,.home.home .networks,.home.home .recentResult { border-color:#efedf4; }
+.home.home .faq summary:hover { background:#f4f2ff; }
 .home.home .finder > div > section { padding-top:12px; }
 
 @media(max-width:760px) {
  .home.home .heroPhoto > img { height:260px; }
  .home.home .otherPlace { padding:12px 0 12px 24px; }
  .home.home .ways { gap:32px; }
+}
+
+/* Nov 2026: same look as the rest of the site. Purple actions, colour through text and bugs, white cards. */
+.home.home h1 { font-size: clamp(34px, 3.6vw, 46px); line-height: 1.1; margin: 0 0 24px; }
+.home.home h2 { font-size: 26px; }
+.heroLinks { display: flex; flex-wrap: wrap; gap: 0 20px; margin-top: 10px; }
+.home.home .heroLinks .quietLink { padding: 0; min-height: 40px; color: #3f36c4; font-size: 15px; font-weight: 800; }
+.home.home .heroLinks .quietLink:hover { background: none; text-decoration: underline; text-underline-offset: 3px; }
+.home.home .heroPhoto > img { height: 340px; border-radius: 20px; }
+.home.home .communityCard { border: 1px solid #e3dff0; border-radius: 20px; background: #fff; }
+.home.home .communityCard:hover { border-color: #c9c2f2; background: #fff; }
+.home.home .communityCard:hover h3 { color: #3f36c4; }
+.home.home .cardPhoto { background: #f7f6fb; min-height: 280px; }
+.home.home .photoFallback { color: #b8b4c4; }
+.photoFallback svg { width: 34px; height: 34px; }
+.home.home .cardCopy h3 { margin: 0 0 8px; font-size: 26px; }
+.home.home .cardCopy p { margin: 0 0 16px; color: #45434d; }
+.cardFacts { display: grid; gap: 8px; width: 100%; margin: 0; padding: 14px 0 0; border-top: 1px solid #efedf4; list-style: none; }
+.cardFacts li { display: flex; align-items: flex-start; gap: 8px; color: #45434d; font-size: 14px; font-weight: 600; line-height: 1.45; }
+.cardFacts svg, .cardFacts img { flex: none; width: 16px; height: 16px; margin-top: 2px; color: #686477; object-fit: contain; }
+.home.home .cardResult { color: #176350; }
+.home.home .cardAction { display: inline-flex; justify-content: flex-start; gap: 4px; width: auto; color: #3f36c4; font-size: 15px; font-weight: 800; }
+.cardAction svg { width: 18px; height: 18px; }
+.home.home .otherPlace { padding: 28px; border: 1px solid #e3dff0; border-radius: 20px; background: #fff; }
+.otherIcon { width: 28px; height: 28px; color: #3f36c4; }
+.home.home .otherPlace h3 { margin: 14px 0 10px; font-size: 24px; }
+.home.home .otherPlace p { color: #45434d; }
+.home.home .outlineAction { min-height: 46px; border: 2px solid #e3dff0; border-radius: 14px; color: #292932; font-weight: 800; }
+.home.home .outlineAction:hover { border-color: #c9c2f2; background: #fff; color: #3f36c4; }
+.home.home .otherPlace > .quietLink { padding: 0; color: #3f36c4; font-weight: 800; }
+.home.home .otherPlace > .quietLink:hover { background: none; text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 760px) {
+  .home.home { width: calc(100% - 32px); }
+  .home.home .heroPhoto > img { height: 220px; }
+  .home.home .cardPhoto { min-height: 200px; }
 }

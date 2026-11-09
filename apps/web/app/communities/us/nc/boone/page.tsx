@@ -5,6 +5,8 @@ import { communityReportHref } from '@/lib/community-journey';
 import journey from '@/components/communities/community-journey.module.css';
 import communityTheme from '@/components/communities/community-theme.module.css';
 import Link from 'next/link';
+import { FiBookOpen, FiChevronLeft, FiUsers } from 'react-icons/fi';
+/* eslint-disable @next/next/no-img-element -- the map's bugs label each section. */
 import { Website, ReportCards, styles as websiteStyles } from '@/components/public-website';
 import { CommunityBreadcrumbs } from '@/components/public-website/structured-data';
 import { SaveCommunity, ResourceDirectory } from '@/components/communities/community-controls';
@@ -32,11 +34,11 @@ export default async function BooneCommunityPage() {
   return <Website activePath="/communities">
     <CommunityBreadcrumbs name={community.name} path={community.href} />
     <main data-community-slug={community.slug} id="main-content" tabIndex={-1} className={`${websiteStyles.wide} ${communityTheme.theme} ${styles.hub}`}>
-      <header><Link className={styles.breadcrumb} href="/communities">Communities</Link><h1>{community.heading}</h1><div className={styles.actions}><Link className="primary-button button-link" href={communityReportHref(community)}>Report litter</Link><SaveCommunity slug={community.slug} name={community.name} /></div><p className={styles.scope}>{community.boundaryDescription} <a href={boundarySource}>Boundary source</a>.</p></header>
-      <nav className={styles.sectionNav} aria-label="Boone community sections"><a href="#cleanups">Cleanups</a><a href="#groups">Groups &amp; help</a><a href="#results">Completed work</a><a href="#local-guidance">Local guidance</a></nav>
+      <header><Link className={styles.breadcrumb} href="/communities"><FiChevronLeft aria-hidden="true" />Communities</Link><h1>{community.heading}</h1><div className={styles.actions}><Link className="primary-button button-link" href={communityReportHref(community)}>Report litter</Link><SaveCommunity slug={community.slug} name={community.name} /></div><p className={styles.scope}>{community.boundaryDescription} <a href={boundarySource}>Boundary source</a>.</p></header>
+      <nav className={styles.sectionNav} aria-label="Boone community sections"><a href="#cleanups"><img src="/brand/bugs/ladybug.png" alt="" aria-hidden="true" width={18} height={18} />Cleanups</a><a href="#groups"><FiUsers aria-hidden="true" />Groups &amp; help</a><a href="#results"><img src="/brand/bugs/flower.png" alt="" aria-hidden="true" width={18} height={18} />Completed work</a><a href="#local-guidance"><FiBookOpen aria-hidden="true" />Local guidance</a></nav>
       <section id="cleanups" aria-labelledby="cleanup-heading"><div className={styles.sectionHeading}><h2 id="cleanup-heading">Places that need attention</h2><a className={styles.textLink} href={communityMapHref(community)}>View reports on the map</a></div>
-        <p className={styles.sectionIntro}>Cleanup opportunities in Boone and nearby locations within postal code 28607. Open a report to check its location, status, and cleanup details.{active.hasMore ? ` Showing ${active.reports.length} recent reports; use “Browse all local opportunities” to see the rest.` : ''}</p>
-        <nav className={journey.opportunityFilters} aria-label="Boone report filters"><span aria-current="page">Available cleanups</span><Link href={communityListingHref(community, 'fundable')}>Accepting funding</Link></nav>
+        {active.hasMore && <p className={styles.sectionIntro}>The {active.reports.length} most recent reports. Use “Browse all local opportunities” for the rest.</p>}
+        <nav className={journey.opportunityFilters} aria-label="Boone report filters"><span aria-current="page"><img src="/brand/bugs/ladybug.png" alt="" aria-hidden="true" width={16} height={16} />Available cleanups</span><Link href={communityListingHref(community, 'fundable')}><img src="/brand/bugs/bee.png" alt="" aria-hidden="true" width={16} height={16} />Accepting funding</Link></nav>
         {active.reports.length ? <ReportCards feed={active} /> : <div className={styles.empty}><h3>{active.unavailable ? 'Reports couldn’t load right now.' : 'No active Litterbugs reports here right now.'}</h3><p>{active.unavailable ? 'Please try again shortly.' : ''}</p><div className={styles.actions}><Link className={styles.textLink} href={communityReportHref(community)}>Report litter</Link><a className={styles.textLink} href="#groups">Find local help</a></div></div>}
         <div className={`${styles.actions} ${journey.actionRow} ${journey.afterCards}`}><Link className={styles.textLink} href={communityListingHref(community)}>Browse all local opportunities</Link><Link className={styles.textLink} href={communityReportHref(community)}>Report litter</Link></div>
       </section>

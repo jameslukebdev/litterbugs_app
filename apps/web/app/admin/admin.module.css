@@ -105,3 +105,72 @@
 .alertPreferences label { display: flex; align-items: center; gap: 10px; font-weight: 600; }
 .alertPreferences input { width: 20px; height: 20px; accent-color: var(--green); }
 .alertPreferences p { margin: 8px 0 0 30px; color: #68716a; font-size: 14px; line-height: 1.5; }
+
+/* Nov 2026: staff pages share the site look — purple actions, white surfaces, colour through text. */
+.shell.shell { --green: #5146ed; --green-dark: #3f36c4; --green-soft: #f4f2ff; color: #292932; background: #fff; }
+.shell .eyebrow { color: #686477; letter-spacing: .08em; }
+.shell .header h1 { color: #292932; }
+.shell .header a { color: #3f36c4; text-decoration: none; }
+.shell .header a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.shell .workspace { border-color: #e3dff0; box-shadow: none; }
+.shell .inbox { border-color: #efedf4; background: #fff; }
+.shell .filters { border-color: #efedf4; flex-wrap: wrap; }
+.shell .filters select { min-height: 40px; border: 2px solid #e3dff0; border-radius: 12px; color: #292932; font-weight: 700; }
+.shell .segmented { background: #f4f3f8; }
+.shell .segmented button { color: #686477; font-weight: 700; }
+.shell .segmented .activeFilter { color: #3f36c4; }
+.shell .caseRow { border-color: #efedf4; border-left: 3px solid transparent; }
+.shell .caseRow:hover { background: #fcfbff; }
+.shell .selectedCase.selectedCase { border-left-color: #5146ed; background: #fcfbff; }
+.shell .caseRow strong { color: #292932; }
+.shell .caseRow > span:not(.caseTopline), .shell .caseRow time { color: #686477; }
+.shell .caseType { color: #3f36c4; }
+.shell .priority { color: #a8323b; }
+.shell .detailHeading p { color: #45434d; }
+.shell .detailHeading .caseIdentity { color: #8b879a; }
+/* Money as coloured text with the bee, like the report sheet. */
+.shell .reward { padding: 0; border-radius: 0; color: #45434d; background: none; justify-content: flex-start; gap: 8px; align-items: center; font-weight: 700; }
+.shell .reward::before { content: ''; width: 18px; height: 18px; background: url('/brand/bugs/bee.png') no-repeat center / contain; }
+.shell .reward strong { color: #8a5a00; }
+.shell .summaryCard, .shell .history { border-color: #efedf4; }
+.shell .summaryCard h3, .shell .history h3, .shell .photoSections h3 { color: #292932; }
+.shell .summaryCard p, .shell .history p { color: #45434d; }
+.shell .photoGrid img { border-radius: 12px; background: #f7f6fb; }
+.shell .decisionPanel { border-color: #efedf4; }
+.shell .decisionPanel > p:first-child { color: #45434d; line-height: 1.6; }
+.shell .decisionPanel label { color: #292932; }
+.shell .decisionPanel textarea { border: 2px solid #e3dff0; border-radius: 12px; color: #292932; }
+.shell .decisionPanel textarea:focus { border-color: #5146ed; outline: none; box-shadow: 0 0 0 3px #e8e5ff; }
+.shell .required { color: #a8323b; }
+.shell .decisionHint { color: #8b879a; }
+.shell .primaryButton { border-radius: 14px; background: #5146ed; box-shadow: 0 4px 0 #3528ac; }
+.shell .primaryButton:hover:not(:disabled) { background: #4438bb; }
+.shell .secondaryButton { border: 2px solid #e3dff0; border-radius: 14px; color: #292932; background: #fff; }
+.shell .secondaryButton:hover:not(:disabled) { border-color: #c9c2f2; color: #3f36c4; background: #fff; }
+.shell .dangerButton { border: 2px solid #f2c4c8; border-radius: 14px; color: #a8323b; background: #fff; }
+.shell .dangerButton:hover:not(:disabled) { border-color: #a8323b; }
+.shell :is(.primaryButton, .dangerButton):disabled { opacity: .5; cursor: not-allowed; }
+/* Second step before a decision is saved (replaces the browser's grey pop-up). */
+.confirm { margin-top: 14px; padding: 16px; border: 2px solid #e3dff0; border-radius: 16px; background: #fff; }
+.confirm > p { margin: 0; color: #45434d; line-height: 1.55; }
+.confirm > p strong { color: #292932; }
+.shell .empty { color: #686477; }
+/* Status messages: coloured text only. */
+.shell .error, .shell .success { padding: 0; border-radius: 0; background: none; font-weight: 700; }
+.shell .error { color: #a8323b; }
+.shell .success { color: #176350; }
+/* Sign-in / authenticator card. */
+.shell .accessCard { border-color: #e3dff0; border-radius: 20px; box-shadow: none; }
+.shell .accessCard > p { color: #45434d; }
+.shell .accessForm label { color: #292932; }
+.shell .accessForm input { min-height: 48px; border: 2px solid #e3dff0; border-radius: 12px; }
+.shell .accessForm input:focus { border-color: #5146ed; outline: none; box-shadow: 0 0 0 3px #e8e5ff; }
+.shell .accessForm .primaryButton { min-height: 48px; }
+.shell .googleButton { min-height: 48px; border: 2px solid #e3dff0; border-radius: 14px; color: #292932; }
+.shell .googleButton:hover { border-color: #c9c2f2; background: #fff; }
+.shell .enrollment { border: 1px solid #efedf4; background: #fff; }
+.shell .linkButton { color: #3f36c4; font-weight: 800; }
+.shell .linkButton:hover { color: #2c2496; text-decoration: underline; }
+.shell .alertPreferences { border-color: #e3dff0; border-radius: 16px; }
+.shell .alertPreferences input { accent-color: #5146ed; }
+.shell .alertPreferences p { color: #686477; }

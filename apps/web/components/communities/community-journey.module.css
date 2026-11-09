@@ -10,3 +10,10 @@
 .opportunityFilters { display:flex; flex-wrap:wrap; gap:12px 24px; margin:0 0 24px; align-items:center; font-size:16px; }
 .opportunityFilters > :is(a,span) { display:inline-flex; align-items:center; min-height:44px; }
 .opportunityFilters > [aria-current] { font-weight:700; border-bottom:2px solid var(--green); }
+
+/* Available / funding filters: small bug-labelled tabs. */
+.opportunityFilters.opportunityFilters { gap: 0 22px; margin: 0 0 20px; border-bottom: 1px solid #efedf4; }
+.opportunityFilters.opportunityFilters > :is(a, span) { gap: 6px; margin-bottom: -1px; border-bottom: 3px solid transparent; color: #45434d; font-size: 15px; font-weight: 800; text-decoration: none; }
+.opportunityFilters.opportunityFilters > a:hover { color: #3f36c4; background: none; }
+.opportunityFilters.opportunityFilters > [aria-current] { color: #3f36c4; border-bottom-color: #5146ed; }
+.opportunityFilters img { width: 16px; height: 16px; object-fit: contain; }

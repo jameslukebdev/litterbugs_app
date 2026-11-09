@@ -8,7 +8,7 @@ import styles from './report-starter.module.css';
 
 export function ReportStarter() {
   return <section className={styles.starter} aria-labelledby="report-starter-title">
-    <h2 id="report-starter-title">Explore what you can do with Litterbugs</h2>
+    <h2 id="report-starter-title" className="heading-with-bug"><img className="heading-bug" src="/brand/ranks/lightning-bug.svg" alt="" aria-hidden="true" width={32} height={32} />Explore what you can do with Litterbugs</h2>
     <div className={styles.choices}>
       <article className={styles.choice} aria-labelledby="report-choice-title">
         <Image className={styles.photo} src="/homepage-photos/action-report.webp" alt="A person taking a photograph with a phone outdoors" width={900} height={600} sizes="(max-width: 700px) calc(100vw - 40px), (max-width: 1244px) 30vw, 375px" loading="lazy" />

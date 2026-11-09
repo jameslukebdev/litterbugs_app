@@ -1,12 +1,12 @@
 .sort { position:relative; width:max-content; max-width:100%; }
-.sort .trigger { display:flex; align-items:center; justify-content:space-between; gap:24px; min-height:46px; padding:10px 16px; border:1px solid #bccdd7; border-radius:10px; background:white; color:#176b96; font:inherit; font-weight:600; cursor:pointer; box-shadow:none; }
+.sort .trigger { display:flex; align-items:center; justify-content:space-between; gap:24px; min-height:46px; padding:10px 16px; border:1px solid #e3dff0; border-radius:10px; background:white; color:#3f36c4; font:inherit; font-weight:600; cursor:pointer; box-shadow:none; }
 .trigger svg { flex-shrink:0; width:18px; height:18px; }
-.sort .trigger:hover, .sort .trigger[aria-expanded='true'] { border-color:#176b96; background:#f4f9fc; }
-.menu { position:absolute; top:calc(100% + 8px); left:0; z-index:30; width:max-content; min-width:100%; max-width:calc(100vw - 48px); padding:6px; background:white; border:1px solid #dce4e8; border-radius:12px; box-shadow:0 8px 28px #173e561a; }
-.menu button { display:flex; justify-content:space-between; align-items:center; gap:24px; width:100%; min-height:44px; padding:10px 12px; border:0; border-radius:7px; background:white; color:#28343c; font:inherit; text-align:left; cursor:pointer; }
-.menu button[aria-checked='true'], .menu button:hover, .menu button:focus-visible { background:#edf6fb; color:#155b80; }
+.sort .trigger:hover, .sort .trigger[aria-expanded='true'] { border-color:#3f36c4; background:#fcfbff; }
+.menu { position:absolute; top:calc(100% + 8px); left:0; z-index:30; width:max-content; min-width:100%; max-width:calc(100vw - 48px); padding:6px; background:white; border:1px solid #efedf4; border-radius:12px; box-shadow:0 8px 28px #29293214; }
+.menu button { display:flex; justify-content:space-between; align-items:center; gap:24px; width:100%; min-height:44px; padding:10px 12px; border:0; border-radius:7px; background:white; color:#292932; font:inherit; text-align:left; cursor:pointer; }
+.menu button[aria-checked='true'], .menu button:hover, .menu button:focus-visible { background:#f4f2ff; color:#2c2496; }
 .menu button svg { flex-shrink:0; width:18px; height:18px; }
 
 .menu { max-height: min(360px, 50vh); overflow-y:auto; }
 .menu button span { min-width:0; overflow-wrap:anywhere; }
-.sort .trigger:focus-visible, .menu button:focus-visible { outline:2px solid #3684ad; outline-offset:2px; }
+.sort .trigger:focus-visible, .menu button:focus-visible { outline:2px solid #5146ed; outline-offset:2px; }

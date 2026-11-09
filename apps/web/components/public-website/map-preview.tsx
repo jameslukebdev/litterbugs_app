@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element -- small heading bug, like the map's bugs. */
 import Image from 'next/image';
 import Link from 'next/link';
 import { IoChevronForward, IoMapOutline } from 'react-icons/io5';
@@ -32,7 +33,7 @@ export function MapPreview({ pins }: { pins: MapPreviewPin[] | null }) {
   return (
     <section className={styles.preview} aria-labelledby="map-preview-title">
       <div className={styles.head}>
-        <h2 id="map-preview-title">Find litter on the map</h2>
+        <h2 id="map-preview-title" className="heading-with-bug"><img className="heading-bug" src="/brand/bugs/ant.svg" alt="" aria-hidden="true" width={32} height={32} />Find litter on the map</h2>
       </div>
       <div className={styles.frame}>
         {key.length > 0 && (

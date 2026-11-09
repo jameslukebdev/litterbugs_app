@@ -390,3 +390,18 @@
 
 /* Cleaned up = flower, mint family. The cleanup section's heading bug is the flower. */
 .brand section[aria-labelledby='home-cleanup-title']::before { background: url('/brand/bugs/flower.png') no-repeat center / contain; filter: none; width: 30px; height: 30px; }
+
+/* Nov 2026: no loose decorative bugs; colour through text and the bugs that label something. */
+.brand.brand > footer::before,
+.brand.brand section[aria-labelledby='home-cleanup-title']::before { content: none; display: none; }
+/* "Explore what you can do": keep the coloured headings and buttons, drop the coloured photo edges. */
+.brand.brand.brand section[aria-labelledby='report-starter-title'] article > img { border-radius: 18px; box-shadow: none; }
+/* Completed-cleanup example (homepage, guides, community pages): keeps its mint button and mint photo glow. */
+.brand.brand.brand section[data-cleanup-proof] figcaption { margin-top: 8px; color: #686477; font-size: 14px; font-weight: 700; }
+.brand.brand.brand section[data-cleanup-proof] > div:last-child h3 { color: #292932; }
+.brand.brand.brand section[data-cleanup-proof] > div:last-child p { margin-top: 6px; color: #686477; font-size: 16px; }
+.brand.brand.brand section[data-cleanup-proof] > div:first-child a { gap: 6px; transition: color .15s ease; }
+.brand.brand.brand section[data-cleanup-proof] > div:first-child a::after { content: '→'; display: inline-block; transition: transform .15s ease; }
+.brand.brand.brand section[data-cleanup-proof] > div:first-child a:hover { color: #0b3b2f; background: none; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.brand.brand.brand section[data-cleanup-proof] > div:first-child a:hover::after { transform: translateX(4px); }
+@media (prefers-reduced-motion: reduce) { .brand.brand.brand section[data-cleanup-proof] > div:first-child a::after { transition: none; } }

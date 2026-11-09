@@ -2152,3 +2152,39 @@ body .modal-backdrop > .modal-shell.flow-page.payout-page.payout-page { --flow-w
 .renew-card .renew-confirm .cleaner-buttons > .danger-button { border-color: #ef9aa3; background: #fff; color: #a8323b; box-shadow: 0 3px 0 #f7c4c9; }
 .renew-card .renew-confirm .cleaner-buttons > .danger-button:hover:not(:disabled) { background: #ffe4e7; }
 @media (max-width: 600px) { .cleaner-actions .cleaner-release { align-self: stretch; width: 100%; } }
+
+/* Report cards (map list and public pages), Nov 2026: colour through text and bugs, no tinted chips.
+   The photo label is a white tag with the status bug; the money line is plain coloured text. */
+body :is(.website-experience, .public-report-cards) .report-card-container.report-card-container.report-card-container .report-result-workflow { color: #a8323b; background: #fff; box-shadow: 0 1px 6px rgba(41, 41, 50, .22); }
+body :is(.website-experience, .public-report-cards) .report-card-container.report-card-container.report-card-container .report-result-workflow[data-tone="active"] { color: #2f6b3a; background: #fff; }
+body :is(.website-experience, .public-report-cards) .report-card-container.report-card-container.report-card-container .report-result-workflow[data-tone="completed"] { color: #176350; background: #fff; }
+body :is(.website-experience, .public-report-cards) .report-card-container.report-card-container.report-card-container .report-result-workflow[data-tone="expired"] { color: #5c5966; background: #fff; padding-left: 10px; }
+body :is(.website-experience, .public-report-cards) .report-card-container.report-card-container.report-card-container .report-result-reward { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; border-radius: 0; color: #686477; background: none; font-size: 15px; }
+body :is(.website-experience, .public-report-cards) .report-card-container.report-card-container.report-card-container .report-result-reward-funded { color: #8a5a00; font-size: 16px; }
+body :is(.website-experience, .public-report-cards) .report-card-container.report-card-container.report-card-container .report-result-reward-funded::before { content: ''; flex: none; width: 17px; height: 17px; background: url('/brand/bugs/bee.png') no-repeat center / contain; }
+body .public-report-cards .report-card-container.report-card-container.report-card-container .report-result-photo-empty { color: #8b879a; background: #fff; border-bottom: 1px solid #efedf4; }
+body .public-report-cards .report-card-container.report-card-container.report-card-container .report-result-photo-empty svg { width: 26px; height: 26px; }
+
+/* Section headings labelled by a bug (homepage and the cleanup example). */
+.heading-with-bug { display: flex; align-items: center; gap: 10px; }
+.heading-with-bug > .heading-bug { flex: none; width: 32px; height: 32px; object-fit: contain; }
+@media (max-width: 700px) { .heading-with-bug > .heading-bug { width: 28px; height: 28px; } }
+
+/* Rank card (account and member pages), Nov 2026: smaller bug, one line of meaning under the name,
+   one line under the bar with the next rank's bug. Purple bar to match the rest of the site. */
+.community-rank.community-rank { padding: 20px 22px; border: 1px solid #e3dff0; border-radius: 20px; background: #fff; }
+.community-rank.community-rank .community-rank-summary { min-height: 56px; gap: 14px; }
+.community-rank.community-rank .community-rank-summary img, .community-rank.community-rank .community-rank-artwork { width: 56px; height: 56px; object-fit: contain; }
+.community-rank.community-rank .community-rank-summary h3 { margin: 0; color: #292932; font-size: 22px; line-height: 1.2; }
+.community-rank.community-rank .community-rank-meta { margin: 2px 0 0; color: #686477; font-size: 14px; font-weight: 600; }
+.community-rank.community-rank .community-rank-progress { min-height: 0; margin-top: 16px; }
+.community-rank.community-rank progress { height: 10px; margin: 0; border-radius: 10px; background: #efedf4; }
+.community-rank.community-rank progress::-webkit-progress-bar { background: #efedf4; border-radius: 10px; }
+.community-rank.community-rank progress::-webkit-progress-value { background: #5146ed; border-radius: 10px; }
+.community-rank.community-rank progress::-moz-progress-bar { background: #5146ed; border-radius: 10px; }
+.community-rank.community-rank .community-rank-progress > .community-rank-next { display: flex; justify-content: flex-start; align-items: center; gap: 8px; margin: 10px 0 0; color: #45434d; font-size: 14px; }
+.community-rank.community-rank .community-rank-next img { flex: none; width: 20px; height: 20px; object-fit: contain; }
+.community-rank.community-rank .community-rank-next strong { color: #292932; }
+.community-rank.community-rank details { margin-top: 16px; padding-top: 12px; border-top: 1px solid #efedf4; color: #45434d; font-size: 14px; line-height: 1.6; }
+.community-rank.community-rank summary { color: #3f36c4; font-weight: 800; cursor: pointer; }
+.community-rank.community-rank summary:hover { color: #2c2496; }

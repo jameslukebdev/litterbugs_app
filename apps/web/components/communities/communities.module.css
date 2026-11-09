@@ -150,26 +150,26 @@
 }
 
 /* Plain selects preserve filtering without a row of decorative pills. */
-.filterSelect { max-width:100%; min-height:44px; margin:0 0 12px; padding:10px 38px 10px 12px; color:#28343c; background:#fff; border:1px solid #bccdd7; border-radius:10px; font:inherit; font-size:15px; cursor:pointer; }
-.hub.hub .textLink,.hub.hub .breadcrumb,.hub.hub .sectionNav a,.hub.hub .resource h3 a { color:#176b96; }
+.filterSelect { max-width:100%; min-height:44px; margin:0 0 12px; padding:10px 38px 10px 12px; color:#292932; background:#fff; border:1px solid #e3dff0; border-radius:10px; font:inherit; font-size:15px; cursor:pointer; }
+.hub.hub .textLink,.hub.hub .breadcrumb,.hub.hub .sectionNav a,.hub.hub .resource h3 a { color:#3f36c4; }
 .hub.hub .textLink { padding:10px 12px; margin-left:-12px; border-radius:10px; text-decoration:none; }
-.hub.hub .textLink:hover { background:#edf6fb; text-decoration:none; }
+.hub.hub .textLink:hover { background:#f4f2ff; text-decoration:none; }
 .hub.hub .sectionNav a { display:inline-flex; align-items:center; min-height:44px; padding:8px 12px; border-radius:8px; }
-.hub.hub .sectionNav a:hover { background:#edf6fb; }
-.hub.hub .secondary { border-color:#bccdd7; border-radius:12px; color:#176b96; font-size:17px; }
-.hub.hub .secondary:hover { background:#edf6fb; }
-.hub.hub .supportGrid { border-top:2px solid #eb735f; padding-top:24px; }
-.hub.hub .resourceIcon { color:#176b96; }
-.dialog.dialog { --ink:#28343c; --muted:#61717b; --line:#dce4e8; --green:#176b96; --green-dark:#155b80; --brand-green-tint:#edf6fb; border-radius:18px; }
-.dialog.dialog .primary { background:#176b96; color:white; border-color:#176b96; border-radius:12px; font-size:17px; }
-.dialog.dialog .secondary { border-color:#bccdd7; color:#176b96; border-radius:12px; font-size:17px; }
-.dialog.dialog .previewNote { background:transparent; border:0; padding:0; color:#61717b; margin:12px 0 24px; }
+.hub.hub .sectionNav a:hover { background:#f4f2ff; }
+.hub.hub .secondary { border-color:#e3dff0; border-radius:12px; color:#3f36c4; font-size:17px; }
+.hub.hub .secondary:hover { background:#f4f2ff; }
+.hub.hub .supportGrid { border-top:1px solid #efedf4; padding-top:24px; }
+.hub.hub .resourceIcon { color:#3f36c4; }
+.dialog.dialog { --ink:#292932; --muted:#686477; --line:#efedf4; --green:#3f36c4; --green-dark:#2c2496; --brand-green-tint:#f4f2ff; border-radius:18px; }
+.dialog.dialog .primary { background:#3f36c4; color:white; border-color:#3f36c4; border-radius:12px; font-size:17px; }
+.dialog.dialog .secondary { border-color:#e3dff0; color:#3f36c4; border-radius:12px; font-size:17px; }
+.dialog.dialog .previewNote { background:transparent; border:0; padding:0; color:#686477; margin:12px 0 24px; }
 .dialog.dialog :is(input,select,textarea) { font-size:16px; border-radius:10px; }
-.dialog.dialog :is(a,button,input,select,textarea):focus-visible { outline:3px solid #3684ad; outline-offset:3px; }
+.dialog.dialog :is(a,button,input,select,textarea):focus-visible { outline:3px solid #5146ed; outline-offset:3px; }
 
 .hub.hub > header { max-width:none; padding-bottom:8px; }
 .hub.hub > header h1 { max-width:900px; font-size:clamp(34px,4vw,54px); line-height:1.12; margin-bottom:28px; }
-.hub.hub .sectionNav { gap:8px 20px; padding:12px 0; border-top:2px solid #eb735f; border-bottom:1px solid #dce4e8; }
+.hub.hub .sectionNav { gap:8px 20px; padding:12px 0; border-top:1px solid #efedf4; border-bottom:1px solid #efedf4; }
 .hub.hub .actions { gap:12px; }
 .hub.hub .supportGrid > div { background:#fff; border-radius:0; }
 @media(max-width:600px) {
@@ -181,8 +181,72 @@
 /* Portaled community dialogs carry the same type and control treatment. */
 .dialog.dialog, .dialog.dialog :is(h2,h3,input,textarea,button) { font-family:'Community Inter',sans-serif; }
 .dialog.dialog :is(h2,h3) { font-weight:700; letter-spacing:-.035em; }
-.dialog.dialog .primary:hover { background:#155b80; border-color:#155b80; }
-.dialog.dialog .textLink { color:#176b96; padding:10px 12px; border-radius:10px; }
-.dialog.dialog .textLink:hover { background:#edf6fb; text-decoration:none; }
+.dialog.dialog .primary:hover { background:#2c2496; border-color:#2c2496; }
+.dialog.dialog .textLink { color:#3f36c4; padding:10px 12px; border-radius:10px; }
+.dialog.dialog .textLink:hover { background:#f4f2ff; text-decoration:none; }
 .offerField { display:grid; gap:8px; min-width:0; }
 .offerField > div, .offerField > div > button { width:100%; }
+
+/* Nov 2026: community pages match the rest of the site (report lists, report page).
+   Back link at the top, bug-labelled tabs, purple text links, white surfaces, no coral rules. */
+.hub.hub { padding-top: 24px; }
+.hub.hub .breadcrumb { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; margin: 0 0 8px -6px; padding: 0 6px; color: #3f36c4; font-size: 15px; font-weight: 800; }
+.breadcrumb svg { width: 20px; height: 20px; }
+.hub.hub .breadcrumb:hover { background: none; color: #2c2496; }
+.hub.hub > header h1 { margin: 0 0 20px; font-size: clamp(34px, 3.6vw, 46px); line-height: 1.1; letter-spacing: -.03em; }
+.hub.hub > header > p:not(.scope) { max-width: 720px; color: #45434d; font-size: 19px; line-height: 1.6; }
+.hub.hub .scope { margin: 14px 0 0; color: #686477; font-size: 14px; }
+.hub.hub .scope a { color: #3f36c4; font-weight: 700; }
+.hub.hub > header :global(.primary-button) { display: inline-flex; align-items: center; gap: 8px; }
+.hub.hub > header :global(.primary-button) svg { width: 18px; height: 18px; }
+.hub.hub .secondary { min-height: 48px; padding: 10px 18px; border: 2px solid #e3dff0; border-radius: 14px; color: #292932; background: #fff; font-size: 16px; font-weight: 800; }
+.hub.hub .secondary:hover { border-color: #c9c2f2; background: #fff; color: #3f36c4; }
+
+/* Section tabs, like the report list tabs. */
+.hub.hub .sectionNav { gap: 0 28px; padding: 0; border-top: 0; border-bottom: 1px solid #efedf4; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+.hub.hub .sectionNav a { flex: none; display: inline-flex; align-items: center; gap: 8px; min-height: 50px; margin-bottom: -1px; padding: 0; border-bottom: 3px solid transparent; border-radius: 0; color: #45434d; font-size: 16px; font-weight: 800; white-space: nowrap; }
+.hub.hub .sectionNav a:hover { background: none; color: #3f36c4; }
+.hub.hub .sectionNav a[aria-current='page'] { color: #3f36c4; border-bottom-color: #5146ed; }
+.sectionNav img, .sectionNav svg { flex: none; width: 18px; height: 18px; object-fit: contain; color: #686477; }
+
+.hub.hub > section { margin-top: 56px; }
+.hub.hub > section h2 { margin: 0 0 12px; font-size: 26px; line-height: 1.2; }
+.hub.hub .sectionIntro { max-width: 760px; margin: 0 0 20px; color: #45434d; font-size: 17px; line-height: 1.65; }
+.hub.hub .textLink { gap: 6px; margin-left: 0; padding: 0; color: #3f36c4; font-size: 15px; font-weight: 800; }
+.hub.hub .textLink:hover { background: none; text-decoration: underline; text-underline-offset: 3px; }
+.hub.hub .textLink svg { width: 16px; height: 16px; }
+
+/* Groups & help: one tidy row per resource. */
+.hub.hub .resource { grid-template-columns: 32px minmax(0, 1fr) auto; gap: 16px; padding: 22px 0; border-color: #efedf4; }
+.hub.hub .resourceIcon { padding-top: 2px; color: #3f36c4; }
+.hub.hub .resourceIcon svg { width: 24px; height: 24px; }
+.hub.hub .resource h3 { margin: 0 0 4px; font-size: 20px; }
+.hub.hub .resource h3 a { color: #292932; }
+.hub.hub .resource h3 a:hover { color: #3f36c4; background: none; }
+.hub.hub .resource .caption { margin: 0 0 8px; color: #686477; font-size: 13px; font-weight: 700; }
+.hub.hub .resource p { margin: 0 0 8px; color: #45434d; font-size: 16px; line-height: 1.6; }
+.hub.hub .resource .availability { margin: 8px 0; color: #686477; font-size: 14px; }
+.hub.hub .resource > .textLink { margin-top: 0; max-width: 220px; text-align: right; justify-content: flex-end; }
+.hub.hub .directoryNote { color: #686477; }
+
+/* Local guidance questions. */
+.hub.hub .guidance details { border-bottom: 1px solid #efedf4; }
+.hub.hub .guidance details:first-of-type { border-top: 1px solid #efedf4; }
+.hub.hub .guidance summary { min-height: 56px; padding: 16px 0; color: #292932; font-size: 17px; font-weight: 800; cursor: pointer; }
+.hub.hub .guidance summary:hover { color: #3f36c4; }
+.hub.hub .guidance details p { max-width: 760px; color: #45434d; font-size: 16px; line-height: 1.65; }
+.hub.hub .guidance details > .actions { padding-bottom: 16px; }
+.hub.hub .empty { border-color: #efedf4; }
+
+@media (max-width: 760px) {
+  .hub.hub { width: calc(100% - 32px); padding-top: 12px; }
+  .hub.hub .sectionNav { gap: 0 22px; }
+  .hub.hub .resource { grid-template-columns: 26px minmax(0, 1fr); }
+  .hub.hub .resource > .textLink { grid-column: 2; justify-content: flex-start; text-align: left; max-width: none; }
+}
+@media (max-width: 560px) {
+  /* Phones: the section / list tabs as a two-column index so none hides off-screen. */
+  .hub.hub.hub .sectionNav { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; overflow: visible; border-bottom: 0; }
+  .hub.hub.hub .sectionNav a { min-width: 0; min-height: 46px; margin: 0; border-radius: 0; border-bottom: 1px solid #efedf4; font-size: 15px; white-space: normal; }
+  .hub.hub.hub .sectionNav a[aria-current='page'] { border-bottom: 2px solid #5146ed; }
+}

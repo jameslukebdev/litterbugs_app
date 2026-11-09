@@ -3,7 +3,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { AdminInbox } from './admin-inbox';
+import { AdminInbox, availableActions, closeBlockedReason } from './admin-inbox';
 
 const invoke = vi.fn();
 
@@ -90,7 +90,6 @@ describe('funded cleanup admin inbox', () => {
       }
       throw new Error('Unexpected operation');
     });
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     render(<AdminInbox />);
     expect(await screen.findByText('Creek trail litter')).toBeTruthy();
@@ -126,7 +125,9 @@ describe('funded cleanup admin inbox', () => {
     expect(decisionButton.getAttribute('disabled')).toBeNull();
     fireEvent.click(decisionButton);
 
-    await waitFor(() => expect(confirm).toHaveBeenCalledOnce());
+    // A second, in-page confirmation replaces the browser pop-up; nothing is sent before it.
+    expect(invoke).not.toHaveBeenCalledWith('admin-cleanup-case', expect.objectContaining({ body: expect.objectContaining({ operation: 'resolve' }) }));
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, deny dispute and continue reward process' }));
     await waitFor(() => expect(invoke).toHaveBeenCalledWith(
       'admin-cleanup-case',
       { body: {
@@ -156,4 +157,34 @@ describe('community moderation in the existing inbox', () => {
     expect(screen.getByRole('button', { name: 'Clear public profile content' }).hasAttribute('disabled')).toBe(true);
     expect(screen.getByText('Profile being reviewed')).toBeTruthy();
   });
+});
+
+describe('closing a report for refunds', () => {
+  const safetyCase = { id: 'case-safety', case_type: 'report_safety' } as never;
+  it('is not offered once the report’s cleanup is complete, and says why', () => {
+    const detail = { case: safetyCase, report: { title: 'Test', cleanup_state: 'completed' } };
+    expect(availableActions(detail).map((action) => action.value)).toEqual(['approve_funding', 'reject_funding']);
+    expect(closeBlockedReason(detail)).toMatch(/already complete/);
+  });
+  it('is offered for an open report', () => {
+    const detail = { case: safetyCase, report: { title: 'Creek', cleanup_state: 'available' } };
+    expect(availableActions(detail).map((action) => action.value)).toContain('close_and_refund');
+    expect(closeBlockedReason(detail)).toBeNull();
+  });
+});
+
+it('shows the server’s explanation instead of a generic status-code error', async () => {
+  invoke.mockImplementation(async (_name, { body }) => {
+    if (body.operation === 'list') return { data: { cases: openCases }, error: null };
+    if (body.operation === 'get') return { data: openDetail, error: null };
+    return { data: null, error: Object.assign(new Error('Edge Function returned a non-2xx status code'), { context: new Response(JSON.stringify({ error: 'The admin action could not be completed' }), { status: 500 }) }) };
+  });
+  render(<AdminInbox />);
+  fireEvent.click(await screen.findByText('Creek trail litter'));
+  await screen.findByText('Cleaner’s description');
+  fireEvent.change(screen.getByLabelText(/Why are you making this decision/i), { target: { value: 'Testing the error message.' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Deny dispute and continue reward process' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Yes, deny dispute and continue reward process' }));
+  expect(await screen.findByText('The admin action could not be completed')).toBeTruthy();
+  expect(screen.queryByText(/non-2xx/)).toBeNull();
 });

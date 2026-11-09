@@ -561,6 +561,8 @@ export function AccountDialog({
 
       {profileEditing && (
         <section className="member-profile-editor" aria-label="Profile editor">
+          {/* Visible title; the page heading above says the same for screen readers. */}
+          <h3 className="member-profile-editor-title" aria-hidden="true">{profile?.profile_completed_at ? 'Edit profile' : 'Finish your profile'}</h3>
           {!profile?.profile_completed_at && <p className="profile-editor-intro">Add your name to finish your profile.</p>}
           <form className="member-profile-form" onSubmit={saveProfile}>
             <div className="member-avatar-editor">

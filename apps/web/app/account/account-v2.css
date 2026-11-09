@@ -209,3 +209,37 @@
 /* No fade-in: it made the rank card blink while the profile card above stayed solid. The placeholders
    are the same size and colour as the real cards, so content can swap in instantly. */
 .account-theme .account-v2 .account-section-ready { animation: none; }
+
+/* Nov 2026 — Edit profile: one white card with a title, roomy fields, counters only while typing. */
+.account-theme .account-v2 .member-profile-editor { margin-top: 0; padding: 24px; border: 1px solid #e3dff0; border-radius: 20px; background: #fff; }
+.account-theme .account-v2 .member-profile-editor-title { margin: 0 0 18px; color: #292932; font-size: 22px; line-height: 1.2; }
+.account-theme .account-v2 .profile-editor-intro { margin: -10px 0 18px; color: #686477; font-size: 15px; }
+.account-theme .account-v2 .member-profile-form { gap: 22px; }
+.account-theme .account-v2 .member-avatar-editor { gap: 18px; padding-bottom: 20px; border-bottom: 1px solid #efedf4; }
+.account-theme .account-v2 .member-avatar-actions { gap: 6px 14px; }
+.account-theme .account-v2 .member-photo-picker { min-height: 42px; padding: 0 16px; border: 2px solid #e3dff0; border-radius: 12px; color: #292932; background: #fff; font-size: 14px; font-weight: 800; box-shadow: none; }
+.account-theme .account-v2 .member-photo-picker:hover { border-color: #c9c2f2; color: #3f36c4; }
+.account-theme .account-v2 .member-photo-picker:focus-within { outline: 3px solid #5146ed; outline-offset: 2px; }
+.account-theme .account-v2 .profile-text-button { color: #686477; font-size: 14px; font-weight: 800; }
+.account-theme .account-v2 .profile-text-button:hover { color: #a8323b; }
+.account-theme .account-v2 .member-avatar-actions small { color: #8b879a; font-size: 13px; }
+.account-theme .account-v2 .member-profile-fields { gap: 18px 16px; }
+.account-theme .account-v2 .member-profile-fields label { gap: 6px; color: #292932; font-size: 14px; font-weight: 800; }
+.account-theme .account-v2 .profile-optional { color: #8b879a; font-weight: 600; }
+.account-theme .account-v2 .member-profile-fields :is(input, textarea) { min-height: 48px; padding: 11px 14px; border: 2px solid #e3dff0; border-radius: 12px; color: #292932; background: #fff; font-size: 16px; font-weight: 500; }
+.account-theme .account-v2 .member-profile-fields textarea { min-height: 96px; resize: vertical; line-height: 1.5; }
+.account-theme .account-v2 .member-profile-fields :is(input, textarea):focus { border-color: #5146ed; outline: none; box-shadow: 0 0 0 3px #e8e5ff; }
+.account-theme .account-v2 .member-profile-fields :is(input, textarea)::placeholder { color: #a8a4b6; }
+.account-theme .account-v2 .profile-username-input { min-height: 48px; border: 2px solid #e3dff0; border-radius: 12px; background: #fff; }
+.account-theme .account-v2 .profile-username-input:focus-within { border-color: #5146ed; box-shadow: 0 0 0 3px #e8e5ff; }
+.account-theme .account-v2 .profile-username-input > span { padding-left: 14px; color: #8b879a; }
+.account-theme .account-v2 .profile-username-input input { min-height: 44px; border: 0; box-shadow: none; }
+.account-theme .account-v2 .profile-field-helper { color: #686477; font-size: 13px; font-weight: 500; }
+/* Character counts only while typing in that field (space kept, so nothing jumps). */
+.account-theme .account-v2 .member-profile-fields label > small { color: #8b879a; font-size: 12px; font-weight: 600; visibility: hidden; }
+.account-theme .account-v2 .member-profile-fields label:focus-within > small { visibility: visible; }
+.account-theme .account-v2 .member-profile-form-actions { gap: 10px; padding-top: 18px; border-top: 1px solid #efedf4; }
+.account-theme .account-v2 .member-profile-form-actions button { min-height: 48px; border-radius: 14px; font-weight: 800; }
+@media (max-width: 600px) {
+  .account-theme .account-v2 .member-profile-editor { padding: 18px 16px; }
+}

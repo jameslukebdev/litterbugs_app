@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { LITTER_MAP_HREF } from '@/lib/home-map-link';
-import { Website, ReportCards, styles } from '@/components/public-website';
+import { Website, ReportCards, DirectoryNav, styles } from '@/components/public-website';
+import info from '@/components/public-website/info-pages.module.css';
 import { publishedCommunities } from '@/lib/community-directory';
 import { loadOpenReportDirectory, openReportPage } from '@/lib/open-report-directory';
 import { publicPageMetadata } from '@/lib/public-page-metadata';
@@ -26,28 +26,18 @@ export default async function ReportsPage({ searchParams }: Props) {
     <main id="main-content" tabIndex={-1} className={styles.wide}>
       <header className={styles.directoryIntro}>
         <h1>Places that need a cleanup.</h1>
-        <p>Find a spot to help, or follow a cleanup already underway.</p>
-        <nav className={styles.directoryLinks} aria-label="Browse litter reports">
-          <Link href="/reports" aria-current="page">Open reports</Link>
-          <Link href="/cleanups">Completed cleanups</Link>
-          <Link href="/reports/history">Past reports</Link>
-          <Link href={LITTER_MAP_HREF}>View the map</Link>
-        </nav>
-        <nav className={styles.directoryLinks} aria-label="Browse by city">
+        <DirectoryNav current="open" cities={<nav className={info.cities} aria-label="Browse by city">
           <span>Browse by city</span>
           {publishedCommunities().map(community => <Link key={community.slug} href={community.href}>{community.name}</Link>)}
           <Link href="/communities">All communities</Link>
-        </nav>
+        </nav>} />
       </header>
       <ReportCards showLocation feed={feed} empty="No open reports right now. Spotted litter? Add a report." />
       {(page > 1 || feed.hasMore) && <nav className={styles.pagination} aria-label="Report pages">
         {page > 1 ? <Link href={page === 2 ? '/reports' : `/reports?page=${page - 1}`}>Previous page</Link> : <span />}
         {feed.hasMore && <Link href={`/reports?page=${page + 1}`}>Next page</Link>}
       </nav>}
-      <div className={styles.more}>
-        <Link href="/report-litter">Report a spot</Link>
-        <Link href="/cleanups">See completed cleanups</Link>
-      </div>
+      <p className={info.closing}>Spotted litter that isn’t listed? <Link href="/report-litter">Report a spot</Link></p>
     </main>
   </Website>;
 }

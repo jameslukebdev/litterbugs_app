@@ -28,11 +28,14 @@ class TestImage {
   decode() { return Promise.resolve(); }
   set src(value: string) { const entry = { src: value, onload: () => this.onload?.(), onerror: () => this.onerror?.() }; pending.push(entry); if (failing.has(value)) queueMicrotask(() => entry.onerror()); }
 }
-async function loadAll() { await act(async () => { for (const entry of pending.splice(0)) entry.onload?.(); await new Promise(r => setTimeout(r, 300)); }); }
+const loaded = new Set<string>();
+async function loadAll() { await act(async () => { for (const entry of pending.splice(0)) { loaded.add(entry.src); entry.onload?.(); } await new Promise(r => setTimeout(r, 300)); }); }
+/** Under a busy test run the next photo may start loading a little later, so keep going until it has. */
+async function loadUntil(src: string) { for (let i = 0; i < 10 && !loaded.has(src); i++) await loadAll(); }
 
 beforeEach(() => {
   vi.stubGlobal('Image', TestImage);
-  pending.length = 0; failing.clear(); createSignedUrl.mockReset();
+  pending.length = 0; loaded.clear(); failing.clear(); createSignedUrl.mockReset();
   rows.cleanup_attempts = { id: 'attempt', cleaner_id: 'cleaner', completed_at: '2026-11-08T12:00:00Z', final_submission_id: 'final', is_paid: true, reward_amount_cents: 2500 };
   rows.cleanup_submissions = { description: 'Two bags of bottles', bags_or_items_removed: 1, weight_pounds: 5 };
   rows.cleanup_submission_photos = [{ storage_path: 'a.jpg' }, { storage_path: 'b.jpg' }];
@@ -45,12 +48,12 @@ it('shows each resized photo only once it has fully loaded, with arrows between 
   expect(screen.queryByRole('img', { name: /After-cleanup photo/ })).toBeNull();
   expect(pending.map(entry => entry.src)).toContain(afterPhotoUrl('report-1', 0));
 
-  await loadAll();
+  await loadUntil(afterPhotoUrl('report-1', 0));
   const first = screen.getByRole('img', { name: 'After-cleanup photo 1 of 2' });
   expect(first.getAttribute('src')).toBe('/reports/report-1/photo/after?photo=0&width=640');
   expect(screen.getByText('1/2')).toBeTruthy();
 
-  await loadAll();
+  await loadUntil(afterPhotoUrl('report-1', 1));
   fireEvent.click(screen.getByRole('button', { name: 'Next photo' }));
   expect(screen.getByRole('img', { name: 'After-cleanup photo 2 of 2' }).getAttribute('src')).toBe('/reports/report-1/photo/after?photo=1&width=640');
   expect(screen.getByText('$25.00 paid from the cleanup fund')).toBeTruthy();

@@ -1,0 +1,96 @@
+/*
+ * Reading pages: the report lists, the guides (Report litter, Fund, Cleaner, About, Help, Get the app)
+ * and the public report page. One calm white layout. Colour comes from text and the bugs that label
+ * something; the loose decorative bugs that floated beside headings and the footer are gone.
+ * Doubled classes outrank the older brand / SEO page rules these pages still load.
+ */
+.info.info { --info-ink: #292932; --info-body: #45434d; --info-muted: #686477; --info-line: #efedf4; --info-purple: #3f36c4; }
+.info.info > main > header::after, .info.info > main > h1::after, .info.info > footer::before,
+.info.info section[aria-labelledby='home-cleanup-title']::before { content: none; display: none; }
+
+/* ---------- Page top (lists and guides) ---------- */
+.info.info main > header { max-width: none; margin: 0 0 36px; padding: 0; border: 0; }
+.info.info main > header h1, .info.info main > h1 { max-width: 860px; margin: 0 0 12px; color: var(--info-ink); font-size: clamp(34px, 3.6vw, 46px); line-height: 1.1; letter-spacing: -.03em; text-wrap: balance; }
+.info.info main > header > p { max-width: 720px; margin: 0 0 8px; color: var(--info-body); font-size: 19px; line-height: 1.6; }
+.info.info main > header > a:global(.primary-button) { margin-top: 16px; }
+
+/* Which menu a guide belongs to, labelled by that menu's bug (same as the header). */
+.eyebrow.eyebrow { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 15px; font-weight: 800; }
+.eyebrow img { width: 22px; height: 22px; object-fit: contain; }
+.eyebrow[data-tone='report'] { color: #2e539e; }
+.eyebrow[data-tone='donate'] { color: #8a5a00; }
+.eyebrow[data-tone='earn'] { color: #2f6b3a; }
+.eyebrow[data-tone='support'] { color: #8a3d99; }
+
+/* ---------- Report lists: tabs with the map's bugs ---------- */
+.directoryNav { margin-top: 22px; }
+.tabs.tabs { display: flex; align-items: center; gap: 0 28px; overflow-x: auto; border-bottom: 1px solid var(--info-line); scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.info.info .tabs a { flex: none; display: inline-flex; align-items: center; gap: 8px; min-height: 50px; margin: 0 0 -1px; padding: 0; border-bottom: 3px solid transparent; color: var(--info-body); font-size: 16px; font-weight: 800; text-decoration: none; white-space: nowrap; }
+.info.info .tabs a:hover { color: var(--info-purple); }
+.info.info .tabs a[aria-current='page'] { color: var(--info-purple); border-bottom-color: #5146ed; }
+.tabs img, .tabs svg { flex: none; width: 18px; height: 18px; object-fit: contain; }
+.tabs a[data-tab='history'] svg { color: var(--info-muted); }
+.info.info .tabs a.mapLink { margin-left: auto; border-bottom-color: transparent; color: var(--info-purple); }
+.cities.cities { display: flex; flex-wrap: wrap; align-items: center; gap: 0 18px; margin: 0; padding: 8px 0 0; }
+.cities > span { color: var(--info-muted); font-size: 15px; }
+.info.info .cities a { display: inline-flex; align-items: center; min-height: 40px; color: var(--info-purple); font-size: 15px; font-weight: 700; text-decoration: none; }
+.info.info .cities a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+.info.info.info main p.closing.closing { margin: 44px 0 0; color: var(--info-body); font-size: 16px; line-height: 1.6; }
+.info.info .closing a { color: var(--info-purple); font-weight: 800; text-decoration: none; }
+.info.info .closing a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* Previous / next page as outlined buttons. */
+.info.info nav:is([aria-label='Report pages'], [aria-label='Cleanup pages'], [aria-label='Past report pages']) { display: flex; justify-content: space-between; gap: 12px; margin-top: 32px; }
+.info.info nav:is([aria-label='Report pages'], [aria-label='Cleanup pages'], [aria-label='Past report pages']) a { display: inline-flex; align-items: center; min-height: 46px; padding: 0 18px; border: 2px solid #e3dff0; border-radius: 14px; color: var(--info-ink); background: #fff; font-size: 15px; font-weight: 800; text-decoration: none; }
+.info.info nav:is([aria-label='Report pages'], [aria-label='Cleanup pages'], [aria-label='Past report pages']) a:hover { border-color: #c9c2f2; color: var(--info-purple); }
+
+/* ---------- Guides and plain reading pages ---------- */
+.info.info main:not([class*='wide']):not([class*='report-share']) { width: 100%; max-width: 780px; margin: 0 auto; padding: 40px 24px 72px; }
+.info.info main:not([class*='report-share']) > section { margin: 52px 0 0; padding: 0; border: 0; }
+.info.info main:not([class*='report-share']) > section h2 { margin: 0 0 14px; color: var(--info-ink); font-size: 26px; line-height: 1.2; letter-spacing: -.02em; }
+.info.info main:not([class*='report-share']) section > p, .info.info main:not([class*='report-share']) > p, .info.info main:not([class*='report-share']) section li { color: var(--info-body); font-size: 17px; line-height: 1.7; }
+.info.info main:not([class*='report-share']) section > p, .info.info main:not([class*='report-share']) > p { max-width: 700px; margin: 0 0 16px; }
+.info.info main:not([class*='report-share']) p a, .info.info main:not([class*='report-share']) li a { color: var(--info-purple); font-weight: 700; text-decoration: underline; text-decoration-color: #c9c2f2; text-underline-offset: 3px; }
+.info.info main:not([class*='report-share']) p a:hover, .info.info main:not([class*='report-share']) li a:hover { text-decoration-color: currentColor; }
+.info.info main:not([class*='report-share']) p strong { color: var(--info-ink); }
+
+/* Numbered steps: the number in purple, no boxes. */
+.info.info main:not([class*='report-share']) section ol { counter-reset: step; margin: 0 0 16px; padding: 0; list-style: none; }
+.info.info main:not([class*='report-share']) section ol > li { counter-increment: step; position: relative; margin: 0 0 14px; padding: 0 0 0 40px; }
+.info.info main:not([class*='report-share']) section ol > li::before { content: counter(step); position: absolute; left: 0; top: 1px; width: 28px; height: 28px; display: grid; place-items: center; border: 2px solid #c9c2f2; border-radius: 50%; color: var(--info-purple); font-size: 14px; font-weight: 900; line-height: 1; }
+
+/* The fee example reads as one line of maths, not a tinted box. */
+.info.info main:not([class*='report-share']) section > div:has(> p > strong:only-child) { margin: 20px 0; padding: 0 0 0 16px; border-left: 3px solid #c9c2f2; background: none; }
+.info.info main:not([class*='report-share']) section > div:has(> p > strong:only-child) strong { color: var(--info-purple); font-size: 22px; }
+.info.info main:not([class*='report-share']) section > div:has(> p > strong:only-child) p { margin: 0 0 6px; }
+.info.info main:not([class*='report-share']) section > div:has(> p > strong:only-child) p + p { color: var(--info-muted); font-size: 14px; line-height: 1.6; }
+
+/* Report cards inside a guide stay two across; one across on phones. */
+.info.info main:not([class*='report-share']):not([class*='wide']) section :global(.public-report-cards) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+@media (max-width: 760px) {
+  .info.info main:not([class*='report-share']):not([class*='wide']):not([class*='report-share']) { padding: 24px 16px 56px; }
+  .info.info main:not([class*='report-share']) > header { margin-bottom: 28px; }
+  .info.info main:not([class*='report-share']) > header > p { font-size: 17px; }
+  .info.info main:not([class*='report-share']) > section { margin-top: 40px; }
+  .info.info main:not([class*='report-share']) > section h2 { font-size: 23px; }
+  .info.info main:not([class*='report-share']) section > p, .info.info main:not([class*='report-share']) > p, .info.info main:not([class*='report-share']) section li { font-size: 16px; }
+  .info.info .tabs { gap: 0 22px; }
+  .info.info main:not([class*='report-share']):not([class*='wide']) section :global(.public-report-cards) { grid-template-columns: 1fr; }
+}
+
+/* The completed-cleanup example on the guides: plain photos, white button with the flower. */
+.info.info section[data-cleanup-proof] h2 { margin: 0; font-size: 26px; }
+.info.info section[data-cleanup-proof] figcaption { margin-top: 8px; color: var(--info-muted); font-size: 14px; font-weight: 700; }
+.info.info section[data-cleanup-proof] h3 { color: var(--info-ink); font-size: 22px; }
+.info.info section[data-cleanup-proof] h3 + p { margin: 4px 0 0; color: var(--info-muted); font-size: 15px; }
+.info.info main[class*='download'] > p { margin-inline: auto; }
+.short { display: none; }
+@media (max-width: 560px) {
+  /* Phones: short tab names so all three fit; the header already has a Map button. */
+  .info.info .tabs { gap: 0 20px; overflow: visible; }
+  .info.info .tabs .long, .info.info .tabs a.mapLink { display: none; }
+  .info.info .tabs .short { display: inline; }
+}

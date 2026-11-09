@@ -14,19 +14,28 @@ import { PublicSiteFooter } from '../public-site-footer';
 import type { PublicFeed } from '@/lib/public-report-feed';
 import type { PublicReportShareModel } from '@/lib/public-report-share-model';
 import styles from './website.module.css';
+import info from './info-pages.module.css';
+import { FiClock, FiImage, FiMap } from 'react-icons/fi';
+import { publicReportStatus } from '@/lib/public-report-status';
+import { LITTER_MAP_HREF } from '@/lib/home-map-link';
 export { styles };
+
+const INFO_PATHS: PublicPath[] = ['/reports', '/cleanups', '/communities', '/photo-review', '/cleanup-safety', '/about', '/help', '/get-app', '/fund-a-cleanup', '/cleaner', '/report-litter'];
 
 export function Website({
   children,
   activePath = '/',
   branded = true,
+  infoPage = INFO_PATHS.includes(activePath),
 }: {
   children: ReactNode;
   activePath?: PublicPath;
   branded?: boolean;
+  /** Reading pages (reports, cleanups, guides, the report page): one shared, quieter layout. */
+  infoPage?: boolean;
 }) {
   return (
-    <div data-public-page={activePath} className={`${styles.surface} ${branded ? brand.brand : ''} ${['/report-litter', '/fund-a-cleanup', '/cleaner', '/cleanups', '/locations', '/communities', '/reports', '/get-app', '/about', '/help', '/support', '/cleanup-safety'].includes(activePath) ? seoStyles.page : ''}`}>
+    <div data-public-page={activePath} className={`${styles.surface} ${infoPage ? info.info : ''} ${branded ? brand.brand : ''} ${['/report-litter', '/fund-a-cleanup', '/cleaner', '/cleanups', '/locations', '/communities', '/reports', '/get-app', '/about', '/help', '/support', '/cleanup-safety'].includes(activePath) ? seoStyles.page : ''}`}>
       <a className={styles.skipLink} href="#main-content">
         Skip to content
       </a>
@@ -36,6 +45,30 @@ export function Website({
     </div>
   );
 }
+/* eslint-disable @next/next/no-img-element -- small status bugs, like the map. */
+/** Tabs shared by the open, completed and past report lists, using the map's bugs. */
+export function DirectoryNav({ current, cities }: { current: 'open' | 'completed' | 'history'; cities?: ReactNode }) {
+  const tabs = [
+    { key: 'open', href: '/reports', label: 'Open reports', short: 'Open', bug: '/brand/bugs/ladybug.png' },
+    { key: 'completed', href: '/cleanups', label: 'Completed cleanups', short: 'Completed', bug: '/brand/bugs/flower.png' },
+    { key: 'history', href: '/reports/history', label: 'Expired reports', short: 'Expired', bug: null },
+  ] as const;
+  return <div className={info.directoryNav}>
+    <nav className={info.tabs} aria-label="Browse litter reports">
+      {tabs.map(tab => <Link key={tab.key} href={tab.href} aria-current={tab.key === current ? 'page' : undefined} data-tab={tab.key}>
+        {tab.bug ? <img src={tab.bug} alt="" aria-hidden="true" width={18} height={18} /> : <FiClock aria-hidden="true" />}<span className={info.long}>{tab.label}</span><span className={info.short}>{tab.short}</span>
+      </Link>)}
+      <Link className={info.mapLink} href={LITTER_MAP_HREF}><FiMap aria-hidden="true" />View the map</Link>
+    </nav>
+    {cities}
+  </div>;
+}
+/** The header menu each guide sits under, with that menu's bug. */
+const GUIDE_MENUS: Partial<Record<PublicPath, { label: string; bug: string; tone: string }>> = {
+  '/report-litter': { label: 'Report', bug: '/brand/ranks/dragonfly.svg', tone: 'report' },
+  '/fund-a-cleanup': { label: 'Donate', bug: '/brand/bugs/bee.png', tone: 'donate' },
+  '/cleaner': { label: 'Earn', bug: '/brand/ranks/caterpillar.svg', tone: 'earn' },
+};
 export function Guide({
   title,
   intro,
@@ -57,6 +90,9 @@ export function Guide({
     <Website activePath={activePath}>
       <main id="main-content" tabIndex={-1} className={`${styles.guide} ${seoStyles.guide} ${className}`}>
         <header className={styles.guideIntro}>
+          {GUIDE_MENUS[activePath] && <p className={info.eyebrow} data-tone={GUIDE_MENUS[activePath]!.tone}>
+            <img src={GUIDE_MENUS[activePath]!.bug} alt="" aria-hidden="true" width={22} height={22} />{GUIDE_MENUS[activePath]!.label}
+          </p>}
           <h1>{title}</h1>
           <p>{intro}</p>
           {action && href && <Link className="primary-button button-link" href={href}>
@@ -110,17 +146,20 @@ export function ReportCards({
       {feed.reports.map((report, index) => {
         const funded = (report.rewardCents ?? 0) > 0;
         const amount = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format((report.rewardCents ?? 0) / 100);
-        const reward = report.state === 'expired' ? 'Report expired' : report.state === 'in_progress' ? 'Cleanup in progress' : report.state === 'completed'
-          ? report.rewardCents == null ? 'Cleanup completed' : funded ? `${amount} funded cleanup` : 'Volunteer cleanup completed'
+        const day = (value: string | null | undefined) => value ? new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '';
+        // The photo label already says the status, so this line is about money (or, for past reports, the outcome).
+        const reward = report.state === 'expired' ? 'Cleanup not confirmed'
+          : report.state === 'completed' ? funded ? `${amount} funded cleanup` : 'Volunteer cleanup'
           : funded ? `Pays ${amount}` : 'Volunteer cleanup';
-        // Cleaned-up spots lead with the after photo and can flip back to the before photo, like the map list.
         // Like the map list: cleaned-up spots lead with the after photo, then every report photo.
         const reportPhotos = report.beforePhotoUrl
           ? Array.from({ length: Math.max(1, report.photoCount ?? 1) }, (_, n) => ({ src: n ? `${report.beforePhotoUrl}?photo=${n}` : report.beforePhotoUrl!, after: false }))
           : [];
         const photos = [...(report.state === 'completed' && report.afterPhotoUrl ? [{ src: report.afterPhotoUrl, after: true }] : []), ...reportPhotos];
-        const timing = report.state === 'completed' ? 'Cleanup complete' : report.reportDate ? new Date(report.reportDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '';
-        const status = report.state === 'expired' ? 'Expired' : report.state === 'completed' ? 'Cleaned' : report.state === 'available' ? 'Available' : 'In progress';
+        const timing = report.state === 'completed' ? report.completionDate ? `Cleaned ${day(report.completionDate)}` : ''
+          : report.state === 'expired' && report.expiredDate ? `Expired ${day(report.expiredDate)}`
+          : day(report.reportDate);
+        const status = publicReportStatus(report.state);
         return <article className="report-card-container" key={report.id}>
           <Link prefetch={false} className="report-result" href={`/reports/${report.id}`}>
             <ReportCardContent
@@ -128,8 +167,8 @@ export function ReportCards({
                 {photos.length ? photos.map((item, slide) => <span className="card-slide" data-active={slide === 0 || undefined} key={item.src}>
                   <PublicPhoto src={item.src} alt="" width={600} height={400} eager={slide === 0 && showLocation && index < 3} />
                   {item.after && photos.length > 1 && <span className="report-result-photo-count">After cleanup</span>}
-                </span>) : <span>No photo yet</span>}
-                <span className="report-result-workflow" data-tone={report.state === 'completed' ? 'completed' : report.state === 'available' ? 'available' : 'active'}>{status}</span>
+                </span>) : <span><FiImage aria-hidden="true" />No photo</span>}
+                <span className="report-result-workflow" data-tone={report.state === 'completed' ? 'completed' : report.state === 'available' ? 'available' : report.state === 'expired' ? 'expired' : 'active'}>{status.short}</span>
                 {photos.length > 1 && <span className="report-result-dots" aria-hidden="true">{photos.slice(0, 5).map((item, dot) => <i key={item.src} data-active={dot === 0 || undefined} />)}</span>}
               </span>}
               title={report.title}
