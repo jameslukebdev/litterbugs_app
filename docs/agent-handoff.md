@@ -24,6 +24,26 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (weekly SEO check)
+
+- Google URL Inspection confirmed 11 of the 12 previously unindexed reports now
+  indexed, including Sand trash. Basura en el patio remains discovered and
+  unindexed. Its repaired report history is still live and its November 8 live
+  test passed. No fresh live test or indexing request was made this week.
+- The new Roby Greene Road report is indexed and its photo loads. The sitemap
+  lists 30 report pages, including 11 completed cleanups, across 48 total URLs.
+  All 30 report pages returned 200, had self-canonicals, allowed crawling and
+  indexing, and had directory links. Winkler cemetery remains indexed with a
+  last Google crawl before the November 8 cleanup. Its live before/after photos
+  and result details are available.
+- Finalized Search Console through November 7: 25 impressions and 2 clicks
+  for seven days vs 11 impressions and 4 clicks the previous week. The 28-day
+  totals were 57 and 8 vs 9 and 1. Visible search terms were brand variants.
+  Saved the bounded inspection and traffic baseline in
+  `docs/reviews/2026-11-09-seo-weekly-baseline.json`.
+- Next check: patio indexing and Google's crawl date for Winkler cemetery.
+  HTTP-only website checks. No code edits, deployment, or analytics changes.
+
 ### 2026-11-08 — Claude (website redesign groups 1–5 + Codex payout fixes released LIVE)
 
 - **Live:** commit `55b6fa5` is deployment `dpl_FAtoZbQdXoyv2Ter3HAoWtQ2f8fp`
