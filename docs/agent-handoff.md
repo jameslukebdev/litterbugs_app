@@ -24,6 +24,20 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (approved Stripe test setup and funded-cleanup return)
+
+- Submitted the owner-approved Stripe test-only agreement for the synthetic
+  cleaner. Stripe reported payouts enabled, active transfer capability and no
+  outstanding requirements. The first in-app status read was early and still
+  showed "Stripe needs a few more details." Closing and reopening Clean then
+  showed the safety step for the same $10 funded report. Local ledger synced
+  enabled. Zero claims or transfers. Immediate automatic resume unverified.
+- Local services stopped and temporary login/runtime secrets removed. Evidence:
+  `/tmp/litterbugs-cloudflare-local-cleanup-after-payout.png`. No hosted or
+  production changes. Focus remaining hosting checks on independent photo
+  scanning and labeled workflow analytics rather than repeating shared
+  Supabase settlement checks. Free scanner credential approval still pending.
+
 ### 2026-11-08 — Codex (funded cleanup opened real Stripe test onboarding)
 
 - In the disposable local Supabase backend, a synthetic cleaner starts with
