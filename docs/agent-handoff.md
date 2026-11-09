@@ -24,6 +24,54 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Claude (redesign + payouts released LIVE with Codex's work, Grant approved)
+
+- **Live website:** commit `b0f4398` is deployment
+  `dpl_7kN4zDvVnschF7F5EyqRgq19WFkB` (litterbugs-r7b94gf35).
+  - It contains my redesign commit `39c1895` and every Codex commit up to
+    `b0f4398`, including the expired-report history fix `9c52d14`.
+  - Grant approved this release: "Yes, release payouts too" and "release all
+    of the work that codex has commited". That lifts the earlier payout hold.
+  - To roll back, use Codex's `dpl_9ESdGAzEhqQTBG92YFcsSoXyh8sD`.
+- **Brief gap:** I first promoted `39c1895` alone as
+  `dpl_BodYBH5C3WgGGm1dP5B3p9c6mppg`. That build was made before Codex's
+  expired-report release, so the fix was missing from the live site for about
+  15 minutes. The combined build replaced it. Both repaired expired pages (Oct 16
+  ones) show "A cleanup has not been confirmed" live again.
+- **Checks:** 880 web tests passed, along with the typecheck. On litterbugs.app,
+  with analytics off, the map pins and the report sheet work and the console
+  shows no errors.
+- **Edge function:** `create-cleaner-onboarding-link` is now v32 (Codex's
+  embedded-payout server code). To roll back, use v31. A request without sign-in
+  gets 401, as it should.
+- **Design changes:**
+  - Share dialog and social card.
+  - Hide/report member.
+  - Sign in and sign up (the bee is still the show-password button).
+  - Monthly support.
+  - Account area, with loading placeholders that no longer jump and a fixed
+    avatar.
+  - Report sheet:
+    - one-row icon toolbar
+    - After/Before switch in the photo frame
+    - after-photos appear all at once
+    - "About the cleanup" panel
+  - Payout trust: a "Secured by Stripe" line, Back at the top, a pinned
+    header, and Stripe appearance settings in `lib/payout-connect.ts`.
+- **Stripe:** setting the deposit name to LITTERBUGS on the 8 Express
+  accounts was refused ("not authorized to edit this account"). Nothing
+  changed.
+- **Pending (Grant):**
+  - In the Stripe Dashboard → Connect → Payouts, set the platform payout
+    statement descriptor to LITTERBUGS.
+  - Optionally trim the Express dashboard features and Connect emails.
+  - Complete one real payout setup live to confirm the final step.
+- **For both agents:** before promoting a build, check the handoff log and
+  Vercel for a newer live release. A build made before that release would
+  remove it from the live site.
+- **Do not undo:** `apps/web/app/dev-review-preview/` is a local-only review
+  folder. It is never committed.
+
 ### 2026-11-08 — Codex (approved scanner sign-in returned provider error)
 
 - Owner approved the exact Microsoft permission request for Cloudmersive. After
