@@ -24,6 +24,18 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (live Stripe handoff and local payout regression checks)
+
+- Live Account → Payments → Payout settings reported payouts ready. Manage
+  payouts successfully redirected to Stripe Express sign-in. The saved
+  purple, lavender and radius were still present in the live branding editor.
+  Verifying those colors on the signed-in $0 Express screen still requires
+  cleaner Express authentication, separate from platform admin sign-in.
+- All 91 focused local tests passed. The browser walkthrough exercised
+  eligibility, phone example, bank menu, review editing, Manage payouts
+  and Express Settings without relevant console errors. No banking details,
+  payout, account or deployment changes.
+
 ### 2026-11-08 — Codex (Litterbugs Express theme saved)
 
 - Saved and reopened the live Express branding editor. It persisted
