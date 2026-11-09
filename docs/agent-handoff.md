@@ -24,6 +24,14 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (Express logo background verified)
+
+- Verified the website wordmark is a transparent PNG and the local Express
+  Home and Settings captures use white sidebars. The existing preview
+  already uses that wordmark over white. Use the transparent asset for the
+  live Express icon. Dashboard sign-in remains pending. No application or
+  Stripe setting changes.
+
 ### 2026-11-08 — Codex (Cloudflare preview checked in iPhone Simulator)
 
 - Ran iOS 26.5 Safari on the small iPhone QA simulator against source
