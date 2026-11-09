@@ -24,6 +24,20 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (approved scanner sign-in returned provider error)
+
+- Owner approved the exact Microsoft permission request for Cloudmersive. After
+  acceptance, Cloudmersive returned another server error at `/signin-oidc`;
+  the official portal still shows its login page. No scanner account session,
+  plan verification or key access. The original first-key email has no key.
+- Official Cloudmersive support route located. Separate authorization to send
+  the recovery ticket is pending; no ticket sent. Do not retry the same failed
+  callback or create a duplicate scanner account. Error screenshot kept at
+  `/tmp/cloudmersive-approved-sign-in-error.png`.
+- No application, payment, database, deployment or DNS changes. Existing
+  preview remains `165d89c` / Worker `9e338877-e3b9-4740-a73c-cd0754f1dbb6`;
+  live stays on Vercel. Cloudflare test remains blocked.
+
 ### 2026-11-08 — Codex (Cloudflare testing blocked on account access/isolation)
 
 - Revalidated Microsoft Cloudmersive consent: still awaits owner confirmation;
