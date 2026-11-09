@@ -24,6 +24,16 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (touch behavior review)
+
+- In Chrome with an emulated touch-only iPhone SE, a homepage pin opened its
+  preview panel, the cocoon played on scroll into view, Terms progress
+  followed scrolling, and tapping After played the flower bloom.
+- The Explore photo stayed static on tap. Chrome synthesized hover for
+  individual bug icons, so those movements can appear on taps but lack a
+  dedicated touch trigger. The map-key effect and logo loop require hover.
+- No application changes or deployment.
+
 ### 2026-11-09 — Codex (bug animations ready for local review)
 
 - Claude had wired up most animations. Finished the account status bloom,
