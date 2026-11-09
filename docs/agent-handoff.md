@@ -24,6 +24,18 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (interactive payout navigation walkthrough)
+
+- Stripe's embedded Add information button initiates provider authentication.
+  The public web SDK exposes no supported way for the Litterbugs eligibility
+  button to trigger that action. Kept the live flow and verification intact.
+- The local walkthrough now links directly to the bank and test review screens.
+  It recreates the verified Payout details dropdown over the live bank capture
+  and makes both Edit buttons interactive over the test review capture. The
+  start capture also advances to the phone example from Add information.
+  Verified the dropdown, both edit paths, and narrow-screen fit in browser.
+  No deployment or payout account changes.
+
 ### 2026-11-08 — Codex (latest committed website rebuilt and checked on Cloudflare)
 
 - Built the latest committed website snapshot `434d4d1` with the Cloudflare
