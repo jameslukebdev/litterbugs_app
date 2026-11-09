@@ -24,6 +24,27 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (funded cleanup opened real Stripe test onboarding)
+
+- In the disposable local Supabase backend, a synthetic cleaner starts with
+  `not_started`. The actual Edge Function rejects missing age confirmation,
+  creates a real Stripe test recipient and session, and reuses the account for
+  a new session. A funded claim while pending returns
+  `cleaner_payout_onboarding_required` and creates no claim.
+- Local Worker `165d89c` opened Stripe onboarding from the funded report's
+  Clean action. Verified Stripe's test-only phone/code helpers and simulated
+  bank. Paused at the browser's explicit agreement confirmation step. Browser
+  handoff and loopback services remain available for that decision. Evidence:
+  `/tmp/litterbugs-cloudflare-local-payout-setup-evidence.json` and
+  `/tmp/litterbugs-cloudflare-test-stripe-review.png`.
+- Routine cleanup approval and recoverable publication SQL passed. Settlement
+  SQL originally expected an existing live fixture, so ran the same assertions
+  with a synthetic approved cleanup in a rolled-back transaction. Retry, hold,
+  duplicate and permission checks passed. Real settlement still pending.
+- No production app, database, Stripe configuration or deployment changes.
+  Free Cloudmersive key approval remains pending. Preserve the existing hosted
+  preview and live Vercel release.
+
 ### 2026-11-08 — Codex (browser checkout passed in local Cloudflare runtime)
 
 - Built disposable OpenNext/Workerd source `165d89c` with a scratch-only
