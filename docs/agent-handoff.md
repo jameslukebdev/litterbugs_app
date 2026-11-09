@@ -24,6 +24,26 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (latest committed website rebuilt and checked on Cloudflare)
+
+- Built the latest committed website snapshot `434d4d1` with the Cloudflare
+  fixes in isolated source `35a7fce`. The next local commit `0bbbf95` is
+  documentation only. Left ongoing working-tree website changes out of the
+  build. Preview Worker `5dfda076-a16e-4202-bed3-4292d47952bd`.
+- Production build and 129 focused tests passed. Hosted JPEG, PNG, WebP,
+  browser-converted HEIC and two simultaneous photo uploads passed. Confirmed
+  scan audit, metadata stripping, authorization and quarantine deletion.
+  Existing sign-in worked. Browser checks reached report photos, the $6
+  total for a $5 contribution, Stripe payout setup, and volunteer safety.
+  Tested reporting and cleanup at 393 px. No phone was attached.
+- Analytics source matches the labeled delivery run and current preview
+  excludes analytics by default. No public report, charge, or cleanup claim.
+  The production Vercel scanner also passed with a disposable unpublished
+  fixture. All synthetic users and files were removed. 83 web scans in the
+  prior 30 days. Vercel hides its production scanner key from export, so
+  Cloudflare still uses the free preview key. A production scanner credential
+  and a physical-phone check remain before cutover. Live remains on Vercel.
+
 ### 2026-11-08 — Codex (payout entry, resume, and management review)
 
 - Verified that Payments and funded Clean share embedded onboarding. The

@@ -2,11 +2,27 @@
 
 ## Decision
 
-The separate Cloudflare preview now processes uploads directly. The live site stays on Vercel. Before switching, build the final release with Claude's changes, confirm the production scanner configuration and run a focused physical-phone check. Use the existing Vercel release as a rollback during the switch.
+The separate Cloudflare preview builds the latest committed website and processes uploads directly. The live site stays on Vercel. Before switching, configure the production scanner on Cloudflare and run a focused physical-phone check. Use the existing Vercel release as a rollback during the switch.
 
 Preview: https://litterbugs-cloudflare-compat-test.gegibson3113.workers.dev
 
-## Final preview verification
+## Latest release rebuild
+
+- Website snapshot `434d4d1` plus Cloudflare fixes in source `35a7fce`, Worker
+  `5dfda076-a16e-4202-bed3-4292d47952bd`. The next commit `0bbbf95` contains
+  documentation only. Ongoing working-tree edits remain outside the build.
+- Build, 129 focused tests, six hosted photo uploads, report entry, funding
+  quote, funded payout setup and volunteer safety checks passed. An existing
+  signed-in session worked. Reporting and cleanup were checked at phone width
+  in Chrome. No physical device was available. Analytics code matches the
+  labeled provider test and remains disabled by default on the preview.
+- The current Vercel production scanner also passed a single private fixture.
+  There were 83 web scan audit rows in the previous 30 days before this
+  fixture. Vercel's export withheld the production credential. The Cloudflare
+  Worker uses its approved free preview credential. No synthetic fixtures
+  remained after testing.
+
+## Independent photo processing verification
 
 - Source `605bb0e`, Worker `1e47548e-25c2-46b4-ab84-9d15878dc069`. The Vercel upload relay is gone. Cloudflare Workers now calls Cloudmersive directly and rejects redirects without forwarding the key or image. The approved free key is for preview testing.
 - Real hosted uploads of JPEG, PNG, WebP and browser-converted HEIC passed. Verified clean audit, JPEG output, metadata removal, checksum, uncached quarantine deletion and authorization. Two simultaneous uploads passed. Temporary private reports, test users and files were removed. OpenNext production build and 116 focused tests passed.
