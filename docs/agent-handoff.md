@@ -24,6 +24,22 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (bug animations and compact report sheet live)
+
+- Grant approved production release. Pushed exact source `8443ba9` to
+  `origin/codex/map-first-navigation` and promoted the clean Vercel build
+  `dpl_FAjtmdGvh2ZaXjpcXabBoCHFRiA1` to litterbugs.app. Previous live
+  deployment for rollback is `dpl_FAtoZbQdXoyv2Ter3HAoWtQ2f8fp`.
+- Includes pin landings after pan, zoom, grouping and filter changes and the
+  72px mobile sheet header. Excluded #13 hero photo hover and #16 automatic
+  photo switching. Unrelated local edits and previews stayed out of release.
+- Clean source lint, 892 tests, and Vercel build/typecheck passed. Staged and
+  live home, map report, cleanups and after photo returned 200. Animation
+  gallery returns 404 in production. Live Chrome verified map filter landings,
+  both exclusions, manual photo controls, and 44px controls in the 320px sheet.
+  Browser analytics were excluded. Bounded production error-log query was empty.
+- No database, Stripe, or mobile app changes.
+
 ### 2026-11-09 — Codex (compact mobile report sheet)
 
 - Reduced the grab handle and toolbar from 105px to 72px on narrow map
