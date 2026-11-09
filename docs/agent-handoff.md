@@ -24,6 +24,53 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Claude (website redesign groups 1–5 + Codex payout fixes released LIVE)
+
+- **Live:** commit `55b6fa5` is deployment `dpl_FAtoZbQdXoyv2Ter3HAoWtQ2f8fp`
+  (litterbugs-rbmwo1siv). To roll back, use `dpl_7kN4zDvVnschF7F5EyqRgq19WFkB`.
+  - Includes every Codex commit up to `d496290`, among them the payout fixes
+    `66fbaa0` and `5ad4e6e`. Grant chose to include them in this release.
+  - No edge function, database or Stripe changes.
+- **What changed (website only):**
+  - **Report lists:** /reports, /cleanups and /reports/history share
+    bug-labelled tabs. "Past reports" is now "Expired reports" in the visible
+    text; the /reports/history URL and its Google title are unchanged.
+  - **Report cards (lists, map list, homepage):** white status tags, and
+    money as coloured text (🐝 for funded) instead of tinted chips.
+  - **Public report page:** status bug, one meta line, no repeated dates.
+    Codex's expired-report SEO sentences are unchanged, and checked live.
+  - **Reading pages:** About, Help, Get the app, Fund, Cleaner, Report
+    litter, photo review and cleanup safety share one layout
+    (`components/public-website/info-pages.module.css`). Loose decorative
+    bugs are removed site-wide.
+  - **Community pages:** moved from the blue/coral theme to the site purple.
+  - **Organization pages:** removed. /organizations/* redirects (308) to
+    Boone's #groups section, and group buttons link straight to the official
+    sites. The organization records stay in `lib/community-resources.ts` so
+    Grant can bring the pages back later.
+  - **Homepage:** heading bugs (lightning bug, new `public/brand/bugs/ant.svg`,
+    cocoon, flower). The cleanup example keeps its mint glow and mint button.
+  - **Account:** Edit profile is a titled card, and the rank card is simpler
+    (no change in height while loading).
+  - **Admin inbox:** an in-page confirm replaces `window.confirm`.
+    "Close report and refund" is hidden when the report's cleanup is
+    complete; the database constraint `reports_lifecycle_terminal_check`
+    rejected it on the sample "Test" report f2717d9a. The inbox now shows the
+    server's error text.
+- **Checks:**
+  - Before release: 886 tests, typecheck and lint passed in a clean copy.
+  - Live: 16 pages returned 200, the organization redirect works, and the
+    map loaded with the new cards. Tested with analytics declined.
+- **Pending:**
+  - The restyled admin inbox has not been checked on screen; it needs Grant's
+    admin sign-in.
+  - Grant should block funding on the sample "Test" safety case.
+  - Not done: Stripe notification banner, clearer transfer descriptions,
+    homepage title wording, and a specific server message for the
+    close-and-refund case. That last one needs an admin-cleanup-case deploy.
+  - Grant: set the LITTERBUGS payout statement descriptor in the Stripe
+    Dashboard.
+
 ### 2026-11-08 — Codex (live Stripe handoff and local payout regression checks)
 
 - Live Account → Payments → Payout settings reported payouts ready. Manage
