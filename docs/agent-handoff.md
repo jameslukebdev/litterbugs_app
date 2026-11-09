@@ -24,6 +24,17 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (transparent Stripe Express logo saved)
+
+- Grant approved the shared Stripe icon after the editor disclosed that it
+  applies to Stripe dashboards and hosted onboarding. Replaced the ladybug
+  with the website wordmark on a 636 × 636 transparent canvas. Verified the
+  wordmark pixels match the source, then reloaded the saved Express settings
+  and confirmed the stored PNG and white-sidebar preview.
+- The Express colors were left as configured. No website code or deployment
+  changes. Local payout fixes remain local. Evidence is in
+  `/tmp/litterbugs-stripe-express-logo-saved.jpg`.
+
 ### 2026-11-08 — Codex (Cloudflare readiness and current speed comparison)
 
 - Confirmed preview Worker `5dfda076-a16e-4202-bed3-4292d47952bd` and live
