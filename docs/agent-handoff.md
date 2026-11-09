@@ -24,6 +24,22 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (Cloudflare preview checked in iPhone Simulator)
+
+- Ran iOS 26.5 Safari on the small iPhone QA simulator against source
+  `35a7fce`, Worker `5dfda076-a16e-4202-bed3-4292d47952bd`. Boone map
+  tiles and markers loaded. Guest chose a location before sign-in, and email
+  sign-in returned to the report's photo step.
+- Selected a HEIC sample through the iOS Photos picker. The report advanced,
+  saved as a private draft and resumed on step two with the photo intact.
+  Verified the cloud draft stored one JPEG. The report photo carousel worked,
+  the $5 funding quote showed $6 total, and first-time cleanup showed the
+  safety agreement with the claim button disabled before acknowledgment.
+- Removed the disposable account, cloud draft and photo. No report published,
+  payment started, agreement accepted or cleanup claimed. No deployment.
+  Simulator evidence: `/tmp/litterbugs-cloudflare-simulator-photo.jpg`.
+  This pass did not exercise a physical camera or cellular connection.
+
 ### 2026-11-08 — Codex (stable Manage payouts handoff and Express preview)
 
 - The Manage payouts request used the onboarding loader, which unmounted the
