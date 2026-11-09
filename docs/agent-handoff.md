@@ -24,6 +24,23 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (local public-site styling and search live)
+
+- The previous animation release omitted four existing local styling edits.
+  Included the left menu and compact header, the narrow hero card position,
+  the Reports grid icon, and scrollable report tabs. Compared local and live
+  at the widths from Grant's screenshots. Development previews remain local.
+- Fixed header search before promotion. One magnifier opens a wide field
+  below the compact header, including at 320px. The smallest signed-in
+  headers keep Map in the drawer to fit search, notifications and profile.
+- Pushed `24b78d5` to `origin/codex/map-first-navigation` and promoted
+  `dpl_3UD2uB3aDMCh6MVuKiMUQ4yVXCeg`. Previous live deployment for rollback
+  is `dpl_FAjtmdGvh2ZaXjpcXabBoCHFRiA1`.
+- Clean build, lint, and all 892 tests passed. Live Chrome verified the
+  header, hero, drawer, search selection to map, report tabs, pin landings,
+  compact report sheet and both animation exclusions (#13 and #16).
+  Analytics were excluded during checks. No database, Stripe or app changes.
+
 ### 2026-11-09 — Codex (bug animations and compact report sheet live)
 
 - Grant approved production release. Pushed exact source `8443ba9` to
