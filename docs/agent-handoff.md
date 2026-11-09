@@ -24,6 +24,25 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (live embedded Stripe smoke test and local walkthrough)
+
+- Confirmed Vercel production deployment `dpl_7kN4zDvVnschF7F5EyqRgq19WFkB`
+  (source `b0f4398`). With analytics excluded, opened embedded Stripe Connect
+  from Payments, reached Stripe verification, and inspected the identity step,
+  bank selection and empty Link manual bank form. Live Clean on the available
+  $1 Winkler’s Creek report opened payout setup before the safety check.
+  Entered no identity or bank data, accepted no live terms and made no claim.
+- Updated `/local-payout-preview` on localhost:3000 with the funded cleanup
+  handoff, current live bank captures and the real Stripe test final review.
+  The name preview uses the earlier blank capture. Phone verification is
+  simulated. Capture files are ignored under `apps/web/work/payout-step-previews`.
+  Walked through the gallery, verified all six captures serve JPEG, confirmed
+  the nonlocal guard, and passed 55 focused tests and scoped ESLint.
+- The isolated test run above reached the safety check after reopening Clean.
+  Immediate automatic resume after a real Stripe submission is still unverified
+  in the browser. The focused cleanup tests cover the server-ready branch.
+  No deployment or live configuration change in this pass.
+
 ### 2026-11-08 — Codex (funding funnel deduplication verified and deployed to preview)
 
 - Actual Stripe test decline and successful retry from local Workerd fed

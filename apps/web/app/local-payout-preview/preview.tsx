@@ -1,69 +1,77 @@
 'use client';
-/* eslint-disable @next/next/no-img-element -- local screenshot previews and existing brand artwork. */
+/* eslint-disable @next/next/no-img-element -- local screenshot previews. */
 import { useState } from 'react';
 import Link from 'next/link';
 import { PayoutPanel } from '@/components/payout-panel';
-import { PayoutHeading } from '@/components/payout-preparing';
+import { captures, type Capture } from './captures';
 import styles from './preview.module.css';
 
-const steps = [
-  { title: 'Eligibility', label: 'First-time setup', note: 'The Litterbugs confirmation that a cleaner is at least 18 and eligible for US payouts.' },
-  { title: 'Phone verification', label: 'Phone entry, then code · example', note: 'A new cleaner enters their mobile number in Stripe’s own sign-in window before receiving a code. This illustration sends no text messages.' },
-  { title: 'Legal name', label: 'Real Stripe screen', note: 'The current legal-name screen, captured locally with empty fields.' },
-  { title: 'Choose your bank', label: 'Real Stripe screen', note: 'Choose a bank or use the manual-entry option. These are two ways to complete the same banking step.' },
-  { title: 'Manual bank entry', label: 'Alternative · real Stripe screen', note: 'Stripe’s Link window asks for routing and account numbers, confirmation, and its required bank authorization.' },
-  { title: 'Final review', label: 'Illustration · sample details', note: 'An example using made-up details. Stripe shows the exact review screen and agreement after the required fields are completed.' },
-  { title: 'Payouts ready', label: 'Example success state', note: 'Shown once Stripe confirms that payouts are enabled. Finishing a form alone does not trigger this screen.' },
+const steps: { id: string; title: string; label: string; note: string; capture?: Capture }[] = [
+  { id: 'clean', title: 'Start from a funded cleanup', label: 'Example entry point', note: 'Clean opens payout setup if you still need it. If payouts are ready, Clean takes you straight to the safety check. You can also start from Account → Payments.' },
+  { id: 'eligibility', title: 'Confirm eligibility', label: 'First-time setup', note: 'Litterbugs confirms that a cleaner is at least 18 and eligible for US payouts.' },
+  { id: 'start', title: 'Start Stripe setup', label: 'Live website capture', note: 'The embedded Stripe form opens inside Litterbugs. Add information starts the Stripe steps.', capture: 'stripe-entry' },
+  { id: 'phone', title: 'Verify your phone', label: 'Interactive example', note: 'Stripe opens a secure verification window. A new user enters a number. For a returning user, Stripe can send a code to the number already linked to their Stripe sign-in.' },
+  { id: 'name', title: 'Enter your legal name', label: 'Earlier blank Stripe capture', note: 'Stripe asks for your legal name and can request other information based on your account. This blank capture uses the earlier Litterbugs header.', capture: 'legal-name' },
+  { id: 'bank', title: 'Choose your bank', label: 'Live website capture', note: 'Connect your bank or enter your bank details manually.', capture: 'bank-selection' },
+  { id: 'manual', title: 'Enter bank details manually', label: 'Optional route · live website capture', note: 'Choose Not now when Stripe offers Link sign-in. Stripe then shows the routing and account fields and its bank authorization.', capture: 'manual-bank' },
+  { id: 'review', title: 'Review and submit', label: 'Stripe test-account capture', note: 'Stripe shows the details you entered and its agreement. This capture uses test data.', capture: 'final-review' },
+  { id: 'ready', title: 'Payouts ready', label: 'Account → Payments', note: 'This status appears after Stripe confirms that payouts are enabled.' },
+  { id: 'safety', title: 'Return to your cleanup', label: 'Test cleanup capture', note: 'With payouts enabled, the same funded cleanup opens to the safety check. Confirm safety and claim the cleanup to begin.', capture: 'cleanup-safety' },
 ];
-const captures: Record<number, string> = { 2: 'legal-name', 3: 'bank-selection', 4: 'manual-bank' };
 
 export default function Preview() {
   const [step, setStep] = useState(0);
   const [eligible, setEligible] = useState(false);
-  const [phoneScreen, setPhoneScreen] = useState<'number' | 'code'>('number');
-  const [phone, setPhone] = useState('');
-  const [code, setCode] = useState('');
-  const phoneDigits = phone.replace(/\D/g, '');
+  const [showCode, setShowCode] = useState(false);
   const current = steps[step];
-  function selectStep(next: number) { setStep(next); window.scrollTo({ top: 0, behavior: 'auto' }); }
+  const capture = current.capture ? captures[current.capture] : null;
+  const captureUrl = `/local-payout-preview/capture/${current.capture}`;
+
+  function selectStep(next: number) {
+    setStep(next);
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }
+
   return <main className={styles.page}>
     <header className={styles.header}>
-      <div><span className={styles.eyebrow}>Local preview · no details saved</span><h1>Payout setup, step by step</h1></div>
+      <div><span className={styles.eyebrow}>Local walkthrough · no details saved</span><h1>Payout setup, step by step</h1></div>
       <Link href="/account/payments">Open local payout settings →</Link>
     </header>
     <div className={styles.layout}>
       <nav className={styles.nav} aria-label="Payout setup previews">
-        {steps.map((item, index) => <button key={item.title} aria-current={step === index ? 'step' : undefined} onClick={() => selectStep(index)}>
+        {steps.map((item, index) => <button key={item.id} aria-current={step === index ? 'step' : undefined} onClick={() => selectStep(index)}>
           <span>{index + 1}</span><div><strong>{item.title}</strong><small>{item.label}</small></div>
         </button>)}
       </nav>
       <section className={styles.stage} aria-labelledby="preview-title">
         <div className={styles.caption}><h2 id="preview-title">{current.title}</h2><p>{current.note}</p></div>
-        {captures[step] ? <figure className={styles.capture}>
-          <img width={393} height={851} src={`/local-payout-preview/capture/${captures[step]}`} alt={`Local Stripe ${current.title.toLowerCase()} screen`} />
+        {capture ? <figure className={styles.capture}>
+          <img {...capture} src={captureUrl} alt={`${current.title} · ${current.label}`} />
+          <a href={captureUrl} target="_blank" rel="noreferrer">View full-size capture ↗</a>
         </figure> : <div className={styles.example}>
-          {step === 0 && <PayoutPanel status={{ onboardingStatus: 'not_started', payoutsEnabled: false, requirementsDue: [] }} eligibleConfirmed={eligible} onEligible={setEligible} busy={false} message="" onContinue={() => selectStep(1)} />}
-          {step === 1 && <div className="payout-flow"><PayoutHeading /><div className={styles.sampleCard}>
-            <span className={styles.exampleTag}>Illustration only · no SMS sent</span>
-            {/* Flows like the real step: number, then Send code moves to the code screen; nothing is sent. */}
-            {phoneScreen === 'number' ? <form onSubmit={event => { event.preventDefault(); if (phoneDigits.length >= 10) setPhoneScreen('code'); }}>
-              <h3>Enter your mobile number</h3><p>Stripe texts a code to this number to confirm it&rsquo;s you.</p>
-              <label className={styles.phoneField} htmlFor="preview-phone">Mobile phone number<input id="preview-phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="(555) 555-0123" value={phone} onChange={event => setPhone(event.target.value)} /></label>
-              <button type="submit" className="primary-button payout-go" disabled={phoneDigits.length < 10}>Send code</button>
-            </form> : <form onSubmit={event => { event.preventDefault(); if (code.length === 6) { setPhoneScreen('number'); setCode(''); selectStep(2); } }}>
+          {current.id === 'clean' && <div className="payout-flow"><div className={styles.sampleCard}>
+            <span className={styles.exampleTag}>Example cleanup</span>
+            <h3>Roadside litter cleanup</h3>
+            <p>Pays $10 once approved</p>
+            <button className="primary-button payout-go" onClick={() => selectStep(step + 1)}>Clean</button>
+          </div></div>}
+          {current.id === 'eligibility' && <PayoutPanel status={{ onboardingStatus: 'not_started', payoutsEnabled: false, requirementsDue: [] }} eligibleConfirmed={eligible} onEligible={setEligible} busy={false} message="" onContinue={() => selectStep(step + 1)} />}
+          {current.id === 'phone' && <div className="payout-flow"><div className={styles.sampleCard}>
+            <span className={styles.exampleTag}>Example only · no text messages sent</span>
+            {showCode ? <>
               <h3>Enter the 6-digit code</h3>
-              <p>Sent to (•••) •••-{phoneDigits.slice(-4)}. <button type="button" className={styles.changeNumber} onClick={() => { setPhoneScreen('number'); setCode(''); }}>Change number</button></p>
-              <label className={styles.phoneField} htmlFor="preview-code">Verification code<input id="preview-code" className={styles.codeInput} inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="••••••" value={code} onChange={event => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))} autoFocus /></label>
-              <button type="submit" className="primary-button payout-go" disabled={code.length !== 6}>Verify</button>
-            </form>}
+              <p>In the real flow, Stripe texts the code to the number being verified.</p>
+              <label className={styles.phoneField}>Example verification code<input value="123456" readOnly /></label>
+              <button className="primary-button payout-go" onClick={() => { setShowCode(false); selectStep(step + 1); }}>Verify example code</button>
+              <button className={styles.changeNumber} onClick={() => setShowCode(false)}>Back to phone entry</button>
+            </> : <>
+              <h3>Enter your mobile number</h3>
+              <p>Try this step with a sample number.</p>
+              <label className={styles.phoneField}>Example mobile number<input value="(202) 555-0123" readOnly /></label>
+              <button className="primary-button payout-go" onClick={() => setShowCode(true)}>Show example code</button>
+            </>}
           </div></div>}
-          {step === 5 && <div className="payout-flow"><PayoutHeading /><div className={styles.sampleCard}>
-            <span className={styles.exampleTag}>Illustration · fictional information</span><h3>Review your payout details</h3>
-            <dl className={styles.summary}><div><dt>Legal name</dt><dd><span>Alex Example</span><button disabled>Edit</button></dd></div><div><dt>Payout account</dt><dd><span>Example Bank · •••• 1234</span><button disabled>Edit</button></dd></div></dl>
-            <p>Review your information and Stripe’s agreement before confirming. The actual agreement and confirmation are provided by Stripe.</p>
-            <button className="primary-button payout-go" disabled>Agree and submit</button>
-          </div></div>}
-          {step === 6 && <fieldset disabled className={styles.disabled}><PayoutPanel status={{ onboardingStatus: 'enabled', payoutsEnabled: true, requirementsDue: [] }} eligibleConfirmed onEligible={() => undefined} busy={false} message="" onContinue={() => undefined} /></fieldset>}
+          {current.id === 'ready' && <fieldset disabled className={styles.disabled}><PayoutPanel status={{ onboardingStatus: 'enabled', payoutsEnabled: true, requirementsDue: [] }} eligibleConfirmed onEligible={() => undefined} busy={false} message="" onContinue={() => undefined} /></fieldset>}
         </div>}
         <footer className={styles.pager}><button disabled={step === 0} onClick={() => selectStep(step - 1)}>← Previous</button><span>{step + 1} of {steps.length}</span><button disabled={step === steps.length - 1} onClick={() => selectStep(step + 1)}>Next preview →</button></footer>
       </section>
