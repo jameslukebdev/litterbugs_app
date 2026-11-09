@@ -24,6 +24,18 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (payout entry, resume, and management review)
+
+- Verified that Payments and funded Clean share embedded onboarding. The
+  photographed Add information screen is Stripe's entry screen. No supported
+  bypass surfaced in the public integration options. Account Activity has a
+  Finish setup reminder for started, unfinished accounts. Returning uses the
+  same connected account and Stripe's outstanding requirements.
+- Confirmed the test final review has separate Edit controls for personal and
+  payout details. After activation, Manage payouts opens Stripe Express Account
+  settings via an account-specific login link. The focused 39 tests passed.
+  No application or deployment changes.
+
 ### 2026-11-08 — Codex (independent Cloudflare preview photo processing verified)
 
 - Removed the preview's Vercel media relay. Configured the approved free
