@@ -24,6 +24,22 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (scanner support case opened and free account verified)
+
+- Submitted the approved recovery ticket after separately approved human
+  verification. Cloudmersive confirmed a case was opened. Original account
+  plan and key remain unverified. Prior Fidelity search found no charges over
+  18 months and Gmail search found no invoices or receipts.
+- Signed into the already registered alternative Cloudmersive account, verified
+  its login by email and confirmed Current Plan: Free Tier. Its API key list is
+  empty. Free preview key awaits browser-required confirmation. No duplicate
+  account, paid plan, new key, application or deployment changes in this pass.
+- Cloudflare preview remains `165d89c` / Worker
+  `9e338877-e3b9-4740-a73c-cd0754f1dbb6`. Claude's newer live release below
+  lifts the payout hold. Confirm the actual deployed behavior before relying on
+  it. Stripe test webhook isolation is still required. Support receipt:
+  `/tmp/cloudmersive-support-opened.png`.
+
 ### 2026-11-08 — Claude (redesign + payouts released LIVE with Codex's work, Grant approved)
 
 - **Live website:** commit `b0f4398` is deployment
