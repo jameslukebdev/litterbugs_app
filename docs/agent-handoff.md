@@ -24,6 +24,15 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (compact mobile report sheet)
+
+- Reduced the grab handle and toolbar from 105px to 72px on narrow map
+  overlays. Back and report actions retain at least 44px height.
+- Verified at 500px and 320px in local Chrome, including Back, swipe
+  dismissal, the community return label and Before/After. Desktop
+  measurements matched the baseline. All 42 focused tests passed.
+- No push or deployment. Await Grant’s review.
+
 ### 2026-11-09 — Codex (map pin landings after pan, zoom and filters)
 
 - Replaced the initial-load cutoff with viewport tracking. Newly visible

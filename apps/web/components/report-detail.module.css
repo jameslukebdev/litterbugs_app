@@ -65,5 +65,13 @@
 .v2.v2 :global(.report-detail-toolbar-actions) button span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .v2.v2 :global(.report-layout-toggle) svg { width: 18px; height: 18px; }
 
+@media (max-width: 700px) {
+  :global(.report-detail-backdrop) .v2.v2 :global(.report-detail-dismiss-handle) { height: 24px; }
+  :global(.report-detail-backdrop) .v2.v2 :global(.report-detail-toolbar) { min-height: 48px; padding: 0 12px; }
+  :global(.report-detail-backdrop) .v2.v2 :global(.report-detail-toolbar) button { min-height: 44px; }
+  :global(.report-detail-backdrop) .v2.v2 :global(.report-detail-toolbar-back) span { white-space: normal; text-align: left; }
+  :global(.report-detail-backdrop) .v2.v2 :global(.report-detail-toolbar-actions) button { min-width: 44px; }
+}
+
 /* Breathing room between the toolbar and the first thing in the photo area (switch or photo). */
 .v2.v2 :global(.report-detail-visual) { padding-top: 14px; }
