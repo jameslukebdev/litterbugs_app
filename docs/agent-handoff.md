@@ -24,6 +24,28 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (real Stripe funding verified against disposable local backend)
+
+- Litterbugs' separate Stripe Test mode (live platform ID with `sk_test_` keys)
+  differs from the named sandbox. Both Stripe event destination lists in Test
+  mode show only Checkout Session events enabled. The funding flow creates
+  PaymentIntents. Used an ephemeral Stripe CLI listener forwarding the tested
+  PaymentIntent events only to `127.0.0.1:55431`, with no destination edits.
+- Fresh local `litterbugs-cf-qa` Supabase from 86 schema files and current Edge
+  Functions. Initial migration runner lacked ownership of Storage policies;
+  applied the source as the disposable DB owner. Seeded synthetic users and
+  a funding-eligible report, set local pricing v2 to match the observed live quote.
+  Actual $5 principal / $1 fee quote and same-ID reservation retry passed.
+  Stripe test decline and successful retry produced signed local webhook 200s
+  and ledger transitions failed/succeeded. Replayed the real test success with
+  a local signature: duplicate returned true and principal stayed $5.
+- Local services stopped with disposable data retained. Private configuration
+  location in `/tmp/litterbugs-cf-local-qa-directory`; evidence in
+  `/tmp/litterbugs-cloudflare-local-funding-evidence.json`. No production writes,
+  Stripe settings edits, application code or deploy changes. Hosted preview
+  payment UI/returns and payout/cleanup remain unverified. Free scanner key
+  confirmation is still pending. Do not switch live hosting.
+
 ### 2026-11-08 — Codex (scanner support case opened and free account verified)
 
 - Submitted the approved recovery ticket after separately approved human
