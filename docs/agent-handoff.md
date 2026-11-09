@@ -24,6 +24,25 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (funding funnel deduplication verified and deployed to preview)
+
+- Actual Stripe test decline and successful retry from local Workerd fed
+  loopback GA/PostHog collectors. Each received one labeled rejection and one
+  confirmed outcome. Opt-out stopped delivery, and report/contribution IDs,
+  provider secrets, test email, card data and amounts were absent. Receipt
+  reopening left outcomes at one but inflated the funnel's confirmed step to
+  five. Fixed the latter while retaining late-provider outcome retries.
+- Repeated the same receipt loads on the fixed build. Each collector got one
+  confirmed step. 35 focused tests, scoped ESLint and production build passed.
+  Isolated source `e283527`, Worker `dedf97fb-343c-446d-8b20-50cdfbf4b59f`.
+  Verified hosted map HTTP 200, v4 bundle, preview noindex/default analytics off
+  and live HTTP 200 on Vercel. No live push, alias, application or DNS change.
+- Local services stopped. Evidence in `/tmp/litterbugs-cloudflare-local-
+  analytics-outcome-evidence.json` and `/tmp/litterbugs-cloudflare-analytics-
+  fix-deployment.json`. Cloudmersive work inbox has support acknowledgements.
+  No recovery response or free key approval yet. Independent photo uploads
+  remain dependent on scanner access. Do not switch the live site.
+
 ### 2026-11-08 — Codex (approved Stripe test setup and funded-cleanup return)
 
 - Submitted the owner-approved Stripe test-only agreement for the synthetic
