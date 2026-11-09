@@ -24,6 +24,20 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (stable Manage payouts handoff and Express preview)
+
+- The Manage payouts request used the onboarding loader, which unmounted the
+  ready panel and replayed its animation when the request cleared before
+  navigation. The local fix keeps the ready panel mounted, locks the action
+  through navigation, restores it on browser Back, and permits retries after
+  a failed link. Celebration requires a newly observed completion. A later
+  Stripe-ready refresh can resume an open funded-cleanup flow.
+- The local walkthrough now previews Manage payouts, Stripe's sample Express
+  dashboard and Settings, with a proposed Litterbugs logo and purple. Browser
+  checks and 41 focused tests passed. Demo JPEGs are in the ignored capture
+  folder. No website deployment. Live Express icon replacement is pending
+  Stripe Dashboard sign-in.
+
 ### 2026-11-08 — Codex (interactive payout navigation walkthrough)
 
 - Stripe's embedded Add information button initiates provider authentication.

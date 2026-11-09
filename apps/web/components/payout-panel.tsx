@@ -41,9 +41,9 @@ export function payoutStage(status: PayoutStatus | null): Stage {
  * Payout setup in plain words: where you are (not set up / in progress / needs info / ready), what the
  * three steps are, one confirmation, and one button to Stripe. Earn family green, like the cleaner flow.
  */
-export function PayoutPanel({ status, eligibleConfirmed, onEligible, busy, message, onContinue, onFallback, celebrate = false }: {
+export function PayoutPanel({ status, eligibleConfirmed, onEligible, busy, openingStripe = false, message, onContinue, onFallback, celebrate = false }: {
   status: PayoutStatus | null; eligibleConfirmed: boolean; onEligible: (value: boolean) => void;
-  busy: boolean; message: string; onContinue: () => void; onFallback?: () => void; celebrate?: boolean;
+  busy: boolean; openingStripe?: boolean; message: string; onContinue: () => void; onFallback?: () => void; celebrate?: boolean;
 }) {
   const stage = payoutStage(status);
   const copy = stage === 'loading' ? null : STAGE[stage];
@@ -77,9 +77,9 @@ export function PayoutPanel({ status, eligibleConfirmed, onEligible, busy, messa
       {message && <p className="form-message error-message" role="alert">{message}</p>}
       {/* Nothing is left to do once payouts are ready, so Manage is a quieter button. */}
       <button className={stage === 'enabled' ? `secondary-button ${payoutStyles.manage}` : 'primary-button payout-go'} onClick={onContinue} disabled={busy || (needsConfirm && !eligibleConfirmed)}>
-        {copy?.button ?? 'Try again'}
+        {stage === 'enabled' && openingStripe ? 'Opening Stripe…' : copy?.button ?? 'Try again'}
       </button>
-      {message && onFallback && <button className="secondary-button" disabled={busy || !status || (needsConfirm && !eligibleConfirmed)} onClick={onFallback}>Continue on Stripe</button>}
+      {message && onFallback && <button className="secondary-button" disabled={busy || !status || (needsConfirm && !eligibleConfirmed)} onClick={onFallback}>{openingStripe ? 'Opening Stripe…' : 'Continue on Stripe'}</button>}
       <PayoutTrust />
     </div>
   );

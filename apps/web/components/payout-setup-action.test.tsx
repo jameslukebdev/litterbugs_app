@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { PayoutStatus } from '@/lib/funding';
 import { PayoutSetupAction } from './payout-setup-action';
@@ -8,14 +8,14 @@ const tracking = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/website-analytics', () => ({ trackPayoutSetup: tracking }));
 
 const { state, createPayoutLink, createPayoutSession, createPayoutConnect, reusePayoutConnect, notifyDataChanged } = vi.hoisted(() => ({
-  state: { status: { onboardingStatus: 'not_started', payoutsEnabled: false, requirementsDue: [] } as PayoutStatus },
+  state: { status: { onboardingStatus: 'not_started', payoutsEnabled: false, requirementsDue: [] } as PayoutStatus, refresh: 0 },
   createPayoutLink: vi.fn(),
   createPayoutSession: vi.fn(),
   createPayoutConnect: vi.fn(),
   reusePayoutConnect: vi.fn(),
   notifyDataChanged: vi.fn(),
 }));
-vi.mock('@/lib/use-data-refresh', () => ({ useDataRefresh: () => 0, notifyDataChanged }));
+vi.mock('@/lib/use-data-refresh', () => ({ useDataRefresh: () => state.refresh, notifyDataChanged }));
 vi.mock('@/lib/payout-connect', () => ({ createPayoutConnect, reusePayoutConnect }));
 vi.mock('@/components/payout-embedded', () => ({ default: ({ onExit, onFallback }: { onExit: () => void; onFallback: () => void }) => <div><h2>Set up your payouts</h2><button onClick={onExit}>Exit secure form</button><button onClick={onFallback}>Continue on Stripe</button></div> }));
 vi.mock('@/components/modal-shell', () => ({ ModalShell: ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => <div role="dialog"><button onClick={onClose}>Close</button>{children}</div> }));
@@ -29,6 +29,7 @@ vi.mock('@/lib/funding', () => ({
 beforeEach(() => {
   window.history.replaceState({}, '', '/account/payments');
   localStorage.clear();
+  state.refresh = 0;
   state.status = { onboardingStatus: 'not_started', payoutsEnabled: false, requirementsDue: [] };
   createPayoutSession.mockRejectedValue(new Error('Stripe is unavailable in tests.'));
   createPayoutConnect.mockResolvedValue({});
@@ -75,17 +76,53 @@ it('opens required follow-up details directly for a restricted cleaner', async (
   expect(screen.queryByRole('checkbox')).toBeNull();
 });
 
-it('opens the Stripe dashboard for ready payouts without asking again, and celebrates once per device', async () => {
+it('keeps the ready panel mounted and locked until the Stripe dashboard navigation', async () => {
+  let resolveLink!: (value: { url: string }) => void;
+  createPayoutLink.mockReturnValueOnce(new Promise(resolve => { resolveLink = resolve; }));
   state.status = { onboardingStatus: 'enabled', payoutsEnabled: true, requirementsDue: [] };
   await open();
-  await screen.findByRole('heading', { name: 'You’re all set to earn cash' });
+  const heading = await screen.findByRole('heading', { name: 'Payouts are ready' });
   expect(screen.queryByRole('checkbox')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Manage payouts' }));
-  await waitFor(() => expect(createPayoutLink).toHaveBeenCalledWith('dashboard'));
-  cleanup();
-  await open();
-  await screen.findByRole('heading', { name: 'Payouts are ready' });
+  const openingStripe = screen.getByRole('button', { name: 'Opening Stripe…' }) as HTMLButtonElement;
+  expect(openingStripe.disabled).toBe(true);
+  fireEvent.click(openingStripe);
+  expect(createPayoutLink).toHaveBeenCalledExactlyOnceWith('dashboard');
+  expect(screen.getByRole('heading', { name: 'Payouts are ready' })).toBe(heading);
+
+  await act(async () => resolveLink({ url: '#stripe-dashboard-test' }));
+  expect(window.location.hash).toBe('#stripe-dashboard-test');
+  expect(screen.getByRole('button', { name: 'Opening Stripe…' })).toBe(openingStripe);
+  expect(screen.getByRole('heading', { name: 'Payouts are ready' })).toBe(heading);
   expect(screen.queryByText('You’re all set to earn cash')).toBeNull();
+
+  act(() => window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })));
+  expect((screen.getByRole('button', { name: 'Manage payouts' }) as HTMLButtonElement).disabled).toBe(false);
+  expect(screen.getByRole('heading', { name: 'Payouts are ready' })).toBe(heading);
+});
+
+it('shows an error in the same ready panel and allows another attempt when Stripe cannot open', async () => {
+  state.status = { onboardingStatus: 'enabled', payoutsEnabled: true, requirementsDue: [] };
+  await open();
+  const heading = await screen.findByRole('heading', { name: 'Payouts are ready' });
+  fireEvent.click(screen.getByRole('button', { name: 'Manage payouts' }));
+  await screen.findByRole('alert');
+  expect(screen.getByRole('heading', { name: 'Payouts are ready' })).toBe(heading);
+  expect(screen.queryByRole('button', { name: 'Continue on Stripe' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Manage payouts' }));
+  await waitFor(() => expect(createPayoutLink).toHaveBeenCalledTimes(2));
+});
+
+it('does not navigate after the cleaner closes a pending dashboard handoff', async () => {
+  let resolveLink!: (value: { url: string }) => void;
+  createPayoutLink.mockReturnValueOnce(new Promise(resolve => { resolveLink = resolve; }));
+  state.status = { onboardingStatus: 'enabled', payoutsEnabled: true, requirementsDue: [] };
+  await open();
+  fireEvent.click(await screen.findByRole('button', { name: 'Manage payouts' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+  await act(async () => resolveLink({ url: '#late-dashboard' }));
+  expect(window.location.hash).toBe('');
+  expect(screen.queryByRole('dialog')).toBeNull();
 });
 
 it('still asks for the confirmation when an in-progress member has none on record', async () => {
@@ -129,6 +166,16 @@ it('opens embedded onboarding after confirmation and only celebrates server-conf
   fireEvent.click(screen.getByRole('button', { name: 'Exit secure form' }));
   await screen.findByRole('heading', { name: 'You’re all set to earn cash' });
   expect(tracking.mock.calls.filter(([stage]) => stage === 'ready')).toHaveLength(1);
+  const celebration = screen.getByRole('dialog').querySelector('.bug-celebration');
+  expect(celebration).not.toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Manage payouts' }));
+  expect(screen.getByRole('dialog').querySelector('.bug-celebration')).toBe(celebration);
+  await screen.findByRole('alert');
+  expect(screen.getByRole('dialog').querySelector('.bug-celebration')).toBe(celebration);
+  fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Payout settings' }));
+  await screen.findByRole('heading', { name: 'Payouts are ready' });
+  expect(screen.getByRole('dialog').querySelector('.bug-celebration')).toBeNull();
 });
 
 it('offers hosted recovery after an embedded session fails without redirecting automatically', async () => {
@@ -208,6 +255,22 @@ it('opens from a cleanup without another settings button and resumes only after 
   fireEvent.click(screen.getByRole('button', { name: 'Exit secure form' }));
   await waitFor(() => expect(onReady).toHaveBeenCalledOnce());
   expect(onDismiss).not.toHaveBeenCalled();
+  expect(screen.queryByRole('dialog')).toBeNull();
+});
+
+it('resumes the cleanup when a later refresh sees Stripe finish verification', async () => {
+  state.status = { onboardingStatus: 'pending', payoutsEnabled: false, requirementsDue: [], age18Confirmed: true };
+  createPayoutSession.mockResolvedValue({ clientSecret: 'secret', publishableKey: 'pk_test_fixture', expiresAt: 1900000000 });
+  const onReady = vi.fn();
+  const { rerender } = render(<PayoutSetupAction autoOpen onReady={onReady} />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Exit secure form' }));
+  await screen.findByRole('heading', { name: 'Almost there' });
+  expect(onReady).not.toHaveBeenCalled();
+
+  state.status = { onboardingStatus: 'enabled', payoutsEnabled: true, requirementsDue: [] };
+  state.refresh += 1;
+  rerender(<PayoutSetupAction autoOpen onReady={onReady} />);
+  await waitFor(() => expect(onReady).toHaveBeenCalledOnce());
   expect(screen.queryByRole('dialog')).toBeNull();
 });
 

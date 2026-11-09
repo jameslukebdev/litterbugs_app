@@ -1,8 +1,9 @@
 'use client';
 /* eslint-disable @next/next/no-img-element -- local screenshot previews. */
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { PayoutPanel } from '@/components/payout-panel';
+import type { PayoutStatus } from '@/lib/funding';
 import { captures, type Capture } from './captures';
 import styles from './preview.module.css';
 
@@ -15,9 +16,14 @@ const steps: { id: string; title: string; label: string; note: string; capture?:
   { id: 'bank', title: 'Choose your bank', label: 'Live website capture', note: 'The small Payout details dropdown above “Select an account for payouts” opens Stripe’s section menu. Try it to go back to Personal details.', capture: 'bank-selection' },
   { id: 'manual', title: 'Enter bank details manually', label: 'Optional route · live website capture', note: 'Choose Not now when Stripe offers Link sign-in. Stripe then shows the routing and account fields and its bank authorization.', capture: 'manual-bank' },
   { id: 'review', title: 'Review and submit', label: 'Stripe test-account capture', note: 'After adding bank details, Stripe shows Edit beside Personal details and Payout details. Try either button on this test-account capture.', capture: 'final-review' },
-  { id: 'ready', title: 'Payouts ready', label: 'Account → Payments', note: 'This status appears after Stripe confirms that payouts are enabled.' },
+  { id: 'ready', title: 'Payouts ready', label: 'Account → Payments', note: 'From Account → Payments → Payout settings, choose Manage payouts to open Stripe Express.' },
   { id: 'safety', title: 'Return to your cleanup', label: 'Test cleanup capture', note: 'With payouts enabled, the same funded cleanup opens to the safety check. Confirm safety and claim the cleanup to begin.', capture: 'cleanup-safety' },
+  { id: 'manage', title: 'Stripe Express Dashboard', label: 'Stripe demo · proposed branding', note: 'After Manage payouts and any Stripe sign-in, this is the type of dashboard you’ll see. The amounts are sample data. Choose Settings to see where Stripe lets you update account details.', capture: 'express-home' },
+  { id: 'manage-settings', title: 'Stripe Express Settings', label: 'Stripe demo · proposed branding', note: 'Stripe’s Settings page is where you manage personal and payout information. The options shown depend on the connected account.', capture: 'express-settings' },
 ];
+
+const readyStatus: PayoutStatus = { onboardingStatus: 'enabled', payoutsEnabled: true, requirementsDue: [] };
+const manageStep = steps.findIndex(item => item.id === 'manage');
 
 const captureViews: Partial<Record<Capture, { x: number; y: number; width: number; height: number }>> = {
   'stripe-entry': { x: 404, y: 30, width: 605, height: 368 },
@@ -49,7 +55,7 @@ function StripeCapture({ screen, label, children }: { screen: Capture; label: st
         {children}
       </div>
     </div>
-    <a href={url} target="_blank" rel="noreferrer">View full-size capture ↗</a>
+    <a href={url} target="_blank" rel="noreferrer">{screen.startsWith('express-') ? 'View original Stripe demo capture ↗' : 'View full-size capture ↗'}</a>
   </figure>;
 }
 
@@ -59,12 +65,24 @@ export default function Preview({ initialStep }: { initialStep?: string }) {
   const [showCode, setShowCode] = useState(false);
   const [showSections, setShowSections] = useState(false);
   const [editingFromReview, setEditingFromReview] = useState(false);
+  const [openingDemo, setOpeningDemo] = useState(false);
   const current = steps[step];
+
+  useEffect(() => {
+    if (!openingDemo) return;
+    const timer = window.setTimeout(() => {
+      setStep(manageStep);
+      setOpeningDemo(false);
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [openingDemo]);
 
   function selectStep(next: number, fromReview = false) {
     setStep(next);
     setShowSections(false);
     setEditingFromReview(fromReview);
+    setOpeningDemo(false);
     window.scrollTo({ top: 0, behavior: 'auto' });
   }
 
@@ -103,6 +121,9 @@ export default function Preview({ initialStep }: { initialStep?: string }) {
             <CaptureButton label="Edit personal details" bounds={[62.65, 43.35, 5.2, 6]} onClick={() => showStep('name', true)} />
             <CaptureButton label="Edit payout details" bounds={[62.65, 62.35, 5.2, 6]} onClick={() => showStep('bank', true)} />
           </>}
+          {(current.id === 'manage' || current.id === 'manage-settings') && <span className={styles.expressMark}><img src="/brand/litterbugs-logo.png" alt="Proposed Litterbugs logo" /></span>}
+          {current.id === 'manage' && <CaptureButton label="Stripe Express Settings" bounds={[2.65, 83.75, 17.5, 5.7]} onClick={() => showStep('manage-settings')} />}
+          {current.id === 'manage-settings' && <CaptureButton label="Stripe Express Home" bounds={[2.65, 19.6, 17.5, 5.7]} onClick={() => showStep('manage')} />}
         </StripeCapture> : <div className={styles.example}>
           {current.id === 'clean' && <div className="payout-flow"><div className={styles.sampleCard}>
             <span className={styles.exampleTag}>Example cleanup</span>
@@ -126,7 +147,7 @@ export default function Preview({ initialStep }: { initialStep?: string }) {
               <button className="primary-button payout-go" onClick={() => setShowCode(true)}>Show example code</button>
             </>}
           </div></div>}
-          {current.id === 'ready' && <fieldset disabled className={styles.disabled}><PayoutPanel status={{ onboardingStatus: 'enabled', payoutsEnabled: true, requirementsDue: [] }} eligibleConfirmed onEligible={() => undefined} busy={false} message="" onContinue={() => undefined} /></fieldset>}
+          {current.id === 'ready' && <PayoutPanel status={readyStatus} eligibleConfirmed onEligible={() => undefined} busy={openingDemo} openingStripe={openingDemo} message="" onContinue={() => setOpeningDemo(true)} />}
         </div>}
         <footer className={styles.pager}><button disabled={step === 0} onClick={() => selectStep(step - 1)}>← Previous</button><span>{step + 1} of {steps.length}</span><button disabled={step === steps.length - 1} onClick={() => selectStep(step + 1)}>Next preview →</button></footer>
       </section>

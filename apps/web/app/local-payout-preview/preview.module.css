@@ -20,7 +20,9 @@
 .capture { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 12px; background: #f8f7fc; padding: 20px; }
 .captureFrame { position: relative; max-width: 100%; overflow: hidden; background: #fff; border: 1px solid #e3dff0; border-radius: 16px; }
 .captureSurface { position: absolute; }
-.captureSurface img { display: block; width: 100%; height: auto; }
+.captureSurface > img { display: block; width: 100%; height: auto; }
+.expressMark { position: absolute; left: 3.12%; top: 11.67%; width: 2.68%; height: 4.75%; display: grid; place-items: center; background: #fff; }
+.expressMark img { display: block; width: 100%; height: auto; }
 .captureButton { position: absolute; padding: 0; border: 2px solid #6659ed; border-radius: 12px; background: transparent; cursor: pointer; }
 .captureButton:hover { background: #5146ed14; }
 .sectionMenu { position: absolute; left: 3%; top: 26.6%; z-index: 1; display: grid; gap: 2px; padding: 4px; border: 1px solid #e3dff0; border-radius: 12px; background: #fff; box-shadow: 0 5px 16px #29293222; }
@@ -35,7 +37,6 @@
 .exampleTag { display: inline-block; padding: 5px 9px; border-radius: 8px; background: #fff4dc; color: #745300; font-size: 12px; font-weight: 700; }
 .phoneField { display: grid; gap: 8px; margin: 22px 0; font-size: 14px; font-weight: 700; }
 .phoneField input { padding: 14px; width: 100%; min-width: 0; border: 1px solid #e3dff0; border-radius: 14px; background: #fff; color: #686477; opacity: 1; }
-.disabled { padding: 0; margin: 0; border: 0; min-width: 0; }
 .pager { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 24px; border-top: 1px solid #eeebf5; }
 .pager button { padding: 10px 12px; color: #4438bb; background: #fff; border: 1px solid #d6ceef; border-radius: 10px; cursor: pointer; font-weight: 700; }
 .pager button:disabled { opacity: .45; cursor: default; }

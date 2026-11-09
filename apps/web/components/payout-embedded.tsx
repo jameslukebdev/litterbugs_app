@@ -6,8 +6,8 @@ import { ConnectAccountOnboarding, ConnectComponentsProvider } from '@stripe/rea
 import { payoutConnectAppearance } from '@/lib/payout-connect';
 import { PayoutHeading, PayoutProgress } from '@/components/payout-preparing';
 
-export default function PayoutEmbedded({ instance, busy, message, onExit, onFallback, onBack }: {
-  instance: StripeConnectInstance; busy: boolean; message: string;
+export default function PayoutEmbedded({ instance, busy, openingStripe = false, message, onExit, onFallback, onBack }: {
+  instance: StripeConnectInstance; busy: boolean; openingStripe?: boolean; message: string;
   onExit: () => void; onFallback: () => void; onBack: () => void;
 }) {
   const observed = useRef({ loader: false, form: false, error: false });
@@ -16,7 +16,7 @@ export default function PayoutEmbedded({ instance, busy, message, onExit, onFall
   useEffect(() => { instance.update({ appearance: payoutConnectAppearance }); }, [instance]);
   return (
     <div className="payout-flow payout-embedded">
-      <PayoutHeading onBack={busy ? undefined : onBack} />
+      <PayoutHeading onBack={onBack} backDisabled={busy} />
       {message && <p className="form-message error-message" role="alert">{message}</p>}
       {message && <button className="secondary-button" disabled={busy} onClick={onExit}>Check payout status</button>}
       {failed ? <p className="payout-note" role="alert">The secure form couldn&rsquo;t load. You can continue on Stripe and return to Litterbugs afterward.</p> : (
@@ -42,7 +42,7 @@ export default function PayoutEmbedded({ instance, busy, message, onExit, onFall
         </div>
       )}
       {(failed || message) && <div className="payout-embedded-actions">
-        <button className="primary-button payout-go" disabled={busy} onClick={onFallback}>{busy ? 'Checking…' : 'Continue on Stripe'}</button>
+        <button className="primary-button payout-go" disabled={busy} onClick={onFallback}>{openingStripe ? 'Opening Stripe…' : 'Continue on Stripe'}</button>
       </div>}
     </div>
   );

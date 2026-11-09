@@ -17,10 +17,10 @@ export function PayoutPreparing() {
 }
 
 /** `onBack` adds a Back button that returns to the payout steps (shown while Stripe's form is open). */
-export function PayoutHeading({ onBack }: { onBack?: () => void } = {}) {
+export function PayoutHeading({ onBack, backDisabled }: { onBack?: () => void; backDisabled?: boolean } = {}) {
   return <>
     <header className={`payout-head ${payoutStyles.head}`}>
-      {onBack && <button type="button" className={payoutStyles.back} onClick={onBack}><FiChevronLeft aria-hidden="true" />Back</button>}
+      {onBack && <button type="button" className={payoutStyles.back} onClick={onBack} disabled={backDisabled}><FiChevronLeft aria-hidden="true" />Back</button>}
       <img src="/brand/ranks/caterpillar.svg" alt="" aria-hidden="true" width={42} height={42} />
       <h2>Set up your payouts</h2>
     </header>

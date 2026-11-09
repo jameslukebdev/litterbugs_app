@@ -22,7 +22,7 @@ function warmPayoutSetup() {
   return warming;
 }
 
-/** The payouts-ready celebration plays once per device, the first time setup is seen as finished. */
+/** Celebrate an observed completion once per device. */
 const CELEBRATED_KEY = 'litterbugs.payouts-ready-celebrated.v1';
 function firstPayoutsReady() {
   try {
@@ -49,7 +49,8 @@ export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, 
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<PayoutStatus | null>(null);
   const [eligibleConfirmed, setEligibleConfirmed] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [pending, setPending] = useState<'prepare' | 'check' | 'redirect' | null>(null);
+  const busy = pending !== null;
   const [message, setMessage] = useState('');
   const [celebrate, setCelebrate] = useState(false);
   const [connectInstance, setConnectInstance] = useState<StripeConnectInstance | null>(null);
@@ -58,9 +59,27 @@ export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, 
   const lastRefresh = useRef(refresh);
   const observedReady = useRef<boolean | null>(null);
   const observeStatus = useCallback((next: PayoutStatus) => {
-    if (next.payoutsEnabled && observedReady.current !== true) trackPayoutSetup(observedReady.current === false ? 'ready' : 'already_ready');
+    const becameReady = next.payoutsEnabled && observedReady.current === false;
+    if (next.payoutsEnabled && observedReady.current !== true) trackPayoutSetup(becameReady ? 'ready' : 'already_ready');
     observedReady.current = next.payoutsEnabled;
+    return becameReady;
   }, []);
+
+  const close = useCallback((reason: 'closed' | 'session_ended' | null = 'closed') => {
+    opening.current += 1;
+    requestBusy.current = false;
+    setOpen(false);
+    setPending(null);
+    setConnectInstance(null);
+    if (reason) onDismiss?.(reason);
+  }, [onDismiss]);
+
+  const resumeCleanup = useCallback((next: PayoutStatus) => {
+    if (!onReady || !next.payoutsEnabled || next.onboardingStatus !== 'enabled') return false;
+    close(null);
+    onReady();
+    return true;
+  }, [close, onReady]);
 
   useEffect(() => {
     if (autoOpen) return;
@@ -96,12 +115,42 @@ export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, 
 
   useEffect(() => {
     if (lastRefresh.current === refresh) return;
+    if (busy || connectInstance) return;
     lastRefresh.current = refresh;
     if (!open) return;
     let cancelled = false;
-    void loadPayoutStatus().then(value => { if (!cancelled) { setStatus(value); observeStatus(value); } }).catch(() => { if (!cancelled) { trackPayoutSetup('status_failed'); setMessage('We couldn’t check your payout status. Close this window and open it again to retry.'); } });
+    const version = opening.current;
+    void loadPayoutStatus().then(value => {
+      if (cancelled || requestBusy.current || version !== opening.current) return;
+      const becameReady = observeStatus(value);
+      if (resumeCleanup(value)) return;
+      setStatus(value);
+      if (becameReady) {
+        setMessage('');
+        setCelebrate(firstPayoutsReady());
+      } else if (!value.payoutsEnabled) {
+        setCelebrate(false);
+      }
+    }).catch(() => {
+      if (cancelled || requestBusy.current || version !== opening.current) return;
+      trackPayoutSetup('status_failed');
+      setMessage('We couldn’t check your payout status. Close this window and open it again to retry.');
+    });
     return () => { cancelled = true; };
-  }, [open, refresh, observeStatus]);
+  }, [open, refresh, busy, connectInstance, observeStatus, resumeCleanup]);
+
+  useEffect(() => {
+    if (pending !== 'redirect') return;
+    function restoreAfterStripe(event: PageTransitionEvent) {
+      if (!event.persisted) return;
+      requestBusy.current = false;
+      setPending(null);
+      setCelebrate(false);
+      notifyDataChanged();
+    }
+    window.addEventListener('pageshow', restoreAfterStripe);
+    return () => window.removeEventListener('pageshow', restoreAfterStripe);
+  }, [pending]);
 
   // Arriving from the "Finish payout setup" reminder opens the payout screen straight away.
   useEffect(() => {
@@ -126,8 +175,9 @@ export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, 
     setStatus(null);
     setEligibleConfirmed(false);
     setOpen(true);
-    setBusy(true);
+    setPending('prepare');
     setMessage('');
+    setCelebrate(false);
     let startingForm = false;
     try {
       const next = await loadPayoutStatus();
@@ -135,7 +185,6 @@ export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, 
       setStatus(next);
       observeStatus(next);
       if (resumeCleanup(next)) return;
-      setCelebrate(next.payoutsEnabled && firstPayoutsReady());
       if (!next.payoutsEnabled && !payoutNeedsConfirmation(next)) {
         startingForm = true;
         await openEmbedded(version);
@@ -145,7 +194,7 @@ export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, 
       trackPayoutSetup(startingForm ? 'start_failed' : 'status_failed');
       setMessage(error instanceof Error ? error.message : 'We couldn’t load your payout status. Check your connection and try again.');
     } finally {
-      if (version === opening.current) { requestBusy.current = false; setBusy(false); }
+      if (version === opening.current) { requestBusy.current = false; setPending(null); }
     }
   }
 
@@ -157,6 +206,7 @@ export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, 
     };
     if (version !== opening.current) return;
     let instance = await reusePayoutConnect(onInvalidated);
+    if (version !== opening.current) return;
     if (!instance) {
       const session = await createPayoutSession();
       if (version !== opening.current) return;
@@ -167,50 +217,37 @@ export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, 
     trackPayoutSetup('form_opened');
   }
 
-  function close(reason: 'closed' | 'session_ended' | null = 'closed') {
-    opening.current += 1;
-    requestBusy.current = false;
-    setOpen(false);
-    setBusy(false);
-    setConnectInstance(null);
-    if (reason) onDismiss?.(reason);
-  }
-
-  function resumeCleanup(next: PayoutStatus) {
-    if (!onReady || !next.payoutsEnabled || next.onboardingStatus !== 'enabled') return false;
-    close(null);
-    onReady();
-    return true;
-  }
-
   async function continueToStripe(hosted = false) {
     if (!status || busy || requestBusy.current || (payoutNeedsConfirmation(status) && !eligibleConfirmed)) return;
+    const redirect = hosted || status.payoutsEnabled;
     requestBusy.current = true;
-    setBusy(true);
-    setMessage('');
+    setPending(redirect ? 'redirect' : 'prepare');
+    // A hosted fallback may be visible because of this message. Keep it mounted until navigation.
+    if (!redirect) setMessage('');
     const version = opening.current;
     try {
-      if (hosted || status.payoutsEnabled) {
+      if (redirect) {
         trackPayoutSetup('hosted_requested');
         const link = await createPayoutLink(status.payoutsEnabled ? 'dashboard' : 'link');
         if (version !== opening.current) return;
         window.location.assign(link.url);
+        // Keep the same screen locked while the browser loads Stripe.
+        return;
       } else {
         await openEmbedded(version);
       }
     } catch (error) {
       if (version !== opening.current) return;
       trackPayoutSetup('start_failed');
-      setMessage(error instanceof Error ? error.message : 'Payout setup didn’t open. Check your connection and try again.');
-    } finally {
-      if (version === opening.current) { requestBusy.current = false; setBusy(false); }
+      setMessage(error instanceof Error ? error.message : 'Stripe didn’t open. Check your connection and try again.');
     }
+    if (version === opening.current) { requestBusy.current = false; setPending(null); }
   }
 
   async function finishEmbedded() {
     if (requestBusy.current) return;
     requestBusy.current = true;
-    setBusy(true);
+    setPending('check');
     setMessage('');
     const version = opening.current;
     try {
@@ -218,9 +255,9 @@ export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, 
       const next = await loadPayoutStatus();
       if (version !== opening.current) return;
       setStatus(next);
-      observeStatus(next);
+      const becameReady = observeStatus(next);
       if (resumeCleanup(next)) { notifyDataChanged(); return; }
-      setCelebrate(next.payoutsEnabled && firstPayoutsReady());
+      if (becameReady) setCelebrate(firstPayoutsReady());
       setConnectInstance(null);
       notifyDataChanged();
     } catch {
@@ -228,7 +265,7 @@ export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, 
       trackPayoutSetup('status_failed');
       setMessage('Your details may already be saved with Stripe. We just couldn’t refresh your payout status, so please try again.');
     } finally {
-      if (version === opening.current) { requestBusy.current = false; setBusy(false); }
+      if (version === opening.current) { requestBusy.current = false; setPending(null); }
     }
   }
 
@@ -237,10 +274,11 @@ export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, 
       {!autoOpen && <button className={`secondary-button${compact ? ' compact-button' : ''}`} onPointerEnter={() => void warmPayoutSetup()} onFocus={() => void warmPayoutSetup()} onPointerDown={() => void warmPayoutSetup()} onClick={show}>Payout settings</button>}
       {open && (
         <ModalShell onClose={() => { trackPayoutSetup('closed'); close(); }} label="Payout setup" className="payout-dialog flow-page payout-page">
-          {!connectInstance && busy ? <PayoutPreparing /> : connectInstance ? <PayoutEmbedded
+          {pending === 'prepare' && !connectInstance ? <PayoutPreparing /> : connectInstance ? <PayoutEmbedded
             key="embedded"
             instance={connectInstance}
             busy={busy}
+            openingStripe={pending === 'redirect'}
             message={message}
             onExit={() => void finishEmbedded()}
             onFallback={() => void continueToStripe(true)}
@@ -250,9 +288,10 @@ export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, 
             eligibleConfirmed={eligibleConfirmed}
             onEligible={setEligibleConfirmed}
             busy={busy}
+            openingStripe={pending === 'redirect'}
             message={message}
             onContinue={() => void (status ? continueToStripe() : show())}
-            onFallback={() => void continueToStripe(true)}
+            onFallback={status?.payoutsEnabled ? undefined : () => void continueToStripe(true)}
             celebrate={celebrate}
           />}
         </ModalShell>
