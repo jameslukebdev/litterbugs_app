@@ -24,6 +24,26 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-08 — Codex (independent Cloudflare preview photo processing verified)
+
+- Removed the preview's Vercel media relay. Configured the approved free
+  Cloudmersive preview key and existing Supabase service credential as private
+  Worker secrets. Workers rejected the scanner's redirect mode before sending
+  the request. Switched to manual redirects and reject non-success responses
+  without forwarding credentials or images. Added safe failure categories.
+- Isolated source `605bb0e`, Worker `1e47548e-25c2-46b4-ab84-9d15878dc069`.
+  Hosted JPEG, PNG, WebP, browser-converted HEIC and two simultaneous uploads
+  passed. Verified clean audit, metadata stripping, hashes, uncached quarantine
+  removal, authentication and ownership. Removed all synthetic fixtures.
+  Production build and 116 focused tests passed. Evidence in
+  `/tmp/litterbugs-cloudflare-direct-upload-evidence.json` and
+  `/tmp/litterbugs-cloudflare-parallel-upload-evidence.json`.
+- Preview noindex and analytics off by default confirmed after the deploy.
+  Prior labeled analytics delivery and local Workers Stripe checks still apply.
+  Live HTTP 200 on Vercel. Claude's work, the mobile app, DNS and billing
+  preserved. Before cutover, build the final Claude-approved release, confirm
+  production scanner capacity/configuration and smoke-test on a physical phone.
+
 ### 2026-11-08 — Codex (live embedded Stripe smoke test and local walkthrough)
 
 - Confirmed Vercel production deployment `dpl_7kN4zDvVnschF7F5EyqRgq19WFkB`

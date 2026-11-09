@@ -2,9 +2,18 @@
 
 ## Decision
 
-Do not move the live site yet. Google login, Maps, report entry, funding quotes, volunteer safety entry, report/cleanup photos, generated share images and authenticated photo uploads now work in the separate preview. Upload safety processing still explicitly relays through the existing Vercel service; the preview is not independent of Vercel. Funded embedded-payout setup remains unavailable. Completed report publication, payment, cleanup evidence submission, approval and payout are **not verified** on Cloudflare.
+The separate Cloudflare preview now processes uploads directly. The live site stays on Vercel. Before switching, build the final release with Claude's changes, confirm the production scanner configuration and run a focused physical-phone check. Use the existing Vercel release as a rollback during the switch.
 
 Preview: https://litterbugs-cloudflare-compat-test.gegibson3113.workers.dev
+
+## Final preview verification
+
+- Source `605bb0e`, Worker `1e47548e-25c2-46b4-ab84-9d15878dc069`. The Vercel upload relay is gone. Cloudflare Workers now calls Cloudmersive directly and rejects redirects without forwarding the key or image. The approved free key is for preview testing.
+- Real hosted uploads of JPEG, PNG, WebP and browser-converted HEIC passed. Verified clean audit, JPEG output, metadata removal, checksum, uncached quarantine deletion and authorization. Two simultaneous uploads passed. Temporary private reports, test users and files were removed. OpenNext production build and 116 focused tests passed.
+- Hosted Google sign-in, Maps, photo display, share cards and funding and cleanup entry checks passed in the preview. Stripe decline, success, webhook and payout setup were exercised with test data in the local Cloudflare runtime. No hosted test report was published, live payment made or actual cleanup claimed.
+- A labeled preview run delivered report, funding and cleanup workflow events to PostHog and verified delivery requests to GA and Clarity. The local funding test verified outcome tracking and receipt deduplication. The current hosted preview again has analytics disabled by default and is excluded from indexing. Live returned HTTP 200 from Vercel.
+
+The sections below are historical snapshots of earlier builds.
 
 ## Latest source and test-isolation follow-up
 
