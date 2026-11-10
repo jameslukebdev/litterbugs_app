@@ -24,6 +24,15 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (closest-report action with a report open)
+
+- Grant confirmed the local gallery and closest-pin fixes. Desktop Chrome
+  confirmed the split map still requests reports after zooming and panning.
+  The map hides its empty state while a report is selected.
+- Recommended showing Find closest reports only when the visible desktop
+  map has no matches, excluding the open report from that lookup. No UI
+  changes from this review.
+
 ### 2026-11-09 — Codex (report gallery and closest-pin preview ready locally)
 
 - Before and After photos open the same viewer from the report sheet.
