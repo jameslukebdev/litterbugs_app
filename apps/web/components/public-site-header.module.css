@@ -501,8 +501,13 @@
   .header.header:not(.mapHeader) .inner:has(:global(.public-account-control-profile)) .mapLink { display: none; }
 }
 @media (max-width: 480px) {
-  .header:not(.mapHeader) .mapEntry { width: 44px; padding: 0; justify-content: center; }
-  .header:not(.mapHeader) .mapEntry .mapMobileLabel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .header:not(.mapHeader) .mapLink .mapEntry { width: 44px; padding: 0; flex-direction: column; justify-content: center; gap: 1px; }
+  .header:not(.mapHeader) .mapLink .mapEntry svg { width: 16px; height: 16px; }
+  .header:not(.mapHeader) .mapLink .mapMobileLabel { font-size: 12px; line-height: 1; }
+}
+@media (min-width: 390px) and (max-width: 480px) {
+  .header:not(.mapHeader) .mapLink .mapEntry { width: 68px; flex-direction: row; gap: 4px; }
+  .header:not(.mapHeader) .mapLink .mapMobileLabel { font-size: 14px; }
 }
 
 /* Phone menu (Nov 2026): matches the redesigned site. Open map is the all-yellow map button, every row keeps
