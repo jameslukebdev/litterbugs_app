@@ -24,6 +24,17 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (Search Console canonical alert verified)
+
+- The Nov 9 alert covered one old `/?report=e08939ae…` link, last crawled
+  Oct 28. Google chose the homepage as its canonical at that crawl.
+  URL Inspection confirmed both the homepage and the standalone Pinnacle
+  Storage cleanup report are indexed; Google chose the report URL itself.
+- The old link now redirects to `/map?report=e08939ae…` with its ID intact.
+  The live sitemap lists the standalone report, which returns 200 and
+  declares itself canonical. No fix, validation request or deploy needed.
+  Website verification was HTTP only; no visitor analytics were generated.
+
 ### 2026-11-09 — Codex (report popup badge removed locally)
 
 - Removed the 50-mile badge at Grant's request. The popup retains the
