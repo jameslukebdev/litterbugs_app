@@ -24,6 +24,18 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-10 — Codex (public member profile ready locally)
+
+- Matched the public profile to the white account layout, added its saved
+  avatar with an initial fallback, and removed the rank card border.
+  Removed Browse cleanups in the local review version. Verified browser
+  Back from the full profile returns to the originating map report.
+- Verified the avatar, eight ranks and layout in Chrome at desktop and
+  phone widths. The earlier version with the button was pushed as
+  `c1f3575` on `codex/web-profile-rank-release` and staged as
+  `dpl_DUaLg2Fe5PmjbdXYmb9Ao9tSQyEU`. Promotion is on hold during review.
+  The live deployment remains `dpl_E5T6XVHDoNi2y49FrbdXxmQJFESr`.
+
 ### 2026-11-10 — Codex (deduplicated points guide heading)
 
 - Removed the repeated heading inside How points work. Verified the point
