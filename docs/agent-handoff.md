@@ -24,6 +24,19 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (participation analytics follow-up)
+
+- Reviewed Oct 27–Nov 9 PostHog website events and five recent Clarity
+  timelines. A Nov 9 desktop recording showed a visitor use the report
+  location picker and cancel. Its timing matches a location-denied event.
+  Make the existing draft option visible before requesting browser location.
+- A Nov 9 shared-report phone visit opened general sign-in before the page
+  went hidden. The current participation events cover task-specific auth,
+  leaving general sign-in and its browser handoff unmeasured. Recommend
+  tracking prompt, provider attempt and outcome without personal identifiers.
+- Samples were small and may include testing. The newest recording was
+  7:53 p.m. ET. Read-only review, with recommendations pending.
+
 ### 2026-11-09 — Codex (closest-report action added to the desktop split view)
 
 - The existing empty-map card appears beside an open desktop report when
