@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import Script from 'next/script';
 import Link from 'next/link';
 import type { PostHog } from 'posthog-js';
-import { WORKFLOW_VERSION, clearParticipationContext, drainJourneys, journeyProperties, entrySourceForPath, ANALYTICS_CONSENT_KEY, ANALYTICS_EVENT, ANALYTICS_PREFERENCES, ANALYTICS_REPLAY_CHOICE_KEY, analyticsAllowed, analyticsPage, analyticsReferrer, drainParticipation, drainParticipationFailures, drainWebsiteOutcomes, participationProperties, participationFailureProperties, consumeParticipationAuthResult, trackParticipation, trackParticipationFailure, type AnalyticsConfig } from '@/lib/website-analytics';
+import { WORKFLOW_VERSION, JOURNEY_EVENTS, clearParticipationContext, drainJourneys, journeyProperties, entrySourceForPath, ANALYTICS_CONSENT_KEY, ANALYTICS_EVENT, ANALYTICS_PREFERENCES, ANALYTICS_REPLAY_CHOICE_KEY, analyticsAllowed, analyticsPage, analyticsReferrer, drainParticipation, drainParticipationFailures, drainWebsiteOutcomes, participationProperties, participationFailureProperties, consumeParticipationAuthResult, consumeSharedReportAuthResult, trackParticipation, trackParticipationFailure, type AnalyticsConfig, type JourneyEvent } from '@/lib/website-analytics';
 import { COMMUNITY_ENGAGEMENT_EVENTS, communityClick, communityForPath, communityProperties, participationLinkAction } from '@/lib/community-metrics';
 import styles from './website-analytics.module.css';
 import { isInstagramStoreVisit, storeBadgeDestination, storeBadgeProperties } from '@/lib/app-links';
@@ -30,6 +30,7 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
   useEffect(() => {
     const url = new URL(window.location.href);
     consumeParticipationAuthResult();
+    consumeSharedReportAuthResult();
     if (url.pathname === '/sign-in' && url.searchParams.get('google') === 'retry') {
       const action = participationIntent(url.searchParams.get('next') ?? '');
       if (action) trackParticipationFailure(action, 'auth_submitted', 'auth_start_failed');
@@ -97,8 +98,9 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
           const participation = event.event === 'participation_step' ? participationProperties(event.properties)
             : event.event === 'participation_failure' ? participationFailureProperties(event.properties) : null;
           if (['participation_step', 'participation_failure'].includes(event.event) && !participation) return null;
-          const journey = ['map_discovery', 'payout_setup', 'participation_decision'].includes(event.event) ? journeyProperties(event.event as 'map_discovery' | 'payout_setup' | 'participation_decision', event.properties) : null;
-          if (['map_discovery', 'payout_setup', 'participation_decision'].includes(event.event) && !journey) return null;
+          const journeyEvent = (JOURNEY_EVENTS as readonly string[]).includes(event.event);
+          const journey = journeyEvent ? journeyProperties(event.event as JourneyEvent, event.properties) : null;
+          if (journeyEvent && !journey) return null;
           const previousDuration = event.properties.$prev_pageview_duration;
           event.properties = Object.fromEntries(Object.entries(event.properties).filter(([key]) => keep.has(key)));
           if (community) Object.assign(event.properties, community);
@@ -195,6 +197,10 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
     const flushParticipation = () => {
       if (!aggregate || !ready || !permitted.current || privacySignal()) return;
       for (const item of drainJourneys()) {
+        if (item.event === 'shared_report_sign_in') {
+          posthog.current?.capture(item.event, item.properties, { transport: 'sendBeacon', send_instantly: true });
+          continue;
+        }
         posthog.current?.capture(item.event, item.properties);
         if (active && gaReady) google('event', item.event, item.properties);
       }
@@ -213,7 +219,7 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
       if (!detail) return;
       const communityContext = communityProperties(detail) ?? {};
       const currentPage = analyticsPage(window.location.pathname) ?? '/private';
-      if (['participation_step', 'participation_failure', 'map_discovery', 'payout_setup', 'participation_decision'].includes(detail.event)) {
+      if (['participation_step', 'participation_failure', ...JOURNEY_EVENTS].includes(detail.event)) {
         flushParticipation();
         return;
       }

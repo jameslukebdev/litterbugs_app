@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { analyticsAllowed, analyticsPage, analyticsReferrer, type AnalyticsConfig } from './website-analytics';
+import { describe, expect, it, vi } from 'vitest';
+import { ANALYTICS_REPLAY_CHOICE_KEY, analyticsAllowed, analyticsPage, analyticsReferrer, consumeSharedReportAuthResult, drainJourneys, type AnalyticsConfig } from './website-analytics';
 
 const config: AnalyticsConfig = { enabled: true, production: true, gaId: 'G-TEST123', posthogKey: 'phc_test', posthogHost: 'https://us.i.posthog.com' };
 describe('analytics privacy boundary', () => {
@@ -25,4 +25,22 @@ describe('analytics privacy boundary', () => {
     expect(analyticsReferrer('invalid')).toBe('');
     expect(analyticsReferrer('javascript:alert(1)')).toBe('');
   });
+});
+
+it.each([false, true])('consumes a shared-report result once while respecting opt-out (%s)', optedOut => {
+  const url = new URL('https://litterbugs.app/map?report=private&shared_report_auth=google%3Asucceeded#map');
+  const replaceState = vi.fn((_state, _title, path: string) => { url.href = new URL(path, url).href; });
+  vi.stubGlobal('window', { location: url, history: { state: null, replaceState }, dispatchEvent: vi.fn() });
+  vi.stubGlobal('localStorage', { getItem: (key: string) => optedOut && key === ANALYTICS_REPLAY_CHOICE_KEY ? 'declined' : null });
+  try {
+    consumeSharedReportAuthResult();
+    consumeSharedReportAuthResult();
+    expect(replaceState).toHaveBeenCalledExactlyOnceWith(null, '', '/map?report=private#map');
+    expect(drainJourneys()).toEqual(optedOut ? [] : [
+      { event: 'shared_report_sign_in', properties: { stage: 'succeeded', provider: 'google', page_type: '/map' } },
+    ]);
+  } finally {
+    drainJourneys();
+    vi.unstubAllGlobals();
+  }
 });

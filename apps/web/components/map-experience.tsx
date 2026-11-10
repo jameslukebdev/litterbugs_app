@@ -799,16 +799,13 @@ export function MapExperience({
 
   async function toggleReportMode() {
     setReportListOpen(false);
-    setLocationError('');
-    if(checkingDraft) return;
-    if (!reportMode && !selectingDraftLocation) trackParticipation('report', 'action_tapped', 'map_action');
-    if (selectingDraftLocation) {
-      setSelectingDraftLocation(false);
-      setReportMode(false);
-      setToast('');
+    if (checkingDraft) return;
+    if (reportMode || selectingDraftLocation) {
+      if (selectingDraftLocation) setToast('');
+      cancelLocationSelection();
       return;
     }
-    if (reportMode) { trackParticipationExit('report', 'location_picker', 'cancelled'); closeReportTask(); return; }
+    trackParticipation('report', 'action_tapped', 'map_action');
     const url = new URL(window.location.href); url.pathname = '/report'; url.searchParams.delete('report');
     window.history.pushState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
     await enterReportTask();
@@ -1232,7 +1229,7 @@ export function MapExperience({
           <div ref={mapElementRef} className="google-map" />
           <button type="button" className="map-report-button"
             onClick={() => { setReportListOpen(false); void toggleReportMode(); }}
-            disabled={checkingDraft || checkingLocation} aria-busy={checkingDraft || checkingLocation}
+            disabled={checkingDraft} aria-busy={checkingDraft}
             aria-label={selectingDraftLocation ? 'Keep location' : reportMode ? 'Cancel reporting' : 'Report Litter'}>
             {selectingDraftLocation ? <IoLocationOutline aria-hidden="true" /> : reportMode ? <IoCloseCircleOutline aria-hidden="true" /> : <span className="map-report-bug" aria-hidden="true" />}<span>{selectingDraftLocation ? 'Keep location' : reportMode ? 'Cancel' : 'Report Litter'}</span>
           </button>
@@ -1247,12 +1244,11 @@ export function MapExperience({
           {reportMode && <>
             <div className="report-placement-pin" aria-hidden="true"><Icon name="location" /></div>
             <section className="report-placement-confirm" aria-label="Choose report location">
-              <button type="button" className="icon-button report-placement-close" aria-label={selectingDraftLocation ? 'Cancel location change' : 'Cancel reporting'} title="Close" onClick={cancelLocationSelection}><Icon name="close" /></button>
               <h1>Where is the litter?</h1>
               {locationError && <p id="report-placement-error" role="alert">{locationError}</p>}
               <div className="report-placement-actions">
-                {userId && <button type="button" className="secondary-button report-placement-draft" disabled={!mapReady || checkingLocation} onClick={continueReportAsDraft}><Icon name="edit" /> Continue as draft</button>}
                 <button type="button" className="primary-button" aria-describedby={locationError ? 'report-placement-error' : undefined} aria-busy={checkingLocation} disabled={!mapReady || checkingLocation} onClick={() => void confirmReportLocation()}>{checkingLocation ? 'Checking…' : locationError ? 'Try again' : 'Use this location'}</button>
+                {userId && <button type="button" className="secondary-button report-placement-draft" disabled={!mapReady || checkingLocation} onClick={continueReportAsDraft}>Continue as draft</button>}
               </div>
             </section>
           </>}

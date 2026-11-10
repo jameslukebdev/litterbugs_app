@@ -24,6 +24,21 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (stacked report popup and shared-report sign-in measurement ready locally)
+
+- Restored two full-width buttons in a compact 280 × 152 px location
+  card. Removed the duplicate X. The map's Cancel button stays available
+  during location checks, and the card shifts left on short screens to
+  leave the pin clear.
+- Added the PostHog event `shared_report_sign_in` for standalone report
+  pages, direct map report links, and sign-in links on standalone reports.
+  It records prompts, providers, handoff and outcomes with bounded fields.
+  Events omit report IDs, credentials and provider messages.
+- Verified the card in local Chrome at phone and desktop sizes. A mocked
+  Google return retained shared-report context and left homepage sign-in
+  untagged. Typecheck, scoped lint, and all 905 web tests passed on rerun
+  with a longer test timeout. Local review and live event validation pending.
+
 ### 2026-11-09 — Codex (Search Console exclusions audited)
 
 - Checked all 27 entries across the five Page indexing categories. Fresh URL

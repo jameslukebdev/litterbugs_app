@@ -28,3 +28,12 @@ it('keeps general account sign-in uninstrumented and blocks external return path
   const external = await GET(new Request('https://litterbugs.app/auth/callback?code=secret&next=https://example.com/report'));
   expect(new URL(external.headers.get('location')!).origin).toBe('https://litterbugs.app');
 });
+
+it.each([true, false])('records the confirmed shared-report OAuth outcome (%s)', async success => {
+  if (!success) exchange.mockResolvedValue({ error: new Error('private auth error') });
+  const response = await GET(new Request('https://litterbugs.app/auth/callback?code=secret&next=%2Faccount&shared_report_auth=google'));
+  const destination = new URL(response.headers.get('location')!);
+  expect(destination.pathname).toBe(success ? '/account' : '/');
+  expect(destination.searchParams.get('shared_report_auth')).toBe(success ? 'google:succeeded' : 'google:return_failed');
+  expect(destination.href).not.toMatch(/secret|private/);
+});

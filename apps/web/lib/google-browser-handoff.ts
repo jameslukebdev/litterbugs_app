@@ -1,4 +1,5 @@
 import { safeNextPath } from '@/lib/safe-next-path';
+import { SHARED_REPORT_AUTH_PARAM } from '@/lib/participation-auth';
 
 export function isEmbeddedSocialBrowser(userAgent: string): boolean {
   return /Instagram|FBAN|FBAV|FB_IAB/i.test(userAgent);
@@ -14,13 +15,15 @@ export function googleSignInNext(value: unknown): string {
 
 // Only pass a fresh, same-origin entry URL to the external browser. OAuth and
 // its PKCE verifier must be created there, never in the Instagram cookie jar.
-export function googleBrowserHandoff(origin: string, next: string, userAgent: string): string | null {
+export function googleBrowserHandoff(origin: string, next: string, userAgent: string, fromSharedReport = false): string | null {
   const entry = new URL('/auth/google', origin);
   entry.searchParams.set('next', googleSignInNext(next));
+  if (fromSharedReport) entry.searchParams.set(SHARED_REPORT_AUTH_PARAM, 'google');
   if (/Android/i.test(userAgent)) {
     const fallback = new URL('/sign-in', origin);
     fallback.searchParams.set('next', googleSignInNext(next));
     fallback.searchParams.set('google', 'browser');
+    if (fromSharedReport) fallback.searchParams.set(SHARED_REPORT_AUTH_PARAM, 'google');
     return `intent://${entry.host}${entry.pathname}${entry.search}#Intent;scheme=${entry.protocol.slice(0, -1)};package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(fallback.href)};end`;
   }
   // Safari's scheme is best effort: Instagram/iOS may refuse the handoff.

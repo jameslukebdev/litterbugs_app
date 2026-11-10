@@ -14,6 +14,7 @@ import { CommunityRank } from '@/components/community-rank';
 import { publicReportSearchTitle, publicReportSearchDescription, publicReportOriginalSummary, publicReportHistorySummary, publicReportPhotoDescription, reportDateLabel as formatDate } from '@/lib/public-report-content';
 import { loadRelatedPublicReports } from '@/lib/related-public-reports';
 import { loadPublicReportShare } from '@/lib/public-report-share';
+import { SHARED_REPORT_AUTH_PARAM } from '@/lib/participation-auth';
 import { publicReportStatus } from '@/lib/public-report-status';
 import { OpenReportAction } from './open-report-action';
 import { ReportPhotos } from './report-photos';
@@ -122,8 +123,8 @@ export default async function SharedReportPage({ params }: Props) {
           <div className={styles.content}>
             <div className={styles.nextSteps}>
             {expired ? <Link className="primary-button button-link" href="/reports">Find a current cleanup</Link> : !completed && !inProgress && localCommunityHref ? <div className={`${journey.reportActions} ${styles.reportActions}`}>
-              {report.fundingEligible && <Link className="report-action-link button-link report-action-fund" prefetch={false} href={`/sign-in?next=${encodeURIComponent(communityReportMapHref(report.id, report.communitySlug, 'fund'))}`}><BrandBug kind="bee" size={21} className="bug-hop" />Fund</Link>}
-              <Link className="report-action-link button-link report-action-clean" prefetch={false} href={`/sign-in?next=${encodeURIComponent(communityReportMapHref(report.id, report.communitySlug, 'clean'))}`}><BrandBug kind="butterfly" size={21} className="bug-hop" />Clean</Link>
+              {report.fundingEligible && <Link className="report-action-link button-link report-action-fund" prefetch={false} href={`/sign-in?${SHARED_REPORT_AUTH_PARAM}=1&next=${encodeURIComponent(communityReportMapHref(report.id, report.communitySlug, 'fund'))}`}><BrandBug kind="bee" size={21} className="bug-hop" />Fund</Link>}
+              <Link className="report-action-link button-link report-action-clean" prefetch={false} href={`/sign-in?${SHARED_REPORT_AUTH_PARAM}=1&next=${encodeURIComponent(communityReportMapHref(report.id, report.communitySlug, 'clean'))}`}><BrandBug kind="butterfly" size={21} className="bug-hop" />Clean</Link>
             </div> : <Link className="primary-button button-link" href={communityReportMapHref(report.id, report.communitySlug, 'locate')}>View on map</Link>}
             </div>
 

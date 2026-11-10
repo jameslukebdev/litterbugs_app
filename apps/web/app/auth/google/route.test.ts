@@ -22,6 +22,15 @@ it('does not create PKCE or loop if the link remains in Instagram', async () => 
   expect(createClient).not.toHaveBeenCalled();
   expect(new URL(response.headers.get('location')!).searchParams.get('google')).toBe('browser');
 });
+it('carries shared-report measurement through the external browser and its fallback', async () => {
+  const entry = 'https://litterbugs.app/auth/google?next=%2Fmap%3Freport%3Dprivate&shared_report_auth=google';
+  await GET(new Request(entry));
+  const callback = new URL(signInWithOAuth.mock.calls[0][0].options.redirectTo);
+  expect(callback.searchParams.get('next')).toBe('/map?report=private');
+  expect(callback.searchParams.get('shared_report_auth')).toBe('google');
+  const blocked = await GET(new Request(entry, { headers: { 'user-agent': 'iPhone Instagram' } }));
+  expect(new URL(blocked.headers.get('location')!).searchParams.get('shared_report_auth')).toBe('google');
+});
 it.each(['returned', 'thrown', 'missing'])('provides a retry after %s startup failure', async failure => {
   if (failure === 'thrown') createClient.mockRejectedValue(new Error('offline'));
   else signInWithOAuth.mockResolvedValue({ data: { url: null }, error: failure === 'returned' ? new Error('failed') : null });

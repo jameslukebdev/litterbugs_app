@@ -360,12 +360,21 @@ describe('map publication and funding handoff', () => {
     expect(screen.getByLabelText('Selected latitude').textContent).toBe('0.5');
   });
 
-  it.each(['close', 'Escape'])('returns to browsing with %s without opening a report', async (action) => {
+  it.each(['Cancel', 'Escape'])('returns to browsing with %s during a location check', async (action) => {
+    let resolveLocation: PositionCallback | undefined;
+    const getCurrentPosition = (success: PositionCallback) => { resolveLocation = success; };
+    Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { getCurrentPosition } });
     window.history.replaceState({}, '', '/report');
     render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
-    await screen.findByRole('button', { name: 'Use this location' });
-    if (action === 'close') fireEvent.click(document.querySelector('.report-placement-close')!);
+    const confirm = await screen.findByRole<HTMLButtonElement>('button', { name: 'Use this location' });
+    await waitFor(() => expect(confirm.disabled).toBe(false));
+    fireEvent.click(confirm);
+    await screen.findByRole('button', { name: 'Checking…' });
+    if (action === 'Cancel') fireEvent.click(screen.getByRole('button', { name: 'Cancel reporting' }));
     else fireEvent.keyDown(window, { key: 'Escape' });
+    await act(async () => {
+      resolveLocation!({ coords: { latitude: 0, longitude: 0 }, timestamp: Date.now() } as GeolocationPosition);
+    });
     expect(screen.queryByLabelText('Choose report location')).toBeNull();
     expect(window.location.pathname).toBe('/map');
     expect(screen.queryByRole('dialog', { name: 'Report form' })).toBeNull();

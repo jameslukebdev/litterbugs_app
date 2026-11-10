@@ -77,6 +77,21 @@ it('collects cookieless pageviews while preserving required ingestion properties
   expect(event.properties.private_data).toBeUndefined();
   expect(screen.queryByTestId('google-script')).not.toBeNull();
 });
+
+it('keeps only safe shared-report sign-in dimensions in PostHog', async () => {
+  mock.allowed = true;
+  render(<WebsiteAnalytics config={config} />);
+  await waitFor(() => expect(mock.init).toHaveBeenCalled());
+  const sanitize = mock.init.mock.calls[0][1].before_send;
+  const event = sanitize({
+    event: 'shared_report_sign_in',
+    properties: { stage: 'attempted', provider: 'google', page_type: '/reports/detail', report_id: 'private', email: 'private@example.com' },
+  });
+  expect(event.properties).toMatchObject({ stage: 'attempted', provider: 'google', $pathname: '/reports/detail' });
+  expect(event.properties).not.toHaveProperty('email');
+  expect(event.properties).not.toHaveProperty('report_id');
+  expect(sanitize({ event: 'shared_report_sign_in', properties: { stage: 'attempted', provider: 'private@example.com' } })).toBeNull();
+});
 it('sends a consent signal only after an explicit analytics choice', async () => {
   mock.allowed = true;
   localStorage.setItem(ANALYTICS_CONSENT_KEY, 'accepted');

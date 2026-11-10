@@ -5,11 +5,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AuthDialog, authEntryMode } from './auth-dialog';
 import * as browserHandoff from '@/lib/google-browser-handoff';
 
-const { signInWithOAuth, signUp, signInWithPassword, step, failure } = vi.hoisted(() => ({ signInWithOAuth: vi.fn(), signUp: vi.fn(), signInWithPassword: vi.fn(), step: vi.fn(), failure: vi.fn() }));
-vi.mock('@/lib/website-analytics', () => ({ trackParticipation: step, trackParticipationFailure: failure }));
+const { signInWithOAuth, signUp, signInWithPassword, step, failure, sharedSignIn } = vi.hoisted(() => ({ signInWithOAuth: vi.fn(), signUp: vi.fn(), signInWithPassword: vi.fn(), step: vi.fn(), failure: vi.fn(), sharedSignIn: vi.fn() }));
+vi.mock('@/lib/website-analytics', () => ({ trackParticipation: step, trackParticipationFailure: failure, trackSharedReportSignIn: sharedSignIn }));
 vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({ auth: { signInWithOAuth, signUp, signInWithPassword } }) }));
 vi.mock('next/image', () => ({ default: ({ src, alt }: { src: string; alt: string }) => <img src={src} alt={alt} /> }));
-afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); vi.resetAllMocks(); vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); window.history.replaceState(null, '', '/'); vi.useRealTimers(); vi.restoreAllMocks(); vi.resetAllMocks(); vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 
 describe('website social sign-in', () => {
   it.each(['google', 'facebook'] as const)('starts %s with the selected return destination', async (provider) => {
@@ -177,9 +177,33 @@ it.each(['Android Instagram', 'iPhone Instagram'])('requests an external-browser
   const next = '/map?report=abc&intent=fund#map=36,-81,12';
   render(<AuthDialog onClose={vi.fn()} returnPath={next} />);
   fireEvent.click(screen.getByRole('button', { name: 'Continue with Google' }));
-  expect(handoff).toHaveBeenCalledWith(window.location.origin, next, userAgent);
+  expect(handoff).toHaveBeenCalledWith(window.location.origin, next, userAgent, false);
   expect(signInWithOAuth).not.toHaveBeenCalled();
   expect((screen.getByLabelText('Email') as HTMLInputElement).disabled).toBe(false);
+});
+
+it('measures email sign-in from a shared report without sending credentials', async () => {
+  window.history.replaceState(null, '', '/reports/00000000-0000-4000-8000-000000000035');
+  signInWithPassword.mockResolvedValue({ data: { session: {} }, error: null });
+  render(<AuthDialog onClose={vi.fn()} />);
+  fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'private@example.com' } });
+  fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'private-password' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+  await waitFor(() => expect(sharedSignIn.mock.calls).toEqual([
+    ['prompt_shown'], ['attempted', 'email'], ['succeeded', 'email'],
+  ]));
+});
+
+it.each([false, true])('uses a shared sign-in marker on a direct map link only (%s opened on map)', async openedOnMap => {
+  const next = '/map?report=private';
+  window.history.replaceState({ litterbugsReportNavigation: openedOnMap }, '', next);
+  signInWithOAuth.mockResolvedValue({ error: null });
+  render(<AuthDialog onClose={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Continue with Google' }));
+  const callback = new URL(signInWithOAuth.mock.calls[0][0].options.redirectTo);
+  expect(callback.searchParams.get('next')).toBe(next);
+  expect(callback.searchParams.get('shared_report_auth')).toBe(openedOnMap ? null : 'google');
+  expect(sharedSignIn.mock.calls).toEqual(openedOnMap ? [] : [['prompt_shown'], ['attempted', 'google']]);
 });
 
 describe('report entry', () => {

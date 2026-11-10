@@ -1,4 +1,4 @@
-import { AUTH_RESULT_PARAM } from './participation-auth';
+import { AUTH_RESULT_PARAM, SHARED_REPORT_AUTH_PARAM, isSharedReportAuthProvider, type SharedReportAuthProvider } from './participation-auth';
 import { communityForEntry, communityForPath, communityProperties, type CommunityEngagementEvent, type CommunityProperties } from './community-metrics';
 // Bump when participation semantics/workflows change; compiled into each browser bundle.
 export const WORKFLOW_VERSION = 'web-participation-2026-11-08-v3';
@@ -218,12 +218,15 @@ function currentEntrySource(): EntrySource {
 
 const MAP_STAGES = ['search_submitted', 'location_selected', 'location_search_empty', 'location_search_failed', 'results_loaded', 'results_empty', 'results_failed', 'closest_requested', 'closest_found', 'closest_empty', 'closest_failed', 'closest_viewed', 'report_opened'] as const;
 const PAYOUT_STAGES = ['opened', 'form_opened', 'form_loading_started', 'form_loaded', 'form_exited', 'closed', 'back', 'hosted_requested', 'already_ready', 'ready', 'status_failed', 'start_failed', 'load_failed', 'session_ended'] as const;
+const SHARED_REPORT_AUTH_STAGES = ['prompt_shown', 'closed', 'attempted', 'handoff_requested', 'handoff_unavailable', 'start_failed', 'redirect_stalled', 'rejected', 'network_failed', 'verification_sent', 'succeeded', 'return_failed'] as const;
+export type SharedReportAuthStage = typeof SHARED_REPORT_AUTH_STAGES[number];
 const EXIT_TYPES = ['cancelled', 'saved_for_later', 'draft_resumed', 'draft_discarded', 'started_new'] as const;
 const SEARCH_SURFACES = ['toolbar_search', 'empty_search', 'map', 'closest_reports'] as const;
 const RESULT_BUCKETS = ['0', '1', '2-5', '6-20', '21+'] as const;
 const DISTANCE_BUCKETS = ['under_1', '1-10', '10-50', 'over_50'] as const;
-export type JourneyEvent = 'map_discovery' | 'payout_setup' | 'participation_decision';
-type JourneyInput = { stage?: unknown; source?: unknown; surface?: unknown; result_bucket?: unknown; distance_bucket?: unknown; filtered?: unknown; truncated?: unknown; action?: unknown; exit_type?: unknown };
+export const JOURNEY_EVENTS = ['map_discovery', 'payout_setup', 'participation_decision', 'shared_report_sign_in'] as const;
+export type JourneyEvent = typeof JOURNEY_EVENTS[number];
+type JourneyInput = { stage?: unknown; source?: unknown; surface?: unknown; result_bucket?: unknown; distance_bucket?: unknown; filtered?: unknown; truncated?: unknown; action?: unknown; exit_type?: unknown; provider?: unknown };
 function inList(value: unknown, list: readonly string[]): value is string { return typeof value === 'string' && list.includes(value); }
 export function journeyProperties(event: JourneyEvent, value: JourneyInput) {
   if (event === 'participation_decision') {
@@ -231,6 +234,11 @@ export function journeyProperties(event: JourneyEvent, value: JourneyInput) {
     return step && inList(value.exit_type, EXIT_TYPES) ? { ...step, exit_type: value.exit_type } : null;
   }
   if (event === 'payout_setup') return inList(value.stage, PAYOUT_STAGES) ? { stage: value.stage } : null;
+  if (event === 'shared_report_sign_in') {
+    if (!inList(value.stage, SHARED_REPORT_AUTH_STAGES)) return null;
+    if (value.stage === 'prompt_shown' || value.stage === 'closed') return { stage: value.stage };
+    return isSharedReportAuthProvider(value.provider) ? { stage: value.stage, provider: value.provider } : null;
+  }
   if (event !== 'map_discovery' || !inList(value.stage, MAP_STAGES)) return null;
   return { stage: value.stage,
     ...(isEntrySource(value.source) ? { source: value.source } : {}),
@@ -264,6 +272,23 @@ export function trackMapDiscovery(stage: typeof MAP_STAGES[number], properties: 
   trackJourney('map_discovery', { ...properties, stage });
 }
 export function trackPayoutSetup(stage: typeof PAYOUT_STAGES[number]) { trackJourney('payout_setup', { stage }); }
+export function trackSharedReportSignIn(stage: SharedReportAuthStage, provider?: SharedReportAuthProvider) {
+  trackJourney('shared_report_sign_in', { stage, provider });
+}
+
+export function consumeSharedReportAuthResult() {
+  try {
+    const url = new URL(window.location.href);
+    const marker = url.searchParams.get(SHARED_REPORT_AUTH_PARAM);
+    if (marker === null || url.pathname === '/sign-in') return;
+    url.searchParams.delete(SHARED_REPORT_AUTH_PARAM);
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+    const [provider, stage] = marker.split(':');
+    if (isSharedReportAuthProvider(provider) && (stage === 'succeeded' || stage === 'return_failed') && marker === `${provider}:${stage}`) {
+      trackSharedReportSignIn(stage, provider);
+    }
+  } catch { /* Measurement cannot affect the return destination. */ }
+}
 export function trackParticipationExit(action: ParticipationAction, stage: ParticipationStage, exit_type: typeof EXIT_TYPES[number]) {
   trackJourney('participation_decision', { action, stage, exit_type, source: participationSources.get(action) });
 }

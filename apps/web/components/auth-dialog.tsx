@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element -- small bug icons that label each action, like BrandBug. */
 import Link from 'next/link';
 
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import Image from 'next/image';
 
 import { ModalShell } from '@/components/modal-shell';
@@ -10,7 +10,8 @@ import { FiCheck, FiMail } from 'react-icons/fi';
 import brandStyles from '@/components/public-website/brand.module.css';
 import styles from '@/components/auth-dialog.module.css';
 import { googleBrowserHandoff, isEmbeddedSocialBrowser } from '@/lib/google-browser-handoff';
-import { trackParticipation, trackParticipationFailure } from '@/lib/website-analytics';
+import { trackParticipation, trackParticipationFailure, trackSharedReportSignIn, type SharedReportAuthStage } from '@/lib/website-analytics';
+import { isSharedReportAuthEntry, SHARED_REPORT_AUTH_PARAM, type SharedReportAuthProvider } from '@/lib/participation-auth';
 import { createClient } from '@/lib/supabase/client';
 
 export type AuthIntent = 'clean' | 'fund' | 'report' | null;
@@ -51,6 +52,7 @@ type AuthDialogProps = {
   facebookLoginEnabled?: boolean;
   initialMode?: 'login' | 'signup';
   initialMessage?: string;
+  fromSharedReport?: boolean;
 };
 
 export function AuthDialog({
@@ -62,6 +64,7 @@ export function AuthDialog({
   initialMode = 'login',
   initialMessage = '',
   facebookLoginEnabled = true,
+  fromSharedReport = false,
 }: AuthDialogProps) {
   const [mode, setMode] = useState<EmailMode>(initialMode);
   const [email, setEmail] = useState('');
@@ -72,14 +75,32 @@ export function AuthDialog({
   const [sentReason, setSentReason] = useState<'signup' | 'recovery'>('signup');
   const emailId = useId();
   const passwordId = useId();
+  const sharedReportAuth = useRef(false);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (sharedReportAuth.current || !(fromSharedReport || isSharedReportAuthEntry(url, window.history.state?.litterbugsReportNavigation === true))) return;
+    sharedReportAuth.current = true;
+    trackSharedReportSignIn('prompt_shown');
+    if (url.pathname !== '/sign-in') return;
+    const fallback = url.searchParams.get('google');
+    if (fallback === 'browser') trackSharedReportSignIn('handoff_unavailable', 'google');
+    if (fallback === 'retry') trackSharedReportSignIn('start_failed', 'google');
+  }, [fromSharedReport]);
+
+  function trackShared(stage: SharedReportAuthStage, provider?: SharedReportAuthProvider) {
+    if (sharedReportAuth.current) trackSharedReportSignIn(stage, provider);
+  }
 
   useEffect(() => {
     if (loading !== 'google' && loading !== 'facebook') return;
+    const provider = loading;
     let recovered = false;
     const recover = () => {
       if (recovered) return;
       recovered = true;
       if (intent) trackParticipationFailure(intent, 'auth_submitted', 'auth_redirect_stalled');
+      if (sharedReportAuth.current) trackSharedReportSignIn('redirect_stalled', provider);
       setLoading('');
       setMessage('Sign in hasn’t opened. Try again, use your email, or open this page in Safari or Chrome.');
     };
@@ -97,9 +118,10 @@ export function AuthDialog({
   const cleanEmail = email.trim().toLowerCase();
   const providerLabel = loading ? loading.charAt(0).toUpperCase() + loading.slice(1) : '';
 
-  function authCallbackUrl() {
+  function authCallbackUrl(provider: SharedReportAuthProvider = 'email') {
     const nextPath = returnPath ?? `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    return `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
+    const source = sharedReportAuth.current ? `&${SHARED_REPORT_AUTH_PARAM}=${provider}` : '';
+    return `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}${source}`;
   }
 
   useEffect(() => {
@@ -108,20 +130,23 @@ export function AuthDialog({
 
   function closeAuth() {
     if (intent) trackParticipation(intent, 'auth_closed');
+    trackShared('closed');
     onClose();
   }
 
   async function startProvider(provider: 'google' | 'facebook') {
     if (intent) trackParticipation(intent, 'auth_submitted');
+    trackShared('attempted', provider);
     if (provider === 'google' && isEmbeddedSocialBrowser(navigator.userAgent)) {
       const next = returnPath ?? `${window.location.pathname}${window.location.search}${window.location.hash}`;
-      const handoff = googleBrowserHandoff(window.location.origin, next, navigator.userAgent);
+      const handoff = googleBrowserHandoff(window.location.origin, next, navigator.userAgent, sharedReportAuth.current);
       setMessage('If your browser doesn’t open, use the app’s menu to open this page in Safari or Chrome, then continue with Google. You can also use your email here.');
       // Keep this synchronous with the tap so the phone can open its browser.
       // Do not create a Supabase client or PKCE verifier before handing off.
       if (handoff) {
-        try { window.location.assign(handoff); } catch { /* Email and manual fallback remain available. */ }
-      }
+        trackShared('handoff_requested', provider);
+        try { window.location.assign(handoff); } catch { trackShared('handoff_unavailable', provider); }
+      } else trackShared('handoff_unavailable', provider);
       return;
     }
     setMessage('');
@@ -129,11 +154,12 @@ export function AuthDialog({
     try {
       const { error } = await createClient().auth.signInWithOAuth({
         provider,
-        options: { redirectTo: authCallbackUrl() },
+        options: { redirectTo: authCallbackUrl(provider) },
       });
       if (error) throw error;
     } catch {
       if (intent) trackParticipationFailure(intent, 'auth_submitted', 'auth_start_failed');
+      trackShared('start_failed', provider);
       setMessage(`We couldn’t start ${provider} sign in. Check your connection and try again.`);
       setLoading('');
     }
@@ -146,7 +172,11 @@ export function AuthDialog({
     if (mode === 'login' && !password) return setMessage('Enter your password.');
     if (mode === 'signup' && password.length < 8) return setMessage('Use at least 8 characters for your new password.');
 
-    if (intent && (mode === 'login' || mode === 'signup')) trackParticipation(intent, 'auth_submitted');
+    const isSignIn = mode === 'login' || mode === 'signup';
+    if (isSignIn) {
+      if (intent) trackParticipation(intent, 'auth_submitted');
+      trackShared('attempted', 'email');
+    }
     setLoading('email');
     try {
       const supabase = createClient();
@@ -155,11 +185,13 @@ export function AuthDialog({
         setLoading('');
         if (error) {
           if (intent) trackParticipationFailure(intent, 'auth_submitted', 'auth_rejected');
+          trackShared('rejected', 'email');
           return setMessage(error.message.toLowerCase().includes('email not confirmed')
           ? 'Please verify your email before signing in.'
           : 'That email and password did not match. Try again or reset your password.');
         }
         if (intent) trackParticipation(intent, 'auth_succeeded');
+        trackShared('succeeded', 'email');
         onSuccess();
         return;
       }
@@ -174,15 +206,18 @@ export function AuthDialog({
         const hiddenDuplicate = Array.isArray(data.user?.identities) && data.user.identities.length === 0;
         if (error || hiddenDuplicate) {
           if (intent) trackParticipationFailure(intent, 'auth_submitted', 'auth_rejected');
+          trackShared('rejected', 'email');
           return setMessage(hiddenDuplicate
           ? 'An account may already exist for this email. Try signing in or reset your password.'
           : 'We couldn’t create your account. Check your connection and try again.');
         }
         if (data.session) {
           if (intent) trackParticipation(intent, 'auth_succeeded');
+          trackShared('succeeded', 'email');
           return onSuccess();
         }
         if (intent) trackParticipation(intent, 'verification_sent');
+        trackShared('verification_sent', 'email');
         setSentReason('signup');
         setMode('sent');
         return;
@@ -196,7 +231,10 @@ export function AuthDialog({
       setSentReason('recovery');
       setMode('sent');
     } catch {
-      if (intent && (mode === 'login' || mode === 'signup')) trackParticipationFailure(intent, 'auth_submitted', 'auth_network_failed');
+      if (isSignIn) {
+        if (intent) trackParticipationFailure(intent, 'auth_submitted', 'auth_network_failed');
+        trackShared('network_failed', 'email');
+      }
       setMessage('We couldn’t connect. Check your connection and try again.');
     } finally {
       setLoading('');

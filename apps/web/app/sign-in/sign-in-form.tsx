@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { communityReturnFromEntry } from '@/lib/community-journey';
 import { useRouter } from 'next/navigation';
 import { AuthDialog, authEntryMode } from '@/components/auth-dialog';
-export function SignInForm({ next, message }: { next: string; message?: string }) {
+import { SHARED_REPORT_AUTH_PARAM } from '@/lib/participation-auth';
+export function SignInForm({ next, message, fromSharedReport }: { next: string; message?: string; fromSharedReport?: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(true);
   const destination = new URL(next, 'https://litterbugs.app');
@@ -18,10 +19,11 @@ export function SignInForm({ next, message }: { next: string; message?: string }
     setOpen(false);
     const params = new URLSearchParams(window.location.search);
     params.delete('next'); params.delete('google'); params.set('view', 'map');
+    params.delete(SHARED_REPORT_AUTH_PARAM);
     window.history.replaceState(window.history.state, '', `/map?${params}${window.location.hash}`);
     document.title = 'Explore the litter map | Litterbugs';
   };
   if (!open) return null;
-  return <AuthDialog intent={intent} initialMode={authEntryMode(intent)} returnPath={next} initialMessage={message}
+  return <AuthDialog intent={intent} initialMode={authEntryMode(intent)} returnPath={next} initialMessage={message} fromSharedReport={fromSharedReport}
     onClose={close} onSuccess={() => { router.replace(next); router.refresh(); }} />;
 }
