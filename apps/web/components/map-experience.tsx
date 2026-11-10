@@ -6,7 +6,6 @@ import { trackParticipation, trackParticipationFailure, trackWebsiteOutcome, tra
 import { importLibrary, setOptions } from '@googlemaps/js-api-loader';
 import {
   EMPTY_REPORT_DRAFT,
-  MAX_REPORT_DISTANCE_MILES,
   hasReportCoordinates,
   reportInsertFromDraft,
   type Coordinates,
@@ -1250,12 +1249,8 @@ export function MapExperience({
             <section className="report-placement-confirm" aria-label="Choose report location">
               <button type="button" className="icon-button report-placement-close" aria-label={selectingDraftLocation ? 'Cancel location change' : 'Cancel reporting'} title="Close" onClick={cancelLocationSelection}><Icon name="close" /></button>
               <h1>Where is the litter?</h1>
-              {locationError ? <p id="report-placement-error" role="alert">{locationError}</p>
-                : userId && <div className="report-placement-distance" id="report-placement-distance">
-                  <Icon name="location" />
-                  <span>Be within <strong>{MAX_REPORT_DISTANCE_MILES} miles</strong> of the pin to post</span>
-                </div>}
-              <button type="button" className="primary-button" aria-describedby={locationError ? 'report-placement-error' : userId ? 'report-placement-distance' : undefined} aria-busy={checkingLocation} disabled={!mapReady || checkingLocation} onClick={() => void confirmReportLocation()}>{locationError ? 'Try again' : 'Use this location'}</button>
+              {locationError && <p id="report-placement-error" role="alert">{locationError}</p>}
+              <button type="button" className="primary-button" aria-describedby={locationError ? 'report-placement-error' : undefined} aria-busy={checkingLocation} disabled={!mapReady || checkingLocation} onClick={() => void confirmReportLocation()}>{locationError ? 'Try again' : 'Use this location'}</button>
               {userId && <button type="button" className="secondary-button report-placement-draft" disabled={!mapReady || checkingLocation} onClick={continueReportAsDraft}>Continue as draft</button>}
             </section>
           </>}

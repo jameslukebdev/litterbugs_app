@@ -24,6 +24,12 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (report popup badge removed locally)
+
+- Removed the 50-mile badge at Grant's request. The popup retains the
+  full-width draft button and location error message. All 45 map
+  publication tests passed. Ready for localhost review.
+
 ### 2026-11-09 — Codex (report picker styling ready locally)
 
 - Updated the location popup with the report dragonfly, rounded heading
