@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { useState } from 'react';
 
-import { CompletedCleanup, afterPhotoUrl } from './completed-cleanup';
+import { AfterPhotos, CompletedCleanup, afterPhotoUrl } from './completed-cleanup';
 
 const createSignedUrl = vi.fn();
 const rows: Record<string, unknown> = {};
@@ -73,4 +74,26 @@ it('falls back to the signed original when the resized photo is unavailable', as
   expect(createSignedUrl).toHaveBeenCalledWith('a.jpg', 3600);
   expect(screen.getByRole('img', { name: 'After-cleanup photo 1 of 1' }).getAttribute('src')).toBe('https://storage.test/a.jpg?token=1');
   expect(screen.queryByRole('button', { name: 'Next photo' })).toBeNull();
+});
+
+it('retains the previous photo and announces loading when navigating in the expanded after gallery', async () => {
+  const paths = ['a.jpg', 'b.jpg'];
+  function Gallery() {
+    const [open, setOpen] = useState(false);
+    return <AfterPhotos reportId="report-1" paths={paths} viewer={{
+      open, onOpen: () => setOpen(true), onClose: () => setOpen(false),
+    }} />;
+  }
+  render(<Gallery />);
+  await loadUntil(afterPhotoUrl('report-1', 0));
+  fireEvent.click(screen.getByRole('button', { name: 'View full photo' }));
+  const dialog = screen.getByRole('dialog', { name: 'Report photo viewer' });
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Next photo' }));
+  expect(within(dialog).getByText('Loading photo…')).toBeTruthy();
+  expect(dialog.querySelector('.photo-viewer-retained')?.getAttribute('src')).toBe(afterPhotoUrl('report-1', 0));
+  await loadUntil(afterPhotoUrl('report-1', 1));
+  await within(dialog).findByRole('img', { name: 'After-cleanup photo 2' });
+  expect(within(dialog).queryByText('Loading photo…')).toBeNull();
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+  expect(screen.getByRole('img', { name: 'After-cleanup photo 2 of 2' })).toBeTruthy();
 });

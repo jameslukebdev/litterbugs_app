@@ -24,6 +24,16 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (report gallery and closest-pin preview ready locally)
+
+- Before and After photos open the same viewer from the report sheet.
+  The viewer supports zoom, loading feedback and browser Back and Forward.
+- View on map highlights the closest pin and shows its preview, including
+  on touchscreens. The distance label refers to the current map area.
+- Verified both flows in local Chrome at desktop and phone sizes. All 894
+  web tests passed with four workers. The final map checks, typecheck and
+  lint passed. Changes are on localhost for Grant's review.
+
 ### 2026-11-09 — Codex (empty-map follow-up)
 
 - Grant showed that Find closest reports is already the primary empty-map

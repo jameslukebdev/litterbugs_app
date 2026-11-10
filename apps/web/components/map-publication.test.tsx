@@ -644,3 +644,23 @@ it('does not count pending or failed map loads as empty, and records only settle
   await waitFor(() => expect(telemetry.discovery).toHaveBeenCalledWith('results_failed', expect.objectContaining({ surface: 'map' })));
   expect(telemetry.discovery).not.toHaveBeenCalledWith('results_empty', expect.anything());
 });
+
+it('previews and opens the closest report before the map results refresh', async () => {
+  window.history.replaceState({}, '', '/map?view=map');
+  const closest = { ...report(), is_published: true };
+  state.discovery.mockImplementation((_client, { limit }) => Promise.resolve({
+    reports: limit === Infinity ? [closest] : [],
+    truncated: false,
+  }));
+  render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+  await waitFor(() => expect(state.tiles).toBeTruthy());
+  act(() => { state.tiles!(); state.idle!(); });
+  fireEvent.click(await screen.findByRole('button', { name: 'Find closest reports' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'View on map' }));
+  const pin = state.markerInstances.find(marker => marker.title === closest.title);
+  expect(pin?.glyph?.classList.contains('report-map-marker-closest')).toBe(true);
+  expect(pin?.glyph?.querySelector('.map-pin-card strong')?.textContent).toBe(closest.title);
+  expect(state.panTo).toHaveBeenCalledWith({ lat: closest.latitude, lng: closest.longitude });
+  act(() => pin?.click?.());
+  expect((await screen.findByLabelText('Linked report')).textContent).toBe(closest.title);
+});

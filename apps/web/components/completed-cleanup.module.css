@@ -10,12 +10,12 @@
 .unavailable { height: 100%; display: grid; place-content: center; justify-items: center; gap: 6px; color: #686477; font-size: 14px; font-weight: 700; }
 .unavailable svg { width: 24px; height: 24px; }
 
-.arrow { position: absolute; top: 50%; width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; color: #292932; background: rgba(255, 255, 255, .92); box-shadow: 0 2px 10px rgba(41, 41, 50, .18); transform: translateY(-50%); cursor: pointer; }
+.arrow { position: absolute; top: 50%; z-index: 2; width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; color: #292932; background: rgba(255, 255, 255, .92); box-shadow: 0 2px 10px rgba(41, 41, 50, .18); transform: translateY(-50%); cursor: pointer; }
 .arrow svg { width: 20px; height: 20px; }
 .arrow:focus-visible { outline: 3px solid #5146ed; outline-offset: 2px; }
 .previous { left: 10px; }
 .next { right: 10px; }
-.count { position: absolute; top: 10px; right: 10px; padding: 3px 9px; border-radius: 999px; color: #fff; background: rgba(41, 41, 50, .62); font-size: 12px; font-weight: 800; }
+.count { position: absolute; top: 10px; right: 10px; z-index: 2; pointer-events: none; padding: 3px 9px; border-radius: 999px; color: #fff; background: rgba(41, 41, 50, .62); font-size: 12px; font-weight: 800; }
 
 /* Cleaner name and rank sit on the panel itself, no white box. */
 .byline { margin-top: 14px; }

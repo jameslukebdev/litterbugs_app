@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Icon } from '@/components/icon';
 import { ReportAuthor } from '@/components/report-author';
 import { AntWalk } from '@/components/bug-motion';
+import { PhotoExpandButton, ReportPhotoViewer } from '@/components/report-photo-viewer';
 import styles from './completed-cleanup.module.css';
 
 type Impact = { rewardCents: number; cleanerId: string | null; completedAt: string | null; description: string | null; bags: number | null; weight: number | null; photoPaths: string[] };
@@ -26,12 +27,19 @@ function preload(src: string) {
 }
 
 /** After-cleanup photos one at a time. `fill` makes it fill the report's main photo frame. */
-export function AfterPhotos({ reportId, paths, fill = false }: { reportId: string; paths: string[]; fill?: boolean }) {
+export function AfterPhotos({ reportId, paths, fill = false, viewer }: {
+  reportId: string;
+  paths: string[];
+  fill?: boolean;
+  viewer?: { open: boolean; onOpen: () => void; onClose: () => void };
+}) {
   const [index, setIndex] = useState(0);
   // src actually shown for each photo, and which ones are fully ready.
   const [sources, setSources] = useState<Record<number, string>>({});
   const [ready, setReady] = useState<Record<number, boolean>>({});
   const [failed, setFailed] = useState<Record<number, boolean>>({});
+  const [previousIndex, setPreviousIndex] = useState<number | null>(null);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,20 +66,34 @@ export function AfterPhotos({ reportId, paths, fill = false }: { reportId: strin
       }
     })();
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when the photo set or current photo changes.
-  }, [reportId, paths, index]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Load missing photos when the selection changes or the user retries.
+  }, [reportId, paths, index, retry]);
 
   const count = paths.length;
-  const go = (step: number) => setIndex(current => (current + step + count) % count);
-  return <div className={`${styles.viewer}${fill ? ` ${styles.fill}` : ''}`} aria-busy={!ready[index] && !failed[index]}>
+  const loading = !ready[index] && !failed[index];
+  function go(step: number) {
+    if (ready[index]) setPreviousIndex(index);
+    setIndex(current => (current + step + count) % count);
+  }
+  function retryPhoto() {
+    setFailed(current => ({ ...current, [index]: false }));
+    setRetry(value => value + 1);
+  }
+  return <div className={`${styles.viewer}${fill ? ` ${styles.fill}` : ''}`} aria-busy={loading}>
     {ready[index] ? <img className={styles.photo} src={sources[index]} alt={`After-cleanup photo ${index + 1} of ${count}`} />
       : failed[index] ? <div className={styles.unavailable}><Icon name="image" /><span>Photo unavailable</span></div>
       : <div className={`${styles.placeholder} bug-ant-host`} role="status" aria-label="Loading photo"><AntWalk /></div>}
+    {viewer && (ready[index] || previousIndex !== null) && <PhotoExpandButton onClick={viewer.onOpen} disabled={!ready[index]} />}
     {count > 1 && <>
       <button type="button" className={`${styles.arrow} ${styles.previous}`} onClick={() => go(-1)} aria-label="Previous photo"><Icon name="chevron-left" /></button>
       <button type="button" className={`${styles.arrow} ${styles.next}`} onClick={() => go(1)} aria-label="Next photo"><Icon name="chevron-right" /></button>
       <span className={styles.count}>{index + 1}/{count}</span>
     </>}
+    {viewer?.open && <ReportPhotoViewer
+      number={index + 1} count={count} src={sources[index]} alt={`After-cleanup photo ${index + 1}`}
+      previousSrc={previousIndex === null ? undefined : sources[previousIndex]} loading={loading} failed={failed[index]}
+      onStep={go} onClose={viewer.onClose} onRetry={retryPhoto}
+    />}
   </div>;
 }
 

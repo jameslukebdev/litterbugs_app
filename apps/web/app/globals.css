@@ -733,12 +733,19 @@ button.member-activity-row:hover { background: var(--green-soft); }
 .cleanup-submission-fields:disabled { opacity: .6; }
 fieldset.cleanup-submission-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
 
-.photo-expand-button { position: absolute; right: 12px; bottom: 16px; z-index: 3; padding: 10px 14px; border: 0; border-radius: 12px; background: white; color: #1c211d; font-weight: 700; }
+.photo-expand-button { position: absolute; inset: 0; z-index: 1; display: flex; align-items: end; justify-content: end; padding: 12px; border: 0; background: transparent; cursor: zoom-in; }
+.photo-expand-button span { display: grid; place-items: center; min-height: 44px; padding: 0 14px; border-radius: 12px; background: white; color: #1c211d; font-weight: 700; }
+.photo-expand-button:focus-visible { outline: 3px solid #5146ed; outline-offset: -4px; }
+.photo-expand-button:disabled { cursor: wait; }
+.photo-expand-button:disabled span { opacity: .7; }
+.report-photo-region .photo-arrow { z-index: 2; }
+.report-photo-region .photo-count { z-index: 2; pointer-events: none; }
 .photo-viewer-dialog { width: min(1000px, 96vw); max-width: 1100px; }
 .photo-viewer-image { overflow: auto; max-height: 65vh; margin-top: 16px; background: #f4f5f4; }
 .photo-viewer-image img { display: block; width: 100%; max-height: 65vh; object-fit: contain; }
 .photo-viewer-image.zoomed img { width: 200%; max-width: none; max-height: none; }
 .photo-viewer-controls { display: flex; justify-content: space-between; gap: 12px; margin-top: 12px; }
+.photo-viewer-status { margin: 8px 0 0; font-size: 14px; }
 
 .report-card-container > .report-author { padding-right: 52px; }
 .report-card-container:not(:has(.report-author)) .report-result-meta { padding-right: 40px; }
@@ -1552,17 +1559,16 @@ a.member-activity-row { color: inherit; text-decoration: none; }
 .report-map-cluster[data-kind='done']:hover { --pin-fill: #e2f8f3; --pin-edge: #8ed7c5; }
 .report-map-marker[data-kind='busy']:is(:hover, .report-map-marker-previewed) { --pin-fill: #ecf6e3; --pin-edge: #9fd17a; }
 .report-map-marker[data-kind='done']:is(:hover, .report-map-marker-previewed) { --pin-fill: #e2f8f3; --pin-edge: #8ed7c5; }
-.report-map-marker-selected { --pin-fill: #fff0f1; --pin-edge: #ed8f97; transform: translateY(-3px) scale(1.08); }
-.report-map-marker-selected[data-kind='busy'] { --pin-fill: #ecf6e3; --pin-edge: #8cc366; }
-.report-map-marker-selected[data-kind='done'] { --pin-fill: #e2f8f3; --pin-edge: #6cc6af; }
+.report-map-marker:is(.report-map-marker-selected, .report-map-marker-closest) { --pin-fill: #fff0f1; --pin-edge: #ed8f97; transform: translateY(-3px) scale(1.08); }
+.report-map-marker:is(.report-map-marker-selected, .report-map-marker-closest)[data-kind='busy'] { --pin-fill: #ecf6e3; --pin-edge: #8cc366; }
+.report-map-marker:is(.report-map-marker-selected, .report-map-marker-closest)[data-kind='done'] { --pin-fill: #e2f8f3; --pin-edge: #6cc6af; }
 .report-map-cluster { padding: 0 11px 0 7px; }
 .report-map-cluster-selected { --pin-fill: #fff0f1; --pin-edge: #ed8f97; }
 .report-map-cluster-selected[data-kind='busy'] { --pin-fill: #ecf6e3; --pin-edge: #8cc366; }
 .report-map-cluster-selected[data-kind='done'] { --pin-fill: #e2f8f3; --pin-edge: #6cc6af; }
 @media (prefers-reduced-motion: reduce) { :is(.report-map-marker, .report-map-cluster) { transition: none; } }
 
-/* Hover cards on map pins and groups: same look as the homepage map preview. Mouse only;
-   taps open the report panel instead. The card lives inside the pin, so reset the pin's type. */
+/* Mouse hover reveals pin and group cards. Finding the closest pin also shows its card on touchscreens. */
 .map-pin-card { position: absolute; bottom: calc(100% + 14px); left: 50%; translate: -50% 6px; z-index: 2; display: flex; align-items: center; gap: 12px; width: 280px; padding: 8px 14px 8px 8px; border: 2px solid #ece8f8; border-radius: 18px; background: #fff; color: #292932; font: 600 13px/1.3 system-ui, -apple-system, sans-serif; text-align: left; white-space: normal; box-shadow: 0 4px 0 #ebe7f8, 0 16px 32px #2a225a1f; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .14s ease, translate .14s ease, visibility 0s .14s; }
 .map-pin-card[data-side='start'] { left: -10px; translate: 0 6px; }
 .map-pin-card[data-side='end'] { left: auto; right: -10px; translate: 0 6px; }
@@ -1570,6 +1576,11 @@ a.member-activity-row { color: inherit; text-decoration: none; }
 @media (hover: hover) and (pointer: fine) {
   :is(.report-map-marker, .report-map-cluster):hover > .map-pin-card { opacity: 1; visibility: visible; translate: -50% 0; transition: opacity .14s ease, translate .14s ease; }
   :is(.report-map-marker, .report-map-cluster):hover > .map-pin-card:is([data-side='start'], [data-side='end']) { translate: 0 0; }
+}
+.report-map-marker.report-map-marker-closest > .map-pin-card {
+  top: auto; bottom: calc(100% + 14px); left: 50%; right: auto; translate: -50% 0;
+  width: min(280px, calc(100vw - 48px)); opacity: 1; visibility: visible;
+  pointer-events: auto; transition: opacity .14s ease, translate .14s ease;
 }
 .map-pin-thumb { flex: none; display: grid; place-items: center; width: 64px; height: 64px; overflow: hidden; border-radius: 12px; background: #f4f1ff; }
 .map-pin-thumb img[data-src] { width: 100%; height: 100%; object-fit: cover; }

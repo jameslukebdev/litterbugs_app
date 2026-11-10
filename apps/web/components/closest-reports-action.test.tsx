@@ -13,7 +13,7 @@ it('shows distance before navigating and changes a radius only after explicit co
   render(<ClosestReportsAction find={find} onShow={show} radius={5} />);
   expect(find).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: 'Find closest reports' }));
-  await screen.findByText('439 miles away');
+  await screen.findByText('439 miles from this map area');
   expect(show).not.toHaveBeenCalled();
   expect(screen.getByText(/removes your 5-mile distance limit/)).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: 'View on map' }));

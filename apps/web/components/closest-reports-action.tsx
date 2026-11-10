@@ -33,9 +33,10 @@ export function ClosestReportsAction({ find, onShow, radius = 0 }: {
     } finally { window.clearTimeout(timeout); }
   }
 
+  const roundedMiles = result ? Math.round(result.miles) : 0;
   return <div className={styles.closest}>
     {state === 'found' && result ? <>
-      <p role="status" className={styles.match}><strong>{result.miles < 1 ? 'Less than a mile away' : `${Math.round(result.miles).toLocaleString()} miles away`}</strong><span>{result.report.title || 'Litter report'}</span></p>
+      <p role="status" className={styles.match}><strong>{result.miles < 1 ? 'Less than a mile' : `${roundedMiles.toLocaleString()} ${roundedMiles === 1 ? 'mile' : 'miles'}`} from this map area</strong><span>{result.report.title || 'Litter report'}</span></p>
       {radius > 0 && <p className={styles.message}>Viewing this report removes your {radius}-mile distance limit.</p>}
       <button className={styles.primary} onClick={() => { trackMapDiscovery('closest_viewed', { surface: 'closest_reports', distance_bucket: reportDistanceBucket(result.miles) }); onShow(result); }}>View on map</button>
     </> : <>

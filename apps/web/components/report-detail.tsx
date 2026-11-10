@@ -14,7 +14,7 @@ import type { Report } from '@litterbugs/report-contract';
 
 import { isReportClosed } from '@/lib/report-visibility';
 import { useReportSheetDismiss } from '@/components/use-report-sheet-dismiss';
-import { ModalShell } from '@/components/modal-shell';
+import { PhotoExpandButton, ReportPhotoViewer } from '@/components/report-photo-viewer';
 import { AfterPhotos, CompletedCleanup, useCleanupImpact } from '@/components/completed-cleanup';
 import { ReportAuthor } from '@/components/report-author';
 import { CleanupAction } from '@/components/cleanup-action';
@@ -99,19 +99,29 @@ export function ReportDetail({
   const [expandedLayout, setExpandedLayout] = useState(false);
   useReportSheetDismiss(dialogRef, closeRef, !embedded && (!inline || expandedLayout));
   const [photoExpanded, setPhotoExpanded] = useState(false);
+  // Remembered per report, so opening another report starts on its after photo again.
+  const [photoChoice, setPhotoChoice] = useState<{ id: string; side: 'after' | 'before' }>({ id: report.id, side: 'after' });
+  const photoSide = photoChoice.id === report.id ? photoChoice.side : 'after';
+  const setPhotoSide = (side: 'after' | 'before') => setPhotoChoice({ id: report.id, side });
   // Keep the report URL intact while giving the photo its own Back/Forward step.
   useEffect(() => {
-    const restorePhoto = () => setPhotoExpanded(window.history.state?.litterbugsPhotoReport === report.id);
+    const restorePhoto = () => {
+      const state = window.history.state;
+      const open = state?.litterbugsPhotoReport === report.id;
+      const side = state?.litterbugsPhotoSide;
+      if (open && (side === 'before' || side === 'after')) setPhotoChoice({ id: report.id, side });
+      setPhotoExpanded(open);
+    };
     window.addEventListener('popstate', restorePhoto);
     return () => window.removeEventListener('popstate', restorePhoto);
   }, [report.id]);
 
-  function openPhoto() {
+  function openPhoto(side: 'before' | 'after') {
     if (window.history.state?.litterbugsPhotoReport !== report.id) {
-      window.history.pushState({ ...window.history.state, litterbugsPhotoReport: report.id }, '', window.location.href);
+      window.history.pushState({ ...window.history.state, litterbugsPhotoReport: report.id, litterbugsPhotoSide: side }, '', window.location.href);
     }
+    setPhotoSide(side);
     setPhotoExpanded(true);
-    setPhotoZoomed(false);
   }
 
   function closePhoto() {
@@ -119,13 +129,8 @@ export function ReportDetail({
     else setPhotoExpanded(false);
   }
 
-  const [photoZoomed, setPhotoZoomed] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  // Remembered per report, so opening another report starts on its after photo again.
-  const [photoChoice, setPhotoChoice] = useState<{ id: string; side: 'after' | 'before' }>({ id: report.id, side: 'after' });
-  const photoSide = photoChoice.id === report.id ? photoChoice.side : 'after';
-  const setPhotoSide = (side: 'after' | 'before') => setPhotoChoice({ id: report.id, side });
   const [photoIndex, setPhotoIndex] = useState(0);
   const [photoRetry, setPhotoRetry] = useState(0);
   type ReadyPhoto = { reportId: string; src: string; index: number };
@@ -167,7 +172,13 @@ export function ReportDetail({
   function selectPhoto(index: number) {
     setRetainedPhoto(readyPhotoRef.current?.reportId === report.id ? readyPhotoRef.current : null);
     setPhotoIndex(index);
-    setPhotoZoomed(false);
+  }
+
+  function retryPhoto() {
+    setRenderedPhoto({ path: '', loaded: false, failed: false });
+    setRenderedPreview({ path: '', loaded: false, failed: false });
+    setSignedPhoto({ path: '', src: null, failed: false });
+    setPhotoRetry(value => value + 1);
   }
 
   useEffect(() => {
@@ -375,8 +386,8 @@ export function ReportDetail({
             <div className="report-photo-region" aria-busy={showAfter ? undefined : photoPaths.length > 0 && !photoLoaded && !photoFailed}>
               {/* The switch already names the photo; label it only when there is no switch (no after photos). */}
               {report.cleanup_state === 'completed' && !hasAfterPhotos && photoPaths.length > 0 && <span className={styles.sideLabel} data-side="before">Before cleanup</span>}
-              {showAfter ? <AfterPhotos key={report.id} reportId={report.id} paths={cleanup.impact!.photoPaths} fill /> : <>
-              {photoSrc && (photoLoaded || retained) && !photoFailed && <button disabled={!photoLoaded} className="photo-expand-button" onClick={openPhoto}>View full photo</button>}
+              {showAfter ? <AfterPhotos key={report.id} reportId={report.id} paths={cleanup.impact!.photoPaths} fill viewer={{ open: photoExpanded, onOpen: () => openPhoto('after'), onClose: closePhoto }} /> : <>
+              {photoSrc && (photoLoaded || retained) && !photoFailed && <PhotoExpandButton disabled={!photoLoaded} onClick={() => openPhoto('before')} />}
               {photoPaths.length ? (
                 <>
                   {retained && retained.src !== photoSrc && <img key={retained.src} className={`report-photo report-photo-retained${photoLoaded ? ' report-photo-loading' : ''}`} src={retained.src} alt="" aria-hidden="true" />}
@@ -408,12 +419,7 @@ export function ReportDetail({
                   {photoFailed && !previewLoaded && !retained && <div className="photo-placeholder photo-placeholder-overlay"><Icon name="image" /><strong>Photo unavailable</strong><span>This photo could not be displayed.</span></div>}
                   {photoFailed && <div className="report-photo-recovery" role="status">
                     <span>{retained ? 'Photo could not load. Previous photo shown.' : previewLoaded ? 'Full-size photo unavailable. Preview shown.' : 'Photo could not load.'}</span>
-                    <button className="secondary-button compact-button" onClick={() => {
-                      setRenderedPhoto({ path: '', loaded: false, failed: false });
-                      setRenderedPreview({ path: '', loaded: false, failed: false });
-                      setSignedPhoto({ path: '', src: null, failed: false });
-                      setPhotoRetry(value => value + 1);
-                    }}>Retry photo</button>
+                    <button className="secondary-button compact-button" onClick={retryPhoto}>Retry photo</button>
                   </div>}
                   {photoPaths.length > 1 && (
                     <>
@@ -445,7 +451,7 @@ export function ReportDetail({
                   {!closed && report.cleanup_state === 'available' && report.expires_at && <span>Open until {formatDate(report.expires_at)}</span>}
                 </p>
               </header>
-              {report.cleanup_state === 'completed' && <CompletedCleanup key={report.id} reportId={report.id} cleanup={cleanup} showPhotos={!hasAfterPhotos || photoPaths.length === 0} />}
+              {report.cleanup_state === 'completed' && <CompletedCleanup key={report.id} reportId={report.id} cleanup={cleanup} showPhotos={!hasAfterPhotos} />}
 
 
 
@@ -482,7 +488,13 @@ export function ReportDetail({
           onClose={closeShareDialog}
           onShared={() => notify('Report shared.')}
         />
-        {photoExpanded && photoSrc && <ModalShell onClose={closePhoto} label="Report photo viewer" className="photo-viewer-dialog"><h2>Photo {visiblePhotoIndex + 1} of {photoPaths.length}</h2><button className="secondary-button" onClick={() => setPhotoZoomed(value => !value)}>{photoZoomed ? 'Fit photo' : 'Zoom in'}</button><div className={`photo-viewer-image${photoZoomed ? ' zoomed' : ''}`}><>{retained && retained.src !== photoSrc && <img key={retained.src} className={`photo-viewer-retained${photoLoaded ? ' report-photo-loading' : ''}`} src={retained.src} alt="" aria-hidden="true" />}<img key={photoSrc} className={photoLoaded ? 'photo-viewer-current' : 'photo-viewer-current report-photo-loading'} src={photoSrc} alt={`Report photo ${displayedPhotoIndex + 1}`} /></></div>{photoPaths.length > 1 && <div className="photo-viewer-controls"><button className="secondary-button" onClick={() => { selectPhoto((displayedPhotoIndex + photoPaths.length - 1) % photoPaths.length); }}>Previous photo</button><button className="secondary-button" onClick={() => { selectPhoto((displayedPhotoIndex + 1) % photoPaths.length); }}>Next photo</button></div>}</ModalShell>}
+        {photoExpanded && !showAfter && photoPaths.length > 0 && <ReportPhotoViewer
+          number={visiblePhotoIndex + 1} count={photoPaths.length}
+          src={photoSrc} alt={`Report photo ${displayedPhotoIndex + 1}`} previousSrc={retained?.src}
+          loading={!photoLoaded && !photoFailed} failed={photoFailed}
+          onStep={step => selectPhoto((displayedPhotoIndex + step + photoPaths.length) % photoPaths.length)}
+          onClose={closePhoto} onRetry={retryPhoto}
+        />}
       </aside>
     </div>
   );

@@ -19,7 +19,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '@/components/icon';
 import { ClusterReports } from '@/components/cluster-reports';
 import type { createReportClusters } from '@/lib/report-clusters';
-import { celebratePostedPin, hideNativeTooltip, pinKind, prepareCard, renderPinCard, renderPinGlyph, reportPinText, type PinKind } from '@/lib/map-marker-glyph';
+import { celebratePostedPin, hideNativeTooltip, landPin, pinKind, prepareCard, renderPinCard, renderPinGlyph, reportPinText, type PinKind } from '@/lib/map-marker-glyph';
 import { prefersReducedMotion } from '@/lib/bug-motion';
 import { getReportCardPhotoUrl } from '@/lib/report-photo';
 import { PublicSiteFooter } from '@/components/public-site-footer';
@@ -147,6 +147,12 @@ export function MapExperience({
   const [discoveryArea, setDiscoveryArea] = useState<DiscoveryArea | null>(null);
   const [restoredFilters, setDiscoveryFilters] = useState<DiscoveryFilters | null>(null);
   const discoveryFilters = restoredFilters ?? DEFAULT_DISCOVERY_FILTERS;
+  const [closestPreview, setClosestPreview] = useState<{ report: MappableReport; filters: DiscoveryFilters } | null>(null);
+  const updateDiscoveryFilters = useCallback((filters: DiscoveryFilters) => {
+    setDiscoveryFilters(filters);
+    setClosestPreview(current => current && Object.entries(current.filters).every(([key, value]) =>
+      value === filters[key as keyof DiscoveryFilters]) ? current : null);
+  }, []);
   const discoveryRequest = useRef<AbortController | null>(null);
   const [mapError, setMapError] = useState(
     googleMapsKey && googleMapsMapId
@@ -175,6 +181,7 @@ export function MapExperience({
     return () => { window.clearTimeout(timer); window.removeEventListener('popstate', restoreView); };
   }, [requestedView]);
   function switchDiscoveryView(view: 'map' | 'reports') {
+    setClosestPreview(null);
     setReportListOpen(view === 'reports');
     const url = new URL(window.location.href);
     url.searchParams.set('view', view);
@@ -325,6 +332,7 @@ export function MapExperience({
   }
 
   function selectSearchPlace(place: SearchPlace) {
+    setClosestPreview(null);
     searchPlaceRef.current = place;
     const url = new URL(window.location.href); url.searchParams.set('area', place.id);
     window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
@@ -347,11 +355,13 @@ export function MapExperience({
     const url = new URL(window.location.href);
     url.searchParams.set('view', 'map');
     const memory = readBrowserUrl(url.search);
-    const next = browserUrl(url, { filters: { ...discoveryFilters, radius: 0 }, sort: memory?.sort ?? 'newest', scroll: 0 });
+    const filters = { ...discoveryFilters, radius: 0 as const };
+    const next = browserUrl(url, { filters, sort: memory?.sort ?? 'newest', scroll: 0 });
     window.history.replaceState(window.history.state, '', next);
     // Keep the existing URL-backed filter controls in sync with the explicitly
     // confirmed distance change, including the hidden Reports panel.
     window.dispatchEvent(new PopStateEvent('popstate'));
+    setClosestPreview({ report, filters });
     setReportListOpen(false);
     mapRef.current.setZoom(14);
     mapRef.current.panTo({ lat: report.latitude, lng: report.longitude });
@@ -365,6 +375,7 @@ export function MapExperience({
       setSearchPlace(null);
       linkedReportFocusRef.current = null;
       setSelectedReport(null);
+      setClosestPreview(null);
       setReportListOpen(false);
       window.history.replaceState(window.history.state, '', LITTER_MAP_HREF);
       window.dispatchEvent(new PopStateEvent('popstate'));
@@ -409,6 +420,7 @@ export function MapExperience({
       const value = await reportPreferenceSync.set(owner, kind, reportId, enabled);
       if (preferenceOwnerRef.current !== owner) return;
       setReportPreferences(current => keepUnchanged(current, value.preferences));
+      if (kind === 'hidden' && enabled) setClosestPreview(current => current?.report.id === reportId ? null : current);
       if (kind === 'hidden') setToast(enabled ? 'Report hidden. Use the Hidden filter to restore it.' : 'Report restored to search.');
       const synced = await reportPreferenceSync.sync(owner);
       if (preferenceOwnerRef.current !== owner) return;
@@ -540,6 +552,7 @@ export function MapExperience({
         map.addListener('click', (event: google.maps.MapMouseEvent) => {
           if (event.latLng) mapClickRef.current({ latitude: event.latLng.lat(), longitude: event.latLng.lng() });
         });
+        map.addListener('dragstart', () => setClosestPreview(null));
         map.addListener('tilesloaded', () => {
           if (cancelled || mapAuthFailed.current) return;
           tilesReady = true;
@@ -594,6 +607,7 @@ export function MapExperience({
     let mapReports = mapFirstEntry && selectedReport && hasReportCoordinates(selectedReport) && !visibleReports.some(report => report.id === selectedReport.id)
       ? [...visibleReports, selectedReport] : visibleReports;
     if (justPostedReport && !mapReports.some(report => report.id === justPostedReport.id)) mapReports = [...mapReports, justPostedReport];
+    if (closestPreview && !mapReports.some(report => report.id === closestPreview.report.id)) mapReports = [...mapReports, closestPreview.report];
     const wanted = new Set(mapReports.map(report => report.id));
     markersRef.current.forEach((marker, id) => {
       if (wanted.has(id)) return;
@@ -628,8 +642,8 @@ export function MapExperience({
           hovered.zIndex = 5000;
           prepareCard(event.currentTarget as HTMLElement);
         });
-        markerGlyph.addEventListener('pointerleave', () => {
-          hovered.zIndex = null;
+        markerGlyph.addEventListener('pointerleave', event => {
+          if (!(event.currentTarget as HTMLElement).classList.contains('report-map-marker-closest')) hovered.zIndex = null;
           setPreviewedReportId((current) => current === report.id ? null : current);
         });
         marker.addEventListener('gmp-click', () => {
@@ -658,9 +672,19 @@ export function MapExperience({
         markerGlyph.dataset.statusClass = statusClass;
       }
       markerGlyph.classList.toggle('report-map-marker-selected', selectedReportIdRef.current === report.id);
+      const showClosest = closestPreview?.report.id === report.id && !selectedReport;
+      const wasClosest = markerGlyph.classList.contains('report-map-marker-closest');
+      markerGlyph.classList.toggle('report-map-marker-closest', showClosest);
+      if (showClosest) {
+        marker.zIndex = 5001;
+        prepareCard(markerGlyph);
+        if (!wasClosest && !marker.map) landPin(markerGlyph, 0);
+      } else if (wasClosest) {
+        marker.zIndex = null;
+      }
     });
-    clustersRef.current?.update(markersRef.current, mapReports, selectedReportIdRef.current, justPostedReport?.id);
-  }, [mapReady, visibleReports, mapFirstEntry, selectedReport, justPostedReport]);
+    clustersRef.current?.update(markersRef.current, mapReports, selectedReportIdRef.current, justPostedReport?.id, closestPreview?.report.id);
+  }, [mapReady, visibleReports, mapFirstEntry, selectedReport, justPostedReport, closestPreview]);
 
   useEffect(() => {
     selectedReportIdRef.current = selectedReport?.id ?? null;
@@ -699,12 +723,14 @@ export function MapExperience({
 
   useEffect(() => {
     mapClickRef.current = (coordinates) => {
+      setClosestPreview(null);
       if (reportMode && !checkingLocation) { mapRef.current?.panTo({ lat: coordinates.latitude, lng: coordinates.longitude }); setPlacement(coordinates); setLocationError(''); }
     };
   }, [reportMode, checkingLocation]);
 
   const enterReportTask = useCallback(async (resume = true, signal?: AbortSignal) => {
     const entry = ++reportEntry.current;
+    setClosestPreview(null);
     setCheckingDraft(true); setLocationError(''); setReportListOpen(false);
     setSelectedReport(null); selectedReportIdRef.current = null;
     try {
@@ -823,6 +849,7 @@ export function MapExperience({
   }
 
   async function centerOnUser() {
+    setClosestPreview(null);
     setLocating(true);
     try {
       const location = await getBrowserLocation();
@@ -842,6 +869,7 @@ export function MapExperience({
 
   function openReport(report: MappableReport, source: EntrySource = 'report_list') {
     trackMapDiscovery('report_opened', { source });
+    setClosestPreview(current => current?.report.id === report.id ? current : null);
     setDetailsMinimized(false);
     returnToReportList.current = reportListOpen;
     selectedReportIdRef.current = report.id;
@@ -854,7 +882,9 @@ export function MapExperience({
 
   useEffect(() => {
     openMapReportRef.current = id => {
-      const report = visibleReports.find(item => item.id === id) ?? (mapFirstEntry && selectedReport?.id === id && hasReportCoordinates(selectedReport) ? selectedReport : undefined);
+      const report = visibleReports.find(item => item.id === id)
+        ?? (closestPreview?.report.id === id ? closestPreview.report : undefined)
+        ?? (mapFirstEntry && selectedReport?.id === id && hasReportCoordinates(selectedReport) ? selectedReport : undefined);
       if (report) openReport(report, 'map_pin');
     };
   });
@@ -1104,6 +1134,7 @@ export function MapExperience({
       setToast(`Delete failed: ${error.message}`);
       return;
     }
+    setClosestPreview(current => current?.report.id === selectedReport.id ? null : current);
     setSelectedReport(null);
     await refreshReports();
     setToast('Report deleted.');
@@ -1170,7 +1201,7 @@ export function MapExperience({
           onHiddenChange={(id, hidden) => updateReportPreference('hidden', id, hidden)}
           mapCenter={displayResponse?.search.area ?? discoveryArea}
           navigationSearch={searchParams.toString()}
-          onDiscoveryFiltersChange={setDiscoveryFilters}
+          onDiscoveryFiltersChange={updateDiscoveryFilters}
           loading={!displayResponse}
           refreshing={Boolean(displayResponse && !currentResponse)}
           truncated={discoveryTruncated}
@@ -1195,7 +1226,7 @@ export function MapExperience({
           </button>
           {!mapError && <div className={`map-loading map-loading-cover${mapTilesReady ? ' map-loading-complete' : ''}`} aria-hidden={mapTilesReady} role="status" aria-label="Loading map"><span className="sr-only">Loading map…</span></div>}
           {mapError && <div className="map-error"><Icon name="warning" /><strong>Map unavailable</strong><span>{mapError}</span></div>}
-          {!reportListOpen && !reportMode && !selectedReport && mapTilesReady && !mapError && displayResponse && (currentResponse?.error || !displayResponse.reports.length) && <MapEmptyState
+          {!reportListOpen && !reportMode && !selectedReport && !closestPreview && mapTilesReady && !mapError && displayResponse && (currentResponse?.error || !displayResponse.reports.length) && <MapEmptyState
             error={currentResponse?.error} filtered={hasDiscoveryFilters} closestAction={closestAction}
             onRetry={() => void refreshReports()}
             onFilters={() => { switchDiscoveryView('reports'); setFiltersRequest(value => value + 1); }}
