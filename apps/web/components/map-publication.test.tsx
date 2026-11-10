@@ -664,3 +664,35 @@ it('previews and opens the closest report before the map results refresh', async
   act(() => pin?.click?.());
   expect((await screen.findByLabelText('Linked report')).textContent).toBe(closest.title);
 });
+
+it('finds a different report on the empty desktop map while keeping the current report open', async () => {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: query === '(min-width: 1100px)', addEventListener() {}, removeEventListener() {},
+  }));
+  try {
+    window.history.replaceState({}, '', '/map?view=map&report=test-report');
+    state.published = true;
+    const opened = report() as MappableReport;
+    const nearby = { ...opened, id: 'nearby-report', title: 'Nearby litter', latitude: 0.6 };
+    state.discovery.mockImplementation((_client, { limit }) => Promise.resolve({
+      reports: limit === Infinity ? [opened, nearby] : [],
+      truncated: false,
+    }));
+    render(<MapExperience initialReports={[opened]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+    await screen.findByLabelText('Linked report');
+    await waitFor(() => expect(state.tiles).toBeTruthy());
+    act(() => { state.tiles!(); state.idle!(); });
+    fireEvent.click(await screen.findByRole('button', { name: 'Find closest reports' }));
+    await screen.findByText(nearby.title);
+    fireEvent.click(screen.getByRole('button', { name: 'View on map' }));
+    const pin = state.markerInstances.find(marker => marker.title === nearby.title);
+    expect(pin?.glyph?.classList.contains('report-map-marker-closest')).toBe(true);
+    expect(screen.getByLabelText('Linked report').textContent).toBe(opened.title);
+    expect(new URLSearchParams(window.location.search).get('report')).toBe(opened.id);
+    act(() => pin?.click?.());
+    await waitFor(() => expect(screen.getByLabelText('Linked report').textContent).toBe(nearby.title));
+  } finally {
+    cleanup();
+    vi.unstubAllGlobals();
+  }
+});

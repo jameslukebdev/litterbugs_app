@@ -17,8 +17,8 @@ export type ClosestReport = { report: MappableReport; miles: number };
 
 /** Complete each search ring before choosing a result: newest-first caps cannot prove proximity. */
 export async function findClosestReport(client: ReturnType<typeof createClient>, {
-  center, filters, favorites, hidden, signal,
-}: { center: Coordinates; filters: DiscoveryFilters; favorites: ReadonlySet<string>; hidden: ReadonlySet<string>; signal: AbortSignal }): Promise<ClosestReport | null> {
+  center, filters, favorites, hidden, signal, excludeReportId,
+}: { center: Coordinates; filters: DiscoveryFilters; favorites: ReadonlySet<string>; hidden: ReadonlySet<string>; signal: AbortSignal; excludeReportId?: string }): Promise<ClosestReport | null> {
   if (!Number.isFinite(center.latitude) || !Number.isFinite(center.longitude)) throw new Error('Map location unavailable');
   const searchFilters = { ...filters, radius: 0 as const };
   for (const radius of [25, 100, 500, 2000, 12500]) {
@@ -30,6 +30,7 @@ export async function findClosestReport(client: ReturnType<typeof createClient>,
     });
     let closest: ClosestReport | null = null;
     for (const report of reports) {
+      if (report.id === excludeReportId) continue;
       const miles = getDistanceMiles(center, report);
       if (miles <= radius && (!closest || miles < closest.miles)) closest = { report, miles };
     }

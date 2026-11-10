@@ -24,6 +24,15 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (closest-report action added to the desktop split view)
+
+- The existing empty-map card appears beside an open desktop report when
+  the map search finishes with no matches. The closest search skips the
+  open report. View on map highlights the new pin and keeps the current
+  report open until the visitor chooses the preview.
+- Verified the full flow on localhost in desktop Chrome and passed 54
+  focused tests, typecheck and lint. Ready for local review.
+
 ### 2026-11-09 — Codex (closest-report action with a report open)
 
 - Grant confirmed the local gallery and closest-pin fixes. Desktop Chrome

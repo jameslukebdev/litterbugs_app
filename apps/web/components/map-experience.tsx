@@ -672,7 +672,7 @@ export function MapExperience({
         markerGlyph.dataset.statusClass = statusClass;
       }
       markerGlyph.classList.toggle('report-map-marker-selected', selectedReportIdRef.current === report.id);
-      const showClosest = closestPreview?.report.id === report.id && !selectedReport;
+      const showClosest = closestPreview?.report.id === report.id && selectedReport?.id !== report.id;
       const wasClosest = markerGlyph.classList.contains('report-map-marker-closest');
       markerGlyph.classList.toggle('report-map-marker-closest', showClosest);
       if (showClosest) {
@@ -1151,11 +1151,14 @@ export function MapExperience({
     notes: editingReport.notes_other ?? '',
   } : EMPTY_REPORT_DRAFT;
 
+  const hasDesktopReportPane = desktopDetail && Boolean(selectedReport) && !detailsMinimized;
+  const excludeReportId = hasDesktopReportPane ? selectedReport?.id : undefined;
+  const mapEmptyResponse = hasDesktopReportPane ? currentResponse : displayResponse;
   const closestAction = mapReady && !mapError && discoverySearch?.area ? <ClosestReportsAction
-    key={JSON.stringify([discoverySearch.area, discoverySearch.filters, [...searchFavorites], [...reportPreferences.hidden]])}
+    key={JSON.stringify([discoverySearch.area, discoverySearch.filters, [...searchFavorites], [...reportPreferences.hidden], excludeReportId])}
     radius={discoveryFilters.radius}
     find={signal => findClosestReport(createClient(), { center: discoverySearch.area!, filters: discoverySearch.filters,
-      favorites: searchFavorites, hidden: reportPreferences.hidden, signal })}
+      favorites: searchFavorites, hidden: reportPreferences.hidden, signal, excludeReportId })}
     onShow={showClosestReport}
   /> : null;
   const hasDiscoveryFilters = Object.entries(discoveryFilters).some(([key, value]) => value !== DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]);
@@ -1186,7 +1189,7 @@ export function MapExperience({
       {toast && toast === postedToast
         ? <CelebrationToast title="Report posted">Thanks for helping keep the community clean!</CelebrationToast>
         : (initialError || toast) && <div className="toast" role="status">{toast || 'Some reports could not be loaded. Try refreshing the results.'}</div>}
-      <div className={`map-workspace${desktopDetail && selectedReport && !detailsMinimized ? ' has-report-detail' : ''}`}>
+      <div className={`map-workspace${hasDesktopReportPane ? ' has-report-detail' : ''}`}>
         <ReportBrowser
           filterToolbar={filterToolbar}
           reports={displayResponse?.reports ?? EMPTY_MAP_REPORTS}
@@ -1226,7 +1229,7 @@ export function MapExperience({
           </button>
           {!mapError && <div className={`map-loading map-loading-cover${mapTilesReady ? ' map-loading-complete' : ''}`} aria-hidden={mapTilesReady} role="status" aria-label="Loading map"><span className="sr-only">Loading map…</span></div>}
           {mapError && <div className="map-error"><Icon name="warning" /><strong>Map unavailable</strong><span>{mapError}</span></div>}
-          {!reportListOpen && !reportMode && !selectedReport && !closestPreview && mapTilesReady && !mapError && displayResponse && (currentResponse?.error || !displayResponse.reports.length) && <MapEmptyState
+          {!reportListOpen && !reportMode && (!selectedReport || hasDesktopReportPane) && !closestPreview && mapTilesReady && !mapError && mapEmptyResponse && (currentResponse?.error || !mapEmptyResponse.reports.length) && <MapEmptyState
             error={currentResponse?.error} filtered={hasDiscoveryFilters} closestAction={closestAction}
             onRetry={() => void refreshReports()}
             onFilters={() => { switchDiscoveryView('reports'); setFiltersRequest(value => value + 1); }}
