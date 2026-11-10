@@ -24,6 +24,15 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (compact report location popup ready locally)
+
+- Kept the dragonfly header and moved the draft and location actions into
+  one row. Draft uses a pencil icon and bold text. The location button
+  shows a checking state during the permission request.
+- Verified the row from 320px to desktop in Chrome and confirmed a denied
+  location check keeps the pin in place and still lets the user draft.
+  All 52 map publication and geolocation tests passed. Local review pending.
+
 ### 2026-11-09 — Codex (Search Console canonical alert verified)
 
 - The Nov 9 alert covered one old `/?report=e08939ae…` link, last crawled

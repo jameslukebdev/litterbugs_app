@@ -1250,8 +1250,10 @@ export function MapExperience({
               <button type="button" className="icon-button report-placement-close" aria-label={selectingDraftLocation ? 'Cancel location change' : 'Cancel reporting'} title="Close" onClick={cancelLocationSelection}><Icon name="close" /></button>
               <h1>Where is the litter?</h1>
               {locationError && <p id="report-placement-error" role="alert">{locationError}</p>}
-              <button type="button" className="primary-button" aria-describedby={locationError ? 'report-placement-error' : undefined} aria-busy={checkingLocation} disabled={!mapReady || checkingLocation} onClick={() => void confirmReportLocation()}>{locationError ? 'Try again' : 'Use this location'}</button>
-              {userId && <button type="button" className="secondary-button report-placement-draft" disabled={!mapReady || checkingLocation} onClick={continueReportAsDraft}>Continue as draft</button>}
+              <div className="report-placement-actions">
+                {userId && <button type="button" className="secondary-button report-placement-draft" disabled={!mapReady || checkingLocation} onClick={continueReportAsDraft}><Icon name="edit" /> Continue as draft</button>}
+                <button type="button" className="primary-button" aria-describedby={locationError ? 'report-placement-error' : undefined} aria-busy={checkingLocation} disabled={!mapReady || checkingLocation} onClick={() => void confirmReportLocation()}>{checkingLocation ? 'Checking…' : locationError ? 'Try again' : 'Use this location'}</button>
+              </div>
             </section>
           </>}
           {selectedReport && detailsMinimized && <button type="button" className="secondary-button map-report-summary" onClick={() => setDetailsMinimized(false)} aria-label={`Open report details: ${selectedReport.title || 'Litter report'}`}>
