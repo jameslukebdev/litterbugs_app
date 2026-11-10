@@ -1,5 +1,5 @@
 'use client';
-/* eslint-disable @next/next/no-img-element -- the small crawling caterpillar, like the map's bugs. */
+/* eslint-disable @next/next/no-img-element -- the animated progress marker, like the map's bugs. */
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { useDataRefresh } from '@/lib/use-data-refresh';
@@ -50,10 +50,10 @@ export function CommunityRank({ userId, compact = false, hold = false, onReady, 
   const next = ranks[index + 1];
   const progress = points === null ? 0 : next ? Math.round(100 * (points - rank.points) / (next.points - rank.points)) : 100;
   if (compact) return points === null ? null : <span className="community-rank-badge"><Image src={rank.artwork} width={22} height={22} alt="" /><span>{rank.name}</span></span>;
-  // One line under the name says what it is; one line under the bar says what's next (the bar shows the share).
-  return <section className="community-rank" aria-label="Community rank" aria-busy={points === null && !error}>
+  const artworkSize = preview ? 32 : 56;
+  return <section className={preview ? 'community-rank community-rank--preview' : 'community-rank'} aria-label="Community rank" aria-busy={points === null && !error}>
     <div className="community-rank-summary">
-      {points !== null ? <Image src={rank.artwork} width={56} height={56} alt="" /> : <span className="account-skeleton community-rank-artwork" aria-hidden />}
+      {points !== null ? <Image src={rank.artwork} width={artworkSize} height={artworkSize} alt="" /> : <span className="account-skeleton community-rank-artwork" aria-hidden />}
       <div>
         <h3>{points === null ? error ? 'Unavailable' : <span className="account-skeleton account-skeleton-name" role="status" aria-label="Loading rank" /> : rank.name}</h3>
         <p className="community-rank-meta">{points !== null ? `${preview ? '' : 'Your rank · '}${points} ${points === 1 ? 'point' : 'points'}` : '\u200b'}</p>
@@ -61,14 +61,14 @@ export function CommunityRank({ userId, compact = false, hold = false, onReady, 
     </div>
     <div className="community-rank-progress" style={points === null ? { visibility: 'hidden' } : undefined} aria-hidden={points === null}>
       <progress className="sr-only" max={100} value={progress} aria-label={next ? `${progress}% of the way to ${next.name}` : 'Highest rank reached'} />
-      {/* What you see: the bar fills while a caterpillar inches along it (it remounts when the points arrive). */}
+      {/* Remount the bar when points arrive so the fill and marker animate together. */}
       <div className="community-rank-bar" aria-hidden="true" key={points === null ? 'waiting' : 'ready'}>
         <span className="community-rank-bar-fill" style={{ width: `${progress}%` }} />
-        {points !== null && <img className="community-rank-bar-bug" src="/brand/ranks/caterpillar.svg" alt="" style={{ left: `${progress}%` }} />}
+        {points !== null && <img className="community-rank-bar-bug" src={preview ? '/brand/ranks/cocoon.svg' : '/brand/ranks/caterpillar.svg'} alt="" style={{ left: `${progress}%` }} />}
       </div>
-      <p className="community-rank-next">
+      {!preview && <p className="community-rank-next">
         {next ? <>{points !== null ? <Image src={next.artwork} width={20} height={20} alt="" /> : <span aria-hidden style={{ display: 'inline-block', width: 20, height: 20, flex: 'none' }} />}<span><strong>{next.points - (points ?? 0)} {next.points - (points ?? 0) === 1 ? 'point' : 'points'}</strong> to {next.name}</span></> : 'Highest rank reached'}
-      </p>
+      </p>}
     </div>
     {error && <button className="secondary-button" onClick={() => { setError(false); setAttempt(value => value + 1); }}>Retry loading rank</button>}
     {!preview && <details><summary>How points work</summary><p>Earn 1 point when a report is accepted after review, and 3 points when a cleanup is confirmed complete.</p><p>You can earn up to 5 report points in a rolling 24 hours. Another report within 25 metres of a location credited to you in the previous 7 days does not earn another point. You can still report new litter there.</p></details>}

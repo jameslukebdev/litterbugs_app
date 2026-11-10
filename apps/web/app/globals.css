@@ -2179,6 +2179,14 @@ body .public-report-cards .report-card-container.report-card-container.report-ca
 .community-rank.community-rank details { margin-top: 16px; padding-top: 12px; border-top: 1px solid #efedf4; color: #45434d; font-size: 14px; line-height: 1.6; }
 .community-rank.community-rank summary { color: #3f36c4; font-weight: 800; cursor: pointer; }
 .community-rank.community-rank summary:hover { color: #2c2496; }
+.community-rank.community-rank--preview { margin: 0; padding: 0; border: 0; background: transparent; }
+.community-rank.community-rank--preview .community-rank-summary { min-height: 36px; gap: 8px; }
+.community-rank.community-rank--preview .community-rank-summary img,
+.community-rank.community-rank--preview .community-rank-artwork { width: 32px; height: 32px; }
+.community-rank.community-rank--preview .community-rank-summary h3 { font-size: 16px; }
+.community-rank.community-rank--preview .community-rank-meta { font-size: 13px; }
+.community-rank.community-rank--preview .community-rank-progress { margin-top: 14px; }
+.community-rank--preview .community-rank-bar { height: 6px; }
 
 /* Safety net (Nov 2026): the page itself never pans sideways on phones, whatever a single element does.
    `clip` (not `hidden`) keeps sticky headers working. */
@@ -2219,6 +2227,7 @@ html, body { max-width: 100%; overflow-x: clip; }
 .community-rank-bar { position: relative; height: 10px; border-radius: 10px; background: #efedf4; }
 .community-rank-bar-fill { position: absolute; inset: 0 auto 0 0; border-radius: 10px; background: #5146ed; animation: bug-fill 1500ms cubic-bezier(.4, 0, .2, 1) 250ms both; }
 .community-rank-bar-bug { position: absolute; bottom: 6px; width: 28px; height: 20px; margin-left: -16px; object-fit: contain; transform-origin: 50% 100%; pointer-events: none; animation: bug-crawl 1500ms cubic-bezier(.4, 0, .2, 1) 250ms both, bug-inch 380ms ease-in-out 250ms 4; }
+.community-rank--preview .community-rank-bar-bug { animation-name: bug-crawl; }
 /* 5: an ant walks along loading cards. */
 .bug-ant-host { position: relative; overflow: hidden; }
 .bug-ant-walk { position: absolute; left: 0; right: 0; bottom: 4px; height: 22px; pointer-events: none; }
