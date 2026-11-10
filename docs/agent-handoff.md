@@ -24,6 +24,20 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (Search Console exclusions audited)
+
+- Checked all 27 entries across the five Page indexing categories. Fresh URL
+  Inspection showed 10 reports already indexed. The 13 URLs outside the search
+  target set were aliases, an account page, an auth endpoint, malformed URLs,
+  a manifest, two image assets and one unavailable report (`c44d0dd4…`, 404
+  and absent from the sitemap and sampled public links).
+- Confirmed Cleanup Safety, Help, Photo Review, and Basura en el patio all
+  return 200, have self-canonicals and crawlable internal links, and are in
+  the live sitemap. Google accepted each into the priority crawl queue.
+  Actual indexing is pending. Recheck via the existing weekly SEO review.
+- No site code or deployment was needed. Treat Google Inspection Tool visits
+  around 9:41–9:43 p.m. Eastern as testing if they appear in visitor analytics.
+
 ### 2026-11-09 — Codex (compact report location popup ready locally)
 
 - Kept the dragonfly header and moved the draft and location actions into
