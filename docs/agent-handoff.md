@@ -24,6 +24,15 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-10 — Codex (rank artwork refreshed locally)
+
+- Added a shaded Ladybug SVG for web ranks. Map pins and report status
+  artwork still reference the original ladybug. Enlarged the cocoon and
+  centered it over the progress bar in the account and member preview.
+- Verified the account artwork in Chrome at desktop and phone widths,
+  including the cocoon's settled progress position. Scoped lint and 27
+  focused tests passed. Local review pending.
+
 ### 2026-11-10 — Codex (integrated account profile)
 
 - Removed the separate profile and rank boxes on /account. Both use one

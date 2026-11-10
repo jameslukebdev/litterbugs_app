@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 // Keep thresholds in sync with mobile/lib/ranking.js. The web uses logo-style artwork.
 const ranks = [
   { name: 'Gnat', points: 0, artwork: '/brand/ranks/gnat.svg' },
-  { name: 'Ladybug', points: 1, artwork: '/brand/bugs/ladybug.png' },
+  { name: 'Ladybug', points: 1, artwork: '/brand/ranks/ladybug.svg' },
   { name: 'Honeybee', points: 12, artwork: '/brand/bugs/bee.png' },
   { name: 'Lightning Bug', points: 30, artwork: '/brand/ranks/lightning-bug.svg' },
   { name: 'Caterpillar', points: 60, artwork: '/brand/ranks/caterpillar.svg' },
