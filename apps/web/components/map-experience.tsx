@@ -824,10 +824,19 @@ export function MapExperience({
     mapRef.current?.panTo({ lat: draftCoordinates.latitude, lng: draftCoordinates.longitude });
   }
 
+  function currentReportPin() {
+    const center = mapRef.current?.getCenter();
+    return center ? { latitude: center.lat(), longitude: center.lng() } : placement;
+  }
+
+  function continueReportAsDraft() {
+    const chosen = currentReportPin();
+    if (chosen) beginReport(chosen);
+  }
+
   async function confirmReportLocation() {
     if (checkingLocation || !mapReady) return;
-    const center = mapRef.current?.getCenter();
-    const chosen = center ? { latitude: center.lat(), longitude: center.lng() } : placement;
+    const chosen = currentReportPin();
     if (!chosen) return;
     if (!userId) {
       trackParticipation('report', 'location_confirmed');
@@ -1240,11 +1249,12 @@ export function MapExperience({
             <section className="report-placement-confirm" aria-label="Choose report location">
               <button type="button" className="icon-button report-placement-close" aria-label={selectingDraftLocation ? 'Cancel location change' : 'Cancel reporting'} title="Close" onClick={cancelLocationSelection}><Icon name="close" /></button>
               <div className="report-placement-instructions">
-              <h1>Where is the litter?</h1>
-              {locationError && <p role="alert">{locationError}</p>}
+                <h1>Where is the litter?</h1>
+                {locationError ? <p role="alert">{locationError}</p>
+                  : userId && <p>To publish, Litterbugs checks that you’re near the pin.</p>}
               </div>
-              <button className="primary-button" aria-busy={checkingLocation} disabled={!mapReady || checkingLocation} onClick={() => void confirmReportLocation()}>Use this location</button>
-              {locationError && <button type="button" className="report-placement-draft" disabled={!mapReady || checkingLocation} onClick={() => { const center = mapRef.current?.getCenter(); const chosen = center ? { latitude: center.lat(), longitude: center.lng() } : placement; if (chosen) beginReport(chosen); }}>Continue as draft</button>}
+              <button className="primary-button" aria-busy={checkingLocation} disabled={!mapReady || checkingLocation} onClick={() => void confirmReportLocation()}>{locationError ? 'Try again' : 'Use this location'}</button>
+              {userId && <button type="button" className="report-placement-draft" disabled={!mapReady || checkingLocation} onClick={continueReportAsDraft}>Continue as draft</button>}
             </section>
           </>}
           {selectedReport && detailsMinimized && <button type="button" className="secondary-button map-report-summary" onClick={() => setDetailsMinimized(false)} aria-label={`Open report details: ${selectedReport.title || 'Litter report'}`}>

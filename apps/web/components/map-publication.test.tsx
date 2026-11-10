@@ -245,11 +245,29 @@ describe('map publication and funding handoff', () => {
     Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { getCurrentPosition: (_success: PositionCallback, fail: PositionErrorCallback) => fail({code:1} as GeolocationPositionError) } });
     await choosePin(0.5, false);
     await screen.findByRole('alert');
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
+    expect(document.querySelector('.report-placement-pin')).toBeTruthy();
+    expect(state.panTo).toHaveBeenCalledExactlyOnceWith({ lat: 0.5, lng: 0 });
     fireEvent.click(screen.getByRole('button', {name:'Continue as draft'}));
     await screen.findByRole('dialog', {name:'Report form'});
+    expect(screen.getByLabelText('Selected latitude').textContent).toBe('0.5');
     fireEvent.click(screen.getByRole('button', {name:'Post without funds'}));
     await waitFor(()=>expect(state.saveResult).toHaveBeenCalled());
     expect(state.upload).not.toHaveBeenCalled();expect(state.publish).not.toHaveBeenCalled();expect(state.inserts).not.toHaveBeenCalled();
+  });
+
+  it('starts a signed-in draft at the chosen pin without first requesting location', async () => {
+    const gps = vi.fn();
+    Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { getCurrentPosition: gps } });
+    window.history.replaceState({}, '', '/report');
+    render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+    const draft = await screen.findByRole('button', { name: 'Continue as draft' });
+    await waitFor(() => expect(state.click).toBeTruthy());
+    act(() => state.click!({ latLng: { lat: () => 0.6, lng: () => 0 } }));
+    fireEvent.click(draft);
+    await screen.findByRole('dialog', { name: 'Report form' });
+    expect(screen.getByLabelText('Selected latitude').textContent).toBe('0.6');
+    expect(gps).not.toHaveBeenCalled();
   });
 
   it('returns a directly opened report to the default report list', async () => {

@@ -24,6 +24,16 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (report location draft option ready locally)
+
+- The signed-in location picker shows Continue as draft upfront and
+  explains the proximity check. A failed check leaves the pin in place
+  and offers Try again. Drafting uses the selected pin without a location
+  request. Publishing still checks the reporter's location.
+- Passed 52 focused tests, typecheck and lint. A phone-sized Chrome run
+  with simulated sign-in and location denial verified the draft flow and
+  pin position. Ready on localhost for Grant's review.
+
 ### 2026-11-09 — Codex (participation analytics follow-up)
 
 - Reviewed Oct 27–Nov 9 PostHog website events and five recent Clarity
