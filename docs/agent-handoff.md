@@ -24,6 +24,14 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (report picker styling ready locally)
+
+- Updated the location popup with the report dragonfly, rounded heading
+  and full-width Continue as draft button. The popup shows the existing
+  50-mile posting limit in a compact badge. The map pin stays clear.
+- Verified the popup and permission-denied flow at 320px and 390px.
+  Passed 52 focused tests, typecheck and lint. Ready for localhost review.
+
 ### 2026-11-09 — Codex (report location draft option ready locally)
 
 - The signed-in location picker shows Continue as draft upfront and
