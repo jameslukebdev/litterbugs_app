@@ -2230,9 +2230,9 @@ html, body { max-width: 100%; overflow-x: clip; }
 .community-rank-bar-bug[src$='/cocoon.svg'] {
   top: 50%;
   bottom: auto;
-  width: 28px;
-  height: 28px;
-  margin-left: -14px;
+  width: 32px;
+  height: 32px;
+  margin-left: -16px;
   transform: translateY(-60%);
   filter: drop-shadow(0 1px 0 #fff) drop-shadow(1px 0 0 #fff);
   animation-name: bug-crawl;

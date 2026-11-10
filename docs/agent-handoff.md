@@ -24,6 +24,13 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-10 — Codex (simpler Ladybug rank artwork)
+
+- Simplified the web rank Ladybug to a two-tone spotted shell and antennae.
+  Increased the cocoon progress marker from 28px to 32px.
+- Verified the local account in Chrome at desktop and phone widths.
+  Local review pending.
+
 ### 2026-11-10 — Codex (rank artwork refreshed locally)
 
 - Added a shaded Ladybug SVG for web ranks. Map pins and report status
