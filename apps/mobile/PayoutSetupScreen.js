@@ -16,6 +16,8 @@ import {
   payoutWorkflowCopy,
   waitForPayoutConnection,
 } from './lib/payoutWorkflowGate';
+import { colors, fonts } from './lib/theme';
+import BrandBug from './components/BrandBug';
 
 
 const PAYOUT_ONBOARDING_RETURN_URL = 'litterbugs://stripe-onboarding-return';
@@ -165,7 +167,7 @@ function PayoutSetupController({ navigation, route }) {
 
 
   return (
-    <ScrollView style={{ backgroundColor: '#FFFFFF' }} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]}>
+    <ScrollView style={{ backgroundColor: colors.white }} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]}>
       {setupNotice ? (
         <View style={[styles.card, styles.notice]} accessibilityLiveRegion="polite">
           <Text style={styles.cardTitle}>{setupNotice.title}</Text>
@@ -177,9 +179,8 @@ function PayoutSetupController({ navigation, route }) {
         </View>
       ) : null}
       {!setupNotice ? <>
-      <View style={[styles.icon, enabled && styles.iconEnabled]}>
-        <Ionicons name={enabled ? 'checkmark' : 'wallet-outline'} size={35} color={enabled ? '#FFFFFF' : '#2F7D32'} />
-      </View>
+      {/* Website payouts: the bee labels rewards; no tinted icon tile. */}
+      <BrandBug kind="bee" size={40} />
       <Text style={styles.title}>
         {enabled ? 'Payouts are ready' : workflowCopy?.title || 'Receive rewards'}
       </Text>
@@ -199,7 +200,7 @@ function PayoutSetupController({ navigation, route }) {
           accessibilityRole="checkbox"
           accessibilityState={{ checked: eligibleConfirmed }}
         >
-          <Ionicons name={eligibleConfirmed ? 'checkbox' : 'square-outline'} size={24} color="#2F7D32" />
+          <Ionicons name={eligibleConfirmed ? 'checkbox' : 'square-outline'} size={24} color={colors.primary} />
           <Text style={styles.confirmText}>I confirm that I am at least 18 years old and eligible to receive payouts in the United States.</Text>
         </TouchableOpacity>
       ) : null}
@@ -213,15 +214,15 @@ function PayoutSetupController({ navigation, route }) {
         disabled={busy || loading || statusError || !status || !eligibilityReady}
       >
         <Text style={enabled ? styles.secondaryText : styles.buttonText}>{updatingRequiredDetails ? 'Update payout details' : enabled ? 'Review payout details' : setupNotice?.kind === 'action_required' ? 'Continue payout setup' : checkingSetup ? 'Review payout setup' : 'Set up payouts'}</Text>
-        {showBusy ? <ActivityIndicator size="small" color={enabled ? '#2F7D32' : '#FFFFFF'} style={styles.buttonSpinner} /> : null}
+        {showBusy ? <ActivityIndicator size="small" color={enabled ? colors.primary : colors.white} style={styles.buttonSpinner} /> : null}
       </TouchableOpacity>
-      <View style={styles.trustRow}><Ionicons name="lock-closed-outline" size={13} color="#6C786F" /><Text style={styles.trustText}>Secure verification and payouts by Stripe</Text></View>
+      <View style={styles.trustRow}><Ionicons name="lock-closed-outline" size={13} color={colors.muted} /><Text style={styles.trustText}>Secure verification and payouts by Stripe</Text></View>
       {!enabled ? <View style={[styles.card, styles.expectations]}>
         <Text style={styles.cardTitle}>What to expect</Text>
-        <View style={styles.row}><Ionicons name="person-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>No business or LLC is required. You’ll set up a personal payout account with Stripe.</Text></View>
-        <View style={styles.row}><Ionicons name="checkmark-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>You do not need a website. Your Litterbugs reward activity is described for you; review it when Stripe calls it a “product description.”</Text></View>
-        <View style={styles.row}><Ionicons name="checkmark-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>Your shown reward is the exact amount Litterbugs transfers.</Text></View>
-        <View style={styles.row}><Ionicons name="checkmark-circle-outline" size={20} color="#2F7D32" /><Text style={styles.rowText}>You are responsible for determining and reporting taxes on cleanup rewards; Stripe or Litterbugs may provide required tax forms.</Text></View>
+        <View style={styles.row}><Ionicons name="person-circle-outline" size={20} color={colors.primary} /><Text style={styles.rowText}>No business or LLC is required. You’ll set up a personal payout account with Stripe.</Text></View>
+        <View style={styles.row}><Ionicons name="checkmark-circle-outline" size={20} color={colors.primary} /><Text style={styles.rowText}>You do not need a website. Your Litterbugs reward activity is described for you; review it when Stripe calls it a “product description.”</Text></View>
+        <View style={styles.row}><Ionicons name="checkmark-circle-outline" size={20} color={colors.primary} /><Text style={styles.rowText}>Your shown reward is the exact amount Litterbugs transfers.</Text></View>
+        <View style={styles.row}><Ionicons name="checkmark-circle-outline" size={20} color={colors.primary} /><Text style={styles.rowText}>You are responsible for determining and reporting taxes on cleanup rewards; Stripe or Litterbugs may provide required tax forms.</Text></View>
       </View> : null}
 
 
@@ -230,30 +231,28 @@ function PayoutSetupController({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F5F6F7' },
-  content: { flexGrow: 1, alignItems: 'stretch', padding: 20, backgroundColor: '#FFFFFF' },
-  icon: { width: 52, height: 52, marginTop: 0, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E3EEE4' },
-  iconEnabled: { backgroundColor: '#2F7D32' },
-  title: { marginTop: 14, color: '#26332B', fontSize: 24, lineHeight: 30, fontWeight: '600' },
-  text: { marginTop: 8, color: '#66736A', fontSize: 14, lineHeight: 21 },
-  card: { width: '100%', maxWidth: 420, marginTop: 0, padding: 16, borderRadius: 14, backgroundColor: '#F5F8F5', borderWidth: 1, borderColor: '#E1EAE2' },
-  cardTitle: { color: '#30363B', fontSize: 17, fontWeight: '600' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.mist },
+  content: { flexGrow: 1, alignItems: 'stretch', padding: 20, backgroundColor: colors.white },
+  title: { marginTop: 12, color: colors.ink, fontSize: 24, lineHeight: 29, fontFamily: fonts.heading },
+  text: { marginTop: 8, color: colors.muted, fontSize: 14, lineHeight: 21 },
+  card: { width: '100%', maxWidth: 420, marginTop: 0, padding: 16, borderRadius: 18, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line },
+  cardTitle: { color: colors.ink, fontSize: 17, fontFamily: fonts.heading },
   notice: { marginBottom: 0 },
   expectations: { marginTop: 24 },
-  noticeText: { marginTop: 8, color: '#59636A', fontSize: 14, lineHeight: 20 },
-  requirementText: { marginTop: 8, color: '#30363B', fontSize: 14, lineHeight: 20, fontWeight: '600' },
+  noticeText: { marginTop: 8, color: colors.body, fontSize: 14, lineHeight: 20 },
+  requirementText: { marginTop: 8, color: colors.ink, fontSize: 14, lineHeight: 20, fontWeight: '600' },
   row: { marginTop: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 9 },
-  rowText: { flex: 1, color: '#59636A', fontSize: 14, lineHeight: 20 },
+  rowText: { flex: 1, color: colors.body, fontSize: 14, lineHeight: 20 },
   confirmRow: { width: '100%', maxWidth: 420, marginTop: 18, flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  confirmText: { flex: 1, color: '#4F5C63', fontSize: 14, lineHeight: 20 },
+  confirmText: { flex: 1, color: colors.body, fontSize: 14, lineHeight: 20 },
   buttonSpinner: { position: 'absolute', right: 12 },
   statusCheck: { minHeight: 24, justifyContent: 'center' },
-  statusCheckText: { color: '#68776D', fontSize: 12 },
+  statusCheckText: { color: colors.muted, fontSize: 12 },
   trustRow: { marginTop: 10, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 5 },
-  trustText: { color: '#6C786F', fontSize: 12, lineHeight: 18 },
-  button: { width: '100%', maxWidth: 420, minHeight: 54, marginTop: 22, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#2F7D32' },
-  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  secondaryButton: { minHeight: 52, marginTop: 22, paddingHorizontal: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#2F7D32', borderRadius: 14 },
-  secondaryText: { color: '#2F7D32', fontSize: 16, fontWeight: '600' },
+  trustText: { color: colors.muted, fontSize: 12, lineHeight: 18 },
+  button: { width: '100%', maxWidth: 420, minHeight: 54, marginTop: 22, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary },
+  buttonText: { color: colors.white, fontSize: 16, fontWeight: '800' },
+  secondaryButton: { minHeight: 52, marginTop: 22, paddingHorizontal: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.line, borderRadius: 14, backgroundColor: colors.white },
+  secondaryText: { color: colors.primaryDark, fontSize: 16, fontWeight: '800' },
   disabled: { opacity: 0.6 },
 });

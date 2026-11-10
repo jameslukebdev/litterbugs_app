@@ -3,6 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import CompactRankBadge from './CompactRankBadge';
 import ProfileAvatar from './ProfileAvatar';
+import { colors } from './lib/theme';
 
 export default function ReporterIdentity({ profile, onPress }) {
   if (!profile?.id) {
@@ -33,7 +34,7 @@ export default function ReporterIdentity({ profile, onPress }) {
         <View style={styles.rankSlot}><CompactRankBadge userId={profile.id} appearance="profileCard" /></View>
         {profile.username ? <Text style={styles.username}>@{profile.username}</Text> : null}
       </View>
-      {onPress ? <Ionicons name="chevron-forward" size={18} color="#7B8580" /> : null}
+      {onPress ? <Ionicons name="chevron-forward" size={18} color={colors.muted} /> : null}
     </TouchableOpacity>
   );
 }
@@ -50,13 +51,13 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   label: {
-    color: '#777F86',
+    color: colors.muted,
     fontSize: 12,
     fontWeight: '400',
   },
   name: {
     marginTop: 3,
-    color: '#202428',
+    color: colors.ink,
     fontSize: 16,
     lineHeight: 21,
     fontWeight: '600',
@@ -64,7 +65,7 @@ const styles = StyleSheet.create({
   rankSlot: { minHeight: 32, marginTop: 4 },
   username: {
     marginTop: 1,
-    color: '#687178',
+    color: colors.muted,
     fontSize: 13,
   },
 });

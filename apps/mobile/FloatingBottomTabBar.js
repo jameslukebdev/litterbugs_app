@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     borderRadius: BOTTOM_NAV_METRICS.radius,
     borderCurve: 'continuous',
     backgroundColor: BOTTOM_NAV_COLORS.surface,
-    boxShadow: '0 8px 24px rgba(31, 35, 40, 0.18)',
+    boxShadow: '0 8px 24px rgba(41, 41, 50, 0.18)',
   },
   slot: {
     flex: 1,

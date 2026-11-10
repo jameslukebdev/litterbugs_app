@@ -1,5 +1,6 @@
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { colors } from '../lib/theme';
 export default function NavigationRow({ label, icon, onPress, destructive = false, busy = false, appearance, divided = false }) {
   return (
     <TouchableOpacity
@@ -11,9 +12,8 @@ export default function NavigationRow({ label, icon, onPress, destructive = fals
       accessibilityLabel={label}
     >
       <View style={styles.actionCopy}>
-        <View style={appearance === 'profile' ? styles.profileIcon : undefined}>
-          <Ionicons name={icon} size={21} color={destructive ? '#C62828' : appearance === 'profile' ? '#49704D' : '#4E5A61'} />
-        </View>
+        {/* Website profile links are words only; other rows keep their icon. */}
+        {appearance === 'profile' ? null : <Ionicons name={icon} size={21} color={destructive ? '#C62828' : colors.body} />}
         <Text
           style={[styles.actionText, appearance === 'profile' && styles.profileText, destructive && styles.destructiveText]}
         >
@@ -21,9 +21,9 @@ export default function NavigationRow({ label, icon, onPress, destructive = fals
         </Text>
       </View>
       {busy ? (
-        <ActivityIndicator size="small" color={destructive ? '#C62828' : '#4E5A61'} />
+        <ActivityIndicator size="small" color={destructive ? '#C62828' : colors.body} />
       ) : (
-        <Ionicons name="chevron-forward" size={appearance === 'profile' ? 17 : 21} color={destructive ? '#C62828' : '#9AA1A8'} />
+        <Ionicons name="chevron-forward" size={appearance === 'profile' ? 17 : 21} color={destructive ? '#C62828' : colors.subtle} />
       )}
       {appearance === 'profile' && divided ? <View pointerEvents="none" style={styles.profileDivider} /> : null}
     </TouchableOpacity>
@@ -31,13 +31,12 @@ export default function NavigationRow({ label, icon, onPress, destructive = fals
 }
 
 const styles = StyleSheet.create({
-  profileRow: { minHeight: 64, paddingHorizontal: 14, borderTopWidth: 0 },
-  profileIcon: { width: 34, height: 34, borderRadius: 10, backgroundColor: '#F0F5F0', alignItems: 'center', justifyContent: 'center' },
-  profileText: { fontSize: 15, lineHeight: 21, fontWeight: '500', color: '#303B34' },
-  profileDivider: { position: 'absolute', left: 59, right: 14, bottom: 0, height: StyleSheet.hairlineWidth, backgroundColor: '#E8EDE9' },
-  actionRow: { minHeight: 60, paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E0E3E5', backgroundColor: '#FFFFFF' },
+  profileRow: { minHeight: 56, paddingHorizontal: 18, borderTopWidth: 0 },
+  profileText: { fontSize: 16, lineHeight: 21, fontWeight: '600', color: colors.ink },
+  profileDivider: { position: 'absolute', left: 0, right: 0, bottom: 0, height: StyleSheet.hairlineWidth, backgroundColor: colors.line },
+  actionRow: { minHeight: 60, paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line, backgroundColor: colors.white },
   actionCopy: { flex: 1, minWidth: 0, marginRight: 12, flexDirection: 'row', alignItems: 'center', gap: 11 },
-  actionText: { flex: 1, paddingVertical: 12, color: '#30363B', fontSize: 16 },
+  actionText: { flex: 1, paddingVertical: 12, color: colors.ink, fontSize: 16 },
   destructiveText: { color: '#C62828' },
   disabled: { opacity: 0.6 },
 });

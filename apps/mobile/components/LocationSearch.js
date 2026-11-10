@@ -5,6 +5,7 @@ import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { searchPlaces, resolvePlace } from '../lib/placeSearch';
 import { useReports } from '../lib/reports';
+import { colors } from '../lib/theme';
 
 export default function LocationSearch({ map }) {
   const { fontScale } = useWindowDimensions();
@@ -80,34 +81,34 @@ export default function LocationSearch({ map }) {
   };
   return <>
     <TouchableOpacity style={[styles.trigger, map && { backgroundColor: 'transparent' }]} accessibilityRole="button" accessibilityLabel={searchPlace ? `Search location: ${searchPlace.label}` : 'Search city or address'} onPress={() => { setText(''); setOpen(true); }}>
-      <Ionicons name="search" size={18} color="#667078" />
-      <Text numberOfLines={1} style={[styles.triggerText, !searchPlace && { color: '#68736C' }]}>{searchPlace?.label || (fontScale > 1.5 ? 'Search' : 'City or address')}</Text>
+      <Ionicons name="search" size={18} color={colors.muted} />
+      <Text numberOfLines={1} style={[styles.triggerText, !searchPlace && { color: colors.muted }]}>{searchPlace?.label || (fontScale > 1.5 ? 'Search' : 'City or address')}</Text>
     </TouchableOpacity>
-    {searchPlace ? <TouchableOpacity style={styles.clear} onPress={clearSearchPlace} accessibilityRole="button" accessibilityLabel="Clear location boundary"><Ionicons name="close-circle" size={21} color="#68736C" /></TouchableOpacity> : null}
+    {searchPlace ? <TouchableOpacity style={styles.clear} onPress={clearSearchPlace} accessibilityRole="button" accessibilityLabel="Clear location boundary"><Ionicons name="close-circle" size={21} color={colors.muted} /></TouchableOpacity> : null}
     <Modal visible={open} animationType="slide" onRequestClose={close}>
       <View style={[styles.screen, { paddingTop: insets.top + 12, paddingBottom: insets.bottom }]}>
         <View style={styles.row}>
-          <View style={styles.field}><Ionicons name="search" size={20} color="#657169" /><TextInput autoFocus value={text} onChangeText={setText} placeholder="City, state or address" accessibilityLabel="City, state or address" style={styles.input} clearButtonMode="while-editing" returnKeyType="search" onSubmitEditing={submitSearch} /></View>
+          <View style={styles.field}><Ionicons name="search" size={20} color={colors.muted} /><TextInput autoFocus value={text} onChangeText={setText} placeholder="City, state or address" accessibilityLabel="City, state or address" style={styles.input} clearButtonMode="while-editing" returnKeyType="search" onSubmitEditing={submitSearch} /></View>
           <TouchableOpacity onPress={close} style={styles.clear} accessibilityRole="button"><Text style={styles.green}>Cancel</Text></TouchableOpacity>
         </View>
-        {busy ? <ActivityIndicator style={{ margin: 20 }} color="#2F7D32" accessibilityLabel="Finding location" /> : null}
+        {busy ? <ActivityIndicator style={{ margin: 20 }} color={colors.primary} accessibilityLabel="Finding location" /> : null}
         {error ? <Text accessibilityLiveRegion="polite" style={styles.error}>{error}</Text> : null}
         <ScrollView keyboardShouldPersistTaps="handled">
           {results.map(place => <TouchableOpacity key={place.id} accessibilityRole="button" style={styles.result} onPress={() => place.region ? (selectSearchPlace(place), close()) : choose(place)}>
-            <Ionicons name={place.region ? 'location-outline' : 'map-outline'} size={23} color="#2F7D32" />
+            <Ionicons name={place.region ? 'location-outline' : 'map-outline'} size={23} color={colors.primary} />
             <View style={{ flex: 1 }}><Text style={styles.name}>{place.label}</Text><Text style={styles.subtitle}>{place.subtitle}</Text></View>
-            <Ionicons name="chevron-forward" size={18} color="#68736C" />
+            <Ionicons name="chevron-forward" size={18} color={colors.muted} />
           </TouchableOpacity>)}
-          {text.trim().length >= 2 && !busy ? <TouchableOpacity style={styles.result} accessibilityRole="button" onPress={findAddress}><Ionicons name="search" size={22} color="#2F7D32" /><Text style={styles.green}>Search this address</Text></TouchableOpacity> : null}
+          {text.trim().length >= 2 && !busy ? <TouchableOpacity style={styles.result} accessibilityRole="button" onPress={findAddress}><Ionicons name="search" size={22} color={colors.primary} /><Text style={styles.green}>Search this address</Text></TouchableOpacity> : null}
         </ScrollView>
       </View>
     </Modal>
   </>;
 }
 const styles = StyleSheet.create({
-  trigger: { flex: 1, minWidth: 0, minHeight: 48, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#F1F4F2', borderRadius: 12 },
-  triggerText: { flex: 1, fontSize: 15, color: '#23382A' }, clear: { minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center' },
-  screen: { flex: 1, backgroundColor: '#FFF', paddingHorizontal: 16 }, row: { flexDirection: 'row', gap: 12, alignItems: 'center' },
-  field: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, backgroundColor: '#F1F4F2', borderRadius: 14 }, input: { flex: 1, minHeight: 52, fontSize: 16, color: '#23382A' },
-  result: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 20, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#DDE4DF' }, name: { fontSize: 17, fontWeight: '600', color: '#23382A' }, subtitle: { fontSize: 13, marginTop: 4, color: '#68736C' }, green: { fontSize: 16, fontWeight: '600', color: '#2F7D32' }, error: { color: '#B42318', marginVertical: 16 },
+  trigger: { flex: 1, minWidth: 0, minHeight: 46, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.white, borderRadius: 12 },
+  triggerText: { flex: 1, fontSize: 15, color: colors.ink }, clear: { minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center' },
+  screen: { flex: 1, backgroundColor: colors.white, paddingHorizontal: 16 }, row: { flexDirection: 'row', gap: 12, alignItems: 'center' },
+  field: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, backgroundColor: colors.white, borderWidth: 2, borderColor: colors.line, borderRadius: 14 }, input: { flex: 1, minHeight: 52, fontSize: 16, color: colors.ink },
+  result: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 20, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.line }, name: { fontSize: 17, fontWeight: '600', color: colors.ink }, subtitle: { fontSize: 13, marginTop: 4, color: colors.muted }, green: { fontSize: 16, fontWeight: '600', color: colors.primary }, error: { color: '#B42318', marginVertical: 16 },
 });

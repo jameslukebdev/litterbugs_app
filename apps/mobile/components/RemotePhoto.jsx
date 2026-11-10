@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { colors } from '../lib/theme';
 
 // A changed source gets a fresh lifecycle, including native image callbacks.
 export default function RemotePhoto(props) {
@@ -29,10 +30,10 @@ function PhotoRequest({ path, uri, getUrl, style, label = 'Report photo' }) {
       .catch(() => { if (active) setResult(current => current?.uri && !current.error ? current : { error: true }); });
     return () => { active = false; };
   }, [attempt]);
-  const frame = [{ backgroundColor: '#EDF2EE', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }, style];
-  if (!path && !uri) return <View style={frame}><Ionicons name="image-outline" size={24} color="#64716A" /><Text>No photo</Text></View>;
+  const frame = [{ backgroundColor: colors.mist, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }, style];
+  if (!path && !uri) return <View style={frame}><Ionicons name="image-outline" size={24} color={colors.muted} /><Text>No photo</Text></View>;
   if (!result) return <View key="loading" style={frame} accessibilityRole="progressbar" accessibilityLabel="Loading report photo" />;
-  if (result.error) return <TouchableOpacity style={frame} accessibilityRole="button" accessibilityLabel="Retry report photo" onPress={() => { setResult(null); setAttempt(value => value + 1); }}><Ionicons name="refresh-outline" size={22} color="#64716A" /><Text style={{ fontSize: 12, color: '#64716A', textAlign: 'center' }}>Retry photo</Text></TouchableOpacity>;
+  if (result.error) return <TouchableOpacity style={frame} accessibilityRole="button" accessibilityLabel="Retry report photo" onPress={() => { setResult(null); setAttempt(value => value + 1); }}><Ionicons name="refresh-outline" size={22} color={colors.muted} /><Text style={{ fontSize: 12, color: colors.muted, textAlign: 'center' }}>Retry photo</Text></TouchableOpacity>;
   // A distinct host prevents Android from retaining the old progress label
   // when it reuses the loading View for the finished photo.
   return <View key="loaded" style={frame}>

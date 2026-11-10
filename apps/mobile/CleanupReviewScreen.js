@@ -41,6 +41,7 @@ import {
 import { permanentUserId } from './lib/reportAccess';
 import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
+import { colors } from './lib/theme';
 
 const reviewErrorMessage = (error) => {
   const message = error?.message ?? '';
@@ -102,7 +103,7 @@ function PhotoSection({ title, urls, paths = [], bucket, emptyText, width }) {
         </ScrollView>
       ) : (
         <View style={styles.emptyPhotoState}>
-          <Ionicons name="image-outline" size={28} color="#7A848A" />
+          <Ionicons name="image-outline" size={28} color={colors.muted} />
           <Text style={styles.emptyPhotoText}>{emptyText}</Text>
         </View>
       )}
@@ -384,7 +385,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
               ) : null}
             </View>
             {context.cleaner?.id ? (
-              <Ionicons name="chevron-forward" size={20} color="#7B858B" />
+              <Ionicons name="chevron-forward" size={20} color={colors.muted} />
             ) : null}
           </TouchableOpacity>
         </View>
@@ -467,7 +468,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
                   onPress={confirmApproval}
                   disabled={submitting}
                 >
-                  <Ionicons name="checkmark-circle-outline" size={21} color="#FFFFFF" />
+                  <Ionicons name="checkmark-circle-outline" size={21} color={colors.white} />
                   <Text style={styles.approveButtonText}>Approve cleanup</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.requestButton} onPress={() => setMode('dispute')} disabled={submitting}>
@@ -510,7 +511,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
               onPress={confirmApproval}
               disabled={submitting}
             >
-              <Ionicons name="checkmark-circle-outline" size={21} color="#FFFFFF" />
+              <Ionicons name="checkmark-circle-outline" size={21} color={colors.white} />
               <Text style={styles.approveButtonText}>Approve cleanup</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -543,7 +544,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
                     <Ionicons
                       name={selected ? 'checkbox' : 'square-outline'}
                       size={23}
-                      color={selected ? '#2F7D32' : '#7B858B'}
+                      color={selected ? colors.primary : colors.muted}
                     />
                     <View style={styles.reasonCopy}>
                       <Text style={styles.reasonTitle}>{reason.label}</Text>
@@ -556,7 +557,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
             {errors.reasons ? <Text style={styles.error}>{errors.reasons}</Text> : null}
 
             <Text style={styles.noteLabel}>Optional note</Text>
-            <TextInput editable={reviewDraftReady && !submitting} selectionColor="#2F7D32"
+            <TextInput editable={reviewDraftReady && !submitting} selectionColor={colors.primary}
               style={[styles.noteInput, errors.note && styles.inputError]}
               value={note}
               onChangeText={(value) => {
@@ -596,66 +597,66 @@ export default function CleanupReviewScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.white },
   content: { padding: 20 },
-  centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: '#FFFFFF' },
-  centerTitle: { marginTop: 14, color: '#30363B', fontSize: 22, fontWeight: '600' },
-  centerText: { maxWidth: 340, marginTop: 9, color: '#677178', fontSize: 15, lineHeight: 22, textAlign: 'center' },
-  eyebrow: { color: '#2F7D32', fontSize: 12, fontWeight: '600', letterSpacing: 1.2 },
-  title: { marginTop: 7, color: '#202428', fontSize: 24, lineHeight: 31, fontWeight: '600' },
-  reportTitle: { marginTop: 7, color: '#687178', fontSize: 15, fontWeight: '700' },
-  section: { marginTop: 20, padding: 16, borderWidth: 1, borderColor: '#E2EAE3', borderRadius: 16, backgroundColor: '#FFFFFF' },
-  sectionTitle: { color: '#30363B', fontSize: 17, lineHeight: 23, fontWeight: '600' },
-  financialCard: { marginTop: 20, padding: 18, borderWidth: 1, borderColor: '#9CCB9F', borderRadius: 18, backgroundColor: '#EAF6EB' },
-  financialEyebrow: { color: '#3F6843', fontSize: 11, fontWeight: '600', letterSpacing: 1 },
-  financialReward: { marginTop: 5, color: '#245F2A', fontSize: 22, fontWeight: '600' },
-  financialSummary: { marginTop: 8, color: '#526C55', fontSize: 14, lineHeight: 20 },
-  disputeDeadline: { marginTop: 10, color: '#37633B', fontSize: 13, fontWeight: '600' },
-  paidReviewNotice: { padding: 15, color: '#59636A', fontSize: 14, lineHeight: 20, borderRadius: 13, backgroundColor: '#FFFFFF' },
+  centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: colors.white },
+  centerTitle: { marginTop: 14, color: colors.ink, fontSize: 22, fontWeight: '600' },
+  centerText: { maxWidth: 340, marginTop: 9, color: colors.muted, fontSize: 15, lineHeight: 22, textAlign: 'center' },
+  eyebrow: { color: colors.primary, fontSize: 12, fontWeight: '600', letterSpacing: 1.2 },
+  title: { marginTop: 7, color: colors.ink, fontSize: 24, lineHeight: 31, fontWeight: '600' },
+  reportTitle: { marginTop: 7, color: colors.muted, fontSize: 15, fontWeight: '700' },
+  section: { marginTop: 20, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: 16, backgroundColor: colors.white },
+  sectionTitle: { color: colors.ink, fontSize: 17, lineHeight: 23, fontWeight: '600' },
+  financialCard: { marginTop: 20, padding: 18, borderWidth: 1, borderColor: colors.primaryLight, borderRadius: 18, backgroundColor: colors.primarySoft },
+  financialEyebrow: { color: colors.primaryDark, fontSize: 11, fontWeight: '600', letterSpacing: 1 },
+  financialReward: { marginTop: 5, color: colors.primaryDark, fontSize: 22, fontWeight: '600' },
+  financialSummary: { marginTop: 8, color: colors.body, fontSize: 14, lineHeight: 20 },
+  disputeDeadline: { marginTop: 10, color: colors.primaryDark, fontSize: 13, fontWeight: '600' },
+  paidReviewNotice: { padding: 15, color: colors.body, fontSize: 14, lineHeight: 20, borderRadius: 13, backgroundColor: colors.white },
   disputeStatusCard: { padding: 16, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: '#E7CF79', borderRadius: 14, backgroundColor: '#FFF9DD' },
   disputeStatusText: { flex: 1, color: '#755900', fontSize: 14, lineHeight: 20, fontWeight: '700' },
   identityRow: { minHeight: 64, marginTop: 10, flexDirection: 'row', alignItems: 'center' },
   identityCopy: { flex: 1, marginLeft: 12 },
-  identityName: { color: '#202428', fontSize: 16, fontWeight: '600' },
-  identityUsername: { marginTop: 2, color: '#687178', fontSize: 13 },
-  selfCleanup: { marginTop: 4, color: '#2F7D32', fontSize: 12, fontWeight: '600' },
+  identityName: { color: colors.ink, fontSize: 16, fontWeight: '600' },
+  identityUsername: { marginTop: 2, color: colors.muted, fontSize: 13 },
+  selfCleanup: { marginTop: 4, color: colors.primary, fontSize: 12, fontWeight: '600' },
   photoScroll: { marginTop: 13, borderRadius: 15 },
-  photoViewer: { height: 300, overflow: 'hidden', borderRadius: 15, backgroundColor: '#E9ECEE' },
+  photoViewer: { height: 300, overflow: 'hidden', borderRadius: 15, backgroundColor: colors.line },
   photo: { width: '100%', height: '100%' },
-  photoOverlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: '#EEF1F2' },
-  photoStatusText: { color: '#687178', fontSize: 14, fontWeight: '700' },
-  photoRetryButton: { minHeight: 38, marginTop: 2, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#8FBC92', borderRadius: 11, backgroundColor: '#FFFFFF' },
-  photoRetryText: { color: '#2F7D32', fontSize: 13, fontWeight: '600' },
-  photoCountBadge: { position: 'absolute', right: 10, bottom: 10, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 12, backgroundColor: 'rgba(31, 36, 39, 0.76)' },
-  photoCountText: { color: '#FFFFFF', fontSize: 12, fontWeight: '600' },
-  emptyPhotoState: { minHeight: 108, marginTop: 13, padding: 16, alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 13, backgroundColor: '#F1F3F4' },
-  emptyPhotoText: { color: '#687178', fontSize: 14, textAlign: 'center' },
-  infoLabel: { marginTop: 17, color: '#6D767D', fontSize: 11, fontWeight: '600', letterSpacing: 0.8 },
-  description: { marginTop: 7, color: '#30363B', fontSize: 16, lineHeight: 23 },
+  photoOverlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: colors.mist },
+  photoStatusText: { color: colors.muted, fontSize: 14, fontWeight: '700' },
+  photoRetryButton: { minHeight: 38, marginTop: 2, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.primaryLight, borderRadius: 11, backgroundColor: colors.white },
+  photoRetryText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
+  photoCountBadge: { position: 'absolute', right: 10, bottom: 10, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 12, backgroundColor: 'rgba(41, 41, 50, 0.76)' },
+  photoCountText: { color: colors.white, fontSize: 12, fontWeight: '600' },
+  emptyPhotoState: { minHeight: 108, marginTop: 13, padding: 16, alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 13, backgroundColor: colors.mist },
+  emptyPhotoText: { color: colors.muted, fontSize: 14, textAlign: 'center' },
+  infoLabel: { marginTop: 17, color: colors.muted, fontSize: 11, fontWeight: '600', letterSpacing: 0.8 },
+  description: { marginTop: 7, color: colors.ink, fontSize: 16, lineHeight: 23 },
   metricRow: { flexDirection: 'row', gap: 12 },
-  metric: { flex: 1, padding: 12, marginTop: 14, borderRadius: 12, backgroundColor: '#F3F7F3' },
-  metricValue: { marginTop: 5, color: '#30363B', fontSize: 15, fontWeight: '600' },
+  metric: { flex: 1, padding: 12, marginTop: 14, borderRadius: 12, backgroundColor: colors.primaryTint },
+  metricValue: { marginTop: 5, color: colors.ink, fontSize: 15, fontWeight: '600' },
   actionSection: { marginTop: 22 },
-  approveButton: { minHeight: 54, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, backgroundColor: '#2F7D32' },
-  approveButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  requestButton: { minHeight: 52, marginTop: 12, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: '#D9AAA5', borderRadius: 14, backgroundColor: '#FFFFFF' },
+  approveButton: { minHeight: 54, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, backgroundColor: colors.primary },
+  approveButtonText: { color: colors.white, fontSize: 16, fontWeight: '600' },
+  requestButton: { minHeight: 52, marginTop: 12, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: '#D9AAA5', borderRadius: 14, backgroundColor: colors.white },
   requestButtonText: { color: '#A33A32', fontSize: 15, fontWeight: '600' },
-  changeSection: { marginTop: 22, padding: 16, borderWidth: 1, borderColor: '#E2EAE3', borderRadius: 16, backgroundColor: '#FFFFFF' },
-  helper: { marginTop: 7, color: '#6D767D', fontSize: 14, lineHeight: 20 },
+  changeSection: { marginTop: 22, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: 16, backgroundColor: colors.white },
+  helper: { marginTop: 7, color: colors.muted, fontSize: 14, lineHeight: 20 },
   reasonList: { marginTop: 14, gap: 9 },
-  reasonRow: { padding: 13, flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderWidth: 1, borderColor: '#D6DBDE', borderRadius: 13, backgroundColor: '#FFFFFF' },
-  reasonRowSelected: { borderColor: '#7EB282', backgroundColor: '#F4FAF4' },
+  reasonRow: { padding: 13, flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderWidth: 1, borderColor: colors.lineStrong, borderRadius: 13, backgroundColor: colors.white },
+  reasonRowSelected: { borderColor: colors.primary, backgroundColor: colors.primaryTint },
   reasonCopy: { flex: 1 },
-  reasonTitle: { color: '#30363B', fontSize: 14, fontWeight: '600' },
-  reasonDescription: { marginTop: 3, color: '#6D767D', fontSize: 13, lineHeight: 18 },
-  noteLabel: { marginTop: 18, color: '#59636A', fontSize: 13, fontWeight: '600' },
-  noteInput: { minHeight: 112, marginTop: 8, padding: 13, borderWidth: 1, borderColor: '#DCE4DE', borderRadius: 13, color: '#202428', fontSize: 15, lineHeight: 21, backgroundColor: '#FFFFFF' },
-  characterCount: { marginTop: 5, color: '#8A9297', fontSize: 12, textAlign: 'right' },
+  reasonTitle: { color: colors.ink, fontSize: 14, fontWeight: '600' },
+  reasonDescription: { marginTop: 3, color: colors.muted, fontSize: 13, lineHeight: 18 },
+  noteLabel: { marginTop: 18, color: colors.body, fontSize: 13, fontWeight: '600' },
+  noteInput: { minHeight: 112, marginTop: 8, padding: 13, borderWidth: 1, borderColor: colors.line, borderRadius: 13, color: colors.ink, fontSize: 15, lineHeight: 21, backgroundColor: colors.white },
+  characterCount: { marginTop: 5, color: colors.subtle, fontSize: 12, textAlign: 'right' },
   inputError: { borderColor: '#C94F45' },
   error: { marginTop: 7, color: '#B63D34', fontSize: 13, lineHeight: 18 },
   requestSubmitButton: { minHeight: 52, marginTop: 18, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#A33A32' },
-  requestSubmitText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
-  secondaryButton: { minHeight: 50, marginTop: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#98B79A', borderRadius: 14, backgroundColor: '#FFFFFF' },
-  secondaryButtonText: { color: '#2F7D32', fontSize: 15, fontWeight: '600' },
+  requestSubmitText: { color: colors.white, fontSize: 15, fontWeight: '600' },
+  secondaryButton: { minHeight: 50, marginTop: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.subtle, borderRadius: 14, backgroundColor: colors.white },
+  secondaryButtonText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
   disabled: { opacity: 0.6 },
 });

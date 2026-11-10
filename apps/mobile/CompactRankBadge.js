@@ -5,6 +5,7 @@ import { Image } from 'expo-image';
 import { getRankAsset } from './lib/rankAssets';
 import { getRankForPoints } from './lib/ranking';
 import { loadRanking } from './lib/rankingService';
+import { colors } from './lib/theme';
 
 export default function CompactRankBadge({ userId, style, appearance = 'badge' }) {
   const [ranking, setRanking] = useState(null);
@@ -62,13 +63,13 @@ const styles = StyleSheet.create({
   plainBadge: { marginTop: 0, paddingRight: 0, minHeight: 22, backgroundColor: 'transparent' },
   plainArtworkStage: { width: 20, height: 22, marginRight: 5, backgroundColor: 'transparent' },
   plainArtwork: { width: 20, height: 20 },
-  plainName: { fontSize: 12, fontWeight: '500', color: '#68756D' },
+  plainName: { fontSize: 12, fontWeight: '500', color: colors.muted },
   profileCardBadge: { minHeight: 32, marginTop: 3, paddingRight: 11, borderRadius: 16, backgroundColor: '#F7EEFA' },
   profileCardArtworkStage: { width: 32, height: 32, marginRight: 7, borderRadius: 10 },
   profileCardArtwork: { width: 29, height: 29 },
   profileCardName: { color: '#7E2995', fontSize: 14, lineHeight: 18, fontWeight: '900' },
-  badge: { minHeight: 25, marginTop: 4, paddingRight: 9, flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', borderRadius: 13, backgroundColor: '#F1F4F2' },
-  artworkStage: { width: 25, height: 25, marginRight: 6, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderRadius: 8, backgroundColor: '#FFFFFF' },
+  badge: { minHeight: 25, marginTop: 4, paddingRight: 9, flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', borderRadius: 13, backgroundColor: colors.mist },
+  artworkStage: { width: 25, height: 25, marginRight: 6, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderRadius: 8, backgroundColor: colors.white },
   artwork: { width: 23, height: 23 },
-  name: { color: '#52615A', fontSize: 12, lineHeight: 16, fontWeight: '900' },
+  name: { color: colors.body, fontSize: 12, lineHeight: 16, fontWeight: '900' },
 });

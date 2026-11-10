@@ -6,6 +6,7 @@ import * as Notifications from 'expo-notifications';
 import * as SecureStore from 'expo-secure-store';
 
 import { supabase } from './supabase';
+import { colors } from './theme';
 
 const INSTALLATION_ID_KEY = 'litterbugs.push.installation-id';
 const CLEANUP_NOTIFICATION_CHANNEL = 'cleanup-updates';
@@ -47,7 +48,7 @@ const configureAndroidChannel = async () => {
       name: 'Cleanup updates',
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#2F7D32',
+      lightColor: colors.primary,
     }
   );
 };

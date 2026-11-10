@@ -1,13 +1,17 @@
-import { View, Text, TextInput, Image, TouchableOpacity, Keyboard, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Image, TouchableOpacity, Keyboard, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MAX_REPORT_PHOTOS } from '../lib/reportPhotoSelection';
 import { formatUsd } from '../lib/funding';
 import FeeExplanationLabel from './FeeExplanationLabel';
 import { LoadingButtonContent } from '../BrandedLoadingState';
-import { getLitterSelectionColors } from '../lib/litterSelectionColors';
+// Website report form: one soft blue for every selected litter type and site condition.
+const TILE_SELECTED = Object.freeze({ backgroundColor: '#E5EFFF', borderColor: '#9BBBF3', foregroundColor: '#234485' });
 import { getSeveritySelectionColors } from '../lib/severitySelectionColors';
 import styles from '../styles/MapScreen.styles';
 import MapView, { Marker } from 'react-native-maps';
+import MapPin from './MapPin';
+import { CALM_MAP_STYLE } from '../lib/calmMapStyle';
+import { colors } from '../lib/theme';
 
 const SEVERITY_OPTIONS = [
   { level: 'Low', icon: 'leaf-outline', description: 'A few items' },
@@ -20,19 +24,19 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
   const renderPhotoSlot = (index) => {
     const uri = form.photos[index];
     return (
-      <View key={index} style={styles.reportPhotoSlot}>
+      <View key={index} style={[styles.reportPhotoSlot, uri && styles.reportPhotoSlotFilled]}>
         {uri ? (
           <>
             <Image source={{ uri }} style={styles.reportPhotoPreview} accessibilityLabel={`Report photo ${index + 1}`} />
             <TouchableOpacity style={styles.reportPhotoRemove} onPress={() => removePhoto(index)}
               disabled={isSaving} accessibilityRole="button" accessibilityLabel={`Remove report photo ${index + 1}`}>
-              <Ionicons name="close-circle" size={26} color="#FFFFFF" />
+              <View style={styles.reportPhotoRemoveDot}><Ionicons name="close" size={18} color={colors.ink} /></View>
             </TouchableOpacity>
           </>
         ) : (
           <TouchableOpacity style={styles.reportPhotoEmpty} onPress={() => pickImage('library')}
             disabled={isSaving} accessibilityRole="button" accessibilityLabel={`Add report photo ${index + 1}`}>
-            <Ionicons name={index === 0 ? 'images-outline' : 'add'} size={index === 0 ? 44 : 28} color="#718078" />
+            <Ionicons name={index === 0 ? 'images-outline' : 'add'} size={index === 0 ? 44 : 28} color={colors.primaryDark} />
           </TouchableOpacity>
         )}
       </View>
@@ -40,11 +44,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
   };
   switch (reportStep) {
     case 0: return (<View style={styles.wizardStep}>
-
-
-          <Text style={styles.wizardTitle}>
-            Add photos
-          </Text>
+          {/* Step name lives in the form header, as on the website. */}
 
 
 
@@ -55,7 +55,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
               <Ionicons
                 name="images-outline"
                 size={34}
-                color="#2F7D32"
+                color={colors.primary}
               />
 
               <Text style={styles.existingPhotoTitle}>
@@ -84,7 +84,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                   accessibilityRole="button"
                   accessibilityLabel="Take replacement report photo"
                 >
-                  <Ionicons name="camera-outline" size={20} color="#2F7D32" />
+                  <Ionicons name="camera-outline" size={20} color={colors.primary} />
                   <Text style={styles.wizardPhotoActionText}>Take photo</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -94,7 +94,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                   accessibilityRole="button"
                   accessibilityLabel="Choose replacement report photos"
                 >
-                  <Ionicons name="images-outline" size={20} color="#2F7D32" />
+                  <Ionicons name="images-outline" size={20} color={colors.primary} />
                   <Text style={styles.wizardPhotoActionText}>Choose photos</Text>
                 </TouchableOpacity>
               </View>
@@ -126,7 +126,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                     accessibilityRole="button"
                     accessibilityLabel="Take litter report photo"
                   >
-                    <Ionicons name="camera-outline" size={20} color="#2F7D32" />
+                    <Ionicons name="camera-outline" size={20} color={colors.primary} />
                     <Text style={styles.wizardPhotoActionText}>Take photo</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -136,7 +136,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                     accessibilityRole="button"
                     accessibilityLabel={`Choose up to ${MAX_REPORT_PHOTOS - form.photos.length} report photos`}
                   >
-                    <Ionicons name="images-outline" size={20} color="#2F7D32" />
+                    <Ionicons name="images-outline" size={20} color={colors.primary} />
                     <Text style={styles.wizardPhotoActionText}>Choose photos</Text>
                   </TouchableOpacity>
                 </View>
@@ -149,18 +149,15 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
 <View style={styles.photoPreparationSlot}>
   {showPhotoPreparation ? (
     <View style={styles.photoPreparationInline} accessibilityRole="progressbar" accessibilityLabel="Getting photos ready">
-      <ActivityIndicator size="small" color="#2F7D32" />
+      <ActivityIndicator size="small" color={colors.primary} />
       <Text style={styles.photoPreparationText}>Getting photos ready…</Text>
     </View>
   ) : null}
 </View>
-<View style={styles.optionalFieldHeading}>
-  <Text style={[styles.reportTitleLabel, { marginBottom: 0 }]}>Title</Text>
-  <Text style={styles.optionalStepLabel}>Optional</Text>
-</View>
+<Text style={styles.reportTitleLabel}>Report title (optional)</Text>
 <TextInput
-            style={styles.input}
-            placeholder="Litter Report" accessibilityLabel="Report title (optional)"
+            style={styles.wizardTitleInput}
+            placeholder="Trash at the trail head" placeholderTextColor={colors.subtle} accessibilityLabel="Report title (optional)"
             value={form.title}
             onFocus={revealBottomReportField}
             onChangeText={(text) =>
@@ -176,11 +173,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
           />
 </View>);
     case 1: return (<View style={styles.wizardStep}>
-
-
-          <Text style={styles.wizardTitle}>
-            Type of litter
-          </Text>
+          {/* Step name lives in the form header, as on the website. */}
 
 
 
@@ -189,7 +182,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
               {LITTER_OPTIONS.map(({ label, icon }, optionIndex) => {
                 const selected =
                   form.selectedTypes?.includes(label);
-                const selectionColors = getLitterSelectionColors(optionIndex);
+                const selectionColors = TILE_SELECTED;
 
                 return (
                   <TouchableOpacity
@@ -236,7 +229,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                       name={selected ? 'checkmark-circle' : icon}
                       size={20}
                       color={
-                        selected ? selectionColors.foregroundColor : '#667078'
+                        selected ? selectionColors.foregroundColor : colors.muted
                       }
                       style={styles.litterTileIcon}
                     />
@@ -258,14 +251,15 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
           </View>
 
           <Text style={styles.wizardFieldLabel}>
-            Other
+            Other type of litter
           </Text>
 
           <TextInput
-            style={[styles.input, styles.wizardSingleLineDetailsInput]}
+            style={[styles.wizardTitleInput, styles.wizardSingleLineDetailsInput]}
             editable={!isSaving}
-            accessibilityLabel="Other litter types"
-            placeholder="Mattress, appliances, or another type"
+            accessibilityLabel="Other type of litter"
+            placeholder="Add another type"
+            placeholderTextColor={colors.subtle}
             value={form.types}
             onFocus={revealBottomReportField}
             returnKeyType="done"
@@ -283,7 +277,6 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
         </View>);
     case 2: return (
       <View style={styles.wizardStep}>
-        <Text style={styles.wizardTitle}>Severity</Text>
         <View style={styles.wizardSeverityList}>
           {SEVERITY_OPTIONS.map(({ level, icon, description }, severityIndex) => {
             const selected = form.severity === level;
@@ -306,7 +299,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                 accessibilityLabel={`${level} severity`}
                 accessibilityHint={description}
               >
-                <Ionicons name={icon} size={32} color={selected ? selectionColors.foregroundColor : '#667078'} />
+                <Ionicons name={icon} size={32} color={selectionColors.iconColor} />
                 <View style={styles.wizardSeverityCopy}>
                   <Text style={[
                     styles.wizardSeverityText,
@@ -319,7 +312,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                   ]}>{description}</Text>
                 </View>
                 <Ionicons name={selected ? 'checkmark-circle' : 'ellipse-outline'} size={26}
-                  color={selected ? selectionColors.foregroundColor : '#C8D0CA'} />
+                  color={selected ? selectionColors.iconColor : colors.lineStrong} />
               </TouchableOpacity>
             );
           })}
@@ -327,10 +320,6 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
       </View>
     );
     case 3: return (<View style={styles.wizardStep}>
-          <View style={styles.optionalStepHeading}>
-            <Text style={[styles.wizardTitle, { marginBottom: 0 }]}>Site conditions</Text>
-            <Text style={styles.optionalStepLabel}>Optional</Text>
-          </View>
 
 
 
@@ -342,7 +331,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                     form.selectedNotes?.includes(
                       label
                     );
-                  const selectionColors = getLitterSelectionColors(optionIndex);
+                  const selectionColors = TILE_SELECTED;
 
                   return (
                     <TouchableOpacity
@@ -391,7 +380,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                         color={
                           selected
                             ? selectionColors.foregroundColor
-                            : '#667078'
+                            : colors.muted
                         }
                         style={
                           styles.litterTileIcon
@@ -420,8 +409,9 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
           </Text>
 
           <TextInput
-            style={[styles.input, styles.wizardSingleLineDetailsInput]}
+            style={[styles.wizardTitleInput, styles.wizardSingleLineDetailsInput]}
             editable={!isSaving}
+            placeholderTextColor={colors.subtle}
             accessibilityLabel="Extra site details (optional)"
             placeholder="Add any extra details"
             value={form.notes}
@@ -490,8 +480,10 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
               <View style={styles.reportReviewMap} pointerEvents="none">
                 <MapView style={{ flex: 1 }} initialRegion={{ ...coordinate, latitudeDelta: 0.008, longitudeDelta: 0.008 }}
                   scrollEnabled={false} zoomEnabled={false} rotateEnabled={false} pitchEnabled={false}
+                  mapType={Platform.OS === 'ios' ? 'mutedStandard' : 'standard'}
+                  {...(Platform.OS === 'android' ? { customMapStyle: CALM_MAP_STYLE } : {})}
                   accessibilityLabel="Confirmed report location">
-                  <Marker coordinate={coordinate} pinColor="#C53232" />
+                  <Marker coordinate={coordinate} anchor={{ x: 0.5, y: 1 }}><MapPin kind="open" /></Marker>
                 </MapView>
               </View>
             </View>
@@ -505,14 +497,14 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                   const option = LITTER_OPTIONS.find((item) => item.label === label);
                   return (
                     <View key={label} style={[styles.reportReviewChip, styles.reportReviewLitterChip]}>
-                      <Ionicons name={option?.icon || 'trash-outline'} size={17} color="#2F7D32" />
+                      <Ionicons name={option?.icon || 'trash-outline'} size={17} color="#234485" />
                       <Text style={[styles.reportReviewChipText, styles.reportReviewLitterChipText]}>{label}</Text>
                     </View>
                   );
                 })}
                 {form.types?.trim() ? (
                   <View style={[styles.reportReviewChip, styles.reportReviewLitterChip]}>
-                    <Ionicons name="create-outline" size={17} color="#2F7D32" />
+                    <Ionicons name="create-outline" size={17} color="#234485" />
                     <Text style={[styles.reportReviewChipText, styles.reportReviewLitterChipText]}>{form.types.trim()}</Text>
                   </View>
                 ) : null}
@@ -539,7 +531,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                       borderColor: selectionColors.borderColor,
                     },
                   ]}>
-                    <Ionicons name={severityOption.icon} size={19} color={selectionColors.foregroundColor} />
+                    <Ionicons name={severityOption.icon} size={19} color={selectionColors.iconColor} />
                     <Text style={[styles.reportReviewSeverityText, { color: selectionColors.foregroundColor }]}>
                       {form.severity}
                     </Text>
@@ -565,14 +557,14 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                       : label === 'Use Caution' ? 'Use caution' : label;
                     return (
                       <View key={label} style={[styles.reportReviewChip, styles.reportReviewConditionChip]}>
-                        <Ionicons name={option?.icon || 'information-circle-outline'} size={17} color="#2E6E9E" />
+                        <Ionicons name={option?.icon || 'information-circle-outline'} size={17} color="#234485" />
                         <Text style={[styles.reportReviewChipText, styles.reportReviewConditionChipText]}>{displayLabel}</Text>
                       </View>
                     );
                   })}
                   {form.notes?.trim() ? (
                     <View style={[styles.reportReviewChip, styles.reportReviewConditionChip]}>
-                      <Ionicons name="document-text-outline" size={17} color="#2E6E9E" />
+                      <Ionicons name="document-text-outline" size={17} color="#234485" />
                       <Text style={[styles.reportReviewChipText, styles.reportReviewConditionChipText]}>{form.notes.trim()}</Text>
                     </View>
                   ) : null}
@@ -590,10 +582,10 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
           {fundingEnabled && !isEditing ? (
             <View style={styles.startingFundCard}>
               <View style={styles.startingFundHeading}>
-                <Ionicons name="heart" size={23} color="#E13B3B" />
+                <Image source={require('../assets/bugs/bee.png')} style={{ width: 22, height: 22 }} resizeMode="contain" accessible={false} />
                 <View style={styles.startingFundHeadingCopy}>
                   <Text style={styles.startingFundTitle}>Start the cleanup fund</Text>
-                  <Text style={styles.optionalStepLabel}>Optional</Text>
+                  <Text style={[styles.optionalStepLabel, { color: '#7A5D00' }]}>Optional</Text>
                 </View>
               </View>
 
@@ -712,7 +704,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                 <Ionicons
                   name="checkmark-circle-outline"
                   size={23}
-                  color="#fff"
+                  color={colors.white}
                 />
 
                 <Text
@@ -720,7 +712,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                     styles.wizardSubmitText
                   }
                 >
-                  Submit Report
+                  Submit report
                 </Text>
               </>
             )}

@@ -5,6 +5,7 @@ import { connectSignInMethod } from './lib/auth';
 import { identityLinkErrorMessage } from './lib/identityLinking';
 import { openSupport } from './lib/support';
 import AppleSignInButton from './components/AppleSignInButton';
+import { colors } from './lib/theme';
 
 export default function SignInMethodsScreen() {
   const [identities, setIdentities] = useState(null);
@@ -46,10 +47,10 @@ export default function SignInMethodsScreen() {
   </ScrollView>;
 }
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#fff' }, content: { padding: 20, paddingBottom: 40 },
-  title: { color: '#26342A', fontSize: 24, lineHeight: 31, fontWeight: '600' },
-  description: { color: '#67746B', fontSize: 14, lineHeight: 22, marginVertical: 16 },
+  screen: { flex: 1, backgroundColor: colors.white }, content: { padding: 20, paddingBottom: 40 },
+  title: { color: colors.ink, fontSize: 24, lineHeight: 31, fontWeight: '600' },
+  description: { color: colors.muted, fontSize: 14, lineHeight: 22, marginVertical: 16 },
   methods: { minHeight: 260 },
-  row: { minHeight: 60, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#E2EAE3' },
-  label: { fontSize: 16, color: '#303B34', flexShrink: 1 }, connected: { color: '#2F7D32', fontSize: 14, fontWeight: '600' }, apple: { marginTop: 16 },
+  row: { minHeight: 60, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.line },
+  label: { fontSize: 16, color: colors.ink, flexShrink: 1 }, connected: { color: colors.primary, fontSize: 14, fontWeight: '600' }, apple: { marginTop: 16 },
 });

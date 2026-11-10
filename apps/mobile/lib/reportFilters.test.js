@@ -82,12 +82,14 @@ describe('shared map and list filtering', () => {
       ),
     ).toBe(true);
   });
-  it('uses the established brand palettes in the filter sheet', () => {
-    expect(filterSource).toContain('STATUS_FILTER_COLORS');
-    expect(filterSource).toContain("if (key === 'radius') return getLitterSelectionColors(optionIndex)");
-    expect(filterSource).toContain("if (key === 'severity')");
-    expect(filterSource).toContain('selected && optionColors && {');
-    expect(filterSource).toContain("backgroundColor: '#A5D6A7'");
+  it('matches the website filter sheet: bug-labelled states, outline choices, no tinted fills', () => {
+    expect(filterSource).toContain('Search and filters');
+    expect(filterSource).toContain("['available', 'Needs a cleanup', 'ladybug']");
+    expect(filterSource).toContain("['progress', 'Being cleaned', 'caterpillar']");
+    expect(filterSource).toContain("['completed', 'Cleaned up', 'flower']");
+    expect(filterSource).toContain("['funded', 'Has a fund', 'bee']");
     expect(filterSource).toContain("['volunteer', 'Volunteer']");
+    expect(filterSource).not.toContain('getLitterSelectionColors');
+    expect(filterSource).toContain("backgroundColor: colors.primary");
   });
 });

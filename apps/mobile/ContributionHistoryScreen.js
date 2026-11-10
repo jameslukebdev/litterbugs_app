@@ -9,6 +9,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatUsd, loadMyContributions } from './lib/funding';
 import PaymentStatus from './components/PaymentStatus';
+import BrandBug from './components/BrandBug';
+import { colors, fonts } from './lib/theme';
 
 export default function ContributionHistoryScreen({ navigation }) {
   const [pullRefreshing, setPullRefreshing] = useState(false);
@@ -30,16 +32,16 @@ export default function ContributionHistoryScreen({ navigation }) {
 
   return (
     <FlatList
-      style={{ backgroundColor: '#FFFFFF' }}
+      style={{ backgroundColor: colors.white }}
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]}
-      refreshControl={<RefreshControl refreshing={pullRefreshing} onRefresh={async () => { setPullRefreshing(true); await load(); setPullRefreshing(false); }} tintColor="#2F7D32" />}
+      refreshControl={<RefreshControl refreshing={pullRefreshing} onRefresh={async () => { setPullRefreshing(true); await load(); setPullRefreshing(false); }} tintColor={colors.primary} />}
       data={items}
       keyExtractor={item => item.id}
       ListHeaderComponent={<>
-      <View style={styles.tabs}>{[[false,'All payments'],[true,'Completed impact']].map(([value,label]) => <TouchableOpacity key={label} accessibilityRole="tab" accessibilityState={{selected:completedOnly===value}} onPress={() => setCompletedOnly(value)} style={[styles.tab, completedOnly === value && styles.tabSelected]}><Text style={styles.status}>{label}</Text></TouchableOpacity>)}</View>
+      <View style={styles.tabs}>{[[false,'All payments'],[true,'Completed impact']].map(([value,label]) => <TouchableOpacity key={label} accessibilityRole="tab" accessibilityState={{selected:completedOnly===value}} onPress={() => setCompletedOnly(value)} style={[styles.tab, completedOnly === value && styles.tabSelected]}><Text style={[styles.tabText, completedOnly === value && styles.tabTextSelected]}>{label}</Text></TouchableOpacity>)}</View>
       {error ? <View><Text style={styles.error}>Couldn’t refresh payment history.</Text><TouchableOpacity accessibilityRole="button" style={styles.more} onPress={load}><Text style={styles.status}>Retry payment history</Text></TouchableOpacity></View> : null}
       {hasLoaded && !error && items.length === 0 ? (
-        <View style={styles.empty}><View style={styles.emptyIcon}><Ionicons name={completedOnly ? "leaf-outline" : "receipt-outline"} size={28} color="#49704D" /></View><Text style={styles.emptyTitle}>{completedOnly ? 'No completed impact yet' : 'No payments yet'}</Text><Text style={styles.emptyCopy}>{completedOnly ? 'Contributions to completed cleanups will appear here.' : 'Your contributions and unfinished payments will appear here.'}</Text></View>
+        <View style={styles.empty}><BrandBug kind={completedOnly ? 'flower' : 'bee'} size={36} /><Text style={styles.emptyTitle}>{completedOnly ? 'No completed impact yet' : 'No payments yet'}</Text><Text style={styles.emptyCopy}>{completedOnly ? 'Contributions to completed cleanups will appear here.' : 'Your contributions and unfinished payments will appear here.'}</Text></View>
       ) : null}
       </>}
       renderItem={({ item }) => (
@@ -55,13 +57,13 @@ export default function ContributionHistoryScreen({ navigation }) {
           <Text style={styles.date}>{formatContributionDate(item.created_at)}</Text>
           <View style={styles.breakdown}><FeeExplanationLabel label="Service fee" textStyle={styles.muted} /><Text style={styles.muted}>{formatUsd(item.platform_fee_cents)}</Text></View>
           <View style={styles.breakdown}><Text style={styles.total}>{['payment_pending','failed'].includes(item.status) ? 'Payment amount' : item.status === 'refunded' ? 'Original total' : 'Total charged'}</Text><Text style={styles.total}>{formatUsd(item.total_amount_cents)}</Text></View>
-          <TouchableOpacity accessibilityRole="button" style={styles.detailsLink} onPress={() => navigation.navigate('PaymentDetail', { contributionId: item.id })}><Text style={styles.status}>View payment details</Text><Ionicons name="chevron-forward" size={16} color="#7A867D" /></TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" style={styles.detailsLink} onPress={() => navigation.navigate('PaymentDetail', { contributionId: item.id })}><Text style={styles.status}>View payment details</Text><Ionicons name="chevron-forward" size={16} color={colors.muted} /></TouchableOpacity>
           {item.refunded_at ? <Text style={styles.date}>Refunded {formatContributionDate(item.refunded_at)}</Text> : null}
         </View>
       )}
       ListFooterComponent={<>
       {!hasLoaded && !error ? <View style={styles.waiting} accessibilityRole="progressbar" accessibilityLabel="Loading payment history">
-        {showWaiting ? <><ActivityIndicator color="#687178" /><Text style={styles.emptyCopy}>Loading payments…</Text></> : null}
+        {showWaiting ? <><ActivityIndicator color={colors.muted} /><Text style={styles.emptyCopy}>Loading payments…</Text></> : null}
       </View> : null}
       {history.moreError ? <Text style={styles.error}>Couldn’t load older payments. Your current history is still available.</Text> : null}
       {history.nextCursor ? <TouchableOpacity accessibilityRole="button" disabled={loading || history.loadingMore} style={styles.more} onPress={history.loadMore}><Text style={styles.status}>{history.loadingMore ? 'Loading older payments…' : history.moreError ? 'Retry older payments' : 'Load older payments'}</Text></TouchableOpacity> : null}
@@ -71,27 +73,27 @@ export default function ContributionHistoryScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  tabs: { flexDirection: 'row', padding: 4, gap: 4, borderRadius: 13, backgroundColor: '#F2F5F2', marginBottom: 18 },
-  tab: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6, borderRadius: 10 },
-  tabSelected: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DCE7DD' },
-  emptyIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#EFF5EF', alignItems: 'center', justifyContent: 'center' },
-  detailsLink: { minHeight: 44, marginTop: 8, paddingTop: 4, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E7ECE8', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  tabs: { flexDirection: 'row', gap: 8, marginBottom: 18 },
+  tab: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6, borderRadius: 22, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.white },
+  tabText: { color: colors.muted, fontSize: 14, fontWeight: '600' },
+  tabTextSelected: { color: colors.primaryDark, fontWeight: '800' },
+  tabSelected: { borderWidth: 2, borderColor: colors.primary },
+  detailsLink: { minHeight: 44, marginTop: 8, paddingTop: 4, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   waiting: { minHeight: 300, alignItems: 'center', justifyContent: 'center' },
   more: { minHeight: 48, padding: 12, alignItems: 'center', justifyContent: 'center' },
-  emptyCopy: { marginTop: 8, color: '#687178', textAlign: 'center', lineHeight: 21 },
-  content: { flexGrow: 1, padding: 20, backgroundColor: '#FFFFFF' },
+  emptyCopy: { marginTop: 8, color: colors.muted, textAlign: 'center', lineHeight: 21 },
+  content: { flexGrow: 1, padding: 20, backgroundColor: colors.white },
   error: { padding: 16, color: '#A33A32', textAlign: 'center' },
   empty: { minHeight: 280, alignItems: 'center', justifyContent: 'center' },
-  emptyTitle: { marginTop: 14, color: '#303B34', fontSize: 17, lineHeight: 23, fontWeight: '600' },
-  card: { marginBottom: 14, padding: 16, borderRadius: 14, borderWidth: 1, borderColor: '#E2E9E3', backgroundColor: '#FFFFFF' },
+  emptyTitle: { marginTop: 12, color: colors.ink, fontSize: 17, lineHeight: 23, fontFamily: fonts.heading },
+  card: { marginBottom: 14, padding: 16, borderRadius: 18, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
   line: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignItems: 'center', justifyContent: 'space-between' },
-  amount: { color: '#245F2A', fontSize: 22, fontWeight: '600' },
-  statusPill: { minHeight: 30, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: '#EDF5EE' },
-  status: { color: '#315F35', fontSize: 12, fontWeight: '600' },
-  reportTitle: { marginTop: 11, color: '#30363B', fontSize: 16, lineHeight: 21, fontWeight: '600' },
-  statusMessage: { marginTop: 5, color: '#5F696F', fontSize: 13, lineHeight: 18 },
-  date: { marginTop: 6, marginBottom: 12, color: '#7A8389', fontSize: 12 },
+  amount: { color: colors.ink, fontSize: 22, fontFamily: fonts.heading },
+  status: { color: colors.primaryDark, fontSize: 12, fontWeight: '600' },
+  reportTitle: { marginTop: 10, color: colors.ink, fontSize: 16, lineHeight: 21, fontWeight: '700' },
+  statusMessage: { marginTop: 5, color: colors.muted, fontSize: 13, lineHeight: 18 },
+  date: { marginTop: 6, marginBottom: 12, color: colors.muted, fontSize: 12 },
   breakdown: { minHeight: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  muted: { color: '#6B747A', fontSize: 14 },
-  total: { color: '#30363B', fontSize: 14, fontWeight: '600' },
+  muted: { color: colors.muted, fontSize: 14 },
+  total: { color: colors.ink, fontSize: 14, fontWeight: '600' },
 });

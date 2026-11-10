@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 
 import { getProfileAvatarUrl, getProfileInitials } from './lib/profile';
+import { colors } from './lib/theme';
 
 export default function ProfileAvatar({ profile, size = 72, previewUri = null }) {
   const uri = previewUri || getProfileAvatarUrl(profile);
@@ -14,7 +15,7 @@ export default function ProfileAvatar({ profile, size = 72, previewUri = null })
         contentFit="cover"
         cachePolicy="memory-disk"
         transition={150}
-        style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#E4E8E4' }}
+        style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.line }}
         accessibilityLabel={`${profile?.display_name || 'User'} profile photo`}
       />
     );
@@ -39,10 +40,10 @@ const styles = StyleSheet.create({
   fallback: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#DCE8DD',
+    backgroundColor: colors.primaryBorder,
   },
   initials: {
-    color: '#245B2A',
+    color: colors.primaryDark,
     fontWeight: '800',
   },
 });

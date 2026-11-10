@@ -30,6 +30,11 @@ export default function AndroidReportMarker({ snapshotKey, children, tracksViewC
     return cancel;
   }, [snapshotKey, redraw, cancel]);
   useEffect(() => {
+    // Bug images decode after first layout; snapshot again once they are drawn.
+    const timers = [250, 1000].map((delay) => setTimeout(redraw, delay));
+    return () => timers.forEach(clearTimeout);
+  }, [snapshotKey, redraw]);
+  useEffect(() => {
     let active = true;
     loadMarkerFont().then(() => { if (active) redraw(); }).catch(() => {});
     return () => { active = false; cancel(); };

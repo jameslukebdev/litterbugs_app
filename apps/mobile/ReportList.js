@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { getDistanceMiles, useReports } from './lib/reports';
 import BrandedLoadingState from './BrandedLoadingState';
+import { colors } from './lib/theme';
 
 export function ReportListItem({ report, origin, onPress, selected = false }) {
   const distance = getDistanceMiles(origin, report);
@@ -101,14 +102,14 @@ export default function ReportList({
             <Ionicons
               name="map-outline"
               size={30}
-              color="#647078"
+              color={colors.muted}
               accessible={false}
               importantForAccessibility="no"
             />
           </View>
           <Text style={styles.emptyTitle}>{emptyTitle}</Text>
           <Text style={styles.emptyText}>{emptyMessage}</Text>
-          {emptyAction ? <TouchableOpacity accessibilityRole="button" onPress={emptyAction.onPress} style={{ minHeight: 48, marginTop: 12, justifyContent: 'center' }}><Text style={{ color: '#2F7D32', fontWeight: '700', fontSize: 16 }}>{emptyAction.label}</Text></TouchableOpacity> : null}
+          {emptyAction ? <TouchableOpacity accessibilityRole="button" onPress={emptyAction.onPress} style={{ minHeight: 48, marginTop: 12, justifyContent: 'center' }}><Text style={{ color: colors.primary, fontWeight: '700', fontSize: 16 }}>{emptyAction.label}</Text></TouchableOpacity> : null}
         </View>
       )}
       contentContainerStyle={[
@@ -126,26 +127,27 @@ export default function ReportList({
 }
 
 const styles = StyleSheet.create({
+  // Website card: white, thin lilac line and a soft 3-point drop edge.
   rowShadow: {
-    marginVertical: 10,
+    marginVertical: 9,
     marginHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#29402D',
-    shadowOpacity: 0.1,
-    shadowRadius: 9,
+    borderRadius: 18,
+    backgroundColor: colors.white,
+    shadowColor: '#EEEAF8',
+    shadowOpacity: 1,
+    shadowRadius: 0,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
+    elevation: 2,
   },
   row: {
     borderWidth: 1,
-    borderColor: '#DDEBDD',
-    borderRadius: 20,
+    borderColor: colors.line,
+    borderRadius: 18,
     overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
   },
-  completedRow: { backgroundColor: '#F0F7F1', borderColor: '#66BB6A' },
-  selectedRow: { borderColor: '#66BB6A' },
+  completedRow: {},
+  selectedRow: { borderColor: colors.primary },
   emptyContent: {
     flexGrow: 1,
   },
@@ -162,17 +164,17 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#E9EFE9',
+    backgroundColor: colors.line,
   },
   emptyTitle: {
     marginTop: 16,
-    color: '#24292D',
+    color: colors.ink,
     fontSize: 19,
     fontWeight: '800',
   },
   emptyText: {
     marginTop: 7,
-    color: '#707980',
+    color: colors.muted,
     fontSize: 15,
     lineHeight: 21,
     textAlign: 'center',

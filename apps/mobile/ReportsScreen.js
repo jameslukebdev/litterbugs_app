@@ -19,6 +19,7 @@ import ReportList from './ReportList';
 import { getBottomNavClearance } from './lib/navigationLayout';
 import { getDistanceMiles, useReports } from './lib/reports';
 import useReportsLocation from './lib/useReportsLocation';
+import { colors } from './lib/theme';
 
 
 export default function ReportsScreen({ navigation }) {
@@ -92,9 +93,9 @@ export default function ReportsScreen({ navigation }) {
               <Text style={styles.area}>{areaText}</Text>
             </View>
             <TouchableOpacity ref={sortButtonRef} accessibilityRole="button" accessibilityLabel={`Sort reports: ${locationOrigin ? 'Closest to me' : 'Newest first'}`} accessibilityState={{ expanded: !!sortAnchor }} onPress={chooseSort} style={[styles.sortButton, sortAnchor && styles.sortButtonOpen]}>
-              <Ionicons name="swap-vertical-outline" size={16} color="#2F7D32" />
+              <Ionicons name="swap-vertical-outline" size={16} color={colors.primary} />
               <Text style={styles.locationActionText}>{locationOrigin ? 'Closest to me' : 'Newest first'}</Text>
-              <Ionicons name={sortAnchor ? "chevron-up" : "chevron-down"} size={13} color="#2F7D32" />
+              <Ionicons name={sortAnchor ? "chevron-up" : "chevron-down"} size={13} color={colors.primary} />
             </TouchableOpacity>
           </View>
           {sort === 'closest' && locationState === 'denied' ? <TouchableOpacity accessibilityRole="button" onPress={() => Linking.openSettings().catch(() => Alert.alert('Location settings', 'Allow location access in your device settings.'))} style={styles.locationAction}><Text style={styles.locationActionText}>Allow location in Settings</Text></TouchableOpacity> : null}
@@ -134,9 +135,9 @@ export default function ReportsScreen({ navigation }) {
               { value: 'closest', label: 'Closest to me', icon: 'navigate-outline' },
             ].map(option => (
               <TouchableOpacity key={option.value} accessibilityRole="radio" accessibilityState={{ checked: sort === option.value }} onPress={() => selectSort(option.value)} style={[styles.sortOption, sort === option.value && styles.sortOptionSelected]}>
-                <Ionicons name={option.icon} size={19} color={sort === option.value ? '#2F7D32' : '#657169'} />
+                <Ionicons name={option.icon} size={19} color={sort === option.value ? colors.primary : colors.muted} />
                 <Text style={[styles.sortOptionText, sort === option.value && styles.sortOptionTextSelected]}>{option.label}</Text>
-                {sort === option.value ? <Ionicons name="checkmark" size={19} color="#2F7D32" /> : null}
+                {sort === option.value ? <Ionicons name="checkmark" size={19} color={colors.primary} /> : null}
               </TouchableOpacity>
             ))}
           </View>
@@ -152,7 +153,7 @@ export default function ReportsScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
   },
   summary: {
     paddingHorizontal: 20,
@@ -163,31 +164,31 @@ const styles = StyleSheet.create({
   },
   summaryTop: { flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
   summaryArea: { flexGrow: 1, flexShrink: 1 },
-  sortButton: { minHeight: 44, paddingHorizontal: 10, borderRadius: 12, borderWidth: 1, borderColor: '#E4EAE5', flexDirection: 'row', alignItems: 'center', gap: 5 },
-  sortButtonOpen: { backgroundColor: '#F0F6F0', borderColor: '#BED5BE' },
+  sortButton: { minHeight: 44, paddingHorizontal: 10, borderRadius: 12, borderWidth: 1, borderColor: colors.line, flexDirection: 'row', alignItems: 'center', gap: 5 },
+  sortButtonOpen: { backgroundColor: colors.primarySoft, borderColor: colors.primaryBorder },
   menuOverlay: { flex: 1 },
-  sortMenu: { position: 'absolute', width: 232, padding: 6, borderRadius: 14, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E4EAE5', shadowColor: '#17251A', shadowOpacity: 0.16, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 12 },
-  sortMenuLabel: { color: '#768078', fontSize: 12, fontWeight: '500', paddingHorizontal: 10, paddingTop: 6, paddingBottom: 8 },
+  sortMenu: { position: 'absolute', width: 232, padding: 6, borderRadius: 14, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line, shadowColor: colors.ink, shadowOpacity: 0.16, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 12 },
+  sortMenuLabel: { color: colors.muted, fontSize: 12, fontWeight: '500', paddingHorizontal: 10, paddingTop: 6, paddingBottom: 8 },
   sortOption: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 10, paddingVertical: 10, borderRadius: 9 },
-  sortOptionSelected: { backgroundColor: '#EFF6EF' },
-  sortOptionText: { flex: 1, fontSize: 14, lineHeight: 20, color: '#303B34', fontWeight: '500' },
-  sortOptionTextSelected: { color: '#2F7D32', fontWeight: '600' },
+  sortOptionSelected: { backgroundColor: colors.primarySoft },
+  sortOptionText: { flex: 1, fontSize: 14, lineHeight: 20, color: colors.ink, fontWeight: '500' },
+  sortOptionTextSelected: { color: colors.primary, fontWeight: '600' },
   summaryCopy: {
     flex: 1,
   },
   count: {
-    color: '#171A1D',
+    color: colors.ink,
     fontSize: 18,
     fontWeight: '600',
   },
   helper: {
     flex: 1,
-    color: '#727A80',
+    color: colors.muted,
     fontSize: 14,
   },
-  area: { color: '#687178', fontSize: 12, marginTop: 4 },
+  area: { color: colors.muted, fontSize: 12, marginTop: 4 },
   locationAction: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' },
-  locationActionText: { color: '#2F7D32', fontSize: 13, fontWeight: '600' },
+  locationActionText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
   helperRow: { minHeight: 24, marginTop: 4, flexDirection: 'row', alignItems: 'center', gap: 7 },
   error: {
     paddingHorizontal: 18,
@@ -198,6 +199,6 @@ const styles = StyleSheet.create({
   list: {
     flex: 1,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#DDE1E3',
+    borderTopColor: colors.line,
   },
 });

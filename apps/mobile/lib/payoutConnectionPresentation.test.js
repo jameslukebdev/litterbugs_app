@@ -9,7 +9,7 @@ describe('Stripe payout connection presentation', () => {
     })).toMatchObject({
       label: 'Ready to receive cleanup rewards',
       icon: 'checkmark-circle',
-      color: '#2F7D32',
+      color: '#5146ED',
     });
   });
 
@@ -21,7 +21,7 @@ describe('Stripe payout connection presentation', () => {
     expect(payoutConnectionPresentation({ status })).toMatchObject({
       label: 'Set up payouts',
       icon: 'wallet-outline',
-      color: '#59636A',
+      color: '#4A4857',
     });
   });
 

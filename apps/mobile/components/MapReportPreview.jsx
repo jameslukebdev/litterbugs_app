@@ -16,14 +16,21 @@ import ReportCardDetails from './ReportCardDetails';
 import ReportCardMenu from './ReportCardMenu';
 import Photo from './ReportPreviewPhoto';
 import ReportPreviewHero from './ReportPreviewHero';
+import BrandBug from './BrandBug';
 import { reportPresentation } from '../lib/reportPresentation';
+import { reportStatePresentation } from '../lib/reportState';
+import { colors, fonts } from '../lib/theme';
 
 function Summary({ report }) {
   const presentation = reportPresentation(report);
+  const state = reportStatePresentation(report);
   const completed = report.cleanup_state === 'completed';
   return <View style={styles.copy}>
     <Text style={styles.title} numberOfLines={2}>{report.title || 'Litter report'}</Text>
-    <Text style={styles.status}>{presentation.status}</Text>
+    <View style={styles.stateRow}>
+      {state.bug ? <BrandBug kind={state.bug} size={15} /> : null}
+      <Text style={[styles.status, { color: state.ink }]}>{state.label}</Text>
+    </View>
     {!completed ? <Text style={styles.reward}>{presentation.funding}</Text> : null}
   </View>;
 }
@@ -168,7 +175,7 @@ export default function MapReportPreview({
           <View style={styles.sheetHeader}>
             <Text style={styles.heading} accessibilityRole="header">Reports here</Text>
             <TouchableOpacity style={styles.close} accessibilityRole="button" accessibilityLabel="Close nearby reports" onPress={onCloseNearby}>
-              <Ionicons name="close" size={22} color="#435047" />
+              <Ionicons name="close" size={22} color={colors.body} />
             </TouchableOpacity>
           </View>
           <FlatList
@@ -182,7 +189,7 @@ export default function MapReportPreview({
             >
               <Photo report={item} getPhotoUrl={getPhotoUrl} />
               <Summary report={item} />
-              <Ionicons name="chevron-forward" size={18} color="#435047" />
+              <Ionicons name="chevron-forward" size={18} color={colors.body} />
             </TouchableOpacity>}
           />
         </View>
@@ -192,16 +199,18 @@ export default function MapReportPreview({
 }
 
 const styles = StyleSheet.create({
-  card: { position: 'absolute', left: 16, right: 16, borderRadius: 20, backgroundColor: '#FFFFFF', shadowColor: '#000', borderWidth: 1, borderColor: 'rgba(255,255,255,0.95)', shadowOpacity: 0.22, shadowRadius: 14, shadowOffset: { width: 0, height: 5 }, elevation: 9 },
-  completedCard: { backgroundColor: '#F0F7F1', borderColor: '#66BB6A' },
+  // Website floating map card (.map-pin-card): white, lilac edge, soft purple shadow.
+  card: { position: 'absolute', left: 16, right: 16, borderRadius: 20, backgroundColor: colors.white, borderWidth: 2, borderColor: '#ECE8F8', boxShadow: '0 4px 0 #EBE7F8, 0 16px 32px rgba(42, 34, 90, 0.12)', elevation: 9 },
+  completedCard: {},
   copy: { flex: 1, gap: 5 },
-  title: { fontSize: 15, fontWeight: '700', color: '#25382D' },
-  status: { fontSize: 12, color: '#637067' },
-  reward: { fontSize: 13, fontWeight: '600', color: '#285D38' },
+  title: { fontSize: 15, fontWeight: '700', color: colors.ink },
+  stateRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  status: { fontSize: 13, fontWeight: '800' },
+  reward: { fontSize: 13, fontWeight: '600', color: colors.primaryDark },
   close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.25)' },
   sheet: { maxHeight: '65%', backgroundColor: 'white', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 18 },
   sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  heading: { flex: 1, fontSize: 22, fontWeight: '700', color: '#25382D' },
-  result: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#DFE6E0' },
+  heading: { flex: 1, fontSize: 22, fontFamily: fonts.heading, color: colors.ink },
+  result: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
 });

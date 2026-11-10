@@ -7,6 +7,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { colors, fonts } from './lib/theme';
 
 export default function BrandedLoadingState({
   title = 'Loading Litterbugs…',
@@ -48,7 +49,7 @@ export default function BrandedLoadingState({
         {!logoOnly ? (
           <>
             {working ? (
-              <ActivityIndicator style={styles.workingIndicator} size="small" color="#2F7D32" />
+              <ActivityIndicator style={styles.workingIndicator} size="small" color={colors.primary} />
             ) : null}
             <Text style={styles.title}>{title}</Text>
             <Text style={styles.message}>{message}</Text>
@@ -59,7 +60,7 @@ export default function BrandedLoadingState({
   );
 }
 
-export function LoadingButtonContent({ label, color = '#FFFFFF' }) {
+export function LoadingButtonContent({ label, color = colors.white }) {
   return (
     <View style={styles.buttonContent} accessibilityLabel={label}>
       <ActivityIndicator size="small" color={color} />
@@ -75,7 +76,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
   },
   containerCompact: {
     minHeight: 280,
@@ -88,10 +89,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 28,
     borderWidth: 1,
-    borderColor: '#DCE8DD',
+    borderColor: colors.primaryBorder,
     borderRadius: 22,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000000',
+    backgroundColor: colors.white,
+    shadowColor: colors.black,
     shadowOpacity: 0.08,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 5 },
@@ -102,7 +103,7 @@ const styles = StyleSheet.create({
   },
   logoOnlyCard: {
     borderWidth: 0,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     shadowOpacity: 0,
     elevation: 0,
   },
@@ -117,15 +118,15 @@ const styles = StyleSheet.create({
   workingIndicator: { marginTop: 12 },
   title: {
     marginTop: 12,
-    color: '#202428',
+    color: colors.ink,
     fontSize: 20,
-    fontWeight: '900',
+    fontFamily: fonts.heading,
     textAlign: 'center',
   },
   message: {
     maxWidth: 310,
     marginTop: 7,
-    color: '#667078',
+    color: colors.muted,
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',

@@ -5,6 +5,10 @@ import { watchNativeProviderAuthorization } from './lib/nativeSocialAuth';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
+import { useFonts } from 'expo-font';
+import { startAnalytics, trackScreen } from './lib/analytics';
+
+startAnalytics();
 import {
   NavigationContainer,
   useNavigationContainerRef,
@@ -58,6 +62,7 @@ import { isPermanentUser } from './lib/reportAccess';
 import { ReportsProvider } from './lib/reports';
 import { SessionProvider } from './lib/session';
 import { supabase } from './lib/supabase';
+import { colors, fonts } from './lib/theme';
 
 const Stack = createNativeStackNavigator();
 
@@ -114,7 +119,7 @@ function HomeScreen({ navigation }) {
       >
         <Text style={styles.secondaryButtonText}>Sign in or create account</Text>
       </TouchableOpacity>
-      <StatusBar hidden={false} style="dark" backgroundColor="#FFFFFF" />
+      <StatusBar hidden={false} style="dark" backgroundColor={colors.white} />
     </ScrollView>
   );
 }
@@ -254,8 +259,10 @@ function AppNavigation({
   const headerOptions = {
     headerShown: true,
     headerShadowVisible: false,
-    headerTintColor: '#2F7D32',
-    headerStyle: { backgroundColor: '#FFFFFF' },
+    headerTintColor: colors.primary,
+    // Website page titles: dark Nunito Black; the back arrow stays purple.
+    headerTitleStyle: { color: colors.ink, fontFamily: fonts.heading, fontSize: 20 },
+    headerStyle: { backgroundColor: colors.white },
     headerBackTitle: 'Back',
     headerBackTitleVisible: false,
     headerBackButtonDisplayMode: 'minimal',
@@ -267,11 +274,13 @@ function AppNavigation({
       ref={navigationRef}
       linking={navigationLinking}
       onReady={() => {
+        trackScreen(navigationRef.getCurrentRoute()?.name);
         resumePendingAction();
         if (pendingNotificationData.current) {
           openNotificationData(pendingNotificationData.current);
         }
       }}
+      onStateChange={() => trackScreen(navigationRef.getCurrentRoute()?.name)}
     >
       <Stack.Navigator
         key={permanent ? 'permanent' : 'signed-out'}
@@ -317,7 +326,7 @@ function AppNavigation({
         <Stack.Screen
           name="FundingContribution"
           component={FundingContributionScreen}
-          options={{ ...headerOptions, title: 'Cleanup fund' }}
+          options={{ ...headerOptions, title: '' }} // the bee heading below names this screen
         />
         <Stack.Screen
           name="PayoutSetup"
@@ -368,6 +377,12 @@ export default function App() {
   const [passwordRecovery, setPasswordRecovery] = useState(false);
   const [launchReady, setLaunchReady] = useState(false);
   const nativeSplashHidden = useRef(false);
+  // Screens wait (behind the launch logo) for Nunito: Android keeps the system font on
+  // any heading drawn before the font finished loading. Never wait more than 3 seconds.
+  const [fontsLoaded, fontError] = useFonts({ [fonts.heading]: require('./assets/fonts/Nunito-Black.ttf') });
+  const [fontWaitOver, setFontWaitOver] = useState(false);
+  useEffect(() => { const timer = setTimeout(() => setFontWaitOver(true), 3000); return () => clearTimeout(timer); }, []);
+  const fontsReady = fontsLoaded || Boolean(fontError) || fontWaitOver;
 
   useEffect(() => {
     if (!session?.access_token) return;
@@ -485,8 +500,8 @@ export default function App() {
 
   return (
     <View style={styles.appRoot}>
-      <StatusBar style="dark" backgroundColor="#FFFFFF" />
-      {!authLoading && discoveryMemory ? (
+      <StatusBar style="dark" backgroundColor={colors.white} />
+      {!authLoading && discoveryMemory && fontsReady ? (
         <SessionProvider session={session}>
           <ProfileProvider>
             <ReportsProvider initialDiscovery={discoveryMemory.lastMap}>
@@ -514,32 +529,32 @@ export default function App() {
 const styles = StyleSheet.create({
   appRoot: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
   },
   launchOverlay: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 10000,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     elevation: 10000,
   },
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
   },
   homeContent: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 32,
     paddingHorizontal: 24,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
   },
   logo: { marginBottom: 12 },
-  title: { maxWidth: 330, color: '#252A2E', fontSize: 30, lineHeight: 36, fontWeight: '800', textAlign: 'center' },
+  title: { maxWidth: 330, color: colors.ink, fontSize: 30, lineHeight: 36, fontFamily: fonts.heading, textAlign: 'center' },
   subtitle: {
     maxWidth: 330,
     marginTop: 10,
     marginBottom: 34,
-    color: '#667078',
+    color: colors.muted,
     fontSize: 16,
     lineHeight: 23,
     textAlign: 'center',
@@ -553,9 +568,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 14,
-    backgroundColor: '#2E7D32',
+    backgroundColor: colors.primary,
   },
-  primaryButtonText: { color: '#FFFFFF', fontSize: 17, fontWeight: '800' },
+  primaryButtonText: { color: colors.white, fontSize: 17, fontWeight: '800' },
   secondaryButton: {
     width: '100%',
     maxWidth: 390,
@@ -566,23 +581,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
   },
-  secondaryButtonText: { color: '#496351', fontSize: 16, fontWeight: '600' },
+  secondaryButtonText: { color: colors.body, fontSize: 16, fontWeight: '600' },
   errorState: {
     flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 32,
     paddingHorizontal: 28,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
   },
   errorStateScroll: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
   },
-  errorTitle: { color: '#252A2E', fontSize: 22, fontWeight: '800', textAlign: 'center' },
-  errorText: { marginVertical: 10, color: '#667078', fontSize: 15, textAlign: 'center' },
+  errorTitle: { color: colors.ink, fontSize: 22, fontFamily: fonts.heading, textAlign: 'center' },
+  errorText: { marginVertical: 10, color: colors.muted, fontSize: 15, textAlign: 'center' },
   textButton: { minHeight: 48, justifyContent: 'center', marginTop: 8 },
-  textButtonText: { color: '#2E7D32', fontSize: 15, fontWeight: '800' },
+  textButtonText: { color: colors.primary, fontSize: 15, fontWeight: '800' },
 });

@@ -1,25 +1,10 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import BrandBug from './BrandBug';
 import RemotePhoto from './RemotePhoto';
-import { reportPresentation } from '../lib/reportPresentation';
-
-function statusPresentation(report) {
-  if (report?.cleanup_state === 'completed') {
-    return { label: 'Completed', icon: 'leaf', tone: 'completed' };
-  }
-  if (['claimed', 'completion_submitted', 'changes_requested'].includes(report?.cleanup_state)) {
-    return {
-      label: report.cleanup_state === 'completion_submitted' ? 'Awaiting review' : 'In progress',
-      icon: 'time',
-      tone: 'pending',
-    };
-  }
-  if (report?.cancelled_at || report?.expired_at) {
-    return { label: reportPresentation(report).status, icon: 'trash', tone: 'available' };
-  }
-  return { label: 'Available', icon: 'trash', tone: 'available' };
-}
+import { reportStatePresentation } from '../lib/reportState';
+import { colors, fonts } from '../lib/theme';
 
 export default function ReportPreviewHero({
   report,
@@ -29,8 +14,7 @@ export default function ReportPreviewHero({
   onFavorite,
   favoritesReady,
 }) {
-  const status = statusPresentation(report);
-  const pending = status.tone === 'pending';
+  const status = reportStatePresentation(report);
 
   return (
     <View style={styles.hero}>
@@ -49,17 +33,10 @@ export default function ReportPreviewHero({
           style={styles.heroPhoto}
         />
       </TouchableOpacity>
-      <View
-        pointerEvents="none"
-        style={[
-          styles.badge,
-          status.tone === 'completed'
-            ? styles.statusCompleted
-            : pending ? styles.statusPending : styles.statusAvailable,
-        ]}
-      >
-        <Ionicons name={status.icon} size={13} color={pending ? '#4F3900' : '#FFFFFF'} />
-        <Text style={[styles.badgeText, pending && styles.pendingBadgeText]}>{status.label}</Text>
+      <View pointerEvents="none" style={styles.badge}>
+        {status.bug ? <BrandBug kind={status.bug} size={14} /> : null}
+        {/* Website card label: short words ("Available", "In progress", "Cleaned") with the bug. */}
+        <Text style={[styles.badgeText, { color: status.ink }]}>{status.tone === 'open' ? 'Available' : status.tone === 'busy' ? 'In progress' : status.tone === 'done' ? 'Cleaned' : status.label}</Text>
       </View>
       <TouchableOpacity
         style={[styles.favorite, isFavorite && styles.favoriteSelected]}
@@ -73,7 +50,7 @@ export default function ReportPreviewHero({
         <Ionicons
           name={isFavorite ? 'heart' : 'heart-outline'}
           size={26}
-          color={isFavorite ? '#E13B3B' : '#FFFFFF'}
+          color={isFavorite ? '#E13B3B' : colors.white}
           style={!isFavorite ? styles.favoriteOutline : undefined}
         />
       </TouchableOpacity>
@@ -84,31 +61,31 @@ export default function ReportPreviewHero({
 const styles = StyleSheet.create({
   hero: {
     width: '100%',
-    height: 160,
+    aspectRatio: 1.7,
     overflow: 'hidden',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    backgroundColor: '#EDF2EE',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    backgroundColor: colors.mist,
   },
-  heroPhotoButton: { width: '100%', height: 160 },
-  heroPhoto: { width: '100%', height: 160 },
+  heroPhotoButton: { width: '100%', height: '100%' },
+  heroPhoto: { width: '100%', height: '100%' },
   badge: {
     position: 'absolute',
-    left: 12,
-    top: 14,
+    left: 10,
+    top: 10,
     maxWidth: '70%',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
+    minHeight: 24,
+    paddingLeft: 7,
+    paddingRight: 10,
+    borderRadius: 999,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
+    // Neutral white label over the photo; colour comes from the bug and text.
+    backgroundColor: colors.white,
+    boxShadow: '0 2px 6px rgba(42, 34, 90, 0.15)',
   },
-  statusAvailable: { backgroundColor: '#E13B3B' },
-  statusPending: { backgroundColor: '#FFB907' },
-  statusCompleted: { backgroundColor: '#2F7D32' },
-  badgeText: { fontSize: 12, fontWeight: '800', color: '#FFFFFF' },
-  pendingBadgeText: { color: '#4F3900' },
+  badgeText: { fontSize: 12, fontFamily: fonts.heading },
   favorite: {
     position: 'absolute',
     right: 6,

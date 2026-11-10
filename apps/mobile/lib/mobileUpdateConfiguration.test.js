@@ -25,8 +25,12 @@ describe('mobile over-the-air updates', () => {
     expect(profiles['production-simulator'].channel).toBe('production-preview');
     expect(profiles.preview.channel).toBe('preview');
     expect(profiles.development.channel).toBe('development');
-    expect(profiles['production-internal'].env).toEqual(profiles.production.env);
-    expect(profiles['production-simulator'].env).toEqual(profiles.production.env);
+    // Test builds match production except analytics, which only store builds send,
+    // so staff and simulator testing is never counted as visitor traffic.
+    const { EXPO_PUBLIC_ANALYTICS_ENABLED: analytics, ...productionEnv } = profiles.production.env;
+    expect(analytics).toBe('true');
+    expect(profiles['production-internal'].env).toEqual(productionEnv);
+    expect(profiles['production-simulator'].env).toEqual(productionEnv);
   });
 
   it('publishes a production test using production configuration rather than local QA settings', () => {

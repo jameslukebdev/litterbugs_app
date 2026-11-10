@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatUsd, loadMyContribution } from './lib/funding';
 import PaymentStatus from './components/PaymentStatus';
 import { statusMessage, paymentDisplayStatus, formatContributionDate } from './lib/contributionPresentation';
+import { colors } from './lib/theme';
 
 export default function PaymentDetailScreen({ navigation, route }) {
   const { user } = useSession();
@@ -19,23 +20,23 @@ export default function PaymentDetailScreen({ navigation, route }) {
   const error = record.error || verification.error;
   const load = () => { record.refresh(); verification.refresh(); };
   const insets = useSafeAreaInsets();
-  const action = (label, onPress, disabled = false) => <TouchableOpacity disabled={disabled} accessibilityRole="button" onPress={onPress} style={{ minHeight: 52, justifyContent: 'center', opacity: disabled ? 0.5 : 1 }}><Text style={{ color: '#2F7D32', fontSize: 16, fontWeight: '700' }}>{label}</Text></TouchableOpacity>;
-  return <ScrollView style={{ backgroundColor: '#FFFFFF' }} contentContainerStyle={{ flexGrow: 1, padding: 20, paddingBottom: insets.bottom + 24 }}>
+  const action = (label, onPress, disabled = false) => <TouchableOpacity disabled={disabled} accessibilityRole="button" onPress={onPress} style={{ minHeight: 52, justifyContent: 'center', opacity: disabled ? 0.5 : 1 }}><Text style={{ color: colors.primary, fontSize: 16, fontWeight: '700' }}>{label}</Text></TouchableOpacity>;
+  return <ScrollView style={{ backgroundColor: colors.white }} contentContainerStyle={{ flexGrow: 1, padding: 20, paddingBottom: insets.bottom + 24 }}>
     {loading && !item ? <BrandedLoadingState compact title="Loading payment details…" /> : null}
     {error ? <Text style={{ color: '#B42318', marginBottom: 16 }}>Couldn’t refresh this payment. Try again.</Text> : null}
     {item ? <>
       <PaymentStatus status={paymentDisplayStatus(item)} />
-      <Text style={{ fontSize: 30, fontWeight: '600', color: '#263B2B', marginTop: 20 }}>{formatUsd(item.total_amount_cents)}</Text>
-      <Text style={{ color: '#687178', marginTop: 4 }}>{['payment_pending', 'failed'].includes(item.status) ? 'Payment amount' : item.status === 'refunded' ? 'Original total' : 'Total charged'}</Text>
+      <Text style={{ fontSize: 30, fontWeight: '600', color: colors.ink, marginTop: 20 }}>{formatUsd(item.total_amount_cents)}</Text>
+      <Text style={{ color: colors.muted, marginTop: 4 }}>{['payment_pending', 'failed'].includes(item.status) ? 'Payment amount' : item.status === 'refunded' ? 'Original total' : 'Total charged'}</Text>
       <Text style={{ marginTop: 20, fontSize: 16, lineHeight: 23 }}>{!item.report && paymentDisplayStatus(item) === 'not_completed' ? 'This payment hasn’t completed. The report is unavailable; get payment help below if you need assistance.' : statusMessage(item)}</Text>
-      {item.checkedAt ? <Text style={{ marginTop: 12, color: '#687178' }}>Last checked {formatContributionDate(item.checkedAt)}</Text> : null}
-      <Text style={{ marginTop: 12, color: '#687178' }}>{formatContributionDate(item.created_at)}</Text>
-      <View style={{ marginVertical: 20, gap: 14, padding: 16, borderRadius: 14, backgroundColor: '#F4F8F4' }}>
+      {item.checkedAt ? <Text style={{ marginTop: 12, color: colors.muted }}>Last checked {formatContributionDate(item.checkedAt)}</Text> : null}
+      <Text style={{ marginTop: 12, color: colors.muted }}>{formatContributionDate(item.created_at)}</Text>
+      <View style={{ marginVertical: 20, gap: 14, padding: 16, borderRadius: 14, backgroundColor: colors.primaryTint }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}><Text>Cleanup contribution</Text><Text>{formatUsd(item.principal_amount_cents)}</Text></View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignItems: 'center', justifyContent: 'space-between' }}><FeeExplanationLabel label="Service fee" /><Text>{formatUsd(item.platform_fee_cents)}</Text></View>
         {item.refunded_at ? <Text>Refunded: {formatContributionDate(item.refunded_at)}</Text> : null}
       </View>
-      {item.report ? action('View cleanup report', () => navigation.popTo('App', { screen: 'Map', params: { reportId: item.report_id } })) : <Text style={{ color: '#687178', lineHeight: 21 }}>The linked report is no longer available. Your payment record remains here.</Text>}
+      {item.report ? action('View cleanup report', () => navigation.popTo('App', { screen: 'Map', params: { reportId: item.report_id } })) : <Text style={{ color: colors.muted, lineHeight: 21 }}>The linked report is no longer available. Your payment record remains here.</Text>}
     </> : !loading && !error ? <Text>This payment record is unavailable.</Text> : null}
     {item || error ? action(loading ? 'Updating…' : 'Refresh payment details', load, loading) : null}
     {action('Get payment help', async () => {

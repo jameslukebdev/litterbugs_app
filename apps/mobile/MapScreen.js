@@ -9,13 +9,16 @@ import CloudDraftStatus from './components/CloudDraftStatus';
 import ReportWizardSteps from './components/ReportWizardSteps';
 
 import MapReportPreview from './components/MapReportPreview';
+import MapPin, { pinKind } from './components/MapPin';
+import MapKey, { mapKeyCounts } from './components/MapKey';
+import { CALM_MAP_STYLE } from './lib/calmMapStyle';
 import { resolveReportPhotoUrls } from './lib/reportPhotoUrls';
 
 import { saveReportDraft, loadReportDraft, clearReportDraft } from './lib/savedReportDraft';
 import ReportFilters from './components/ReportFilters';
 // MapScreen.js
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, Platform, Alert, Keyboard, Animated, Easing, PanResponder, ScrollView, TouchableWithoutFeedback, ActivityIndicator, AppState, Linking, Share as NativeShare, TurboModuleRegistry, useWindowDimensions } from 'react-native';
+import { View, Text, Image, StyleSheet, Modal, TouchableOpacity, Platform, Alert, Keyboard, Animated, Easing, PanResponder, ScrollView, TouchableWithoutFeedback, ActivityIndicator, AppState, Linking, Share as NativeShare, TurboModuleRegistry, useWindowDimensions } from 'react-native';
 import { polygonParts } from './lib/searchGeography';
 import { Marker, Polygon } from 'react-native-maps';
 import ClusteredMapView from 'react-native-map-clustering';
@@ -99,6 +102,7 @@ import {
 
 import { createReportShareModel, isInstagramStoriesAvailable, isReportShareable, prepareNativeReportShareImage, shareReportToInstagramStories, shareReportWithSystemSheet } from './lib/reportSharing';
 import * as FileSystem from 'expo-file-system/legacy';
+import { colors } from './lib/theme';
 
 function loadInstalledRNShare() {
   if (!TurboModuleRegistry.get('RNShare')) return null;
@@ -476,7 +480,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     ? screenWidth - 32
     : reportPlacementActive || isLocatingReportLocation
       ? Math.min(screenWidth - 100, 194 + 120 * (fontScale - 1))
-      : Math.max(152, Math.min(screenWidth - 148, 44 + 108 * fontScale));
+      : Math.max(168, Math.min(screenWidth - 148, 64 + 112 * fontScale)); // website: min-width 168
   // Leave 20px margin on each side of the main report photo
   const reportHeroWidth = Math.max(screenWidth - 40, 280);
 
@@ -1213,12 +1217,7 @@ const submitReport = async () => {
     });
   };
 
-// Icon Changes When Map Type Changes
-  const getMapTypeColor = () => {
-    if (mapType === 'satellite') return '#2F7D32';
-    if (mapType === 'hybrid') return '#9333B8';
-    return '#E6B800';
-  };
+
 
 
 // Preset Litter Options Users Can Choose From
@@ -2257,11 +2256,9 @@ const revealBottomReportField = () => {
           superClusterRef={reportClusterRef}
           renderCluster={({ id, geometry, properties, onPress }) => {
             const statusCounts = getClusterStatusCounts(id);
-            const statusBadges = [
-              { key: 'available', count: statusCounts.available, color: REPORT_MARKER_COLORS.availableAccent },
-              { key: 'active', count: statusCounts.active, color: REPORT_MARKER_COLORS.activeAccent },
-              { key: 'completed', count: statusCounts.completed, color: REPORT_MARKER_COLORS.completedAccent },
-            ];
+            // Like the website, a group shows the bug of its most useful member
+            // (litter that still needs a cleanup first) next to the count.
+            const clusterKind = statusCounts.available ? 'open' : statusCounts.active ? 'busy' : 'done';
             return (
               <Marker
                 key={`cluster-${id}`}
@@ -2270,7 +2267,7 @@ const revealBottomReportField = () => {
                   longitude: geometry.coordinates[0],
                 }}
                 tracksViewChanges={Platform.OS === 'ios' ? true : tracksReportMarkers}
-                anchor={{ x: 0.5, y: 0.5 }}
+                anchor={{ x: 0.5, y: 1 }}
                 accessibilityLabel={`${properties.point_count} reports: ${statusCounts.available} available, ${statusCounts.active} in progress, ${statusCounts.completed} completed`}
                 onPress={(event) => {
                   event?.stopPropagation?.();
@@ -2280,21 +2277,7 @@ const revealBottomReportField = () => {
                   onPress();
                 }}
               >
-                <>
-                  <View collapsable={false} style={styles.reportClusterHit}>
-                    <View style={styles.reportClusterBubble}>
-                      <Text style={styles.reportClusterText}>{properties.point_count}</Text>
-                    </View>
-                    <View style={styles.reportClusterStatusRow}>
-                      {statusBadges.map(({ key, count, color }) => (
-                        <View key={key} style={[styles.reportClusterStatusBadge, { borderColor: color }]}>
-                          <View style={[styles.reportClusterStatusDot, { backgroundColor: color }]} />
-                          <Text style={[styles.reportClusterStatusCount, { color }]}>{count}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                </>
+                <MapPin kind={clusterKind} text={`${properties.point_count}`} />
               </Marker>
             );
           }}
@@ -2309,13 +2292,15 @@ const revealBottomReportField = () => {
           followsUserLocation={false}
           showsMyLocationButton={false}
           toolbarEnabled={false}
-          mapType={mapType}
+          // The website's calm map: Apple's muted style on iOS, a calm Google style on Android.
+          mapType={mapType === 'standard' && Platform.OS === 'ios' ? 'mutedStandard' : mapType}
+          {...(mapType === 'standard' && Platform.OS === 'android' ? { customMapStyle: CALM_MAP_STYLE } : {})}
         >
 
         {polygonParts(searchPlace?.geometry).map(([outer, ...holes], index) => <Polygon key={`${searchPlace.id}:${index}`}
           coordinates={outer.map(([longitude, latitude]) => ({ latitude, longitude }))}
           holes={holes.map(ring => ring.map(([longitude, latitude]) => ({ latitude, longitude })))}
-          strokeColor="#2F7D32" accessible={false} importantForAccessibility="no" strokeWidth={1.5} fillColor="rgba(47,125,50,0.035)" tappable={false} />)}
+          strokeColor={colors.primary} accessible={false} importantForAccessibility="no" strokeWidth={1.5} fillColor="rgba(81, 70, 237, 0.035)" tappable={false} />)}
         {markers.map((marker) => {
           const tone = reportMarkerPresentation(marker.report);
           const fundingLabel = formatMapFundingLabel(marker.report?.funded_amount_cents);
@@ -2325,7 +2310,7 @@ const revealBottomReportField = () => {
               coordinate={marker.coordinate}
               identifier={`report:${tone.key}:${marker.id}`}
               tracksViewChanges={Platform.OS === 'ios' ? true : tracksReportMarkers}
-              anchor={{ x: 0.5, y: 0.5 }}
+              anchor={{ x: 0.5, y: 1 }}
               accessibilityLabel={`${tone.accessibilityLabel}${tone.key === 'available' ? `, ${fundingLabel}` : ''}: ${marker.report?.title || 'Litter report'}`}
               onPress={(event) => {
                 event?.stopPropagation?.();
@@ -2333,33 +2318,12 @@ const revealBottomReportField = () => {
                 chooseMapReport(marker.report);
               }}
             >
-              <>
-                <View collapsable={false} style={styles.reportMarkerHitLg}>
-                  <View style={[
-                    styles.reportMarkerIconWrapLg,
-                    { backgroundColor: tone.backgroundColor, borderColor: tone.borderColor },
-                  ]}>
-                    {tone.key === 'available' ? (
-                      <Text
-                        allowFontScaling={false}
-                        adjustsFontSizeToFit
-                        minimumFontScale={0.68}
-                        numberOfLines={1}
-                        style={[styles.reportMarkerAmount, { color: tone.foregroundColor }]}
-                      >
-                        {fundingLabel}
-                      </Text>
-                    ) : (
-                      <Ionicons name={tone.icon} size={31} color={tone.foregroundColor} />
-                    )}
-                    {tone.statusIcon ? (
-                      <View style={[styles.reportMarkerStatusBadge, { borderColor: tone.borderColor }]}>
-                        <Ionicons name={tone.statusIcon} size={15} color={tone.foregroundColor} />
-                      </View>
-                    ) : null}
-                  </View>
-                </View>
-              </>
+              {/* Website pins: the bug alone, plus the amount only when there is money. */}
+              <MapPin
+                kind={pinKind(marker.report?.cleanup_state)}
+                text={pinKind(marker.report?.cleanup_state) === 'open' && marker.report?.funded_amount_cents > 0 ? fundingLabel : null}
+                selected={marker.id === previewId}
+              />
             </Marker>
           );
         })}
@@ -2381,10 +2345,11 @@ const revealBottomReportField = () => {
           {!reportPlacementActive ? <ReportFilters map /> : null}
           {reportsError && !reportPlacementActive ? <TouchableOpacity
             accessibilityRole="button" onPress={() => refreshReports({ showRefresh: true })}
-            style={{ backgroundColor: '#FFFFFF', borderRadius: 14, padding: 12, marginTop: 8 }}>
-            <Text style={{ color: '#37463D', fontWeight: '600' }}>Reports couldn’t refresh. Tap to try again.</Text>
+            style={{ backgroundColor: colors.white, borderRadius: 14, padding: 12, marginTop: 8 }}>
+            <Text style={{ color: colors.ink, fontWeight: '600' }}>Reports couldn’t refresh. Tap to try again.</Text>
           </TouchableOpacity> : null}
-          {searchPlace && !reportPlacementActive && !mapRegionsAreEquivalent(region, searchPlace.region) ? <TouchableOpacity onPress={() => { setPreviewId(null); commitMapRegion(searchPlace.region); }} accessibilityRole="button" accessibilityLabel="Re-center selected search area" style={{ alignSelf: 'center', backgroundColor: '#FFFFFF', borderRadius: 18, paddingHorizontal: 16, minHeight: 44, justifyContent: 'center', marginTop: 8 }}><Text style={{ color: '#285D38', fontWeight: '600' }}>Re-center</Text></TouchableOpacity> : null}
+          {searchPlace && !reportPlacementActive && !mapRegionsAreEquivalent(region, searchPlace.region) ? <TouchableOpacity onPress={() => { setPreviewId(null); commitMapRegion(searchPlace.region); }} accessibilityRole="button" accessibilityLabel="Re-center selected search area" style={{ alignSelf: 'center', backgroundColor: colors.white, borderRadius: 18, paddingHorizontal: 16, minHeight: 44, justifyContent: 'center', marginTop: 8 }}><Text style={{ color: colors.primaryDark, fontWeight: '600' }}>Re-center</Text></TouchableOpacity> : null}
+          {!reportPlacementActive ? <MapKey counts={mapKeyCounts(markers, region)} /> : null}
 
           <Animated.View
             pointerEvents="none"
@@ -2414,7 +2379,7 @@ const revealBottomReportField = () => {
               },
             ]}
           >
-            <Text style={styles.floatingMapInstructionTitle}>Choose Report Location</Text>
+            <Text style={styles.floatingMapInstructionTitle}>Where is the litter?</Text>
           </Animated.View>
         </View>
       ) : null}
@@ -2425,8 +2390,8 @@ const revealBottomReportField = () => {
           pointerEvents="none"
           accessible={false}
         >
-          <Ionicons name="location-sharp" size={54} color="#C53232" style={{ transform: [{ translateY: -24 }] }} />
-          <View style={{ position: 'absolute', width: 7, height: 7, borderRadius: 4, backgroundColor: '#C53232', borderWidth: 1, borderColor: '#FFFFFF' }} />
+          <Ionicons name="location-sharp" size={54} color={colors.primaryDark} style={{ transform: [{ translateY: -24 }] }} />
+          <View style={{ position: 'absolute', width: 7, height: 7, borderRadius: 4, backgroundColor: colors.primaryDark, borderWidth: 1, borderColor: colors.white }} />
         </View>
       ) : null}
 
@@ -2479,7 +2444,7 @@ const revealBottomReportField = () => {
             accessibilityLabel="Cancel report location"
             accessibilityHint="Closes the report pin and returns to normal map browsing"
           >
-            <Ionicons name="close" size={27} color="#374151" />
+            <Ionicons name="close" size={27} color={colors.ink} />
           </TouchableOpacity>
         </Animated.View>
 
@@ -2496,12 +2461,12 @@ const revealBottomReportField = () => {
           }}
         >
           <TouchableOpacity
-            style={[styles.reportLitterButton, { width: reportControlWidth, height: fontScale > 1.5 ? undefined : BOTTOM_NAV_METRICS.mapControlSize, minHeight: 44, paddingVertical: fontScale > 1.5 ? 12 : 0 }]}
+            style={[styles.reportLitterButton, reportPlacementActive && !isCheckingReportLocation && { backgroundColor: colors.primary }, { width: reportControlWidth, height: fontScale > 1.5 ? undefined : BOTTOM_NAV_METRICS.mapControlSize, minHeight: 44, paddingVertical: fontScale > 1.5 ? 12 : 0 }]}
             onPress={reportPlacementActive ? confirmReportLocation : openReportLocationPicker}
             disabled={showInitialMapLoading || formOpen || detailsOpen || isSaving || isLocatingReportLocation || isCheckingReportLocation}
             activeOpacity={0.82}
             accessibilityRole="button"
-            accessibilityLabel={isCheckingReportLocation ? 'Checking reporting distance' : isLocatingReportLocation ? 'Finding user location' : reportPlacementActive ? 'Use this location' : 'Report litter'}
+            accessibilityLabel={isCheckingReportLocation ? 'Checking reporting distance' : isLocatingReportLocation ? 'Finding your location' : reportPlacementActive ? 'Use this location' : 'Report litter'}
             accessibilityHint={reportPlacementActive
               ? 'Checks that the pin is within 50 miles of your current GPS location'
               : 'Places a pin at the map center so you can choose the cleanup site'}
@@ -2512,13 +2477,14 @@ const revealBottomReportField = () => {
           >
               {isLocatingReportLocation || isCheckingReportLocation ? (
                 <>
-                  <ActivityIndicator size="small" color="#2F7D32" />
-                  <Text style={[styles.reportLitterButtonText, { flexShrink: 1, textAlign: 'center' }]}>{isCheckingReportLocation ? 'Checking Distance' : 'Finding User Location'}</Text>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text style={[styles.reportLitterButtonText, { flexShrink: 1, textAlign: 'center' }]}>{isCheckingReportLocation ? 'Checking distance…' : 'Finding your location…'}</Text>
                 </>
               ) : (
                 <>
-                  <Ionicons name={reportPlacementActive ? 'location-outline' : 'add-circle-outline'} size={22} color="#2F7D32" />
-                  <Text style={[styles.reportLitterButtonText, { flexShrink: 1, textAlign: 'center' }]}>{reportPlacementActive ? 'Use This Location' : 'Report Litter'}</Text>
+                  {/* Website: the dragonfly labels Report Litter; placing the pin turns it into the purple confirm button. */}
+                  {reportPlacementActive ? null : <Image source={require('./assets/bugs/dragonfly.png')} style={{ width: 26, height: 26 }} resizeMode="contain" accessible={false} />}
+                  <Text numberOfLines={fontScale > 1.5 ? undefined : 1} style={[styles.reportLitterButtonText, reportPlacementActive && { color: colors.white }, { flexShrink: 1, textAlign: 'center' }]}>{reportPlacementActive ? 'Use this location' : 'Report Litter'}</Text>
                 </>
               )}
           </TouchableOpacity>
@@ -2540,9 +2506,9 @@ const revealBottomReportField = () => {
         accessibilityState={{ busy: isCentering, disabled: isCentering }}
       >
         {isCentering ? (
-          <ActivityIndicator color="#2F80ED" />
+          <ActivityIndicator color={colors.ink} />
         ) : (
-          <Ionicons name="navigate-outline" size={27} color="#2F80ED" />
+          <Ionicons name="locate-outline" size={23} color={colors.ink} />
         )}
       </TouchableOpacity> : null}
 
@@ -2558,7 +2524,7 @@ const revealBottomReportField = () => {
         accessibilityLabel="Change map style"
         accessibilityValue={{ text: mapType }}
       >
-        <Ionicons name="layers-outline" size={27} color={getMapTypeColor()} />
+        <Ionicons name="layers-outline" size={23} color={mapType === 'standard' ? colors.ink : colors.primary} />
       </TouchableOpacity> : null}
 
 {!reportPlacementActive && !detailsOpen && !showInitialMapLoading ? <MapReportPreview
@@ -2593,7 +2559,7 @@ const revealBottomReportField = () => {
             accessibilityLabel={saveStage}
           >
             <View style={styles.savingCard}>
-              <ActivityIndicator size="large" color="#2F7D32" />
+              <ActivityIndicator size="large" color={colors.primary} />
               <Text style={styles.savingTitle}>
                 Creating your report
               </Text>
@@ -2609,12 +2575,13 @@ const revealBottomReportField = () => {
         {/* Persistent Header */}
         <View style={styles.wizardHeader}>
 
-          <View style={{ flex: 1 }}>
-            <Text style={styles.wizardHeaderTitle}>
-              {reportStep === 4
-                ? 'Review report'
-                : isEditing ? 'Edit Litter Report' : 'New Litter Report'}
+          {/* Website report form: the dragonfly beside the current step's name. */}
+          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <Image source={require('./assets/bugs/dragonfly.png')} style={{ width: 30, height: 30 }} resizeMode="contain" accessible={false} />
+            <Text style={styles.wizardHeaderTitle} accessibilityRole="header">
+              {['Add photos', 'Type of litter', 'Severity', 'Site conditions', isEditing ? 'Review changes' : 'Review report'][reportStep] || 'Report litter'}
             </Text>
+            {reportStep === 3 ? <Text style={styles.optionalStepLabel}>Optional</Text> : null}
 
 
           </View>
@@ -2629,7 +2596,7 @@ const revealBottomReportField = () => {
             <Ionicons
               name="close"
               size={25}
-              color="#374151"
+              color={colors.ink}
             />
           </TouchableOpacity>
 
@@ -2714,36 +2681,21 @@ const revealBottomReportField = () => {
         {!reportKeyboardVisible && (
           <View style={styles.wizardFooter}>
 
-          {/* LEFT */}
+          {/* Website footer: outlined Back (Cancel on the first step), step count with dots, purple Next. */}
           <TouchableOpacity
-            style={styles.wizardArrowButton}
-            onPress={goToPreviousReportStep}
-            disabled={
-              reportStep === 0 ||
-              isTransitioning ||
-              isSaving
-            }
+            style={[styles.wizardBackButton, (isTransitioning || isSaving) && { opacity: 0.5 }]}
+            onPress={reportStep === 0 ? cancelDraft : goToPreviousReportStep}
+            disabled={isTransitioning || isSaving || Boolean(photoPreparationStatus)}
             accessibilityRole="button"
-            accessibilityLabel="Previous report step"
+            accessibilityLabel={reportStep === 0 ? 'Cancel report' : 'Previous report step'}
           >
-            <Ionicons
-              name="arrow-back-circle"
-              size={39}
-              color={
-                reportStep === 0 ||
-                isTransitioning ||
-                isSaving
-                  ? '#D1D5DB'
-                  : '#4B5563'
-              }
-            />
+            <Ionicons name="chevron-back" size={18} color={colors.ink} />
+            <Text style={styles.wizardBackText}>{reportStep === 0 ? 'Cancel' : 'Back'}</Text>
           </TouchableOpacity>
 
-
-          {/* DOTS */}
           <View style={styles.wizardProgress}>
             <Text style={styles.wizardProgressText}>
-              {reportStep + 1} of {REPORT_STEPS.length}
+              Step {reportStep + 1} of {REPORT_STEPS.length}
             </Text>
             <View style={styles.wizardDots}>
               {REPORT_STEPS.map(
@@ -2762,20 +2714,19 @@ const revealBottomReportField = () => {
             </View>
           </View>
 
-
-          {/* Keep the footer balanced, with no forward action on the final step. */}
+          {/* The final step posts from the review screen, so it keeps the footer balanced instead. */}
           {reportStep < REPORT_STEPS.length - 1 ? (
             <TouchableOpacity
-              style={styles.wizardArrowButton}
+              style={[styles.wizardNextButton, (!canAdvanceFromStep(reportStep) || isTransitioning || isSaving || Boolean(photoPreparationStatus)) && styles.wizardNextButtonDisabled]}
               onPress={goToNextReportStep}
               disabled={!canAdvanceFromStep(reportStep) || isTransitioning || isSaving || Boolean(photoPreparationStatus)}
               accessibilityRole="button"
               accessibilityLabel={returnToReview ? "Return to review" : "Next report step"}
             >
-              <Ionicons name="arrow-forward-circle" size={39}
-                color={!canAdvanceFromStep(reportStep) || isTransitioning || isSaving || Boolean(photoPreparationStatus) ? '#D1D5DB' : '#4B5563'} />
+              <Text style={styles.wizardNextText}>{returnToReview ? 'Review' : 'Next'}</Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.white} />
             </TouchableOpacity>
-          ) : <View style={styles.wizardArrowButton} accessible={false} />}
+          ) : <View style={styles.wizardNextSpacer} accessible={false} />}
 
           </View>
         )}

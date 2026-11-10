@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Modal, Platform, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { colors } from '../lib/theme';
 
 export default function ReportCardMenu({ actions }) {
   const button = useRef(null);
@@ -17,7 +18,7 @@ export default function ReportCardMenu({ actions }) {
   });
   return <>
     <TouchableOpacity ref={button} style={styles.button} accessibilityRole="button" accessibilityLabel="Report options" accessibilityState={{ expanded: open }} onPress={show}>
-      <Ionicons name="ellipsis-horizontal" size={22} color="#2F7D32" />
+      <Ionicons name="ellipsis-horizontal" size={22} color={colors.body} />
     </TouchableOpacity>
     <Modal visible={open} transparent animationType="fade" statusBarTranslucent onRequestClose={dismiss} onDismiss={() => { const action = pendingAction.current; pendingAction.current = null; action?.(); }}>
       <View style={{ flex: 1 }} accessibilityViewIsModal onAccessibilityEscape={dismiss}>
@@ -28,7 +29,7 @@ export default function ReportCardMenu({ actions }) {
             dismiss();
             if (Platform.OS !== 'ios') action.onPress();
           }}>
-            <Ionicons name={action.icon} size={20} color="#435047" /><Text style={styles.text}>{action.text}</Text>
+            <Ionicons name={action.icon} size={20} color={colors.body} /><Text style={styles.text}>{action.text}</Text>
           </TouchableOpacity>)}
         </View>
       </View>
@@ -37,7 +38,7 @@ export default function ReportCardMenu({ actions }) {
 }
 const styles = StyleSheet.create({
   button: { position: 'absolute', right: 3, top: 0, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  menu: { position: 'absolute', padding: 4, borderRadius: 14, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E4EAE5', shadowColor: '#17251A', shadowOpacity: 0.16, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 12 },
+  menu: { position: 'absolute', padding: 4, borderRadius: 14, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line, shadowColor: colors.ink, shadowOpacity: 0.16, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 12 },
   option: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 10, paddingVertical: 10 },
-  text: { flex: 1, color: '#303B34', fontSize: 14, lineHeight: 20 },
+  text: { flex: 1, color: colors.ink, fontSize: 14, lineHeight: 20 },
 });

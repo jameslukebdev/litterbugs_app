@@ -200,6 +200,11 @@ module.exports = ({ config }) => {
     extra: {
       ...config.extra,
       stripeApplePayEnabled,
+      analytics: {
+        enabled: process.env.EXPO_PUBLIC_ANALYTICS_ENABLED === 'true',
+        posthogKey: process.env.EXPO_PUBLIC_POSTHOG_KEY || '',
+        posthogHost: process.env.EXPO_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
+      },
       ...(stripeAppleMerchantIdentifier ? { stripeAppleMerchantIdentifier } : {}),
     },
     plugins,

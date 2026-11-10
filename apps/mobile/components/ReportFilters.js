@@ -21,70 +21,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReports } from '../lib/reports';
 import { DEFAULT_REPORT_FILTERS } from '../lib/reportFilters';
-import { getLitterSelectionColors } from '../lib/litterSelectionColors';
-import { getSeveritySelectionColors } from '../lib/severitySelectionColors';
+import BrandBug from './BrandBug';
+import { colors, fonts } from '../lib/theme';
 
-const STATUS_FILTER_COLORS = Object.freeze({
-  all: getLitterSelectionColors(1),
-  available: getLitterSelectionColors(3),
-  progress: getLitterSelectionColors(2),
-  completed: getLitterSelectionColors(0),
-});
-
-function filterChoiceColors(key, value, optionIndex) {
-  if (key === 'status') return STATUS_FILTER_COLORS[value];
-  if (key === 'radius') return getLitterSelectionColors(optionIndex);
-  if (key === 'severity') {
-    if (value === 'all') {
-      return { backgroundColor: '#FFF7F8', borderColor: '#F8DADD', foregroundColor: '#982D38' };
-    }
-    return getSeveritySelectionColors(Math.max(0, ['low', 'medium', 'high'].indexOf(value)));
-  }
-  return null;
-}
-
+// Website "Search and filters" (apps/web report-browser): same wording and order,
+// with each status labelled by its map bug and "Has a fund" by the bee.
 const groups = [
-  ['visibility', 'Visibility', [['visible', 'Visible reports'], ['hidden', 'Hidden reports']]],
+  ['status', 'Cleanup status', [['all', 'All'], ['available', 'Needs a cleanup', 'ladybug'], ['progress', 'Being cleaned', 'caterpillar'], ['completed', 'Cleaned up', 'flower']]],
+  ['funding', 'Cleanup fund', [['all', 'Any'], ['funded', 'Has a fund', 'bee'], ['volunteer', 'Volunteer']]],
+  ['severity', 'Priority', [['all', 'All'], ['low', 'Low'], ['medium', 'Medium'], ['high', 'High']]],
+  ['radius', 'Distance from map center', [[0, 'Any'], [5, '5 mi'], [25, '25 mi'], [50, '50 mi']]],
+  ['visibility', 'Hidden reports', [['visible', 'Visible'], ['hidden', 'Hidden']]],
   ['favoritesOnly', 'Favorites', [[false, 'All reports'], [true, 'Favorites only']]],
-  [
-    'status',
-    'Cleanup status',
-    [
-      ['all', 'All'],
-      ['available', 'Available'],
-      ['progress', 'In progress'],
-      ['completed', 'Completed'],
-    ],
-  ],
-  [
-    'funding',
-    'Reward',
-    [
-      ['all', 'Any reward'],
-      ['funded', 'Funded'],
-      ['volunteer', 'Volunteer'],
-    ],
-  ],
-  [
-    'radius',
-    'Distance from map center',
-    [
-      [0, 'Any distance'],
-      [5, '5 miles'],
-      [25, '25 miles'],
-      [50, '50 miles'],
-    ],
-  ],
-  [
-    'severity',
-    'Severity',
-    [
-      ['all', 'All'],
-      ['low', 'Low'],
-      ['medium', 'Medium'],
-      ['high', 'High'],
-    ],
-  ],
 ];
 export default function ReportFilters({ map = false }) {
   const { fontScale } = useWindowDimensions();
@@ -111,7 +59,7 @@ export default function ReportFilters({ map = false }) {
     .filter(([key]) => filters[key] !== DEFAULT_REPORT_FILTERS[key])
     .map(([key, , options]) => {
       const valueLabel = options.find(([value]) => value === filters[key])?.[1];
-      return { key, label: key === 'severity' ? `${valueLabel} severity` : valueLabel };
+      return { key, label: key === 'severity' ? `${valueLabel} priority` : key === 'radius' ? `Within ${valueLabel}` : valueLabel };
     });
   if (filters.query.trim()) activeFilters.push({ key: 'query', label: `“${filters.query.trim()}”` });
   const count = activeFilters.length;
@@ -143,11 +91,13 @@ export default function ReportFilters({ map = false }) {
           onPress={() => { setDraft({ ...filters }); setOpen(true); }}
           style={[styles.filterButton, map && styles.mapFilterButton, count > 0 && styles.selected]}
         >
-          <Ionicons name="options-outline" size={25} color="#2F7D32" />
+          {/* Website "Filters" button: plum outline with its label; the map keeps just the icon. */}
+          <Ionicons name="options-outline" size={map ? 25 : 20} color={colors.plum} />
+          {map ? null : <Text style={styles.filterButtonText}>Filters</Text>}
           {count > 0 ? <View style={styles.badge}><Text style={styles.badgeText} maxFontSizeMultiplier={1.3}>{count}</Text></View> : null}
         </TouchableOpacity>
       </View>
-      {truncated ? <Text style={{ padding: 10, color: '#435047', backgroundColor: '#FFFFFF', borderRadius: 12 }}>{mapLimitMessage(truncated)}</Text> : null}
+      {truncated ? <Text style={{ padding: 10, color: colors.body, backgroundColor: colors.white, borderRadius: 12 }}>{mapLimitMessage(truncated)}</Text> : null}
       {count > 0 ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.activeFilters} contentContainerStyle={styles.activeFilterContent}>
           {activeFilters.map(({ key, label }) => (
@@ -155,7 +105,7 @@ export default function ReportFilters({ map = false }) {
               accessibilityRole="button" accessibilityLabel={`Remove ${label} filter`}
               onPress={() => choose(key, DEFAULT_REPORT_FILTERS[key])}>
               <View style={styles.activeChip}>
-                <Ionicons name="close-circle" size={16} color="#245F2A" />
+                <Ionicons name="close-circle" size={16} color={colors.primaryDark} />
                 <Text style={styles.chipText} >{label}</Text>
               </View>
             </TouchableOpacity>
@@ -183,55 +133,45 @@ export default function ReportFilters({ map = false }) {
           >
             <View style={styles.sheetHeader}>
               <Text style={styles.title} accessibilityRole="header">
-                Filters
+                Search and filters
               </Text>
-              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close filters without applying" onPress={() => setOpen(false)} style={styles.closeButton}><Ionicons name="close" size={22} color="#303A34" /></TouchableOpacity>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close filters without applying" onPress={() => setOpen(false)} style={styles.closeButton}><Ionicons name="close" size={22} color={colors.ink} /></TouchableOpacity>
             </View>
             <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.filterContent}>
+              <View style={styles.filterSection}>
+                <Text style={styles.label}>Search report titles and notes</Text>
+                <TextInput value={draft.query} onChangeText={value => setDraft(current => ({ ...current, query: value }))} placeholder="Bottles, roadside…" placeholderTextColor={colors.subtle} accessibilityLabel="Search report titles and notes" style={styles.input} clearButtonMode="while-editing" />
+              </View>
               {groups.map(([key, label, options]) => (
                 key === 'favoritesOnly' ? (
                   <View key={key} style={styles.favoritesRow}>
-                    <Ionicons name="heart-outline" size={21} color="#687178" />
+                    <Ionicons name="heart-outline" size={21} color={colors.muted} />
                     <Text style={styles.favoritesLabel}>Favorites only</Text>
-                    <Switch value={draft.favoritesOnly} onValueChange={value => setDraft(current => ({ ...current, favoritesOnly: value }))} accessibilityLabel="Favorites only" trackColor={{ false: '#DDE3DF', true: '#2F7D32' }} />
+                    <Switch value={draft.favoritesOnly} onValueChange={value => setDraft(current => ({ ...current, favoritesOnly: value }))} accessibilityLabel="Favorites only" trackColor={{ false: colors.line, true: colors.primary }} />
                   </View>
                 ) : <View key={key} style={styles.filterSection}>
                   <Text style={styles.label}>{label}</Text>
                   <View style={styles.options}>
-                    {options.map(([value, text], optionIndex) => {
-                      const optionColors = filterChoiceColors(key, value, optionIndex);
+                    {options.map(([value, text, bug]) => {
                       const selected = draft[key] === value;
                       return (
-                        <TouchableOpacity key={value} accessibilityRole="radio"
+                        <TouchableOpacity key={String(value)} accessibilityRole="radio"
+                          accessibilityLabel={text}
                           accessibilityState={{ checked: selected }}
-                          style={[
-                            styles.choice,
-                            (key === 'status' || key === 'radius') ? styles.gridChoice : styles.inlineChoice,
-                            selected && optionColors && {
-                              backgroundColor: optionColors.backgroundColor,
-                              borderColor: optionColors.borderColor,
-                            },
-                            selected && (optionColors ? styles.coloredChoiceSelected : styles.selected),
-                          ]}
+                          style={[styles.choice, selected && styles.choiceSelected]}
                           onPress={() => setDraft(current => ({ ...current, [key]: value }))}>
-                          <Text style={[
-                            styles.choiceText,
-                            selected && optionColors && { color: optionColors.foregroundColor },
-                            selected && !optionColors && styles.choiceTextSelected,
-                            selected && optionColors && styles.coloredChoiceTextSelected,
-                          ]}>{key === 'status' && value === 'all' ? 'All reports' : text}</Text>
+                          {bug ? <BrandBug kind={bug} size={17} /> : null}
+                          <Text style={[styles.choiceText, selected && styles.choiceTextSelected]}>{text}</Text>
                         </TouchableOpacity>
                       );
                     })}
                   </View>
                 </View>
               ))}
-              <View style={styles.filterSection}><Text style={styles.label}>Report keywords</Text>
-              <TextInput value={draft.query} onChangeText={value => setDraft(current => ({ ...current, query: value }))} placeholder="Search report titles and notes" accessibilityLabel="Report keywords" style={styles.input} clearButtonMode="while-editing" /></View>
             </ScrollView>
             <View style={[styles.filterFooter, fontScale > 1.5 && { flexDirection: 'column', alignItems: 'stretch', gap: 8 }]}>
               <TouchableOpacity style={styles.resetButton} onPress={() => setDraft({ ...DEFAULT_REPORT_FILTERS })} accessibilityRole="button" accessibilityLabel="Reset all filters">
-                <Text style={styles.resetText}>Reset</Text>
+                <Text style={styles.resetText}>Reset filters</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.done, fontScale > 1.5 && { flex: 0, paddingVertical: 10 }]}
@@ -239,7 +179,7 @@ export default function ReportFilters({ map = false }) {
                 onPress={() => { setFilters(draft); setOpen(false); }}
               >
                 <Text style={[styles.doneText, { textAlign: 'center' }]}>
-                  {displayCount == null || (!draftChanged && loading) ? 'Show reports' : `Show ${displayCount}${displayTruncated ? '+' : ''} ${displayCount === 1 ? 'report' : 'reports'}`}
+                  {displayCount == null || (!draftChanged && loading) ? 'Show results' : `Show ${displayCount}${displayTruncated ? '+' : ''} ${displayCount === 1 ? 'result' : 'results'}`}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -250,44 +190,45 @@ export default function ReportFilters({ map = false }) {
   );
 }
 const styles = StyleSheet.create({
-  header: { backgroundColor: '#FFFFFF', padding: 12 },
+  header: { backgroundColor: colors.white, padding: 12 },
   activeFilters: { marginTop: 4, flexGrow: 0 },
   activeFilterContent: { gap: 6, paddingRight: 2 },
   activeChipTarget: { minHeight: 44, maxWidth: 260, justifyContent: 'center' },
-  activeChip: { minHeight: 32, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 18, borderWidth: 1, borderColor: '#2F7D32', backgroundColor: '#E8F2E9', flexDirection: 'row', alignItems: 'center', gap: 5 },
+  activeChip: { minHeight: 32, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 18, borderWidth: 1, borderColor: colors.primary, backgroundColor: colors.primarySoft, flexDirection: 'row', alignItems: 'center', gap: 5 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  searchSurface: { flex: 1, minWidth: 0, minHeight: 52, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F4F2', borderRadius: 16 },
-  input: { fontSize: 15, color: '#202428', minHeight: 48, backgroundColor: '#F1F4F2', borderRadius: 12, paddingHorizontal: 12 },
+  searchSurface: { flex: 1, minWidth: 0, minHeight: 50, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderWidth: 2, borderColor: colors.line, borderRadius: 14 },
+  input: { fontSize: 16, color: colors.ink, minHeight: 48, backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.lineStrong, borderRadius: 12, paddingHorizontal: 12 },
   mapHeader: { backgroundColor: 'transparent', paddingHorizontal: 16, paddingVertical: 0 },
-  mapSearchShell: { minHeight: 58, gap: 0, paddingHorizontal: 3, paddingVertical: 3, borderRadius: 29, borderCurve: 'continuous', borderWidth: 1, borderColor: '#D6DED8', backgroundColor: '#FFFFFF', boxShadow: '0 3px 10px rgba(25, 45, 32, 0.14)' },
+  mapSearchShell: { minHeight: 58, gap: 0, paddingHorizontal: 3, paddingVertical: 3, borderRadius: 29, borderCurve: 'continuous', borderWidth: 1, borderColor: colors.lineStrong, backgroundColor: colors.white, boxShadow: '0 3px 10px rgba(46, 37, 128, 0.14)' },
   mapLogoCard: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
   mapLogo: { width: 42, height: 30 },
-  mapSearchRow: { backgroundColor: 'transparent', boxShadow: 'none' },
-  mapFilterButton: { borderWidth: 0, backgroundColor: 'transparent', boxShadow: 'none', shadowOpacity: 0, elevation: 0 },
-  filterButton: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D6DED8', boxShadow: '0 2px 6px rgba(25, 45, 32, 0.10)' },
-  badge: { position: 'absolute', top: -3, right: -2, minWidth: 21, minHeight: 21, paddingHorizontal: 4, borderRadius: 12, backgroundColor: '#2F7D32', borderWidth: 2, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
-  badgeText: { fontSize: 11, fontWeight: '700', color: '#FFFFFF' },
+  mapSearchRow: { backgroundColor: 'transparent', borderWidth: 0, boxShadow: 'none' },
+  mapFilterButton: { width: 52, height: 52, paddingHorizontal: 0, borderRadius: 26, borderWidth: 0, backgroundColor: 'transparent', boxShadow: 'none', shadowOpacity: 0, elevation: 0 },
+  filterButton: { minWidth: 50, height: 50, paddingHorizontal: 14, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: colors.white, borderWidth: 2, borderColor: '#E4C9ED' },
+  filterButtonText: { color: colors.plum, fontSize: 16, fontWeight: '800' },
+  badge: { position: 'absolute', top: -3, right: -2, minWidth: 21, minHeight: 21, paddingHorizontal: 4, borderRadius: 12, backgroundColor: colors.primary, borderWidth: 2, borderColor: colors.white, alignItems: 'center', justifyContent: 'center' },
+  badgeText: { fontSize: 11, fontWeight: '700', color: colors.white },
   chip: {
     minHeight: 44,
     paddingHorizontal: 13,
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: '#D6DED8',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.lineStrong,
+    backgroundColor: colors.white,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
   },
-  selected: { backgroundColor: '#E8F2E9', borderColor: '#2F7D32' },
-  chipText: { flexShrink: 1, color: '#245F2A', fontSize: 14, fontWeight: '600' },
+  selected: { backgroundColor: colors.plumSoft, borderColor: colors.plum },
+  chipText: { flexShrink: 1, color: colors.primaryDark, fontSize: 14, fontWeight: '600' },
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.3)',
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '90%',
@@ -297,38 +238,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: '#E8ECE9',
   },
-  title: { fontSize: 22, fontWeight: '700', color: '#202428' },
-  label: {
-    fontSize: 15,
-    fontWeight: '600',
-    marginBottom: 12,
-    color: '#30363B',
-  },
+  title: { fontSize: 28, lineHeight: 32, fontFamily: fonts.heading, color: colors.ink },
+  label: { fontSize: 15, fontWeight: '800', marginBottom: 10, color: colors.ink },
   options: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  closeButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F3F5F4' },
+  closeButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.mist },
   filterContent: { paddingHorizontal: 20, paddingBottom: 20 },
-  favoritesRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: '#E8ECE9' },
-  favoritesLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: '#30363B' },
-  filterSection: { paddingTop: 20, paddingBottom: 20, borderBottomWidth: 1, borderBottomColor: '#E8ECE9' },
-  choice: { minHeight: 48, paddingHorizontal: 8, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: '#DCE3DE', alignItems: 'center', justifyContent: 'center' },
-  gridChoice: { width: '48%', flexGrow: 1 },
-  inlineChoice: { flex: 1 },
-  choiceText: { color: '#4F5C63', fontSize: 14, lineHeight: 20, textAlign: 'center', fontWeight: '500' },
-  choiceTextSelected: { color: '#245F2A', fontWeight: '600' },
-  coloredChoiceSelected: { borderWidth: 2 },
-  coloredChoiceTextSelected: { fontWeight: '800' },
-  filterFooter: { paddingHorizontal: 20, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#E8ECE9', flexDirection: 'row', alignItems: 'center', gap: 20 },
-  resetButton: { minHeight: 48, paddingHorizontal: 6, justifyContent: 'center' },
-  resetText: { color: '#303A34', fontSize: 15, fontWeight: '600', textDecorationLine: 'underline' },
+  favoritesRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 18 },
+  favoritesLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.ink },
+  filterSection: { paddingTop: 16 },
+  choice: { minHeight: 42, paddingHorizontal: 15, borderRadius: 21, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.white, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  choiceText: { color: colors.ink, fontSize: 15, fontWeight: '600' },
+  choiceTextSelected: { color: colors.primaryDark, fontWeight: '800' },
+  choiceSelected: { borderWidth: 2, borderColor: colors.primary },
+  filterFooter: { paddingHorizontal: 20, paddingTop: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  resetButton: { minHeight: 48, paddingHorizontal: 18, justifyContent: 'center', borderRadius: 14, borderWidth: 1.5, borderColor: colors.lineStrong, backgroundColor: colors.white },
+  resetText: { color: colors.ink, fontSize: 16, fontWeight: '800' },
   done: {
     flex: 1,
-    backgroundColor: '#A5D6A7',
+    backgroundColor: colors.primary,
     minHeight: 52,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 14,
   },
-  doneText: { color: '#17451C', fontSize: 16, fontWeight: '800' },
+  doneText: { color: colors.white, fontSize: 16, fontWeight: '800' },
 });

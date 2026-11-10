@@ -13,16 +13,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 
 import { getRankAsset } from './lib/rankAssets';
+import { colors, fonts } from './lib/theme';
 
 const PARTICLES = [
   { x: -102, y: -78, color: '#B448CF', size: 11 },
   { x: -112, y: 18, color: '#F5C84C', size: 8 },
-  { x: -72, y: 90, color: '#67B96B', size: 10 },
+  { x: -72, y: 90, color: colors.primary, size: 10 },
   { x: 82, y: -92, color: '#F5C84C', size: 9 },
   { x: 112, y: -8, color: '#B448CF', size: 12 },
-  { x: 72, y: 92, color: '#67B96B', size: 8 },
-  { x: -24, y: -118, color: '#FFFFFF', size: 7 },
-  { x: 18, y: 118, color: '#FFFFFF', size: 7 },
+  { x: 72, y: 92, color: colors.primary, size: 8 },
+  { x: -24, y: -118, color: colors.white, size: 7 },
+  { x: 18, y: 118, color: colors.white, size: 7 },
 ];
 
 export default function RankUpCelebration({
@@ -330,23 +331,23 @@ export default function RankUpCelebration({
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, paddingVertical: 18, backgroundColor: 'rgba(16, 8, 20, 0.86)' },
+  backdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, paddingVertical: 18, backgroundColor: 'rgba(41, 41, 50, 0.86)' },
   card: { width: '100%', maxWidth: 430, paddingHorizontal: 24, paddingTop: 28, paddingBottom: 24, alignItems: 'center', overflow: 'hidden', borderWidth: 2, borderColor: '#D995E8', borderRadius: 28, backgroundColor: '#FBF7FC', shadowColor: '#D25AE8', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 28, elevation: 15 },
   skipButton: { position: 'absolute', zIndex: 5, top: 12, right: 12, minWidth: 58, minHeight: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: '#F0E3F3' },
   skipText: { color: '#75258A', fontSize: 14, fontWeight: '800' },
   eyebrow: { color: '#79517F', fontSize: 11, lineHeight: 15, fontWeight: '900', letterSpacing: 1.4 },
-  rankUpTitle: { marginTop: 5, color: '#3A243F', fontSize: 29, lineHeight: 35, fontWeight: '900' },
-  artworkStage: { marginTop: 17, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderWidth: 3, borderColor: '#E7B8F0', borderRadius: 38, backgroundColor: '#FFFFFF' },
+  rankUpTitle: { marginTop: 5, color: '#3A243F', fontSize: 29, lineHeight: 35, fontFamily: fonts.heading },
+  artworkStage: { marginTop: 17, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderWidth: 3, borderColor: '#E7B8F0', borderRadius: 38, backgroundColor: colors.white },
   glow: { position: 'absolute', backgroundColor: '#D96EEE', shadowColor: '#E48FF5', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.95, shadowRadius: 24 },
   artworkLayer: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
   particle: { position: 'absolute', zIndex: 3 },
   finalCopy: { width: '100%', marginTop: 20, alignItems: 'center' },
-  congratulations: { color: '#2F7D32', fontSize: 20, lineHeight: 26, fontWeight: '900' },
-  reached: { marginTop: 2, color: '#625768', fontSize: 15, lineHeight: 21, fontWeight: '700' },
-  newRank: { marginTop: 3, color: '#8B2EA2', fontSize: 25, lineHeight: 31, fontWeight: '900', letterSpacing: 1.1, textAlign: 'center' },
-  impactCopy: { maxWidth: 310, marginTop: 8, color: '#554C59', fontSize: 14, lineHeight: 20, textAlign: 'center' },
+  congratulations: { color: colors.primary, fontSize: 20, lineHeight: 26, fontFamily: fonts.heading },
+  reached: { marginTop: 2, color: colors.body, fontSize: 15, lineHeight: 21, fontWeight: '700' },
+  newRank: { marginTop: 3, color: '#8B2EA2', fontSize: 25, lineHeight: 31, fontFamily: fonts.heading, letterSpacing: 1.1, textAlign: 'center' },
+  impactCopy: { maxWidth: 310, marginTop: 8, color: colors.body, fontSize: 14, lineHeight: 20, textAlign: 'center' },
   error: { marginTop: 10, color: '#B42318', fontSize: 13, lineHeight: 18, fontWeight: '700', textAlign: 'center' },
-  continueButton: { width: '100%', minHeight: 52, marginTop: 18, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: '#2F7D32' },
-  continueText: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+  continueButton: { width: '100%', minHeight: 52, marginTop: 18, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: colors.primary },
+  continueText: { color: colors.white, fontSize: 16, fontWeight: '900' },
   disabled: { opacity: 0.65 },
 });

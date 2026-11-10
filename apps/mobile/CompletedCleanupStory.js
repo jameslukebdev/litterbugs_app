@@ -16,6 +16,7 @@ import {
   cleanupImpactFacts,
   formatCleanupDate,
 } from './lib/cleanupImpactPresentation';
+import { colors, fonts } from './lib/theme';
 
 function AfterPhoto({ url, index, count, width }) {
   const [loading, setLoading] = useState(true);
@@ -42,13 +43,13 @@ function AfterPhoto({ url, index, count, width }) {
 
       {loading ? (
         <View style={styles.photoOverlay}>
-          <ActivityIndicator color="#FFFFFF" />
+          <ActivityIndicator color={colors.white} />
         </View>
       ) : null}
 
       {failed ? (
         <View style={styles.photoUnavailable}>
-          <Ionicons name="image-outline" size={34} color="#5E6B61" />
+          <Ionicons name="image-outline" size={34} color={colors.body} />
           <Text style={styles.photoUnavailableText}>After photo couldn’t load.</Text>
         </View>
       ) : null}
@@ -77,7 +78,7 @@ export default function CompletedCleanupStory({
   if (error || !impact) {
     return (
       <View style={styles.stateCard}>
-        <Ionicons name="alert-circle-outline" size={34} color="#6F796F" />
+        <Ionicons name="alert-circle-outline" size={34} color={colors.muted} />
         <Text style={styles.stateTitle}>Cleanup details unavailable</Text>
         <Text style={styles.stateText}>
           The report is complete, but its impact details couldn’t be loaded.
@@ -98,7 +99,7 @@ export default function CompletedCleanupStory({
     <View style={styles.story}>
       <View style={styles.completionBanner}>
         <View style={styles.completionIcon}>
-          <Ionicons name="checkmark" size={25} color="#FFFFFF" />
+          <Ionicons name="checkmark" size={25} color={colors.white} />
         </View>
         <View style={styles.completionCopy}>
           <Text style={styles.eyebrow}>COMMUNITY IMPACT</Text>
@@ -124,12 +125,12 @@ export default function CompletedCleanupStory({
           ) : null}
         </View>
         {impact.cleaner?.id && onCleanerPress ? (
-          <Ionicons name="chevron-forward" size={21} color="#738076" />
+          <Ionicons name="chevron-forward" size={21} color={colors.muted} />
         ) : null}
       </TouchableOpacity>
 
       <View style={styles.sectionHeader}>
-        <Ionicons name="images-outline" size={21} color="#2F7D32" />
+        <Ionicons name="images-outline" size={21} color={colors.primary} />
         <Text style={styles.sectionTitle}>After cleanup</Text>
       </View>
 
@@ -154,13 +155,13 @@ export default function CompletedCleanupStory({
         </ScrollView>
       ) : (
         <View style={[styles.photoUnavailable, styles.emptyPhotos]}>
-          <Ionicons name="image-outline" size={34} color="#5E6B61" />
+          <Ionicons name="image-outline" size={34} color={colors.body} />
           <Text style={styles.photoUnavailableText}>After photos are unavailable.</Text>
         </View>
       )}
 
       <View style={styles.cleanupDateRow}>
-        <Ionicons name="calendar-outline" size={18} color="#356B3A" />
+        <Ionicons name="calendar-outline" size={18} color={colors.primaryDark} />
         <View style={styles.cleanupDateCopy}>
           <Text style={styles.cleanupDateLabel}>Cleanup date</Text>
           <Text style={styles.cleanupDateText}>
@@ -178,7 +179,7 @@ export default function CompletedCleanupStory({
         <View style={styles.factsRow}>
           {facts.map((fact) => (
             <View key={fact.label} style={styles.factCard} accessible accessibilityLabel={fact.label}>
-              <Ionicons name={fact.icon} size={21} color="#2F7D32" />
+              <Ionicons name={fact.icon} size={21} color={colors.primary} />
               <Text style={styles.factText}>{fact.label}</Text>
             </View>
           ))}
@@ -194,14 +195,14 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 12,
     gap: 18,
-    backgroundColor: '#F5FAF5',
+    backgroundColor: colors.primaryTint,
   },
   completionBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
     borderRadius: 20,
-    backgroundColor: '#E0F2E1',
+    backgroundColor: colors.primarySoft,
   },
   completionIcon: {
     width: 46,
@@ -209,24 +210,24 @@ const styles = StyleSheet.create({
     borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#2F7D32',
+    backgroundColor: colors.primary,
   },
   completionCopy: {
     flex: 1,
     marginLeft: 13,
   },
   eyebrow: {
-    color: '#4D7551',
+    color: colors.primary,
     fontSize: 11,
     letterSpacing: 1.1,
     fontWeight: '800',
   },
   completionTitle: {
     marginTop: 3,
-    color: '#17451C',
+    color: colors.ink,
     fontSize: 24,
     lineHeight: 29,
-    fontWeight: '900',
+    fontFamily: fonts.heading,
   },
   cleanerRow: {
     minHeight: 62,
@@ -235,26 +236,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 7,
     borderRadius: 22,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
   },
   cleanerCopy: {
     flex: 1,
     marginLeft: 12,
   },
   cleanerLabel: {
-    color: '#647168',
+    color: colors.muted,
     fontSize: 12,
     fontWeight: '700',
   },
   cleanerName: {
     marginTop: 2,
-    color: '#1E2820',
+    color: colors.ink,
     fontSize: 17,
     fontWeight: '800',
   },
   cleanerUsername: {
     marginTop: 1,
-    color: '#6A766D',
+    color: colors.muted,
     fontSize: 13,
   },
   cleanupDateRow: {
@@ -266,13 +267,13 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   cleanupDateLabel: {
-    color: '#617066',
+    color: colors.muted,
     fontSize: 12,
     fontWeight: '700',
   },
   cleanupDateText: {
     marginTop: 2,
-    color: '#263128',
+    color: colors.ink,
     fontSize: 15,
     fontWeight: '700',
   },
@@ -282,7 +283,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sectionTitle: {
-    color: '#1F3922',
+    color: colors.ink,
     fontSize: 18,
     fontWeight: '900',
   },
@@ -293,7 +294,7 @@ const styles = StyleSheet.create({
     height: 380,
     overflow: 'hidden',
     borderRadius: 22,
-    backgroundColor: '#DDE5DE',
+    backgroundColor: colors.line,
   },
   photo: {
     width: '100%',
@@ -303,13 +304,13 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(20, 40, 22, 0.28)',
+    backgroundColor: 'rgba(41, 41, 50, 0.28)',
   },
   photoUnavailable: {
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
-    backgroundColor: '#E7EEE7',
+    backgroundColor: colors.line,
   },
   emptyPhotos: {
     minHeight: 180,
@@ -317,7 +318,7 @@ const styles = StyleSheet.create({
   },
   photoUnavailableText: {
     marginTop: 9,
-    color: '#59655B',
+    color: colors.body,
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
@@ -329,20 +330,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 14,
-    backgroundColor: 'rgba(20, 28, 21, 0.72)',
+    backgroundColor: 'rgba(41, 41, 50, 0.72)',
   },
   photoCountText: {
-    color: '#FFFFFF',
+    color: colors.white,
     fontSize: 12,
     fontWeight: '800',
   },
   descriptionCard: {
     padding: 17,
     borderRadius: 18,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
   },
   descriptionLabel: {
-    color: '#537057',
+    color: colors.body,
     fontSize: 12,
     letterSpacing: 0.4,
     fontWeight: '800',
@@ -350,7 +351,7 @@ const styles = StyleSheet.create({
   },
   descriptionText: {
     marginTop: 8,
-    color: '#273029',
+    color: colors.ink,
     fontSize: 16,
     lineHeight: 24,
   },
@@ -366,12 +367,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 14,
     borderRadius: 16,
-    backgroundColor: '#E5F1E6',
+    backgroundColor: colors.primarySoft,
   },
   factText: {
     flex: 1,
     marginLeft: 9,
-    color: '#315B35',
+    color: colors.primaryDark,
     fontSize: 14,
     lineHeight: 19,
     fontWeight: '800',
@@ -383,17 +384,17 @@ const styles = StyleSheet.create({
     margin: 20,
     padding: 24,
     borderRadius: 22,
-    backgroundColor: '#F0F6F0',
+    backgroundColor: colors.primarySoft,
   },
   stateTitle: {
     marginTop: 12,
-    color: '#283229',
+    color: colors.ink,
     fontSize: 18,
     fontWeight: '800',
   },
   stateText: {
     marginTop: 9,
-    color: '#667068',
+    color: colors.muted,
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
@@ -403,10 +404,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 18,
-    backgroundColor: '#2F7D32',
+    backgroundColor: colors.primary,
   },
   retryButtonText: {
-    color: '#FFFFFF',
+    color: colors.white,
     fontSize: 14,
     fontWeight: '800',
   },

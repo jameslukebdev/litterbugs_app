@@ -1,11 +1,12 @@
 import { StyleSheet } from 'react-native';
 import { BOTTOM_NAV_METRICS } from '../lib/navigationLayout';
+import { colors, fonts } from '../lib/theme';
 export default StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F6F7' },
+  container: { flex: 1, backgroundColor: colors.mist },
   initialMapLoading: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 1000,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
   },
   floatingMapHeaderArea: {
     position: 'absolute',
@@ -18,13 +19,13 @@ export default StyleSheet.create({
     position: 'absolute',
     minHeight: 50,
     borderWidth: 1,
-    borderColor: 'rgba(47,125,50,0.16)',
+    borderColor: 'rgba(81, 70, 237, 0.16)',
     borderRadius: 25,
     borderCurve: 'continuous',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0 6px 20px rgba(31, 35, 40, 0.16)',
+    boxShadow: '0 6px 20px rgba(41, 41, 50, 0.16)',
   },
   floatingMapLogoCard: {
     width: 154,
@@ -40,14 +41,14 @@ export default StyleSheet.create({
     paddingHorizontal: 18,
   },
   floatingMapInstructionTitle: {
-    color: '#1F2937',
+    color: colors.ink,
     fontSize: 16,
     fontWeight: '800',
     textAlign: 'center',
   },
   floatingMapInstructionHint: {
     marginTop: 1,
-    color: '#667085',
+    color: colors.muted,
     fontSize: 11,
     fontWeight: '600',
     textAlign: 'center',
@@ -66,18 +67,19 @@ export default StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 25,
     borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: '#2F7D32',
-    backgroundColor: '#FFFFFF',
+    // Website Report Litter: white pill, soft blue edge, blue Nunito label, dragonfly.
+    borderWidth: 2,
+    borderColor: '#9BBBF3',
+    backgroundColor: colors.white,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    shadowColor: '#000000',
-    shadowOpacity: 0.18,
+    gap: 8,
+    shadowColor: '#2A225A',
+    shadowOpacity: 0.08,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 4,
+    elevation: 2,
   },
   reportLitterButtonContentFrame: {
     width: '100%',
@@ -97,9 +99,9 @@ export default StyleSheet.create({
     right: 0,
   },
   reportLitterButtonText: {
-    color: '#2F7D32',
+    color: '#2E539E',
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: fonts.heading,
   },
   reportPlacementCloseWrap: {
     position: 'absolute',
@@ -112,11 +114,11 @@ export default StyleSheet.create({
     borderRadius: 25,
     borderCurve: 'continuous',
     borderWidth: 1,
-    borderColor: 'rgba(55,65,81,0.24)',
-    backgroundColor: '#FFFFFF',
+    borderColor: 'rgba(41, 41, 50, 0.24)',
+    backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000000',
+    shadowColor: colors.black,
     shadowOpacity: 0.18,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
@@ -140,7 +142,7 @@ wizardKeyboardView: {
 
 wizardSheet: {
   height: '92%',
-  backgroundColor: '#FFFFFF',
+  backgroundColor: colors.white,
   borderTopLeftRadius: 24,
   borderTopRightRadius: 24,
   overflow: 'hidden',
@@ -156,15 +158,15 @@ wizardHeader: {
 
 wizardHeaderTitle: {
   fontSize: 22,
-  fontWeight: '800',
-  color: '#1F2937',
+  fontFamily: fonts.heading,
+  color: colors.ink,
 },
 
 wizardHeaderStep: {
   marginTop: 3,
   fontSize: 13,
   fontWeight: '600',
-  color: '#6B7280',
+  color: colors.muted,
 },
 
 wizardCloseButton: {
@@ -173,7 +175,7 @@ wizardCloseButton: {
   borderRadius: 21,
   alignItems: 'center',
   justifyContent: 'center',
-  backgroundColor: '#F3F4F6',
+  backgroundColor: colors.mist,
 },
 
 wizardDivider: {
@@ -201,7 +203,7 @@ wizardDismissArea: {
 },
 
 wizardDetailSection: { marginTop: 28 },
-wizardSectionTitle: { fontSize: 20, lineHeight: 26, fontWeight: '700', color: '#1F2937', marginBottom: 8 },
+wizardSectionTitle: { fontSize: 20, lineHeight: 26, fontFamily: fonts.heading, color: colors.ink, marginBottom: 8 },
 wizardStep: {
   flexGrow: 1,
 },
@@ -210,22 +212,22 @@ wizardEyebrow: {
   fontSize: 12,
   fontWeight: '800',
   letterSpacing: 0.8,
-  color: '#2F7D32',
+  color: colors.primary,
   marginBottom: 10,
 },
 
 wizardTitle: {
   fontSize: 28,
   lineHeight: 34,
-  fontWeight: '800',
-  color: '#1F2937',
+  fontFamily: fonts.heading,
+  color: colors.ink,
   marginBottom: 10,
 },
 
 wizardDescription: {
   fontSize: 16,
   lineHeight: 23,
-  color: '#667085',
+  color: colors.muted,
   marginBottom: 28,
 },
 
@@ -237,7 +239,7 @@ wizardLargeInput: {
 wizardFieldLabel: {
   fontSize: 14,
   fontWeight: '700',
-  color: '#4B5563',
+  color: colors.body,
   marginTop: 18,
   marginBottom: 7,
 },
@@ -261,12 +263,12 @@ optionalFieldHeading: {
 },
 reportReviewRow: {
   flexDirection: 'row', alignItems: 'center', gap: 12,
-  paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#E8ECE9',
+  paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.line,
 },
 reportReviewCopy: { flex: 1, gap: 6 },
-reportReviewLabel: { fontSize: 16, fontWeight: '700', color: '#4D5952' },
-reportReviewTitle: { fontSize: 20, fontWeight: '700', color: '#26312B', lineHeight: 26 },
-reportReviewValue: { fontSize: 16, color: '#374151', lineHeight: 23 },
+reportReviewLabel: { fontSize: 16, fontFamily: fonts.heading, color: colors.ink },
+reportReviewTitle: { fontSize: 20, fontFamily: fonts.heading, color: colors.ink, lineHeight: 26 },
+reportReviewValue: { fontSize: 16, color: colors.ink, lineHeight: 23 },
 reportReviewChipList: {
   flexDirection: 'row',
   flexWrap: 'wrap',
@@ -279,9 +281,9 @@ reportReviewChip: {
   alignItems: 'center',
   gap: 6,
   paddingHorizontal: 11,
-  paddingVertical: 7,
-  borderRadius: 17,
-  borderWidth: 1,
+  paddingVertical: 5,
+  borderRadius: 999,
+  borderWidth: 0,
 },
 reportReviewChipText: {
   flexShrink: 1,
@@ -289,26 +291,21 @@ reportReviewChipText: {
   lineHeight: 18,
   fontWeight: '600',
 },
-reportReviewLitterChip: {
-  backgroundColor: '#EAF4EC',
-  borderColor: '#B9D9BD',
-},
-reportReviewLitterChipText: { color: '#245F2A' },
-reportReviewConditionChip: {
-  backgroundColor: '#E8F3FC',
-  borderColor: '#B8D8F0',
-},
-reportReviewConditionChipText: { color: '#2E6E9E' },
+// Website review chips: one pale blue for litter types and site conditions.
+reportReviewLitterChip: { backgroundColor: '#E5EFFF' },
+reportReviewLitterChipText: { color: '#234485' },
+reportReviewConditionChip: { backgroundColor: '#E5EFFF' },
+reportReviewConditionChipText: { color: '#234485' },
 reportReviewSeverityChip: {
   alignSelf: 'flex-start',
   minHeight: 38,
   flexDirection: 'row',
   alignItems: 'center',
   gap: 8,
-  paddingHorizontal: 13,
+  paddingHorizontal: 12,
   paddingVertical: 8,
-  borderRadius: 19,
-  borderWidth: 1,
+  borderRadius: 12,
+  borderWidth: 0,
 },
 reportReviewSeverityText: {
   fontSize: 15,
@@ -321,14 +318,14 @@ reportReviewEditButton: {
 reportReviewHeader: {
   flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 44,
 },
-reportReviewMediaSection: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#E8ECE9' },
+reportReviewMediaSection: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.line },
 reportReviewPhotos: { flexDirection: 'row', gap: 10 },
 reportReviewPhoto: {
   width: '31%',
   aspectRatio: 1,
   borderRadius: 12,
   resizeMode: 'contain',
-  backgroundColor: '#F5F6F7',
+  backgroundColor: colors.mist,
 },
 reportReviewMap: { height: 112, borderRadius: 12, overflow: 'hidden' },
 wizardDetailsInput: {
@@ -350,7 +347,7 @@ optionalStepHeading: {
   rowGap: 4,
   marginBottom: 16,
 },
-optionalStepLabel: { fontSize: 14, fontWeight: '500', color: '#667078' },
+optionalStepLabel: { fontSize: 14, fontWeight: '500', color: colors.muted },
 litterTileSection: { marginBottom: 24 },
 litterTileGrid: {
   flexDirection: 'row',
@@ -365,16 +362,16 @@ litterTile: {
   paddingVertical: 10,
   flexDirection: 'row',
   alignItems: 'center',
-  borderWidth: 1,
-  borderColor: '#DCE2DE',
-  borderRadius: 12,
-  backgroundColor: '#FFFFFF',
+  borderWidth: 2,
+  borderColor: '#ECE8F8',
+  borderRadius: 14,
+  backgroundColor: colors.white,
 },
 litterTileSelected: {
   borderWidth: 2,
 },
 litterTileIcon: { marginRight: 8 },
-litterTileText: { flex: 1, fontSize: 14, lineHeight: 19, fontWeight: '500', color: '#374151' },
+litterTileText: { flex: 1, fontSize: 14, lineHeight: 19, fontWeight: '500', color: colors.ink },
 litterTileTextSelected: { fontWeight: '700' },
 reportPhotoStage: {
   height: 236,
@@ -384,26 +381,30 @@ reportPhotoStage: {
 },
 reportPhotoMain: { flex: 2 },
 reportPhotoSide: { flex: 1, gap: 12 },
+// Website photo slots: white with a dashed lilac edge, purple "+".
 reportPhotoSlot: {
   flex: 1,
   borderRadius: 16,
-  backgroundColor: '#F1F4F2',
+  backgroundColor: colors.white,
   overflow: 'hidden',
-  borderWidth: 1,
-  borderColor: '#DDE5DF',
+  borderWidth: 2,
+  borderStyle: 'dashed',
+  borderColor: colors.primaryBorder,
 },
 reportPhotoPreview: { width: '100%', height: '100%', resizeMode: 'cover' },
 reportPhotoEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+// Website: a filled slot gets a solid lilac edge and a white round remove button.
+reportPhotoSlotFilled: { borderStyle: 'solid', borderColor: '#A9B8F0' },
 reportPhotoRemove: {
   position: 'absolute', top: 0, right: 0,
   width: 44, height: 44,
   alignItems: 'center', justifyContent: 'center',
-  backgroundColor: 'rgba(0,0,0,0.3)',
-  borderBottomLeftRadius: 16,
 },
+reportPhotoRemoveDot: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.94)' },
 reportTitleLabel: {
-  color: '#374151', fontSize: 16, fontWeight: '600', marginBottom: 10,
+  color: colors.ink, fontSize: 16, fontWeight: '700', marginBottom: 8,
 },
+wizardTitleInput: { minHeight: 50, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1.5, borderColor: colors.primaryBorder, backgroundColor: colors.white, color: colors.ink, fontSize: 16 },
 photoPreparationSlot: {
   height: 36,
   justifyContent: 'center',
@@ -414,7 +415,7 @@ photoPreparationInline: {
   gap: 8,
 },
 photoPreparationText: {
-  color: '#667078',
+  color: colors.muted,
   fontSize: 13,
 },
 wizardPhotoActions: {
@@ -432,13 +433,15 @@ wizardPhotoActionButton: {
   justifyContent: 'center',
   gap: 7,
   borderWidth: 1,
-  borderColor: '#8FBC92',
+  borderColor: colors.primaryBorder,
+  borderBottomWidth: 4,
+  borderBottomColor: '#EBE7F8',
   borderRadius: 13,
-  backgroundColor: '#F6FBF6',
+  backgroundColor: colors.white,
 },
 
 wizardPhotoActionText: {
-  color: '#2F7D32',
+  color: colors.primaryDark,
   fontSize: 14,
   fontWeight: '800',
 },
@@ -458,14 +461,14 @@ wizardPhotoThumb: {
   width: 96,
   height: 96,
   borderRadius: 14,
-  backgroundColor: '#E5E7EB',
+  backgroundColor: colors.line,
 },
 
 existingPhotoNotice: {
   borderRadius: 20,
   borderWidth: 1,
-  borderColor: '#C8E6C9',
-  backgroundColor: '#F1F8E9',
+  borderColor: colors.primaryBorder,
+  backgroundColor: colors.primarySoft,
   padding: 22,
   alignItems: 'center',
 },
@@ -474,7 +477,7 @@ existingPhotoTitle: {
   marginTop: 10,
   fontSize: 17,
   fontWeight: '800',
-  color: '#2F7D32',
+  color: colors.primary,
   textAlign: 'center',
 },
 
@@ -482,7 +485,7 @@ existingPhotoText: {
   marginTop: 6,
   fontSize: 14,
   lineHeight: 20,
-  color: '#667085',
+  color: colors.muted,
   textAlign: 'center',
 },
 
@@ -490,14 +493,14 @@ replacementPhotoNotice: {
   marginBottom: 14,
   padding: 16,
   borderWidth: 1,
-  borderColor: '#C8E6C9',
+  borderColor: colors.primaryBorder,
   borderRadius: 16,
-  backgroundColor: '#F1F8E9',
+  backgroundColor: colors.primarySoft,
 },
 
 keepExistingPhotosText: {
   marginTop: 12,
-  color: '#2F7D32',
+  color: colors.primary,
   fontSize: 14,
   fontWeight: '800',
   textAlign: 'center',
@@ -514,8 +517,8 @@ wizardSeverityOption: {
   minHeight: 100,
   borderRadius: 16,
   borderWidth: 1,
-  borderColor: '#DCE2DE',
-  backgroundColor: '#FFFFFF',
+  borderColor: colors.line,
+  backgroundColor: colors.white,
   flexDirection: 'row',
   alignItems: 'center',
   paddingHorizontal: 18,
@@ -529,12 +532,12 @@ wizardSeverityCopy: { flex: 1, gap: 6 },
 wizardSeverityText: {
   fontSize: 18,
   fontWeight: '700',
-  color: '#374151',
+  color: colors.ink,
 },
 wizardSeverityDescription: {
   fontSize: 14,
   lineHeight: 20,
-  color: '#667078',
+  color: colors.muted,
 },
 wizardSeverityTextSelected: {
   fontWeight: '800',
@@ -545,29 +548,29 @@ wizardRadio: {
   height: 24,
   borderRadius: 12,
   borderWidth: 2,
-  borderColor: '#D1D5DB',
+  borderColor: colors.lineStrong,
   alignItems: 'center',
   justifyContent: 'center',
 },
 
 wizardRadioSelected: {
-  borderColor: '#66BB6A',
+  borderColor: colors.primary,
 },
 
 wizardRadioInner: {
   width: 12,
   height: 12,
   borderRadius: 6,
-  backgroundColor: '#66BB6A',
+  backgroundColor: colors.primary,
 },
 
 /* Review */
 
 reviewCard: {
-  backgroundColor: '#F9FAFB',
+  backgroundColor: colors.soft,
   borderRadius: 20,
   borderWidth: 1,
-  borderColor: '#E5E7EB',
+  borderColor: colors.line,
   paddingHorizontal: 18,
   marginBottom: 24,
 },
@@ -586,7 +589,7 @@ reviewHeader: {
 reviewLabel: {
   fontSize: 14,
   fontWeight: '800',
-  color: '#667085',
+  color: colors.muted,
   textTransform: 'uppercase',
   letterSpacing: 0.5,
 },
@@ -594,23 +597,23 @@ reviewLabel: {
 reviewEdit: {
   fontSize: 14,
   fontWeight: '800',
-  color: '#2F7D32',
+  color: '#2E539E',
 },
 
 reviewValue: {
   fontSize: 17,
   fontWeight: '700',
-  color: '#1F2937',
+  color: colors.ink,
 },
 
 reviewMuted: {
   fontSize: 15,
-  color: '#9CA3AF',
+  color: colors.subtle,
 },
 
 reviewDivider: {
   height: 1,
-  backgroundColor: '#E5E7EB',
+  backgroundColor: colors.line,
 },
 
 reviewPhotoRow: {
@@ -623,7 +626,7 @@ reviewPhoto: {
   width: 78,
   height: 78,
   borderRadius: 12,
-  backgroundColor: '#E5E7EB',
+  backgroundColor: colors.line,
 },
 
 reviewChipRow: {
@@ -633,7 +636,7 @@ reviewChipRow: {
 },
 
 reviewTypeChip: {
-  backgroundColor: '#66BB6A',
+  backgroundColor: colors.primary,
   paddingHorizontal: 11,
   paddingVertical: 7,
   borderRadius: 999,
@@ -647,7 +650,7 @@ reviewNoteChip: {
 },
 
 reviewChipText: {
-  color: '#FFFFFF',
+  color: colors.white,
   fontSize: 13,
   fontWeight: '700',
 },
@@ -656,13 +659,18 @@ reviewNotes: {
   marginTop: 10,
   fontSize: 15,
   lineHeight: 22,
-  color: '#374151',
+  color: colors.ink,
 },
 
+// Website: the optional starting fund sits in a soft yellow card labelled by the bee.
 startingFundCard: {
   marginTop: 8,
   marginBottom: 24,
-  paddingVertical: 16,
+  padding: 16,
+  borderWidth: 2,
+  borderColor: '#FFE08A',
+  borderRadius: 18,
+  backgroundColor: '#FFFBEA',
 },
 
 startingFundHeading: {
@@ -681,14 +689,14 @@ startingFundHeadingCopy: {
 },
 
 startingFundTitle: {
-  color: '#26332C',
+  color: '#5F4600',
   fontSize: 17,
-  fontWeight: '700',
+  fontFamily: fonts.heading,
 },
 
 startingFundText: {
   marginTop: 4,
-  color: '#526C55',
+  color: colors.body,
   fontSize: 14,
   lineHeight: 20,
 },
@@ -711,24 +719,24 @@ startingFundChoice: {
   justifyContent: 'center',
   borderRadius: 12,
   borderWidth: 1,
-  borderColor: '#DCE2DE',
-  backgroundColor: '#FFFFFF',
+  borderColor: colors.line,
+  backgroundColor: colors.white,
 },
 
 startingFundChoiceSelected: {
-  borderColor: '#2F7D32',
-  backgroundColor: '#EBF4EC',
+  borderColor: colors.primary,
+  backgroundColor: colors.primary,
 },
 
 startingFundChoiceText: {
-  color: '#405044',
+  color: colors.body,
   fontSize: 14,
   fontWeight: '600',
   textAlign: 'center',
 },
 
 startingFundChoiceTextSelected: {
-  color: '#2F7D32',
+  color: colors.white,
   fontWeight: '800',
 },
 
@@ -741,12 +749,12 @@ startingFundOtherRow: {
   flexDirection: 'row',
   alignItems: 'center',
   borderRadius: 12,
-  backgroundColor: '#F5F6F7',
+  backgroundColor: colors.mist,
 },
 
 startingFundDollar: {
   paddingLeft: 14,
-  color: '#405044',
+  color: colors.body,
   fontSize: 18,
   fontWeight: '600',
 },
@@ -755,7 +763,7 @@ startingFundOtherInput: {
   flex: 1,
   minHeight: 52,
   paddingHorizontal: 8,
-  color: '#1F2937',
+  color: colors.ink,
   fontSize: 18,
   fontWeight: '600',
 },
@@ -773,32 +781,32 @@ startingFundSummaryRow: {
 },
 
 startingFundSummaryText: {
-  color: '#52605A',
+  color: colors.body,
   fontSize: 14,
 },
 
 startingFundTotalRow: {
   borderTopWidth: 1,
-  borderTopColor: '#E5EAE6',
+  borderTopColor: colors.line,
   paddingTop: 12,
 },
 
 startingFundTotal: {
-  color: '#26332C',
+  color: colors.ink,
   fontSize: 16,
   fontWeight: '700',
 },
 
 startingFundHelper: {
   marginTop: 12,
-  color: '#68756B',
+  color: colors.muted,
   fontSize: 13,
 },
 
 wizardSubmitButton: {
   minHeight: 56,
   borderRadius: 16,
-  backgroundColor: '#66BB6A',
+  backgroundColor: colors.primary,
   flexDirection: 'row',
   gap: 9,
   alignItems: 'center',
@@ -807,7 +815,7 @@ wizardSubmitButton: {
 },
 
 wizardSubmitText: {
-  color: '#FFFFFF',
+  color: colors.white,
   fontSize: 17,
   fontWeight: '800',
 },
@@ -821,11 +829,12 @@ wizardFooter: {
   paddingTop: 12,
   paddingBottom: 20,
   borderTopWidth: 1,
-  borderTopColor: 'rgba(0,0,0,0.08)',
-  backgroundColor: '#FFFFFF',
+  borderTopColor: colors.line,
+  backgroundColor: colors.white,
   flexDirection: 'row',
   alignItems: 'center',
   justifyContent: 'space-between',
+  gap: 8,
 },
 
 wizardArrowButton: {
@@ -839,7 +848,7 @@ wizardDots: {
   flexDirection: 'row',
   alignItems: 'center',
   justifyContent: 'center',
-  gap: 8,
+  gap: 5,
 },
 
 wizardProgress: {
@@ -849,25 +858,31 @@ wizardProgress: {
 },
 
 wizardProgressText: {
-  marginBottom: 5,
-  color: '#667085',
-  fontSize: 11,
-  fontWeight: '800',
+  marginBottom: 6,
+  color: colors.muted,
+  fontSize: 13,
+  fontWeight: '500',
 },
 
 wizardDot: {
   width: 7,
   height: 7,
   borderRadius: 3.5,
-  backgroundColor: '#D1D5DB',
+  backgroundColor: colors.line,
 },
 
+// Website: the current step is a longer pill in the progress row.
 wizardDotActive: {
-  width: 9,
-  height: 9,
-  borderRadius: 4.5,
-  backgroundColor: '#2F7D32',
+  width: 24,
+  backgroundColor: colors.primaryLight,
 },
+
+wizardBackButton: { minHeight: 48, paddingLeft: 12, paddingRight: 18, flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 14, borderWidth: 1.5, borderColor: colors.line, borderBottomWidth: 4, borderBottomColor: '#EBE7F8', backgroundColor: colors.white },
+wizardBackText: { color: colors.ink, fontSize: 16, fontWeight: '800' },
+wizardNextButton: { minHeight: 48, paddingLeft: 18, paddingRight: 12, flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 14, backgroundColor: colors.primary },
+wizardNextButtonDisabled: { backgroundColor: colors.primaryLight },
+wizardNextText: { color: colors.white, fontSize: 16, fontWeight: '800' },
+wizardNextSpacer: { width: 96 },
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.25)',
@@ -875,7 +890,7 @@ wizardDotActive: {
   },
   sheet: {
     paddingTop: 100,      // ⬅️ Add this
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
     padding: 16,
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
@@ -885,18 +900,18 @@ wizardDotActive: {
   sheetTitle: {
     fontSize: 20,
     top: 25,
-    fontWeight: '800',
-    color: '#333',
+    fontFamily: fonts.heading,
+    color: colors.ink,
     marginBottom: 4,
   },
   label: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#333',
+    color: colors.ink,
     marginBottom: 4,
   },
   input: {
-    backgroundColor: '#F5F6F7',
+    backgroundColor: colors.mist,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 12,
@@ -909,9 +924,9 @@ wizardDotActive: {
     paddingVertical: 14,
     borderRadius: 12,
   },
-  cancelBtn: { backgroundColor: '#EAEAEA' },
-  saveBtn: { backgroundColor: '#81C784' },
-  btnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  cancelBtn: { backgroundColor: colors.line },
+  saveBtn: { backgroundColor: colors.primary },
+  btnText: { color: colors.white, fontSize: 16, fontWeight: '700' },
   severityRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -922,56 +937,58 @@ wizardDotActive: {
     marginHorizontal: 4,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: '#F5F6F7',
+    backgroundColor: colors.mist,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: colors.lineStrong,
     alignItems: 'center',
   },
   severityChipSelected: {
-    backgroundColor: '#81C784',
+    backgroundColor: colors.primary,
     borderColor: '#FB8C00',
   },
   severityChipText: {
-    color: '#333',
+    color: colors.ink,
     fontSize: 14,
     fontWeight: '500',
   },
   severityChipTextSelected: {
-    color: '#fff',
+    color: colors.white,
     fontWeight: '700',
   },
   centerButton: {
     position: 'absolute',
     right: 16,
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
     width: BOTTOM_NAV_METRICS.mapControlSize,
     height: BOTTOM_NAV_METRICS.mapControlSize,
     borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
+    // Website map controls: white circles, thin line, dark icons, soft shadow.
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.15)',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 2 },
+    borderColor: colors.line,
+    shadowColor: '#233728',
+    shadowOpacity: 0.18,
+    shadowRadius: 9,
+    shadowOffset: { width: 0, height: 7 },
     elevation: 4,
   },
   mapTypeButton: {
     position: 'absolute',
     right: 16,
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
     width: BOTTOM_NAV_METRICS.mapControlSize,
     height: BOTTOM_NAV_METRICS.mapControlSize,
     borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
+    // Website map controls: white circles, thin line, dark icons, soft shadow.
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.15)',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 2 },
+    borderColor: colors.line,
+    shadowColor: '#233728',
+    shadowOpacity: 0.18,
+    shadowRadius: 9,
+    shadowOffset: { width: 0, height: 7 },
     elevation: 4,
   },
   photoButton: {
@@ -990,7 +1007,7 @@ wizardDotActive: {
     width: 80,
     height: 80,
     borderRadius: 8,
-    backgroundColor: '#ddd',
+    backgroundColor: colors.line,
   },
   photoContainer: {
     position: 'relative',
@@ -1007,14 +1024,14 @@ wizardDotActive: {
     justifyContent: 'center',
   },
   deletePhotoText: {
-    color: '#fff',
+    color: colors.white,
     fontSize: 14,
     fontWeight: '800',
   },
   photoHelper: {
     fontSize: 12,
     fontStyle: 'italic',
-    color: '#666',
+    color: colors.muted,
     marginBottom: 4,
   },
   section: {
@@ -1033,32 +1050,32 @@ wizardDotActive: {
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#F5F6F7',
+    backgroundColor: colors.mist,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: colors.lineStrong,
   },
   typeChipSelected: {
-    backgroundColor: '#81C784',
-    borderColor: '#66BB6A',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   typeChipIcon: {
     marginRight: 6,
   },
   typeChipText: {
     fontSize: 13,
-    color: '#333',
+    color: colors.ink,
   },
   typeChipTextSelected: {
-    color: '#fff',
+    color: colors.white,
     fontWeight: '600',
   },
   typeBox: {
-  backgroundColor: '#E8F5E9',
+  backgroundColor: colors.primarySoft,
   borderRadius: 12,
   padding: 10,
   marginBottom: 10,
   borderWidth: 1,
-  borderColor: '#C8E6C9',
+  borderColor: colors.primaryBorder,
 },
 typeChipRow: {
   flexDirection: 'row',
@@ -1071,23 +1088,23 @@ typeChip: {
   paddingHorizontal: 10,
   paddingVertical: 8,
   borderRadius: 20,
-  backgroundColor: '#F1F8E9',
+  backgroundColor: colors.primarySoft,
   borderWidth: 1,
-  borderColor: '#C5E1A5',
+  borderColor: colors.primaryLight,
 },
 typeChipSelected: {
-  backgroundColor: '#66BB6A',
-  borderColor: '#388E3C',
+  backgroundColor: colors.primary,
+  borderColor: colors.primaryDark,
 },
 typeChipIcon: {
   marginRight: 6,
 },
 typeChipText: {
   fontSize: 13,
-  color: '#333',
+  color: colors.ink,
 },
 typeChipTextSelected: {
-  color: '#fff',
+  color: colors.white,
   fontWeight: '600',
 },
 notesBox: {
@@ -1111,7 +1128,7 @@ notesChip: {
   borderRadius: 18,
   backgroundColor: '#D0E8FF',
   borderWidth: 1,
-  borderColor: '#C8E6C9',
+  borderColor: colors.primaryBorder,
 },
 notesChipSelected: {
   backgroundColor: '#42A5F5',        // stronger pink/red
@@ -1119,10 +1136,10 @@ notesChipSelected: {
 },
 notesChipText: {
   fontSize: 13,
-  color: '#333',
+  color: colors.ink,
 },
 notesChipTextSelected: {
-  color: '#fff',
+  color: colors.white,
   fontWeight: '600',
 },
 notesChipIcon: {
@@ -1151,7 +1168,7 @@ supportButton: {
   alignItems: "center",
   justifyContent: "center",
   // optional shadow (if you already use shadows elsewhere)
-  shadowColor: "#000",
+  shadowColor: colors.black,
   shadowOpacity: 0.12,
   shadowRadius: 6,
   shadowOffset: { width: 0, height: 3 },
@@ -1164,7 +1181,7 @@ supportButton: {
 
 reportSheet: {
   flex: 1,
-  backgroundColor: '#FFFFFF',
+  backgroundColor: colors.white,
   borderTopLeftRadius: 24,
   borderTopRightRadius: 24,
   overflow: 'hidden',
@@ -1176,7 +1193,7 @@ reportDetailsLoadingOverlay: {
   alignItems: 'center',
   justifyContent: 'center',
   paddingHorizontal: 32,
-  backgroundColor: '#FFFFFF',
+  backgroundColor: colors.white,
 },
 
 reportDetailsLoadingClose: {
@@ -1188,12 +1205,12 @@ reportDetailsLoadingClose: {
   borderRadius: 22,
   alignItems: 'center',
   justifyContent: 'center',
-  backgroundColor: '#F3F4F6',
+  backgroundColor: colors.mist,
 },
 
 reportDetailsLoadingText: {
   marginTop: 14,
-  color: '#526057',
+  color: colors.body,
   fontSize: 15,
   fontWeight: '700',
   textAlign: 'center',
@@ -1216,26 +1233,26 @@ originalReportDivider: {
   paddingTop: 32,
   paddingBottom: 22,
   borderTopWidth: 6,
-  borderTopColor: '#FFFFFF',
-  backgroundColor: '#FFFFFF',
+  borderTopColor: colors.white,
+  backgroundColor: colors.white,
 },
 originalReportEyebrow: {
-  color: '#6B776D',
+  color: colors.muted,
   fontSize: 11,
   letterSpacing: 1.05,
   fontWeight: '800',
 },
 originalReportTitle: {
   marginTop: 5,
-  color: '#263129',
+  color: colors.ink,
   fontSize: 23,
   lineHeight: 29,
-  fontWeight: '900',
+  fontFamily: fonts.heading,
 },
 
 originalReportText: {
   marginTop: 7,
-  color: '#6A746C',
+  color: colors.muted,
   fontSize: 14,
   lineHeight: 20,
 },
@@ -1249,14 +1266,14 @@ reportRewardDirectionsRow: {
   flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: 16, rowGap: 10, marginBottom: 20,
 },
 reportRewardSummary: { flexGrow: 1, flexShrink: 1, gap: 3 },
-reportRewardAmount: { fontSize: 25, lineHeight: 30, fontWeight: '700', color: '#202625' },
-reportRewardCaption: { fontSize: 12, lineHeight: 17, color: '#687178' },
+reportRewardAmount: { fontSize: 25, lineHeight: 30, fontFamily: fonts.heading, color: colors.ink },
+reportRewardCaption: { fontSize: 12, lineHeight: 17, color: colors.muted },
 reportDirectionsButton: {
   flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7,
   minHeight: 44, paddingHorizontal: 12, paddingVertical: 10,
-  borderWidth: 1, borderColor: '#DCE3DE', borderRadius: 12, backgroundColor: '#FFFFFF',
+  borderWidth: 1, borderColor: colors.line, borderRadius: 12, backgroundColor: colors.white,
 },
-reportDirectionsButtonText: { fontSize: 14, fontWeight: '600', color: '#2F7D32' },
+reportDirectionsButtonText: { fontSize: 14, fontWeight: '600', color: colors.primary },
 reportDetailFacts: {
   gap: 12, paddingBottom: 20,
 },
@@ -1264,13 +1281,13 @@ reportDetailFactRow: {
   flexDirection: 'row', alignItems: 'flex-start', gap: 10,
 },
 reportDetailFactText: {
-  flex: 1, fontSize: 15, lineHeight: 22, color: '#3E4842',
+  flex: 1, fontSize: 15, lineHeight: 22, color: colors.ink,
 },
 reportDetailDirections: {
-  flex: 1, fontSize: 14, lineHeight: 22, fontWeight: '600', color: '#2F7D32',
+  flex: 1, fontSize: 14, lineHeight: 22, fontWeight: '600', color: colors.primary,
 },
 reportDetailReporter: {
-  borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#E8ECE9', paddingVertical: 16,
+  borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.line, paddingVertical: 16,
 },
 reportDetailDates: {
   paddingTop: 16, gap: 12,
@@ -1279,37 +1296,45 @@ reportDetailMetadataRow: {
   flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16,
 },
 reportDetailMetadataLabel: {
-  color: '#687178', fontSize: 13, lineHeight: 19, flexShrink: 0,
+  color: colors.muted, fontSize: 13, lineHeight: 19, flexShrink: 0,
 },
 reportDetailMetadataValue: {
-  color: '#3E4842', fontSize: 13, lineHeight: 19, flexShrink: 1, textAlign: 'right',
+  color: colors.ink, fontSize: 13, lineHeight: 19, flexShrink: 1, textAlign: 'right',
 },
 reportDetailSeverityBadge: {
   flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10,
-  paddingVertical: 5, borderRadius: 999, backgroundColor: '#EAF3EA', flexShrink: 1,
+  paddingVertical: 5, borderRadius: 999, backgroundColor: colors.primarySoft, flexShrink: 1,
 },
 reportDetailSeverityMedium: { backgroundColor: '#FFF3DA' },
 reportDetailSeverityHigh: { backgroundColor: '#FBEAEA' },
 reportDetailSeverityValue: {
-  color: '#2F7D32', fontSize: 13, lineHeight: 18, fontWeight: '600', flexShrink: 1,
+  color: colors.primary, fontSize: 13, lineHeight: 18, fontWeight: '600', flexShrink: 1,
 },
-completedReportToolbar: { backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E8ECE9', flexShrink: 0 },
+completedReportToolbar: { backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.line, flexShrink: 0 },
 reportPhotoControl: {
   position: 'absolute', zIndex: 20, minHeight: 44, borderRadius: 22,
-  backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center',
-  borderWidth: 1, borderColor: '#E9EDE9', shadowColor: '#18251D',
+  backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center',
+  borderWidth: 1, borderColor: colors.line, shadowColor: colors.ink,
   shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.14, shadowRadius: 5, elevation: 4,
 },
 reportPhotoMapControl: { left: 32, paddingHorizontal: 12, flexDirection: 'row', gap: 7, maxWidth: '65%' },
 reportPhotoCloseControl: { right: 32, width: 44 },
-reportPhotoControlText: { color: '#303A34', fontSize: 13, lineHeight: 18, fontWeight: '600', flexShrink: 1 },
+reportPhotoShareControl: { right: 84, width: 44 },
+// Website report-action-fund / report-action-clean: coloured fill with a 3-point inset edge.
+reportActionRow: { flexDirection: 'row', gap: 10 },
+reportActionButton: { flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, borderWidth: 1, borderBottomWidth: 4 },
+reportCleanButton: { backgroundColor: colors.cleanFill, borderColor: colors.cleanEdge },
+reportCleanButtonText: { color: colors.cleanInk, fontSize: 16, fontWeight: '800' },
+reportPhotoControlText: { color: colors.ink, fontSize: 13, lineHeight: 18, fontWeight: '600', flexShrink: 1 },
 reportDetailActionFooter: {
-  flexShrink: 0, backgroundColor: '#FFFFFF', borderTopWidth: 1,
-  borderTopColor: '#E8ECE9', paddingHorizontal: 20, paddingTop: 12,
+  flexShrink: 0, backgroundColor: colors.white, borderTopWidth: 1,
+  borderTopColor: colors.line, paddingHorizontal: 20, paddingTop: 12,
 },
 reportDetailPrimaryAction: {
   marginHorizontal: 0, marginTop: 0, minHeight: 52, borderRadius: 12,
-  paddingHorizontal: 36, paddingVertical: 12, backgroundColor: '#66BB6A', borderWidth: 0,
+  paddingHorizontal: 36, paddingVertical: 12,
+  // Lilac "Clean" action, raised like the website's report-action-clean.
+  backgroundColor: colors.cleanFill, borderWidth: 1, borderBottomWidth: 4, borderColor: colors.cleanEdge,
 },
 reportDetailClaimSpinner: {
   position: 'absolute', right: 10, top: 0, bottom: 0, width: 20, justifyContent: 'center', alignItems: 'center',
@@ -1319,14 +1344,34 @@ reportDetailUtilityRow: {
   elevation: 0,
 },
 reportDetailSecondaryAction: {
-  borderWidth: 1, borderColor: '#E3E8E5', backgroundColor: '#FFFFFF', minHeight: 44, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 8, gap: 7,
+  borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white, minHeight: 44, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 8, gap: 7,
 },
 reportPostHeader: {
   paddingHorizontal: 22,
   paddingTop: 20,
   paddingBottom: 22,
-  backgroundColor: '#F5FAF5',
+  backgroundColor: colors.primaryTint,
 },
+
+// Website report header: white, colour only in the state's bug and words.
+websiteReportHeader: { backgroundColor: colors.white, paddingTop: 18, paddingBottom: 18, borderBottomWidth: 1, borderBottomColor: colors.mist },
+websiteReportState: { marginBottom: 6, flexDirection: 'row', alignItems: 'center', gap: 8 },
+websiteReportStateText: { flexShrink: 1, fontSize: 16, lineHeight: 22, fontWeight: '800' },
+websiteReportTitle: { marginTop: 0, marginBottom: 10, paddingRight: 104, fontSize: 24, lineHeight: 28 },
+websiteReportFacts: { color: colors.muted, fontSize: 13, lineHeight: 18 },
+websiteReporterRow: { minHeight: 56, paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 10 },
+websiteReporterName: { color: colors.ink, fontSize: 14, fontWeight: '700' },
+
+websiteReportMeta: { marginTop: 2, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 14, rowGap: 4 },
+websiteReportSeverity: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+websiteReportSeverityDot: { width: 8, height: 8, borderRadius: 4 },
+websiteReportSeverityText: { fontSize: 13, fontWeight: '800' },
+websiteByline: { marginTop: 22, borderWidth: 1, borderColor: colors.line, borderRadius: 16 },
+websiteBylineLabel: { paddingHorizontal: 16, paddingTop: 14, color: colors.muted, fontSize: 12, fontWeight: '800' },
+websiteAbout: { marginTop: 6 },
+websiteAboutText: { color: '#45434D', fontSize: 15, lineHeight: 22 },
+websiteFact: { gap: 5, paddingTop: 17, marginTop: 17, borderTopWidth: 1, borderTopColor: '#ECE8F8' },
+websiteFactLabel: { color: colors.ink, fontSize: 13, fontWeight: '800' },
 
 reportPostHeaderRegular: {
   paddingBottom: 12,
@@ -1341,9 +1386,9 @@ reportIdentityCard: {
   paddingVertical: 8,
   borderRadius: 22,
   borderWidth: 1,
-  borderColor: '#DDEBDD',
-  backgroundColor: '#FFFFFF',
-  shadowColor: '#29402D',
+  borderColor: colors.primaryBorder,
+  backgroundColor: colors.white,
+  shadowColor: colors.ink,
   shadowOffset: { width: 0, height: 2 },
   shadowOpacity: 0.06,
   shadowRadius: 6,
@@ -1354,8 +1399,8 @@ reportPostTitle: {
   marginTop: 14,
   fontSize: 30,
   lineHeight: 36,
-  fontWeight: '800',
-  color: '#1F2937',
+  fontFamily: fonts.heading,
+  color: colors.ink,
   marginBottom: 12,
 },
 
@@ -1372,11 +1417,11 @@ rewardBadge: {
   alignItems: 'center',
   gap: 7,
   borderRadius: 999,
-  backgroundColor: '#66BB6A',
+  backgroundColor: colors.primary,
 },
 
 rewardBadgeText: {
-  color: '#FFFFFF',
+  color: colors.white,
   fontSize: 14,
   fontWeight: '900',
 },
@@ -1387,8 +1432,8 @@ reportMetaStack: {
   padding: 16,
   borderRadius: 18,
   borderWidth: 1,
-  borderColor: '#DDEBDD',
-  backgroundColor: '#FFFFFF',
+  borderColor: colors.primaryBorder,
+  backgroundColor: colors.white,
 },
 
 reportMetaStackCompact: {
@@ -1427,7 +1472,7 @@ reportMetaItem: {
 reportMetaItemLabel: {
   fontSize: 12,
   fontWeight: '800',
-  color: '#667085',
+  color: colors.muted,
   textTransform: 'uppercase',
   letterSpacing: 0.45,
   marginBottom: 2,
@@ -1435,7 +1480,7 @@ reportMetaItemLabel: {
 
 reportMetaItemText: {
   fontSize: 14,
-  color: '#667085',
+  color: colors.muted,
 },
 
 beforePhotoHeading: {
@@ -1445,11 +1490,11 @@ beforePhotoHeading: {
   paddingHorizontal: 22,
   paddingTop: 12,
   paddingBottom: 12,
-  backgroundColor: '#FFFFFF',
+  backgroundColor: colors.white,
 },
 
 beforePhotoHeadingText: {
-  color: '#4F5A52',
+  color: colors.body,
   fontSize: 17,
   fontWeight: '900',
 },
@@ -1478,7 +1523,7 @@ reportSeverityBelowPhoto: {
 },
 
 severityLow: {
-  backgroundColor: '#66BB6A',
+  backgroundColor: colors.primary,
 },
 
 severityMedium: {
@@ -1492,7 +1537,7 @@ severityHigh: {
 reportSeverityText: {
   fontSize: 14,
   fontWeight: '800',
-  color: '#FFFFFF',
+  color: colors.white,
 },
 
 
@@ -1505,26 +1550,26 @@ reportPhotoCarousel: {
   position: 'relative',
   borderRadius: 22,
   overflow: 'hidden',
-  backgroundColor: '#F3F4F6',
+  backgroundColor: colors.mist,
 },
 
 reportHeroImage: {
   height: 355,
-  backgroundColor: '#E5E7EB',
+  backgroundColor: colors.line,
 },
 
 reportPhotoCounter: {
   position: 'absolute',
   top: 14,
   right: 14,
-  backgroundColor: 'rgba(17,24,39,0.72)',
+  backgroundColor: 'rgba(41, 41, 50, 0.72)',
   paddingHorizontal: 10,
   paddingVertical: 5,
   borderRadius: 999,
 },
 
 reportPhotoCounterText: {
-  color: '#FFFFFF',
+  color: colors.white,
   fontSize: 12,
   fontWeight: '800',
 },
@@ -1542,14 +1587,14 @@ reportPhotoDot: {
   width: 7,
   height: 7,
   borderRadius: 3.5,
-  backgroundColor: '#D1D5DB',
+  backgroundColor: colors.lineStrong,
 },
 
 reportPhotoDotActive: {
   width: 9,
   height: 9,
   borderRadius: 4.5,
-  backgroundColor: '#2F7D32',
+  backgroundColor: colors.primary,
 },
 
 
@@ -1559,18 +1604,18 @@ reportPhotoLoadingCard: {
   marginHorizontal: 20,
   height: 260,
   borderRadius: 22,
-  backgroundColor: '#F9FAFB',
+  backgroundColor: colors.soft,
   alignItems: 'center',
   justifyContent: 'center',
   borderWidth: 1,
-  borderColor: '#E5E7EB',
+  borderColor: colors.line,
 },
 
 reportPhotoLoadingText: {
   marginTop: 12,
   fontSize: 14,
   fontWeight: '600',
-  color: '#667085',
+  color: colors.muted,
 },
 
 
@@ -1581,9 +1626,9 @@ reportNoPhotoCard: {
   paddingVertical: 27,
   paddingHorizontal: 20,
   borderRadius: 20,
-  backgroundColor: '#F9FAFB',
+  backgroundColor: colors.soft,
   borderWidth: 1,
-  borderColor: '#E5E7EB',
+  borderColor: colors.line,
   alignItems: 'center',
 },
 
@@ -1591,7 +1636,7 @@ reportNoPhotoIcon: {
   width: 58,
   height: 58,
   borderRadius: 29,
-  backgroundColor: '#F3F4F6',
+  backgroundColor: colors.mist,
   alignItems: 'center',
   justifyContent: 'center',
   marginBottom: 10,
@@ -1600,7 +1645,7 @@ reportNoPhotoIcon: {
 reportNoPhotoTitle: {
   fontSize: 16,
   fontWeight: '800',
-  color: '#475467',
+  color: colors.body,
 },
 
 reportNoPhotoText: {
@@ -1608,7 +1653,7 @@ reportNoPhotoText: {
   fontSize: 13,
   lineHeight: 19,
   textAlign: 'center',
-  color: '#98A2B3',
+  color: colors.subtle,
 },
 
 
@@ -1636,8 +1681,8 @@ reportInfoCard: {
 },
 
 reportLitterInfoCard: {
-  borderColor: '#CFE3D1',
-  backgroundColor: '#F1F8F2',
+  borderColor: colors.primaryBorder,
+  backgroundColor: colors.primaryTint,
 },
 
 reportConditionsInfoCard: {
@@ -1646,8 +1691,8 @@ reportConditionsInfoCard: {
 },
 
 reportDetailsInfoCard: {
-  borderColor: '#E1E4E8',
-  backgroundColor: '#F7F8FA',
+  borderColor: colors.line,
+  backgroundColor: colors.soft,
 },
 
 reportSectionHeader: {
@@ -1660,7 +1705,7 @@ reportSectionHeader: {
 reportPostSectionTitle: {
   fontSize: 18,
   fontWeight: '800',
-  color: '#1F2937',
+  color: colors.ink,
 },
 
 
@@ -1684,11 +1729,11 @@ reportChip: {
 reportChipText: {
   fontSize: 13,
   fontWeight: '700',
-  color: '#FFFFFF',
+  color: colors.white,
 },
 
 reportTypeChip: {
-  backgroundColor: '#66BB6A',
+  backgroundColor: colors.primary,
 },
 
 reportNoteChip: {
@@ -1698,15 +1743,15 @@ reportNoteChip: {
 /* Typed "Other" litter type */
 
 reportOtherTypeChip: {
-  backgroundColor: '#F1F8E9',
+  backgroundColor: colors.primarySoft,
   borderWidth: 1,
-  borderColor: '#A5D6A7',
+  borderColor: colors.primary,
 },
 
 reportOtherTypeText: {
   fontSize: 13,
   fontWeight: '700',
-  color: '#2F7D32',
+  color: colors.primary,
 },
 
 
@@ -1715,15 +1760,15 @@ reportOtherTypeText: {
 reportDetailsCard: {
   padding: 17,
   borderRadius: 16,
-  backgroundColor: '#F9FAFB',
+  backgroundColor: colors.soft,
   borderWidth: 1,
-  borderColor: '#E5E7EB',
+  borderColor: colors.line,
 },
 
 reportDetailsText: {
   fontSize: 16,
   lineHeight: 24,
-  color: '#374151',
+  color: colors.ink,
 },
 
 fundingFeedbackCard: {
@@ -1745,7 +1790,7 @@ cleanupEligibilityCard: {
   paddingTop: 16,
   paddingBottom: 4,
   borderTopWidth: 1,
-  borderTopColor: '#E8ECE9',
+  borderTopColor: colors.line,
 },
 
 cleanupEligibilityHeader: {
@@ -1765,7 +1810,7 @@ cleanupEligibilityCopy: {
 },
 
 cleanupEligibilityTitle: {
-  color: '#303A34',
+  color: colors.ink,
   fontSize: 15,
   lineHeight: 21,
   fontWeight: '600',
@@ -1773,7 +1818,7 @@ cleanupEligibilityTitle: {
 
 cleanupEligibilityText: {
   marginTop: 4,
-  color: '#687178',
+  color: colors.muted,
   fontSize: 13,
   lineHeight: 19,
 },
@@ -1783,12 +1828,12 @@ cleanupButton: {
   marginTop: 17,
   borderRadius: 14,
   borderWidth: 2,
-  borderColor: '#66BB6A',
+  borderColor: colors.primary,
   flexDirection: 'row',
   alignItems: 'center',
   justifyContent: 'center',
   gap: 8,
-  backgroundColor: '#FFFFFF',
+  backgroundColor: colors.white,
 },
 
 cleanupButtonDisabled: {
@@ -1796,20 +1841,22 @@ cleanupButtonDisabled: {
 },
 
 cleanupButtonText: {
-  color: '#2F7D32',
+  color: colors.primary,
   fontSize: 16,
   fontWeight: '800',
 },
 
 reportFundButton: {
-  borderWidth: 2,
-  borderColor: '#66BB6A',
-  backgroundColor: '#FFFFFF',
+  // Yellow "Fund" action, raised like the website's report-action-fund.
+  borderWidth: 1,
+  borderBottomWidth: 4,
+  borderColor: colors.fundEdge,
+  backgroundColor: colors.fundFill,
 },
 
 reportFundButtonText: {
-  color: '#66BB6A',
-  fontSize: 15,
+  color: colors.fundInk,
+  fontSize: 16,
   fontWeight: '800',
 },
 
@@ -1823,8 +1870,8 @@ cleanupProgressCard: {
 },
 
 cleanupCompleteStatusCard: {
-  borderColor: '#9CCB9F',
-  backgroundColor: '#EDF8EE',
+  borderColor: colors.primaryLight,
+  backgroundColor: colors.primarySoft,
 },
 
 cleanupProgressHeader: {
@@ -1843,7 +1890,7 @@ cleanupProgressIcon: {
 },
 
 cleanupCompleteStatusIcon: {
-  backgroundColor: '#D4ECD6',
+  backgroundColor: colors.primaryBorder,
 },
 
 cleanupProgressCopy: {
@@ -1857,7 +1904,7 @@ cleanupProgressTitle: {
 },
 
 cleanupCompleteStatusTitle: {
-  color: '#245F28',
+  color: colors.primaryDark,
 },
 
 cleanupProgressText: {
@@ -1868,7 +1915,7 @@ cleanupProgressText: {
 },
 
 cleanupCompleteStatusText: {
-  color: '#3E7041',
+  color: colors.primaryDark,
 },
 
 cleanupProgressLoading: {
@@ -1899,13 +1946,13 @@ cleanupActionButton: {
 },
 
 cleanupNavigateButton: {
-  backgroundColor: '#66BB6A',
+  backgroundColor: colors.primary,
 },
 
 cleanupCompleteButton: {
   borderWidth: 1,
-  borderColor: '#8FBC92',
-  backgroundColor: '#FFFFFF',
+  borderColor: colors.primaryLight,
+  backgroundColor: colors.white,
 },
 
 cleanupFeedbackButton: {
@@ -1923,17 +1970,17 @@ cleanupFeedbackActionText: {
 cleanupReleaseButton: {
   borderWidth: 1,
   borderColor: '#D9A6A1',
-  backgroundColor: '#FFFFFF',
+  backgroundColor: colors.white,
 },
 
 cleanupPrimaryActionText: {
-  color: '#FFFFFF',
+  color: colors.white,
   fontSize: 15,
   fontWeight: '800',
 },
 
 cleanupSecondaryActionText: {
-  color: '#2F7D32',
+  color: colors.primary,
   fontSize: 15,
   fontWeight: '800',
 },
@@ -1952,9 +1999,9 @@ ownerReportLockCard: {
   alignItems: 'flex-start',
   gap: 12,
   borderWidth: 1,
-  borderColor: '#D8E0D9',
+  borderColor: colors.line,
   borderRadius: 16,
-  backgroundColor: '#F6F8F6',
+  backgroundColor: colors.soft,
 },
 
 ownerReportLockCopy: {
@@ -1962,14 +2009,14 @@ ownerReportLockCopy: {
 },
 
 ownerReportLockTitle: {
-  color: '#344638',
+  color: colors.ink,
   fontSize: 15,
   fontWeight: '800',
 },
 
 ownerReportLockText: {
   marginTop: 4,
-  color: '#5F6E62',
+  color: colors.muted,
   fontSize: 13,
   lineHeight: 19,
 },
@@ -1981,13 +2028,13 @@ ownerReportLockText: {
 
 reportOwnerMenuOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 50, elevation: 20 },
 reportOwnerMenuBackdrop: { ...StyleSheet.absoluteFillObject },
-reportOwnerMenu: { position: 'absolute', right: 20, width: 220, maxWidth: '90%', backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1, borderColor: '#E2E7E3', shadowColor: '#17251C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.16, shadowRadius: 12, elevation: 22 },
+reportOwnerMenu: { position: 'absolute', right: 20, width: 220, maxWidth: '90%', backgroundColor: colors.white, borderRadius: 14, borderWidth: 1, borderColor: colors.line, shadowColor: colors.ink, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.16, shadowRadius: 12, elevation: 22 },
 reportOwnerMenuItem: { minHeight: 52, paddingHorizontal: 16, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', gap: 12 },
-reportOwnerMenuText: { flexShrink: 1, color: '#303A34', fontSize: 15, lineHeight: 21, fontWeight: '500' },
-reportOwnerMenuDivider: { height: 1, backgroundColor: '#E8ECE9', marginHorizontal: 14 },
-reportOwnerFooter: { flexShrink: 0, backgroundColor: '#FFFFFF', paddingHorizontal: 20, paddingTop: 4 },
+reportOwnerMenuText: { flexShrink: 1, color: colors.ink, fontSize: 15, lineHeight: 21, fontWeight: '500' },
+reportOwnerMenuDivider: { height: 1, backgroundColor: colors.line, marginHorizontal: 14 },
+reportOwnerFooter: { flexShrink: 0, backgroundColor: colors.white, paddingHorizontal: 20, paddingTop: 4 },
 reportManageButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-reportManageText: { color: '#4F5C63', fontSize: 14, fontWeight: '500' },
+reportManageText: { color: colors.body, fontSize: 14, fontWeight: '500' },
 reportFooter: {
   zIndex: 3,
   elevation: 3,
@@ -1997,7 +2044,7 @@ reportFooter: {
   paddingHorizontal: 16,
   paddingTop: 12,
   paddingBottom: 20,
-  backgroundColor: '#FFFFFF',
+  backgroundColor: colors.white,
 },
 
 reportUtilityBar: {
@@ -2009,7 +2056,7 @@ reportUtilityBar: {
   paddingHorizontal: 16,
   paddingTop: 12,
   paddingBottom: 12,
-  backgroundColor: '#FFFFFF',
+  backgroundColor: colors.white,
 },
 
 reportUtilityButton: {
@@ -2026,12 +2073,12 @@ reportShareButton: {
   minHeight: 50,
   borderRadius: 14,
   borderWidth: 2,
-  borderColor: '#CDD5D0',
+  borderColor: colors.lineStrong,
   flexDirection: 'row',
   alignItems: 'center',
   justifyContent: 'center',
   gap: 8,
-  backgroundColor: '#FFFFFF',
+  backgroundColor: colors.white,
 },
 
 reportShareButtonText: {
@@ -2053,7 +2100,7 @@ reportFooterButton: {
 reportDeleteButton: {
   borderWidth: 2,
   borderColor: '#E57373',
-  backgroundColor: '#FFFFFF',
+  backgroundColor: colors.white,
 },
 
 reportDeleteButtonText: {
@@ -2064,24 +2111,24 @@ reportDeleteButtonText: {
 
 reportEditButton: {
   borderWidth: 2,
-  borderColor: '#66BB6A',
-  backgroundColor: '#FFFFFF',
+  borderColor: colors.primary,
+  backgroundColor: colors.white,
 },
 
 reportEditButtonText: {
-  color: '#2F7D32',
+  color: colors.primary,
   fontSize: 15,
   fontWeight: '800',
 },
 
 reportCloseButton: {
-  backgroundColor: '#FFFFFF',
+  backgroundColor: colors.white,
   borderWidth: 2,
-  borderColor: '#D1D5DB',
+  borderColor: colors.lineStrong,
 },
 
 reportCloseButtonText: {
-  color: '#374151',
+  color: colors.ink,
   fontSize: 15,
   fontWeight: '800',
 },
@@ -2104,12 +2151,12 @@ markerRewardBadge: {
   paddingHorizontal: 8,
   paddingVertical: 4,
   borderWidth: 1,
-  borderColor: '#8FBC92',
+  borderColor: colors.primaryLight,
   borderRadius: 999,
-  backgroundColor: '#FFFFFF',
+  backgroundColor: colors.white,
 },
 markerRewardText: {
-  color: '#245F2A',
+  color: colors.primaryDark,
   fontSize: 11,
   fontWeight: '900',
 },
@@ -2120,7 +2167,7 @@ reportMarkerIconWrapLg: {
   alignItems: 'center',
   justifyContent: 'center',
   borderWidth: 3,
-  shadowColor: '#000000',
+  shadowColor: colors.black,
   shadowOpacity: 0.28,
   shadowRadius: 7,
   shadowOffset: { width: 0, height: 3 },
@@ -2143,9 +2190,9 @@ reportMarkerStatusBadge: {
   borderRadius: 12,
   alignItems: 'center',
   justifyContent: 'center',
-  backgroundColor: '#FFFFFF',
+  backgroundColor: colors.white,
   borderWidth: 2,
-  borderColor: '#374151',
+  borderColor: colors.ink,
 },
 reportClusterHit: {
   width: 96,
@@ -2165,7 +2212,7 @@ reportClusterBubble: {
   backgroundColor: '#F3E2F7',
   borderWidth: 3,
   borderColor: '#B448CF',
-  shadowColor: '#000000',
+  shadowColor: colors.black,
   shadowOpacity: 0.25,
   shadowRadius: 6,
   shadowOffset: { width: 0, height: 3 },
@@ -2192,7 +2239,7 @@ reportClusterStatusBadge: {
   alignItems: 'center',
   justifyContent: 'center',
   gap: 2,
-  backgroundColor: '#FFFFFF',
+  backgroundColor: colors.white,
   borderWidth: 2,
 },
 reportClusterStatusDot: {
@@ -2221,10 +2268,10 @@ savingCard: {
   paddingHorizontal: 24,
   paddingVertical: 28,
   borderRadius: 22,
-  backgroundColor: '#FFFFFF',
+  backgroundColor: colors.white,
   borderWidth: 1,
-  borderColor: '#D9E8DA',
-  shadowColor: '#000000',
+  borderColor: colors.primaryBorder,
+  shadowColor: colors.black,
   shadowOpacity: 0.12,
   shadowRadius: 12,
   shadowOffset: { width: 0, height: 5 },
@@ -2232,21 +2279,21 @@ savingCard: {
 },
 savingTitle: {
   marginTop: 17,
-  color: '#202428',
+  color: colors.ink,
   fontSize: 21,
-  fontWeight: '900',
+  fontFamily: fonts.heading,
   textAlign: 'center',
 },
 savingStatus: {
   marginTop: 9,
-  color: '#2F7D32',
+  color: colors.primary,
   fontSize: 16,
   fontWeight: '800',
   textAlign: 'center',
 },
 savingHelper: {
   marginTop: 8,
-  color: '#667078',
+  color: colors.muted,
   fontSize: 14,
   lineHeight: 20,
   textAlign: 'center',

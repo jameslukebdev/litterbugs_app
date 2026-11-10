@@ -8,9 +8,10 @@ import {
   View,
 } from 'react-native';
 import { useReports } from '../lib/reports';
+import { colors } from '../lib/theme';
 function Photo({ uri, path, width, title }) {
   const { getReportPhotoUrl } = useReports();
-  return <RemotePhoto path={path} uri={uri} getUrl={getReportPhotoUrl} label={`Litter reported: ${title || 'cleanup location'}`} style={{ width, height: 355 }} />;
+  return <RemotePhoto path={path} uri={uri} getUrl={getReportPhotoUrl} label={`Litter reported: ${title || 'cleanup location'}`} style={{ width, height: Math.round(width / 1.73) }} />; // website report photo shape
 }
 export default function ReportPhotoGallery({ report, urls, loading, width }) {
   const [index, setIndex] = useState(0);
@@ -20,7 +21,7 @@ export default function ReportPhotoGallery({ report, urls, loading, width }) {
   if (loading && !urls.length && !report.photo_paths?.length)
     return (
       <View style={[styles.empty, { width, alignSelf: 'center' }]}>
-        <ActivityIndicator color="#2F7D32" />
+        <ActivityIndicator color={colors.primary} />
         <Text>Loading photos…</Text>
       </View>
     );
@@ -76,14 +77,14 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     borderRadius: 22,
     overflow: 'hidden',
-    backgroundColor: '#F1F4F2',
+    backgroundColor: colors.mist,
   },
   empty: {
     height: 260,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
-    backgroundColor: '#F1F4F2',
+    backgroundColor: colors.mist,
     borderRadius: 22,
     marginBottom: 14,
   },
@@ -96,7 +97,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 12,
   },
-  counterText: { color: '#FFFFFF', fontSize: 12, fontWeight: '600' },
+  counterText: { color: colors.white, fontSize: 12, fontWeight: '600' },
   dots: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -105,7 +106,7 @@ const styles = StyleSheet.create({
     marginTop: 13,
     marginBottom: 4,
   },
-  dot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#D1D5DB' },
-  dotActive: { width: 9, height: 9, borderRadius: 4.5, backgroundColor: '#2F7D32' },
-  caption: { padding: 10, fontWeight: '600', color: '#4F5C63' },
+  dot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: colors.lineStrong },
+  dotActive: { width: 9, height: 9, borderRadius: 4.5, backgroundColor: colors.primary },
+  caption: { padding: 10, fontWeight: '600', color: colors.body },
 });

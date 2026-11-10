@@ -23,6 +23,7 @@ import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
 import { loadPublicMember, loadPublicMemberReports } from './lib/publicMember';
 import useFocusedResource from './lib/useFocusedResource';
+import { colors } from './lib/theme';
 
 export default function PublicProfileScreen({ navigation, route }) {
   const profileId = route.params?.profileId;
@@ -79,7 +80,7 @@ export default function PublicProfileScreen({ navigation, route }) {
           accessibilityRole="button"
           accessibilityLabel="Profile actions"
         >
-          <Ionicons name="ellipsis-horizontal" size={24} color="#2F7D32" />
+          <Ionicons name="ellipsis-horizontal" size={24} color={colors.primary} />
         </TouchableOpacity>
       ) : undefined,
     });
@@ -88,7 +89,7 @@ export default function PublicProfileScreen({ navigation, route }) {
   if (blocked) {
     return (
       <View style={styles.center}>
-        <Ionicons name="ban-outline" size={48} color="#6D767C" />
+        <Ionicons name="ban-outline" size={48} color={colors.muted} />
         <Text style={styles.stateTitle}>You blocked this account</Text>
         <Text style={styles.stateText}>Manage blocked accounts from your Profile tab to view this content again.</Text>
         <TouchableOpacity style={styles.manageButton} onPress={() => navigation.navigate('BlockedAccounts')}>
@@ -119,7 +120,7 @@ export default function PublicProfileScreen({ navigation, route }) {
         {profile.username ? <Text style={styles.username}>@{profile.username}</Text> : null}
         {profile.location ? (
           <View style={styles.locationRow}>
-            <Ionicons name="location-outline" size={16} color="#677178" />
+            <Ionicons name="location-outline" size={16} color={colors.muted} />
             <Text style={styles.location}>{profile.location}</Text>
           </View>
         ) : null}
@@ -152,7 +153,7 @@ export default function PublicProfileScreen({ navigation, route }) {
           <View style={styles.actionSheet}>
             <Text style={styles.actionTitle}>Profile actions</Text>
             <TouchableOpacity style={styles.actionOption} accessibilityRole="button" onPress={() => selectAction(() => navigation.navigate('ReportUser', { profileId, displayName: profile?.display_name, sourceReportId }))}>
-              <Ionicons name="flag-outline" size={21} color="#49704D" /><Text style={styles.actionText}>Report account</Text>
+              <Ionicons name="flag-outline" size={21} color={colors.primaryDark} /><Text style={styles.actionText}>Report account</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionOption} accessibilityRole="button" onPress={() => selectAction(confirmBlock)}>
               <Ionicons name="ban-outline" size={21} color="#A33A32" /><Text style={[styles.actionText, { color: '#A33A32' }]}>Block account</Text>
@@ -166,39 +167,39 @@ export default function PublicProfileScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  actionBackdrop: { flex: 1, backgroundColor: 'rgba(22,32,25,0.28)', justifyContent: 'center', padding: 24 },
-  actionSheet: { borderRadius: 18, padding: 16, backgroundColor: '#FFFFFF', width: '100%', maxWidth: 400, alignSelf: 'center' },
-  actionTitle: { fontSize: 18, lineHeight: 24, fontWeight: '600', color: '#303B34', marginBottom: 12 },
-  actionOption: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E2EAE3' },
-  actionText: { fontSize: 15, lineHeight: 22, color: '#303B34' },
-  tabs: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 14, padding: 4, gap: 4, borderRadius: 13, backgroundColor: '#F2F5F2' },
+  actionBackdrop: { flex: 1, backgroundColor: 'rgba(41, 41, 50, 0.28)', justifyContent: 'center', padding: 24 },
+  actionSheet: { borderRadius: 18, padding: 16, backgroundColor: colors.white, width: '100%', maxWidth: 400, alignSelf: 'center' },
+  actionTitle: { fontSize: 18, lineHeight: 24, fontWeight: '600', color: colors.ink, marginBottom: 12 },
+  actionOption: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
+  actionText: { fontSize: 15, lineHeight: 22, color: colors.ink },
+  tabs: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 14, padding: 4, gap: 4, borderRadius: 13, backgroundColor: colors.mist },
   tab: { flex: 1, padding: 12, minHeight: 44, justifyContent: 'center', alignItems: 'center', borderRadius: 10 },
-  selectedTab: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DCE7DD' },
-  tabText: { color: '#245F2A', fontWeight: '700', textAlign: 'center' },
-  notice: { padding: 16, color: '#687178' },
+  selectedTab: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line },
+  tabText: { color: colors.primaryDark, fontWeight: '700', textAlign: 'center' },
+  notice: { padding: 16, color: colors.muted },
   retry: { minHeight: 44, padding: 12, justifyContent: 'center', alignItems: 'center' },
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.white },
   content: { paddingBottom: 36 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30, backgroundColor: '#FFFFFF' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30, backgroundColor: colors.white },
   headerAction: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   identityTop: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  avatarFrame: { padding: 3, borderWidth: 1, borderColor: '#DCE7DD', borderRadius: 40 },
+  avatarFrame: { padding: 3, borderWidth: 1, borderColor: colors.line, borderRadius: 40 },
   identityCopy: { flex: 1 },
   identity: { paddingHorizontal: 20, paddingTop: 24 },
-  name: { color: '#202428', fontSize: 23, lineHeight: 29, fontWeight: '600' },
+  name: { color: colors.ink, fontSize: 23, lineHeight: 29, fontWeight: '600' },
   rankBadge: { marginTop: 7, alignSelf: 'flex-start' },
-  username: { marginTop: 4, color: '#687178', fontSize: 15 },
+  username: { marginTop: 4, color: colors.muted, fontSize: 15 },
   locationRow: { marginTop: 9, flexDirection: 'row', alignItems: 'center', gap: 4 },
-  location: { color: '#59636A', fontSize: 14 },
-  bio: { maxWidth: 360, marginTop: 12, color: '#4F5960', fontSize: 15, lineHeight: 22 },
-  joined: { marginTop: 10, color: '#7A8288', fontSize: 13 },
-  statCard: { margin: 20, marginBottom: 2, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, borderWidth: 1, borderColor: '#E0EAE1', backgroundColor: '#F4F8F4' },
-  statValue: { color: '#245F2A', fontSize: 24, lineHeight: 31, fontWeight: '600' },
-  statLabel: { marginTop: 3, color: '#687178', fontSize: 14, fontWeight: '700' },
-  sectionTitle: { marginHorizontal: 20, marginTop: 27, marginBottom: 9, color: '#30363B', fontSize: 17, fontWeight: '600' },
-  card: { marginHorizontal: 16, overflow: 'hidden', borderRadius: 16, backgroundColor: '#FFFFFF' },
-  stateTitle: { marginTop: 16, color: '#30363B', fontSize: 21, fontWeight: '600', textAlign: 'center' },
-  stateText: { maxWidth: 340, marginTop: 8, color: '#6C757C', fontSize: 15, lineHeight: 22, textAlign: 'center' },
-  manageButton: { minHeight: 48, marginTop: 18, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: '#2F7D32' },
-  manageText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
+  location: { color: colors.body, fontSize: 14 },
+  bio: { maxWidth: 360, marginTop: 12, color: colors.body, fontSize: 15, lineHeight: 22 },
+  joined: { marginTop: 10, color: colors.muted, fontSize: 13 },
+  statCard: { margin: 20, marginBottom: 2, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.primaryTint },
+  statValue: { color: colors.primaryDark, fontSize: 24, lineHeight: 31, fontWeight: '600' },
+  statLabel: { marginTop: 3, color: colors.muted, fontSize: 14, fontWeight: '700' },
+  sectionTitle: { marginHorizontal: 20, marginTop: 27, marginBottom: 9, color: colors.ink, fontSize: 17, fontWeight: '600' },
+  card: { marginHorizontal: 16, overflow: 'hidden', borderRadius: 16, backgroundColor: colors.white },
+  stateTitle: { marginTop: 16, color: colors.ink, fontSize: 21, fontWeight: '600', textAlign: 'center' },
+  stateText: { maxWidth: 340, marginTop: 8, color: colors.muted, fontSize: 15, lineHeight: 22, textAlign: 'center' },
+  manageButton: { minHeight: 48, marginTop: 18, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: colors.primary },
+  manageText: { color: colors.white, fontSize: 15, fontWeight: '600' },
 });

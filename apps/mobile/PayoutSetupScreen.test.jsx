@@ -16,6 +16,7 @@ vi.mock('react-native', () => ({
   AppState: { addEventListener: () => ({ remove() {} }) },
 }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+vi.mock('./components/BrandBug', () => ({ default: () => null }));
 vi.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ bottom: 0 }) }));
 vi.mock('./lib/session', () => ({ useSession: () => ({ user: { id: 'test-member' } }) }));
 vi.mock('./lib/funding', () => ({

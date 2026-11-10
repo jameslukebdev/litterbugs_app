@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   AppState,
   Alert,
+  Image,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
@@ -39,6 +40,7 @@ import { cleanupLoadErrorPresentation } from './lib/cleanupLoadError';
 import { permanentUserId } from './lib/reportAccess';
 import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
+import { colors, fonts } from './lib/theme';
 
 const submissionErrorMessage = (error) => {
   const message = error?.message ?? '';
@@ -78,7 +80,7 @@ function CleanupPhoto({ photo, index, review = false, onRemove }) {
       />
       {loading ? (
         <View style={styles.photoLoading} accessibilityLabel={`Loading photo ${index + 1}`}>
-          <ActivityIndicator color="#2F7D32" />
+          <ActivityIndicator color={colors.primary} />
         </View>
       ) : null}
       {!review ? (
@@ -88,7 +90,7 @@ function CleanupPhoto({ photo, index, review = false, onRemove }) {
           accessibilityRole="button"
           accessibilityLabel={`Remove cleanup photo ${index + 1}`}
         >
-          <Ionicons name="close" size={18} color="#FFFFFF" />
+          <Ionicons name="close" size={18} color={colors.white} />
         </TouchableOpacity>
       ) : null}
     </View>
@@ -381,18 +383,21 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
         {draftReady && !submitted.current ? <CloudDraftStatus userId={userId} draftKey={`cleanup:${cleanupId}`} onRestored={() => setDraftRestoreAttempt(value => value + 1)} /> : null}
         {!submitted.current ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
           {missingPhotoCount > 0 ? <Text style={{ color: '#8A6400', marginBottom: 8 }}>{missingPhotoCount} saved {missingPhotoCount === 1 ? 'photo is' : 'photos are'} no longer on this device. Add replacement photos before submitting. Your other answers were kept.</Text> : null}
-          <Text accessibilityLiveRegion="polite" style={{ flex: 1, color: '#687178', fontSize: 12 }}>{draftStatus}</Text>
-          <TouchableOpacity accessibilityRole="button" disabled={submitting} onPress={saveAndExit} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: '#2F7D32', fontWeight: '700' }}>Save and exit</Text></TouchableOpacity>
+          <Text accessibilityLiveRegion="polite" style={{ flex: 1, color: colors.muted, fontSize: 12 }}>{draftStatus}</Text>
+          <TouchableOpacity accessibilityRole="button" disabled={submitting} onPress={saveAndExit} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: colors.primary, fontWeight: '700' }}>Save and exit</Text></TouchableOpacity>
         </View> : null}
-        <Text style={styles.eyebrow}>
-          {step === 'form' ? (isCorrection ? 'UPDATE EVIDENCE' : 'STEP 1 OF 2 · CLEANUP DETAILS') : 'STEP 2 OF 2 · REVIEW'}
-        </Text>
-        <Text style={styles.title}>
-          {step === 'form'
-            ? (isCorrection ? 'Update your submission' : 'Show what you cleaned')
-            : (isCorrection ? 'Review your update' : 'Review your cleanup')}
-        </Text>
-        <Text style={styles.reportTitle}>{reportTitle}</Text>
+        {/* Website cleanup flow header: the caterpillar beside the step's question and the report. */}
+        <View style={styles.flowHead}>
+          <Image source={require('./assets/bugs/caterpillar.png')} style={styles.flowBug} resizeMode="contain" accessible={false} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title} accessibilityRole="header">
+              {step === 'form'
+                ? (isCorrection ? 'Update your cleanup photos' : 'Show what you cleaned')
+                : 'Ready to send?'}
+            </Text>
+            <Text style={styles.reportTitle}>{reportTitle}</Text>
+          </View>
+        </View>
 
         {isCorrection && step === 'form' ? (
           <View style={styles.correctionNotice}>
@@ -411,7 +416,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
           <>
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>After photos</Text>
+                <Text style={styles.sectionTitle}>1  Add after photos</Text>
                 <Text style={styles.required}>Required · {photos.length}/{MAX_CLEANUP_PHOTOS}</Text>
               </View>
               <Text style={styles.helper}>
@@ -429,11 +434,11 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
               {photos.length < MAX_CLEANUP_PHOTOS ? (
                 <View style={styles.photoActions}>
                   <TouchableOpacity style={styles.photoButton} onPress={() => addPhotos('camera')}>
-                    <Ionicons name="camera-outline" size={20} color="#2F7D32" />
+                    <Ionicons name="camera-outline" size={20} color={colors.primary} />
                     <Text style={styles.photoButtonText}>Take photo</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.photoButton} onPress={() => addPhotos('library')}>
-                    <Ionicons name="images-outline" size={20} color="#2F7D32" />
+                    <Ionicons name="images-outline" size={20} color={colors.primary} />
                     <Text style={styles.photoButtonText}>Choose photos</Text>
                   </TouchableOpacity>
                 </View>
@@ -443,10 +448,10 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
 
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Cleanup description</Text>
+                <Text style={styles.sectionTitle}>2  What did you clean up?</Text>
                 <Text style={styles.required}>Required</Text>
               </View>
-              <TextInput selectionColor="#2F7D32"
+              <TextInput selectionColor={colors.primary}
                 ref={descriptionInputRef}
                 style={[styles.descriptionInput, errors.description && styles.inputError]}
                 value={description}
@@ -469,12 +474,12 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Impact details</Text>
+              <Text style={styles.sectionTitle}>3  How much?</Text>
               <Text style={styles.helper}>Optional information for future community impact reporting.</Text>
               <View style={styles.numericRow}>
                 <View style={styles.numericField}>
                   <Text style={styles.inputLabel}>Bags/items removed</Text>
-                  <TextInput selectionColor="#2F7D32"
+                  <TextInput selectionColor={colors.primary}
                     ref={bagsInputRef}
                     style={[styles.numericInput, errors.bagsOrItemsRemoved && styles.inputError]}
                     value={bagsOrItemsRemoved}
@@ -492,7 +497,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
                 </View>
                 <View style={styles.numericField}>
                   <Text style={styles.inputLabel}>Weight removed (lb)</Text>
-                  <TextInput selectionColor="#2F7D32"
+                  <TextInput selectionColor={colors.primary}
                     ref={weightInputRef}
                     style={[styles.numericInput, errors.weightPounds && styles.inputError]}
                     value={weightPounds}
@@ -513,7 +518,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
 
             <TouchableOpacity style={styles.primaryButton} onPress={continueToReview}>
               <Text style={styles.primaryButtonText}>Review Cleanup</Text>
-              <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+              <Ionicons name="arrow-forward" size={20} color={colors.white} />
             </TouchableOpacity>
           </>
         ) : (
@@ -566,7 +571,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
                 <LoadingButtonContent label="Submitting cleanup…" />
               ) : (
                 <>
-                  <Ionicons name="checkmark-circle-outline" size={21} color="#FFFFFF" />
+                  <Ionicons name="checkmark-circle-outline" size={21} color={colors.white} />
                   <Text style={styles.primaryButtonText}>
                     {isCorrection ? 'Resubmit Cleanup' : 'Submit Cleanup'}
                   </Text>
@@ -588,54 +593,55 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.white },
   content: { padding: 20 },
-  centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: '#FFFFFF' },
-  centerTitle: { marginTop: 14, color: '#30363B', fontSize: 22, fontWeight: '600' },
-  centerText: { maxWidth: 340, marginTop: 9, color: '#677178', fontSize: 15, lineHeight: 22, textAlign: 'center' },
-  eyebrow: { color: '#2F7D32', fontSize: 12, fontWeight: '600', letterSpacing: 1.2 },
-  title: { marginTop: 7, color: '#202428', fontSize: 24, lineHeight: 31, fontWeight: '600' },
-  reportTitle: { marginTop: 7, color: '#687178', fontSize: 15, fontWeight: '700' },
+  centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: colors.white },
+  centerTitle: { marginTop: 14, color: colors.ink, fontSize: 22, fontFamily: fonts.heading },
+  centerText: { maxWidth: 340, marginTop: 9, color: colors.muted, fontSize: 15, lineHeight: 22, textAlign: 'center' },
+  flowHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  flowBug: { width: 44, height: 44 },
+  title: { color: colors.ink, fontSize: 20, lineHeight: 24, fontFamily: fonts.heading },
+  reportTitle: { marginTop: 2, color: colors.muted, fontSize: 14, lineHeight: 21 },
   correctionNotice: { marginTop: 18, padding: 14, flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: 14, backgroundColor: '#FFF9DD' },
   correctionNoticeCopy: { flex: 1 },
   correctionNoticeTitle: { color: '#755900', fontSize: 14, fontWeight: '600' },
   correctionNoticeText: { marginTop: 3, color: '#755900', fontSize: 13, lineHeight: 18 },
-  feedbackLink: { marginTop: 7, color: '#2F7D32', fontSize: 13, fontWeight: '600' },
-  section: { marginTop: 22, padding: 16, borderWidth: 1, borderColor: '#E2EAE3', borderRadius: 16, backgroundColor: '#FFFFFF' },
+  feedbackLink: { marginTop: 7, color: colors.primary, fontSize: 13, fontWeight: '600' },
+  section: { marginTop: 22, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: 18, backgroundColor: colors.white },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
-  sectionTitle: { flex: 1, color: '#30363B', fontSize: 17, lineHeight: 23, fontWeight: '600' },
-  required: { color: '#2F7D32', fontSize: 11, fontWeight: '600' },
-  helper: { marginTop: 7, color: '#6D767D', fontSize: 14, lineHeight: 20 },
+  sectionTitle: { flex: 1, color: colors.ink, fontSize: 17, lineHeight: 23, fontFamily: fonts.heading },
+  required: { color: colors.primary, fontSize: 11, fontWeight: '600' },
+  helper: { marginTop: 7, color: colors.muted, fontSize: 14, lineHeight: 20 },
   photoGrid: { marginTop: 14, flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
-  photoWrap: { width: '31%', aspectRatio: 1, borderRadius: 13, overflow: 'hidden', backgroundColor: '#E9ECEE' },
+  photoWrap: { width: '31%', aspectRatio: 1, borderRadius: 13, overflow: 'hidden', backgroundColor: colors.line },
   photo: { width: '100%', height: '100%' },
-  photoLoading: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E9ECEE' },
-  removePhoto: { position: 'absolute', top: 2, right: 2, width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(30,35,38,0.78)' },
+  photoLoading: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.line },
+  removePhoto: { position: 'absolute', top: 2, right: 2, width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(41, 41, 50, 0.78)' },
   photoActions: { marginTop: 14, flexDirection: 'row', gap: 10 },
-  photoButton: { flex: 1, minHeight: 48, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderWidth: 1, borderColor: '#8FBC92', borderRadius: 13, backgroundColor: '#F6FBF6' },
-  photoButtonText: { color: '#2F7D32', fontSize: 14, fontWeight: '600' },
-  descriptionInput: { minHeight: 132, marginTop: 14, padding: 14, borderWidth: 1, borderColor: '#DCE4DE', borderRadius: 13, color: '#202428', fontSize: 16, lineHeight: 22, backgroundColor: '#FFFFFF' },
-  characterCount: { marginTop: 5, color: '#8A9297', fontSize: 12, textAlign: 'right' },
+  photoButton: { flex: 1, minHeight: 48, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderWidth: 1.5, borderColor: colors.primaryBorder, borderBottomWidth: 4, borderBottomColor: '#EBE7F8', borderRadius: 13, backgroundColor: colors.white },
+  photoButtonText: { color: colors.primaryDark, fontSize: 14, fontWeight: '800' },
+  descriptionInput: { minHeight: 132, marginTop: 14, padding: 14, borderWidth: 1, borderColor: colors.line, borderRadius: 13, color: colors.ink, fontSize: 16, lineHeight: 22, backgroundColor: colors.white },
+  characterCount: { marginTop: 5, color: colors.subtle, fontSize: 12, textAlign: 'right' },
   numericRow: { marginTop: 14, flexDirection: 'row', gap: 12 },
   numericField: { flex: 1 },
-  inputLabel: { color: '#59636A', fontSize: 13, fontWeight: '700' },
-  numericInput: { minHeight: 50, marginTop: 7, paddingHorizontal: 13, borderWidth: 1, borderColor: '#DCE4DE', borderRadius: 12, color: '#202428', fontSize: 16, backgroundColor: '#FFFFFF' },
+  inputLabel: { color: colors.body, fontSize: 13, fontWeight: '700' },
+  numericInput: { minHeight: 50, marginTop: 7, paddingHorizontal: 13, borderWidth: 1, borderColor: colors.line, borderRadius: 12, color: colors.ink, fontSize: 16, backgroundColor: colors.white },
   inputError: { borderColor: '#C94F45' },
   error: { marginTop: 7, color: '#B63D34', fontSize: 13, lineHeight: 18 },
-  primaryButton: { minHeight: 54, marginTop: 22, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, backgroundColor: '#2F7D32' },
-  primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  secondaryButton: { minHeight: 50, marginTop: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#98B79A', borderRadius: 14, backgroundColor: '#FFFFFF' },
-  secondaryButtonText: { color: '#2F7D32', fontSize: 15, fontWeight: '600' },
-  reviewCard: { marginTop: 22, padding: 16, borderWidth: 1, borderColor: '#E2EAE3', borderRadius: 16, backgroundColor: '#FFFFFF' },
-  reviewLabel: { marginTop: 16, color: '#6D767D', fontSize: 11, fontWeight: '600', letterSpacing: 0.8 },
-  reviewPhotoWrap: { width: '31%', aspectRatio: 1, overflow: 'hidden', borderRadius: 12, backgroundColor: '#E9ECEE' },
+  primaryButton: { minHeight: 54, marginTop: 22, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, backgroundColor: colors.primary },
+  primaryButtonText: { color: colors.white, fontSize: 16, fontWeight: '800' },
+  secondaryButton: { minHeight: 50, marginTop: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.line, borderRadius: 14, backgroundColor: colors.white },
+  secondaryButtonText: { color: colors.primaryDark, fontSize: 15, fontWeight: '800' },
+  reviewCard: { marginTop: 22, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: 16, backgroundColor: colors.white },
+  reviewLabel: { marginTop: 16, color: colors.muted, fontSize: 11, fontWeight: '600', letterSpacing: 0.8 },
+  reviewPhotoWrap: { width: '31%', aspectRatio: 1, overflow: 'hidden', borderRadius: 12, backgroundColor: colors.line },
   reviewPhoto: { width: '100%', height: '100%' },
-  reviewText: { marginTop: 7, color: '#30363B', fontSize: 16, lineHeight: 23 },
+  reviewText: { marginTop: 7, color: colors.ink, fontSize: 16, lineHeight: 23 },
   reviewMetrics: { flexDirection: 'row', gap: 12 },
   reviewMetric: { flex: 1 },
-  reviewMetricValue: { marginTop: 5, color: '#30363B', fontSize: 15, fontWeight: '600' },
+  reviewMetricValue: { marginTop: 5, color: colors.ink, fontSize: 15, fontWeight: '600' },
   encouragement: { marginTop: 13, padding: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderRadius: 12, backgroundColor: '#FFF9DD' },
   encouragementText: { flex: 1, color: '#755900', fontSize: 13, lineHeight: 18 },
-  reviewNotice: { marginTop: 17, paddingHorizontal: 5, color: '#667078', fontSize: 14, lineHeight: 20, textAlign: 'center' },
+  reviewNotice: { marginTop: 17, paddingHorizontal: 5, color: colors.muted, fontSize: 14, lineHeight: 20, textAlign: 'center' },
   disabled: { opacity: 0.6 },
 });

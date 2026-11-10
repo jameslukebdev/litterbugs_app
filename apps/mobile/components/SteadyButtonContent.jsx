@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { colors } from '../lib/theme';
 
 // Reserve the label's space throughout a request; only longer requests show motion.
-export default function SteadyButtonContent({ label, busy, busyLabel, color = '#FFFFFF' }) {
+export default function SteadyButtonContent({ label, busy, busyLabel, color = colors.white }) {
   const [showProgress, setShowProgress] = useState(false);
   useEffect(() => {
     if (!busy) { setShowProgress(false); return; }

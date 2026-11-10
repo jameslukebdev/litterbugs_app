@@ -19,6 +19,7 @@ import { useProfile } from './lib/profile';
 import { showAvatarSourceMenu, uploadProfileAvatar } from './lib/profileAvatar';
 import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
+import { colors } from './lib/theme';
 
 export default function CompleteProfileScreen({ navigation }) {
   const { user } = useSession();
@@ -84,7 +85,7 @@ export default function CompleteProfileScreen({ navigation }) {
         <Text style={styles.label}>Display name</Text>
         <TextInput
           editable={!saving}
-          selectionColor="#2F7D32"
+          selectionColor={colors.primary}
           value={displayName}
           onChangeText={(value) => { setDisplayName(value); setError(''); }}
           placeholder="Your name"
@@ -116,20 +117,20 @@ export default function CompleteProfileScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.white },
   content: { flexGrow: 1, padding: 20, alignItems: 'stretch' },
-  title: { marginTop: 18, color: '#202428', fontSize: 24, lineHeight: 31, fontWeight: '600' },
-  subtitle: { maxWidth: 340, marginTop: 9, color: '#6C757C', fontSize: 15, lineHeight: 22 },
-  avatarButton: { flexDirection: 'row', gap: 16, alignItems: 'center', padding: 16, borderWidth: 1, borderColor: '#E2EAE3', borderRadius: 16, backgroundColor: '#F4F8F4', marginVertical: 24 },
-  avatarAction: { marginTop: 9, color: '#2F7D32', fontSize: 15, fontWeight: '600' },
-  label: { width: '100%', maxWidth: 420, marginBottom: 7, color: '#333A3F', fontSize: 14, fontWeight: '600' },
-  input: { width: '100%', maxWidth: 420, minHeight: 52, paddingHorizontal: 14, borderWidth: 1, borderColor: '#DCE4DE', borderRadius: 12, backgroundColor: '#FFFFFF', fontSize: 16 },
+  title: { marginTop: 18, color: colors.ink, fontSize: 24, lineHeight: 31, fontWeight: '600' },
+  subtitle: { maxWidth: 340, marginTop: 9, color: colors.muted, fontSize: 15, lineHeight: 22 },
+  avatarButton: { flexDirection: 'row', gap: 16, alignItems: 'center', padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: 16, backgroundColor: colors.primaryTint, marginVertical: 24 },
+  avatarAction: { marginTop: 9, color: colors.primary, fontSize: 15, fontWeight: '600' },
+  label: { width: '100%', maxWidth: 420, marginBottom: 7, color: colors.ink, fontSize: 14, fontWeight: '600' },
+  input: { width: '100%', maxWidth: 420, minHeight: 52, paddingHorizontal: 14, borderWidth: 1, borderColor: colors.line, borderRadius: 12, backgroundColor: colors.white, fontSize: 16 },
   inputError: { borderColor: '#B42318' },
-  counter: { width: '100%', maxWidth: 420, marginTop: 5, color: '#7A8288', fontSize: 12, textAlign: 'right' },
+  counter: { width: '100%', maxWidth: 420, marginTop: 5, color: colors.muted, fontSize: 12, textAlign: 'right' },
   error: { width: '100%', maxWidth: 420, marginTop: 6, color: '#B42318', fontSize: 14 },
-  primaryButton: { width: '100%', maxWidth: 420, minHeight: 54, marginTop: 24, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#2F7D32' },
-  primaryText: { color: '#FFFFFF', fontSize: 17, fontWeight: '600' },
+  primaryButton: { width: '100%', maxWidth: 420, minHeight: 54, marginTop: 24, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary },
+  primaryText: { color: colors.white, fontSize: 17, fontWeight: '600' },
   signOutButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
-  signOutText: { color: '#626C73', fontSize: 15, fontWeight: '700' },
+  signOutText: { color: colors.muted, fontSize: 15, fontWeight: '700' },
   disabled: { opacity: 0.6 },
 });

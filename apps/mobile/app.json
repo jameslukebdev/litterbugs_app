@@ -64,7 +64,8 @@
           "cameraPermission": "Litterbugs uses your camera when you take report or profile pictures.",
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "extra": {
       "eas": {

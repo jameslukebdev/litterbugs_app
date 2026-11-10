@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -12,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { reportPresentation } from './lib/reportPresentation';
+import { colors, fonts } from './lib/theme';
 
 
 export default function CleanupWaiverModal({
@@ -38,8 +40,11 @@ export default function CleanupWaiverModal({
     >
       <View style={styles.container}>
         <View style={styles.header}>
+          {/* Website claim step: the caterpillar labels "Before you start", with the report under it. */}
+          <Image source={require('./assets/bugs/caterpillar.png')} style={styles.headerBug} resizeMode="contain" accessible={false} />
           <View style={styles.headerCopy}>
-            <Text style={styles.title}>Cleanup safety and agreement</Text>
+            <Text style={styles.title} accessibilityRole="header">Before you start</Text>
+            {report ? <Text style={styles.headerReport} numberOfLines={2}>{report.title || 'This cleanup'}</Text> : null}
           </View>
           <TouchableOpacity
             style={styles.closeButton}
@@ -48,7 +53,7 @@ export default function CleanupWaiverModal({
             accessibilityRole="button"
             accessibilityLabel="Close cleanup acknowledgment"
           >
-            <Ionicons name="close" size={25} color="#374151" />
+            <Ionicons name="close" size={25} color={colors.ink} />
           </TouchableOpacity>
         </View>
 
@@ -58,35 +63,42 @@ export default function CleanupWaiverModal({
           showsVerticalScrollIndicator
         >
           {report ? <View style={styles.reportSummary}>
-            <Text style={styles.reportTitle}>{report.title || 'This cleanup'}</Text>
-            <View style={styles.summaryRow}>
-              <Ionicons name="cash-outline" size={20} color="#687178" />
-              <Text style={styles.summaryText}>{reportPresentation(report).funding}</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Ionicons name="time-outline" size={20} color="#687178" />
-              <Text style={styles.summaryText}>You’ll have 24 hours to finish and submit 1–3 after photos.</Text>
+            {/* Facts as soft chips, as on the website; colour comes from the chip words. */}
+            <View style={styles.factChip}>
+              <Ionicons name="calendar-outline" size={16} color="#24521F" />
+              <Text style={styles.factText}>You’ll have 24 hours to finish and submit 1–3 after photos.</Text>
             </View>
             {Number(report.funded_amount_cents) > 0 ? (
-              <View style={styles.summaryRow}>
-                <Ionicons name="wallet-outline" size={20} color="#687178" />
+              <>
+                <View style={[styles.factChip, styles.payChip]}>
+                  <Text style={[styles.factText, styles.payText]}>{reportPresentation(report).funding}</Text>
+                </View>
                 <Text style={styles.summaryText}>Payout setup is required before reserving a funded cleanup. Your reward is paid after approval.</Text>
-              </View>
+              </>
             ) : <Text style={styles.summaryText}>There is currently no funded reward.</Text>}
-            <View style={styles.safetyNotice}>
-              <Ionicons name="warning-outline" size={18} color="#805900" />
-              <Text style={styles.safetyNoticeText}>Only continue if the location is safe to clean.</Text>
-            </View>
             <Text style={styles.claimNote}>Reading this acknowledgment does not reserve the cleanup. You’ll confirm your claim afterward.</Text>
           </View> : null}
-          <Text style={styles.body}>{waiver?.body ?? ''}</Text>
 
           {waiver?.guidelines_body ? (
             <View style={styles.guidelinesCard}>
-              <Text style={styles.guidelinesTitle}>Cleanup safety guidelines</Text>
+              <Text style={styles.guidelinesTitle}>Stay safe</Text>
               <Text style={styles.guidelinesBody}>{waiver.guidelines_body}</Text>
+              <Text style={[styles.guidelinesBody, { fontWeight: '700' }]}>Only continue if the location is safe to clean.</Text>
             </View>
-          ) : null}
+          ) : (
+            <View style={styles.guidelinesCard}>
+              <Text style={styles.guidelinesTitle}>Stay safe</Text>
+              <Text style={styles.guidelinesBody}>Only continue if the location is safe to clean.</Text>
+            </View>
+          )}
+
+          <View style={styles.agreementHeading}>
+            <Text style={styles.agreementTitle}>Cleanup agreement</Text>
+            {waiver?.published_at && Number.isFinite(Date.parse(waiver.published_at)) ? <Text style={styles.agreementUpdated}>
+              Updated {new Date(waiver.published_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+            </Text> : null}
+          </View>
+          <Text style={styles.body}>{waiver?.body ?? ''}</Text>
 
           {waiver?.release_body ? (
             <View style={styles.releaseCard}>
@@ -94,10 +106,6 @@ export default function CleanupWaiverModal({
               <Text style={styles.releaseBody}>{waiver.release_body}</Text>
             </View>
           ) : null}
-
-          {waiver?.published_at && Number.isFinite(Date.parse(waiver.published_at)) ? <Text style={{ color: '#687178', fontSize: 13, marginVertical: 12 }}>
-            Updated {new Date(waiver.published_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
-          </Text> : null}
 
           <TouchableOpacity
             style={styles.acknowledgmentRow}
@@ -109,7 +117,7 @@ export default function CleanupWaiverModal({
             <Ionicons
               name={acknowledged ? 'checkbox' : 'square-outline'}
               size={27}
-              color={acknowledged ? '#2F7D32' : '#7A8288'}
+              color={acknowledged ? colors.primary : colors.muted}
             />
             <Text style={styles.acknowledgmentText}>
               I confirm I am 18 or older. I have read and accept this version of the safety guidelines and funded reward acknowledgment, including the assumption of risk and release.
@@ -131,7 +139,7 @@ export default function CleanupWaiverModal({
             accessibilityState={{ busy: accepting, disabled: !acknowledged || accepting }}
           >
             <Text style={styles.acceptButtonText}>Accept and review claim</Text>
-            {accepting ? <View style={styles.acceptSpinner} pointerEvents="none"><ActivityIndicator size="small" color="#FFFFFF" /></View> : null}
+            {accepting ? <View style={styles.acceptSpinner} pointerEvents="none"><ActivityIndicator size="small" color={colors.white} /></View> : null}
           </TouchableOpacity>
         </View>
       </View>
@@ -140,7 +148,7 @@ export default function CleanupWaiverModal({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.white },
   header: {
     minHeight: 76,
     paddingHorizontal: 20,
@@ -148,80 +156,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#DDE1E3',
+    borderBottomColor: colors.line,
   },
+  headerBug: { width: 40, height: 40, marginRight: 10 },
+  headerReport: { marginTop: 2, color: colors.muted, fontSize: 14, lineHeight: 21 },
+  factChip: { alignSelf: 'flex-start', maxWidth: '100%', flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 7, paddingHorizontal: 12, borderRadius: 999, backgroundColor: '#ECF6E3' },
+  factText: { flexShrink: 1, color: '#24521F', fontSize: 14, fontWeight: '800' },
+  payChip: { backgroundColor: '#FFF0F1' },
+  payText: { color: '#A8323B' },
+  agreementHeading: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 10, marginBottom: 8 },
+  agreementTitle: { color: colors.ink, fontSize: 17, fontFamily: fonts.heading },
+  agreementUpdated: { color: colors.muted, fontSize: 12, fontWeight: '600' },
   headerCopy: { flex: 1, paddingRight: 12 },
-  eyebrow: { color: '#9A6700', fontSize: 12, fontWeight: '800', letterSpacing: 0.7 },
-  title: { color: '#1F2937', fontSize: 22, lineHeight: 28, fontWeight: '700' },
-  closeButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F3F5F4', alignItems: 'center', justifyContent: 'center' },
+  title: { color: colors.ink, fontSize: 20, lineHeight: 24, fontFamily: fonts.heading },
+  closeButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.mist, alignItems: 'center', justifyContent: 'center' },
   scroll: { flex: 1 },
   content: { padding: 20, paddingBottom: 34 },
-  reportSummary: { paddingBottom: 22, marginBottom: 24, borderBottomWidth: 1, borderBottomColor: '#E8ECE9' },
-  reportTitle: { color: '#303A34', fontSize: 16, lineHeight: 22, fontWeight: '600', marginBottom: 16 },
-  summaryRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 12 },
-  summaryText: { flex: 1, color: '#4F5C63', fontSize: 14, lineHeight: 21 },
-  safetyNotice: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, padding: 12, borderRadius: 10, backgroundColor: '#FFF7E5' },
-  safetyNoticeText: { flex: 1, color: '#805900', fontSize: 13, lineHeight: 19, fontWeight: '500' },
-  claimNote: { marginTop: 14, color: '#687178', fontSize: 13, lineHeight: 19 },
-  body: { color: '#30363B', fontSize: 16, lineHeight: 25 },
-  guidelinesCard: {
-    marginTop: 24,
-    padding: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E2E7E3',
-    backgroundColor: '#F7F9F7',
-  },
-  guidelinesTitle: { color: '#303A34', fontSize: 17, lineHeight: 23, fontWeight: '400' },
-  guidelinesBody: { marginTop: 10, color: '#30363B', fontSize: 15, lineHeight: 23 },
-  releaseCard: {
-    marginTop: 20,
-    padding: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#A23A2A',
-    backgroundColor: '#FFF4F1',
-  },
-  releaseTitle: {
-    color: '#7C2418',
-    fontSize: 16,
-    lineHeight: 22,
-    fontWeight: '700',
-  },
-  releaseBody: { marginTop: 8, color: '#49251F', fontSize: 15, lineHeight: 23, fontWeight: '400' },
-  versionCard: { marginTop: 24, padding: 15, borderRadius: 14, backgroundColor: '#F5F6F7' },
-  versionLabel: { color: '#6B7379', fontSize: 12, fontWeight: '800', textTransform: 'uppercase' },
-  versionValue: { marginTop: 4, color: '#30363B', fontSize: 14, fontWeight: '700' },
-  versionSpacing: { marginTop: 14 },
-  acknowledgmentRow: {
-    marginTop: 24,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    borderWidth: 1,
-    borderColor: '#C8D8C9',
-    borderRadius: 14,
-    backgroundColor: '#F4FAF4',
-  },
-  acknowledgmentText: { flex: 1, color: '#244A27', fontSize: 15, lineHeight: 22, fontWeight: '500' },
+  reportSummary: { gap: 10, marginBottom: 20 },
+  summaryText: { color: colors.muted, fontSize: 14, lineHeight: 21 },
+  claimNote: { color: colors.muted, fontSize: 13, lineHeight: 19 },
+  body: { color: colors.muted, fontSize: 13, lineHeight: 19.5 },
+  guidelinesCard: { marginBottom: 22, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 18, borderWidth: 2, borderColor: '#B8E198', backgroundColor: '#F6FBF1' },
+  guidelinesTitle: { color: '#2F6B3A', fontSize: 17, lineHeight: 22, fontFamily: fonts.heading },
+  guidelinesBody: { marginTop: 6, color: '#3B4A36', fontSize: 14, lineHeight: 21.7 },
+  releaseCard: { marginTop: 14 },
+  releaseTitle: { color: colors.ink, fontSize: 14, lineHeight: 20, fontWeight: '800' },
+  releaseBody: { marginTop: 4, color: colors.muted, fontSize: 13, lineHeight: 19.5 },
+  acknowledgmentRow: { marginTop: 22, paddingVertical: 14, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderWidth: 2, borderColor: '#ECE8F8', borderRadius: 16, backgroundColor: colors.white },
+  acknowledgmentText: { flex: 1, color: '#45434D', fontSize: 14, lineHeight: 21 },
   footer: {
     paddingHorizontal: 20,
     paddingTop: 14,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#DDE1E3',
-    backgroundColor: '#FFFFFF',
+    borderTopColor: colors.line,
+    backgroundColor: colors.white,
   },
-  acceptButton: {
-    minHeight: 54,
-    paddingHorizontal: 36,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 14,
-    backgroundColor: '#2F7D32',
-  },
+  acceptButton: { minHeight: 52, paddingHorizontal: 36, paddingVertical: 12, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: colors.primary },
   acceptButtonDisabled: { opacity: 0.45 },
-  acceptButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  acceptButtonText: { color: colors.white, fontSize: 16, fontWeight: '800' },
   acceptSpinner: { position: 'absolute', right: 10, top: 0, bottom: 0, justifyContent: 'center' },
 });

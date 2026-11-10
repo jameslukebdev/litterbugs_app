@@ -2,10 +2,11 @@ import RemotePhoto from './components/RemotePhoto';
 import { useReports } from './lib/reports';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { colors } from './lib/theme';
 
 const severityColor = (severity) => {
   if (String(severity).toLowerCase() === 'high') return '#C62828';
-  if (String(severity).toLowerCase() === 'low') return '#687178';
+  if (String(severity).toLowerCase() === 'low') return colors.muted;
   return '#D66A00';
 };
 
@@ -14,7 +15,7 @@ export default function ProfileReportList({ reports, onReportPress, emptyTitle =
   if (!reports?.length) {
     return (
       <View style={styles.empty}>
-        <Ionicons name="map-outline" size={28} color="#6F797F" />
+        <Ionicons name="map-outline" size={28} color={colors.muted} />
         <Text style={styles.emptyTitle}>{emptyTitle}</Text>
         <Text style={styles.emptyText}>{emptyText}</Text>
       </View>
@@ -40,7 +41,7 @@ export default function ProfileReportList({ reports, onReportPress, emptyTitle =
           <Text style={styles.date}>{new Date(report.created_at).toLocaleDateString()}</Text>
         ) : null}
       </View>
-      <Ionicons name="chevron-forward" size={18} color="#8B9690" />
+      <Ionicons name="chevron-forward" size={18} color={colors.subtle} />
     </TouchableOpacity>
   ));
 }
@@ -53,23 +54,23 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
   },
   divider: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#DDE1E3',
+    borderTopColor: colors.line,
   },
   copy: { flex: 1, marginRight: 8 },
-  title: { color: '#202428', fontSize: 16, lineHeight: 22, fontWeight: '600' },
+  title: { color: colors.ink, fontSize: 16, lineHeight: 22, fontWeight: '600' },
   severity: { marginTop: 5, fontSize: 12, fontWeight: '500' },
-  date: { marginTop: 3, color: '#747D84', fontSize: 13 },
+  date: { marginTop: 3, color: colors.muted, fontSize: 13 },
   empty: {
     minHeight: 200,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
   },
-  emptyTitle: { marginTop: 10, color: '#30363B', fontSize: 16, lineHeight: 22, fontWeight: '600' },
-  emptyText: { marginTop: 5, color: '#747D84', fontSize: 14, lineHeight: 21, textAlign: 'center' },
+  emptyTitle: { marginTop: 10, color: colors.ink, fontSize: 16, lineHeight: 22, fontWeight: '600' },
+  emptyText: { marginTop: 5, color: colors.muted, fontSize: 14, lineHeight: 21, textAlign: 'center' },
 });
