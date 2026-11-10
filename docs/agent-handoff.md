@@ -24,6 +24,21 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (mobile Map buttons fixed and live)
+
+- The compact 44px Map width leaked into the homepage drawer. Scoped it
+  to the header and restored the full-width Open map row. The header now
+  shows Map beside the icon at 390–480px and below it at narrower widths.
+  Browser geometry confirmed that the menu, logo, search and account
+  stayed in place.
+- Pushed `9c5ffd8` to `origin/codex/map-first-navigation` and promoted
+  Vercel deployment `dpl_9KAAk5pLnNkMzsDvsVVhKPHVtkGY`. Previous live
+  deployment for rollback is `dpl_3UD2uB3aDMCh6MVuKiMUQ4yVXCeg`.
+- Clean lint, Vercel build and 892 web tests passed. Live emulated-phone
+  checks covered 320–480px and opening the map from the header, drawer,
+  homepage preview and a preview pin. Test browsers were excluded from
+  analytics. Production error-log query returned no entries.
+
 ### 2026-11-09 — Codex (local public-site styling and search live)
 
 - The previous animation release omitted four existing local styling edits.
