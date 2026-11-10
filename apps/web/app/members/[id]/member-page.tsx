@@ -1,9 +1,8 @@
 'use client';
 import Image from 'next/image';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { FiMap, FiMapPin } from 'react-icons/fi';
+import { FiMapPin } from 'react-icons/fi';
 import type { PublicProfile } from '@/lib/public-profile';
 import { CommunityRank } from '@/components/community-rank';
 import { MemberReports } from '@/components/member-reports';
@@ -16,7 +15,6 @@ export function MemberPage({ profile, avatarUrl }: { profile: PublicProfile; ava
   const name = profile.display_name || 'Community member';
   const initial = (profile.display_name || profile.username || '?').charAt(0).toUpperCase();
   return <main className={styles.profile}>
-    <Link href="/map" className={styles.browse}><FiMap aria-hidden="true" /> Browse cleanups</Link>
     <header className={styles.identity}>
       <span className={styles.avatar} aria-hidden="true">
         {avatarUrl && failedAvatar !== avatarUrl ? <Image src={avatarUrl} alt="" width={76} height={76} unoptimized referrerPolicy="no-referrer" onError={() => setFailedAvatar(avatarUrl)} /> : initial}
