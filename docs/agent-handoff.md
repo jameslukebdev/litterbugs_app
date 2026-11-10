@@ -24,6 +24,22 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-10 — Codex (PostHog and Clarity friction follow-up)
+
+- Rolling seven-day PostHog production-host review excluded tagged QA and
+  detected bots where available. Four rage clicks were on the map, all
+  before Nov 10, with no element chain. Nov 10 through the query had five
+  recorded pageviews and 32 map events, with no participation stages.
+  The shared-report sign-in event had not appeared in the taxonomy.
+- Clarity showed 91 recordings, 14 flagged for dead clicks and none for
+  rage clicks under its own filters. Five flagged recordings entered and
+  exited on Get the app. Two Instagram replays showed App Store badge
+  taps. Phone-sized Chrome followed the current badge to the expected
+  Apple URL. The external store handoff inside Instagram remains unverified.
+- The public member route is outside the GA/PostHog page allowlist.
+  Consider an ID-free member route and fixed action labels for map controls.
+  Read-only analysis, with no product or analytics configuration changes.
+
 ### 2026-11-10 — Codex (public member profile update live)
 
 - Pushed release source `3f3d78d` to `origin/codex/web-profile-rank-release`
