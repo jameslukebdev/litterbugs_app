@@ -24,6 +24,20 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-10 — Codex (web profile and rank update live)
+
+- Pushed release source `37e3954` to `origin/codex/web-profile-rank-release`
+  and promoted Vercel deployment `dpl_E5T6XVHDoNi2y49FrbdXxmQJFESr` to
+  litterbugs.app. Previous live deployment is `dpl_CzgTAJEwFocsFE2iPioEXmbnknkp`.
+- Released the compact map member profile and integrated account profile,
+  with the simplified Ladybug and larger cocoon. The release branch is
+  scoped to the approved web changes. Mobile app work and local previews
+  remain in the shared checkout.
+- The remote production build, 901 web tests, lint and typecheck passed.
+  Staged HTTP smoke checks and live Chrome verified both profile surfaces,
+  the new artwork and account points guide. Analytics were off in the
+  test browser. The bounded production error query returned no entries.
+
 ### 2026-11-10 — Codex (simpler Ladybug rank artwork)
 
 - Simplified the web rank Ladybug to a two-tone spotted shell and antennae.
