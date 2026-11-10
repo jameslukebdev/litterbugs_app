@@ -24,6 +24,25 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (PostHog and Clarity website review)
+
+- Reviewed Nov 3–9 website events and four Clarity recording timelines.
+  Clarity showed 101 sessions after bot exclusion, with 14 dead-click and
+  25 quick-back flags and zero JavaScript errors. PostHog's four rage-click
+  events were all on the map, three on mobile Safari. Some sessions may be QA.
+- Prioritize the phone report gallery. The Nov 9 12:28 p.m. replay showed
+  repeated photo taps and seven Previous photo taps. The report component
+  offers full-screen viewing for Before photos only. Check both sides and
+  loading feedback on mobile Safari. Next, make recovery from empty map
+  results easier. Nine empty results appeared in PostHog without a captured
+  closest-report request, and an afternoon replay showed the empty state.
+- PostHog captured one unflagged report-location permission denial and no
+  auth submissions in the participation data. The sample is too small to
+  diagnose account, funding or cleanup conversion. The newest recording
+  predates the evening mobile Map button release.
+- Read-only analytics review. Pending work is limited to the proposed
+  follow-ups. No app changes or deployment from this review.
+
 ### 2026-11-09 — Codex (mobile Map buttons fixed and live)
 
 - The compact 44px Map width leaked into the homepage drawer. Scoped it
