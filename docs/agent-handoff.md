@@ -24,6 +24,15 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-10 — Codex (smooth member report tab switching)
+
+- Kept the previous report list at its existing height while the other
+  tab loads. The old rows are dimmed and inactive until the new list
+  arrives. The transition respects reduced motion.
+- Verified desktop and phone Chrome with delayed responses, rapid
+  tab changes, and a failed request followed by retry. Lint and
+  typecheck passed. Local review pending.
+
 ### 2026-11-10 — Codex (rank guide and member report styling)
 
 - Made the web points guide easier to scan and added all eight rank icons
