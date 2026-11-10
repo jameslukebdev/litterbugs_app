@@ -82,7 +82,6 @@ export function CommunityRank({ userId, compact = false, hold = false, onReady, 
     {!preview && <details>
       <summary>How points work</summary>
       <div className={styles.guide}>
-        <h4>How to earn points</h4>
         <dl className={styles.earnings}>
           <div><dt>+1 point</dt><dd>When your report is accepted after review</dd></div>
           <div><dt>+3 points</dt><dd>When your cleanup is confirmed complete</dd></div>
