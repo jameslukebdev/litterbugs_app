@@ -24,12 +24,12 @@ describe('public shared report funding copy', () => {
     expect(screen.getByText(/\$6.00 in its cleanup fund/)).toBeTruthy();
     expect(screen.queryByText(/Volunteer cleanup/)).toBeNull();
     expect(screen.getByRole('link', { name: 'Open in Litterbugs' }).getAttribute('href'))
-      .toBe('litterbugs://reports/report-id');
+      .toBe('/get-app?report=report-id');
   });
-  it('includes an app link in server HTML before browser JavaScript runs', async () => {
+  it('includes the report download link in server HTML before browser JavaScript runs', async () => {
     loadReport.mockResolvedValue(report);
     const html = renderToStaticMarkup(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
-    expect(html).toContain('href="litterbugs://reports/report-id"');
+    expect(html).toContain('href="/get-app?report=report-id"');
     expect(loadReport).toHaveBeenCalledWith(report.id, 'linked');
   });
   it('retains volunteer wording when there is no reward', async () => {

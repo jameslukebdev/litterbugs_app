@@ -16,7 +16,7 @@ import { loadRelatedPublicReports } from '@/lib/related-public-reports';
 import { loadPublicReportShare } from '@/lib/public-report-share';
 import { SHARED_REPORT_AUTH_PARAM } from '@/lib/participation-auth';
 import { publicReportStatus } from '@/lib/public-report-status';
-import { OpenReportAction } from './open-report-action';
+import { AppLink } from '@/components/app-link';
 import { ReportPhotos } from './report-photos';
 
 import styles from './report-share.module.css';
@@ -159,7 +159,7 @@ export default async function SharedReportPage({ params }: Props) {
               {localCommunityHref && <li><Link href={localCommunityHref}>Back to {report.generalLocation}<FiChevronRight aria-hidden="true" /></Link></li>}
               <li><Link href={expired ? "/report-litter" : completed ? community ? communityListingHref(community) : "/cleaner" : "/fund-a-cleanup"}>{expired ? "Report a spot" : completed ? community ? `Find another cleanup in ${community.name}` : "Find another cleanup" : "How funding works"}<FiChevronRight aria-hidden="true" /></Link></li>
               <li><Link href="/report-litter">How reporting works<FiChevronRight aria-hidden="true" /></Link></li>
-              {!expired && <li><OpenReportAction reportId={report.id} className={styles.appLink} /></li>}
+              {!expired && <li><AppLink reportId={report.id} className={styles.appLink}>Open in Litterbugs</AppLink></li>}
             </ul>
           </div>
           </div>

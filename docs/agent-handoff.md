@@ -24,6 +24,16 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (shared report desktop app fallback ready locally)
+
+- Shared reports now use the site's app link. Desktop visitors reach the
+  download page with the report ID, and **Continue on the website** opens
+  that same report on the map. Mobile uses the existing app and store handoff.
+- Verified the desktop path in local Chrome and passed 38 focused tests.
+  The four PostHog rage clicks still have no control labels. One overlapped
+  a replay with repeated photo taps, which does not prove the cause.
+- Local review pending. The funding and refund pages were outside this fix.
+
 ### 2026-11-09 — Codex (next PostHog and Clarity issues reviewed)
 
 - Nov 3–9 production-host PostHog records, excluding labeled QA and detected

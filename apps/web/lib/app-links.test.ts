@@ -8,8 +8,10 @@ describe('app invitation handoff', () => {
   it('supports iPad desktop mode while leaving desktop users on the download page', () => {
     expect(storeUrlForUserAgent('Macintosh', 5)).toBe(APP_STORE_URL);
     expect(storeUrlForUserAgent('Macintosh', 0)).toBeNull();
+    expect(storeUrlForUserAgent('iPhone')).toBe(APP_STORE_URL);
     expect(storeUrlForUserAgent('Linux Android')).toBe(GOOGLE_PLAY_URL);
     expect(appDownloadPath('report id/1')).toBe('/get-app?report=report%20id%2F1');
+    expect(reportAppUrl('report id/1')).toBe('litterbugs://reports/report%20id%2F1');
     expect(reportAppUrl()).toBe('litterbugs://');
   });
 
