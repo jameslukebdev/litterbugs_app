@@ -24,6 +24,18 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-10 — Codex (public member profile update live)
+
+- Pushed release source `3f3d78d` to `origin/codex/web-profile-rank-release`
+  and promoted Vercel deployment `dpl_6xn6UFxSv9YBM1oTZJaBBeTPZdpC`.
+  Previous live deployment is `dpl_E5T6XVHDoNi2y49FrbdXxmQJFESr`.
+- Released the white public profile, avatar, unboxed rank, eight-rank points
+  guide, steadier report tabs and the More actions menu for Report and Block.
+- Remote build, 901 web tests and lint passed. Staged HTTP and live Chrome
+  checks verified the profile, both report tabs and both safety dialogs.
+  Analytics were off in the test browser. The bounded production error
+  query returned no entries.
+
 ### 2026-11-10 — Codex (public profile safety actions menu)
 
 - Moved Report and Block into a More actions menu beside the member name.
