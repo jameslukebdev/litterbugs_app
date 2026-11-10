@@ -190,10 +190,7 @@ export function MapExperience({
   const [reportMode, setReportMode] = useState(false);
   useEffect(() => { if (reportMode) trackParticipation('report', 'location_picker'); }, [reportMode]);
   const [placement, setPlacement] = useState<Coordinates | null>(null);
-  const [checkingLocation, setCheckingLocation] = useState(false);
-  const locationCheck = useRef(0);
   const reportEntry = useRef(0);
-  const [locationError, setLocationError] = useState('');
   const [checkingDraft, setCheckingDraft] = useState(false);
   const [previewedReportId, setPreviewedReportId] = useState<string | null>(null);
   const [toast, setToast] = useState('');
@@ -386,7 +383,7 @@ export function MapExperience({
   }, []);
 
   const handleUserChange = useCallback((nextUserId: string | null) => {
-    locationCheck.current++; reportEntry.current++; setCheckingLocation(false); setCheckingDraft(false);
+    reportEntry.current++; setCheckingDraft(false);
     setUserId(nextUserId);
     setReportFunding(null);
     setPublicationUncertain(false);
@@ -440,7 +437,7 @@ export function MapExperience({
 
   useEffect(() => {
     const navigate = () => {
-      if (window.location.pathname !== '/report') { locationCheck.current++; reportEntry.current++; setCheckingDraft(false); setCheckingLocation(false); setDraftCoordinates(null); setReportMode(false); setLocationError(''); setSelectingDraftLocation(false); }
+      if (window.location.pathname !== '/report') { reportEntry.current++; setCheckingDraft(false); setDraftCoordinates(null); setReportMode(false); setSelectingDraftLocation(false); }
       setNavigationRevision(value => value + 1);
     };
     window.addEventListener('popstate', navigate);
@@ -724,14 +721,14 @@ export function MapExperience({
   useEffect(() => {
     mapClickRef.current = (coordinates) => {
       setClosestPreview(null);
-      if (reportMode && !checkingLocation) { mapRef.current?.panTo({ lat: coordinates.latitude, lng: coordinates.longitude }); setPlacement(coordinates); setLocationError(''); }
+      if (reportMode) { mapRef.current?.panTo({ lat: coordinates.latitude, lng: coordinates.longitude }); setPlacement(coordinates); }
     };
-  }, [reportMode, checkingLocation]);
+  }, [reportMode]);
 
   const enterReportTask = useCallback(async (resume = true, signal?: AbortSignal) => {
     const entry = ++reportEntry.current;
     setClosestPreview(null);
-    setCheckingDraft(true); setLocationError(''); setReportListOpen(false);
+    setCheckingDraft(true); setReportListOpen(false);
     setSelectedReport(null); selectedReportIdRef.current = null;
     try {
       const confirmedPin = window.location.pathname === '/report' ? readReportEntryLocation(new URLSearchParams(window.location.search)) : null;
@@ -762,8 +759,8 @@ export function MapExperience({
   }, [userId, navigationRevision, enterReportTask]);
 
   const closeReportTask = useCallback(() => {
-    locationCheck.current++; reportEntry.current++; setCheckingDraft(false); setCheckingLocation(false); setSelectingDraftLocation(false);
-    setDraftCoordinates(null); setReportMode(false); setLocationError('');
+    reportEntry.current++; setCheckingDraft(false); setSelectingDraftLocation(false);
+    setDraftCoordinates(null); setReportMode(false);
     const url = new URL(window.location.href);
     clearReportEntryLocation(url);
     if (url.pathname === '/report' && communityReturn) { window.location.assign(communityReturn); return; }
@@ -772,11 +769,8 @@ export function MapExperience({
 
   const cancelLocationSelection = useCallback(() => {
     if (selectingDraftLocation) {
-      locationCheck.current++;
-      setCheckingLocation(false);
       setSelectingDraftLocation(false);
       setReportMode(false);
-      setLocationError('');
     } else {
       trackParticipationExit('report', 'location_picker', 'cancelled');
       closeReportTask();
@@ -816,42 +810,17 @@ export function MapExperience({
     setSelectingDraftLocation(true);
     setReportListOpen(false);
     setReportMode(true);
-    setLocationError('');
     setPlacement(draftCoordinates);
     mapRef.current?.panTo({ lat: draftCoordinates.latitude, lng: draftCoordinates.longitude });
   }
 
-  function currentReportPin() {
+  function confirmReportLocation() {
+    if (!mapReady) return;
     const center = mapRef.current?.getCenter();
-    return center ? { latitude: center.lat(), longitude: center.lng() } : placement;
-  }
-
-  function continueReportAsDraft() {
-    const chosen = currentReportPin();
-    if (chosen) beginReport(chosen);
-  }
-
-  async function confirmReportLocation() {
-    if (checkingLocation || !mapReady) return;
-    const chosen = currentReportPin();
+    const chosen = center ? { latitude: center.lat(), longitude: center.lng() } : placement;
     if (!chosen) return;
-    if (!userId) {
-      trackParticipation('report', 'location_confirmed');
-      beginReport(chosen);
-      return;
-    }
-    const check = ++locationCheck.current;
-    setCheckingLocation(true); setLocationError('');
-    try {
-      await requireReportLocation(chosen);
-      if (check !== locationCheck.current) return;
-      const current = mapRef.current?.getCenter();
-      if (current && (Math.abs(current.lat() - chosen.latitude) > 0.00001 || Math.abs(current.lng() - chosen.longitude) > 0.00001)) { setLocationError('The pin moved while checking. Confirm the new location.'); return; }
-      trackParticipation('report', 'location_confirmed');
-      beginReport(chosen);
-    }
-    catch (error) { if (check === locationCheck.current) { trackParticipationFailure('report', 'location_picker', reportLocationFailureReason(error)); setLocationError(error instanceof Error ? error.message : 'Location could not be checked. Try again.'); } }
-    finally { if (check === locationCheck.current) setCheckingLocation(false); }
+    trackParticipation('report', 'location_confirmed');
+    beginReport(chosen);
   }
 
   async function centerOnUser() {
@@ -1184,7 +1153,7 @@ export function MapExperience({
           onResumeDraft={() => { void toggleReportMode(); }} />
       )} />
       <div className="discovery-toolbar">
-        <PlaceSearch selected={searchPlace} onSelect={selectSearchPlace} onClear={clearSearchPlace} bias={discoveryArea} disabled={checkingLocation} />
+        <PlaceSearch selected={searchPlace} onSelect={selectSearchPlace} onClear={clearSearchPlace} bias={discoveryArea} />
         <div className="discovery-quick-filters" ref={setFilterToolbar} />
         <div className="discovery-toolbar-actions">
           <button className="secondary-button discovery-filters" onClick={() => { switchDiscoveryView('reports'); setFiltersRequest(value => value + 1); }}><IoOptionsOutline aria-hidden />Filters<span className="discovery-filter-count" data-empty={Object.entries(discoveryFilters).every(([key, value]) => value === DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]) || undefined}>{Object.entries(discoveryFilters).filter(([key, value]) => value !== DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]).length || ''}</span></button>
@@ -1201,7 +1170,7 @@ export function MapExperience({
           reports={displayResponse?.reports ?? EMPTY_MAP_REPORTS}
           resultFilters={displayResponse?.search.filters ?? null}
           filtersRequest={filtersRequest}
-          emptyPlaceSearch={<PlaceSearch trackingSurface="empty_search" label="Search another location" selected={null} onSelect={selectSearchPlace} onClear={clearSearchPlace} bias={discoveryArea} disabled={checkingLocation} />}
+          emptyPlaceSearch={<PlaceSearch trackingSurface="empty_search" label="Search another location" selected={null} onSelect={selectSearchPlace} onClear={clearSearchPlace} bias={discoveryArea} />}
           closestAction={closestAction}
           onRetry={() => void refreshReports()}
           showAuthors
@@ -1245,11 +1214,7 @@ export function MapExperience({
             <div className="report-placement-pin" aria-hidden="true"><Icon name="location" /></div>
             <section className="report-placement-confirm" aria-label="Choose report location">
               <h1>Where is the litter?</h1>
-              {locationError && <p id="report-placement-error" role="alert">{locationError}</p>}
-              <div className="report-placement-actions">
-                <button type="button" className="primary-button" aria-describedby={locationError ? 'report-placement-error' : undefined} aria-busy={checkingLocation} disabled={!mapReady || checkingLocation} onClick={() => void confirmReportLocation()}>{checkingLocation ? 'Checking…' : locationError ? 'Try again' : 'Use this location'}</button>
-                {userId && <button type="button" className="secondary-button report-placement-draft" disabled={!mapReady || checkingLocation} onClick={continueReportAsDraft}>Continue as draft</button>}
-              </div>
+              <button type="button" className="primary-button" disabled={!mapReady} onClick={confirmReportLocation}>Use this location</button>
             </section>
           </>}
           {selectedReport && detailsMinimized && <button type="button" className="secondary-button map-report-summary" onClick={() => setDetailsMinimized(false)} aria-label={`Open report details: ${selectedReport.title || 'Litter report'}`}>

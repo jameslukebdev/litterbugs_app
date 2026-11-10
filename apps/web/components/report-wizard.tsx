@@ -7,7 +7,7 @@ import { prepareBrowserPhotos } from '@/lib/prepare-browser-photo';
 /* eslint-disable @next/next/no-img-element -- Blob previews and short-lived signed URLs cannot use the image optimizer. */
 
 import { usePhotoPreviews } from '@/lib/use-photo-previews';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { IoCheckmarkCircle, IoEllipseOutline, IoLeafOutline, IoTrashOutline, IoLayersOutline, IoChevronBack, IoChevronForward } from 'react-icons/io5';
 import { ReportOptionIcon, reportOptionLabel } from './report-option-icon';
 import styles from './report-wizard.module.css';
@@ -15,6 +15,7 @@ import styles from './report-wizard.module.css';
 const STEP_TITLES = ['Add photos', 'Type of litter', 'Severity', 'Site conditions', 'Review report'] as const;
 import {
   LITTER_OPTIONS,
+  MAX_REPORT_DISTANCE_MILES,
   MAX_REPORT_NOTES_LENGTH,
   MAX_REPORT_PHOTOS,
   MAX_REPORT_TITLE_LENGTH,
@@ -111,6 +112,7 @@ export function ReportWizard({
   onSubmit: (draft: ReportDraft, startingContributionCents: number | null) => Promise<string | null>;
 }) {
   const [step, setStep] = useState(initialState?.step ?? 0);
+  const locationHintId = useId();
   useEffect(() => {
     const stage = (['photos', 'litter_type', 'severity', 'details', 'review'] as const)[step];
     if (!isEditing && stage) trackParticipation('report', stage);
@@ -287,11 +289,16 @@ export function ReportWizard({
             </dl>}
             {wantsFunding && <p>You’ll confirm payment separately after the report is saved and eligible for funding.</p>}
           </section>}
-            <button type="button" className={`primary-button ${styles.submitButton}`} onClick={submit} disabled={saving || preparing || (wantsFunding && contributionCents == null)}>{saving ? submissionProgress || 'Saving report…' : isEditing ? 'Save changes' : 'Submit report'}</button>
+          <div className={styles.submitActions}>
+            {message
+              ? <p id={locationHintId} className="form-message error-message" role="alert">{message}</p>
+              : !isEditing && <p id={locationHintId} className={styles.submitHint}>To post, allow location access and be within {MAX_REPORT_DISTANCE_MILES} miles of the pin.</p>}
+            <button type="button" className={`primary-button ${styles.submitButton}`} aria-describedby={message || !isEditing ? locationHintId : undefined} onClick={submit} disabled={saving || preparing || (wantsFunding && contributionCents == null)}>{saving ? submissionProgress || 'Saving report…' : isEditing ? 'Save changes' : 'Submit report'}</button>
+          </div>
         </section>}
       </fieldset></div>
 
-      {message && <p className="form-message error-message wizard-message" role="alert">{message}</p>}
+      {step !== 4 && message && <p className="form-message error-message wizard-message" role="alert">{message}</p>}
       <footer className="wizard-footer">
         <button type="button" className={`secondary-button ${styles.navButton}`} aria-label={step === 0 && !returnToReview ? 'Cancel' : 'Back'} onClick={() => { if (returnToReview) { setStep(4); setReturnToReview(false); } else if (step === 0) onClose(); else setStep(step - 1); }} disabled={saving || preparing}><IoChevronBack aria-hidden="true" />{step === 0 && !returnToReview ? 'Cancel' : 'Back'}</button>
         <div className={styles.stepProgress} aria-live="polite"><span>Step {step + 1} of {REPORT_STEPS.length}</span><div className={styles.stepDots} aria-hidden="true">{REPORT_STEPS.map((label, index) => <span key={label} data-active={index === step} />)}</div></div>

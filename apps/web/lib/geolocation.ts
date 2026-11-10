@@ -1,5 +1,5 @@
 import { ReportLocationError } from './report-location-error';
-import { isWithinReportDistance, type Coordinates } from '@litterbugs/report-contract';
+import { isWithinReportDistance, MAX_REPORT_DISTANCE_MILES, type Coordinates } from '@litterbugs/report-contract';
 
 export const GEOLOCATION_OPTIONS: PositionOptions = {
   enableHighAccuracy: false,
@@ -41,7 +41,7 @@ export async function requireReportLocation(
   }
   const origin = { latitude: position.coords.latitude, longitude: position.coords.longitude };
   if (!isWithinReportDistance(origin, destination)) {
-    throw new ReportLocationError('Choose a spot within 50 miles of you.', 'location_out_of_range');
+    throw new ReportLocationError(`You must be within ${MAX_REPORT_DISTANCE_MILES} miles of the pin to post. Try again when you’re closer.`, 'location_out_of_range');
   }
   return { ...origin, capturedAt: new Date(position.timestamp).toISOString() };
 }

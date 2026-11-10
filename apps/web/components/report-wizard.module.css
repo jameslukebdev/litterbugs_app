@@ -93,7 +93,9 @@
 .stepDots span { width: 6px; height: 6px; border-radius: 50%; background: #e3dff0; }
 .stepDots span[data-active="true"] { background: #4438bb; }
 .footerSpacer { width: 48px; }
-.submitButton { width: 100%; min-height: 50px; margin-top: 24px; }
+.submitActions { display: grid; gap: 8px; margin-top: 24px; }
+.submitButton { width: 100%; min-height: 50px; }
+.submitHint { margin: 0; color: #4a4857; font-size: 14px; }
 
 /* Consistency pass: same look as the cleanup flows. Report family = periwinkle dragonfly;
    severity uses the site's green/amber/red dots as pastel tints; real Back/Next buttons. */

@@ -24,6 +24,19 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (report location checks moved to submission locally)
+
+- The web report picker has one **Use this location** button. It takes the
+  chosen pin into the report form or sign-in without requesting GPS.
+  Changing a draft pin also skips GPS. Publish checks and recovery remain.
+- Review explains the 50-mile and location-access requirements next to
+  **Submit report**. A failed check shows an inline alert and preserves
+  the pin and form. Analytics workflow version is
+  `web-participation-2026-11-09-v4`.
+- Verified no GPS request through review and a visible denial at submit
+  in local Chrome at 320px, 390px and desktop widths. Passed 117 focused
+  tests, typecheck and scoped lint. Local review pending.
+
 ### 2026-11-09 — Codex (stacked report popup and shared-report sign-in measurement ready locally)
 
 - Restored two full-width buttons in a compact 280 × 152 px location
