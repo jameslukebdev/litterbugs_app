@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { useDataRefresh } from '@/lib/use-data-refresh';
 import { createClient } from '@/lib/supabase/client';
+import styles from './community-rank.module.css';
 
 // Keep thresholds in sync with mobile/lib/ranking.js. The web uses logo-style artwork.
 const ranks = [
@@ -78,6 +79,26 @@ export function CommunityRank({ userId, compact = false, hold = false, onReady, 
       </p>}
     </div>
     {error && <button className="secondary-button" onClick={() => { setError(false); setAttempt(value => value + 1); }}>Retry loading rank</button>}
-    {!preview && <details><summary>How points work</summary><p>Earn 1 point when a report is accepted after review, and 3 points when a cleanup is confirmed complete.</p><p>You can earn up to 5 report points in a rolling 24 hours. Another report within 25 metres of a location credited to you in the previous 7 days does not earn another point. You can still report new litter there.</p></details>}
+    {!preview && <details>
+      <summary>How points work</summary>
+      <div className={styles.guide}>
+        <h4>How to earn points</h4>
+        <dl className={styles.earnings}>
+          <div><dt>+1 point</dt><dd>When your report is accepted after review</dd></div>
+          <div><dt>+3 points</dt><dd>When your cleanup is confirmed complete</dd></div>
+        </dl>
+        <ul className={styles.limits}>
+          <li>You can earn up to 5 points from reports in any 24-hour period.</li>
+          <li>A report within 25 metres of a spot that earned you points in the past 7 days won’t earn another point. You can still report new litter there.</li>
+        </ul>
+        <h4>Ranks by total points</h4>
+        <ol className={styles.ranks} role="list">
+          {ranks.map(({ name, points, artwork }) => <li key={name}>
+            <Image src={artwork} width={36} height={36} alt="" />
+            <span><strong>{name}</strong><span>{points} {points === 1 ? 'point' : 'points'}</span></span>
+          </li>)}
+        </ol>
+      </div>
+    </details>}
   </section>;
 }

@@ -1,0 +1,47 @@
+.reports { margin-block: 28px; color: #292932; }
+.reports h3 { margin: 0 0 12px; font-size: 20px; }
+
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tabs button {
+  min-height: 46px;
+  padding: 8px 6px;
+  border: 2px solid #e3dff0;
+  border-radius: 14px;
+  color: #45434d;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.tabs button[aria-pressed='true'] { border-color: #5146ed; color: #3f36c4; }
+.tabs button[aria-pressed='false']:hover { border-color: #c9c2f2; color: #3f36c4; }
+
+.report {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 8px;
+  border-bottom: 1px solid #e3dff0;
+  color: #292932;
+  text-decoration: none;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.report:hover { color: #3f36c4; background: #f8f7fc; }
+.report small { display: block; margin-top: 3px; color: #686477; font-size: 13px; }
+.report svg { flex: none; color: #686477; }
+
+.tabs button:focus-visible, .report:focus-visible { outline: 2px solid #5146ed; outline-offset: 2px; }
+
+@media (max-width: 700px) {
+  .tabs button { font-size: 13px; }
+}

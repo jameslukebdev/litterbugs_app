@@ -1,8 +1,10 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { FiChevronRight } from 'react-icons/fi';
 import type { Report } from '@litterbugs/report-contract';
 import { reportDiscoveryWindow } from '@/lib/report-visibility';
 import { createClient } from '@/lib/supabase/client';
+import styles from './member-reports.module.css';
 
 export function MemberReports({ profileId }: { profileId: string }) {
   const [view, setView] = useState<'active' | 'completed'>('active');
@@ -27,9 +29,24 @@ export function MemberReports({ profileId }: { profileId: string }) {
       });
     return () => { cancelled = true; };
   }, [profileId, view, page, retry]);
-  return <section><h3>Reports</h3>
-    <div className="activity-tabs" role="group" aria-label="Member reports">{(['active', 'completed'] as const).map(value => <button key={value} aria-pressed={value === view} onClick={() => { setView(value); setPage(0); setRows([]); setLoading(true); }}>{value === 'active' ? 'Active reports' : 'Completed reports'}</button>)}</div>
-    {rows.map(report => <a key={report.id} className="member-activity-row" href={`/map?report=${encodeURIComponent(report.id)}`}><span><strong>{report.title || 'Litter report'}</strong><small>{report.severity} severity</small></span></a>)}
+  function selectView(value: typeof view) {
+    if (value === view) return;
+    setView(value);
+    setPage(0);
+    setRows([]);
+    setMore(false);
+    setError(false);
+    setLoading(true);
+  }
+
+  return <section className={styles.reports}><h3>Reports</h3>
+    <div className={styles.tabs} role="group" aria-label="Member reports">
+      {(['active', 'completed'] as const).map(value => <button type="button" key={value} aria-pressed={value === view} onClick={() => selectView(value)}>{value === 'active' ? 'Active reports' : 'Completed reports'}</button>)}
+    </div>
+    {rows.map(report => <a key={report.id} className={styles.report} href={`/map?report=${encodeURIComponent(report.id)}`}>
+      <span><strong>{report.title || 'Litter report'}</strong><small>{report.severity} severity</small></span>
+      <FiChevronRight aria-hidden="true" />
+    </a>)}
     {loading && <p role="status">Loading reports…</p>}
     {!loading && !error && !rows.length && <p className="member-empty">No {view} reports</p>}
     {error && <button className="secondary-button" onClick={() => { setLoading(true); setRetry(value => value + 1); }}>Couldn’t load reports. Retry</button>}
