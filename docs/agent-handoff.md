@@ -24,6 +24,11 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-10 — Codex (deduplicated points guide heading)
+
+- Removed the repeated heading inside How points work. Verified the point
+  rules and all eight ranks on the local member profile. Local review pending.
+
 ### 2026-11-10 — Codex (smooth member report tab switching)
 
 - Kept the previous report list at its existing height while the other
