@@ -24,6 +24,27 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (next PostHog and Clarity issues reviewed)
+
+- Nov 3–9 production-host PostHog records, excluding labeled QA and detected
+  bots, showed 378 autocapture events and four rage-click events with no
+  element chain. The four were on the map, three in Mobile Safari. Prefer
+  fixed action labels on specific controls over raw element text.
+- A Nov 5 1:23 p.m. phone replay went through About, the reward policy, and
+  Support before choosing **Fees, rewards & refunds**. Confirmed locally that
+  the link opens the top of the general funding page. A section link would
+  take visitors straight to the fee and refund information.
+- Confirmed locally that **Open in Litterbugs** on a shared report uses the
+  app-only scheme on desktop without a fallback. The existing app-link
+  component can route desktop visitors to the download page with the report
+  intact. No replay established how often this fails.
+- PostHog showed 24 `/get-app` pageviews and six store-badge clicks there.
+  Clarity showed actual App Store taps from Instagram. Neither establishes
+  installs. Consider measuring the app-open and website choices separately.
+- Sources: [PostHog project](https://us.posthog.com/project/695338) and
+  [Clarity recordings](https://clarity.microsoft.com/projects/view/z60itnrbpn/impressions?date=Last%207%20days).
+  Review and local verification only. No application changes or deploy.
+
 ### 2026-11-09 — Codex (report location checks moved to submission locally)
 
 - The web report picker has one **Use this location** button. It takes the
