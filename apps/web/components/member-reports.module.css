@@ -23,6 +23,33 @@
 .tabs button[aria-pressed='true'] { border-color: #5146ed; color: #3f36c4; }
 .tabs button[aria-pressed='false']:hover { border-color: #c9c2f2; color: #3f36c4; }
 
+.stage { position: relative; }
+.results { transition: opacity 150ms ease; }
+.results[data-switching] { opacity: 0.45; }
+
+.loadingStatus {
+  position: absolute;
+  z-index: 1;
+  inset-block-start: 10px;
+  inset-inline-end: 8px;
+  margin: 0;
+  padding: 4px 10px;
+  border: 1px solid #e3dff0;
+  border-radius: 8px;
+  color: #45434d;
+  background: #fff;
+  font-size: 13px;
+  pointer-events: none;
+  animation: show-status 150ms 160ms ease both;
+}
+
+@keyframes show-status { from { opacity: 0; } to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .results { transition: none; }
+  .loadingStatus { animation: none; }
+}
+
 .report {
   display: flex;
   align-items: center;
