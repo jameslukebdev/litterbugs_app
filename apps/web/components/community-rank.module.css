@@ -1,0 +1,59 @@
+.guide {
+  padding-block: 8px 4px;
+  text-align: start;
+}
+
+.guide h4 {
+  margin: 0 0 10px;
+  color: #292932;
+  font-size: 15px;
+}
+
+.earnings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 20px;
+  margin: 0;
+}
+
+.earnings dt { color: #3f36c4; font-weight: 800; }
+.earnings dd { margin: 0; }
+
+.limits {
+  margin: 12px 0 20px;
+  padding-inline-start: 18px;
+  color: #686477;
+}
+
+.limits li + li { margin-top: 4px; }
+
+.ranks {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ranks li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: #686477;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.ranks img { flex: none; object-fit: contain; }
+.ranks strong { display: block; color: #292932; }
+
+@media (max-width: 760px) {
+  .ranks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 400px) {
+  .earnings { grid-template-columns: minmax(0, 1fr); }
+  .ranks img { width: 30px; height: 30px; }
+}

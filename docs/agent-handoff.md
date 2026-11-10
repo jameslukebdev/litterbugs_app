@@ -24,6 +24,16 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-10 — Codex (rank guide and member report styling)
+
+- Made the web points guide easier to scan and added all eight rank icons
+  and thresholds. The guide is shared by the account and full member profile.
+- Updated the public member report tabs and rows to match the account styling.
+  Clicking the selected tab now leaves its loaded reports in place.
+- Local Chrome verified the full profile at desktop and phone widths,
+  both report filters and the account guide. Typecheck, scoped lint and
+  32 focused tests passed. Local review pending.
+
 ### 2026-11-10 — Codex (web profile and rank update live)
 
 - Pushed release source `37e3954` to `origin/codex/web-profile-rank-release`
