@@ -32,18 +32,22 @@
 }
 
 /* ---------- Profile header: photo, name, details, counts and Edit together ---------- */
+.account-theme .account-v2 .member-dashboard :is(.member-dashboard-header, .community-rank) {
+  max-width: 680px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
 .account-theme .account-v2 .member-dashboard-header {
   display: grid;
   grid-template-columns: 76px minmax(0, 1fr) auto;
   align-items: start;
   gap: 4px 16px;
-  margin: 0 0 20px;
-  padding: 20px;
-  border: 1px solid #e3dff0;
-  border-radius: 18px;
+  margin: 0 0 28px;
   text-align: left;
-  background: #fff;
 }
+.account-theme .account-v2 .member-dashboard .community-rank { margin: 0; }
 .account-theme .account-v2 .member-dashboard-header .account-avatar { width: 76px; height: 76px; margin: 0; border: 0; box-shadow: none; }
 .account-theme .account-v2 .member-dashboard-header h2 { margin: 2px 0 2px; color: #292932; font-size: 22px; line-height: 1.2; }
 .account-theme .account-v2 .member-profile-summary p { margin: 2px 0 0; color: #686477; font-size: 14px; line-height: 1.4; }
@@ -192,10 +196,10 @@
   .account-theme .account-v2 .account-v2-nav a[aria-current='page'] svg { color: var(--section-ink); }
   .account-v2-nav-short { display: block; }
   .account-v2-nav-long { display: none; }
-  .account-theme .account-v2 .member-dashboard-header { grid-template-columns: 64px minmax(0, 1fr); padding: 16px; }
+  .account-theme .account-v2 .member-dashboard-header { grid-template-columns: 64px minmax(0, 1fr); column-gap: 12px; min-height: 112px; margin-bottom: 24px; }
   .account-theme .account-v2 .member-dashboard-header .account-avatar { width: 64px; height: 64px; }
-  .account-theme .account-v2 .member-edit-profile { position: absolute; top: 14px; right: 14px; }
-  .account-theme .account-v2 .member-profile-summary { padding-right: 70px; }
+  .account-theme .account-v2 .member-edit-profile { position: absolute; top: 0; inset-inline-end: 0; }
+  .account-theme .account-v2 .member-dashboard-header h2 { padding-inline-end: 84px; }
   .account-theme .account-v2 .activity-tabs :is(a, button) { font-size: 13px; }
 }
 
