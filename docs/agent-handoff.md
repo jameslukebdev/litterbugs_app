@@ -24,6 +24,14 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (empty-map follow-up)
+
+- Grant showed that Find closest reports is already the primary empty-map
+  action. Reviewed the existing flow. View on map centers the result without
+  selecting it. If the flow needs refinement, highlight the matching pin and
+  show its preview, and label distance as measured from the current map area.
+  The mobile report gallery remains the higher priority. Advice only.
+
 ### 2026-11-09 — Codex (PostHog and Clarity website review)
 
 - Reviewed Nov 3–9 website events and four Clarity recording timelines.
