@@ -24,6 +24,15 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-10 — Codex (integrated rank in member popup)
+
+- Removed the inner rank card and next-rank points message from the popup.
+  Kept the current rank and points, with a cocoon marking the slim progress
+  bar. The full profile retains its detailed rank card.
+- Verified the popup in local Chrome at 320px and 1220px and followed its
+  full profile link. Seven focused tests, scoped lint and typecheck passed.
+  Local review pending.
+
 ### 2026-11-10 — Codex (compact map member profile ready locally)
 
 - Updated the popup with the account page's spacing and lavender borders,

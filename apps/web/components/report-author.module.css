@@ -71,8 +71,6 @@
   font-size: 15px;
 }
 
-.summary :global(.community-rank) { margin-top: 0; }
-
 .summary .profileLink {
   justify-self: start;
   min-height: 44px;
