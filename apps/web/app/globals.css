@@ -649,7 +649,6 @@ button.member-activity-row:hover { background: var(--green-soft); }
 .community-rank-summary h3 { margin: 3px 0 0; font-size: 23px; }
 .community-rank small { color: #667078; }
 .community-rank-progress > p { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
-.community-rank progress { width: 100%; height: 8px; accent-color: #2f7d32; display: block; margin-bottom: 10px; }
 .community-rank details { margin-top: 18px; padding-top: 14px; border-top: 1px solid #edf0ed; font-size: 14px; line-height: 1.6; }
 .community-rank summary { color: #2f7d32; cursor: pointer; }
 .activity-tabs { display: flex; gap: 4px; padding: 4px; margin-bottom: 20px; border-radius: 14px; background: #edf0ed; }
@@ -757,10 +756,6 @@ fieldset.cleanup-submission-fields { border: 0; padding: 0; margin: 0; min-width
 .report-author-copy { display: grid; gap: 3px; }
 .community-rank-badge { display: inline-flex; gap: 4px; align-items: center; font-size: 11px; color: #5c665f; }
 .community-rank-badge img { object-fit: contain; }
-.community-rank progress { display:block; width:100%; height:8px; border:0; border-radius:8px; overflow:hidden; background:#e8ece9; }
-.community-rank progress::-webkit-progress-bar { background:#e8ece9; }
-.community-rank progress::-webkit-progress-value { background:#2f7d32; }
-.community-rank progress::-moz-progress-bar { background:#2f7d32; }
 
 .member-settings { border-top:0; margin-top:0; padding-top:0; }
 .member-settings details.member-panel { padding:18px; }
@@ -2178,10 +2173,6 @@ body .public-report-cards .report-card-container.report-card-container.report-ca
 .community-rank.community-rank .community-rank-summary h3 { margin: 0; color: #292932; font-size: 22px; line-height: 1.2; }
 .community-rank.community-rank .community-rank-meta { margin: 2px 0 0; color: #686477; font-size: 14px; font-weight: 600; }
 .community-rank.community-rank .community-rank-progress { min-height: 0; margin-top: 16px; }
-.community-rank.community-rank progress { height: 10px; margin: 0; border-radius: 10px; background: #efedf4; }
-.community-rank.community-rank progress::-webkit-progress-bar { background: #efedf4; border-radius: 10px; }
-.community-rank.community-rank progress::-webkit-progress-value { background: #5146ed; border-radius: 10px; }
-.community-rank.community-rank progress::-moz-progress-bar { background: #5146ed; border-radius: 10px; }
 .community-rank.community-rank .community-rank-progress > .community-rank-next { display: flex; justify-content: flex-start; align-items: center; gap: 8px; margin: 10px 0 0; color: #45434d; font-size: 14px; }
 .community-rank.community-rank .community-rank-next img { flex: none; width: 20px; height: 20px; object-fit: contain; }
 .community-rank.community-rank .community-rank-next strong { color: #292932; }

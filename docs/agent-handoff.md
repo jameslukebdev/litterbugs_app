@@ -24,6 +24,19 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-10 — Codex (compact map member profile ready locally)
+
+- Updated the popup with the account page's spacing and lavender borders,
+  a saved avatar with an initial fallback, and an outlined full profile
+  link. The [Kinhive profile preview](https://refero.design/pages/e4f5d8fb-2c8a-4765-89e8-6a9013e5ff89)
+  informed the avatar and identity layout.
+- Removed the report history and points explanation from the popup. The
+  full profile still lists the member's reports. Removed legacy styles
+  that made the screen reader progress element overflow the dialog.
+- Local Chrome verified the avatar, full profile link, and no horizontal
+  scrolling at 320px and desktop widths. Typecheck, scoped lint and 53
+  focused tests passed. Local review pending.
+
 ### 2026-11-09 — Codex (report and map fixes live)
 
 - Pushed `df6a610` to `origin/codex/map-first-navigation` and promoted

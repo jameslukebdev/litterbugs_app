@@ -31,7 +31,7 @@ function loadRank(userId: string) {
  * `hold` keeps the loading look even after the points arrive, so a page can reveal this card together
  * with the rest of its content; `onReady` says the points (or an error) have arrived.
  */
-export function CommunityRank({ userId, compact = false, hold = false, onReady }: { userId: string; compact?: boolean; hold?: boolean; onReady?: () => void }) {
+export function CommunityRank({ userId, compact = false, hold = false, onReady, preview = false }: { userId: string; compact?: boolean; hold?: boolean; onReady?: () => void; preview?: boolean }) {
   const refreshRevision = useDataRefresh();
   const [loadedPoints, setPoints] = useState<number | null>(null);
   const [loadError, setError] = useState(false);
@@ -56,7 +56,7 @@ export function CommunityRank({ userId, compact = false, hold = false, onReady }
       {points !== null ? <Image src={rank.artwork} width={56} height={56} alt="" /> : <span className="account-skeleton community-rank-artwork" aria-hidden />}
       <div>
         <h3>{points === null ? error ? 'Unavailable' : <span className="account-skeleton account-skeleton-name" role="status" aria-label="Loading rank" /> : rank.name}</h3>
-        <p className="community-rank-meta">{points !== null ? `Your rank · ${points} ${points === 1 ? 'point' : 'points'}` : '\u200b'}</p>
+        <p className="community-rank-meta">{points !== null ? `${preview ? '' : 'Your rank · '}${points} ${points === 1 ? 'point' : 'points'}` : '\u200b'}</p>
       </div>
     </div>
     <div className="community-rank-progress" style={points === null ? { visibility: 'hidden' } : undefined} aria-hidden={points === null}>
@@ -71,6 +71,6 @@ export function CommunityRank({ userId, compact = false, hold = false, onReady }
       </p>
     </div>
     {error && <button className="secondary-button" onClick={() => { setError(false); setAttempt(value => value + 1); }}>Retry loading rank</button>}
-    <details><summary>How points work</summary><p>Earn 1 point when a report is accepted after review, and 3 points when a cleanup is confirmed complete.</p><p>You can earn up to 5 report points in a rolling 24 hours. Another report within 25 metres of a location credited to you in the previous 7 days does not earn another point. You can still report new litter there.</p></details>
+    {!preview && <details><summary>How points work</summary><p>Earn 1 point when a report is accepted after review, and 3 points when a cleanup is confirmed complete.</p><p>You can earn up to 5 report points in a rolling 24 hours. Another report within 25 metres of a location credited to you in the previous 7 days does not earn another point. You can still report new litter there.</p></details>}
   </section>;
 }
