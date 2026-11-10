@@ -202,6 +202,40 @@ it('measures SEO-page navigation once per visit in both providers', async () => 
   delete (window as Window & { gtag?: unknown }).gtag;
 });
 
+it('counts public profile views without sending member IDs or profile clicks', async () => {
+  mock.allowed = true;
+  const gtag = vi.fn();
+  Object.defineProperty(window, 'gtag', { configurable: true, value: gtag });
+  const firstProfile = '/members/12345678-1234-1234-1234-123456789abc';
+  const nextProfile = '/members/abcdef12-1234-1234-1234-123456789abc';
+  const setPath = (path: string) => {
+    mock.path = path;
+    window.history.replaceState({}, '', `${path}?from=private-report`);
+  };
+  setPath(firstProfile);
+  const view = render(<WebsiteAnalytics config={config} />);
+  try {
+    await waitFor(() => expect(mock.capture).toHaveBeenCalledWith('$pageview', { page_type: '/members/profile' }));
+    const beforeSend = mock.init.mock.calls[0][1].before_send;
+    const event = beforeSend({ event: '$pageview', properties: { page_type: '/members/profile', $current_url: window.location.href, $pathname: firstProfile } });
+    expect(event.properties.$current_url).toBe('https://litterbugs.app/members/profile');
+    expect(event.properties.$pathname).toBe('/members/profile');
+    expect(beforeSend({ event: '$autocapture', properties: {} })).toBeNull();
+    expect(beforeSend({ event: '$rageclick', properties: {} })).toBeNull();
+
+    setPath(nextProfile);
+    view.rerender(<WebsiteAnalytics config={config} />);
+    const pageViews = () => gtag.mock.calls.filter(([command, event]) => command === 'event' && event === 'page_view');
+    await waitFor(() => expect(pageViews()).toHaveLength(2));
+    expect(pageViews().map(([, , props]) => props.page_location)).toEqual(Array(2).fill('https://litterbugs.app/members/profile'));
+    expect(mock.capture.mock.calls.filter(([name]) => name === '$pageview')).toHaveLength(2);
+    expect(JSON.stringify([event, pageViews(), mock.capture.mock.calls])).not.toMatch(/12345678-|abcdef12-|private-report/);
+  } finally {
+    window.history.replaceState({}, '', '/');
+    delete (window as Window & { gtag?: unknown }).gtag;
+  }
+});
+
 it('keeps community engagement separate from confirmed outcomes and removes private properties', async () => {
   mock.allowed = true;
   localStorage.setItem(ANALYTICS_CONSENT_KEY, 'accepted'); localStorage.setItem('litterbugs:analytics-replay-consent:v1', 'accepted');

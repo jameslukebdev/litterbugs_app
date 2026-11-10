@@ -22,7 +22,8 @@ export function analyticsAllowed(config: AnalyticsConfig, hostname: string) {
     && ['https://us.i.posthog.com', 'https://eu.i.posthog.com'].includes(config.posthogHost);
 }
 
-// Fixed route names: never send search terms, report IDs, account paths, or tokens.
+// Fixed route names: never send search terms, report or member IDs, account paths, or tokens.
+export const MEMBER_PROFILE_PAGE = '/members/profile';
 export function analyticsPage(pathname: string): string | null {
   if (['/', '/map', '/report', '/report-litter', '/cleaner', '/fund-a-cleanup',
     '/locations', '/communities', '/reports', '/reports/history', '/cleanups', '/get-app', '/about', '/help', '/support', '/terms', '/privacy',
@@ -31,6 +32,7 @@ export function analyticsPage(pathname: string): string | null {
   const community = communityForPath(pathname);
   if (community) return pathname === community.href ? community.href : '/communities/cleanups';
   if (/^\/reports\/[^/]+$/.test(pathname)) return '/reports/detail';
+  if (pathname === MEMBER_PROFILE_PAGE || /^\/members\/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(pathname)) return MEMBER_PROFILE_PAGE;
   return null;
 }
 

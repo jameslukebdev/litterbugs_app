@@ -24,6 +24,20 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-10 — Codex (public profile analytics and traffic quality)
+
+- Local GA and PostHog public member views now use `/members/profile`,
+  without member IDs or profile click autocapture. Tested both payloads and
+  navigation between profiles. No deployment or live settings changes.
+- Clarity quick-back filter showed 23 recordings in seven days; a visited
+  URL prefix of `https://litterbugs.app/` left 22. The excluded Cloudflare
+  preview replay is consistent with the bounded Nov 8 analytics QA.
+- PostHog recorded 9 empty-map and 153 loaded-map events over seven days
+  after excluding marked QA and detected bots. These are map responses,
+  not people or deliberate searches. No location-search or closest-report
+  stages appeared in this window. Next: track suggestions shown and
+  outcomes for deliberate attempts; keep preview QA out of visitor views.
+
 ### 2026-11-10 — Codex (PostHog and Clarity friction follow-up)
 
 - Rolling seven-day PostHog production-host review excluded tagged QA and

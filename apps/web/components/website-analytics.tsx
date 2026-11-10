@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import Script from 'next/script';
 import Link from 'next/link';
 import type { PostHog } from 'posthog-js';
-import { WORKFLOW_VERSION, JOURNEY_EVENTS, clearParticipationContext, drainJourneys, journeyProperties, entrySourceForPath, ANALYTICS_CONSENT_KEY, ANALYTICS_EVENT, ANALYTICS_PREFERENCES, ANALYTICS_REPLAY_CHOICE_KEY, analyticsAllowed, analyticsPage, analyticsReferrer, drainParticipation, drainParticipationFailures, drainWebsiteOutcomes, participationProperties, participationFailureProperties, consumeParticipationAuthResult, consumeSharedReportAuthResult, trackParticipation, trackParticipationFailure, type AnalyticsConfig, type JourneyEvent } from '@/lib/website-analytics';
+import { WORKFLOW_VERSION, MEMBER_PROFILE_PAGE, JOURNEY_EVENTS, clearParticipationContext, drainJourneys, journeyProperties, entrySourceForPath, ANALYTICS_CONSENT_KEY, ANALYTICS_EVENT, ANALYTICS_PREFERENCES, ANALYTICS_REPLAY_CHOICE_KEY, analyticsAllowed, analyticsPage, analyticsReferrer, drainParticipation, drainParticipationFailures, drainWebsiteOutcomes, participationProperties, participationFailureProperties, consumeParticipationAuthResult, consumeSharedReportAuthResult, trackParticipation, trackParticipationFailure, type AnalyticsConfig, type JourneyEvent } from '@/lib/website-analytics';
 import { COMMUNITY_ENGAGEMENT_EVENTS, communityClick, communityForPath, communityProperties, participationLinkAction } from '@/lib/community-metrics';
 import styles from './website-analytics.module.css';
 import { isInstagramStoreVisit, storeBadgeDestination, storeBadgeProperties } from '@/lib/app-links';
@@ -112,6 +112,8 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
           const page = (event.event === '$pageleave' || participation || journey) && typeof event.properties.page_type === 'string'
             ? analyticsPage(event.properties.page_type) : analyticsPage(window.location.pathname);
           if ((event.event === '$pageleave' || event.event === '$autocapture') && !page) return null;
+          // Measure profile visits without collecting automatic clicks on profile content.
+          if (page === MEMBER_PROFILE_PAGE && (event.event === '$autocapture' || event.event === '$rageclick')) return null;
           if (event.event === '$pageleave' && page && typeof previousDuration === 'number' && Number.isFinite(previousDuration) && previousDuration >= 0) {
             event.properties.$prev_pageview_pathname = page;
             event.properties.$prev_pageview_duration = previousDuration;
