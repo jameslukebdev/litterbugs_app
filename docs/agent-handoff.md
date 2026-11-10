@@ -24,6 +24,15 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-10 — Codex (public profile safety actions menu)
+
+- Moved Report and Block into a More actions menu beside the member name.
+  The existing forms open in a dialog, and the map profile popup retains
+  its inline actions. No moderation actions were submitted in testing.
+- Verified both dialogs, focus return, and dismissal in local Chrome,
+  including a 320px viewport. Five safety tests, lint and typecheck passed.
+  Local review pending.
+
 ### 2026-11-10 — Codex (public member profile ready locally)
 
 - Matched the public profile to the white account layout, added its saved

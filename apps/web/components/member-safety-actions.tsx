@@ -1,6 +1,7 @@
 'use client';
-import { useEffect, useState, type FormEvent } from 'react';
-import { FiCheck, FiFlag, FiSlash } from 'react-icons/fi';
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
+import { FiCheck, FiFlag, FiMoreHorizontal, FiSlash } from 'react-icons/fi';
+import { ModalShell } from '@/components/modal-shell';
 import { createClient } from '@/lib/supabase/client';
 import { realUserId } from '@/lib/report-access';
 import styles from './member-safety-actions.module.css';
@@ -105,14 +106,44 @@ export function MemberSafetyPanel({
   );
 }
 
-export function MemberSafetyActions({ profileId, memberName, sourceReportId, onBlocked }: { profileId: string; memberName?: string | null; sourceReportId?: string; onBlocked: () => void }) {
+export function MemberSafetyActions({ profileId, memberName, sourceReportId, onBlocked, presentation = 'inline' }: {
+  profileId: string;
+  memberName?: string | null;
+  sourceReportId?: string;
+  onBlocked: () => void;
+  presentation?: 'inline' | 'menu';
+}) {
   const [viewer, setViewer] = useState<string | null>(null);
   const [mode, setMode] = useState<SafetyMode>('idle');
   const [reason, setReason] = useState<MemberReportReason | ''>('');
   const [details, setDetails] = useState('');
   const [busy, setBusy] = useState<'' | 'report' | 'block'>('');
   const [error, setError] = useState('');
+  const [open, setOpen] = useState(false);
+  const menuId = useId();
+  const menuRoot = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
   useEffect(() => { let cancelled = false; void createClient().auth.getUser().then(({ data }) => { if (!cancelled) setViewer(realUserId(data.user)); }); return () => { cancelled = true; }; }, []);
+  useEffect(() => {
+    if (!open) return;
+    function outside(event: PointerEvent | FocusEvent) {
+      if (!menuRoot.current?.contains(event.target as Node)) setOpen(false);
+    }
+    function escape(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      setOpen(false);
+      trigger.current?.focus();
+    }
+    document.addEventListener('pointerdown', outside);
+    document.addEventListener('focusin', outside);
+    document.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('pointerdown', outside);
+      document.removeEventListener('focusin', outside);
+      document.removeEventListener('keydown', escape);
+    };
+  }, [open]);
   if (!viewer || viewer === profileId) return null;
   const name = memberName?.trim() || 'this member';
 
@@ -137,6 +168,32 @@ export function MemberSafetyActions({ profileId, memberName, sourceReportId, onB
     finally { setBusy(''); }
   }
 
-  return <MemberSafetyPanel name={name} mode={mode} onMode={next => { setMode(next); setError(''); }} reason={reason} onReason={setReason}
-    details={details} onDetails={setDetails} busy={busy} error={error} onReport={() => { void report(); }} onBlock={() => { void block(); }} />;
+  function changeMode(next: SafetyMode) {
+    setMode(next);
+    setError('');
+  }
+
+  const panel = { name, mode, reason, onReason: setReason, details, onDetails: setDetails, busy, error, onReport: report, onBlock: block };
+  if (presentation === 'inline') return <MemberSafetyPanel {...panel} onMode={changeMode} />;
+
+  function choose(next: 'report' | 'block') {
+    trigger.current?.focus();
+    setOpen(false);
+    changeMode(next);
+  }
+
+  return <div ref={menuRoot} className={styles.menuAnchor}>
+    <button ref={trigger} type="button" className={styles.menuTrigger} aria-label="More actions" title="More actions"
+      aria-expanded={open} aria-controls={open ? menuId : undefined} onClick={() => setOpen(value => !value)}>
+      <FiMoreHorizontal aria-hidden="true" />
+    </button>
+    {open && <div id={menuId} className={styles.menu} role="group" aria-label="Member actions">
+      <button type="button" onClick={() => choose('report')}><FiFlag aria-hidden="true" />Report member</button>
+      <button type="button" className={styles.menuBlock} onClick={() => choose('block')}><FiSlash aria-hidden="true" />Block member</button>
+    </div>}
+    {mode !== 'idle' && <ModalShell className={styles.dialog} label={mode === 'block' ? 'Block member' : 'Report member'}
+      closeDisabled={Boolean(busy)} onClose={() => changeMode('idle')}>
+      {close => <MemberSafetyPanel {...panel} onMode={next => next === 'idle' ? close() : changeMode(next)} />}
+    </ModalShell>}
+  </div>;
 }

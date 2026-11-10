@@ -26,9 +26,9 @@ export function MemberPage({ profile, avatarUrl }: { profile: PublicProfile; ava
         <p>Joined {new Date(profile.created_at).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</p>
         {profile.bio && <p className={styles.bio}>{profile.bio}</p>}
       </div>
+      <MemberSafetyActions key={profile.id} profileId={profile.id} memberName={profile.display_name} presentation="menu" onBlocked={() => router.push('/')} />
     </header>
     <CommunityRank userId={profile.id} />
     <MemberReports key={profile.id} profileId={profile.id} />
-    <MemberSafetyActions profileId={profile.id} memberName={profile.display_name} onBlocked={() => router.push('/')} />
   </main>;
 }
