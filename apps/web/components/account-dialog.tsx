@@ -634,7 +634,7 @@ export function AccountDialog({
           {embedded && section === 'activity' && <NeedsAttention userId={userId} reports={reports} renewals={expiredReports} attempts={cleanups} incomplete={unavailable.some(name => ['Account', 'Reports', 'Renewals', 'Cleanups'].includes(name))} />}
           {embedded && section === 'activity' && <ResumeDrafts userId={userId} attempts={activeCleanups} onReady={setDraftsReady} />}
           {section === 'profile' && <>
-          <CommunityRank userId={userId} hold={!profileReady} onReady={() => setRankReady(true)} />
+          <CommunityRank userId={userId} hold={!profileReady} onReady={() => setRankReady(true)} progressMarker={embedded ? 'cocoon' : undefined} />
           {!embedded && <nav className="account-section-links" aria-label="Profile sections" style={dataLoading ? { visibility: 'hidden' } : undefined}>
             <button onClick={() => navigateSection('activity')}>My activity<Icon name="chevron-right" /></button>
             <button onClick={() => navigateSection('payments')}>Payments<Icon name="chevron-right" /></button>

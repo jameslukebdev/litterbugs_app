@@ -24,6 +24,16 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-10 — Codex (integrated account profile)
+
+- Removed the separate profile and rank boxes on /account. Both use one
+  aligned column and the progress bar uses the cocoon. The next-rank points
+  and How points work disclosure are still available.
+- Verified the signed-in page in Chrome at desktop and phone widths,
+  including opening the explanation and entering and cancelling Edit.
+  Scoped lint, typecheck and 27 tests passed with Node experimental
+  Web Storage disabled for the test workers. Local review pending.
+
 ### 2026-11-10 — Codex (integrated rank in member popup)
 
 - Removed the inner rank card and next-rank points message from the popup.

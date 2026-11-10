@@ -31,7 +31,14 @@ function loadRank(userId: string) {
  * `hold` keeps the loading look even after the points arrive, so a page can reveal this card together
  * with the rest of its content; `onReady` says the points (or an error) have arrived.
  */
-export function CommunityRank({ userId, compact = false, hold = false, onReady, preview = false }: { userId: string; compact?: boolean; hold?: boolean; onReady?: () => void; preview?: boolean }) {
+export function CommunityRank({ userId, compact = false, hold = false, onReady, preview = false, progressMarker = preview ? 'cocoon' : 'caterpillar' }: {
+  userId: string;
+  compact?: boolean;
+  hold?: boolean;
+  onReady?: () => void;
+  preview?: boolean;
+  progressMarker?: 'cocoon' | 'caterpillar';
+}) {
   const refreshRevision = useDataRefresh();
   const [loadedPoints, setPoints] = useState<number | null>(null);
   const [loadError, setError] = useState(false);
@@ -64,7 +71,7 @@ export function CommunityRank({ userId, compact = false, hold = false, onReady, 
       {/* Remount the bar when points arrive so the fill and marker animate together. */}
       <div className="community-rank-bar" aria-hidden="true" key={points === null ? 'waiting' : 'ready'}>
         <span className="community-rank-bar-fill" style={{ width: `${progress}%` }} />
-        {points !== null && <img className="community-rank-bar-bug" src={preview ? '/brand/ranks/cocoon.svg' : '/brand/ranks/caterpillar.svg'} alt="" style={{ left: `${progress}%` }} />}
+        {points !== null && <img className="community-rank-bar-bug" src={`/brand/ranks/${progressMarker}.svg`} alt="" style={{ left: `${progress}%` }} />}
       </div>
       {!preview && <p className="community-rank-next">
         {next ? <>{points !== null ? <Image src={next.artwork} width={20} height={20} alt="" /> : <span aria-hidden style={{ display: 'inline-block', width: 20, height: 20, flex: 'none' }} />}<span><strong>{next.points - (points ?? 0)} {next.points - (points ?? 0) === 1 ? 'point' : 'points'}</strong> to {next.name}</span></> : 'Highest rank reached'}
