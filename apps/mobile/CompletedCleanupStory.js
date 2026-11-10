@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 
 import CompactRankBadge from './CompactRankBadge';
+import BrandBug from './components/BrandBug';
 import ProfileAvatar from './ProfileAvatar';
 import {
   cleanupImpactFacts,
@@ -97,14 +98,10 @@ export default function CompletedCleanupStory({
 
   return (
     <View style={styles.story}>
+      {/* Website completed cleanup: the flower labels the finished state; no tinted banner. */}
       <View style={styles.completionBanner}>
-        <View style={styles.completionIcon}>
-          <Ionicons name="checkmark" size={25} color={colors.white} />
-        </View>
-        <View style={styles.completionCopy}>
-          <Text style={styles.eyebrow}>COMMUNITY IMPACT</Text>
-          <Text style={styles.completionTitle}>Cleanup Complete</Text>
-        </View>
+        <BrandBug kind="flower" size={26} />
+        <Text style={styles.completionTitle} accessibilityRole="header">Cleanup complete</Text>
       </View>
 
       <TouchableOpacity
@@ -119,7 +116,7 @@ export default function CompletedCleanupStory({
         <View style={styles.cleanerCopy}>
           <Text style={styles.cleanerLabel}>Cleaned by</Text>
           <Text style={styles.cleanerName}>{cleanerName}</Text>
-          <CompactRankBadge userId={impact.cleaner?.id} appearance="profileCard" />
+          <CompactRankBadge userId={impact.cleaner?.id} appearance="plain" />
           {impact.cleaner?.username ? (
             <Text style={styles.cleanerUsername}>@{impact.cleaner.username}</Text>
           ) : null}
@@ -129,10 +126,7 @@ export default function CompletedCleanupStory({
         ) : null}
       </TouchableOpacity>
 
-      <View style={styles.sectionHeader}>
-        <Ionicons name="images-outline" size={21} color={colors.primary} />
-        <Text style={styles.sectionTitle}>After cleanup</Text>
-      </View>
+      <Text style={styles.sectionTitle}>After cleanup</Text>
 
       {impact.afterPhotoUrls.length > 0 ? (
         <ScrollView
@@ -160,15 +154,7 @@ export default function CompletedCleanupStory({
         </View>
       )}
 
-      <View style={styles.cleanupDateRow}>
-        <Ionicons name="calendar-outline" size={18} color={colors.primaryDark} />
-        <View style={styles.cleanupDateCopy}>
-          <Text style={styles.cleanupDateLabel}>Cleanup date</Text>
-          <Text style={styles.cleanupDateText}>
-            {formatCleanupDate(impact.attempt.completed_at)}
-          </Text>
-        </View>
-      </View>
+      <Text style={styles.cleanupDateText}>Cleaned {formatCleanupDate(impact.attempt.completed_at)}</Text>
 
       <View style={styles.descriptionCard}>
         <Text style={styles.descriptionLabel}>What they did</Text>
@@ -179,7 +165,6 @@ export default function CompletedCleanupStory({
         <View style={styles.factsRow}>
           {facts.map((fact) => (
             <View key={fact.label} style={styles.factCard} accessible accessibilityLabel={fact.label}>
-              <Ionicons name={fact.icon} size={21} color={colors.primary} />
               <Text style={styles.factText}>{fact.label}</Text>
             </View>
           ))}
@@ -190,54 +175,10 @@ export default function CompletedCleanupStory({
 }
 
 const styles = StyleSheet.create({
-  story: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 12,
-    gap: 18,
-    backgroundColor: colors.primaryTint,
-  },
-  completionBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 20,
-    backgroundColor: colors.primarySoft,
-  },
-  completionIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
-  },
-  completionCopy: {
-    flex: 1,
-    marginLeft: 13,
-  },
-  eyebrow: {
-    color: colors.primary,
-    fontSize: 11,
-    letterSpacing: 1.1,
-    fontWeight: '800',
-  },
-  completionTitle: {
-    marginTop: 3,
-    color: colors.ink,
-    fontSize: 24,
-    lineHeight: 29,
-    fontFamily: fonts.heading,
-  },
-  cleanerRow: {
-    minHeight: 62,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 22,
-    backgroundColor: colors.white,
-  },
+  story: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12, gap: 16, backgroundColor: colors.white },
+  completionBanner: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingRight: 104 },
+  completionTitle: { flexShrink: 1, color: colors.done, fontSize: 22, lineHeight: 27, fontFamily: fonts.heading },
+  cleanerRow: { minHeight: 62, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 16, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
   cleanerCopy: {
     flex: 1,
     marginLeft: 12,
@@ -247,46 +188,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
-  cleanerName: {
-    marginTop: 2,
-    color: colors.ink,
-    fontSize: 17,
-    fontWeight: '800',
-  },
+  cleanerName: { marginTop: 2, color: colors.ink, fontSize: 16, fontWeight: '700' },
   cleanerUsername: {
     marginTop: 1,
     color: colors.muted,
     fontSize: 13,
   },
-  cleanupDateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-  },
-  cleanupDateCopy: {
-    marginLeft: 10,
-  },
-  cleanupDateLabel: {
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  cleanupDateText: {
-    marginTop: 2,
-    color: colors.ink,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  sectionTitle: {
-    color: colors.ink,
-    fontSize: 18,
-    fontWeight: '900',
-  },
+  cleanupDateText: { color: colors.muted, fontSize: 14 },
+  sectionTitle: { color: colors.ink, fontSize: 17, fontFamily: fonts.heading },
   photoScroll: {
     borderRadius: 22,
   },
@@ -337,61 +246,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
   },
-  descriptionCard: {
-    padding: 17,
-    borderRadius: 18,
-    backgroundColor: colors.white,
-  },
-  descriptionLabel: {
-    color: colors.body,
-    fontSize: 12,
-    letterSpacing: 0.4,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-  },
-  descriptionText: {
-    marginTop: 8,
-    color: colors.ink,
-    fontSize: 16,
-    lineHeight: 24,
-  },
+  descriptionCard: { paddingTop: 14, borderTopWidth: 1, borderTopColor: '#ECE8F8' },
+  descriptionLabel: { color: colors.ink, fontSize: 13, fontWeight: '800' },
+  descriptionText: { marginTop: 5, color: '#45434D', fontSize: 15, lineHeight: 22 },
   factsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
   },
-  factCard: {
-    minWidth: '46%',
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    borderRadius: 16,
-    backgroundColor: colors.primarySoft,
-  },
-  factText: {
-    flex: 1,
-    marginLeft: 9,
-    color: colors.primaryDark,
-    fontSize: 14,
-    lineHeight: 19,
-    fontWeight: '800',
-  },
-  stateCard: {
-    minHeight: 200,
-    alignItems: 'center',
-    justifyContent: 'center',
-    margin: 20,
-    padding: 24,
-    borderRadius: 22,
-    backgroundColor: colors.primarySoft,
-  },
-  stateTitle: {
-    marginTop: 12,
-    color: colors.ink,
-    fontSize: 18,
-    fontWeight: '800',
-  },
+  factCard: { minWidth: '46%', flex: 1, padding: 12, borderRadius: 14, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
+  factText: { color: colors.ink, fontSize: 14, lineHeight: 19, fontWeight: '700' },
+  stateCard: { minHeight: 200, alignItems: 'center', justifyContent: 'center', margin: 20, padding: 24, borderRadius: 18, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
+  stateTitle: { marginTop: 12, color: colors.ink, fontSize: 18, fontFamily: fonts.heading },
   stateText: {
     marginTop: 9,
     color: colors.muted,

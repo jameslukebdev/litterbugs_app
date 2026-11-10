@@ -51,7 +51,7 @@ describe('completed cleanup impact presentation', () => {
 
   it('places the cleanup date after the completed cleanup photos', () => {
     expect(completedStorySource.indexOf('styles.photoScroll')).toBeLessThan(
-      completedStorySource.indexOf('styles.cleanupDateRow')
+      completedStorySource.indexOf('styles.cleanupDateText')
     );
     expect(mapScreenSource).not.toContain('completedReportToolbar');
     expect(mapScreenSource).not.toContain('See what was reported at this location');

@@ -17,7 +17,8 @@ import {
   signInWithProvider, signUpWithEmail,
 } from './lib/auth';
 import BrandBug from './components/BrandBug';
-import { colors } from './lib/theme';
+import { colors, fonts } from './lib/theme';
+import SlideUp from './components/SlideUp';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -277,7 +278,7 @@ export default function AuthScreen() {
       </ScrollView>
 
       <StatusBar hidden={false} />
-      <Modal visible={emailModalOpen} animationType="slide" transparent onRequestClose={closeEmail}>
+      <Modal visible={emailModalOpen} animationType="fade" transparent onRequestClose={closeEmail}>
         <TouchableWithoutFeedback onPress={closeEmail} accessible={false}>
           <View style={emailStyles.backdrop}>
             <KeyboardAvoidingView
@@ -286,7 +287,7 @@ export default function AuthScreen() {
               style={emailStyles.kav}
             >
               <TouchableWithoutFeedback accessible={false}>
-                <View style={emailStyles.sheet}>
+                <SlideUp style={emailStyles.sheet}>
                   <ScrollView
                     contentContainerStyle={emailStyles.sheetContent}
                     keyboardShouldPersistTaps="handled"
@@ -401,7 +402,7 @@ export default function AuthScreen() {
                     </>
                   )}
                   </ScrollView>
-                </View>
+                </SlideUp>
               </TouchableWithoutFeedback>
             </KeyboardAvoidingView>
           </View>
@@ -415,7 +416,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.white },
   content: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 24 },
   logo: { width: 112, height: 112, marginBottom: 8 },
-  title: { fontSize: 24, lineHeight: 31, fontWeight: '600', color: colors.ink, marginBottom: 6, textAlign: 'center' },
+  title: { fontSize: 24, lineHeight: 31, fontFamily: fonts.heading, color: colors.ink, marginBottom: 6, textAlign: 'center' },
   subtitle: { fontSize: 15, color: colors.muted, marginBottom: 22, textAlign: 'center' },
   actions: { width: '100%', maxWidth: 420 },
   providerButton: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line, borderRadius: 14, marginBottom: 11 },
@@ -444,7 +445,7 @@ const emailStyles = StyleSheet.create({
   headingRow: { flexDirection: 'row', alignItems: 'flex-start' },
   headingCopy: { flex: 1 },
   closeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginTop: -8, marginRight: -10 },
-  title: { fontSize: 22, fontWeight: '600', color: colors.ink },
+  title: { fontSize: 22, fontFamily: fonts.heading, color: colors.ink },
   subtitle: { fontSize: 14, lineHeight: 20, color: colors.muted, marginTop: 5, marginBottom: 10 },
   label: { fontSize: 14, fontWeight: '700', color: colors.ink, marginBottom: 7, marginTop: 11 },
   input: { minHeight: 50, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line, borderRadius: 12, paddingHorizontal: 14 },
@@ -461,7 +462,7 @@ const emailStyles = StyleSheet.create({
   switchLinkButton: { minHeight: 44, justifyContent: 'center' },
   switchLink: { color: colors.primary, fontSize: 14, fontWeight: '600' },
   sentContent: { alignItems: 'center', paddingTop: 4 },
-  sentTitle: { fontSize: 22, fontWeight: '600', color: colors.ink, marginTop: 12 },
+  sentTitle: { fontSize: 22, fontFamily: fonts.heading, color: colors.ink, marginTop: 12 },
   sentText: { fontSize: 15, lineHeight: 22, color: colors.muted, textAlign: 'center', marginTop: 8 },
   textButton: { minHeight: 44, justifyContent: 'center', marginTop: 5 },
   sentLinksRow: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', columnGap: 18 },

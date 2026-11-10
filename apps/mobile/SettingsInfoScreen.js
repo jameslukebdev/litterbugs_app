@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
 import { openSupport } from './lib/support';
-import { colors } from './lib/theme';
+import { colors, fonts } from './lib/theme';
 
 const pages = {
   photos: {
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.white },
   content: { padding: 20 },
   icon: { width: 52, height: 52, borderRadius: 16, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
-  heading: { fontSize: 24, lineHeight: 31, fontWeight: '600', color: colors.ink },
+  heading: { fontSize: 24, lineHeight: 31, fontFamily: fonts.heading, color: colors.ink },
   description: { fontSize: 14, lineHeight: 22, color: colors.muted, marginTop: 10, marginBottom: 24 },
   panel: { borderWidth: 1, borderColor: colors.line, borderRadius: 16, paddingHorizontal: 16 },
   section: { paddingVertical: 18 },

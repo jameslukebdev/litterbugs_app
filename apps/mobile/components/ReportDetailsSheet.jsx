@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import CompletedCleanupStory from '../CompletedCleanupStory';
 import ReportPhotoGallery from './ReportPhotoGallery';
 import BrandBug from './BrandBug';
+import LoadingBee from './LoadingBee';
+import SlideUp from './SlideUp';
 import CompactRankBadge from '../CompactRankBadge';
 import ProfileAvatar from '../ProfileAvatar';
 import { reportStatePresentation } from '../lib/reportState';
@@ -81,7 +83,7 @@ export default function ReportDetailsSheet({ state, actions }) {
   }, [cleanupActionBusy, detailsOpen]);
   return (<Modal
   visible={detailsOpen}
-  animationType="slide"
+  animationType="fade"
   transparent
   onRequestClose={() => {
     if (ownerMenuOpen) { setOwnerMenuOpen(false); return; }
@@ -93,7 +95,7 @@ export default function ReportDetailsSheet({ state, actions }) {
   }}
 >
   <View style={styles.modalBackdrop}>
-    <View style={styles.reportSheet}>
+    <SlideUp style={styles.reportSheet} distance={80}>
 
       <TouchableOpacity onPress={closeReportDetails} accessibilityRole="button" accessibilityLabel="Close report" style={[styles.reportPhotoControl, styles.reportPhotoCloseControl, { top: reportControlsTop }]}><Ionicons name="close" size={20} color={colors.ink} /></TouchableOpacity>
       {selectedReportIsShareable ? (
@@ -122,12 +124,7 @@ export default function ReportDetailsSheet({ state, actions }) {
           >
             <Ionicons name="close-outline" size={24} color={colors.ink} />
           </TouchableOpacity>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.reportDetailsLoadingText}>
-            {selectedReport?.cleanup_state === 'completed'
-              ? 'Loading completed report…'
-              : 'Loading report…'}
-          </Text>
+          <LoadingBee label="Loading report" message={selectedReport?.cleanup_state === 'completed' ? 'Loading completed report…' : 'Loading report…'} />
         </View>
       ) : null}
 
@@ -582,7 +579,7 @@ export default function ReportDetailsSheet({ state, actions }) {
           </View>
         </View>
       ) : null}
-    </View>
+    </SlideUp>
 
     <ReportShareSheet
       visible={reportShareSheetOpen && detailsOpen && selectedReportIsShareable}

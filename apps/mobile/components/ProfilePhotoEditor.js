@@ -3,7 +3,7 @@ import { Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ProfileAvatar from '../ProfileAvatar';
 import { showAvatarSourceMenu } from '../lib/profileAvatar';
-import { colors } from '../lib/theme';
+import { colors, fonts } from '../lib/theme';
 export default function ProfilePhotoEditor({ profile, initialAsset, initialRemoved, onCancel, onDone }) {
   const [asset, setAsset] = useState(initialAsset), [removed, setRemoved] = useState(initialRemoved);
   const insets = useSafeAreaInsets();
@@ -12,7 +12,7 @@ export default function ProfilePhotoEditor({ profile, initialAsset, initialRemov
     <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 24, paddingTop: 24, paddingBottom: insets.bottom + 24, backgroundColor: colors.white }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <TouchableOpacity accessibilityRole="button" onPress={onCancel} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: colors.body, fontSize: 16 }}>Cancel</Text></TouchableOpacity>
-        <Text style={{ fontSize: 18, fontWeight: '700' }}>Profile photo</Text>
+        <Text style={{ fontSize: 18, fontFamily: fonts.heading, color: colors.ink }}>Profile photo</Text>
         <TouchableOpacity accessibilityRole="button" onPress={() => onDone(asset, removed)} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: colors.primary, fontSize: 16, fontWeight: '700' }}>Done</Text></TouchableOpacity>
       </View>
       <View style={{ alignItems: 'center', marginTop: 36 }}><ProfileAvatar profile={removed ? { ...profile, avatar_path: null, provider_avatar_url: null } : profile} previewUri={asset?.uri} size={220} /></View>

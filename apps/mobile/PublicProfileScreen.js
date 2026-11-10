@@ -23,7 +23,7 @@ import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
 import { loadPublicMember, loadPublicMemberReports } from './lib/publicMember';
 import useFocusedResource from './lib/useFocusedResource';
-import { colors } from './lib/theme';
+import { colors, fonts } from './lib/theme';
 
 export default function PublicProfileScreen({ navigation, route }) {
   const profileId = route.params?.profileId;
@@ -169,7 +169,7 @@ export default function PublicProfileScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   actionBackdrop: { flex: 1, backgroundColor: 'rgba(41, 41, 50, 0.28)', justifyContent: 'center', padding: 24 },
   actionSheet: { borderRadius: 18, padding: 16, backgroundColor: colors.white, width: '100%', maxWidth: 400, alignSelf: 'center' },
-  actionTitle: { fontSize: 18, lineHeight: 24, fontWeight: '600', color: colors.ink, marginBottom: 12 },
+  actionTitle: { fontSize: 18, lineHeight: 24, fontFamily: fonts.heading, color: colors.ink, marginBottom: 12 },
   actionOption: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
   actionText: { fontSize: 15, lineHeight: 22, color: colors.ink },
   tabs: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 14, padding: 4, gap: 4, borderRadius: 13, backgroundColor: colors.mist },
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   avatarFrame: { padding: 3, borderWidth: 1, borderColor: colors.line, borderRadius: 40 },
   identityCopy: { flex: 1 },
   identity: { paddingHorizontal: 20, paddingTop: 24 },
-  name: { color: colors.ink, fontSize: 23, lineHeight: 29, fontWeight: '600' },
+  name: { color: colors.ink, fontSize: 23, lineHeight: 29, fontFamily: fonts.heading },
   rankBadge: { marginTop: 7, alignSelf: 'flex-start' },
   username: { marginTop: 4, color: colors.muted, fontSize: 15 },
   locationRow: { marginTop: 9, flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   statLabel: { marginTop: 3, color: colors.muted, fontSize: 14, fontWeight: '700' },
   sectionTitle: { marginHorizontal: 20, marginTop: 27, marginBottom: 9, color: colors.ink, fontSize: 17, fontWeight: '600' },
   card: { marginHorizontal: 16, overflow: 'hidden', borderRadius: 16, backgroundColor: colors.white },
-  stateTitle: { marginTop: 16, color: colors.ink, fontSize: 21, fontWeight: '600', textAlign: 'center' },
+  stateTitle: { marginTop: 16, color: colors.ink, fontSize: 21, fontFamily: fonts.heading, textAlign: 'center' },
   stateText: { maxWidth: 340, marginTop: 8, color: colors.muted, fontSize: 15, lineHeight: 22, textAlign: 'center' },
   manageButton: { minHeight: 48, marginTop: 18, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: colors.primary },
   manageText: { color: colors.white, fontSize: 15, fontWeight: '600' },

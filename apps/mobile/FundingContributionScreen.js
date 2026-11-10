@@ -7,6 +7,7 @@ import { useSession } from './lib/session';
 import { supabase } from './lib/supabase';
 import { loadPaymentAttempt, savePaymentAttempt, clearPaymentAttempt } from './lib/contributionRecovery';
 import { useEffect, useRef, useState } from 'react';
+import { trackParticipation, trackParticipationFailure } from './lib/analytics';
 import {
   ActivityIndicator,
   Alert,
@@ -260,6 +261,8 @@ function FundingContributionController({ navigation, route }) {
     fundingEligibilityInitialized.current = true;
   }, [loadError, loading, report]);
 
+  useEffect(() => { trackParticipation('fund', 'amount_review'); }, []);
+
   const pay = async () => {
     if (!principalCents || payLock.current || !recoveryReady || confirmationPending) return;
     payLock.current = true;
@@ -302,6 +305,7 @@ function FundingContributionController({ navigation, route }) {
         { cancelable: true, onDismiss: () => resolve(false) },
       ));
       if (!accepted || !mounted.current) return;
+      trackParticipation('fund', 'payment_form');
       const applePayEnabled = Platform.OS === 'ios'
         && Constants.expoConfig?.extra?.stripeApplePayEnabled === true;
       await initStripe(stripeInitializationConfiguration({
@@ -323,8 +327,10 @@ function FundingContributionController({ navigation, route }) {
       await savePaymentAttempt(user.id, reportId, { ...attempt, phase: 'submitted' }, { updating: true });
       attemptRef.current = { ...attempt, phase: 'submitted' };
       if (!mounted.current) return;
+      trackParticipation('fund', 'payment_submitted');
       const { error: paymentError } = await presentPaymentSheet();
       if (paymentError) {
+        if (paymentError.code !== 'Canceled') trackParticipationFailure('fund', 'payment_submitted', 'payment_rejected');
         if (paymentError.code === 'Canceled') {
           await savePaymentAttempt(user.id, reportId, attempt, { updating: true });
           attemptRef.current = attempt;
@@ -338,12 +344,14 @@ function FundingContributionController({ navigation, route }) {
         await retrievePaymentIntent(intent.paymentIntentClientSecret),
       );
       if (!paymentConfirmation.confirmed) {
+        trackParticipationFailure('fund', 'payment_submitted', 'payment_confirmation_unavailable');
         setConfirmationPending(true);
         await refreshReports({ showRefresh: false });
         Alert.alert('Payment confirmation pending', paymentConfirmation.message);
         return;
       }
 
+      trackParticipation('fund', 'payment_confirmed');
       setReceipt(intent);
       await clearPaymentAttempt(user.id, reportId, attempt.clientRequestId);
       attemptRef.current = null;

@@ -15,7 +15,7 @@ import SteadyButtonContent from './components/SteadyButtonContent';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from './lib/supabase';
 import BrandBug from './components/BrandBug';
-import { colors } from './lib/theme';
+import { colors, fonts } from './lib/theme';
 
 export default function ResetPasswordScreen({ onComplete, onCancel }) {
   const insets = useSafeAreaInsets();
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   card: { backgroundColor: colors.white, width: '100%', maxWidth: 480, alignSelf: 'center' },
-  title: { fontSize: 24, lineHeight: 31, fontWeight: '600', color: colors.ink, marginTop: 16 },
+  title: { fontSize: 24, lineHeight: 31, fontFamily: fonts.heading, color: colors.ink, marginTop: 16 },
   subtitle: { fontSize: 15, lineHeight: 21, color: colors.muted, marginTop: 8, marginBottom: 16 },
   label: { fontSize: 14, fontWeight: '700', color: colors.ink, marginTop: 12, marginBottom: 7 },
   input: {

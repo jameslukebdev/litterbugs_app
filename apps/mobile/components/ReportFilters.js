@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReports } from '../lib/reports';
 import { DEFAULT_REPORT_FILTERS } from '../lib/reportFilters';
 import BrandBug from './BrandBug';
+import SlideUp from './SlideUp';
 import { colors, fonts } from '../lib/theme';
 
 // Website "Search and filters" (apps/web report-browser): same wording and order,
@@ -115,7 +116,7 @@ export default function ReportFilters({ map = false }) {
       <Modal
         visible={Boolean(open)}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setOpen(false)}
       >
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.backdrop}>
@@ -124,7 +125,7 @@ export default function ReportFilters({ map = false }) {
             accessible={false}
             onPress={() => setOpen(false)}
           />
-          <View
+          <SlideUp
             style={[
               styles.sheet,
               { paddingBottom: Math.max(insets.bottom, 20) },
@@ -183,7 +184,7 @@ export default function ReportFilters({ map = false }) {
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </SlideUp>
         </KeyboardAvoidingView>
       </Modal>
     </View>

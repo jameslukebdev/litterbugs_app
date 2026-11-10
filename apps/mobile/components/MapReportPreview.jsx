@@ -17,6 +17,7 @@ import ReportCardMenu from './ReportCardMenu';
 import Photo from './ReportPreviewPhoto';
 import ReportPreviewHero from './ReportPreviewHero';
 import BrandBug from './BrandBug';
+import SlideUp from './SlideUp';
 import { reportPresentation } from '../lib/reportPresentation';
 import { reportStatePresentation } from '../lib/reportState';
 import { colors, fonts } from '../lib/theme';
@@ -168,10 +169,10 @@ export default function MapReportPreview({
         animation,
       }}
     /> : null}
-    <Modal visible={Boolean(nearby?.length)} transparent animationType="slide" onRequestClose={onCloseNearby}>
+    <Modal visible={Boolean(nearby?.length)} transparent animationType="fade" onRequestClose={onCloseNearby}>
       <View style={styles.backdrop}>
         <TouchableOpacity style={StyleSheet.absoluteFill} accessible={false} onPress={onCloseNearby} />
-        <View style={[styles.sheet, { paddingBottom: Math.max(insetBottom, 16), maxHeight: fontScale > 1.5 ? '90%' : '65%' }]}>
+        <SlideUp style={[styles.sheet, { paddingBottom: Math.max(insetBottom, 16), maxHeight: fontScale > 1.5 ? '90%' : '65%' }]}>
           <View style={styles.sheetHeader}>
             <Text style={styles.heading} accessibilityRole="header">Reports here</Text>
             <TouchableOpacity style={styles.close} accessibilityRole="button" accessibilityLabel="Close nearby reports" onPress={onCloseNearby}>
@@ -192,7 +193,7 @@ export default function MapReportPreview({
               <Ionicons name="chevron-forward" size={18} color={colors.body} />
             </TouchableOpacity>}
           />
-        </View>
+        </SlideUp>
       </View>
     </Modal>
   </>;

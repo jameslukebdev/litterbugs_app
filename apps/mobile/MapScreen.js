@@ -1,4 +1,5 @@
 import { userMessage } from './lib/userMessage';
+import { REPORT_STEP_STAGES, trackParticipation, trackParticipationFailure } from './lib/analytics';
 import { requireReportLocation } from './lib/reportLocationCheck';
 import { publishReportDraft, clearReportSubmission } from './lib/reportSubmissionStore';
 import ReportDetailsSheet from './components/ReportDetailsSheet';
@@ -11,6 +12,7 @@ import ReportWizardSteps from './components/ReportWizardSteps';
 import MapReportPreview from './components/MapReportPreview';
 import MapPin, { pinKind } from './components/MapPin';
 import MapKey, { mapKeyCounts } from './components/MapKey';
+import SlideUp from './components/SlideUp';
 import { CALM_MAP_STYLE } from './lib/calmMapStyle';
 import { resolveReportPhotoUrls } from './lib/reportPhotoUrls';
 
@@ -635,6 +637,7 @@ const transitionToReportStep = (nextStep, direction) => {
   ) {
     return;
   }
+  if (!isEditing) trackParticipation('report', REPORT_STEP_STAGES[nextStep]);
 
   Keyboard.dismiss();
   setIsTransitioning(true);
@@ -746,6 +749,7 @@ useEffect(() => {
 
 const openReportLocationPicker = async (skipDraft = false) => {
   editingDraftLocationRef.current = false;
+  if (skipDraft !== true) trackParticipation('report', 'action_tapped');
   if (skipDraft !== true && currentUserId) {
     try {
       const saved = await loadReportDraft(currentUserId);
@@ -846,6 +850,7 @@ const confirmReportLocation = async () => {
   try {
     await requireReportLocation(Location, coord);
     if (reportLocationCheckRef.current !== request || !navigation.isFocused()) return;
+    trackParticipation('report', 'location_confirmed');
     setReportPlacementActive(false);
     setPlacementCoordinate(null);
     if (editingDraftLocationRef.current) {
@@ -857,6 +862,9 @@ const confirmReportLocation = async () => {
     }
   } catch (error) {
     if (reportLocationCheckRef.current === request && navigation.isFocused()) {
+      const message = String(error?.message ?? '');
+      trackParticipationFailure('report', 'location_confirmed', /Allow location/i.test(message) ? 'location_denied'
+        : /50 miles/i.test(message) ? 'location_out_of_range' : /fresh location/i.test(message) ? 'location_stale' : 'location_unavailable');
       Alert.alert('Choose a nearby report location', userMessage(error, 'Your current location could not be checked. Please try again.'));
     }
   } finally {
@@ -1042,11 +1050,13 @@ const openPayoutSetupForWorkflow = (action) => {
           return;
         }
 
+        if (!isEditing) trackParticipationFailure('report', 'review', 'publication_unconfirmed');
         Alert.alert('Couldn’t save report', userMessage(error, 'Your report hasn’t been saved. Please try again.'));
         return;
       }
 
       if (!isEditing) {
+        trackParticipation('report', 'published');
         if (geminiReviewEnabled) refreshReportAfterFundingReview(data.id, 'Report photo review deferred:');
         await clearReportDraft(currentUserId).catch(error => console.log('Published draft cleanup deferred:', error));
         await clearReportSubmission(currentUserId).catch(error => console.log('Published submission cleanup deferred:', error));
@@ -1864,6 +1874,7 @@ useEffect(() => {
 
   const openFundingContribution = async ({ reportId }) => {
     if (!reportId || payoutGateBusy) return;
+    trackParticipation('fund', 'action_tapped');
 
     if (!currentUserId) {
       setPendingReportCoordinate(null);
@@ -1898,6 +1909,7 @@ useEffect(() => {
         }
       }
       const claimedAttempt = await claimCleanup(report.id);
+      trackParticipation('clean', 'claim_confirmed');
 
       const claimedReport = {
         ...report,
@@ -1920,6 +1932,7 @@ useEffect(() => {
           reportId: report.id,
         });
       } else {
+        trackParticipationFailure('clean', 'claim_confirmed', 'claim_failed');
         Alert.alert('Unable to claim cleanup', cleanupActionMessage(error));
       }
       await refreshReports({ showRefresh: false });
@@ -1953,11 +1966,13 @@ useEffect(() => {
       return;
     }
     if (cleanupActionBusy || !cleanupEligible) return;
+    trackParticipation('clean', 'action_tapped');
 
     try {
       setCleanupActionBusy(true);
       const waiverStatus = await loadCurrentCleanupWaiver(currentUserId);
       setCleanupWaiver(waiverStatus.waiver);
+      trackParticipation('clean', 'safety_review');
       if (waiverStatus.accepted) {
         setClaimConfirmationQueued(true);
       } else {
@@ -1965,6 +1980,7 @@ useEffect(() => {
         setDetailsOpen(false);
       }
     } catch (error) {
+      trackParticipationFailure('clean', 'safety_review', 'safety_load_failed');
       Alert.alert('Unable to start cleanup', cleanupActionMessage(error));
     } finally {
       setCleanupActionBusy(false);
@@ -2543,12 +2559,12 @@ const revealBottomReportField = () => {
 {/* Multi-step Report Form */}
 <Modal
   visible={formOpen}
-  animationType="slide"
+  animationType="fade"
   transparent
   onRequestClose={cancelDraft}
 >
   <View style={styles.modalBackdrop}>
-    <View style={styles.wizardKeyboardView}>
+    <SlideUp style={styles.wizardKeyboardView} distance={80}>
       <View style={styles.wizardSheet}>
 
         {isSaving && (
@@ -2731,7 +2747,7 @@ const revealBottomReportField = () => {
           </View>
         )}
       </View>
-    </View>
+    </SlideUp>
   </View>
 </Modal>
 

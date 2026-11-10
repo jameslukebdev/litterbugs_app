@@ -13,11 +13,11 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 
 import { getDistanceMiles, useReports } from './lib/reports';
-import BrandedLoadingState from './BrandedLoadingState';
-import { colors } from './lib/theme';
+import LoadingBee from './components/LoadingBee';
+import BrandBug from './components/BrandBug';
+import { colors, fonts } from './lib/theme';
 
 export function ReportListItem({ report, origin, onPress, selected = false }) {
   const distance = getDistanceMiles(origin, report);
@@ -95,21 +95,14 @@ export default function ReportList({
         <ReportListItem report={item} origin={origin} onPress={onReportPress} selected={item.id === selectedId} />
       )}
       ListEmptyComponent={initialLoading ? (
-        <BrandedLoadingState compact title="Loading nearby reports…" message="Finding active cleanups around you." />
+        <LoadingBee label="Loading nearby reports" message="Finding cleanups around you…" />
       ) : (
         <View style={styles.emptyState}>
-          <View style={styles.emptyIcon}>
-            <Ionicons
-              name="map-outline"
-              size={30}
-              color={colors.muted}
-              accessible={false}
-              importantForAccessibility="no"
-            />
-          </View>
+          {/* Website empty state: the ladybug, a heading and one purple action. */}
+          <BrandBug kind="ladybug" size={44} />
           <Text style={styles.emptyTitle}>{emptyTitle}</Text>
           <Text style={styles.emptyText}>{emptyMessage}</Text>
-          {emptyAction ? <TouchableOpacity accessibilityRole="button" onPress={emptyAction.onPress} style={{ minHeight: 48, marginTop: 12, justifyContent: 'center' }}><Text style={{ color: colors.primary, fontWeight: '700', fontSize: 16 }}>{emptyAction.label}</Text></TouchableOpacity> : null}
+          {emptyAction ? <TouchableOpacity accessibilityRole="button" onPress={emptyAction.onPress} style={styles.emptyAction}><Text style={styles.emptyActionText}>{emptyAction.label}</Text></TouchableOpacity> : null}
         </View>
       )}
       contentContainerStyle={[
@@ -158,20 +151,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 34,
   },
-  emptyIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.line,
-  },
-  emptyTitle: {
-    marginTop: 16,
-    color: colors.ink,
-    fontSize: 19,
-    fontWeight: '800',
-  },
+  emptyTitle: { marginTop: 14, color: colors.ink, fontSize: 20, fontFamily: fonts.heading, textAlign: 'center' },
+  emptyAction: { minHeight: 48, marginTop: 18, paddingHorizontal: 22, justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary },
+  emptyActionText: { color: colors.white, fontWeight: '800', fontSize: 16 },
   emptyText: {
     marginTop: 7,
     color: colors.muted,

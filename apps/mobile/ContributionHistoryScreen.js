@@ -1,6 +1,6 @@
 import FeeExplanationLabel from './components/FeeExplanationLabel';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, RefreshControl, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { RefreshControl, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import useFocusedResource from './lib/useFocusedResource';
 import { useSession } from './lib/session';
@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatUsd, loadMyContributions } from './lib/funding';
 import PaymentStatus from './components/PaymentStatus';
 import BrandBug from './components/BrandBug';
+import LoadingBee from './components/LoadingBee';
 import { colors, fonts } from './lib/theme';
 
 export default function ContributionHistoryScreen({ navigation }) {
@@ -63,7 +64,7 @@ export default function ContributionHistoryScreen({ navigation }) {
       )}
       ListFooterComponent={<>
       {!hasLoaded && !error ? <View style={styles.waiting} accessibilityRole="progressbar" accessibilityLabel="Loading payment history">
-        {showWaiting ? <><ActivityIndicator color={colors.muted} /><Text style={styles.emptyCopy}>Loading payments…</Text></> : null}
+        {showWaiting ? <LoadingBee label="Loading payment history" message="Loading payments…" /> : null}
       </View> : null}
       {history.moreError ? <Text style={styles.error}>Couldn’t load older payments. Your current history is still available.</Text> : null}
       {history.nextCursor ? <TouchableOpacity accessibilityRole="button" disabled={loading || history.loadingMore} style={styles.more} onPress={history.loadMore}><Text style={styles.status}>{history.loadingMore ? 'Loading older payments…' : history.moreError ? 'Retry older payments' : 'Load older payments'}</Text></TouchableOpacity> : null}

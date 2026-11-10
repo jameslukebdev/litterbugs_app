@@ -19,7 +19,7 @@ import { useProfile } from './lib/profile';
 import { showAvatarSourceMenu, uploadProfileAvatar } from './lib/profileAvatar';
 import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
-import { colors } from './lib/theme';
+import { colors, fonts } from './lib/theme';
 
 export default function CompleteProfileScreen({ navigation }) {
   const { user } = useSession();
@@ -119,7 +119,7 @@ export default function CompleteProfileScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.white },
   content: { flexGrow: 1, padding: 20, alignItems: 'stretch' },
-  title: { marginTop: 18, color: colors.ink, fontSize: 24, lineHeight: 31, fontWeight: '600' },
+  title: { marginTop: 18, color: colors.ink, fontSize: 24, lineHeight: 31, fontFamily: fonts.heading },
   subtitle: { maxWidth: 340, marginTop: 9, color: colors.muted, fontSize: 15, lineHeight: 22 },
   avatarButton: { flexDirection: 'row', gap: 16, alignItems: 'center', padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: 16, backgroundColor: colors.primaryTint, marginVertical: 24 },
   avatarAction: { marginTop: 9, color: colors.primary, fontSize: 15, fontWeight: '600' },

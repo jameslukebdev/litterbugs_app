@@ -28,6 +28,9 @@ export default defineConfig({
     },
   }],
   test: {
+    // React Native defines __DEV__ at runtime; give every test file the same value so
+    // results never depend on which other test file happened to run first.
+    setupFiles: ['./vitest.setup.js'],
     maxWorkers: 2,
     exclude: [...configDefaults.exclude, 'ios/**', 'android/**', 'dist/**'],
   },

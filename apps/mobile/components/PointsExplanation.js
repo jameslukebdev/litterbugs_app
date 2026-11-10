@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RANKS } from '../lib/ranking';
 import { POINTS_RULES, POINTS_LIMITS } from '../lib/pointsExplanation';
+import SlideUp from './SlideUp';
 import { colors, fonts } from '../lib/theme';
 
 export default function PointsExplanation({ ranking, appearance }) {
@@ -15,10 +16,10 @@ export default function PointsExplanation({ ranking, appearance }) {
       <Text style={[styles.action, appearance === 'row' && styles.rowAction]}>How points work</Text>
       {appearance === 'row' ? <Ionicons name="chevron-forward" size={16} color={colors.muted} /> : null}
     </TouchableOpacity>
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={() => setVisible(false)}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={() => setVisible(false)}>
       <View style={styles.overlay}>
         <Pressable style={StyleSheet.absoluteFill} onPress={() => setVisible(false)} accessibilityLabel="Dismiss points explanation" />
-        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) }]} accessibilityViewIsModal>
+        <SlideUp style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) }]} accessibilityViewIsModal>
           <View style={styles.header}>
             <Text accessibilityRole="header" style={styles.title}>How points work</Text>
             <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close points explanation" onPress={() => setVisible(false)} style={styles.close}><Ionicons name="close" size={24} color={colors.ink} /></TouchableOpacity>
@@ -36,7 +37,7 @@ export default function PointsExplanation({ ranking, appearance }) {
             <Text style={styles.section}>Community ranks</Text>
             {RANKS.map(rank => <View key={rank.id} style={styles.rank}><Text style={styles.copy}>{rank.name}</Text><Text style={styles.copy}>{rank.minPoints} {rank.minPoints === 1 ? 'point' : 'points'}</Text></View>)}
           </ScrollView>
-        </View>
+        </SlideUp>
       </View>
     </Modal>
   </>;

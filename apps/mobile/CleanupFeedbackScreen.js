@@ -15,7 +15,7 @@ import { loadCleanupFeedbackContext } from './lib/cleanupFeedback';
 import { cleanupChangeReasonLabel } from './lib/cleanupReviewValidation';
 import { permanentUserId } from './lib/reportAccess';
 import { useSession } from './lib/session';
-import { colors } from './lib/theme';
+import { colors, fonts } from './lib/theme';
 
 const formatDateTime = (value) => {
   if (!value) return 'Deadline unavailable';
@@ -144,11 +144,11 @@ const styles = StyleSheet.create({
   errorText: { color: '#B42318', fontSize: 15, lineHeight: 22 },
   content: { padding: 20 },
   centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: colors.white },
-  centerTitle: { marginTop: 14, color: colors.ink, fontSize: 22, fontWeight: '600' },
+  centerTitle: { marginTop: 14, color: colors.ink, fontSize: 22, fontFamily: fonts.heading },
   centerText: { maxWidth: 340, marginTop: 9, color: colors.muted, fontSize: 15, lineHeight: 22, textAlign: 'center' },
   statusIcon: { width: 58, height: 58, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: '#FFF8E8' },
   eyebrow: { marginTop: 18, color: '#8A6400', fontSize: 12, fontWeight: '600', letterSpacing: 1.2 },
-  title: { marginTop: 7, color: colors.ink, fontSize: 24, lineHeight: 31, fontWeight: '600' },
+  title: { marginTop: 7, color: colors.ink, fontSize: 24, lineHeight: 31, fontFamily: fonts.heading },
   reportTitle: { marginTop: 7, color: colors.muted, fontSize: 15, fontWeight: '700' },
   deadlineCard: { marginTop: 20, padding: 15, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 15, backgroundColor: '#FFF9DD' },
   deadlineCopy: { flex: 1 },

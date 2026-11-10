@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import SteadyButtonContent from './components/SteadyButtonContent';
 import { useSession } from './lib/session';
 import { supabase } from './lib/supabase';
-import { colors } from './lib/theme';
+import { colors, fonts } from './lib/theme';
 
 const REASONS = [
   ['spam_or_misleading', 'Spam or misleading'],
@@ -123,7 +123,7 @@ export default function ReportUserScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.white },
   content: { padding: 20, paddingBottom: 40 },
-  title: { color: colors.ink, fontSize: 23, lineHeight: 30, fontWeight: '600' },
+  title: { color: colors.ink, fontSize: 23, lineHeight: 30, fontFamily: fonts.heading },
   subtitle: { marginTop: 8, color: colors.muted, fontSize: 14, lineHeight: 20 },
   reasonSelected: { backgroundColor: colors.primarySoft },
   reasons: { marginTop: 22, overflow: 'hidden', borderRadius: 14, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },

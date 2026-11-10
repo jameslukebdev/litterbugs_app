@@ -9,7 +9,7 @@ import { closeExpiredReport, formatUsd, loadMyExpiredReports, renewExpiredReport
 import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
 import BrandedLoadingState, { LoadingButtonContent } from './BrandedLoadingState';
-import { colors } from './lib/theme';
+import { colors, fonts } from './lib/theme';
 
 export default function ExpiredReportsScreen() {
   const { user } = useSession();
@@ -84,7 +84,7 @@ export default function ExpiredReportsScreen() {
 
 const styles = StyleSheet.create({
   content: { flexGrow: 1, padding: 20, backgroundColor: colors.white },
-  title: { color: colors.ink, fontSize: 24, lineHeight: 30, fontWeight: '600' },
+  title: { color: colors.ink, fontSize: 24, lineHeight: 30, fontFamily: fonts.heading },
   explanation: { marginTop: 14, padding: 14, borderRadius: 13, backgroundColor: colors.primaryTint, flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   subtitle: { flex: 1, color: colors.muted, fontSize: 14, lineHeight: 21 },
   empty: { minHeight: 240, marginTop: 24, padding: 20, alignItems: 'center', justifyContent: 'center' },

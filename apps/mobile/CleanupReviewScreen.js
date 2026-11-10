@@ -41,7 +41,7 @@ import {
 import { permanentUserId } from './lib/reportAccess';
 import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
-import { colors } from './lib/theme';
+import { colors, fonts } from './lib/theme';
 
 const reviewErrorMessage = (error) => {
   const message = error?.message ?? '';
@@ -357,7 +357,6 @@ export default function CleanupReviewScreen({ navigation, route }) {
       >
         {reviewDraftError || loadError ? <Text accessibilityRole="alert" style={{ color: '#B42318', padding: 16 }}>{reviewDraftError || 'Couldn’t update this cleanup. Refresh before sending your review.'}</Text> : null}
         {loadError ? <TouchableOpacity accessibilityRole="button" disabled={loading} style={styles.secondaryButton} onPress={retryContext}><Text style={styles.secondaryButtonText}>{loading ? 'Updating…' : 'Try again'}</Text></TouchableOpacity> : null}
-        <Text style={styles.eyebrow}>REPORTER REVIEW</Text>
         <Text style={styles.title}>Review this cleanup</Text>
         <Text style={styles.reportTitle}>{context.report.title || 'Litter cleanup'}</Text>
 
@@ -401,7 +400,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
 
         {context.attempt.is_paid ? (
           <View style={styles.financialCard}>
-            <Text style={styles.financialEyebrow}>FUNDED CLEANUP</Text>
+            <Text style={styles.financialEyebrow}>Funded cleanup</Text>
             <Text style={styles.financialReward}>Cleaner receives {formatUsd(context.attempt.reward_amount_cents)}</Text>
             <Text style={styles.financialSummary}>
               {context.attempt.financial_review_summary
@@ -600,18 +599,17 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.white },
   content: { padding: 20 },
   centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: colors.white },
-  centerTitle: { marginTop: 14, color: colors.ink, fontSize: 22, fontWeight: '600' },
+  centerTitle: { marginTop: 14, color: colors.ink, fontSize: 22, fontFamily: fonts.heading },
   centerText: { maxWidth: 340, marginTop: 9, color: colors.muted, fontSize: 15, lineHeight: 22, textAlign: 'center' },
-  eyebrow: { color: colors.primary, fontSize: 12, fontWeight: '600', letterSpacing: 1.2 },
-  title: { marginTop: 7, color: colors.ink, fontSize: 24, lineHeight: 31, fontWeight: '600' },
+  title: { color: colors.ink, fontSize: 24, lineHeight: 29, fontFamily: fonts.heading },
   reportTitle: { marginTop: 7, color: colors.muted, fontSize: 15, fontWeight: '700' },
-  section: { marginTop: 20, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: 16, backgroundColor: colors.white },
-  sectionTitle: { color: colors.ink, fontSize: 17, lineHeight: 23, fontWeight: '600' },
-  financialCard: { marginTop: 20, padding: 18, borderWidth: 1, borderColor: colors.primaryLight, borderRadius: 18, backgroundColor: colors.primarySoft },
-  financialEyebrow: { color: colors.primaryDark, fontSize: 11, fontWeight: '600', letterSpacing: 1 },
-  financialReward: { marginTop: 5, color: colors.primaryDark, fontSize: 22, fontWeight: '600' },
+  section: { marginTop: 20, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: 18, backgroundColor: colors.white },
+  sectionTitle: { color: colors.ink, fontSize: 17, lineHeight: 23, fontFamily: fonts.heading },
+  financialCard: { marginTop: 20, padding: 16, borderWidth: 2, borderColor: '#FFE08A', borderRadius: 18, backgroundColor: '#FFFBEA' },
+  financialEyebrow: { color: '#5F4600', fontSize: 14, fontWeight: '800' },
+  financialReward: { marginTop: 4, color: colors.ink, fontSize: 22, fontFamily: fonts.heading },
   financialSummary: { marginTop: 8, color: colors.body, fontSize: 14, lineHeight: 20 },
-  disputeDeadline: { marginTop: 10, color: colors.primaryDark, fontSize: 13, fontWeight: '600' },
+  disputeDeadline: { marginTop: 10, color: '#5F4600', fontSize: 13, fontWeight: '700' },
   paidReviewNotice: { padding: 15, color: colors.body, fontSize: 14, lineHeight: 20, borderRadius: 13, backgroundColor: colors.white },
   disputeStatusCard: { padding: 16, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: '#E7CF79', borderRadius: 14, backgroundColor: '#FFF9DD' },
   disputeStatusText: { flex: 1, color: '#755900', fontSize: 14, lineHeight: 20, fontWeight: '700' },
@@ -631,14 +629,14 @@ const styles = StyleSheet.create({
   photoCountText: { color: colors.white, fontSize: 12, fontWeight: '600' },
   emptyPhotoState: { minHeight: 108, marginTop: 13, padding: 16, alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 13, backgroundColor: colors.mist },
   emptyPhotoText: { color: colors.muted, fontSize: 14, textAlign: 'center' },
-  infoLabel: { marginTop: 17, color: colors.muted, fontSize: 11, fontWeight: '600', letterSpacing: 0.8 },
+  infoLabel: { marginTop: 17, color: colors.ink, fontSize: 13, fontWeight: '800' },
   description: { marginTop: 7, color: colors.ink, fontSize: 16, lineHeight: 23 },
   metricRow: { flexDirection: 'row', gap: 12 },
-  metric: { flex: 1, padding: 12, marginTop: 14, borderRadius: 12, backgroundColor: colors.primaryTint },
+  metric: { flex: 1, padding: 12, marginTop: 14, borderRadius: 14, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
   metricValue: { marginTop: 5, color: colors.ink, fontSize: 15, fontWeight: '600' },
   actionSection: { marginTop: 22 },
   approveButton: { minHeight: 54, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, backgroundColor: colors.primary },
-  approveButtonText: { color: colors.white, fontSize: 16, fontWeight: '600' },
+  approveButtonText: { color: colors.white, fontSize: 16, fontWeight: '800' },
   requestButton: { minHeight: 52, marginTop: 12, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: '#D9AAA5', borderRadius: 14, backgroundColor: colors.white },
   requestButtonText: { color: '#A33A32', fontSize: 15, fontWeight: '600' },
   changeSection: { marginTop: 22, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: 16, backgroundColor: colors.white },

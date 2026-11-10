@@ -26,7 +26,8 @@ describe('mobile loading experience', () => {
       'CleanupSubmissionScreen.js',
       'CleanupReviewScreen.js',
     ].forEach((fileName) => {
-      expect(readMobileSource(fileName)).toContain('BrandedLoadingState');
+      // A branded loader: the logo screen or the website's fading loading bee.
+      expect(readMobileSource(fileName)).toMatch(/BrandedLoadingState|LoadingBee/);
     });
   });
 
@@ -70,6 +71,6 @@ describe('mobile loading experience', () => {
   it('does not show a false empty reports message during the initial fetch', () => {
     const source = readMobileSource('ReportList.js');
     expect(source).toContain('initialLoading');
-    expect(source).toContain('Loading nearby reports…');
+    expect(source).toContain('<LoadingBee label="Loading nearby reports"');
   });
 });

@@ -1,6 +1,7 @@
 import { usePreventRemove } from '@react-navigation/native';
 import * as Crypto from 'expo-crypto';
 import CloudDraftStatus from './components/CloudDraftStatus';
+import { trackParticipation, trackParticipationFailure } from './lib/analytics';
 import { cloudDrafts } from './lib/cloudDrafts';
 import { loadCleanupDraft, saveCleanupDraft, clearCleanupDraft } from './lib/savedCleanupDraft';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -109,6 +110,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
   }, [cleanupId, userId]));
   const { data: context, loading, error: loadError } = contextResource;
   const [step, setStep] = useState('form');
+  useEffect(() => { trackParticipation('clean', 'evidence_form'); }, []);
   const [photos, setPhotos] = useState([]);
   const [description, setDescription] = useState('');
   const [bagsOrItemsRemoved, setBagsOrItemsRemoved] = useState('');
@@ -274,6 +276,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
         ...validation.normalized,
       });
       submitted.current = true;
+      trackParticipation('clean', 'evidence_submitted');
       await clearCleanupDraft(userId, cleanupId).catch(() => {});
       await refreshReports({ showRefresh: false }).catch(() => {});
 
@@ -308,6 +311,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
       );
     } catch (error) {
       console.log('Cleanup submission error:', error);
+      trackParticipationFailure('clean', 'evidence_submitted', 'evidence_submit_unconfirmed');
       Alert.alert('Couldn’t submit cleanup', submissionErrorMessage(error));
     } finally {
       setSubmitting(false);
