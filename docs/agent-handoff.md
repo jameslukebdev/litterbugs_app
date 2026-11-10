@@ -24,6 +24,22 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-09 — Codex (report and map fixes live)
+
+- Pushed `df6a610` to `origin/codex/map-first-navigation` and promoted
+  Vercel deployment `dpl_CzgTAJEwFocsFE2iPioEXmbnknkp` to litterbugs.app.
+  Previous live deployment for rollback is `dpl_9KAAk5pLnNkMzsDvsVVhKPHVtkGY`.
+- Released the report photo viewer, closest report previews with and
+  without an open desktop report, location checks at submit, shared report
+  sign-in measurement, and the desktop app link fallback. The funding and
+  refund routes and their menu link match the prior source.
+- Clean Vercel build and typecheck, lint and 901 web tests passed using the
+  repository's Node version. Live Chrome exercised both sides of the photo
+  viewer, closest report recovery, a simulated location denial, a mocked
+  sign-in return, and the download page back to the same report. Browser
+  analytics were excluded. No entries in the bounded production error scan.
+- Live sign-in event ingestion remains to be observed in visitor traffic.
+
 ### 2026-11-09 — Codex (shared report desktop app fallback ready locally)
 
 - Shared reports now use the site's app link. Desktop visitors reach the
