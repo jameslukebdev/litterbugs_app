@@ -103,3 +103,10 @@ Branch `codex/map-first-navigation`. Nothing pushed, built for stores, or deploy
   - Android emulator `Litterbugs_API_36`. Install the debug APK as the QA app; `adb reverse tcp:8081 tcp:8081`.
 - Disk is tight (about 5 GB free). Check with `df -h` before building.
 - Codex also works in this folder. Don't commit its `apps/web` or `docs/agent-handoff.md` changes.
+
+## Updates bell and larger Profile tab photo (Nov 11, evening)
+
+- `apps/mobile/lib/unreadUpdates.js` holds one shared unread count (refreshes on mount, every 60s and when the app comes forward).
+- Profile header has a bell that opens Updates, with a count badge when something is unread. The Updates row shows the same count.
+- The Profile tab shows the member's photo at 44pt in a 50pt ring with no caption, plus a red dot when updates are unread. Members without a finished profile still get the icon and "Profile" label.
+- Checked on the iPhone simulator with zero unread; the badge and dot states were not seen with real unread data.

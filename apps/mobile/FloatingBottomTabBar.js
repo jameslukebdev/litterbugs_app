@@ -16,6 +16,9 @@ import {
 import { hapticSelect } from './lib/haptics';
 import ProfileAvatar from './ProfileAvatar';
 import { useProfile } from './lib/profile';
+import { useSession } from './lib/session';
+import { useUnreadUpdates } from './lib/unreadUpdates';
+import { colors } from './lib/theme';
 
 export const BOTTOM_NAV_SLOTS = Object.freeze([
   {
@@ -47,6 +50,9 @@ export default function FloatingBottomTabBar({
   const { fontScale } = useWindowDimensions();
   // A signed-in member's own photo marks the Profile tab, like the website's header.
   const { profile } = useProfile();
+  const { user } = useSession();
+  // A dot on the Profile tab says there are unopened updates.
+  const unreadUpdates = useUnreadUpdates(profile?.profile_completed_at ? user?.id : null);
   // Apply the existing compact-label cap explicitly: Android can retain stale
   // native text metrics when system scaling changes while this bar is mounted.
   const labelScale = Math.min(fontScale, 1.2);
@@ -82,9 +88,12 @@ export default function FloatingBottomTabBar({
     const routeIndex = state.routes.indexOf(route);
     const isFocused = state.index === routeIndex;
     const options = descriptors[route.key]?.options ?? {};
-    const accessibilityLabel = options.tabBarAccessibilityLabel
+    const baseLabel = options.tabBarAccessibilityLabel
       ?? options.title
       ?? route.name;
+    const accessibilityLabel = slot.key === 'profile' && unreadUpdates > 0
+      ? `${baseLabel}, ${unreadUpdates} unread ${unreadUpdates === 1 ? 'update' : 'updates'}`
+      : baseLabel;
 
     const onPress = () => {
       const event = navigation.emit({
@@ -106,6 +115,8 @@ export default function FloatingBottomTabBar({
       });
     };
 
+    const showsAvatar = slot.key === 'profile' && Boolean(profile?.profile_completed_at);
+
     return (
       <TouchableOpacity
         key={slot.key}
@@ -119,10 +130,11 @@ export default function FloatingBottomTabBar({
         accessibilityState={{ selected: isFocused }}
       >
         <View style={[styles.tabContent, isFocused && styles.tabContentSelected]}>
-          <View style={styles.iconBackdrop}>
-            {slot.key === 'profile' && profile?.profile_completed_at ? (
+          <View style={[styles.iconBackdrop, showsAvatar && styles.avatarBackdrop]}>
+            {showsAvatar ? (
               <View style={[styles.avatarRing, isFocused && { borderColor: BOTTOM_NAV_COLORS.active }]} accessible={false} importantForAccessibility="no-hide-descendants">
-                <ProfileAvatar profile={profile} size={22} />
+                <ProfileAvatar profile={profile} size={44} />
+                {unreadUpdates > 0 ? <View style={styles.unreadDot} /> : null}
               </View>
             ) : (
               <Ionicons
@@ -134,12 +146,15 @@ export default function FloatingBottomTabBar({
               />
             )}
           </View>
-          <Text
-            style={[styles.label, { fontSize: 10 * labelScale, lineHeight: 13 * labelScale }, isFocused && styles.labelSelected]}
-            allowFontScaling={false}
-          >
-            {slot.label}
-          </Text>
+          {/* The member's own photo fills the slot; it needs no caption. */}
+          {showsAvatar ? null : (
+            <Text
+              style={[styles.label, { fontSize: 10 * labelScale, lineHeight: 13 * labelScale }, isFocused && styles.labelSelected]}
+              allowFontScaling={false}
+            >
+              {slot.label}
+            </Text>
+          )}
         </View>
       </TouchableOpacity>
     );
@@ -211,7 +226,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarRing: { width: 27, height: 27, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'transparent' },
+  avatarBackdrop: { width: 50, height: 50 },
+  avatarRing: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'transparent' },
+  unreadDot: { position: 'absolute', top: 0, right: 0, width: 14, height: 14, borderRadius: 7, borderWidth: 2, borderColor: colors.white, backgroundColor: colors.severityHigh },
   label: {
     marginTop: 2,
     color: BOTTOM_NAV_COLORS.inactive,

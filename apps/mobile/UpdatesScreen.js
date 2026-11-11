@@ -8,6 +8,7 @@ import { EmptyState, LoadFailure, PillTabs, PullRefresh } from './components/ui'
 import { acknowledgeCleanupNotifications, loadCleanupNotifications } from './lib/cleanup';
 import { cleanupNotificationDestination, cleanupNotificationPresentation } from './lib/cleanupNotifications';
 import { useSession } from './lib/session';
+import { refreshUnreadUpdates } from './lib/unreadUpdates';
 import { colors } from './lib/theme';
 import useFocusedResource from './lib/useFocusedResource';
 
@@ -30,7 +31,7 @@ export default function UpdatesScreen({ navigation }) {
   const open = async (notice) => {
     const destination = cleanupNotificationDestination(notice);
     if (!notice.read_at) {
-      acknowledgeCleanupNotifications([notice.id]).then(resource.refresh).catch(() => {});
+      acknowledgeCleanupNotifications([notice.id]).then(() => { resource.refresh(); refreshUnreadUpdates(user?.id); }).catch(() => {});
     }
     if (!destination) return;
     if (destination.url) {

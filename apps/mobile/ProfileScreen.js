@@ -36,6 +36,7 @@ import { groupAccountReports } from './lib/accountReports';
 import { useSession } from './lib/session';
 import { colors, fonts } from './lib/theme';
 import BrandBug from './components/BrandBug';
+import { useUnreadUpdates } from './lib/unreadUpdates';
 import LoadingBee from './components/LoadingBee';
 import { EmptyState, LoadFailure, PillTabs, PrimaryButton, PullRefresh, TextLink } from './components/ui';
 
@@ -122,6 +123,7 @@ export default function ProfileScreen({ navigation, route }) {
   // Tapping the Profile tab again returns the page to the top.
   const scrollRef = useRef(null);
   useScrollToTop(scrollRef);
+  const unreadUpdates = useUnreadUpdates(permanent ? user.id : null);
   const [signingOut, setSigningOut] = useState(false);
   const [sendingReset, setSendingReset] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -144,6 +146,18 @@ export default function ProfileScreen({ navigation, route }) {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: permanent && section === 'overview' ? () => (
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        {/* The website's bell: opens Updates and shows how many are unread. */}
+        <TouchableOpacity
+          style={styles.headerEditButton}
+          hitSlop={6}
+          onPress={() => navigation.navigate('Updates')}
+          accessibilityRole="button"
+          accessibilityLabel={unreadUpdates > 0 ? `Updates, ${unreadUpdates} unread` : 'Updates'}
+        >
+          <Ionicons name="notifications-outline" size={23} color={colors.primary} />
+          {unreadUpdates > 0 ? <View style={styles.bellBadge}><Text style={styles.bellBadgeText}>{unreadUpdates > 9 ? '9+' : unreadUpdates}</Text></View> : null}
+        </TouchableOpacity>
         <TouchableOpacity
           style={styles.headerEditButton}
           hitSlop={6}
@@ -153,10 +167,11 @@ export default function ProfileScreen({ navigation, route }) {
         >
           <Ionicons name="create-outline" size={22} color={colors.primary} />
         </TouchableOpacity>
+        </View>
       ) : undefined,
       headerRightContainerStyle: styles.headerEditButtonContainer,
     });
-  }, [navigation, permanent, section]);
+  }, [navigation, permanent, section, unreadUpdates]);
 
   // Website My reports: one list, each row labelled with its state.
   const closedReportIds = useMemo(() => new Set(groupAccountReports(reports).closed.map(({ id }) => id)), [reports]);
@@ -324,7 +339,7 @@ export default function ProfileScreen({ navigation, route }) {
       <View style={[styles.card, styles.overviewActions]}>
         <ActionRow appearance="profile" divided label="My activity" icon="leaf-outline" onPress={() => openScreen('MyActivity')} />
         <ActionRow appearance="profile" divided label="Payments" icon="wallet-outline" onPress={() => openScreen('Payments')} />
-        <ActionRow appearance="profile" divided label="Updates" icon="notifications-outline" onPress={() => openScreen('Updates')} />
+        <ActionRow appearance="profile" divided label={unreadUpdates > 0 ? `Updates (${unreadUpdates} unread)` : 'Updates'} icon="notifications-outline" onPress={() => openScreen('Updates')} />
         <ActionRow appearance="profile" label="Settings" icon="settings-outline" onPress={() => openScreen('Settings')} />
       </View>
       </> : null}
@@ -507,6 +522,8 @@ const styles = StyleSheet.create({
   joinedRow: { marginTop: 6, flexDirection: 'row', alignItems: 'center', gap: 5 },
   joined: { flexShrink: 1, color: colors.muted, fontSize: 14, lineHeight: 19 },
   headerEditButtonContainer: { paddingRight: 16, justifyContent: 'flex-end' },
+  bellBadge: { position: 'absolute', top: 4, right: 2, minWidth: 18, height: 18, paddingHorizontal: 4, borderRadius: 9, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.white, backgroundColor: colors.severityHigh },
+  bellBadgeText: { color: colors.white, fontSize: 10, fontWeight: '800' },
   headerEditButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   rankPanel: { marginHorizontal: 20, backgroundColor: colors.white },
   card: { marginHorizontal: 20, overflow: 'hidden', borderRadius: 18, backgroundColor: colors.white },
