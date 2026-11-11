@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { cleanupImpactFacts, formatCleanupDate } from './cleanupImpactPresentation';
 
-const mapScreenSource = ['../MapScreen.js', './useSelectedReportLoaders.js', '../components/ReportDetailsSheet.jsx'].map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
+const mapScreenSource = ['../MapScreen.js', './useCleanupFlow.js', './useSelectedReportLoaders.js', '../components/ReportDetailsSheet.jsx'].map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
 const completedStorySource = readFileSync(
   new URL('../CompletedCleanupStory.js', import.meta.url),
   'utf8'
