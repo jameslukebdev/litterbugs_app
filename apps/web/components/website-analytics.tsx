@@ -13,6 +13,13 @@ import { participationIntent } from '@/lib/participation-auth';
 import { supportCheckoutProperties } from '@/lib/monthly-support';
 
 type AnalyticsWindow = Window & { dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void; clarity?: ((...args: unknown[]) => void) & { q?: unknown[][] } };
+type PendingFlowDelivery = {
+  event: JourneyEvent | 'participation_step' | 'participation_failure';
+  properties: Record<string, unknown>;
+  googleSent: boolean;
+  posthogSent: boolean;
+};
+type PendingOutcomeDelivery = ReturnType<typeof drainWebsiteOutcomes>[number] & { page_type: string };
 function google(...args: unknown[]) {
   if (args[0] === 'event' && args[2] && typeof args[2] === 'object') args[2] = { ...args[2], workflow_version: WORKFLOW_VERSION };
   (window as AnalyticsWindow).gtag?.(...args);
@@ -47,6 +54,8 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
   const lastPosthogPage = useRef<{ pathname: string; page: string; started: number } | null>(null);
   const permitted = useRef(false);
   const observedOutcomes = useRef(new Set<string>());
+  const pendingFlowDeliveries = useRef<PendingFlowDelivery[]>([]);
+  const pendingOutcomeDeliveries = useRef(new Map<string, PendingOutcomeDelivery>());
   const active = allowed && consent !== 'declined';
   const aggregate = allowed && consent !== 'declined';
 
@@ -109,7 +118,8 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
           if (participation) Object.assign(event.properties, participation);
           if (journey) Object.assign(event.properties, journey);
           event.properties.workflow_version = WORKFLOW_VERSION;
-          const page = (event.event === '$pageleave' || participation || journey) && typeof event.properties.page_type === 'string'
+          const confirmedOutcome = ['report_published', 'contribution_confirmed', 'cleanup_approved'].includes(event.event);
+          const page = (event.event === '$pageleave' || participation || journey || confirmedOutcome) && typeof event.properties.page_type === 'string'
             ? analyticsPage(event.properties.page_type) : analyticsPage(window.location.pathname);
           if ((event.event === '$pageleave' || event.event === '$autocapture') && !page) return null;
           // Measure profile visits without collecting automatic clicks on profile content.
@@ -195,28 +205,42 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
   }, [aggregate, finishPosthogPage, ready]);
 
   useEffect(() => {
-    if (!active && !aggregate) return;
+    if (!active && !aggregate) { pendingFlowDeliveries.current = []; pendingOutcomeDeliveries.current.clear(); return; }
     const flushParticipation = () => {
-      if (!aggregate || !ready || !permitted.current || privacySignal()) return;
+      if (!permitted.current || privacySignal()) { pendingFlowDeliveries.current = []; pendingOutcomeDeliveries.current.clear(); return; }
+      const enqueue = (event: PendingFlowDelivery['event'], properties: PendingFlowDelivery['properties']) => {
+        pendingFlowDeliveries.current.push({ event, properties, posthogSent: false,
+          // Shared-report provider handoffs are intentionally PostHog-only.
+          googleSent: event === 'shared_report_sign_in' });
+      };
       for (const item of drainJourneys()) {
-        if (item.event === 'shared_report_sign_in') {
-          posthog.current?.capture(item.event, item.properties, { transport: 'sendBeacon', send_instantly: true });
-          continue;
-        }
-        posthog.current?.capture(item.event, item.properties);
-        if (active && gaReady) google('event', item.event, item.properties);
+        enqueue(item.event, item.properties);
       }
       for (const failure of drainParticipationFailures()) {
-        posthog.current?.capture('participation_failure', failure);
-        if (active && gaReady) google('event', 'participation_failure', failure);
+        enqueue('participation_failure', failure);
       }
       for (const step of drainParticipation()) {
-        posthog.current?.capture('participation_step', step);
-        if (active && gaReady) google('event', 'participation_step', step);
+        enqueue('participation_step', step);
       }
+      // In-memory, safe properties only; a blocked provider cannot grow this indefinitely.
+      if (pendingFlowDeliveries.current.length > 150) pendingFlowDeliveries.current.splice(0, pendingFlowDeliveries.current.length - 150);
+      for (const item of pendingFlowDeliveries.current) {
+        if (aggregate && ready && posthog.current && !item.posthogSent) {
+          try {
+            if (item.event === 'shared_report_sign_in') posthog.current.capture(item.event, item.properties, { transport: 'sendBeacon', send_instantly: true });
+            else posthog.current.capture(item.event, item.properties);
+            item.posthogSent = true;
+          } catch { /* One unavailable provider must not block the other or the user action. */ }
+        }
+        if (active && gaReady && !item.googleSent) {
+          try { google('event', item.event, item.properties); item.googleSent = true; }
+          catch { /* Keep the bounded event for a later readiness/action flush. */ }
+        }
+      }
+      pendingFlowDeliveries.current = pendingFlowDeliveries.current.filter(item => !item.googleSent || !item.posthogSent);
     };
     const outcome = (raw: Event) => {
-      if (privacySignal()) return;
+      if (!permitted.current || privacySignal()) { pendingOutcomeDeliveries.current.clear(); return; }
       const detail = (raw as CustomEvent).detail;
       if (!detail) return;
       const communityContext = communityProperties(detail) ?? {};
@@ -242,20 +266,32 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
       try {
         const key = `litterbugs:analytics-observed:${detail.event}:${detail.id}`;
         const persist = consent === 'accepted';
-        if (persist && localStorage.getItem(key)) return;
+        if (persist && localStorage.getItem(key)) { pendingOutcomeDeliveries.current.delete(key); return; }
         const seen = (provider: string) => observedOutcomes.current.has(`${key}:${provider}`)
           || (persist && Boolean(localStorage.getItem(`${key}:${provider}`)));
         const remember = (provider: string) => {
           observedOutcomes.current.add(`${key}:${provider}`);
           if (persist) localStorage.setItem(`${key}:${provider}`, '1');
         };
-        const page = analyticsPage(window.location.pathname) ?? '/private';
+        // Keep the first safe page even if the visitor navigates before a provider loads.
+        const delivery = pendingOutcomeDeliveries.current.get(key) ?? {
+          event: detail.event, id: detail.id, ...communityContext,
+          page_type: typeof detail.page_type === 'string' ? analyticsPage(detail.page_type) ?? '/private' : currentPage,
+        };
+        pendingOutcomeDeliveries.current.set(key, delivery);
+        if (pendingOutcomeDeliveries.current.size > 30) pendingOutcomeDeliveries.current.delete(pendingOutcomeDeliveries.current.keys().next().value!);
+        const page = delivery.page_type;
+        const context = communityProperties(delivery) ?? {};
         if (active && gaReady && !seen('ga')) {
-          google('event', detail.event, { ...communityContext, page_type: page, page_location: `https://litterbugs.app${page}`, page_title: 'Litterbugs', page_referrer: analyticsReferrer(document.referrer) }); remember('ga');
+          try {
+            google('event', delivery.event, { ...context, page_type: page, page_location: `https://litterbugs.app${page}`, page_title: 'Litterbugs', page_referrer: analyticsReferrer(document.referrer) }); remember('ga');
+          } catch { /* Retain this provider's delivery without blocking the other. */ }
         }
         if (aggregate && ready && posthog.current && !seen('posthog')) {
-          posthog.current.capture(detail.event, { ...communityContext, page_type: page }); remember('posthog');
+          try { posthog.current.capture(delivery.event, { ...context, page_type: page }); remember('posthog'); }
+          catch { /* Retain this provider's delivery without blocking the user action. */ }
         }
+        if (seen('ga') && seen('posthog')) pendingOutcomeDeliveries.current.delete(key);
       } catch { /* Measurement must not interrupt the user action. */ }
     };
     const click = (event: MouseEvent) => {
@@ -277,9 +313,8 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
       if (observation) outcome(new CustomEvent(ANALYTICS_EVENT, { detail: { event: observation.event, ...observation.properties } }));
     };
     flushParticipation();
-    if (aggregate && ready) {
-      for (const detail of drainWebsiteOutcomes()) outcome(new CustomEvent(ANALYTICS_EVENT, { detail }));
-    }
+    for (const detail of [...pendingOutcomeDeliveries.current.values()]) outcome(new CustomEvent(ANALYTICS_EVENT, { detail }));
+    for (const detail of drainWebsiteOutcomes()) outcome(new CustomEvent(ANALYTICS_EVENT, { detail }));
     window.addEventListener(ANALYTICS_EVENT, outcome);
     document.addEventListener('click', click, true);
     return () => { window.removeEventListener(ANALYTICS_EVENT, outcome); document.removeEventListener('click', click, true); };
@@ -290,6 +325,8 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
     setConsent(value); setShow(false);
     if (value === 'declined') {
       permitted.current = false;
+      pendingFlowDeliveries.current = [];
+      pendingOutcomeDeliveries.current.clear();
       drainParticipation();
       drainParticipationFailures();
       drainJourneys();

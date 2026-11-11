@@ -1,7 +1,7 @@
 import { AUTH_RESULT_PARAM, SHARED_REPORT_AUTH_PARAM, isSharedReportAuthProvider, type SharedReportAuthProvider } from './participation-auth';
 import { communityForEntry, communityForPath, communityProperties, type CommunityEngagementEvent, type CommunityProperties } from './community-metrics';
 // Bump when participation semantics/workflows change; compiled into each browser bundle.
-export const WORKFLOW_VERSION = 'web-participation-2026-11-10-v5';
+export const WORKFLOW_VERSION = 'web-participation-2026-11-11-v6';
 export const ANALYTICS_CONSENT_KEY = 'litterbugs:analytics-consent:v1';
 export const ANALYTICS_REPLAY_CHOICE_KEY = 'litterbugs:analytics-replay-consent:v1';
 export const ANALYTICS_EVENT = 'litterbugs:analytics-event';

@@ -24,6 +24,25 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-11 — Codex (analytics provider-readiness delivery fixed locally)
+
+- Reproduced early map/report/cleanup flow events reaching PostHog but being
+  lost to GA when Google's script loads later. Confirmed outcomes had the
+  same gap; an unavailable PostHog SDK also blocked otherwise-ready GA flows.
+- Added bounded in-memory delivery tracking per provider (150 flow events,
+  30 confirmed outcomes). Preserve safe original pages across navigation,
+  deduplicate outcomes per provider, and clear pending deliveries on opt-out
+  or privacy signals. Shared-report sign-in handoffs stay PostHog-only;
+  IDs remain local deduplication keys and are not sent in event payloads.
+  Measurement bundle version: `web-participation-2026-11-11-v6`.
+- 52 focused analytics tests, scoped ESLint, TypeScript and diff checks pass.
+  Regression tests use mocked providers; no production test events. No build,
+  new browser, deployment or GitHub push. Local changes are in this commit;
+  earlier reviewed local improvements still await owner release approval.
+- Memory was normal at start, warning level 2 after checks (43% memory-pressure
+  free percentage). Android remains closed; iOS and owner apps left running.
+  Continue lightweight work and avoid builds/extra browser sessions.
+
 ### 2026-11-11 — Codex (Android emulator closed at owner's request)
 
 - Owner approved closing Android only. Gracefully stopped emulator-5554 via
