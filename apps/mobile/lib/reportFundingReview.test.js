@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 // Integration contract spans the extracted presentation and its owning screen.
-const mapScreenSource = ['../MapScreen.js', '../components/ReportWizardSteps.jsx', '../components/ReportDetailsSheet.jsx', '../styles/MapScreen.styles.js'].map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
+const mapScreenSource = ['../MapScreen.js', './useReportWizardNavigation.js', '../components/ReportWizardSteps.jsx', '../components/ReportDetailsSheet.jsx', '../styles/MapScreen.styles.js'].map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
 
 describe('report review cleanup-fund choices', () => {
   it('offers no contribution now and explains that others can still fund it', () => {

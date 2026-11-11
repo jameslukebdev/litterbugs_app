@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const mapScreenSource = readFileSync(
-  new URL('../MapScreen.js', import.meta.url),
+  new URL('./useReportSharing.js', import.meta.url),
   'utf8'
 );
 const reportShareSheetSource = readFileSync(

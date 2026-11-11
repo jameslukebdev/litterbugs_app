@@ -1,9 +1,8 @@
 import { userMessage } from './lib/userMessage';
-import { REPORT_STEP_STAGES, trackParticipation, trackParticipationFailure } from './lib/analytics';
+import { trackParticipation, trackParticipationFailure } from './lib/analytics';
 import { requireReportLocation } from './lib/reportLocationCheck';
 import { publishReportDraft, clearReportSubmission } from './lib/reportSubmissionStore';
 import ReportDetailsSheet from './components/ReportDetailsSheet';
-import { canAdvanceReportStep, nextReportStep } from './lib/reportWizard';
 import styles from './styles/MapScreen.styles';
 import { cloudDrafts } from './lib/cloudDrafts';
 import CloudDraftStatus from './components/CloudDraftStatus';
@@ -15,13 +14,12 @@ import MapKey, { mapKeyCounts } from './components/MapKey';
 import SlideUp from './components/SlideUp';
 import { hapticSuccess } from './lib/haptics';
 import { CALM_MAP_STYLE } from './lib/calmMapStyle';
-import { resolveReportPhotoUrls } from './lib/reportPhotoUrls';
 
 import { saveReportDraft, loadReportDraft, clearReportDraft } from './lib/savedReportDraft';
 import ReportFilters from './components/ReportFilters';
 // MapScreen.js
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { View, Text, Image, StyleSheet, Modal, TouchableOpacity, Platform, Alert, Keyboard, Animated, Easing, PanResponder, ScrollView, TouchableWithoutFeedback, ActivityIndicator, AppState, Linking, Share as NativeShare, TurboModuleRegistry, useWindowDimensions } from 'react-native';
+import { View, Text, Image, StyleSheet, Modal, TouchableOpacity, Platform, Alert, Keyboard, Animated, Easing, ScrollView, TouchableWithoutFeedback, ActivityIndicator, AppState, Linking, useWindowDimensions } from 'react-native';
 import { polygonParts } from './lib/searchGeography';
 import { Marker, Polygon } from 'react-native-maps';
 import ClusteredMapView from 'react-native-map-clustering';
@@ -52,7 +50,6 @@ import {
   acceptCleanupWaiver,
   acknowledgeCleanupNotifications,
   claimCleanup,
-  loadActiveCleanupAttempt,
   loadCurrentCleanupWaiver,
   loadUnreadCleanupNotifications,
   releaseCleanup,
@@ -60,11 +57,6 @@ import {
 import { canOfferCleanup, cleanupActionMessage, cleanupStatusPresentation, isCleanupInProgress, isCurrentCleaner } from './lib/cleanupEligibility';
 import { createCleanupNotificationPrompt } from './lib/cleanupNotificationPrompt';
 import { useProfile } from './lib/profile';
-import {
-  CLEANUP_NAVIGATION_SAFETY_REMINDER,
-  cleanupNavigationUrls,
-} from './lib/cleanupNavigation';
-import { loadCompletedCleanupImpact } from './lib/cleanupImpact';
 import { loadCleanupFeatureFlags, loadPayoutStatus, loadReportFundingFeedback, requestGeminiReview } from './lib/funding';
 import { parseContributionAmount } from './lib/fundingMath';
 import { savePendingReportFunding } from './lib/pendingReportFunding';
@@ -78,16 +70,11 @@ import {
 import { hasRequiredReportPhoto } from './lib/reportDraft';
 import { normalizeReportTitle } from './lib/reportTitle';
 import { mergeReportPhotoUris, reportCameraPickerOptions, reportPhotoPickerOptions } from './lib/reportPhotoSelection';
-import { uploadSecureMedia } from './lib/secureMediaUpload';
+import { uploadReportPhotos } from './lib/uploadReportPhotos';
 import {
   isPhotoOptimizationAvailable,
   preparePhotoForSafetyScan,
-  validatePreparedPhotoForSafetyScan,
 } from './lib/photoSafetyPreparation';
-import {
-  mapInConcurrentBatches,
-  REPORT_PHOTO_UPLOAD_CONCURRENCY,
-} from './lib/concurrentBatch';
 import {
   findResponsiveUserLocation,
   mapRegionsAreEquivalent,
@@ -103,45 +90,14 @@ import {
 } from './lib/mapMarkerPresentation';
 
 
-import { createReportShareModel, isInstagramStoriesAvailable, isReportShareable, prepareNativeReportShareImage, shareReportToInstagramStories, shareReportWithSystemSheet } from './lib/reportSharing';
-import * as FileSystem from 'expo-file-system/legacy';
+import { isReportShareable } from './lib/reportSharing';
+import useReportSharing from './lib/useReportSharing';
+import useReportWizardNavigation from './lib/useReportWizardNavigation';
+import useSelectedReportLoaders from './lib/useSelectedReportLoaders';
+import { LITTER_OPTIONS, NOTES_OPTIONS, REPORT_STEPS } from './lib/reportOptions';
+import { promptCleanupNavigation } from './lib/promptCleanupNavigation';
+import { showLocationSettingsAlert, showPermanentAccountRequired } from './lib/mapAlerts';
 import { colors } from './lib/theme';
-
-function loadInstalledRNShare() {
-  if (!TurboModuleRegistry.get('RNShare')) return null;
-
-  try {
-    return require('react-native-share').default;
-  } catch (error) {
-    console.log('Native report sharing unavailable:', error);
-    return null;
-  }
-}
-
-const installedRNShare = loadInstalledRNShare();
-
-const showPermanentAccountRequired = () => {
-  Alert.alert(
-    'Account required',
-    'Sign in with email, Google, or Facebook to create and manage reports.'
-  );
-};
-
-const showLocationSettingsAlert = (message) => {
-  Alert.alert(
-    'Location Access Needed',
-    `${message} You can turn location access on in Settings.`,
-    [
-      { text: 'Not now', style: 'cancel' },
-      {
-        text: 'Open Settings',
-        onPress: () => Linking.openSettings().catch((error) => {
-          console.log('Open location settings error:', error);
-        }),
-      },
-    ]
-  );
-};
 
 
 // State Functions
@@ -156,7 +112,6 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
       setReportOpenRevision(value => value + 1);
     }
   }, [isMapScreenFocused, route?.params?.editPhotos]);
-  const REPORT_STEPS = ['Photos', 'Type of litter', 'Severity', 'Site conditions', 'Review'];
   const [tracksReportMarkers, setTracksReportMarkers] = useState(true);
   const reportMarkerTrackingTimerRef = useRef(null);
   const reportClusterRef = useRef(null);
@@ -169,13 +124,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const [formOpen, setFormOpen] = useState(false);
   const [reportKeyboardVisible, setReportKeyboardVisible] = useState(false);
   const [reportKeyboardHeight, setReportKeyboardHeight] = useState(0);
-  const [reportStep, setReportStep] = useState(0);
-  const [returnToReview, setReturnToReview] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const reportWizardScrollRef = useRef(null);
-  const stepTranslateX = useRef(new Animated.Value(0)).current;
-  const stepOpacity = useRef(new Animated.Value(1)).current;
-  const pendingReportTransitionDirectionRef = useRef(null);
   const [form, setForm] = useState({
     title: '',
     selectedTypes: [],
@@ -199,6 +148,20 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const [isSaving, setIsSaving] = useState(false);
   const [saveStage, setSaveStage] = useState('Saving report…');
   const [photoPreparationStatus, setPhotoPreparationStatus] = useState(null);
+  const {
+    reportStep,
+    setReportStep,
+    returnToReview,
+    isTransitioning,
+    stepTranslateX,
+    stepOpacity,
+    resetReportWizard,
+    canAdvanceFromStep,
+    goToNextReportStep,
+    goToPreviousReportStep,
+    jumpToReportStep,
+    reportStepPanResponder,
+  } = useReportWizardNavigation({ form, isEditing, selectedReport, photoPreparationStatus });
   const [showPhotoPreparation, setShowPhotoPreparation] = useState(false);
   const isPreparingPhotos = Boolean(photoPreparationStatus?.startsWith('Preparing'));
   useEffect(() => {
@@ -230,8 +193,15 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const [completedCleanupImpactLoading, setCompletedCleanupImpactLoading] = useState(false);
   const [completedCleanupImpactError, setCompletedCleanupImpactError] = useState(null);
   const [completedCleanupImpactReloadKey, setCompletedCleanupImpactReloadKey] = useState(0);
-  const [reportShareSheetOpen, setReportShareSheetOpen] = useState(false);
-  const [reportShareBusyAction, setReportShareBusyAction] = useState(null);
+  const {
+    reportShareSheetOpen,
+    setReportShareSheetOpen,
+    reportShareBusyAction,
+    shareMapReport,
+    shareSelectedReport,
+    shareSelectedReportLink,
+    shareSelectedReportToInstagram,
+  } = useReportSharing({ selectedReport, detailsOpen, completedCleanupImpact, reportPhotoUrls });
   const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
   const [paymentsEnabled, setPaymentsEnabled] = useState(false);
   const [geminiReviewEnabled, setGeminiReviewEnabled] = useState(false);
@@ -565,19 +535,10 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   }, [cleanupWaiverOpen, reportReopenQueued, selectedReport]);
 
 
-  // const PATREON_URL = "https://patreon.com/litterbugs?utm_medium=unknown&utm_source=join_link&utm_campaign=creatorshare_creator&utm_content=copyLink"; // <-- paste your real link
 
   // =============================
 // Multi-step Report Form
 // =============================
-
-const resetReportWizard = () => {
-  setReturnToReview(false);
-  setReportStep(0);
-  stepTranslateX.setValue(0);
-  stepOpacity.setValue(1);
-  setIsTransitioning(false);
-};
 
 const hasAttachedReportPhoto = () => (
   hasRequiredReportPhoto({
@@ -600,125 +561,6 @@ const wantsStartingFunding = fundingEnabled
 const startingContributionCents = wantsStartingFunding
   ? parseContributionAmount(startingFundingAmount)
   : null;
-
-// Determines whether the user can move forward from a given step
-const canAdvanceFromStep = (step = reportStep) => canAdvanceReportStep(step, { form, isEditing, existingPhotoPaths: selectedReport?.photo_paths });
-
-// Animate between report screens
-useLayoutEffect(() => {
-  const direction = pendingReportTransitionDirectionRef.current;
-  if (!direction) return undefined;
-  pendingReportTransitionDirectionRef.current = null;
-
-  const incomingTransition = Animated.parallel([
-    Animated.timing(stepTranslateX, {
-      toValue: 0,
-      duration: 190,
-      useNativeDriver: true,
-    }),
-    Animated.timing(stepOpacity, {
-      toValue: 1,
-      duration: 170,
-      useNativeDriver: true,
-    }),
-  ]);
-
-  incomingTransition.start(() => {
-    setIsTransitioning(false);
-  });
-  return () => incomingTransition.stop();
-}, [reportStep, stepOpacity, stepTranslateX]);
-
-const transitionToReportStep = (nextStep, direction) => {
-  if (
-    isTransitioning ||
-    nextStep < 0 ||
-    nextStep >= REPORT_STEPS.length ||
-    nextStep === reportStep
-  ) {
-    return;
-  }
-  if (!isEditing) trackParticipation('report', REPORT_STEP_STAGES[nextStep]);
-
-  Keyboard.dismiss();
-  setIsTransitioning(true);
-
-  // Slide current screen out
-  Animated.parallel([
-    Animated.timing(stepTranslateX, {
-      toValue: direction > 0 ? -80 : 80,
-      duration: 150,
-      useNativeDriver: true,
-    }),
-    Animated.timing(stepOpacity, {
-      toValue: 0,
-      duration: 120,
-      useNativeDriver: true,
-    }),
-  ]).start(() => {
-    // Position incoming screen on opposite side
-    stepTranslateX.setValue(direction > 0 ? 80 : -80);
-    pendingReportTransitionDirectionRef.current = direction;
-    setReportStep(nextStep);
-  });
-};
-
-const goToNextReportStep = () => {
-  if (photoPreparationStatus || isTransitioning) return;
-  if (reportStep >= REPORT_STEPS.length - 1) return;
-
-  if (!canAdvanceFromStep(reportStep)) return;
-
-  const nextStep = nextReportStep(reportStep, {
-    form, isEditing, existingPhotoPaths: selectedReport?.photo_paths,
-  }, returnToReview);
-  if (nextStep === REPORT_STEPS.length - 1) setReturnToReview(false);
-  transitionToReportStep(nextStep, nextStep > reportStep ? 1 : -1);
-};
-
-const goToPreviousReportStep = () => {
-  if (isTransitioning || photoPreparationStatus) return;
-  setReturnToReview(false);
-  if (reportStep <= 0) return;
-
-  transitionToReportStep(reportStep - 1, -1);
-};
-
-// Used by the Edit buttons on the review screen
-const jumpToReportStep = (step) => {
-  if (step === reportStep || isTransitioning) return;
-  if (reportStep === REPORT_STEPS.length - 1) setReturnToReview(true);
-
-  transitionToReportStep(
-    step,
-    step > reportStep ? 1 : -1
-  );
-};
-
-// Allow horizontal swiping in addition to arrow navigation
-const reportStepPanResponder = PanResponder.create({
-  onMoveShouldSetPanResponder: (_, gestureState) => {
-    const { dx, dy } = gestureState;
-
-    return (
-      Math.abs(dx) > 24 &&
-      Math.abs(dx) > Math.abs(dy) * 1.2
-    );
-  },
-
-  onPanResponderRelease: (_, gestureState) => {
-    // Swipe left = next
-    if (gestureState.dx <= -55) {
-      goToNextReportStep();
-    }
-
-    // Swipe right = back
-    else if (gestureState.dx >= 55) {
-      goToPreviousReportStep();
-    }
-  },
-});
-
 
 // The pin identifies the litter; fresh device GPS checks that it is nearby.
 const beginReportAtCoordinate = (coord, savedForm = null, savedStep = 0, missingPhotoCount = 0) => {
@@ -1232,54 +1074,6 @@ const submitReport = async () => {
 
 
 
-// Preset Litter Options Users Can Choose From
-  const LITTER_OPTIONS = [
-    { label: 'Takeout cups', icon: 'cafe-outline' },
-    { label: 'Bottles', icon: 'water-outline' },
-    { label: 'Cans', icon: 'beer-outline' },
-    { label: 'Paper products', icon: 'document-text-outline' },
-    { label: 'Food wrappers', icon: 'fast-food-outline' },
-    { label: 'Fast food bags', icon: 'bag-handle-outline' },
-    { label: 'Plastic bags', icon: 'bag-handle-outline' },
-    { label: 'Trash bags', icon: 'trash-outline' },
-    { label: 'PPE', icon: 'medkit-outline' },
-    { label: 'Construction debris', icon: 'construct-outline' },
-    { label: 'Furniture', icon: 'bed-outline' },
-    { label: 'Strewn plastic', icon: 'layers-outline' },
-    { label: 'Textiles', icon: 'shirt-outline' },
-    { label: 'Pet waste', icon: 'paw-outline' },
-    { label: 'Tires', icon: 'disc-outline' },
-    { label: 'Vehicular debris', icon: 'car-outline' },
-  ];
-
-
-// Preset Notes Options Users Can Choose From
-  const NOTES_OPTIONS = [
-    { label: 'Scattered',        icon: 'layers-outline' },
-    { label: 'In a pile',        icon: 'construct-outline' },
-    { label: 'Bagged but left',  icon: 'bag-handle-outline' },
-    { label: 'Near roadside',    icon: 'car-outline' },
-    { label: 'In Public Park',   icon: 'paw-outline' },          // park / nature-ish
-    { label: 'In ditch',         icon: 'water-outline' },
-    { label: 'Along trail',      icon: 'walk-outline' },         // if walk-outline isn't used yet, it's a standard Ionicon
-    { label: 'Near waterway',    icon: 'water-outline' },
-    { label: 'Blocking path',    icon: 'close-circle-outline' }, // or trash-outline if you prefer
-    { label: 'Broken glass',     icon: 'alert-circle-outline' },
-    { label: 'Hard to access',   icon: 'warning-outline' },
-    { label: 'Use Caution',      icon: 'warning-outline' },
-  ];
-
-
-// Helper Function for Photo Uploads
-  const base64ToUint8Array = (base64) => {
-    const binaryString = globalThis.atob ? globalThis.atob(base64) : Buffer.from(base64, 'base64').toString('binary');
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
-    return bytes;
-  };
-
-
   // Photo upload function
   const pickImage = async (source = 'library') => {
     if (isSaving || photoPreparationStatus) return;
@@ -1343,65 +1137,6 @@ const submitReport = async () => {
         ...prev,
         photos: prev.photos.filter((_, i) => i !== index),
       }));
-    };
-
-    // Upload Photos to Supabase, helper function
-    const uploadReportPhotos = async (photoUris, reportId, userId, onProgress = () => {}) => {
-      const uploadedPaths = [];
-      let completedPhotos = 0;
-
-      try {
-        onProgress(
-          photoUris.length === 1
-            ? 'Preparing and safety-checking your photo…'
-            : `Preparing and safety-checking ${photoUris.length} photos…`,
-        );
-        return await mapInConcurrentBatches(
-          photoUris,
-          async (uri) => {
-            const preparedPhoto = await validatePreparedPhotoForSafetyScan(uri);
-            const base64 = await FileSystem.readAsStringAsync(preparedPhoto.uri, {
-              encoding: 'base64',
-            });
-            const bytes = base64ToUint8Array(base64);
-            if (bytes.byteLength > 5 * 1024 * 1024) {
-              throw new Error('Each report photo must be 5 MB or smaller.');
-            }
-
-            const candidateExt = (preparedPhoto.uri.split('?')[0].split('.').pop() || 'jpg').toLowerCase();
-            const fileExt = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'].includes(candidateExt)
-              ? candidateExt
-              : 'jpg';
-            const mimeType = preparedPhoto.mimeType
-              ?? `image/${['jpg', 'jpeg'].includes(fileExt) ? 'jpeg' : fileExt}`;
-            return uploadSecureMedia({
-              userId,
-              kind: 'report',
-              bytes,
-              mimeType,
-              subjectId: reportId,
-            });
-          },
-          {
-            concurrency: REPORT_PHOTO_UPLOAD_CONCURRENCY,
-            onFulfilled: (filePath) => {
-              uploadedPaths.push(filePath);
-              completedPhotos += 1;
-              onProgress(
-                `Photo ${completedPhotos} of ${photoUris.length} safety-checked.`,
-              );
-            },
-          },
-        );
-      } catch (error) {
-        if (uploadedPaths.length > 0) {
-          const { error: cleanupError } = await supabase.storage
-            .from('report_photos')
-            .remove(uploadedPaths);
-          if (cleanupError) console.log('New report photo cleanup failed:', cleanupError);
-        }
-        throw error;
-      }
     };
 
 const refreshReportMarkerSnapshots = useCallback(() => {
@@ -1552,116 +1287,20 @@ useEffect(() => {
   route?.params?.editPhotos,
 ]);
 
-// Load Photos into Existing Report
-useEffect(() => {
-  let active = true;
-
-  const loadPhotoUrls = async () => {
-    // Always begin a newly opened report on its first photo
-
-    setPhotosLoading(true);
-
-    if (!selectedReport?.photo_paths?.length) {
-      if (active) {
-        setReportPhotoUrls([]);
-        setPhotosLoading(false);
-      }
-      return;
-    }
-
-    try {
-      const urls = await resolveReportPhotoUrls(selectedReport.photo_paths, getReportPhotoUrl, firstUrl => {
-        if (active) {
-          setReportPhotoUrls([firstUrl]);
-          setPhotosLoading(false);
-        }
-      });
-
-      if (active) {
-        setReportPhotoUrls(urls);
-      }
-    } catch (error) {
-      console.log('Report photo loading error:', error);
-      if (active) setReportPhotoUrls([]);
-    } finally {
-      if (active) setPhotosLoading(false);
-    }
-  };
-
-  loadPhotoUrls();
-
-  return () => {
-    active = false;
-  };
-}, [getReportPhotoUrl, selectedReport?.id, JSON.stringify(selectedReport?.photo_paths), reportOpenRevision]);
-
-useEffect(() => {
-  let active = true;
-
-  if (!selectedReport?.id || !isCleanupInProgress(selectedReport) || !currentUserId) {
-    setSelectedCleanupAttempt(null);
-    setCleanupAttemptLoading(false);
-    return undefined;
-  }
-
-  setCleanupAttemptLoading(true);
-  loadActiveCleanupAttempt(selectedReport.id)
-    .then((attempt) => {
-      if (active) setSelectedCleanupAttempt(attempt);
-    })
-    .catch((error) => {
-      console.log('Cleanup attempt load error:', error);
-      if (active) setSelectedCleanupAttempt(null);
-    })
-    .finally(() => {
-      if (active) setCleanupAttemptLoading(false);
-    });
-
-  return () => {
-    active = false;
-  };
-}, [currentUserId, selectedReport?.cleanup_state, selectedReport?.id, reportOpenRevision]);
-
-useEffect(() => {
-  let active = true;
-
-  if (!selectedReport?.id || selectedReport.cleanup_state !== 'completed') {
-    setCompletedCleanupImpact(null);
-    setCompletedCleanupImpactError(null);
-    setCompletedCleanupImpactLoading(false);
-    return undefined;
-  }
-
-  setCompletedCleanupImpactLoading(true);
-  setCompletedCleanupImpactError(null);
-
-  loadCompletedCleanupImpact(selectedReport.id)
-    .then((impact) => {
-      if (!active) return;
-      setCompletedCleanupImpact(impact);
-      if (!impact) setCompletedCleanupImpactError('cleanup_impact_unavailable');
-    })
-    .catch((error) => {
-      console.log('Completed cleanup impact load error:', error);
-      if (active) {
-        setCompletedCleanupImpact(null);
-        setCompletedCleanupImpactError(error?.message || 'cleanup_impact_unavailable');
-      }
-    })
-    .finally(() => {
-      if (active) setCompletedCleanupImpactLoading(false);
-    });
-
-  return () => {
-    active = false;
-  };
-}, [
-  completedCleanupImpactReloadKey,
-  reportOpenRevision,
-  selectedReport?.cleanup_state,
-  selectedReport?.id,
-]);
-
+  useSelectedReportLoaders({
+    selectedReport,
+    currentUserId,
+    reportOpenRevision,
+    completedCleanupImpactReloadKey,
+    getReportPhotoUrl,
+    setPhotosLoading,
+    setReportPhotoUrls,
+    setSelectedCleanupAttempt,
+    setCleanupAttemptLoading,
+    setCompletedCleanupImpact,
+    setCompletedCleanupImpactError,
+    setCompletedCleanupImpactLoading,
+  });
 
   const userOwnsSelectedReport = canManageReport(selectedReport, currentUser);
   const canEditOrDeleteSelectedReport = canEditOrDeleteReport(
@@ -1693,14 +1332,6 @@ useEffect(() => {
     );
 
   useEffect(() => {
-    if (!detailsOpen) setReportShareSheetOpen(false);
-  }, [detailsOpen]);
-
-  useEffect(() => {
-    setReportShareSheetOpen(false);
-  }, [selectedReport?.id]);
-
-  useEffect(() => {
     if (!detailsOpen || !selectedReport?.id) return;
     const latestReport = markers.find(({ id }) => id === selectedReport.id)?.report;
     if (!latestReport) return;
@@ -1727,147 +1358,6 @@ useEffect(() => {
     });
   }, [detailsOpen, markers, selectedReport?.id]);
 
-  const selectedReportShareModel = () => createReportShareModel({
-    report: selectedReport,
-    impact: completedCleanupImpact,
-    beforePhotoUrl: reportPhotoUrls[0] ?? null,
-    afterPhotoUrl: completedCleanupImpact?.afterPhotoUrls?.[0] ?? null,
-  });
-
-  const prepareSelectedReportShareImage = async () => {
-    const model = selectedReportShareModel();
-    if (!model) return null;
-
-    return prepareNativeReportShareImage({
-      model,
-      cacheDirectory: FileSystem.cacheDirectory,
-      deleteAsync: FileSystem.deleteAsync,
-      getInfoAsync: FileSystem.getInfoAsync,
-      readAsStringAsync: FileSystem.readAsStringAsync,
-      downloadAsync: FileSystem.downloadAsync,
-    });
-  };
-
-  const shareMapReport = async (report) => {
-    if (!isReportShareable(report) || reportShareBusyAction) return;
-    setReportShareBusyAction('system');
-    try {
-      await shareReportWithSystemSheet({ report, platform: Platform.OS, share: NativeShare.share });
-    } catch (error) {
-      Alert.alert('Sharing unavailable', 'We couldn’t open the share menu. Please try again.');
-    } finally {
-      setReportShareBusyAction(null);
-    }
-  };
-
-  const shareSelectedReport = async () => {
-    if (!selectedReportIsShareable || reportShareBusyAction) return;
-
-    setReportShareBusyAction('system');
-    try {
-      let shareImageUri = null;
-      try {
-        shareImageUri = await prepareSelectedReportShareImage();
-      } catch (imageError) {
-        console.log('Report share image unavailable:', imageError);
-      }
-
-      await shareReportWithSystemSheet({
-        report: selectedReport,
-        impact: completedCleanupImpact,
-        beforePhotoUrl: reportPhotoUrls[0] ?? null,
-        afterPhotoUrl: completedCleanupImpact?.afterPhotoUrls?.[0] ?? null,
-        platform: Platform.OS,
-        share: installedRNShare?.open ?? NativeShare.share,
-        shareImageUri: installedRNShare ? shareImageUri : null,
-      });
-      setReportShareSheetOpen(false);
-    } catch (error) {
-      console.log('Report sharing error:', error);
-      Alert.alert('Sharing unavailable', 'We couldn’t open the share menu. Please try again.');
-    } finally {
-      setReportShareBusyAction(null);
-    }
-  };
-
-  const shareSelectedReportLink = async () => {
-    if (!selectedReportIsShareable || reportShareBusyAction) return;
-    setReportShareBusyAction('link');
-    try {
-      await shareReportWithSystemSheet({
-        report: selectedReport,
-        impact: completedCleanupImpact,
-        platform: Platform.OS,
-        linkOnly: true,
-        share: NativeShare.share,
-      });
-      setReportShareSheetOpen(false);
-    } catch (error) {
-      console.log('Report link sharing error:', error);
-      Alert.alert('Sharing unavailable', 'We couldn’t open the share menu. Please try again.');
-    } finally {
-      setReportShareBusyAction(null);
-    }
-  };
-
-  const shareSelectedReportToInstagram = async () => {
-    if (!selectedReportIsShareable || reportShareBusyAction) return;
-
-    if (!installedRNShare?.shareSingle || !installedRNShare.Social?.INSTAGRAM_STORIES) {
-      Alert.alert(
-        'Instagram sharing unavailable',
-        'We couldn’t open Instagram Stories. You can still send this report with “Share link”.'
-      );
-      return;
-    }
-
-    let instagramAvailable = false;
-    try {
-      instagramAvailable = await isInstagramStoriesAvailable({
-        platform: Platform.OS,
-        isPackageInstalled: installedRNShare.isPackageInstalled,
-        canOpenURL: url => Linking.canOpenURL(url),
-      });
-    } catch (error) {
-      console.log('Instagram availability check error:', error);
-    }
-
-    if (!instagramAvailable) {
-      Alert.alert(
-        'Instagram isn’t available',
-        'Instagram isn’t available on this phone. Try “Share link” to send the report another way.'
-      );
-      return;
-    }
-
-    setReportShareBusyAction('instagram');
-    try {
-      const shareImageUri = await prepareSelectedReportShareImage();
-      if (!shareImageUri) throw new Error('share_image_unavailable');
-
-      await shareReportToInstagramStories({
-        report: selectedReport,
-        impact: completedCleanupImpact,
-        beforePhotoUrl: reportPhotoUrls[0] ?? null,
-        afterPhotoUrl: completedCleanupImpact?.afterPhotoUrls?.[0] ?? null,
-        shareImageUri,
-        shareSingle: installedRNShare.shareSingle,
-        instagramStoriesSocial: installedRNShare.Social.INSTAGRAM_STORIES,
-      });
-      setReportShareSheetOpen(false);
-    } catch (error) {
-      console.log('Instagram sharing error:', error);
-      const unavailable = /not installed|activity not found|package/i.test(error?.message || '');
-      Alert.alert(
-        unavailable ? 'Instagram isn’t available' : 'Instagram sharing unavailable',
-        unavailable
-          ? 'Instagram isn’t available on this phone. Try “Share link” to send the report another way.'
-          : 'We couldn’t prepare your Story. Please try again, or use “Share link”.'
-      );
-    } finally {
-      setReportShareBusyAction(null);
-    }
-  };
   const cleanupStatus = cleanupStatusPresentation(
     selectedReport,
     currentUserIsCleaner,
@@ -2082,61 +1572,7 @@ useEffect(() => {
     };
   }, [isMapScreenFocused, pendingPayoutWorkflowToken]);
 
-  const openExternalMap = async (preferredUrl, fallbackUrl) => {
-    try {
-      const supported = await Linking.canOpenURL(preferredUrl);
-      await Linking.openURL(supported ? preferredUrl : fallbackUrl);
-    } catch (error) {
-      console.log('Cleanup navigation error:', error);
-
-      try {
-        await Linking.openURL(fallbackUrl);
-      } catch (fallbackError) {
-        console.log('Cleanup navigation fallback error:', fallbackError);
-        Alert.alert('Unable to open maps', 'Try opening the report location in your maps app.');
-      }
-    }
-  };
-
-  const openCleanupNavigation = () => {
-    const urls = cleanupNavigationUrls(selectedReport);
-
-    if (!urls) {
-      Alert.alert('Location unavailable', 'This report does not have a valid cleanup location.');
-      return;
-    }
-
-    if (Platform.OS === 'ios') {
-      Alert.alert(
-        'Navigate to Cleanup',
-        CLEANUP_NAVIGATION_SAFETY_REMINDER,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Apple Maps',
-            onPress: () => openExternalMap(urls.apple, urls.google),
-          },
-          {
-            text: 'Google Maps',
-            onPress: () => openExternalMap(urls.google, urls.google),
-          },
-        ]
-      );
-      return;
-    }
-
-    Alert.alert(
-      'Navigate to Cleanup',
-      CLEANUP_NAVIGATION_SAFETY_REMINDER,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Open Maps',
-          onPress: () => openExternalMap(urls.android, urls.google),
-        },
-      ]
-    );
-  };
+  const openCleanupNavigation = () => promptCleanupNavigation(selectedReport);
 
   const openCleanupSubmission = () => {
     if (!selectedCleanupAttempt?.id || !selectedReport?.id) return;
@@ -2208,21 +1644,6 @@ useEffect(() => {
       ]
     );
   };
-
-// Links out to Patreon Account
-// const openPatreon = async () => {
-//   try {
-//     const supported = await Linking.canOpenURL(PATREON_URL);
-//     if (!supported) {
-//       Alert.alert("Can't open link", "Unable to open Patreon on this device.");
-//       return;
-//     }
-//     await Linking.openURL(PATREON_URL);
-//   } catch (e) {
-//     console.log("Patreon link error:", e);
-//     Alert.alert("Link error", "Something went wrong opening Patreon.");
-//   }
-// };
 
 // =============================
 // Report Form Step Content
