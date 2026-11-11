@@ -409,10 +409,11 @@ function FundingContributionController({ navigation, route }) {
   if (receipt) {
     return (
       <View style={styles.center}>
-        <View style={styles.successIcon}><Ionicons name="checkmark" size={38} color={colors.white} /></View>
-        <Text style={styles.centerTitle}>Contribution received</Text>
+        {/* Website finish: the bee and "Thank you!". */}
+        <Image source={require('./assets/bugs/bee.png')} style={{ width: 56, height: 56 }} resizeMode="contain" accessible={false} />
+        <Text style={styles.centerTitle}>Thank you!</Text>
         <Text style={styles.centerText}>
-          {formatUsd(receipt.principalAmountCents)} was added to the cleanup fund. Your total charge was {formatUsd(receipt.totalAmountCents)}.
+          {formatUsd(receipt.principalAmountCents)} is in the cleanup fund. Someone can now earn cash for cleaning this spot. Your total charge was {formatUsd(receipt.totalAmountCents)}.
         </Text>
         <PrimaryButton label="Return to report" onPress={() => navigation.goBack()} style={styles.centerButton} />
       </View>

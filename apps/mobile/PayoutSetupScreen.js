@@ -136,7 +136,7 @@ function PayoutSetupController({ navigation, route }) {
               'Ready to receive rewards',
               workflowToken
                 ? 'Your payout account is ready. Continue to return to the litter report and finish claiming the cleanup.'
-                : 'Your payout account is ready for cleanup and reporter rewards.',
+                : 'Approved cleanups and reporter earnings can now be paid out to you.',
               [{
                 text: workflowToken ? 'Continue to cleanup' : 'Done',
                 onPress: () => {

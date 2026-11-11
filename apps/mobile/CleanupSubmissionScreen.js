@@ -27,6 +27,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BrandedLoadingState, { LoadingButtonContent } from './BrandedLoadingState';
 import LoadingBee from './components/LoadingBee';
 import { hapticSuccess } from './lib/haptics';
+import { showFlowDone } from './components/FlowDone';
 import { EmptyState, ErrorText, SecondaryButton, TextLink } from './components/ui';
 
 import {
@@ -292,27 +293,23 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
             ? 'A Litterbugs team member is reviewing the photos. Your payout is paused, and we’ll contact you if we need anything.'
             : 'Your photos are being reviewed. The 48-hour dispute window starts only after they pass.';
 
-      if (aiDecision?.status !== 'better_photos') hapticSuccess();
-      Alert.alert(
-        aiDecision?.status === 'better_photos'
-          ? 'Better photos needed'
-          : context.attempt.status === 'changes_requested'
-          ? 'Cleanup resubmitted'
-          : 'Cleanup submitted',
-        context.attempt.is_paid
-          ? paidMessage
-          : 'Your cleanup evidence is awaiting review. The original reporter has 48 hours to respond before automatic approval.',
-        [{
-          text: aiDecision?.status === 'better_photos' ? 'Review feedback' : 'View report',
-          onPress: () => aiDecision?.status === 'better_photos'
-            ? navigation.replace('CleanupFeedback', { cleanupId: context.attempt.id })
-            : navigation.navigate('App', {
-              screen: 'Map',
-              params: { reportId: context.attempt.report_id },
-            }),
-        }],
-        { cancelable: false }
-      );
+      if (aiDecision?.status === 'better_photos') {
+        Alert.alert(
+          'Better photos needed',
+          context.attempt.is_paid ? paidMessage : 'Please review the feedback and send clearer photos.',
+          [{ text: 'Review feedback', onPress: () => navigation.replace('CleanupFeedback', { cleanupId: context.attempt.id }) }],
+          { cancelable: false }
+        );
+      } else {
+        // Website finish: land back on the report with the "Photos sent" banner.
+        hapticSuccess();
+        showFlowDone({
+          bug: 'flower',
+          title: 'Photos sent',
+          text: context.attempt.is_paid ? paidMessage : 'Cleanup submitted. The reporter has 48 hours to review it.',
+        });
+        navigation.navigate('App', { screen: 'Map', params: { reportId: context.attempt.report_id } });
+      }
     } catch (error) {
       console.log('Cleanup submission error:', error);
       trackParticipationFailure('clean', 'evidence_submitted', 'evidence_submit_unconfirmed');

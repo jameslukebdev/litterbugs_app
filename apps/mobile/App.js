@@ -46,6 +46,7 @@ import FundingContributionScreen from './FundingContributionScreen';
 import PayoutSetupScreen from './PayoutSetupScreen';
 import PublicProfileScreen from './PublicProfileScreen';
 import RankCelebrationManager from './RankCelebrationManager';
+import { FlowDoneHost } from './components/FlowDone';
 import ReportUserScreen from './ReportUserScreen';
 import ResetPasswordScreen from './ResetPasswordScreen';
 import { handleAuthCallbackUrl, isBrowserAuthInProgress, AUTH_CALLBACK_PATH, PASSWORD_RECOVERY_PATH, signOut } from './lib/auth';
@@ -496,6 +497,7 @@ export default function App() {
                 onRecoveryComplete={() => setPasswordRecovery(false)}
               />
               <RankCelebrationManager />
+              <FlowDoneHost />
             </ReportsProvider>
           </ProfileProvider>
         </SessionProvider>

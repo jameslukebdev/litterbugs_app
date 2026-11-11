@@ -46,7 +46,7 @@ export default function ProfileReportList({ reports, onReportPress, emptyTitle =
 const styles = StyleSheet.create({
   row: {
     minHeight: 64,
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
     paddingVertical: 13,
     flexDirection: 'row',
     alignItems: 'center',
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.line,
   },
   copy: { flex: 1, marginRight: 8 },
-  title: { color: colors.ink, fontSize: 16, lineHeight: 22, fontWeight: '600' },
+  title: { color: colors.ink, fontSize: 16, lineHeight: 22, fontWeight: '700' },
   meta: { marginTop: 5, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
   severityDot: { width: 8, height: 8, borderRadius: 4 },
   severity: { marginRight: 6, color: colors.body, fontSize: 13, fontWeight: '600' },

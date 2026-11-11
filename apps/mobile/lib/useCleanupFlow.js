@@ -13,6 +13,7 @@ import {
 } from './payoutWorkflowGate';
 import { promptCleanupNavigation } from './promptCleanupNavigation';
 import { hapticSuccess } from './haptics';
+import { showFlowDone } from '../components/FlowDone';
 import { userMessage } from './userMessage';
 
 // What a person can do with a cleanup from the report sheet: fund it, claim it
@@ -104,6 +105,7 @@ export default function useCleanupFlow(screen) {
       if (reopenDetailsOnSuccess) setDetailsOpen(true);
 
       hapticSuccess();
+      if (!announce) showFlowDone({ bug: 'caterpillar', title: 'Cleanup claimed', text: `Send your after photos by ${new Date(claimedAttempt.claim_expires_at).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' })}.` });
       if (announce) {
         Alert.alert(
           'Cleanup claimed',

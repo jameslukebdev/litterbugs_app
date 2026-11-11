@@ -116,7 +116,7 @@ export async function loadReportFundingFeedback(reportId) {
 export async function loadMyExpiredReports(userId) {
   const { data, error } = await supabase
     .from('reports')
-    .select('id, title, funded_amount_cents, expires_at, renewal_decision_due_at, renewal_status')
+    .select('id, title, photo_paths, funded_amount_cents, expires_at, renewal_decision_due_at, renewal_status')
     .eq('user_id', userId)
     .eq('renewal_status', 'decision_required')
     .order('renewal_decision_due_at');
