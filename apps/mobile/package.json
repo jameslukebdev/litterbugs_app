@@ -6,6 +6,7 @@
     "start": "npx expo start",
     "android": "npx expo start --android",
     "ios": "npx expo start --ios",
+    "lint": "eslint .",
     "test": "vitest run",
     "web": "npx expo start --web"
   },

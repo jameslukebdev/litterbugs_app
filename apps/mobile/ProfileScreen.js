@@ -47,6 +47,7 @@ import { EmptyState, LoadFailure, PillTabs, PrimaryButton, PullRefresh } from '.
 const TERMS_URL = 'https://litterbugs.app/terms';
 const PRIVACY_URL = 'https://litterbugs.app/privacy';
 const CLEANUP_POLICY_URL = 'https://litterbugs.app/cleanup-policy';
+const CLEANUP_SAFETY_URL = 'https://litterbugs.app/cleanup-safety';
 
 const openLitterbugsLink = async (url) => {
   try {
@@ -517,6 +518,7 @@ export default function ProfileScreen({ navigation, route }) {
         <Text style={styles.settingsHeading}>Privacy & policies</Text>
         <View style={styles.settingsGroup}>
           <ActionRow appearance="profile" divided label="About photo review" icon="images-outline" onPress={() => openScreen('SettingsInfo', { topic: 'photos' })} />
+          <ActionRow appearance="profile" divided label="Cleanup safety" icon="shield-outline" onPress={() => openLitterbugsLink(CLEANUP_SAFETY_URL)} />
           <ActionRow appearance="profile" divided label="Cleanup and reward policy" icon="leaf-outline" onPress={() => openLitterbugsLink(CLEANUP_POLICY_URL)} />
           <ActionRow appearance="profile" divided label="Privacy policy" icon="shield-checkmark-outline" onPress={() => openLitterbugsLink(PRIVACY_URL)} />
           <ActionRow appearance="profile" label="Terms of use" icon="document-text-outline" onPress={() => openLitterbugsLink(TERMS_URL)} />
