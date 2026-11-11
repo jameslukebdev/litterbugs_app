@@ -14,6 +14,7 @@ import { LoadingButtonContent } from '../BrandedLoadingState';
 import { formatUsd } from '../lib/funding';
 import { withdrawOwnReport, reportWithdrawalErrorMessage } from '../lib/reportWithdrawal';
 import styles from '../styles/MapScreen.styles';
+import { hapticTap } from '../lib/haptics';
 import { colors } from '../lib/theme';
 // Website severity words: green, orange, red.
 const SEVERITY_INK = { Low: colors.green, Medium: colors.yellow, High: colors.red };
@@ -21,8 +22,8 @@ const formatShortDate = value => new Date(value).toLocaleDateString('en-US', { m
 
 // The map owns report operations; this component owns the detail presentation.
 export default function ReportDetailsSheet({ state, actions }) {
-  const { detailsOpen, reportShareSheetOpen, reportShareBusyAction, selectedReport, insets, reportDetailsPreparing, selectedReportHasUtilityActions, completedCleanupImpact, completedCleanupImpactLoading, completedCleanupImpactError, reportHeroWidth, currentUserId, reportPhotoUrls, photosLoading, geminiReviewEnabled, userOwnsSelectedReport, reportFundingFeedback, cleanupDiscoverable, cleanupStatus, currentUserIsCleaner, selectedCleanupAttempt, cleanupAttemptLoading, cleanupActionBusy, canEditOrDeleteSelectedReport, selectedReportCanOpenFunding, payoutGateBusy, selectedReportIsShareable } = state;
-  const { setReportShareSheetOpen, closeReportDetails, setDetailsOpen, setSelectedReport, navigation, setCompletedCleanupImpact, setCompletedCleanupImpactError, setCompletedCleanupImpactLoading, setCompletedCleanupImpactReloadKey, openCleanupNavigation, openCleanupSubmission, confirmCleanupRelease, openCleanupFeedback, openCleanupReview, beginCleanupClaim, openFundingContribution, removeReport, setForm, setEditingReportId, setIsEditing, setDraftCoord, resetReportWizard, setFormOpen, shareSelectedReport, shareSelectedReportLink, shareSelectedReportToInstagram, editReportPhotos } = actions;
+  const { detailsOpen, reportShareSheetOpen, reportShareBusyAction, selectedReport, insets, reportDetailsPreparing, selectedReportHasUtilityActions, completedCleanupImpact, completedCleanupImpactLoading, completedCleanupImpactError, reportHeroWidth, currentUserId, reportPhotoUrls, photosLoading, geminiReviewEnabled, userOwnsSelectedReport, reportFundingFeedback, cleanupDiscoverable, cleanupStatus, currentUserIsCleaner, selectedCleanupAttempt, cleanupAttemptLoading, cleanupActionBusy, canEditOrDeleteSelectedReport, selectedReportCanOpenFunding, payoutGateBusy, selectedReportIsShareable, isFavorite, favoritesReady } = state;
+  const { setReportShareSheetOpen, closeReportDetails, setDetailsOpen, setSelectedReport, navigation, setCompletedCleanupImpact, setCompletedCleanupImpactError, setCompletedCleanupImpactLoading, setCompletedCleanupImpactReloadKey, openCleanupNavigation, openCleanupSubmission, confirmCleanupRelease, openCleanupFeedback, openCleanupReview, beginCleanupClaim, openFundingContribution, removeReport, setForm, setEditingReportId, setIsEditing, setDraftCoord, resetReportWizard, setFormOpen, shareSelectedReport, shareSelectedReportLink, shareSelectedReportToInstagram, editReportPhotos, toggleFavorite } = actions;
   const editSelectedReport = () => editReportPhotos(selectedReport);
   const confirmDeleteReport = () => {
 
@@ -106,6 +107,19 @@ export default function ReportDetailsSheet({ state, actions }) {
           style={[styles.reportPhotoControl, styles.reportPhotoShareControl, { top: reportControlsTop }]}
         >
           <Ionicons name="share-outline" size={20} color={colors.ink} />
+        </TouchableOpacity>
+      ) : null}
+
+      {/* Website report sheet: the heart sits with Share in the top bar. */}
+      {favoritesReady && selectedReport?.id ? (
+        <TouchableOpacity
+          onPress={() => { hapticTap(); toggleFavorite(selectedReport.id); }}
+          accessibilityRole="button"
+          accessibilityLabel={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+          accessibilityState={{ selected: Boolean(isFavorite) }}
+          style={[styles.reportPhotoControl, styles.reportPhotoFavoriteControl, { top: reportControlsTop }, !selectedReportIsShareable && styles.reportPhotoShareControl]}
+        >
+          <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={20} color={isFavorite ? colors.severityHigh : colors.ink} />
         </TouchableOpacity>
       ) : null}
 
@@ -218,6 +232,14 @@ export default function ReportDetailsSheet({ state, actions }) {
 
         {selectedReport?.cleanup_state !== 'completed' ? (
           <ReportPhotoGallery report={selectedReport} urls={reportPhotoUrls} loading={photosLoading} width={reportHeroWidth} />
+        ) : null}
+
+        {/* Website report sheet: directions sit right under the photos. */}
+        {selectedReport?.cleanup_state !== 'completed' && !selectedReport?.cancelled_at && !selectedReport?.expired_at ? (
+          <TouchableOpacity style={styles.reportDirectionsButton} onPress={openCleanupNavigation} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Get directions to this report">
+            <Ionicons name="navigate-outline" size={18} color={colors.primaryDark} />
+            <Text style={styles.reportDirectionsText}>Get directions</Text>
+          </TouchableOpacity>
         ) : null}
 
         {geminiReviewEnabled

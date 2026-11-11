@@ -830,8 +830,9 @@ reportDetailsLoadingClose: {
 
 /* Main vertical report scroll */
 
+// Content starts below the top bar (favourite, share, close), as on the website.
 reportPostScrollContent: {
-  paddingTop: 72,
+  paddingTop: 130,
   paddingBottom: 24,
 },
 
@@ -876,6 +877,10 @@ reportPhotoControl: {
 },
 reportPhotoCloseControl: { right: 32, width: 44 },
 reportPhotoShareControl: { right: 84, width: 44 },
+reportPhotoFavoriteControl: { right: 136, width: 44 },
+// Website "Get directions": white, thin lilac line, purple words.
+reportDirectionsButton: { minHeight: 48, marginHorizontal: 22, marginTop: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, borderWidth: 1, borderBottomWidth: 3, borderColor: colors.line, backgroundColor: colors.white },
+reportDirectionsText: { color: colors.primaryDark, fontSize: 15, fontWeight: '800' },
 // Website report-action-fund / report-action-clean: coloured fill with a 3-point inset edge.
 reportActionRow: { flexDirection: 'row', gap: 10 },
 reportActionButton: { flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, borderWidth: 1, borderBottomWidth: 4 },
@@ -896,20 +901,21 @@ reportPostHeader: {
 },
 
 // Website report header: white, colour only in the state's bug and words.
-websiteReportHeader: { backgroundColor: colors.white, paddingTop: 18, paddingBottom: 18, borderBottomWidth: 1, borderBottomColor: colors.mist },
+websiteReportHeader: { backgroundColor: colors.white, paddingTop: 4, paddingBottom: 18, borderBottomWidth: 1, borderBottomColor: colors.mist },
 websiteReportState: { marginBottom: 6, flexDirection: 'row', alignItems: 'center', gap: 8 },
 websiteReportStateText: { flexShrink: 1, fontSize: 16, lineHeight: 22, fontWeight: '800' },
-websiteReportTitle: { marginTop: 0, marginBottom: 10, paddingRight: 104, fontSize: 24, lineHeight: 28 },
+websiteReportTitle: { marginTop: 0, marginBottom: 10, fontSize: 24, lineHeight: 28 },
 websiteReportFacts: { color: colors.muted, fontSize: 13, lineHeight: 18 },
-websiteReporterRow: { minHeight: 56, paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 10 },
+websiteReporterRow: { minHeight: 56, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 10 },
 websiteReporterName: { color: colors.ink, fontSize: 14, fontWeight: '700' },
 
 websiteReportMeta: { marginTop: 2, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 14, rowGap: 4 },
 websiteReportSeverity: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 websiteReportSeverityDot: { width: 8, height: 8, borderRadius: 4 },
 websiteReportSeverityText: { fontSize: 13, fontWeight: '800' },
-websiteByline: { marginTop: 22, borderWidth: 1, borderColor: colors.line, borderRadius: 16 },
-websiteBylineLabel: { paddingHorizontal: 16, paddingTop: 14, color: colors.muted, fontSize: 12, fontWeight: '800' },
+// Website: the reporter is a plain row under a thin line, not a boxed card.
+websiteByline: { marginTop: 17, paddingTop: 17, marginBottom: 12, borderTopWidth: 1, borderTopColor: colors.edge },
+websiteBylineLabel: { color: colors.muted, fontSize: 12, fontWeight: '800' },
 websiteAbout: { marginTop: 6 },
 websiteAboutText: { color: colors.body, fontSize: 15, lineHeight: 22 },
 websiteFact: { gap: 5, paddingTop: 17, marginTop: 17, borderTopWidth: 1, borderTopColor: colors.edge },
