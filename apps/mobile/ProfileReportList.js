@@ -2,6 +2,7 @@ import RemotePhoto from './components/RemotePhoto';
 import { useReports } from './lib/reports';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import BrandBug from './components/BrandBug';
 import { colors } from './lib/theme';
 
 const severityColor = (severity) => {
@@ -15,7 +16,7 @@ export default function ProfileReportList({ reports, onReportPress, emptyTitle =
   if (!reports?.length) {
     return (
       <View style={styles.empty}>
-        <Ionicons name="map-outline" size={28} color={colors.muted} />
+        <BrandBug kind="ladybug" size={36} />
         <Text style={styles.emptyTitle}>{emptyTitle}</Text>
         <Text style={styles.emptyText}>{emptyText}</Text>
       </View>

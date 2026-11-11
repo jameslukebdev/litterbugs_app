@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import CompactRankBadge from './CompactRankBadge';
+import LoadingBee from './components/LoadingBee';
 import BrandedLoadingState from './BrandedLoadingState';
 import ProfileAvatar from './ProfileAvatar';
 import ProfileReportList from './ProfileReportList';
@@ -116,7 +117,7 @@ export default function PublicProfileScreen({ navigation, route }) {
       <View style={styles.identity}>
         <View style={styles.identityTop}><View style={styles.avatarFrame}><ProfileAvatar profile={profile} size={72} /></View><View style={styles.identityCopy}>
         <Text style={styles.name}>{profile.display_name}</Text>
-        <CompactRankBadge userId={profile.id} style={styles.rankBadge} /></View></View>
+        <CompactRankBadge userId={profile.id} appearance="plain" style={styles.rankBadge} /></View></View>
         {profile.username ? <Text style={styles.username}>@{profile.username}</Text> : null}
         {profile.location ? (
           <View style={styles.locationRow}>
@@ -130,18 +131,18 @@ export default function PublicProfileScreen({ navigation, route }) {
         </Text>
       </View>
 
-      <View style={styles.statCard}>
-        <Text style={styles.statValue}>{profile.visible_report_count ?? '—'}</Text>
-        <Text style={styles.statLabel}>Reports on this profile</Text>
-      </View>
+      {/* Website member header: the count sits with the profile as plain words. */}
+      <Text style={styles.statLine}>
+        <Text style={styles.statValue}>{profile.visible_report_count ?? '—'}</Text> {profile.visible_report_count === 1 ? 'report' : 'reports'}
+      </Text>
 
       <Text style={styles.sectionTitle}>Reports</Text>
       <View style={styles.tabs}>
-        {['active', 'completed'].map(value => <TouchableOpacity key={value} accessibilityRole="tab" accessibilityState={{ selected: view === value }} onPress={() => setView(value)} style={[styles.tab, view === value && styles.selectedTab]}><Text style={styles.tabText}>{value === 'active' ? 'Active reports' : 'Completed reports'}</Text></TouchableOpacity>)}
+        {['active', 'completed'].map(value => <TouchableOpacity key={value} accessibilityRole="tab" accessibilityState={{ selected: view === value }} onPress={() => setView(value)} style={[styles.tab, view === value && styles.selectedTab]}><Text style={[styles.tabText, view === value && styles.tabTextSelected]}>{value === 'active' ? 'Active reports' : 'Completed reports'}</Text></TouchableOpacity>)}
       </View>
       {activity.error ? <TouchableOpacity accessibilityRole="button" style={styles.retry} onPress={activity.refresh}><Text>Couldn’t refresh these reports. Retry.</Text></TouchableOpacity> : null}
       </>}
-      ListEmptyComponent={activity.loading ? <BrandedLoadingState compact title="Loading reports…" /> : !activity.error ? <ProfileReportList reports={[]} emptyTitle={view === 'completed' ? 'No completed reports' : 'No active reports'} /> : null}
+      ListEmptyComponent={activity.loading ? <LoadingBee label="Loading reports" /> : !activity.error ? <ProfileReportList reports={[]} emptyTitle={view === 'completed' ? 'No completed reports' : 'No active reports'} /> : null}
       ListFooterComponent={<>
         {activity.moreError ? <Text style={styles.notice}>Couldn’t load older reports. Your current list is still available.</Text> : null}
         {activity.nextCursor ? <TouchableOpacity disabled={activity.loading || activity.loadingMore} accessibilityRole="button" style={styles.retry} onPress={activity.loadMore}><Text style={styles.tabText}>{activity.loadingMore ? 'Loading older reports…' : activity.moreError ? 'Retry older reports' : 'Load older reports'}</Text></TouchableOpacity> : null}
@@ -172,10 +173,11 @@ const styles = StyleSheet.create({
   actionTitle: { fontSize: 18, lineHeight: 24, fontFamily: fonts.heading, color: colors.ink, marginBottom: 12 },
   actionOption: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
   actionText: { fontSize: 15, lineHeight: 22, color: colors.ink },
-  tabs: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 14, padding: 4, gap: 4, borderRadius: 13, backgroundColor: colors.mist },
-  tab: { flex: 1, padding: 12, minHeight: 44, justifyContent: 'center', alignItems: 'center', borderRadius: 10 },
-  selectedTab: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line },
-  tabText: { color: colors.primaryDark, fontWeight: '700', textAlign: 'center' },
+  tabs: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 14, gap: 8 },
+  tab: { flex: 1, padding: 10, minHeight: 44, justifyContent: 'center', alignItems: 'center', borderRadius: 22, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.white },
+  selectedTab: { borderWidth: 2, borderColor: colors.primary },
+  tabTextSelected: { color: colors.primaryDark, fontWeight: '800' },
+  tabText: { color: colors.muted, fontWeight: '600', textAlign: 'center' },
   notice: { padding: 16, color: colors.muted },
   retry: { minHeight: 44, padding: 12, justifyContent: 'center', alignItems: 'center' },
   container: { flex: 1, backgroundColor: colors.white },
@@ -183,7 +185,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30, backgroundColor: colors.white },
   headerAction: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   identityTop: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  avatarFrame: { padding: 3, borderWidth: 1, borderColor: colors.line, borderRadius: 40 },
+  avatarFrame: { alignSelf: 'flex-start' },
   identityCopy: { flex: 1 },
   identity: { paddingHorizontal: 20, paddingTop: 24 },
   name: { color: colors.ink, fontSize: 23, lineHeight: 29, fontFamily: fonts.heading },
@@ -193,10 +195,9 @@ const styles = StyleSheet.create({
   location: { color: colors.body, fontSize: 14 },
   bio: { maxWidth: 360, marginTop: 12, color: colors.body, fontSize: 15, lineHeight: 22 },
   joined: { marginTop: 10, color: colors.muted, fontSize: 13 },
-  statCard: { margin: 20, marginBottom: 2, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.primaryTint },
-  statValue: { color: colors.primaryDark, fontSize: 24, lineHeight: 31, fontWeight: '600' },
-  statLabel: { marginTop: 3, color: colors.muted, fontSize: 14, fontWeight: '700' },
-  sectionTitle: { marginHorizontal: 20, marginTop: 27, marginBottom: 9, color: colors.ink, fontSize: 17, fontWeight: '600' },
+  statLine: { marginHorizontal: 20, marginTop: 12, color: '#45434D', fontSize: 15 },
+  statValue: { color: colors.ink, fontSize: 17, fontWeight: '900' },
+  sectionTitle: { marginHorizontal: 20, marginTop: 24, marginBottom: 10, color: colors.ink, fontSize: 20, fontFamily: fonts.heading },
   card: { marginHorizontal: 16, overflow: 'hidden', borderRadius: 16, backgroundColor: colors.white },
   stateTitle: { marginTop: 16, color: colors.ink, fontSize: 21, fontFamily: fonts.heading, textAlign: 'center' },
   stateText: { maxWidth: 340, marginTop: 8, color: colors.muted, fontSize: 15, lineHeight: 22, textAlign: 'center' },
