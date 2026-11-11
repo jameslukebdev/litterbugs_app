@@ -745,6 +745,21 @@ it.each(['drag', 'filter'])('does not attribute an interrupted search to later %
   expect(telemetry.discovery.mock.calls.some(([stage]) => stage.startsWith('search_'))).toBe(false);
 });
 
+it('does not revive a homepage search after the visitor moves the map before results arrive', async () => {
+  const place = { id: 'header-choice', label: 'Private result', subtitle: 'City', latitude: 1, longitude: 2, bounds: { north: 2, south: 0, west: 1, east: 3 } };
+  let finish!: (value: { reports: MappableReport[]; truncated: boolean }) => void;
+  state.discovery.mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+  rememberMapSearchSelection(place.id, 'toolbar_search');
+  render(<MapExperience initialReports={[]} initialPlace={place} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+  await waitFor(() => expect(state.tiles).toBeTruthy());
+  act(() => { state.tiles!(); state.idle!(); });
+  await waitFor(() => expect(state.discovery).toHaveBeenCalled());
+  act(() => state.drag!());
+  await act(async () => finish({ reports: [], truncated: false }));
+  await waitFor(() => expect(telemetry.discovery).toHaveBeenCalledWith('results_empty', expect.anything()));
+  expect(telemetry.discovery).not.toHaveBeenCalledWith('search_results_empty', expect.anything());
+});
+
 it('finds a different report on the empty desktop map while keeping the current report open', async () => {
   vi.stubGlobal('matchMedia', (query: string) => ({
     matches: query === '(min-width: 1100px)', addEventListener() {}, removeEventListener() {},

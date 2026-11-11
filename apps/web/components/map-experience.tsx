@@ -146,9 +146,11 @@ export function MapExperience({
   }, [searchPlace]);
   const [discoveryArea, setDiscoveryArea] = useState<DiscoveryArea | null>(null);
   const [restoredFilters, setDiscoveryFilters] = useState<DiscoveryFilters | null>(null);
+  const discoveryFiltersRef = useRef<DiscoveryFilters | null>(null);
   const discoveryFilters = restoredFilters ?? DEFAULT_DISCOVERY_FILTERS;
   const [closestPreview, setClosestPreview] = useState<{ report: MappableReport; filters: DiscoveryFilters } | null>(null);
   const updateDiscoveryFilters = useCallback((filters: DiscoveryFilters) => {
+    discoveryFiltersRef.current = filters;
     setDiscoveryFilters(filters);
     setClosestPreview(current => current && Object.entries(current.filters).every(([key, value]) =>
       value === filters[key as keyof DiscoveryFilters]) ? current : null);
@@ -263,10 +265,11 @@ export function MapExperience({
         surface: 'map', filtered, ...(currentResponse.error ? {} : { result_bucket: reportResultBucket(currentResponse.reports.length), truncated: currentResponse.truncated }),
       });
     }
-    const handoff = !pendingPlaceSearch.current ? consumeMapSearchSelection(currentResponse.search.placeId) : null;
-    const search = pendingPlaceSearch.current ?? (handoff ? { ...handoff, filters: currentResponse.search.filters, awaitingViewport: false } : null);
+    const search = pendingPlaceSearch.current;
     // fitBounds can produce an intermediate response before the final map idle.
     if (search?.awaitingViewport) return;
+    // A homepage search may still be resolving its place after the map's first idle.
+    if (search && Date.now() - search.started <= 30000 && currentResponse.search.filters === search.filters && currentResponse.search.placeId !== search.placeId) return;
     placeSearchResults.current = null;
     pendingPlaceSearch.current = null;
     if (search && Date.now() - search.started <= 30000 && currentResponse.search.placeId === search.placeId && currentResponse.search.filters === search.filters) {
@@ -554,6 +557,8 @@ export function MapExperience({
         // Search is usable before Google Maps finishes loading. A choice made
         // in this session must outrank the previous URL or saved viewport.
         const selectedWhileLoading = searchPlaceRef.current;
+        const handoff = consumeMapSearchSelection(selectedWhileLoading?.id ?? areaId ?? undefined);
+        if (handoff && !pendingPlaceSearch.current) pendingPlaceSearch.current = { ...handoff, filters: discoveryFiltersRef.current, awaitingViewport: true };
         const memory = selectedWhileLoading
           ? { latitude: selectedWhileLoading.latitude, longitude: selectedWhileLoading.longitude, zoom: 12, place: selectedWhileLoading }
           : sharedMap ? { ...sharedMap, place: stored?.place?.id === areaId ? stored.place : null } : stored;

@@ -34,7 +34,8 @@ They cannot talk to each other directly. This file is how they share context.
 - Bundle measurement version is now `web-participation-2026-11-10-v5`.
   Search report-open measurement expires after five minutes or another result
   response, navigation/clear or map gesture. No backfill or deployment.
-- 104 focused tests, scoped lint and TypeScript passed. Isolated phone-sized
+- 105 focused tests, scoped lint and TypeScript passed (final map suite: 50).
+  Isolated phone-sized
   Chrome on localhost selected a Google suggestion and rendered the map/pins;
   no page errors, framework overlay or visitor analytics requests.
 - Further Clarity review: production-only, last seven days had five recordings
