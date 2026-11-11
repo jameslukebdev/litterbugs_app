@@ -1,8 +1,8 @@
 import { reportDraftSummary as loadReportDraft } from './lib/savedReportDraft';
 import ActionRow from './components/NavigationRow';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useScrollToTop } from '@react-navigation/native';
 import {
-  ActivityIndicator,
   Alert,
   RefreshControl,
   ScrollView,
@@ -43,6 +43,8 @@ import { groupAccountReports } from './lib/accountReports';
 import { useSession } from './lib/session';
 import { colors, fonts } from './lib/theme';
 import BrandBug from './components/BrandBug';
+import LoadingBee from './components/LoadingBee';
+import { EmptyState, LoadFailure, PillTabs, PrimaryButton } from './components/ui';
 
 const TERMS_URL = 'https://litterbugs.app/terms';
 const PRIVACY_URL = 'https://litterbugs.app/privacy';
@@ -198,31 +200,13 @@ function CompletedCleanupRow({ attempt, onPress, divided }) {
 
 function RankingCard({ ranking, loading, error, onRetry }) {
   if (!ranking) {
-    const showingLoader = loading || !error;
-
+    // One quiet loader, or one failure with a retry, while the rank is unknown.
     return (
-      <TouchableOpacity
-        style={styles.rankCard}
-        onPress={error ? onRetry : undefined}
-        disabled={!error}
-        activeOpacity={0.76}
-        accessibilityRole={error ? 'button' : undefined}
-        accessibilityLabel={error ? 'Retry loading rank' : 'Loading rank'}
-      >
-        <View style={styles.rankSummaryRow}>
-          <View style={styles.rankArtworkStage}><Ionicons name={showingLoader ? 'ribbon-outline' : 'cloud-offline-outline'} size={34} color={colors.primary} /></View>
-          <View style={styles.rankSummaryCopy}>
-            <Text style={styles.rankEyebrow}>Community rank</Text>
-            <Text style={styles.rankName}>{showingLoader ? 'Loading…' : 'Unavailable'}</Text>
-          </View>
-          <Text style={styles.rankPoints}>—</Text>
-        </View>
-        <View style={styles.rankProgressSection}>
-          <View style={styles.rankProgressHeader}><Text style={styles.rankProgressTitle}>{error ? 'Tap to try again' : 'Your progress'}</Text><Text style={styles.rankProgressPercent}>—</Text></View>
-          <View style={styles.rankProgressTrack} />
-          <Text style={styles.rankRemaining}>{error ? 'Couldn’t load your rank' : 'Loading your rank…'}</Text>
-        </View>
-      </TouchableOpacity>
+      <View style={styles.rankCard}>
+        {loading || !error
+          ? <LoadingBee label="Loading rank" size={48} style={styles.rankPending} />
+          : <LoadFailure title="Couldn’t load your rank" onRetry={onRetry} style={styles.rankPending} />}
+      </View>
     );
   }
 
@@ -293,13 +277,7 @@ function SignedOutProfile({ navigation, bottomPadding }) {
       <Text style={styles.signedOutText}>
         Sign in to submit litter reports, build your public profile, and keep your activity connected across devices.
       </Text>
-      <TouchableOpacity
-        style={styles.primaryButton}
-        onPress={() => navigation.navigate('Auth')}
-        accessibilityRole="button"
-      >
-        <Text style={styles.primaryButtonText}>Sign in or create account</Text>
-      </TouchableOpacity>
+      <PrimaryButton label="Sign in or create account" onPress={() => navigation.navigate('Auth')} style={styles.primaryButton} />
       <View style={styles.signedOutSupport}>
         <ActionRow appearance="profile" divided={true} label="Get help" icon="help-circle-outline" onPress={() => navigation.navigate('SettingsInfo', { topic: 'help' })} />
         <ActionRow appearance="profile" divided={true} label="Support Litterbugs" icon="heart-outline" onPress={() => navigation.navigate('SettingsInfo', { topic: 'support' })} />
@@ -324,6 +302,9 @@ export default function ProfileScreen({ navigation, route }) {
   const { reports, loading: reportsLoading, error: reportsError, hasLoaded: reportsHaveLoaded, refresh: refreshReports } = useAccountReports(permanent ? user.id : null);
   const [reportView, setReportView] = useState('active');
   const insets = useSafeAreaInsets();
+  // Tapping the Profile tab again returns the page to the top.
+  const scrollRef = useRef(null);
+  useScrollToTop(scrollRef);
   const [signingOut, setSigningOut] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const cleanups = useFocusedResource(useCallback(() => loadCurrentUserCleanupSummary(user.id), [user?.id]), { enabled: permanent && section !== 'settings', cacheKey: `cleanups:${user?.id}` });
@@ -445,6 +426,7 @@ export default function ProfileScreen({ navigation, route }) {
 
   return (
     <ScrollView
+      ref={scrollRef}
       style={[styles.container, (section === 'overview' || section === 'activity' || section === 'payments' || section === 'settings') && styles.overviewContainer]}
       contentContainerStyle={{ paddingBottom: bottomPadding }}
       showsVerticalScrollIndicator={false}
@@ -526,7 +508,7 @@ export default function ProfileScreen({ navigation, route }) {
           </View>
           <Text style={styles.activityHeading}>Cleanup earnings</Text>
           <View style={styles.card}>
-            {cleanupsError && !cleanups.hasLoaded ? <ActionRow label="Retry loading earnings" icon="refresh-outline" onPress={refreshCleanups} /> : cleanupsLoading && !cleanups.hasLoaded ? <Text style={{ padding: 20, color: colors.muted }}>Loading earnings…</Text> : cleanupSummary.completed.filter(attempt => attempt.is_paid).length ? cleanupSummary.completed.filter(attempt => attempt.is_paid).map((attempt, index) => <CompletedCleanupRow key={attempt.id} attempt={attempt} divided={index > 0} onPress={() => openReport(attempt.report_id)} />) : <View style={styles.completedCleanupEmpty}><BrandBug kind="bee" size={36} /><Text style={styles.activeCleanupEmptyTitle}>No cleanup earnings yet</Text><Text style={styles.activeCleanupEmptyText}>Rewards from your completed paid cleanups will appear here.</Text></View>}
+            {cleanupsError && !cleanups.hasLoaded ? <LoadFailure title="Couldn’t load earnings" onRetry={refreshCleanups} /> : cleanupsLoading && !cleanups.hasLoaded ? <LoadingBee label="Loading earnings" size={48} /> : cleanupSummary.completed.filter(attempt => attempt.is_paid).length ? cleanupSummary.completed.filter(attempt => attempt.is_paid).map((attempt, index) => <CompletedCleanupRow key={attempt.id} attempt={attempt} divided={index > 0} onPress={() => openReport(attempt.report_id)} />) : <EmptyState bug="bee" title="No cleanup earnings yet" text="Rewards from your completed paid cleanups will appear here." />}
           </View>
           <ReporterEarnings userId={user.id} onOpenReport={openReport} />
         </>
@@ -535,9 +517,7 @@ export default function ProfileScreen({ navigation, route }) {
       {section === 'activity' ? <>
       {savedDraft.data ? <View style={styles.card}><ActionRow label="Continue draft" icon="create-outline" onPress={() => openAppTab('Map', { resumeDraft: Date.now() })} /><Text style={{ padding: 16, color: colors.muted }}>Saved {new Date(savedDraft.data.savedAt).toLocaleString()}</Text></View> : null}
       {savedDraft.error ? <ActionRow label="Retry loading your draft" icon="refresh-outline" onPress={savedDraft.refresh} /> : null}
-      <View style={[styles.activityTabs, fontScale > 1.5 && { flexDirection: 'column' }]}>
-        {[['current', 'Current cleanups'], ['history', 'Cleanup history'], ['reports', 'My reports']].map(([value, label]) => <TouchableOpacity key={value} accessibilityRole="tab" accessibilityState={{ selected: activityView === value }} onPress={() => setActivityView(value)} style={[styles.activityTab, activityView === value && styles.activityTabSelected]}><Text style={[styles.activityTabText, activityView === value && { color: colors.primaryDark }]}>{label}</Text></TouchableOpacity>)}
-      </View>
+      <PillTabs style={styles.activityTabs} stacked={fontScale > 1.5} value={activityView} onChange={setActivityView} options={[['current', 'Current cleanups'], ['history', 'Cleanup history'], ['reports', 'My reports']]} />
       {activityView !== 'reports' ? <>
       <Text style={styles.activityHeading}>Cleanups you performed</Text>
       <View style={styles.cleanupStatsCard}>
@@ -549,19 +529,11 @@ export default function ProfileScreen({ navigation, route }) {
 
       {cleanupsError && cleanups.hasLoaded ? <ActionRow label="Couldn’t update cleanups. Try again" icon="refresh-outline" onPress={refreshCleanups} /> : null}
       {activityView === 'current' ? <>
-      <Text style={styles.subsectionTitle}>Current cleanups</Text>
-      <View style={[styles.card, styles.activeCleanupCard]}>
+      <View style={[styles.card, styles.activeCleanupCard, { marginTop: 16 }]}>
         {cleanupsLoading && cleanupSummary.current.length === 0 ? (
-          <View style={styles.activeCleanupEmpty}>
-            <ActivityIndicator color={colors.muted} />
-            <Text style={styles.activeCleanupEmptyText}>Checking your cleanups…</Text>
-          </View>
+          <LoadingBee label="Checking your cleanups" size={48} />
         ) : cleanupsError && !cleanups.hasLoaded ? (
-          <TouchableOpacity style={styles.activeCleanupEmpty} onPress={refreshCleanups}>
-            <Ionicons name="cloud-offline-outline" size={27} color={colors.muted} />
-            <Text style={styles.activeCleanupEmptyTitle}>Couldn’t load cleanups</Text>
-            <Text style={styles.activeCleanupEmptyText}>Tap to try again.</Text>
-          </TouchableOpacity>
+          <LoadFailure title="Couldn’t load cleanups" onRetry={refreshCleanups} />
         ) : cleanupSummary.current.length > 0 ? (
           cleanupSummary.current.map((attempt, index) => (
             <ActiveCleanupRow
@@ -572,20 +544,14 @@ export default function ProfileScreen({ navigation, route }) {
             />
           ))
         ) : (
-          <View style={styles.activeCleanupEmpty}>
-            <BrandBug kind="ladybug" size={36} />
-            <Text style={styles.activeCleanupEmptyTitle}>No active cleanups</Text>
-            <Text style={styles.activeCleanupEmptyText}>Claimed and awaiting-review cleanups will appear here.</Text>
-            <TouchableOpacity accessibilityRole="button" onPress={() => openAppTab('Reports')} style={styles.browseReportsButton}><Ionicons name="list-outline" size={18} color={colors.primary} /><Text style={styles.browseReportsText}>Browse reports</Text><Ionicons name="arrow-forward" size={17} color={colors.primary} /></TouchableOpacity>
-          </View>
+          <EmptyState bug="ladybug" title="No active cleanups" text="Claimed and awaiting-review cleanups will appear here." action={{ label: 'Browse reports', onPress: () => openAppTab('Reports') }} actionStyle="link" />
         )}
       </View>
 
       </> : null}
       {activityView === 'history' ? <>
-      <Text style={styles.subsectionTitle}>Completed cleanups</Text>
       <View style={styles.card}>
-        {cleanupsLoading && !cleanups.hasLoaded ? <Text style={{ padding: 20, color: colors.muted }}>Loading completed cleanups…</Text> : cleanupsError && !cleanups.hasLoaded ? <ActionRow label="Retry loading completed cleanups" icon="refresh-outline" onPress={refreshCleanups} /> : cleanupSummary.completed.length > 0 ? (
+        {cleanupsLoading && !cleanups.hasLoaded ? <LoadingBee label="Loading completed cleanups" size={48} /> : cleanupsError && !cleanups.hasLoaded ? <LoadFailure title="Couldn’t load cleanups" onRetry={refreshCleanups} /> : cleanupSummary.completed.length > 0 ? (
           cleanupSummary.completed.map((attempt, index) => (
             <CompletedCleanupRow
               key={attempt.id}
@@ -595,27 +561,16 @@ export default function ProfileScreen({ navigation, route }) {
             />
           ))
         ) : (
-          <View style={styles.completedCleanupEmpty}>
-            <BrandBug kind="flower" size={36} />
-            <Text style={styles.activeCleanupEmptyTitle}>No completed cleanups yet</Text>
-            <Text style={styles.activeCleanupEmptyText}>Your completed cleanup history will appear here.</Text>
-          </View>
+          <EmptyState bug="flower" title="No completed cleanups yet" text="Your completed cleanup history will appear here." />
         )}
       </View>
 
       </> : null}
       {activityView === 'reports' ? <>
-      <Text style={styles.activityHeading}>My reports</Text>
       {reportsError && reportsHaveLoaded ? <ActionRow label="Couldn’t update reports. Try again" icon="refresh-outline" onPress={refreshReports} /> : null}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginHorizontal: 20, marginBottom: 14 }}>
-        {[['active', 'Active'], ['completed', 'Completed'], ['closed', 'Closed']].map(([value, label]) => (
-          <TouchableOpacity key={value} accessibilityRole="tab" accessibilityState={{ selected: reportView === value }} onPress={() => setReportView(value)} style={{ minHeight: 44, paddingHorizontal: 14, justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: reportView === value ? colors.primaryLight : colors.line, backgroundColor: reportView === value ? colors.primarySoft : colors.white }}>
-            <Text style={{ color: colors.primaryDark, fontWeight: '600' }}>{label} ({reportsError && !reportsHaveLoaded ? '—' : !reportsHaveLoaded ? '…' : reportGroups[value].length})</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <PillTabs fill={false} style={styles.reportTabs} value={reportView} onChange={setReportView} options={[['active', 'Active'], ['completed', 'Completed'], ['closed', 'Closed']].map(([value, label]) => [value, `${label} (${reportsError && !reportsHaveLoaded ? '—' : !reportsHaveLoaded ? '…' : reportGroups[value].length})`])} />
       <View style={styles.card}>
-        {reportsLoading && !reportsHaveLoaded ? <Text style={{ padding: 20, color: colors.muted }}>Loading your reports…</Text> : reportsError && !reportsHaveLoaded ? <ActionRow label="Retry loading your reports" icon="refresh-outline" onPress={refreshReports} /> : <ProfileReportList
+        {reportsLoading && !reportsHaveLoaded ? <LoadingBee label="Loading your reports" size={48} /> : reportsError && !reportsHaveLoaded ? <LoadFailure title="Couldn’t load your reports" onRetry={refreshReports} /> : <ProfileReportList
           reports={reportGroups[reportView]}
           emptyTitle={`No ${reportView} reports`}
           emptyText="Reports you submit appear here, wherever you browse on the map."
@@ -623,7 +578,7 @@ export default function ProfileScreen({ navigation, route }) {
         />}
       </View>
 
-      {fundingSchemaReady ? <View style={[styles.card, { marginTop: 16 }]}><ActionRow label="Reports needing attention" icon="calendar-outline" onPress={() => openScreen('ExpiredReports')} /></View> : null}
+      {fundingSchemaReady ? <View style={[styles.card, { marginTop: 16 }]}><ActionRow label="Expired reports" icon="calendar-outline" onPress={() => openScreen('ExpiredReports')} /></View> : null}
       </> : null}
       </> : null}
 
@@ -669,14 +624,9 @@ const styles = StyleSheet.create({
   settingsGroup: { marginHorizontal: 20, borderRadius: 18, borderWidth: 1, borderColor: colors.line, overflow: 'hidden', backgroundColor: colors.white },
   settingsFootnote: { marginHorizontal: 24, marginTop: 12, fontSize: 12, lineHeight: 18, color: colors.muted },
   container: { flex: 1, backgroundColor: colors.mist },
-  activityTabs: { flexDirection: 'row', marginHorizontal: 20, marginTop: 16, marginBottom: 8, gap: 8 },
-  activityTab: { flex: 1, minHeight: 44, justifyContent: 'center', alignItems: 'center', padding: 6, borderRadius: 22, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.white },
-  activityTabSelected: { borderWidth: 2, borderColor: colors.primary },
-  activityTabText: { fontSize: 13, lineHeight: 18, textAlign: 'center', color: colors.muted, fontWeight: '600' },
+  activityTabs: { marginHorizontal: 20, marginTop: 16, marginBottom: 8 },
+  reportTabs: { marginHorizontal: 20, marginTop: 8, marginBottom: 14 },
   activityHeading: { marginHorizontal: 20, marginTop: 16, marginBottom: 12, color: colors.ink, fontSize: 20, lineHeight: 25, fontFamily: fonts.heading },
-  activityEmptyIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
-  browseReportsButton: { minHeight: 44, marginTop: 16, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, borderWidth: 1, borderColor: colors.primaryBorder, backgroundColor: colors.primaryTint },
-  browseReportsText: { color: colors.primary, fontSize: 14, fontWeight: '600' },
   overviewContainer: { backgroundColor: colors.white },
   overviewActions: { marginHorizontal: 20, marginTop: 18, borderRadius: 18, borderWidth: 1, borderColor: colors.line },
   continueCleanupCard: {
@@ -692,14 +642,9 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
   },
-  overviewStats: { marginHorizontal: 20, marginTop: 16, flexDirection: 'row', paddingVertical: 14, borderRadius: 14, backgroundColor: colors.mist, borderWidth: 1, borderColor: colors.line },
-  overviewStat: { flex: 1, justifyContent: 'center', paddingHorizontal: 16 },
-  overviewStatDivider: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.line },
-  overviewStatValue: { fontSize: 25, lineHeight: 31, fontWeight: '600', color: colors.primaryDark, fontVariant: ['tabular-nums'] },
-  overviewStatLabel: { marginTop: 2, fontSize: 12, lineHeight: 18, color: colors.muted, fontWeight: '500' },
   identity: { marginHorizontal: 20, marginTop: 16, marginBottom: 16, padding: 20, borderRadius: 18, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
   identityAvatar: { alignSelf: 'flex-start' },
-  identityCounts: { marginTop: 14, color: '#45434D', fontSize: 15 },
+  identityCounts: { marginTop: 14, color: colors.body, fontSize: 15 },
   identityCountValue: { color: colors.ink, fontSize: 17, fontWeight: '900' },
   identityTop: { flexDirection: 'row', alignItems: 'center' },
   identityCopy: { flex: 1, minWidth: 0, marginLeft: 16 },
@@ -712,34 +657,26 @@ const styles = StyleSheet.create({
   joined: { flexShrink: 1, color: colors.muted, fontSize: 14, lineHeight: 19 },
   headerEditButtonContainer: { paddingRight: 16, justifyContent: 'flex-end' },
   headerEditButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  rankPanel: { marginHorizontal: 20, borderWidth: 1, borderColor: colors.line, borderRadius: 18, overflow: 'hidden', backgroundColor: '#FCFBFF' },
+  rankPanel: { marginHorizontal: 20, borderWidth: 1, borderColor: colors.line, borderRadius: 18, overflow: 'hidden', backgroundColor: colors.white },
   rankCard: { padding: 18 },
+  rankPending: { minHeight: 150, padding: 0, backgroundColor: 'transparent' },
   rankSummaryRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10 },
   rankSummaryCopy: { flex: 1, minWidth: 100 },
   rankEyebrow: { marginTop: 2, color: colors.muted, fontSize: 14, lineHeight: 19 },
   rankArtworkStage: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center' },
   rankArtwork: { width: '100%', height: '100%' },
   rankName: { color: colors.ink, fontSize: 23, lineHeight: 28, fontFamily: fonts.heading },
-  rankPoints: { color: colors.primaryDark, fontSize: 16, lineHeight: 22, fontWeight: '600', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, backgroundColor: colors.primarySoft },
   rankProgressSection: { width: '100%', marginTop: 18 },
   rankProgressHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   rankProgressTitle: { flex: 1, color: colors.body, fontSize: 13, fontWeight: '500' },
   rankProgressPercent: { color: colors.body, fontSize: 13, fontWeight: '600' },
-  rankProgressTrack: { height: 10, marginTop: 8, overflow: 'hidden', borderRadius: 5, backgroundColor: '#EAE5FA' },
+  rankProgressTrack: { height: 10, marginTop: 8, overflow: 'hidden', borderRadius: 5, backgroundColor: colors.edge },
   rankProgressFill: { height: '100%', borderRadius: 7, backgroundColor: colors.primary },
   rankRemaining: { marginTop: 7, color: colors.muted, fontSize: 13, lineHeight: 19, fontWeight: '400' },
   highestRankBadge: { minHeight: 48, marginTop: 19, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 24, backgroundColor: colors.mist },
   highestRankText: { color: colors.body, fontSize: 15, fontWeight: '900' },
-  rankLoadingStage: { width: 76, height: 76, alignSelf: 'center', alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: colors.mist },
-  rankLoadingTitle: { marginTop: 15, color: colors.ink, fontSize: 17, fontWeight: '800' },
-  rankRetryText: { marginTop: 5, color: colors.body, fontSize: 14, fontWeight: '700' },
   rankRefreshWarning: { marginTop: 15, color: colors.body, fontSize: 13, fontWeight: '700', textAlign: 'center' },
-  statCard: { marginHorizontal: 16, marginTop: 14, paddingVertical: 14, alignItems: 'center', borderRadius: 16, backgroundColor: colors.white },
-  statValue: { color: colors.primaryDark, fontSize: 28, fontFamily: fonts.heading },
-  statLabel: { marginTop: 3, color: colors.muted, fontSize: 14, fontWeight: '700' },
-  sectionTitle: { marginHorizontal: 20, marginTop: 27, marginBottom: 9, color: colors.ink, fontSize: 17, fontWeight: '800' },
-  subsectionTitle: { marginHorizontal: 20, marginTop: 16, marginBottom: 8, color: colors.body, fontSize: 14, fontWeight: '800' },
-  card: { marginHorizontal: 16, overflow: 'hidden', borderRadius: 16, backgroundColor: colors.white },
+  card: { marginHorizontal: 20, overflow: 'hidden', borderRadius: 18, backgroundColor: colors.white },
   paymentCard: { borderWidth: 1, borderColor: colors.line, borderRadius: 18 },
   // Payout status: coloured icon and words on white, as on the website.
   stripeConnectionRow: { minHeight: 54, paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: colors.white },
@@ -761,9 +698,6 @@ const styles = StyleSheet.create({
   activeCleanupReward: { marginTop: 3, color: colors.primaryDark, fontSize: 13, fontWeight: '800' },
   activeCleanupDeadline: { marginTop: 3, color: colors.muted, fontSize: 13, lineHeight: 18 },
   activeCleanupLink: { marginTop: 8, color: colors.primary, fontSize: 14, fontWeight: '800' },
-  activeCleanupEmpty: { minHeight: 220, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  activeCleanupEmptyTitle: { marginTop: 10, color: colors.ink, fontSize: 17, lineHeight: 23, fontFamily: fonts.heading },
-  activeCleanupEmptyText: { marginTop: 6, color: colors.muted, fontSize: 14, lineHeight: 21, textAlign: 'center', maxWidth: 290 },
   completedCleanupRow: { minHeight: 82, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white },
   completedCleanupDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
   completedCleanupIcon: { width: 40, height: 40, marginRight: 13, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary },
@@ -771,16 +705,11 @@ const styles = StyleSheet.create({
   completedCleanupTitle: { color: colors.ink, fontSize: 15, lineHeight: 21, fontWeight: '600' },
   completedCleanupMeta: { marginTop: 5, color: colors.muted, fontSize: 13 },
   completedCleanupReward: { marginTop: 4, color: colors.primaryDark, fontSize: 13, fontWeight: '800' },
-  completedCleanupEmpty: { minHeight: 210, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  emailRow: { minHeight: 68, paddingHorizontal: 17, justifyContent: 'center' },
-  emailCopy: { minWidth: 0 },
   emailLabel: { color: colors.ink, fontSize: 16, fontWeight: '600' },
   emailText: { flexShrink: 1, color: colors.muted, fontSize: 15, fontWeight: '700' },
-  deleteCard: { marginTop: 24 },
   signedOutContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, backgroundColor: colors.white },
   signedOutTitle: { marginTop: 20, color: colors.ink, fontSize: 24, fontFamily: fonts.heading, textAlign: 'center' },
   signedOutText: { maxWidth: 360, marginTop: 10, color: colors.muted, fontSize: 15, lineHeight: 22, textAlign: 'center' },
-  primaryButton: { width: '100%', maxWidth: 390, minHeight: 54, marginTop: 24, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary },
-  primaryButtonText: { color: colors.white, fontSize: 16, fontWeight: '800' },
+  primaryButton: { width: '100%', maxWidth: 390, marginTop: 24 },
   signedOutSupport: { alignSelf: 'stretch', marginTop: 28, borderRadius: 18, borderWidth: 1, borderColor: colors.line, overflow: 'hidden', backgroundColor: colors.white },
 });

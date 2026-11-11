@@ -16,7 +16,7 @@ import { withdrawOwnReport, reportWithdrawalErrorMessage } from '../lib/reportWi
 import styles from '../styles/MapScreen.styles';
 import { colors } from '../lib/theme';
 // Website severity words: green, orange, red.
-const SEVERITY_INK = { Low: '#277B36', Medium: '#B85614', High: '#B52C24' };
+const SEVERITY_INK = { Low: colors.green, Medium: colors.yellow, High: colors.red };
 const formatShortDate = value => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
 // The map owns report operations; this component owns the detail presentation.
@@ -138,10 +138,7 @@ export default function ReportDetailsSheet({ state, actions }) {
         ]}
       >
         {selectedReport?.cleanup_state === 'completed' && completedCleanupImpactLoading && !completedCleanupImpact ? (
-          <View accessibilityRole="progressbar" accessibilityLabel="Loading cleanup" style={{ minHeight: 220, backgroundColor: colors.mist, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator color={colors.primary} />
-            <Text style={{ marginTop: 12, color: colors.muted }}>Loading cleanup…</Text>
-          </View>
+          <LoadingBee label="Loading cleanup" message="Loading cleanup…" />
         ) : <>
         {selectedReport?.cleanup_state === 'completed' ? (
           <>
@@ -204,7 +201,7 @@ export default function ReportDetailsSheet({ state, actions }) {
               {!closed && cleanupState !== 'completed' && funded ? (
                 <View style={styles.websiteReportState}>
                   <BrandBug kind="bee" size={18} />
-                  <Text style={[styles.websiteReportStateText, { color: '#8A5A00' }]}>{formatUsd(Number(selectedReport.funded_amount_cents))} in its cleanup fund</Text>
+                  <Text style={[styles.websiteReportStateText, { color: colors.yellow }]}>{formatUsd(Number(selectedReport.funded_amount_cents))} in its cleanup fund</Text>
                 </View>
               ) : null}
               <View style={styles.websiteReportMeta}>
@@ -236,7 +233,7 @@ export default function ReportDetailsSheet({ state, actions }) {
                   ? 'alert-circle-outline'
                   : 'time-outline'}
               size={23}
-              color="#8A5A14"
+              color={colors.yellow}
             />
             <View style={styles.fundingCopy}>
               <Text style={styles.fundingFeedbackTitle}>
@@ -260,10 +257,10 @@ export default function ReportDetailsSheet({ state, actions }) {
                 <View style={styles.fundingFeedbackActions}>
                   <TouchableOpacity style={styles.fundingFeedbackAction} onPress={() => setFeedbackExpanded(value => !value)} accessibilityRole="button" accessibilityState={{ expanded: feedbackExpanded }}>
                     <Text style={styles.fundingFeedbackActionText}>{feedbackExpanded ? 'Hide details' : 'View details'}</Text>
-                    <Ionicons name={feedbackExpanded ? 'chevron-up' : 'chevron-down'} size={14} color="#754B13" />
+                    <Ionicons name={feedbackExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={colors.yellow} />
                   </TouchableOpacity>
                   {canEditOrDeleteSelectedReport && !selectedReport?.funding_locked_at ? <TouchableOpacity style={styles.fundingFeedbackAction} onPress={editSelectedReport} accessibilityRole="button" accessibilityLabel="Edit report photos">
-                    <Ionicons name="camera-outline" size={16} color="#754B13" />
+                    <Ionicons name="camera-outline" size={16} color={colors.yellow} />
                     <Text style={styles.fundingFeedbackActionText}>Edit photos</Text>
                   </TouchableOpacity> : null}
                 </View>
@@ -371,7 +368,7 @@ export default function ReportDetailsSheet({ state, actions }) {
                   <Ionicons
                     name={cleanupStatus.icon}
                     size={24}
-                    color={cleanupStatus.tone === 'completed' ? colors.primary : '#8A6400'}
+                    color={cleanupStatus.tone === 'completed' ? colors.primary : colors.yellow}
                   />
                 </View>
                 <View style={styles.cleanupProgressCopy}>
@@ -400,7 +397,7 @@ export default function ReportDetailsSheet({ state, actions }) {
 
               {selectedReport?.cleanup_state === 'claimed' && cleanupAttemptLoading ? (
                 <View style={styles.cleanupProgressLoading}>
-                  <ActivityIndicator color="#8A6400" />
+                  <ActivityIndicator color={colors.yellow} />
                   <Text style={styles.cleanupProgressLoadingText}>Checking cleanup details…</Text>
                 </View>
               ) : cleanupStatus.showClaimActions ? (
@@ -435,10 +432,10 @@ export default function ReportDetailsSheet({ state, actions }) {
                     accessibilityLabel="Release Cleanup"
                   >
                     {cleanupActionBusy ? (
-                      <LoadingButtonContent label="Releasing…" color="#A33A32" />
+                      <LoadingButtonContent label="Releasing…" color={colors.red} />
                     ) : (
                       <>
-                        <Ionicons name="return-down-back-outline" size={20} color="#A33A32" />
+                        <Ionicons name="return-down-back-outline" size={20} color={colors.red} />
                         <Text style={styles.cleanupReleaseActionText}>Release Cleanup</Text>
                       </>
                     )}
@@ -453,7 +450,7 @@ export default function ReportDetailsSheet({ state, actions }) {
                     accessibilityRole="button"
                     accessibilityLabel="Review Cleanup Feedback"
                   >
-                    <Ionicons name="document-text-outline" size={20} color="#755900" />
+                    <Ionicons name="document-text-outline" size={20} color={colors.yellow} />
                     <Text style={styles.cleanupFeedbackActionText}>Review Feedback</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -573,8 +570,8 @@ export default function ReportDetailsSheet({ state, actions }) {
             </TouchableOpacity>
             <View style={styles.reportOwnerMenuDivider} />
             <TouchableOpacity style={styles.reportOwnerMenuItem} onPress={() => { setOwnerMenuOpen(false); confirmDeleteReport(); }} accessibilityRole="button" accessibilityLabel="Delete report">
-              <Ionicons name="trash-outline" size={20} color="#B23B3B" />
-              <Text style={[styles.reportOwnerMenuText, { color: '#B23B3B' }]}>Delete report</Text>
+              <Ionicons name="trash-outline" size={20} color={colors.red} />
+              <Text style={[styles.reportOwnerMenuText, { color: colors.red }]}>Delete report</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 
+import { ErrorText } from './components/ui';
 import { userMessage } from './lib/userMessage';
 import ProfileAvatar from './ProfileAvatar';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,7 +29,7 @@ import { useSession } from './lib/session';
 import { colors } from './lib/theme';
 
 function FieldError({ children }) {
-  return children ? <Text style={styles.error}>{children}</Text> : null;
+  return <ErrorText style={styles.error}>{children}</ErrorText>;
 }
 
 export default function EditProfileScreen({ navigation }) {
@@ -156,20 +157,20 @@ const styles = StyleSheet.create({
   avatarAction: { marginTop: 4, color: colors.primary, fontSize: 13, lineHeight: 19, fontWeight: '600' },
   label: { flex: 1, color: colors.ink, fontSize: 14, lineHeight: 20, fontWeight: '600' },
   optional: { color: colors.muted, fontWeight: '500' },
-  input: { minHeight: 52, paddingHorizontal: 14, borderWidth: 1, borderColor: colors.line, borderRadius: 12, backgroundColor: colors.primaryTint, color: colors.ink, fontSize: 16 },
+  input: { minHeight: 52, paddingHorizontal: 14, borderWidth: 1, borderColor: colors.line, borderRadius: 12, backgroundColor: colors.white, color: colors.ink, fontSize: 16 },
   multiline: { minHeight: 100, paddingTop: 13, paddingBottom: 13 },
   usernameRow: { minHeight: 52, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.line, borderRadius: 12, backgroundColor: colors.white },
   at: { marginLeft: 14, color: colors.muted, fontSize: 17 },
-  usernameInput: { flex: 1, minHeight: 50, paddingHorizontal: 5, fontSize: 16 },
+  usernameInput: { flex: 1, minHeight: 50, paddingHorizontal: 5, color: colors.ink, fontSize: 16 },
   saveButton: { minWidth: 60, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   avatarFrame: { padding: 3, borderWidth: 1, borderColor: colors.line, borderRadius: 40 },
-  cameraBadge: { position: 'absolute', bottom: -1, right: -1, width: 26, height: 26, borderRadius: 13, backgroundColor: colors.primarySoft, borderWidth: 2, borderColor: colors.white, alignItems: 'center', justifyContent: 'center' },
+  cameraBadge: { position: 'absolute', bottom: -1, right: -1, width: 26, height: 26, borderRadius: 13, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center' },
   avatarCopy: { flex: 1 },
   avatarLabel: { color: colors.ink, fontSize: 16, lineHeight: 22, fontWeight: '600' },
   fieldHeading: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 18, marginBottom: 7 },
-  inputFocused: { borderColor: colors.primary, backgroundColor: colors.white },
-  inputError: { borderColor: '#B42318' },
+  inputFocused: { borderColor: colors.primary },
+  inputError: { borderColor: colors.red },
   counter: { color: colors.muted, fontSize: 12, lineHeight: 18, textAlign: 'right' },
   helper: { marginTop: 7, color: colors.muted, fontSize: 13, lineHeight: 18 },
-  error: { marginTop: 5, color: '#B42318', fontSize: 13, lineHeight: 18 },
+  error: { marginTop: 5, fontSize: 13, lineHeight: 18 },
 });

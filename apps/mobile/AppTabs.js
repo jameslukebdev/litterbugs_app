@@ -22,6 +22,8 @@ export default function AppTabs({ onLaunchReady }) {
           headerTitleAlign: 'center',
           headerBackVisible: false,
           tabBarShowLabel: false,
+          // Tabs cross-fade instead of cutting; the map stays mounted underneath.
+          animation: 'fade',
           sceneStyle: { backgroundColor: colors.mist },
         }}
       >

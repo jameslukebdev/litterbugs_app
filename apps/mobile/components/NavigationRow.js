@@ -13,7 +13,7 @@ export default function NavigationRow({ label, icon, onPress, destructive = fals
     >
       <View style={styles.actionCopy}>
         {/* Website profile links are words only; other rows keep their icon. */}
-        {appearance === 'profile' ? null : <Ionicons name={icon} size={21} color={destructive ? '#C62828' : colors.body} />}
+        {appearance === 'profile' ? null : <Ionicons name={icon} size={21} color={destructive ? colors.red : colors.body} />}
         <Text
           style={[styles.actionText, appearance === 'profile' && styles.profileText, destructive && styles.destructiveText]}
         >
@@ -21,9 +21,9 @@ export default function NavigationRow({ label, icon, onPress, destructive = fals
         </Text>
       </View>
       {busy ? (
-        <ActivityIndicator size="small" color={destructive ? '#C62828' : colors.body} />
+        <ActivityIndicator size="small" color={destructive ? colors.red : colors.body} />
       ) : (
-        <Ionicons name="chevron-forward" size={appearance === 'profile' ? 17 : 21} color={destructive ? '#C62828' : colors.subtle} />
+        <Ionicons name="chevron-forward" size={appearance === 'profile' ? 17 : 21} color={destructive ? colors.red : colors.subtle} />
       )}
       {appearance === 'profile' && divided ? <View pointerEvents="none" style={styles.profileDivider} /> : null}
     </TouchableOpacity>
@@ -37,6 +37,6 @@ const styles = StyleSheet.create({
   actionRow: { minHeight: 60, paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line, backgroundColor: colors.white },
   actionCopy: { flex: 1, minWidth: 0, marginRight: 12, flexDirection: 'row', alignItems: 'center', gap: 11 },
   actionText: { flex: 1, paddingVertical: 12, color: colors.ink, fontSize: 16 },
-  destructiveText: { color: '#C62828' },
+  destructiveText: { color: colors.red },
   disabled: { opacity: 0.6 },
 });

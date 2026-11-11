@@ -50,7 +50,7 @@ export default function ReportPreviewHero({
         <Ionicons
           name={isFavorite ? 'heart' : 'heart-outline'}
           size={26}
-          color={isFavorite ? '#E13B3B' : colors.white}
+          color={isFavorite ? colors.severityHigh : colors.white}
           style={!isFavorite ? styles.favoriteOutline : undefined}
         />
       </TouchableOpacity>

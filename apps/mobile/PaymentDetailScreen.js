@@ -1,9 +1,10 @@
 import FeeExplanationLabel from './components/FeeExplanationLabel';
 import { useCallback } from 'react';
-import { Alert, Linking, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, ScrollView, Text, View } from 'react-native';
 import useFocusedResource from './lib/useFocusedResource';
 import { useSession } from './lib/session';
-import BrandedLoadingState from './BrandedLoadingState';
+import LoadingBee from './components/LoadingBee';
+import { ErrorText, TextLink } from './components/ui';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatUsd, loadMyContribution } from './lib/funding';
 import PaymentStatus from './components/PaymentStatus';
@@ -20,10 +21,10 @@ export default function PaymentDetailScreen({ navigation, route }) {
   const error = record.error || verification.error;
   const load = () => { record.refresh(); verification.refresh(); };
   const insets = useSafeAreaInsets();
-  const action = (label, onPress, disabled = false) => <TouchableOpacity disabled={disabled} accessibilityRole="button" onPress={onPress} style={{ minHeight: 52, justifyContent: 'center', opacity: disabled ? 0.5 : 1 }}><Text style={{ color: colors.primary, fontSize: 16, fontWeight: '700' }}>{label}</Text></TouchableOpacity>;
+  const action = (label, onPress, disabled = false) => <TextLink align="start" label={label} onPress={onPress} disabled={disabled} style={{ minHeight: 52 }} />;
   return <ScrollView style={{ backgroundColor: colors.white }} contentContainerStyle={{ flexGrow: 1, padding: 20, paddingBottom: insets.bottom + 24 }}>
-    {loading && !item ? <BrandedLoadingState compact title="Loading payment details…" /> : null}
-    {error ? <Text style={{ color: '#B42318', marginBottom: 16 }}>Couldn’t refresh this payment. Try again.</Text> : null}
+    {loading && !item ? <LoadingBee label="Loading payment details" /> : null}
+    {error ? <ErrorText style={{ marginTop: 0, marginBottom: 16 }}>Couldn’t refresh this payment. Try again.</ErrorText> : null}
     {item ? <>
       <PaymentStatus status={paymentDisplayStatus(item)} />
       <Text style={{ fontSize: 30, fontWeight: '600', color: colors.ink, marginTop: 20 }}>{formatUsd(item.total_amount_cents)}</Text>

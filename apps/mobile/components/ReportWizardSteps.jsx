@@ -5,7 +5,7 @@ import { formatUsd } from '../lib/funding';
 import FeeExplanationLabel from './FeeExplanationLabel';
 import { LoadingButtonContent } from '../BrandedLoadingState';
 // Website report form: one soft blue for every selected litter type and site condition.
-const TILE_SELECTED = Object.freeze({ backgroundColor: '#E5EFFF', borderColor: '#9BBBF3', foregroundColor: '#234485' });
+const TILE_SELECTED = Object.freeze({ backgroundColor: colors.reportSoft, borderColor: colors.reportEdge, foregroundColor: colors.reportInk });
 import { getSeveritySelectionColors } from '../lib/severitySelectionColors';
 import styles from '../styles/MapScreen.styles';
 import MapView, { Marker } from 'react-native-maps';
@@ -497,14 +497,14 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                   const option = LITTER_OPTIONS.find((item) => item.label === label);
                   return (
                     <View key={label} style={[styles.reportReviewChip, styles.reportReviewLitterChip]}>
-                      <Ionicons name={option?.icon || 'trash-outline'} size={17} color="#234485" />
+                      <Ionicons name={option?.icon || 'trash-outline'} size={17} color={colors.reportInk} />
                       <Text style={[styles.reportReviewChipText, styles.reportReviewLitterChipText]}>{label}</Text>
                     </View>
                   );
                 })}
                 {form.types?.trim() ? (
                   <View style={[styles.reportReviewChip, styles.reportReviewLitterChip]}>
-                    <Ionicons name="create-outline" size={17} color="#234485" />
+                    <Ionicons name="create-outline" size={17} color={colors.reportInk} />
                     <Text style={[styles.reportReviewChipText, styles.reportReviewLitterChipText]}>{form.types.trim()}</Text>
                   </View>
                 ) : null}
@@ -557,14 +557,14 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                       : label === 'Use Caution' ? 'Use caution' : label;
                     return (
                       <View key={label} style={[styles.reportReviewChip, styles.reportReviewConditionChip]}>
-                        <Ionicons name={option?.icon || 'information-circle-outline'} size={17} color="#234485" />
+                        <Ionicons name={option?.icon || 'information-circle-outline'} size={17} color={colors.reportInk} />
                         <Text style={[styles.reportReviewChipText, styles.reportReviewConditionChipText]}>{displayLabel}</Text>
                       </View>
                     );
                   })}
                   {form.notes?.trim() ? (
                     <View style={[styles.reportReviewChip, styles.reportReviewConditionChip]}>
-                      <Ionicons name="document-text-outline" size={17} color="#234485" />
+                      <Ionicons name="document-text-outline" size={17} color={colors.reportInk} />
                       <Text style={[styles.reportReviewChipText, styles.reportReviewConditionChipText]}>{form.notes.trim()}</Text>
                     </View>
                   ) : null}
@@ -585,7 +585,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                 <Image source={require('../assets/bugs/bee.png')} style={{ width: 22, height: 22 }} resizeMode="contain" accessible={false} />
                 <View style={styles.startingFundHeadingCopy}>
                   <Text style={styles.startingFundTitle}>Start the cleanup fund</Text>
-                  <Text style={[styles.optionalStepLabel, { color: '#7A5D00' }]}>Optional</Text>
+                  <Text style={[styles.optionalStepLabel, { color: colors.yellow }]}>Optional</Text>
                 </View>
               </View>
 

@@ -15,5 +15,5 @@ export default function CloudDraftStatus({userId,draftKey,onRestored}) {
   // Preserve recovery actions when a draft needs the user's decision.
   if (!['conflict', 'submitting'].includes(status) && !error) return null;
   const button=(label,choice)=><TouchableOpacity key={label} accessibilityRole="button" disabled={busy} onPress={()=>act(choice)} style={{paddingVertical:10,paddingHorizontal:4}}><Text style={{color:colors.primary,fontWeight:'600'}}>{label}</Text></TouchableOpacity>;
-  return <View style={{padding:12,backgroundColor:colors.mist,borderRadius:12,marginVertical:8}}>{copy[status]?<Text accessibilityLiveRegion="polite">{copy[status]}</Text>:null}{error?<Text style={{color:'#B42318'}}>{error}</Text>:null}{status==='conflict'?<>{button('Use account draft','account')}{button('Keep this device’s draft','device')}</>:status==='submitting'?button('Restore submitted draft','account'):null}</View>;
+  return <View style={{padding:12,backgroundColor:colors.mist,borderRadius:12,marginVertical:8}}>{copy[status]?<Text accessibilityLiveRegion="polite">{copy[status]}</Text>:null}{error?<Text style={{color:colors.red}}>{error}</Text>:null}{status==='conflict'?<>{button('Use account draft','account')}{button('Keep this device’s draft','device')}</>:status==='submitting'?button('Restore submitted draft','account'):null}</View>;
 }

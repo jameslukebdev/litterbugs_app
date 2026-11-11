@@ -41,6 +41,26 @@ export const colors = Object.freeze({
   plum: '#783398',
   plumSoft: '#F7EBFB',
 
+  // Lines and soft fills that go with the accent inks above
+  redBorder: '#ED8F97',
+  yellowBorder: '#FFE08A',
+  green: '#2F6B3A',
+  greenBorder: '#B8E198',
+  greenSoft: '#ECF6E3',
+
+  // The 3-point drop edge under website cards and buttons
+  edge: '#ECE8F8',
+
+  // Severity dots: green for Low, orange for Medium, red for High
+  severityLow: '#77B847',
+  severityMedium: '#F2A93B',
+  severityHigh: '#ED3F48',
+
+  // Report Litter (dragonfly blue) wizard accents
+  reportInk: '#234485',
+  reportEdge: '#9BBBF3',
+  reportSoft: '#E5EFFF',
+
   // Fund (yellow) and Clean (lilac) action buttons
   fundFill: '#FFDA61',
   fundInk: '#493A10',

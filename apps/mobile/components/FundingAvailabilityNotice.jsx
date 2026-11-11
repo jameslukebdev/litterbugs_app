@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
   hint: { color: colors.muted, fontSize: 13, lineHeight: 20, marginTop: 12 },
   saved: { flexDirection: 'row', gap: 10, marginTop: 20, alignItems: 'flex-start' },
   savedText: { flex: 1, color: colors.body, fontSize: 14, lineHeight: 21 },
-  error: { color: '#9A3F32', fontSize: 14, lineHeight: 21, marginTop: 16 },
+  error: { color: colors.red, fontSize: 14, lineHeight: 21, marginTop: 16 },
   primary: { backgroundColor: colors.primary, borderRadius: 13, minHeight: 52, padding: 14, marginTop: 26, alignItems: 'center', justifyContent: 'center' },
   primaryText: { color: colors.white, fontSize: 16, fontWeight: '600' },
   secondary: { minHeight: 48, padding: 12, marginTop: 8, alignItems: 'center', justifyContent: 'center' },

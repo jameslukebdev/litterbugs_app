@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import CompactRankBadge from './CompactRankBadge';
 import LoadingBee from './components/LoadingBee';
-import BrandedLoadingState from './BrandedLoadingState';
+import { EmptyState, LoadFailure, PillTabs, TextLink } from './components/ui';
 import ProfileAvatar from './ProfileAvatar';
 import ProfileReportList from './ProfileReportList';
 import { useProfile } from './lib/profile';
@@ -90,22 +90,13 @@ export default function PublicProfileScreen({ navigation, route }) {
   if (blocked) {
     return (
       <View style={styles.center}>
-        <Ionicons name="ban-outline" size={48} color={colors.muted} />
-        <Text style={styles.stateTitle}>You blocked this account</Text>
-        <Text style={styles.stateText}>Manage blocked accounts from your Profile tab to view this content again.</Text>
-        <TouchableOpacity style={styles.manageButton} onPress={() => navigation.navigate('BlockedAccounts')}>
-          <Text style={styles.manageText}>Manage blocked accounts</Text>
-        </TouchableOpacity>
+        <EmptyState icon={<Ionicons name="ban-outline" size={36} color={colors.subtle} />} title="You blocked this account" text="Unblock this account to view its profile again." action={{ label: 'Manage blocked accounts', onPress: () => navigation.navigate('BlockedAccounts') }} />
       </View>
     );
   }
 
-  if (member.loading && !profile) return <BrandedLoadingState title="Loading profile…" message="Gathering this member’s community impact." />;
-  if (member.error && !profile) return <View style={styles.center}>
-    <Text style={styles.stateTitle}>Couldn’t load this profile</Text>
-    <Text style={styles.stateText}>Check your connection and try again.</Text>
-    <TouchableOpacity accessibilityRole="button" style={styles.manageButton} onPress={member.refresh}><Text style={styles.manageText}>Retry profile</Text></TouchableOpacity>
-  </View>;
+  if (member.loading && !profile) return <LoadingBee label="Loading profile" style={styles.center} />;
+  if (member.error && !profile) return <View style={styles.center}><LoadFailure title="Couldn’t load this profile" onRetry={member.refresh} /></View>;
   if (!profile) return <View style={styles.center}>
     <Text style={styles.stateTitle}>Profile unavailable</Text>
     <Text style={styles.stateText}>This profile is not available to view.</Text>
@@ -137,15 +128,13 @@ export default function PublicProfileScreen({ navigation, route }) {
       </Text>
 
       <Text style={styles.sectionTitle}>Reports</Text>
-      <View style={styles.tabs}>
-        {['active', 'completed'].map(value => <TouchableOpacity key={value} accessibilityRole="tab" accessibilityState={{ selected: view === value }} onPress={() => setView(value)} style={[styles.tab, view === value && styles.selectedTab]}><Text style={[styles.tabText, view === value && styles.tabTextSelected]}>{value === 'active' ? 'Active reports' : 'Completed reports'}</Text></TouchableOpacity>)}
-      </View>
-      {activity.error ? <TouchableOpacity accessibilityRole="button" style={styles.retry} onPress={activity.refresh}><Text>Couldn’t refresh these reports. Retry.</Text></TouchableOpacity> : null}
+      <PillTabs style={styles.tabs} value={view} onChange={setView} options={[['active', 'Active reports'], ['completed', 'Completed reports']]} />
+      {activity.error ? <TextLink label="Couldn’t refresh these reports. Retry." onPress={activity.refresh} /> : null}
       </>}
       ListEmptyComponent={activity.loading ? <LoadingBee label="Loading reports" /> : !activity.error ? <ProfileReportList reports={[]} emptyTitle={view === 'completed' ? 'No completed reports' : 'No active reports'} /> : null}
       ListFooterComponent={<>
         {activity.moreError ? <Text style={styles.notice}>Couldn’t load older reports. Your current list is still available.</Text> : null}
-        {activity.nextCursor ? <TouchableOpacity disabled={activity.loading || activity.loadingMore} accessibilityRole="button" style={styles.retry} onPress={activity.loadMore}><Text style={styles.tabText}>{activity.loadingMore ? 'Loading older reports…' : activity.moreError ? 'Retry older reports' : 'Load older reports'}</Text></TouchableOpacity> : null}
+        {activity.nextCursor ? <TextLink disabled={activity.loading || activity.loadingMore} label={activity.loadingMore ? 'Loading older reports…' : activity.moreError ? 'Retry older reports' : 'Load older reports'} onPress={activity.loadMore} /> : null}
       </>}
     />
       <Modal visible={actionsOpen} transparent animationType="fade" onRequestClose={() => setActionsOpen(false)} onDismiss={() => { const action = pendingAction.current; pendingAction.current = null; action?.(); }}>
@@ -157,7 +146,7 @@ export default function PublicProfileScreen({ navigation, route }) {
               <Ionicons name="flag-outline" size={21} color={colors.primaryDark} /><Text style={styles.actionText}>Report account</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionOption} accessibilityRole="button" onPress={() => selectAction(confirmBlock)}>
-              <Ionicons name="ban-outline" size={21} color="#A33A32" /><Text style={[styles.actionText, { color: '#A33A32' }]}>Block account</Text>
+              <Ionicons name="ban-outline" size={21} color={colors.red} /><Text style={[styles.actionText, { color: colors.red }]}>Block account</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionOption} accessibilityRole="button" onPress={() => setActionsOpen(false)}><Text style={styles.actionText}>Cancel</Text></TouchableOpacity>
           </View>
@@ -173,13 +162,8 @@ const styles = StyleSheet.create({
   actionTitle: { fontSize: 18, lineHeight: 24, fontFamily: fonts.heading, color: colors.ink, marginBottom: 12 },
   actionOption: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
   actionText: { fontSize: 15, lineHeight: 22, color: colors.ink },
-  tabs: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 14, gap: 8 },
-  tab: { flex: 1, padding: 10, minHeight: 44, justifyContent: 'center', alignItems: 'center', borderRadius: 22, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.white },
-  selectedTab: { borderWidth: 2, borderColor: colors.primary },
-  tabTextSelected: { color: colors.primaryDark, fontWeight: '800' },
-  tabText: { color: colors.muted, fontWeight: '600', textAlign: 'center' },
+  tabs: { marginHorizontal: 20, marginBottom: 14 },
   notice: { padding: 16, color: colors.muted },
-  retry: { minHeight: 44, padding: 12, justifyContent: 'center', alignItems: 'center' },
   container: { flex: 1, backgroundColor: colors.white },
   content: { paddingBottom: 36 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30, backgroundColor: colors.white },
@@ -195,12 +179,10 @@ const styles = StyleSheet.create({
   location: { color: colors.body, fontSize: 14 },
   bio: { maxWidth: 360, marginTop: 12, color: colors.body, fontSize: 15, lineHeight: 22 },
   joined: { marginTop: 10, color: colors.muted, fontSize: 13 },
-  statLine: { marginHorizontal: 20, marginTop: 12, color: '#45434D', fontSize: 15 },
+  statLine: { marginHorizontal: 20, marginTop: 12, color: colors.body, fontSize: 15 },
   statValue: { color: colors.ink, fontSize: 17, fontWeight: '900' },
   sectionTitle: { marginHorizontal: 20, marginTop: 24, marginBottom: 10, color: colors.ink, fontSize: 20, fontFamily: fonts.heading },
   card: { marginHorizontal: 16, overflow: 'hidden', borderRadius: 16, backgroundColor: colors.white },
   stateTitle: { marginTop: 16, color: colors.ink, fontSize: 21, fontFamily: fonts.heading, textAlign: 'center' },
   stateText: { maxWidth: 340, marginTop: 8, color: colors.muted, fontSize: 15, lineHeight: 22, textAlign: 'center' },
-  manageButton: { minHeight: 48, marginTop: 18, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: colors.primary },
-  manageText: { color: colors.white, fontSize: 15, fontWeight: '600' },
 });

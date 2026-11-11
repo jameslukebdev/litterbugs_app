@@ -54,7 +54,7 @@ import {
   savePendingReportFunding,
 } from './lib/pendingReportFunding';
 import FundingAvailabilityNotice from './components/FundingAvailabilityNotice';
-import SteadyButtonContent from './components/SteadyButtonContent';
+import { ErrorText, PrimaryButton, TextLink } from './components/ui';
 import { canEditOrDeleteReport } from './lib/reportAccess';
 import { useIsFocused } from '@react-navigation/native';
 import { colors, fonts } from './lib/theme';
@@ -384,21 +384,11 @@ function FundingContributionController({ navigation, route }) {
   if (loadError && !report) {
     return (
       <View style={styles.center}>
-        <Ionicons name="time-outline" size={44} color="#8A6400" />
+        <Ionicons name="time-outline" size={44} color={colors.yellow} />
         <Text style={styles.centerTitle}>This is taking longer than expected</Text>
         <Text style={styles.centerText}>{loadError}</Text>
-        <TouchableOpacity
-          style={styles.primaryButton}
-          disabled={refreshing}
-          onPress={() => {
-            setReloadKey((value) => value + 1);
-          }}
-        >
-          <SteadyButtonContent label="Try again" busy={refreshing} busyLabel="Refreshing contribution availability" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.secondaryButtonText}>Return to report</Text>
-        </TouchableOpacity>
+        <PrimaryButton label="Try again" busy={refreshing} busyLabel="Refreshing contribution availability" onPress={() => setReloadKey((value) => value + 1)} style={styles.centerButton} />
+        <TextLink label="Return to report" onPress={() => navigation.goBack()} style={styles.secondaryButton} />
       </View>
     );
   }
@@ -421,9 +411,7 @@ function FundingContributionController({ navigation, route }) {
         <Text style={styles.centerText}>
           {formatUsd(receipt.principalAmountCents)} was added to the cleanup fund. Your total charge was {formatUsd(receipt.totalAmountCents)}.
         </Text>
-        <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.primaryButtonText}>Return to report</Text>
-        </TouchableOpacity>
+        <PrimaryButton label="Return to report" onPress={() => navigation.goBack()} style={styles.centerButton} />
       </View>
     );
   }
@@ -432,9 +420,9 @@ function FundingContributionController({ navigation, route }) {
     <Ionicons name="time-outline" size={44} color={colors.primary} />
     <Text style={styles.centerTitle}>{confirmationPending ? 'Checking your payment' : 'Payment status'}</Text>
     <Text style={styles.centerText}>{recoveryError || 'Your payment attempt is saved. We’re waiting for confirmation. You can leave this screen and return without starting another charge.'}</Text>
-    <TouchableOpacity style={styles.primaryButton} onPress={() => reconcileAttempt().catch(() => setRecoveryError('Status is still unavailable. Check your connection and retry.'))}><Text style={styles.primaryButtonText}>Refresh status</Text></TouchableOpacity>
-    <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('ContributionHistory')}><Text style={styles.secondaryButtonText}>Payment activity</Text></TouchableOpacity>
-    <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.goBack()}><Text style={styles.secondaryButtonText}>Return to report</Text></TouchableOpacity>
+    <PrimaryButton label="Refresh status" style={styles.centerButton} onPress={() => reconcileAttempt().catch(() => setRecoveryError('Status is still unavailable. Check your connection and retry.'))} />
+    <TextLink label="Payment activity" onPress={() => navigation.navigate('ContributionHistory')} style={styles.secondaryButton} />
+    <TextLink label="Return to report" onPress={() => navigation.goBack()} />
   </View>;
 
   const unavailable = fundingAvailabilityPresentation(report);
@@ -518,7 +506,7 @@ function FundingContributionController({ navigation, route }) {
           </View>
         ) : null}
 
-        {quoteError ? <View style={styles.card}><Text style={styles.error}>{quoteError}</Text><TouchableOpacity onPress={() => setQuoteRetry(value => value + 1)} accessibilityRole="button"><Text>Retry pricing</Text></TouchableOpacity></View> : null}
+        {quoteError ? <View style={styles.card}><ErrorText>{quoteError}</ErrorText><TextLink align="start" label="Retry pricing" onPress={() => setQuoteRetry(value => value + 1)} /></View> : null}
         <View style={styles.termsCard}>
           <Ionicons name="information-circle-outline" size={21} color={colors.body} />
           <Text style={styles.termsText}>
@@ -528,7 +516,7 @@ function FundingContributionController({ navigation, route }) {
 
         {confirmationPending ? (
           <View style={styles.pendingCard}>
-            <Ionicons name="time-outline" size={21} color="#7A5810" />
+            <Ionicons name="time-outline" size={21} color={colors.yellow} />
             <Text style={styles.pendingText}>Your payment is being confirmed. You can return to the report while we check. Please don’t pay again.</Text>
           </View>
         ) : null}
@@ -563,7 +551,7 @@ function FundingContributionController({ navigation, route }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.white },
   content: { padding: 20 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: colors.mist },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: colors.white },
   centerTitle: { marginTop: 16, color: colors.ink, fontSize: 24, fontFamily: fonts.heading, textAlign: 'center' },
   centerText: { maxWidth: 360, marginTop: 9, color: colors.muted, fontSize: 15, lineHeight: 22, textAlign: 'center' },
   successIcon: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary },
@@ -573,40 +561,40 @@ const styles = StyleSheet.create({
   eyebrow: { color: colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1.1 },
   title: { color: colors.ink, fontSize: 21, lineHeight: 25, fontFamily: fonts.heading },
   reportTitle: { marginTop: 2, color: colors.muted, fontSize: 14, lineHeight: 20 },
-  rewardText: { marginTop: 14, color: '#45434D', fontSize: 15, lineHeight: 22 },
+  rewardText: { marginTop: 14, color: colors.body, fontSize: 15, lineHeight: 22 },
   card: { marginTop: 22, padding: 0, backgroundColor: colors.white },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   titleBug: { width: 34, height: 34 },
   subLabel: { marginTop: 16, color: colors.ink, fontSize: 14, fontWeight: '800' },
-  summaryCard: { marginTop: 20, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 18, borderWidth: 2, borderColor: '#FFE08A', backgroundColor: '#FFFBEA' },
+  summaryCard: { marginTop: 20, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 18, borderWidth: 2, borderColor: colors.yellowBorder, backgroundColor: colors.yellowSoft },
   label: { color: colors.ink, fontSize: 17, fontFamily: fonts.heading },
   amountPresets: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  amountPreset: { flex: 1, minHeight: 54, padding: 6, borderRadius: 16, borderWidth: 2, borderColor: '#F3E3A8', borderBottomWidth: 4, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
-  amountPresetSelected: { backgroundColor: '#FFF4CC', borderColor: '#F5C430' },
-  amountPresetText: { color: '#5F4600', fontSize: 20, fontFamily: fonts.heading },
-  amountPresetTextSelected: { color: '#5F4600' },
+  amountPreset: { flex: 1, minHeight: 54, padding: 6, borderRadius: 16, borderWidth: 2, borderColor: colors.yellowBorder, borderBottomWidth: 4, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
+  amountPresetSelected: { backgroundColor: colors.yellowSoft, borderColor: colors.fundEdge },
+  amountPresetText: { color: colors.yellow, fontSize: 20, fontFamily: fonts.heading },
+  amountPresetTextSelected: { color: colors.yellow },
   amountRow: { marginTop: 8, flexDirection: 'row', alignItems: 'center', borderWidth: 2, borderColor: colors.line, borderRadius: 14, backgroundColor: colors.white },
-  dollar: { paddingLeft: 14, color: '#5F4600', fontSize: 18, fontWeight: '800' },
+  dollar: { paddingLeft: 14, color: colors.yellow, fontSize: 18, fontWeight: '800' },
   amountInput: { flex: 1, minHeight: 48, paddingHorizontal: 8, color: colors.ink, fontSize: 18, fontWeight: '700' },
   helper: { marginTop: 8, color: colors.muted, fontSize: 13 },
-  error: { color: '#A33A32' },
+  error: { color: colors.red },
   line: { minHeight: 38, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   lineLabel: { color: colors.body, fontSize: 15 },
   lineValue: { color: colors.ink, fontSize: 15, fontWeight: '700' },
-  totalLine: { marginTop: 6, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#FFE08A', borderStyle: 'dashed' },
+  totalLine: { marginTop: 6, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.yellowBorder, borderStyle: 'dashed' },
   totalLabel: { color: colors.ink, fontSize: 18, fontFamily: fonts.heading },
   totalValue: { color: colors.ink, fontSize: 18, fontFamily: fonts.heading },
   termsCard: { marginTop: 20, paddingTop: 16, flexDirection: 'row', gap: 10, borderTopWidth: 1, borderTopColor: colors.line },
   termsText: { flex: 1, color: colors.body, fontSize: 13, lineHeight: 19 },
-  pendingCard: { marginTop: 16, padding: 15, flexDirection: 'row', gap: 10, borderRadius: 14, backgroundColor: '#FFF4D6' },
-  pendingText: { flex: 1, color: '#7A5810', fontSize: 13, lineHeight: 19 },
+  pendingCard: { marginTop: 16, flexDirection: 'row', gap: 10 },
+  pendingText: { flex: 1, color: colors.yellow, fontSize: 13, lineHeight: 19, fontWeight: '600' },
   primaryButton: { minWidth: 220, minHeight: 54, marginTop: 22, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary },
   paymentTrustRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 5, marginTop: 9 },
   paymentTrustText: { color: colors.muted, fontSize: 12, lineHeight: 17 },
   paymentButton: { marginTop: 8, paddingHorizontal: 36, paddingVertical: 12 },
   paymentSpinner: { position: 'absolute', right: 10, top: 0, bottom: 0, width: 20, justifyContent: 'center', alignItems: 'center' },
   primaryButtonText: { color: colors.white, fontSize: 16, fontWeight: '800' },
-  secondaryButton: { minHeight: 48, marginTop: 10, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
-  secondaryButtonText: { color: colors.primary, fontSize: 15, fontWeight: '900' },
+  secondaryButton: { marginTop: 10 },
+  centerButton: { minWidth: 220, marginTop: 22 },
   disabled: { opacity: 0.55 },
 });

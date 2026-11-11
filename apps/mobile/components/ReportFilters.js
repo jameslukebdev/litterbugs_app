@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   mapLogo: { width: 42, height: 30 },
   mapSearchRow: { backgroundColor: 'transparent', borderWidth: 0, boxShadow: 'none' },
   mapFilterButton: { width: 52, height: 52, paddingHorizontal: 0, borderRadius: 26, borderWidth: 0, backgroundColor: 'transparent', boxShadow: 'none', shadowOpacity: 0, elevation: 0 },
-  filterButton: { minWidth: 50, height: 50, paddingHorizontal: 14, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: colors.white, borderWidth: 2, borderColor: '#E4C9ED' },
+  filterButton: { minWidth: 50, height: 50, paddingHorizontal: 14, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: colors.white, borderWidth: 2, borderColor: colors.cleanEdge },
   filterButtonText: { color: colors.plum, fontSize: 16, fontWeight: '800' },
   badge: { position: 'absolute', top: -3, right: -2, minWidth: 21, minHeight: 21, paddingHorizontal: 4, borderRadius: 12, backgroundColor: colors.primary, borderWidth: 2, borderColor: colors.white, alignItems: 'center', justifyContent: 'center' },
   badgeText: { fontSize: 11, fontWeight: '700', color: colors.white },

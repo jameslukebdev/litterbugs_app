@@ -454,7 +454,7 @@ const emailStyles = StyleSheet.create({
   eyeButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   forgotButton: { minHeight: 44, alignSelf: 'flex-end', justifyContent: 'center' },
   linkText: { color: colors.primary, fontSize: 14, fontWeight: '600' },
-  error: { color: '#B42318', fontSize: 14, lineHeight: 20, marginTop: 9 },
+  error: { color: colors.red, fontSize: 14, lineHeight: 20, marginTop: 9 },
   primaryButton: { minHeight: 52, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, marginTop: 14, width: '100%' },
   primaryButtonText: { color: colors.white, fontSize: 16, fontWeight: '600' },
   switchRow: { minHeight: 46, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 6 },

@@ -21,8 +21,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import BrandedLoadingState from './BrandedLoadingState';
-import SteadyButtonContent from './components/SteadyButtonContent';
+import LoadingBee from './components/LoadingBee';
+import { EmptyState, ErrorText, PrimaryButton, SecondaryButton, TextLink } from './components/ui';
 
 import CompactRankBadge from './CompactRankBadge';
 import ProfileAvatar from './ProfileAvatar';
@@ -66,7 +66,7 @@ const formatSubmittedAt = (value) => new Date(value).toLocaleString(undefined, {
 });
 
 function LoadingState() {
-  return <BrandedLoadingState title="Loading cleanup evidence…" message="Preparing the before-and-after photos for review." />;
+  return <LoadingBee label="Loading cleanup evidence" style={{ backgroundColor: colors.white }} />;
 }
 
 function ReviewPhoto({ title, url, path, bucket, index, count, width }) {
@@ -327,13 +327,8 @@ export default function CleanupReviewScreen({ navigation, route }) {
   if (!context) {
     return (
       <View style={styles.centerState}>
-        <Ionicons name="alert-circle-outline" size={44} color="#A33A32" />
-        <Text style={styles.centerTitle}>Review unavailable</Text>
-        <Text style={styles.centerText}>{loadError}</Text>
-        <TouchableOpacity accessibilityRole="button" style={styles.secondaryButton} onPress={retryContext}><Text style={styles.secondaryButtonText}>Retry</Text></TouchableOpacity>
-        <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.secondaryButtonText}>Go back</Text>
-        </TouchableOpacity>
+        <EmptyState icon={<Ionicons name="alert-circle-outline" size={40} color={colors.red} />} title="Review unavailable" text={loadError} action={{ label: 'Try again', onPress: retryContext }} />
+        <TextLink label="Go back" onPress={() => navigation.goBack()} />
       </View>
     );
   }
@@ -355,8 +350,8 @@ export default function CleanupReviewScreen({ navigation, route }) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {reviewDraftError || loadError ? <Text accessibilityRole="alert" style={{ color: '#B42318', padding: 16 }}>{reviewDraftError || 'Couldn’t update this cleanup. Refresh before sending your review.'}</Text> : null}
-        {loadError ? <TouchableOpacity accessibilityRole="button" disabled={loading} style={styles.secondaryButton} onPress={retryContext}><Text style={styles.secondaryButtonText}>{loading ? 'Updating…' : 'Try again'}</Text></TouchableOpacity> : null}
+        {reviewDraftError || loadError ? <ErrorText style={{ marginTop: 0, marginBottom: 8 }}>{reviewDraftError || 'Couldn’t update this cleanup. Refresh before sending your review.'}</ErrorText> : null}
+        {loadError ? <TextLink align="start" disabled={loading} label={loading ? 'Updating…' : 'Try again'} onPress={retryContext} /> : null}
         <Text style={styles.title}>Review this cleanup</Text>
         <Text style={styles.reportTitle}>{context.report.title || 'Litter cleanup'}</Text>
 
@@ -456,7 +451,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
           <View style={styles.actionSection}>
             {context.attempt.dispute_status === 'open' ? (
               <View style={styles.disputeStatusCard}>
-                <Ionicons name="shield-checkmark-outline" size={22} color="#8A6400" />
+                <Ionicons name="shield-checkmark-outline" size={22} color={colors.yellow} />
                 <Text style={styles.disputeStatusText}>A Litterbugs team member is reviewing your dispute. The reward remains paused.</Text>
               </View>
             ) : context.attempt.financial_review_status === 'passed' && context.attempt.review_due_at ? (
@@ -471,13 +466,13 @@ export default function CleanupReviewScreen({ navigation, route }) {
                   <Text style={styles.approveButtonText}>Approve cleanup</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.requestButton} onPress={() => setMode('dispute')} disabled={submitting}>
-                  <Ionicons name="flag-outline" size={21} color="#A33A32" />
+                  <Ionicons name="flag-outline" size={21} color={colors.red} />
                   <Text style={styles.requestButtonText}>Dispute cleanup</Text>
                 </TouchableOpacity>
               </>
             ) : (
               <View style={styles.disputeStatusCard}>
-                <ActivityIndicator color="#8A6400" />
+                <ActivityIndicator color={colors.yellow} />
                 <Text style={styles.disputeStatusText}>The cleanup is still being reviewed. The payout is paused.</Text>
               </View>
             )}
@@ -495,13 +490,9 @@ export default function CleanupReviewScreen({ navigation, route }) {
               maxLength={1000}
               textAlignVertical="top"
             />
-            {errors.note ? <Text style={styles.error}>{errors.note}</Text> : null}
-            <TouchableOpacity style={[styles.requestSubmitButton, submitting && styles.disabled]} onPress={submitPaidDispute} disabled={submitting}>
-              <SteadyButtonContent label="Submit dispute" busy={submitting} busyLabel="Submitting dispute…" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.secondaryButton} onPress={() => setMode('review')} disabled={submitting}>
-              <Text style={styles.secondaryButtonText}>Cancel</Text>
-            </TouchableOpacity>
+            <ErrorText style={styles.error}>{errors.note}</ErrorText>
+            <PrimaryButton label="Submit dispute" busy={submitting} busyLabel="Submitting dispute…" onPress={submitPaidDispute} style={styles.requestSubmitButton} />
+            <SecondaryButton label="Cancel" onPress={() => setMode('review')} disabled={submitting} style={styles.secondaryButton} />
           </View>
         ) : mode === 'review' ? (
           <View style={styles.actionSection}>
@@ -518,7 +509,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
               onPress={() => setMode('request_changes')}
               disabled={submitting}
             >
-              <Ionicons name="refresh-circle-outline" size={21} color="#A33A32" />
+              <Ionicons name="refresh-circle-outline" size={21} color={colors.red} />
               <Text style={styles.requestButtonText}>Request Changes</Text>
             </TouchableOpacity>
           </View>
@@ -553,7 +544,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
                 );
               })}
             </View>
-            {errors.reasons ? <Text style={styles.error}>{errors.reasons}</Text> : null}
+            <ErrorText style={styles.error}>{errors.reasons}</ErrorText>
 
             <Text style={styles.noteLabel}>Optional note</Text>
             <TextInput editable={reviewDraftReady && !submitting} selectionColor={colors.primary}
@@ -572,22 +563,10 @@ export default function CleanupReviewScreen({ navigation, route }) {
             <Text style={styles.characterCount}>
               {note.length}/{MAX_CLEANUP_REVIEW_NOTE_LENGTH}
             </Text>
-            {errors.note ? <Text style={styles.error}>{errors.note}</Text> : null}
+            <ErrorText style={styles.error}>{errors.note}</ErrorText>
 
-            <TouchableOpacity
-              style={[styles.requestSubmitButton, submitting && styles.disabled]}
-              onPress={submitChangeRequest}
-              disabled={submitting}
-            >
-              <SteadyButtonContent label="Send change request" busy={submitting} busyLabel="Sending review…" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.secondaryButton}
-              onPress={() => setMode('review')}
-              disabled={submitting}
-            >
-              <Text style={styles.secondaryButtonText}>Cancel</Text>
-            </TouchableOpacity>
+            <PrimaryButton label="Send change request" busy={submitting} busyLabel="Sending review…" onPress={submitChangeRequest} style={styles.requestSubmitButton} />
+            <SecondaryButton label="Cancel" onPress={() => setMode('review')} disabled={submitting} style={styles.secondaryButton} />
           </View>
         )}
       </ScrollView>
@@ -599,20 +578,18 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.white },
   content: { padding: 20 },
   centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: colors.white },
-  centerTitle: { marginTop: 14, color: colors.ink, fontSize: 22, fontFamily: fonts.heading },
-  centerText: { maxWidth: 340, marginTop: 9, color: colors.muted, fontSize: 15, lineHeight: 22, textAlign: 'center' },
   title: { color: colors.ink, fontSize: 24, lineHeight: 29, fontFamily: fonts.heading },
   reportTitle: { marginTop: 7, color: colors.muted, fontSize: 15, fontWeight: '700' },
   section: { marginTop: 20, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: 18, backgroundColor: colors.white },
   sectionTitle: { color: colors.ink, fontSize: 17, lineHeight: 23, fontFamily: fonts.heading },
-  financialCard: { marginTop: 20, padding: 16, borderWidth: 2, borderColor: '#FFE08A', borderRadius: 18, backgroundColor: '#FFFBEA' },
-  financialEyebrow: { color: '#5F4600', fontSize: 14, fontWeight: '800' },
+  financialCard: { marginTop: 20, padding: 16, borderWidth: 2, borderColor: colors.yellowBorder, borderRadius: 18, backgroundColor: colors.yellowSoft },
+  financialEyebrow: { color: colors.yellow, fontSize: 14, fontWeight: '800' },
   financialReward: { marginTop: 4, color: colors.ink, fontSize: 22, fontFamily: fonts.heading },
   financialSummary: { marginTop: 8, color: colors.body, fontSize: 14, lineHeight: 20 },
-  disputeDeadline: { marginTop: 10, color: '#5F4600', fontSize: 13, fontWeight: '700' },
+  disputeDeadline: { marginTop: 10, color: colors.yellow, fontSize: 13, fontWeight: '700' },
   paidReviewNotice: { padding: 15, color: colors.body, fontSize: 14, lineHeight: 20, borderRadius: 13, backgroundColor: colors.white },
-  disputeStatusCard: { padding: 16, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: '#E7CF79', borderRadius: 14, backgroundColor: '#FFF9DD' },
-  disputeStatusText: { flex: 1, color: '#755900', fontSize: 14, lineHeight: 20, fontWeight: '700' },
+  disputeStatusCard: { padding: 16, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: colors.yellowBorder, borderRadius: 14, backgroundColor: colors.yellowSoft },
+  disputeStatusText: { flex: 1, color: colors.yellow, fontSize: 14, lineHeight: 20, fontWeight: '700' },
   identityRow: { minHeight: 64, marginTop: 10, flexDirection: 'row', alignItems: 'center' },
   identityCopy: { flex: 1, marginLeft: 12 },
   identityName: { color: colors.ink, fontSize: 16, fontWeight: '600' },
@@ -637,8 +614,8 @@ const styles = StyleSheet.create({
   actionSection: { marginTop: 22 },
   approveButton: { minHeight: 54, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, backgroundColor: colors.primary },
   approveButtonText: { color: colors.white, fontSize: 16, fontWeight: '800' },
-  requestButton: { minHeight: 52, marginTop: 12, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: '#D9AAA5', borderRadius: 14, backgroundColor: colors.white },
-  requestButtonText: { color: '#A33A32', fontSize: 15, fontWeight: '600' },
+  requestButton: { minHeight: 52, marginTop: 12, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: colors.redBorder, borderRadius: 14, backgroundColor: colors.white },
+  requestButtonText: { color: colors.red, fontSize: 15, fontWeight: '600' },
   changeSection: { marginTop: 22, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: 16, backgroundColor: colors.white },
   helper: { marginTop: 7, color: colors.muted, fontSize: 14, lineHeight: 20 },
   reasonList: { marginTop: 14, gap: 9 },
@@ -650,11 +627,10 @@ const styles = StyleSheet.create({
   noteLabel: { marginTop: 18, color: colors.body, fontSize: 13, fontWeight: '600' },
   noteInput: { minHeight: 112, marginTop: 8, padding: 13, borderWidth: 1, borderColor: colors.line, borderRadius: 13, color: colors.ink, fontSize: 15, lineHeight: 21, backgroundColor: colors.white },
   characterCount: { marginTop: 5, color: colors.subtle, fontSize: 12, textAlign: 'right' },
-  inputError: { borderColor: '#C94F45' },
-  error: { marginTop: 7, color: '#B63D34', fontSize: 13, lineHeight: 18 },
-  requestSubmitButton: { minHeight: 52, marginTop: 18, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#A33A32' },
+  inputError: { borderColor: colors.red },
+  error: { marginTop: 7, fontSize: 13, lineHeight: 18 },
+  requestSubmitButton: { marginTop: 18, backgroundColor: colors.red },
   requestSubmitText: { color: colors.white, fontSize: 15, fontWeight: '600' },
-  secondaryButton: { minHeight: 50, marginTop: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.subtle, borderRadius: 14, backgroundColor: colors.white },
-  secondaryButtonText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
+  secondaryButton: { marginTop: 12 },
   disabled: { opacity: 0.6 },
 });

@@ -33,7 +33,7 @@ function websiteSummary(report, distanceText) {
   return [distanceText, typeSummary || report?.types || 'General litter'].filter(Boolean).join(' · ');
 }
 // Severity is a coloured dot and word, as on the website.
-const SEVERITY_DOT = { Low: '#77B847', Medium: '#F2A93B', High: '#ED3F48' };
+const SEVERITY_DOT = { Low: colors.severityLow, Medium: colors.severityMedium, High: colors.severityHigh };
 
 function getLitterSummary(report) {
   const items = [

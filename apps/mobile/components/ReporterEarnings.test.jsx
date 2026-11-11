@@ -7,6 +7,8 @@ vi.mock('react-native', () => ({
   ActivityIndicator: () => <span>Loading reporter earnings</span>,
   TouchableOpacity: ({ children, onPress }) => <button onClick={onPress}>{children}</button>,
 }));
+vi.mock('./LoadingBee', () => ({ default: ({ label }) => <span>{label}</span> }));
+vi.mock('./ui', () => ({ LoadFailure: ({ title, onRetry }) => <button onClick={onRetry}>{title}</button> }));
 const state = vi.hoisted(() => ({ resource: {} }));
 vi.mock('../lib/useFocusedResource', () => ({ default: () => state.resource }));
 vi.mock('../lib/funding', () => ({ formatUsd: cents => `$${(cents / 100).toFixed(2)}`, loadReporterRewards: vi.fn() }));

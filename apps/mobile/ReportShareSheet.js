@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import SlideUp from './components/SlideUp';
 import { colors, fonts } from './lib/theme';
 
 const logo = require('./assets/LB_Logo_PNG.png');
@@ -31,7 +32,7 @@ function ShareOption({
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ busy, disabled: busy }}
     >
-      <View style={[styles.optionIcon, { backgroundColor: `${iconColor}14` }]}>
+      <View style={styles.optionIcon}>
         {busy ? (
           <ActivityIndicator color={iconColor} />
         ) : (
@@ -75,7 +76,7 @@ export default function ReportShareSheet({
       accessibilityViewIsModal
       accessibilityLabel={completed ? 'Share cleanup' : 'Share report'}
     >
-      <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 18) }]}>
+      <SlideUp style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 18) }]}>
           <View style={styles.handle} />
           <View style={styles.header}>
             <View style={styles.headerCopy}>
@@ -151,7 +152,7 @@ export default function ReportShareSheet({
             </Text>
           </View>
           </ScrollView>
-      </View>
+      </SlideUp>
     </View>
   );
 }
@@ -260,11 +261,10 @@ const styles = StyleSheet.create({
   },
   optionBusy: { opacity: 0.74 },
   optionIcon: {
-    width: 44,
+    width: 32,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 13,
   },
   optionCopy: { flex: 1, gap: 2 },
   optionTitle: { color: colors.ink, fontSize: 15, lineHeight: 21, fontWeight: '600' },

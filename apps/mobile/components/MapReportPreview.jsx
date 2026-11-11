@@ -201,7 +201,7 @@ export default function MapReportPreview({
 
 const styles = StyleSheet.create({
   // Website floating map card (.map-pin-card): white, lilac edge, soft purple shadow.
-  card: { position: 'absolute', left: 16, right: 16, borderRadius: 20, backgroundColor: colors.white, borderWidth: 2, borderColor: '#ECE8F8', boxShadow: '0 4px 0 #EBE7F8, 0 16px 32px rgba(42, 34, 90, 0.12)', elevation: 9 },
+  card: { position: 'absolute', left: 16, right: 16, borderRadius: 20, backgroundColor: colors.white, borderWidth: 2, borderColor: colors.edge, boxShadow: '0 4px 0 #EBE7F8, 0 16px 32px rgba(42, 34, 90, 0.12)', elevation: 9 },
   completedCard: {},
   copy: { flex: 1, gap: 5 },
   title: { fontSize: 15, fontWeight: '700', color: colors.ink },

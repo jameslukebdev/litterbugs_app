@@ -22,14 +22,14 @@ export default function ReportPhotoGallery({ report, urls, loading, width }) {
     return (
       <View style={[styles.empty, { width, alignSelf: 'center' }]}>
         <ActivityIndicator color={colors.primary} />
-        <Text>Loading photos…</Text>
+        <Text style={styles.loadingText}>Loading photos…</Text>
       </View>
     );
   if (!urls.length && !report.photo_paths?.length)
     return (
       <View style={[styles.empty, { width, alignSelf: 'center' }]}>
         <Text style={styles.caption}>Photo unavailable</Text>
-        <Text>The report details remain available below.</Text>
+        <Text style={styles.loadingText}>The report details remain available below.</Text>
       </View>
     );
   return (
@@ -109,4 +109,5 @@ const styles = StyleSheet.create({
   dot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: colors.lineStrong },
   dotActive: { width: 9, height: 9, borderRadius: 4.5, backgroundColor: colors.primary },
   caption: { padding: 10, fontWeight: '600', color: colors.body },
+  loadingText: { marginTop: 8, color: colors.muted, fontSize: 14, textAlign: 'center' },
 });

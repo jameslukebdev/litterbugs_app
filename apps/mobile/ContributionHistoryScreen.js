@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatUsd, loadMyContributions } from './lib/funding';
 import PaymentStatus from './components/PaymentStatus';
-import BrandBug from './components/BrandBug';
+import { EmptyState, ErrorText, PillTabs, TextLink } from './components/ui';
 import LoadingBee from './components/LoadingBee';
 import { colors, fonts } from './lib/theme';
 
@@ -39,10 +39,10 @@ export default function ContributionHistoryScreen({ navigation }) {
       data={items}
       keyExtractor={item => item.id}
       ListHeaderComponent={<>
-      <View style={styles.tabs}>{[[false,'All payments'],[true,'Completed impact']].map(([value,label]) => <TouchableOpacity key={label} accessibilityRole="tab" accessibilityState={{selected:completedOnly===value}} onPress={() => setCompletedOnly(value)} style={[styles.tab, completedOnly === value && styles.tabSelected]}><Text style={[styles.tabText, completedOnly === value && styles.tabTextSelected]}>{label}</Text></TouchableOpacity>)}</View>
-      {error ? <View><Text style={styles.error}>Couldn’t refresh payment history.</Text><TouchableOpacity accessibilityRole="button" style={styles.more} onPress={load}><Text style={styles.status}>Retry payment history</Text></TouchableOpacity></View> : null}
+      <PillTabs style={styles.tabs} value={completedOnly ? 'completed' : 'all'} onChange={value => setCompletedOnly(value === 'completed')} options={[['all', 'All payments'], ['completed', 'Completed impact']]} />
+      {error ? <View><ErrorText style={styles.error}>Couldn’t refresh payment history.</ErrorText><TextLink label="Retry payment history" onPress={load} /></View> : null}
       {hasLoaded && !error && items.length === 0 ? (
-        <View style={styles.empty}><BrandBug kind={completedOnly ? 'flower' : 'bee'} size={36} /><Text style={styles.emptyTitle}>{completedOnly ? 'No completed impact yet' : 'No payments yet'}</Text><Text style={styles.emptyCopy}>{completedOnly ? 'Contributions to completed cleanups will appear here.' : 'Your contributions and unfinished payments will appear here.'}</Text></View>
+        <EmptyState style={styles.empty} bug={completedOnly ? 'flower' : 'bee'} title={completedOnly ? 'No completed impact yet' : 'No payments yet'} text={completedOnly ? 'Contributions to completed cleanups will appear here.' : 'Your contributions and unfinished payments will appear here.'} />
       ) : null}
       </>}
       renderItem={({ item }) => (
@@ -66,27 +66,20 @@ export default function ContributionHistoryScreen({ navigation }) {
       {!hasLoaded && !error ? <View style={styles.waiting} accessibilityRole="progressbar" accessibilityLabel="Loading payment history">
         {showWaiting ? <LoadingBee label="Loading payment history" message="Loading payments…" /> : null}
       </View> : null}
-      {history.moreError ? <Text style={styles.error}>Couldn’t load older payments. Your current history is still available.</Text> : null}
-      {history.nextCursor ? <TouchableOpacity accessibilityRole="button" disabled={loading || history.loadingMore} style={styles.more} onPress={history.loadMore}><Text style={styles.status}>{history.loadingMore ? 'Loading older payments…' : history.moreError ? 'Retry older payments' : 'Load older payments'}</Text></TouchableOpacity> : null}
+      {history.moreError ? <ErrorText style={styles.error}>Couldn’t load older payments. Your current history is still available.</ErrorText> : null}
+      {history.nextCursor ? <TextLink disabled={loading || history.loadingMore} onPress={history.loadMore} label={history.loadingMore ? 'Loading older payments…' : history.moreError ? 'Retry older payments' : 'Load older payments'} /> : null}
       </>}
     />
   );
 }
 
 const styles = StyleSheet.create({
-  tabs: { flexDirection: 'row', gap: 8, marginBottom: 18 },
-  tab: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6, borderRadius: 22, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.white },
-  tabText: { color: colors.muted, fontSize: 14, fontWeight: '600' },
-  tabTextSelected: { color: colors.primaryDark, fontWeight: '800' },
-  tabSelected: { borderWidth: 2, borderColor: colors.primary },
+  tabs: { marginBottom: 18 },
   detailsLink: { minHeight: 44, marginTop: 8, paddingTop: 4, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   waiting: { minHeight: 300, alignItems: 'center', justifyContent: 'center' },
-  more: { minHeight: 48, padding: 12, alignItems: 'center', justifyContent: 'center' },
-  emptyCopy: { marginTop: 8, color: colors.muted, textAlign: 'center', lineHeight: 21 },
   content: { flexGrow: 1, padding: 20, backgroundColor: colors.white },
-  error: { padding: 16, color: '#A33A32', textAlign: 'center' },
-  empty: { minHeight: 280, alignItems: 'center', justifyContent: 'center' },
-  emptyTitle: { marginTop: 12, color: colors.ink, fontSize: 17, lineHeight: 23, fontFamily: fonts.heading },
+  error: { padding: 16, textAlign: 'center' },
+  empty: { minHeight: 280 },
   card: { marginBottom: 14, padding: 16, borderRadius: 18, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
   line: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignItems: 'center', justifyContent: 'space-between' },
   amount: { color: colors.ink, fontSize: 22, fontFamily: fonts.heading },

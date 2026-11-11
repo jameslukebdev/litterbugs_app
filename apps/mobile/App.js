@@ -18,15 +18,16 @@ import {
   Alert,
   Image,
   Linking,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   useWindowDimensions,
   View,
 } from 'react-native';
 
 import AppTabs from './AppTabs';
+import { PrimaryButton, TextLink } from './components/ui';
 import BrandedLoadingState from './BrandedLoadingState';
 import AuthScreen from './AuthScreen';
 import SignInMethodsScreen from './SignInMethodsScreen';
@@ -102,23 +103,8 @@ function HomeScreen({ navigation }) {
       <Text style={styles.title}>A cleaner community starts here.</Text>
       <Text style={styles.subtitle}>Report litter, help clean it up, or fund a local cleanup.</Text>
 
-      <TouchableOpacity
-        style={styles.primaryButton}
-        onPress={async () => { await markWelcomeSeen(); navigation.replace('App', { screen: 'Map' }); }}
-        accessibilityRole="button"
-        accessibilityLabel="Explore the Map"
-      >
-        <Text style={styles.primaryButtonText}>Explore the Map</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.secondaryButton}
-        onPress={async () => { await markWelcomeSeen(); navigation.navigate('Auth'); }}
-        accessibilityRole="button"
-        accessibilityLabel="Sign in or create account"
-      >
-        <Text style={styles.secondaryButtonText}>Sign in or create account</Text>
-      </TouchableOpacity>
+      <PrimaryButton label="Explore the Map" style={styles.primaryButton} onPress={async () => { await markWelcomeSeen(); navigation.replace('App', { screen: 'Map' }); }} />
+      <TextLink tone="muted" label="Sign in or create account" style={styles.secondaryButton} onPress={async () => { await markWelcomeSeen(); navigation.navigate('Auth'); }} />
       <StatusBar hidden={false} style="dark" backgroundColor={colors.white} />
     </ScrollView>
   );
@@ -139,12 +125,8 @@ function ProfileLoadError() {
     >
       <Text style={styles.errorTitle}>We couldn’t load your profile</Text>
       <Text style={styles.errorText}>Check your connection and try again.</Text>
-      <TouchableOpacity style={styles.primaryButton} onPress={refreshProfile}>
-        <Text style={styles.primaryButtonText}>Try again</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.textButton} onPress={signOut}>
-        <Text style={styles.textButtonText}>Sign out</Text>
-      </TouchableOpacity>
+      <PrimaryButton label="Try again" style={styles.primaryButton} onPress={refreshProfile} />
+      <TextLink label="Sign out" style={styles.textButton} onPress={signOut} />
     </ScrollView>
   );
 }
@@ -285,7 +267,8 @@ function AppNavigation({
       <Stack.Navigator
         key={permanent ? 'permanent' : 'signed-out'}
         initialRouteName={initialRouteName}
-        screenOptions={{ headerShown: false }}
+        // Android pushes slide in from the right like iOS, instead of the system default.
+        screenOptions={{ headerShown: false, animation: Platform.OS === 'android' ? 'slide_from_right' : 'default' }}
       >
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="App">
@@ -362,7 +345,7 @@ function AppNavigation({
         <Stack.Screen
           name="ReportUser"
           component={ReportUserScreen}
-          options={{ ...headerOptions, title: 'Report user', presentation: 'modal' }}
+          options={{ ...headerOptions, title: 'Report user', presentation: 'modal', animation: Platform.OS === 'android' ? 'slide_from_bottom' : 'default' }}
         />
       </Stack.Navigator>
     </NavigationContainer>
@@ -559,31 +542,8 @@ const styles = StyleSheet.create({
     lineHeight: 23,
     textAlign: 'center',
   },
-  primaryButton: {
-    width: '100%',
-    maxWidth: 390,
-    minHeight: 54,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 14,
-    backgroundColor: colors.primary,
-  },
-  primaryButtonText: { color: colors.white, fontSize: 17, fontWeight: '800' },
-  secondaryButton: {
-    width: '100%',
-    maxWidth: 390,
-    minHeight: 52,
-    marginTop: 12,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 14,
-    backgroundColor: colors.white,
-  },
-  secondaryButtonText: { color: colors.body, fontSize: 16, fontWeight: '600' },
+  primaryButton: { width: '100%', maxWidth: 390 },
+  secondaryButton: { minHeight: 52, marginTop: 12 },
   errorState: {
     flexGrow: 1,
     alignItems: 'center',
@@ -598,6 +558,5 @@ const styles = StyleSheet.create({
   },
   errorTitle: { color: colors.ink, fontSize: 22, fontFamily: fonts.heading, textAlign: 'center' },
   errorText: { marginVertical: 10, color: colors.muted, fontSize: 15, textAlign: 'center' },
-  textButton: { minHeight: 48, justifyContent: 'center', marginTop: 8 },
-  textButtonText: { color: colors.primary, fontSize: 15, fontWeight: '800' },
+  textButton: { marginTop: 8 },
 });

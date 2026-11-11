@@ -2,25 +2,20 @@ import RemotePhoto from './components/RemotePhoto';
 import { useReports } from './lib/reports';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import BrandBug from './components/BrandBug';
+import { EmptyState } from './components/ui';
 import { colors } from './lib/theme';
 
-const severityColor = (severity) => {
-  if (String(severity).toLowerCase() === 'high') return '#C62828';
-  if (String(severity).toLowerCase() === 'low') return colors.muted;
-  return '#D66A00';
+// Website report cards: a green, orange or red dot beside plain words.
+const SEVERITY_DOT = { low: colors.severityLow, medium: colors.severityMedium, high: colors.severityHigh };
+const severityLabel = (severity) => {
+  const value = String(severity || '').toLowerCase();
+  return SEVERITY_DOT[value] ? value.charAt(0).toUpperCase() + value.slice(1) : null;
 };
 
 export default function ProfileReportList({ reports, onReportPress, emptyTitle = "No active reports", emptyText = "Active reports will appear here." }) {
   const { getReportPhotoUrl } = useReports();
   if (!reports?.length) {
-    return (
-      <View style={styles.empty}>
-        <BrandBug kind="ladybug" size={36} />
-        <Text style={styles.emptyTitle}>{emptyTitle}</Text>
-        <Text style={styles.emptyText}>{emptyText}</Text>
-      </View>
-    );
+    return <EmptyState bug="ladybug" title={emptyTitle} text={emptyText} />;
   }
 
   return reports.map((report, index) => (
@@ -35,12 +30,17 @@ export default function ProfileReportList({ reports, onReportPress, emptyTitle =
       <RemotePhoto path={report.photo_paths?.[0]} getUrl={getReportPhotoUrl} label={`Photo for ${report.title || 'litter report'}`} style={styles.photo} />
       <View style={styles.copy}>
         <Text style={styles.title} numberOfLines={2}>{report.title || 'Litter Report'}</Text>
-        <Text style={[styles.severity, { color: severityColor(report.severity) }]}>
-          {report.severity || 'Unrated'} severity
-        </Text>
-        {report.created_at ? (
-          <Text style={styles.date}>{new Date(report.created_at).toLocaleDateString()}</Text>
-        ) : null}
+        <View style={styles.meta}>
+          {severityLabel(report.severity) ? (
+            <>
+              <View style={[styles.severityDot, { backgroundColor: SEVERITY_DOT[String(report.severity).toLowerCase()] }]} />
+              <Text style={styles.severity}>{severityLabel(report.severity)}</Text>
+            </>
+          ) : null}
+          {report.created_at ? (
+            <Text style={styles.date}>{new Date(report.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
+          ) : null}
+        </View>
       </View>
       <Ionicons name="chevron-forward" size={18} color={colors.subtle} />
     </TouchableOpacity>
@@ -63,15 +63,8 @@ const styles = StyleSheet.create({
   },
   copy: { flex: 1, marginRight: 8 },
   title: { color: colors.ink, fontSize: 16, lineHeight: 22, fontWeight: '600' },
-  severity: { marginTop: 5, fontSize: 12, fontWeight: '500' },
-  date: { marginTop: 3, color: colors.muted, fontSize: 13 },
-  empty: {
-    minHeight: 200,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    backgroundColor: colors.white,
-  },
-  emptyTitle: { marginTop: 10, color: colors.ink, fontSize: 16, lineHeight: 22, fontWeight: '600' },
-  emptyText: { marginTop: 5, color: colors.muted, fontSize: 14, lineHeight: 21, textAlign: 'center' },
+  meta: { marginTop: 5, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
+  severityDot: { width: 8, height: 8, borderRadius: 4 },
+  severity: { marginRight: 6, color: colors.body, fontSize: 13, fontWeight: '600' },
+  date: { color: colors.muted, fontSize: 13 },
 });

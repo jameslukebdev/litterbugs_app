@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import SteadyButtonContent from './components/SteadyButtonContent';
+import { ErrorText, PrimaryButton, TextLink } from './components/ui';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from './lib/supabase';
 import BrandBug from './components/BrandBug';
@@ -93,20 +93,10 @@ export default function ResetPasswordScreen({ onComplete, onCancel }) {
           accessibilityLabel="Confirm new password"
         />
 
-        {!!message && <Text accessibilityRole="alert" style={styles.message}>{message}</Text>}
+        <ErrorText style={styles.message}>{message}</ErrorText>
 
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={updatePassword}
-          disabled={loading}
-          accessibilityRole="button"
-          accessibilityLabel="Save new password"
-        >
-          <SteadyButtonContent label="Save password" busy={loading} busyLabel="Saving password…" />
-        </TouchableOpacity>
-        {onCancel ? <TouchableOpacity accessibilityRole="button" disabled={loading} onPress={onCancel} style={styles.cancelButton}>
-          <Text style={styles.cancelText}>Not now</Text>
-        </TouchableOpacity> : null}
+        <PrimaryButton label="Save password" busy={loading} busyLabel="Saving password…" onPress={updatePassword} accessibilityLabel="Save new password" style={styles.button} />
+        {onCancel ? <TextLink label="Not now" disabled={loading} onPress={onCancel} style={styles.cancelButton} /> : null}
       </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -143,17 +133,7 @@ const styles = StyleSheet.create({
   },
   passwordInput: { flex: 1, paddingHorizontal: 14 },
   eyeButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
-  message: { color: '#B42318', marginTop: 14, lineHeight: 20 },
-  button: {
-    minHeight: 50,
-    marginTop: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
-  },
-  buttonDisabled: { opacity: 0.65 },
-  cancelButton: { minHeight: 48, marginTop: 8, alignItems: 'center', justifyContent: 'center' },
-  cancelText: { color: colors.primary, fontSize: 16, fontWeight: '600' },
-  buttonText: { color: colors.white, fontSize: 16, fontWeight: '600' },
+  message: { marginTop: 14 },
+  button: { marginTop: 20 },
+  cancelButton: { marginTop: 8 },
 });

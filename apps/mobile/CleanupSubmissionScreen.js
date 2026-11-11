@@ -25,6 +25,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BrandedLoadingState, { LoadingButtonContent } from './BrandedLoadingState';
+import LoadingBee from './components/LoadingBee';
+import { EmptyState, ErrorText, SecondaryButton, TextLink } from './components/ui';
 
 import {
   chooseCleanupPhotos,
@@ -61,7 +63,7 @@ const submissionErrorMessage = (error) => {
 };
 
 function LoadingState() {
-  return <BrandedLoadingState title="Opening cleanup…" message="Loading the report and your cleanup details." />;
+  return <LoadingBee label="Opening cleanup" style={{ backgroundColor: colors.white }} />;
 }
 
 function CleanupPhoto({ photo, index, review = false, onRemove }) {
@@ -324,22 +326,15 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
     const recovery = cleanupLoadErrorPresentation(loadError);
     return (
       <View style={styles.centerState}>
-        <Ionicons name="alert-circle-outline" size={44} color="#A33A32" />
-        <Text style={styles.centerTitle}>Cleanup unavailable</Text>
-        <Text style={styles.centerText}>{recovery.message}</Text>
-        {recovery.retryable ? <TouchableOpacity accessibilityRole="button" style={styles.primaryButton} onPress={contextResource.refresh}><Text style={styles.primaryButtonText}>Retry cleanup</Text></TouchableOpacity> : null}
-        <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.secondaryButtonText}>Go back</Text>
-        </TouchableOpacity>
+        <EmptyState icon={<Ionicons name="alert-circle-outline" size={40} color={colors.red} />} title="Cleanup unavailable" text={recovery.message} action={recovery.retryable ? { label: 'Retry cleanup', onPress: contextResource.refresh } : null} />
+        <TextLink label="Go back" onPress={() => navigation.goBack()} />
       </View>
     );
   }
 
   if (draftLoadError) return <View style={styles.centerState}>
-    <Text style={styles.centerTitle}>Couldn’t restore your draft</Text>
-    <Text style={styles.centerText}>Retry before adding evidence so your saved draft is not replaced.</Text>
-    <TouchableOpacity accessibilityRole="button" style={styles.primaryButton} onPress={() => setDraftRestoreAttempt(attempt => attempt + 1)}><Text style={styles.primaryButtonText}>Retry saved draft</Text></TouchableOpacity>
-    <TouchableOpacity accessibilityRole="button" style={styles.secondaryButton} onPress={() => navigation.goBack()}><Text style={styles.secondaryButtonText}>Go back</Text></TouchableOpacity>
+    <EmptyState icon={<Ionicons name="alert-circle-outline" size={40} color={colors.red} />} title="Couldn’t restore your draft" text="Retry before adding evidence so your saved draft is not replaced." action={{ label: 'Retry saved draft', onPress: () => setDraftRestoreAttempt(attempt => attempt + 1) }} />
+    <TextLink label="Go back" onPress={() => navigation.goBack()} />
   </View>;
 
   const reportTitle = context.report?.title || 'Litter cleanup';
@@ -386,7 +381,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
       >
         {draftReady && !submitted.current ? <CloudDraftStatus userId={userId} draftKey={`cleanup:${cleanupId}`} onRestored={() => setDraftRestoreAttempt(value => value + 1)} /> : null}
         {!submitted.current ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-          {missingPhotoCount > 0 ? <Text style={{ color: '#8A6400', marginBottom: 8 }}>{missingPhotoCount} saved {missingPhotoCount === 1 ? 'photo is' : 'photos are'} no longer on this device. Add replacement photos before submitting. Your other answers were kept.</Text> : null}
+          {missingPhotoCount > 0 ? <Text style={{ color: colors.yellow, marginBottom: 8 }}>{missingPhotoCount} saved {missingPhotoCount === 1 ? 'photo is' : 'photos are'} no longer on this device. Add replacement photos before submitting. Your other answers were kept.</Text> : null}
           <Text accessibilityLiveRegion="polite" style={{ flex: 1, color: colors.muted, fontSize: 12 }}>{draftStatus}</Text>
           <TouchableOpacity accessibilityRole="button" disabled={submitting} onPress={saveAndExit} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: colors.primary, fontWeight: '700' }}>Save and exit</Text></TouchableOpacity>
         </View> : null}
@@ -405,7 +400,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
 
         {isCorrection && step === 'form' ? (
           <View style={styles.correctionNotice}>
-            <Ionicons name="time-outline" size={21} color="#755900" />
+            <Ionicons name="time-outline" size={21} color={colors.yellow} />
             <View style={styles.correctionNoticeCopy}>
               <Text style={styles.correctionNoticeTitle}>Changes requested</Text>
               <Text style={styles.correctionNoticeText}>Resubmit by {correctionDeadline}.</Text>
@@ -447,7 +442,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
                   </TouchableOpacity>
                 </View>
               ) : null}
-              {errors.photos ? <Text style={styles.error}>{errors.photos}</Text> : null}
+              <ErrorText style={styles.error}>{errors.photos}</ErrorText>
             </View>
 
             <View style={styles.section}>
@@ -474,7 +469,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
               <Text style={styles.characterCount}>
                 {description.length}/{MAX_CLEANUP_DESCRIPTION_LENGTH}
               </Text>
-              {errors.description ? <Text style={styles.error}>{errors.description}</Text> : null}
+              <ErrorText style={styles.error}>{errors.description}</ErrorText>
             </View>
 
             <View style={styles.section}>
@@ -497,7 +492,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
                     editable={!submitting}
                     onFocus={() => revealCleanupEntryField(bagsInputRef)}
                   />
-                  {errors.bagsOrItemsRemoved ? <Text style={styles.error}>{errors.bagsOrItemsRemoved}</Text> : null}
+                  <ErrorText style={styles.error}>{errors.bagsOrItemsRemoved}</ErrorText>
                 </View>
                 <View style={styles.numericField}>
                   <Text style={styles.inputLabel}>Weight removed (lb)</Text>
@@ -515,7 +510,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
                     editable={!submitting}
                     onFocus={() => revealCleanupEntryField(weightInputRef)}
                   />
-                  {errors.weightPounds ? <Text style={styles.error}>{errors.weightPounds}</Text> : null}
+                  <ErrorText style={styles.error}>{errors.weightPounds}</ErrorText>
                 </View>
               </View>
             </View>
@@ -536,7 +531,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
               </View>
               {photos.length === 1 ? (
                 <View style={styles.encouragement}>
-                  <Ionicons name="information-circle-outline" size={20} color="#755900" />
+                  <Ionicons name="information-circle-outline" size={20} color={colors.yellow} />
                   <Text style={styles.encouragementText}>
                     One photo is allowed. Add another angle if it would make the result clearer.
                   </Text>
@@ -582,13 +577,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
                 </>
               )}
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.secondaryButton}
-              onPress={() => setStep('form')}
-              disabled={submitting}
-            >
-              <Text style={styles.secondaryButtonText}>Edit details</Text>
-            </TouchableOpacity>
+            <SecondaryButton label="Edit details" onPress={() => setStep('form')} disabled={submitting} style={styles.secondaryButton} />
           </>
         )}
       </ScrollView>
@@ -600,16 +589,14 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.white },
   content: { padding: 20 },
   centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: colors.white },
-  centerTitle: { marginTop: 14, color: colors.ink, fontSize: 22, fontFamily: fonts.heading },
-  centerText: { maxWidth: 340, marginTop: 9, color: colors.muted, fontSize: 15, lineHeight: 22, textAlign: 'center' },
   flowHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   flowBug: { width: 44, height: 44 },
   title: { color: colors.ink, fontSize: 20, lineHeight: 24, fontFamily: fonts.heading },
   reportTitle: { marginTop: 2, color: colors.muted, fontSize: 14, lineHeight: 21 },
-  correctionNotice: { marginTop: 18, padding: 14, flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: 14, backgroundColor: '#FFF9DD' },
+  correctionNotice: { marginTop: 18, padding: 14, flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: 14, backgroundColor: colors.yellowSoft },
   correctionNoticeCopy: { flex: 1 },
-  correctionNoticeTitle: { color: '#755900', fontSize: 14, fontWeight: '600' },
-  correctionNoticeText: { marginTop: 3, color: '#755900', fontSize: 13, lineHeight: 18 },
+  correctionNoticeTitle: { color: colors.yellow, fontSize: 14, fontWeight: '600' },
+  correctionNoticeText: { marginTop: 3, color: colors.yellow, fontSize: 13, lineHeight: 18 },
   feedbackLink: { marginTop: 7, color: colors.primary, fontSize: 13, fontWeight: '600' },
   section: { marginTop: 22, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: 18, backgroundColor: colors.white },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
@@ -622,7 +609,7 @@ const styles = StyleSheet.create({
   photoLoading: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.line },
   removePhoto: { position: 'absolute', top: 2, right: 2, width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(41, 41, 50, 0.78)' },
   photoActions: { marginTop: 14, flexDirection: 'row', gap: 10 },
-  photoButton: { flex: 1, minHeight: 48, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderWidth: 1.5, borderColor: colors.primaryBorder, borderBottomWidth: 4, borderBottomColor: '#EBE7F8', borderRadius: 13, backgroundColor: colors.white },
+  photoButton: { flex: 1, minHeight: 48, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderWidth: 1.5, borderColor: colors.primaryBorder, borderBottomWidth: 4, borderBottomColor: colors.edge, borderRadius: 13, backgroundColor: colors.white },
   photoButtonText: { color: colors.primaryDark, fontSize: 14, fontWeight: '800' },
   descriptionInput: { minHeight: 132, marginTop: 14, padding: 14, borderWidth: 1, borderColor: colors.line, borderRadius: 13, color: colors.ink, fontSize: 16, lineHeight: 22, backgroundColor: colors.white },
   characterCount: { marginTop: 5, color: colors.subtle, fontSize: 12, textAlign: 'right' },
@@ -630,12 +617,11 @@ const styles = StyleSheet.create({
   numericField: { flex: 1 },
   inputLabel: { color: colors.body, fontSize: 13, fontWeight: '700' },
   numericInput: { minHeight: 50, marginTop: 7, paddingHorizontal: 13, borderWidth: 1, borderColor: colors.line, borderRadius: 12, color: colors.ink, fontSize: 16, backgroundColor: colors.white },
-  inputError: { borderColor: '#C94F45' },
-  error: { marginTop: 7, color: '#B63D34', fontSize: 13, lineHeight: 18 },
+  inputError: { borderColor: colors.red },
+  error: { marginTop: 7, fontSize: 13, lineHeight: 18 },
   primaryButton: { minHeight: 54, marginTop: 22, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, backgroundColor: colors.primary },
   primaryButtonText: { color: colors.white, fontSize: 16, fontWeight: '800' },
-  secondaryButton: { minHeight: 50, marginTop: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.line, borderRadius: 14, backgroundColor: colors.white },
-  secondaryButtonText: { color: colors.primaryDark, fontSize: 15, fontWeight: '800' },
+  secondaryButton: { marginTop: 12 },
   reviewCard: { marginTop: 22, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: 16, backgroundColor: colors.white },
   reviewLabel: { marginTop: 16, color: colors.muted, fontSize: 11, fontWeight: '600', letterSpacing: 0.8 },
   reviewPhotoWrap: { width: '31%', aspectRatio: 1, overflow: 'hidden', borderRadius: 12, backgroundColor: colors.line },
@@ -644,8 +630,8 @@ const styles = StyleSheet.create({
   reviewMetrics: { flexDirection: 'row', gap: 12 },
   reviewMetric: { flex: 1 },
   reviewMetricValue: { marginTop: 5, color: colors.ink, fontSize: 15, fontWeight: '600' },
-  encouragement: { marginTop: 13, padding: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderRadius: 12, backgroundColor: '#FFF9DD' },
-  encouragementText: { flex: 1, color: '#755900', fontSize: 13, lineHeight: 18 },
+  encouragement: { marginTop: 13, padding: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderRadius: 12, backgroundColor: colors.yellowSoft },
+  encouragementText: { flex: 1, color: colors.yellow, fontSize: 13, lineHeight: 18 },
   reviewNotice: { marginTop: 17, paddingHorizontal: 5, color: colors.muted, fontSize: 14, lineHeight: 20, textAlign: 'center' },
   disabled: { opacity: 0.6 },
 });

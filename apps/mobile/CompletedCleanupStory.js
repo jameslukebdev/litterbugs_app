@@ -246,9 +246,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
   },
-  descriptionCard: { paddingTop: 14, borderTopWidth: 1, borderTopColor: '#ECE8F8' },
+  descriptionCard: { paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.edge },
   descriptionLabel: { color: colors.ink, fontSize: 13, fontWeight: '800' },
-  descriptionText: { marginTop: 5, color: '#45434D', fontSize: 15, lineHeight: 22 },
+  descriptionText: { marginTop: 5, color: colors.body, fontSize: 15, lineHeight: 22 },
   factsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',

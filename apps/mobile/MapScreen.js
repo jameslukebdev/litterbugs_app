@@ -2418,7 +2418,7 @@ const revealBottomReportField = () => {
           accessibilityRole="button"
           accessibilityLabel="Support Litterbugs on Patreon"
         >
-          <Ionicons name="heart" size={22} color="#E53935" />
+          <Ionicons name="heart" size={22} color={colors.severityHigh} />
         </TouchableOpacity> */}
 
 
@@ -2587,7 +2587,7 @@ const revealBottomReportField = () => {
 
 
         {!isEditing && currentUserId ? <CloudDraftStatus userId={currentUserId} draftKey="report" onRestored={saved => { if(saved) beginReportAtCoordinate(saved.coordinate, saved.form, saved.step, saved.missingPhotoCount); }} /> : null}
-        {!isEditing && draftSaveError ? <Text style={{ color: '#B42318', paddingHorizontal: 20 }}>Draft could not be saved. Keep this screen open and try Save for later again.</Text> : null}
+        {!isEditing && draftSaveError ? <Text style={{ color: colors.red, paddingHorizontal: 20 }}>Draft could not be saved. Keep this screen open and try Save for later again.</Text> : null}
         {/* Persistent Header */}
         <View style={styles.wizardHeader}>
 

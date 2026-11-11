@@ -65,7 +65,7 @@ export default function CleanupWaiverModal({
           {report ? <View style={styles.reportSummary}>
             {/* Facts as soft chips, as on the website; colour comes from the chip words. */}
             <View style={styles.factChip}>
-              <Ionicons name="calendar-outline" size={16} color="#24521F" />
+              <Ionicons name="calendar-outline" size={16} color={colors.green} />
               <Text style={styles.factText}>You’ll have 24 hours to finish and submit 1–3 after photos.</Text>
             </View>
             {Number(report.funded_amount_cents) > 0 ? (
@@ -160,10 +160,10 @@ const styles = StyleSheet.create({
   },
   headerBug: { width: 40, height: 40, marginRight: 10 },
   headerReport: { marginTop: 2, color: colors.muted, fontSize: 14, lineHeight: 21 },
-  factChip: { alignSelf: 'flex-start', maxWidth: '100%', flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 7, paddingHorizontal: 12, borderRadius: 999, backgroundColor: '#ECF6E3' },
-  factText: { flexShrink: 1, color: '#24521F', fontSize: 14, fontWeight: '800' },
-  payChip: { backgroundColor: '#FFF0F1' },
-  payText: { color: '#A8323B' },
+  factChip: { alignSelf: 'flex-start', maxWidth: '100%', flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 7, paddingHorizontal: 12, borderRadius: 999, backgroundColor: colors.greenSoft },
+  factText: { flexShrink: 1, color: colors.green, fontSize: 14, fontWeight: '800' },
+  payChip: { backgroundColor: colors.redSoft },
+  payText: { color: colors.red },
   agreementHeading: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 10, marginBottom: 8 },
   agreementTitle: { color: colors.ink, fontSize: 17, fontFamily: fonts.heading },
   agreementUpdated: { color: colors.muted, fontSize: 12, fontWeight: '600' },
@@ -176,14 +176,14 @@ const styles = StyleSheet.create({
   summaryText: { color: colors.muted, fontSize: 14, lineHeight: 21 },
   claimNote: { color: colors.muted, fontSize: 13, lineHeight: 19 },
   body: { color: colors.muted, fontSize: 13, lineHeight: 19.5 },
-  guidelinesCard: { marginBottom: 22, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 18, borderWidth: 2, borderColor: '#B8E198', backgroundColor: '#F6FBF1' },
-  guidelinesTitle: { color: '#2F6B3A', fontSize: 17, lineHeight: 22, fontFamily: fonts.heading },
-  guidelinesBody: { marginTop: 6, color: '#3B4A36', fontSize: 14, lineHeight: 21.7 },
+  guidelinesCard: { marginBottom: 22, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 18, borderWidth: 2, borderColor: colors.greenBorder, backgroundColor: colors.greenSoft },
+  guidelinesTitle: { color: colors.green, fontSize: 17, lineHeight: 22, fontFamily: fonts.heading },
+  guidelinesBody: { marginTop: 6, color: colors.body, fontSize: 14, lineHeight: 21.7 },
   releaseCard: { marginTop: 14 },
   releaseTitle: { color: colors.ink, fontSize: 14, lineHeight: 20, fontWeight: '800' },
   releaseBody: { marginTop: 4, color: colors.muted, fontSize: 13, lineHeight: 19.5 },
-  acknowledgmentRow: { marginTop: 22, paddingVertical: 14, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderWidth: 2, borderColor: '#ECE8F8', borderRadius: 16, backgroundColor: colors.white },
-  acknowledgmentText: { flex: 1, color: '#45434D', fontSize: 14, lineHeight: 21 },
+  acknowledgmentRow: { marginTop: 22, paddingVertical: 14, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderWidth: 2, borderColor: colors.edge, borderRadius: 16, backgroundColor: colors.white },
+  acknowledgmentText: { flex: 1, color: colors.body, fontSize: 14, lineHeight: 21 },
   footer: {
     paddingHorizontal: 20,
     paddingTop: 14,

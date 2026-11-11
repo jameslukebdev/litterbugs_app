@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ReportFilters from './components/ReportFilters';
+import { ErrorText } from './components/ui';
 import ReportList from './ReportList';
 import { getBottomNavClearance } from './lib/navigationLayout';
 import { getDistanceMiles, useReports } from './lib/reports';
@@ -105,7 +106,7 @@ export default function ReportsScreen({ navigation }) {
 
       </View>
 
-      {error && reports.length > 0 ? <Text style={styles.error}>{error}</Text> : null}
+      {reports.length > 0 ? <ErrorText style={styles.error}>{error}</ErrorText> : null}
 
       <ReportList
         reports={nearbyReports}
@@ -189,13 +190,7 @@ const styles = StyleSheet.create({
   area: { color: colors.muted, fontSize: 12, marginTop: 4 },
   locationAction: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' },
   locationActionText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
-  helperRow: { minHeight: 24, marginTop: 4, flexDirection: 'row', alignItems: 'center', gap: 7 },
-  error: {
-    paddingHorizontal: 18,
-    paddingBottom: 8,
-    color: '#B42318',
-    fontSize: 14,
-  },
+  error: { marginTop: 0, paddingHorizontal: 20, paddingBottom: 8 },
   list: {
     flex: 1,
     borderTopWidth: StyleSheet.hairlineWidth,

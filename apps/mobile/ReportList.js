@@ -3,21 +3,20 @@ import ReportCardMenu from './components/ReportCardMenu';
 import ReportPreviewHero from './components/ReportPreviewHero';
 import { isReportShareable, shareReportWithSystemSheet } from './lib/reportSharing';
 import { useEffect, useMemo, useRef } from 'react';
+import { useScrollToTop } from '@react-navigation/native';
 import {
   FlatList,
   Alert,
   Platform,
   Share,
   StyleSheet,
-  Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 
 import { getDistanceMiles, useReports } from './lib/reports';
 import LoadingBee from './components/LoadingBee';
-import BrandBug from './components/BrandBug';
-import { colors, fonts } from './lib/theme';
+import { EmptyState } from './components/ui';
+import { colors } from './lib/theme';
 
 export function ReportListItem({ report, origin, onPress, selected = false }) {
   const distance = getDistanceMiles(origin, report);
@@ -72,6 +71,8 @@ export default function ReportList({
   style,
 }) {
   const listRef = useRef(null);
+  // Tapping the current tab again returns the list to the top.
+  useScrollToTop(listRef);
   const lastSelected = useRef(null);
   useEffect(() => {
     if (!selectedId) { lastSelected.current = null; return; }
@@ -97,13 +98,7 @@ export default function ReportList({
       ListEmptyComponent={initialLoading ? (
         <LoadingBee label="Loading nearby reports" message="Finding cleanups around you…" />
       ) : (
-        <View style={styles.emptyState}>
-          {/* Website empty state: the ladybug, a heading and one purple action. */}
-          <BrandBug kind="ladybug" size={44} />
-          <Text style={styles.emptyTitle}>{emptyTitle}</Text>
-          <Text style={styles.emptyText}>{emptyMessage}</Text>
-          {emptyAction ? <TouchableOpacity accessibilityRole="button" onPress={emptyAction.onPress} style={styles.emptyAction}><Text style={styles.emptyActionText}>{emptyAction.label}</Text></TouchableOpacity> : null}
-        </View>
+        <EmptyState bug="ladybug" title={emptyTitle} text={emptyMessage} action={emptyAction} style={styles.emptyState} />
       )}
       contentContainerStyle={[
         data.length === 0 && styles.emptyContent,
@@ -126,7 +121,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     borderRadius: 18,
     backgroundColor: colors.white,
-    shadowColor: '#EEEAF8',
+    shadowColor: colors.edge,
     shadowOpacity: 1,
     shadowRadius: 0,
     shadowOffset: { width: 0, height: 3 },
@@ -144,21 +139,5 @@ const styles = StyleSheet.create({
   emptyContent: {
     flexGrow: 1,
   },
-  emptyState: {
-    flex: 1,
-    minHeight: 250,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 34,
-  },
-  emptyTitle: { marginTop: 14, color: colors.ink, fontSize: 20, fontFamily: fonts.heading, textAlign: 'center' },
-  emptyAction: { minHeight: 48, marginTop: 18, paddingHorizontal: 22, justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary },
-  emptyActionText: { color: colors.white, fontWeight: '800', fontSize: 16 },
-  emptyText: {
-    marginTop: 7,
-    color: colors.muted,
-    fontSize: 15,
-    lineHeight: 21,
-    textAlign: 'center',
-  },
+  emptyState: { flex: 1, minHeight: 250 },
 });
