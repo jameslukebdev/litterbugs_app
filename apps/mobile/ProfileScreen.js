@@ -4,7 +4,6 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useScrollToTop } from '@react-navigation/native';
 import {
   Alert,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -44,7 +43,7 @@ import { useSession } from './lib/session';
 import { colors, fonts } from './lib/theme';
 import BrandBug from './components/BrandBug';
 import LoadingBee from './components/LoadingBee';
-import { EmptyState, LoadFailure, PillTabs, PrimaryButton } from './components/ui';
+import { EmptyState, LoadFailure, PillTabs, PrimaryButton, PullRefresh } from './components/ui';
 
 const TERMS_URL = 'https://litterbugs.app/terms';
 const PRIVACY_URL = 'https://litterbugs.app/privacy';
@@ -430,7 +429,7 @@ export default function ProfileScreen({ navigation, route }) {
       style={[styles.container, (section === 'overview' || section === 'activity' || section === 'payments' || section === 'settings') && styles.overviewContainer]}
       contentContainerStyle={{ paddingBottom: bottomPadding }}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={pullRefreshing} onRefresh={refresh} tintColor={colors.primary} />}
+      refreshControl={<PullRefresh refreshing={pullRefreshing} onRefresh={refresh} />}
     >
       {section === 'overview' ? <>
       <View style={styles.identity}>

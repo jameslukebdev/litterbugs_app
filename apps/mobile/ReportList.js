@@ -15,7 +15,7 @@ import {
 
 import { getDistanceMiles, useReports } from './lib/reports';
 import LoadingBee from './components/LoadingBee';
-import { EmptyState } from './components/ui';
+import { EmptyState, PullRefresh } from './components/ui';
 import { colors } from './lib/theme';
 
 export function ReportListItem({ report, origin, onPress, selected = false }) {
@@ -105,8 +105,7 @@ export default function ReportList({
         contentContainerStyle,
       ]}
       style={style}
-      refreshing={refreshing}
-      onRefresh={onRefresh}
+      refreshControl={onRefresh ? <PullRefresh refreshing={refreshing} onRefresh={onRefresh} /> : undefined}
       scrollEnabled={scrollEnabled}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"

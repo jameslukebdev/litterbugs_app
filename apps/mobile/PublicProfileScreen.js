@@ -5,7 +5,6 @@ import {
   Platform,
   ScrollView,
   FlatList,
-  RefreshControl,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -15,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import CompactRankBadge from './CompactRankBadge';
 import LoadingBee from './components/LoadingBee';
-import { EmptyState, LoadFailure, PillTabs, TextLink } from './components/ui';
+import { EmptyState, LoadFailure, PillTabs, PullRefresh, TextLink } from './components/ui';
 import ProfileAvatar from './ProfileAvatar';
 import ProfileReportList from './ProfileReportList';
 import { useProfile } from './lib/profile';
@@ -103,7 +102,7 @@ export default function PublicProfileScreen({ navigation, route }) {
   </View>;
 
   return (
-    <><FlatList data={activity.data} keyExtractor={report => report.id} renderItem={({ item }) => <ProfileReportList reports={[item]} onReportPress={report => navigation.popTo('App', { screen: 'Map', params: { reportId: report.id } })} />} style={styles.container} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={member.loading || activity.loading} onRefresh={() => { member.refresh(); activity.refresh(); }} />} ListHeaderComponent={<>
+    <><FlatList data={activity.data} keyExtractor={report => report.id} renderItem={({ item }) => <ProfileReportList reports={[item]} onReportPress={report => navigation.popTo('App', { screen: 'Map', params: { reportId: report.id } })} />} style={styles.container} contentContainerStyle={styles.content} refreshControl={<PullRefresh refreshing={member.loading || activity.loading} onRefresh={() => { member.refresh(); activity.refresh(); }} />} ListHeaderComponent={<>
       {member.error ? <Text style={styles.stateText}>Couldn’t refresh this profile. Pull down to try again.</Text> : null}
       <View style={styles.identity}>
         <View style={styles.identityTop}><View style={styles.avatarFrame}><ProfileAvatar profile={profile} size={72} /></View><View style={styles.identityCopy}>

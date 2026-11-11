@@ -1,6 +1,6 @@
 import { userMessage } from './lib/userMessage';
 import { useCallback, useState } from 'react';
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import useFocusedResource from './lib/useFocusedResource';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,7 +9,7 @@ import { closeExpiredReport, formatUsd, loadMyExpiredReports, renewExpiredReport
 import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
 import LoadingBee from './components/LoadingBee';
-import { EmptyState, PrimaryButton, TextLink } from './components/ui';
+import { EmptyState, PrimaryButton, PullRefresh, TextLink } from './components/ui';
 import { colors, fonts } from './lib/theme';
 
 export default function ExpiredReportsScreen() {
@@ -56,7 +56,7 @@ export default function ExpiredReportsScreen() {
     <ScrollView
       style={{ backgroundColor: colors.white }}
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]}
-      refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={colors.primary} />}
+      refreshControl={<PullRefresh refreshing={loading && reports.length > 0} onRefresh={load} />}
     >
       <Text style={styles.title}>Renew or close reports</Text>
       <View style={styles.explanation}><Ionicons name="calendar-outline" size={20} color={colors.muted} /><Text style={styles.subtitle}>Expired reports stay here for 7 days. Renewing starts a fresh 30-day period and keeps the cleanup fund attached.</Text></View>

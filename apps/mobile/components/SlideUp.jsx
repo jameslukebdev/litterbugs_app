@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'react';
-import { AccessibilityInfo, Animated } from 'react-native';
+import { AccessibilityInfo, Animated, Easing } from 'react-native';
 
 // Bottom sheets open with the modal fading in (so the dimmed backdrop fades rather than
-// sliding up with the sheet) while the sheet itself rises a short way. Reduced motion
-// skips the rise.
-export default function SlideUp({ style, children, distance = 48, ...props }) {
+// sliding up with the sheet) while the sheet itself rises a short way. Pass the modal's
+// own `visible` value as `open` and the sheet also sinks back down while the modal fades
+// out. Reduced motion skips both movements.
+export default function SlideUp({ style, children, distance = 48, open = true, ...props }) {
   const progress = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     let cancelled = false;
@@ -12,11 +13,12 @@ export default function SlideUp({ style, children, distance = 48, ...props }) {
       .then((reduce) => {
         if (cancelled) return;
         if (reduce) progress.setValue(1);
-        else Animated.spring(progress, { toValue: 1, damping: 22, stiffness: 240, mass: 0.9, useNativeDriver: true }).start();
+        else if (open) Animated.spring(progress, { toValue: 1, damping: 22, stiffness: 240, mass: 0.9, useNativeDriver: true }).start();
+        else Animated.timing(progress, { toValue: 0, duration: 200, easing: Easing.in(Easing.quad), useNativeDriver: true }).start();
       })
       .catch(() => progress.setValue(1));
     return () => { cancelled = true; };
-  }, [progress]);
+  }, [open, progress]);
   return (
     <Animated.View
       {...props}

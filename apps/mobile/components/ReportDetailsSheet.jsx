@@ -95,7 +95,7 @@ export default function ReportDetailsSheet({ state, actions }) {
   }}
 >
   <View style={styles.modalBackdrop}>
-    <SlideUp style={styles.reportSheet} distance={80}>
+    <SlideUp open={Boolean(detailsOpen)} style={styles.reportSheet} distance={80}>
 
       <TouchableOpacity onPress={closeReportDetails} accessibilityRole="button" accessibilityLabel="Close report" style={[styles.reportPhotoControl, styles.reportPhotoCloseControl, { top: reportControlsTop }]}><Ionicons name="close" size={20} color={colors.ink} /></TouchableOpacity>
       {selectedReportIsShareable ? (

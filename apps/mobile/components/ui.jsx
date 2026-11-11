@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import BrandBug from './BrandBug';
 import SteadyButtonContent from './SteadyButtonContent';
@@ -98,6 +98,12 @@ export function LoadFailure({ title = 'Couldn’t load this', text = 'Check your
       style={style}
     />
   );
+}
+
+// Pull-to-refresh in the brand purple on both platforms. Pass it as a list's
+// `refreshControl`; extra props (such as the scroll view's own) pass through.
+export function PullRefresh({ refreshing, onRefresh, ...props }) {
+  return <RefreshControl {...props} refreshing={Boolean(refreshing)} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />;
 }
 
 // Outlined pill tabs: the selected one gets the purple line and darker words,

@@ -1,6 +1,6 @@
 import FeeExplanationLabel from './components/FeeExplanationLabel';
 import { useCallback, useEffect, useState } from 'react';
-import { RefreshControl, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import useFocusedResource from './lib/useFocusedResource';
 import { useSession } from './lib/session';
@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatUsd, loadMyContributions } from './lib/funding';
 import PaymentStatus from './components/PaymentStatus';
-import { EmptyState, ErrorText, PillTabs, TextLink } from './components/ui';
+import { EmptyState, ErrorText, PillTabs, PullRefresh, TextLink } from './components/ui';
 import LoadingBee from './components/LoadingBee';
 import { colors, fonts } from './lib/theme';
 
@@ -35,7 +35,7 @@ export default function ContributionHistoryScreen({ navigation }) {
     <FlatList
       style={{ backgroundColor: colors.white }}
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]}
-      refreshControl={<RefreshControl refreshing={pullRefreshing} onRefresh={async () => { setPullRefreshing(true); await load(); setPullRefreshing(false); }} tintColor={colors.primary} />}
+      refreshControl={<PullRefresh refreshing={pullRefreshing} onRefresh={async () => { setPullRefreshing(true); await load(); setPullRefreshing(false); }} />}
       data={items}
       keyExtractor={item => item.id}
       ListHeaderComponent={<>

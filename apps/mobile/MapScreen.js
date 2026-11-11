@@ -2564,7 +2564,7 @@ const revealBottomReportField = () => {
   onRequestClose={cancelDraft}
 >
   <View style={styles.modalBackdrop}>
-    <SlideUp style={styles.wizardKeyboardView} distance={80}>
+    <SlideUp open={Boolean(formOpen)} style={styles.wizardKeyboardView} distance={80}>
       <View style={styles.wizardSheet}>
 
         {isSaving && (

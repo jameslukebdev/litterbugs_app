@@ -17,7 +17,7 @@ import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
 import { supabase } from './lib/supabase';
 import LoadingBee from './components/LoadingBee';
-import { EmptyState, TextLink } from './components/ui';
+import { EmptyState, PullRefresh, TextLink } from './components/ui';
 import { colors } from './lib/theme';
 
 export default function BlockedAccountsScreen() {
@@ -55,8 +55,7 @@ export default function BlockedAccountsScreen() {
     <FlatList
       style={{ flex: 1, backgroundColor: colors.white }}
       data={rows}
-      refreshing={loading}
-      onRefresh={load}
+      refreshControl={<PullRefresh refreshing={loading && rows.length > 0} onRefresh={load} />}
       ListHeaderComponent={<><Text style={styles.intro}>Manage the accounts you’ve blocked. You can unblock an account here at any time.</Text>{error ? <TextLink align="start" label="Couldn’t load blocked accounts. Tap to retry." onPress={load} style={styles.retry} /> : null}</>}
       keyExtractor={({ blocked_id }) => blocked_id}
       contentContainerStyle={[styles.content, rows.length === 0 && styles.emptyContent]}

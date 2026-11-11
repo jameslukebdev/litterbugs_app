@@ -126,6 +126,7 @@ export default function ReportFilters({ map = false }) {
             onPress={() => setOpen(false)}
           />
           <SlideUp
+            open={Boolean(open)}
             style={[
               styles.sheet,
               { paddingBottom: Math.max(insets.bottom, 20) },

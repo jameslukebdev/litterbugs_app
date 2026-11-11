@@ -19,7 +19,7 @@ export default function PointsExplanation({ ranking, appearance }) {
     <Modal visible={visible} transparent animationType="fade" onRequestClose={() => setVisible(false)}>
       <View style={styles.overlay}>
         <Pressable style={StyleSheet.absoluteFill} onPress={() => setVisible(false)} accessibilityLabel="Dismiss points explanation" />
-        <SlideUp style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) }]} accessibilityViewIsModal>
+        <SlideUp open={visible} style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) }]} accessibilityViewIsModal>
           <View style={styles.header}>
             <Text accessibilityRole="header" style={styles.title}>How points work</Text>
             <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close points explanation" onPress={() => setVisible(false)} style={styles.close}><Ionicons name="close" size={24} color={colors.ink} /></TouchableOpacity>
