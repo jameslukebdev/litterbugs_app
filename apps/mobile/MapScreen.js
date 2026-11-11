@@ -20,7 +20,7 @@ import { saveReportDraft, loadReportDraft, clearReportDraft } from './lib/savedR
 import ReportFilters from './components/ReportFilters';
 // MapScreen.js
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Platform, Alert, Keyboard, Animated, Easing, AppState, Linking, useWindowDimensions } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Platform, Alert, Animated, Easing, useWindowDimensions } from 'react-native';
 import { polygonParts } from './lib/searchGeography';
 import { Marker, Polygon } from 'react-native-maps';
 import ClusteredMapView from 'react-native-map-clustering';
@@ -48,16 +48,13 @@ import CleanupWaiverModal from './CleanupWaiverModal';
 
 import {
   acceptCleanupWaiver,
-  acknowledgeCleanupNotifications,
   claimCleanup,
   loadCurrentCleanupWaiver,
-  loadUnreadCleanupNotifications,
   releaseCleanup,
 } from './lib/cleanup';
 import { canOfferCleanup, cleanupActionMessage, cleanupStatusPresentation, isCleanupInProgress, isCurrentCleaner } from './lib/cleanupEligibility';
-import { createCleanupNotificationPrompt } from './lib/cleanupNotificationPrompt';
 import { useProfile } from './lib/profile';
-import { loadCleanupFeatureFlags, loadPayoutStatus, loadReportFundingFeedback, requestGeminiReview } from './lib/funding';
+import { loadPayoutStatus, requestGeminiReview } from './lib/funding';
 import { parseContributionAmount } from './lib/fundingMath';
 import { savePendingReportFunding } from './lib/pendingReportFunding';
 import {
@@ -92,6 +89,7 @@ import {
 
 import { isReportShareable } from './lib/reportSharing';
 import useReportSharing from './lib/useReportSharing';
+import { useCleanupFeatureFlags, useCleanupNoticePrompt, usePhotoPreparationNotice, useReportFundingFeedback, useReportKeyboard } from './lib/mapScreenHooks';
 import useReportWizardNavigation from './lib/useReportWizardNavigation';
 import useSelectedReportLoaders from './lib/useSelectedReportLoaders';
 import { promptCleanupNavigation } from './lib/promptCleanupNavigation';
@@ -121,8 +119,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const [placementCoordinate, setPlacementCoordinate] = useState(null);
   const reportControlTransition = useRef(new Animated.Value(0)).current;
   const [formOpen, setFormOpen] = useState(false);
-  const [reportKeyboardVisible, setReportKeyboardVisible] = useState(false);
-  const [reportKeyboardHeight, setReportKeyboardHeight] = useState(0);
+  const { reportKeyboardVisible, reportKeyboardHeight } = useReportKeyboard(formOpen);
   const reportWizardScrollRef = useRef(null);
   const [form, setForm] = useState({
     title: '',
@@ -161,14 +158,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     jumpToReportStep,
     reportStepPanResponder,
   } = useReportWizardNavigation({ form, isEditing, selectedReport, photoPreparationStatus });
-  const [showPhotoPreparation, setShowPhotoPreparation] = useState(false);
-  const isPreparingPhotos = Boolean(photoPreparationStatus?.startsWith('Preparing'));
-  useEffect(() => {
-    setShowPhotoPreparation(false);
-    if (!isPreparingPhotos) return undefined;
-    const timer = setTimeout(() => setShowPhotoPreparation(true), 400);
-    return () => clearTimeout(timer);
-  }, [isPreparingPhotos]);
+  const { showPhotoPreparation, isPreparingPhotos } = usePhotoPreparationNotice(photoPreparationStatus);
   const [isCentering, setIsCentering] = useState(false);
   const [isLocatingReportLocation, setIsLocatingReportLocation] = useState(false);
   const [isCheckingReportLocation, setIsCheckingReportLocation] = useState(false);
@@ -202,13 +192,9 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     shareSelectedReportToInstagram,
   } = useReportSharing({ selectedReport, detailsOpen, completedCleanupImpact, reportPhotoUrls });
   const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
-  const [paymentsEnabled, setPaymentsEnabled] = useState(false);
-  const [geminiReviewEnabled, setGeminiReviewEnabled] = useState(false);
-  const [reportFundingFeedback, setReportFundingFeedback] = useState(null);
+  const { paymentsEnabled, geminiReviewEnabled } = useCleanupFeatureFlags();
   const [pendingPayoutWorkflowToken, setPendingPayoutWorkflowToken] = useState(null);
   const [payoutGateBusy, setPayoutGateBusy] = useState(false);
-  const cleanupNoticeCheckInFlight = useRef(false);
-  const cleanupNoticePromptState = useRef(null);
   // Report detail photo carousel
 
   const { user: currentUser } = useSession();
@@ -237,6 +223,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     removeReport,
   } = useReports();
   const currentUserId = permanentUserId(currentUser);
+  const reportFundingFeedback = useReportFundingFeedback({ geminiReviewEnabled, currentUserId, selectedReport });
   const [draftSaveError, setDraftSaveError] = useState(false);
   useEffect(() => {
     if (!formOpen || isEditing || !currentUserId || !draftCoord || isSaving || cloudDrafts.status(currentUserId, 'report') === 'submitting') return undefined;
@@ -331,32 +318,6 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     };
   }, [locateAndCenterMap, restoredMap]);
 
-  useEffect(() => {
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const showSubscription = Keyboard.addListener(
-      showEvent,
-      event => {
-        setReportKeyboardVisible(true);
-        // The transparent report modal stays full height on Android too.
-        setReportKeyboardHeight(event.endCoordinates.height);
-      }
-    );
-    const hideSubscription = Keyboard.addListener(
-      hideEvent,
-      () => { setReportKeyboardVisible(false); setReportKeyboardHeight(0); }
-    );
-
-    return () => {
-      showSubscription.remove();
-      hideSubscription.remove();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!formOpen) setReportKeyboardVisible(false);
-  }, [formOpen]);
-
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: false,
@@ -401,52 +362,6 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     return undefined;
   }, [initialLocationResolved, mapSurfaceLoaded, onLaunchReady, reportsLoading]);
 
-  useEffect(() => {
-    let active = true;
-    loadCleanupFeatureFlags()
-      .then((flags) => {
-        if (!active) return;
-        setPaymentsEnabled(Boolean(flags.payments_enabled));
-        setGeminiReviewEnabled(Boolean(flags.gemini_financial_review_enabled));
-      })
-      .catch(() => {
-        if (!active) return;
-        setPaymentsEnabled(false);
-        setGeminiReviewEnabled(false);
-      });
-    return () => { active = false; };
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    const shouldLoad = geminiReviewEnabled
-      && currentUserId
-      && selectedReport?.user_id === currentUserId
-      && ['better_photos', 'safety_hold', 'ineligible'].includes(
-        selectedReport?.funding_eligibility
-      );
-    if (!shouldLoad) {
-      setReportFundingFeedback(null);
-      return undefined;
-    }
-    loadReportFundingFeedback(selectedReport.id)
-      .then((feedback) => {
-        if (active) setReportFundingFeedback(feedback);
-      })
-      .catch((error) => {
-        console.log('Report funding feedback load error:', error);
-        if (active) setReportFundingFeedback(null);
-      });
-    return () => {
-      active = false;
-    };
-  }, [
-    currentUserId,
-    geminiReviewEnabled,
-    selectedReport?.funding_eligibility,
-    selectedReport?.id,
-    selectedReport?.user_id,
-  ]);
   const mapControlsBottom = bottomNavClearance + BOTTOM_NAV_METRICS.mapControlGap;
   const reportControlWidth = fontScale > 1.5
     ? screenWidth - 32
@@ -456,60 +371,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   // Leave 20px margin on each side of the main report photo
   const reportHeroWidth = Math.max(screenWidth - 40, 280);
 
-  useEffect(() => {
-    if (!currentUserId) return undefined;
-
-    let active = true;
-    if (cleanupNoticePromptState.current?.owner !== currentUserId) {
-      cleanupNoticePromptState.current = { owner: currentUserId, shown: new Set(), pending: false };
-    }
-    const prompt = createCleanupNotificationPrompt({
-      state: cleanupNoticePromptState.current,
-      isCurrent: () => active,
-      present: (...args) => Alert.alert(...args),
-      acknowledge: acknowledgeCleanupNotifications,
-      open: async destination => {
-        if (destination.url) await Linking.openURL(destination.url);
-        else {
-          const parent = navigation.getParent();
-          if (!parent) throw new Error('Navigation is not ready.');
-          parent.navigate(destination.name, destination.params);
-        }
-      },
-      onError: () => Alert.alert('Update remains unread', 'The update could not be opened or marked read. Check your connection and try again.'),
-    });
-
-    const checkCleanupNotices = async () => {
-      if (cleanupNoticeCheckInFlight.current) return;
-
-      try {
-        cleanupNoticeCheckInFlight.current = true;
-        const notices = await loadUnreadCleanupNotifications();
-        if (!active || notices.length === 0) return;
-
-        // Unread historical events are not the current task state. Refresh from
-        // the account before presenting; never navigate or acknowledge on display.
-        await refreshReports({ showRefresh: false });
-        if (active) prompt.show(notices);
-      } catch (error) {
-        console.log('Cleanup notification error:', error);
-      } finally {
-        cleanupNoticeCheckInFlight.current = false;
-      }
-    };
-
-    checkCleanupNotices();
-    const interval = setInterval(checkCleanupNotices, 60 * 1000);
-    const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') checkCleanupNotices();
-    });
-
-    return () => {
-      active = false;
-      clearInterval(interval);
-      subscription.remove();
-    };
-  }, [currentUserId, refreshReports, navigation]);
+  useCleanupNoticePrompt({ currentUserId, refreshReports, navigation });
 
   useEffect(() => {
     if (!cleanupWaiverQueued || detailsOpen) return undefined;
