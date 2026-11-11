@@ -17,6 +17,7 @@ import {
   cleanupImpactFacts,
   formatCleanupDate,
 } from './lib/cleanupImpactPresentation';
+import { hapticSelect } from './lib/haptics';
 import { colors, fonts } from './lib/theme';
 
 function AfterPhoto({ url, index, count, width }) {
@@ -69,9 +70,12 @@ export default function CompletedCleanupStory({
   loading,
   error,
   photoWidth,
+  beforePhotos,
   onCleanerPress,
   onRetry,
 }) {
+  const [photoSide, setPhotoSide] = useState('after');
+
   if (loading) {
     return null;
   }
@@ -95,6 +99,9 @@ export default function CompletedCleanupStory({
 
   const cleanerName = impact.cleaner?.display_name || 'Cleaner profile unavailable';
   const facts = cleanupImpactFacts(impact.submission);
+  // Website report sheet: one photo area with an After cleanup / Before switch.
+  const canSwitchPhotos = Boolean(beforePhotos) && impact.afterPhotoUrls.length > 0;
+  const showBefore = canSwitchPhotos && photoSide === 'before';
 
   return (
     <View style={styles.story}>
@@ -126,9 +133,30 @@ export default function CompletedCleanupStory({
         ) : null}
       </TouchableOpacity>
 
-      <Text style={styles.sectionTitle}>After cleanup</Text>
+      {canSwitchPhotos ? (
+        <View style={styles.sideSwitch} accessibilityRole="tablist" accessibilityLabel="Choose photos">
+          {[['after', 'After cleanup', 'flower', colors.done], ['before', 'Before', 'ladybug', colors.red]].map(([side, label, bug, ink]) => {
+            const selected = photoSide === side;
+            return (
+              <TouchableOpacity
+                key={side}
+                style={[styles.sideButton, selected && styles.sideButtonSelected]}
+                onPress={() => { if (!selected) hapticSelect(); setPhotoSide(side); }}
+                activeOpacity={0.8}
+                accessibilityRole="tab"
+                accessibilityState={{ selected }}
+              >
+                <BrandBug kind={bug} size={18} />
+                <Text style={[styles.sideButtonText, selected && { color: ink }]}>{label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      ) : (
+        <Text style={styles.sectionTitle}>After cleanup</Text>
+      )}
 
-      {impact.afterPhotoUrls.length > 0 ? (
+      {showBefore ? beforePhotos : impact.afterPhotoUrls.length > 0 ? (
         <ScrollView
           horizontal
           pagingEnabled
@@ -195,6 +223,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   cleanupDateText: { color: colors.muted, fontSize: 14 },
+  sideSwitch: { flexDirection: 'row', gap: 6, padding: 4, borderRadius: 16, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
+  sideButton: { flex: 1, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: 12, borderWidth: 2, borderColor: 'transparent' },
+  sideButtonSelected: { borderColor: colors.primary },
+  sideButtonText: { color: colors.body, fontSize: 15, fontWeight: '700' },
   sectionTitle: { color: colors.ink, fontSize: 17, fontFamily: fonts.heading },
   photoScroll: {
     borderRadius: 22,

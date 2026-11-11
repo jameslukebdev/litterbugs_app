@@ -99,7 +99,6 @@ function SignedOutProfile({ navigation, bottomPadding }) {
       <PrimaryButton label="Sign in or create account" onPress={() => navigation.navigate('Auth')} style={styles.primaryButton} />
       <View style={styles.signedOutSupport}>
         <ActionRow appearance="profile" divided={true} label="Get help" icon="help-circle-outline" onPress={() => navigation.navigate('SettingsInfo', { topic: 'help' })} />
-        <ActionRow appearance="profile" divided={true} label="Support Litterbugs" icon="heart-outline" onPress={() => navigation.navigate('SettingsInfo', { topic: 'support' })} />
         <ActionRow appearance="profile" divided={true} label="Terms of use" icon="document-text-outline" onPress={() => openLitterbugsLink(TERMS_URL)} />
         <ActionRow appearance="profile" divided={false} label="Privacy policy" icon="shield-checkmark-outline" onPress={() => openLitterbugsLink(PRIVACY_URL)} />
       </View>
@@ -465,8 +464,7 @@ export default function ProfileScreen({ navigation, route }) {
           <ActionRow appearance="profile" divided label="Terms of use" icon="document-text-outline" onPress={() => openLitterbugsLink(TERMS_URL)} />
           <ActionRow appearance="profile" divided label="Privacy policy" icon="shield-checkmark-outline" onPress={() => openLitterbugsLink(PRIVACY_URL)} />
           <ActionRow appearance="profile" divided label="Cleanup & reward policy" icon="leaf-outline" onPress={() => openLitterbugsLink(CLEANUP_POLICY_URL)} />
-          <ActionRow appearance="profile" divided label="About photo review" icon="images-outline" onPress={() => openScreen('SettingsInfo', { topic: 'photos' })} />
-          <ActionRow appearance="profile" label="Support Litterbugs" icon="heart-outline" onPress={() => openScreen('SettingsInfo', { topic: 'support' })} />
+          <ActionRow appearance="profile" label="About photo review" icon="images-outline" onPress={() => openScreen('SettingsInfo', { topic: 'photos' })} />
         </View>
         {user.email ? (
           <View style={[styles.settingsGroup, { marginTop: 24 }]}>

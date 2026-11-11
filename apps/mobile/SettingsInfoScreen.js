@@ -25,15 +25,6 @@ const pages = {
       ['Keep your details private', 'Please don’t send passwords, bank account details, or full card numbers.'],
     ],
   },
-  support: {
-    title: 'Support Litterbugs', icon: 'heart-outline', heading: 'Help our community grow',
-    description: 'Every report, cleanup, and shared story helps bring us closer to cleaner neighborhoods.',
-    sections: [
-      ['Spot litter', 'Your photos and local knowledge can help a neighbor find a place that needs care.'],
-      ['Lend a hand', 'Find a nearby cleanup that feels right for you. Every little bit makes a difference.'],
-      ['Spread the word', 'Share a report or a completed cleanup to help more people get involved.'],
-    ],
-  },
 };
 
 export default function SettingsInfoScreen({ navigation, route }) {

@@ -172,6 +172,7 @@ export default function ReportDetailsSheet({ state, actions }) {
               loading={completedCleanupImpactLoading}
               error={completedCleanupImpactError}
               photoWidth={reportHeroWidth}
+              beforePhotos={<ReportPhotoGallery report={selectedReport} urls={reportPhotoUrls} loading={photosLoading} width={reportHeroWidth} />}
               onRetry={() => {
                 setCompletedCleanupImpact(null);
                 setCompletedCleanupImpactError(null);
@@ -217,7 +218,7 @@ export default function ReportDetailsSheet({ state, actions }) {
           const severityWord = selectedReport?.severity ? `${String(selectedReport.severity).charAt(0).toUpperCase()}${String(selectedReport.severity).slice(1).toLowerCase()}` : 'Medium';
           const funded = Number(selectedReport?.funded_amount_cents) > 0;
           return (
-            <View style={[styles.reportPostHeader, styles.websiteReportHeader]}>
+            <View style={[styles.reportPostHeader, styles.websiteReportHeader, completedCleanupImpact?.afterPhotoUrls?.length > 0 && cleanupState === 'completed' && { borderBottomWidth: 0, paddingBottom: 0 }]}>
               <Text style={[styles.reportPostTitle, styles.websiteReportTitle]} accessibilityRole="header">{selectedReport?.title || 'Litter Report'}</Text>
               <View style={styles.websiteReportState}>
                 {!closed && state.bug ? <BrandBug kind={state.bug} size={18} /> : null}
@@ -302,15 +303,16 @@ export default function ReportDetailsSheet({ state, actions }) {
           </View>
         ) : null}
 
-        {selectedReport?.cleanup_state === 'completed' ? (
-          <View style={styles.beforePhotoHeading}>
-            <Ionicons name="images-outline" size={20} color={colors.muted} />
-            <Text style={styles.beforePhotoHeadingText}>Before cleanup</Text>
-          </View>
-        ) : null}
-
-        {selectedReport?.cleanup_state === 'completed' ? (
-          <ReportPhotoGallery report={selectedReport} urls={reportPhotoUrls} loading={photosLoading} width={reportHeroWidth} />
+        {/* The story above carries the After cleanup / Before switch. Only when it has no
+            after photos to switch with do the original photos sit here on their own. */}
+        {selectedReport?.cleanup_state === 'completed' && !(completedCleanupImpact?.afterPhotoUrls?.length > 0) ? (
+          <>
+            <View style={styles.beforePhotoHeading}>
+              <Ionicons name="images-outline" size={20} color={colors.muted} />
+              <Text style={styles.beforePhotoHeadingText}>Before cleanup</Text>
+            </View>
+            <ReportPhotoGallery report={selectedReport} urls={reportPhotoUrls} loading={photosLoading} width={reportHeroWidth} />
+          </>
         ) : null}
 
 
@@ -320,7 +322,7 @@ export default function ReportDetailsSheet({ state, actions }) {
 
         <View style={[
           styles.reportPostBody,
-          selectedReport?.cleanup_state !== 'completed' && styles.reportPostBodyRegular,
+          (selectedReport?.cleanup_state !== 'completed' || completedCleanupImpact?.afterPhotoUrls?.length > 0) && styles.reportPostBodyRegular,
         ]}>
 
           {/* Website report sheet body: Litter, Notes and Details as label-over-value facts,
