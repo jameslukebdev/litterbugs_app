@@ -227,7 +227,7 @@ export default function AuthScreen() {
         {image ? (
           <Image source={image} style={styles.googleIcon} resizeMode="contain" />
         ) : (
-          <Ionicons name={icon} size={21} color={id === 'facebook' ? colors.white : colors.ink} style={styles.buttonIcon} />
+          <Ionicons name={icon} size={21} color={id === 'facebook' ? '#1877F2' : colors.ink} style={styles.buttonIcon} />
         )}
         <Text style={[
           styles.providerText,
@@ -237,7 +237,7 @@ export default function AuthScreen() {
         {loading && (
           <ActivityIndicator
             size="small"
-            color={id === 'facebook' ? colors.white : colors.ink}
+            color={colors.ink}
             style={styles.providerSpinner}
           />
         )}
@@ -253,8 +253,8 @@ export default function AuthScreen() {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <Image source={require('./assets/LB_Logo_PNG.png')} style={styles.logo} resizeMode="contain" />
-        <Text style={styles.title}>{pendingAction?.kind === 'cleanup' ? 'Sign in to help clean this up' : pendingAction?.kind === 'fund' ? 'Sign in to fund this cleanup' : 'Join the Cleanup Movement'}</Text>
-        <Text style={styles.subtitle}>{pendingAction ? 'Sign in or create an account to continue with this cleanup.' : 'Sign in to track and share reports.'}</Text>
+        <Text style={styles.title}>{pendingAction?.kind === 'cleanup' ? 'Sign in to help clean this up' : pendingAction?.kind === 'fund' ? 'Sign in to fund this cleanup' : 'Create a free account or sign in'}</Text>
+        <Text style={styles.subtitle}>{pendingAction ? 'Sign in or create an account to continue with this cleanup.' : 'Put litter on the map and earn cash from funded cleanups.'}</Text>
 
         <View style={styles.actions}>
           <AppleSignInButton onPress={() => handleProvider('apple')} disabled={Boolean(loadingProvider)} loading={loadingProvider === 'apple'} />
@@ -422,11 +422,12 @@ const styles = StyleSheet.create({
   providerButton: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line, borderRadius: 14, marginBottom: 11 },
   providerText: { color: colors.ink, fontSize: 16, fontWeight: '700' },
   providerSpinner: { position: 'absolute', right: 16 },
-  googleButton: { borderColor: '#747775' },
+  googleButton: { borderColor: colors.line },
   googleText: { color: '#1F1F1F' },
   googleIcon: { width: 20, height: 20, marginRight: 10 },
-  facebookButton: { backgroundColor: '#1877F2', borderColor: '#1877F2' },
-  facebookText: { color: colors.white },
+  // Website sign-in: Facebook is a white button with the blue mark, like Google.
+  facebookButton: { borderColor: colors.line },
+  facebookText: { color: colors.ink },
   buttonIcon: { marginRight: 10 },
   dividerRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 4 },
   divider: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.lineStrong },

@@ -179,10 +179,10 @@ function PayoutSetupController({ navigation, route }) {
         </View>
       ) : null}
       {!setupNotice ? <>
-      {/* Website payouts: the bee labels rewards; no tinted icon tile. */}
-      <BrandBug kind="bee" size={40} />
+      {/* Website payout setup: the caterpillar (the cleaner) beside "Get paid for cleanups". */}
+      <BrandBug kind={enabled ? 'bee' : 'caterpillar'} size={40} />
       <Text style={styles.title}>
-        {enabled ? 'Payouts are ready' : workflowCopy?.title || 'Receive rewards'}
+        {enabled ? 'Payouts are ready' : workflowCopy?.title || 'Get paid for cleanups'}
       </Text>
       <Text style={styles.text}>
         {enabled
@@ -190,6 +190,27 @@ function PayoutSetupController({ navigation, route }) {
           : workflowCopy?.text || 'Receive cleanup and reporter rewards in your bank account. We’ll open a secure form with Stripe to verify your identity and bank details. Have your phone nearby for a verification code.'}
       </Text>
 
+      {/* Website payout setup: the three steps, with the current one marked. */}
+      {!enabled ? (
+        <View style={styles.steps}>
+          {[
+            ['Confirm you can be paid', null],
+            ['Verify your name and choose your bank', 'Then review and accept Stripe’s terms. Phone verification is part of Stripe’s setup.'],
+            ['Get paid', null],
+          ].map(([label, detail], index) => {
+            const current = index === (needsEligibilityConfirmation ? 0 : 1);
+            return (
+              <View key={label} style={styles.step}>
+                <View style={[styles.stepNumber, current && styles.stepNumberCurrent]}><Text style={[styles.stepNumberText, current && styles.stepNumberTextCurrent]}>{index + 1}</Text></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.stepLabel}>{label}</Text>
+                  {detail ? <Text style={styles.stepDetail}>{detail}</Text> : null}
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      ) : null}
       </> : null}
 
       {needsEligibilityConfirmation ? (
@@ -201,7 +222,7 @@ function PayoutSetupController({ navigation, route }) {
           accessibilityState={{ checked: eligibleConfirmed }}
         >
           <Ionicons name={eligibleConfirmed ? 'checkbox' : 'square-outline'} size={24} color={colors.primary} />
-          <Text style={styles.confirmText}>I confirm that I am at least 18 years old and eligible to receive payouts in the United States.</Text>
+          <Text style={styles.confirmText}>I confirm that I am at least 18 and eligible to receive payouts in the United States.</Text>
         </TouchableOpacity>
       ) : null}
 
@@ -216,7 +237,7 @@ function PayoutSetupController({ navigation, route }) {
         <Text style={enabled ? styles.secondaryText : styles.buttonText}>{updatingRequiredDetails ? 'Update payout details' : enabled ? 'Review payout details' : setupNotice?.kind === 'action_required' ? 'Continue payout setup' : checkingSetup ? 'Review payout setup' : 'Set up payouts'}</Text>
         {showBusy ? <ActivityIndicator size="small" color={enabled ? colors.primary : colors.white} style={styles.buttonSpinner} /> : null}
       </TouchableOpacity>
-      <View style={styles.trustRow}><Ionicons name="lock-closed-outline" size={13} color={colors.muted} /><Text style={styles.trustText}>Secure verification and payouts by Stripe</Text></View>
+      <View style={styles.trustRow}><Ionicons name="lock-closed-outline" size={13} color={colors.muted} /><Text style={styles.trustText}><Text style={{ fontWeight: '800', color: colors.green }}>Secured by Stripe.</Text> Stripe checks your identity and sends your payouts. Litterbugs never receives your full bank-account number.</Text></View>
       {!enabled ? <View style={[styles.card, styles.expectations]}>
         <Text style={styles.cardTitle}>What to expect</Text>
         <View style={styles.row}><Ionicons name="person-circle-outline" size={20} color={colors.primary} /><Text style={styles.rowText}>No business or LLC is required. You’ll set up a personal payout account with Stripe.</Text></View>
@@ -248,8 +269,16 @@ const styles = StyleSheet.create({
   buttonSpinner: { position: 'absolute', right: 12 },
   statusCheck: { minHeight: 24, justifyContent: 'center' },
   statusCheckText: { color: colors.muted, fontSize: 12 },
-  trustRow: { marginTop: 10, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 5 },
-  trustText: { color: colors.muted, fontSize: 12, lineHeight: 18 },
+  trustRow: { marginTop: 14, flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  trustText: { flex: 1, color: colors.muted, fontSize: 13, lineHeight: 19 },
+  steps: { marginTop: 18, gap: 14 },
+  step: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  stepNumber: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.white },
+  stepNumberCurrent: { borderColor: colors.green },
+  stepNumberText: { color: colors.muted, fontSize: 13, fontWeight: '800' },
+  stepNumberTextCurrent: { color: colors.green },
+  stepLabel: { marginTop: 3, color: colors.ink, fontSize: 15, lineHeight: 21, fontWeight: '700' },
+  stepDetail: { marginTop: 2, color: colors.muted, fontSize: 13, lineHeight: 19 },
   button: { width: '100%', maxWidth: 420, minHeight: 54, marginTop: 22, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary },
   buttonText: { color: colors.white, fontSize: 16, fontWeight: '800' },
   secondaryButton: { minHeight: 52, marginTop: 22, paddingHorizontal: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.line, borderRadius: 14, backgroundColor: colors.white },
