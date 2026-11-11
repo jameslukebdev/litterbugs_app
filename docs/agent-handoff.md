@@ -24,6 +24,14 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-11 — Codex (Android emulator closed at owner's request)
+
+- Owner approved closing Android only. Gracefully stopped emulator-5554 via
+  adb; verified its process exited and adb lists no devices. iOS Simulator
+  and its Litterbugs processes remain running.
+- Memory-pressure free percentage is now 45%; VM pressure still reports
+  warning level 2. Continue light work; no further apps were closed.
+
 ### 2026-11-11 — Codex (continued friction review; memory-limited)
 
 - Read-only PostHog refresh: no new tracked participation failures in the last
