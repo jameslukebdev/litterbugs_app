@@ -779,11 +779,9 @@ const openPayoutSetupForWorkflow = (action) => {
           initialAmount,
           fromReportCreation: true,
         });
-      } else {
-        Alert.alert(
-          'Report saved',
-          'Thanks for helping keep the community clean!'
-        );
+      } else if (isEditing) {
+        // A new report already showed its finish banner above; an edit gets its own.
+        showFlowDone({ bug: 'dragonfly', title: 'Report updated', text: 'Your changes are saved.' });
       }
     } catch (e) {
       console.error('Unexpected save error:', e);
