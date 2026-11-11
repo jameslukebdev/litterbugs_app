@@ -29,7 +29,7 @@ export default function ProfileAvatar({ profile, size = 72, previewUri = null })
       ]}
       accessibilityLabel={`${profile?.display_name || 'User'} initials`}
     >
-      <Text style={[styles.initials, { fontSize: Math.max(16, size * 0.34) }]}>
+      <Text style={[styles.initials, { fontSize: Math.max(size < 32 ? 10 : 16, size * 0.34) }]}>
         {initials}
       </Text>
     </View>

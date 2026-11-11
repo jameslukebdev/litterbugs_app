@@ -14,6 +14,8 @@ import {
   getBottomNavBottom,
 } from './lib/navigationLayout';
 import { hapticSelect } from './lib/haptics';
+import ProfileAvatar from './ProfileAvatar';
+import { useProfile } from './lib/profile';
 
 export const BOTTOM_NAV_SLOTS = Object.freeze([
   {
@@ -43,6 +45,8 @@ export default function FloatingBottomTabBar({
 }) {
   const insets = useSafeAreaInsets();
   const { fontScale } = useWindowDimensions();
+  // A signed-in member's own photo marks the Profile tab, like the website's header.
+  const { profile } = useProfile();
   // Apply the existing compact-label cap explicitly: Android can retain stale
   // native text metrics when system scaling changes while this bar is mounted.
   const labelScale = Math.min(fontScale, 1.2);
@@ -116,13 +120,19 @@ export default function FloatingBottomTabBar({
       >
         <View style={[styles.tabContent, isFocused && styles.tabContentSelected]}>
           <View style={styles.iconBackdrop}>
-            <Ionicons
-              name={isFocused ? slot.iconName.replace('-outline', '') : slot.iconName}
-              size={23}
-              color={isFocused ? BOTTOM_NAV_COLORS.active : BOTTOM_NAV_COLORS.inactive}
-              accessible={false}
-              importantForAccessibility="no"
-            />
+            {slot.key === 'profile' && profile?.profile_completed_at ? (
+              <View style={[styles.avatarRing, isFocused && { borderColor: BOTTOM_NAV_COLORS.active }]} accessible={false} importantForAccessibility="no-hide-descendants">
+                <ProfileAvatar profile={profile} size={22} />
+              </View>
+            ) : (
+              <Ionicons
+                name={isFocused ? slot.iconName.replace('-outline', '') : slot.iconName}
+                size={23}
+                color={isFocused ? BOTTOM_NAV_COLORS.active : BOTTOM_NAV_COLORS.inactive}
+                accessible={false}
+                importantForAccessibility="no"
+              />
+            )}
           </View>
           <Text
             style={[styles.label, { fontSize: 10 * labelScale, lineHeight: 13 * labelScale }, isFocused && styles.labelSelected]}
@@ -201,6 +211,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  avatarRing: { width: 27, height: 27, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'transparent' },
   label: {
     marginTop: 2,
     color: BOTTOM_NAV_COLORS.inactive,

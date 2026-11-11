@@ -4,7 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import BrandBug from './BrandBug';
 import { cleanupStatusPresentation } from '../lib/cleanupEligibility';
 import { cleanupApprovalLabel } from '../lib/cleanupProfile';
+import { paymentDisplayStatus, statusLabel } from '../lib/contributionPresentation';
 import { formatUsd } from '../lib/funding';
+import { paymentTone, statusColors } from '../lib/statusColors';
 import { colors } from '../lib/theme';
 
 // Rows for My activity and Payments, matched to the website's account lists
@@ -104,6 +106,31 @@ export function CompletedCleanupRow({ attempt, onPress, divided }) {
   );
 }
 
+// Website Payments list: report title, "$5.00 contribution · $0.50 fee", status and
+// date, with the total charged on the right.
+export function ContributionRow({ item, onPress, divided }) {
+  const title = item.report?.title || 'Litter report';
+  const status = paymentDisplayStatus(item);
+  const tone = statusColors[paymentTone(status)];
+  return (
+    <TouchableOpacity
+      style={[styles.row, divided && styles.divider]}
+      onPress={onPress}
+      activeOpacity={0.72}
+      accessibilityRole="button"
+      accessibilityLabel={`${title}, ${formatUsd(item.total_amount_cents)}, ${statusLabel(status)}. View payment details`}
+    >
+      <View style={styles.copy}>
+        <Text style={styles.title} numberOfLines={2}>{title}</Text>
+        <Text style={styles.line}>{formatUsd(item.principal_amount_cents)} contribution · {formatUsd(item.platform_fee_cents)} fee</Text>
+        <Text style={styles.line}><Text style={[styles.statusText, { color: tone.color }]}>{statusLabel(status)}</Text>{shortDate(item.created_at) ? ` · ${shortDate(item.created_at)}` : ''}</Text>
+      </View>
+      <Text style={styles.amount}>{formatUsd(item.total_amount_cents)}</Text>
+      <Ionicons name="chevron-forward" size={18} color={colors.subtle} />
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
   row: { minHeight: 64, paddingHorizontal: 18, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.white },
   divider: { borderTopWidth: 1, borderTopColor: colors.edge },
@@ -112,4 +139,5 @@ const styles = StyleSheet.create({
   line: { color: colors.muted, fontSize: 13, lineHeight: 18 },
   status: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   statusText: { fontSize: 13, lineHeight: 18, fontWeight: '800' },
+  amount: { color: colors.ink, fontSize: 16, fontWeight: '800' },
 });

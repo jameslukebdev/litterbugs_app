@@ -21,13 +21,13 @@ import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ProfileAvatar from './ProfileAvatar';
-import { CompletedCleanupRow, CurrentCleanupRow, ReportActivityRow } from './components/ActivityRows';
-import { deleteCurrentAccount, signOut } from './lib/auth';
+import { CompletedCleanupRow, ContributionRow, CurrentCleanupRow, ReportActivityRow } from './components/ActivityRows';
+import { deleteCurrentAccount, sendPasswordRecovery, signOut } from './lib/auth';
 import { openSupport } from './lib/support';
 import * as WebBrowser from 'expo-web-browser';
 import { loadCurrentUserCleanupSummary } from './lib/cleanup';
 import { ReporterEarnings } from './components/ReporterEarnings';
-import { loadCleanupFeatureFlags, loadPayoutStatus } from './lib/funding';
+import { loadCleanupFeatureFlags, loadMyContributions, loadPayoutStatus } from './lib/funding';
 import { emptyCleanupSummary } from './lib/cleanupProfile';
 import { getBottomNavClearance } from './lib/navigationLayout';
 import { payoutConnectionPresentation } from './lib/payoutConnectionPresentation';
@@ -42,7 +42,7 @@ import { useSession } from './lib/session';
 import { colors, fonts } from './lib/theme';
 import BrandBug from './components/BrandBug';
 import LoadingBee from './components/LoadingBee';
-import { EmptyState, LoadFailure, PillTabs, PrimaryButton, PullRefresh } from './components/ui';
+import { EmptyState, LoadFailure, PillTabs, PrimaryButton, PullRefresh, TextLink } from './components/ui';
 
 const TERMS_URL = 'https://litterbugs.app/terms';
 const PRIVACY_URL = 'https://litterbugs.app/privacy';
@@ -224,6 +224,7 @@ export default function ProfileScreen({ navigation, route }) {
   const scrollRef = useRef(null);
   useScrollToTop(scrollRef);
   const [signingOut, setSigningOut] = useState(false);
+  const [sendingReset, setSendingReset] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const cleanups = useFocusedResource(useCallback(() => loadCurrentUserCleanupSummary(user.id), [user?.id]), { enabled: permanent && section !== 'settings', cacheKey: `cleanups:${user?.id}` });
   const rankingResource = useFocusedResource(useCallback(() => loadRanking(user.id), [user?.id]), { enabled: permanent && section === 'overview', cacheKey: `rank:${user?.id}` });
@@ -235,6 +236,8 @@ export default function ProfileScreen({ navigation, route }) {
   const { loading: cleanupsLoading, error: cleanupsError, refresh: refreshCleanups } = cleanups;
   const { data: ranking, loading: rankingLoading, error: rankingError, refresh: refreshRanking } = rankingResource;
   const { data: payoutStatus, loading: payoutStatusLoading, error: payoutStatusError, refresh: refreshPayoutStatus } = payout;
+  const contributions = useFocusedResource(useCallback(() => loadMyContributions({ userId: user?.id }), [user?.id]), { enabled: permanent && section === 'payments', cacheKey: `payments-preview:${user?.id}` });
+  const contributionItems = contributions.data?.items ?? [];
   const savedDraft = useFocusedResource(useCallback(() => loadReportDraft(user.id), [user?.id]), { enabled: permanent && section === 'activity' });
   const accountBusy = signingOut || deletingAccount;
   const bottomPadding = section === 'overview' ? getBottomNavClearance(insets.bottom) + 18 : insets.bottom + 24;
@@ -262,6 +265,29 @@ export default function ProfileScreen({ navigation, route }) {
   if (!permanent) {
     return <SignedOutProfile navigation={navigation} bottomPadding={bottomPadding} />;
   }
+
+  // Website settings: "Reset password" emails a link, after one confirmation.
+  const handleResetPassword = () => {
+    if (accountBusy || sendingReset) return;
+    Alert.alert('Reset password?', `We’ll email a reset link to ${user.email}.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Send link',
+        onPress: async () => {
+          setSendingReset(true);
+          try {
+            const { error } = await sendPasswordRecovery(user.email);
+            if (error) throw error;
+            Alert.alert('Check your email', 'We sent a link to reset your password.');
+          } catch {
+            Alert.alert('Couldn’t send the link', 'Check your connection and try again.');
+          } finally {
+            setSendingReset(false);
+          }
+        },
+      },
+    ]);
+  };
 
   const handleSignOut = () => {
     if (accountBusy) return;
@@ -339,6 +365,7 @@ export default function ProfileScreen({ navigation, route }) {
       refreshRanking(),
       flags.refresh(),
       ...(fundingEnabled ? [refreshPayoutStatus()] : []),
+      ...(section === 'payments' ? [contributions.refresh()] : []),
     ]);
     setPullRefreshing(false);
   };
@@ -404,7 +431,22 @@ export default function ProfileScreen({ navigation, route }) {
 
       {section === 'payments' ? (
         <>
-          <Text style={styles.activityHeading}>Cleanup rewards</Text>
+          {/* Website Payments: your contributions first, then reporter earnings, then
+              cleanup earnings with the payout settings beside them. */}
+          <Text style={styles.activityHeading}>Your contributions</Text>
+          <View style={[styles.card, styles.paymentCard]}>
+            {contributions.error && !contributions.hasLoaded ? <LoadFailure title="Couldn’t load contributions" onRetry={contributions.refresh} />
+              : !contributions.hasLoaded ? <LoadingBee label="Loading contributions" size={48} />
+              : contributionItems.length > 0 ? <>
+                {contributionItems.slice(0, 5).map((item, index) => (
+                  <ContributionRow key={item.id} item={item} divided={index > 0} onPress={() => navigation.navigate('PaymentDetail', { contributionId: item.id })} />
+                ))}
+                {contributionItems.length > 5 || contributions.data?.nextCursor ? <TextLink label="Show all contributions" onPress={() => navigation.navigate('ContributionHistory')} style={styles.showAll} /> : null}
+              </>
+              : <EmptyState bug="bee" title="No contributions yet" text="Money you add to a cleanup fund appears here." />}
+          </View>
+          <ReporterEarnings userId={user.id} onOpenReport={openReport} />
+          <Text style={styles.activityHeading}>Cleanup earnings</Text>
           <View style={[styles.card, styles.paymentCard]}>
             {flags.loading && !flags.hasLoaded ? <><View style={styles.stripeConnectionRow} /><ActionRow label="Set up cleanup payouts" icon="card-outline" onPress={() => navigation.navigate('PayoutSetup')} /></> : flags.error ? <ActionRow label="Retry payout availability" icon="refresh-outline" onPress={flags.refresh} /> : fundingEnabled ? <>
             {<StripeConnectionStatus
@@ -416,23 +458,13 @@ export default function ProfileScreen({ navigation, route }) {
             <ActionRow
               appearance="profile"
               divided
-              label={payoutStatus?.payoutsEnabled ? 'Review payout details' : 'Set up payouts'}
+              label={payoutStatus?.payoutsEnabled ? 'Payout settings' : 'Set up payouts'}
               icon="card-outline"
               onPress={() => navigation.navigate('PayoutSetup')}
             />
-            </> : <Text style={{ padding: 17, color: colors.muted }}>Payout setup is currently unavailable. Your payment history is still accessible below.</Text>}
-            <ActionRow
-              appearance="profile"
-              label="Your contributions & payments"
-              icon="receipt-outline"
-              onPress={() => navigation.navigate('ContributionHistory')}
-            />
-          </View>
-          <Text style={styles.activityHeading}>Cleanup earnings</Text>
-          <View style={[styles.card, styles.paymentCard]}>
+            </> : <Text style={{ padding: 17, color: colors.muted }}>Payout setup is currently unavailable. Your payment history is still available above.</Text>}
             {cleanupsError && !cleanups.hasLoaded ? <LoadFailure title="Couldn’t load earnings" onRetry={refreshCleanups} /> : cleanupsLoading && !cleanups.hasLoaded ? <LoadingBee label="Loading earnings" size={48} /> : cleanupSummary.completed.filter(attempt => attempt.is_paid).length ? cleanupSummary.completed.filter(attempt => attempt.is_paid).map((attempt, index) => <CompletedCleanupRow key={attempt.id} attempt={attempt} divided={index > 0} onPress={() => openReport(attempt.report_id)} />) : <EmptyState bug="bee" title="No cleanup earnings yet" text="Rewards from your completed paid cleanups will appear here." />}
           </View>
-          <ReporterEarnings userId={user.id} onOpenReport={openReport} />
         </>
       ) : null}
 
@@ -502,9 +534,8 @@ export default function ProfileScreen({ navigation, route }) {
       </> : null}
 
       {section === 'settings' ? <>
-        <Text style={styles.settingsHeading}>Your account</Text>
-        <View style={styles.settingsGroup}>
-          {/* Website settings: the email is a plain row in the account group. */}
+        {/* Website settings: two plain groups in the same order, with no section headings. */}
+        <View style={[styles.settingsGroup, { marginTop: 20 }]}>
           <View style={styles.settingsEmailRow}>
             <Text style={styles.emailLabel}>Email</Text>
             <Text style={styles.emailText} selectable numberOfLines={1}>{user.email || 'Not shared'}</Text>
@@ -513,20 +544,21 @@ export default function ProfileScreen({ navigation, route }) {
           <ActionRow appearance="profile" divided label="Sign-in methods" icon="key-outline" onPress={() => openScreen('SignInMethods')} />
           <ActionRow appearance="profile" label="Blocked accounts" icon="ban-outline" onPress={() => openScreen('BlockedAccounts')} />
         </View>
-        <Text style={styles.settingsHeading}>Help & community</Text>
-        <View style={styles.settingsGroup}>
+        <View style={[styles.settingsGroup, { marginTop: 16 }]}>
           <ActionRow appearance="profile" divided label="Get help" icon="help-circle-outline" onPress={() => openScreen('SettingsInfo', { topic: 'help' })} />
+          <ActionRow appearance="profile" divided label="Cleanup safety" icon="shield-outline" onPress={() => openLitterbugsLink(CLEANUP_SAFETY_URL)} />
+          <ActionRow appearance="profile" divided label="Terms of use" icon="document-text-outline" onPress={() => openLitterbugsLink(TERMS_URL)} />
+          <ActionRow appearance="profile" divided label="Privacy policy" icon="shield-checkmark-outline" onPress={() => openLitterbugsLink(PRIVACY_URL)} />
+          <ActionRow appearance="profile" divided label="Cleanup & reward policy" icon="leaf-outline" onPress={() => openLitterbugsLink(CLEANUP_POLICY_URL)} />
+          <ActionRow appearance="profile" divided label="About photo review" icon="images-outline" onPress={() => openScreen('SettingsInfo', { topic: 'photos' })} />
           <ActionRow appearance="profile" label="Support Litterbugs" icon="heart-outline" onPress={() => openScreen('SettingsInfo', { topic: 'support' })} />
         </View>
-        <Text style={styles.settingsHeading}>Privacy & policies</Text>
-        <View style={styles.settingsGroup}>
-          <ActionRow appearance="profile" divided label="About photo review" icon="images-outline" onPress={() => openScreen('SettingsInfo', { topic: 'photos' })} />
-          <ActionRow appearance="profile" divided label="Cleanup safety" icon="shield-outline" onPress={() => openLitterbugsLink(CLEANUP_SAFETY_URL)} />
-          <ActionRow appearance="profile" divided label="Cleanup and reward policy" icon="leaf-outline" onPress={() => openLitterbugsLink(CLEANUP_POLICY_URL)} />
-          <ActionRow appearance="profile" divided label="Privacy policy" icon="shield-checkmark-outline" onPress={() => openLitterbugsLink(PRIVACY_URL)} />
-          <ActionRow appearance="profile" label="Terms of use" icon="document-text-outline" onPress={() => openLitterbugsLink(TERMS_URL)} />
-        </View>
-        <View style={[styles.settingsGroup, { marginTop: 24 }]}>
+        {user.email ? (
+          <View style={[styles.settingsGroup, { marginTop: 24 }]}>
+            <ActionRow appearance="profile" label="Reset password" icon="key-outline" onPress={handleResetPassword} busy={accountBusy || sendingReset} />
+          </View>
+        ) : null}
+        <View style={[styles.settingsGroup, { marginTop: 12 }]}>
           <ActionRow appearance="profile" label="Sign out" icon="log-out-outline" onPress={handleSignOut} busy={accountBusy} />
         </View>
         <View style={[styles.settingsGroup, { marginTop: 12 }]}>
@@ -540,7 +572,6 @@ export default function ProfileScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   settingsEmailRow: { minHeight: 56, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.line, backgroundColor: colors.white },
-  settingsHeading: { marginHorizontal: 20, marginTop: 24, marginBottom: 10, fontSize: 17, lineHeight: 22, fontFamily: fonts.heading, color: colors.ink },
   settingsGroup: { marginHorizontal: 20, borderRadius: 18, borderWidth: 1, borderColor: colors.line, overflow: 'hidden', backgroundColor: colors.white },
   settingsFootnote: { marginHorizontal: 24, marginTop: 12, fontSize: 12, lineHeight: 18, color: colors.muted },
   container: { flex: 1, backgroundColor: colors.mist },
@@ -597,6 +628,7 @@ const styles = StyleSheet.create({
   rankRefreshWarning: { marginTop: 15, color: colors.body, fontSize: 13, fontWeight: '700', textAlign: 'center' },
   card: { marginHorizontal: 20, overflow: 'hidden', borderRadius: 18, backgroundColor: colors.white },
   activityList: { marginTop: 16, borderWidth: 1, borderColor: colors.line },
+  showAll: { borderTopWidth: 1, borderTopColor: colors.edge },
   paymentCard: { borderWidth: 1, borderColor: colors.line, borderRadius: 18 },
   // Payout status: coloured icon and words on white, as on the website.
   stripeConnectionRow: { minHeight: 54, paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: colors.white },
