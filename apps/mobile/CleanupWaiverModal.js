@@ -12,7 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { reportPresentation } from './lib/reportPresentation';
+import { formatUsd } from './lib/funding';
 import { colors, fonts } from './lib/theme';
 
 
@@ -66,17 +66,21 @@ export default function CleanupWaiverModal({
             {/* Facts as soft chips, as on the website; colour comes from the chip words. */}
             <View style={styles.factChip}>
               <Ionicons name="calendar-outline" size={16} color={colors.green} />
-              <Text style={styles.factText}>You’ll have 24 hours to finish and submit 1–3 after photos.</Text>
+              <Text style={styles.factText}>24 hours to clean and send photos</Text>
+            </View>
+            <View style={styles.factChip}>
+              <Ionicons name="camera-outline" size={16} color={colors.green} />
+              <Text style={styles.factText}>Take after photos from the same spot</Text>
             </View>
             {Number(report.funded_amount_cents) > 0 ? (
               <>
                 <View style={[styles.factChip, styles.payChip]}>
-                  <Text style={[styles.factText, styles.payText]}>{reportPresentation(report).funding}</Text>
+                  <Text style={[styles.factText, styles.payText]}>Pays {formatUsd(Number(report.funded_amount_cents))} once approved</Text>
                 </View>
-                <Text style={styles.summaryText}>Payout setup is required before reserving a funded cleanup. Your reward is paid after approval.</Text>
+                <Text style={styles.summaryText}>Payout setup is required before claiming a funded cleanup.</Text>
               </>
-            ) : <Text style={styles.summaryText}>There is currently no funded reward.</Text>}
-            <Text style={styles.claimNote}>Reading this acknowledgment does not reserve the cleanup. You’ll confirm your claim afterward.</Text>
+            ) : null}
+            <Text style={styles.claimNote}>Accepting doesn’t claim the cleanup yet. You’ll confirm on the next step.</Text>
           </View> : null}
 
           {waiver?.guidelines_body ? (

@@ -348,6 +348,11 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
       timeStyle: 'short',
     })
     : null;
+  // Website cleanup flow: the deadline sits under the step's heading.
+  const sendByValue = isCorrection ? context.attempt.correction_due_at : context.attempt.claim_expires_at;
+  const sendBy = sendByValue && Number.isFinite(Date.parse(sendByValue))
+    ? new Date(sendByValue).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    : null;
   const submissionTitle = submissionProgress.stage === 'preparing'
     ? 'Preparing cleanup photos…'
     : submissionProgress.stage === 'uploading'
@@ -397,6 +402,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
                 : 'Ready to send?'}
             </Text>
             <Text style={styles.reportTitle}>{reportTitle}</Text>
+            {sendBy ? <Text style={styles.reportTitle}>Send by {sendBy}</Text> : null}
           </View>
         </View>
 
@@ -421,7 +427,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
                 <Text style={styles.required}>Required · {photos.length}/{MAX_CLEANUP_PHOTOS}</Text>
               </View>
               <Text style={styles.helper}>
-                Add 1–3 photos. When appropriate, include another angle to clearly show the completed cleanup.
+                1 to 3 photos. Try to stand where the reporter did.
               </Text>
 
               {photos.length > 0 ? (
@@ -475,11 +481,13 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>3  How much?</Text>
-              <Text style={styles.helper}>Optional information for future community impact reporting.</Text>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>3  How much?</Text>
+                <Text style={styles.required}>Optional</Text>
+              </View>
               <View style={styles.numericRow}>
                 <View style={styles.numericField}>
-                  <Text style={styles.inputLabel}>Bags/items removed</Text>
+                  <Text style={styles.inputLabel}>Bags or items</Text>
                   <TextInput selectionColor={colors.primary}
                     ref={bagsInputRef}
                     style={[styles.numericInput, errors.bagsOrItemsRemoved && styles.inputError]}
@@ -518,14 +526,15 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
             </View>
 
             <TouchableOpacity style={styles.primaryButton} onPress={continueToReview}>
-              <Text style={styles.primaryButtonText}>Review Cleanup</Text>
+              <Text style={styles.primaryButtonText}>Check before sending</Text>
               <Ionicons name="arrow-forward" size={20} color={colors.white} />
             </TouchableOpacity>
           </>
         ) : (
           <>
             <View style={styles.reviewCard}>
-              <Text style={styles.reviewLabel}>AFTER PHOTOS</Text>
+              <Text style={styles.reviewHeading}>This is what the reporter will see</Text>
+              <Text style={styles.reviewLabel}>After photos</Text>
               <View style={styles.photoGrid}>
                 {photos.map((photo, index) => (
                   <CleanupPhoto key={`${photo.uri}-${index}`} photo={photo} index={index} review />
@@ -540,16 +549,16 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
                 </View>
               ) : null}
 
-              <Text style={styles.reviewLabel}>DESCRIPTION</Text>
+              <Text style={styles.reviewLabel}>Your note</Text>
               <Text style={styles.reviewText}>{normalized.description}</Text>
 
               <View style={styles.reviewMetrics}>
                 <View style={styles.reviewMetric}>
-                  <Text style={styles.reviewLabel}>BAGS/ITEMS</Text>
+                  <Text style={styles.reviewLabel}>Bags or items</Text>
                   <Text style={styles.reviewMetricValue}>{normalized.bagsOrItemsRemoved ?? 'Not provided'}</Text>
                 </View>
                 <View style={styles.reviewMetric}>
-                  <Text style={styles.reviewLabel}>WEIGHT REMOVED</Text>
+                  <Text style={styles.reviewLabel}>Weight removed</Text>
                   <Text style={styles.reviewMetricValue}>
                     {normalized.weightPounds ? `${normalized.weightPounds} lb` : 'Not provided'}
                   </Text>
@@ -560,7 +569,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
             <Text style={styles.reviewNotice}>
               {context.attempt.is_paid
                 ? 'Your photos are checked first. Once they pass, the reporter has 48 hours to review your cleanup. Any required team review must also finish before a reward is sent.'
-                : 'After submission, the reporter has 48 hours to review your cleanup before automatic approval.'}
+                : 'The reporter has 48 hours to check it. If they don’t respond, it’s approved automatically.'}
             </Text>
 
             <TouchableOpacity
@@ -574,12 +583,12 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
                 <>
                   <Ionicons name="checkmark-circle-outline" size={21} color={colors.white} />
                   <Text style={styles.primaryButtonText}>
-                    {isCorrection ? 'Resubmit Cleanup' : 'Submit Cleanup'}
+                    {isCorrection ? 'Resend cleanup' : 'Send cleanup'}
                   </Text>
                 </>
               )}
             </TouchableOpacity>
-            <SecondaryButton label="Edit details" onPress={() => setStep('form')} disabled={submitting} style={styles.secondaryButton} />
+            <SecondaryButton label="Edit" onPress={() => setStep('form')} disabled={submitting} style={styles.secondaryButton} />
           </>
         )}
       </ScrollView>
@@ -625,7 +634,8 @@ const styles = StyleSheet.create({
   primaryButtonText: { color: colors.white, fontSize: 16, fontWeight: '800' },
   secondaryButton: { marginTop: 12 },
   reviewCard: { marginTop: 22, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: 16, backgroundColor: colors.white },
-  reviewLabel: { marginTop: 16, color: colors.muted, fontSize: 11, fontWeight: '600', letterSpacing: 0.8 },
+  reviewHeading: { color: colors.ink, fontSize: 16, fontFamily: fonts.heading },
+  reviewLabel: { marginTop: 16, color: colors.muted, fontSize: 13, fontWeight: '600' },
   reviewPhotoWrap: { width: '31%', aspectRatio: 1, overflow: 'hidden', borderRadius: 12, backgroundColor: colors.line },
   reviewPhoto: { width: '100%', height: '100%' },
   reviewText: { marginTop: 7, color: colors.ink, fontSize: 16, lineHeight: 23 },
