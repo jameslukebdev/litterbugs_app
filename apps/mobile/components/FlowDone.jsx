@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { initialWindowMetrics } from 'react-native-safe-area-context';
 
 import BrandBug from './BrandBug';
 import { colors, fonts } from '../lib/theme';
@@ -20,7 +20,9 @@ export function showFlowDone({ bug = 'flower', title, text = '' }) {
 const EDGE = { dragonfly: colors.reportEdge, flower: colors.doneBorder, bee: colors.yellowBorder, caterpillar: colors.greenBorder };
 
 export function FlowDoneHost() {
-  const insets = useSafeAreaInsets();
+  // Mounted beside the navigator, outside its safe-area provider, so read the
+  // device's insets directly.
+  const topInset = initialWindowMetrics?.insets?.top ?? 44;
   const [message, setMessage] = useState(null);
   const progress = useRef(new Animated.Value(0)).current;
 
@@ -41,7 +43,7 @@ export function FlowDoneHost() {
 
   if (!message) return null;
   return (
-    <View style={[styles.host, { top: insets.top + 10 }]} pointerEvents="box-none">
+    <View style={[styles.host, { top: topInset + 10 }]} pointerEvents="box-none">
       <Animated.View style={{ opacity: progress, transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [-18, 0] }) }] }}>
         <TouchableOpacity
           style={[styles.card, { borderColor: EDGE[message.bug] || colors.line }]}
