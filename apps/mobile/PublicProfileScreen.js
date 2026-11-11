@@ -12,9 +12,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import CompactRankBadge from './CompactRankBadge';
 import LoadingBee from './components/LoadingBee';
 import { EmptyState, LoadFailure, PillTabs, PullRefresh, TextLink } from './components/ui';
+import RankCard from './components/RankCard';
+import PointsExplanation from './components/PointsExplanation';
+import { loadRanking } from './lib/rankingService';
 import ProfileAvatar from './ProfileAvatar';
 import ProfileReportList from './ProfileReportList';
 import { useProfile } from './lib/profile';
@@ -38,6 +40,7 @@ export default function PublicProfileScreen({ navigation, route }) {
   const blocked = blockedIds.includes(profileId);
   const member = useFocusedResource(useCallback(() => loadPublicMember(profileId), [profileId, user?.id]), { enabled: Boolean(profileId) && !blocked });
   const profile = member.data;
+  const rank = useFocusedResource(useCallback(() => loadRanking(profileId), [profileId]), { enabled: Boolean(profileId) && !blocked, cacheKey: `rank:${profileId}` });
   const activity = useFocusedResource(useCallback(cursor => loadPublicMemberReports({ profileId, view, cursor }), [profileId, view, user?.id]), { paged: true, enabled: Boolean(profile) && !blocked });
 
   const confirmBlock = () => {
@@ -104,27 +107,31 @@ export default function PublicProfileScreen({ navigation, route }) {
   return (
     <><FlatList data={activity.data} keyExtractor={report => report.id} renderItem={({ item }) => <ProfileReportList reports={[item]} onReportPress={report => navigation.popTo('App', { screen: 'Map', params: { reportId: report.id } })} />} style={styles.container} contentContainerStyle={styles.content} refreshControl={<PullRefresh refreshing={member.loading || activity.loading} onRefresh={() => { member.refresh(); activity.refresh(); }} />} ListHeaderComponent={<>
       {member.error ? <Text style={styles.stateText}>Couldn’t refresh this profile. Pull down to try again.</Text> : null}
+      {/* Website member page: photo, name, place, joined date and bio, then the rank block. */}
       <View style={styles.identity}>
-        <View style={styles.identityTop}><View style={styles.avatarFrame}><ProfileAvatar profile={profile} size={72} /></View><View style={styles.identityCopy}>
-        <Text style={styles.name}>{profile.display_name}</Text>
-        <CompactRankBadge userId={profile.id} appearance="plain" style={styles.rankBadge} /></View></View>
-        {profile.username ? <Text style={styles.username}>@{profile.username}</Text> : null}
-        {profile.location ? (
-          <View style={styles.locationRow}>
-            <Ionicons name="location-outline" size={16} color={colors.muted} />
-            <Text style={styles.location}>{profile.location}</Text>
+        <View style={styles.identityTop}>
+          <ProfileAvatar profile={profile} size={64} />
+          <View style={styles.identityCopy}>
+            <Text style={styles.name}>{profile.display_name}</Text>
+            {profile.username ? <Text style={styles.username}>@{profile.username}</Text> : null}
+            {profile.location ? (
+              <View style={styles.locationRow}>
+                <Ionicons name="location-outline" size={15} color={colors.muted} />
+                <Text style={styles.location}>{profile.location}</Text>
+              </View>
+            ) : null}
+            <Text style={styles.joined}>
+              Joined {new Date(profile.created_at).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+            </Text>
           </View>
-        ) : null}
+        </View>
         {profile.bio ? <Text style={styles.bio}>{profile.bio}</Text> : null}
-        <Text style={styles.joined}>
-          Joined {new Date(profile.created_at).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
-        </Text>
       </View>
 
-      {/* Website member header: the count sits with the profile as plain words. */}
-      <Text style={styles.statLine}>
-        <Text style={styles.statValue}>{profile.visible_report_count ?? '—'}</Text> {profile.visible_report_count === 1 ? 'report' : 'reports'}
-      </Text>
+      <View style={styles.rankBlock}>
+        <RankCard ranking={rank.data} loading={rank.loading} error={rank.error} onRetry={rank.refresh} own={false} />
+        <PointsExplanation ranking={rank.data} appearance="row" />
+      </View>
 
       <Text style={styles.sectionTitle}>Reports</Text>
       <PillTabs style={styles.tabs} value={view} onChange={setView} options={[['active', 'Active reports'], ['completed', 'Completed reports']]} />
@@ -168,18 +175,15 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30, backgroundColor: colors.white },
   headerAction: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   identityTop: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  avatarFrame: { alignSelf: 'flex-start' },
   identityCopy: { flex: 1 },
   identity: { paddingHorizontal: 20, paddingTop: 24 },
   name: { color: colors.ink, fontSize: 23, lineHeight: 29, fontFamily: fonts.heading },
-  rankBadge: { marginTop: 7, alignSelf: 'flex-start' },
   username: { marginTop: 4, color: colors.muted, fontSize: 15 },
   locationRow: { marginTop: 9, flexDirection: 'row', alignItems: 'center', gap: 4 },
   location: { color: colors.body, fontSize: 14 },
   bio: { maxWidth: 360, marginTop: 12, color: colors.body, fontSize: 15, lineHeight: 22 },
-  joined: { marginTop: 10, color: colors.muted, fontSize: 13 },
-  statLine: { marginHorizontal: 20, marginTop: 12, color: colors.body, fontSize: 15 },
-  statValue: { color: colors.ink, fontSize: 17, fontWeight: '900' },
+  joined: { marginTop: 4, color: colors.muted, fontSize: 14 },
+  rankBlock: { marginHorizontal: 20, marginTop: 22 },
   sectionTitle: { marginHorizontal: 20, marginTop: 24, marginBottom: 10, color: colors.ink, fontSize: 20, fontFamily: fonts.heading },
   card: { marginHorizontal: 16, overflow: 'hidden', borderRadius: 16, backgroundColor: colors.white },
   stateTitle: { marginTop: 16, color: colors.ink, fontSize: 21, fontFamily: fonts.heading, textAlign: 'center' },

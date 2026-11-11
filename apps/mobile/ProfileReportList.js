@@ -1,11 +1,9 @@
-import RemotePhoto from './components/RemotePhoto';
-import { useReports } from './lib/reports';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { EmptyState } from './components/ui';
 import { colors } from './lib/theme';
 
-// Website report cards: a green, orange or red dot beside plain words.
+// Website member page rows: a title, then a severity dot with plain words. No thumbnail.
 const SEVERITY_DOT = { low: colors.severityLow, medium: colors.severityMedium, high: colors.severityHigh };
 const severityLabel = (severity) => {
   const value = String(severity || '').toLowerCase();
@@ -13,7 +11,6 @@ const severityLabel = (severity) => {
 };
 
 export default function ProfileReportList({ reports, onReportPress, emptyTitle = "No active reports", emptyText = "Active reports will appear here." }) {
-  const { getReportPhotoUrl } = useReports();
   if (!reports?.length) {
     return <EmptyState bug="ladybug" title={emptyTitle} text={emptyText} />;
   }
@@ -27,7 +24,6 @@ export default function ProfileReportList({ reports, onReportPress, emptyTitle =
       accessibilityRole="button"
       accessibilityLabel={`Open ${report.title || 'litter report'}`}
     >
-      <RemotePhoto path={report.photo_paths?.[0]} getUrl={getReportPhotoUrl} label={`Photo for ${report.title || 'litter report'}`} style={styles.photo} />
       <View style={styles.copy}>
         <Text style={styles.title} numberOfLines={2}>{report.title || 'Litter Report'}</Text>
         <View style={styles.meta}>
@@ -48,9 +44,8 @@ export default function ProfileReportList({ reports, onReportPress, emptyTitle =
 }
 
 const styles = StyleSheet.create({
-  photo: { width: 64, height: 64, borderRadius: 12, marginRight: 12 },
   row: {
-    minHeight: 82,
+    minHeight: 64,
     paddingHorizontal: 18,
     paddingVertical: 13,
     flexDirection: 'row',

@@ -62,6 +62,13 @@ Branch `codex/map-first-navigation`. Nothing pushed, built for stores, or deploy
   - So the app needs a Stripe SDK upgrade past Expo's pinned version plus `react-native-webview`, a native rebuild, and a retest of the fund payment sheet. Waiting on Grant's go-ahead because it touches the payment path.
   - The server already prefills email, US, individual, and the activity description, and the web form skips business type and product description.
 - Venmo/PayPal payouts: research only (Nov 11). Grant's rule: do not implement without his approval. Summary given to him in chat: PayPal's Payouts API can pay a PayPal or Venmo account by phone, email or handle (Venmo is US-only), about $0.25 per payout by API, needs a PayPal business account with Payouts enabled and a funded PayPal balance. Open questions before any build: whether moving donor money from Stripe into a PayPal balance creates a money-transmitter problem (Stripe Connect covers this today), who files tax forms, and how refunds and disputes would work. Stripe's own lighter option is Global Payouts (debit card or bank, few recipient details), which carries the same licensing caveat.
+- Later on Nov 11, compared with the signed-in website at phone width (`/account/payments`, `/account/settings`, `/members/<id>`):
+  - Payments: contributions list first (five rows, then "Show all contributions"), then reporter earnings, then cleanup earnings with payout settings. Seen on iPhone.
+  - Settings: the website's two groups and order, no headings, plus "Reset password" (emails a link after a confirmation; not sent during testing). Seen on iPhone.
+  - Profile tab icon shows the signed-in member's photo (owner request). Seen on iPhone.
+  - Public profile: website header order, the full rank block (`components/RankCard.jsx`, shared with the own Profile) and plain report rows without thumbnails. NOT seen on iPhone.
+  - Reports tab: compared, already matches.
+  - Financials: owner said to hold off on changing them. Venmo/PayPal and the Stripe SDK upgrade for embedded payout setup are both parked until he says otherwise.
 - The simulator also has an older store-style build installed (`com.litterbugs.app`, green design). `litterbugs://` links can open that one instead of the QA build (`com.gegibson.litterbugs.qa`), so don't test with deep links.
 - Simulator note: taps from the simulator tool often only register when the next tap is sent, so screens can be hard to reach.
 
