@@ -324,6 +324,7 @@ export default function ProfileScreen({ navigation, route }) {
       <View style={[styles.card, styles.overviewActions]}>
         <ActionRow appearance="profile" divided label="My activity" icon="leaf-outline" onPress={() => openScreen('MyActivity')} />
         <ActionRow appearance="profile" divided label="Payments" icon="wallet-outline" onPress={() => openScreen('Payments')} />
+        <ActionRow appearance="profile" divided label="Updates" icon="notifications-outline" onPress={() => openScreen('Updates')} />
         <ActionRow appearance="profile" label="Settings" icon="settings-outline" onPress={() => openScreen('Settings')} />
       </View>
       </> : null}

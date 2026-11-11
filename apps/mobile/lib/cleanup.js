@@ -78,6 +78,19 @@ export async function loadUnreadCleanupNotifications() {
   return data ?? [];
 }
 
+// The Updates inbox: every update for this member, newest first, read or not.
+export async function loadCleanupNotifications({ userId, unreadOnly = false } = {}) {
+  if (!userId) return [];
+  let query = supabase
+    .from('cleanup_notifications')
+    .select('id, cleanup_attempt_id, report_id, review_id, submission_id, event_type, created_at, read_at, report:reports!cleanup_notifications_report_id_fkey(id,title)')
+    .eq('user_id', userId);
+  if (unreadOnly) query = query.is('read_at', null);
+  const { data, error } = await query.order('created_at', { ascending: false }).order('id').limit(50);
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function acknowledgeCleanupNotifications(notificationIds) {
   if (!notificationIds.length) return [];
 

@@ -69,6 +69,16 @@ Branch `codex/map-first-navigation`. Nothing pushed, built for stores, or deploy
   - Public profile: website header order, the full rank block (`components/RankCard.jsx`, shared with the own Profile) and plain report rows without thumbnails. NOT seen on iPhone.
   - Reports tab: compared, already matches.
   - Financials: owner said to hold off on changing them. Venmo/PayPal and the Stripe SDK upgrade for embedded payout setup are both parked until he says otherwise.
+- Third website pass (Nov 11):
+  - Public profile seen on iPhone and matches the website's member page.
+  - Expired reports: the website's renewal card ("Keep this report open?", photo, fund line, deadline, Renew 30 days / Close and refund). Not seen with a real expired report.
+  - `components/FlowDone.jsx`: the website's finish banner. `showFlowDone({ bug, title, text })` from anywhere; the host is mounted in `App.js` beside the navigator, so it must NOT use `useSafeAreaInsets` (that crashed launch once; fixed in c26f904). Used for report posted, cleanup claimed, photos sent (which now goes straight back to the report), report renewed and report closed. The banner itself has not been seen on iPhone because each trigger changes real data.
+  - Fund receipt says "Thank you!" with the bee. The payout-ready pop-up keeps its title because a test pins it.
+  - New `UpdatesScreen.js` (Profile → Updates): the website's notifications inbox with All/Unread, report title, message and time; opening one marks it read and goes to its screen. Seen on iPhone; opening an update was not tried.
+  - Filters: compared, left as is (the app has a Favourites toggle and Visible/Hidden where the website has one "Saved reports" row).
+  - Support Litterbugs: the website sells a monthly subscription through Stripe; the app's page stays information-only (app-store payment rules, and financials are on hold).
+  - Simulator tip: don't use the status bar as the "flush" tap, it scrolls the screen to the top. Tap the left margin (x≈10) instead.
+  - Not yet compared: edit profile, payment details, help pages, the map key and the map preview card.
 - The simulator also has an older store-style build installed (`com.litterbugs.app`, green design). `litterbugs://` links can open that one instead of the QA build (`com.gegibson.litterbugs.qa`), so don't test with deep links.
 - Simulator note: taps from the simulator tool often only register when the next tap is sent, so screens can be hard to reach.
 
