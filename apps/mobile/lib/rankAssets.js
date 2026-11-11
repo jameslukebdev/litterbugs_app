@@ -1,8 +1,10 @@
 // Rank art matches the website's CommunityRank (apps/web components/community-rank.tsx):
-// logo bugs for Ladybug, Honeybee and Butterfly; flat drawings for the rest.
+// logo bugs for Honeybee and Butterfly; flat drawings for the rest. The Ladybug rank
+// has its own drawing (web public/brand/ranks/ladybug.svg); the logo ladybug stays
+// the "needs a cleanup" bug.
 export const RANK_ASSETS = Object.freeze({
   gnat: require('../assets/bugs/gnat.png'),
-  ladybug: require('../assets/bugs/ladybug.png'),
+  ladybug: require('../assets/bugs/rank-ladybug.png'),
   honeybee: require('../assets/bugs/bee.png'),
   'lightning-bug': require('../assets/bugs/lightning-bug.png'),
   caterpillar: require('../assets/bugs/caterpillar.png'),

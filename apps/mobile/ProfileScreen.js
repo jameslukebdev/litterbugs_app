@@ -1,9 +1,12 @@
 import { reportDraftSummary as loadReportDraft } from './lib/savedReportDraft';
 import ActionRow from './components/NavigationRow';
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useScrollToTop } from '@react-navigation/native';
 import {
+  AccessibilityInfo,
   Alert,
+  Animated,
+  Easing,
   ScrollView,
   StyleSheet,
   Text,
@@ -34,7 +37,7 @@ import { getBottomNavClearance } from './lib/navigationLayout';
 import { payoutConnectionPresentation } from './lib/payoutConnectionPresentation';
 import { useProfile } from './lib/profile';
 import { getRankAsset } from './lib/rankAssets';
-import { getRankForPoints } from './lib/ranking';
+import { getRankForPoints, RANKS } from './lib/ranking';
 import { loadRanking } from './lib/rankingService';
 import { isPermanentUser } from './lib/reportAccess';
 import useAccountReports from './lib/useAccountReports';
@@ -197,6 +200,41 @@ function CompletedCleanupRow({ attempt, onPress, divided }) {
   );
 }
 
+// The bar fills from empty when the rank arrives, with the cocoon on its leading
+// edge; with reduced motion it simply shows the result.
+function RankProgressBar({ percent, label }) {
+  const fill = useRef(new Animated.Value(0)).current;
+  const [trackWidth, setTrackWidth] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    AccessibilityInfo.isReduceMotionEnabled?.()
+      .then((reduce) => {
+        if (cancelled) return;
+        if (reduce) fill.setValue(percent);
+        else Animated.timing(fill, { toValue: percent, duration: 1500, delay: 250, easing: Easing.bezier(0.4, 0, 0.2, 1), useNativeDriver: false }).start();
+      })
+      .catch(() => fill.setValue(percent));
+    return () => { cancelled = true; };
+  }, [fill, percent]);
+  const filled = fill.interpolate({ inputRange: [0, 100], outputRange: [0, trackWidth], extrapolate: 'clamp' });
+
+  return (
+    <View
+      style={styles.rankProgressTrack}
+      onLayout={(event) => setTrackWidth(event.nativeEvent.layout.width)}
+      accessible
+      accessibilityRole="progressbar"
+      accessibilityLabel={label}
+      accessibilityValue={{ min: 0, max: 100, now: percent }}
+    >
+      <Animated.View style={[styles.rankProgressFill, { width: filled }]} />
+      <Animated.View style={[styles.rankProgressMarker, { transform: [{ translateX: filled }] }]} pointerEvents="none">
+        <BrandBug kind="cocoon" size={30} />
+      </Animated.View>
+    </View>
+  );
+}
+
 function RankingCard({ ranking, loading, error, onRetry }) {
   if (!ranking) {
     // One quiet loader, or one failure with a retry, while the rank is unknown.
@@ -213,6 +251,7 @@ function RankingCard({ ranking, loading, error, onRetry }) {
   const pointsLabel = `${ranking.points.toLocaleString()} ${ranking.points === 1 ? 'point' : 'points'}`;
   const remainingLabel = `${ranking.pointsRemaining.toLocaleString()} ${ranking.pointsRemaining === 1 ? 'point' : 'points'}`;
   const progressPercent = Math.round(ranking.progress * 100);
+  const nextRankDefinition = RANKS.find(({ name }) => name === ranking.nextRank);
 
   return (
     <View style={styles.rankCard}>
@@ -232,31 +271,21 @@ function RankingCard({ ranking, loading, error, onRetry }) {
         </View>
       </View>
 
-      {ranking.nextRank ? (
-        <View style={styles.rankProgressSection}>
-          <View style={styles.rankProgressHeader}>
-            <Text style={styles.rankProgressTitle}>Next rank: {ranking.nextRank}</Text>
-            <Text style={styles.rankProgressPercent}>{progressPercent}%</Text>
+      {/* Website rank: the bar fills while the cocoon rides its leading edge, then
+          the points still to go sit beside the next rank's bug. */}
+      <View style={styles.rankProgressSection}>
+        <RankProgressBar percent={ranking.nextRank ? progressPercent : 100} label={ranking.nextRank ? `Progress to ${ranking.nextRank}` : 'Highest rank reached'} />
+        {ranking.nextRank ? (
+          <View style={styles.rankNextRow}>
+            <Image source={getRankAsset(nextRankDefinition)} contentFit="contain" style={styles.rankNextArtwork} accessible={false} />
+            <Text style={styles.rankNextText}>
+              <Text style={styles.rankNextPoints}>{remainingLabel}</Text> to {ranking.nextRank}
+            </Text>
           </View>
-          <View
-            style={styles.rankProgressTrack}
-            accessible
-            accessibilityRole="progressbar"
-            accessibilityLabel={`Progress to ${ranking.nextRank}`}
-            accessibilityValue={{ min: 0, max: 100, now: progressPercent }}
-          >
-            <View style={[styles.rankProgressFill, { width: `${progressPercent}%` }]} />
-          </View>
-          <Text style={styles.rankRemaining}>
-            {remainingLabel} until {ranking.nextRank}
-          </Text>
-        </View>
-      ) : (
-        <View style={styles.highestRankBadge}>
-          <Ionicons name="sparkles" size={20} color={colors.body} />
-          <Text style={styles.highestRankText}>Highest Rank Achieved</Text>
-        </View>
-      )}
+        ) : (
+          <Text style={styles.rankNextText}>Highest rank reached</Text>
+        )}
+      </View>
 
       {error ? (
         <TouchableOpacity onPress={onRetry} activeOpacity={0.72} accessibilityRole="button">
@@ -434,7 +463,7 @@ export default function ProfileScreen({ navigation, route }) {
       {section === 'overview' ? <>
       <View style={styles.identity}>
         <View style={[styles.identityTop, fontScale > 1.5 && { flexDirection: 'column', alignItems: 'stretch', gap: 12 }]}>
-          <View style={styles.identityAvatar}><ProfileAvatar profile={profile} size={76} /></View>
+          <View style={styles.identityAvatar}><ProfileAvatar profile={profile} size={64} /></View>
           <View style={[styles.identityCopy, fontScale > 1.5 && { marginLeft: 0 }]}>
             <Text style={styles.name}>{profile?.display_name || 'Profile unavailable'}</Text>
             {profile?.username ? <Text style={styles.username}>@{profile.username}</Text> : null}
@@ -641,7 +670,8 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
   },
-  identity: { marginHorizontal: 20, marginTop: 16, marginBottom: 16, padding: 20, borderRadius: 18, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
+  // Website account page: the profile and the rank read as one page, not two boxed cards.
+  identity: { marginHorizontal: 20, marginTop: 20, marginBottom: 24, backgroundColor: colors.white },
   identityAvatar: { alignSelf: 'flex-start' },
   identityCounts: { marginTop: 14, color: colors.body, fontSize: 15 },
   identityCountValue: { color: colors.ink, fontSize: 17, fontWeight: '900' },
@@ -656,24 +686,23 @@ const styles = StyleSheet.create({
   joined: { flexShrink: 1, color: colors.muted, fontSize: 14, lineHeight: 19 },
   headerEditButtonContainer: { paddingRight: 16, justifyContent: 'flex-end' },
   headerEditButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  rankPanel: { marginHorizontal: 20, borderWidth: 1, borderColor: colors.line, borderRadius: 18, overflow: 'hidden', backgroundColor: colors.white },
-  rankCard: { padding: 18 },
+  rankPanel: { marginHorizontal: 20, backgroundColor: colors.white },
+  rankCard: { paddingBottom: 14 },
   rankPending: { minHeight: 150, padding: 0, backgroundColor: 'transparent' },
-  rankSummaryRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10 },
+  rankSummaryRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 14 },
   rankSummaryCopy: { flex: 1, minWidth: 100 },
-  rankEyebrow: { marginTop: 2, color: colors.muted, fontSize: 14, lineHeight: 19 },
+  rankEyebrow: { marginTop: 2, color: colors.muted, fontSize: 14, lineHeight: 19, fontWeight: '600' },
   rankArtworkStage: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center' },
   rankArtwork: { width: '100%', height: '100%' },
-  rankName: { color: colors.ink, fontSize: 23, lineHeight: 28, fontFamily: fonts.heading },
-  rankProgressSection: { width: '100%', marginTop: 18 },
-  rankProgressHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  rankProgressTitle: { flex: 1, color: colors.body, fontSize: 13, fontWeight: '500' },
-  rankProgressPercent: { color: colors.body, fontSize: 13, fontWeight: '600' },
-  rankProgressTrack: { height: 10, marginTop: 8, overflow: 'hidden', borderRadius: 5, backgroundColor: colors.edge },
-  rankProgressFill: { height: '100%', borderRadius: 7, backgroundColor: colors.primary },
-  rankRemaining: { marginTop: 7, color: colors.muted, fontSize: 13, lineHeight: 19, fontWeight: '400' },
-  highestRankBadge: { minHeight: 48, marginTop: 19, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 24, backgroundColor: colors.mist },
-  highestRankText: { color: colors.body, fontSize: 15, fontWeight: '900' },
+  rankName: { color: colors.ink, fontSize: 22, lineHeight: 27, fontFamily: fonts.heading },
+  rankProgressSection: { width: '100%', marginTop: 20 },
+  rankProgressTrack: { height: 10, borderRadius: 10, backgroundColor: colors.edge },
+  rankProgressFill: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 10, backgroundColor: colors.primary },
+  rankProgressMarker: { position: 'absolute', left: -15, top: -13 },
+  rankNextRow: { marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  rankNextArtwork: { width: 20, height: 20 },
+  rankNextText: { marginTop: 0, color: colors.body, fontSize: 14, lineHeight: 20 },
+  rankNextPoints: { color: colors.ink, fontWeight: '700' },
   rankRefreshWarning: { marginTop: 15, color: colors.body, fontSize: 13, fontWeight: '700', textAlign: 'center' },
   card: { marginHorizontal: 20, overflow: 'hidden', borderRadius: 18, backgroundColor: colors.white },
   paymentCard: { borderWidth: 1, borderColor: colors.line, borderRadius: 18 },
