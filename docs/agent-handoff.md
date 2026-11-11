@@ -24,6 +24,28 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-11 — Codex (continued friction review; memory-limited)
+
+- Read-only PostHog refresh: no new tracked participation failures in the last
+  48 hours; a Nov 11 browser sequence reached clean/safety_review then
+  claim_confirmed. It is not proven to be an external visitor. Rage-click
+  examples remain Nov 4–9, not new regressions. Old rapid auth open/close
+  bursts are insufficient evidence to redesign sign-in and may include QA.
+- Reused one existing Chrome test tab for Clarity, production-only last three
+  days. Nov 10 5:50 PM mobile replay: Continue on the website at 5s -> map,
+  Reports at 17s -> report list. No broken handoff observed in that sample.
+  Useful next measurement: explicit app-open versus website-continue choices;
+  current store-badge events cannot separate these paths or prove installs.
+- Owner requested low memory use. 16 GB Mac reported warning-level VM pressure
+  (2); swap rose from ~7.4 to ~7.9 GB. Extra profiling server is stopped,
+  no builds/headless browsers launched; one replay reviewed and playback ended.
+  Android emulator is the largest resident process (~1.2 GB). Asked owner
+  which emulators may be closed because closing them interrupts mobile tests;
+  no answer/closure yet. Do not assume that approval from elapsed time.
+- No product edits, deployment, GitHub push, moderation, payment or analytics
+  configuration changes. Prefer releasing reviewed pending local improvements
+  after approval and gathering new evidence over inventing additional bugs.
+
 ### 2026-11-11 — Codex (SEO progress checked with fresh Google data)
 
 - Fresh URL Inspection: patio report, Cleanup Safety, Help and Photo Review
