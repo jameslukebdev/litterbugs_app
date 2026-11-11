@@ -451,7 +451,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
           <View style={styles.reportReviewMediaSection}>
             <View style={styles.reportReviewHeader}>
               <Text style={styles.reportReviewLabel}>Photos</Text>
-              <TouchableOpacity style={styles.reportReviewEditButton} onPress={() => jumpToReportStep(0)}
+              <TouchableOpacity style={[styles.reportReviewEditButton, { marginTop: 0 }]} onPress={() => jumpToReportStep(0)}
                 disabled={isSaving} accessibilityRole="button" accessibilityLabel="Edit report photos">
                 <Text style={styles.reviewEdit}>Edit</Text>
               </TouchableOpacity>
@@ -472,7 +472,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                 <Text style={styles.reportReviewLabel}>Location</Text>
                 {!isEditing ? (
                   <TouchableOpacity onPress={onChangeLocation} disabled={isSaving} accessibilityRole="button"
-                    accessibilityLabel="Change report location" style={styles.reportReviewEditButton}>
+                    accessibilityLabel="Change report location" style={[styles.reportReviewEditButton, { marginTop: 0 }]}>
                     <Text style={styles.reviewEdit}>Edit</Text>
                   </TouchableOpacity>
                 ) : null}
@@ -685,6 +685,8 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
             </View>
           ) : null}
 
+          {/* Website review: says what posting needs before the button is pressed. */}
+          {!isEditing ? <Text style={styles.reportPostingNote}>To post, allow location access and be within 50 miles of the pin.</Text> : null}
 
           <TouchableOpacity
             style={[

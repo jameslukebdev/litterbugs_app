@@ -189,8 +189,9 @@ wizardDisabled: {
 
 /* Photos */
 
+// Website review: each Edit sits level with its section heading.
 reportReviewRow: {
-  flexDirection: 'row', alignItems: 'center', gap: 12,
+  flexDirection: 'row', alignItems: 'flex-start', gap: 12,
   paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.line,
 },
 reportReviewCopy: { flex: 1, gap: 6 },
@@ -240,7 +241,7 @@ reportReviewSeverityText: {
   fontWeight: '700',
 },
 reportReviewEditButton: {
-  minWidth: 44, minHeight: 44, justifyContent: 'center', alignItems: 'flex-end',
+  minWidth: 44, minHeight: 44, marginTop: -11, justifyContent: 'center', alignItems: 'flex-end',
 },
 reportReviewHeader: {
   flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 44,
@@ -251,10 +252,12 @@ reportReviewPhoto: {
   width: '31%',
   aspectRatio: 1,
   borderRadius: 12,
-  resizeMode: 'contain',
+  resizeMode: 'cover',
+  borderWidth: 1,
+  borderColor: colors.reportEdge,
   backgroundColor: colors.mist,
 },
-reportReviewMap: { height: 112, borderRadius: 12, overflow: 'hidden' },
+reportReviewMap: { height: 132, borderRadius: 12, overflow: 'hidden' },
 wizardSingleLineDetailsInput: {
   minHeight: 52,
   textAlignVertical: 'center',
@@ -533,15 +536,14 @@ startingFundChoices: {
   marginTop: 16,
   flexDirection: 'row',
   flexWrap: 'wrap',
-  justifyContent: 'space-between',
-  rowGap: 8,
   gap: 8,
 },
 
+// Website: each amount is as wide as its words, so the row wraps naturally.
 startingFundChoice: {
-  width: '31.5%',
-  minHeight: 52,
-  paddingHorizontal: 4,
+  minWidth: 58,
+  minHeight: 48,
+  paddingHorizontal: 14,
   paddingVertical: 10,
   alignItems: 'center',
   justifyContent: 'center',
@@ -609,9 +611,12 @@ startingFundSummaryRow: {
 },
 
 startingFundSummaryText: {
+  marginTop: 12,
   color: colors.body,
   fontSize: 14,
+  lineHeight: 20,
 },
+reportPostingNote: { marginBottom: 10, color: colors.body, fontSize: 14, lineHeight: 20 },
 
 startingFundTotalRow: {
   borderTopWidth: 1,
