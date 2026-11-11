@@ -24,6 +24,26 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-10 — Codex (map search funnel ready locally)
+
+- Added actual search-start and suggestions-shown stages, plus selected-search
+  report outcomes (loaded/empty/failed) and first matching report open. Normal
+  map panning/zooming, filters, intermediate fitBounds frames and stale responses
+  do not become search outcomes. Homepage-to-map handoff is memory-only and
+  expires after 30 seconds; IDs, queries and coordinates are not transmitted.
+- Bundle measurement version is now `web-participation-2026-11-10-v5`.
+  Search report-open measurement expires after five minutes or another result
+  response, navigation/clear or map gesture. No backfill or deployment.
+- 104 focused tests, scoped lint and TypeScript passed. Isolated phone-sized
+  Chrome on localhost selected a Google suggestion and rendered the map/pins;
+  no page errors, framework overlay or visitor analytics requests.
+- Further Clarity review: production-only, last seven days had five recordings
+  matching poor LCP (at least 4s), all mobile; three entered on map and two on
+  homepage. Latest Nov 10 5:44 PM recording showed typing then selecting a city
+  at 7s. This is a small flagged sample, not a site-wide speed or failure rate.
+  Next investigate mobile first-render timing before choosing a performance fix.
+  Filter: https://clarity.microsoft.com/projects/view/z60itnrbpn/impressions?URL=2%3B0%3Bhttps%3A%2F%2Flitterbugs.app%2F&WebVitalsLCP=poor&date=Last%207%20days
+
 ### 2026-11-10 — Codex (public profile analytics and traffic quality)
 
 - Local GA and PostHog public member views now use `/members/profile`,

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ANALYTICS_REPLAY_CHOICE_KEY, analyticsAllowed, analyticsPage, analyticsReferrer, consumeSharedReportAuthResult, drainJourneys, type AnalyticsConfig } from './website-analytics';
+import { ANALYTICS_REPLAY_CHOICE_KEY, analyticsAllowed, analyticsPage, analyticsReferrer, consumeSharedReportAuthResult, drainJourneys, rememberMapSearchSelection, consumeMapSearchSelection, clearParticipationContext, type AnalyticsConfig } from './website-analytics';
 
 const config: AnalyticsConfig = { enabled: true, production: true, gaId: 'G-TEST123', posthogKey: 'phc_test', posthogHost: 'https://us.i.posthog.com' };
 describe('analytics privacy boundary', () => {
@@ -25,6 +25,24 @@ describe('analytics privacy boundary', () => {
     expect(analyticsReferrer('invalid')).toBe('');
     expect(analyticsReferrer('javascript:alert(1)')).toBe('');
   });
+});
+
+it('expires and replaces in-memory search handoffs and clears them on exclusion', () => {
+  vi.stubGlobal('window', {});
+  const now = vi.spyOn(Date, 'now').mockReturnValue(1000);
+  try {
+    rememberMapSearchSelection('old-choice', 'toolbar_search');
+    rememberMapSearchSelection('current-choice', 'empty_search');
+    expect(consumeMapSearchSelection('old-choice')).toBeNull();
+    expect(consumeMapSearchSelection('current-choice')).toEqual({ placeId: 'current-choice', surface: 'empty_search', started: 1000 });
+    expect(consumeMapSearchSelection('current-choice')).toBeNull();
+    rememberMapSearchSelection('expired-choice', 'toolbar_search');
+    now.mockReturnValue(31001);
+    expect(consumeMapSearchSelection('expired-choice')).toBeNull();
+    rememberMapSearchSelection('excluded-choice', 'toolbar_search');
+    clearParticipationContext();
+    expect(consumeMapSearchSelection('excluded-choice')).toBeNull();
+  } finally { clearParticipationContext(); now.mockRestore(); vi.unstubAllGlobals(); }
 });
 
 it.each([false, true])('consumes a shared-report result once while respecting opt-out (%s)', optedOut => {

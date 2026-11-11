@@ -5,6 +5,7 @@ import { EMPTY_REPORT_DRAFT, type ReportDraft, type MappableReport } from '@litt
 import { useEffect, useImperativeHandle, type Ref } from 'react';
 import { DEFAULT_DISCOVERY_FILTERS, type DiscoveryFilters } from '@/lib/report-discovery';
 import { MapExperience } from './map-experience';
+import { rememberMapSearchSelection } from '@/lib/website-analytics';
 
 const telemetry = vi.hoisted(() => ({ step: vi.fn(), failure: vi.fn(), outcome: vi.fn(), discovery: vi.fn() }));
 vi.mock('@/lib/website-analytics', async original => ({ ...await original<object>(), trackParticipation: telemetry.step, trackParticipationFailure: telemetry.failure, trackWebsiteOutcome: telemetry.outcome, trackMapDiscovery: telemetry.discovery }));
@@ -16,6 +17,8 @@ const state = vi.hoisted(() => ({
   markerInstances: [] as { map: unknown; position: {lat: number; lng: number}; title: string; glyph?: HTMLElement; click?: () => void }[],
   click: null as null | ((event: unknown) => void),
   idle: null as null | (() => void),
+  drag: null as null | (() => void),
+  zoom: null as null | (() => void),
   tiles: null as null | (() => void),
   discovery: vi.fn(),
   panTo: vi.fn(),
@@ -42,7 +45,7 @@ vi.mock('@googlemaps/js-api-loader', () => ({
   setOptions: vi.fn(),
   importLibrary: async (name: string) => { await state.mapLoadGate; return name === 'maps' ? { Map: class {
     constructor(_element: unknown, options: unknown) { state.mapOptions(options); }
-    addListener(name: string, callback: (event: unknown) => void) { if (name === 'click') state.click = callback; else if (name === 'idle') state.idle = () => callback(undefined); else if (name === 'tilesloaded') state.tiles = () => callback(undefined); }
+    addListener(name: string, callback: (event: unknown) => void) { if (name === 'click') state.click = callback; else if (name === 'idle') state.idle = () => callback(undefined); else if (name === 'tilesloaded') state.tiles = () => callback(undefined); else if (name === 'dragstart') state.drag = () => callback(undefined); else if (name === 'zoom_changed') state.zoom = () => callback(undefined); }
     panTo(location: { lat: number; lng: number }) { state.center = location; state.panTo(location); } fitBounds(...args: unknown[]) { state.fitBounds(...args); } setZoom() {} getZoom() { return 14; }
     getBounds() { return { toJSON: () => ({ north: 1, south: -1, west: -1, east: 1 }) }; }
     getCenter() { return { lat: () => state.center.lat, lng: () => state.center.lng }; }
@@ -65,11 +68,11 @@ vi.mock('@/components/public-account-action', () => ({ PublicAccountAction: ({ r
   useImperativeHandle(ref, () => ({ openAuth: state.openAuth }));
   return <><button onClick={() => onOpenReport('test-report')}>Open report from history</button><button onClick={() => onUserChange('test-user')}>Finish test sign-in</button></>;
 } }));
-vi.mock('@/components/report-browser', () => ({ ReportBrowser: ({ reports, onVisibleReportsChange, onDiscoveryFiltersChange, placeSearch }: { onVisibleReportsChange: (reports: MappableReport[]) => void; placeSearch: React.ReactNode; reports: Array<{ title: string }>; onDiscoveryFiltersChange: (filters: DiscoveryFilters) => void }) => {
+vi.mock('@/components/report-browser', () => ({ ReportBrowser: ({ reports, onVisibleReportsChange, onDiscoveryFiltersChange, placeSearch, emptyPlaceSearch }: { onVisibleReportsChange: (reports: MappableReport[]) => void; placeSearch: React.ReactNode; emptyPlaceSearch: React.ReactNode; reports: Array<{ title: string }>; onDiscoveryFiltersChange: (filters: DiscoveryFilters) => void }) => {
   useEffect(() => { onDiscoveryFiltersChange(DEFAULT_DISCOVERY_FILTERS); }, [onDiscoveryFiltersChange]);
-  return <>{placeSearch}<button onClick={() => onVisibleReportsChange(state.markerReports)}>Refresh visible pins</button><output aria-label="Discovery results">{reports.map(report => report.title).join(',')}</output><button onClick={() => onDiscoveryFiltersChange({ ...DEFAULT_DISCOVERY_FILTERS, status: 'available', severity: 'high' })}>High severity filter</button></>;
+  return <>{placeSearch}{emptyPlaceSearch}<button onClick={() => onVisibleReportsChange(state.markerReports)}>Refresh visible pins</button><output aria-label="Discovery results">{reports.map(report => report.title).join(',')}</output><button onClick={() => onDiscoveryFiltersChange({ ...DEFAULT_DISCOVERY_FILTERS, status: 'available', severity: 'high' })}>High severity filter</button></>;
 } }));
-vi.mock('@/components/place-search', () => ({ PlaceSearch: ({onSelect}: {onSelect: (place: unknown) => void}) => <button onClick={() => onSelect({id:'chosen',label:'Chosen area',latitude:1,longitude:2,bounds:{north:2,south:0,west:1,east:3}})}>Choose map area</button> }));
+vi.mock('@/components/place-search', () => ({ PlaceSearch: ({onSelect, trackingSurface}: {onSelect: (place: unknown) => void; trackingSurface?: string}) => <button onClick={() => onSelect({id:'chosen',label:'Chosen area',latitude:1,longitude:2,bounds:{north:2,south:0,west:1,east:3}})}>{trackingSurface === 'empty_search' ? 'Choose empty map area' : 'Choose map area'}</button> }));
 vi.mock('@/lib/synced-report-preferences', () => ({ reportPreferenceSync: { load: async () => ({ preferences: { favorites: [], hidden: [] } }), sync: async () => ({ preferences: { favorites: [], hidden: [] }, offline: false }) } }));
 vi.mock('@/lib/report-discovery', async (importOriginal) => ({ ...await importOriginal<typeof import('@/lib/report-discovery')>(), loadDiscoveryReports: (...args: unknown[]) => state.discovery(...args) }));
 vi.mock('@/components/report-detail', () => ({ ReportDetail: ({report, onClose}: {report: {title: string}; onClose: () => void}) => <><output aria-label="Linked report">{report.title}</output><button onClick={onClose}>Back to discovery</button></> }));
@@ -667,6 +670,79 @@ it('previews and opens the closest report before the map results refresh', async
   expect(state.panTo).toHaveBeenCalledWith({ lat: closest.latitude, lng: closest.longitude });
   act(() => pin?.click?.());
   expect((await screen.findByLabelText('Linked report')).textContent).toBe(closest.title);
+});
+
+it('measures a selected search only after the viewport settles and a matching report opens', async () => {
+  const found = { ...report(), is_published: true } as MappableReport;
+  state.discovery.mockResolvedValue({ reports: [found], truncated: false });
+  state.markerReports = [found];
+  render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+  await waitFor(() => expect(state.tiles).toBeTruthy());
+  act(() => { state.tiles!(); state.idle!(); });
+  await screen.findByText(found.title!);
+  telemetry.discovery.mockClear();
+  fireEvent.click(screen.getByRole('button', { name: 'Choose map area' }));
+  await waitFor(() => expect(state.fitBounds).toHaveBeenCalled());
+  expect(telemetry.discovery).not.toHaveBeenCalledWith('search_results_loaded', expect.anything());
+  act(() => { state.zoom!(); state.idle!(); });
+  await waitFor(() => expect(telemetry.discovery).toHaveBeenCalledWith('search_results_loaded', {
+    surface: 'toolbar_search', filtered: false, result_bucket: '1', truncated: false,
+  }));
+  fireEvent.click(screen.getByRole('button', { name: 'Refresh visible pins' }));
+  act(() => state.markerInstances.find(marker => marker.title === found.title)?.click?.());
+  expect(telemetry.discovery).toHaveBeenCalledWith('search_report_opened', { source: 'map_pin', surface: 'toolbar_search' });
+  expect(JSON.stringify(telemetry.discovery.mock.calls)).not.toMatch(/test-report|Chosen area|latitude|longitude/);
+  expect(telemetry.discovery.mock.calls.filter(([stage]) => stage === 'search_results_loaded')).toHaveLength(1);
+});
+
+it.each(['empty', 'failed'])('distinguishes %s recovery search results from ordinary map loads', async outcome => {
+  render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+  await waitFor(() => expect(state.tiles).toBeTruthy());
+  act(() => { state.tiles!(); state.idle!(); });
+  await waitFor(() => expect(telemetry.discovery).toHaveBeenCalledWith('results_empty', expect.anything()));
+  telemetry.discovery.mockClear();
+  if (outcome === 'failed') state.discovery.mockRejectedValue(new Error('private address in backend error'));
+  fireEvent.click(screen.getByRole('button', { name: 'Choose empty map area' }));
+  act(() => state.idle!());
+  await waitFor(() => expect(telemetry.discovery).toHaveBeenCalledWith(`search_results_${outcome}`, expect.objectContaining({ surface: 'empty_search' })));
+  if (outcome === 'failed') expect(telemetry.discovery).not.toHaveBeenCalledWith('search_results_empty', expect.anything());
+  expect(JSON.stringify(telemetry.discovery.mock.calls)).not.toContain('private address');
+  telemetry.discovery.mockClear();
+  state.discovery.mockResolvedValue({ reports: [], truncated: false });
+  state.center = { lat: 0.3, lng: 0.3 };
+  act(() => { state.drag!(); state.idle!(); });
+  await waitFor(() => expect(telemetry.discovery).toHaveBeenCalledWith('results_empty', expect.anything()));
+  expect(telemetry.discovery.mock.calls.some(([stage]) => stage.startsWith('search_'))).toBe(false);
+});
+
+it('continues a homepage search into the map without treating a later reload as another search', async () => {
+  const place = { id: 'header-choice', label: 'Private search result', subtitle: 'City', latitude: 1, longitude: 2, bounds: { north: 2, south: 0, west: 1, east: 3 } };
+  rememberMapSearchSelection(place.id, 'toolbar_search');
+  render(<MapExperience initialReports={[]} initialPlace={place} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+  await waitFor(() => expect(state.tiles).toBeTruthy());
+  act(() => { state.tiles!(); state.idle!(); });
+  await waitFor(() => expect(telemetry.discovery).toHaveBeenCalledWith('search_results_empty', expect.objectContaining({ surface: 'toolbar_search' })));
+  expect(JSON.stringify(telemetry.discovery.mock.calls)).not.toMatch(/header-choice|Private search result/);
+  cleanup(); telemetry.discovery.mockClear();
+  render(<MapExperience initialReports={[]} initialPlace={place} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+  await waitFor(() => expect(state.tiles).toBeTruthy());
+  act(() => { state.tiles!(); state.idle!(); });
+  await waitFor(() => expect(telemetry.discovery).toHaveBeenCalledWith('results_empty', expect.anything()));
+  expect(telemetry.discovery).not.toHaveBeenCalledWith('search_results_empty', expect.anything());
+});
+
+it.each(['drag', 'filter'])('does not attribute an interrupted search to later %s results', async interruption => {
+  render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+  await waitFor(() => expect(state.tiles).toBeTruthy());
+  act(() => { state.tiles!(); state.idle!(); });
+  await waitFor(() => expect(telemetry.discovery).toHaveBeenCalledWith('results_empty', expect.anything()));
+  telemetry.discovery.mockClear();
+  fireEvent.click(screen.getByRole('button', { name: 'Choose map area' }));
+  if (interruption === 'drag') act(() => state.drag!());
+  else fireEvent.click(screen.getByRole('button', { name: 'High severity filter' }));
+  act(() => state.idle!());
+  await waitFor(() => expect(telemetry.discovery).toHaveBeenCalledWith('results_empty', expect.anything()));
+  expect(telemetry.discovery.mock.calls.some(([stage]) => stage.startsWith('search_'))).toBe(false);
 });
 
 it('finds a different report on the empty desktop map while keeping the current report open', async () => {

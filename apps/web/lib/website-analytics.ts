@@ -1,7 +1,7 @@
 import { AUTH_RESULT_PARAM, SHARED_REPORT_AUTH_PARAM, isSharedReportAuthProvider, type SharedReportAuthProvider } from './participation-auth';
 import { communityForEntry, communityForPath, communityProperties, type CommunityEngagementEvent, type CommunityProperties } from './community-metrics';
 // Bump when participation semantics/workflows change; compiled into each browser bundle.
-export const WORKFLOW_VERSION = 'web-participation-2026-11-09-v4';
+export const WORKFLOW_VERSION = 'web-participation-2026-11-10-v5';
 export const ANALYTICS_CONSENT_KEY = 'litterbugs:analytics-consent:v1';
 export const ANALYTICS_REPLAY_CHOICE_KEY = 'litterbugs:analytics-replay-consent:v1';
 export const ANALYTICS_EVENT = 'litterbugs:analytics-event';
@@ -218,7 +218,23 @@ function currentEntrySource(): EntrySource {
   return entrySourceForPath(window.location.pathname);
 }
 
-const MAP_STAGES = ['search_submitted', 'location_selected', 'location_search_empty', 'location_search_failed', 'results_loaded', 'results_empty', 'results_failed', 'closest_requested', 'closest_found', 'closest_empty', 'closest_failed', 'closest_viewed', 'report_opened'] as const;
+const MAP_STAGES = ['search_submitted', 'location_search_started', 'location_suggestions_shown', 'location_selected', 'location_search_empty', 'location_search_failed', 'search_results_loaded', 'search_results_empty', 'search_results_failed', 'search_report_opened', 'results_loaded', 'results_empty', 'results_failed', 'closest_requested', 'closest_found', 'closest_empty', 'closest_failed', 'closest_viewed', 'report_opened'] as const;
+export type MapSearchSurface = 'toolbar_search' | 'empty_search';
+let mapSearchSelection: { placeId: string; surface: MapSearchSurface; started: number } | null = null;
+/** In-memory handoff for the homepage search → map route. Never sent or persisted. */
+export function rememberMapSearchSelection(placeId: string, surface: MapSearchSurface) {
+  if (typeof window === 'undefined') return;
+  mapSearchSelection = { placeId, surface, started: Date.now() };
+}
+export function consumeMapSearchSelection(placeId: string | undefined) {
+  if (typeof window === 'undefined') return null;
+  if (!mapSearchSelection) return null;
+  if (Date.now() - mapSearchSelection.started > 30000) { mapSearchSelection = null; return null; }
+  if (mapSearchSelection.placeId !== placeId) return null;
+  const selection = mapSearchSelection;
+  mapSearchSelection = null;
+  return selection;
+}
 const PAYOUT_STAGES = ['opened', 'form_opened', 'form_loading_started', 'form_loaded', 'form_exited', 'closed', 'back', 'hosted_requested', 'already_ready', 'ready', 'status_failed', 'start_failed', 'load_failed', 'session_ended'] as const;
 const SHARED_REPORT_AUTH_STAGES = ['prompt_shown', 'closed', 'attempted', 'handoff_requested', 'handoff_unavailable', 'start_failed', 'redirect_stalled', 'rejected', 'network_failed', 'verification_sent', 'succeeded', 'return_failed'] as const;
 export type SharedReportAuthStage = typeof SHARED_REPORT_AUTH_STAGES[number];
@@ -298,4 +314,5 @@ export function trackParticipationExit(action: ParticipationAction, stage: Parti
 export function clearParticipationContext() {
   participationSources.clear();
   reportEntrySource = 'report_detail';
+  mapSearchSelection = null;
 }
