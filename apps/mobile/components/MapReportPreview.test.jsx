@@ -23,7 +23,8 @@ const report = { id: 'a', title: 'Bottles by the road', funded_amount_cents: 600
 const render = props => renderToStaticMarkup(<MapReportPreview insetBottom={0} getPhotoUrl={vi.fn()} {...props} />);
 const previewSource = readFileSync(new URL('./MapReportPreview.jsx', import.meta.url), 'utf8');
 const previewHeroSource = readFileSync(new URL('./ReportPreviewHero.jsx', import.meta.url), 'utf8');
-const mapSource = readFileSync(new URL('../MapScreen.js', import.meta.url), 'utf8');
+// The map's floating controls live beside the screen that owns their state.
+const mapSource = ['../MapScreen.js', './MapControls.jsx'].map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
 describe('map preview states', () => {
   it('renders safely before selection and after dismissal', () => {
     expect(render({ report: undefined, nearby: [] })).toBe('');

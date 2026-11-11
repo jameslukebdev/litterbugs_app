@@ -6,7 +6,8 @@ import ReportDetailsSheet from './components/ReportDetailsSheet';
 import styles from './styles/MapScreen.styles';
 import { cloudDrafts } from './lib/cloudDrafts';
 import CloudDraftStatus from './components/CloudDraftStatus';
-import ReportWizardSteps from './components/ReportWizardSteps';
+import ReportWizardModal from './components/ReportWizardModal';
+import MapControls from './components/MapControls';
 
 import MapReportPreview from './components/MapReportPreview';
 import MapPin, { pinKind } from './components/MapPin';
@@ -19,14 +20,13 @@ import { saveReportDraft, loadReportDraft, clearReportDraft } from './lib/savedR
 import ReportFilters from './components/ReportFilters';
 // MapScreen.js
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { View, Text, Image, StyleSheet, Modal, TouchableOpacity, Platform, Alert, Keyboard, Animated, Easing, ScrollView, TouchableWithoutFeedback, ActivityIndicator, AppState, Linking, useWindowDimensions } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Platform, Alert, Keyboard, Animated, Easing, AppState, Linking, useWindowDimensions } from 'react-native';
 import { polygonParts } from './lib/searchGeography';
 import { Marker, Polygon } from 'react-native-maps';
 import ClusteredMapView from 'react-native-map-clustering';
 import { useIsFocused } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import * as Device from 'expo-device';
-import { Ionicons } from '@expo/vector-icons';
 
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -94,7 +94,6 @@ import { isReportShareable } from './lib/reportSharing';
 import useReportSharing from './lib/useReportSharing';
 import useReportWizardNavigation from './lib/useReportWizardNavigation';
 import useSelectedReportLoaders from './lib/useSelectedReportLoaders';
-import { LITTER_OPTIONS, NOTES_OPTIONS, REPORT_STEPS } from './lib/reportOptions';
 import { promptCleanupNavigation } from './lib/promptCleanupNavigation';
 import { showLocationSettingsAlert, showPermanentAccountRequired } from './lib/mapAlerts';
 import { colors } from './lib/theme';
@@ -1823,148 +1822,28 @@ const revealBottomReportField = () => {
         </View>
       ) : null}
 
-      {reportPlacementActive ? (
-        <View
-          style={styles.reportPlacementPinArea}
-          pointerEvents="none"
-          accessible={false}
-        >
-          <Ionicons name="location-sharp" size={54} color={colors.primaryDark} style={{ transform: [{ translateY: -24 }] }} />
-          <View style={{ position: 'absolute', width: 7, height: 7, borderRadius: 4, backgroundColor: colors.primaryDark, borderWidth: 1, borderColor: colors.white }} />
-        </View>
-      ) : null}
-
-        {/* Support Button (Patreon) */}
-        {/* <TouchableOpacity
-          style={styles.supportButton}
-          onPress={openPatreon}
-          accessibilityRole="button"
-          accessibilityLabel="Support Litterbugs on Patreon"
-        >
-          <Ionicons name="heart" size={22} color={colors.severityHigh} />
-        </TouchableOpacity> */}
-
-
-      <View
-        style={[styles.reportLitterButtonDock, { bottom: mapControlsBottom }, previewControlsHidden && !reportPlacementActive && { display: 'none' }]}
-        pointerEvents="box-none"
-      >
-        <Animated.View
-          pointerEvents={reportPlacementActive ? 'auto' : 'none'}
-          style={[
-            styles.reportPlacementCloseWrap,
-            fontScale > 1.5
-              ? { left: 16, bottom: 90 * fontScale }
-              : { right: reportControlWidth + 26 },
-            {
-              opacity: reportControlTransition,
-              transform: [
-                {
-                  translateX: reportControlTransition.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [16, 0],
-                  }),
-                },
-                {
-                  scale: reportControlTransition.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.82, 1],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <TouchableOpacity
-            style={styles.reportPlacementClose}
-            onPress={cancelReportLocationPicker}
-            activeOpacity={0.82}
-            accessibilityRole="button"
-            accessibilityLabel="Cancel report location"
-            accessibilityHint="Closes the report pin and returns to normal map browsing"
-          >
-            <Ionicons name="close" size={27} color={colors.ink} />
-          </TouchableOpacity>
-        </Animated.View>
-
-        <Animated.View
-          style={{
-            transform: [
-              {
-                scale: reportControlTransition.interpolate({
-                  inputRange: [0, 0.5, 1],
-                  outputRange: [1, 0.97, 1],
-                }),
-              },
-            ],
-          }}
-        >
-          <TouchableOpacity
-            style={[styles.reportLitterButton, reportPlacementActive && !isCheckingReportLocation && { backgroundColor: colors.primary }, { width: reportControlWidth, height: fontScale > 1.5 ? undefined : BOTTOM_NAV_METRICS.mapControlSize, minHeight: 44, paddingVertical: fontScale > 1.5 ? 12 : 0 }]}
-            onPress={reportPlacementActive ? confirmReportLocation : openReportLocationPicker}
-            disabled={showInitialMapLoading || formOpen || detailsOpen || isSaving || isLocatingReportLocation || isCheckingReportLocation}
-            activeOpacity={0.82}
-            accessibilityRole="button"
-            accessibilityLabel={isCheckingReportLocation ? 'Checking reporting distance' : isLocatingReportLocation ? 'Finding your location' : reportPlacementActive ? 'Use this location' : 'Report litter'}
-            accessibilityHint={reportPlacementActive
-              ? 'Checks that the pin is within 50 miles of your current GPS location'
-              : 'Places a pin at the map center so you can choose the cleanup site'}
-            accessibilityState={{
-              busy: isLocatingReportLocation || isCheckingReportLocation,
-              disabled: showInitialMapLoading || formOpen || detailsOpen || isSaving || isLocatingReportLocation || isCheckingReportLocation,
-            }}
-          >
-              {isLocatingReportLocation || isCheckingReportLocation ? (
-                <>
-                  <ActivityIndicator size="small" color={colors.primary} />
-                  <Text style={[styles.reportLitterButtonText, { flexShrink: 1, textAlign: 'center' }]}>{isCheckingReportLocation ? 'Checking distance…' : 'Finding your location…'}</Text>
-                </>
-              ) : (
-                <>
-                  {/* Website: the dragonfly labels Report Litter; placing the pin turns it into the purple confirm button. */}
-                  {reportPlacementActive ? null : <Image source={require('./assets/bugs/dragonfly.png')} style={{ width: 26, height: 26 }} resizeMode="contain" accessible={false} />}
-                  <Text numberOfLines={fontScale > 1.5 ? undefined : 1} style={[styles.reportLitterButtonText, reportPlacementActive && { color: colors.white }, { flexShrink: 1, textAlign: 'center' }]}>{reportPlacementActive ? 'Use this location' : 'Report Litter'}</Text>
-                </>
-              )}
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
-
-      {/* Center Me Button */}
-      {!previewControlsHidden ? <TouchableOpacity
-        style={[
-          styles.centerButton,
-          {
-            bottom: mapControlsBottom + (fontScale > 1.5 ? 90 * fontScale : 58),
-          },
-        ]}
-        onPress={() => { clearSearchPlace(); centerOnUser(); }}
-        disabled={isCentering}
-        accessibilityRole="button"
-        accessibilityLabel={isCentering ? 'Finding your location' : 'Center map on your location'}
-        accessibilityState={{ busy: isCentering, disabled: isCentering }}
-      >
-        {isCentering ? (
-          <ActivityIndicator color={colors.ink} />
-        ) : (
-          <Ionicons name="locate-outline" size={23} color={colors.ink} />
-        )}
-      </TouchableOpacity> : null}
-
-      {!previewControlsHidden ? <TouchableOpacity
-        style={[
-          styles.mapTypeButton,
-          {
-            bottom: mapControlsBottom + (fontScale > 1.5 ? 90 * fontScale : 58) + BOTTOM_NAV_METRICS.mapControlSize + 10,
-          },
-        ]}
-        onPress={toggleMapType}
-        accessibilityRole="button"
-        accessibilityLabel="Change map style"
-        accessibilityValue={{ text: mapType }}
-      >
-        <Ionicons name="layers-outline" size={23} color={mapType === 'standard' ? colors.ink : colors.primary} />
-      </TouchableOpacity> : null}
+      <MapControls
+        cancelReportLocationPicker={cancelReportLocationPicker}
+        centerOnUser={centerOnUser}
+        clearSearchPlace={clearSearchPlace}
+        confirmReportLocation={confirmReportLocation}
+        detailsOpen={detailsOpen}
+        fontScale={fontScale}
+        formOpen={formOpen}
+        isCentering={isCentering}
+        isCheckingReportLocation={isCheckingReportLocation}
+        isLocatingReportLocation={isLocatingReportLocation}
+        isSaving={isSaving}
+        mapControlsBottom={mapControlsBottom}
+        mapType={mapType}
+        openReportLocationPicker={openReportLocationPicker}
+        previewControlsHidden={previewControlsHidden}
+        reportControlTransition={reportControlTransition}
+        reportControlWidth={reportControlWidth}
+        reportPlacementActive={reportPlacementActive}
+        showInitialMapLoading={showInitialMapLoading}
+        toggleMapType={toggleMapType}
+      />
 
 {!reportPlacementActive && !detailsOpen && !showInitialMapLoading ? <MapReportPreview
         report={previewReport} nearby={nearbyReports} bottom={mapControlsBottom}
@@ -1980,199 +1859,47 @@ const revealBottomReportField = () => {
       /> : null}
 
 {/* Multi-step Report Form */}
-<Modal
-  visible={formOpen}
-  animationType="fade"
-  transparent
-  onRequestClose={cancelDraft}
->
-  <View style={styles.modalBackdrop}>
-    <SlideUp open={Boolean(formOpen)} style={styles.wizardKeyboardView} distance={80}>
-      <View style={styles.wizardSheet}>
-
-        {isSaving && (
-          <View
-            style={styles.savingOverlay}
-            pointerEvents="auto"
-            accessibilityRole="progressbar"
-            accessibilityLabel={saveStage}
-          >
-            <View style={styles.savingCard}>
-              <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={styles.savingTitle}>
-                Creating your report
-              </Text>
-              <Text style={styles.savingStatus}>{saveStage}</Text>
-
-            </View>
-          </View>
-        )}
-
-
-        {!isEditing && currentUserId ? <CloudDraftStatus userId={currentUserId} draftKey="report" onRestored={saved => { if(saved) beginReportAtCoordinate(saved.coordinate, saved.form, saved.step, saved.missingPhotoCount); }} /> : null}
-        {!isEditing && draftSaveError ? <Text style={{ color: colors.red, paddingHorizontal: 20 }}>Draft could not be saved. Keep this screen open and try Save for later again.</Text> : null}
-        {/* Persistent Header */}
-        <View style={styles.wizardHeader}>
-
-          {/* Website report form: the dragonfly beside the current step's name. */}
-          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <Image source={require('./assets/bugs/dragonfly.png')} style={{ width: 30, height: 30 }} resizeMode="contain" accessible={false} />
-            <Text style={styles.wizardHeaderTitle} accessibilityRole="header">
-              {['Add photos', 'Type of litter', 'Severity', 'Site conditions', isEditing ? 'Review changes' : 'Review report'][reportStep] || 'Report litter'}
-            </Text>
-            {reportStep === 3 ? <Text style={styles.optionalStepLabel}>Optional</Text> : null}
-
-
-          </View>
-
-          <TouchableOpacity
-            style={styles.wizardCloseButton}
-            onPress={cancelDraft}
-            disabled={isSaving || Boolean(photoPreparationStatus)}
-            accessibilityRole="button"
-            accessibilityLabel="Close report form"
-          >
-            <Ionicons
-              name="close"
-              size={25}
-              color={colors.ink}
-            />
-          </TouchableOpacity>
-
-        </View>
-
-
-        <View style={styles.wizardDivider} />
-
-
-        {/* Animated Page */}
-        <Animated.View
-          {...reportStepPanResponder.panHandlers}
-          style={[
-            styles.wizardPage,
-            {
-              opacity: stepOpacity,
-
-              transform: [
-                {
-                  translateX:
-                    stepTranslateX,
-                },
-              ],
-            },
-          ]}
-        >
-          <ScrollView
-            key={reportStep}
-            ref={reportWizardScrollRef}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
-            automaticallyAdjustKeyboardInsets={false}
-            onContentSizeChange={() => {
-              // Focus can fire before the keyboard opens and before its inset
-              // is laid out. Reveal the field again using the final content size.
-              if (reportKeyboardVisible) {
-                reportWizardScrollRef.current?.scrollToEnd({ animated: true });
-              }
-            }}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={[
-              styles.wizardScrollContent,
-              reportKeyboardVisible && { paddingBottom: reportKeyboardHeight + 32 },
-            ]}
-          >
-            <TouchableWithoutFeedback
-              onPress={Keyboard.dismiss}
-              accessible={false}
-            >
-              <View style={styles.wizardDismissArea}>
-                <ReportWizardSteps
-                  onChangeLocation={changeDraftLocation}
-                  coordinate={isEditing ? selectedReport : draftCoord}
-                  form={form}
-                  isEditing={isEditing}
-                  reportPhotoUrls={reportPhotoUrls}
-                  reportStep={reportStep}
-                  selectedReport={selectedReport}
-                  pickImage={pickImage}
-                  isSaving={isSaving || Boolean(photoPreparationStatus)}
-                  showPhotoPreparation={showPhotoPreparation && isPreparingPhotos}
-                  setForm={setForm}
-                  removePhoto={removePhoto}
-                  hasAttachedReportPhoto={hasAttachedReportPhoto}
-                  LITTER_OPTIONS={LITTER_OPTIONS}
-                  revealBottomReportField={revealBottomReportField}
-                  NOTES_OPTIONS={NOTES_OPTIONS}
-                  jumpToReportStep={jumpToReportStep}
-                  fundingEnabled={fundingEnabled}
-                  wantsStartingFunding={wantsStartingFunding}
-                  startingContributionCents={startingContributionCents}
-                  hasStartingFundingChoice={hasStartingFundingChoice}
-                  submitReport={submitReport}
-                />
-              </View>
-            </TouchableWithoutFeedback>
-          </ScrollView>
-        </Animated.View>
-
-
-        {/* Persistent bottom navigation */}
-        {!reportKeyboardVisible && (
-          <View style={styles.wizardFooter}>
-
-          {/* Website footer: outlined Back (Cancel on the first step), step count with dots, purple Next. */}
-          <TouchableOpacity
-            style={[styles.wizardBackButton, (isTransitioning || isSaving) && { opacity: 0.5 }]}
-            onPress={reportStep === 0 ? cancelDraft : goToPreviousReportStep}
-            disabled={isTransitioning || isSaving || Boolean(photoPreparationStatus)}
-            accessibilityRole="button"
-            accessibilityLabel={reportStep === 0 ? 'Cancel report' : 'Previous report step'}
-          >
-            <Ionicons name="chevron-back" size={18} color={colors.ink} />
-            <Text style={styles.wizardBackText}>{reportStep === 0 ? 'Cancel' : 'Back'}</Text>
-          </TouchableOpacity>
-
-          <View style={styles.wizardProgress}>
-            <Text style={styles.wizardProgressText}>
-              Step {reportStep + 1} of {REPORT_STEPS.length}
-            </Text>
-            <View style={styles.wizardDots}>
-              {REPORT_STEPS.map(
-                (step, index) => (
-                  <View
-                    key={step}
-                    style={[
-                      styles.wizardDot,
-
-                      index === reportStep &&
-                        styles.wizardDotActive,
-                    ]}
-                  />
-                )
-              )}
-            </View>
-          </View>
-
-          {/* The final step posts from the review screen, so it keeps the footer balanced instead. */}
-          {reportStep < REPORT_STEPS.length - 1 ? (
-            <TouchableOpacity
-              style={[styles.wizardNextButton, (!canAdvanceFromStep(reportStep) || isTransitioning || isSaving || Boolean(photoPreparationStatus)) && styles.wizardNextButtonDisabled]}
-              onPress={goToNextReportStep}
-              disabled={!canAdvanceFromStep(reportStep) || isTransitioning || isSaving || Boolean(photoPreparationStatus)}
-              accessibilityRole="button"
-              accessibilityLabel={returnToReview ? "Return to review" : "Next report step"}
-            >
-              <Text style={styles.wizardNextText}>{returnToReview ? 'Review' : 'Next'}</Text>
-              <Ionicons name="chevron-forward" size={18} color={colors.white} />
-            </TouchableOpacity>
-          ) : <View style={styles.wizardNextSpacer} accessible={false} />}
-
-          </View>
-        )}
-      </View>
-    </SlideUp>
-  </View>
-</Modal>
+<ReportWizardModal
+  beginReportAtCoordinate={beginReportAtCoordinate}
+  canAdvanceFromStep={canAdvanceFromStep}
+  cancelDraft={cancelDraft}
+  changeDraftLocation={changeDraftLocation}
+  currentUserId={currentUserId}
+  draftCoord={draftCoord}
+  draftSaveError={draftSaveError}
+  form={form}
+  formOpen={formOpen}
+  fundingEnabled={fundingEnabled}
+  goToNextReportStep={goToNextReportStep}
+  goToPreviousReportStep={goToPreviousReportStep}
+  hasAttachedReportPhoto={hasAttachedReportPhoto}
+  hasStartingFundingChoice={hasStartingFundingChoice}
+  isEditing={isEditing}
+  isPreparingPhotos={isPreparingPhotos}
+  isSaving={isSaving}
+  isTransitioning={isTransitioning}
+  jumpToReportStep={jumpToReportStep}
+  photoPreparationStatus={photoPreparationStatus}
+  pickImage={pickImage}
+  removePhoto={removePhoto}
+  reportKeyboardHeight={reportKeyboardHeight}
+  reportKeyboardVisible={reportKeyboardVisible}
+  reportPhotoUrls={reportPhotoUrls}
+  reportStep={reportStep}
+  reportStepPanResponder={reportStepPanResponder}
+  reportWizardScrollRef={reportWizardScrollRef}
+  returnToReview={returnToReview}
+  revealBottomReportField={revealBottomReportField}
+  saveStage={saveStage}
+  selectedReport={selectedReport}
+  setForm={setForm}
+  showPhotoPreparation={showPhotoPreparation}
+  startingContributionCents={startingContributionCents}
+  stepOpacity={stepOpacity}
+  stepTranslateX={stepTranslateX}
+  submitReport={submitReport}
+  wantsStartingFunding={wantsStartingFunding}
+/>
 
 {/* ============================= */}
 {/* Redesigned Report Detail View */}
