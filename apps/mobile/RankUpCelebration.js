@@ -14,6 +14,7 @@ import { Image } from 'expo-image';
 
 import { ErrorText, PrimaryButton } from './components/ui';
 import { getRankAsset } from './lib/rankAssets';
+import { hapticSuccess } from './lib/haptics';
 import { colors, fonts } from './lib/theme';
 
 const PARTICLES = [
@@ -173,12 +174,15 @@ export default function RankUpCelebration({
 
     animationRef.current = animation;
     animation.start();
+    // Mark the moment the new rank lands.
+    const rankLandsTimer = setTimeout(hapticSuccess, 1220);
     completionTimerRef.current = setTimeout(() => {
       setFinalStateVisible(true);
     }, 2180);
 
     return () => {
       animation.stop();
+      clearTimeout(rankLandsTimer);
       if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
     };
   }, [

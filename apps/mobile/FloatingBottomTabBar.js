@@ -13,6 +13,7 @@ import {
   BOTTOM_NAV_METRICS,
   getBottomNavBottom,
 } from './lib/navigationLayout';
+import { hapticSelect } from './lib/haptics';
 
 export const BOTTOM_NAV_SLOTS = Object.freeze([
   {
@@ -89,6 +90,7 @@ export default function FloatingBottomTabBar({
       });
 
       if (!isFocused && !event.defaultPrevented) {
+        hapticSelect();
         navigation.navigate(route.name, route.params);
       }
     };

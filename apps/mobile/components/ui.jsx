@@ -3,6 +3,7 @@ import { RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-
 
 import BrandBug from './BrandBug';
 import SteadyButtonContent from './SteadyButtonContent';
+import { hapticSelect, hapticTap } from '../lib/haptics';
 import { colors, fonts } from '../lib/theme';
 
 // Shared building blocks, matched to the website. Screens use these instead of
@@ -15,7 +16,7 @@ export function PrimaryButton({ label, onPress, busy = false, busyLabel, disable
   return (
     <TouchableOpacity
       style={[styles.primaryButton, inactive && styles.inactive, style]}
-      onPress={onPress}
+      onPress={(event) => { hapticTap(); onPress?.(event); }}
       disabled={inactive}
       activeOpacity={0.8}
       accessibilityRole="button"
@@ -117,7 +118,7 @@ export function PillTabs({ options, value, onChange, stacked = false, fill = tru
           <TouchableOpacity
             key={optionValue}
             style={[styles.tab, fill && !stacked && styles.tabFill, selected && styles.tabSelected]}
-            onPress={() => onChange(optionValue)}
+            onPress={() => { if (!selected) hapticSelect(); onChange(optionValue); }}
             accessibilityRole="tab"
             accessibilityState={{ selected }}
           >

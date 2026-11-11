@@ -26,6 +26,7 @@ import { Image as ExpoImage } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BrandedLoadingState, { LoadingButtonContent } from './BrandedLoadingState';
 import LoadingBee from './components/LoadingBee';
+import { hapticSuccess } from './lib/haptics';
 import { EmptyState, ErrorText, SecondaryButton, TextLink } from './components/ui';
 
 import {
@@ -291,6 +292,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
             ? 'A Litterbugs team member is reviewing the photos. Your payout is paused, and we’ll contact you if we need anything.'
             : 'Your photos are being reviewed. The 48-hour dispute window starts only after they pass.';
 
+      if (aiDecision?.status !== 'better_photos') hapticSuccess();
       Alert.alert(
         aiDecision?.status === 'better_photos'
           ? 'Better photos needed'

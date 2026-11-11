@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import BrandBug from './BrandBug';
 import RemotePhoto from './RemotePhoto';
 import { reportStatePresentation } from '../lib/reportState';
+import { hapticTap } from '../lib/haptics';
 import { colors, fonts } from '../lib/theme';
 
 export default function ReportPreviewHero({
@@ -45,7 +46,7 @@ export default function ReportPreviewHero({
         accessibilityState={{ selected: Boolean(isFavorite), disabled: !favoritesReady }}
         disabled={!favoritesReady}
         hitSlop={6}
-        onPress={() => onFavorite?.(report.id)}
+        onPress={() => { hapticTap(); onFavorite?.(report.id); }}
       >
         <Ionicons
           name={isFavorite ? 'heart' : 'heart-outline'}

@@ -55,6 +55,7 @@ import {
 } from './lib/pendingReportFunding';
 import FundingAvailabilityNotice from './components/FundingAvailabilityNotice';
 import { ErrorText, PrimaryButton, TextLink } from './components/ui';
+import { hapticSuccess } from './lib/haptics';
 import { canEditOrDeleteReport } from './lib/reportAccess';
 import { useIsFocused } from '@react-navigation/native';
 import { colors, fonts } from './lib/theme';
@@ -146,6 +147,7 @@ function FundingContributionController({ navigation, route }) {
     attemptRef.current = result.attempt;
     setConfirmationPending(result.attempt?.phase === 'submitted');
     if (result.state === 'received') {
+      hapticSuccess();
       setReceipt({ principalAmountCents: result.contribution.principal_amount_cents, totalAmountCents: result.contribution.total_amount_cents });
     } else if (result.state === 'refund' || result.state === 'failed') {
       setRecoveryError(result.state === 'refund' ? 'The previous contribution is being returned. See Payment activity for its status.' : 'Your previous payment did not complete. You can try again.');
@@ -352,6 +354,7 @@ function FundingContributionController({ navigation, route }) {
       }
 
       trackParticipation('fund', 'payment_confirmed');
+      hapticSuccess();
       setReceipt(intent);
       await clearPaymentAttempt(user.id, reportId, attempt.clientRequestId);
       attemptRef.current = null;

@@ -13,6 +13,7 @@ import MapReportPreview from './components/MapReportPreview';
 import MapPin, { pinKind } from './components/MapPin';
 import MapKey, { mapKeyCounts } from './components/MapKey';
 import SlideUp from './components/SlideUp';
+import { hapticSuccess } from './lib/haptics';
 import { CALM_MAP_STYLE } from './lib/calmMapStyle';
 import { resolveReportPhotoUrls } from './lib/reportPhotoUrls';
 
@@ -1057,6 +1058,7 @@ const openPayoutSetupForWorkflow = (action) => {
 
       if (!isEditing) {
         trackParticipation('report', 'published');
+        hapticSuccess();
         if (geminiReviewEnabled) refreshReportAfterFundingReview(data.id, 'Report photo review deferred:');
         await clearReportDraft(currentUserId).catch(error => console.log('Published draft cleanup deferred:', error));
         await clearReportSubmission(currentUserId).catch(error => console.log('Published submission cleanup deferred:', error));
