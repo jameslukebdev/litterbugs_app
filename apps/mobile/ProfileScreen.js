@@ -21,18 +21,14 @@ import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ProfileAvatar from './ProfileAvatar';
-import ProfileReportList from './ProfileReportList';
+import { CompletedCleanupRow, CurrentCleanupRow, ReportActivityRow } from './components/ActivityRows';
 import { deleteCurrentAccount, signOut } from './lib/auth';
 import { openSupport } from './lib/support';
 import * as WebBrowser from 'expo-web-browser';
 import { loadCurrentUserCleanupSummary } from './lib/cleanup';
-import { cleanupStatusPresentation } from './lib/cleanupEligibility';
 import { ReporterEarnings } from './components/ReporterEarnings';
-import { formatUsd, loadCleanupFeatureFlags, loadPayoutStatus } from './lib/funding';
-import {
-  cleanupApprovalLabel,
-  emptyCleanupSummary,
-} from './lib/cleanupProfile';
+import { loadCleanupFeatureFlags, loadPayoutStatus } from './lib/funding';
+import { emptyCleanupSummary } from './lib/cleanupProfile';
 import { getBottomNavClearance } from './lib/navigationLayout';
 import { payoutConnectionPresentation } from './lib/payoutConnectionPresentation';
 import { useProfile } from './lib/profile';
@@ -90,112 +86,6 @@ function StripeConnectionStatus({ status, loading, error, onRetry }) {
           {presentation.detail}
         </Text>
       ) : null}
-    </TouchableOpacity>
-  );
-}
-
-function ActiveCleanupRow({ attempt, onPress, divided }) {
-  const presentation = cleanupStatusPresentation(
-    { cleanup_state: attempt.status },
-    true
-  );
-  const deadline = attempt.status === 'claimed' && attempt.claim_expires_at
-    ? `Complete by ${new Date(attempt.claim_expires_at).toLocaleString()}`
-    : presentation?.description;
-  const paidStatus = attempt.dispute_status === 'open'
-    ? 'Reward paused for dispute review'
-      : attempt.financial_review_status === 'admin_review'
-      ? 'Reward paused for review'
-      : attempt.financial_review_status === 'better_photos'
-        ? 'Replacement photos requested'
-      : attempt.first_paid_admin_status === 'pending'
-        ? 'First reward is being reviewed'
-        : attempt.financial_review_status === 'passed'
-          ? 'Reward in 48-hour dispute window'
-          : attempt.financial_review_status === 'queued'
-            ? 'Photos are being reviewed'
-            : attempt.status === 'claimed'
-              ? 'Reward held for this cleanup'
-              : 'Reward pending';
-
-  return (
-    <TouchableOpacity
-      style={[styles.activeCleanupRow, divided && styles.activeCleanupDivider]}
-      onPress={onPress}
-      activeOpacity={0.72}
-      accessibilityRole="button"
-      accessibilityLabel={`Return to ${attempt.report?.title || 'active cleanup'}`}
-      accessibilityHint="Opens the claimed cleanup report on the map"
-    >
-      <View style={styles.activeCleanupIcon}>
-        <Ionicons name={presentation?.icon || 'time-outline'} size={24} color={colors.muted} />
-      </View>
-      <View style={styles.activeCleanupCopy}>
-        <Text style={styles.activeCleanupTitle} numberOfLines={2}>
-          {attempt.report?.title || 'Litter cleanup'}
-        </Text>
-        <Text style={styles.activeCleanupStatus}>{presentation?.title}</Text>
-        {attempt.is_paid ? (
-          <Text style={styles.activeCleanupReward}>
-            {formatUsd(attempt.reward_amount_cents)} · {paidStatus}
-          </Text>
-        ) : null}
-        <Text style={styles.activeCleanupDeadline}>{deadline}</Text>
-        <Text style={styles.activeCleanupLink}>Return to cleanup</Text>
-      </View>
-      <Ionicons name="chevron-forward" size={22} color={colors.muted} />
-    </TouchableOpacity>
-  );
-}
-
-function CleanupStat({ value, label, divided }) {
-  return (
-    <View testID={`cleanup-stat-${label}`} style={[styles.cleanupStat, divided && styles.cleanupStatDivider]}>
-      <Text testID={`cleanup-value-${label}`} style={styles.cleanupStatValue}>{value}</Text>
-      <View style={styles.cleanupStatLabelContainer}>
-        <Text testID={`cleanup-label-${label}`} style={styles.cleanupStatLabel}>{label}</Text>
-      </View>
-    </View>
-  );
-}
-
-function CompletedCleanupRow({ attempt, onPress, divided }) {
-  const completedDate = attempt.completed_at
-    ? new Date(attempt.completed_at).toLocaleDateString()
-    : 'Date unavailable';
-  const payoutStatus = {
-    blocked: 'Awaiting release',
-    pending: 'Reward pending',
-    processing: 'Sending reward',
-    transferred: 'Reward sent',
-    failed: 'Reward needs attention',
-  }[attempt.payout_status] || 'Payout status unavailable';
-
-  return (
-    <TouchableOpacity
-      style={[styles.completedCleanupRow, divided && styles.completedCleanupDivider]}
-      onPress={onPress}
-      activeOpacity={0.72}
-      accessibilityRole="button"
-      accessibilityLabel={`Open completed cleanup ${attempt.report?.title || ''}`.trim()}
-    >
-      <View style={styles.completedCleanupIcon}>
-        <Ionicons name="checkmark" size={22} color={colors.white} />
-      </View>
-      <View style={styles.completedCleanupCopy}>
-        <Text style={styles.completedCleanupTitle} numberOfLines={2}>
-          {attempt.report?.title || 'Completed litter cleanup'}
-        </Text>
-        <Text style={styles.completedCleanupMeta}>
-          {completedDate} · {cleanupApprovalLabel(attempt.approval_method)}
-        </Text>
-        {attempt.is_paid ? (
-          <Text style={styles.completedCleanupReward}>
-            {formatUsd(attempt.reward_amount_cents)} · {payoutStatus}
-          </Text>
-        ) : null}
-      </View>
-      <Ionicons name="chevron-forward" size={22} color={colors.muted} />
     </TouchableOpacity>
   );
 }
@@ -328,7 +218,6 @@ export default function ProfileScreen({ navigation, route }) {
   const permanent = isPermanentUser(user);
   const { profile, refreshProfile, loading } = useProfile();
   const { reports, loading: reportsLoading, error: reportsError, hasLoaded: reportsHaveLoaded, refresh: refreshReports } = useAccountReports(permanent ? user.id : null);
-  const [reportView, setReportView] = useState('active');
   const insets = useSafeAreaInsets();
   // Tapping the Profile tab again returns the page to the top.
   const scrollRef = useRef(null);
@@ -366,7 +255,8 @@ export default function ProfileScreen({ navigation, route }) {
     });
   }, [navigation, permanent, section]);
 
-  const reportGroups = useMemo(() => groupAccountReports(reports), [reports]);
+  // Website My reports: one list, each row labelled with its state.
+  const closedReportIds = useMemo(() => new Set(groupAccountReports(reports).closed.map(({ id }) => id)), [reports]);
 
   if (!permanent) {
     return <SignedOutProfile navigation={navigation} bottomPadding={bottomPadding} />;
@@ -546,25 +436,16 @@ export default function ProfileScreen({ navigation, route }) {
       {savedDraft.data ? <View style={styles.card}><ActionRow label="Continue draft" icon="create-outline" onPress={() => openAppTab('Map', { resumeDraft: Date.now() })} /><Text style={{ padding: 16, color: colors.muted }}>Saved {new Date(savedDraft.data.savedAt).toLocaleString()}</Text></View> : null}
       {savedDraft.error ? <ActionRow label="Retry loading your draft" icon="refresh-outline" onPress={savedDraft.refresh} /> : null}
       <PillTabs style={styles.activityTabs} stacked={fontScale > 1.5} value={activityView} onChange={setActivityView} options={[['current', 'Current cleanups'], ['history', 'Cleanup history'], ['reports', 'My reports']]} />
-      {activityView !== 'reports' ? <>
-      <Text style={styles.activityHeading}>Cleanups you performed</Text>
-      <View style={styles.cleanupStatsCard}>
-        <CleanupStat value={cleanups.hasLoaded ? cleanupSummary.counts.completed : '—'} label="Completed" />
-        <CleanupStat value={cleanups.hasLoaded ? cleanupSummary.counts.awaitingReview : '—'} label="Awaiting review" divided />
-        <CleanupStat value={cleanups.hasLoaded ? cleanupSummary.counts.active : '—'} label="Active" divided />
-      </View>
-      </> : null}
-
       {cleanupsError && cleanups.hasLoaded ? <ActionRow label="Couldn’t update cleanups. Try again" icon="refresh-outline" onPress={refreshCleanups} /> : null}
       {activityView === 'current' ? <>
-      <View style={[styles.card, styles.activeCleanupCard, { marginTop: 16 }]}>
+      <View style={[styles.card, styles.activityList]}>
         {cleanupsLoading && cleanupSummary.current.length === 0 ? (
           <LoadingBee label="Checking your cleanups" size={48} />
         ) : cleanupsError && !cleanups.hasLoaded ? (
           <LoadFailure title="Couldn’t load cleanups" onRetry={refreshCleanups} />
         ) : cleanupSummary.current.length > 0 ? (
           cleanupSummary.current.map((attempt, index) => (
-            <ActiveCleanupRow
+            <CurrentCleanupRow
               key={attempt.id}
               attempt={attempt}
               divided={index > 0}
@@ -572,13 +453,13 @@ export default function ProfileScreen({ navigation, route }) {
             />
           ))
         ) : (
-          <EmptyState bug="ladybug" title="No active cleanups" text="Claimed and awaiting-review cleanups will appear here." action={{ label: 'Browse reports', onPress: () => openAppTab('Reports') }} actionStyle="link" />
+          <EmptyState bug="ladybug" title="No current cleanups" text="Cleanups you claim appear here until they’re approved." action={{ label: 'Browse reports', onPress: () => openAppTab('Reports') }} actionStyle="link" />
         )}
       </View>
 
       </> : null}
       {activityView === 'history' ? <>
-      <View style={styles.card}>
+      <View style={[styles.card, styles.activityList]}>
         {cleanupsLoading && !cleanups.hasLoaded ? <LoadingBee label="Loading completed cleanups" size={48} /> : cleanupsError && !cleanups.hasLoaded ? <LoadFailure title="Couldn’t load cleanups" onRetry={refreshCleanups} /> : cleanupSummary.completed.length > 0 ? (
           cleanupSummary.completed.map((attempt, index) => (
             <CompletedCleanupRow
@@ -596,17 +477,23 @@ export default function ProfileScreen({ navigation, route }) {
       </> : null}
       {activityView === 'reports' ? <>
       {reportsError && reportsHaveLoaded ? <ActionRow label="Couldn’t update reports. Try again" icon="refresh-outline" onPress={refreshReports} /> : null}
-      <PillTabs fill={false} style={styles.reportTabs} value={reportView} onChange={setReportView} options={[['active', 'Active'], ['completed', 'Completed'], ['closed', 'Closed']].map(([value, label]) => [value, `${label} (${reportsError && !reportsHaveLoaded ? '—' : !reportsHaveLoaded ? '…' : reportGroups[value].length})`])} />
-      <View style={styles.card}>
-        {reportsLoading && !reportsHaveLoaded ? <LoadingBee label="Loading your reports" size={48} /> : reportsError && !reportsHaveLoaded ? <LoadFailure title="Couldn’t load your reports" onRetry={refreshReports} /> : <ProfileReportList
-          reports={reportGroups[reportView]}
-          emptyTitle={`No ${reportView} reports`}
-          emptyText="Reports you submit appear here, wherever you browse on the map."
-          onReportPress={(report) => openReport(report.id)}
-        />}
+      <View style={[styles.card, styles.activityList]}>
+        {reportsLoading && !reportsHaveLoaded ? <LoadingBee label="Loading your reports" size={48} /> : reportsError && !reportsHaveLoaded ? <LoadFailure title="Couldn’t load your reports" onRetry={refreshReports} /> : reports.length > 0 ? (
+          reports.map((report, index) => (
+            <ReportActivityRow
+              key={report.id}
+              report={report}
+              closed={closedReportIds.has(report.id)}
+              divided={index > 0}
+              onPress={() => openReport(report.id)}
+            />
+          ))
+        ) : (
+          <EmptyState bug="ladybug" title="No reports yet" text="Reports you submit appear here." />
+        )}
       </View>
 
-      {fundingSchemaReady ? <View style={[styles.card, { marginTop: 16 }]}><ActionRow label="Expired reports" icon="calendar-outline" onPress={() => openScreen('ExpiredReports')} /></View> : null}
+      {fundingSchemaReady ? <View style={[styles.settingsGroup, { marginTop: 16 }]}><ActionRow appearance="profile" label="Expired reports" icon="calendar-outline" onPress={() => openScreen('ExpiredReports')} /></View> : null}
       </> : null}
       </> : null}
 
@@ -653,7 +540,6 @@ const styles = StyleSheet.create({
   settingsFootnote: { marginHorizontal: 24, marginTop: 12, fontSize: 12, lineHeight: 18, color: colors.muted },
   container: { flex: 1, backgroundColor: colors.mist },
   activityTabs: { marginHorizontal: 20, marginTop: 16, marginBottom: 8 },
-  reportTabs: { marginHorizontal: 20, marginTop: 8, marginBottom: 14 },
   activityHeading: { marginHorizontal: 20, marginTop: 16, marginBottom: 12, color: colors.ink, fontSize: 20, lineHeight: 25, fontFamily: fonts.heading },
   overviewContainer: { backgroundColor: colors.white },
   overviewActions: { marginHorizontal: 20, marginTop: 18, borderRadius: 18, borderWidth: 1, borderColor: colors.line },
@@ -705,34 +591,12 @@ const styles = StyleSheet.create({
   rankNextPoints: { color: colors.ink, fontWeight: '700' },
   rankRefreshWarning: { marginTop: 15, color: colors.body, fontSize: 13, fontWeight: '700', textAlign: 'center' },
   card: { marginHorizontal: 20, overflow: 'hidden', borderRadius: 18, backgroundColor: colors.white },
+  activityList: { marginTop: 16, borderWidth: 1, borderColor: colors.line },
   paymentCard: { borderWidth: 1, borderColor: colors.line, borderRadius: 18 },
   // Payout status: coloured icon and words on white, as on the website.
   stripeConnectionRow: { minHeight: 54, paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: colors.white },
   stripeConnectionText: { flex: 1, fontSize: 15, lineHeight: 20, fontWeight: '700' },
   stripeConnectionDetail: { fontSize: 12, fontWeight: '800' },
-  cleanupStatsCard: { marginHorizontal: 20, flexDirection: 'row', overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
-  cleanupStat: { flex: 1, minHeight: 78, alignItems: 'center', paddingHorizontal: 6, paddingVertical: 12 },
-  cleanupStatDivider: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.line },
-  cleanupStatValue: { color: colors.ink, fontSize: 24, fontWeight: '900' },
-  cleanupStatLabelContainer: { flexGrow: 1, marginTop: 4, justifyContent: 'center', alignSelf: 'stretch' },
-  cleanupStatLabel: { color: colors.muted, fontSize: 12, lineHeight: 17, fontWeight: '500', textAlign: 'center' },
-  activeCleanupCard: { borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
-  activeCleanupRow: { minHeight: 124, padding: 16, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white },
-  activeCleanupDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
-  activeCleanupIcon: { width: 46, height: 46, marginRight: 13, borderRadius: 23, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.mist },
-  activeCleanupCopy: { flex: 1, marginRight: 8 },
-  activeCleanupTitle: { color: colors.ink, fontSize: 16, lineHeight: 22, fontWeight: '600' },
-  activeCleanupStatus: { marginTop: 4, color: colors.muted, fontSize: 13, fontWeight: '800' },
-  activeCleanupReward: { marginTop: 3, color: colors.primaryDark, fontSize: 13, fontWeight: '800' },
-  activeCleanupDeadline: { marginTop: 3, color: colors.muted, fontSize: 13, lineHeight: 18 },
-  activeCleanupLink: { marginTop: 8, color: colors.primary, fontSize: 14, fontWeight: '800' },
-  completedCleanupRow: { minHeight: 82, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white },
-  completedCleanupDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
-  completedCleanupIcon: { width: 40, height: 40, marginRight: 13, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary },
-  completedCleanupCopy: { flex: 1, marginRight: 8 },
-  completedCleanupTitle: { color: colors.ink, fontSize: 15, lineHeight: 21, fontWeight: '600' },
-  completedCleanupMeta: { marginTop: 5, color: colors.muted, fontSize: 13 },
-  completedCleanupReward: { marginTop: 4, color: colors.primaryDark, fontSize: 13, fontWeight: '800' },
   emailLabel: { color: colors.ink, fontSize: 16, fontWeight: '600' },
   emailText: { flexShrink: 1, color: colors.muted, fontSize: 15, fontWeight: '700' },
   signedOutContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, backgroundColor: colors.white },
