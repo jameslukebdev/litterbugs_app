@@ -24,6 +24,23 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-11 — Codex (SEO progress checked with fresh Google data)
+
+- Fresh URL Inspection: patio report, Cleanup Safety, Help and Photo Review
+  now PASS / Submitted and indexed with matching canonicals; crawled Nov 10
+  UTC. These four were still pending in the Nov 9 review. No live rendering
+  tests, indexing submissions, website changes or deployment.
+- Final Search Console web totals Nov 3–9: 26 impressions / 5 clicks vs
+  18 / 3 for Oct 27–Nov 2 (GSC Pacific dates). Sparse retained query rows:
+  `litterbugs` (3 impressions) and `cleanups in my community` (1, no clicks).
+  Query rows omit anonymized terms; use date/property totals for volume.
+  Nov 10 fresh/incomplete data excluded. Growth is small and not attributable
+  solely to recent changes; the ~20 daily visitors are from all sources.
+- Winkler cemetery is still indexed but last crawled Nov 6, before cleanup.
+  Next: grow useful Boone/cleanup evidence and check search outcomes over
+  subsequent weeks. Preserve existing weekly monitoring; no new automation.
+  Evidence: `/tmp/litterbugs-seo-progress-2026-11-11.json` and raw GSC JSON.
+
 ### 2026-11-11 — Codex (daily website visitor readout)
 
 - PostHog project 695338 daily unique pageview visitors, America/New_York:
