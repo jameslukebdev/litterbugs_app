@@ -24,6 +24,17 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-11 — Codex (daily website visitor readout)
+
+- PostHog project 695338 daily unique pageview visitors, America/New_York:
+  Nov 4–10 = 20, 45, 17, 21, 7, 20, 12; average 20.3/day. Nov 11 partial = 3.
+  Production URL filter, internal/test-account filtering, detected bots and
+  explicit QA tags excluded. Untagged historical testing can remain.
+- One-off query, no governed catalog definition; daily cookieless browser
+  estimates are not confirmed individuals or a deduplicated weekly total.
+  Oct 28–29 zeroes precede the current setup and were not used in the average.
+  Read-only analysis; no app changes or deployment.
+
 ### 2026-11-11 — Codex (mobile map startup profiled and improved locally)
 
 - Live phone profiling found Stripe.js loading before any checkout and four
