@@ -414,19 +414,22 @@ export default function ProfileScreen({ navigation, route }) {
               onRetry={refreshPayoutStatus}
             />}
             <ActionRow
+              appearance="profile"
+              divided
               label={payoutStatus?.payoutsEnabled ? 'Review payout details' : 'Set up payouts'}
               icon="card-outline"
               onPress={() => navigation.navigate('PayoutSetup')}
             />
             </> : <Text style={{ padding: 17, color: colors.muted }}>Payout setup is currently unavailable. Your payment history is still accessible below.</Text>}
             <ActionRow
+              appearance="profile"
               label="Your contributions & payments"
               icon="receipt-outline"
               onPress={() => navigation.navigate('ContributionHistory')}
             />
           </View>
           <Text style={styles.activityHeading}>Cleanup earnings</Text>
-          <View style={styles.card}>
+          <View style={[styles.card, styles.paymentCard]}>
             {cleanupsError && !cleanups.hasLoaded ? <LoadFailure title="Couldn’t load earnings" onRetry={refreshCleanups} /> : cleanupsLoading && !cleanups.hasLoaded ? <LoadingBee label="Loading earnings" size={48} /> : cleanupSummary.completed.filter(attempt => attempt.is_paid).length ? cleanupSummary.completed.filter(attempt => attempt.is_paid).map((attempt, index) => <CompletedCleanupRow key={attempt.id} attempt={attempt} divided={index > 0} onPress={() => openReport(attempt.report_id)} />) : <EmptyState bug="bee" title="No cleanup earnings yet" text="Rewards from your completed paid cleanups will appear here." />}
           </View>
           <ReporterEarnings userId={user.id} onOpenReport={openReport} />
