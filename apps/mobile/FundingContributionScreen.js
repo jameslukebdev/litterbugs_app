@@ -512,8 +512,9 @@ function FundingContributionController({ navigation, route }) {
         {quoteError ? <View style={styles.card}><ErrorText>{quoteError}</ErrorText><TextLink align="start" label="Retry pricing" onPress={() => setQuoteRetry(value => value + 1)} /></View> : null}
         <View style={styles.termsCard}>
           <Ionicons name="information-circle-outline" size={21} color={colors.body} />
+          {/* Same refund line as the website's fund dialog. */}
           <Text style={styles.termsText}>
-            Stripe charges your selected payment method when you confirm so the cleanup reward is funded and available for a cleaner. Litterbugs pays the cleaner only after an approved cleanup. If the report closes or the funds reach the published holding limit, Litterbugs refunds your full charge, including the service fee. Funding freezes once a cleaner claims the report.
+            If this report closes before payout, your full charge, including the fee, is refunded.
           </Text>
         </View>
 
@@ -587,7 +588,7 @@ const styles = StyleSheet.create({
   totalLine: { marginTop: 6, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.yellowBorder, borderStyle: 'dashed' },
   totalLabel: { color: colors.ink, fontSize: 18, fontFamily: fonts.heading },
   totalValue: { color: colors.ink, fontSize: 18, fontFamily: fonts.heading },
-  termsCard: { marginTop: 20, paddingTop: 16, flexDirection: 'row', gap: 10, borderTopWidth: 1, borderTopColor: colors.line },
+  termsCard: { marginTop: 16, flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   termsText: { flex: 1, color: colors.body, fontSize: 13, lineHeight: 19 },
   pendingCard: { marginTop: 16, flexDirection: 'row', gap: 10 },
   pendingText: { flex: 1, color: colors.yellow, fontSize: 13, lineHeight: 19, fontWeight: '600' },
