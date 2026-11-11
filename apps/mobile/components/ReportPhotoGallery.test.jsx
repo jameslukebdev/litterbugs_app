@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('react-native', async () => {
   const { createElement } = await import('react');
   const Container = ({ children }) => createElement('div', null, children);
-  return { View: Container, Text: Container, ScrollView: Container, ActivityIndicator: () => null, StyleSheet: { create: (value) => value } };
+  return { View: Container, Text: Container, ScrollView: Container, TouchableOpacity: Container, Modal: () => null, useWindowDimensions: () => ({ width: 390, height: 844 }), ActivityIndicator: () => null, StyleSheet: { create: (value) => value } };
 });
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 vi.mock('expo-image', async () => {

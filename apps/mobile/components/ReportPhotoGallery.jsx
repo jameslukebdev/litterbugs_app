@@ -2,11 +2,15 @@ import RemotePhoto from './RemotePhoto';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useReports } from '../lib/reports';
 import { colors } from '../lib/theme';
 function Photo({ uri, path, width, title }) {
@@ -14,8 +18,11 @@ function Photo({ uri, path, width, title }) {
   return <RemotePhoto path={path} uri={uri} getUrl={getReportPhotoUrl} label={`Litter reported: ${title || 'cleanup location'}`} style={{ width, height: Math.round(width / 1.73) }} />; // website report photo shape
 }
 export default function ReportPhotoGallery({ report, urls, loading, width }) {
+  const { getReportPhotoUrl } = useReports();
   const [index, setIndex] = useState(0);
-  useEffect(() => setIndex(0), [report?.id]);
+  const [fullPhotoOpen, setFullPhotoOpen] = useState(false);
+  const screen = useWindowDimensions();
+  useEffect(() => { setIndex(0); setFullPhotoOpen(false); }, [report?.id]);
   if (!report) return null;
   const photoCount = report.photo_paths?.length || urls.length;
   if (loading && !urls.length && !report.photo_paths?.length)
@@ -54,6 +61,13 @@ export default function ReportPhotoGallery({ report, urls, loading, width }) {
           />
         ))}
       </ScrollView>
+      {/* Website report sheet: "View full photo" shows the whole picture, uncropped. */}
+      {photoCount > 0 ? (
+        <TouchableOpacity style={styles.fullPhotoButton} onPress={() => setFullPhotoOpen(true)} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={`View full photo ${index + 1} of ${photoCount}`}>
+          <Ionicons name="expand-outline" size={15} color={colors.ink} />
+          <Text style={styles.fullPhotoText}>View full photo</Text>
+        </TouchableOpacity>
+      ) : null}
       {photoCount > 0 ? (
         <View style={styles.counter}>
           <Text style={styles.counterText}>
@@ -69,6 +83,24 @@ export default function ReportPhotoGallery({ report, urls, loading, width }) {
         ))}
       </View>
     ) : null}
+    <Modal visible={fullPhotoOpen} animationType="fade" onRequestClose={() => setFullPhotoOpen(false)} statusBarTranslucent>
+      <View style={styles.fullPhotoBackdrop}>
+        {fullPhotoOpen ? (
+          <RemotePhoto
+            path={report.photo_paths?.[index]}
+            uri={urls[index]}
+            getUrl={getReportPhotoUrl}
+            fit="contain"
+            background={colors.black}
+            label={`Full photo ${index + 1} of ${photoCount}: ${report.title || 'litter report'}`}
+            style={{ width: screen.width, height: screen.height }}
+          />
+        ) : null}
+        <TouchableOpacity style={styles.fullPhotoClose} onPress={() => setFullPhotoOpen(false)} accessibilityRole="button" accessibilityLabel="Close full photo">
+          <Ionicons name="close" size={22} color={colors.ink} />
+        </TouchableOpacity>
+      </View>
+    </Modal>
     </>
   );
 }
@@ -97,6 +129,10 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 12,
   },
+  fullPhotoButton: { position: 'absolute', left: 12, bottom: 12, minHeight: 32, paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 16, backgroundColor: colors.white },
+  fullPhotoText: { color: colors.ink, fontSize: 13, fontWeight: '700' },
+  fullPhotoBackdrop: { flex: 1, backgroundColor: colors.black, alignItems: 'center', justifyContent: 'center' },
+  fullPhotoClose: { position: 'absolute', top: 58, right: 20, width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white },
   counterText: { color: colors.white, fontSize: 12, fontWeight: '600' },
   dots: {
     flexDirection: 'row',

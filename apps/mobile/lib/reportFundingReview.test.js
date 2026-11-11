@@ -32,7 +32,8 @@ describe('report review cleanup-fund choices', () => {
     // Website report sheet: "$6.00 in its cleanup fund" beside the bee.
     expect(mapScreenSource).toContain('{formatUsd(Number(selectedReport.funded_amount_cents))} in its cleanup fund');
     const share = mapScreenSource.indexOf("? 'Share completed cleanup'");
-    const cleanupCard = mapScreenSource.indexOf('style={styles.cleanupEligibilityCard}');
+    // The website's sheet has no claim note; the report facts sit between Share and the footer.
+    const cleanupCard = mapScreenSource.indexOf('style={styles.websiteAbout}');
     const fundButton = mapScreenSource.indexOf('accessibilityLabel="Fund cleanup"');
     const cleanButton = mapScreenSource.indexOf('>Clean</Text>');
     expect(share).toBeGreaterThan(-1);

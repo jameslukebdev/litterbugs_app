@@ -8,7 +8,7 @@ import { colors } from '../lib/theme';
 export default function RemotePhoto(props) {
   return <PhotoRequest key={props.path || props.uri || 'empty'} {...props} />;
 }
-function PhotoRequest({ path, uri, getUrl, style, label = 'Report photo' }) {
+function PhotoRequest({ path, uri, getUrl, style, label = 'Report photo', fit = 'cover', background = colors.mist }) {
   const [attempt, setAttempt] = useState(0);
   const [result, setResult] = useState(uri ? { uri } : null);
   const request = useRef({ path, uri, getUrl });
@@ -30,7 +30,7 @@ function PhotoRequest({ path, uri, getUrl, style, label = 'Report photo' }) {
       .catch(() => { if (active) setResult(current => current?.uri && !current.error ? current : { error: true }); });
     return () => { active = false; };
   }, [attempt]);
-  const frame = [{ backgroundColor: colors.mist, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }, style];
+  const frame = [{ backgroundColor: background, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }, style];
   if (!path && !uri) return <View style={frame}><Ionicons name="image-outline" size={24} color={colors.muted} /><Text>No photo</Text></View>;
   if (!result) return <View key="loading" style={frame} accessibilityRole="progressbar" accessibilityLabel="Loading report photo" />;
   if (result.error) return <TouchableOpacity style={frame} accessibilityRole="button" accessibilityLabel="Retry report photo" onPress={() => { setResult(null); setAttempt(value => value + 1); }}><Ionicons name="refresh-outline" size={22} color={colors.muted} /><Text style={{ fontSize: 12, color: colors.muted, textAlign: 'center' }}>Retry photo</Text></TouchableOpacity>;
@@ -38,7 +38,7 @@ function PhotoRequest({ path, uri, getUrl, style, label = 'Report photo' }) {
   // when it reuses the loading View for the finished photo.
   return <View key="loaded" style={frame}>
     <Image key={attempt} source={{ uri: result.uri, cacheKey: path || result.uri }}
-      style={StyleSheet.absoluteFill} contentFit="cover" transition={180}
+      style={StyleSheet.absoluteFill} contentFit={fit} transition={180}
       cachePolicy="memory-disk" recyclingKey={path || result.uri}
       accessibilityLabel={label} onError={() => setResult({ error: true })} />
   </View>;

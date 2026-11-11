@@ -22,8 +22,8 @@ const formatShortDate = value => new Date(value).toLocaleDateString('en-US', { m
 
 // The map owns report operations; this component owns the detail presentation.
 export default function ReportDetailsSheet({ state, actions }) {
-  const { detailsOpen, reportShareSheetOpen, reportShareBusyAction, selectedReport, insets, reportDetailsPreparing, selectedReportHasUtilityActions, completedCleanupImpact, completedCleanupImpactLoading, completedCleanupImpactError, reportHeroWidth, currentUserId, reportPhotoUrls, photosLoading, geminiReviewEnabled, userOwnsSelectedReport, reportFundingFeedback, cleanupDiscoverable, cleanupStatus, currentUserIsCleaner, selectedCleanupAttempt, cleanupAttemptLoading, cleanupActionBusy, canEditOrDeleteSelectedReport, selectedReportCanOpenFunding, payoutGateBusy, selectedReportIsShareable, isFavorite, favoritesReady } = state;
-  const { setReportShareSheetOpen, closeReportDetails, setDetailsOpen, setSelectedReport, navigation, setCompletedCleanupImpact, setCompletedCleanupImpactError, setCompletedCleanupImpactLoading, setCompletedCleanupImpactReloadKey, openCleanupNavigation, openCleanupSubmission, confirmCleanupRelease, openCleanupFeedback, openCleanupReview, beginCleanupClaim, openFundingContribution, removeReport, setForm, setEditingReportId, setIsEditing, setDraftCoord, resetReportWizard, setFormOpen, shareSelectedReport, shareSelectedReportLink, shareSelectedReportToInstagram, editReportPhotos, toggleFavorite } = actions;
+  const { detailsOpen, reportShareSheetOpen, reportShareBusyAction, selectedReport, insets, reportDetailsPreparing, selectedReportHasUtilityActions, completedCleanupImpact, completedCleanupImpactLoading, completedCleanupImpactError, reportHeroWidth, currentUserId, reportPhotoUrls, photosLoading, geminiReviewEnabled, userOwnsSelectedReport, reportFundingFeedback, cleanupDiscoverable, cleanupStatus, currentUserIsCleaner, selectedCleanupAttempt, cleanupAttemptLoading, cleanupActionBusy, canEditOrDeleteSelectedReport, selectedReportCanOpenFunding, payoutGateBusy, selectedReportIsShareable, isFavorite, favoritesReady, isHidden } = state;
+  const { setReportShareSheetOpen, closeReportDetails, setDetailsOpen, setSelectedReport, navigation, setCompletedCleanupImpact, setCompletedCleanupImpactError, setCompletedCleanupImpactLoading, setCompletedCleanupImpactReloadKey, openCleanupNavigation, openCleanupSubmission, confirmCleanupRelease, openCleanupFeedback, openCleanupReview, beginCleanupClaim, openFundingContribution, removeReport, setForm, setEditingReportId, setIsEditing, setDraftCoord, resetReportWizard, setFormOpen, shareSelectedReport, shareSelectedReportLink, shareSelectedReportToInstagram, editReportPhotos, toggleFavorite, toggleHidden } = actions;
   const editSelectedReport = () => editReportPhotos(selectedReport);
   const confirmDeleteReport = () => {
 
@@ -110,7 +110,18 @@ export default function ReportDetailsSheet({ state, actions }) {
         </TouchableOpacity>
       ) : null}
 
-      {/* Website report sheet: the heart sits with Share in the top bar. */}
+      {/* Website report sheet: hide, share and the heart sit together in the top bar. */}
+      {favoritesReady && selectedReport?.id ? (
+        <TouchableOpacity
+          onPress={() => { toggleHidden(selectedReport.id); if (!isHidden) closeReportDetails(); }}
+          accessibilityRole="button"
+          accessibilityLabel={isHidden ? 'Show this report again' : 'Hide this report'}
+          style={[styles.reportPhotoControl, styles.reportPhotoHideControl, { top: reportControlsTop }]}
+        >
+          <Ionicons name={isHidden ? 'eye-outline' : 'eye-off-outline'} size={20} color={colors.ink} />
+        </TouchableOpacity>
+      ) : null}
+
       {favoritesReady && selectedReport?.id ? (
         <TouchableOpacity
           onPress={() => { hapticTap(); toggleFavorite(selectedReport.id); }}
@@ -354,24 +365,6 @@ export default function ReportDetailsSheet({ state, actions }) {
             );
           })()}
 
-
-          {cleanupDiscoverable ? (
-            <View style={styles.cleanupEligibilityCard}>
-              <View style={styles.cleanupEligibilityHeader}>
-                <View style={styles.cleanupEligibilityIcon}>
-                  <Ionicons name="time-outline" size={22} color={colors.muted} />
-                </View>
-                <View style={styles.cleanupEligibilityCopy}>
-                  <Text style={styles.cleanupEligibilityTitle}>24-hour cleanup claim</Text>
-                  <Text style={styles.cleanupEligibilityText}>
-                    Review and accept the safety acknowledgment each time you claim a report.
-                  </Text>
-                </View>
-              </View>
-
-
-            </View>
-          ) : null}
 
           {cleanupStatus && selectedReport?.cleanup_state !== 'completed' && (
             <View
