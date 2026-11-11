@@ -470,7 +470,7 @@ export function ReportBrowser({
                 aria-current={selected ? 'true' : undefined}
               >
                 <ReportCardContent
-                  photo={<ReportThumbnail key={`${report.photo_paths?.[0]}:${photoRetries[report.id] ?? 0}`} report={report} priority={index < 4} retry={photoRetries[report.id] ?? 0} index={photoIndex[report.id] ?? 0} onError={() => setPhotoFailures(current => ({ ...current, [report.id]: report.photo_paths?.[0] ?? '' }))} />}
+                  photo={<ReportThumbnail key={`${report.photo_paths?.[0]}:${photoRetries[report.id] ?? 0}`} report={report} priority={Boolean(open) && index < 4} retry={photoRetries[report.id] ?? 0} index={photoIndex[report.id] ?? 0} onError={() => setPhotoFailures(current => ({ ...current, [report.id]: report.photo_paths?.[0] ?? '' }))} />}
                   title={report.title || 'Litter report'}
                   reward={rewardLabel(report)} funded={funded}
                   summary={reportSummary(report)} severity={report.severity ?? 'Medium'}

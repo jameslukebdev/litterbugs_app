@@ -24,6 +24,31 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-11 — Codex (mobile map startup profiled and improved locally)
+
+- Live phone profiling found Stripe.js loading before any checkout and four
+  eagerly loaded photos in the hidden report list. Used Stripe's documented
+  `/pure` loader; it now loads only when an intent supplies a publishable key.
+  Hidden list thumbnails are lazy, becoming eager/high priority when opened.
+- Compared baseline `6aa0f7c` with these two changes in isolated Turbopack
+  production builds. Three fresh iPhone-sized Chrome contexts per version,
+  1.6 Mbps down/150 ms latency/4x CPU: median map ready 8437 -> 7276 ms,
+  pins 6965 -> 6289 ms, final LCP 9452 -> 7872 ms; transfer 1,623,239 ->
+  957,619 bytes. These are simulated local-build timings, not visitor averages.
+  Google tiles remain the final LCP content. Early invalid test-port runs were
+  discarded; verified runs routed the existing authorized localhost:3000
+  origin internally to the isolated build, preserving browser throttling.
+- Both production builds, 34 focused tests, scoped lint and TypeScript passed.
+  Real local phone/desktop checks: zero initial Stripe/report-photo requests;
+  opening Reports loads photos and opens a report. Confirmed a phone detail
+  photo loads too. No browser errors/overlays or visitor analytics requests.
+  No live payment was submitted. Existing payment tests verify deferred Stripe
+  still initializes with the payment key after explicit Continue.
+- No deploy or GitHub push. Main local server remains on port 3000. Profiling
+  artifacts: `/tmp/litterbugs-map-speed-summary.json`, raw verified before/after
+  JSON and `/tmp/litterbugs-map-startup-profile.mjs`. Next investigate the
+  remaining app-JS/Google Maps startup chain before adding broader changes.
+
 ### 2026-11-10 — Codex (map search funnel ready locally)
 
 - Added actual search-start and suggestions-shown stages, plus selected-search
