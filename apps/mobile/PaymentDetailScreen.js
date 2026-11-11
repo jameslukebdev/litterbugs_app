@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatUsd, loadMyContribution } from './lib/funding';
 import PaymentStatus from './components/PaymentStatus';
 import { statusMessage, paymentDisplayStatus, formatContributionDate } from './lib/contributionPresentation';
-import { colors } from './lib/theme';
+import { colors, fonts } from './lib/theme';
 
 export default function PaymentDetailScreen({ navigation, route }) {
   const { user } = useSession();
@@ -27,12 +27,12 @@ export default function PaymentDetailScreen({ navigation, route }) {
     {error ? <ErrorText style={{ marginTop: 0, marginBottom: 16 }}>Couldn’t refresh this payment. Try again.</ErrorText> : null}
     {item ? <>
       <PaymentStatus status={paymentDisplayStatus(item)} />
-      <Text style={{ fontSize: 30, fontWeight: '600', color: colors.ink, marginTop: 20 }}>{formatUsd(item.total_amount_cents)}</Text>
+      <Text style={{ fontSize: 30, fontFamily: fonts.heading, color: colors.ink, marginTop: 20 }}>{formatUsd(item.total_amount_cents)}</Text>
       <Text style={{ color: colors.muted, marginTop: 4 }}>{['payment_pending', 'failed'].includes(item.status) ? 'Payment amount' : item.status === 'refunded' ? 'Original total' : 'Total charged'}</Text>
       <Text style={{ marginTop: 20, fontSize: 16, lineHeight: 23 }}>{!item.report && paymentDisplayStatus(item) === 'not_completed' ? 'This payment hasn’t completed. The report is unavailable; get payment help below if you need assistance.' : statusMessage(item)}</Text>
       {item.checkedAt ? <Text style={{ marginTop: 12, color: colors.muted }}>Last checked {formatContributionDate(item.checkedAt)}</Text> : null}
       <Text style={{ marginTop: 12, color: colors.muted }}>{formatContributionDate(item.created_at)}</Text>
-      <View style={{ marginVertical: 20, gap: 14, padding: 16, borderRadius: 14, backgroundColor: colors.primaryTint }}>
+      <View style={{ marginVertical: 20, gap: 14, padding: 16, borderRadius: 14, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}><Text>Cleanup contribution</Text><Text>{formatUsd(item.principal_amount_cents)}</Text></View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignItems: 'center', justifyContent: 'space-between' }}><FeeExplanationLabel label="Service fee" /><Text>{formatUsd(item.platform_fee_cents)}</Text></View>
         {item.refunded_at ? <Text>Refunded: {formatContributionDate(item.refunded_at)}</Text> : null}

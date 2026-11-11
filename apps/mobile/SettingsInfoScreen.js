@@ -53,16 +53,13 @@ export default function SettingsInfoScreen({ navigation, route }) {
         <Text style={styles.note}>Litterbugs · Version {Constants.expoConfig?.version || 'unavailable'}</Text>
         {Updates.isEnabled ? <Text style={styles.note}>App update: {Updates.isEmbeddedLaunch ? 'Included with install' : Updates.updateId?.slice(0, 8) || 'Downloaded update'}</Text> : null}
       </> : null}
-      {topic === 'support' ? <>
-        <TouchableOpacity style={styles.button} accessibilityRole="button" onPress={() => navigation.popTo('App', { screen: 'Map' })}><Text style={styles.buttonText}>Explore nearby cleanups</Text><Ionicons name="map-outline" size={18} color={colors.white} /></TouchableOpacity>
-      </> : null}
     </ScrollView>
   );
 }
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.white },
   content: { padding: 20 },
-  icon: { width: 52, height: 52, borderRadius: 16, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
+  icon: { marginBottom: 14 },
   heading: { fontSize: 24, lineHeight: 31, fontFamily: fonts.heading, color: colors.ink },
   description: { fontSize: 14, lineHeight: 22, color: colors.muted, marginTop: 10, marginBottom: 24 },
   panel: { borderWidth: 1, borderColor: colors.line, borderRadius: 16, paddingHorizontal: 16 },
