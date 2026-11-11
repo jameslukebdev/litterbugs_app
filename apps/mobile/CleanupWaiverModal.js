@@ -26,9 +26,14 @@ export default function CleanupWaiverModal({
 }) {
   const insets = useSafeAreaInsets();
   const [acknowledged, setAcknowledged] = useState(false);
+  const [siteConfirmed, setSiteConfirmed] = useState(false);
+  // Someone who already accepted this version only confirms the site is safe.
+  const agreementSaved = Boolean(waiver?.alreadyAccepted);
+  const ready = (agreementSaved || acknowledged) && siteConfirmed;
 
   useEffect(() => {
     setAcknowledged(false);
+    setSiteConfirmed(false);
   }, [visible, waiver?.waiver_version, waiver?.guidelines_version]);
 
   return (
@@ -80,7 +85,6 @@ export default function CleanupWaiverModal({
                 <Text style={styles.summaryText}>Payout setup is required before claiming a funded cleanup.</Text>
               </>
             ) : null}
-            <Text style={styles.claimNote}>Accepting doesn’t claim the cleanup yet. You’ll confirm on the next step.</Text>
           </View> : null}
 
           {waiver?.guidelines_body ? (
@@ -111,20 +115,38 @@ export default function CleanupWaiverModal({
             </View>
           ) : null}
 
+          {agreementSaved ? null : (
+            <TouchableOpacity
+              style={styles.acknowledgmentRow}
+              onPress={() => setAcknowledged((current) => !current)}
+              disabled={accepting}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: acknowledged }}
+            >
+              <Ionicons
+                name={acknowledged ? 'checkbox' : 'square-outline'}
+                size={27}
+                color={acknowledged ? colors.primary : colors.muted}
+              />
+              <Text style={styles.acknowledgmentText}>
+                I confirm I am 18 or older. I have read and accept this version of the safety guidelines, funded reward acknowledgment, assumption of risk, and release.
+              </Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={styles.acknowledgmentRow}
-            onPress={() => setAcknowledged((current) => !current)}
+            onPress={() => setSiteConfirmed((current) => !current)}
             disabled={accepting}
             accessibilityRole="checkbox"
-            accessibilityState={{ checked: acknowledged }}
+            accessibilityState={{ checked: siteConfirmed }}
           >
             <Ionicons
-              name={acknowledged ? 'checkbox' : 'square-outline'}
+              name={siteConfirmed ? 'checkbox' : 'square-outline'}
               size={27}
-              color={acknowledged ? colors.primary : colors.muted}
+              color={siteConfirmed ? colors.primary : colors.muted}
             />
             <Text style={styles.acknowledgmentText}>
-              I confirm I am 18 or older. I have read and accept this version of the safety guidelines and funded reward acknowledgment, including the assumption of risk and release.
+              I can legally access this site and clean safely with my equipment, away from moving traffic and hazardous materials. I will stop if conditions become unsafe.
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -133,16 +155,16 @@ export default function CleanupWaiverModal({
           <TouchableOpacity
             style={[
               styles.acceptButton,
-              !acknowledged && styles.acceptButtonDisabled,
+              !ready && styles.acceptButtonDisabled,
             ]}
             activeOpacity={1}
             onPress={onAccept}
-            disabled={!acknowledged || accepting}
+            disabled={!ready || accepting}
             accessibilityRole="button"
-            accessibilityLabel="Accept cleanup acknowledgment and continue"
-            accessibilityState={{ busy: accepting, disabled: !acknowledged || accepting }}
+            accessibilityLabel="Claim this cleanup"
+            accessibilityState={{ busy: accepting, disabled: !ready || accepting }}
           >
-            <Text style={styles.acceptButtonText}>Accept and review claim</Text>
+            <Text style={styles.acceptButtonText}>Claim this cleanup</Text>
             {accepting ? <View style={styles.acceptSpinner} pointerEvents="none"><ActivityIndicator size="small" color={colors.white} /></View> : null}
           </TouchableOpacity>
         </View>

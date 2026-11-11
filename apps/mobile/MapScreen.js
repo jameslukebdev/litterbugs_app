@@ -164,7 +164,6 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const [cleanupWaiverOpen, setCleanupWaiverOpen] = useState(false);
   const [cleanupWaiverQueued, setCleanupWaiverQueued] = useState(false);
   const [reportReopenQueued, setReportReopenQueued] = useState(false);
-  const [claimConfirmationQueued, setClaimConfirmationQueued] = useState(false);
   const [cleanupActionBusy, setCleanupActionBusy] = useState(false);
   const [selectedCleanupAttempt, setSelectedCleanupAttempt] = useState(null);
   const [cleanupAttemptLoading, setCleanupAttemptLoading] = useState(false);
@@ -1225,7 +1224,6 @@ useEffect(() => {
     openCleanupFeedback,
     confirmCleanupRelease,
   } = useCleanupFlow({
-    claimConfirmationQueued,
     cleanupActionBusy,
     cleanupDiscoverable,
     cleanupEligible,
@@ -1243,7 +1241,6 @@ useEffect(() => {
     reopenReportOnFocus,
     selectedCleanupAttempt,
     selectedReport,
-    setClaimConfirmationQueued,
     setCleanupActionBusy,
     setCleanupWaiver,
     setCleanupWaiverOpen,

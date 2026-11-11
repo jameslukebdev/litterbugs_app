@@ -12,6 +12,7 @@ import {
   isPayoutConnectionReady,
 } from './payoutWorkflowGate';
 import { promptCleanupNavigation } from './promptCleanupNavigation';
+import { hapticSuccess } from './haptics';
 import { userMessage } from './userMessage';
 
 // What a person can do with a cleanup from the report sheet: fund it, claim it
@@ -20,7 +21,6 @@ import { userMessage } from './userMessage';
 // handlers read and set stays in MapScreen; the code is moved out unchanged.
 export default function useCleanupFlow(screen) {
   const {
-    claimConfirmationQueued,
     cleanupActionBusy,
     cleanupDiscoverable,
     cleanupEligible,
@@ -38,7 +38,6 @@ export default function useCleanupFlow(screen) {
     reopenReportOnFocus,
     selectedCleanupAttempt,
     selectedReport,
-    setClaimConfirmationQueued,
     setCleanupActionBusy,
     setCleanupWaiver,
     setCleanupWaiverOpen,
@@ -74,8 +73,10 @@ export default function useCleanupFlow(screen) {
     report = selectedReport,
     skipPayoutConnectionCheck = false,
     reopenDetailsOnSuccess = false,
+    // The claim sheet shows its own result, so it asks for no pop-up here.
+    announce = true,
   } = {}) => {
-    if (!report?.id || cleanupActionBusy) return;
+    if (!report?.id || cleanupActionBusy) return 'busy';
 
     try {
       setCleanupActionBusy(true);
@@ -86,7 +87,7 @@ export default function useCleanupFlow(screen) {
             kind: PAYOUT_WORKFLOW_KIND.CLEANUP_CLAIM,
             reportId: report.id,
           });
-          return;
+          return 'payout';
         }
       }
       const claimedAttempt = await claimCleanup(report.id);
@@ -102,40 +103,30 @@ export default function useCleanupFlow(screen) {
       upsertReport(claimedReport);
       if (reopenDetailsOnSuccess) setDetailsOpen(true);
 
-      Alert.alert(
-        'Cleanup claimed',
-        `Complete by ${new Date(claimedAttempt.claim_expires_at).toLocaleString()}.`
-      );
+      hapticSuccess();
+      if (announce) {
+        Alert.alert(
+          'Cleanup claimed',
+          `Complete by ${new Date(claimedAttempt.claim_expires_at).toLocaleString()}.`
+        );
+      }
+      return 'claimed';
     } catch (error) {
       if (/cleaner_payout_onboarding_required/i.test(error?.message ?? '')) {
         openPayoutSetupForWorkflow({
           kind: PAYOUT_WORKFLOW_KIND.CLEANUP_CLAIM,
           reportId: report.id,
         });
-      } else {
-        trackParticipationFailure('clean', 'claim_confirmed', 'claim_failed');
-        Alert.alert('Unable to claim cleanup', cleanupActionMessage(error));
+        await refreshReports({ showRefresh: false });
+        return 'payout';
       }
+      trackParticipationFailure('clean', 'claim_confirmed', 'claim_failed');
+      if (announce) Alert.alert('Unable to claim cleanup', cleanupActionMessage(error));
       await refreshReports({ showRefresh: false });
+      return { failed: cleanupActionMessage(error) };
     } finally {
       setCleanupActionBusy(false);
     }
-  };
-
-  const confirmCleanupClaim = () => {
-    if (!cleanupEligible) return;
-
-    Alert.alert(
-      'Confirm this site is safe for you',
-      "I can legally access this site and clean safely with my equipment, away from moving traffic and hazardous materials. I'll stop if conditions become unsafe. I have 24 hours to clean and submit photos.",
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'I can clean safely',
-          onPress: executeCleanupClaim,
-        },
-      ]
-    );
   };
 
   const beginCleanupClaim = async () => {
@@ -152,14 +143,12 @@ export default function useCleanupFlow(screen) {
     try {
       setCleanupActionBusy(true);
       const waiverStatus = await loadCurrentCleanupWaiver(currentUserId);
-      setCleanupWaiver(waiverStatus.waiver);
+      // Website claim step: one sheet every time. A person who already accepted this
+      // version only confirms the site is safe; everyone else also accepts the agreement.
+      setCleanupWaiver({ ...waiverStatus.waiver, alreadyAccepted: waiverStatus.accepted });
       trackParticipation('clean', 'safety_review');
-      if (waiverStatus.accepted) {
-        setClaimConfirmationQueued(true);
-      } else {
-        setCleanupWaiverQueued(true);
-        setDetailsOpen(false);
-      }
+      setCleanupWaiverQueued(true);
+      setDetailsOpen(false);
     } catch (error) {
       trackParticipationFailure('clean', 'safety_review', 'safety_load_failed');
       Alert.alert('Unable to start cleanup', cleanupActionMessage(error));
@@ -168,52 +157,40 @@ export default function useCleanupFlow(screen) {
     }
   };
 
+  // One step, as on the website: save the agreement if needed, then claim.
   const acceptWaiverAndContinue = async () => {
     if (!cleanupWaiver || cleanupActionBusy) return;
 
-    try {
-      setCleanupActionBusy(true);
-      await acceptCleanupWaiver(cleanupWaiver);
-      setCleanupWaiverOpen(false);
-      setReportReopenQueued(true);
-      setClaimConfirmationQueued(true);
-    } catch (error) {
-      if (/cleanup_waiver_outdated/i.test(error?.message ?? '')) {
-        try {
-          const waiverStatus = await loadCurrentCleanupWaiver();
-          setCleanupWaiver(waiverStatus.waiver);
-        } catch (refreshError) {
-          console.log('Cleanup waiver refresh error:', refreshError);
+    if (!cleanupWaiver.alreadyAccepted) {
+      try {
+        setCleanupActionBusy(true);
+        await acceptCleanupWaiver(cleanupWaiver);
+        setCleanupWaiver((current) => (current ? { ...current, alreadyAccepted: true } : current));
+      } catch (error) {
+        trackParticipationFailure('clean', 'safety_review', 'safety_save_failed');
+        if (/cleanup_waiver_outdated/i.test(error?.message ?? '')) {
+          try {
+            const waiverStatus = await loadCurrentCleanupWaiver();
+            setCleanupWaiver({ ...waiverStatus.waiver, alreadyAccepted: false });
+          } catch (refreshError) {
+            console.log('Cleanup waiver refresh error:', refreshError);
+          }
         }
+        setCleanupActionBusy(false);
+        Alert.alert('Unable to start cleanup', cleanupActionMessage(error));
+        return;
       }
-
-      Alert.alert('Unable to start cleanup', cleanupActionMessage(error));
-    } finally {
       setCleanupActionBusy(false);
     }
+
+    const result = await executeCleanupClaim({ announce: false });
+    if (result === 'busy') return;
+    setCleanupWaiverOpen(false);
+    if (result === 'payout') return;
+    // The report sheet reopens once this sheet has closed and shows the claim.
+    setReportReopenQueued(true);
+    if (result?.failed) setTimeout(() => Alert.alert('Unable to claim cleanup', result.failed), 700);
   };
-
-  useEffect(() => {
-    if (
-      !claimConfirmationQueued
-      || !detailsOpen
-      || cleanupWaiverOpen
-      || cleanupActionBusy
-    ) return undefined;
-
-    const timer = setTimeout(() => {
-      setClaimConfirmationQueued(false);
-      confirmCleanupClaim();
-    }, 350);
-
-    return () => clearTimeout(timer);
-  }, [
-    claimConfirmationQueued,
-    cleanupActionBusy,
-    cleanupWaiverOpen,
-    detailsOpen,
-    selectedReport?.id,
-  ]);
 
   useEffect(() => {
     if (!isMapScreenFocused || !pendingPayoutWorkflowToken) return undefined;
