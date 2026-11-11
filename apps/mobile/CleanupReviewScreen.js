@@ -22,6 +22,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LoadingBee from './components/LoadingBee';
+import BrandBug from './components/BrandBug';
 import { EmptyState, ErrorText, PrimaryButton, SecondaryButton, TextLink } from './components/ui';
 
 import CompactRankBadge from './CompactRankBadge';
@@ -77,10 +78,13 @@ function ReviewPhoto({ title, url, path, bucket, index, count, width }) {
   </View>;
 }
 
-function PhotoSection({ title, urls, paths = [], bucket, emptyText, width }) {
+function PhotoSection({ title, bug, urls, paths = [], bucket, emptyText, width }) {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.photoHeading}>
+        {bug ? <BrandBug kind={bug} size={18} /> : null}
+        <Text style={[styles.sectionTitle, bug === 'ladybug' && { color: colors.needsCleanup }, bug === 'flower' && { color: colors.done }]}>{title}</Text>
+      </View>
       {urls.length > 0 ? (
         <ScrollView
           horizontal
@@ -334,6 +338,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
   }
 
   const cleanerName = context.cleaner?.display_name || 'Cleaner profile unavailable';
+  const cleanerFirstName = context.cleaner?.display_name?.trim().split(/\s+/)[0] || 'A volunteer';
   const photoViewerWidth = Math.max(screenWidth - 74, 1);
 
   return (
@@ -352,40 +357,31 @@ export default function CleanupReviewScreen({ navigation, route }) {
       >
         {reviewDraftError || loadError ? <ErrorText style={{ marginTop: 0, marginBottom: 8 }}>{reviewDraftError || 'Couldn’t update this cleanup. Refresh before sending your review.'}</ErrorText> : null}
         {loadError ? <TextLink align="start" disabled={loading} label={loading ? 'Updating…' : 'Try again'} onPress={retryContext} /> : null}
-        <Text style={styles.title}>Review this cleanup</Text>
+        {/* Website review screen: who cleaned, when it was sent, and when it approves itself. */}
         <Text style={styles.reportTitle}>{context.report.title || 'Litter cleanup'}</Text>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Cleaner</Text>
-          <TouchableOpacity
-            style={styles.identityRow}
-            disabled={!context.cleaner?.id}
-            onPress={() => navigation.navigate('PublicProfile', {
-              profileId: context.cleaner.id,
-              sourceReportId: context.report.id,
-            })}
-            accessibilityRole={context.cleaner?.id ? 'button' : undefined}
-            accessibilityLabel={context.cleaner?.id ? `View ${cleanerName} profile` : undefined}
-          >
-            <ProfileAvatar profile={context.cleaner} size={48} />
-            <View style={styles.identityCopy}>
-              <Text style={styles.identityName}>{cleanerName}</Text>
-              <CompactRankBadge userId={context.cleaner?.id} />
-              {context.cleaner?.username ? (
-                <Text style={styles.identityUsername}>@{context.cleaner.username}</Text>
-              ) : null}
-              {context.attempt.is_self_cleanup ? (
-                <Text style={styles.selfCleanup}>Original reporter and cleaner</Text>
-              ) : null}
-            </View>
-            {context.cleaner?.id ? (
-              <Ionicons name="chevron-forward" size={20} color={colors.muted} />
-            ) : null}
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={styles.identityRow}
+          disabled={!context.cleaner?.id}
+          onPress={() => navigation.navigate('PublicProfile', {
+            profileId: context.cleaner.id,
+            sourceReportId: context.report.id,
+          })}
+          accessibilityRole={context.cleaner?.id ? 'button' : undefined}
+          accessibilityLabel={context.cleaner?.id ? `View ${cleanerName} profile` : undefined}
+        >
+          <ProfileAvatar profile={context.cleaner} size={48} />
+          <View style={styles.identityCopy}>
+            <Text style={styles.title}>{context.attempt.is_self_cleanup ? 'You cleaned up this spot' : `${cleanerFirstName} cleaned up this spot`}</Text>
+            <Text style={styles.identityUsername}>
+              Sent {formatSubmittedAt(context.submission.created_at)}.
+              {!context.attempt.is_paid && context.attempt.review_due_at ? ` If you don’t respond by ${formatSubmittedAt(context.attempt.review_due_at)}, it’s approved automatically.` : ''}
+            </Text>
+          </View>
+        </TouchableOpacity>
 
         <PhotoSection
-          title="Before cleanup"
+          title="Before"
+          bug="ladybug"
           urls={context.beforePhotoUrls}
           paths={context.beforePhotoPaths}
           bucket="report_photos"
@@ -411,7 +407,8 @@ export default function CleanupReviewScreen({ navigation, route }) {
           </View>
         ) : null}
         <PhotoSection
-          title="After cleanup"
+          title="After"
+          bug="flower"
           urls={context.afterPhotoUrls}
           paths={context.afterPhotoPaths}
           bucket="cleanup_photos"
@@ -420,31 +417,16 @@ export default function CleanupReviewScreen({ navigation, route }) {
         />
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Cleanup information</Text>
-          <Text style={styles.infoLabel}>Description</Text>
+          <Text style={styles.sectionTitle}>{context.attempt.is_self_cleanup ? 'Your note' : `${cleanerFirstName}’s note`}</Text>
           <Text style={styles.description}>{context.submission.description}</Text>
-
-          <View style={styles.metricRow}>
-            <View style={styles.metric}>
-              <Text style={styles.infoLabel}>Bags or items</Text>
-              <Text style={styles.metricValue}>
-                {context.submission.bags_or_items_removed ?? 'Not provided'}
-              </Text>
-            </View>
-            <View style={styles.metric}>
-              <Text style={styles.infoLabel}>Weight removed</Text>
-              <Text style={styles.metricValue}>
-                {context.submission.weight_pounds
-                  ? `${context.submission.weight_pounds} lb`
-                  : 'Not provided'}
-              </Text>
-            </View>
-          </View>
-
-          <Text style={styles.infoLabel}>Submitted</Text>
-          <Text style={styles.metricValue}>
-            {formatSubmittedAt(context.submission.created_at)}
-          </Text>
+          {context.submission.bags_or_items_removed || context.submission.weight_pounds ? (
+            <Text style={styles.noteFacts}>
+              {[
+                context.submission.bags_or_items_removed ? `${context.submission.bags_or_items_removed} ${Number(context.submission.bags_or_items_removed) === 1 ? 'bag or item' : 'bags or items'}` : null,
+                context.submission.weight_pounds ? `${context.submission.weight_pounds} lb removed` : null,
+              ].filter(Boolean).join('  ·  ')}
+            </Text>
+          ) : null}
         </View>
 
         {context.attempt.is_paid && mode === 'review' ? (
@@ -578,8 +560,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.white },
   content: { padding: 20 },
   centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: colors.white },
-  title: { color: colors.ink, fontSize: 24, lineHeight: 29, fontFamily: fonts.heading },
-  reportTitle: { marginTop: 7, color: colors.muted, fontSize: 15, fontWeight: '700' },
+  title: { color: colors.ink, fontSize: 19, lineHeight: 24, fontFamily: fonts.heading },
+  reportTitle: { color: colors.muted, fontSize: 15, fontWeight: '700' },
+  photoHeading: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  noteFacts: { marginTop: 10, color: colors.ink, fontSize: 14, fontWeight: '700' },
   section: { marginTop: 20, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: 18, backgroundColor: colors.white },
   sectionTitle: { color: colors.ink, fontSize: 17, lineHeight: 23, fontFamily: fonts.heading },
   financialCard: { marginTop: 20, padding: 16, borderWidth: 2, borderColor: colors.yellowBorder, borderRadius: 18, backgroundColor: colors.yellowSoft },
@@ -590,7 +574,7 @@ const styles = StyleSheet.create({
   paidReviewNotice: { padding: 15, color: colors.body, fontSize: 14, lineHeight: 20, borderRadius: 13, backgroundColor: colors.white },
   disputeStatusCard: { padding: 16, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: colors.yellowBorder, borderRadius: 14, backgroundColor: colors.yellowSoft },
   disputeStatusText: { flex: 1, color: colors.yellow, fontSize: 14, lineHeight: 20, fontWeight: '700' },
-  identityRow: { minHeight: 64, marginTop: 10, flexDirection: 'row', alignItems: 'center' },
+  identityRow: { minHeight: 64, marginTop: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   identityCopy: { flex: 1, marginLeft: 12 },
   identityName: { color: colors.ink, fontSize: 16, fontWeight: '600' },
   identityUsername: { marginTop: 2, color: colors.muted, fontSize: 13 },
