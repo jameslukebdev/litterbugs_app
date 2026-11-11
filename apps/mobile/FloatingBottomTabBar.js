@@ -129,7 +129,9 @@ export default function FloatingBottomTabBar({
         accessibilityLabel={accessibilityLabel}
         accessibilityState={{ selected: isFocused }}
       >
-        <View style={[styles.tabContent, isFocused && styles.tabContentSelected]}>
+        {/* Android loses the pill's rounded corners when its background changes in
+            place, so the pill is mounted afresh when the tab gains or loses focus. */}
+        <View key={isFocused ? 'selected' : 'idle'} style={[styles.tabContent, isFocused && styles.tabContentSelected]}>
           <View style={[styles.iconBackdrop, showsAvatar && styles.avatarBackdrop]}>
             {showsAvatar ? (
               <View style={[styles.avatarRing, isFocused && { borderColor: BOTTOM_NAV_COLORS.active }]} accessible={false} importantForAccessibility="no-hide-descendants">

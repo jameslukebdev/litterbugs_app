@@ -110,3 +110,13 @@ Branch `codex/map-first-navigation`. Nothing pushed, built for stores, or deploy
 - Profile header has a bell that opens Updates, with a count badge when something is unread. The Updates row shows the same count.
 - The Profile tab shows the member's photo at 44pt in a 50pt ring with no caption, plus a red dot when updates are unread. Members without a finished profile still get the icon and "Profile" label.
 - Checked on the iPhone simulator with zero unread; the badge and dot states were not seen with real unread data.
+
+## Before/After switch, Support row removed, Android pass (Nov 11, evening)
+
+- Cleaned report sheet: one photo area with an "After cleanup / Before" switch (`CompletedCleanupStory.js` takes `beforePhotos`). The stacked "Before cleanup" gallery only shows when there are no after photos.
+- "Support Litterbugs" row and its info page are removed from the app (owner: do not add the support feature).
+- Payment details and help pages no longer use tinted panels.
+- Profile tab photo is 44pt with no caption.
+- Android emulator (`Litterbugs_API_36`): installed the Nov 10 debug APK over the old QA build (`adb install -r -d`) and loaded Metro. Map, Reports, signed-out Profile, report sheet and filters render in the new design. Fixed the selected tab pill losing its rounded corners on Android.
+- Android map tiles are blank in the debug build: Google rejects the Maps key for the debug signing certificate (SHA-1 `5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25`, package `com.litterbugs.app.qa`). Pins and cards still work. Needs that fingerprint added to the key in Google Cloud.
+- Not checked on Android: anything signed in (the emulator is signed out), the report wizard, payments.
