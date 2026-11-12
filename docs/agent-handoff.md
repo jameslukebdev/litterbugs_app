@@ -24,6 +24,30 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (filter, card and loading improvements deployed)
+
+- Owner-approved release 89f6da0 on codex/filter-loading-release-20261112 is live:
+  dpl_DeCmzBrM6UdhTNAdQDKMmRYiLuoL / litterbugs-bjki2fcru. Release source and
+  completion notes pushed to GitHub. Rollback: dpl_GxyQnRbtykjhEeDhTUMWN3FCGBYh.
+- Exactly 20 reviewed production web/test files from bda0f8a on prior live
+  2bebc0f: filter state/URL recovery, single selected filter with X, no After
+  cleanup card badge, delayed pulsing firefly, removed loading ants, and visible
+  photo batches. Homepage copy/layout unchanged; only loading behavior updated.
+- Dev previews, notification/native/backend work, dependencies, policy pages
+  and database changes excluded (verified byte-identical to prior live for
+  excluded paths). No mobile/store release or local production build.
+- Exact release: 76 tests pass. Vercel Next.js compile/TypeScript/build pass;
+  existing social-card filesystem tracing warnings remain. Staged home/map/
+  cleanups/photo/firefly asset HTTP 200. Loading/photos preview pages and local
+  delayed-image route HTTP 404. Production domain identity matches release.
+- Live excluded-browser checks: homepage collage 4/4 decoded/revealed; Favorites
+  appears once and toggles off; completed results show 9 cards, zero photo
+  badges/ants and decoded visible photos. 390px removable-filter/card layout
+  passes; no browser errors. Last-10-minute deployment error scan empty.
+- Analytics choices set off for test browser; temporary viewport reset and
+  production test tab closed. Local previews and concurrent work preserved.
+  Memory pressure moderate (2); tests used one worker and build ran remotely.
+
 ### 2026-11-12 — Codex (coordinated photo reveal and clearer glow, local)
 
 - Visible report photos now download/decode behind fixed-size frames and reveal
