@@ -24,6 +24,36 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (signed-in Clarity connection restored; recordings reviewed)
+
+- Owner screenshot confirmed main Chrome listening at 127.0.0.1:9222. Both
+  --autoConnect (missing DevToolsActivePort) and --browserUrl (/json/version
+  HTTP 404) fail on this permission-based listener. Official installed MCP
+  1.13.0 connected successfully with --wsEndpoint=ws://127.0.0.1:9222/devtools/browser.
+  Persistent standard MCP client in node_repl read owner's signed-in Clarity
+  tab and played/seeks recordings. No extra login or cookies copied. Global
+  MCP config untouched; default tools still use isolated browser.
+- Last-three-day production URL view lists 29 recordings; dead-click subset
+  lists 2. Inspected Nov 10 desktop 16:48 session: Report menu visibly opens
+  at 20:09 despite dead-click label. Two funding flags at 21:22/23 point into
+  blank dialog space. No confirmed broken control. Edit/Delete controls appear
+  in this session; cannot treat it as known non-staff traffic. A 39-second
+  navigation gap includes a user-left-site interval; not map load duration.
+- Inspected Nov 12 14:52 Instagram shared-report timeline and replay: two taps,
+  report content/photos loaded; menu appears clipped in replay. Current same
+  report in excluded mobile Chrome at 390px does not reproduce: page width390,
+  drawer x0..320, Open map x16..303; no console errors. Real Instagram/iOS
+  device verification remains needed before calling this a website defect.
+- Nov 12 04:00 ChromeMobile session has Google Play outbound at 01:10, page
+  hidden at 01:11; consistent with store handoff, not proof of install or bug.
+  No newly confirmed user-facing defect this pass. No policy/fee/homepage edits.
+- Production verification used separate test browser, both analytics exclusions
+  set before page scripts and verified true. Test tab returned to about:blank;
+  normal owner tabs untouched. Local server currently refused port3000, so
+  did not restart/build it. No deploy, push or DB changes. Map telemetry 2f6c8e0
+  still awaits deployment approval. Future Chrome attach must use WebSocket
+  path above, not the missing discovery file or /json/version HTTP endpoint.
+
 ### 2026-11-12 — Codex (Chrome attachment rechecked after owner enabled debugging)
 
 - Retried official --autoConnect after owner reported enabling remote debugging.
