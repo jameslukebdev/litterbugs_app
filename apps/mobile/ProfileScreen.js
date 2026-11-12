@@ -1,6 +1,6 @@
 import { reportDraftSummary as loadReportDraft } from './lib/savedReportDraft';
 import ActionRow from './components/NavigationRow';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useScrollToTop } from '@react-navigation/native';
 import {
   Alert,
@@ -37,7 +37,6 @@ import { useSession } from './lib/session';
 import { colors, fonts } from './lib/theme';
 import BrandBug from './components/BrandBug';
 import { useUnreadUpdates } from './lib/unreadUpdates';
-import { loadNotificationPreferences } from './lib/notificationPreferences';
 import LoadingBee from './components/LoadingBee';
 import { EmptyState, LoadFailure, PillTabs, PrimaryButton, PullRefresh, TextLink } from './components/ui';
 
@@ -126,14 +125,6 @@ export default function ProfileScreen({ navigation, route }) {
   const scrollRef = useRef(null);
   useScrollToTop(scrollRef);
   const unreadUpdates = useUnreadUpdates(permanent ? user.id : null);
-  // The Notifications row appears once the server supports notification settings.
-  const [notificationsReady, setNotificationsReady] = useState(false);
-  useEffect(() => {
-    if (!permanent || !user?.id) return undefined;
-    let active = true;
-    loadNotificationPreferences(user.id).then(loaded => { if (active) setNotificationsReady(loaded.available); }).catch(() => {});
-    return () => { active = false; };
-  }, [permanent, user?.id]);
   const [signingOut, setSigningOut] = useState(false);
   const [sendingReset, setSendingReset] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -357,7 +348,7 @@ export default function ProfileScreen({ navigation, route }) {
         <ActionRow appearance="profile" divided label="Payments" icon="wallet-outline" onPress={() => openScreen('Payments')} />
         <ActionRow appearance="profile" divided label={unreadUpdates > 0 ? `Updates (${unreadUpdates} unread)` : 'Updates'} icon="notifications-outline" onPress={() => openScreen('Updates')} />
         {/* What reaches the phone, kept apart from the Updates inbox itself. */}
-        {notificationsReady ? <ActionRow appearance="profile" divided label="Notifications" icon="options-outline" onPress={() => openScreen('NotificationSettings')} /> : null}
+        <ActionRow appearance="profile" divided label="Notifications" icon="options-outline" onPress={() => openScreen('NotificationSettings')} />
         <ActionRow appearance="profile" label="Settings" icon="settings-outline" onPress={() => openScreen('Settings')} />
       </View>
       </> : null}

@@ -60,27 +60,23 @@ const fromRow = row => ({
 });
 const nearbyOn = preferences => preferences.newLitterNearby || preferences.cleanupsNearby;
 
-// Before the server change is live, the table is missing: the settings stay hidden.
+// Before the server change is live, the table and function are missing. The settings still work:
+// choices are kept on this phone and sent to the server the first time it accepts them.
 const isUnavailable = error => ['42P01', 'PGRST205', 'PGRST202', '42883'].includes(error?.code);
+const pendingKey = userId => `litterbugs.notification-preferences.pending.v1:${userId}`;
 
-/** { available, preferences, nearbyDecided } for a signed-in member. */
-export async function loadNotificationPreferences(userId) {
-  if (!userId) return { available: false, preferences: { ...DEFAULT_NOTIFICATION_PREFERENCES }, nearbyDecided: false };
-  const { data, error } = await supabase.from('notification_preferences').select(COLUMNS).eq('user_id', userId).maybeSingle();
-  if (error) {
-    if (isUnavailable(error)) return { available: false, preferences: { ...DEFAULT_NOTIFICATION_PREFERENCES }, nearbyDecided: false };
-    throw error;
+async function readPending(userId) {
+  try {
+    const value = JSON.parse(await AsyncStorage.getItem(pendingKey(userId)) || 'null');
+    return value && typeof value === 'object' ? value : null;
+  } catch {
+    return null;
   }
-  const preferences = fromRow(data);
-  if (!nearbyOn(preferences)) saved.delete(userId);
-  return { available: true, preferences, nearbyDecided: Boolean(data?.nearby_decided_at) };
 }
+const writePending = (userId, value) => AsyncStorage.setItem(pendingKey(userId), JSON.stringify(value)).catch(() => {});
+const clearPending = userId => AsyncStorage.removeItem(pendingKey(userId)).catch(() => {});
 
-/**
- * Change some preferences ({ reportsAndCleanups, payments, newLitterNearby, cleanupsNearby }, any
- * subset). Turning a nearby alert on needs the phone's `coordinate`.
- */
-export async function saveNotificationPreferences(userId, changes, coordinate = null) {
+async function sendToServer(userId, changes, coordinate) {
   const timeZone = deviceTimeZone();
   const { data, error } = await supabase.rpc('set_notification_preferences', {
     target_reports_and_cleanups: changes.reportsAndCleanups ?? null,
@@ -96,6 +92,59 @@ export async function saveNotificationPreferences(userId, changes, coordinate = 
   if (!nearbyOn(preferences)) saved.delete(userId);
   else if (coordinate) saved.set(userId, { coordinate, timeZone, savedAt: Date.now() });
   return preferences;
+}
+
+/**
+ * { available, preferences, nearbyDecided } for a signed-in member. `available` is whether the
+ * server has notification settings yet; the preferences are usable either way.
+ */
+export async function loadNotificationPreferences(userId) {
+  if (!userId) return { available: false, preferences: { ...DEFAULT_NOTIFICATION_PREFERENCES }, nearbyDecided: false };
+  const pending = await readPending(userId);
+  const { data, error } = await supabase.from('notification_preferences').select(COLUMNS).eq('user_id', userId).maybeSingle();
+  if (error) {
+    if (!isUnavailable(error)) throw error;
+    return {
+      available: false,
+      preferences: { ...DEFAULT_NOTIFICATION_PREFERENCES, ...pending?.preferences },
+      nearbyDecided: Boolean(pending?.nearbyDecided),
+    };
+  }
+  // Choices made on this phone before the server supported them: send them now.
+  if (pending?.preferences) {
+    try {
+      const preferences = await sendToServer(userId, pending.preferences, nearbyOn(pending.preferences) ? pending.coordinate : null);
+      await clearPending(userId);
+      return { available: true, preferences, nearbyDecided: true };
+    } catch {
+      // Keep them for next time; show what the server has.
+    }
+  }
+  const preferences = fromRow(data);
+  if (!nearbyOn(preferences)) saved.delete(userId);
+  return { available: true, preferences, nearbyDecided: Boolean(data?.nearby_decided_at) };
+}
+
+/**
+ * Change some preferences ({ reportsAndCleanups, payments, newLitterNearby, cleanupsNearby }, any
+ * subset). Turning a nearby alert on needs the phone's `coordinate`.
+ */
+export async function saveNotificationPreferences(userId, changes, coordinate = null) {
+  try {
+    return await sendToServer(userId, changes, coordinate);
+  } catch (error) {
+    if (!isUnavailable(error)) throw error;
+    // Server not ready yet: keep the choice on this phone (sent later by loadNotificationPreferences).
+    const pending = await readPending(userId);
+    const preferences = { ...DEFAULT_NOTIFICATION_PREFERENCES, ...pending?.preferences, ...changes };
+    const decided = pending?.nearbyDecided || changes.newLitterNearby !== undefined || changes.cleanupsNearby !== undefined;
+    await writePending(userId, {
+      preferences,
+      nearbyDecided: decided,
+      coordinate: nearbyOn(preferences) ? (coordinate ?? pending?.coordinate ?? null) : null,
+    });
+    return preferences;
+  }
 }
 
 /** Keep the area of a nearby alert that is on with the phone. Cheap to call on every location update. */

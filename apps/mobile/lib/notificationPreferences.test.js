@@ -3,7 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const supabaseMock = vi.hoisted(() => ({ from: vi.fn(), rpc: vi.fn() }));
 vi.mock('./supabase', () => ({ supabase: supabaseMock }));
 vi.mock('expo-localization', () => ({ getCalendars: () => [{ timeZone: 'America/New_York' }] }));
-vi.mock('@react-native-async-storage/async-storage', () => ({ default: { getItem: vi.fn(), setItem: vi.fn(() => Promise.resolve()) } }));
+const storage = vi.hoisted(() => new Map());
+vi.mock('@react-native-async-storage/async-storage', () => ({ default: {
+  getItem: vi.fn(async key => storage.get(key) ?? null),
+  setItem: vi.fn(async (key, value) => { storage.set(key, value); }),
+  removeItem: vi.fn(async key => { storage.delete(key); }),
+} }));
 
 const {
   areaNeedsRefresh,
@@ -22,7 +27,7 @@ const row = (overrides = {}) => ({
 });
 
 describe('notification preferences', () => {
-  beforeEach(() => { supabaseMock.from.mockReset(); supabaseMock.rpc.mockReset(); });
+  beforeEach(() => { supabaseMock.from.mockReset(); supabaseMock.rpc.mockReset(); storage.clear(); });
 
   it('starts with activity and payments on and the nearby alerts off', () => {
     expect(DEFAULT_NOTIFICATION_PREFERENCES).toEqual({ reportsAndCleanups: true, payments: true, newLitterNearby: false, cleanupsNearby: false });
@@ -45,9 +50,31 @@ describe('notification preferences', () => {
     expect(areaNeedsRefresh(last, null, 'America/New_York', now)).toBe(false);
   });
 
-  it('stays hidden until the server supports it', async () => {
+  it('works before the server supports it: choices are kept on the phone', async () => {
     supabaseMock.from.mockReturnValue(selectReturning({ data: null, error: { code: 'PGRST205' } }));
-    await expect(loadNotificationPreferences('user')).resolves.toMatchObject({ available: false, nearbyDecided: false });
+    supabaseMock.rpc.mockResolvedValue({ data: null, error: { code: 'PGRST202' } });
+    await expect(loadNotificationPreferences('user')).resolves.toEqual({ available: false, preferences: DEFAULT_NOTIFICATION_PREFERENCES, nearbyDecided: false });
+    await expect(saveNotificationPreferences('user', { payments: false })).resolves.toMatchObject({ payments: false, reportsAndCleanups: true });
+    await saveNotificationPreferences('user', { cleanupsNearby: true }, boone);
+    await expect(loadNotificationPreferences('user')).resolves.toEqual({
+      available: false,
+      preferences: { reportsAndCleanups: true, payments: false, newLitterNearby: false, cleanupsNearby: true },
+      nearbyDecided: true,
+    });
+  });
+
+  it('sends choices kept on the phone once the server supports them, then forgets them', async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: { code: 'PGRST202' } });
+    await saveNotificationPreferences('user', { payments: false, cleanupsNearby: true }, boone);
+    supabaseMock.from.mockReturnValue(selectReturning({ data: null, error: null }));
+    supabaseMock.rpc.mockResolvedValue({ data: [row({ payments: false, cleanups_nearby: true })], error: null });
+    await expect(loadNotificationPreferences('user')).resolves.toMatchObject({ available: true, preferences: { payments: false, cleanupsNearby: true } });
+    expect(supabaseMock.rpc).toHaveBeenLastCalledWith('set_notification_preferences', expect.objectContaining({
+      target_payments: false, target_cleanups_nearby: true, target_latitude: boone.latitude, target_longitude: boone.longitude,
+    }));
+    expect(storage.size).toBe(0);
+    await loadNotificationPreferences('user');
+    expect(supabaseMock.rpc).toHaveBeenCalledTimes(2); // nothing left to send
   });
 
   it('reads the defaults for a new member, and their own choices after that', async () => {

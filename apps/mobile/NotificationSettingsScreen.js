@@ -105,7 +105,7 @@ export default function NotificationSettingsScreen() {
     }
   };
 
-  if (error || (loaded && !loaded.available)) {
+  if (error) {
     return <View style={styles.screen}><LoadFailure title="Couldn’t load notification settings" onRetry={load} /></View>;
   }
   if (!loaded) return <View style={styles.screen}><LoadingBee label="Loading notification settings" /></View>;
