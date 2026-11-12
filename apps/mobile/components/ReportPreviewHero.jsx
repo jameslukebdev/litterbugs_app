@@ -51,7 +51,6 @@ export default function ReportPreviewHero({
           style={styles.heroPhoto}
         />}
       </TouchableOpacity>
-      {showAfter ? <View pointerEvents="none" style={styles.afterTag}><Text style={styles.afterTagText}>After cleanup</Text></View> : null}
       <View pointerEvents="none" style={[styles.badge, status.tone === 'done' && styles.badgeCleaned]}>
         {status.bug ? <BrandBug kind={status.bug} size={14} /> : null}
         {/* Website card label: short words ("Available", "In progress", "Cleaned") with the bug. */}
@@ -106,8 +105,6 @@ const styles = StyleSheet.create({
   },
   // Cleaned-up reports wear the mint fill.
   badgeCleaned: { backgroundColor: colors.doneSoft },
-  afterTag: { position: 'absolute', right: 10, bottom: 10, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 10, backgroundColor: 'rgba(41, 41, 50, 0.72)' },
-  afterTagText: { color: colors.white, fontSize: 12, fontWeight: '700' },
   badgeText: { fontSize: 12, fontFamily: fonts.heading },
   favorite: {
     position: 'absolute',

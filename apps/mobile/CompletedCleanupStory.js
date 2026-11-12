@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
@@ -21,6 +23,8 @@ import { hapticSelect } from './lib/haptics';
 import { colors, fonts } from './lib/theme';
 
 function AfterPhoto({ url, index, count, width }) {
+  const screen = useWindowDimensions();
+  const [fullOpen, setFullOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
 
@@ -61,6 +65,20 @@ function AfterPhoto({ url, index, count, width }) {
           <Text style={styles.photoCountText}>{index + 1}/{count}</Text>
         </View>
       ) : null}
+      {/* Same as the report photos: the whole picture, uncropped, on a black screen. */}
+      {!failed ? (
+        <TouchableOpacity style={styles.fullPhotoButton} onPress={() => setFullOpen(true)} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={`View full after photo ${index + 1} of ${count}`}>
+          <Text style={styles.fullPhotoText}>View full photo</Text>
+        </TouchableOpacity>
+      ) : null}
+      <Modal visible={fullOpen} animationType="fade" onRequestClose={() => setFullOpen(false)} statusBarTranslucent>
+        <View style={styles.fullPhotoBackdrop}>
+          {fullOpen ? <ExpoImage source={url} contentFit="contain" cachePolicy="memory-disk" style={{ width: screen.width, height: screen.height }} accessibilityLabel={`Full after-cleanup photo ${index + 1} of ${count}`} /> : null}
+          <TouchableOpacity style={styles.fullPhotoClose} onPress={() => setFullOpen(false)} accessibilityRole="button" accessibilityLabel="Close full photo">
+            <Ionicons name="close" size={22} color={colors.ink} />
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -275,6 +293,10 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: 'rgba(41, 41, 50, 0.72)',
   },
+  fullPhotoButton: { position: 'absolute', right: 12, bottom: 12, minHeight: 36, paddingHorizontal: 13, justifyContent: 'center', borderRadius: 16, backgroundColor: colors.white },
+  fullPhotoText: { color: colors.ink, fontSize: 13, fontWeight: '700' },
+  fullPhotoBackdrop: { flex: 1, backgroundColor: colors.black, alignItems: 'center', justifyContent: 'center' },
+  fullPhotoClose: { position: 'absolute', top: 58, right: 20, width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white },
   photoCountText: {
     color: colors.white,
     fontSize: 12,
