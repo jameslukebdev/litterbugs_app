@@ -10,7 +10,7 @@ export const CALM_MAP_STYLE = [
   { featureType: 'poi', stylers: [{ visibility: 'off' }] },
   { featureType: 'poi.park', stylers: [{ visibility: 'on' }] },
   { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#d3e6c4' }] },
-  { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#5f7a52' }] },
+  { featureType: 'poi.park', elementType: 'labels', stylers: [{ visibility: 'off' }] },
   { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
   { featureType: 'road', elementType: 'labels.icon', stylers: [{ saturation: -60 }, { lightness: 20 }] },
   { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#fbf7ee' }] },

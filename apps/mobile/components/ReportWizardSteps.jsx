@@ -481,6 +481,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                 <MapView style={{ flex: 1 }} initialRegion={{ ...coordinate, latitudeDelta: 0.008, longitudeDelta: 0.008 }}
                   scrollEnabled={false} zoomEnabled={false} rotateEnabled={false} pitchEnabled={false}
                   mapType={Platform.OS === 'ios' ? 'mutedStandard' : 'standard'}
+                  showsPointsOfInterest={false}
                   {...(Platform.OS === 'android' ? { customMapStyle: CALM_MAP_STYLE } : {})}
                   accessibilityLabel="Confirmed report location">
                   <Marker coordinate={coordinate} anchor={{ x: 0.5, y: 1 }}><MapPin kind="open" /></Marker>

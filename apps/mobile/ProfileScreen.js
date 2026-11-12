@@ -53,7 +53,8 @@ const openLitterbugsLink = async (url) => {
   }
 };
 
-function StripeConnectionStatus({ status, loading, error, onRetry }) {
+// One row: the payout status, and a tap opens payout settings (or retries on error).
+function StripeConnectionStatus({ status, loading, error, onRetry, onOpen }) {
   const presentation = payoutConnectionPresentation({ status, loading, error });
   if (loading && !status) return <View style={styles.stripeConnectionRow} />;
 
@@ -62,13 +63,13 @@ function StripeConnectionStatus({ status, loading, error, onRetry }) {
       style={[
         styles.stripeConnectionRow,
       ]}
-      onPress={error ? onRetry : undefined}
-      disabled={!error}
+      onPress={error ? onRetry : onOpen}
+      disabled={!error && !onOpen}
       activeOpacity={0.72}
       accessible
-      accessibilityRole={error ? 'button' : undefined}
+      accessibilityRole={error || onOpen ? 'button' : undefined}
       accessibilityLabel={presentation.label}
-      accessibilityHint={error ? 'Retries checking your Stripe payout connection' : undefined}
+      accessibilityHint={error ? 'Retries checking your Stripe payout connection' : onOpen ? 'Opens payout settings' : undefined}
     >
       {loading && !status ? (
         <Ionicons name="wallet-outline" size={23} color={colors.muted} />
@@ -83,6 +84,7 @@ function StripeConnectionStatus({ status, loading, error, onRetry }) {
           {presentation.detail}
         </Text>
       ) : null}
+      {!error && onOpen ? <Ionicons name="chevron-forward" size={18} color={colors.muted} /> : null}
     </TouchableOpacity>
   );
 }
@@ -363,14 +365,8 @@ export default function ProfileScreen({ navigation, route }) {
               loading={payoutStatusLoading && !payoutStatus}
               error={payoutStatusError}
               onRetry={refreshPayoutStatus}
+              onOpen={() => navigation.navigate('PayoutSetup', payoutStatus ? { initialStatus: payoutStatus } : undefined)}
             />}
-            <ActionRow
-              appearance="profile"
-              divided
-              label={payoutStatus?.payoutsEnabled ? 'Payout settings' : 'Set up payouts'}
-              icon="card-outline"
-              onPress={() => navigation.navigate('PayoutSetup', payoutStatus ? { initialStatus: payoutStatus } : undefined)}
-            />
             </> : <Text style={{ padding: 17, color: colors.muted }}>Payout setup is currently unavailable. Your payment history is still available above.</Text>}
           </View>
           {/* Who holds the money, said once and plainly. */}
@@ -547,7 +543,7 @@ const styles = StyleSheet.create({
   showAll: { borderTopWidth: 1, borderTopColor: colors.edge },
   paymentCard: { borderWidth: 1, borderColor: colors.line, borderRadius: 18 },
   // Payout status: coloured icon and words on white, as on the website.
-  stripeConnectionRow: { minHeight: 54, paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: colors.white },
+  stripeConnectionRow: { minHeight: 60, paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: colors.white },
   stripeConnectionText: { flex: 1, fontSize: 15, lineHeight: 20, fontWeight: '700' },
   stripeConnectionDetail: { fontSize: 12, fontWeight: '800' },
   emailLabel: { color: colors.ink, fontSize: 16, fontWeight: '600' },

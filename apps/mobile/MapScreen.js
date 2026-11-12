@@ -1341,6 +1341,8 @@ const revealBottomReportField = () => {
           followsUserLocation={false}
           showsMyLocationButton={false}
           toolbarEnabled={false}
+          // Like the website: no business or park names competing with the report pins.
+          showsPointsOfInterest={false}
           // The website's calm map: Apple's muted style on iOS, a calm Google style on Android.
           mapType={mapType === 'standard' && Platform.OS === 'ios' ? 'mutedStandard' : mapType}
           {...(mapType === 'standard' && Platform.OS === 'android' ? { customMapStyle: CALM_MAP_STYLE } : {})}

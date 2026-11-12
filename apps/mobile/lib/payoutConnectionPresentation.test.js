@@ -7,7 +7,7 @@ describe('Stripe payout connection presentation', () => {
     expect(payoutConnectionPresentation({
       status: { onboardingStatus: 'complete', payoutsEnabled: true },
     })).toMatchObject({
-      label: 'Ready to receive cleanup rewards',
+      label: 'Ready to receive rewards',
       icon: 'checkmark-circle',
       color: '#5146ED',
     });
@@ -35,4 +35,4 @@ describe('Stripe payout connection presentation', () => {
   });
 });
 
-it('retains known payout status during background refresh', () => { expect(payoutConnectionPresentation({ loading: true, status: { payoutsEnabled: true } }).label).toBe('Ready to receive cleanup rewards'); });
+it('retains known payout status during background refresh', () => { expect(payoutConnectionPresentation({ loading: true, status: { payoutsEnabled: true } }).label).toBe('Ready to receive rewards'); });
