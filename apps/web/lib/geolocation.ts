@@ -17,11 +17,23 @@ export function getBrowserLocation(
       return;
     }
 
-    geolocation.getCurrentPosition(
-      ({ coords }) => resolve({ latitude: coords.latitude, longitude: coords.longitude }),
-      reject,
-      GEOLOCATION_OPTIONS,
-    );
+    // Some browsers do not start their timeout while a permission prompt is open.
+    // Bound the whole interaction too, and ignore callbacks after it has expired.
+    let settled = false;
+    const finish = (work: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      work();
+    };
+    const timer = setTimeout(() => finish(() => reject(new Error('Location took too long. Please try again.'))), GEOLOCATION_OPTIONS.timeout);
+    try {
+      geolocation.getCurrentPosition(
+        ({ coords }) => finish(() => resolve({ latitude: coords.latitude, longitude: coords.longitude })),
+        error => finish(() => reject(error)),
+        GEOLOCATION_OPTIONS,
+      );
+    } catch (error) { finish(() => reject(error)); }
   });
 }
 

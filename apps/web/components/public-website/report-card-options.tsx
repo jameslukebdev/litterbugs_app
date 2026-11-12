@@ -11,6 +11,7 @@ export function ReportCardOptions({ reportId, title }: { reportId: string; title
   const [hidden, setHidden] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const change = useRef(0);
   useEffect(() => {
     let active = true;
     void createClient().auth.getUser().then(async ({ data }) => {
@@ -21,6 +22,8 @@ export function ReportCardOptions({ reportId, title }: { reportId: string; title
   }, [reportId]);
 
   async function toggleHidden() {
+    if (busy) return;
+    const revision = ++change.current;
     setBusy(true);
     try {
       const { data } = await createClient().auth.getUser();
@@ -31,11 +34,14 @@ export function ReportCardOptions({ reportId, title }: { reportId: string; title
       const card = menu.current?.closest('article');
       if (!hidden && isHidden && card) scurryFrom(card);
       setMessage(hidden ? 'Report restored to map results.' : 'Report hidden from map results. You can undo this here.');
-      await reportPreferenceSync.sync(owner);
-    } catch {
-      setMessage('Your preference could not be synced. Please try again.');
-    } finally {
+      // The device save is complete; undo must remain available while cloud sync runs.
       setBusy(false);
+      const synced = await reportPreferenceSync.sync(owner);
+      if (revision === change.current && synced.offline) setMessage('Saved on this device. Changes will sync when you reconnect.');
+    } catch {
+      if (revision === change.current) setMessage('Your preference could not be synced. Please try again.');
+    } finally {
+      if (revision === change.current) setBusy(false);
     }
   }
 
@@ -47,7 +53,7 @@ export function ReportCardOptions({ reportId, title }: { reportId: string; title
   }}>
     <summary aria-label={`Options for ${title}`}>•••</summary>
     <div className="public-card-options-panel">
-      <button disabled={busy} onClick={toggleHidden}>{busy ? 'Saving…' : hidden ? 'Unhide report' : 'Hide report'}</button>
+      <button disabled={busy} aria-busy={busy || undefined} onClick={toggleHidden}>{hidden ? 'Unhide report' : 'Hide report'}</button>
       {message && <p role="status">{message}</p>}
     </div>
   </details>;

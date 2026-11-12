@@ -59,6 +59,13 @@ const loadPublicReportData = cache(async (reportId: string) => {
   const report = reportData as Report | null;
   if (!report || !isPubliclyShareableReport(report)) return null;
 
+  // Independent of cleanup evidence: start this read now instead of adding a
+  // final database round trip after all completion details have arrived.
+  const reporterPromise = report.user_id
+    ? Promise.resolve(supabase.from('profiles').select('display_name, username').eq('id', report.user_id).maybeSingle())
+      .catch(() => ({ data: null }))
+    : Promise.resolve({ data: null });
+
   let attempt: Pick<CleanupAttempt, 'id' | 'cleaner_id' | 'completed_at' | 'final_submission_id'> | null = null;
   let submission: Pick<CleanupSubmission, 'description' | 'bags_or_items_removed' | 'weight_pounds'> | null = null;
   let cleaner: Pick<Profile, 'display_name' | 'username'> | null = null;
@@ -106,9 +113,7 @@ const loadPublicReportData = cache(async (reportId: string) => {
     }
   }
 
-  const { data: reporter } = report.user_id
-    ? await supabase.from('profiles').select('display_name, username').eq('id', report.user_id).maybeSingle()
-    : { data: null };
+  const { data: reporter } = await reporterPromise;
 
   const expired = isExpiredPublicReport(report);
   const community = publicCommunityForPoint(report.latitude, report.longitude);

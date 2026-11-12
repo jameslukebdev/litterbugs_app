@@ -20,6 +20,7 @@ import { AppLink } from '@/components/app-link';
 import { ReportPhotos } from './report-photos';
 
 import styles from './report-share.module.css';
+import { Suspense } from 'react';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,7 +63,16 @@ export default async function SharedReportPage({ params }: Props) {
   const report = await loadPublicReportShare(id, 'linked');
   if (!report) notFound();
 
-  const related = await loadRelatedPublicReports(report.id, report.communitySlug);
+  // Optional recommendations must not hold the report and its actions behind another database read.
+  const relatedLinks = loadRelatedPublicReports(report.id, report.communitySlug).then(related => related.length > 0 ? <ul className={styles.relatedList}>
+    {related.map(item => {
+      const itemStatus = publicReportStatus(item.state);
+      return <li key={item.id}>
+        <Link prefetch={false} href={`/reports/${item.id}`}>{item.title}</Link>
+        <span className={styles.relatedStatus} data-tone={itemStatus.tone}>{itemStatus.bug ? <img src={itemStatus.bug} alt="" aria-hidden="true" width={16} height={16} /> : <FiClock aria-hidden="true" />}{itemStatus.label}</span>
+      </li>;
+    })}
+  </ul> : null);
   const completed = report.state === 'completed';
   const inProgress = report.state === 'in_progress';
   const expired = report.state === 'expired';
@@ -166,15 +176,7 @@ export default async function SharedReportPage({ params }: Props) {
         </article>
         <section className={styles.related} aria-labelledby="related-reports-heading">
           <h2 id="related-reports-heading">{community ? `More reports in ${community.name}` : 'Explore more litter reports'}</h2>
-          {related.length > 0 && <ul className={styles.relatedList}>
-            {related.map(item => {
-              const itemStatus = publicReportStatus(item.state);
-              return <li key={item.id}>
-                <Link prefetch={false} href={`/reports/${item.id}`}>{item.title}</Link>
-                <span className={styles.relatedStatus} data-tone={itemStatus.tone}>{itemStatus.bug ? <img src={itemStatus.bug} alt="" aria-hidden="true" width={16} height={16} /> : <FiClock aria-hidden="true" />}{itemStatus.label}</span>
-              </li>;
-            })}
-          </ul>}
+          <Suspense fallback={null}>{relatedLinks}</Suspense>
           <div className={styles.browseLinks}>
             {community && <>
               <Link href={communityListingHref(community)}>Reports needing cleanup in {community.name}</Link>

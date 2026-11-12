@@ -1,7 +1,8 @@
 'use client';
 
 import { communityReturnPath } from '@/lib/community-journey';
-import { trackParticipation, trackParticipationFailure, trackWebsiteOutcome, trackMapDiscovery, reportResultBucket, trackParticipationExit, consumeMapSearchSelection, type EntrySource, type MapSearchSurface } from '@/lib/website-analytics';
+import { trackParticipation, trackParticipationFailure, trackWebsiteOutcome, trackMapDiscovery, trackMapLoading, reportResultBucket, trackParticipationExit, consumeMapSearchSelection, type EntrySource, type MapSearchSurface } from '@/lib/website-analytics';
+import { createMapLoadTracker } from '@/lib/map-loading-metrics';
 
 import { importLibrary, setOptions } from '@googlemaps/js-api-loader';
 import {
@@ -118,6 +119,7 @@ export function MapExperience({
   const mapElementRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const mapAuthFailed = useRef(false);
+  const mapLoadTrackerRef = useRef<ReturnType<typeof createMapLoadTracker> | null>(null);
   const clustersRef = useRef<ReturnType<typeof createReportClusters> | null>(null);
   const [clusterIds, setClusterIds] = useState<string[] | null>(null);
   const markersRef = useRef(new Map<string, google.maps.marker.AdvancedMarkerElement>());
@@ -162,6 +164,7 @@ export function MapExperience({
       : 'A restricted Google Maps browser key and web map ID are required to display the map.',
   );
   const [mapTypeIndex, setMapTypeIndex] = useState(0);
+  const mapTypeIndexRef = useRef(0);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [draftCoordinates, setDraftCoordinates] = useState<Coordinates | null>(null);
   const [selectingDraftLocation, setSelectingDraftLocation] = useState(false);
@@ -198,6 +201,7 @@ export function MapExperience({
   const [toast, setToast] = useState('');
   // Bug motion: the lightning bug glows while finding you; the dragonfly drops the pin of a report you just posted.
   const [locating, setLocating] = useState(false);
+  const locatingRequest = useRef(false);
   const [justPostedReport, setJustPostedReport] = useState<MappableReport | null>(null);
   useEffect(() => {
     if (!mapReady || !justPostedReport) return;
@@ -523,17 +527,38 @@ export function MapExperience({
   }, [toast]);
 
   useEffect(() => {
-    if (!googleMapsKey || !googleMapsMapId || !mapElementRef.current || mapRef.current) return;
+    if (!mapElementRef.current || mapRef.current) return;
     let cancelled = false;
+    const loadTracker = createMapLoadTracker(trackMapLoading, undefined, document.visibilityState === 'hidden');
+    mapLoadTrackerRef.current = loadTracker;
+    const visibility = () => { if (document.visibilityState === 'hidden') loadTracker.background(); };
+    document.addEventListener('visibilitychange', visibility);
+    const disposeTracking = () => {
+      cancelled = true;
+      loadTracker.dispose();
+      document.removeEventListener('visibilitychange', visibility);
+      if (mapLoadTrackerRef.current === loadTracker) mapLoadTrackerRef.current = null;
+    };
+    // Ignore React's discarded Strict Mode effect; early failures still precede their outcome.
+    queueMicrotask(() => {
+      if (cancelled) return;
+      loadTracker.start();
+      if (!googleMapsKey || !googleMapsMapId) loadTracker.fail('configuration_missing');
+      else void startMap();
+    });
+    if (!googleMapsKey || !googleMapsMapId) return disposeTracking;
 
     let tilesReady = false;
     const startupTimeout = window.setTimeout(() => {
-      if (!cancelled && !tilesReady) setMapError('The map is taking too long to load. You can still browse reports or reload to try again.');
+      if (!cancelled && !tilesReady) {
+        loadTracker.fail('startup_timeout');
+        setMapError('The map is taking too long to load. You can still browse reports or reload to try again.');
+      }
     }, 12000);
     const previousAuthFailure = window.gm_authFailure;
     window.gm_authFailure = () => {
       window.clearTimeout(startupTimeout);
-      if (!cancelled) { mapAuthFailed.current = true; discoveryRequest.current?.abort(); setDiscoveryArea(null); setMapReady(false); setMapError('The map is unavailable on this address. You can still browse reports.'); }
+      if (!cancelled) { loadTracker.fail('authorization_failed'); mapAuthFailed.current = true; discoveryRequest.current?.abort(); setDiscoveryArea(null); setMapReady(false); setMapError('The map is unavailable on this address. You can still browse reports.'); }
     };
     async function startMap() {
       try {
@@ -569,7 +594,7 @@ export function MapExperience({
           center: { lat: linkedReport?.latitude ?? confirmedPin?.latitude ?? memory?.latitude ?? DEFAULT_WEB_MAP_CENTER.latitude, lng: linkedReport?.longitude ?? confirmedPin?.longitude ?? memory?.longitude ?? DEFAULT_WEB_MAP_CENTER.longitude },
           zoom: linkedReport ? Math.max(14, memory?.zoom ?? 14) : memory?.zoom ?? 12,
           mapId: googleMapsMapId,
-          mapTypeId: 'roadmap',
+          mapTypeId: MAP_TYPES[mapTypeIndexRef.current],
           disableDefaultUI: true,
           clickableIcons: false,
           gestureHandling: 'greedy',
@@ -593,6 +618,7 @@ export function MapExperience({
           if (cancelled || mapAuthFailed.current) return;
           tilesReady = true;
           window.clearTimeout(startupTimeout);
+          loadTracker.tilesReady();
           setMapTilesReady(true);
           setMapError('');
         });
@@ -628,11 +654,10 @@ export function MapExperience({
         }
       } catch {
         window.clearTimeout(startupTimeout);
-        if (!cancelled) setMapError('Google Maps could not load. Check the browser key and try again.');
+        if (!cancelled) { loadTracker.fail('initialization_failed'); setMapError('Google Maps could not load. Check the browser key and try again.'); }
       }
     }
-    void startMap();
-    return () => { cancelled = true; window.clearTimeout(startupTimeout); window.gm_authFailure = previousAuthFailure; clustersRef.current?.dispose(); clustersRef.current = null; mapRef.current = null; };
+    return () => { disposeTracking(); window.clearTimeout(startupTimeout); window.gm_authFailure = previousAuthFailure; clustersRef.current?.dispose(); clustersRef.current = null; mapRef.current = null; };
   }, [googleMapsKey, googleMapsMapId, initialMapReports]);
 
   useEffect(() => {
@@ -665,6 +690,7 @@ export function MapExperience({
           title: report.title || 'Litter Report',
           gmpClickable: true,
         }); } catch {
+          mapLoadTrackerRef.current?.fail('marker_render_failed');
           mapAuthFailed.current = true; setMapReady(false);
           setMapError('The map could not display its pins. You can still browse reports. Reload to try the map again.');
           return;
@@ -866,6 +892,8 @@ export function MapExperience({
   }
 
   async function centerOnUser() {
+    if (locatingRequest.current) return;
+    locatingRequest.current = true;
     setClosestPreview(null);
     setLocating(true);
     try {
@@ -875,11 +903,13 @@ export function MapExperience({
       mapRef.current?.setZoom(14);
     } catch {
       setToast('Unable to find your location. Check your browser permission and try again.');
-    } finally { setLocating(false); }
+    } finally { locatingRequest.current = false; setLocating(false); }
   }
 
   function toggleMapType() {
-    const nextIndex = (mapTypeIndex + 1) % MAP_TYPES.length;
+    if (!mapRef.current) return;
+    const nextIndex = (mapTypeIndexRef.current + 1) % MAP_TYPES.length;
+    mapTypeIndexRef.current = nextIndex;
     setMapTypeIndex(nextIndex);
     mapRef.current?.setMapTypeId(MAP_TYPES[nextIndex] as google.maps.MapTypeId);
   }
@@ -1279,7 +1309,7 @@ export function MapExperience({
             </ul>
           )}
           <div className="map-action-controls">
-            <button onClick={toggleMapType} aria-label={`Change map type. Current: ${MAP_TYPES[mapTypeIndex]}`} title="Change map type"><Icon name="layers" /></button>
+            <button onClick={toggleMapType} disabled={!mapReady} aria-label={`Change map type. Current: ${MAP_TYPES[mapTypeIndex]}`} title="Change map type"><Icon name="layers" /></button>
             <button onClick={centerOnUser} disabled={locating} aria-label={locating ? 'Finding your location' : 'Center map on your location'} aria-busy={locating} title="My location">{locating ? locatingBug : <Icon name="location" />}</button>
           </div>
 

@@ -24,6 +24,23 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (approved navigation/save/map release prepared)
+
+- Owner approved deployment of all tested local fixes. Clean release starts at
+  previous production notes d46a236 (source7638185), applies only web/shared
+  source from2f6c8e0,c8ce7b0,6b26f03: map startup telemetry, responsive navigation
+  with original button labels, streamed optional report data, nonblocking web
+  preference sync, reliable map controls and bounded browser location wait.
+- Exactly25 source/test files changed; no dependency/native/migration changes.
+  Concurrent notification work, dev previews and homepage redesign excluded.
+- Focused web130 tests and shared preference10 tests pass. Web/shared TypeScript
+  and scoped ESLint pass. Boundary checker reports four pre-existing Stripe
+  exclusions in unchanged files/dependencies already in production; no new
+  boundary violation. Tests needing storage passed with Node webstorage disabled
+  after the temporary checkout selected the newer local runtime.
+- Remote production build and staged browser verification precede promotion.
+  Previous live/rollback: dpl_97HKBRMdUPK8wmDAP2CNvLdvNVPy. No DB changes.
+
 ### 2026-11-12 — Codex (cleanup hours and social links deployed)
 
 - Owner-approved source 7638185 on codex/cleanup-hours-social-release-20261112
