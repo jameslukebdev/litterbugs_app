@@ -24,6 +24,17 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (approved cleanup stats web release)
+
+- Release source adds only the three reviewed CompletedCleanup files to the
+  current live source d80611d: mint panel, compact cleaner styling, three icon
+  stats, and recorded hours from existing duration_minutes with missing-time
+  placeholder. No homepage, native, policy-page or database changes.
+- Source changes verified locally: 48 cleanup/report tests, scoped ESLint,
+  TypeScript and CSS compilation; 390px/320px browser checks passed.
+- Owner approved GitHub push and production deployment. Staging and live
+  verification results will be recorded in the follow-up entry.
+
 ### 2026-11-11 — Codex (approved map performance and analytics release live)
 
 - Owner approved deploying completed work and pushing GitHub, with new homepage

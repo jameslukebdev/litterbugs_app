@@ -1,5 +1,7 @@
 /* "Cleanup complete" section in the report sheet. Doubled classes outrank the older globals.css rules. */
-.story.story p { margin: 8px 0 0; color: #45434d; font-size: 15px; line-height: 1.5; }
+.story.story { padding: 18px; border: 1px solid #b9e9dd; border-radius: 20px; background: #e2f8f3; box-shadow: none; color: #292932; overflow-wrap: anywhere; }
+.story.story h3 { margin: 0 0 16px; color: #292932; font-size: 18px; font-weight: 800; line-height: 1.3; }
+.story.story p { margin: 12px 0 0; color: #45434d; font-size: 15px; line-height: 1.5; }
 .story.story h4 { margin: 0 0 10px; }
 
 /* One photo at a time, with arrows; the photo only appears once it has fully loaded. */
@@ -20,12 +22,18 @@
 /* Cleaner name and rank sit on the panel itself, no white box. */
 .byline { margin-top: 14px; }
 .byline > span { display: block; color: #686477; font-size: 12px; font-weight: 800; }
-.byline :global(.report-author) { min-height: 0; margin: 4px 0 0; padding: 0; border: 0; background: transparent; box-shadow: none; }
+.byline :global(.report-author) { min-height: 44px; margin: 4px 0 0; padding: 0; border: 0; background: transparent; box-shadow: none; color: #292932; }
 .byline :global(.report-author):hover { background: transparent; }
+.story.story :global(.report-author-initial) { background: #efedff; color: #3f36c4; }
+.byline :global(.report-author):focus-visible { outline: 3px solid #5146ed; outline-offset: 4px; border-radius: 8px; }
 
 .paid.paid { display: flex; align-items: center; gap: 6px; color: #8a5a00; font-weight: 800; }
-.facts.facts { display: flex; flex-wrap: wrap; gap: 4px 16px; }
-.facts strong { color: #292932; }
+.facts.facts { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); margin-top: 16px; padding-top: 14px; border-top: 1px solid #b9e9dd; }
+.fact { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; padding: 0 6px; text-align: center; }
+.fact + .fact { border-left: 1px solid #b9e9dd; }
+.fact svg { flex: none; width: 20px; height: 20px; color: #5146ed; }
+.fact strong { color: #292932; font-size: 22px; font-weight: 800; line-height: 1.25; }
+.fact span { color: #686477; font-size: 12px; line-height: 1.4; }
 
 /* Inside the report's main photo frame: fill it exactly (the frame sets the size and corners). */
 .viewer.fill { width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; }

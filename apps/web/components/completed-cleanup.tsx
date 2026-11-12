@@ -1,6 +1,7 @@
 'use client';
 /* eslint-disable @next/next/no-img-element -- Resized report photos from our own photo route. */
 import { useEffect, useState } from 'react';
+import { IoBagHandleOutline, IoScaleOutline, IoTimeOutline } from 'react-icons/io5';
 import { createClient } from '@/lib/supabase/client';
 import { Icon } from '@/components/icon';
 import { ReportAuthor } from '@/components/report-author';
@@ -8,7 +9,7 @@ import { AntWalk } from '@/components/bug-motion';
 import { PhotoExpandButton, ReportPhotoViewer } from '@/components/report-photo-viewer';
 import styles from './completed-cleanup.module.css';
 
-type Impact = { rewardCents: number; cleanerId: string | null; completedAt: string | null; description: string | null; bags: number | null; weight: number | null; photoPaths: string[] };
+type Impact = { rewardCents: number; cleanerId: string | null; completedAt: string | null; description: string | null; bags: number | null; weight: number | null; durationMinutes: number | null; photoPaths: string[] };
 
 /** Resized, cached after-cleanup photo (640px) instead of the full-size original. */
 export const afterPhotoUrl = (reportId: string, index: number) => `/reports/${encodeURIComponent(reportId)}/photo/after?photo=${index}&width=640`;
@@ -115,11 +116,11 @@ export function useCleanupImpact(reportId: string | null): CleanupImpactState {
         .not('final_submission_id', 'is', null).order('completed_at', { ascending: false }).limit(1).maybeSingle();
       if (error || !attempt) throw new Error('Cleanup unavailable');
       const [submission, photos] = await Promise.all([
-        client.from('cleanup_submissions').select('description,bags_or_items_removed,weight_pounds').eq('id', attempt.final_submission_id!).eq('cleanup_attempt_id', attempt.id).maybeSingle(),
+        client.from('cleanup_submissions').select('description,bags_or_items_removed,weight_pounds,duration_minutes').eq('id', attempt.final_submission_id!).eq('cleanup_attempt_id', attempt.id).maybeSingle(),
         client.from('cleanup_submission_photos').select('storage_path').eq('submission_id', attempt.final_submission_id!).order('display_order'),
       ]);
       if (submission.error || photos.error || !submission.data) throw new Error('Evidence unavailable');
-      if (!cancelled) setImpact({ rewardCents: attempt.is_paid ? attempt.reward_amount_cents : 0, cleanerId: attempt.cleaner_id, completedAt: attempt.completed_at, description: submission.data.description, bags: submission.data.bags_or_items_removed, weight: submission.data.weight_pounds, photoPaths: (photos.data ?? []).map(photo => photo.storage_path).filter(Boolean) });
+      if (!cancelled) setImpact({ rewardCents: attempt.is_paid ? attempt.reward_amount_cents : 0, cleanerId: attempt.cleaner_id, completedAt: attempt.completed_at, description: submission.data.description, bags: submission.data.bags_or_items_removed, weight: submission.data.weight_pounds, durationMinutes: submission.data.duration_minutes, photoPaths: (photos.data ?? []).map(photo => photo.storage_path).filter(Boolean) });
     }
     void load().catch(() => { if (!cancelled) setError(true); });
     return () => { cancelled = true; };
@@ -130,6 +131,9 @@ export function useCleanupImpact(reportId: string | null): CleanupImpactState {
 export function CompletedCleanup({ reportId, cleanup, showPhotos = true }: { reportId: string; cleanup?: CleanupImpactState; showPhotos?: boolean }) {
   const own = useCleanupImpact(cleanup ? null : reportId);
   const { impact, error, retry } = cleanup ?? own;
+  // Match the app's hours display. Older submissions have no recorded duration.
+  const hours = impact?.durationMinutes != null && Number.isFinite(impact.durationMinutes) && impact.durationMinutes > 0
+    ? String(Math.max(0.1, Math.round(impact.durationMinutes / 60 * 10) / 10)) : null;
   if (!impact && !error) return <section className={`completed-cleanup-story completed-cleanup-loading ${styles.story}`} aria-busy="true"><h3>{showPhotos ? 'Cleanup complete' : 'About the cleanup'}</h3><p className="sr-only" role="status">Loading cleanup details…</p>{showPhotos && <div className={styles.placeholder} aria-hidden="true" />}</section>;
   return <section className={`completed-cleanup-story ${styles.story}`}>
     {/* In the report sheet the photos sit in the main photo frame, so this panel tells the story only. */}
@@ -141,10 +145,17 @@ export function CompletedCleanup({ reportId, cleanup, showPhotos = true }: { rep
       {impact.completedAt && <p>Cleaned {new Date(impact.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>}
       {impact.rewardCents > 0 && <p className={styles.paid}><img src="/brand/bugs/bee.png" alt="" aria-hidden="true" width={16} height={16} />${(impact.rewardCents / 100).toFixed(2)} paid from the cleanup fund</p>}
       {impact.description && <p>{impact.description}</p>}
-      {(impact.bags !== null || impact.weight !== null) && <p className={styles.facts}>
-        {impact.bags !== null && <span><strong>{impact.bags}</strong> {impact.bags === 1 ? 'bag or item' : 'bags or items'} removed</span>}
-        {impact.weight !== null && <span><strong>{impact.weight} lb</strong> removed</span>}
-      </p>}
+      <div className={styles.facts} role="group" aria-label="Cleanup stats">
+        {impact.bags !== null && <div className={styles.fact} aria-label={`${impact.bags} ${impact.bags === 1 ? 'bag or item' : 'bags or items'} removed`}>
+          <IoBagHandleOutline aria-hidden="true" /><strong>{impact.bags}</strong><span>{impact.bags === 1 ? 'bag/item' : 'bags/items'} removed</span>
+        </div>}
+        {impact.weight !== null && <div className={styles.fact} aria-label={`${impact.weight} ${impact.weight === 1 ? 'pound' : 'pounds'} removed`}>
+          <IoScaleOutline aria-hidden="true" /><strong>{impact.weight}</strong><span>{impact.weight === 1 ? 'pound' : 'pounds'} removed</span>
+        </div>}
+        <div className={styles.fact} aria-label={hours ? `${hours} ${hours === '1' ? 'hour' : 'hours'} spent` : 'Time spent was not recorded'}>
+          <IoTimeOutline aria-hidden="true" /><strong>{hours ?? '–'}</strong><span>{hours ? `${hours === '1' ? 'hr' : 'hrs'} spent` : 'time not recorded'}</span>
+        </div>
+      </div>
     </>}
   </section>;
 }
