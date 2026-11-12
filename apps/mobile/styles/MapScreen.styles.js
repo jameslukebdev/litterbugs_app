@@ -917,7 +917,7 @@ reportPostHeader: {
 websiteReportHeader: { backgroundColor: colors.white, paddingTop: 4, paddingBottom: 18, borderBottomWidth: 1, borderBottomColor: colors.mist },
 websiteReportState: { marginBottom: 6, flexDirection: 'row', alignItems: 'center', gap: 8 },
 // Owner's preference: cleaned-up indicators sit on the mint fill.
-cleanedUpPill: { alignSelf: 'flex-start', paddingVertical: 5, paddingLeft: 10, paddingRight: 14, borderRadius: 999, backgroundColor: colors.doneSoft },
+cleanedUpPill: { alignSelf: 'flex-start', marginTop: 2, marginBottom: 12, paddingVertical: 5, paddingLeft: 10, paddingRight: 14, borderRadius: 999, backgroundColor: colors.doneSoft },
 websiteReportStateText: { flexShrink: 1, fontSize: 16, lineHeight: 22, fontWeight: '800' },
 websiteReportTitle: { marginTop: 0, marginBottom: 10, fontSize: 24, lineHeight: 28 },
 websiteReportFacts: { color: colors.muted, fontSize: 13, lineHeight: 18 },

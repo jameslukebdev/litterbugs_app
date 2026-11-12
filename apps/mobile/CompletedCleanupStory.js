@@ -206,7 +206,7 @@ export default function CompletedCleanupStory({
 }
 
 const styles = StyleSheet.create({
-  story: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, gap: 14, backgroundColor: colors.white },
+  story: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 12, gap: 16, backgroundColor: colors.white },
   completionBanner: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingRight: 104 },
   completionTitle: { flexShrink: 1, color: colors.done, fontSize: 22, lineHeight: 27, fontFamily: fonts.heading },
   cleanerRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center' },

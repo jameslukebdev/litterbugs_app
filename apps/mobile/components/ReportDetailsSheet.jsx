@@ -324,7 +324,7 @@ export default function ReportDetailsSheet({ state, actions }) {
           const severityWord = selectedReport?.severity ? `${String(selectedReport.severity).charAt(0).toUpperCase()}${String(selectedReport.severity).slice(1).toLowerCase()}` : 'Medium';
           const funded = Number(selectedReport?.funded_amount_cents) > 0;
           return (
-            <View style={[styles.reportPostHeader, styles.websiteReportHeader, cleanupState === 'completed' && { borderBottomWidth: 0, paddingBottom: 4 }]}>
+            <View style={[styles.reportPostHeader, styles.websiteReportHeader, cleanupState === 'completed' && { borderBottomWidth: 0, paddingBottom: 10 }]}>
               <Text style={[styles.reportPostTitle, styles.websiteReportTitle]} accessibilityRole="header">{selectedReport?.title || 'Litter Report'}</Text>
               <View style={[styles.websiteReportState, !closed && cleanupState === 'completed' && styles.cleanedUpPill]}>
                 {!closed && state.bug ? <BrandBug kind={state.bug} size={18} /> : null}
