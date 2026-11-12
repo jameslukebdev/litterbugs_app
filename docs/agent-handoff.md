@@ -24,6 +24,19 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (GivePulse comparison and growth lessons)
+
+- Compared current GivePulse official workflows/pricing with Litterbugs source:
+  institutional groups/affiliations, opportunity registration, impact logging,
+  organization verification and transcripts versus report-led cleanup evidence
+  and optional funding/rewards. Existing Litterbugs duration is recorded time,
+  not a school-approved service-hours credential.
+- Recommended organizer-led local pilots, group attribution, useful impact
+  summaries and repeat participation before broad API/enterprise work. These
+  are proposed growth hypotheses, not verified GivePulse acquisition results.
+- Advisory only; no product edits, outreach, deployment, push or database
+  changes. Preserve concurrent staged and working changes.
+
 ### 2026-11-12 — Codex (single selected filter control and quieter cleanup cards, local)
 
 - Refero research: visitors.now/shadcn style references, LinkedIn jobs filters
