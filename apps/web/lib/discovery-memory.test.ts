@@ -11,6 +11,12 @@ it('restores filters from shareable URLs and preserves report selection', () => 
   expect(readBrowserUrl('?report=example')).toBeNull();
 });
 
+it('honors explicit filter links even without the legacy browse flag', () => {
+  expect(readBrowserUrl('?scope=favorites&severity=high')?.filters).toMatchObject({ scope: 'favorites', severity: 'high' });
+  expect(readBrowserUrl('?status=completed')?.filters.status).toBe('completed');
+  expect(readBrowserUrl('?view=map&report=shared')).toBeNull();
+});
+
 it('restores the map area without serializing precise device coordinates', () => {
   const url = mapUrl(new URL('https://litterbugs.app/?area=4:12345&browse=1'), { latitude: 36.123456789, longitude: -81.7654321, zoom: 13 });
   expect(url).toContain('#map=36.123,-81.765,13.0'); expect(new URL(url, 'https://litterbugs.app').searchParams.get('area')).toBe('4:12345');

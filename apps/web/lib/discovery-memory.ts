@@ -25,7 +25,7 @@ export function saveBrowserMemory(value: BrowserMemory) { try { sessionStorage.s
 /** Explicit URL state wins over device memory, including an intentionally cleared filter. */
 export function readBrowserUrl(search: string): BrowserMemory | null {
   const p = new URLSearchParams(search);
-  if (!p.has('browse')) return null;
+  if (!p.has('browse') && !['status', 'funding', 'severity', 'scope', 'radius', 'q', 'sort'].some(key => p.has(key))) return null;
   const pick = <T extends string>(key: string, allowed: readonly T[], fallback: T): T => allowed.includes(p.get(key) as T) ? p.get(key) as T : fallback;
   return { filters: {
     status: pick('status', ['all', 'available', 'progress', 'completed'], 'all'),

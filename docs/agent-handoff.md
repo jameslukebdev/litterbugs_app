@@ -24,6 +24,26 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (website filter state and recovery fixed locally)
+
+- Favorites (1) was a saved-count shortcut, not an active-filter indicator;
+  Hidden in the screenshot could have no shortcut when zero saved IDs existed.
+  Fixed reproducible stale-draft reopening through the toolbar after Show
+  results. One applied filter object now drives map/list callbacks and controls.
+- Fresh/shared links no longer silently restore unrelated session filters;
+  explicit URL filters (including URLs without browse=1) and back/forward still
+  restore choices. Matching session memory retains expanded results/scroll.
+- Added removable chips for every active filter plus Clear all, including on
+  phones; removed ambiguous saved counts/Custom filters placeholder. Empty
+  Favorites/Hidden stay explicit rather than silently switching to Available.
+- 54 focused tests pass: status/workflow, funding, priority, distance, text,
+  saved scopes, URL restoration, cancelled drafts, individual removal and
+  map/list consistency. Scoped ESLint, TypeScript and CSS compilation pass.
+  CUA checks at 1280px, 390px and 320px: dialog sync, X removal, Clear all,
+  returning cards/pins; no browser errors. Local preview kept open, viewport
+  reset. No deployment, push, production testing or database changes.
+- Concurrent mobile/notification changes and other handoff edits preserved.
+
 ### 2026-11-12 — Codex (mint cleanup stats deployed)
 
 - Owner-approved release 2bebc0f on codex/cleanup-stats-release-20261112 is live:

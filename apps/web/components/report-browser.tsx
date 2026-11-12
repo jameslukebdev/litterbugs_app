@@ -32,7 +32,7 @@ const formatUsd = (cents: number) => new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 }).format(cents / 100);
 
-type ReportFilter = 'available' | 'rewarded' | 'volunteer' | 'claimed' | 'completed' | 'all' | 'favorites' | 'hidden' | 'custom';
+type ReportFilter = 'available' | 'rewarded' | 'volunteer' | 'claimed' | 'completed' | 'all' | 'favorites' | 'hidden';
 type ReportSort = 'closest' | 'newest' | 'reward-high' | 'severity';
 
 const FILTERS: { value: ReportFilter; label: string }[] = [
@@ -257,15 +257,19 @@ export function ReportBrowser({
   const [locationMessage, setLocationMessage] = useState('');
   const [authors, setAuthors] = useState<Record<string, PublicProfile>>({});
   const [filtersOpen, setFiltersOpen] = useState(false);
-  useEffect(() => {
-    if (!filtersRequest) return;
-    const timer = setTimeout(() => setFiltersOpen(true), 0);
-    return () => clearTimeout(timer);
-  }, [filtersRequest]);
   const listRef = useRef<HTMLDivElement>(null);
-  const [filter, setFilter] = useState<ReportFilter>('all');
   const [draftFilters, setDraftFilters] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
-  const [advanced, setAdvanced] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
+  const [applied, setApplied] = useState<DiscoveryFilters>(DEFAULT_DISCOVERY_FILTERS);
+  const openedFiltersRequest = useRef(0);
+  useEffect(() => {
+    if (!filtersRequest || filtersRequest === openedFiltersRequest.current) return;
+    const timer = setTimeout(() => {
+      openedFiltersRequest.current = filtersRequest;
+      setDraftFilters(applied);
+      setFiltersOpen(true);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [filtersRequest, applied]);
   const [displayLimit, setDisplayLimit] = useState(50);
   const [sort, setSort] = useState<ReportSort>('newest');
   const [memoryReady, setMemoryReady] = useState(false);
@@ -274,21 +278,20 @@ export function ReportBrowser({
   useEffect(() => {
     const restore = () => {
       setMemoryReady(true);
-      const fromUrl = readBrowserUrl(window.location.search);
+      // Fresh/shared map links start unfiltered. Back/forward and explicit filter
+      // URLs restore the user's choices; unrelated old session filters must not.
+      const fromUrl = readBrowserUrl(window.location.search) ?? { filters: DEFAULT_DISCOVERY_FILTERS, sort: 'newest' as const, scroll: 0 };
       // Next links can change the map's filters without remounting the browser.
       const signature = JSON.stringify(fromUrl);
       if (signature === restoredBrowseUrl.current) return;
-      const initial = restoredBrowseUrl.current === undefined;
       restoredBrowseUrl.current = signature;
       const stored = readBrowserMemory();
-      const sameSearch = stored && fromUrl && stored.sort === fromUrl.sort && (Object.keys(DEFAULT_DISCOVERY_FILTERS) as (keyof DiscoveryFilters)[]).every(key => stored.filters[key] === fromUrl.filters[key]);
-      const memory = fromUrl ? { ...fromUrl, scroll: sameSearch ? stored.scroll : 0, displayLimit: sameSearch ? stored.displayLimit : 50 } : initial ? stored : null;
-      if (memory) {
-        setAdvanced(memory.filters); setDraftFilters(memory.filters); setFilter('custom'); setSort(memory.sort);
-        restoringScrollRef.current = memory.scroll;
-        setDisplayLimit(memory.displayLimit ?? 50);
-        if (memory.sort === 'closest') void getBrowserLocation().then(setLocationOrigin).catch(() => setLocationMessage('Allow location access to sort by distance.'));
-      }
+      const sameSearch = stored && stored.sort === fromUrl.sort && (Object.keys(DEFAULT_DISCOVERY_FILTERS) as (keyof DiscoveryFilters)[]).every(key => stored.filters[key] === fromUrl.filters[key]);
+      const memory = { ...fromUrl, scroll: sameSearch ? stored.scroll : 0, displayLimit: sameSearch ? stored.displayLimit : 50 };
+      setApplied(memory.filters); setDraftFilters(memory.filters); setSort(memory.sort);
+      restoringScrollRef.current = memory.scroll;
+      setDisplayLimit(memory.displayLimit ?? 50);
+      if (memory.sort === 'closest') void getBrowserLocation().then(setLocationOrigin).catch(() => setLocationMessage('Allow location access to sort by distance.'));
     };
     const timer = setTimeout(restore, 0);
     window.addEventListener('popstate', restore);
@@ -299,17 +302,21 @@ export function ReportBrowser({
   }, [navigationSearch]);
   const filters = useMemo(() => [
     ...FILTERS,
-    ...(favoriteReportIds.size ? [{ value: 'favorites' as const, label: `Favorites (${favoriteReportIds.size})` }] : []),
-    ...(hiddenReportIds.size ? [{ value: 'hidden' as const, label: `Hidden (${hiddenReportIds.size})` }] : []),
-  ], [favoriteReportIds, hiddenReportIds]);
-  const activeFilter = (filter === 'favorites' && !favoriteReportIds.size)
-    || (filter === 'hidden' && !hiddenReportIds.size)
-    ? 'available'
-    : filter;
-  const applied = useMemo(() => filter === 'custom' ? advanced : quickFilters(activeFilter), [filter, advanced, activeFilter]);
+    { value: 'favorites' as const, label: 'Favorites' },
+    ...(hiddenReportIds.size || applied.scope === 'hidden' ? [{ value: 'hidden' as const, label: 'Hidden' }] : []),
+  ], [hiddenReportIds, applied.scope]);
   const resultsLoading = loading || (resultFilters !== undefined && (!memoryReady || resultFilters !== applied));
   const selectedQuickFilter = filters.find(item => (Object.keys(DEFAULT_DISCOVERY_FILTERS) as (keyof DiscoveryFilters)[]).every(key => quickFilters(item.value)[key] === applied[key]))?.value;
-  const hasFilters = selectedQuickFilter !== 'all';
+  const activeFilters = (Object.keys(DEFAULT_DISCOVERY_FILTERS) as (keyof DiscoveryFilters)[]).filter(key => applied[key] !== DEFAULT_DISCOVERY_FILTERS[key]);
+  const hasFilters = activeFilters.length > 0;
+  const filterLabels: Record<keyof DiscoveryFilters, string> = {
+    status: { all: 'All reports', available: 'Needs a cleanup', progress: 'Being cleaned', completed: 'Cleaned up' }[applied.status],
+    funding: applied.funding === 'funded' ? 'Has a fund' : 'Volunteer',
+    severity: `Priority: ${applied.severity[0].toUpperCase()}${applied.severity.slice(1)}`,
+    radius: `Within ${applied.radius} mi of map center`,
+    query: `Search: ${applied.query}`,
+    scope: applied.scope === 'favorites' ? 'Favorites' : 'Hidden reports',
+  };
   const rewardedOnly = applied.funding === 'funded';
   const canWiden = Boolean(onWidenArea || applied.radius);
   useEffect(() => { if (memoryReady) onDiscoveryFiltersChange?.(applied); }, [applied, onDiscoveryFiltersChange, memoryReady]);
@@ -330,11 +337,10 @@ export function ReportBrowser({
     setDraftFilters(current => ({ ...current, [key]: value }));
   }
 
-  function applyFilters(next: DiscoveryFilters, nextFilter: ReportFilter = 'custom') {
+  function applyFilters(next: DiscoveryFilters) {
     writeBrowseUrl(next, sort);
-    setAdvanced(next);
+    setApplied(next);
     setDraftFilters(next);
-    setFilter(nextFilter);
     setDisplayLimit(50);
   }
   const visibleReports = useMemo(() => {
@@ -376,7 +382,7 @@ export function ReportBrowser({
 
   useEffect(() => {
     if (listRef.current && restoringScrollRef.current === null) listRef.current.scrollTop = 0;
-  }, [filter, sort]);
+  }, [applied, sort]);
 
   useEffect(() => {
     if (memoryReady && !resultsLoading && reports.length && listRef.current && restoringScrollRef.current !== null) {
@@ -384,19 +390,26 @@ export function ReportBrowser({
     }
   }, [memoryReady, resultsLoading, reports]);
 
-  const filterPills = (<div className={`report-browser-filters ${filterToolbar ? controls.toolbarFilters : ''}`} aria-label="Filter cleanup opportunities">
-            {!selectedQuickFilter && <button aria-pressed="true" onClick={() => { setDraftFilters(applied); setFiltersOpen(true); }}>Custom filters</button>}
+  const filterPills = (<div className={controls.filterBar}>
+          <div className={`report-browser-filters ${filterToolbar ? controls.toolbarFilters : ''}`} aria-label="Filter cleanup opportunities">
             {filters.map(({ value, label }) => (
               <button
                 key={value}
                 type="button"
                 aria-pressed={selectedQuickFilter === value}
-                onClick={() => applyFilters(quickFilters(value), value)}
+                onClick={() => applyFilters(quickFilters(value))}
               >
                 {label}
               </button>
             ))}
-          </div>);
+          </div>
+          {hasFilters && <div className={controls.activeFilters} role="group" aria-label="Active filters">
+            {activeFilters.map(key => <button key={key} type="button" aria-label={`Remove ${filterLabels[key]} filter`} onClick={() => applyFilters({ ...applied, [key]: DEFAULT_DISCOVERY_FILTERS[key] })}>
+              <span>{filterLabels[key]}</span><Icon name="close" />
+            </button>)}
+            <button type="button" className={controls.clearFilters} aria-label="Clear all filters" onClick={() => applyFilters(quickFilters('all'))}>Clear all</button>
+          </div>}
+        </div>);
 
   return (
     <>
@@ -521,7 +534,7 @@ export function ReportBrowser({
                 {(closestAction || canWiden) && <div className={controls.emptyOr}>or</div>}
                 {emptyPlaceSearch}
               </div>}
-              {hasFilters && <button className={controls.emptyTextAction} onClick={() => applyFilters(quickFilters('all'), 'all')}>Clear filters</button>}
+              {hasFilters && <button className={controls.emptyTextAction} onClick={() => applyFilters(quickFilters('all'))}>Clear filters</button>}
             </section>
           )}
           {displayedReports.length < visibleReports.length && <button className="secondary-button load-more-reports" onClick={() => setDisplayLimit(value => value + 50)}>Show more reports ({displayedReports.length} of {visibleReports.length})</button>}

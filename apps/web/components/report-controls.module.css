@@ -54,6 +54,16 @@
 .toolbarFilters.toolbarFilters button[aria-pressed='true'] { background: #efedff; border-color: #b3a6e5; color: #4438bb; }
 .toolbarFilters.toolbarFilters button:focus-visible { outline: 3px solid #b3a6e5; outline-offset: 2px; }
 
+/* Presets are shortcuts; only this removable row describes applied filters. */
+.filterBar { min-width: 0; max-width: 100%; }
+.activeFilters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; min-width: 0; }
+.activeFilters.activeFilters button { display: inline-flex; align-items: center; gap: 6px; max-width: 220px; min-height: 40px; padding: 8px 10px; border: 1px solid #b3a6e5; border-radius: 12px; background: #efedff; color: #4438bb; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.activeFilters button span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.activeFilters button svg { flex: none; width: 16px; height: 16px; }
+.activeFilters.activeFilters button:hover { background: #e3ddff; }
+.activeFilters.activeFilters button:focus-visible { outline: 3px solid #b3a6e5; outline-offset: 2px; }
+.activeFilters.activeFilters .clearFilters { padding-inline: 6px; border-color: transparent; background: transparent; }
+
 /* One outer card frame contains both the report action and author footer. */
 .panel.panel.panel :global(.report-card-container) { border: 1px solid #e3dff0; border-radius: 18px; box-shadow: 0 3px 0 #eeeaf8; background: #fff; }
 .panel.panel.panel :global(.report-card-container):is(:hover,:focus-within) { border-color: #b3a6e5; box-shadow: 0 3px 0 #d8d1ee; }
@@ -66,4 +76,8 @@
 @media (max-width: 760px) {
   .toolbarFilters.toolbarFilters.toolbarFilters,
   .panel.panel.panel :global(.report-browser-filters) { display: none; }
+  :global(.website-experience.website-experience .discovery-quick-filters):has(.activeFilters) { display: block; grid-column: 1 / -1; min-width: 0; }
+  .activeFilters { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-top: 0; padding: 2px 0; }
+  .activeFilters::-webkit-scrollbar { display: none; }
+  .activeFilters.activeFilters button { flex: none; min-height: 44px; max-width: 200px; }
 }
