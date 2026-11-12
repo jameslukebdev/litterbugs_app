@@ -31,7 +31,8 @@ function websiteReward(report) {
 function websiteSummary(report, distanceText) {
   const types = (Array.isArray(report?.litter_types) ? report.litter_types : []).filter(Boolean);
   const typeSummary = types.length > 2 ? `${types.slice(0, 2).join(' · ')} +${types.length - 2}` : types.join(' · ');
-  return [distanceText, typeSummary || report?.types || 'General litter'].filter(Boolean).join(' · ');
+  const note = (Array.isArray(report?.notes_presets) ? report.notes_presets : []).find(Boolean);
+  return [distanceText, typeSummary || report?.types || 'General litter', note].filter(Boolean).join(' · ');
 }
 // Severity is a coloured dot and word, as on the website.
 const SEVERITY_DOT = { Low: colors.severityLow, Medium: colors.severityMedium, High: colors.severityHigh };

@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
 import BrandBug from './BrandBug';
@@ -16,6 +18,11 @@ export default function ReportPreviewHero({
   favoritesReady,
 }) {
   const status = reportStatePresentation(report);
+  // Website cards: a cleaned report leads with its after photo (the site's public
+  // after-photo address), falling back to the report photo when there is none.
+  const [afterFailed, setAfterFailed] = useState(false);
+  useEffect(() => { setAfterFailed(false); }, [report?.id]);
+  const showAfter = report?.cleanup_state === 'completed' && report?.id && !afterFailed;
 
   return (
     <View style={styles.hero}>
@@ -27,13 +34,24 @@ export default function ReportPreviewHero({
         onPress={() => onPress?.(report)}
         style={styles.heroPhotoButton}
       >
-        <RemotePhoto
+        {showAfter ? (
+          <ExpoImage
+            source={`https://litterbugs.app/reports/${encodeURIComponent(report.id)}/photo/after?width=640`}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={150}
+            style={styles.heroPhoto}
+            onError={() => setAfterFailed(true)}
+            accessibilityLabel={`${report?.title || 'Report'} after cleanup`}
+          />
+        ) : <RemotePhoto
           path={report?.photo_paths?.[0] ?? null}
           getUrl={getPhotoUrl}
           label={`${report?.title || 'Report'} photo`}
           style={styles.heroPhoto}
-        />
+        />}
       </TouchableOpacity>
+      {showAfter ? <View pointerEvents="none" style={styles.afterTag}><Text style={styles.afterTagText}>After cleanup</Text></View> : null}
       <View pointerEvents="none" style={[styles.badge, status.tone === 'done' && styles.badgeCleaned]}>
         {status.bug ? <BrandBug kind={status.bug} size={14} /> : null}
         {/* Website card label: short words ("Available", "In progress", "Cleaned") with the bug. */}
@@ -88,6 +106,8 @@ const styles = StyleSheet.create({
   },
   // Cleaned-up reports wear the mint fill.
   badgeCleaned: { backgroundColor: colors.doneSoft },
+  afterTag: { position: 'absolute', right: 10, bottom: 10, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 10, backgroundColor: 'rgba(41, 41, 50, 0.72)' },
+  afterTagText: { color: colors.white, fontSize: 12, fontWeight: '700' },
   badgeText: { fontSize: 12, fontFamily: fonts.heading },
   favorite: {
     position: 'absolute',
