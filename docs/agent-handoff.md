@@ -24,6 +24,17 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-11 — Codex (guest browsing clarified)
+
+- Read-only source check confirms guests already browse/search/filter the map,
+  open report details/photos and public profiles, share/get directions, and
+  favorite/hide reports locally. Guest preferences do not sync remotely.
+- Report form continuation requires auth after location selection; funding
+  and cleanup claims prompt auth. Cleanup evidence/reviews, owner management,
+  payouts/account features and member report/block actions require sign-in.
+  Previous map-first recommendation was about prominence, not removing an
+  existing browse restriction. No product changes, deployment or GitHub push.
+
 ### 2026-11-11 — Codex (explained homepage-to-map reach)
 
 - Read-only follow-up: most inspected phone homepage sessions have no later
