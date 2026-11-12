@@ -245,7 +245,7 @@ export default function ReportDetailsSheet({ state, actions }) {
           accessibilityLabel={selectedReport?.cleanup_state === 'completed' ? 'Share completed cleanup' : 'Share litter report'}
           style={[styles.reportPhotoControl, styles.reportPhotoShareControl, { top: reportControlsTop }]}
         >
-          <Ionicons name="share-outline" size={20} color={colors.ink} />
+          <Ionicons name="share-social-outline" size={20} color={colors.ink} />
         </TouchableOpacity>
       ) : null}
 
