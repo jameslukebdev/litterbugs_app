@@ -21,6 +21,7 @@ import {
 } from './lib/payoutWorkflowGate';
 import { colors, fonts } from './lib/theme';
 import BrandBug from './components/BrandBug';
+import LoadingBee from './components/LoadingBee';
 
 
 const PAYOUT_ONBOARDING_RETURN_URL = 'litterbugs://stripe-onboarding-return';
@@ -46,8 +47,9 @@ function PayoutSetupController({ navigation, route }) {
   const [statusError, setStatusError] = useState(false);
   const [waiting, setWaiting] = useState(false);
   const refreshBusy = useRef(false);
-  const [status, setStatus] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Payments already knows the status; starting from it means no loader and no jump.
+  const [status, setStatus] = useState(route?.params?.initialStatus ?? null);
+  const [loading, setLoading] = useState(!route?.params?.initialStatus);
   const [busy, setBusy] = useState(false);
   const [showBusy, setShowBusy] = useState(false);
   useEffect(() => {
@@ -199,6 +201,12 @@ function PayoutSetupController({ navigation, route }) {
     try { await finishSetup(); } catch { await refresh(); } finally { if (mounted.current) setBusy(false); }
   };
 
+  // Until the first status answer arrives, show one loader rather than the
+  // "not set up yet" pitch, which would then jump to the real state.
+  if (loading && !status && !statusError) {
+    return <View style={styles.center}><LoadingBee label="Checking your payout setup" /></View>;
+  }
+
   return (
     <>
     {connect ? (
@@ -285,7 +293,7 @@ function PayoutSetupController({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.mist },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white },
   content: { flexGrow: 1, alignItems: 'stretch', padding: 20, backgroundColor: colors.white },
   title: { marginTop: 12, color: colors.ink, fontSize: 24, lineHeight: 29, fontFamily: fonts.heading },
   text: { marginTop: 8, color: colors.muted, fontSize: 14, lineHeight: 21 },

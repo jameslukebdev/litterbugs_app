@@ -136,8 +136,13 @@ export default function ProfileScreen({ navigation, route }) {
   const { loading: cleanupsLoading, error: cleanupsError, refresh: refreshCleanups } = cleanups;
   const { data: ranking, loading: rankingLoading, error: rankingError, refresh: refreshRanking } = rankingResource;
   const { data: payoutStatus, loading: payoutStatusLoading, error: payoutStatusError, refresh: refreshPayoutStatus } = payout;
+  // Payments shows once its first loads have all answered (or failed), so the page
+  // appears in one piece.
   const contributions = useFocusedResource(useCallback(() => loadMyContributions({ userId: user?.id }), [user?.id]), { enabled: permanent && section === 'payments', cacheKey: `payments-preview:${user?.id}` });
   const contributionItems = contributions.data?.items ?? [];
+  const settled = resource => resource.hasLoaded || Boolean(resource.error);
+  const paymentsReady = settled(contributions) && settled(flags) && settled(cleanups)
+    && (!fundingEnabled || Boolean(payoutStatus) || Boolean(payoutStatusError));
   const savedDraft = useFocusedResource(useCallback(() => loadReportDraft(user.id), [user?.id]), { enabled: permanent && section === 'activity' });
   const accountBusy = signingOut || deletingAccount;
   const bottomPadding = section === 'overview' ? getBottomNavClearance(insets.bottom) + 18 : insets.bottom + 24;
@@ -345,8 +350,28 @@ export default function ProfileScreen({ navigation, route }) {
 
       {section === 'payments' ? (
         <>
-          {/* Website Payments: your contributions first, then reporter earnings, then
-              cleanup earnings with the payout settings beside them. */}
+          {/* One loader for the whole page, then everything at once: sections no longer
+              arrive one by one and push each other around. */}
+          {!paymentsReady ? <LoadingBee label="Loading payments" style={{ marginTop: 80 }} /> : <>
+          {/* Payouts first: getting paid is the thing to set up. */}
+          <Text style={styles.activityHeading}>Payouts</Text>
+          <View style={[styles.card, styles.paymentCard]}>
+            {flags.error ? <ActionRow label="Retry payout availability" icon="refresh-outline" onPress={flags.refresh} /> : fundingEnabled ? <>
+            {<StripeConnectionStatus
+              status={payoutStatus}
+              loading={payoutStatusLoading && !payoutStatus}
+              error={payoutStatusError}
+              onRetry={refreshPayoutStatus}
+            />}
+            <ActionRow
+              appearance="profile"
+              divided
+              label={payoutStatus?.payoutsEnabled ? 'Payout settings' : 'Set up payouts'}
+              icon="card-outline"
+              onPress={() => navigation.navigate('PayoutSetup', payoutStatus ? { initialStatus: payoutStatus } : undefined)}
+            />
+            </> : <Text style={{ padding: 17, color: colors.muted }}>Payout setup is currently unavailable. Your payment history is still available above.</Text>}
+          </View>
           <Text style={styles.activityHeading}>Your contributions</Text>
           <View style={[styles.card, styles.paymentCard]}>
             {contributions.error && !contributions.hasLoaded ? <LoadFailure title="Couldn’t load contributions" onRetry={contributions.refresh} />
@@ -362,23 +387,9 @@ export default function ProfileScreen({ navigation, route }) {
           <ReporterEarnings userId={user.id} onOpenReport={openReport} />
           <Text style={styles.activityHeading}>Cleanup earnings</Text>
           <View style={[styles.card, styles.paymentCard]}>
-            {flags.loading && !flags.hasLoaded ? <><View style={styles.stripeConnectionRow} /><ActionRow label="Set up cleanup payouts" icon="card-outline" onPress={() => navigation.navigate('PayoutSetup')} /></> : flags.error ? <ActionRow label="Retry payout availability" icon="refresh-outline" onPress={flags.refresh} /> : fundingEnabled ? <>
-            {<StripeConnectionStatus
-              status={payoutStatus}
-              loading={payoutStatusLoading && !payoutStatus}
-              error={payoutStatusError}
-              onRetry={refreshPayoutStatus}
-            />}
-            <ActionRow
-              appearance="profile"
-              divided
-              label={payoutStatus?.payoutsEnabled ? 'Payout settings' : 'Set up payouts'}
-              icon="card-outline"
-              onPress={() => navigation.navigate('PayoutSetup')}
-            />
-            </> : <Text style={{ padding: 17, color: colors.muted }}>Payout setup is currently unavailable. Your payment history is still available above.</Text>}
             {cleanupsError && !cleanups.hasLoaded ? <LoadFailure title="Couldn’t load earnings" onRetry={refreshCleanups} /> : cleanupsLoading && !cleanups.hasLoaded ? <LoadingBee label="Loading earnings" size={48} /> : cleanupSummary.completed.filter(attempt => attempt.is_paid).length ? cleanupSummary.completed.filter(attempt => attempt.is_paid).map((attempt, index) => <CompletedCleanupRow key={attempt.id} attempt={attempt} divided={index > 0} onPress={() => openReport(attempt.report_id)} />) : <EmptyState bug="bee" title="No cleanup earnings yet" text="Rewards from your completed paid cleanups will appear here." />}
           </View>
+          </>}
         </>
       ) : null}
 

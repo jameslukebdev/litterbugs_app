@@ -1,6 +1,5 @@
 import React, { useCallback } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import LoadingBee from './LoadingBee';
 import { LoadFailure } from './ui';
 import useFocusedResource from '../lib/useFocusedResource';
 import { formatUsd, loadReporterRewards } from '../lib/funding';
@@ -14,7 +13,7 @@ export function ReporterEarnings({ userId, onOpenReport }) {
   return <View style={{ padding: 20, backgroundColor: colors.white, borderRadius: 16, marginTop: 16 }}>
     <Text style={{ fontSize: 20, lineHeight: 25, fontFamily: fonts.heading, color: colors.ink }} accessibilityRole="header">Reporter earnings</Text>
     <Text style={{ marginTop: 8, color: colors.muted }}>Earn 5% of eligible contributions after a report you create leads to an approved, funded cleanup. This comes from the service fee; the cleaner keeps the full cleanup reward.</Text>
-    {resource.loading && !resource.hasLoaded ? <LoadingBee label="Loading reporter earnings" size={48} /> : resource.error ?
+    {resource.loading && !resource.hasLoaded ? <Text style={{ marginTop: 12, color: colors.muted }} accessibilityLabel="Loading reporter earnings">Checking your reporter earnings…</Text> : resource.error ?
       <LoadFailure title="Couldn’t load reporter earnings" onRetry={resource.refresh} /> : resource.data?.length ? resource.data.map(reward =>
         <TouchableOpacity key={reward.cleanup_attempt_id} accessibilityRole="button" onPress={() => onOpenReport(reward.report_id)} style={{ paddingVertical: 14 }}>
           <Text style={{ color: colors.ink, fontSize: 15, fontWeight: '600' }}>{reward.report?.title || 'Completed litter cleanup'}</Text>

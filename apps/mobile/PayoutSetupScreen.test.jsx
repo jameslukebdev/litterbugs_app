@@ -17,6 +17,7 @@ vi.mock('react-native', () => ({
 }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 vi.mock('./components/BrandBug', () => ({ default: () => null }));
+vi.mock('./components/LoadingBee', () => ({ default: ({ label }) => <div>{label}</div> }));
 vi.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ bottom: 0 }) }));
 vi.mock('./lib/session', () => ({ useSession: () => ({ user: { id: 'test-member' } }) }));
 vi.mock('./lib/funding', () => ({
