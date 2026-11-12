@@ -164,6 +164,7 @@ export function MapExperience({
       : 'A restricted Google Maps browser key and web map ID are required to display the map.',
   );
   const [mapTypeIndex, setMapTypeIndex] = useState(0);
+  const mapTypeIndexRef = useRef(0);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [draftCoordinates, setDraftCoordinates] = useState<Coordinates | null>(null);
   const [selectingDraftLocation, setSelectingDraftLocation] = useState(false);
@@ -200,6 +201,7 @@ export function MapExperience({
   const [toast, setToast] = useState('');
   // Bug motion: the lightning bug glows while finding you; the dragonfly drops the pin of a report you just posted.
   const [locating, setLocating] = useState(false);
+  const locatingRequest = useRef(false);
   const [justPostedReport, setJustPostedReport] = useState<MappableReport | null>(null);
   useEffect(() => {
     if (!mapReady || !justPostedReport) return;
@@ -592,7 +594,7 @@ export function MapExperience({
           center: { lat: linkedReport?.latitude ?? confirmedPin?.latitude ?? memory?.latitude ?? DEFAULT_WEB_MAP_CENTER.latitude, lng: linkedReport?.longitude ?? confirmedPin?.longitude ?? memory?.longitude ?? DEFAULT_WEB_MAP_CENTER.longitude },
           zoom: linkedReport ? Math.max(14, memory?.zoom ?? 14) : memory?.zoom ?? 12,
           mapId: googleMapsMapId,
-          mapTypeId: 'roadmap',
+          mapTypeId: MAP_TYPES[mapTypeIndexRef.current],
           disableDefaultUI: true,
           clickableIcons: false,
           gestureHandling: 'greedy',
@@ -890,6 +892,8 @@ export function MapExperience({
   }
 
   async function centerOnUser() {
+    if (locatingRequest.current) return;
+    locatingRequest.current = true;
     setClosestPreview(null);
     setLocating(true);
     try {
@@ -899,11 +903,13 @@ export function MapExperience({
       mapRef.current?.setZoom(14);
     } catch {
       setToast('Unable to find your location. Check your browser permission and try again.');
-    } finally { setLocating(false); }
+    } finally { locatingRequest.current = false; setLocating(false); }
   }
 
   function toggleMapType() {
-    const nextIndex = (mapTypeIndex + 1) % MAP_TYPES.length;
+    if (!mapRef.current) return;
+    const nextIndex = (mapTypeIndexRef.current + 1) % MAP_TYPES.length;
+    mapTypeIndexRef.current = nextIndex;
     setMapTypeIndex(nextIndex);
     mapRef.current?.setMapTypeId(MAP_TYPES[nextIndex] as google.maps.MapTypeId);
   }
@@ -1303,7 +1309,7 @@ export function MapExperience({
             </ul>
           )}
           <div className="map-action-controls">
-            <button onClick={toggleMapType} aria-label={`Change map type. Current: ${MAP_TYPES[mapTypeIndex]}`} title="Change map type"><Icon name="layers" /></button>
+            <button onClick={toggleMapType} disabled={!mapReady} aria-label={`Change map type. Current: ${MAP_TYPES[mapTypeIndex]}`} title="Change map type"><Icon name="layers" /></button>
             <button onClick={centerOnUser} disabled={locating} aria-label={locating ? 'Finding your location' : 'Center map on your location'} aria-busy={locating} title="My location">{locating ? locatingBug : <Icon name="location" />}</button>
           </div>
 

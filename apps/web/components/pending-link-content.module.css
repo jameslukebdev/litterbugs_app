@@ -1,0 +1,4 @@
+.content { position: relative; display: inline-block; }
+.content[data-pending]::after { content: ''; position: absolute; inset: auto 0 -4px; height: 2px; border-radius: 2px; background: currentColor; opacity: .4; animation: breathe 1.2s ease-in-out infinite alternate; pointer-events: none; }
+@keyframes breathe { to { opacity: .8; } }
+@media (prefers-reduced-motion: reduce) { .content[data-pending]::after { animation: none; } }

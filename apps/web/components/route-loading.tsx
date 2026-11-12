@@ -8,8 +8,8 @@ export function RouteLoading() {
     <div className={styles.content}>
       <span className="account-skeleton account-skeleton-name" aria-hidden="true" />
       <span className="account-skeleton account-skeleton-line" aria-hidden="true" />
-      <div className={styles.indicator}><LoadingFirefly active label="Opening page" /></div>
-      <p role="status">Opening page…</p>
+      <div className={styles.indicator}><LoadingFirefly active label="Please wait" /></div>
+      <p role="status" className="sr-only">Please wait</p>
     </div>
   </main></Website>;
 }

@@ -20,6 +20,9 @@ export function createPreferenceSync(adapter: {
   remote: (owner: string, seed: Seed[], operations: Operation[]) => Promise<SyncedPreferences>;
   id: () => string;
   exclusive?: <T>(owner: string, work: () => Promise<T>) => Promise<T>;
+  /** Web opts in: local saves must not wait for background network requests. */
+  nonBlockingSync?: boolean;
+  exclusiveSync?: <T>(owner: string, work: () => Promise<T>) => Promise<T>;
 }) {
   const queues = new Map<string, Promise<unknown>>();
   const retired = new Set<string>();
@@ -42,6 +45,44 @@ export function createPreferenceSync(adapter: {
     return { preferences, pending: [], imported: false, seed: kinds.flatMap(kind => preferences[kind].filter(id => uuid.test(id)).map(reportId => ({ kind, reportId }))) };
   }
   const snapshot = (state: State, offline = false): Snapshot => ({ preferences: state.preferences, pending: !!state.pending.length || !state.imported, offline });
+  const syncing = new Map<string, Promise<Snapshot>>();
+  function syncInBackground(owner: string): Promise<Snapshot> {
+    const existing = syncing.get(owner);
+    if (existing) return existing;
+    const flush = async (): Promise<Snapshot> => {
+      while (true) {
+        const state = await serialize(owner, async () => {
+          const current = await read(owner);
+          if (owner !== 'guest') await adapter.write(owner, JSON.stringify(current));
+          return current;
+        });
+        if (owner === 'guest') return { ...snapshot(state), pending: false };
+        const batch = state.pending.slice(0, 100);
+        let preferences: SyncedPreferences;
+        try {
+          preferences = await adapter.remote(owner, state.imported ? [] : state.seed, batch);
+          if (!validPreferences(preferences)) throw new Error('Invalid preferences response.');
+        } catch {
+          return serialize(owner, async () => snapshot(await read(owner), true));
+        }
+        const result = await serialize(owner, async () => {
+          // Re-read after the request: local changes made during it take priority.
+          const current = await read(owner);
+          const acknowledged = new Set(batch.map(operation => operation.id));
+          const pending = current.pending.filter(operation => !acknowledged.has(operation.id));
+          const next: State = { imported: true, seed: [], pending, preferences: pending.reduce(apply, preferences) };
+          await adapter.write(owner, JSON.stringify(next));
+          return snapshot(next);
+        });
+        if (!result.pending) return result;
+      }
+    };
+    // A separate cross-tab network lock keeps responses ordered, without locking local edits.
+    const work = (adapter.exclusiveSync ? adapter.exclusiveSync(owner, flush) : flush())
+      .finally(() => { if (syncing.get(owner) === work) syncing.delete(owner); });
+    syncing.set(owner, work);
+    return work;
+  }
   return {
     retire: (owner: string) => {
       retired.add(owner);
@@ -58,7 +99,7 @@ export function createPreferenceSync(adapter: {
       await adapter.write(owner, JSON.stringify(state));
       return snapshot(state);
     }),
-    sync: (owner: string) => serialize(owner, async () => {
+    sync: (owner: string) => adapter.nonBlockingSync ? syncInBackground(owner) : serialize(owner, async () => {
       const state = await read(owner);
       if (owner === 'guest') return { ...snapshot(state), pending: false };
       // Checkpoint the import before contacting the server; retries must use the

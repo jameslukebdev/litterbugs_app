@@ -24,6 +24,36 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (save/map delays and unchanged button labels fixed locally)
+
+- Owner requested local save/map fixes and no visible technical progress labels.
+  Cleanup CTA now retains See this cleanup with a subtle reduced-motion-aware
+  underline pulse; removed visible Opening page text from route shell too.
+  Actual browser samples keep label unchanged and show no Opening wording.
+- Found preference engine's single queue/cross-tab data lock held throughout
+  network sync (web deadline8s), blocking local Favorite/Hide writes behind it.
+  Added opt-in nonBlockingSync used by web only: network work gets a separate
+  cross-tab lock, local writes remain durable/fast, responses rebase newer
+  pending operations. Concurrent sync callers share a flush. Native/default
+  mode unchanged. No backend RPC/schema/RLS changes. Hide/Unhide re-enables
+  after device save so undo needn't wait for cloud; latest-action notices win.
+- Map style clicks now advance from a ref to avoid lost batched rapid clicks;
+  disabled before map initialization, preserve choice when map initializes.
+  Map location request has a12s wall-clock deadline (even if browser never
+  calls back), drops late results and prevents duplicate requests. Fresh
+  publication location checks in requireReportLocation are unchanged.
+- 40 targeted tests pass:26 web save/geolocation/map/link/closest tests,
+  10 preference-engine tests (including slow sync, offline retry, cross-tab
+  ordering, lost response, retirement and native defaults),4 profile-save
+  regression tests. Web/shared TypeScript, scoped ESLint and diff check pass.
+- Actual local browser: satellite toggle works; one hung fake-location request
+  shows busy icon, then control re-enables; no browser errors. Cleanup CTA
+  label stays constant through pending navigation. No real location prompt,
+  live profile/preference writes or destructive actions used in testing.
+  Local server remains running at3000 for review. No deploy/push/DB changes.
+  Preserve concurrent native/notification/preview work and earlier pending
+  map telemetry2f6c8e0 / navigationc8ce7b0 local-only changes.
+
 ### 2026-11-12 — Codex (slow cleanup navigation reproduced and improved locally)
 
 - Owner reported repeated See this cleanup taps and broader slow buttons.
