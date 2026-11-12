@@ -505,10 +505,14 @@ startingFundCard: {
   marginBottom: 24,
   padding: 16,
   borderWidth: 2,
-  borderColor: colors.yellowBorder,
+  borderColor: colors.line,
   borderRadius: 18,
-  backgroundColor: colors.yellowSoft,
+  backgroundColor: colors.white,
 },
+cleanupCardFirst: { paddingHorizontal: 22, paddingTop: 16, marginBottom: -10 },
+cleanupGiveUpLink: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+cleanupGiveUpText: { color: colors.muted, fontSize: 14 },
+cleanupGiveUpAction: { color: colors.red, fontWeight: '700' },
 
 startingFundHeading: {
   flexDirection: 'row',
@@ -878,8 +882,9 @@ reportPhotoControl: {
   position: 'absolute', zIndex: 20, minHeight: 44, borderRadius: 22,
   backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center',
   borderWidth: 1, borderColor: colors.line, shadowColor: colors.ink,
-  shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.14, shadowRadius: 5, elevation: 4,
+  shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 3, elevation: 4,
 },
+reportTopBar: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 19, backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.mist },
 reportPhotoCloseControl: { right: 32, width: 44 },
 reportPhotoHideControl: { right: 84, width: 44 },
 reportPhotoShareControl: { right: 136, width: 44 },
@@ -949,6 +954,7 @@ reportPostTitle: {
 
 reportFeedbackBelowPhoto: {
   marginHorizontal: 22,
+  marginTop: 16,
 },
 
 
@@ -1052,8 +1058,8 @@ reportChip: {
 
 
 fundingFeedbackCard: {
-  marginBottom: 18, padding: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 10,
-  borderLeftWidth: 3, borderLeftColor: colors.yellowBorder, borderRadius: 12, backgroundColor: colors.yellowSoft,
+  marginBottom: 18, padding: 14, flexDirection: 'row', alignItems: 'flex-start', gap: 10,
+  borderWidth: 1, borderColor: colors.line, borderRadius: 14, backgroundColor: colors.white,
 },
 fundingFeedbackTitle: { color: colors.yellow, fontSize: 14, lineHeight: 20, fontWeight: '600' },
 fundingFeedbackText: { marginTop: 5, color: colors.yellow, fontSize: 13, lineHeight: 19 },
@@ -1124,15 +1130,15 @@ cleanupProgressCard: {
   marginBottom: 28,
   padding: 18,
   borderWidth: 1,
-  borderColor: colors.yellowBorder,
+  borderColor: colors.line,
   borderRadius: 18,
-  backgroundColor: colors.yellowSoft,
+  backgroundColor: colors.white,
 },
+cleanupGiveUpLink: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+cleanupGiveUpText: { color: colors.muted, fontSize: 14 },
+cleanupGiveUpAction: { color: colors.red, fontWeight: '700' },
 
-cleanupCompleteStatusCard: {
-  borderColor: colors.primaryLight,
-  backgroundColor: colors.primarySoft,
-},
+cleanupCompleteStatusCard: {},
 
 cleanupProgressHeader: {
   flexDirection: 'row',
@@ -1146,19 +1152,16 @@ cleanupProgressIcon: {
   borderRadius: 23,
   alignItems: 'center',
   justifyContent: 'center',
-  backgroundColor: colors.yellowBorder,
 },
 
-cleanupCompleteStatusIcon: {
-  backgroundColor: colors.primaryBorder,
-},
+cleanupCompleteStatusIcon: {},
 
 cleanupProgressCopy: {
   flex: 1,
 },
 
 cleanupProgressTitle: {
-  color: colors.yellow,
+  color: colors.ink,
   fontSize: 18,
   fontWeight: '800',
 },
@@ -1169,7 +1172,7 @@ cleanupCompleteStatusTitle: {
 
 cleanupProgressText: {
   marginTop: 5,
-  color: colors.yellow,
+  color: colors.body,
   fontSize: 14,
   lineHeight: 20,
 },

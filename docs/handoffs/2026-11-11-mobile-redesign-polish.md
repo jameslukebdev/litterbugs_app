@@ -120,3 +120,13 @@ Branch `codex/map-first-navigation`. Nothing pushed, built for stores, or deploy
 - Android emulator (`Litterbugs_API_36`): installed the Nov 10 debug APK over the old QA build (`adb install -r -d`) and loaded Metro. Map, Reports, signed-out Profile, report sheet and filters render in the new design. Fixed the selected tab pill losing its rounded corners on Android.
 - Android map tiles are blank in the debug build: Google rejects the Maps key for the debug signing certificate (SHA-1 `5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25`, package `com.litterbugs.app.qa`). Pins and cards still work. Needs that fingerprint added to the key in Google Cloud.
 - Not checked on Android: anything signed in (the emulator is signed out), the report wizard, payments.
+
+## Live test pass and claim-flow clarity (Nov 11, night)
+
+- The QA simulator app uses the live database. A test report "TEST - please ignore (app check)" was filed and claimed under Grant's account near E King St, Boone. It must be given back and deleted when testing ends.
+- Verified live: report wizard, "Report posted" banner, unread dot and bell count, one-step claim (agreement saved).
+- Removed the "Report saved" pop-up that doubled the finish banner; edits now show "Report updated".
+- Cleaner's card reworded and moved to the top of the report sheet: "You're cleaning this one", "I cleaned it – add after photos", "Get directions", "Can't do it? Give this cleanup back". Pop-ups reworded to match.
+- Report sheet: solid top bar behind the heart/hide/close buttons; space between Get directions and the funding notice; notices and the claim sheet are white with a line border instead of tinted.
+- Owner asked for a "How long did it take? (hrs)" field on Complete cleanup. Not built: it needs a new database column and a change to the submission function, which is a live backend change.
+- Still open: old pop-up alerts for notifications ("Report claimed", "Better report photos needed") duplicate the Updates inbox; report wizard still has tinted chips and the yellow fund box.

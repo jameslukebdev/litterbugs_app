@@ -30,7 +30,7 @@ export function promptCleanupNavigation(report) {
 
   if (Platform.OS === 'ios') {
     Alert.alert(
-      'Navigate to Cleanup',
+      'Get directions',
       CLEANUP_NAVIGATION_SAFETY_REMINDER,
       [
         { text: 'Cancel', style: 'cancel' },
@@ -48,7 +48,7 @@ export function promptCleanupNavigation(report) {
   }
 
   Alert.alert(
-    'Navigate to Cleanup',
+    'Get directions',
     CLEANUP_NAVIGATION_SAFETY_REMINDER,
     [
       { text: 'Cancel', style: 'cancel' },

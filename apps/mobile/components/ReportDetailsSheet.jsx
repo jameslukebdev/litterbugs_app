@@ -82,6 +82,139 @@ export default function ReportDetailsSheet({ state, actions }) {
     const timer = setTimeout(() => setShowClaimSpinner(true), 400);
     return () => clearTimeout(timer);
   }, [cleanupActionBusy, detailsOpen]);
+  // The cleanup status card. For the member doing the cleanup it is the next step,
+  // so it sits right under the title; for everyone else it stays lower down.
+  const cleanupCard = cleanupStatus && selectedReport?.cleanup_state !== 'completed' ? (
+            <View
+              style={[
+                styles.cleanupProgressCard,
+                cleanupStatus.tone === 'completed' && styles.cleanupCompleteStatusCard,
+              ]}
+            >
+              <View style={styles.cleanupProgressHeader}>
+                <View
+                  style={[
+                    styles.cleanupProgressIcon,
+                    cleanupStatus.tone === 'completed' && styles.cleanupCompleteStatusIcon,
+                  ]}
+                >
+                  {selectedReport?.cleanup_state === 'claimed' ? <BrandBug kind="caterpillar" size={34} /> : (
+                    <Ionicons
+                      name={cleanupStatus.icon}
+                      size={24}
+                      color={cleanupStatus.tone === 'completed' ? colors.primary : colors.yellow}
+                    />
+                  )}
+                </View>
+                <View style={styles.cleanupProgressCopy}>
+                  <Text
+                    style={[
+                      styles.cleanupProgressTitle,
+                      cleanupStatus.tone === 'completed' && styles.cleanupCompleteStatusTitle,
+                    ]}
+                  >
+                    {selectedReport?.cleanup_state === 'claimed' && currentUserIsCleaner ? 'You’re cleaning this one' : cleanupStatus.title}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.cleanupProgressText,
+                      cleanupStatus.tone === 'completed' && styles.cleanupCompleteStatusText,
+                    ]}
+                  >
+                    {selectedReport?.cleanup_state === 'claimed'
+                      && currentUserIsCleaner
+                      && selectedCleanupAttempt?.claim_expires_at
+                      ? `Clean it and send your after photos by ${new Date(selectedCleanupAttempt.claim_expires_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}.`
+                      : cleanupStatus.description}
+                  </Text>
+                </View>
+              </View>
+
+              {selectedReport?.cleanup_state === 'claimed' && cleanupAttemptLoading ? (
+                <View style={styles.cleanupProgressLoading}>
+                  <ActivityIndicator color={colors.yellow} />
+                  <Text style={styles.cleanupProgressLoadingText}>Checking cleanup details…</Text>
+                </View>
+              ) : cleanupStatus.showClaimActions ? (
+                <View style={styles.cleanupActionStack}>
+                  {/* One clear next step first; directions second; giving up is a quiet link. */}
+                  <TouchableOpacity
+                    style={[styles.cleanupActionButton, styles.cleanupNavigateButton]}
+                    onPress={openCleanupSubmission}
+                    disabled={cleanupActionBusy}
+                    accessibilityRole="button"
+                    accessibilityLabel="I cleaned it, add after photos"
+                  >
+                    <Ionicons name="camera-outline" size={20} color={colors.white} />
+                    <Text style={styles.cleanupPrimaryActionText}>I cleaned it – add after photos</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.cleanupActionButton, styles.cleanupCompleteButton]}
+                    onPress={openCleanupNavigation}
+                    disabled={cleanupActionBusy}
+                    accessibilityRole="button"
+                    accessibilityLabel="Get directions to this cleanup"
+                  >
+                    <Ionicons name="navigate-outline" size={20} color={colors.primary} />
+                    <Text style={styles.cleanupSecondaryActionText}>Get directions</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.cleanupGiveUpLink}
+                    onPress={confirmCleanupRelease}
+                    disabled={cleanupActionBusy}
+                    accessibilityRole="button"
+                    accessibilityLabel="Can’t do it? Give this cleanup back"
+                  >
+                    {cleanupActionBusy ? (
+                      <LoadingButtonContent label="Giving it back…" color={colors.red} />
+                    ) : (
+                      <Text style={styles.cleanupGiveUpText}>Can’t do it? <Text style={styles.cleanupGiveUpAction}>Give this cleanup back</Text></Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              ) : cleanupStatus.showSubmissionAction ? (
+                <View style={styles.cleanupActionStack}>
+                  <TouchableOpacity
+                    style={[styles.cleanupActionButton, styles.cleanupFeedbackButton]}
+                    onPress={openCleanupFeedback}
+                    disabled={cleanupActionBusy}
+                    accessibilityRole="button"
+                    accessibilityLabel="Review Cleanup Feedback"
+                  >
+                    <Ionicons name="document-text-outline" size={20} color={colors.yellow} />
+                    <Text style={styles.cleanupFeedbackActionText}>Review Feedback</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.cleanupActionButton, styles.cleanupCompleteButton]}
+                    onPress={openCleanupSubmission}
+                    disabled={cleanupActionBusy}
+                    accessibilityRole="button"
+                    accessibilityLabel="Update Submission"
+                  >
+                    <Ionicons name="camera-outline" size={20} color={colors.primary} />
+                    <Text style={styles.cleanupSecondaryActionText}>Update Submission</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : cleanupStatus.showReviewAction ? (
+                <View style={styles.cleanupActionStack}>
+                  <TouchableOpacity
+                    style={[styles.cleanupActionButton, styles.cleanupCompleteButton]}
+                    onPress={openCleanupReview}
+                    disabled={cleanupActionBusy}
+                    accessibilityRole="button"
+                    accessibilityLabel="Review Cleanup"
+                  >
+                    <Ionicons name="images-outline" size={20} color={colors.primary} />
+                    <Text style={styles.cleanupSecondaryActionText}>Review Cleanup</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+            </View>
+  ) : null;
+  const cleanupCardFirst = selectedReport?.cleanup_state === 'claimed' && currentUserIsCleaner;
+
   return (<Modal
   visible={detailsOpen}
   animationType="fade"
@@ -98,6 +231,8 @@ export default function ReportDetailsSheet({ state, actions }) {
   <View style={styles.modalBackdrop}>
     <SlideUp open={Boolean(detailsOpen)} style={styles.reportSheet} distance={80}>
 
+      {/* A solid bar behind the top buttons, so the report scrolls under it instead of through them. */}
+      <View pointerEvents="none" style={[styles.reportTopBar, { height: reportControlsTop + 54 }]} />
       <TouchableOpacity onPress={closeReportDetails} accessibilityRole="button" accessibilityLabel="Close report" style={[styles.reportPhotoControl, styles.reportPhotoCloseControl, { top: reportControlsTop }]}><Ionicons name="close" size={20} color={colors.ink} /></TouchableOpacity>
       {selectedReportIsShareable ? (
         <TouchableOpacity
@@ -242,12 +377,14 @@ export default function ReportDetailsSheet({ state, actions }) {
           );
         })()}
 
+        {cleanupCardFirst ? <View style={styles.cleanupCardFirst}>{cleanupCard}</View> : null}
+
         {selectedReport?.cleanup_state !== 'completed' ? (
           <ReportPhotoGallery report={selectedReport} urls={reportPhotoUrls} loading={photosLoading} width={reportHeroWidth} />
         ) : null}
 
         {/* Website report sheet: directions sit right under the photos. */}
-        {selectedReport?.cleanup_state !== 'completed' && !selectedReport?.cancelled_at && !selectedReport?.expired_at ? (
+        {selectedReport?.cleanup_state !== 'completed' && !selectedReport?.cancelled_at && !selectedReport?.expired_at && !(selectedReport?.cleanup_state === 'claimed' && currentUserIsCleaner) ? (
           <TouchableOpacity style={styles.reportDirectionsButton} onPress={openCleanupNavigation} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Get directions to this report">
             <Ionicons name="navigate-outline" size={18} color={colors.primaryDark} />
             <Text style={styles.reportDirectionsText}>Get directions</Text>
@@ -368,135 +505,7 @@ export default function ReportDetailsSheet({ state, actions }) {
           })()}
 
 
-          {cleanupStatus && selectedReport?.cleanup_state !== 'completed' && (
-            <View
-              style={[
-                styles.cleanupProgressCard,
-                cleanupStatus.tone === 'completed' && styles.cleanupCompleteStatusCard,
-              ]}
-            >
-              <View style={styles.cleanupProgressHeader}>
-                <View
-                  style={[
-                    styles.cleanupProgressIcon,
-                    cleanupStatus.tone === 'completed' && styles.cleanupCompleteStatusIcon,
-                  ]}
-                >
-                  <Ionicons
-                    name={cleanupStatus.icon}
-                    size={24}
-                    color={cleanupStatus.tone === 'completed' ? colors.primary : colors.yellow}
-                  />
-                </View>
-                <View style={styles.cleanupProgressCopy}>
-                  <Text
-                    style={[
-                      styles.cleanupProgressTitle,
-                      cleanupStatus.tone === 'completed' && styles.cleanupCompleteStatusTitle,
-                    ]}
-                  >
-                    {cleanupStatus.title}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.cleanupProgressText,
-                      cleanupStatus.tone === 'completed' && styles.cleanupCompleteStatusText,
-                    ]}
-                  >
-                    {selectedReport?.cleanup_state === 'claimed'
-                      && currentUserIsCleaner
-                      && selectedCleanupAttempt?.claim_expires_at
-                      ? `Complete by ${new Date(selectedCleanupAttempt.claim_expires_at).toLocaleString()}.`
-                      : cleanupStatus.description}
-                  </Text>
-                </View>
-              </View>
-
-              {selectedReport?.cleanup_state === 'claimed' && cleanupAttemptLoading ? (
-                <View style={styles.cleanupProgressLoading}>
-                  <ActivityIndicator color={colors.yellow} />
-                  <Text style={styles.cleanupProgressLoadingText}>Checking cleanup details…</Text>
-                </View>
-              ) : cleanupStatus.showClaimActions ? (
-                <View style={styles.cleanupActionStack}>
-                  <TouchableOpacity
-                    style={[styles.cleanupActionButton, styles.cleanupNavigateButton]}
-                    onPress={openCleanupNavigation}
-                    disabled={cleanupActionBusy}
-                    accessibilityRole="button"
-                    accessibilityLabel="Navigate to Cleanup"
-                  >
-                    <Ionicons name="navigate-outline" size={20} color={colors.white} />
-                    <Text style={styles.cleanupPrimaryActionText}>Navigate to Cleanup</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.cleanupActionButton, styles.cleanupCompleteButton]}
-                    onPress={openCleanupSubmission}
-                    disabled={cleanupActionBusy}
-                    accessibilityRole="button"
-                    accessibilityLabel="Complete Cleanup"
-                  >
-                    <Ionicons name="checkmark-circle-outline" size={20} color={colors.primary} />
-                    <Text style={styles.cleanupSecondaryActionText}>Complete Cleanup</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.cleanupActionButton, styles.cleanupReleaseButton]}
-                    onPress={confirmCleanupRelease}
-                    disabled={cleanupActionBusy}
-                    accessibilityRole="button"
-                    accessibilityLabel="Release Cleanup"
-                  >
-                    {cleanupActionBusy ? (
-                      <LoadingButtonContent label="Releasing…" color={colors.red} />
-                    ) : (
-                      <>
-                        <Ionicons name="return-down-back-outline" size={20} color={colors.red} />
-                        <Text style={styles.cleanupReleaseActionText}>Release Cleanup</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              ) : cleanupStatus.showSubmissionAction ? (
-                <View style={styles.cleanupActionStack}>
-                  <TouchableOpacity
-                    style={[styles.cleanupActionButton, styles.cleanupFeedbackButton]}
-                    onPress={openCleanupFeedback}
-                    disabled={cleanupActionBusy}
-                    accessibilityRole="button"
-                    accessibilityLabel="Review Cleanup Feedback"
-                  >
-                    <Ionicons name="document-text-outline" size={20} color={colors.yellow} />
-                    <Text style={styles.cleanupFeedbackActionText}>Review Feedback</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.cleanupActionButton, styles.cleanupCompleteButton]}
-                    onPress={openCleanupSubmission}
-                    disabled={cleanupActionBusy}
-                    accessibilityRole="button"
-                    accessibilityLabel="Update Submission"
-                  >
-                    <Ionicons name="camera-outline" size={20} color={colors.primary} />
-                    <Text style={styles.cleanupSecondaryActionText}>Update Submission</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : cleanupStatus.showReviewAction ? (
-                <View style={styles.cleanupActionStack}>
-                  <TouchableOpacity
-                    style={[styles.cleanupActionButton, styles.cleanupCompleteButton]}
-                    onPress={openCleanupReview}
-                    disabled={cleanupActionBusy}
-                    accessibilityRole="button"
-                    accessibilityLabel="Review Cleanup"
-                  >
-                    <Ionicons name="images-outline" size={20} color={colors.primary} />
-                    <Text style={styles.cleanupSecondaryActionText}>Review Cleanup</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : null}
-            </View>
-          )}
+          {cleanupCardFirst ? null : cleanupCard}
 
           {userOwnsSelectedReport && (
             selectedReport?.funding_locked_at || !canEditOrDeleteSelectedReport

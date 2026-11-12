@@ -300,12 +300,12 @@ export default function useCleanupFlow(screen) {
 
   const confirmCleanupRelease = () => {
     Alert.alert(
-      'Release this cleanup?',
-      'This report will become available for another volunteer.',
+      'Give this cleanup back?',
+      'You won’t be cleaning it, and another volunteer can take it.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Release Cleanup',
+          text: 'Give it back',
           style: 'destructive',
           onPress: executeCleanupRelease,
         },
