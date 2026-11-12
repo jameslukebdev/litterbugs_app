@@ -326,7 +326,7 @@ export default function ReportDetailsSheet({ state, actions }) {
           return (
             <View style={[styles.reportPostHeader, styles.websiteReportHeader, cleanupState === 'completed' && { borderBottomWidth: 0, paddingBottom: 4 }]}>
               <Text style={[styles.reportPostTitle, styles.websiteReportTitle]} accessibilityRole="header">{selectedReport?.title || 'Litter Report'}</Text>
-              <View style={styles.websiteReportState}>
+              <View style={[styles.websiteReportState, !closed && cleanupState === 'completed' && styles.cleanedUpPill]}>
                 {!closed && state.bug ? <BrandBug kind={state.bug} size={18} /> : null}
                 <Text style={[styles.websiteReportStateText, { color: closed ? colors.muted : state.ink }]}>{statusText}</Text>
               </View>

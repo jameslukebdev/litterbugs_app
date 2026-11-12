@@ -112,12 +112,12 @@ export default function CompletedCleanupStory({
 
       {canSwitchPhotos ? (
         <View style={styles.sideSwitch} accessibilityRole="tablist" accessibilityLabel="Choose photos">
-          {[['after', 'After cleanup', 'flower', colors.ink], ['before', 'Before', 'ladybug', colors.ink]].map(([side, label, bug, ink]) => {
+          {[['after', 'After cleanup', 'flower', colors.done], ['before', 'Before', 'ladybug', colors.ink]].map(([side, label, bug, ink]) => {
             const selected = photoSide === side;
             return (
               <TouchableOpacity
                 key={side}
-                style={[styles.sideButton, selected && styles.sideButtonSelected]}
+                style={[styles.sideButton, selected && styles.sideButtonSelected, selected && side === 'after' && styles.sideButtonCleaned]}
                 onPress={() => { if (!selected) hapticSelect(); setPhotoSide(side); }}
                 activeOpacity={0.8}
                 accessibilityRole="tab"
@@ -161,10 +161,7 @@ export default function CompletedCleanupStory({
 
       {/* About the cleanup: the cleaner's own words first, then the numbers as one stat row. */}
       <View style={styles.aboutCard}>
-        <View style={styles.aboutHeading}>
-          <BrandBug kind="flower" size={20} />
-          <Text style={styles.aboutTitle}>About the cleanup</Text>
-        </View>
+        <Text style={styles.aboutTitle}>About the cleanup</Text>
         <TouchableOpacity
           style={styles.cleanerRow}
           onPress={onCleanerPress}
@@ -232,6 +229,7 @@ const styles = StyleSheet.create({
   sideSwitch: { flexDirection: 'row', gap: 6, padding: 4, borderRadius: 16, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
   sideButton: { flex: 1, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: 12, borderWidth: 2, borderColor: 'transparent' },
   sideButtonSelected: { borderColor: colors.primary },
+  sideButtonCleaned: { borderColor: colors.doneBorder, backgroundColor: colors.doneSoft },
   sideButtonText: { color: colors.body, fontSize: 15, fontWeight: '700' },
   sectionTitle: { color: colors.ink, fontSize: 17, fontFamily: fonts.heading },
   photoScroll: {

@@ -34,7 +34,7 @@ export default function ReportPreviewHero({
           style={styles.heroPhoto}
         />
       </TouchableOpacity>
-      <View pointerEvents="none" style={styles.badge}>
+      <View pointerEvents="none" style={[styles.badge, status.tone === 'done' && styles.badgeCleaned]}>
         {status.bug ? <BrandBug kind={status.bug} size={14} /> : null}
         {/* Website card label: short words ("Available", "In progress", "Cleaned") with the bug. */}
         <Text style={[styles.badgeText, { color: status.ink }]}>{status.tone === 'open' ? 'Available' : status.tone === 'busy' ? 'In progress' : status.tone === 'done' ? 'Cleaned' : status.label}</Text>
@@ -86,6 +86,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     boxShadow: '0 2px 6px rgba(42, 34, 90, 0.15)',
   },
+  // Cleaned-up reports wear the mint fill.
+  badgeCleaned: { backgroundColor: colors.doneSoft },
   badgeText: { fontSize: 12, fontFamily: fonts.heading },
   favorite: {
     position: 'absolute',
