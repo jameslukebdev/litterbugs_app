@@ -63,6 +63,11 @@
 .activeFilters.activeFilters button:hover { background: #e3ddff; }
 .activeFilters.activeFilters button:focus-visible { outline: 3px solid #b3a6e5; outline-offset: 2px; }
 .activeFilters.activeFilters .clearFilters { padding-inline: 6px; border-color: transparent; background: transparent; }
+.presetRemove { display: inline-block; width: 14px; height: 14px; margin-left: 6px; vertical-align: -2px; }
+@media (min-width: 761px) {
+  .activeFilters[data-inline-only='true'],
+  .activeFilters.activeFilters .coveredByPreset { display: none; }
+}
 
 /* One outer card frame contains both the report action and author footer. */
 .panel.panel.panel :global(.report-card-container) { border: 1px solid #e3dff0; border-radius: 18px; box-shadow: 0 3px 0 #eeeaf8; background: #fff; }

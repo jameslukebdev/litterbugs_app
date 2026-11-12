@@ -24,6 +24,26 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (single selected filter control and quieter cleanup cards, local)
+
+- Refero research: visitors.now/shadcn style references, LinkedIn jobs filters
+  (0ed16707) and [untitled] toggles (7c614cd9). Existing Litterbugs white/purple
+  tokens remain the visual lock; adopted selected controls in place, rather
+  than repeating their labels in another row.
+- Desktop selected presets now include an X; active chips below omit filters
+  already represented above. Favorites/Hidden toggle independently of status
+  and advanced choices; status presets preserve unrelated saved/advanced
+  filters. Phone layouts retain the complete removable chip row.
+- Removed “After cleanup” photo badge from both ReportBrowser and public
+  ReportCards. After-photo ordering and cleaned status remain unchanged.
+- 57 focused tests, scoped ESLint, TypeScript and CSS compilation pass. CUA
+  checks: one visible Favorites control at 1280px and 390px, toggle removal,
+  mixed priority/Favorites, and 9 completed cards with after photos and no
+  badge. Browser errors empty; viewport reset, local preview kept open.
+- No deployment, push, production or database changes. Used an isolated Git
+  index to commit only this task; concurrent staged native/migration work and
+  other handoff edits preserved.
+
 ### 2026-11-12 — Codex (website filter state and recovery fixed locally)
 
 - Favorites (1) was a saved-count shortcut, not an active-filter indicator;

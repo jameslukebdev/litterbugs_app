@@ -163,7 +163,6 @@ function ReportThumbnail({ report, priority, retry, index, onError }: { report: 
         }}
       />
       <span className="report-result-workflow" data-tone={reportWorkflowTone(report)}>{workflowStatus(report)}</span>
-      {current.after && <span className="report-result-photo-count">After cleanup</span>}
       {count > 1 && (
         <span className="report-result-dots" aria-hidden="true">
           {sources.slice(0, 5).map((source, dot) => <i key={source.src} data-active={dot === Math.min(position, 4) || undefined} />)}
@@ -306,8 +305,17 @@ export function ReportBrowser({
     ...(hiddenReportIds.size || applied.scope === 'hidden' ? [{ value: 'hidden' as const, label: 'Hidden' }] : []),
   ], [hiddenReportIds, applied.scope]);
   const resultsLoading = loading || (resultFilters !== undefined && (!memoryReady || resultFilters !== applied));
-  const selectedQuickFilter = filters.find(item => (Object.keys(DEFAULT_DISCOVERY_FILTERS) as (keyof DiscoveryFilters)[]).every(key => quickFilters(item.value)[key] === applied[key]))?.value;
   const activeFilters = (Object.keys(DEFAULT_DISCOVERY_FILTERS) as (keyof DiscoveryFilters)[]).filter(key => applied[key] !== DEFAULT_DISCOVERY_FILTERS[key]);
+  const selectedQuickFilter = FILTERS.find(item => {
+    const preset = quickFilters(item.value);
+    return preset.status === applied.status && preset.funding === applied.funding
+      && (item.value !== 'all' || !activeFilters.length);
+  })?.value;
+  // Desktop presets carry their own selected/removable state. Phones hide the
+  // preset row, so their active-filter row still contains every applied choice.
+  const inlineFilterKeys = new Set<keyof DiscoveryFilters>(selectedQuickFilter ? ['status', 'funding'] : []);
+  if (applied.scope !== 'all') inlineFilterKeys.add('scope');
+  const onlyInlineFilters = activeFilters.every(key => inlineFilterKeys.has(key));
   const hasFilters = activeFilters.length > 0;
   const filterLabels: Record<keyof DiscoveryFilters, string> = {
     status: { all: 'All reports', available: 'Needs a cleanup', progress: 'Being cleaned', completed: 'Cleaned up' }[applied.status],
@@ -392,19 +400,29 @@ export function ReportBrowser({
 
   const filterPills = (<div className={controls.filterBar}>
           <div className={`report-browser-filters ${filterToolbar ? controls.toolbarFilters : ''}`} aria-label="Filter cleanup opportunities">
-            {filters.map(({ value, label }) => (
+            {filters.map(({ value, label }) => {
+              const savedScope = value === 'favorites' || value === 'hidden';
+              const selected = savedScope ? applied.scope === value : selectedQuickFilter === value;
+              const removable = selected && value !== 'all';
+              return (
               <button
                 key={value}
                 type="button"
-                aria-pressed={selectedQuickFilter === value}
-                onClick={() => applyFilters(quickFilters(value))}
+                aria-pressed={selected}
+                title={removable ? `Remove ${label} filter` : undefined}
+                onClick={() => {
+                  if (value === 'all') { applyFilters(quickFilters('all')); return; }
+                  if (savedScope) { applyFilters({ ...applied, scope: selected ? 'all' : value }); return; }
+                  const preset = quickFilters(value);
+                  applyFilters({ ...applied, status: removable ? 'all' : preset.status, funding: removable ? 'all' : preset.funding });
+                }}
               >
-                {label}
+                {label}{removable && <Icon name="close" className={controls.presetRemove} />}
               </button>
-            ))}
+            ); })}
           </div>
-          {hasFilters && <div className={controls.activeFilters} role="group" aria-label="Active filters">
-            {activeFilters.map(key => <button key={key} type="button" aria-label={`Remove ${filterLabels[key]} filter`} onClick={() => applyFilters({ ...applied, [key]: DEFAULT_DISCOVERY_FILTERS[key] })}>
+          {hasFilters && <div className={controls.activeFilters} data-inline-only={onlyInlineFilters || undefined} role="group" aria-label="Active filters">
+            {activeFilters.map(key => <button key={key} type="button" className={inlineFilterKeys.has(key) ? controls.coveredByPreset : undefined} aria-label={`Remove ${filterLabels[key]} filter`} onClick={() => applyFilters({ ...applied, [key]: DEFAULT_DISCOVERY_FILTERS[key] })}>
               <span>{filterLabels[key]}</span><Icon name="close" />
             </button>)}
             <button type="button" className={controls.clearFilters} aria-label="Clear all filters" onClick={() => applyFilters(quickFilters('all'))}>Clear all</button>

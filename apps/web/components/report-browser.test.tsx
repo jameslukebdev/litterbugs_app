@@ -484,3 +484,33 @@ it('sends the same filtered reports to the map as it renders in the list', async
   await waitFor(() => expect(onVisibleReportsChange).toHaveBeenLastCalledWith([report, other]));
   expect(screen.getByText('Other report')).toBeTruthy();
 });
+
+it('uses Favorites as a removable inline toggle while preserving other filters', async () => {
+  window.history.replaceState(null, '', '/map?browse=1&status=completed&severity=high');
+  const onDiscoveryFiltersChange = vi.fn();
+  render(<ReportBrowser reports={[]} open onToggle={vi.fn()} onSelect={vi.fn()} onDiscoveryFiltersChange={onDiscoveryFiltersChange} />);
+  await screen.findByRole('button', { name: 'Remove Priority: High filter' });
+  const favorites = screen.getByRole('button', { name: 'Favorites' });
+  fireEvent.click(favorites);
+  expect(favorites.getAttribute('aria-pressed')).toBe('true');
+  expect(favorites.getAttribute('title')).toBe('Remove Favorites filter');
+  expect(favorites.querySelector('svg')).toBeTruthy();
+  expect(new URLSearchParams(window.location.search).get('status')).toBe('completed');
+  expect(new URLSearchParams(window.location.search).get('severity')).toBe('high');
+  fireEvent.click(favorites);
+  await waitFor(() => expect(onDiscoveryFiltersChange).toHaveBeenLastCalledWith({ ...DEFAULT_DISCOVERY_FILTERS, status: 'completed', severity: 'high' }));
+  expect(favorites.getAttribute('aria-pressed')).toBe('false');
+});
+
+it('clears an inline status preset without losing Favorites or advanced choices', async () => {
+  window.history.replaceState(null, '', '/map?browse=1&status=completed&scope=favorites&severity=high');
+  const onDiscoveryFiltersChange = vi.fn();
+  render(<ReportBrowser reports={[]} open onToggle={vi.fn()} onSelect={vi.fn()} onDiscoveryFiltersChange={onDiscoveryFiltersChange} />);
+  await screen.findByRole('button', { name: 'Remove Priority: High filter' });
+  const completed = screen.getByRole('button', { name: 'Completed' });
+  expect(completed.getAttribute('aria-pressed')).toBe('true');
+  expect(completed.querySelector('svg')).toBeTruthy();
+  fireEvent.click(completed);
+  await waitFor(() => expect(onDiscoveryFiltersChange).toHaveBeenLastCalledWith({ ...DEFAULT_DISCOVERY_FILTERS, scope: 'favorites', severity: 'high' }));
+  expect(screen.getByRole('button', { name: 'Favorites' }).getAttribute('aria-pressed')).toBe('true');
+});

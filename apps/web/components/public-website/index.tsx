@@ -171,7 +171,6 @@ export function ReportCards({
               photo={<span className={`report-result-photo${photos.length ? '' : ' report-result-photo-empty'}`}>
                 {photos.length ? photos.map((item, slide) => <span className="card-slide" data-active={slide === 0 || undefined} key={item.src}>
                   <PublicPhoto src={item.src} alt="" width={600} height={400} eager={slide === 0 && showLocation && index < 3} />
-                  {item.after && photos.length > 1 && <span className="report-result-photo-count">After cleanup</span>}
                 </span>) : <span><FiImage aria-hidden="true" />No photo</span>}
                 <span className="report-result-workflow" data-tone={report.state === 'completed' ? 'completed' : report.state === 'available' ? 'available' : report.state === 'expired' ? 'expired' : 'active'}>{status.short}</span>
                 {photos.length > 1 && <span className="report-result-dots" aria-hidden="true">{photos.slice(0, 5).map((item, dot) => <i key={item.src} data-active={dot === 0 || undefined} />)}</span>}
