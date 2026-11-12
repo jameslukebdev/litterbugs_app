@@ -147,3 +147,5 @@ Branch `codex/map-first-navigation`. Nothing pushed, built for stores, or deploy
 - Cards: funded cleanups show gold "Pays $X" with the bee, in the map preview and the Reports list (`colors.gold`).
 - Report sheet toolbar matches the website: "Back to map" on the left; heart, share, hide as plain icons on the right. Photo counter top right, "View full photo" bottom right, locate icon on Get directions.
 - Not seen in the simulator: a card with a fund (gold line), hours on a cleaned report (no cleanup has hours yet), the cleaner's pinned bar.
+
+- Cleaned reports now lead with the title and state (website order): title, After/Before switch, photos, then "About the cleanup" with "Cleaned by" inside. The "Original litter report" divider and the separate "Cleanup complete" banner are gone. The time column always shows (dash when not recorded).

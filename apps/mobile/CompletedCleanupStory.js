@@ -109,33 +109,6 @@ export default function CompletedCleanupStory({
 
   return (
     <View style={styles.story}>
-      {/* Website completed cleanup: the flower labels the finished state; no tinted banner. */}
-      <View style={styles.completionBanner}>
-        <BrandBug kind="flower" size={26} />
-        <Text style={styles.completionTitle} accessibilityRole="header">Cleanup complete</Text>
-      </View>
-
-      <TouchableOpacity
-        style={styles.cleanerRow}
-        onPress={onCleanerPress}
-        disabled={!impact.cleaner?.id || !onCleanerPress}
-        activeOpacity={0.72}
-        accessibilityRole={impact.cleaner?.id && onCleanerPress ? 'button' : undefined}
-        accessibilityLabel={`Cleaned by ${cleanerName}`}
-      >
-        <ProfileAvatar profile={impact.cleaner} size={52} />
-        <View style={styles.cleanerCopy}>
-          <Text style={styles.cleanerLabel}>Cleaned by</Text>
-          <Text style={styles.cleanerName}>{cleanerName}</Text>
-          <CompactRankBadge userId={impact.cleaner?.id} appearance="plain" />
-          {impact.cleaner?.username ? (
-            <Text style={styles.cleanerUsername}>@{impact.cleaner.username}</Text>
-          ) : null}
-        </View>
-        {impact.cleaner?.id && onCleanerPress ? (
-          <Ionicons name="chevron-forward" size={21} color={colors.muted} />
-        ) : null}
-      </TouchableOpacity>
 
       {canSwitchPhotos ? (
         <View style={styles.sideSwitch} accessibilityRole="tablist" accessibilityLabel="Choose photos">
@@ -189,10 +162,30 @@ export default function CompletedCleanupStory({
       {/* About the cleanup: the cleaner's own words first, then the numbers as one stat row. */}
       <View style={styles.aboutCard}>
         <Text style={styles.aboutTitle}>About the cleanup</Text>
+        <TouchableOpacity
+          style={styles.cleanerRow}
+          onPress={onCleanerPress}
+          disabled={!impact.cleaner?.id || !onCleanerPress}
+          activeOpacity={0.72}
+          accessibilityRole={impact.cleaner?.id && onCleanerPress ? 'button' : undefined}
+          accessibilityLabel={`Cleaned by ${cleanerName}`}
+        >
+          <ProfileAvatar profile={impact.cleaner} size={52} />
+          <View style={styles.cleanerCopy}>
+            <Text style={styles.cleanerLabel}>Cleaned by</Text>
+            <Text style={styles.cleanerName}>{cleanerName}</Text>
+            <CompactRankBadge userId={impact.cleaner?.id} appearance="plain" />
+            {impact.cleaner?.username ? (
+              <Text style={styles.cleanerUsername}>@{impact.cleaner.username}</Text>
+            ) : null}
+          </View>
+          {impact.cleaner?.id && onCleanerPress ? (
+            <Ionicons name="chevron-forward" size={21} color={colors.muted} />
+          ) : null}
+        </TouchableOpacity>
         <Text style={styles.cleanupDateText}>Cleaned {formatCleanupDate(impact.attempt.completed_at)}</Text>
         {impact.submission.description ? (
           <View style={styles.commentRow}>
-            <ProfileAvatar profile={impact.cleaner} size={30} />
             <Text style={styles.descriptionText}>“{impact.submission.description}”</Text>
           </View>
         ) : null}
@@ -213,10 +206,10 @@ export default function CompletedCleanupStory({
 }
 
 const styles = StyleSheet.create({
-  story: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12, gap: 16, backgroundColor: colors.white },
+  story: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, gap: 14, backgroundColor: colors.white },
   completionBanner: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingRight: 104 },
   completionTitle: { flexShrink: 1, color: colors.done, fontSize: 22, lineHeight: 27, fontFamily: fonts.heading },
-  cleanerRow: { minHeight: 62, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 16, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
+  cleanerRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center' },
   cleanerCopy: {
     flex: 1,
     marginLeft: 12,
@@ -232,7 +225,7 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 13,
   },
-  cleanupDateText: { marginTop: -6, color: colors.muted, fontSize: 13 },
+  cleanupDateText: { color: colors.muted, fontSize: 13 },
   sideSwitch: { flexDirection: 'row', gap: 6, padding: 4, borderRadius: 16, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
   sideButton: { flex: 1, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: 12, borderWidth: 2, borderColor: 'transparent' },
   sideButtonSelected: { borderColor: colors.primary },
@@ -289,7 +282,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   aboutCard: { padding: 16, gap: 10, borderRadius: 18, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
-  aboutTitle: { color: colors.ink, fontSize: 17, fontFamily: fonts.heading },
+  aboutTitle: { color: colors.done, fontSize: 17, fontFamily: fonts.heading },
   commentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingTop: 2 },
   descriptionText: { flex: 1, color: colors.body, fontSize: 15, lineHeight: 22 },
   factsRow: { flexDirection: 'row', marginTop: 4, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.edge },

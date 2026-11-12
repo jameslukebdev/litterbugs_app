@@ -304,6 +304,53 @@ export default function ReportDetailsSheet({ state, actions }) {
         {selectedReport?.cleanup_state === 'completed' && completedCleanupImpactLoading && !completedCleanupImpact ? (
           <LoadingBee label="Loading cleanup" message="Loading cleanup…" />
         ) : <>
+
+        {/* ============================= */}
+        {/* Report Header                 */}
+        {/* ============================= */}
+
+        {/* Website report sheet header (apps/web components/report-detail.tsx): title, then the
+            state's bug and words, the bee's fund line, and a quiet line with a priority dot. */}
+        {(() => {
+          const state = reportStatePresentation(selectedReport);
+          const closed = Boolean(selectedReport?.cancelled_at || selectedReport?.expired_at);
+          const cleanupState = selectedReport?.cleanup_state;
+          const statusText = closed ? 'Report closed'
+            : cleanupState === 'claimed' ? 'Cleanup in progress'
+            : cleanupState === 'completion_submitted' ? 'Cleanup photos under review'
+            : cleanupState === 'changes_requested' ? 'Cleaner is updating photos'
+            : cleanupState === 'completed' ? 'Cleanup complete'
+            : 'Available to clean';
+          const severityWord = selectedReport?.severity ? `${String(selectedReport.severity).charAt(0).toUpperCase()}${String(selectedReport.severity).slice(1).toLowerCase()}` : 'Medium';
+          const funded = Number(selectedReport?.funded_amount_cents) > 0;
+          return (
+            <View style={[styles.reportPostHeader, styles.websiteReportHeader, cleanupState === 'completed' && { borderBottomWidth: 0, paddingBottom: 4 }]}>
+              <Text style={[styles.reportPostTitle, styles.websiteReportTitle]} accessibilityRole="header">{selectedReport?.title || 'Litter Report'}</Text>
+              <View style={styles.websiteReportState}>
+                {!closed && state.bug ? <BrandBug kind={state.bug} size={18} /> : null}
+                <Text style={[styles.websiteReportStateText, { color: closed ? colors.muted : state.ink }]}>{statusText}</Text>
+              </View>
+              {!closed && cleanupState !== 'completed' && funded ? (
+                <View style={styles.websiteReportState}>
+                  <BrandBug kind="bee" size={18} />
+                  <Text style={[styles.websiteReportStateText, { color: colors.yellow }]}>{formatUsd(Number(selectedReport.funded_amount_cents))} in its cleanup fund</Text>
+                </View>
+              ) : null}
+              {cleanupCardFirst && selectedCleanupAttempt?.claim_expires_at ? (
+                <Text style={styles.cleanerDeadline}>You’re cleaning this one. Send your after photos by {new Date(selectedCleanupAttempt.claim_expires_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}.</Text>
+              ) : null}
+              <View style={styles.websiteReportMeta}>
+                <View style={styles.websiteReportSeverity}>
+                  <View style={[styles.websiteReportSeverityDot, { backgroundColor: SEVERITY_INK[severityWord] || SEVERITY_INK.Medium }]} />
+                  <Text style={[styles.websiteReportSeverityText, { color: SEVERITY_INK[severityWord] || SEVERITY_INK.Medium }]}>{severityWord} priority</Text>
+                </View>
+                {selectedReport?.created_at ? <Text style={styles.websiteReportFacts}>Reported {formatShortDate(selectedReport.created_at)}</Text> : null}
+                {!closed && cleanupState === 'available' && selectedReport?.expires_at ? <Text style={styles.websiteReportFacts}>Open until {formatShortDate(selectedReport.expires_at)}</Text> : null}
+              </View>
+            </View>
+          );
+        })()}
+
         {selectedReport?.cleanup_state === 'completed' ? (
           <>
             <CompletedCleanupStory
@@ -331,58 +378,8 @@ export default function ReportDetailsSheet({ state, actions }) {
               } : undefined}
             />
 
-            <View style={styles.originalReportDivider}>
-              <Text style={styles.originalReportEyebrow}>BEFORE THE CLEANUP</Text>
-              <Text style={styles.originalReportTitle}>Original litter report</Text>
-            </View>
           </>
         ) : null}
-
-        {/* ============================= */}
-        {/* Report Header                 */}
-        {/* ============================= */}
-
-        {/* Website report sheet header (apps/web components/report-detail.tsx): title, then the
-            state's bug and words, the bee's fund line, and a quiet line with a priority dot. */}
-        {(() => {
-          const state = reportStatePresentation(selectedReport);
-          const closed = Boolean(selectedReport?.cancelled_at || selectedReport?.expired_at);
-          const cleanupState = selectedReport?.cleanup_state;
-          const statusText = closed ? 'Report closed'
-            : cleanupState === 'claimed' ? 'Cleanup in progress'
-            : cleanupState === 'completion_submitted' ? 'Cleanup photos under review'
-            : cleanupState === 'changes_requested' ? 'Cleaner is updating photos'
-            : cleanupState === 'completed' ? 'Cleanup complete'
-            : 'Available to clean';
-          const severityWord = selectedReport?.severity ? `${String(selectedReport.severity).charAt(0).toUpperCase()}${String(selectedReport.severity).slice(1).toLowerCase()}` : 'Medium';
-          const funded = Number(selectedReport?.funded_amount_cents) > 0;
-          return (
-            <View style={[styles.reportPostHeader, styles.websiteReportHeader, completedCleanupImpact?.afterPhotoUrls?.length > 0 && cleanupState === 'completed' && { borderBottomWidth: 0, paddingBottom: 0 }]}>
-              <Text style={[styles.reportPostTitle, styles.websiteReportTitle]} accessibilityRole="header">{selectedReport?.title || 'Litter Report'}</Text>
-              <View style={styles.websiteReportState}>
-                {!closed && state.bug ? <BrandBug kind={state.bug} size={18} /> : null}
-                <Text style={[styles.websiteReportStateText, { color: closed ? colors.muted : state.ink }]}>{statusText}</Text>
-              </View>
-              {!closed && cleanupState !== 'completed' && funded ? (
-                <View style={styles.websiteReportState}>
-                  <BrandBug kind="bee" size={18} />
-                  <Text style={[styles.websiteReportStateText, { color: colors.yellow }]}>{formatUsd(Number(selectedReport.funded_amount_cents))} in its cleanup fund</Text>
-                </View>
-              ) : null}
-              {cleanupCardFirst && selectedCleanupAttempt?.claim_expires_at ? (
-                <Text style={styles.cleanerDeadline}>You’re cleaning this one. Send your after photos by {new Date(selectedCleanupAttempt.claim_expires_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}.</Text>
-              ) : null}
-              <View style={styles.websiteReportMeta}>
-                <View style={styles.websiteReportSeverity}>
-                  <View style={[styles.websiteReportSeverityDot, { backgroundColor: SEVERITY_INK[severityWord] || SEVERITY_INK.Medium }]} />
-                  <Text style={[styles.websiteReportSeverityText, { color: SEVERITY_INK[severityWord] || SEVERITY_INK.Medium }]}>{severityWord} priority</Text>
-                </View>
-                {selectedReport?.created_at ? <Text style={styles.websiteReportFacts}>Reported {formatShortDate(selectedReport.created_at)}</Text> : null}
-                {!closed && cleanupState === 'available' && selectedReport?.expires_at ? <Text style={styles.websiteReportFacts}>Open until {formatShortDate(selectedReport.expires_at)}</Text> : null}
-              </View>
-            </View>
-          );
-        })()}
 
         {selectedReport?.cleanup_state !== 'completed' ? (
           <ReportPhotoGallery report={selectedReport} urls={reportPhotoUrls} loading={photosLoading} width={reportHeroWidth} />
