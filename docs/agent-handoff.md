@@ -24,6 +24,34 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (calmer lightning-bug loader, local; deployment paused)
+
+- Owner interrupted the approved filter/card release before deployment to review
+  loading changes. Nothing pushed or deployed this turn; last live remains
+  2bebc0f / dpl_GxyQnRbtykjhEeDhTUMWN3FCGBYh.
+- Replaced ReportBrowser's bee with the existing lightning-bug SVG: 350ms reveal
+  delay (including initial mount/retries), 180ms entrance/exit fade, stationary
+  body with subtle 2.4s halo breathing. Loader stays mounted for exit; ready
+  results are never delayed or blocked. Reduced motion uses a static glow.
+- Removed rendered AntWalk loaders from homepage feed, account section and
+  completed-photo placeholders. Kept stable quiet skeletons and existing
+  non-loading bug artwork/motion; no hero or before/after-hover changes.
+- Research: Carbon loading guidelines (prefer stable skeletons, avoid competing
+  indicators), NN/G progress-indicator guidance, Refero skill motion reference.
+  Existing Litterbugs white/purple/yellow art is the reference lock; timing
+  values are our implementation choices, not quoted source requirements.
+- Added guarded development-only /dev-review-preview/loading comparison with
+  150ms, 1.8s and manually held loads using the real component. Production
+  requests call notFound(). No report data changes are made by this preview.
+- 51 focused tests pass, including fast/slow/retry/unmount timing and existing
+  report/photo/motion regressions. Scoped ESLint, TypeScript, CSS compilation
+  and diff check pass. CUA verifies delayed reveal, immediate results during
+  fade, 150ms bypass, 390px layout, reduced-motion static glow, real map wiring
+  and no browser errors. Media/viewport overrides reset; preview left open.
+- No local production build. Memory pressure moderate (2); Node dev server
+  remains capped at 1536MB. Concurrent staged native/migration and handoff
+  changes preserved using a temporary Git index.
+
 ### 2026-11-12 — Codex (GivePulse comparison and growth lessons)
 
 - Compared current GivePulse official workflows/pricing with Litterbugs source:

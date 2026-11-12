@@ -1,0 +1,14 @@
+/* LoadingFirefly waits 350 ms before revealing. Only the halo breathes;
+   the bug stays still and ready results are never held. */
+.indicator { position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 180ms ease-out, visibility 0s linear 180ms; }
+.indicator[data-visible='true'] { opacity: 1; visibility: visible; transition: opacity 180ms ease-out, visibility 0s; }
+.bug { position: relative; display: block; width: 56px; height: 56px; }
+.bug::before { content: ''; position: absolute; left: 44%; top: 62%; width: 20px; height: 20px; border-radius: 50%; background: #ffda61; box-shadow: 0 0 15px 6px #ffda61; opacity: .2; animation: breathe 2400ms ease-in-out infinite alternate; animation-play-state: paused; }
+.indicator[data-visible='true'] .bug::before { animation-play-state: running; }
+.bug img { position: relative; display: block; width: 56px; height: 56px; }
+@keyframes breathe { from { opacity: .2; } to { opacity: .38; } }
+@media (prefers-reduced-motion: reduce) {
+  .indicator { transition: none; }
+  .indicator[data-visible='true'] { transition: none; }
+  .bug::before { animation: none; opacity: .25; }
+}

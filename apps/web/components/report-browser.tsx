@@ -7,6 +7,7 @@ import { EmptyBug } from '@/components/bug-motion';
 import { ReportSortMenu } from './report-sort';
 import controls from './report-controls.module.css';
 import { BrandBug } from './brand-bug';
+import { LoadingFirefly } from './loading-firefly';
 import { ReportCardContent } from './report-card-content';
 import { reportWorkflowTone } from '@/lib/report-visibility';
 import { getDistanceMiles, type Coordinates, type MappableReport } from '@litterbugs/report-contract';
@@ -479,6 +480,7 @@ export function ReportBrowser({
           <p className="discovery-status" role="status">{discoveryError || (truncated ? 'Showing up to 1,000 matches. Zoom in or narrow your filters to see more.' : '')}</p>
         </header>
         <div className={`report-browser-list${resultsLoading ? ` ${controls.loadingList}` : ''}`} ref={listRef} onScroll={() => { if (memoryReady && !resultsLoading) saveBrowserMemory({ filters: applied, sort, scroll: listRef.current?.scrollTop ?? 0, displayLimit }); }} aria-busy={resultsLoading || refreshing}>
+          <LoadingFirefly active={resultsLoading} />
           {visibleReports.length ? displayedReports.map((report, index) => {
             const selected = report.id === selectedReportId;
             const previewed = report.id === previewedReportId;
@@ -523,11 +525,7 @@ export function ReportBrowser({
               {showAuthors && report.user_id && (authors[report.user_id] ? <ReportAuthor key={report.user_id} profileId={report.user_id} initialProfile={authors[report.user_id]} sourceReportId={report.id} onBlocked={onMemberBlocked} /> : <div className="report-author report-author-placeholder" aria-hidden="true"><span className="report-author-initial" /><span className="report-author-copy"><span>Community member</span></span></div>)}
               </article>
             );
-          }) : resultsLoading ? (
-            <div role="status" aria-label="Loading reports">
-              <BrandBug kind="bee" size={64} className={controls.loadingBee} />
-            </div>
-          ) : discoveryError ? (
+          }) : resultsLoading ? null : discoveryError ? (
             <div className="report-browser-empty">
               <BrandBug kind="ladybug" size={36} className="brand-bug-state" />
               <strong>Reports could not be loaded</strong>
