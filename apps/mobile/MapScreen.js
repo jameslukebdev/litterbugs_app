@@ -10,8 +10,9 @@ import ReportWizardModal from './components/ReportWizardModal';
 import MapControls from './components/MapControls';
 
 import MapReportPreview from './components/MapReportPreview';
-import MapPin, { pinKind } from './components/MapPin';
+import MapPin, { PinPlaceholder, pinCenterOffset, pinKind } from './components/MapPin';
 import PinLanding from './components/PinLanding';
+import usePinLandings from './lib/usePinLandings';
 import { prefersReducedMotion } from './lib/reduceMotion';
 import MapKey, { mapKeyCounts } from './components/MapKey';
 import SlideUp from './components/SlideUp';
@@ -134,31 +135,6 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const [postedPinId, setPostedPinId] = useState(null);
   // Website pin arrival, iPhone only (Android draws map pins from still snapshots).
   const pinLandings = Platform.OS === 'ios' && !prefersReducedMotion();
-  const [arrivedPins, setArrivedPins] = useState(() => new Set());
-  const [landingPins, setLandingPins] = useState([]);
-  const pinArrival = useRef({ seen: new Set(), waiting: [], count: 0 });
-  const mapHiddenRef = useRef(true);
-  const postedPinRef = useRef(null);
-  postedPinRef.current = postedPinId;
-  const finishPinLanding = useCallback((id) => {
-    setArrivedPins(current => new Set(current).add(id));
-    setLandingPins(current => current.filter(pin => pin.id !== id));
-  }, []);
-  const startPinLanding = useCallback(async (pin) => {
-    let point = null;
-    try { point = await mapViewRef.current?.pointForCoordinate?.(pin.coordinate); } catch { point = null; }
-    if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) { finishPinLanding(pin.id); return; }
-    const order = pinArrival.current.count++;
-    setTimeout(() => { pinArrival.current.count = Math.max(0, pinArrival.current.count - 1); }, 700);
-    setLandingPins(current => [...current, { ...pin, x: point.x, y: point.y, order, posted: pin.id === postedPinRef.current }]);
-  }, [finishPinLanding]);
-  // A pin has just been put on the map. The first time, it lands; after that it is simply there.
-  const pinMounted = useCallback((pin) => {
-    if (!pinLandings || pinArrival.current.seen.has(pin.id)) return;
-    pinArrival.current.seen.add(pin.id);
-    if (mapHiddenRef.current) pinArrival.current.waiting.push(pin);
-    else startPinLanding(pin);
-  }, [pinLandings, startPinLanding]);
   const [reportPhotoUrls, setReportPhotoUrls] = useState([]);
   const [editingReportId, setEditingReportId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -189,13 +165,6 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const [mapReady, setMapReady] = useState(false);
   const [mapSurfaceLoaded, setMapSurfaceLoaded] = useState(false);
   const [showInitialMapLoading, setShowInitialMapLoading] = useState(true);
-  // Pins that arrived while the map was still behind its loading screen land once it shows.
-  useEffect(() => {
-    mapHiddenRef.current = showInitialMapLoading;
-    if (showInitialMapLoading) return;
-    const waiting = pinArrival.current.waiting.splice(0);
-    waiting.forEach(startPinLanding);
-  }, [showInitialMapLoading, startPinLanding]);
   const [initialLocationResolved, setInitialLocationResolved] = useState(false);
   const initialLocationRequestStartedRef = useRef(false);
   const [photosLoading, setPhotosLoading] = useState(false);
@@ -250,6 +219,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     upsertReport,
     removeReport,
   } = useReports();
+  const pins = usePinLandings({ enabled: pinLandings, mapRef: mapViewRef, region, hidden: showInitialMapLoading, postedPinId });
   const currentUserId = permanentUserId(currentUser);
   const reportFundingFeedback = useReportFundingFeedback({ geminiReviewEnabled, currentUserId, selectedReport });
   const [draftSaveError, setDraftSaveError] = useState(false);
@@ -1326,7 +1296,9 @@ const revealBottomReportField = () => {
           }}
           initialRegion={region}
           region={region}
+          onRegionChange={pins.regionChanging}
           onRegionChangeComplete={(nextRegion) => {
+            pins.regionSettled();
             if (reportPlacementActive) {
               setPlacementCoordinate(mapCenterCoordinate(nextRegion));
             }
@@ -1348,15 +1320,21 @@ const revealBottomReportField = () => {
             // Like the website, a group shows the bug of its most useful member
             // (litter that still needs a cleanup first) next to the count.
             const clusterKind = statusCounts.available ? 'open' : statusCounts.active ? 'busy' : 'done';
+            // A group is known by the reports inside it, so one that only moves while zooming
+            // does not land again. Its look is in the key: a changed group is a new pin.
+            const groupKey = `group:${(reportClusterRef.current?.getLeaves(id, Infinity) || []).map(leaf => String(leaf?.properties?.identifier || '').split(':').pop()).sort().join(',')}`;
+            const groupCoordinate = { latitude: geometry.coordinates[1], longitude: geometry.coordinates[0] };
+            const groupShown = pins.isShown(groupKey);
             return (
               <Marker
-                key={`cluster-${id}`}
+                key={groupShown ? `${groupKey}:${clusterKind}:${properties.point_count}:${groupCoordinate.latitude.toFixed(6)},${groupCoordinate.longitude.toFixed(6)}` : `${groupKey}:pending`}
                 coordinate={{
                   latitude: geometry.coordinates[1],
                   longitude: geometry.coordinates[0],
                 }}
                 tracksViewChanges={Platform.OS === 'ios' ? true : tracksReportMarkers}
                 anchor={{ x: 0.5, y: 1 }}
+                centerOffset={groupShown ? pinCenterOffset(clusterKind, `${properties.point_count}`) : undefined}
                 accessibilityLabel={`${properties.point_count} reports: ${statusCounts.available} available, ${statusCounts.active} in progress, ${statusCounts.completed} completed`}
                 onPress={(event) => {
                   event?.stopPropagation?.();
@@ -1366,7 +1344,15 @@ const revealBottomReportField = () => {
                   onPress();
                 }}
               >
-                <MapPin kind={clusterKind} text={`${properties.point_count}`} />
+                {groupShown ? (
+                  <MapPin kind={clusterKind} text={`${properties.point_count}`}
+                    onMount={() => pins.track(groupKey, { coordinate: groupCoordinate, kind: clusterKind, text: `${properties.point_count}` })}
+                    onUnmount={() => pins.untrack(groupKey)} />
+                ) : (
+                  <PinPlaceholder
+                    onMount={() => pins.track(groupKey, { coordinate: groupCoordinate, kind: clusterKind, text: `${properties.point_count}` })}
+                    onUnmount={() => pins.untrack(groupKey)} />
+                )}
               </Marker>
             );
           }}
@@ -1392,18 +1378,25 @@ const revealBottomReportField = () => {
           coordinates={outer.map(([longitude, latitude]) => ({ latitude, longitude }))}
           holes={holes.map(ring => ring.map(([longitude, latitude]) => ({ latitude, longitude })))}
           strokeColor={colors.primary} accessible={false} importantForAccessibility="no" strokeWidth={1.5} fillColor="rgba(81, 70, 237, 0.035)" tappable={false} />)}
-        {markers.map((marker, order) => {
+        {markers.map((marker) => {
           const tone = reportMarkerPresentation(marker.report);
           const fundingLabel = formatMapFundingLabel(marker.report?.funded_amount_cents);
+          const kind = pinKind(marker.report?.cleanup_state);
+          // Website pins: the bug alone, plus the amount only when there is money.
+          const text = kind === 'open' && marker.report?.funded_amount_cents > 0 ? fundingLabel : null;
+          const selected = marker.id === previewId;
+          const shown = pins.isShown(marker.id);
+          const info = { coordinate: marker.coordinate, kind, text };
           return (
             <Marker
-              key={marker.id}
+              // Never update a pin on the map (iPhone draws it in the wrong place): anything that
+              // changes how it looks is in the key, so a change puts a new pin in its place.
+              key={shown ? `${marker.id}:${kind}:${text ?? ''}:${selected ? 'selected' : ''}` : `${marker.id}:pending`}
               coordinate={marker.coordinate}
               identifier={`report:${tone.key}:${marker.id}`}
               tracksViewChanges={Platform.OS === 'ios' ? true : tracksReportMarkers}
               anchor={{ x: 0.5, y: 1 }}
-              // Hidden until its landing (PinLanding, above the map) has finished.
-              opacity={pinLandings && !arrivedPins.has(marker.id) ? 0 : 1}
+              centerOffset={shown ? pinCenterOffset(kind, text) : undefined}
               accessibilityLabel={`${tone.accessibilityLabel}${tone.key === 'available' ? `, ${fundingLabel}` : ''}: ${marker.report?.title || 'Litter report'}`}
               onPress={(event) => {
                 event?.stopPropagation?.();
@@ -1411,23 +1404,22 @@ const revealBottomReportField = () => {
                 chooseMapReport(marker.report);
               }}
             >
-              {/* Website pins: the bug alone, plus the amount only when there is money. */}
-              <MapPin
-                kind={pinKind(marker.report?.cleanup_state)}
-                text={pinKind(marker.report?.cleanup_state) === 'open' && marker.report?.funded_amount_cents > 0 ? fundingLabel : null}
-                selected={marker.id === previewId}
-                onMount={() => pinMounted({ id: marker.id, coordinate: marker.coordinate, kind: pinKind(marker.report?.cleanup_state), text: pinKind(marker.report?.cleanup_state) === 'open' && marker.report?.funded_amount_cents > 0 ? fundingLabel : null })}
-              />
+              {shown ? (
+                <MapPin kind={kind} text={text} selected={selected}
+                  onMount={() => pins.track(marker.id, info)} onUnmount={() => pins.untrack(marker.id)} />
+              ) : (
+                <PinPlaceholder onMount={() => pins.track(marker.id, info)} onUnmount={() => pins.untrack(marker.id)} />
+              )}
             </Marker>
           );
         })}
 
       </ClusteredMapView>
 
-      {/* Pins land here, above the map, then hand over to the real pin underneath. */}
+      {/* Pins and groups land here, above the map, then a new real pin appears underneath. */}
       <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-        {landingPins.map((pin) => (
-          <PinLanding key={pin.id} x={pin.x} y={pin.y} kind={pin.kind} text={pin.text} order={pin.order} posted={pin.posted} onDone={() => finishPinLanding(pin.id)} />
+        {pins.ghosts.map((pin) => (
+          <PinLanding key={pin.key} x={pin.x} y={pin.y} kind={pin.kind} text={pin.text} order={pin.order} posted={pin.posted} onDone={() => pins.ghostDone(pin.key)} />
         ))}
       </View>
 

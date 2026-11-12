@@ -26,6 +26,19 @@ const TONES = {
   done: { edge: '#ECE8F8', fill: colors.white, selectedEdge: '#6CC6AF', selectedFill: '#E2F8F3' },
 };
 
+/** Height of the pin drawn for this kind and text, including its tail. */
+export function pinHeight(kind, text) {
+  return (!text && kind === 'done' ? 30 : PIN_HEIGHT) + PIN_TAIL;
+}
+
+/**
+ * Apple Maps ignores `anchor` and centres a pin on its spot. Raise it by half its height so the
+ * tail's tip marks the exact spot, as on the website (and as the landing stand-in is drawn).
+ */
+export function pinCenterOffset(kind, text) {
+  return { x: 0, y: -pinHeight(kind, text) / 2 };
+}
+
 /** Website pin kind for a report's cleanup state. */
 export function pinKind(state) {
   if (state === 'completed') return 'done';
@@ -33,10 +46,11 @@ export function pinKind(state) {
   return 'open';
 }
 
-// `onMount` tells the map this pin has just been put on it (see PinLanding). The pin itself
-// never animates: the map draws a pin that changes in the corner of the screen.
-export default function MapPin({ kind = 'open', text = null, selected = false, onMount }) {
-  useEffect(() => { onMount?.(); }, []);
+// `onMount`/`onUnmount` tell the map when this pin is put on it or taken off (see
+// lib/usePinLandings.js). The pin itself never animates or changes: on iPhone the map draws a
+// changed pin in the wrong place. To change a pin, give its Marker a new key instead.
+export default function MapPin({ kind = 'open', text = null, selected = false, onMount, onUnmount }) {
+  useEffect(() => { onMount?.(); return () => onUnmount?.(); }, []);
   const bug = BUG_SIZE[kind] || BUG_SIZE.open;
   const tone = TONES[kind] || TONES.open;
   const edge = selected ? tone.selectedEdge : tone.edge;
@@ -61,7 +75,15 @@ export default function MapPin({ kind = 'open', text = null, selected = false, o
   );
 }
 
+// Stands in for a pin on the map while its landing plays above the map: invisible, and
+// replaced (never updated) by the real pin once the landing ends.
+export function PinPlaceholder({ onMount, onUnmount }) {
+  useEffect(() => { onMount?.(); return () => onUnmount?.(); }, []);
+  return <View collapsable={false} pointerEvents="none" style={styles.placeholder} />;
+}
+
 const styles = StyleSheet.create({
+  placeholder: { width: 2, height: 2, opacity: 0 },
   wrap: {
     alignItems: 'center',
     paddingBottom: PIN_TAIL,

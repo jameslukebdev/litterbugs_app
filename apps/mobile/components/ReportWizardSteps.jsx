@@ -9,7 +9,7 @@ const TILE_SELECTED = Object.freeze({ backgroundColor: colors.reportSoft, border
 import { getSeveritySelectionColors } from '../lib/severitySelectionColors';
 import styles from '../styles/MapScreen.styles';
 import MapView, { Marker } from 'react-native-maps';
-import MapPin from './MapPin';
+import MapPin, { pinCenterOffset } from './MapPin';
 import { CALM_MAP_STYLE } from '../lib/calmMapStyle';
 import { colors } from '../lib/theme';
 
@@ -484,7 +484,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                   showsPointsOfInterest={false}
                   {...(Platform.OS === 'android' ? { customMapStyle: CALM_MAP_STYLE } : {})}
                   accessibilityLabel="Confirmed report location">
-                  <Marker coordinate={coordinate} anchor={{ x: 0.5, y: 1 }}><MapPin kind="open" /></Marker>
+                  <Marker coordinate={coordinate} anchor={{ x: 0.5, y: 1 }} centerOffset={pinCenterOffset('open', null)}><MapPin kind="open" /></Marker>
                 </MapView>
               </View>
             </View>
