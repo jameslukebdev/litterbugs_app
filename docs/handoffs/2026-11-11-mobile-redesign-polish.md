@@ -149,3 +149,12 @@ Branch `codex/map-first-navigation`. Nothing pushed, built for stores, or deploy
 - Not seen in the simulator: a card with a fund (gold line), hours on a cleaned report (no cleanup has hours yet), the cleaner's pinned bar.
 
 - Cleaned reports now lead with the title and state (website order): title, After/Before switch, photos, then "About the cleanup" with "Cleaned by" inside. The "Original litter report" divider and the separate "Cleanup complete" banner are gone. The time column always shows (dash when not recorded).
+
+## Website matching pass (Nov 11, after midnight)
+
+- After/Before switch uses the website's exact colours (mint outline + green words; pink outline + red words). Owner likes the mint fill for cleaned-up indicators (card badge, "Cleanup complete" pill) and is fine with green beside the caterpillar.
+- Cleaned cards lead with the after photo (the site's public `/reports/<id>/photo/after` address) with an "After cleanup" tag, falling back to the report photo.
+- Card summaries add the first site note, as on the website ("Bottles · Paper products +3 · Scattered").
+- Share is offered on in-progress reports too, matching the website's rule; share icon is the website's.
+- Compared and already matching: filters sheet, Profile overview, My activity tabs and empty state.
+- Not compared yet this pass: fund screen, Payments, Updates, Settings, public profile, report wizard steps.
