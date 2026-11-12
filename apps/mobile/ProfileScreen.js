@@ -377,22 +377,22 @@ export default function ProfileScreen({ navigation, route }) {
             <Ionicons name="lock-closed-outline" size={15} color={colors.muted} />
             <Text style={styles.paymentsTrustText}>Payments and payouts run through Stripe. Litterbugs never sees your full card or bank number.</Text>
           </View>
-          <Text style={styles.activityHeading}>Your contributions</Text>
+          <Text style={styles.activityHeading}>Donations</Text>
           <View style={[styles.card, styles.paymentCard]}>
-            {contributions.error && !contributions.hasLoaded ? <LoadFailure title="Couldn’t load contributions" onRetry={contributions.refresh} />
-              : !contributions.hasLoaded ? <LoadingBee label="Loading contributions" size={48} />
+            {contributions.error && !contributions.hasLoaded ? <LoadFailure title="Couldn’t load donations" onRetry={contributions.refresh} />
+              : !contributions.hasLoaded ? <LoadingBee label="Loading donations" size={48} />
               : contributionItems.length > 0 ? <>
                 {contributionItems.slice(0, 5).map((item, index) => (
                   <ContributionRow key={item.id} item={item} divided={index > 0} onPress={() => navigation.navigate('PaymentDetail', { contributionId: item.id })} />
                 ))}
-                {contributionItems.length > 5 || contributions.data?.nextCursor ? <TextLink label="Show all contributions" onPress={() => navigation.navigate('ContributionHistory')} style={styles.showAll} /> : null}
+                {contributionItems.length > 5 || contributions.data?.nextCursor ? <TextLink label="Show all donations" onPress={() => navigation.navigate('ContributionHistory')} style={styles.showAll} /> : null}
               </>
-              : <EmptyState bug="bee" title="No contributions yet" text="Money you add to a cleanup fund appears here." />}
+              : <EmptyState style={styles.quietEmpty} bug="bee" title="No donations yet" />}
           </View>
           <ReporterEarnings userId={user.id} onOpenReport={openReport} />
           <Text style={styles.activityHeading}>Cleanup earnings</Text>
           <View style={[styles.card, styles.paymentCard]}>
-            {cleanupsError && !cleanups.hasLoaded ? <LoadFailure title="Couldn’t load earnings" onRetry={refreshCleanups} /> : cleanupsLoading && !cleanups.hasLoaded ? <LoadingBee label="Loading earnings" size={48} /> : cleanupSummary.completed.filter(attempt => attempt.is_paid).length ? cleanupSummary.completed.filter(attempt => attempt.is_paid).map((attempt, index) => <CompletedCleanupRow key={attempt.id} attempt={attempt} divided={index > 0} onPress={() => openReport(attempt.report_id)} />) : <EmptyState bug="bee" title="No cleanup earnings yet" text="Rewards from your completed paid cleanups will appear here." />}
+            {cleanupsError && !cleanups.hasLoaded ? <LoadFailure title="Couldn’t load earnings" onRetry={refreshCleanups} /> : cleanupsLoading && !cleanups.hasLoaded ? <LoadingBee label="Loading earnings" size={48} /> : cleanupSummary.completed.filter(attempt => attempt.is_paid).length ? cleanupSummary.completed.filter(attempt => attempt.is_paid).map((attempt, index) => <CompletedCleanupRow key={attempt.id} attempt={attempt} divided={index > 0} onPress={() => openReport(attempt.report_id)} />) : <EmptyState style={styles.quietEmpty} bug="caterpillar" title="No cleanup earnings yet" />}
           </View>
           </>}
         </>
@@ -550,6 +550,8 @@ const styles = StyleSheet.create({
   stripeConnectionDetail: { fontSize: 12, fontWeight: '800' },
   emailLabel: { color: colors.ink, fontSize: 16, fontWeight: '600' },
   emailText: { flexShrink: 1, color: colors.muted, fontSize: 15, fontWeight: '700' },
+  // Nothing-yet cards: a bug and a heading, no explanation.
+  quietEmpty: { minHeight: 0, paddingVertical: 26 },
   paymentsTrust: { marginTop: 12, paddingHorizontal: 4, flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   paymentsTrustText: { flex: 1, color: colors.muted, fontSize: 13, lineHeight: 19 },
   signedOutContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, backgroundColor: colors.white },

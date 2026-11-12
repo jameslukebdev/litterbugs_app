@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { LoadFailure } from './ui';
+import BrandBug from './BrandBug';
 import useFocusedResource from '../lib/useFocusedResource';
 import { formatUsd, loadReporterRewards } from '../lib/funding';
 import { colors, fonts } from '../lib/theme';
@@ -22,7 +23,10 @@ export function ReporterEarnings({ userId, onOpenReport }) {
             <Text style={{ color: colors.ink, fontSize: 15, fontWeight: '600' }}>{reward.report?.title || 'Completed litter cleanup'}</Text>
             <Text style={{ marginTop: 3, color: colors.muted, fontSize: 13 }}>{formatUsd(reward.amount_cents)} · {labels[reward.status]}</Text>
           </TouchableOpacity>)
-        : <Text style={{ paddingVertical: 16, color: colors.muted, fontSize: 14, lineHeight: 20 }}>{resource.loading && !resource.hasLoaded ? 'Checking your reporter earnings…' : 'None yet. You earn 5% when a report you made gets a funded cleanup approved.'}</Text>}
+        : <View style={{ alignItems: 'center', paddingVertical: 26, opacity: resource.loading && !resource.hasLoaded ? 0 : 1 }}>
+            <BrandBug kind="dragonfly" size={40} />
+            <Text style={{ marginTop: 12, color: colors.ink, fontSize: 18, fontFamily: fonts.heading, textAlign: 'center' }}>No reporter earnings yet</Text>
+          </View>}
     </View>
   </View>;
 }

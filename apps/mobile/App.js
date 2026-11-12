@@ -330,7 +330,7 @@ function AppNavigation({
         <Stack.Screen
           name="ContributionHistory"
           component={ContributionHistoryScreen}
-          options={{ ...headerOptions, title: 'Payment activity' }}
+          options={{ ...headerOptions, title: 'Donations' }}
         />
         <Stack.Screen
           name="ExpiredReports"

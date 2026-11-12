@@ -176,3 +176,5 @@ Owner: "remove the no tint rule and try to match the website look". Restored wit
 - Backend: `supabase/functions/_shared/cleaner-onboarding.ts` now accepts `returnTarget: 'mobile'` for sessions. **Not deployed.** Deno is not installed here, so the edge function tests were not run.
 - Camera permission text mentions ID photos for payout setup.
 - Android not built with the new library (its Kotlin requirement is 2.2.21; unverified against this project).
+
+- Payments (Nov 12): Payouts card first; one loader for the page; Stripe trust line; "Your contributions" renamed **Donations** at the owner's request (the reward policy still says contributions are not donations or tax deductible; owner was told). Nothing-yet states are a bug and a heading only. Payout setup opens with the status Payments already has.

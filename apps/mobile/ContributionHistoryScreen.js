@@ -39,10 +39,10 @@ export default function ContributionHistoryScreen({ navigation }) {
       data={items}
       keyExtractor={item => item.id}
       ListHeaderComponent={<>
-      <PillTabs style={styles.tabs} value={completedOnly ? 'completed' : 'all'} onChange={value => setCompletedOnly(value === 'completed')} options={[['all', 'All payments'], ['completed', 'Completed impact']]} />
+      <PillTabs style={styles.tabs} value={completedOnly ? 'completed' : 'all'} onChange={value => setCompletedOnly(value === 'completed')} options={[['all', 'All donations'], ['completed', 'Completed impact']]} />
       {error ? <View><ErrorText style={styles.error}>Couldn’t refresh payment history.</ErrorText><TextLink label="Retry payment history" onPress={load} /></View> : null}
       {hasLoaded && !error && items.length === 0 ? (
-        <EmptyState style={styles.empty} bug={completedOnly ? 'flower' : 'bee'} title={completedOnly ? 'No completed impact yet' : 'No payments yet'} text={completedOnly ? 'Contributions to completed cleanups will appear here.' : 'Your contributions and unfinished payments will appear here.'} />
+        <EmptyState style={styles.empty} bug={completedOnly ? 'flower' : 'bee'} title={completedOnly ? 'No completed impact yet' : 'No donations yet'} />
       ) : null}
       </>}
       renderItem={({ item }) => (
