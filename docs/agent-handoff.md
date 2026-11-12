@@ -24,6 +24,20 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (approved cleanup-hours/social release prepared)
+
+- Owner approved cleanup hours plus Instagram/TikTok/Facebook links. Clean
+  release based on prior live f284c46/89f6da0, with exactly 22 production/test
+  files from approved local 9b81fc6. All files byte-match approved source.
+- Excludes development previews, native work, notification/backend migrations,
+  dependencies, homepage layout and policy pages. Those paths match prior live.
+  Existing duration/weight endpoint already confirmed; no DB migration needed.
+- Exact release tests: 80 web + 3 shared payload tests pass. No local production
+  build; remote production build and staged checks precede promotion.
+- Source pushed on codex/cleanup-hours-social-release-20261112; deployment and
+  final verification recorded in a follow-up entry. Concurrent local work stays
+  in the main workspace and is not copied to this web deployment.
+
 ### 2026-11-12 — Codex (filter, card and loading improvements deployed)
 
 - Owner-approved release 89f6da0 on codex/filter-loading-release-20261112 is live:

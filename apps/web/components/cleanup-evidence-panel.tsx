@@ -75,7 +75,7 @@ export type EvidencePhoto = { key: string; src: string | null; name: string };
  */
 export function CleanupEvidencePanel({
   correction, reportTitle, due, reporterPhoto, photos, maxPhotos, onAddFiles, onRemovePhoto,
-  description, onDescription, bags, onBags, weight, onWeight,
+  description, onDescription, bags, onBags, weight, onWeight, hours = '', onHours,
   checking, onCheck, onEdit, onSubmit, paid,
   fieldsDisabled, checkDisabled, submitDisabled, editDisabled, busy,
   releaseConfirming, onRelease, onReleaseConfirming, releaseDisabled,
@@ -84,6 +84,7 @@ export function CleanupEvidencePanel({
   correction: boolean; reportTitle?: string | null; due: string | null; reporterPhoto: string | null;
   photos: EvidencePhoto[]; maxPhotos: number; onAddFiles: (files: File[]) => void; onRemovePhoto: (index: number) => void;
   description: string; onDescription: (value: string) => void; bags: string; onBags: (value: string) => void; weight: string; onWeight: (value: string) => void;
+  hours?: string; onHours?: (value: string) => void;
   checking: boolean; onCheck: () => void; onEdit: () => void; onSubmit: () => void; paid: boolean;
   fieldsDisabled: boolean; checkDisabled: boolean; submitDisabled: boolean; editDisabled: boolean; busy: string;
   releaseConfirming: boolean; onRelease: () => void; onReleaseConfirming: (value: boolean) => void; releaseDisabled: boolean;
@@ -120,7 +121,7 @@ export function CleanupEvidencePanel({
           <div className="cleaner-note-card">
             <h4>Your note</h4>
             <p>{description}</p>
-            {(bags || weight) && <ul className="cleaner-stats">{bags && <li>{bags} {bags === '1' ? 'bag or item' : 'bags or items'}</li>}{weight && <li>{weight} lb removed</li>}</ul>}
+            {(bags || weight || hours.trim()) && <ul className="cleaner-stats">{bags && <li>{bags} {bags === '1' ? 'bag or item' : 'bags or items'}</li>}{weight && <li>{weight} lb removed</li>}{hours.trim() && <li>{hours.trim()} {Number(hours) === 1 ? 'hr' : 'hrs'} spent</li>}</ul>}
           </div>
           <p className="cleaner-next">{paid ? 'Litterbugs checks the photos first. Then the reporter has 48 hours to approve.' : 'The reporter has 48 hours to check it. If they don’t respond, it’s approved automatically.'}</p>
         </section>
@@ -155,10 +156,11 @@ export function CleanupEvidencePanel({
             <small className="cleaner-count">{description.length}/500</small>
           </section>
           <section className="cleaner-step">
-            <h3><span aria-hidden="true">3</span>How much? <em>Optional</em></h3>
+            <h3><span aria-hidden="true">3</span>How much and how long? <em>Optional</em></h3>
             <div className="cleaner-amounts">
               <label>Bags or items<input inputMode="numeric" value={bags} onChange={event => onBags(event.target.value)} placeholder="3" /></label>
               <label>Weight (lb)<input inputMode="decimal" value={weight} onChange={event => onWeight(event.target.value)} placeholder="12" /></label>
+              {onHours && <label className="cleaner-duration">How long did it take? (hrs)<input inputMode="decimal" value={hours} onChange={event => onHours(event.target.value)} placeholder="1.5" maxLength={5} /></label>}
             </div>
           </section>
         </fieldset>

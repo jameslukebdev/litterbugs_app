@@ -15,7 +15,7 @@ function payload(draft: Draft): Json {
     const { photos: _photos, ...fields } = draft.draft; void _photos;
     return { version:1, kind:'report', coordinates:draft.coordinates, step:draft.step, fundingChoice:draft.fundingChoice, customAmount:draft.customAmount, draft:fields } as Json;
   }
-  return { version:1, kind:'cleanup', description:draft.description, bagsOrItems:draft.bagsOrItems, weightPounds:draft.weightPounds, correctionDueAt:draft.correctionDueAt??null };
+  return { version:1, kind:'cleanup', description:draft.description, bagsOrItems:draft.bagsOrItems, weightPounds:draft.weightPounds, hoursSpent:draft.hoursSpent??'', correctionDueAt:draft.correctionDueAt??null };
 }
 async function hash(bytes: BufferSource) { return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join(''); }
 export const cloudDrafts = createCloudDraftSync<Draft>({
@@ -54,7 +54,7 @@ export const cloudDrafts = createCloudDraftSync<Draft>({
       files.push(new File([data],path.split('/').pop()!,{type:data.type||'image/jpeg'}));
     }
     if(p.kind==='report') return { coordinates:p.coordinates,step:p.step,fundingChoice:p.fundingChoice,customAmount:p.customAmount,draft:{...p.draft as object,photos:files} } as SavedReportDraft;
-    return { description:p.description,bagsOrItems:p.bagsOrItems,weightPounds:p.weightPounds,correctionDueAt:p.correctionDueAt,photos:files,submissionId:record.submission_id } as CleanupDraft;
+    return { description:p.description,bagsOrItems:p.bagsOrItems,weightPounds:p.weightPounds,hoursSpent:p.hoursSpent??'',correctionDueAt:p.correctionDueAt,photos:files,submissionId:record.submission_id } as CleanupDraft;
   },
   loadRemote: async (owner,key) => {
     const {data,error}=await createClient().from('customer_drafts').select('*').eq('user_id',owner).eq('draft_key',key).abortSignal(AbortSignal.timeout(8000)).maybeSingle();

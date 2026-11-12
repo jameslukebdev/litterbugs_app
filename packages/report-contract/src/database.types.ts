@@ -2252,6 +2252,34 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      submit_cleanup_with_details: {
+        Args: {
+          cleanup_bags_or_items_removed?: number
+          cleanup_description: string
+          cleanup_duration_minutes?: number
+          cleanup_photo_paths: string[]
+          cleanup_weight_pounds?: number
+          target_cleanup_id: string
+          target_submission_id: string
+        }
+        Returns: {
+          bags_or_items_removed: number | null
+          cleanup_attempt_id: string
+          created_at: string
+          description: string
+          duration_minutes: number | null
+          id: string
+          submission_number: number
+          submitted_by: string | null
+          weight_pounds: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cleanup_submissions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       submit_cleanup_with_weight: {
         Args: {
           cleanup_bags_or_items_removed?: number

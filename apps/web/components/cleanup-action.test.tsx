@@ -4,6 +4,10 @@ import type { Report } from '@litterbugs/report-contract';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { StrictMode } from 'react';
 import { CleanupAction } from './cleanup-action';
+import { cloudDrafts } from '@/lib/cloud-drafts';
+
+const submitEvidence = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock('@/lib/cleanup-submission', () => ({ submitCleanupEvidence: submitEvidence }));
 
 const telemetry = vi.hoisted(() => ({ step: vi.fn(), failure: vi.fn() }));
 vi.mock('@/lib/website-analytics', async original => ({ ...await original<object>(), trackParticipation: telemetry.step, trackParticipationFailure: telemetry.failure }));
@@ -87,19 +91,56 @@ describe('cleanup agreement and site confirmation', () => {
 });
 
 describe('cleanup evidence recovery', () => {
-  it('restores photos and text and requires review before sending evidence', async () => {
+  it('converts entered hours for submission and keeps the original hours in the draft', async () => {
     state.claimed = true;
     loadDraft.mockResolvedValue({ photos: [new File(['photo'], 'after.jpg', { type: 'image/jpeg' })], description: 'Removed roadside bottles', bagsOrItems: '2', weightPounds: '4' });
+    const begin = vi.spyOn(cloudDrafts, 'begin').mockResolvedValue('stable-submission');
+    try {
+      render(<CleanupAction report={report} userId="cleaner-1" />);
+      fireEvent.click(await screen.findByRole('button', { name: 'Submit cleanup photos' }));
+      await waitFor(() => expect((screen.getByLabelText(/What did you clean up/) as HTMLTextAreaElement).value).toBe('Removed roadside bottles'));
+      fireEvent.change(screen.getByLabelText('How long did it take? (hrs)'), { target: { value: '1.5' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Check before sending' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Send cleanup' }));
+      await waitFor(() => expect(submitEvidence).toHaveBeenCalledWith(expect.objectContaining({ durationMinutes: 90, weightPounds: 4, bagsOrItems: 2, submissionId: 'stable-submission' })));
+      expect(saveDraft).toHaveBeenCalledWith('cleaner-1', 'attempt-1', expect.objectContaining({ hoursSpent: '1.5' }));
+      await screen.findByText('Photos sent');
+    } finally { begin.mockRestore(); }
+  });
+  it('restores photos and text and requires review before sending evidence', async () => {
+    state.claimed = true;
+    loadDraft.mockResolvedValue({ photos: [new File(['photo'], 'after.jpg', { type: 'image/jpeg' })], description: 'Removed roadside bottles', bagsOrItems: '2', weightPounds: '4', hoursSpent: '1.5' });
     render(<CleanupAction report={report} userId="cleaner-1" />);
     fireEvent.click(await screen.findByRole('button', { name: 'Submit cleanup photos' }));
     await waitFor(() => expect((screen.getByLabelText(/What did you clean up/) as HTMLTextAreaElement).value).toBe('Removed roadside bottles'));
     expect(screen.queryByRole('button', { name: 'Send cleanup' })).toBeNull();
+    expect((screen.getByLabelText('How long did it take? (hrs)') as HTMLInputElement).value).toBe('1.5');
     fireEvent.click(screen.getByRole('button', { name: 'Check before sending' }));
     expect(screen.getByRole('heading', { name: 'Ready to send?' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Send cleanup' })).toBeTruthy();
+    expect(screen.getByText('1.5 hrs spent')).toBeTruthy();
     expect(rpc).not.toHaveBeenCalledWith('submit_cleanup', expect.anything());
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     expect((screen.getByLabelText(/What did you clean up/) as HTMLTextAreaElement).value).toBe('Removed roadside bottles');
+    fireEvent.change(screen.getByLabelText('How long did it take? (hrs)'), { target: { value: '2' } });
+    await waitFor(() => expect(saveDraft).toHaveBeenCalledWith('cleaner-1', 'attempt-1', expect.objectContaining({ hoursSpent: '2' })));
+  });
+  it('opens an older draft with empty time and rejects invalid hours before review', async () => {
+    state.claimed = true;
+    loadDraft.mockResolvedValue({ photos: [new File(['photo'], 'after.jpg', { type: 'image/jpeg' })], description: 'Removed roadside bottles', bagsOrItems: '', weightPounds: '' });
+    render(<CleanupAction report={report} userId="cleaner-1" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Submit cleanup photos' }));
+    const hours = await screen.findByLabelText('How long did it take? (hrs)') as HTMLInputElement;
+    await waitFor(() => expect((screen.getByLabelText(/What did you clean up/) as HTMLTextAreaElement).value).toBe('Removed roadside bottles'));
+    expect(hours.value).toBe('');
+    fireEvent.change(hours, { target: { value: '25' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Check before sending' }));
+    expect(screen.getByRole('alert').textContent).toMatch(/24 hours/);
+    expect(screen.queryByRole('button', { name: 'Send cleanup' })).toBeNull();
+    fireEvent.change(hours, { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Check before sending' }));
+    expect(screen.getByRole('button', { name: 'Send cleanup' })).toBeTruthy();
+    expect(screen.queryByText(/hrs spent/)).toBeNull();
   });
   it('does not overwrite an unreadable saved draft', async () => {
     state.claimed = true;

@@ -1899,6 +1899,7 @@ body .public-report-cards .report-card-container.report-card-container.report-ca
 .cleaner-step :is(textarea, input):focus { border-color: #b3a6e5; outline: none; box-shadow: 0 0 0 3px #efedff; }
 .cleaner-count { justify-self: end; margin-top: -4px; color: #686477; font-size: 12px; }
 .cleaner-amounts { display: grid; grid-template-columns: repeat(2, minmax(0, 220px)); gap: 12px; }
+.cleaner-amounts .cleaner-duration { grid-column: 1 / -1; }
 .cleaner-amounts label { display: grid; gap: 6px; color: #45434d; font-size: 14px; font-weight: 800; }
 /* Check step */
 .cleaner-check-step { display: grid; gap: 12px; }

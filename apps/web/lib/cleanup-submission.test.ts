@@ -32,6 +32,22 @@ beforeEach(() => {
 afterEach(() => { vi.resetAllMocks(); vi.useRealTimers(); });
 
 describe('cleanup commit recovery', () => {
+  it('saves duration and weight together without dropping either', async () => {
+    await submitCleanupEvidence({ ...input, bagsOrItems: 2, weightPounds: 12.5, durationMinutes: 90 });
+    expect(rpc).toHaveBeenCalledExactlyOnceWith('submit_cleanup_with_details', expect.objectContaining({
+      cleanup_duration_minutes: 90, cleanup_weight_pounds: 12.5, cleanup_bags_or_items_removed: 2,
+    }));
+  });
+  it('preserves the existing submission path when time is omitted', async () => {
+    await submitCleanupEvidence(input);
+    expect(rpc).toHaveBeenCalledExactlyOnceWith('submit_cleanup_with_weight', expect.not.objectContaining({ cleanup_duration_minutes: expect.anything() }));
+  });
+  it('never falls back to saving without entered time if the duration endpoint fails', async () => {
+    rpc.mockResolvedValue({ error: { code: 'PGRST202' } });
+    await expect(submitCleanupEvidence({ ...input, durationMinutes: 90 })).rejects.toBeInstanceOf(CleanupSubmissionUncertainError);
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(remove).not.toHaveBeenCalled();
+  });
   it('recovers a committed submission after the response is lost without deleting its evidence', async () => {
     let saved = false;
     lookup.mockImplementation(async () => ({ data: saved ? { id: 'stable-id' } : null, error: null }));
