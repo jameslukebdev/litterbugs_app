@@ -419,7 +419,7 @@ export default function ProfileScreen({ navigation, route }) {
             />
           ))
         ) : (
-          <EmptyState bug="ladybug" title="No current cleanups" text="Cleanups you claim appear here until they’re approved." action={{ label: 'Browse reports', onPress: () => openAppTab('Reports') }} actionStyle="link" />
+          <EmptyState style={styles.quietEmpty} bug="ladybug" title="No current cleanups" />
         )}
       </View>
 
@@ -436,7 +436,7 @@ export default function ProfileScreen({ navigation, route }) {
             />
           ))
         ) : (
-          <EmptyState bug="flower" title="No completed cleanups yet" text="Your completed cleanup history will appear here." />
+          <EmptyState style={styles.quietEmpty} bug="flower" title="No completed cleanups yet" />
         )}
       </View>
 
@@ -455,7 +455,7 @@ export default function ProfileScreen({ navigation, route }) {
             />
           ))
         ) : (
-          <EmptyState bug="ladybug" title="No reports yet" text="Reports you submit appear here." />
+          <EmptyState style={styles.quietEmpty} bug="ladybug" title="No reports yet" />
         )}
       </View>
 
