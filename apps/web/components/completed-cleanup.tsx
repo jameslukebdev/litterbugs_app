@@ -5,7 +5,6 @@ import { IoBagHandleOutline, IoScaleOutline, IoTimeOutline } from 'react-icons/i
 import { createClient } from '@/lib/supabase/client';
 import { Icon } from '@/components/icon';
 import { ReportAuthor } from '@/components/report-author';
-import { AntWalk } from '@/components/bug-motion';
 import { PhotoExpandButton, ReportPhotoViewer } from '@/components/report-photo-viewer';
 import styles from './completed-cleanup.module.css';
 
@@ -83,7 +82,7 @@ export function AfterPhotos({ reportId, paths, fill = false, viewer }: {
   return <div className={`${styles.viewer}${fill ? ` ${styles.fill}` : ''}`} aria-busy={loading}>
     {ready[index] ? <img className={styles.photo} src={sources[index]} alt={`After-cleanup photo ${index + 1} of ${count}`} />
       : failed[index] ? <div className={styles.unavailable}><Icon name="image" /><span>Photo unavailable</span></div>
-      : <div className={`${styles.placeholder} bug-ant-host`} role="status" aria-label="Loading photo"><AntWalk /></div>}
+      : <div className={styles.placeholder} role="status" aria-label="Loading photo" />}
     {viewer && (ready[index] || previousIndex !== null) && <PhotoExpandButton onClick={viewer.onOpen} disabled={!ready[index]} />}
     {count > 1 && <>
       <button type="button" className={`${styles.arrow} ${styles.previous}`} onClick={() => go(-1)} aria-label="Previous photo"><Icon name="chevron-left" /></button>

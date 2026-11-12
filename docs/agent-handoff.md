@@ -24,6 +24,20 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (approved filter/loading web release staged)
+
+- Release source layers the 20 reviewed production web/test files from bda0f8a
+  onto current live 2bebc0f: synchronized/removable filters with one selected
+  control, no After cleanup card badge, delayed glowing lightning-bug loader,
+  no loading ants, and coordinated visible-photo reveal with lazy offscreen
+  photos. Existing homepage content/layout preserved; only photo loading and
+  removal of the loading ant changed there.
+- Excluded all dev-review previews and concurrent notification/native/backend
+  changes. No policy-page changes, database migrations or mobile/store release.
+- Local source previously passed 76 focused tests, lint, TypeScript, CSS and
+  phone/desktop browser checks. Exact release validation and live deployment
+  identity will be recorded in the completion entry.
+
 ### 2026-11-12 — Codex (mint cleanup stats deployed)
 
 - Owner-approved release 2bebc0f on codex/cleanup-stats-release-20261112 is live:

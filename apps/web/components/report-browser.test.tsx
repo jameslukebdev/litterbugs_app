@@ -5,6 +5,7 @@ import type { MappableReport } from '@litterbugs/report-contract';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ReportBrowser } from './report-browser';
+import { DEFAULT_DISCOVERY_FILTERS, type DiscoveryFilters } from '@/lib/report-discovery';
 
 const report: MappableReport = {
   is_published: true,
@@ -139,9 +140,9 @@ describe('ReportBrowser', () => {
     );
 
     expect(screen.queryByText('Hidden trail report')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Favorites (1)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Favorites' }));
     expect(screen.getByText('Roadside bottles')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Hidden (1)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Hidden' }));
     expect(screen.getByText('Hidden trail report')).toBeTruthy();
     expect(screen.queryByText('Roadside bottles')).toBeNull();
   });
@@ -295,14 +296,15 @@ it('applies explicit filters when a navigation link reopens the current map', as
   expect(inProgress.getAttribute('aria-pressed')).toBe('false');
 });
 
-it('restores browse filters without rewriting the entry URL, then writes an explicit filter change', async () => {
+it('starts a shared report unfiltered instead of silently restoring unrelated session filters', async () => {
   window.history.replaceState(null, '', '/map?report=shared&intent=fund#map=36,-81,12');
   sessionStorage.setItem('litterbugs.results.v1', JSON.stringify({
     filters: { status: 'completed', funding: 'all', severity: 'all', radius: 0, query: '', scope: 'all' },
     sort: 'newest', scroll: 0,
   }));
   render(<ReportBrowser reports={[report]} open onToggle={vi.fn()} onSelect={vi.fn()} />);
-  await screen.findByText('No reports match your filters');
+  await waitFor(() => expect(screen.getByRole('button', { name: 'All reports' }).getAttribute('aria-pressed')).toBe('true'));
+  expect(screen.getByText('Roadside bottles')).toBeTruthy();
   expect(window.location.search).toBe('?report=shared&intent=fund');
   fireEvent.click(screen.getByRole('button', { name: 'Available' }));
   const query = new URLSearchParams(window.location.search);
@@ -374,4 +376,141 @@ it('waits for results for the restored filters and keeps those cards visible dur
   view.rerender(<ReportBrowser {...props} resultFilters={completed} />);
   expect(screen.getByRole('link', { name: /completed bottles/i })).toBeTruthy();
   expect(screen.queryByText('Roadside bottles')).toBeNull();
+});
+
+it('opens the toolbar dialog with applied filters after Show results, including an empty Hidden scope', async () => {
+  const props = { reports: [report], open: true, onToggle: vi.fn(), onSelect: vi.fn() };
+  const view = render(<ReportBrowser {...props} filtersRequest={0} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Search and filters' }));
+  fireEvent.click(within(screen.getByRole('group', { name: 'Saved reports' })).getByRole('radio', { name: 'Hidden' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Show results' }));
+  expect(screen.getByRole('button', { name: 'Remove Hidden reports filter' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Hidden' }).getAttribute('aria-pressed')).toBe('true');
+  expect(screen.queryByText('Roadside bottles')).toBeNull();
+  view.rerender(<ReportBrowser {...props} filtersRequest={1} />);
+  const dialog = await screen.findByRole('dialog', { name: 'Search and filters' });
+  expect((within(dialog).getByRole('radio', { name: 'Hidden' }) as HTMLInputElement).checked).toBe(true);
+  expect((within(dialog).getByRole('radio', { name: 'Favorites' }) as HTMLInputElement).checked).toBe(false);
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Remove Hidden reports filter' }));
+  expect(screen.getByText('Roadside bottles')).toBeTruthy();
+  expect(new URLSearchParams(window.location.search).has('scope')).toBe(false);
+});
+
+it('keeps Favorites explicit and removable after the last saved favorite disappears', async () => {
+  const props = { reports: [report], open: true, onToggle: vi.fn(), onSelect: vi.fn() };
+  const view = render(<ReportBrowser {...props} favoriteReportIds={new Set([report.id])} />);
+  await waitFor(() => expect(sessionStorage.getItem('litterbugs.results.v1')).toBeTruthy());
+  expect(screen.queryByRole('group', { name: 'Active filters' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Favorites' }));
+  view.rerender(<ReportBrowser {...props} favoriteReportIds={new Set()} />);
+  expect(screen.getByRole('button', { name: 'Favorites' }).getAttribute('aria-pressed')).toBe('true');
+  expect(screen.queryByText('Roadside bottles')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Remove Favorites filter' }));
+  expect(screen.getByText('Roadside bottles')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'All reports' }).getAttribute('aria-pressed')).toBe('true');
+});
+
+it.each([
+  ['status', 'Remove Cleaned up filter'], ['funding', 'Remove Has a fund filter'],
+  ['severity', 'Remove Priority: High filter'], ['radius', 'Remove Within 5 mi of map center filter'],
+  ['query', 'Remove Search: bottles filter'], ['scope', 'Remove Favorites filter'],
+] as const)('removes only %s, keeping the other filters, map position and report selection', async (key, button) => {
+  window.history.replaceState(null, '', '/map?browse=1&view=map&status=completed&funding=funded&severity=high&radius=5&q=bottles&scope=favorites&report=shared#map=36,-81,12');
+  const onDiscoveryFiltersChange = vi.fn();
+  const allFilters: DiscoveryFilters = { status: 'completed', funding: 'funded', severity: 'high', radius: 5, query: 'bottles', scope: 'favorites' };
+  render(<ReportBrowser reports={[]} open onToggle={vi.fn()} onSelect={vi.fn()} onDiscoveryFiltersChange={onDiscoveryFiltersChange} />);
+  fireEvent.click(await screen.findByRole('button', { name: button }));
+  await waitFor(() => expect(onDiscoveryFiltersChange).toHaveBeenLastCalledWith({ ...allFilters, [key]: DEFAULT_DISCOVERY_FILTERS[key] }));
+  expect(new URLSearchParams(window.location.search).get('report')).toBe('shared');
+  expect(new URLSearchParams(window.location.search).get('view')).toBe('map');
+  expect(window.location.hash).toBe('#map=36,-81,12');
+  expect(screen.queryByRole('button', { name: button })).toBeNull();
+  expect(within(screen.getByRole('group', { name: 'Active filters' })).getAllByRole('button')).toHaveLength(6);
+});
+
+it('clears every applied filter from the active row and restores URL filters on back/forward', async () => {
+  const filtered = '/map?browse=1&scope=favorites&severity=high&q=bottles';
+  window.history.replaceState(null, '', filtered);
+  render(<ReportBrowser reports={[report]} open onToggle={vi.fn()} onSelect={vi.fn()} favoriteReportIds={new Set([report.id])} />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Clear all filters' }));
+  expect(screen.queryByRole('group', { name: 'Active filters' })).toBeNull();
+  expect(screen.getByText('Roadside bottles')).toBeTruthy();
+  expect(window.location.search).toBe('?browse=1');
+  window.history.replaceState(null, '', filtered);
+  fireEvent(window, new PopStateEvent('popstate'));
+  expect(await screen.findByRole('button', { name: 'Remove Favorites filter' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Remove Priority: High filter' })).toBeTruthy();
+  window.history.replaceState(null, '', '/map');
+  fireEvent(window, new PopStateEvent('popstate'));
+  await waitFor(() => expect(screen.queryByRole('group', { name: 'Active filters' })).toBeNull());
+});
+
+it.each(['favorites', 'hidden'] as const)('does not apply stale %s session filters to a fresh map entry', async scope => {
+  sessionStorage.setItem('litterbugs.results.v1', JSON.stringify({ filters: { ...DEFAULT_DISCOVERY_FILTERS, scope }, sort: 'newest', scroll: 0 }));
+  window.history.replaceState(null, '', '/map?view=reports');
+  const onDiscoveryFiltersChange = vi.fn();
+  render(<ReportBrowser reports={[report]} open onToggle={vi.fn()} onSelect={vi.fn()} onDiscoveryFiltersChange={onDiscoveryFiltersChange} />);
+  await waitFor(() => expect(onDiscoveryFiltersChange).toHaveBeenLastCalledWith(DEFAULT_DISCOVERY_FILTERS));
+  expect(screen.getByText('Roadside bottles')).toBeTruthy();
+});
+
+it('keeps dialog edits and Reset unapplied when dismissed, then reopens the actual choices', async () => {
+  window.history.replaceState(null, '', '/map?browse=1&severity=high');
+  const props = { reports: [report], open: true, onToggle: vi.fn(), onSelect: vi.fn() };
+  const view = render(<ReportBrowser {...props} filtersRequest={0} />);
+  await screen.findByRole('button', { name: 'Remove Priority: High filter' });
+  fireEvent.click(screen.getByRole('button', { name: 'Search and filters' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Reset filters' }));
+  fireEvent.click(within(screen.getByRole('group', { name: 'Saved reports' })).getByRole('radio', { name: 'Favorites' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+  expect(window.location.search).toBe('?browse=1&severity=high');
+  expect(screen.queryByRole('button', { name: 'Remove Favorites filter' })).toBeNull();
+  view.rerender(<ReportBrowser {...props} filtersRequest={1} />);
+  const dialog = await screen.findByRole('dialog', { name: 'Search and filters' });
+  expect((within(dialog).getByRole('radio', { name: 'High' }) as HTMLInputElement).checked).toBe(true);
+  expect((within(within(dialog).getByRole('group', { name: 'Saved reports' })).getByRole('radio', { name: 'All' }) as HTMLInputElement).checked).toBe(true);
+});
+
+it('sends the same filtered reports to the map as it renders in the list', async () => {
+  const other = { ...report, id: 'other', title: 'Other report' };
+  const onVisibleReportsChange = vi.fn();
+  render(<ReportBrowser reports={[report, other]} open onToggle={vi.fn()} onSelect={vi.fn()} favoriteReportIds={new Set([report.id])} onVisibleReportsChange={onVisibleReportsChange} />);
+  await waitFor(() => expect(onVisibleReportsChange).toHaveBeenLastCalledWith([report, other]));
+  fireEvent.click(screen.getByRole('button', { name: 'Favorites' }));
+  await waitFor(() => expect(onVisibleReportsChange).toHaveBeenLastCalledWith([report]));
+  expect(screen.queryByText('Other report')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Remove Favorites filter' }));
+  await waitFor(() => expect(onVisibleReportsChange).toHaveBeenLastCalledWith([report, other]));
+  expect(screen.getByText('Other report')).toBeTruthy();
+});
+
+it('uses Favorites as a removable inline toggle while preserving other filters', async () => {
+  window.history.replaceState(null, '', '/map?browse=1&status=completed&severity=high');
+  const onDiscoveryFiltersChange = vi.fn();
+  render(<ReportBrowser reports={[]} open onToggle={vi.fn()} onSelect={vi.fn()} onDiscoveryFiltersChange={onDiscoveryFiltersChange} />);
+  await screen.findByRole('button', { name: 'Remove Priority: High filter' });
+  const favorites = screen.getByRole('button', { name: 'Favorites' });
+  fireEvent.click(favorites);
+  expect(favorites.getAttribute('aria-pressed')).toBe('true');
+  expect(favorites.getAttribute('title')).toBe('Remove Favorites filter');
+  expect(favorites.querySelector('svg')).toBeTruthy();
+  expect(new URLSearchParams(window.location.search).get('status')).toBe('completed');
+  expect(new URLSearchParams(window.location.search).get('severity')).toBe('high');
+  fireEvent.click(favorites);
+  await waitFor(() => expect(onDiscoveryFiltersChange).toHaveBeenLastCalledWith({ ...DEFAULT_DISCOVERY_FILTERS, status: 'completed', severity: 'high' }));
+  expect(favorites.getAttribute('aria-pressed')).toBe('false');
+});
+
+it('clears an inline status preset without losing Favorites or advanced choices', async () => {
+  window.history.replaceState(null, '', '/map?browse=1&status=completed&scope=favorites&severity=high');
+  const onDiscoveryFiltersChange = vi.fn();
+  render(<ReportBrowser reports={[]} open onToggle={vi.fn()} onSelect={vi.fn()} onDiscoveryFiltersChange={onDiscoveryFiltersChange} />);
+  await screen.findByRole('button', { name: 'Remove Priority: High filter' });
+  const completed = screen.getByRole('button', { name: 'Completed' });
+  expect(completed.getAttribute('aria-pressed')).toBe('true');
+  expect(completed.querySelector('svg')).toBeTruthy();
+  fireEvent.click(completed);
+  await waitFor(() => expect(onDiscoveryFiltersChange).toHaveBeenLastCalledWith({ ...DEFAULT_DISCOVERY_FILTERS, scope: 'favorites', severity: 'high' }));
+  expect(screen.getByRole('button', { name: 'Favorites' }).getAttribute('aria-pressed')).toBe('true');
 });

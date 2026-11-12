@@ -4,6 +4,7 @@ import { BrandBug } from '@/components/brand-bug';
 import type { PublicReportShareModel } from '@/lib/public-report-share-model';
 import { PublicPhoto } from './public-photo';
 import styles from './home-cleanup-proof.module.css';
+import { PhotoBatch } from '../photo-batch';
 
 export function HomeCleanupProof({ report, heading = 'Most recent cleanup', showHeading = true }: { report: PublicReportShareModel; heading?: string; showHeading?: boolean }) {
   const cleaned = report.completionDate ? new Date(report.completionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : null;
@@ -15,7 +16,7 @@ export function HomeCleanupProof({ report, heading = 'Most recent cleanup', show
         <h2 id="home-cleanup-title" className="heading-with-bug"><img className="heading-bug" src="/brand/bugs/flower.png" alt="" aria-hidden="true" width={32} height={32} />{heading}</h2>
         <Link href="/cleanups">See completed cleanups</Link>
       </div>}
-      <div className={styles.photos}>
+      <PhotoBatch className={styles.photos}>
         {[
           ['Before', report.beforePhotoUrl],
           ['After', report.afterPhotoUrl],
@@ -25,7 +26,7 @@ export function HomeCleanupProof({ report, heading = 'Most recent cleanup', show
             <figcaption>{label}</figcaption>
           </figure>
         ))}
-      </div>
+      </PhotoBatch>
       <div className={styles.details}>
         <div>
           <h3>{report.title}</h3>
