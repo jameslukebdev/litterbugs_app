@@ -112,7 +112,7 @@ export default function CompletedCleanupStory({
 
       {canSwitchPhotos ? (
         <View style={styles.sideSwitch} accessibilityRole="tablist" accessibilityLabel="Choose photos">
-          {[['after', 'After cleanup', 'flower', colors.done], ['before', 'Before', 'ladybug', colors.red]].map(([side, label, bug, ink]) => {
+          {[['after', 'After cleanup', 'flower', colors.ink], ['before', 'Before', 'ladybug', colors.ink]].map(([side, label, bug, ink]) => {
             const selected = photoSide === side;
             return (
               <TouchableOpacity
@@ -161,7 +161,10 @@ export default function CompletedCleanupStory({
 
       {/* About the cleanup: the cleaner's own words first, then the numbers as one stat row. */}
       <View style={styles.aboutCard}>
-        <Text style={styles.aboutTitle}>About the cleanup</Text>
+        <View style={styles.aboutHeading}>
+          <BrandBug kind="flower" size={20} />
+          <Text style={styles.aboutTitle}>About the cleanup</Text>
+        </View>
         <TouchableOpacity
           style={styles.cleanerRow}
           onPress={onCleanerPress}
@@ -193,7 +196,7 @@ export default function CompletedCleanupStory({
           <View style={styles.factsRow}>
             {facts.map((fact, index) => (
               <View key={fact.label} style={[styles.factCard, index > 0 && styles.factDivider]} accessible accessibilityLabel={fact.label}>
-                <Ionicons name={fact.icon} size={20} color={colors.done} />
+                <Ionicons name={fact.icon} size={20} color={colors.primary} />
                 <Text style={styles.factValue}>{fact.value}</Text>
                 <Text style={styles.factText}>{fact.caption}</Text>
               </View>
@@ -282,7 +285,8 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   aboutCard: { padding: 16, gap: 10, borderRadius: 18, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
-  aboutTitle: { color: colors.done, fontSize: 17, fontFamily: fonts.heading },
+  aboutHeading: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  aboutTitle: { color: colors.ink, fontSize: 17, fontFamily: fonts.heading },
   commentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingTop: 2 },
   descriptionText: { flex: 1, color: colors.body, fontSize: 15, lineHeight: 22 },
   factsRow: { flexDirection: 'row', marginTop: 4, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.edge },
