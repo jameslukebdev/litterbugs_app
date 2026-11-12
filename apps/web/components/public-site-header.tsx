@@ -12,6 +12,7 @@ import { HeaderAreaSearch } from './header-area-search';
 import { AVAILABLE_CLEANUPS_MAP_HREF, LITTER_MAP_HREF, MAP_HOME_EVENT, REPORT_ENTRY_HREF } from '@/lib/home-map-link';
 
 import { PublicAccountAction } from '@/components/public-account-action';
+import { SocialLinks } from './social-links';
 import { getHeaderProfile, getServerHeaderProfile, subscribeHeaderProfile } from '@/lib/header-profile-cache';
 
 import styles from './public-site-header.module.css';
@@ -256,6 +257,7 @@ function NavigationMenu({ activePath }: { activePath: PublicPath }) {
             <NavigationDropdown key={label} label={label} links={links} activePath={activePath}
               open={openCategory === label} onToggle={() => setOpenCategory(openCategory === label ? null : label)} onClose={() => setOpenCategory(current => current === label ? null : current)} onNavigate={closeMenu} />)}
           {!member?.userId && <Link className={styles.navLink} href="/sign-in" onClick={closeMenu}>Log in / Sign up</Link>}
+          <div className={styles.drawerSocial}><SocialLinks /></div>
         </nav>
       </dialog>
     </div>

@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { IoChevronUp } from 'react-icons/io5';
 import { AnalyticsPreferences } from './website-analytics';
+import { SocialLinks } from './social-links';
 import styles from './public-site-footer.module.css';
 
 /**
@@ -30,6 +31,7 @@ export function PublicSiteFooter({ compact = false }: { compact?: boolean }) {
             <Image src="/brand/litterbugs-logo.png" alt="" width={636} height={433} />
           </Link>
           <span className={styles.copyright}>© {new Date().getFullYear()} Litterbugs</span>
+          <div className={styles.brandSocial}><SocialLinks compact={compact} /></div>
         </div>
         <nav className={styles.links} aria-label="Footer navigation">
           <ul className={styles.group} data-tone="lavender">
@@ -41,7 +43,7 @@ export function PublicSiteFooter({ compact = false }: { compact?: boolean }) {
           <div className={styles.secondary}>{secondaryLinks}</div>
           {compact && <details className={styles.more}>
             <summary>More <IoChevronUp aria-hidden /></summary>
-            <div className={styles.moreLinks}>{secondaryLinks}</div>
+            <div className={styles.moreLinks}>{secondaryLinks}<div className={styles.moreSocial}><SocialLinks /></div></div>
           </details>}
         </nav>
       </div>

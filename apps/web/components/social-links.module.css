@@ -1,0 +1,15 @@
+.socials { display: grid; justify-items: start; gap: 4px; }
+.label { color: #6b6878; font-size: 13px; font-weight: 600; line-height: 1.5; }
+.icons { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.socials.socials .icons a {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; padding: 10px; border: 0; border-radius: 12px;
+  background: transparent; color: #4a4857; box-shadow: none; text-decoration: none;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+.socials.socials .icons a:is(:hover, :focus-visible) { background: #ebe7ff; color: #4438bb; text-decoration: none; }
+.socials.socials .icons a:focus-visible { outline: 2px solid #4438bb; outline-offset: 2px; }
+.icons svg { width: 22px; height: 22px; flex: none; }
+.compact.compact .icons a { width: 32px; height: 32px; padding: 6px; border-radius: 8px; }
+.compact .icons svg { width: 20px; height: 20px; }
+@media (prefers-reduced-motion: reduce) { .socials.socials .icons a { transition: none; } }

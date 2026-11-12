@@ -24,6 +24,27 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (Instagram links added locally)
+
+- Added owner-confirmed instagram.com/litterbugs_app to shared SocialLinks:
+  regular footer identity, phone drawer, and compact map footer (More below
+  1440px; inline above). Existing lavender/charcoal tokens, 44px phone targets,
+  accessible destination names and new tabs; no external embeds or SDKs.
+- Refero reference lock from preceding entry retained. Fixed narrow-footer
+  logo/copyright/social grid placement. Map footer remains 48px at 1280px.
+- 20 existing header/navigation tests, scoped ESLint, TypeScript and diff check
+  pass. CUA verifies desktop/phone layout, no overflow at 319/390/1280px,
+  drawer and map More access, and actual Instagram click opens correct profile.
+  Initial mid-edit HMR/hydration errors stopped after clean reload; no new
+  browser errors in final checks. Temporary viewport/CDP overrides restored;
+  local home preview remains open; research tabs closed. No production build.
+- Owner asked us to find other profiles. Instagram bio links only own website.
+  TikTok search found @litterbugs.commun with matching full name but no avatar,
+  bio or videos; ownership unverified, owner question pending, not linked.
+  Facebook search failed to yield a verified official page; not linked.
+- Local only: no push, deployment, native/backend or DB changes. Preserved
+  concurrent mobile files and other handoff edits via isolated Git index.
+
 ### 2026-11-12 — Codex (social-link placement research)
 
 - Refero: Duolingo and Bumble full styles plus Kickstarter footer screen

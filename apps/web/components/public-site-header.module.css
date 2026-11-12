@@ -111,6 +111,7 @@
 .drawerBrand img { width: 96px; height: 66px; object-fit: contain; }
 .drawerBrand:focus-visible { outline: 3px solid #2f7d3266; outline-offset: 2px; border-radius: 5px; }
 .mobileDrawer .mobilePrimaryLinks { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+.drawerSocial { margin-top: 16px; padding: 16px 14px 0; border-top: 1px solid #e5dff2; }
 .mobilePrimaryLinks .navLink:hover { color: var(--green-dark); background: #f4f7f4; }
 
 @starting-style {
