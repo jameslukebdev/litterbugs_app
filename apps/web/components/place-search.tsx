@@ -1,6 +1,6 @@
 'use client';
 
-import { trackMapDiscovery } from '@/lib/website-analytics';
+import { trackMapDiscovery, reportResultBucket, rememberMapSearchSelection } from '@/lib/website-analytics';
 import { IoCloseOutline, IoLocationOutline, IoSearchOutline } from 'react-icons/io5';
 import { useEffect, useId, useRef, useState } from 'react';
 import { createLocationSearch, type LocationSuggestion } from '@/lib/location-suggestions';
@@ -67,11 +67,13 @@ export function PlaceSearch({ selected, onSelect, onClear, bias, disabled = fals
     setMessage('');
     setResults([]);
     setOpen(true);
+    trackMapDiscovery('location_search_started', { surface: trackingSurface });
     try {
       const timeout = new Promise<never>((_, reject) => controller.signal.addEventListener('abort', () => reject(new Error('Search timed out')), { once: true }));
       const places = await Promise.race([provider.search(query.trim(), bias), timeout]);
       if (seq !== sequence.current) return;
       setResults(places);
+      if (places.length) trackMapDiscovery('location_suggestions_shown', { surface: trackingSurface, result_bucket: reportResultBucket(places.length) });
       if (!places.length) trackMapDiscovery('location_search_empty', { surface: trackingSurface });
       if (!places.length) setMessage('No location found. Try a city and state or a full address.');
     } catch {
@@ -95,6 +97,7 @@ export function PlaceSearch({ selected, onSelect, onClear, bias, disabled = fals
       const resolved = await Promise.race([place.resolve(), timeout]);
       if (seq !== sequence.current) return;
       trackMapDiscovery('location_selected', { surface: trackingSurface });
+      rememberMapSearchSelection(resolved.id, trackingSurface);
       onSelect(resolved);
       setResults([]);
       setText('');

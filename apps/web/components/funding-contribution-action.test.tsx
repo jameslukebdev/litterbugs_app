@@ -5,6 +5,7 @@ import type { Report } from '@litterbugs/report-contract';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { FundingContributionAction } from './funding-contribution-action';
+import { loadStripe } from '@stripe/stripe-js/pure';
 
 const { loadFlags, createContribution, quote, stripeMock } = vi.hoisted(() => ({ loadFlags: vi.fn(), createContribution: vi.fn(), quote: vi.fn(), stripeMock: { ready: false, confirmPayment: vi.fn() } }));
 
@@ -21,7 +22,7 @@ vi.mock('@/lib/funding', async (importOriginal) => ({
   createCleanupContribution: createContribution,
 }));
 
-vi.mock('@stripe/stripe-js', () => ({ loadStripe: vi.fn().mockResolvedValue(null) }));
+vi.mock('@stripe/stripe-js/pure', () => ({ loadStripe: vi.fn().mockResolvedValue(null) }));
 vi.mock('@stripe/react-stripe-js', () => ({
   Elements: ({ children }: { children: React.ReactNode }) => children,
   PaymentElement: () => <div>Secure card form</div>,
@@ -110,6 +111,7 @@ describe('FundingContributionAction', () => {
     expect(screen.getByText('$3.00')).toBeTruthy();
     expect(screen.getByText('$28.00')).toBeTruthy();
     expect(screen.getByText(/full charge—including the fee—is refunded/i)).toBeTruthy();
+    expect(loadStripe).not.toHaveBeenCalled();
   });
 });
 
@@ -231,8 +233,10 @@ it('tracks the new funding flow through payment submission and observes confirma
   render(<FundingContributionAction report={report} userId="member" initialAmountCents={500} startOpen />);
   await waitFor(() => expect((screen.getByRole('button', { name: 'Continue' }) as HTMLButtonElement).disabled).toBe(false));
   expect(telemetry.step).toHaveBeenCalledWith('fund', 'amount_review');
+  expect(loadStripe).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
   fireEvent.click(await screen.findByRole('button', { name: 'Pay $6.00' }));
+  expect(loadStripe).toHaveBeenCalledExactlyOnceWith('pk_test_fixture');
   await screen.findByText('Thank you!');
   expect(telemetry.step).toHaveBeenCalledWith('fund', 'payment_form');
   expect(telemetry.step).toHaveBeenCalledWith('fund', 'payment_submitted');

@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, act } from '@testing-libra
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { PlaceSearch } from './place-search';
 const telemetry = vi.hoisted(() => vi.fn());
-vi.mock('@/lib/website-analytics', () => ({ trackMapDiscovery: telemetry }));
+vi.mock('@/lib/website-analytics', async original => ({ ...await original<object>(), trackMapDiscovery: telemetry }));
 const api = vi.hoisted(() => ({ search: vi.fn(), reset: vi.fn() }));
 vi.mock('@/lib/location-suggestions', () => ({ createLocationSearch: () => api }));
 const place = { id: 'nairobi', label: 'Nairobi, Kenya', subtitle: 'City / town', latitude: -1.28, longitude: 36.8, bounds: { north: -1.1, south: -1.4, west: 36.6, east: 37 } };
@@ -21,7 +21,12 @@ it('selects a worldwide city without inventing a boundary or labelling it an add
   fireEvent.click(option);
   await waitFor(() => expect(onSelect).toHaveBeenCalledWith(place));
   expect(onSelect.mock.calls[0][0].geometry).toBeUndefined();
-  expect(telemetry.mock.calls).toEqual([['search_submitted', { surface: 'toolbar_search' }], ['location_selected', { surface: 'toolbar_search' }]]);
+  expect(telemetry.mock.calls).toEqual([
+    ['search_submitted', { surface: 'toolbar_search' }],
+    ['location_search_started', { surface: 'toolbar_search' }],
+    ['location_suggestions_shown', { surface: 'toolbar_search', result_bucket: '1' }],
+    ['location_selected', { surface: 'toolbar_search' }],
+  ]);
   expect(JSON.stringify(telemetry.mock.calls)).not.toMatch(/Nairobi|Kenya|latitude|longitude/);
 });
 
@@ -34,6 +39,7 @@ it('ignores an older response after the query changes', async () => {
   fireEvent.change(screen.getByRole('combobox'), { target: { value: 'Bangkok' } });
   await act(async () => resolve([suggestion()]));
   expect(screen.queryByRole('option')).toBeNull();
+  expect(telemetry).not.toHaveBeenCalledWith('location_suggestions_shown', expect.anything());
 });
 
 it('retains the selected place when opening a suggestion fails', async () => {
@@ -74,6 +80,10 @@ it('debounces typing and chooses the highlighted result with the keyboard', asyn
   await act(async () => { await vi.advanceTimersByTimeAsync(300); });
   expect(api.search).toHaveBeenCalledTimes(1);
   expect(api.search).toHaveBeenCalledWith('Nairobi', bias);
+  expect(telemetry.mock.calls).toEqual([
+    ['location_search_started', { surface: 'toolbar_search' }],
+    ['location_suggestions_shown', { surface: 'toolbar_search', result_bucket: '1' }],
+  ]);
   fireEvent.keyDown(input, { key: 'ArrowDown' });
   fireEvent.submit(input.closest('form')!);
   await act(async () => {});

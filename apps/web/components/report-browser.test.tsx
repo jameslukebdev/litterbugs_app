@@ -97,6 +97,18 @@ describe('ReportBrowser', () => {
     expect(image?.getAttribute('fetchpriority')).toBe('high');
   });
 
+  it('defers hidden report photos and prioritizes them when the list opens', () => {
+    const props = { reports: [{ ...report, photo_paths: ['user/report/photo.jpg'] }], onToggle: vi.fn(), onSelect: vi.fn() };
+    const view = render(<ReportBrowser {...props} open={false} />);
+    const image = document.querySelector('.report-result-photo img');
+    expect(image?.getAttribute('loading')).toBe('lazy');
+    expect(image?.getAttribute('fetchpriority')).toBe('auto');
+    view.rerender(<ReportBrowser {...props} open />);
+    expect(document.querySelector('.report-result-photo img')).toBe(image);
+    expect(image?.getAttribute('loading')).toBe('eager');
+    expect(image?.getAttribute('fetchpriority')).toBe('high');
+  });
+
   it('preloads the optimized detail image when a photographed card is explored', () => {
     const originalImage = globalThis.Image;
     const sources: string[] = [];

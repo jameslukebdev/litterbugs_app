@@ -1,7 +1,7 @@
 'use client';
 
 import { communityReturnPath } from '@/lib/community-journey';
-import { trackParticipation, trackParticipationFailure, trackWebsiteOutcome, trackMapDiscovery, reportResultBucket, trackParticipationExit, type EntrySource } from '@/lib/website-analytics';
+import { trackParticipation, trackParticipationFailure, trackWebsiteOutcome, trackMapDiscovery, reportResultBucket, trackParticipationExit, consumeMapSearchSelection, type EntrySource, type MapSearchSurface } from '@/lib/website-analytics';
 
 import { importLibrary, setOptions } from '@googlemaps/js-api-loader';
 import {
@@ -146,9 +146,11 @@ export function MapExperience({
   }, [searchPlace]);
   const [discoveryArea, setDiscoveryArea] = useState<DiscoveryArea | null>(null);
   const [restoredFilters, setDiscoveryFilters] = useState<DiscoveryFilters | null>(null);
+  const discoveryFiltersRef = useRef<DiscoveryFilters | null>(null);
   const discoveryFilters = restoredFilters ?? DEFAULT_DISCOVERY_FILTERS;
   const [closestPreview, setClosestPreview] = useState<{ report: MappableReport; filters: DiscoveryFilters } | null>(null);
   const updateDiscoveryFilters = useCallback((filters: DiscoveryFilters) => {
+    discoveryFiltersRef.current = filters;
     setDiscoveryFilters(filters);
     setClosestPreview(current => current && Object.entries(current.filters).every(([key, value]) =>
       value === filters[key as keyof DiscoveryFilters]) ? current : null);
@@ -248,14 +250,35 @@ export function MapExperience({
     && discoveryResponse.search.favorites === discoverySearch.favorites
     && discoveryResponse.search.hidden === discoverySearch.hidden ? discoveryResponse : null);
   const measuredDiscovery = useRef<typeof discoveryResponse>(null);
+  const [settledSearchViewport, setSettledSearchViewport] = useState(0);
+  // Local correlation only: place/report IDs never enter analytics payloads.
+  const pendingPlaceSearch = useRef<{ placeId: string; filters: DiscoveryFilters | null; surface: MapSearchSurface; started: number; awaitingViewport: boolean } | null>(null);
+  const placeSearchResults = useRef<{ response: NonNullable<typeof discoveryResponse>; surface: MapSearchSurface; started: number } | null>(null);
   useEffect(() => {
-    if (!currentResponse || !mapTilesReady || mapError || measuredDiscovery.current === currentResponse) return;
-    measuredDiscovery.current = currentResponse;
+    if (!currentResponse || !mapTilesReady || mapError) return;
+    const newResponse = measuredDiscovery.current !== currentResponse;
+    if (!newResponse && !pendingPlaceSearch.current) return;
     const filtered = Object.entries(currentResponse.search.filters).some(([key, value]) => value !== DEFAULT_DISCOVERY_FILTERS[key as keyof DiscoveryFilters]);
-    trackMapDiscovery(currentResponse.error ? 'results_failed' : currentResponse.reports.length ? 'results_loaded' : 'results_empty', {
-      surface: 'map', filtered, ...(currentResponse.error ? {} : { result_bucket: reportResultBucket(currentResponse.reports.length), truncated: currentResponse.truncated }),
-    });
-  }, [currentResponse, mapTilesReady, mapError]);
+    if (newResponse) {
+      measuredDiscovery.current = currentResponse;
+      trackMapDiscovery(currentResponse.error ? 'results_failed' : currentResponse.reports.length ? 'results_loaded' : 'results_empty', {
+        surface: 'map', filtered, ...(currentResponse.error ? {} : { result_bucket: reportResultBucket(currentResponse.reports.length), truncated: currentResponse.truncated }),
+      });
+    }
+    const search = pendingPlaceSearch.current;
+    // fitBounds can produce an intermediate response before the final map idle.
+    if (search?.awaitingViewport) return;
+    // A homepage search may still be resolving its place after the map's first idle.
+    if (search && Date.now() - search.started <= 30000 && currentResponse.search.filters === search.filters && currentResponse.search.placeId !== search.placeId) return;
+    placeSearchResults.current = null;
+    pendingPlaceSearch.current = null;
+    if (search && Date.now() - search.started <= 30000 && currentResponse.search.placeId === search.placeId && currentResponse.search.filters === search.filters) {
+      trackMapDiscovery(currentResponse.error ? 'search_results_failed' : currentResponse.reports.length ? 'search_results_loaded' : 'search_results_empty', {
+        surface: search.surface, filtered, ...(currentResponse.error ? {} : { result_bucket: reportResultBucket(currentResponse.reports.length), truncated: currentResponse.truncated }),
+      });
+      if (!currentResponse.error) placeSearchResults.current = { response: currentResponse, surface: search.surface, started: Date.now() };
+    }
+  }, [currentResponse, mapTilesReady, mapError, settledSearchViewport]);
   const reports = discoveryResponse?.reports ?? initialMapReports;
   const discoveryTruncated = displayResponse?.truncated ?? false;
 
@@ -328,7 +351,10 @@ export function MapExperience({
     }
   }
 
-  function selectSearchPlace(place: SearchPlace) {
+  function selectSearchPlace(place: SearchPlace, surface: MapSearchSurface = 'toolbar_search') {
+    consumeMapSearchSelection(place.id);
+    pendingPlaceSearch.current = { placeId: place.id, filters: restoredFilters, surface, started: Date.now(), awaitingViewport: Boolean(mapRef.current) };
+    placeSearchResults.current = null;
     setClosestPreview(null);
     searchPlaceRef.current = place;
     const url = new URL(window.location.href); url.searchParams.set('area', place.id);
@@ -339,6 +365,8 @@ export function MapExperience({
   }
 
   function clearSearchPlace() {
+    pendingPlaceSearch.current = null;
+    placeSearchResults.current = null;
     searchPlaceRef.current = null;
     setSearchPlace(null);
     const url = new URL(window.location.href);
@@ -529,6 +557,8 @@ export function MapExperience({
         // Search is usable before Google Maps finishes loading. A choice made
         // in this session must outrank the previous URL or saved viewport.
         const selectedWhileLoading = searchPlaceRef.current;
+        const handoff = consumeMapSearchSelection(selectedWhileLoading?.id ?? areaId ?? undefined);
+        if (handoff && !pendingPlaceSearch.current) pendingPlaceSearch.current = { ...handoff, filters: discoveryFiltersRef.current, awaitingViewport: true };
         const memory = selectedWhileLoading
           ? { latitude: selectedWhileLoading.latitude, longitude: selectedWhileLoading.longitude, zoom: 12, place: selectedWhileLoading }
           : sharedMap ? { ...sharedMap, place: stored?.place?.id === areaId ? stored.place : null } : stored;
@@ -549,7 +579,16 @@ export function MapExperience({
         map.addListener('click', (event: google.maps.MapMouseEvent) => {
           if (event.latLng) mapClickRef.current({ latitude: event.latLng.lat(), longitude: event.latLng.lng() });
         });
-        map.addListener('dragstart', () => setClosestPreview(null));
+        map.addListener('dragstart', () => {
+          setClosestPreview(null);
+          pendingPlaceSearch.current = null;
+          placeSearchResults.current = null;
+        });
+        map.addListener('zoom_changed', () => {
+          if (pendingPlaceSearch.current?.awaitingViewport) return;
+          pendingPlaceSearch.current = null;
+          placeSearchResults.current = null;
+        });
         map.addListener('tilesloaded', () => {
           if (cancelled || mapAuthFailed.current) return;
           tilesReady = true;
@@ -567,6 +606,9 @@ export function MapExperience({
           const zoom = map.getZoom() ?? 12;
           window.history.replaceState(window.history.state, '', mapUrl(new URL(window.location.href), { latitude: area.latitude, longitude: area.longitude, zoom }));
           saveDiscoveryMemory({ latitude: area.latitude, longitude: area.longitude, zoom, place: searchPlaceRef.current });
+          const searchedViewport = pendingPlaceSearch.current?.awaitingViewport;
+          if (pendingPlaceSearch.current) pendingPlaceSearch.current.awaitingViewport = false;
+          if (searchedViewport) setSettledSearchViewport(value => value + 1);
           setDiscoveryArea(current => current && Object.keys(area).every(key => current[key as keyof DiscoveryArea] === area[key as keyof DiscoveryArea]) ? current : area);
         });
         clustersRef.current = createReportClusters(map, AdvancedMarkerElement, ids => setClusterIds(ids));
@@ -844,6 +886,11 @@ export function MapExperience({
 
   function openReport(report: MappableReport, source: EntrySource = 'report_list') {
     trackMapDiscovery('report_opened', { source });
+    const search = placeSearchResults.current;
+    if (search && search.response === currentResponse && Date.now() - search.started <= 5 * 60000 && search.response.reports.some(item => item.id === report.id)) {
+      trackMapDiscovery('search_report_opened', { source, surface: search.surface });
+      placeSearchResults.current = null;
+    }
     setClosestPreview(current => current?.report.id === report.id ? current : null);
     setDetailsMinimized(false);
     returnToReportList.current = reportListOpen;
@@ -1170,7 +1217,7 @@ export function MapExperience({
           reports={displayResponse?.reports ?? EMPTY_MAP_REPORTS}
           resultFilters={displayResponse?.search.filters ?? null}
           filtersRequest={filtersRequest}
-          emptyPlaceSearch={<PlaceSearch trackingSurface="empty_search" label="Search another location" selected={null} onSelect={selectSearchPlace} onClear={clearSearchPlace} bias={discoveryArea} />}
+          emptyPlaceSearch={<PlaceSearch trackingSurface="empty_search" label="Search another location" selected={null} onSelect={place => selectSearchPlace(place, 'empty_search')} onClear={clearSearchPlace} bias={discoveryArea} />}
           closestAction={closestAction}
           onRetry={() => void refreshReports()}
           showAuthors

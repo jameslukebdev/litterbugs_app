@@ -1,21 +1,99 @@
 // @vitest-environment jsdom
 // @vitest-environment-options {"url":"https://litterbugs.app/map"}
 import { act, cleanup, render, waitFor } from '@testing-library/react';
+import { useEffect } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { WebsiteAnalytics } from './website-analytics';
-import { WORKFLOW_VERSION, clearParticipationContext, drainJourneys, trackMapDiscovery, trackPayoutSetup, trackParticipationExit, drainParticipation, drainParticipationFailures, drainWebsiteOutcomes, rememberContributionAttempt, trackParticipation, trackParticipationFailure, trackWebsiteOutcome } from '@/lib/website-analytics';
+import { WORKFLOW_VERSION, clearParticipationContext, drainJourneys, trackAppChoice, trackMapDiscovery, trackPayoutSetup, trackParticipationExit, drainParticipation, drainParticipationFailures, drainWebsiteOutcomes, rememberContributionAttempt, trackParticipation, trackParticipationFailure, trackWebsiteOutcome } from '@/lib/website-analytics';
 
-const sdk = vi.hoisted(() => ({ init: vi.fn(), capture: vi.fn() }));
+const sdk = vi.hoisted(() => ({ init: vi.fn(), capture: vi.fn(), googleReady: false }));
 vi.mock('posthog-js', () => ({ default: sdk }));
 vi.mock('next/navigation', () => ({ usePathname: () => window.location.pathname }));
-vi.mock('next/script', () => ({ default: () => null }));
+vi.mock('next/script', () => ({ default: function FakeScript({ onReady }: { onReady: () => void }) {
+  useEffect(() => { if (sdk.googleReady) onReady(); }, [onReady]);
+  return null;
+} }));
 const config = { enabled: true, production: true, gaId: 'G-TEST', posthogKey: 'phc_test', posthogHost: 'https://us.i.posthog.com' };
 beforeEach(() => {
-  vi.clearAllMocks(); localStorage.clear();
+  vi.clearAllMocks(); sdk.googleReady = false; localStorage.clear();
   drainParticipation(); drainParticipationFailures(); drainWebsiteOutcomes(); drainJourneys(); clearParticipationContext();
   window.history.replaceState({}, '', '/map');
 });
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); delete (window as Window & { gtag?: unknown }).gtag; });
+
+it('delivers early flow events once to Google when its script becomes ready later than PostHog', async () => {
+  const gtag = vi.fn();
+  Object.defineProperty(window, 'gtag', { configurable: true, value: gtag });
+  const view = render(<WebsiteAnalytics config={config} />);
+  await waitFor(() => expect(sdk.init).toHaveBeenCalled());
+  act(() => {
+    trackAppChoice('open_requested', 'report', 'app_store');
+    trackMapDiscovery('location_selected', { surface: 'toolbar_search' });
+    trackParticipation('report', 'location_confirmed');
+    trackParticipationFailure('report', 'review', 'photo_upload_failed');
+  });
+  expect(sdk.capture).toHaveBeenCalledWith('participation_step', expect.objectContaining({ stage: 'location_confirmed' }));
+  expect(gtag.mock.calls.some(([command, event]) => command === 'event' && event === 'participation_step')).toBe(false);
+  window.history.replaceState({}, '', '/about?token=secret');
+  sdk.googleReady = true;
+  view.rerender(<WebsiteAnalytics config={config} />);
+  await waitFor(() => expect(gtag).toHaveBeenCalledWith('event', 'page_view', expect.objectContaining({ page_type: '/about' })));
+  await waitFor(() => expect(gtag).toHaveBeenCalledWith('event', 'participation_step', {
+    action: 'report', stage: 'location_confirmed', page_type: '/map', workflow_version: WORKFLOW_VERSION,
+  }));
+  expect(gtag).toHaveBeenCalledWith('event', 'map_discovery', expect.objectContaining({ stage: 'location_selected', page_type: '/map' }));
+  expect(gtag).toHaveBeenCalledWith('event', 'participation_failure', expect.objectContaining({ reason: 'photo_upload_failed', page_type: '/map' }));
+  view.rerender(<WebsiteAnalytics config={config} />);
+  for (const name of ['participation_step', 'participation_failure', 'map_discovery', 'app_choice']) {
+    expect(sdk.capture.mock.calls.filter(([event]) => event === name)).toHaveLength(1);
+    expect(gtag.mock.calls.filter(([command, event]) => command === 'event' && event === name)).toHaveLength(1);
+  }
+  expect(JSON.stringify(gtag.mock.calls)).not.toMatch(/private|secret/);
+});
+
+it('retains confirmed outcomes for a late Google script without duplicating them or changing their safe page', async () => {
+  const gtag = vi.fn();
+  Object.defineProperty(window, 'gtag', { configurable: true, value: gtag });
+  const view = render(<WebsiteAnalytics config={config} />);
+  await waitFor(() => expect(sdk.init).toHaveBeenCalled());
+  act(() => { trackWebsiteOutcome('report_published', 'private-report'); trackWebsiteOutcome('report_published', 'private-report'); });
+  expect(sdk.capture.mock.calls.filter(([event]) => event === 'report_published')).toHaveLength(1);
+  window.history.replaceState({}, '', '/about?token=secret');
+  sdk.googleReady = true;
+  view.rerender(<WebsiteAnalytics config={config} />);
+  await waitFor(() => expect(gtag).toHaveBeenCalledWith('event', 'report_published', expect.objectContaining({ page_type: '/map', page_location: 'https://litterbugs.app/map' })));
+  act(() => trackWebsiteOutcome('report_published', 'private-report'));
+  expect(gtag.mock.calls.filter(([command, event]) => command === 'event' && event === 'report_published')).toHaveLength(1);
+  expect(sdk.capture.mock.calls.filter(([event]) => event === 'report_published')).toHaveLength(1);
+  const send = sdk.init.mock.calls[0][1].before_send;
+  expect(send({ event: 'report_published', properties: { page_type: '/map' } }).properties.$pathname).toBe('/map');
+  expect(JSON.stringify([gtag.mock.calls, sdk.capture.mock.calls])).not.toMatch(/private-report|token|secret/);
+});
+
+it('still delivers flow events to Google if PostHog initialization fails', async () => {
+  const gtag = vi.fn();
+  Object.defineProperty(window, 'gtag', { configurable: true, value: gtag });
+  sdk.init.mockImplementationOnce(() => { throw new Error('SDK unavailable'); });
+  sdk.googleReady = true;
+  render(<WebsiteAnalytics config={config} />);
+  await waitFor(() => expect(gtag).toHaveBeenCalledWith('event', 'page_view', expect.anything()));
+  act(() => trackParticipation('clean', 'safety_review'));
+  expect(gtag).toHaveBeenCalledWith('event', 'participation_step', expect.objectContaining({ action: 'clean', stage: 'safety_review' }));
+  expect(sdk.capture).not.toHaveBeenCalled();
+});
+
+it.each(['doNotTrack', 'globalPrivacyControl'])('drops queued deliveries if %s turns on before the other provider is ready', async signal => {
+  const gtag = vi.fn();
+  Object.defineProperty(window, 'gtag', { configurable: true, value: gtag });
+  const view = render(<WebsiteAnalytics config={config} />);
+  await waitFor(() => expect(sdk.init).toHaveBeenCalled());
+  act(() => { trackParticipation('report', 'photos'); trackWebsiteOutcome('report_published', 'private-report'); });
+  vi.stubGlobal('navigator', { [signal]: signal === 'doNotTrack' ? '1' : true });
+  sdk.googleReady = true;
+  view.rerender(<WebsiteAnalytics config={config} />);
+  await act(async () => {});
+  expect(gtag.mock.calls.some(([command, event]) => command === 'event' && ['participation_step', 'report_published'].includes(event))).toBe(false);
+});
 
 it('delivers pre-initialization steps, failures and confirmed outcomes once with their original safe page', async () => {
   trackParticipation('report', 'review');
@@ -88,11 +166,37 @@ it.each(['declined', 'doNotTrack', 'globalPrivacyControl'])('does not queue or t
   trackMapDiscovery('results_empty', { result_bucket: '0' });
   trackPayoutSetup('opened');
   trackParticipationExit('clean', 'safety_review', 'cancelled');
+  trackAppChoice('website_continued', 'report');
   render(<WebsiteAnalytics config={config} />);
   await act(async () => {});
   expect(sdk.init).not.toHaveBeenCalled();
   expect(sdk.capture).not.toHaveBeenCalled();
   expect([...drainParticipation(), ...drainParticipationFailures(), ...drainWebsiteOutcomes(), ...drainJourneys()]).toEqual([]);
+});
+
+it('sends only bounded app-choice dimensions and never infers an install or successful app open', async () => {
+  window.history.replaceState({}, '', '/get-app?report=private-id&token=secret');
+  render(<WebsiteAnalytics config={config} />);
+  await waitFor(() => expect(sdk.init).toHaveBeenCalled());
+  act(() => {
+    trackAppChoice('open_requested', 'report', 'google_play');
+    trackAppChoice('store_fallback', 'report', 'google_play');
+    trackAppChoice('website_continued', 'report');
+  });
+  expect(sdk.capture.mock.calls.filter(([event]) => event === 'app_choice')).toEqual([
+    ['app_choice', { stage: 'open_requested', destination: 'report', store: 'google_play', page_type: '/get-app' }, { transport: 'sendBeacon', send_instantly: true }],
+    ['app_choice', { stage: 'store_fallback', destination: 'report', store: 'google_play', page_type: '/get-app' }, { transport: 'sendBeacon', send_instantly: true }],
+    ['app_choice', { stage: 'website_continued', destination: 'report', page_type: '/get-app' }, { transport: 'sendBeacon', send_instantly: true }],
+  ]);
+  const sanitize = sdk.init.mock.calls[0][1].before_send;
+  const safe = sanitize({ event: 'app_choice', properties: { stage: 'open_requested', destination: 'report', store: 'app_store', report_id: 'private-id', url: 'secret', page_type: '/get-app' } });
+  expect(safe.properties).toMatchObject({ stage: 'open_requested', destination: 'report', store: 'app_store', $pathname: '/get-app' });
+  expect(JSON.stringify([safe, sdk.capture.mock.calls])).not.toMatch(/private-id|secret/);
+  for (const properties of [
+    { stage: 'installed', destination: 'report' },
+    { stage: 'open_requested', destination: 'report', store: 'private-url' },
+    { stage: 'website_continued', destination: 'private-report-id' },
+  ]) expect(sanitize({ event: 'app_choice', properties })).toBeNull();
 });
 
 it('buffers new journey signals before SDK readiness and labels the actual bundle version', async () => {

@@ -5,7 +5,8 @@ import { rememberContributionAttempt, trackParticipation, trackParticipationFail
 import { useGuestParticipationEntry } from '@/lib/use-guest-participation-entry';
 
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
+// Load Stripe.js only once a payment intent supplies its publishable key.
+import { loadStripe } from '@stripe/stripe-js/pure';
 import type { Report } from '@litterbugs/report-contract';
 import { useEffect, useMemo, useState } from 'react';
 

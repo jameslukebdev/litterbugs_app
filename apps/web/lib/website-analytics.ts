@@ -1,7 +1,7 @@
 import { AUTH_RESULT_PARAM, SHARED_REPORT_AUTH_PARAM, isSharedReportAuthProvider, type SharedReportAuthProvider } from './participation-auth';
 import { communityForEntry, communityForPath, communityProperties, type CommunityEngagementEvent, type CommunityProperties } from './community-metrics';
 // Bump when participation semantics/workflows change; compiled into each browser bundle.
-export const WORKFLOW_VERSION = 'web-participation-2026-11-09-v4';
+export const WORKFLOW_VERSION = 'web-participation-2026-11-11-v7';
 export const ANALYTICS_CONSENT_KEY = 'litterbugs:analytics-consent:v1';
 export const ANALYTICS_REPLAY_CHOICE_KEY = 'litterbugs:analytics-replay-consent:v1';
 export const ANALYTICS_EVENT = 'litterbugs:analytics-event';
@@ -22,7 +22,8 @@ export function analyticsAllowed(config: AnalyticsConfig, hostname: string) {
     && ['https://us.i.posthog.com', 'https://eu.i.posthog.com'].includes(config.posthogHost);
 }
 
-// Fixed route names: never send search terms, report IDs, account paths, or tokens.
+// Fixed route names: never send search terms, report or member IDs, account paths, or tokens.
+export const MEMBER_PROFILE_PAGE = '/members/profile';
 export function analyticsPage(pathname: string): string | null {
   if (['/', '/map', '/report', '/report-litter', '/cleaner', '/fund-a-cleanup',
     '/locations', '/communities', '/reports', '/reports/history', '/cleanups', '/get-app', '/about', '/help', '/support', '/terms', '/privacy',
@@ -31,6 +32,7 @@ export function analyticsPage(pathname: string): string | null {
   const community = communityForPath(pathname);
   if (community) return pathname === community.href ? community.href : '/communities/cleanups';
   if (/^\/reports\/[^/]+$/.test(pathname)) return '/reports/detail';
+  if (pathname === MEMBER_PROFILE_PAGE || /^\/members\/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(pathname)) return MEMBER_PROFILE_PAGE;
   return null;
 }
 
@@ -216,7 +218,23 @@ function currentEntrySource(): EntrySource {
   return entrySourceForPath(window.location.pathname);
 }
 
-const MAP_STAGES = ['search_submitted', 'location_selected', 'location_search_empty', 'location_search_failed', 'results_loaded', 'results_empty', 'results_failed', 'closest_requested', 'closest_found', 'closest_empty', 'closest_failed', 'closest_viewed', 'report_opened'] as const;
+const MAP_STAGES = ['search_submitted', 'location_search_started', 'location_suggestions_shown', 'location_selected', 'location_search_empty', 'location_search_failed', 'search_results_loaded', 'search_results_empty', 'search_results_failed', 'search_report_opened', 'results_loaded', 'results_empty', 'results_failed', 'closest_requested', 'closest_found', 'closest_empty', 'closest_failed', 'closest_viewed', 'report_opened'] as const;
+export type MapSearchSurface = 'toolbar_search' | 'empty_search';
+let mapSearchSelection: { placeId: string; surface: MapSearchSurface; started: number } | null = null;
+/** In-memory handoff for the homepage search → map route. Never sent or persisted. */
+export function rememberMapSearchSelection(placeId: string, surface: MapSearchSurface) {
+  if (typeof window === 'undefined') return;
+  mapSearchSelection = { placeId, surface, started: Date.now() };
+}
+export function consumeMapSearchSelection(placeId: string | undefined) {
+  if (typeof window === 'undefined') return null;
+  if (!mapSearchSelection) return null;
+  if (Date.now() - mapSearchSelection.started > 30000) { mapSearchSelection = null; return null; }
+  if (mapSearchSelection.placeId !== placeId) return null;
+  const selection = mapSearchSelection;
+  mapSearchSelection = null;
+  return selection;
+}
 const PAYOUT_STAGES = ['opened', 'form_opened', 'form_loading_started', 'form_loaded', 'form_exited', 'closed', 'back', 'hosted_requested', 'already_ready', 'ready', 'status_failed', 'start_failed', 'load_failed', 'session_ended'] as const;
 const SHARED_REPORT_AUTH_STAGES = ['prompt_shown', 'closed', 'attempted', 'handoff_requested', 'handoff_unavailable', 'start_failed', 'redirect_stalled', 'rejected', 'network_failed', 'verification_sent', 'succeeded', 'return_failed'] as const;
 export type SharedReportAuthStage = typeof SHARED_REPORT_AUTH_STAGES[number];
@@ -224,11 +242,19 @@ const EXIT_TYPES = ['cancelled', 'saved_for_later', 'draft_resumed', 'draft_disc
 const SEARCH_SURFACES = ['toolbar_search', 'empty_search', 'map', 'closest_reports'] as const;
 const RESULT_BUCKETS = ['0', '1', '2-5', '6-20', '21+'] as const;
 const DISTANCE_BUCKETS = ['under_1', '1-10', '10-50', 'over_50'] as const;
-export const JOURNEY_EVENTS = ['map_discovery', 'payout_setup', 'participation_decision', 'shared_report_sign_in'] as const;
+const APP_CHOICE_STAGES = ['open_requested', 'store_fallback', 'download_page_requested', 'website_continued'] as const;
+export const JOURNEY_EVENTS = ['map_discovery', 'payout_setup', 'participation_decision', 'shared_report_sign_in', 'app_choice'] as const;
 export type JourneyEvent = typeof JOURNEY_EVENTS[number];
-type JourneyInput = { stage?: unknown; source?: unknown; surface?: unknown; result_bucket?: unknown; distance_bucket?: unknown; filtered?: unknown; truncated?: unknown; action?: unknown; exit_type?: unknown; provider?: unknown };
+type JourneyInput = { stage?: unknown; source?: unknown; surface?: unknown; result_bucket?: unknown; distance_bucket?: unknown; filtered?: unknown; truncated?: unknown; action?: unknown; exit_type?: unknown; provider?: unknown; destination?: unknown; store?: unknown };
 function inList(value: unknown, list: readonly string[]): value is string { return typeof value === 'string' && list.includes(value); }
 export function journeyProperties(event: JourneyEvent, value: JourneyInput) {
+  if (event === 'app_choice') {
+    if (!inList(value.stage, APP_CHOICE_STAGES) || !inList(value.destination, ['report', 'map'])) return null;
+    if (value.stage === 'open_requested' || value.stage === 'store_fallback') {
+      return inList(value.store, ['app_store', 'google_play']) ? { stage: value.stage, destination: value.destination, store: value.store } : null;
+    }
+    return { stage: value.stage, destination: value.destination };
+  }
   if (event === 'participation_decision') {
     const step = participationProperties(value);
     return step && inList(value.exit_type, EXIT_TYPES) ? { ...step, exit_type: value.exit_type } : null;
@@ -272,6 +298,10 @@ export function trackMapDiscovery(stage: typeof MAP_STAGES[number], properties: 
   trackJourney('map_discovery', { ...properties, stage });
 }
 export function trackPayoutSetup(stage: typeof PAYOUT_STAGES[number]) { trackJourney('payout_setup', { stage }); }
+/** These are deliberate choices and fallback attempts, never proof of an app open/install. */
+export function trackAppChoice(stage: typeof APP_CHOICE_STAGES[number], destination: 'report' | 'map', store?: 'app_store' | 'google_play') {
+  trackJourney('app_choice', { stage, destination, store });
+}
 export function trackSharedReportSignIn(stage: SharedReportAuthStage, provider?: SharedReportAuthProvider) {
   trackJourney('shared_report_sign_in', { stage, provider });
 }
@@ -296,4 +326,5 @@ export function trackParticipationExit(action: ParticipationAction, stage: Parti
 export function clearParticipationContext() {
   participationSources.clear();
   reportEntrySource = 'report_detail';
+  mapSearchSelection = null;
 }

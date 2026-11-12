@@ -35,7 +35,7 @@ export function appDownloadPath(reportId?: string) {
   return reportId ? `/get-app?report=${encodeURIComponent(reportId)}` : '/get-app';
 }
 
-export function beginAppHandoff(appUrl: string, storeUrl: string, navigate = (url: string) => window.location.assign(url)) {
+export function beginAppHandoff(appUrl: string, storeUrl: string, navigate = (url: string) => window.location.assign(url), onFallback?: () => void) {
   const cancel = () => {
     window.clearTimeout(timer);
     document.removeEventListener('visibilitychange', onVisibility);
@@ -44,7 +44,10 @@ export function beginAppHandoff(appUrl: string, storeUrl: string, navigate = (ur
   const onVisibility = () => { if (document.hidden) cancel(); };
   const timer = window.setTimeout(() => {
     cancel();
-    if (!document.hidden) navigate(storeUrl);
+    if (!document.hidden) {
+      try { onFallback?.(); } catch { /* Optional measurement must not prevent navigation. */ }
+      navigate(storeUrl);
+    }
   }, 1800);
   document.addEventListener('visibilitychange', onVisibility);
   window.addEventListener('pagehide', cancel);
