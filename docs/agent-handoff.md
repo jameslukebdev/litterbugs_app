@@ -24,6 +24,15 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (confirmed TikTok added locally)
+
+- Owner confirmed @litterbugs.commun is theirs. Added TikTok beside Instagram
+  through shared SocialLinks, covering footer, map footer and phone drawer.
+- Scoped ESLint and diff check pass; CUA confirms correct destinations,
+  44px targets and no overflow at 319px. Local preview remains open.
+- No push or deployment. Facebook remains unverified and unlinked.
+  Concurrent native/handoff changes preserved.
+
 ### 2026-11-12 — Codex (Instagram links added locally)
 
 - Added owner-confirmed instagram.com/litterbugs_app to shared SocialLinks:
