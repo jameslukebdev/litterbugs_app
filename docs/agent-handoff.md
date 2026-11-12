@@ -24,6 +24,16 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (API and MCP growth examples)
+
+- Researched official Booking.com partner API, Calendly embeds, Jotform/Zapier
+  case study (2023), and Notion MCP documentation. Explained partner reach,
+  product exposure, retention and AI-workflow access as distinct mechanisms.
+- Historical Jotform retention figures are vendor-reported cohort comparisons,
+  not causal forecasts for Litterbugs. Notion docs show MCP functionality,
+  without a measured acquisition result. No implementation, outreach,
+  production testing, deployment, push or database changes.
+
 ### 2026-11-12 — Codex (mint cleanup stats and recorded duration, local)
 
 - Matched the owner's phone reference: pale mint #E2F8F3 surface with #B9E9DD
