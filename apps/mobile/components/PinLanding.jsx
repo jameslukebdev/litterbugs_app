@@ -11,7 +11,7 @@ import MapPin, { pinHeight } from './MapPin';
 const ANCHOR_WIDTH = 240;
 const CURVE = Easing.bezier(0.3, 1.5, 0.5, 1); // the website's cubic-bezier(.3, 1.5, .5, 1)
 
-export default function PinLanding({ x, y, kind, text, order = 0, posted = false, onDone }) {
+export default function PinLanding({ x, y, kind, text, order = 0, posted = false, handover = false, onDone }) {
   const land = useRef(new Animated.Value(0)).current;
   const carrier = useRef(new Animated.Value(0)).current;
   const ripple = useRef(new Animated.Value(0)).current;
@@ -52,7 +52,8 @@ export default function PinLanding({ x, y, kind, text, order = 0, posted = false
         <Animated.View style={[styles.ripple, { opacity: ripple.interpolate({ inputRange: [0, 0.01, 1], outputRange: [0, 0.9, 0] }), transform: [{ scale: ripple.interpolate({ inputRange: [0, 1], outputRange: [0.3, 2] }) }] }]} />
       ) : null}
       <Animated.View style={style}>
-        <MapPin kind={kind} text={text} />
+        {/* Once the real pin is shown under it, this pin's shadow goes so two never stack. */}
+        <MapPin kind={kind} text={text} shadow={!handover} />
       </Animated.View>
       {posted ? (
         <Animated.View style={[styles.carrier, {

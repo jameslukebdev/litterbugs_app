@@ -28,6 +28,8 @@ import { View, Text, Image, StyleSheet, TouchableOpacity, Platform, Alert, Anima
 import { polygonParts } from './lib/searchGeography';
 import { Marker, Polygon } from 'react-native-maps';
 import ClusteredMapView from 'react-native-map-clustering';
+import { calculateBBox, returnMapZoom } from 'react-native-map-clustering/lib/helpers';
+import { regionForGroup } from './lib/clusterZoom';
 import { useIsFocused } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import * as Device from 'expo-device';
@@ -1308,6 +1310,21 @@ const revealBottomReportField = () => {
             }
           }}
           maxZoom={14}
+          // A tapped group zooms in enough to split it and spread its pins over the middle of the
+          // screen, never so far that they reach its edges (lib/clusterZoom.js).
+          preserveClusterPressBehavior
+          onClusterPress={(cluster, leaves) => {
+            const clusters = reportClusterRef.current;
+            const clusterId = cluster?.properties?.cluster_id ?? cluster?.id;
+            if (!clusters || clusterId == null || !leaves?.length) return;
+            mapViewRef.current?.animateToRegion?.(regionForGroup({
+              leaves,
+              splitZoom: clusters.getClusterExpansionZoom(clusterId),
+              closestZoom: 15, // one past maxZoom: every report is its own pin
+              currentRegion: region,
+              zoomOf: (next) => returnMapZoom(next, calculateBBox(next), 1),
+            }), 300);
+          }}
           // Match the 60-point pins and 96-point cluster status controls.
           radius={80}
           animationEnabled={false}
@@ -1419,7 +1436,7 @@ const revealBottomReportField = () => {
       {/* Pins and groups land here, above the map, then a new real pin appears underneath. */}
       <View pointerEvents="none" style={StyleSheet.absoluteFill}>
         {pins.ghosts.map((pin) => (
-          <PinLanding key={pin.key} x={pin.x} y={pin.y} kind={pin.kind} text={pin.text} order={pin.order} posted={pin.posted} onDone={() => pins.ghostDone(pin.key)} />
+          <PinLanding key={pin.key} x={pin.x} y={pin.y} kind={pin.kind} text={pin.text} order={pin.order} posted={pin.posted} handover={pin.handover} onDone={() => pins.ghostDone(pin.key)} />
         ))}
       </View>
 

@@ -160,7 +160,10 @@ export default function usePinLandings({ enabled, mapRef, region, hidden, posted
 
   const ghostDone = useCallback((key) => {
     landing.current.delete(key);
+    // Show the real pin and, in the same screen update, drop the stand-in's shadow, so the two
+    // shadows never stack (that showed as a dark blink at the end of each landing).
     reveal([key]);
+    setGhosts(current => current.map(ghost => (ghost.key === key ? { ...ghost, handover: true } : ghost)));
     setTimeout(() => setGhosts(current => current.filter(ghost => ghost.key !== key)), HANDOVER_MS);
   }, [reveal]);
 

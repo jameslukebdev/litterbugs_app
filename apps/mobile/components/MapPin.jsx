@@ -49,7 +49,7 @@ export function pinKind(state) {
 // `onMount`/`onUnmount` tell the map when this pin is put on it or taken off (see
 // lib/usePinLandings.js). The pin itself never animates or changes: on iPhone the map draws a
 // changed pin in the wrong place. To change a pin, give its Marker a new key instead.
-export default function MapPin({ kind = 'open', text = null, selected = false, onMount, onUnmount }) {
+export default function MapPin({ kind = 'open', text = null, selected = false, shadow = true, onMount, onUnmount }) {
   useEffect(() => { onMount?.(); return () => onUnmount?.(); }, []);
   const bug = BUG_SIZE[kind] || BUG_SIZE.open;
   const tone = TONES[kind] || TONES.open;
@@ -59,7 +59,7 @@ export default function MapPin({ kind = 'open', text = null, selected = false, o
   const small = iconOnly && kind === 'done';
   const size = small ? 30 : PIN_HEIGHT;
   return (
-    <View collapsable={false} style={[styles.wrap, selected && styles.selected]}>
+    <View collapsable={false} style={[styles.wrap, !shadow && styles.flat, selected && styles.selected]}>
       <View style={[
         styles.pill,
         { height: size, minWidth: size, borderRadius: size / 2, borderColor: edge, backgroundColor: fill },
@@ -92,6 +92,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     shadowOffset: { width: 0, height: 3 },
   },
+  flat: { shadowOpacity: 0 },
   selected: { transform: [{ translateY: -3 }, { scale: 1.08 }] },
   pill: {
     flexDirection: 'row',
