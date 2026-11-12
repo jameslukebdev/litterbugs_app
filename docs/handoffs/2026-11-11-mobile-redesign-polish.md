@@ -139,3 +139,11 @@ Branch `codex/map-first-navigation`. Nothing pushed, built for stores, or deploy
 - "How long did it take? (hrs)" added to Complete cleanup. Saved as `duration_minutes` through a new function `submit_cleanup_with_details`. **The migration `supabase/migrations/20261111200000_submit_cleanup_with_details.sql` is written but NOT applied** (blocked as a production deploy). Until it is applied the app falls back to `submit_cleanup_with_weight` and the hours are not saved.
 - Stack headers use a solid scroll edge on iOS 26; the report wizard hides the draft notice while sending; the starting-fund box and lock notice are white and full width.
 - Not looked at in the simulator after these changes: pinned cleaner bar, hours field, banners over the sheet, header edge.
+
+## Hours live, website details (Nov 11, late night)
+
+- `submit_cleanup_with_details` is now applied to the live database (owner approved). Hours typed on Complete cleanup are saved as `duration_minutes`; the fallback to `submit_cleanup_with_weight` stays for safety.
+- Cleaned reports: "About the cleanup" card with the cleaner's comment in quotes and a stat row (bags/items, pounds, hrs spent when recorded). The reporter's review screen shows hours too.
+- Cards: funded cleanups show gold "Pays $X" with the bee, in the map preview and the Reports list (`colors.gold`).
+- Report sheet toolbar matches the website: "Back to map" on the left; heart, share, hide as plain icons on the right. Photo counter top right, "View full photo" bottom right, locate icon on Get directions.
+- Not seen in the simulator: a card with a fund (gold line), hours on a cleaned report (no cleanup has hours yet), the cleaner's pinned bar.

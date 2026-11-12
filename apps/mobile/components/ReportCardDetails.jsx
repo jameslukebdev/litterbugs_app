@@ -2,6 +2,7 @@ import { Text, View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CompactRankBadge from '../CompactRankBadge';
 import ProfileAvatar from '../ProfileAvatar';
+import BrandBug from './BrandBug';
 import { reportPresentation } from '../lib/reportPresentation';
 import { colors, fonts } from '../lib/theme';
 function getRelativeTime(value) {
@@ -91,7 +92,11 @@ export default function ReportCardDetails({ report, distance, onPress, selected 
 
         {preview ? (
           <>
-            <Text style={[styles.websiteReward, (completed ? fundedAmount > 0 : report?.funded_amount_cents > 0) && styles.websiteRewardFunded]}>{websiteReward(report)}</Text>
+            {/* Website card: a funded cleanup is gold with the bee; a volunteer one is quiet. */}
+            <View style={styles.rewardLine}>
+              {fundedAmount > 0 ? <BrandBug kind="bee" size={17} /> : null}
+              <Text style={[styles.websiteReward, styles.rewardLineText, fundedAmount > 0 && styles.websiteRewardFunded]}>{websiteReward(report)}</Text>
+            </View>
             <Text style={styles.websiteSummary} numberOfLines={1}>{websiteSummary(report, distance == null ? null : `${distance < 10 ? distance.toFixed(1) : Math.round(distance)} mi`)}</Text>
             <View style={styles.websiteMeta}>
               <View style={styles.websiteSeverity}>
@@ -114,7 +119,10 @@ export default function ReportCardDetails({ report, distance, onPress, selected 
           <>
             {!completed && report.cleanup_state !== 'available' ? <Text style={styles.metadata}>{presentation.status}</Text> : null}
             <View style={styles.rewardMetadataRow}>
-              <Text style={[styles.websiteReward, fundedAmount > 0 && styles.websiteRewardFunded]}>{funding}</Text>
+              <View style={[styles.rewardLine, { marginTop: 0 }]}>
+                {fundedAmount > 0 ? <BrandBug kind="bee" size={17} /> : null}
+                <Text style={[styles.websiteReward, styles.rewardLineText, fundedAmount > 0 && styles.websiteRewardFunded]}>{websiteReward(report)}</Text>
+              </View>
               {metadata ? <Text style={styles.inlineMetadata}>{metadata}</Text> : null}
             </View>
             <View style={styles.detailRow}>
@@ -147,7 +155,9 @@ const styles = StyleSheet.create({
   },
   previewTitle: { fontSize: 16, lineHeight: 20.5, fontFamily: fonts.heading, fontWeight: 'normal' },
   websiteReward: { marginTop: 6, color: colors.muted, fontSize: 15, lineHeight: 20, fontFamily: fonts.heading },
-  websiteRewardFunded: { color: colors.primaryDark },
+  websiteRewardFunded: { color: colors.gold, fontSize: 16 },
+  rewardLine: { marginTop: 6, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  rewardLineText: { marginTop: 0, flexShrink: 1 },
   websiteSummary: { marginTop: 4, color: colors.muted, fontSize: 13, lineHeight: 18 },
   websiteMeta: { marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.mist, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   websiteSeverity: { flexDirection: 'row', alignItems: 'center', gap: 5 },

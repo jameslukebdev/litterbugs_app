@@ -182,22 +182,28 @@ export default function CompletedCleanupStory({
         </View>
       )}
 
-      <Text style={styles.cleanupDateText}>Cleaned {formatCleanupDate(impact.attempt.completed_at)}</Text>
-
-      <View style={styles.descriptionCard}>
-        <Text style={styles.descriptionLabel}>What they did</Text>
-        <Text style={styles.descriptionText}>{impact.submission.description}</Text>
+      {/* About the cleanup: the cleaner's own words first, then the numbers as one stat row. */}
+      <View style={styles.aboutCard}>
+        <Text style={styles.aboutTitle}>About the cleanup</Text>
+        <Text style={styles.cleanupDateText}>Cleaned {formatCleanupDate(impact.attempt.completed_at)}</Text>
+        {impact.submission.description ? (
+          <View style={styles.commentRow}>
+            <ProfileAvatar profile={impact.cleaner} size={30} />
+            <Text style={styles.descriptionText}>“{impact.submission.description}”</Text>
+          </View>
+        ) : null}
+        {facts.length > 0 ? (
+          <View style={styles.factsRow}>
+            {facts.map((fact, index) => (
+              <View key={fact.label} style={[styles.factCard, index > 0 && styles.factDivider]} accessible accessibilityLabel={fact.label}>
+                <Ionicons name={fact.icon} size={20} color={colors.done} />
+                <Text style={styles.factValue}>{fact.value}</Text>
+                <Text style={styles.factText}>{fact.caption}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
       </View>
-
-      {facts.length > 0 ? (
-        <View style={styles.factsRow}>
-          {facts.map((fact) => (
-            <View key={fact.label} style={styles.factCard} accessible accessibilityLabel={fact.label}>
-              <Text style={styles.factText}>{fact.label}</Text>
-            </View>
-          ))}
-        </View>
-      ) : null}
     </View>
   );
 }
@@ -222,7 +228,7 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 13,
   },
-  cleanupDateText: { color: colors.muted, fontSize: 14 },
+  cleanupDateText: { marginTop: -6, color: colors.muted, fontSize: 13 },
   sideSwitch: { flexDirection: 'row', gap: 6, padding: 4, borderRadius: 16, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
   sideButton: { flex: 1, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: 12, borderWidth: 2, borderColor: 'transparent' },
   sideButtonSelected: { borderColor: colors.primary },
@@ -278,16 +284,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
   },
-  descriptionCard: { paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.edge },
-  descriptionLabel: { color: colors.ink, fontSize: 13, fontWeight: '800' },
-  descriptionText: { marginTop: 5, color: colors.body, fontSize: 15, lineHeight: 22 },
-  factsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  factCard: { minWidth: '46%', flex: 1, padding: 12, borderRadius: 14, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
-  factText: { color: colors.ink, fontSize: 14, lineHeight: 19, fontWeight: '700' },
+  aboutCard: { padding: 16, gap: 10, borderRadius: 18, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
+  aboutTitle: { color: colors.ink, fontSize: 17, fontFamily: fonts.heading },
+  commentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingTop: 2 },
+  descriptionText: { flex: 1, color: colors.body, fontSize: 15, lineHeight: 22 },
+  factsRow: { flexDirection: 'row', marginTop: 4, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.edge },
+  factCard: { flex: 1, alignItems: 'center', gap: 2, paddingHorizontal: 4 },
+  factDivider: { borderLeftWidth: 1, borderLeftColor: colors.edge },
+  factValue: { color: colors.ink, fontSize: 22, lineHeight: 27, fontFamily: fonts.heading },
+  factText: { color: colors.muted, fontSize: 12, lineHeight: 16, textAlign: 'center' },
   stateCard: { minHeight: 200, alignItems: 'center', justifyContent: 'center', margin: 20, padding: 24, borderRadius: 18, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
   stateTitle: { marginTop: 12, color: colors.ink, fontSize: 18, fontFamily: fonts.heading },
   stateText: {

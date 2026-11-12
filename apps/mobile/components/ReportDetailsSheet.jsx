@@ -233,7 +233,11 @@ export default function ReportDetailsSheet({ state, actions }) {
 
       {/* A solid bar behind the top buttons, so the report scrolls under it instead of through them. */}
       <View pointerEvents="none" style={[styles.reportTopBar, { height: reportControlsTop + 54 }]} />
-      <TouchableOpacity onPress={closeReportDetails} accessibilityRole="button" accessibilityLabel="Close report" style={[styles.reportPhotoControl, styles.reportPhotoCloseControl, { top: reportControlsTop }]}><Ionicons name="close" size={20} color={colors.ink} /></TouchableOpacity>
+      {/* Website toolbar: "Back to map" on the left; heart, share and hide on the right. */}
+      <TouchableOpacity onPress={closeReportDetails} accessibilityRole="button" accessibilityLabel="Back to map" style={[styles.reportBackControl, { top: reportControlsTop }]}>
+        <Ionicons name="chevron-back" size={20} color={colors.ink} />
+        <Text style={styles.reportBackText}>Back to map</Text>
+      </TouchableOpacity>
       {selectedReportIsShareable ? (
         <TouchableOpacity
           onPress={() => setReportShareSheetOpen(true)}
@@ -387,7 +391,7 @@ export default function ReportDetailsSheet({ state, actions }) {
         {/* Website report sheet: directions sit right under the photos. */}
         {selectedReport?.cleanup_state !== 'completed' && !selectedReport?.cancelled_at && !selectedReport?.expired_at && !(selectedReport?.cleanup_state === 'claimed' && currentUserIsCleaner) ? (
           <TouchableOpacity style={styles.reportDirectionsButton} onPress={openCleanupNavigation} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Get directions to this report">
-            <Ionicons name="navigate-outline" size={18} color={colors.primaryDark} />
+            <Ionicons name="locate-outline" size={19} color={colors.primaryDark} />
             <Text style={styles.reportDirectionsText}>Get directions</Text>
           </TouchableOpacity>
         ) : null}

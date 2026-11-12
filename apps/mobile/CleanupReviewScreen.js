@@ -1,3 +1,4 @@
+import { formatCleanupHours } from './lib/cleanupImpactPresentation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, usePreventRemove } from '@react-navigation/native';
 import RemotePhoto from './components/RemotePhoto';
@@ -419,11 +420,12 @@ export default function CleanupReviewScreen({ navigation, route }) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{context.attempt.is_self_cleanup ? 'Your note' : `${cleanerFirstName}’s note`}</Text>
           <Text style={styles.description}>{context.submission.description}</Text>
-          {context.submission.bags_or_items_removed || context.submission.weight_pounds ? (
+          {context.submission.bags_or_items_removed || context.submission.weight_pounds || context.submission.duration_minutes ? (
             <Text style={styles.noteFacts}>
               {[
                 context.submission.bags_or_items_removed ? `${context.submission.bags_or_items_removed} ${Number(context.submission.bags_or_items_removed) === 1 ? 'bag or item' : 'bags or items'}` : null,
                 context.submission.weight_pounds ? `${context.submission.weight_pounds} lb removed` : null,
+                context.submission.duration_minutes ? `${formatCleanupHours(context.submission.duration_minutes)} hrs` : null,
               ].filter(Boolean).join('  ·  ')}
             </Text>
           ) : null}

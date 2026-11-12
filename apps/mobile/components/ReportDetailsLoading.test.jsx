@@ -27,9 +27,9 @@ describe('completed report loading layout', () => {
     detailsOpen: true, selectedReport: { id: 'a', title: 'Clean road', cleanup_state: 'completed', litter_types: [] },
     insets: { top: 20, bottom: 0 }, reportPhotoUrls: [], completedCleanupImpactLoading: true,
   };
-  it('keeps Close available without showing content that the arriving story would push down', () => {
+  it('keeps Back to map available without showing content that the arriving story would push down', () => {
     const html = renderToStaticMarkup(<ReportDetailsSheet state={state} actions={{}} />);
-    expect(html).toContain('Close report');
+    expect(html).toContain('Back to map');
     expect(html).toContain('Loading cleanup…');
     expect(html).not.toContain('Original photos');
     expect(html).not.toContain('Clean road');

@@ -64,6 +64,8 @@ export const colors = Object.freeze({
   // Fund (yellow) and Clean (lilac) action buttons
   fundFill: '#FFDA61',
   fundInk: '#493A10',
+  // Website card reward: "Pays $6" in gold beside the bee.
+  gold: '#8A5A00',
   fundEdge: '#D9AC19',
   cleanFill: '#F2E5FA',
   cleanInk: '#60237E',

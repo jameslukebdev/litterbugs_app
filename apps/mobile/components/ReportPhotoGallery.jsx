@@ -64,14 +64,13 @@ export default function ReportPhotoGallery({ report, urls, loading, width }) {
       {/* Website report sheet: "View full photo" shows the whole picture, uncropped. */}
       {photoCount > 0 ? (
         <TouchableOpacity style={styles.fullPhotoButton} onPress={() => setFullPhotoOpen(true)} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={`View full photo ${index + 1} of ${photoCount}`}>
-          <Ionicons name="expand-outline" size={15} color={colors.ink} />
           <Text style={styles.fullPhotoText}>View full photo</Text>
         </TouchableOpacity>
       ) : null}
       {photoCount > 0 ? (
         <View style={styles.counter}>
           <Text style={styles.counterText}>
-            {index + 1} / {photoCount}
+            {index + 1}/{photoCount}
           </Text>
         </View>
       ) : null}
@@ -123,13 +122,13 @@ const styles = StyleSheet.create({
   counter: {
     position: 'absolute',
     right: 12,
-    bottom: 12,
+    top: 12,
     backgroundColor: 'rgba(0,0,0,0.65)',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
   },
-  fullPhotoButton: { position: 'absolute', left: 12, bottom: 12, minHeight: 32, paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 16, backgroundColor: colors.white },
+  fullPhotoButton: { position: 'absolute', right: 12, bottom: 12, minHeight: 36, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 16, backgroundColor: colors.white },
   fullPhotoText: { color: colors.ink, fontSize: 13, fontWeight: '700' },
   fullPhotoBackdrop: { flex: 1, backgroundColor: colors.black, alignItems: 'center', justifyContent: 'center' },
   fullPhotoClose: { position: 'absolute', top: 58, right: 20, width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white },

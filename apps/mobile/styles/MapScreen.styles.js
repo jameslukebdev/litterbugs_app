@@ -883,16 +883,14 @@ originalReportTitle: {
 
 completedReportToolbar: { backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.line, flexShrink: 0 },
 reportPhotoControl: {
-  position: 'absolute', zIndex: 20, minHeight: 44, borderRadius: 22,
-  backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center',
-  borderWidth: 1, borderColor: colors.line, shadowColor: colors.ink,
-  shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 3, elevation: 4,
+  position: 'absolute', zIndex: 20, minHeight: 44, alignItems: 'center', justifyContent: 'center',
 },
 reportTopBar: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 19, backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.mist },
-reportPhotoCloseControl: { right: 32, width: 44 },
-reportPhotoHideControl: { right: 84, width: 44 },
-reportPhotoShareControl: { right: 136, width: 44 },
-reportPhotoFavoriteControl: { right: 188, width: 44 },
+reportBackControl: { position: 'absolute', zIndex: 20, left: 14, minHeight: 44, paddingRight: 10, flexDirection: 'row', alignItems: 'center', gap: 4 },
+reportBackText: { color: colors.ink, fontSize: 15, fontWeight: '700' },
+reportPhotoHideControl: { right: 14, width: 44 },
+reportPhotoShareControl: { right: 60, width: 44 },
+reportPhotoFavoriteControl: { right: 106, width: 44 },
 // Website "Get directions": white, thin lilac line, purple words.
 reportDirectionsButton: { minHeight: 48, marginHorizontal: 22, marginTop: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, borderWidth: 1, borderBottomWidth: 3, borderColor: colors.line, backgroundColor: colors.white },
 reportDirectionsText: { color: colors.primaryDark, fontSize: 15, fontWeight: '800' },
