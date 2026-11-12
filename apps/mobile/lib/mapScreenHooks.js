@@ -3,6 +3,9 @@ import { Alert, AppState, Keyboard, Linking, Platform } from 'react-native';
 
 import { acknowledgeCleanupNotifications, loadUnreadCleanupNotifications } from './cleanup';
 import { createCleanupNotificationPrompt } from './cleanupNotificationPrompt';
+import { cleanupNotificationPresentation } from './cleanupNotifications';
+import { refreshUnreadUpdates } from './unreadUpdates';
+import { showFlowDone } from '../components/FlowDone';
 import { loadCleanupFeatureFlags, loadReportFundingFeedback } from './funding';
 
 // Small pieces of MapScreen that each own their state and need nothing else from
@@ -158,7 +161,16 @@ export function useCleanupNoticePrompt({ currentUserId, refreshReports, navigati
         // Unread historical events are not the current task state. Refresh from
         // the account before presenting; never navigate or acknowledge on display.
         await refreshReports({ showRefresh: false });
-        if (active) prompt.show(notices);
+        if (!active) return;
+        // New updates arrive as a banner that opens the Updates inbox; the bell and
+        // the Profile tab dot keep the count. No pop-up to answer.
+        const shown = cleanupNoticePromptState.current.shown;
+        const fresh = notices.filter(notice => !shown.has(notice.id));
+        if (!fresh.length) return;
+        fresh.forEach(notice => shown.add(notice.id));
+        refreshUnreadUpdates(currentUserId);
+        const copy = cleanupNotificationPresentation(fresh);
+        showFlowDone({ bug: 'dragonfly', title: copy.title, text: copy.message, onPress: () => navigation.getParent()?.navigate('Updates') });
       } catch (error) {
         console.log('Cleanup notification error:', error);
       } finally {

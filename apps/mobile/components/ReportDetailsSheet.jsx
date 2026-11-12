@@ -3,6 +3,7 @@ import { Modal, View, Text, TouchableOpacity, ActivityIndicator, ScrollView, Ale
 import { Ionicons } from '@expo/vector-icons';
 import CompletedCleanupStory from '../CompletedCleanupStory';
 import ReportPhotoGallery from './ReportPhotoGallery';
+import { FlowDoneHost, showFlowDone } from './FlowDone';
 import BrandBug from './BrandBug';
 import LoadingBee from './LoadingBee';
 import SlideUp from './SlideUp';
@@ -46,10 +47,7 @@ export default function ReportDetailsSheet({ state, actions }) {
                         removeReport(selectedReport.id);
                         setDetailsOpen(false);
                         setSelectedReport(null);
-                        Alert.alert(
-                          'Report deleted',
-                          'The report is no longer visible on the map or in report lists.'
-                        );
+                        showFlowDone({ bug: 'dragonfly', title: 'Report deleted', text: 'It’s off the map and report lists.' });
                       } catch (error) {
                         Alert.alert(
                           'Couldn’t delete report',
@@ -230,6 +228,8 @@ export default function ReportDetailsSheet({ state, actions }) {
 >
   <View style={styles.modalBackdrop}>
     <SlideUp open={Boolean(detailsOpen)} style={styles.reportSheet} distance={80}>
+      {/* This sheet covers the app's banner host, so it carries its own. */}
+      <FlowDoneHost />
 
       {/* A solid bar behind the top buttons, so the report scrolls under it instead of through them. */}
       <View pointerEvents="none" style={[styles.reportTopBar, { height: reportControlsTop + 54 }]} />
@@ -365,6 +365,9 @@ export default function ReportDetailsSheet({ state, actions }) {
                   <Text style={[styles.websiteReportStateText, { color: colors.yellow }]}>{formatUsd(Number(selectedReport.funded_amount_cents))} in its cleanup fund</Text>
                 </View>
               ) : null}
+              {cleanupCardFirst && selectedCleanupAttempt?.claim_expires_at ? (
+                <Text style={styles.cleanerDeadline}>You’re cleaning this one. Send your after photos by {new Date(selectedCleanupAttempt.claim_expires_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}.</Text>
+              ) : null}
               <View style={styles.websiteReportMeta}>
                 <View style={styles.websiteReportSeverity}>
                   <View style={[styles.websiteReportSeverityDot, { backgroundColor: SEVERITY_INK[severityWord] || SEVERITY_INK.Medium }]} />
@@ -376,8 +379,6 @@ export default function ReportDetailsSheet({ state, actions }) {
             </View>
           );
         })()}
-
-        {cleanupCardFirst ? <View style={styles.cleanupCardFirst}>{cleanupCard}</View> : null}
 
         {selectedReport?.cleanup_state !== 'completed' ? (
           <ReportPhotoGallery report={selectedReport} urls={reportPhotoUrls} loading={photosLoading} width={reportHeroWidth} />
@@ -571,6 +572,47 @@ export default function ReportDetailsSheet({ state, actions }) {
           ) : null}
       </View>
       </View> : null}
+
+      {/* The cleaner's next steps live in the pinned bar, like Fund and Clean do. */}
+      {cleanupCardFirst && cleanupStatus?.showClaimActions && !cleanupAttemptLoading ? (
+        <View style={[styles.reportDetailActionFooter, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+          <View style={styles.reportActionRow}>
+            <TouchableOpacity
+              style={[styles.reportActionButton, styles.cleanerDirectionsButton]}
+              onPress={openCleanupNavigation}
+              disabled={cleanupActionBusy}
+              accessibilityRole="button"
+              accessibilityLabel="Get directions to this cleanup"
+            >
+              <Ionicons name="navigate-outline" size={19} color={colors.primaryDark} />
+              <Text style={styles.cleanerDirectionsText}>Directions</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.reportActionButton, styles.cleanerDoneButton]}
+              onPress={openCleanupSubmission}
+              disabled={cleanupActionBusy}
+              accessibilityRole="button"
+              accessibilityLabel="I cleaned it, add after photos"
+            >
+              <Ionicons name="camera-outline" size={20} color={colors.white} />
+              <Text style={styles.cleanerDoneText}>I cleaned it</Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity
+            style={styles.cleanupGiveUpLink}
+            onPress={confirmCleanupRelease}
+            disabled={cleanupActionBusy}
+            accessibilityRole="button"
+            accessibilityLabel="Can’t do it? Give this cleanup back"
+          >
+            {cleanupActionBusy ? (
+              <LoadingButtonContent label="Giving it back…" color={colors.red} />
+            ) : (
+              <Text style={styles.cleanupGiveUpText}>Can’t do it? <Text style={styles.cleanupGiveUpAction}>Give this cleanup back</Text></Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      ) : null}
 
       {/* ============================= */}
       {/* Persistent Footer             */}

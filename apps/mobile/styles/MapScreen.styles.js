@@ -509,7 +509,11 @@ startingFundCard: {
   borderRadius: 18,
   backgroundColor: colors.white,
 },
-cleanupCardFirst: { paddingHorizontal: 22, paddingTop: 16, marginBottom: -10 },
+cleanerDeadline: { marginBottom: 8, color: colors.body, fontSize: 14, lineHeight: 20 },
+cleanerDirectionsButton: { flex: 1, borderColor: colors.line, backgroundColor: colors.white },
+cleanerDirectionsText: { color: colors.primaryDark, fontSize: 15, fontWeight: '800' },
+cleanerDoneButton: { flex: 1.4, borderColor: colors.primaryDark, backgroundColor: colors.primary },
+cleanerDoneText: { color: colors.white, fontSize: 16, fontWeight: '800' },
 cleanupGiveUpLink: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
 cleanupGiveUpText: { color: colors.muted, fontSize: 14 },
 cleanupGiveUpAction: { color: colors.red, fontWeight: '700' },
@@ -1255,7 +1259,7 @@ cleanupReleaseActionText: {
 },
 
 ownerReportLockCard: {
-  marginHorizontal: 22,
+  marginHorizontal: 0,
   marginBottom: 28,
   padding: 16,
   flexDirection: 'row',

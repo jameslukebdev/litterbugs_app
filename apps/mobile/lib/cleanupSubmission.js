@@ -133,6 +133,7 @@ export async function uploadCleanupSubmission({
   description,
   bagsOrItemsRemoved,
   weightPounds,
+  durationMinutes = null,
   isPaid = false,
   onProgress = () => {},
 }) {
@@ -199,17 +200,23 @@ export async function uploadCleanupSubmission({
 
     onProgress({ stage: 'saving', current: photos.length, total: photos.length });
     saveDispatched = true;
-    const { data, error: submissionError } = await supabase.rpc(
-      'submit_cleanup_with_weight',
-      {
-        target_cleanup_id: cleanupId,
-        target_submission_id: submissionId,
-        cleanup_description: description,
-        cleanup_photo_paths: uploadedPaths,
-        cleanup_bags_or_items_removed: bagsOrItemsRemoved,
-        cleanup_weight_pounds: weightPounds,
-      }
+    const saveArguments = {
+      target_cleanup_id: cleanupId,
+      target_submission_id: submissionId,
+      cleanup_description: description,
+      cleanup_photo_paths: uploadedPaths,
+      cleanup_bags_or_items_removed: bagsOrItemsRemoved,
+      cleanup_weight_pounds: weightPounds,
+    };
+    let { data, error: submissionError } = await supabase.rpc(
+      'submit_cleanup_with_details',
+      { ...saveArguments, cleanup_duration_minutes: durationMinutes }
     );
+    // Until the database has submit_cleanup_with_details (PGRST202 = function not
+    // found), save without the time spent rather than fail the cleanup.
+    if (submissionError?.code === 'PGRST202') {
+      ({ data, error: submissionError } = await supabase.rpc('submit_cleanup_with_weight', saveArguments));
+    }
 
     if (submissionError) throw submissionError;
     let aiReview = null;

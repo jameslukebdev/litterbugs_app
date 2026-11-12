@@ -11,6 +11,7 @@ vi.mock('../CompletedCleanupStory', () => ({ default: () => <div>Cleanup story</
 vi.mock('./ReportPhotoGallery', () => ({ default: () => <div>Original photos</div> }));
 vi.mock('../ReporterIdentity', () => ({ default: () => null }));
 vi.mock('./LoadingBee', () => ({ default: ({ message }) => <div>{message}</div> }));
+vi.mock('./FlowDone', () => ({ FlowDoneHost: () => null, showFlowDone: vi.fn() }));
 vi.mock('./SlideUp', () => ({ default: ({ children }) => <div>{children}</div> }));
 vi.mock('../CompactRankBadge', () => ({ default: () => null }));
 vi.mock('../ProfileAvatar', () => ({ default: () => null }));

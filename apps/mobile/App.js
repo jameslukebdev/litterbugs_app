@@ -250,6 +250,8 @@ function AppNavigation({
     headerBackTitle: 'Back',
     headerBackTitleVisible: false,
     headerBackButtonDisplayMode: 'minimal',
+    // iOS 26 lets content show through the header while scrolling; keep a solid edge.
+    scrollEdgeEffects: { top: 'hard' },
   };
 
   return (

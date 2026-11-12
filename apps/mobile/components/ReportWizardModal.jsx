@@ -84,7 +84,7 @@ export default function ReportWizardModal(props) {
             )}
 
 
-            {!isEditing && currentUserId ? <CloudDraftStatus userId={currentUserId} draftKey="report" onRestored={saved => { if(saved) beginReportAtCoordinate(saved.coordinate, saved.form, saved.step, saved.missingPhotoCount); }} /> : null}
+            {!isEditing && currentUserId && !isSaving ? <CloudDraftStatus userId={currentUserId} draftKey="report" onRestored={saved => { if(saved) beginReportAtCoordinate(saved.coordinate, saved.form, saved.step, saved.missingPhotoCount); }} /> : null}
             {!isEditing && draftSaveError ? <Text style={{ color: colors.red, paddingHorizontal: 20 }}>Draft could not be saved. Keep this screen open and try Save for later again.</Text> : null}
             {/* Persistent Header */}
             <View style={styles.wizardHeader}>

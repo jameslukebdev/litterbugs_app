@@ -9,11 +9,14 @@ import { colors, fonts } from '../lib/theme';
 // one line, shown over whatever screen the flow lands on. It replaces a system pop-up
 // when there is nothing to decide. Call showFlowDone() from anywhere; <FlowDoneHost />
 // is mounted once in App.js.
-let present = null;
+// Each mounted host registers here; the newest one (the top-most surface, such as an
+// open report sheet, which covers the app-level host) shows the banner.
+const presenters = [];
 
-export function showFlowDone({ bug = 'flower', title, text = '' }) {
+export function showFlowDone({ bug = 'flower', title, text = '', onPress }) {
   if (!title) return;
-  if (present) present({ bug, title, text, key: Date.now() });
+  const present = presenters[presenters.length - 1];
+  if (present) present({ bug, title, text, onPress, key: Date.now() });
   AccessibilityInfo.announceForAccessibility?.(text ? `${title}. ${text}` : title);
 }
 
@@ -27,8 +30,8 @@ export function FlowDoneHost() {
   const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    present = setMessage;
-    return () => { if (present === setMessage) present = null; };
+    presenters.push(setMessage);
+    return () => { const at = presenters.indexOf(setMessage); if (at >= 0) presenters.splice(at, 1); };
   }, []);
 
   useEffect(() => {
@@ -48,10 +51,10 @@ export function FlowDoneHost() {
         <TouchableOpacity
           style={[styles.card, { borderColor: EDGE[message.bug] || colors.line }]}
           activeOpacity={0.9}
-          onPress={() => setMessage(null)}
+          onPress={() => { const open = message.onPress; setMessage(null); if (open) open(); }}
           accessibilityRole="alert"
           accessibilityLabel={message.text ? `${message.title}. ${message.text}` : message.title}
-          accessibilityHint="Dismisses this message"
+          accessibilityHint={message.onPress ? "Opens this update" : "Dismisses this message"}
         >
           <BrandBug kind={message.bug} size={30} />
           <View style={{ flex: 1 }}>

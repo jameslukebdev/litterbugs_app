@@ -130,3 +130,12 @@ Branch `codex/map-first-navigation`. Nothing pushed, built for stores, or deploy
 - Report sheet: solid top bar behind the heart/hide/close buttons; space between Get directions and the funding notice; notices and the claim sheet are white with a line border instead of tinted.
 - Owner asked for a "How long did it take? (hrs)" field on Complete cleanup. Not built: it needs a new database column and a change to the submission function, which is a live backend change.
 - Still open: old pop-up alerts for notifications ("Report claimed", "Better report photos needed") duplicate the Updates inbox; report wizard still has tinted chips and the yellow fund box.
+
+## Cleaner bar, banners, hours field (Nov 11, late)
+
+- Test report given back and deleted through the app; confirmed cancelled in the database.
+- Cleaner's actions moved from a box into the pinned bottom bar of the report sheet: "Directions", "I cleaned it", and "Can't do it? Give this cleanup back". The header carries the deadline line.
+- Pop-ups replaced by finish banners: cleanup given back, report deleted, and new updates (banner opens Updates; nothing is marked read). `FlowDoneHost` is also mounted inside the report sheet, because the sheet is a Modal that covers the app-level host.
+- "How long did it take? (hrs)" added to Complete cleanup. Saved as `duration_minutes` through a new function `submit_cleanup_with_details`. **The migration `supabase/migrations/20261111200000_submit_cleanup_with_details.sql` is written but NOT applied** (blocked as a production deploy). Until it is applied the app falls back to `submit_cleanup_with_weight` and the hours are not saved.
+- Stack headers use a solid scroll edge on iOS 26; the report wizard hides the draft notice while sending; the starting-fund box and lock notice are white and full width.
+- Not looked at in the simulator after these changes: pinned cleaner bar, hours field, banners over the sheet, header edge.

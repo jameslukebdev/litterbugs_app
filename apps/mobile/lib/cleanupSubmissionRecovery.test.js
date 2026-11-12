@@ -26,7 +26,7 @@ it('recognizes a commit after a lost save response and preserves its evidence', 
 });
 it('does not delete evidence when a dispatched save cannot be confirmed', async () => {
   await expect(uploadCleanupSubmission(input)).rejects.toThrow('response lost');
-  expect(m.rpc).toHaveBeenCalledWith('submit_cleanup_with_weight', expect.objectContaining({ target_submission_id: 'stable-id' }));
+  expect(m.rpc).toHaveBeenCalledWith('submit_cleanup_with_details', expect.objectContaining({ target_submission_id: 'stable-id' }));
   expect(m.remove).not.toHaveBeenCalled();
 });
 
@@ -56,5 +56,5 @@ it('saves photos in selection order even when the second upload finishes first',
   await vi.waitFor(() => expect(progress).toHaveBeenCalledWith({ stage: 'uploading', current: 1, total: 2 }));
   finishFirst();
   await operation;
-  expect(m.rpc).toHaveBeenCalledWith('submit_cleanup_with_weight', expect.objectContaining({ cleanup_photo_paths: ['first','second'] }));
+  expect(m.rpc).toHaveBeenCalledWith('submit_cleanup_with_details', expect.objectContaining({ cleanup_photo_paths: ['first','second'] }));
 });

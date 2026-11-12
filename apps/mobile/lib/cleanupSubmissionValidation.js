@@ -32,11 +32,28 @@ const parseOptionalWeight = (value) => {
   return { value: parsed };
 };
 
+// Time spent is typed in hours (for example 1.5) and stored as whole minutes.
+const parseOptionalHours = (value) => {
+  const trimmed = String(value ?? '').trim();
+  if (!trimmed) return { value: null };
+  if (!/^(?:\d+|\d*\.\d{1,2})$/.test(trimmed)) {
+    return { error: 'Time spent must be a number of hours, like 1.5.' };
+  }
+
+  const minutes = Math.round(Number(trimmed) * 60);
+  if (!Number.isFinite(minutes) || minutes < 1 || minutes > 1440) {
+    return { error: 'Time spent must be between 0.1 and 24 hours.' };
+  }
+
+  return { value: minutes };
+};
+
 export function validateCleanupSubmission({
   photos,
   description,
   bagsOrItemsRemoved,
   weightPounds,
+  hoursSpent,
 }) {
   const errors = {};
   const photoCount = photos?.length ?? 0;
@@ -62,6 +79,9 @@ export function validateCleanupSubmission({
   const weight = parseOptionalWeight(weightPounds);
   if (weight.error) errors.weightPounds = weight.error;
 
+  const duration = parseOptionalHours(hoursSpent);
+  if (duration.error) errors.hoursSpent = duration.error;
+
   return {
     valid: Object.keys(errors).length === 0,
     errors,
@@ -69,6 +89,7 @@ export function validateCleanupSubmission({
       description: normalizedDescription,
       bagsOrItemsRemoved: bags.value ?? null,
       weightPounds: weight.value ?? null,
+      durationMinutes: duration.value ?? null,
     },
   };
 }

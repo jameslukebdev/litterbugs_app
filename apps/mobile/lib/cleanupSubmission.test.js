@@ -89,12 +89,20 @@ describe('cleanup completion submission validation', () => {
     }).errors.description).toBeTruthy();
   });
 
-  it('submits and presents estimated pounds instead of duration', () => {
-    expect(submissionServiceSource).toContain("'submit_cleanup_with_weight'");
+  it('submits estimated pounds and the hours the cleanup took', () => {
+    expect(submissionServiceSource).toContain("'submit_cleanup_with_details'");
     expect(submissionServiceSource).toContain('cleanup_weight_pounds: weightPounds');
-    expect(submissionServiceSource).not.toContain('cleanup_duration_minutes');
+    expect(submissionServiceSource).toContain('cleanup_duration_minutes: durationMinutes');
+    expect(submissionServiceSource).toContain("submissionError?.code === 'PGRST202'");
     expect(submissionScreenSource).toContain('Weight removed (lb)');
-    expect(submissionScreenSource).not.toContain('Duration (minutes)');
+    expect(submissionScreenSource).toContain('How long did it take? (hrs)');
+  });
+
+  it('turns hours into whole minutes and rejects impossible times', () => {
+    expect(validateCleanupSubmission({ ...validSubmission, hoursSpent: '1.5' }).normalized.durationMinutes).toBe(90);
+    expect(validateCleanupSubmission({ ...validSubmission, hoursSpent: '' }).normalized.durationMinutes).toBeNull();
+    expect(validateCleanupSubmission({ ...validSubmission, hoursSpent: '25' }).errors.hoursSpent).toBeTruthy();
+    expect(validateCleanupSubmission({ ...validSubmission, hoursSpent: 'abc' }).errors.hoursSpent).toBeTruthy();
   });
 
   it('safety-checks cleanup photos with bounded concurrency', () => {

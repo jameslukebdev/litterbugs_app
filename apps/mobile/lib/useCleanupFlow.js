@@ -287,10 +287,11 @@ export default function useCleanupFlow(screen) {
       setSelectedReport(availableReport);
       upsertReport(availableReport);
 
-      Alert.alert(
-        releasedAttempt.status === 'expired' ? 'Claim expired' : 'Cleanup released',
-        'This report is available for another volunteer.'
-      );
+      showFlowDone({
+        bug: 'ladybug',
+        title: releasedAttempt.status === 'expired' ? 'Your claim ran out' : 'Cleanup given back',
+        text: 'Another volunteer can take it now.',
+      });
     } catch (error) {
       Alert.alert('Unable to release cleanup', cleanupActionMessage(error));
     } finally {

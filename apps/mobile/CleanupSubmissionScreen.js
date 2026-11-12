@@ -119,6 +119,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
   const [description, setDescription] = useState('');
   const [bagsOrItemsRemoved, setBagsOrItemsRemoved] = useState('');
   const [weightPounds, setWeightPounds] = useState('');
+  const [hoursSpent, setHoursSpent] = useState('');
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submissionProgress, setSubmissionProgress] = useState({
@@ -136,7 +137,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
   const submitted = useRef(false);
   const draftOwner = useRef(null);
   const latestDraft = useRef(null);
-  latestDraft.current = { photos, description, bagsOrItemsRemoved, weightPounds, submissionId: submissionId.current, correctionDueAt: context?.attempt?.correction_due_at ?? null };
+  latestDraft.current = { photos, description, bagsOrItemsRemoved, weightPounds, hoursSpent, submissionId: submissionId.current, correctionDueAt: context?.attempt?.correction_due_at ?? null };
 
   useEffect(() => {
     let active = true;
@@ -148,12 +149,12 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
     loadCleanupDraft(userId, cleanupId, context.attempt.correction_due_at ?? null).then(draft => {
       if (!active) return;
       submissionId.current = draft?.submissionId || Crypto.randomUUID();
-      setPhotos([]); setDescription(''); setBagsOrItemsRemoved(''); setWeightPounds('');
+      setPhotos([]); setDescription(''); setBagsOrItemsRemoved(''); setWeightPounds(''); setHoursSpent('');
       draftOwner.current = `${userId}:${cleanupId}`;
       setMissingPhotoCount(draft?.missingPhotoCount || 0);
       if (draft) {
         setPhotos(draft.photos); setDescription(draft.description);
-        setBagsOrItemsRemoved(draft.bagsOrItemsRemoved || ''); setWeightPounds(draft.weightPounds || '');
+        setBagsOrItemsRemoved(draft.bagsOrItemsRemoved || ''); setWeightPounds(draft.weightPounds || ''); setHoursSpent(draft.hoursSpent || '');
         if (draft.submissionId) submissionId.current = draft.submissionId;
         setDraftStatus('Draft restored');
       }
@@ -169,7 +170,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
       .then(() => { if (active) setDraftStatus('Draft saved on this device'); })
       .catch(() => { if (active) setDraftStatus('Draft not saved — keep this screen open and try again'); }), 500);
     return () => { active = false; clearTimeout(timer); };
-  }, [draftReady, userId, cleanupId, photos, description, bagsOrItemsRemoved, weightPounds]);
+  }, [draftReady, userId, cleanupId, photos, description, bagsOrItemsRemoved, weightPounds, hoursSpent]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', state => {
@@ -180,7 +181,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
     return () => subscription.remove();
   }, [draftReady, userId, cleanupId]);
 
-  usePreventRemove(draftReady && !submitted.current && Boolean(photos.length || description || bagsOrItemsRemoved || weightPounds) && !exitAction, ({ data }) => {
+  usePreventRemove(draftReady && !submitted.current && Boolean(photos.length || description || bagsOrItemsRemoved || weightPounds || hoursSpent) && !exitAction, ({ data }) => {
     saveCleanupDraft(userId, cleanupId, latestDraft.current)
       .then(() => setExitAction(data.action))
       .catch(() => Alert.alert('Couldn’t save draft', 'Keep this screen open and try again.'));
@@ -199,6 +200,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
   const descriptionInputRef = useRef(null);
   const bagsInputRef = useRef(null);
   const weightInputRef = useRef(null);
+  const hoursInputRef = useRef(null);
 
   const revealCleanupEntryField = (inputRef) => {
     const keyboardAnimationDelay = Platform.OS === 'ios' ? 320 : 120;
@@ -246,6 +248,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
     description,
     bagsOrItemsRemoved,
     weightPounds,
+    hoursSpent,
   });
 
   const continueToReview = () => {
@@ -479,7 +482,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
 
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>3  How much?</Text>
+                <Text style={styles.sectionTitle}>3  How much and how long?</Text>
                 <Text style={styles.required}>Optional</Text>
               </View>
               <View style={styles.numericRow}>
@@ -520,6 +523,24 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
                   <ErrorText style={styles.error}>{errors.weightPounds}</ErrorText>
                 </View>
               </View>
+              <View style={styles.hoursField}>
+                <Text style={styles.inputLabel}>How long did it take? (hrs)</Text>
+                <TextInput selectionColor={colors.primary}
+                  ref={hoursInputRef}
+                  style={[styles.numericInput, errors.hoursSpent && styles.inputError]}
+                  value={hoursSpent}
+                  onChangeText={(value) => {
+                    setHoursSpent(value);
+                    setErrors((current) => ({ ...current, hoursSpent: undefined }));
+                  }}
+                  placeholder="1.5"
+                  keyboardType="decimal-pad"
+                  maxLength={5}
+                  editable={!submitting}
+                  onFocus={() => revealCleanupEntryField(hoursInputRef)}
+                />
+                <ErrorText style={styles.error}>{errors.hoursSpent}</ErrorText>
+              </View>
             </View>
 
             <TouchableOpacity style={styles.primaryButton} onPress={continueToReview}>
@@ -559,6 +580,10 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
                   <Text style={styles.reviewMetricValue}>
                     {normalized.weightPounds ? `${normalized.weightPounds} lb` : 'Not provided'}
                   </Text>
+                </View>
+                <View style={styles.reviewMetric}>
+                  <Text style={styles.reviewLabel}>Time spent</Text>
+                  <Text style={styles.reviewMetricValue}>{normalized.durationMinutes ? `${Math.round(normalized.durationMinutes / 6) / 10} hrs` : 'Not provided'}</Text>
                 </View>
               </View>
             </View>
@@ -624,6 +649,7 @@ const styles = StyleSheet.create({
   numericRow: { marginTop: 14, flexDirection: 'row', gap: 12 },
   numericField: { flex: 1 },
   inputLabel: { color: colors.body, fontSize: 13, fontWeight: '700' },
+  hoursField: { marginTop: 12 },
   numericInput: { minHeight: 50, marginTop: 7, paddingHorizontal: 13, borderWidth: 1, borderColor: colors.line, borderRadius: 12, color: colors.ink, fontSize: 16, backgroundColor: colors.white },
   inputError: { borderColor: colors.red },
   error: { marginTop: 7, fontSize: 13, lineHeight: 18 },
