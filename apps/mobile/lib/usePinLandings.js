@@ -28,6 +28,7 @@ function inRegion(region, coordinate) {
 export default function usePinLandings({ enabled, mapRef, region, hidden, postedPinId }) {
   const [shown, setShown] = useState(() => new Set());
   const [ghosts, setGhosts] = useState([]);
+  const [onMap, setOnMap] = useState(() => new Set()); // without landings: the pins on the map
   const pins = useRef(new Map()); // key -> { coordinate, kind, text, mounts }
   const visible = useRef(new Set()); // keys that were in view when the map last settled
   const landing = useRef(new Set()); // keys hidden while their stand-in lands
@@ -115,8 +116,9 @@ export default function usePinLandings({ enabled, mapRef, region, hidden, posted
   const track = useCallback((key, info) => {
     const existing = pins.current.get(key);
     pins.current.set(key, { ...info, mounts: (existing?.mounts ?? 0) + 1 });
+    if (!enabled) setOnMap(current => (current.has(key) ? current : new Set(current).add(key)));
     schedule();
-  }, [schedule]);
+  }, [enabled, schedule]);
 
   // A pin has been taken off the map. Swapping a placeholder for the real pin unmounts one and
   // mounts the other in the same update, so only forget the key if nothing is back a moment later.
@@ -130,6 +132,12 @@ export default function usePinLandings({ enabled, mapRef, region, hidden, posted
       pins.current.delete(key);
       visible.current.delete(key);
       landing.current.delete(key);
+      setOnMap((current) => {
+        if (!current.has(key)) return current;
+        const next = new Set(current);
+        next.delete(key);
+        return next;
+      });
       // Next time it appears it starts hidden and lands again.
       setShown((shownNow) => {
         if (!shownNow.has(key)) return shownNow;
@@ -176,6 +184,8 @@ export default function usePinLandings({ enabled, mapRef, region, hidden, posted
   }, []);
 
   const isShown = useCallback((key) => !enabled || shown.has(key), [enabled, shown]);
+  // Whether this pin stands on the map by itself and is fully shown (not in a group or landing).
+  const isOnMap = useCallback((key) => (enabled ? shown.has(key) : onMap.has(key)), [enabled, shown, onMap]);
 
-  return { isShown, track, untrack, ghosts, ghostDone, regionChanging, regionSettled };
+  return { isShown, isOnMap, track, untrack, ghosts, ghostDone, regionChanging, regionSettled };
 }

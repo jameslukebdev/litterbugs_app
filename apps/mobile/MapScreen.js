@@ -30,6 +30,7 @@ import { Marker, Polygon } from 'react-native-maps';
 import ClusteredMapView from 'react-native-map-clustering';
 import { calculateBBox, returnMapZoom } from 'react-native-map-clustering/lib/helpers';
 import { regionForGroup } from './lib/clusterZoom';
+import { regionWithPointAt, SELECTED_PIN_HEIGHT } from './lib/mapFraming';
 import { useIsFocused } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import * as Device from 'expo-device';
@@ -237,7 +238,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const fundingEnabled = paymentsEnabled && geminiReviewEnabled;
 
   const insets = useSafeAreaInsets();
-  const { width: screenWidth, fontScale } = useWindowDimensions();
+  const { width: screenWidth, height: screenHeight, fontScale } = useWindowDimensions();
   const previewReport = markers.find((marker) => marker.id === previewId)?.report;
   const [previewControlsHidden, setPreviewControlsHidden] = useState(Boolean(previewReport));
   useEffect(() => {
@@ -253,7 +254,9 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     setNearbyIds([]);
     setPreviewId(report.id);
     const marker = markers.find((item) => item.id === report.id);
-    if (marker) mapViewRef.current?.animateToRegion({ ...region, ...marker.coordinate }, 240);
+    // Bring the pin into the open map above the report card (which covers the middle of the
+    // screen), so it stays in sight next to its card instead of hiding behind it.
+    if (marker) mapViewRef.current?.animateToRegion(regionWithPointAt(region, marker.coordinate, SELECTED_PIN_HEIGHT * screenHeight, screenHeight), 240);
   };
   const bottomNavClearance = getBottomNavClearance(insets.bottom);
 
@@ -1401,14 +1404,14 @@ const revealBottomReportField = () => {
           const kind = pinKind(marker.report?.cleanup_state);
           // Website pins: the bug alone, plus the amount only when there is money.
           const text = kind === 'open' && marker.report?.funded_amount_cents > 0 ? fundingLabel : null;
-          const selected = marker.id === previewId;
           const shown = pins.isShown(marker.id);
           const info = { coordinate: marker.coordinate, kind, text };
           return (
             <Marker
               // Never update a pin on the map (iPhone draws it in the wrong place): anything that
               // changes how it looks is in the key, so a change puts a new pin in its place.
-              key={shown ? `${marker.id}:${kind}:${text ?? ''}:${selected ? 'selected' : ''}` : `${marker.id}:pending`}
+              // Selecting a pin never touches it: the selected look is a second pin laid on top.
+              key={shown ? `${marker.id}:${kind}:${text ?? ''}` : `${marker.id}:pending`}
               coordinate={marker.coordinate}
               identifier={`report:${tone.key}:${marker.id}`}
               tracksViewChanges={Platform.OS === 'ios' ? true : tracksReportMarkers}
@@ -1422,7 +1425,7 @@ const revealBottomReportField = () => {
               }}
             >
               {shown ? (
-                <MapPin kind={kind} text={text} selected={selected}
+                <MapPin kind={kind} text={text}
                   onMount={() => pins.track(marker.id, info)} onUnmount={() => pins.untrack(marker.id)} />
               ) : (
                 <PinPlaceholder onMount={() => pins.track(marker.id, info)} onUnmount={() => pins.untrack(marker.id)} />
@@ -1430,6 +1433,32 @@ const revealBottomReportField = () => {
             </Marker>
           );
         })}
+
+        {/* The selected pin, laid over its pin on the map. Swapping the pin itself for a selected
+            one left a frame or two with no pin at all (a blink) while the map drew the new one;
+            with the plain pin left in place underneath, there is always a pin showing. */}
+        {(() => {
+          const marker = previewId ? markers.find(item => item.id === previewId) : null;
+          if (!marker || !pins.isOnMap(marker.id)) return null;
+          const kind = pinKind(marker.report?.cleanup_state);
+          const text = kind === 'open' && marker.report?.funded_amount_cents > 0 ? formatMapFundingLabel(marker.report?.funded_amount_cents) : null;
+          return (
+            <Marker
+              key={`selected:${marker.id}:${kind}:${text ?? ''}`}
+              cluster={false}
+              zIndex={1000}
+              coordinate={marker.coordinate}
+              tracksViewChanges={Platform.OS === 'ios' ? true : tracksReportMarkers}
+              anchor={{ x: 0.5, y: 1 }}
+              centerOffset={pinCenterOffset(kind, text)}
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              onPress={(event) => { event?.stopPropagation?.(); }}
+            >
+              <MapPin kind={kind} text={text} selected />
+            </Marker>
+          );
+        })()}
 
       </ClusteredMapView>
 
