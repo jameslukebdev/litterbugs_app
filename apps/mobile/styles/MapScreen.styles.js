@@ -845,7 +845,7 @@ reportDetailsLoadingClose: {
 
 // Content starts below the top bar (favourite, share, close), as on the website.
 reportPostScrollContent: {
-  paddingTop: 130,
+  paddingTop: 140,
   paddingBottom: 24,
 },
 

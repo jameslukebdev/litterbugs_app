@@ -158,3 +158,5 @@ Branch `codex/map-first-navigation`. Nothing pushed, built for stores, or deploy
 - Share is offered on in-progress reports too, matching the website's rule; share icon is the website's.
 - Compared and already matching: filters sheet, Profile overview, My activity tabs and empty state.
 - Not compared yet this pass: fund screen, Payments, Updates, Settings, public profile, report wizard steps.
+
+- Final checks (Nov 12): on a cleaned report the expand icon, website switch colours, share icon and mint pill were all seen in the simulator; title now has a little more room under the top bar. Payments and Settings were compared with the website again and match (the website Support Litterbugs row is deliberately absent). The website has no /account/updates page at that address; Updates was not re-compared.
