@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Image } from 'expo-image';
+import SmoothImage from './SmoothImage';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../lib/theme';
 
@@ -37,8 +37,8 @@ function PhotoRequest({ path, uri, getUrl, style, label = 'Report photo', fit = 
   // A distinct host prevents Android from retaining the old progress label
   // when it reuses the loading View for the finished photo.
   return <View key="loaded" style={frame}>
-    <Image key={attempt} source={{ uri: result.uri, cacheKey: path || result.uri }}
-      style={StyleSheet.absoluteFill} contentFit={fit} transition={180}
+    <SmoothImage key={attempt} source={{ uri: result.uri, cacheKey: path || result.uri }}
+      style={StyleSheet.absoluteFill} contentFit={fit}
       cachePolicy="memory-disk" recyclingKey={path || result.uri}
       accessibilityLabel={label} onError={() => setResult({ error: true })} />
   </View>;

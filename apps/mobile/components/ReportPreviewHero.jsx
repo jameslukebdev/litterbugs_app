@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Image as ExpoImage } from 'expo-image';
+import SmoothImage from './SmoothImage';
 import { Ionicons } from '@expo/vector-icons';
 
 import BrandBug from './BrandBug';
@@ -36,11 +36,10 @@ export default function ReportPreviewHero({
         style={styles.heroPhotoButton}
       >
         {showAfter ? (
-          <ExpoImage
+          <SmoothImage
             source={`https://litterbugs.app/reports/${encodeURIComponent(report.id)}/photo/after?width=640`}
             contentFit="cover"
             cachePolicy="memory-disk"
-            transition={150}
             style={styles.heroPhoto}
             onError={() => setAfterFailed(true)}
             accessibilityLabel={`${report?.title || 'Report'} after cleanup`}

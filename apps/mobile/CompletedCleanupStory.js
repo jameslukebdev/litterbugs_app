@@ -14,6 +14,7 @@ import { Image as ExpoImage } from 'expo-image';
 
 import CompactRankBadge from './CompactRankBadge';
 import BrandBug from './components/BrandBug';
+import SmoothImage from './components/SmoothImage';
 import ProfileAvatar from './ProfileAvatar';
 import {
   cleanupImpactFacts,
@@ -31,11 +32,10 @@ function AfterPhoto({ url, index, count, width }) {
   return (
     <View style={[styles.photoFrame, { width }]}>
       {!failed ? (
-        <ExpoImage
+        <SmoothImage
           source={url}
           contentFit="cover"
           cachePolicy="memory-disk"
-          transition={180}
           style={styles.photo}
           onLoadStart={() => setLoading(true)}
           onLoad={() => setLoading(false)}

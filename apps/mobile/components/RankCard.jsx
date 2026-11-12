@@ -72,7 +72,6 @@ export default function RankCard({ ranking, loading, error, onRetry, own = true 
           <Image
             source={getRankAsset(rankDefinition)}
             contentFit="contain"
-            transition={120}
             style={styles.rankArtwork}
             accessibilityLabel={`${ranking.rank} rank artwork`}
           />
