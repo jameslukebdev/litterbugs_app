@@ -24,6 +24,19 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (integration acquisition shortlist)
+
+- Researched official Nextdoor, Wix/WordPress, GivePulse, Eventbrite, Meetup,
+  Idealist and Benevity documentation. Prioritized user-initiated Nextdoor
+  sharing, willing local website widget placements, and campus partnerships.
+- Nextdoor Share Plugin needs no API approval; Publish API does. Meetup API
+  requires Pro plus approval. GivePulse access/partner arrangements need
+  confirmation; App State platform usage was not established. Idealist blocks
+  for-profit categories from volunteer postings; Benevity has nonprofit gates.
+  Importing another platform's feed does not establish outbound distribution.
+- Advisory only: no integrations, outreach, live tests, deployment, push or
+  database changes. Preserve pending work by other agents.
+
 ### 2026-11-12 — Codex (API and MCP growth examples)
 
 - Researched official Booking.com partner API, Calendly embeds, Jotform/Zapier
