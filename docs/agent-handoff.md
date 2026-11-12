@@ -24,6 +24,29 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (cleanup hours and social links deployed)
+
+- Owner-approved source 7638185 on codex/cleanup-hours-social-release-20261112
+  is live at litterbugs.app: dpl_97HKBRMdUPK8wmDAP2CNvLdvNVPy /
+  litterbugs-9u6drffx1. Previous live/rollback: dpl_DeCmzBrM6UdhTNAdQDKMmRYiLuoL.
+  Release branch and working branch through approved 9b81fc6 pushed to GitHub.
+- Exactly 22 reviewed production/test files match approved local 9b81fc6:
+  optional hours field with draft/review/minute conversion and existing duration
+  RPC, plus all three confirmed social destinations with Font Awesome brand
+  icons and no subheading. Native work, backend migrations, dependencies,
+  dev previews, homepage layout and policy pages match previous live.
+- 80 web + 3 shared tests pass against clean release. Remote compile/TypeScript
+  and production build pass (20s); existing two social-card filesystem tracing
+  warnings remain. No local production build or database changes.
+- Staged home/map/report HTTP 200; cleanup-hours/loading previews HTTP 404.
+  Three social URLs and no subheading verified in staged HTML. Promoted the
+  same build; production domain identity is the new deployment above.
+- Live excluded-browser checks pass: all three URLs, 44px phone menu targets,
+  no overflow or subheading at 390/1280px, no browser errors. Last-10-minute
+  deployment error scan empty. No real cleanup submitted during verification.
+  Analytics set off in test browser; temporary viewport restored and live test
+  tab closed. Local review previews preserved. Concurrent work stays untouched.
+
 ### 2026-11-12 — Codex (approved cleanup-hours/social release prepared)
 
 - Owner approved cleanup hours plus Instagram/TikTok/Facebook links. Clean
