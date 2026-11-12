@@ -24,6 +24,24 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (mint cleanup stats deployed)
+
+- Owner-approved release 2bebc0f on codex/cleanup-stats-release-20261112 is live:
+  dpl_GxyQnRbtykjhEeDhTUMWN3FCGBYh / litterbugs-3qo0b6po1. GitHub release
+  branch pushed. Rollback: dpl_G9Q15QaLjZDr825x4a6CBqusEPp6.
+- Deployed only the three reviewed CompletedCleanup files on prior live source
+  d80611d: mint card, clearer cleaner identity, bag/item, pound and recorded-hour
+  stats; missing durations show “time not recorded”. Homepage, policy pages,
+  native work, untracked previews and database remain outside this release.
+- Exact release source passes 48 cleanup/report tests; remote Next.js build and
+  TypeScript pass. Staged home/map HTTP 200; bug-animation dev preview 404.
+  Live alias identity matches the new deployment. 390px live report verifies
+  mint RGB(226,248,243), all stats, no overflow and no browser errors. Browser
+  Analytics choices set off; temporary viewport reset. Recent deployment error
+  scan empty. Existing social-card filesystem tracing warnings remain.
+- Current local work and concurrent Claude commits preserved. No cache files
+  deleted; no local production build or mobile/store release.
+
 ### 2026-11-12 — Codex (integration acquisition shortlist)
 
 - Researched official Nextdoor, Wix/WordPress, GivePulse, Eventbrite, Meetup,
