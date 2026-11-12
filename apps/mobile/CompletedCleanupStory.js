@@ -99,6 +99,10 @@ export default function CompletedCleanupStory({
 
   const cleanerName = impact.cleaner?.display_name || 'Cleaner profile unavailable';
   const facts = cleanupImpactFacts(impact.submission);
+  // Time always has its place in the row; older cleanups were sent without it.
+  if (!facts.some(fact => fact.icon === 'time-outline')) {
+    facts.push({ icon: 'time-outline', value: '–', caption: 'time not recorded', label: 'Time spent was not recorded' });
+  }
   // Website report sheet: one photo area with an After cleanup / Before switch.
   const canSwitchPhotos = Boolean(beforePhotos) && impact.afterPhotoUrls.length > 0;
   const showBefore = canSwitchPhotos && photoSide === 'before';
