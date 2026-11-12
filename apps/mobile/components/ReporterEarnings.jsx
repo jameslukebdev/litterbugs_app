@@ -10,12 +10,12 @@ const labels = { pending: 'Pending payout · check your payout settings', proces
   transferred: 'Sent to Stripe', failed: 'Payment needs attention · we’re reviewing it' };
 // Reporter earnings, in the same card style as the rest of Payments: a heading, then
 // either the rewards or one quiet line. The policy detail lives on the reward policy page.
-export function ReporterEarnings({ userId, onOpenReport }) {
+export function ReporterEarnings({ userId, onOpenReport, heading = true }) {
   const resource = useFocusedResource(useCallback(() => loadReporterRewards(userId), [userId]),
     { enabled: Boolean(userId), cacheKey: `reporter-rewards:${userId}` });
   const rewards = resource.data ?? [];
   return <View style={{ marginHorizontal: 20 }}>
-    <Text style={{ marginTop: 24, marginBottom: 12, fontSize: 20, lineHeight: 25, fontFamily: fonts.heading, color: colors.ink }} accessibilityRole="header">Reporter earnings</Text>
+    {heading ? <Text style={{ marginTop: 24, marginBottom: 12, fontSize: 20, lineHeight: 25, fontFamily: fonts.heading, color: colors.ink }} accessibilityRole="header">Reporter earnings</Text> : null}
     <View style={{ borderRadius: 18, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white, paddingHorizontal: 17 }}>
       {resource.error ? <LoadFailure title="Couldn’t load reporter earnings" onRetry={resource.refresh} />
         : rewards.length ? rewards.map((reward, index) =>

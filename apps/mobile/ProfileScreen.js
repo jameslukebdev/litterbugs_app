@@ -140,6 +140,7 @@ export default function ProfileScreen({ navigation, route }) {
   // appears in one piece.
   const contributions = useFocusedResource(useCallback(() => loadMyContributions({ userId: user?.id }), [user?.id]), { enabled: permanent && section === 'payments', cacheKey: `payments-preview:${user?.id}` });
   const contributionItems = contributions.data?.items ?? [];
+  const [paymentsView, setPaymentsView] = useState('donations');
   const settled = resource => resource.hasLoaded || Boolean(resource.error);
   const paymentsReady = settled(contributions) && settled(flags) && settled(cleanups)
     && (!fundingEnabled || Boolean(payoutStatus) || Boolean(payoutStatusError));
@@ -354,7 +355,7 @@ export default function ProfileScreen({ navigation, route }) {
               arrive one by one and push each other around. */}
           {!paymentsReady ? <LoadingBee label="Loading payments" style={{ marginTop: 80 }} /> : <>
           {/* Payouts first: getting paid is the thing to set up. */}
-          <Text style={styles.activityHeading}>Payouts</Text>
+          <View style={{ height: 16 }} />
           <View style={[styles.card, styles.paymentCard]}>
             {flags.error ? <ActionRow label="Retry payout availability" icon="refresh-outline" onPress={flags.refresh} /> : fundingEnabled ? <>
             {<StripeConnectionStatus
@@ -377,8 +378,10 @@ export default function ProfileScreen({ navigation, route }) {
             <Ionicons name="lock-closed-outline" size={15} color={colors.muted} />
             <Text style={styles.paymentsTrustText}>Payments and payouts run through Stripe. Litterbugs never sees your full card or bank number.</Text>
           </View>
-          <Text style={styles.activityHeading}>Donations</Text>
-          <View style={[styles.card, styles.paymentCard]}>
+          {/* Same three-tab pattern as My activity; the payout connection stays above
+              the tabs because it applies to both kinds of earnings. */}
+          <PillTabs style={styles.activityTabs} stacked={fontScale > 1.5} value={paymentsView} onChange={setPaymentsView} options={[['donations', 'Donations'], ['reporter', 'Reporter earnings'], ['cleanup', 'Cleanup earnings']]} />
+          {paymentsView === 'donations' ? <View style={[styles.card, styles.paymentCard]}>
             {contributions.error && !contributions.hasLoaded ? <LoadFailure title="Couldn’t load donations" onRetry={contributions.refresh} />
               : !contributions.hasLoaded ? <LoadingBee label="Loading donations" size={48} />
               : contributionItems.length > 0 ? <>
@@ -388,12 +391,11 @@ export default function ProfileScreen({ navigation, route }) {
                 {contributionItems.length > 5 || contributions.data?.nextCursor ? <TextLink label="Show all donations" onPress={() => navigation.navigate('ContributionHistory')} style={styles.showAll} /> : null}
               </>
               : <EmptyState style={styles.quietEmpty} bug="bee" title="No donations yet" />}
-          </View>
-          <ReporterEarnings userId={user.id} onOpenReport={openReport} />
-          <Text style={styles.activityHeading}>Cleanup earnings</Text>
-          <View style={[styles.card, styles.paymentCard]}>
+          </View> : null}
+          {paymentsView === 'reporter' ? <ReporterEarnings userId={user.id} onOpenReport={openReport} heading={false} /> : null}
+          {paymentsView === 'cleanup' ? <View style={[styles.card, styles.paymentCard]}>
             {cleanupsError && !cleanups.hasLoaded ? <LoadFailure title="Couldn’t load earnings" onRetry={refreshCleanups} /> : cleanupsLoading && !cleanups.hasLoaded ? <LoadingBee label="Loading earnings" size={48} /> : cleanupSummary.completed.filter(attempt => attempt.is_paid).length ? cleanupSummary.completed.filter(attempt => attempt.is_paid).map((attempt, index) => <CompletedCleanupRow key={attempt.id} attempt={attempt} divided={index > 0} onPress={() => openReport(attempt.report_id)} />) : <EmptyState style={styles.quietEmpty} bug="caterpillar" title="No cleanup earnings yet" />}
-          </View>
+          </View> : null}
           </>}
         </>
       ) : null}
@@ -552,7 +554,7 @@ const styles = StyleSheet.create({
   emailText: { flexShrink: 1, color: colors.muted, fontSize: 15, fontWeight: '700' },
   // Nothing-yet cards: a bug and a heading, no explanation.
   quietEmpty: { minHeight: 0, paddingVertical: 26 },
-  paymentsTrust: { marginTop: 12, paddingHorizontal: 4, flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  paymentsTrust: { marginTop: 12, marginBottom: 4, marginHorizontal: 24, flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   paymentsTrustText: { flex: 1, color: colors.muted, fontSize: 13, lineHeight: 19 },
   signedOutContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, backgroundColor: colors.white },
   signedOutTitle: { marginTop: 20, color: colors.ink, fontSize: 24, fontFamily: fonts.heading, textAlign: 'center' },
