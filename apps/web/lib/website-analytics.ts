@@ -1,7 +1,7 @@
 import { AUTH_RESULT_PARAM, SHARED_REPORT_AUTH_PARAM, isSharedReportAuthProvider, type SharedReportAuthProvider } from './participation-auth';
 import { communityForEntry, communityForPath, communityProperties, type CommunityEngagementEvent, type CommunityProperties } from './community-metrics';
 // Bump when participation semantics/workflows change; compiled into each browser bundle.
-export const WORKFLOW_VERSION = 'web-participation-2026-11-11-v6';
+export const WORKFLOW_VERSION = 'web-participation-2026-11-11-v7';
 export const ANALYTICS_CONSENT_KEY = 'litterbugs:analytics-consent:v1';
 export const ANALYTICS_REPLAY_CHOICE_KEY = 'litterbugs:analytics-replay-consent:v1';
 export const ANALYTICS_EVENT = 'litterbugs:analytics-event';
@@ -242,11 +242,19 @@ const EXIT_TYPES = ['cancelled', 'saved_for_later', 'draft_resumed', 'draft_disc
 const SEARCH_SURFACES = ['toolbar_search', 'empty_search', 'map', 'closest_reports'] as const;
 const RESULT_BUCKETS = ['0', '1', '2-5', '6-20', '21+'] as const;
 const DISTANCE_BUCKETS = ['under_1', '1-10', '10-50', 'over_50'] as const;
-export const JOURNEY_EVENTS = ['map_discovery', 'payout_setup', 'participation_decision', 'shared_report_sign_in'] as const;
+const APP_CHOICE_STAGES = ['open_requested', 'store_fallback', 'download_page_requested', 'website_continued'] as const;
+export const JOURNEY_EVENTS = ['map_discovery', 'payout_setup', 'participation_decision', 'shared_report_sign_in', 'app_choice'] as const;
 export type JourneyEvent = typeof JOURNEY_EVENTS[number];
-type JourneyInput = { stage?: unknown; source?: unknown; surface?: unknown; result_bucket?: unknown; distance_bucket?: unknown; filtered?: unknown; truncated?: unknown; action?: unknown; exit_type?: unknown; provider?: unknown };
+type JourneyInput = { stage?: unknown; source?: unknown; surface?: unknown; result_bucket?: unknown; distance_bucket?: unknown; filtered?: unknown; truncated?: unknown; action?: unknown; exit_type?: unknown; provider?: unknown; destination?: unknown; store?: unknown };
 function inList(value: unknown, list: readonly string[]): value is string { return typeof value === 'string' && list.includes(value); }
 export function journeyProperties(event: JourneyEvent, value: JourneyInput) {
+  if (event === 'app_choice') {
+    if (!inList(value.stage, APP_CHOICE_STAGES) || !inList(value.destination, ['report', 'map'])) return null;
+    if (value.stage === 'open_requested' || value.stage === 'store_fallback') {
+      return inList(value.store, ['app_store', 'google_play']) ? { stage: value.stage, destination: value.destination, store: value.store } : null;
+    }
+    return { stage: value.stage, destination: value.destination };
+  }
   if (event === 'participation_decision') {
     const step = participationProperties(value);
     return step && inList(value.exit_type, EXIT_TYPES) ? { ...step, exit_type: value.exit_type } : null;
@@ -290,6 +298,10 @@ export function trackMapDiscovery(stage: typeof MAP_STAGES[number], properties: 
   trackJourney('map_discovery', { ...properties, stage });
 }
 export function trackPayoutSetup(stage: typeof PAYOUT_STAGES[number]) { trackJourney('payout_setup', { stage }); }
+/** These are deliberate choices and fallback attempts, never proof of an app open/install. */
+export function trackAppChoice(stage: typeof APP_CHOICE_STAGES[number], destination: 'report' | 'map', store?: 'app_store' | 'google_play') {
+  trackJourney('app_choice', { stage, destination, store });
+}
 export function trackSharedReportSignIn(stage: SharedReportAuthStage, provider?: SharedReportAuthProvider) {
   trackJourney('shared_report_sign_in', { stage, provider });
 }

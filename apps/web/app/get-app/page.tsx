@@ -1,9 +1,8 @@
 import { GetAppQr } from '@/components/get-app-qr';
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import Link from 'next/link';
 import { Website } from '@/components/public-website';
-import { AppLink } from '@/components/app-link';
+import { AppLink, ContinueOnWebsiteLink } from '@/components/app-link';
 import { APP_STORE_URL, GOOGLE_PLAY_URL, isInstagramStoreVisit } from '@/lib/app-links';
 import seoStyles from '@/components/public-website/seo-pages.module.css';
 import styles from '@/components/app-promotion.module.css';
@@ -29,7 +28,7 @@ export default async function GetAppPage({ searchParams }: { searchParams: Promi
       <div className={styles.desktopQr}>
         <GetAppQr className={styles.qr} />
       </div>
-      <Link className="primary-button button-link" href={reportId ? `/map?view=map&report=${encodeURIComponent(reportId)}` : '/map?view=map'}>Continue on the website</Link>
+      <ContinueOnWebsiteLink className="primary-button button-link" reportId={reportId} />
     </main>
   </Website>;
 }

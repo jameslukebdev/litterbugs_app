@@ -227,7 +227,7 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
       for (const item of pendingFlowDeliveries.current) {
         if (aggregate && ready && posthog.current && !item.posthogSent) {
           try {
-            if (item.event === 'shared_report_sign_in') posthog.current.capture(item.event, item.properties, { transport: 'sendBeacon', send_instantly: true });
+            if (item.event === 'shared_report_sign_in' || item.event === 'app_choice') posthog.current.capture(item.event, item.properties, { transport: 'sendBeacon', send_instantly: true });
             else posthog.current.capture(item.event, item.properties);
             item.posthogSent = true;
           } catch { /* One unavailable provider must not block the other or the user action. */ }

@@ -24,6 +24,39 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-11 — Codex (mobile friction review, app choices and map reach)
+
+- Fresh PostHog participation record review found no new tracked failures.
+  Clarity production-only last-three-days dead-click filter has four sessions;
+  newest (Nov 11 9:11 AM, mobile Safari) tapped the Cleanup and reward policy
+  heading at 2s, not an interactive control. No policy edits. Nov 9 Instagram
+  shared-report insights show login tap then page hidden; this alone cannot
+  establish a failed sign-in. Reused one existing Clarity tab; playback ended.
+- Added local `app_choice` stages: open_requested, store_fallback,
+  download_page_requested (desktop), website_continued. Allowlisted destination
+  report/map and store category only. Existing app/report destinations and
+  fallback timing preserved. Fallback is recorded only when it actually runs;
+  hidden-page/cancelled timers do not count. No install/app-open-success claim.
+  Uses the bounded per-provider queue and immediate PostHog beacon; normal
+  analytics exclusion applies. Version `web-participation-2026-11-11-v7`.
+- Since Nov 6 midnight ET through Nov 11 query time: mobile homepage-entry
+  visits -> /map = 3/18 (16.67%, ordered same-session funnel, one-day window).
+  Earlier ~4% baseline was 1/28 homepage phone visits. All phone visits with
+  any map view = 15/49 (30.61%), including 9 direct map-entry visits. These are
+  tracked sessions, not confirmed individuals; small samples and untagged
+  historical owner testing limit interpretation. No causal rollout claim.
+- Read-only typed PostHog queries in project 695338: filterTestAccounts=true,
+  production hosts, marked test traffic, QA referrers and detected bots excluded.
+  No governed map metric matched. Existing saved watcher 1kdPlWal is a broader
+  ordered phone-visit -> map funnel (18.18% for partial week Nov 8), not the
+  homepage-entry measure; a single pageview direct map entry can be omitted
+  by that two-event definition. Do not compare these denominators directly.
+- 64 focused tests, scoped ESLint, TypeScript and diff checks passed. Mocked
+  analytics only, no production test events or new browsers/builds. Memory
+  pressure remains warning level 2; no further applications closed.
+  Committed locally with this entry; no deployment, GitHub push or live
+  analytics/dashboard changes. Existing pending releases still await approval.
+
 ### 2026-11-11 — Codex (analytics provider-readiness delivery fixed locally)
 
 - Reproduced early map/report/cleanup flow events reaching PostHog but being
