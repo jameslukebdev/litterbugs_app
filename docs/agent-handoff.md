@@ -24,6 +24,18 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (subtle button shade replaces pending underline, local only)
+
+- Owner disliked the underline. Replaced pending-line/pulsing styles with a5.5%
+  current-color tint over the existing rounded button/link, transitioning120ms.
+  No new palette, text, layout, route/prefetch or loading timing changes. No loop;
+  reduced motion removes the transition. Refero Tally surface restraint and bundled
+  motion guidance informed the tiny tint; existing Litterbugs colors are primary.
+- Browser local390px confirms tint, inherited rounding, unchanged size/labels,
+  no underline/animation and reduced-motion transition0s. Six existing link tests
+  and scoped diff check pass. Committed locally; no deploy/push. Previous live
+  remains65a80e9; homepage responsiveness00318cb also awaits approval to deploy.
+
 ### 2026-11-12 — Codex (homepage button responsiveness follow-up, local only)
 
 - Owner requested broader homepage button checks. Added ResponsiveLink: original
