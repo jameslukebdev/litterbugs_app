@@ -112,12 +112,12 @@ export default function CompletedCleanupStory({
 
       {canSwitchPhotos ? (
         <View style={styles.sideSwitch} accessibilityRole="tablist" accessibilityLabel="Choose photos">
-          {[['after', 'After cleanup', 'flower', colors.done], ['before', 'Before', 'ladybug', colors.ink]].map(([side, label, bug, ink]) => {
+          {[['after', 'After cleanup', 'flower', colors.done, '#8ED7C5'], ['before', 'Before', 'ladybug', '#A8323B', '#F2A8B0']].map(([side, label, bug, ink, edge]) => {
             const selected = photoSide === side;
             return (
               <TouchableOpacity
                 key={side}
-                style={[styles.sideButton, selected && styles.sideButtonSelected, selected && side === 'after' && styles.sideButtonCleaned]}
+                style={[styles.sideButton, selected && { borderColor: edge }]}
                 onPress={() => { if (!selected) hapticSelect(); setPhotoSide(side); }}
                 activeOpacity={0.8}
                 accessibilityRole="tab"
@@ -226,11 +226,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   cleanupDateText: { color: colors.muted, fontSize: 13 },
-  sideSwitch: { flexDirection: 'row', gap: 6, padding: 4, borderRadius: 16, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
+  sideSwitch: { flexDirection: 'row', gap: 4, padding: 4, borderRadius: 16, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
   sideButton: { flex: 1, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: 12, borderWidth: 2, borderColor: 'transparent' },
-  sideButtonSelected: { borderColor: colors.primary },
-  sideButtonCleaned: { borderColor: colors.doneBorder, backgroundColor: colors.doneSoft },
-  sideButtonText: { color: colors.body, fontSize: 15, fontWeight: '700' },
+  sideButtonText: { color: colors.muted, fontSize: 15, fontWeight: '800' },
   sectionTitle: { color: colors.ink, fontSize: 17, fontFamily: fonts.heading },
   photoScroll: {
     borderRadius: 22,
