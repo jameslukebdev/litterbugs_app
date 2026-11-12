@@ -36,6 +36,7 @@ import { groupAccountReports } from './lib/accountReports';
 import { useSession } from './lib/session';
 import { colors, fonts } from './lib/theme';
 import BrandBug from './components/BrandBug';
+import NearbyAlertSetting from './components/NearbyAlertSetting';
 import { useUnreadUpdates } from './lib/unreadUpdates';
 import LoadingBee from './components/LoadingBee';
 import { EmptyState, LoadFailure, PillTabs, PrimaryButton, PullRefresh, TextLink } from './components/ui';
@@ -472,6 +473,7 @@ export default function ProfileScreen({ navigation, route }) {
           <ActionRow appearance="profile" divided label="Sign-in methods" icon="key-outline" onPress={() => openScreen('SignInMethods')} />
           <ActionRow appearance="profile" label="Blocked accounts" icon="ban-outline" onPress={() => openScreen('BlockedAccounts')} />
         </View>
+        <NearbyAlertSetting userId={user.id} style={{ marginTop: 16 }} />
         <View style={[styles.settingsGroup, { marginTop: 16 }]}>
           <ActionRow appearance="profile" divided label="Get help" icon="help-circle-outline" onPress={() => openScreen('SettingsInfo', { topic: 'help' })} />
           <ActionRow appearance="profile" divided label="Cleanup safety" icon="shield-outline" onPress={() => openLitterbugsLink(CLEANUP_SAFETY_URL)} />

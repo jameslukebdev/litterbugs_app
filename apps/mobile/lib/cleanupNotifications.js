@@ -24,8 +24,8 @@ const CLEANUP_NOTIFICATION_CONTENT = Object.freeze({
     message: 'Your cleanup claim expired and is available to other volunteers again.',
   },
   completion_submitted: {
-    title: 'Cleanup ready for review',
-    message: 'A cleanup was submitted for your review.',
+    title: 'Your spot was cleaned up',
+    message: 'Check the before and after photos, then approve the cleanup or ask for changes.',
   },
   changes_requested: {
     title: 'Changes requested',
@@ -91,6 +91,10 @@ const CLEANUP_NOTIFICATION_CONTENT = Object.freeze({
     title: 'Cleanup funding unavailable',
     message: 'Your report was reviewed and cannot accept cleanup funding.',
   },
+  nearby_reports_daily: {
+    title: 'New litter near you',
+    message: 'New litter reports are available in your area for funding and cleanup.',
+  },
 });
 
 export function cleanupNotificationPresentation(notices) {
@@ -118,6 +122,15 @@ export function cleanupNotificationDestination(notification) {
     return { url: 'https://litterbugs.app/admin', label: 'Open admin inbox' };
   }
 
+  // The daily nearby alert is about an area, not one report: open the map where the person is.
+  if (eventType === 'nearby_reports_daily') {
+    return {
+      name: 'App',
+      label: 'See new reports',
+      params: { screen: 'Map', params: { showNearby: true } },
+    };
+  }
+
   if (!reportId) return null;
 
   if (eventType === 'report_renewal_due') {
@@ -132,6 +145,15 @@ export function cleanupNotificationDestination(notification) {
     return {
       name: 'ContributionHistory',
       label: 'View Contribution History',
+      params: {},
+    };
+  }
+
+  // As on the website: a sent reward opens your earnings.
+  if (eventType === 'cleanup_reward_sent') {
+    return {
+      name: 'Payments',
+      label: 'View Earnings',
       params: {},
     };
   }

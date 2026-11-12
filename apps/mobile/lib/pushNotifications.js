@@ -10,6 +10,7 @@ import { colors } from './theme';
 
 const INSTALLATION_ID_KEY = 'litterbugs.push.installation-id';
 const CLEANUP_NOTIFICATION_CHANNEL = 'cleanup-updates';
+const NEARBY_REPORTS_CHANNEL = 'nearby-reports';
 let installationIdPromise = null;
 let pushRegistrationQueue = Promise.resolve();
 
@@ -51,6 +52,12 @@ const configureAndroidChannel = async () => {
       lightColor: colors.primary,
     }
   );
+  // The daily "New litter near you" alert, on its own channel so it can be muted by itself.
+  await Notifications.setNotificationChannelAsync(NEARBY_REPORTS_CHANNEL, {
+    name: 'New litter near you',
+    importance: Notifications.AndroidImportance.DEFAULT,
+    lightColor: colors.primary,
+  });
 };
 
 const expoProjectId = () => (

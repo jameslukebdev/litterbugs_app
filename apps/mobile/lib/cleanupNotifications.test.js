@@ -15,7 +15,7 @@ describe('cleanup notifications', () => {
     expect(cleanupNotificationPresentation([{ event_type: 'claim_expired' }]).message)
       .toContain('expired');
     expect(cleanupNotificationPresentation([{ event_type: 'completion_submitted' }]).message)
-      .toContain('submitted');
+      .toContain('before and after photos');
     expect(cleanupNotificationPresentation([{ event_type: 'changes_requested' }]).message)
       .toContain('Changes');
     expect(cleanupNotificationPresentation([{ event_type: 'cleanup_approved' }]).message)
@@ -48,6 +48,17 @@ describe('cleanup notifications', () => {
       .toContain('can now accept contributions');
     expect(cleanupNotificationPresentation([{ event_type: 'report_funding_rejected' }]).message)
       .toContain('cannot accept');
+    expect(cleanupNotificationPresentation([{ event_type: 'nearby_reports_daily' }])).toEqual({
+      title: 'New litter near you',
+      message: 'New litter reports are available in your area for funding and cleanup.',
+    });
+  });
+
+  it('opens the map near the person for the daily nearby alert, and earnings for a sent reward', () => {
+    expect(cleanupNotificationDestination({ eventType: 'nearby_reports_daily', notificationId: 'n' }))
+      .toEqual({ name: 'App', label: 'See new reports', params: { screen: 'Map', params: { showNearby: true } } });
+    expect(cleanupNotificationDestination({ event_type: 'cleanup_reward_sent', report_id: 'report', cleanup_attempt_id: 'cleanup' }))
+      .toMatchObject({ name: 'Payments' });
   });
 
   it('routes review and feedback events to dedicated screens', () => {

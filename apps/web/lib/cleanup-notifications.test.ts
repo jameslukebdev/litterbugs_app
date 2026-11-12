@@ -8,3 +8,7 @@ it('preserves refund receipt, payout and admin destinations', () => {
   expect(notificationHref({ event_type: 'cleanup_reward_sent', report_id: 'r', contribution_id: null })).toBe('/account/connect');
   expect(notificationHref({ event_type: 'admin_cleanup_needed', report_id: 'r', contribution_id: null })).toBe('/admin');
 });
+it('opens the map for the daily nearby alert, which has no single report', () => {
+  // The shared database types still say every notice has a report; this one has none.
+  expect(notificationHref({ event_type: 'nearby_reports_daily', report_id: null as unknown as string, contribution_id: null })).toBe('/');
+});

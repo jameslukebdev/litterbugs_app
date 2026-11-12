@@ -96,6 +96,10 @@ const CLEANUP_NOTIFICATION_CONTENT: Record<string, { title: string; message: str
     title: 'Cleanup funding unavailable',
     message: 'Your report was reviewed and cannot accept cleanup funding.',
   },
+  nearby_reports_daily: {
+    title: 'New litter near you',
+    message: 'New litter reports are available in your area for funding and cleanup.',
+  },
 };
 
 export function notificationPresentation(notice: Pick<CleanupNotification, 'event_type'>) {
@@ -103,6 +107,8 @@ export function notificationPresentation(notice: Pick<CleanupNotification, 'even
 }
 export function notificationHref(notice: Pick<CleanupNotification, 'event_type' | 'report_id' | 'contribution_id'> & { id?: string }, view?: NotificationView) {
   if (notice.event_type.startsWith('admin_')) return '/admin';
+  // The daily nearby alert (sent from the app's setting) is about an area: open the map.
+  if (notice.event_type === 'nearby_reports_daily') return '/';
   if (notice.event_type === 'cleanup_contribution_refunded') return notice.contribution_id ? `/account/payments/${encodeURIComponent(notice.contribution_id)}` : '/account/payments';
   if (notice.event_type === 'cleanup_payout_failed' || notice.event_type === 'cleanup_reward_sent') return '/account/connect';
   if (notice.event_type === 'report_renewal_due') return '/account/reports';

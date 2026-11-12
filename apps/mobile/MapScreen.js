@@ -13,6 +13,8 @@ import MapReportPreview from './components/MapReportPreview';
 import MapPin, { PinPlaceholder, pinCenterOffset, pinKind } from './components/MapPin';
 import PinLanding from './components/PinLanding';
 import usePinLandings from './lib/usePinLandings';
+import useNearbyReportAlerts from './lib/useNearbyReportAlerts';
+import { nearbyAlertRegion } from './lib/nearbyReportAlerts';
 import { prefersReducedMotion } from './lib/reduceMotion';
 import MapKey, { mapKeyCounts } from './components/MapKey';
 import SlideUp from './components/SlideUp';
@@ -224,6 +226,12 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   } = useReports();
   const pins = usePinLandings({ enabled: pinLandings, mapRef: mapViewRef, region, hidden: showInitialMapLoading, postedPinId });
   const currentUserId = permanentUserId(currentUser);
+  // The daily "New litter near you" alert: asked once here, with nothing else on screen.
+  useNearbyReportAlerts({
+    userId: currentUserId,
+    location: locationPermissionGranted ? mapUserLocation : null,
+    canAsk: isMapScreenFocused && !showInitialMapLoading && !previewId && !reportPlacementActive && !detailsOpen && !formOpen,
+  });
   const reportFundingFeedback = useReportFundingFeedback({ geminiReviewEnabled, currentUserId, selectedReport });
   const [draftSaveError, setDraftSaveError] = useState(false);
   useEffect(() => {
@@ -1091,6 +1099,18 @@ useEffect(() => {
     setSelectedReport(null);
   }
 }, [blockedIds, selectedReport?.user_id]);
+
+// Opened from the daily nearby alert: show the whole alert area around where the person is.
+useEffect(() => {
+  if (!route?.params?.showNearby) return;
+  navigation.setParams({ showNearby: undefined });
+  setPreviewId(null);
+  locateAndCenterMap({
+    showPermissionAlert: false,
+    requestPermission: false,
+    regionForPosition: (position) => nearbyAlertRegion(position.coords),
+  }).catch(() => {});
+}, [route?.params?.showNearby]);
 
 useEffect(() => {
   const requestedReportId = route?.params?.reportId;
