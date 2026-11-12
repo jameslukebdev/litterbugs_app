@@ -24,6 +24,19 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (Clarity browser timeout investigated)
+
+- Earlier failure occurred on Emulation.setFocusEmulationEnabled, before page
+  inspection; no evidence that Clarity itself was timing out. Fresh Chrome
+  DevTools connection navigated to project z60itnrbpn in 2.4s and read its UI.
+- Fresh browser shows session-expired/sign-in screen. Google sign-in reached
+  successfully but requires account entry; no saved authenticated account.
+  Owner sign-in needed in that browser before recording access can be verified.
+  No cookies copied, credential access, browser/app restarts or closures.
+- Memory pressure remains level 2; observed as context, not established cause.
+  No website change, push or deployment. Local map tracking 2f6c8e0 still awaits
+  deployment approval; no new Clarity recording conclusions.
+
 ### 2026-11-12 — Codex (map startup measurement added locally)
 
 - Added map_loading journey signals: started, first tiles_ready, failed and
