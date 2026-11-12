@@ -162,7 +162,7 @@ export default function ReportFilters({ map = false }) {
                           accessibilityState={{ checked: selected }}
                           style={[styles.choice, selected && styles.choiceSelected]}
                           onPress={() => setDraft(current => ({ ...current, [key]: value }))}>
-                          {bug ? <BrandBug kind={bug} size={17} /> : null}
+                          {bug ? <BrandBug kind={bug} size={17} active={selected} /> : null}
                           <Text style={[styles.choiceText, selected && styles.choiceTextSelected]}>{text}</Text>
                         </TouchableOpacity>
                       );

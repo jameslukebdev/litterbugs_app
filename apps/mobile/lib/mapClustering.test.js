@@ -29,6 +29,6 @@ describe('map clustering visibility', () => {
     expect(mapSource.match(/tracksViewChanges=\{Platform\.OS === 'ios' \? true : tracksReportMarkers\}/g)).toHaveLength(2);
     // Pins and groups both draw the shared website pin, whose root view is never collapsed.
     expect(mapSource.match(/<MapPin\b/g)).toHaveLength(2);
-    expect(readFileSync(new URL('../components/MapPin.jsx', import.meta.url), 'utf8')).toContain('<View collapsable={false}');
+    expect(readFileSync(new URL('../components/MapPin.jsx', import.meta.url), 'utf8')).toContain('<Wrap collapsable={false}');
   });
 });

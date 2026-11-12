@@ -26,8 +26,8 @@ describe('regular report detail presentation', () => {
   });
 
   it('uses the website Fund (bee) and Clean (butterfly) buttons', () => {
-    expect(source).toContain('<BrandBug kind="bee" size={21} />');
-    expect(source).toContain('<BrandBug kind="butterfly" size={21} />');
+    expect(source).toContain('<BrandBug kind="bee" size={21} playKey={fundTaps} />');
+    expect(source).toContain('<BrandBug kind="butterfly" size={21} playKey={cleanTaps} />');
     expect(source).toContain('>Fund</Text>');
     expect(source).toContain('>Clean</Text>');
   });

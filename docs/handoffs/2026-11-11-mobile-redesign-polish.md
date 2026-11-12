@@ -178,3 +178,12 @@ Owner: "remove the no tint rule and try to match the website look". Restored wit
 - Android not built with the new library (its Kotlin requirement is 2.2.21; unverified against this project).
 
 - Payments (Nov 12): Payouts card first; one loader for the page; Stripe trust line; "Your contributions" renamed **Donations** at the owner's request (the reward policy still says contributions are not donations or tax deductible; owner was told). Nothing-yet states are a bug and a heading only. Payout setup opens with the status Payments already has.
+
+## Website bug motion in the app (Nov 12)
+
+Ported from apps/web/app/globals.css "Bug motion" and lib/map-marker-glyph.ts. All skip when Reduce Motion is on (`lib/reduceMotion.js`); `lib/safeAnimated.js` keeps unit tests working where react-native is mocked without Animated.
+- `components/BrandBug.jsx`: each bug's own move (ladybug waddle, bee buzz, butterfly flap, dragonfly dart, caterpillar inch, flower spin, lightning-bug pulse, cocoon wiggle) via `playKey`, `active` or `playOnMount`; entrances `bloom` and `walk`.
+- `components/MapPin.jsx`: pins land staggered (`entrance="land"`, `order`); a just-posted report's pin is carried in by the dragonfly with a ripple (`entrance="posted"`, `postedPinId` in MapScreen, 4s); a pin turning cleaned blooms; a chosen pin's bug does its move. iPhone only: Android markers are still snapshots. Clusters do not animate.
+- Elsewhere: Fund bee buzzes and Clean butterfly flaps on press; filter chips and the After/Before switch move when picked; favourite heart hops (`HopOnTrue`); Report Litter dragonfly darts when the button appears; empty lists: ladybug walks in, other bugs do their move.
+- Not ported: bee flying to the fund amount with count-up, ant walking along loading cards, lightning bug glow while locating, sliding tab underline.
+- Verified only that the app runs without errors and pins still show; the motion itself was not watched (screenshots are stills).

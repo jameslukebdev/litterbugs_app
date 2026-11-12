@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import CompletedCleanupStory from '../CompletedCleanupStory';
 import ReportPhotoGallery from './ReportPhotoGallery';
 import { FlowDoneHost, showFlowDone } from './FlowDone';
+import HopOnTrue from './HopOnTrue';
 import BrandBug from './BrandBug';
 import LoadingBee from './LoadingBee';
 import SlideUp from './SlideUp';
@@ -70,6 +71,9 @@ export default function ReportDetailsSheet({ state, actions }) {
     setOwnerMenuOpen(value => !value);
   };
   const [feedbackExpanded, setFeedbackExpanded] = useState(false);
+  // Bumped on press so the bee buzzes and the butterfly flaps, as on the website.
+  const [fundTaps, setFundTaps] = useState(0);
+  const [cleanTaps, setCleanTaps] = useState(0);
   useEffect(() => { setFeedbackExpanded(false); }, [detailsOpen, selectedReport?.id, reportFundingFeedback?.user_summary, selectedReport?.funding_eligibility]);
   const [showClaimSpinner, setShowClaimSpinner] = useState(false);
   useEffect(() => {
@@ -269,7 +273,7 @@ export default function ReportDetailsSheet({ state, actions }) {
           accessibilityState={{ selected: Boolean(isFavorite) }}
           style={[styles.reportPhotoControl, styles.reportPhotoFavoriteControl, { top: reportControlsTop }, !selectedReportIsShareable && styles.reportPhotoShareControl]}
         >
-          <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={20} color={isFavorite ? colors.severityHigh : colors.ink} />
+          <HopOnTrue active={Boolean(isFavorite)}><Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={20} color={isFavorite ? colors.severityHigh : colors.ink} /></HopOnTrue>
         </TouchableOpacity>
       ) : null}
 
@@ -537,7 +541,7 @@ export default function ReportDetailsSheet({ state, actions }) {
           {selectedReportCanOpenFunding ? (
             <TouchableOpacity
               style={[styles.reportActionButton, styles.reportFundButton]}
-              onPress={() => openFundingContribution({ reportId: selectedReport.id })}
+              onPress={() => { setFundTaps(value => value + 1); openFundingContribution({ reportId: selectedReport.id }); }}
               disabled={payoutGateBusy}
               accessibilityRole="button"
               accessibilityLabel="Fund cleanup"
@@ -546,7 +550,7 @@ export default function ReportDetailsSheet({ state, actions }) {
                 <LoadingButtonContent label="Checking Stripe…" color={colors.fundInk} />
               ) : (
                 <>
-                  <BrandBug kind="bee" size={21} />
+                  <BrandBug kind="bee" size={21} playKey={fundTaps} />
                   <Text style={styles.reportFundButtonText}>Fund</Text>
                 </>
               )}
@@ -556,13 +560,13 @@ export default function ReportDetailsSheet({ state, actions }) {
             <TouchableOpacity
               style={[styles.reportActionButton, styles.reportCleanButton]}
               activeOpacity={1}
-              onPress={beginCleanupClaim}
+              onPress={() => { setCleanTaps(value => value + 1); beginCleanupClaim(); }}
               disabled={cleanupActionBusy}
               accessibilityRole="button"
               accessibilityLabel="Clean up this report"
               accessibilityState={{ busy: cleanupActionBusy, disabled: cleanupActionBusy }}
             >
-              <BrandBug kind="butterfly" size={21} />
+              <BrandBug kind="butterfly" size={21} playKey={cleanTaps} />
               <Text style={styles.reportCleanButtonText}>Clean</Text>
               {cleanupActionBusy && showClaimSpinner ? (
                 <View style={styles.reportDetailClaimSpinner} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">

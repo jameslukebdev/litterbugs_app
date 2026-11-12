@@ -141,7 +141,7 @@ export default function CompletedCleanupStory({
                 accessibilityRole="tab"
                 accessibilityState={{ selected }}
               >
-                <BrandBug kind={bug} size={18} />
+                <BrandBug kind={bug} size={18} active={selected} />
                 <Text style={[styles.sideButtonText, selected && { color: ink }]}>{label}</Text>
               </TouchableOpacity>
             );

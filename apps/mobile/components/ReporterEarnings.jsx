@@ -24,7 +24,7 @@ export function ReporterEarnings({ userId, onOpenReport, heading = true }) {
             <Text style={{ marginTop: 3, color: colors.muted, fontSize: 13 }}>{formatUsd(reward.amount_cents)} · {labels[reward.status]}</Text>
           </TouchableOpacity>)
         : <View style={{ alignItems: 'center', paddingVertical: 26, opacity: resource.loading && !resource.hasLoaded ? 0 : 1 }}>
-            <BrandBug kind="dragonfly" size={40} />
+            <BrandBug kind="dragonfly" size={40} playOnMount />
             <Text style={{ marginTop: 12, color: colors.ink, fontSize: 18, fontFamily: fonts.heading, textAlign: 'center' }}>No reporter earnings yet</Text>
           </View>}
     </View>

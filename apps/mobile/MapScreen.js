@@ -128,6 +128,8 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const [mapUserLocation, setMapUserLocation] = useState(null);
   const [nearbyIds, setNearbyIds] = useState([]);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  // The report just filed: its pin is carried in by the dragonfly instead of landing.
+  const [postedPinId, setPostedPinId] = useState(null);
   const [reportPhotoUrls, setReportPhotoUrls] = useState([]);
   const [editingReportId, setEditingReportId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -753,6 +755,8 @@ const openPayoutSetupForWorkflow = (action) => {
         trackParticipation('report', 'published');
         hapticSuccess();
         showFlowDone({ bug: 'dragonfly', title: 'Report posted', text: 'Thanks for helping keep the community clean!' });
+        setPostedPinId(data.id);
+        setTimeout(() => setPostedPinId(null), 4000);
         if (geminiReviewEnabled) refreshReportAfterFundingReview(data.id, 'Report photo review deferred:');
         await clearReportDraft(currentUserId).catch(error => console.log('Published draft cleanup deferred:', error));
         await clearReportSubmission(currentUserId).catch(error => console.log('Published submission cleanup deferred:', error));
@@ -1352,7 +1356,7 @@ const revealBottomReportField = () => {
           coordinates={outer.map(([longitude, latitude]) => ({ latitude, longitude }))}
           holes={holes.map(ring => ring.map(([longitude, latitude]) => ({ latitude, longitude })))}
           strokeColor={colors.primary} accessible={false} importantForAccessibility="no" strokeWidth={1.5} fillColor="rgba(81, 70, 237, 0.035)" tappable={false} />)}
-        {markers.map((marker) => {
+        {markers.map((marker, order) => {
           const tone = reportMarkerPresentation(marker.report);
           const fundingLabel = formatMapFundingLabel(marker.report?.funded_amount_cents);
           return (
@@ -1374,6 +1378,9 @@ const revealBottomReportField = () => {
                 kind={pinKind(marker.report?.cleanup_state)}
                 text={pinKind(marker.report?.cleanup_state) === 'open' && marker.report?.funded_amount_cents > 0 ? fundingLabel : null}
                 selected={marker.id === previewId}
+                // Website pin motion, iPhone only: Android draws markers from still snapshots.
+                entrance={Platform.OS === 'ios' ? (marker.id === postedPinId ? 'posted' : 'land') : null}
+                order={order}
               />
             </Marker>
           );

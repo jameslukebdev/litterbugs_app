@@ -1,5 +1,6 @@
 import { ActivityIndicator, Animated, Image, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import BrandBug from './BrandBug';
 
 import { BOTTOM_NAV_METRICS } from '../lib/navigationLayout';
 import { colors } from '../lib/theme';
@@ -124,7 +125,7 @@ export default function MapControls(props) {
               ) : (
                 <>
                   {/* Website: the dragonfly labels Report Litter; placing the pin turns it into the purple confirm button. */}
-                  {reportPlacementActive ? null : <Image source={require('../assets/bugs/dragonfly.png')} style={{ width: 26, height: 26 }} resizeMode="contain" accessible={false} />}
+                  {reportPlacementActive ? null : <BrandBug kind="dragonfly" size={26} playOnMount />}
                   <Text numberOfLines={fontScale > 1.5 ? undefined : 1} style={[styles.reportLitterButtonText, reportPlacementActive && { color: colors.white }, { flexShrink: 1, textAlign: 'center' }]}>{reportPlacementActive ? 'Use this location' : 'Report Litter'}</Text>
                 </>
               )}

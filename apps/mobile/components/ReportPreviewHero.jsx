@@ -4,6 +4,7 @@ import { Image as ExpoImage } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
 import BrandBug from './BrandBug';
+import HopOnTrue from './HopOnTrue';
 import RemotePhoto from './RemotePhoto';
 import { reportStatePresentation } from '../lib/reportState';
 import { hapticTap } from '../lib/haptics';
@@ -65,12 +66,14 @@ export default function ReportPreviewHero({
         hitSlop={6}
         onPress={() => { hapticTap(); onFavorite?.(report.id); }}
       >
-        <Ionicons
-          name={isFavorite ? 'heart' : 'heart-outline'}
-          size={26}
-          color={isFavorite ? colors.severityHigh : colors.white}
-          style={!isFavorite ? styles.favoriteOutline : undefined}
-        />
+        <HopOnTrue active={Boolean(isFavorite)}>
+          <Ionicons
+            name={isFavorite ? 'heart' : 'heart-outline'}
+            size={26}
+            color={isFavorite ? colors.severityHigh : colors.white}
+            style={!isFavorite ? styles.favoriteOutline : undefined}
+          />
+        </HopOnTrue>
       </TouchableOpacity>
     </View>
   );

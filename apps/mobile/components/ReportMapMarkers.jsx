@@ -5,11 +5,14 @@ import MapPin, { pinKind } from './MapPin';
 import { cleanupMapTone } from '../lib/cleanupEligibility';
 import { reportsNearMapTap, markerHostDimensions } from '../lib/mapLabelLayout';
 
-export default function ReportMapMarkers({ markers, selectedId, tracksViewChanges, reportPlacementActive, onNearby, onChoose }) {
+export default function ReportMapMarkers({ markers, selectedId, tracksViewChanges, reportPlacementActive, onNearby, onChoose, postedId = null }) {
+  // Pins animate in on iPhone only: Android draws each marker from a still snapshot,
+  // which would capture the pin mid-air.
+  const animate = Platform?.OS === 'ios';
   return <>
         {/* Label allocation changes priority on selection; native annotation order
             must stay stable or MapKit can remove a moved annotation. */}
-        {[...markers].sort((a, b) => String(a.id).localeCompare(String(b.id))).map((m) => {
+        {[...markers].sort((a, b) => String(a.id).localeCompare(String(b.id))).map((m, order) => {
           // MapKit adds 999 to its tapped annotation. App selection must also
           // win when the overlap chooser selects a different report.
           const selected = m.id === selectedId;
@@ -43,7 +46,7 @@ export default function ReportMapMarkers({ markers, selectedId, tracksViewChange
                 annotation's host frame can reset its MapKit position in Fabric. */}
             <View collapsable={false} style={[styles.compactMarkerHit, markerHostDimensions(m.width || 44, m.height || 44)]}>
               {/* Website pins: the bug alone, plus the amount only when money is on an open report. */}
-              <MapPin kind={kind} text={kind === 'open' && m.label && m.label !== '$0' && (m.labelled || selected) ? m.label : null} selected={selected} />
+              <MapPin kind={kind} text={kind === 'open' && m.label && m.label !== '$0' && (m.labelled || selected) ? m.label : null} selected={selected} entrance={animate ? (m.id === postedId ? 'posted' : 'land') : null} order={order} />
             </View>
           </MarkerComponent>;
         })}

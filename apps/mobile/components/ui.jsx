@@ -74,7 +74,8 @@ export function ErrorText({ children, style }) {
 export function EmptyState({ bug, icon = null, title, text, action = null, actionStyle = 'button', style }) {
   return (
     <View style={[styles.empty, style]}>
-      {bug ? <BrandBug kind={bug} size={40} /> : icon}
+      {/* Website empty lists: the ladybug walks in and looks around; other bugs do their own move. */}
+      {bug ? <BrandBug kind={bug} size={40} entrance={bug === 'ladybug' ? 'walk' : null} playOnMount /> : icon}
       <Text style={styles.emptyTitle}>{title}</Text>
       {text ? <Text style={styles.emptyText}>{text}</Text> : null}
       {action ? (
