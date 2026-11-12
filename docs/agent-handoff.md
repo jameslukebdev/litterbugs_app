@@ -24,6 +24,17 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-11 — Codex (API and MCP feasibility advice)
+
+- Read-only source and current Google/MCP documentation review: existing public
+  report loaders can support a small documented read-only API and MCP tools.
+  Rough estimate: 1–2 focused days for the API, another 1–2 for a basic MCP
+  integration, subject to scoped implementation review. These are estimates.
+- Recommended useful public pages and local cleanup evidence first for search;
+  API/MCP value is connected assistants and partner distribution, with no
+  automatic ranking or AI-citation benefit. No implementation authorized,
+  product changes, production testing, deployment, push or database changes.
+
 ### 2026-11-11 — Codex (approved map performance and analytics release live)
 
 - Owner approved deploying completed work and pushing GitHub, with new homepage
