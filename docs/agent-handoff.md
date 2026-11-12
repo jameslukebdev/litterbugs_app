@@ -24,6 +24,22 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-11 — Codex (explained homepage-to-map reach)
+
+- Read-only follow-up: most inspected phone homepage sessions have no later
+  public-page view; a few visit About/Communities/Support. These paths do not
+  prove why visitors stop or whether an app-store departure succeeded.
+  Raw path inspection contains 19 sessions and does not reproduce the typed
+  query's project test-account filters; keep 3/18 from the earlier typed funnel
+  as the reported rate, not a new denominator from these records.
+- Source confirms homepage hero prioritizes app-store badges; map preview is
+  later in the page. /sign-in renders the live map behind its form while its
+  private route is omitted from pageview tracking. The reported 16.7% measures
+  /map navigation, not every map impression or successful map interaction.
+- Suggested making the map the initial usable experience if near-universal
+  map exposure is the objective, then measuring map readiness and meaningful
+  interactions separately. No design/code, deployment, push or tracker changes.
+
 ### 2026-11-11 — Codex (mobile friction review, app choices and map reach)
 
 - Fresh PostHog participation record review found no new tracked failures.
