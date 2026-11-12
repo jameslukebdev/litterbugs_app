@@ -24,6 +24,28 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (PostHog follow-up; map startup measurement gap)
+
+- Read-only PostHog project 695338 review: production-host events exclude
+  staff cohort 673394, explicit is_test and bot flag. Last 3 days contain
+  no participation_failure/rageclick rows; last 7 days show one Nov 9
+  location_denied failure from v3, predating the location workflow fix.
+  No map/search/closest failure rows in the last 7 days. Small activity
+  sample and unlabelled testing remain limitations; not proof of no errors.
+- Thirty-second results_loaded events are visible-tab background refreshes,
+  not deliberate searches or separate visitor actions. Hidden/offline refresh
+  guards already exist. New app_choice/shared_report_sign_in events have not
+  appeared in current taxonomy/results; cannot infer broken delivery or usage.
+- Confirmed code measurement gap: map result telemetry returns before tiles
+  ready or on mapError. SDK startup rejection, 12-second timeout, key/auth and
+  marker construction failures only set UI errors; no map startup outcome or
+  timing event. Recommend bounded, sanitized startup outcomes/timing, without
+  location/report IDs, URLs or raw exceptions. No implementation authorized yet.
+- Fresh Clarity recordings unavailable: existing browser tab CDP focus timed
+  out twice; native browser access also timed out. Did not claim new replay
+  findings. No test visits, builds, app closures, deployment or database changes.
+  Preserved concurrent native/notification/onboarding work and prior handoff edits.
+
 ### 2026-11-12 — Codex (cleanup hours and social links deployed)
 
 - Owner-approved source 7638185 on codex/cleanup-hours-social-release-20261112
