@@ -4,7 +4,7 @@ import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { useEffect } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { WebsiteAnalytics } from './website-analytics';
-import { WORKFLOW_VERSION, clearParticipationContext, drainJourneys, trackAppChoice, trackMapDiscovery, trackPayoutSetup, trackParticipationExit, drainParticipation, drainParticipationFailures, drainWebsiteOutcomes, rememberContributionAttempt, trackParticipation, trackParticipationFailure, trackWebsiteOutcome } from '@/lib/website-analytics';
+import { WORKFLOW_VERSION, clearParticipationContext, drainJourneys, trackAppChoice, trackMapDiscovery, trackMapLoading, trackPayoutSetup, trackParticipationExit, drainParticipation, drainParticipationFailures, drainWebsiteOutcomes, rememberContributionAttempt, trackParticipation, trackParticipationFailure, trackWebsiteOutcome } from '@/lib/website-analytics';
 
 const sdk = vi.hoisted(() => ({ init: vi.fn(), capture: vi.fn(), googleReady: false }));
 vi.mock('posthog-js', () => ({ default: sdk }));
@@ -164,6 +164,7 @@ it.each(['declined', 'doNotTrack', 'globalPrivacyControl'])('does not queue or t
   trackParticipationFailure('clean', 'safety_review', 'claim_failed');
   trackWebsiteOutcome('cleanup_approved', 'private-attempt');
   trackMapDiscovery('results_empty', { result_bucket: '0' });
+  trackMapLoading({ stage: 'failed', reason: 'startup_timeout', elapsed_ms: 12000, backgrounded: false });
   trackPayoutSetup('opened');
   trackParticipationExit('clean', 'safety_review', 'cancelled');
   trackAppChoice('website_continued', 'report');
@@ -237,4 +238,23 @@ it('rejects unknown journey stages and keeps payout events free of provider deta
   const safe = send({ event: 'payout_setup', properties: { stage: 'form_exited', account_id: 'private', bank_account: 'private', step: 'private' } });
   expect(safe.properties.stage).toBe('form_exited');
   expect(JSON.stringify(safe)).not.toMatch(/account_id|bank_account|private/);
+});
+
+it('delivers map startup failures queued before SDK readiness and sanitizes their payload', async () => {
+  trackMapLoading({ stage: 'started', elapsed_ms: 0, backgrounded: false });
+  trackMapLoading({ stage: 'failed', reason: 'authorization_failed', elapsed_ms: 2400, backgrounded: false });
+  window.history.replaceState({}, '', '/about?key=secret');
+  render(<WebsiteAnalytics config={config} />);
+  await waitFor(() => expect(sdk.capture).toHaveBeenCalledWith('map_loading', {
+    stage: 'failed', reason: 'authorization_failed', elapsed_ms: 2400, backgrounded: false, page_type: '/map',
+  }));
+  const sanitize = sdk.init.mock.calls[0][1].before_send;
+  const result = sanitize({ event: 'map_loading', properties: {
+    stage: 'failed', reason: 'initialization_failed', elapsed_ms: 1234, backgrounded: false, page_type: '/map',
+    latitude: 36, longitude: -81, report_id: 'private-id', error: 'secret', url: 'private address',
+  } });
+  expect(result.properties).toMatchObject({ stage: 'failed', reason: 'initialization_failed', elapsed_ms: 1200, backgrounded: false, $pathname: '/map', workflow_version: WORKFLOW_VERSION });
+  expect(JSON.stringify(result)).not.toMatch(/latitude|longitude|private|secret/);
+  expect(sanitize({ event: 'map_loading', properties: { stage: 'failed', reason: 'private error', elapsed_ms: 10, backgrounded: false } })).toBeNull();
+  expect(sdk.capture.mock.calls.filter(([event]) => event === 'map_loading')).toHaveLength(2);
 });

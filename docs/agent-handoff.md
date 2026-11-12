@@ -24,6 +24,30 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (map startup measurement added locally)
+
+- Added map_loading journey signals: started, first tiles_ready, failed and
+  recovered after timeout. Five fixed failure reasons cover missing config,
+  initialization, Google authorization, 12-second startup timeout and marker
+  construction. Startup timing begins at the map effect, not navigation;
+  elapsed_ms rounded to 100ms/capped at 120s, backgrounded marks hidden tabs.
+- Existing bounded queue/provider sanitizers carry these signals; privacy
+  exclusions remain enforced. No raw errors, locations, keys or report IDs.
+  Repeated tiles/pans and discarded Strict Mode effects do not duplicate loads;
+  late marker failures still recorded. Bundle marker bumped to v8.
+- 71 focused tests pass: actual MapExperience handlers, timeout/recovery,
+  configuration/auth/initialization/marker failure, Strict Mode, unmount cleanup,
+  safe provider transport and exclusion. Web TypeScript and scoped ESLint pass;
+  local /map HTTP 200. No local production build or new browser test traffic.
+- Continued read-only PostHog record inspection over 14 days (same production,
+  staff-cohort/test/bot exclusions): Nov 12 report-location cancellation has no
+  matched failure signal; not sufficient evidence of a new UX bug. No payout
+  setup rows in the bounded inspection. Store clicks do not prove installs.
+- Clarity existing-tab focus still times out. Fresh replay review remains
+  unavailable; no new replay claim. Changes committed locally only; no push,
+  deployment, database changes or app closures. Live ingestion awaits approval
+  and deployment; localhost remains excluded. Preserve concurrent native work.
+
 ### 2026-11-12 — Codex (PostHog follow-up; map startup measurement gap)
 
 - Read-only PostHog project 695338 review: production-host events exclude
