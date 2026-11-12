@@ -160,3 +160,5 @@ Branch `codex/map-first-navigation`. Nothing pushed, built for stores, or deploy
 - Not compared yet this pass: fund screen, Payments, Updates, Settings, public profile, report wizard steps.
 
 - Final checks (Nov 12): on a cleaned report the expand icon, website switch colours, share icon and mint pill were all seen in the simulator; title now has a little more room under the top bar. Payments and Settings were compared with the website again and match (the website Support Litterbugs row is deliberately absent). The website has no /account/updates page at that address; Updates was not re-compared.
+
+- Last four screens compared with the website at phone width (Nov 12): Updates (All updates / Unread, title, report, message, date), fund screen (How much, presets, Or enter an amount, cleaner/fee/total, refund note), report wizard step 1 (Add photos, Choose/Take photo, Report title (optional), step dots, Cancel/Next) and public profile (header, rank block, Reports with Active/Completed tabs). All four match in structure and wording; no code changes. The app side of these four was checked from source, not viewed in the simulator this pass.
