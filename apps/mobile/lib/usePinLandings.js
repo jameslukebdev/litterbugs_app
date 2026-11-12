@@ -15,7 +15,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 const STAGGER_MS = 60;
 const MAX_STAGGER = 8;
 const HANDOVER_MS = 140; // the stand-in stays until the real pin has surely been drawn under it
-const SETTLE_MS = 40; // let the clustering redraw after the map settles before looking
+const SETTLE_MS = 16; // one frame: let the clustering redraw after the map settles before looking
 
 function inRegion(region, coordinate) {
   if (!region || !coordinate) return false;
@@ -35,10 +35,13 @@ export default function usePinLandings({ enabled, mapRef, region, hidden, posted
   const generation = useRef(0);
   const timer = useRef(null);
   const movingFallback = useRef(null);
+  // The map's own settled view, taken straight from the map so landing never waits for the
+  // screen to catch up; a new view from the screen (a search, a tap on a group) replaces it.
   const regionRef = useRef(region);
+  const regionProp = useRef(region);
+  if (regionProp.current !== region) { regionProp.current = region; regionRef.current = region; }
   const hiddenRef = useRef(hidden);
   const postedRef = useRef(postedPinId);
-  regionRef.current = region;
   hiddenRef.current = hidden;
   postedRef.current = postedPinId;
 
@@ -147,8 +150,9 @@ export default function usePinLandings({ enabled, mapRef, region, hidden, posted
     movingFallback.current = setTimeout(() => { moving.current = false; schedule(); }, 1500);
   }, [enabled, finishAll, schedule]);
 
-  const regionSettled = useCallback(() => {
+  const regionSettled = useCallback((nextRegion) => {
     if (!enabled) return;
+    if (nextRegion) regionRef.current = nextRegion;
     moving.current = false;
     if (movingFallback.current) { clearTimeout(movingFallback.current); movingFallback.current = null; }
     schedule();

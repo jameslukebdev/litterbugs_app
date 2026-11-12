@@ -1298,7 +1298,7 @@ const revealBottomReportField = () => {
           region={region}
           onRegionChange={pins.regionChanging}
           onRegionChangeComplete={(nextRegion) => {
-            pins.regionSettled();
+            pins.regionSettled(nextRegion);
             if (reportPlacementActive) {
               setPlacementCoordinate(mapCenterCoordinate(nextRegion));
             }

@@ -127,7 +127,7 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
     requestAbort.current = controller;
     const sequence = ++requestSequence.current;
     try {
-      const result = await loadDiscoveryReports({ area: regionRef.current, ...discoveryRef.current, signal: controller.signal });
+      const result = await loadDiscoveryReports({ area: regionRef.current, ...discoveryRef.current, signal: controller.signal, includeNearby: true });
       if (sequence !== requestSequence.current) return;
       setTruncated(result.truncated);
       setAllReports(result.reports);
@@ -140,7 +140,7 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => refreshReports(), 400);
+    const timer = setTimeout(() => refreshReports(), 250); // as soon after the map stops as the website
     return () => { clearTimeout(timer); requestSequence.current += 1; requestAbort.current?.abort(); };
   }, [mapRegion, filters, searchPlace, blockedIds, refreshReports, filters.favoritesOnly ? favoriteIds : null, hiddenIds]);
 
