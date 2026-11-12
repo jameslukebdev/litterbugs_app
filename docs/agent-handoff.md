@@ -24,6 +24,17 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (GivePulse individual participation clarified)
+
+- Official volunteer guide confirms free individual accounts, opportunity
+  search, impact logging and creating a group to publish opportunities.
+  Many events accept registration without group membership. Organizer posting
+  uses group/event setup; no claim that registered nonprofit status is always
+  required. Earlier comparison emphasized institutions too heavily.
+- Recommended preserving Litterbugs individual report/claim/cleanup flow and
+  making potential group tools optional. Advisory only; no product changes,
+  outreach, deployment, push or database changes.
+
 ### 2026-11-12 — Codex (calmer lightning-bug loader, local; deployment paused)
 
 - Owner interrupted the approved filter/card release before deployment to review
