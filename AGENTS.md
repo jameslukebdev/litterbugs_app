@@ -31,6 +31,13 @@ See `docs/user-testing-known-issues.md` for the current testing limitations and
 - When verifying analytics itself requires a tracked test visit, record that
   it is test traffic and restore the test browser's exclusion afterward.
 
+## Visual style preferences — November 12, 2026
+
+- When creating or restyling UI, use the existing mint-green family whenever
+  green is needed: mint fills (`#b9e9dd`) and borders (`#8ed7c5`) with readable
+  dark text. Avoid the legacy forest-green styling.
+- Apply this to the work in scope; preserve unrelated screens and bug artwork.
+
 ## Working alongside Claude
 
 Grant also uses Claude (Cowork) on this project. Before starting work, read

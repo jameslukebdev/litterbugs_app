@@ -24,6 +24,23 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (cleanup summary restyled locally)
+
+- Restyled CompletedCleanup's About the cleanup panel: soft lavender surface,
+  lavender border/subtle lower edge, charcoal heading, purple avatar initial,
+  clearer spacing and two-column bag/weight totals. CSS is scoped to this
+  component; cleaner profile behavior and cleanup data remain unchanged.
+- Existing Litterbugs styles are the reference lock; Refero Aave informed soft
+  lavender grouping and Airbnb informed cleaner identity/spacing. Recorded
+  owner's mint-green-only preference for new/restyled UI in AGENTS.md.
+- Local report c9de971b-9b18-4e63-8b2d-00bba1de799c checked at 390px, 320px
+  and 1280px: no horizontal overflow or browser errors; cleaner opens profile.
+  Three existing cleanup tests and CSS-module compilation pass. Local preview
+  remains open; viewport reset. No production testing, deployment or push.
+- Restarted the stopped port-3000 dev server with a 1536 MB Node heap cap;
+  no production build. Memory pressure is now normal (1). Other agents' native,
+  launch, generated and handoff changes preserved.
+
 ### 2026-11-11 — Codex (API and MCP acquisition strategy)
 
 - Advisory follow-up: prioritize partner-hosted cleanup feeds/cards, newsletter
