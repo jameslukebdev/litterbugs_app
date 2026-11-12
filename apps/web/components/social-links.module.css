@@ -1,5 +1,4 @@
 .socials { display: grid; justify-items: start; gap: 4px; }
-.label { color: #6b6878; font-size: 13px; font-weight: 600; line-height: 1.5; }
 .icons { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 .socials.socials .icons a {
   display: inline-flex; align-items: center; justify-content: center;

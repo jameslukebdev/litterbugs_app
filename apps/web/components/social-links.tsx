@@ -10,7 +10,6 @@ const profiles = [
 export function SocialLinks({ compact = false }: { compact?: boolean }) {
   return (
     <div className={`${styles.socials}${compact ? ` ${styles.compact}` : ''}`} role="group" aria-label="Follow Litterbugs">
-      {!compact && <span className={styles.label}>Follow along</span>}
       <div className={styles.icons}>
         {profiles.map(({ name, href, Icon }) => (
           <a key={name} href={href} target="_blank" rel="noopener noreferrer"

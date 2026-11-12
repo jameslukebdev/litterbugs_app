@@ -24,6 +24,21 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (icon-only social links; Facebook search)
+
+- Removed visible Follow along label from shared SocialLinks and its CSS.
+  Instagram/TikTok use existing Font Awesome Brands via react-icons/fa6,
+  not custom SVG drawings. Accessible destination labels remain.
+- Scoped lint and diff check pass. Local CUA footer confirms both logos,
+  no visible subheading and no overflow. Preview stays open; no deploy/push.
+- Further Facebook search: Firecrawl found App State reposts mentioning the
+  exact full name; browser-verified mentions link back to Instagram, not a
+  Facebook page. Instagram public links/Account details show no Page link.
+  Other search hits were unrelated, and no official Facebook destination
+  could be verified. Facebook remains unlinked; no new credentials requested,
+  no account/settings changes or messages. Research tab closed.
+- Concurrent native/handoff work preserved via isolated Git index.
+
 ### 2026-11-12 — Codex (confirmed TikTok added locally)
 
 - Owner confirmed @litterbugs.commun is theirs. Added TikTok beside Instagram
