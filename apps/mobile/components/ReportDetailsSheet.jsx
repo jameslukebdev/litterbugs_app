@@ -360,7 +360,7 @@ export default function ReportDetailsSheet({ state, actions }) {
               loading={completedCleanupImpactLoading}
               error={completedCleanupImpactError}
               photoWidth={reportHeroWidth}
-              beforePhotos={<ReportPhotoGallery report={selectedReport} urls={reportPhotoUrls} loading={photosLoading} width={reportHeroWidth} />}
+              beforePhotos={<ReportPhotoGallery report={selectedReport} urls={reportPhotoUrls} loading={photosLoading} width={reportHeroWidth} aspect={4 / 3} />}
               onRetry={() => {
                 setCompletedCleanupImpact(null);
                 setCompletedCleanupImpactError(null);

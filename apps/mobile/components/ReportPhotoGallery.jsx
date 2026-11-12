@@ -1,7 +1,6 @@
 import RemotePhoto from './RemotePhoto';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   Modal,
   ScrollView,
   StyleSheet,
@@ -13,11 +12,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useReports } from '../lib/reports';
 import { colors } from '../lib/theme';
-function Photo({ uri, path, width, title }) {
+function Photo({ uri, path, width, height, title }) {
   const { getReportPhotoUrl } = useReports();
-  return <RemotePhoto path={path} uri={uri} getUrl={getReportPhotoUrl} label={`Litter reported: ${title || 'cleanup location'}`} style={{ width, height: Math.round(width / 1.73) }} />; // website report photo shape
+  return <RemotePhoto path={path} uri={uri} getUrl={getReportPhotoUrl} label={`Litter reported: ${title || 'cleanup location'}`} style={{ width, height }} />;
 }
-export default function ReportPhotoGallery({ report, urls, loading, width }) {
+// `aspect` is width / height: 1.73 is the website's report photo shape.
+export default function ReportPhotoGallery({ report, urls, loading, width, aspect = 1.73 }) {
+  const height = Math.round(width / aspect);
   const { getReportPhotoUrl } = useReports();
   const [index, setIndex] = useState(0);
   const [fullPhotoOpen, setFullPhotoOpen] = useState(false);
@@ -27,14 +28,12 @@ export default function ReportPhotoGallery({ report, urls, loading, width }) {
   const photoCount = report.photo_paths?.length || urls.length;
   if (loading && !urls.length && !report.photo_paths?.length)
     return (
-      <View style={[styles.empty, { width, alignSelf: 'center' }]}>
-        <ActivityIndicator color={colors.primary} />
-        <Text style={styles.loadingText}>Loading photos…</Text>
-      </View>
+      // The same shape as the photo that will replace it, so nothing below moves.
+      <View style={[styles.frame, { width, height }]} accessibilityRole="progressbar" accessibilityLabel="Loading photos" />
     );
   if (!urls.length && !report.photo_paths?.length)
     return (
-      <View style={[styles.empty, { width, alignSelf: 'center' }]}>
+      <View style={[styles.empty, { width, height, alignSelf: 'center' }]}>
         <Text style={styles.caption}>Photo unavailable</Text>
         <Text style={styles.loadingText}>The report details remain available below.</Text>
       </View>
@@ -57,6 +56,7 @@ export default function ReportPhotoGallery({ report, urls, loading, width }) {
             uri={urls[i]}
             path={report.photo_paths?.[i]}
             width={width}
+            height={height}
             title={report.title}
           />
         ))}
@@ -111,13 +111,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.mist,
   },
   empty: {
-    height: 260,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
     backgroundColor: colors.mist,
     borderRadius: 22,
-    marginBottom: 14,
   },
   counter: {
     position: 'absolute',

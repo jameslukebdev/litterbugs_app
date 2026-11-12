@@ -30,7 +30,7 @@ function AfterPhoto({ url, index, count, width }) {
   const [failed, setFailed] = useState(false);
 
   return (
-    <View style={[styles.photoFrame, { width }]}>
+    <View style={[styles.photoFrame, { width, height: Math.round(width * 0.75) }]}>
       {!failed ? (
         <SmoothImage
           source={url}
@@ -151,6 +151,8 @@ export default function CompletedCleanupStory({
         <Text style={styles.sectionTitle}>After cleanup</Text>
       )}
 
+      {/* Both sides share one 4:3 photo area, so switching never moves what is below. */}
+      <View style={{ minHeight: Math.round(photoWidth * 0.75) + 30 }}>
       {showBefore ? beforePhotos : impact.afterPhotoUrls.length > 0 ? (
         <ScrollView
           horizontal
@@ -176,6 +178,7 @@ export default function CompletedCleanupStory({
           <Text style={styles.photoUnavailableText}>After photos are unavailable.</Text>
         </View>
       )}
+      </View>
 
       {/* About the cleanup: the cleaner's own words first, then the numbers as one stat row. */}
       <View style={styles.aboutCard}>
@@ -252,7 +255,6 @@ const styles = StyleSheet.create({
     borderRadius: 22,
   },
   photoFrame: {
-    height: 380,
     overflow: 'hidden',
     borderRadius: 22,
     backgroundColor: colors.line,

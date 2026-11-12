@@ -7,21 +7,25 @@ import { getRankForPoints } from './lib/ranking';
 import { loadRanking } from './lib/rankingService';
 import { colors } from './lib/theme';
 
+// Ranks already fetched this session, so a badge seen before is there at once.
+const known = new Map();
+
 export default function CompactRankBadge({ userId, style, appearance = 'badge' }) {
-  const [ranking, setRanking] = useState(null);
+  const [ranking, setRanking] = useState(() => known.get(userId) ?? null);
 
   useEffect(() => {
     let active = true;
-    setRanking(null);
+    setRanking(known.get(userId) ?? null);
 
     if (!userId) return () => { active = false; };
 
     loadRanking(userId)
       .then((nextRanking) => {
+        if (nextRanking) known.set(userId, nextRanking);
         if (active) setRanking(nextRanking);
       })
       .catch(() => {
-        if (active) setRanking(null);
+        if (active) setRanking(current => current);
       });
 
     return () => { active = false; };

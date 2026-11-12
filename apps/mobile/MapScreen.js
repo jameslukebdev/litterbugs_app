@@ -11,6 +11,8 @@ import MapControls from './components/MapControls';
 
 import MapReportPreview from './components/MapReportPreview';
 import MapPin, { pinKind } from './components/MapPin';
+import PinLanding from './components/PinLanding';
+import { prefersReducedMotion } from './lib/reduceMotion';
 import MapKey, { mapKeyCounts } from './components/MapKey';
 import SlideUp from './components/SlideUp';
 import { hapticSuccess } from './lib/haptics';
@@ -130,6 +132,33 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   // The report just filed: its pin is carried in by the dragonfly instead of landing.
   const [postedPinId, setPostedPinId] = useState(null);
+  // Website pin arrival, iPhone only (Android draws map pins from still snapshots).
+  const pinLandings = Platform.OS === 'ios' && !prefersReducedMotion();
+  const [arrivedPins, setArrivedPins] = useState(() => new Set());
+  const [landingPins, setLandingPins] = useState([]);
+  const pinArrival = useRef({ seen: new Set(), waiting: [], count: 0 });
+  const mapHiddenRef = useRef(true);
+  const postedPinRef = useRef(null);
+  postedPinRef.current = postedPinId;
+  const finishPinLanding = useCallback((id) => {
+    setArrivedPins(current => new Set(current).add(id));
+    setLandingPins(current => current.filter(pin => pin.id !== id));
+  }, []);
+  const startPinLanding = useCallback(async (pin) => {
+    let point = null;
+    try { point = await mapViewRef.current?.pointForCoordinate?.(pin.coordinate); } catch { point = null; }
+    if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) { finishPinLanding(pin.id); return; }
+    const order = pinArrival.current.count++;
+    setTimeout(() => { pinArrival.current.count = Math.max(0, pinArrival.current.count - 1); }, 700);
+    setLandingPins(current => [...current, { ...pin, x: point.x, y: point.y, order, posted: pin.id === postedPinRef.current }]);
+  }, [finishPinLanding]);
+  // A pin has just been put on the map. The first time, it lands; after that it is simply there.
+  const pinMounted = useCallback((pin) => {
+    if (!pinLandings || pinArrival.current.seen.has(pin.id)) return;
+    pinArrival.current.seen.add(pin.id);
+    if (mapHiddenRef.current) pinArrival.current.waiting.push(pin);
+    else startPinLanding(pin);
+  }, [pinLandings, startPinLanding]);
   const [reportPhotoUrls, setReportPhotoUrls] = useState([]);
   const [editingReportId, setEditingReportId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -160,6 +189,13 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const [mapReady, setMapReady] = useState(false);
   const [mapSurfaceLoaded, setMapSurfaceLoaded] = useState(false);
   const [showInitialMapLoading, setShowInitialMapLoading] = useState(true);
+  // Pins that arrived while the map was still behind its loading screen land once it shows.
+  useEffect(() => {
+    mapHiddenRef.current = showInitialMapLoading;
+    if (showInitialMapLoading) return;
+    const waiting = pinArrival.current.waiting.splice(0);
+    waiting.forEach(startPinLanding);
+  }, [showInitialMapLoading, startPinLanding]);
   const [initialLocationResolved, setInitialLocationResolved] = useState(false);
   const initialLocationRequestStartedRef = useRef(false);
   const [photosLoading, setPhotosLoading] = useState(false);
@@ -1366,6 +1402,8 @@ const revealBottomReportField = () => {
               identifier={`report:${tone.key}:${marker.id}`}
               tracksViewChanges={Platform.OS === 'ios' ? true : tracksReportMarkers}
               anchor={{ x: 0.5, y: 1 }}
+              // Hidden until its landing (PinLanding, above the map) has finished.
+              opacity={pinLandings && !arrivedPins.has(marker.id) ? 0 : 1}
               accessibilityLabel={`${tone.accessibilityLabel}${tone.key === 'available' ? `, ${fundingLabel}` : ''}: ${marker.report?.title || 'Litter report'}`}
               onPress={(event) => {
                 event?.stopPropagation?.();
@@ -1378,15 +1416,20 @@ const revealBottomReportField = () => {
                 kind={pinKind(marker.report?.cleanup_state)}
                 text={pinKind(marker.report?.cleanup_state) === 'open' && marker.report?.funded_amount_cents > 0 ? fundingLabel : null}
                 selected={marker.id === previewId}
-                // Website pin motion, iPhone only: Android draws markers from still snapshots.
-                entrance={Platform.OS === 'ios' ? (marker.id === postedPinId ? 'posted' : 'land') : null}
-                order={order}
+                onMount={() => pinMounted({ id: marker.id, coordinate: marker.coordinate, kind: pinKind(marker.report?.cleanup_state), text: pinKind(marker.report?.cleanup_state) === 'open' && marker.report?.funded_amount_cents > 0 ? fundingLabel : null })}
               />
             </Marker>
           );
         })}
 
       </ClusteredMapView>
+
+      {/* Pins land here, above the map, then hand over to the real pin underneath. */}
+      <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+        {landingPins.map((pin) => (
+          <PinLanding key={pin.id} x={pin.x} y={pin.y} kind={pin.kind} text={pin.text} order={pin.order} posted={pin.posted} onDone={() => finishPinLanding(pin.id)} />
+        ))}
+      </View>
 
       {showInitialMapLoading ? (
         <View style={styles.initialMapLoading} pointerEvents="auto">
