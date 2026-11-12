@@ -24,6 +24,30 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (website cleanup hours added locally)
+
+- Optional How long did it take? (hrs) field added below bags/weight, matching
+  native form layout. Decimal hours convert to whole minutes (1.5 -> 90),
+  validate before review/send, appear in review and existing completed stats.
+- Hours retained in device/account drafts, restored drafts and conflict
+  summaries; optional shared payload field keeps older drafts readable.
+  Submission with time uses existing submit_cleanup_with_details and preserves
+  weight/bag values; no fallback that silently drops entered time. Blank time
+  retains existing submit_cleanup_with_weight path and missing-time behavior.
+- 63 focused web/contract tests pass, including controller-to-service conversion,
+  draft edits/restoration, account-draft round trip, legacy drafts, invalid
+  input, duration/weight RPC and existing submission recovery/cleanup display.
+  Web/contract TypeScript, scoped lint and diff check pass.
+- Read-only linked DB catalog checks confirm authenticated execute permission,
+  duration and weight support. No schema/data changes; Supabase connector lacked
+  permission, so used documented CLI read-only queries. No cleanup submitted.
+- CUA: 390px form and 1280px review have no overflow, invalid 25h rejected,
+  1.5h retained through Edit and shown in review, browser errors empty. Original
+  app/form styles are reference lock. Preview uses real component, disables
+  submit and is production-404 guarded: /dev-review-preview/cleanup-hours.
+  Temporary viewport reset; local preview left open. No production build,
+  push or deployment. Concurrent native/other previews/handoff preserved.
+
 ### 2026-11-12 — Codex (cleanup-hours parity check)
 
 - Source audit: native CleanupSubmissionScreen already has optional decimal

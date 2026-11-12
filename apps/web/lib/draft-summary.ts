@@ -13,8 +13,9 @@ const reportFields = (draft: Omit<ReportDetails, 'photos'>, step: number, fundin
   `Severity: ${draft.severity || 'Not entered'}`,
   `Notes: ${[...draft.selectedNotes, draft.notes].filter(Boolean).join('; ') || 'Not entered'}`,
 ];
-const cleanupFields = (draft: Pick<CleanupDraft, 'bagsOrItems' | 'weightPounds'>) => [
+const cleanupFields = (draft: Pick<CleanupDraft, 'bagsOrItems' | 'weightPounds' | 'hoursSpent'>) => [
   `Bags or items: ${draft.bagsOrItems || 'Not entered'}`, `Weight (lb): ${draft.weightPounds || 'Not entered'}`,
+  `Time (hrs): ${draft.hoursSpent || 'Not entered'}`,
 ];
 export function deviceDraftSummary(local: SavedReportDraft | CleanupDraft): DraftSummary {
   return {

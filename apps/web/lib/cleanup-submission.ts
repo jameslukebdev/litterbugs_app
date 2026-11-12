@@ -24,12 +24,12 @@ async function startReview(cleanupId: string) {
 }
 
 export async function submitCleanupEvidence({
-  cleanupId, userId, submissionId, photos, description, bagsOrItems, weightPounds,
+  cleanupId, userId, submissionId, photos, description, bagsOrItems, weightPounds, durationMinutes,
   isPaid, onProgress = () => {},
   uploadedPaths = [], onPrepared = async () => {},
 }: {
   cleanupId: string; userId: string; submissionId: string; photos: File[];
-  description: string; bagsOrItems?: number; weightPounds?: number; isPaid: boolean;
+  description: string; bagsOrItems?: number; weightPounds?: number; durationMinutes?: number; isPaid: boolean;
   onProgress?: (message: string) => void;
   uploadedPaths?: string[];
   onPrepared?: (paths: string[]) => Promise<void>;
@@ -72,14 +72,17 @@ export async function submitCleanupEvidence({
     await onPrepared(paths);
     onProgress('Saving cleanup…');
     dispatched = true;
-    const { error } = await supabase.rpc('submit_cleanup_with_weight', {
+    const args = {
       target_cleanup_id: cleanupId,
       target_submission_id: submissionId,
       cleanup_description: description.trim(),
       cleanup_photo_paths: paths,
       cleanup_bags_or_items_removed: bagsOrItems,
       cleanup_weight_pounds: weightPounds,
-    });
+    };
+    const { error } = durationMinutes === undefined
+      ? await supabase.rpc('submit_cleanup_with_weight', args)
+      : await supabase.rpc('submit_cleanup_with_details', { ...args, cleanup_duration_minutes: durationMinutes });
     if (error) throw error;
   } catch (error) {
     if (dispatched) {

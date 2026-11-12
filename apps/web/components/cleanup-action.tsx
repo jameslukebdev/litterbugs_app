@@ -18,6 +18,7 @@ import { getReportCardPhotoUrl } from '@/lib/report-photo';
 import { BrandBug } from '@/components/brand-bug';
 import { ModalShell } from '@/components/modal-shell';
 import { submitCleanupEvidence } from '@/lib/cleanup-submission';
+import { parseCleanupHours } from '@/lib/cleanup-duration';
 import { useDataRefresh, notifyDataChanged } from '@/lib/use-data-refresh';
 import { useCleanupAttempt } from '@/lib/use-cleanup-attempt';
 import { createClient } from '@/lib/supabase/client';
@@ -84,6 +85,7 @@ function CleanupActionForReport({
   const [description, setDescription] = useState('');
   const [bagsOrItems, setBagsOrItems] = useState('');
   const [weightPounds, setWeightPounds] = useState('');
+  const [hoursSpent, setHoursSpent] = useState('');
   const [submissionError, setSubmissionError] = useState('');
   const [reviewing, setReviewing] = useState(false);
   const [draftReady, setDraftReady] = useState('');
@@ -116,7 +118,7 @@ function CleanupActionForReport({
       setSubmissionId(draft?.submissionId && (draft.correctionDueAt ?? null) === (attempt.correction_due_at ?? null) ? draft.submissionId : crypto.randomUUID());
       if (draft) {
         if (draft.photos.length || draft.description.trim()) trackParticipationExit('clean', 'evidence_form', 'draft_resumed');
-        setPhotos(draft.photos); setDescription(draft.description); setBagsOrItems(draft.bagsOrItems); setWeightPounds(draft.weightPounds); setDraftMessage('Your saved cleanup draft is ready.'); }
+        setPhotos(draft.photos); setDescription(draft.description); setBagsOrItems(draft.bagsOrItems); setWeightPounds(draft.weightPounds); setHoursSpent(draft.hoursSpent ?? ''); setDraftMessage('Your saved cleanup draft is ready.'); }
       setDraftReady(attempt.id);
     }).catch(() => { if (!cancelled) { setSubmissionId(crypto.randomUUID()); setDraftStorageFailed(true); setDraftReady(attempt.id); setDraftMessage('Draft storage is unavailable. Keep this page open until you submit.'); } });
     return () => { cancelled = true; };
@@ -124,10 +126,10 @@ function CleanupActionForReport({
 
   useEffect(() => {
     if (!submissionOpen || !userId || !attempt?.id || draftReady !== attempt.id || draftStorageFailed || busy || draftLocked || editorLock !== 'ready') return;
-    void saveCleanupDraft(userId, attempt.id, { photos, description, bagsOrItems, weightPounds, submissionId, uploadedPaths, correctionDueAt: attempt.correction_due_at })
+    void saveCleanupDraft(userId, attempt.id, { photos, description, bagsOrItems, weightPounds, hoursSpent, submissionId, uploadedPaths, correctionDueAt: attempt.correction_due_at })
         .then(() => setDraftMessage(''))
         .catch(() => setDraftMessage('Couldn’t save your draft. Keep this page open until you submit.'));
-  }, [submissionOpen, userId, attempt?.id, draftReady, draftStorageFailed, busy, photos, description, bagsOrItems, weightPounds, submissionId, uploadedPaths, attempt?.correction_due_at, draftLocked, editorLock]);
+  }, [submissionOpen, userId, attempt?.id, draftReady, draftStorageFailed, busy, photos, description, bagsOrItems, weightPounds, hoursSpent, submissionId, uploadedPaths, attempt?.correction_due_at, draftLocked, editorLock]);
 
   const deadline = attempt?.status === 'changes_requested' ? attempt.correction_due_at : attempt?.claim_expires_at;
 
@@ -319,7 +321,8 @@ function CleanupActionForReport({
   function reviewCleanup() {
     const error = validateCleanupEvidence(photos, description)
       || parseOptionalInteger(bagsOrItems, 'Bags or items removed', 0, 9999).error
-      || parseOptionalWeight(weightPounds).error;
+      || parseOptionalWeight(weightPounds).error
+      || parseCleanupHours(hoursSpent).error;
     if (error) { setSubmissionError(error); return; }
     setSubmissionError(''); setReviewing(true);
   }
@@ -332,6 +335,8 @@ function CleanupActionForReport({
     if (bags.error) return setSubmissionError(bags.error);
     const weight = parseOptionalWeight(weightPounds);
     if (weight.error) return setSubmissionError(weight.error);
+    const duration = parseCleanupHours(hoursSpent);
+    if (duration.error) return setSubmissionError(duration.error);
 
     setBusy('submit');
     setSubmissionError('');
@@ -340,7 +345,7 @@ function CleanupActionForReport({
     try {
       // Await a durable ID before any network mutation, including after a reload.
       await saveCleanupDraft(userId, attempt.id, {
-        photos, description, bagsOrItems, weightPounds, submissionId, uploadedPaths,
+        photos, description, bagsOrItems, weightPounds, hoursSpent, submissionId, uploadedPaths,
         correctionDueAt: attempt.correction_due_at,
       });
       const syncedSubmissionId = await cloudDrafts.begin(userId, `cleanup:${attempt.id}`);
@@ -348,12 +353,12 @@ function CleanupActionForReport({
       submittingEvidence = true;
       await submitCleanupEvidence({
         cleanupId: attempt.id, userId, submissionId: syncedSubmissionId, photos, description,
-        bagsOrItems: bags.value, weightPounds: weight.value, isPaid: attempt.is_paid,
+        bagsOrItems: bags.value, weightPounds: weight.value, durationMinutes: duration.value, isPaid: attempt.is_paid,
         onProgress: setUploadProgress,
         uploadedPaths,
         onPrepared: async paths => {
           await saveCleanupDraft(userId, attempt.id, {
-            photos, description, bagsOrItems, weightPounds, submissionId: syncedSubmissionId,
+            photos, description, bagsOrItems, weightPounds, hoursSpent, submissionId: syncedSubmissionId,
             uploadedPaths: paths, correctionDueAt: attempt.correction_due_at,
           });
           setUploadedPaths(paths);
@@ -379,6 +384,7 @@ function CleanupActionForReport({
     setDescription('');
     setBagsOrItems('');
     setWeightPounds('');
+    setHoursSpent('');
     setSubmissionId('');
     setUploadedPaths([]);
     setDoneKind('sent');
@@ -403,7 +409,7 @@ function CleanupActionForReport({
         photoFailure = 'draft_save_failed';
         const nextPhotos = [...photos, ...prepared];
         setPhotos(nextPhotos);
-        await saveCleanupDraft(userId, attempt.id, { photos: nextPhotos, description, bagsOrItems, weightPounds, submissionId, uploadedPaths, correctionDueAt: attempt.correction_due_at });
+        await saveCleanupDraft(userId, attempt.id, { photos: nextPhotos, description, bagsOrItems, weightPounds, hoursSpent, submissionId, uploadedPaths, correctionDueAt: attempt.correction_due_at });
         return nextPhotos;
       });
       setPhotos(nextPhotos); setSubmissionError('');
@@ -482,6 +488,8 @@ function CleanupActionForReport({
             onBags={setBagsOrItems}
             weight={weightPounds}
             onWeight={setWeightPounds}
+            hours={hoursSpent}
+            onHours={value => { setHoursSpent(value); setSubmissionError(''); }}
             checking={reviewing}
             onCheck={reviewCleanup}
             onEdit={() => setReviewing(false)}
@@ -500,7 +508,7 @@ function CleanupActionForReport({
             error={preparing && submissionError.startsWith('Preparing') ? '' : submissionError}
             status={<>
               {draftReady !== attempt.id && <p role="status">Loading saved cleanup…</p>}
-              <CloudDraftStatus userId={userId!} draftKey={`cleanup:${attempt.id}`} onRestored={async () => { const restored = await loadCleanupDraft(userId!, attempt.id); if(restored) {setPhotos(restored.photos);setDescription(restored.description);setBagsOrItems(restored.bagsOrItems);setWeightPounds(restored.weightPounds);setSubmissionId(restored.submissionId!);setUploadedPaths([]);} }} />
+              <CloudDraftStatus userId={userId!} draftKey={`cleanup:${attempt.id}`} onRestored={async () => { const restored = await loadCleanupDraft(userId!, attempt.id); if(restored) {setPhotos(restored.photos);setDescription(restored.description);setBagsOrItems(restored.bagsOrItems);setWeightPounds(restored.weightPounds);setHoursSpent(restored.hoursSpent ?? '');setSubmissionId(restored.submissionId!);setUploadedPaths([]);} }} />
               {draftMessage && <p className="form-message" role="status">{draftMessage}</p>}
               {(preparing || uploadProgress) && <section className="evidence-transfer cleaner-transfer" aria-label="Evidence transfer"><h3>{preparing ? 'Preparing selected photos' : uploadProgress.includes('review') ? 'Starting evidence review' : uploadProgress.includes('Uploading') ? 'Uploading and checking photos' : 'Saving your evidence'}</h3><p role="status" aria-live="polite">{preparing ? 'Preparing browser-compatible photos. Keep this page open until the device save finishes.' : uploadProgress}</p><p>Uploading a photo does not mean the cleanup has been approved. Your task will show the review result and any requested corrections.</p></section>}
             </>}

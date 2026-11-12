@@ -15,6 +15,10 @@ it('summarizes saved cleanup evidence without exposing private media paths', () 
   expect(summary).toMatchObject({ title: 'Cleanup evidence', photos: 2, detail: 'Removed bottles', savedAt: record.updated_at });
   expect(JSON.stringify(summary)).not.toContain('private/');
 });
+it('includes hours when comparing account cleanup drafts', () => {
+  const summary = accountDraftSummary({ ...record, payload: { ...record.payload as object, hoursSpent: '1.5' } });
+  expect(summary?.fields).toContain('Time (hrs): 1.5');
+});
 it('does not offer deleted or expired drafts for continuation', () => {
   expect(accountDraftSummary({ ...record, state: 'deleted' })).toBeNull();
   expect(accountDraftSummary({ ...record, expires_at: '2000-01-01T00:00:00Z' })).toBeNull();

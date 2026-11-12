@@ -1,6 +1,6 @@
 import { trackDeviceSave, forgetDeviceSave } from './device-save-state';
 import { cloudDrafts } from './cloud-drafts';
-export type CleanupDraft = { savedAt?: number; photos: File[]; description: string; bagsOrItems: string; weightPounds: string; submissionId?: string; uploadedPaths?: string[]; correctionDueAt?: string | null };
+export type CleanupDraft = { savedAt?: number; photos: File[]; description: string; bagsOrItems: string; weightPounds: string; hoursSpent?: string; submissionId?: string; uploadedPaths?: string[]; correctionDueAt?: string | null };
 let queue: Promise<unknown> = Promise.resolve();
 function transact<T>(operation: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
   const work = queue.catch(() => undefined).then(() => new Promise<T>((resolve, reject) => {
@@ -29,6 +29,7 @@ export const saveLocalCleanupDraft = (userId: string, attemptId: string, draft: 
 export async function loadLocalCleanupDraft(userId: string, attemptId: string) {
   const value = await transact<CleanupDraft | undefined>(store => store.get(key(userId, attemptId)));
   if (value && (!Array.isArray(value.photos) || value.photos.length > 3 || !value.photos.every(file => file instanceof File) || ![value.description, value.bagsOrItems, value.weightPounds].every(item => typeof item === 'string'))) throw new Error('Saved cleanup could not be read');
+  if (value?.hoursSpent !== undefined && (typeof value.hoursSpent !== 'string' || value.hoursSpent.length > 20)) throw new Error('Saved cleanup could not be read');
   return value;
 }
 export const clearLocalCleanupDraft = async (userId: string, attemptId: string) => { await transact(store => store.delete(key(userId, attemptId))); forgetDeviceSave(userId, `cleanup:${attemptId}`); };
