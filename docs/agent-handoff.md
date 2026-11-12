@@ -24,6 +24,16 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-11 — Codex (API and MCP acquisition strategy)
+
+- Advisory follow-up: prioritize partner-hosted cleanup feeds/cards, newsletter
+  links and sponsor result pages; connected AI tools are a later distribution
+  experiment. Proposed a small Boone pilot with attributed report visits,
+  first contributions/cleanup claims and confirmed completions as outcomes.
+- These are unvalidated channel hypotheses, not growth forecasts or existing
+  partner commitments. No outreach, implementation, live testing, deployment,
+  push or database changes. Preserve prior pending work.
+
 ### 2026-11-11 — Codex (API and MCP feasibility advice)
 
 - Read-only source and current Google/MCP documentation review: existing public
