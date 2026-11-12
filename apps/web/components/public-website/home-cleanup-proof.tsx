@@ -5,6 +5,7 @@ import type { PublicReportShareModel } from '@/lib/public-report-share-model';
 import { PublicPhoto } from './public-photo';
 import styles from './home-cleanup-proof.module.css';
 import { PhotoBatch } from '../photo-batch';
+import { PendingLinkContent } from '../pending-link-content';
 
 export function HomeCleanupProof({ report, heading = 'Most recent cleanup', showHeading = true }: { report: PublicReportShareModel; heading?: string; showHeading?: boolean }) {
   const cleaned = report.completionDate ? new Date(report.completionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : null;
@@ -32,7 +33,7 @@ export function HomeCleanupProof({ report, heading = 'Most recent cleanup', show
           <h3>{report.title}</h3>
           {meta && <p>{meta}</p>}
         </div>
-        <Link className={styles.cta} href={`/reports/${report.id}`}><BrandBug kind="flower" size={22} className="brand-action-icon" />See this cleanup</Link>
+        <Link className={styles.cta} href={`/reports/${report.id}`}><BrandBug kind="flower" size={22} className="brand-action-icon" /><PendingLinkContent>See this cleanup</PendingLinkContent></Link>
       </div>
     </section>
   );

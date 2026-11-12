@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { renderToStaticMarkup } from 'react-dom/server';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import SharedReportPage, { generateMetadata } from './page';
 import type { PublicReportShareModel } from '@/lib/public-report-share-model';
@@ -42,10 +42,10 @@ describe('public shared report funding copy', () => {
     const { container } = render(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
     expect(screen.getByAltText('Cleanup result photo for “Creek cleanup”').getAttribute('src')).toBe('/photo/after');
     expect(Array.from(container.querySelectorAll('figure img')).map(img => img.getAttribute('src'))).toEqual(['/photo/before', '/photo/after']);
-    fireEvent.error(screen.getByAltText('Cleanup result photo for “Creek cleanup”'));
+    await act(async () => { fireEvent.error(screen.getByAltText('Cleanup result photo for “Creek cleanup”')); });
     expect(screen.queryByAltText('Cleanup result photo for “Creek cleanup”')).toBeNull();
     expect(container.querySelector('[class*="singlePhoto"]')).toBeTruthy();
-    fireEvent.error(screen.getByAltText('Original report photo for “Creek cleanup”'));
+    await act(async () => { fireEvent.error(screen.getByAltText('Original report photo for “Creek cleanup”')); });
     expect(screen.queryByText('Before')).toBeNull();
     expect(screen.getByRole('heading', { level: 1, name: report.title })).toBeTruthy();
   });
@@ -93,11 +93,23 @@ it('renders original context, cleanup evidence, dates and related report links i
   expect(html).toContain('The original report');
   expect(html).toContain('Cans beside the creek');
   expect(html).toContain('Collected two bags');
-  expect(html).toContain('href="/reports/another-report"');
   expect(html).toContain('near Boone, North Carolina');
   expect(html).toContain('dateTime="2026-11-02T12:00:00Z"');
   expect(html).toContain('Original report photo for');
   expect(html).toContain('Reported October 28, 2026');
+});
+
+it('shows the report before slow optional recommendations resolve, then streams those links', async () => {
+  loadReport.mockResolvedValue({ ...report, state: 'completed', communitySlug: 'us-nc-boone' });
+  let finish!: (rows: Array<{ id: string; title: string; state: 'available' }>) => void;
+  loadRelated.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
+  const page = await SharedReportPage({ params: Promise.resolve({ id: report.id }) });
+  await act(async () => { render(page); });
+  expect(screen.getByRole('heading', { level: 1, name: report.title })).toBeTruthy();
+  expect(screen.getByRole('link', { name: 'View on map' })).toBeTruthy();
+  expect(screen.queryByRole('link', { name: 'Roadside litter' })).toBeNull();
+  await act(async () => { finish([{ id: 'another-report', title: 'Roadside litter', state: 'available' }]); });
+  expect((await screen.findByRole('link', { name: 'Roadside litter' })).getAttribute('href')).toBe('/reports/another-report');
 });
 it('aligns search and sharing metadata with verified locality and available evidence', async () => {
   loadReport.mockResolvedValue({ ...report, state: 'completed', communitySlug: 'us-nc-boone', localityLabel: 'Boone, North Carolina' });

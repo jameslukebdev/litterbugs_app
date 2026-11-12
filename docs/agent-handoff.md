@@ -24,6 +24,37 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (slow cleanup navigation reproduced and improved locally)
+
+- Owner reported repeated See this cleanup taps and broader slow buttons.
+  Excluded isolated production test reproduced a 1202ms click-to-report delay:
+  old homepage/button persisted without any status; report RSC request1112ms,
+  despite partial prefetch. One sample, not visitor average. Button is a normal
+  Next Link; force-dynamic report lacked a loading boundary. Main render also
+  awaited optional related links; reporter lookup was serial after completion.
+- Local fix: cleanup CTA uses useLinkStatus for immediate Opening… feedback;
+  shared root and explicit report loading boundaries use existing delayed/glowing
+  firefly and white branded layout. Existing map/sign-in/account fallbacks keep
+  priority. Optional related links stream in their own Suspense boundary, and
+  reporter lookup runs alongside cleanup evidence. No stale data cache or RLS
+  changes. This addresses navigation links, not every save/dialog/map action.
+- Actual local browser: pending feedback present at first51ms sample; full report
+  and 6 recommendations render, photos preserved, no console errors. Another
+  report-list link shows shared fallback at218ms. Dev compilation/network differ
+  from production: no claim of reduced production load time yet. Local /report
+  HTTP200 verifies actual read path after changes. Port3000 dev server started
+  (was stopped) and left running for owner review; no production build.
+- 41 focused tests pass, including blocked recommendations not blocking report,
+  eventual related links, parallel reporter read, pending reset and photo errors.
+  Web TypeScript, scoped ESLint and diff check pass. Preserve all concurrent work.
+- PostHog14-day raw rage-click scan (staff cohort673394, test/bot flags excluded)
+  finds seven records, all /map, none identifies this CTA. Clarity7-day rage
+  filter has no matching recordings; owner-observed repeated clicks plus direct
+  reproduction are the evidence for this fix. Restored Clarity3-day URL view.
+- All production test browser visits excluded before scripts and verified;
+  separate local review tab retained. No real participation/money submission,
+  database change, deploy or push. Map telemetry2f6c8e0 remains locally pending.
+
 ### 2026-11-12 — Codex (signed-in Clarity connection restored; recordings reviewed)
 
 - Owner screenshot confirmed main Chrome listening at 127.0.0.1:9222. Both

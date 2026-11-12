@@ -45,6 +45,15 @@ beforeEach(() => {
 });
 
 describe('public report photo delivery', () => {
+  it('starts the reporter read while cleanup evidence is still loading', async () => {
+    fixture({ ...base, cleanup_state: 'completed', user_id: 'reporter' });
+    let finish!: (value: { data: null; error: null }) => void;
+    queries.get('cleanup_attempts')!.maybeSingle.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    const work = loadPublicReportShare(id, 'linked');
+    await vi.waitFor(() => expect(queries.get('profiles')!.maybeSingle).toHaveBeenCalled());
+    finish({ data: null, error: null });
+    expect((await work)?.reporterName).toBe('Cleaner');
+  });
   it('builds small HTML photo links without downloading, embedding, or disclosing storage paths', async () => {
     const report = await loadPublicReportShare(id, 'linked');
     expect(report?.beforePhotoUrl).toBe(`/reports/${id}/photo/before`);
