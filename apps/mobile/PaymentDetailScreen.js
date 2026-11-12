@@ -32,7 +32,7 @@ export default function PaymentDetailScreen({ navigation, route }) {
       <Text style={{ marginTop: 20, fontSize: 16, lineHeight: 23 }}>{!item.report && paymentDisplayStatus(item) === 'not_completed' ? 'This payment hasn’t completed. The report is unavailable; get payment help below if you need assistance.' : statusMessage(item)}</Text>
       {item.checkedAt ? <Text style={{ marginTop: 12, color: colors.muted }}>Last checked {formatContributionDate(item.checkedAt)}</Text> : null}
       <Text style={{ marginTop: 12, color: colors.muted }}>{formatContributionDate(item.created_at)}</Text>
-      <View style={{ marginVertical: 20, gap: 14, padding: 16, borderRadius: 14, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white }}>
+      <View style={{ marginVertical: 20, gap: 14, padding: 16, borderRadius: 14, backgroundColor: colors.primaryTint }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}><Text>Cleanup contribution</Text><Text>{formatUsd(item.principal_amount_cents)}</Text></View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignItems: 'center', justifyContent: 'space-between' }}><FeeExplanationLabel label="Service fee" /><Text>{formatUsd(item.platform_fee_cents)}</Text></View>
         {item.refunded_at ? <Text>Refunded: {formatContributionDate(item.refunded_at)}</Text> : null}

@@ -59,7 +59,7 @@ export default function SettingsInfoScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.white },
   content: { padding: 20 },
-  icon: { marginBottom: 14 },
+  icon: { width: 52, height: 52, borderRadius: 16, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
   heading: { fontSize: 24, lineHeight: 31, fontFamily: fonts.heading, color: colors.ink },
   description: { fontSize: 14, lineHeight: 22, color: colors.muted, marginTop: 10, marginBottom: 24 },
   panel: { borderWidth: 1, borderColor: colors.line, borderRadius: 16, paddingHorizontal: 16 },

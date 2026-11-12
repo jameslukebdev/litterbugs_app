@@ -571,7 +571,7 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   titleBug: { width: 34, height: 34 },
   subLabel: { marginTop: 16, color: colors.ink, fontSize: 14, fontWeight: '800' },
-  summaryCard: { marginTop: 20, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 18, borderWidth: 2, borderColor: colors.yellowBorder, backgroundColor: colors.yellowSoft },
+  summaryCard: { marginTop: 20, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 18, borderWidth: 2, borderColor: colors.yellowBorder, backgroundColor: colors.yellowPale },
   label: { color: colors.ink, fontSize: 17, fontFamily: fonts.heading },
   amountPresets: { flexDirection: 'row', gap: 10, marginTop: 12 },
   amountPreset: { flex: 1, minHeight: 54, padding: 6, borderRadius: 16, borderWidth: 2, borderColor: colors.yellowBorder, borderBottomWidth: 4, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },

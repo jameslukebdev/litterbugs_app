@@ -505,9 +505,9 @@ startingFundCard: {
   marginBottom: 24,
   padding: 16,
   borderWidth: 2,
-  borderColor: colors.line,
+  borderColor: colors.yellowBorder,
   borderRadius: 18,
-  backgroundColor: colors.white,
+  backgroundColor: colors.yellowPale,
 },
 cleanerDeadline: { marginBottom: 8, color: colors.body, fontSize: 14, lineHeight: 20 },
 cleanerDirectionsButton: { flex: 1, borderColor: colors.line, backgroundColor: colors.white },
@@ -1063,7 +1063,7 @@ reportChip: {
 
 fundingFeedbackCard: {
   marginBottom: 18, padding: 14, flexDirection: 'row', alignItems: 'flex-start', gap: 10,
-  borderWidth: 1, borderColor: colors.line, borderRadius: 14, backgroundColor: colors.white,
+  borderWidth: 1, borderColor: colors.yellowBorder, borderRadius: 14, backgroundColor: colors.yellowPale,
 },
 fundingFeedbackTitle: { color: colors.yellow, fontSize: 14, lineHeight: 20, fontWeight: '600' },
 fundingFeedbackText: { marginTop: 5, color: colors.yellow, fontSize: 13, lineHeight: 19 },

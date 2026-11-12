@@ -38,6 +38,11 @@ export const colors = Object.freeze({
   redSoft: '#FFF0EE',
   yellow: '#775700',
   yellowSoft: '#FFF4CC',
+  // Website fund breakdown / starting-fund card fill.
+  yellowPale: '#FFFBEA',
+  // Website cleaner guidelines card fill and fact-chip words.
+  greenPale: '#F6FBF1',
+  greenDeep: '#24521F',
   plum: '#783398',
   plumSoft: '#F7EBFB',
 
