@@ -61,7 +61,7 @@
         "expo-image-picker",
         {
           "photosPermission": "Litterbugs uses your photos when you choose report or profile pictures.",
-          "cameraPermission": "Litterbugs uses your camera when you take report or profile pictures.",
+          "cameraPermission": "Litterbugs uses your camera when you take report or profile pictures, or a photo of your ID if Stripe asks for one during payout setup.",
           "microphonePermission": false
         }
       ],

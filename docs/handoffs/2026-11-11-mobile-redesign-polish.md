@@ -166,3 +166,13 @@ Branch `codex/map-first-navigation`. Nothing pushed, built for stores, or deploy
 ## No-tint rule lifted (Nov 12)
 
 Owner: "remove the no tint rule and try to match the website look". Restored with the website colours: claim sheet green fact pills, pink pay pill and pale green Stay safe card; yellow funding notice and status card on the report sheet; pale yellow fund breakdown and wizard starting-fund card; lilac payment-detail panel and help icon tile. "About the cleanup" uses the mint fill (owner dislikes the website green there, likes mint). Only the About card was viewed in the simulator.
+
+## Embedded Stripe payout setup in the app (Nov 12) — built, not yet run
+
+- `@stripe/stripe-react-native` 0.50.3 -> **0.72.0**, plus `react-native-webview` 13.15.0. 0.72.0 is the newest version that still resolves Stripe iOS through CocoaPods; 0.78+ needs dynamic frameworks / Swift Package Manager and points at Expo 58. Do not jump to 0.85 on Expo 54.
+- `pod install` done (LANG=en_US.UTF-8) and the EXUpdates Pods fix re-applied. **The iOS app has not been rebuilt** (disk had 1.5 GB free). The simulator still runs the old native build, which does not contain the new Stripe code; the JS guards nothing, so opening Payout setup on the old build may fail until the rebuild.
+- App: `createPayoutSession()` in `lib/funding.js` asks the edge function for `mode: 'session', returnTarget: 'mobile'`. If the server refuses, the screen falls back to Stripe's hosted page as before.
+- `PayoutSetupScreen.js`: shows `ConnectAccountOnboarding` in-app; one-tap start (the 18+/US checkbox is replaced by a "By continuing, you confirm…" line; the server still receives `confirmAge18: true`); "Have these ready" list; `collectionOptions` currently_due only; `payout started` analytics event.
+- Backend: `supabase/functions/_shared/cleaner-onboarding.ts` now accepts `returnTarget: 'mobile'` for sessions. **Not deployed.** Deno is not installed here, so the edge function tests were not run.
+- Camera permission text mentions ID photos for payout setup.
+- Android not built with the new library (its Kotlin requirement is 2.2.21; unverified against this project).
