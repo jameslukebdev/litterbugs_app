@@ -24,6 +24,16 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (social-link placement research)
+
+- Refero: Duolingo and Bumble full styles plus Kickstarter footer screen
+  7573bf28. Plan: quiet social icon row by footer identity and in the mobile
+  drawer, using existing lavender tokens and 44px touch targets; keep map
+  footer height stable. Existing site is the visual reference lock.
+- No official Instagram/TikTok/Facebook profile links found in source or
+  public search. Asked owner for URLs/usernames before wiring destinations.
+  No product changes, deployment or push. Concurrent work preserved.
+
 ### 2026-11-12 — Codex (filter, card and loading improvements deployed)
 
 - Owner-approved release 89f6da0 on codex/filter-loading-release-20261112 is live:
