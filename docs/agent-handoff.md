@@ -24,6 +24,39 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-11 — Codex (approved map performance and analytics release live)
+
+- Owner approved deploying completed work and pushing GitHub, with new homepage
+  work held back. Clean release `d80611d` on
+  `codex/analytics-map-release-20261111` is live as
+  `dpl_G9Q15QaLjZDr825x4a6CBqusEPp6` (litterbugs-dcclnt0cl).
+  Rollback: `dpl_6xn6UFxSv9YBM1oTZJaBBeTPZdpC`.
+- Based on last live `3f3d78d` plus the 18 changed web files from `6cab301`:
+  public-profile analytics privacy, map search/discovery attribution, deferred
+  Stripe/hidden thumbnails, independent provider delivery, and app choices.
+  Homepage source is byte-identical to previous live. No fees/rewards/refunds,
+  database, native release, new homepage design or untracked previews shipped.
+  Both release branch and working branch through `6cab301` were pushed.
+  Concurrent later native payout work remains outside this web release.
+- 156 focused release tests and scoped lint passed; remote production build
+  and TypeScript passed. Isolated-test setup initially lacked workspace modules
+  and used a different Node executable; linked existing dependencies for tests
+  and used Node 22.22.0, then removed links before uploading clean source.
+  No local production build. Existing social-card-bugs tracing warning remains.
+- Staged home/map/get-app HTTP 200; dev-review-preview/bug-animations 404.
+  Promoted and verified production deployment identity. Live 390px test:
+  Continue on website -> loaded map -> Boone suggestion -> results -> report
+  list -> completed report with loaded after photo. No initial Stripe or
+  report-photo requests; photos load after list/detail opens. Zero analytics
+  requests and browser errors. Test browser remains opted out of analytics;
+  temporary viewport reset. Bounded production error-log scan was empty.
+- Refero research for recommendation only: three style searches, Duolingo and
+  Airbnb full styles, two Airbnb map/search/detail screen references. Preserve
+  Litterbugs white canvas, rounded type, colorful bugs, existing button roles;
+  put usable map/search into opening composition and move collage/app badges
+  lower. No homepage implementation yet; approval required before deployment.
+  Memory remains warning level 2; Android stayed closed, iOS left running.
+
 ### 2026-11-11 — Codex (guest browsing clarified)
 
 - Read-only source check confirms guests already browse/search/filter the map,
