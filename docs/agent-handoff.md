@@ -24,6 +24,18 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (Chrome attachment rechecked after owner enabled debugging)
+
+- Retried official --autoConnect after owner reported enabling remote debugging.
+  Main Chrome is running, but it still reports missing DevToolsActivePort in
+  its default user-data directory; bounded filesystem check confirms absent.
+  No connection prompt/recordings reached. Existing isolated MCP browser is
+  still a separate profile and cannot verify owner's Clarity authentication.
+- Requested current chrome://inspect/#remote-debugging screenshot to diagnose
+  the actual setting state without another blind sign-in/restart instruction.
+  No settings modifications, cookies copied, browser closures, website changes,
+  push or deploy. Local map tracking remains pending owner deployment approval.
+
 ### 2026-11-12 — Codex (signed-in Clarity session located by owner)
 
 - Owner screenshot confirms Clarity is signed in in normal Chrome. Earlier
