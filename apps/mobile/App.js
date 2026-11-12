@@ -33,6 +33,7 @@ import AuthScreen from './AuthScreen';
 import SignInMethodsScreen from './SignInMethodsScreen';
 import SettingsInfoScreen from './SettingsInfoScreen';
 import UpdatesScreen from './UpdatesScreen';
+import NotificationSettingsScreen from './NotificationSettingsScreen';
 import BlockedAccountsScreen from './BlockedAccountsScreen';
 import CompleteProfileScreen from './CompleteProfileScreen';
 import CleanupFeedbackScreen from './CleanupFeedbackScreen';
@@ -325,6 +326,7 @@ function AppNavigation({
         <Stack.Screen name="Payments" component={ProfileScreen} initialParams={{ section: 'payments' }} options={{ ...headerOptions, title: 'Payments' }} />
         <Stack.Screen name="SignInMethods" component={SignInMethodsScreen} options={{ ...headerOptions, title: 'Sign-in methods' }} />
         <Stack.Screen name="Updates" component={UpdatesScreen} options={{ ...headerOptions, title: 'Updates' }} />
+        <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ ...headerOptions, title: 'Notifications' }} />
         <Stack.Screen name="SettingsInfo" component={SettingsInfoScreen} options={{ ...headerOptions, title: 'Settings' }} />
         <Stack.Screen name="Settings" component={ProfileScreen} initialParams={{ section: 'settings' }} options={{ ...headerOptions, title: 'Settings' }} />
         <Stack.Screen

@@ -4,12 +4,12 @@ import * as Location from 'expo-location';
 
 import {
   followPhoneForNearbyAlerts,
-  loadNearbyReportAlerts,
+  loadNotificationPreferences,
   markAskedAboutNearbyAlerts,
-  setNearbyReportAlerts,
-  trackEnabledNearbyAlert,
+  saveNotificationPreferences,
+  trackNearbyAlerts,
   wasAskedAboutNearbyAlerts,
-} from './nearbyReportAlerts';
+} from './notificationPreferences';
 import { registerCleanupPushDevice } from './pushNotifications';
 
 const ASK_DELAY_MS = 2500; // let the map settle and the pins land before asking
@@ -24,44 +24,49 @@ export async function phoneCoordinateForAlerts({ request = false } = {}) {
   return position ? { latitude: position.coords.latitude, longitude: position.coords.longitude } : null;
 }
 
-/** Turn the alert on: make sure this phone can get notifications, then save the area. */
-export async function turnOnNearbyAlerts(userId, coordinate) {
+/** Tell the member when notifications are blocked for Litterbugs on this phone. */
+export function explainBlockedNotifications() {
+  Alert.alert(
+    'Notifications are off',
+    'Notifications for Litterbugs are turned off on this phone. Turn them on in Settings to get these alerts.',
+    [{ text: 'Not now', style: 'cancel' }, { text: 'Open Settings', onPress: () => Linking.openSettings().catch(() => {}) }],
+  );
+}
+
+/** Save preference changes after making sure this phone can get notifications. */
+export async function saveWithPhoneReady(userId, changes, coordinate = null) {
   const push = await registerCleanupPushDevice().catch(() => ({ status: 'error' }));
-  await setNearbyReportAlerts(userId, { enabled: true, coordinate });
-  if (push?.status === 'denied') {
-    Alert.alert(
-      'Notifications are off',
-      'Your alert is on, but notifications for Litterbugs are turned off on this phone. Turn them on in Settings to get it.',
-      [{ text: 'Not now', style: 'cancel' }, { text: 'Open Settings', onPress: () => Linking.openSettings().catch(() => {}) }],
-    );
-  }
+  const preferences = await saveNotificationPreferences(userId, changes, coordinate);
+  if (push?.status === 'denied') explainBlockedNotifications();
+  return preferences;
 }
 
 /**
- * On the map: ask once whether the member wants the daily alert (only when signed in, with
- * location allowed, and nothing else on screen), and keep an alert that is on following the phone.
+ * On the map: ask once whether the member wants the nearby alerts (only when signed in, with
+ * location allowed, and nothing else on screen), and keep the area of alerts that are on with the phone.
  */
 export default function useNearbyReportAlerts({ userId, location, canAsk }) {
-  const state = useRef({ userId: null, available: false, enabled: false, ask: false });
+  const state = useRef({ userId: null, nearbyOn: false, ask: false });
   const asking = useRef(false);
 
   useEffect(() => {
     if (!userId) return undefined;
     let active = true;
-    state.current = { userId, available: false, enabled: false, ask: false };
-    Promise.all([loadNearbyReportAlerts(userId), wasAskedAboutNearbyAlerts(userId)])
-      .then(([alerts, asked]) => {
+    state.current = { userId, nearbyOn: false, ask: false };
+    Promise.all([loadNotificationPreferences(userId), wasAskedAboutNearbyAlerts(userId)])
+      .then(([loaded, asked]) => {
         if (!active) return;
-        state.current = { userId, available: alerts.available, enabled: alerts.enabled, ask: alerts.available && !alerts.decided && !asked };
-        if (alerts.enabled) trackEnabledNearbyAlert(userId);
+        const nearbyOn = loaded.preferences.newLitterNearby || loaded.preferences.cleanupsNearby;
+        state.current = { userId, nearbyOn, ask: loaded.available && !loaded.nearbyDecided && !asked };
+        if (nearbyOn) trackNearbyAlerts(userId);
       })
       .catch(() => {});
     return () => { active = false; };
   }, [userId]);
 
-  // An alert that is on follows the phone (the server rounds the spot).
+  // Alerts that are on follow the phone (the server rounds the spot).
   useEffect(() => {
-    if (userId && location && state.current.enabled) followPhoneForNearbyAlerts(userId, location);
+    if (userId && location && state.current.nearbyOn) followPhoneForNearbyAlerts(userId, location);
   }, [userId, location?.latitude, location?.longitude]);
 
   useEffect(() => {
@@ -72,17 +77,17 @@ export default function useNearbyReportAlerts({ userId, location, canAsk }) {
       state.current.ask = false;
       markAskedAboutNearbyAlerts(userId);
       Alert.alert(
-        'Get a daily alert for new litter near you?',
-        'Once a day at 5 pm, if new litter is reported within 50 miles of you, we’ll let you know so you can help fund or clean it up. You can turn this off anytime in Settings.',
+        'Get alerts about litter near you?',
+        'We’ll let you know once a day at 5 pm when new litter is reported within 50 miles, and when a cleanup near you is completed. You can change this anytime in Profile › Notifications.',
         [
           { text: 'Not now', style: 'cancel', onPress: () => {
             // Remember the answer on the account too, so other phones don't ask again.
-            setNearbyReportAlerts(userId, { enabled: false }).catch(() => {});
+            saveNotificationPreferences(userId, { newLitterNearby: false, cleanupsNearby: false }).catch(() => {});
           } },
           { text: 'Turn on', onPress: () => {
-            turnOnNearbyAlerts(userId, location)
-              .then(() => { state.current.enabled = true; })
-              .catch(() => Alert.alert('Couldn’t turn on the alert', 'Check your connection and try again in Settings.'));
+            saveWithPhoneReady(userId, { newLitterNearby: true, cleanupsNearby: true }, location)
+              .then(() => { state.current.nearbyOn = true; })
+              .catch(() => Alert.alert('Couldn’t turn on the alerts', 'Check your connection and try again in Profile › Notifications.'));
           } },
         ],
       );

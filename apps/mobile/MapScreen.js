@@ -14,7 +14,7 @@ import MapPin, { PinPlaceholder, pinCenterOffset, pinKind } from './components/M
 import PinLanding from './components/PinLanding';
 import usePinLandings from './lib/usePinLandings';
 import useNearbyReportAlerts from './lib/useNearbyReportAlerts';
-import { nearbyAlertRegion } from './lib/nearbyReportAlerts';
+import { nearbyAlertRegion } from './lib/notificationPreferences';
 import { prefersReducedMotion } from './lib/reduceMotion';
 import MapKey, { mapKeyCounts } from './components/MapKey';
 import SlideUp from './components/SlideUp';

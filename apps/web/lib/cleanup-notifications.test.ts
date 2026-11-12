@@ -12,3 +12,6 @@ it('opens the map for the daily nearby alert, which has no single report', () =>
   // The shared database types still say every notice has a report; this one has none.
   expect(notificationHref({ event_type: 'nearby_reports_daily', report_id: null as unknown as string, contribution_id: null })).toBe('/');
 });
+it('opens a cleanup completed nearby on the public map, since it is someone else\'s report', () => {
+  expect(notificationHref({ event_type: 'cleanup_completed_nearby', report_id: 'report id', contribution_id: null })).toBe('/?report=report%20id');
+});

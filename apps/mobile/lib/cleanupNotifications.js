@@ -95,7 +95,14 @@ const CLEANUP_NOTIFICATION_CONTENT = Object.freeze({
     title: 'New litter near you',
     message: 'New litter reports are available in your area for funding and cleanup.',
   },
+  cleanup_completed_nearby: {
+    title: 'Cleanup completed near you',
+    message: 'A cleanup has been completed in your area. Help celebrate the impact!',
+  },
 });
+
+/** Every notification's title and message, as shown in Updates (and pushed to the phone). */
+export const CLEANUP_NOTIFICATION_COPY = CLEANUP_NOTIFICATION_CONTENT;
 
 export function cleanupNotificationPresentation(notices) {
   if (!notices?.length) return null;

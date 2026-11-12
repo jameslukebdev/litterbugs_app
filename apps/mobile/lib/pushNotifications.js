@@ -52,9 +52,9 @@ const configureAndroidChannel = async () => {
       lightColor: colors.primary,
     }
   );
-  // The daily "New litter near you" alert, on its own channel so it can be muted by itself.
+  // The opt-in "near you" alerts, on their own channel so they can be muted by themselves.
   await Notifications.setNotificationChannelAsync(NEARBY_REPORTS_CHANNEL, {
-    name: 'New litter near you',
+    name: 'Near you',
     importance: Notifications.AndroidImportance.DEFAULT,
     lightColor: colors.primary,
   });

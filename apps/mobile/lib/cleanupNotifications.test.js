@@ -154,3 +154,20 @@ describe('contributor completion and serious exception notifications', () => {
     expect(cleanupNotificationDestination({ event_type: 'admin_cleanup_needed' })).toEqual({ url: 'https://litterbugs.app/admin', label: 'Open admin inbox' });
   });
 });
+
+describe('notification wording matches the phone push', () => {
+  it('shows the same title and message in Updates as the push sends, for every notification', async () => {
+    const { CLEANUP_NOTIFICATION_COPY } = await import('./cleanupNotifications');
+    const { NOTIFICATION_EVENT_TYPES, notificationContent } = await import('../../../supabase/functions/_shared/notification-content.ts');
+    for (const eventType of NOTIFICATION_EVENT_TYPES) {
+      expect(CLEANUP_NOTIFICATION_COPY[eventType], eventType).toBeDefined();
+      expect({ title: CLEANUP_NOTIFICATION_COPY[eventType].title, body: CLEANUP_NOTIFICATION_COPY[eventType].message }, eventType)
+        .toEqual(notificationContent(eventType));
+    }
+  });
+
+  it('opens the completed cleanup when tapped', () => {
+    expect(cleanupNotificationDestination({ event_type: 'cleanup_completed_nearby', report_id: 'report', cleanup_attempt_id: 'cleanup' }))
+      .toMatchObject({ name: 'App', params: { screen: 'Map', params: { reportId: 'report' } } });
+  });
+});
