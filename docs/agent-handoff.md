@@ -24,6 +24,19 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (signed-in Clarity session located by owner)
+
+- Owner screenshot confirms Clarity is signed in in normal Chrome. Earlier
+  sign-in guidance targeted the isolated MCP profile and was misleading.
+  Current connector config contains --isolated; fresh profile remains signed out.
+- Tested installed official chrome-devtools-mcp 1.13.0 --autoConnect through
+  its standard MCP interface, without changing config or Chrome settings.
+  It cannot attach: main Chrome DevToolsActivePort absent; remote debugging
+  must be enabled via chrome://inspect/#remote-debugging and owner-approved.
+- No fresh recordings reviewed. No cookie/credential copying, global settings
+  changes, browser closures, website changes or deployment. Normal signed-in
+  Chrome session preserved. Local map tracking 2f6c8e0 remains undeployed.
+
 ### 2026-11-12 — Codex (Clarity browser timeout investigated)
 
 - Earlier failure occurred on Emulation.setFocusEmulationEnabled, before page
