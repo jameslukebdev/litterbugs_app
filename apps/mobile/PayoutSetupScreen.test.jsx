@@ -20,7 +20,13 @@ vi.mock('./components/BrandBug', () => ({ default: () => null }));
 vi.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ bottom: 0 }) }));
 vi.mock('./lib/session', () => ({ useSession: () => ({ user: { id: 'test-member' } }) }));
 vi.mock('./lib/funding', () => ({
-  loadPayoutStatus: vi.fn(), createPayoutOnboardingLink: vi.fn(), createPayoutDashboardLink: vi.fn(),
+  loadPayoutStatus: vi.fn(), createPayoutOnboardingLink: vi.fn(), createPayoutDashboardLink: vi.fn(), createPayoutSession: vi.fn(),
+}));
+vi.mock('./lib/analytics', () => ({ trackParticipation: vi.fn() }));
+vi.mock('@stripe/stripe-react-native', () => ({
+  loadConnectAndInitialize: vi.fn(params => ({ params })),
+  ConnectComponentsProvider: ({ children }) => children,
+  ConnectAccountOnboarding: ({ title }) => <div data-embedded-setup>{title}</div>,
 }));
 vi.mock('expo-web-browser', () => ({
   WebBrowserPresentationStyle: { FORM_SHEET: 'formSheet' },
@@ -33,7 +39,7 @@ vi.mock('./lib/payoutWorkflowGate', () => ({
 }));
 
 import PayoutSetupScreen from './PayoutSetupScreen';
-import { createPayoutDashboardLink, createPayoutOnboardingLink, loadPayoutStatus } from './lib/funding';
+import { createPayoutDashboardLink, createPayoutOnboardingLink, createPayoutSession, loadPayoutStatus } from './lib/funding';
 import { openAuthSessionAsync, openBrowserAsync } from 'expo-web-browser';
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -41,6 +47,7 @@ let root, host;
 beforeEach(() => {
   vi.clearAllMocks();
   host = document.createElement('div'); root = createRoot(host);
+  createPayoutSession.mockResolvedValue(null);
   createPayoutOnboardingLink.mockResolvedValue({ url: 'https://example.com/test-onboarding' });
   createPayoutDashboardLink.mockResolvedValue({ url: 'https://example.com/test-dashboard' });
   openAuthSessionAsync.mockResolvedValue({ type: 'cancel' });
@@ -54,16 +61,26 @@ async function render(status) {
     navigation={{ addListener: () => () => {}, goBack: vi.fn() }} />));
 }
 
-it('requires the first eligibility confirmation before opening the secure payout form', async () => {
+it('starts setup with one tap and states the eligibility confirmation instead of a checkbox', async () => {
   await render({ onboardingStatus: 'not_started', payoutsEnabled: false, requirementsDue: [] });
-  expect(button('Set up payouts').disabled).toBe(true);
-  await act(() => host.querySelector('[role="checkbox"]').click());
+  expect(host.querySelector('[role="checkbox"]')).toBeNull();
+  expect(host.textContent).toContain('By continuing, you confirm you are at least 18');
   expect(button('Set up payouts').disabled).toBe(false);
   await act(() => button('Set up payouts').click());
+  // No embedded session offered: falls back to Stripe's hosted page.
   expect(createPayoutOnboardingLink).toHaveBeenCalledOnce();
   expect(openAuthSessionAsync).toHaveBeenCalledWith('https://example.com/test-onboarding',
     'litterbugs://stripe-onboarding-return', expect.objectContaining({ createTask: false }));
   expect(createPayoutDashboardLink).not.toHaveBeenCalled();
+});
+
+it('shows Stripe’s form inside the app when the server offers an embedded session', async () => {
+  createPayoutSession.mockResolvedValue({ clientSecret: 'test_secret', publishableKey: 'pk_test_fixture' });
+  await render({ onboardingStatus: 'not_started', payoutsEnabled: false, requirementsDue: [] });
+  await act(() => button('Set up payouts').click());
+  expect(host.querySelector('[data-embedded-setup]')).not.toBeNull();
+  expect(createPayoutOnboardingLink).not.toHaveBeenCalled();
+  expect(openAuthSessionAsync).not.toHaveBeenCalled();
 });
 
 it('lets an already-confirmed member resume missing-information setup without another checkbox', async () => {

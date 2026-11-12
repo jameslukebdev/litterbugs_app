@@ -59,8 +59,10 @@ export async function cleanerOnboardingResponse(request: Request, deps = depende
   const returnTarget: StripeOnboardingReturnTarget = body.returnTarget === "web"
     ? "web"
     : "mobile";
-  if (mode === "session" && body.returnTarget !== "web") {
-    return jsonResponse({ error: "Embedded payout setup is available on the website" }, 400);
+  // Embedded payout setup runs on the website and, from app builds that carry Stripe's
+  // embedded Connect components, inside the app. Both must say which they are.
+  if (mode === "session" && body.returnTarget !== "web" && body.returnTarget !== "mobile") {
+    return jsonResponse({ error: "Embedded payout setup needs a return target" }, 400);
   }
   if ((mode === "link" || mode === "session") && body.confirmAge18 !== true) {
     return jsonResponse({ error: "You must confirm that you are at least 18" }, 400);

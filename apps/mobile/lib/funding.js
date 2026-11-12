@@ -58,6 +58,17 @@ export async function createPayoutOnboardingLink() {
   return data;
 }
 
+// A short-lived session for Stripe's embedded payout setup, shown inside the app.
+// Returns null when the server does not offer it to the app, so the caller can fall
+// back to Stripe's hosted page.
+export async function createPayoutSession() {
+  const { data, error } = await supabase.functions.invoke('create-cleaner-onboarding-link', {
+    body: { mode: 'session', returnTarget: 'mobile', confirmAge18: true },
+  });
+  if (error || !data?.clientSecret || !data?.publishableKey) return null;
+  return data;
+}
+
 export async function createPayoutDashboardLink() {
   const { data, error } = await supabase.functions.invoke('create-cleaner-onboarding-link', {
     body: { mode: 'dashboard' },

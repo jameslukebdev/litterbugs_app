@@ -70,13 +70,19 @@ Deno.test('embedded session is restricted to the caller-owned account and only o
   assert(!body.url && !body.secretKey && !body.accountId);
 });
 
-Deno.test('signed-out, anonymous, disabled payments, unconfirmed age, and native session calls cannot create sessions', async () => {
+Deno.test('the app can create an embedded session', async () => {
+  const f = fixture();
+  assert((await f.call({ returnTarget: 'mobile' })).status === 200);
+  assert(f.calls.session);
+});
+
+Deno.test('signed-out, anonymous, disabled payments, unconfirmed age, and untargeted session calls cannot create sessions', async () => {
   for (const [change, body, status] of [
     [(f: ReturnType<typeof fixture>) => { f.signedIn = false; }, {}, 401],
     [(f: ReturnType<typeof fixture>) => { f.anonymous = true; }, {}, 401],
     [(f: ReturnType<typeof fixture>) => { f.payments = false; }, {}, 409],
     [() => {}, { confirmAge18: false }, 400],
-    [() => {}, { returnTarget: 'mobile' }, 400],
+    [() => {}, { returnTarget: 'elsewhere' }, 400],
   ] as const) {
     const f = fixture(); change(f);
     assert((await f.call(body)).status === status);

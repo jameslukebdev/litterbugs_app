@@ -7,7 +7,10 @@ import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { createPayoutDashboardLink, createPayoutOnboardingLink, loadPayoutStatus } from './lib/funding';
+import { ConnectAccountOnboarding, ConnectComponentsProvider, loadConnectAndInitialize } from '@stripe/stripe-react-native';
+
+import { createPayoutDashboardLink, createPayoutOnboardingLink, createPayoutSession, loadPayoutStatus } from './lib/funding';
+import { trackParticipation } from './lib/analytics';
 import { payoutSetupPresentation } from './lib/payoutSetupPresentation';
 import {
   cancelPayoutWorkflow,
@@ -53,14 +56,16 @@ function PayoutSetupController({ navigation, route }) {
     const timer = setTimeout(() => setShowBusy(true), 400);
     return () => clearTimeout(timer);
   }, [busy]);
-  const [eligibleConfirmed, setEligibleConfirmed] = useState(false);
+  // Stripe's setup form, shown inside the app. Null while it is closed.
+  const [connect, setConnect] = useState(null);
   const setupNotice = payoutSetupPresentation({ status, error: statusError, waiting });
   const checkingSetup = setupNotice?.kind === 'pending';
   const enabled = status?.payoutsEnabled === true;
   const updatingRequiredDetails = enabled && setupNotice?.kind === 'action_required';
   const openingOnboarding = !enabled || updatingRequiredDetails;
+  // Pressing the button is the confirmation: the line under it says so. One tap fewer.
   const needsEligibilityConfirmation = openingOnboarding && status?.age18Confirmed !== true;
-  const eligibilityReady = !needsEligibilityConfirmation || eligibleConfirmed;
+  const eligibilityReady = true;
 
   const refresh = useCallback(async () => {
     if (refreshBusy.current) return;
@@ -111,10 +116,62 @@ function PayoutSetupController({ navigation, route }) {
     completePendingWorkflow();
   }, [completePendingWorkflow, status?.payoutsEnabled]);
 
+  // After the member leaves Stripe's form: check the account and say what happened.
+  const finishSetup = async () => {
+      const nextStatus = await waitForPayoutConnection(loadPayoutStatus);
+      if (!mounted.current) return;
+      const connected = isPayoutConnectionReady(nextStatus);
+      if (connected) connectionSuccessAlertRef.current = true;
+      if (nextStatus) setStatus(nextStatus);
+      if (connected) {
+        Alert.alert(
+          'Ready to receive rewards',
+          workflowToken
+            ? 'Your payout account is ready. Continue to return to the litter report and finish claiming the cleanup.'
+            : 'Approved cleanups and reporter earnings can now be paid out to you.',
+          [{
+            text: workflowToken ? 'Continue to cleanup' : 'Done',
+            onPress: () => {
+              connectionSuccessAlertRef.current = false;
+              completePendingWorkflow();
+            },
+          }],
+          { cancelable: false }
+        );
+      } else {
+        setWaiting(true);
+        const notice = payoutSetupPresentation({ status: nextStatus, waiting: true });
+        Alert.alert(
+          notice.title,
+          [notice.detail, ...notice.requirements.map(item => `• ${item}`)].join('\n\n')
+        );
+      }
+  };
+
   const openSetup = async () => {
     if (busy || loading || statusError || !status || !eligibilityReady) return;
     try {
       setBusy(true);
+      if (openingOnboarding) {
+        trackParticipation('payout', 'started');
+        // Prefer Stripe's form inside the app; fall back to Stripe's hosted page.
+        const session = await createPayoutSession();
+        if (!mounted.current) return;
+        if (session) {
+          let first = session.clientSecret;
+          const instance = loadConnectAndInitialize({
+            publishableKey: session.publishableKey,
+            // Stripe asks again when a session runs out; hand over the first one once.
+            fetchClientSecret: async () => {
+              if (first) { const secret = first; first = null; return secret; }
+              return (await createPayoutSession())?.clientSecret;
+            },
+            appearance: { variables: { colorPrimary: colors.primary, colorText: colors.ink, colorBackground: colors.white, borderRadius: '14px' } },
+          });
+          setConnect(instance);
+          return;
+        }
+      }
       const link = openingOnboarding
         ? await createPayoutOnboardingLink()
         : await createPayoutDashboardLink();
@@ -125,38 +182,8 @@ function PayoutSetupController({ navigation, route }) {
       } else {
         const result = await WebBrowser.openAuthSessionAsync(link.url, PAYOUT_ONBOARDING_RETURN_URL, PAYOUT_BROWSER_OPTIONS);
         if (!mounted.current) return;
-        if (result.type === 'success') {
-          const nextStatus = await waitForPayoutConnection(loadPayoutStatus);
-          if (!mounted.current) return;
-          const connected = isPayoutConnectionReady(nextStatus);
-          if (connected) connectionSuccessAlertRef.current = true;
-          if (nextStatus) setStatus(nextStatus);
-          if (connected) {
-            Alert.alert(
-              'Ready to receive rewards',
-              workflowToken
-                ? 'Your payout account is ready. Continue to return to the litter report and finish claiming the cleanup.'
-                : 'Approved cleanups and reporter earnings can now be paid out to you.',
-              [{
-                text: workflowToken ? 'Continue to cleanup' : 'Done',
-                onPress: () => {
-                  connectionSuccessAlertRef.current = false;
-                  completePendingWorkflow();
-                },
-              }],
-              { cancelable: false }
-            );
-          } else {
-            setWaiting(true);
-            const notice = payoutSetupPresentation({ status: nextStatus, waiting: true });
-            Alert.alert(
-              notice.title,
-              [notice.detail, ...notice.requirements.map(item => `• ${item}`)].join('\n\n')
-            );
-          }
-        } else {
-          await refresh();
-        }
+        if (result.type === 'success') await finishSetup();
+        else await refresh();
       }
     } catch (error) {
       Alert.alert('Payout setup unavailable', userMessage(error, 'Payout setup is unavailable. Please try again.'));
@@ -166,7 +193,25 @@ function PayoutSetupController({ navigation, route }) {
   };
 
 
+  const closeConnect = async () => {
+    setConnect(null);
+    setBusy(true);
+    try { await finishSetup(); } catch { await refresh(); } finally { if (mounted.current) setBusy(false); }
+  };
+
   return (
+    <>
+    {connect ? (
+      <ConnectComponentsProvider connectInstance={connect}>
+        <ConnectAccountOnboarding
+          title="Payout setup"
+          // Ask only for what Stripe needs now, not what it might need later.
+          collectionOptions={{ fields: 'currently_due', futureRequirements: 'omit' }}
+          onExit={closeConnect}
+          onLoadError={() => { setConnect(null); Alert.alert('Payout setup unavailable', 'Stripe’s form couldn’t load. Check your connection and try again.'); }}
+        />
+      </ConnectComponentsProvider>
+    ) : null}
     <ScrollView style={{ backgroundColor: colors.white }} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]}>
       {setupNotice ? (
         <View style={[styles.card, styles.notice]} accessibilityLiveRegion="polite">
@@ -187,44 +232,30 @@ function PayoutSetupController({ navigation, route }) {
       <Text style={styles.text}>
         {enabled
           ? 'Use this account for cleanup and reporter rewards. Stripe sends rewards to your connected payout account.'
-          : workflowCopy?.text || 'Receive cleanup and reporter rewards in your bank account. We’ll open a secure form with Stripe to verify your identity and bank details. Have your phone nearby for a verification code.'}
+          : workflowCopy?.text || 'Rewards go straight to your bank. Setup takes about 3 minutes and happens right here, on a secure form from Stripe.'}
       </Text>
 
-      {/* Website payout setup: the three steps, with the current one marked. */}
+      {/* What to have ready, so nobody starts and then has to stop and look for something. */}
       {!enabled ? (
         <View style={styles.steps}>
+          <Text style={styles.readyTitle}>Have these ready</Text>
           {[
-            ['Confirm you can be paid', null],
-            ['Verify your name and choose your bank', 'Then review and accept Stripe’s terms. Phone verification is part of Stripe’s setup.'],
-            ['Get paid', null],
-          ].map(([label, detail], index) => {
-            const current = index === (needsEligibilityConfirmation ? 0 : 1);
-            return (
-              <View key={label} style={styles.step}>
-                <View style={[styles.stepNumber, current && styles.stepNumberCurrent]}><Text style={[styles.stepNumberText, current && styles.stepNumberTextCurrent]}>{index + 1}</Text></View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.stepLabel}>{label}</Text>
-                  {detail ? <Text style={styles.stepDetail}>{detail}</Text> : null}
-                </View>
+            ['phone-portrait-outline', 'Your phone', 'Stripe texts you a code.'],
+            ['person-outline', 'Your details', 'Legal name, date of birth and address. Stripe may ask for the last 4 digits of your SSN.'],
+            ['card-outline', 'Where to pay you', 'Your bank account or debit card.'],
+          ].map(([icon, label, detail]) => (
+            <View key={label} style={styles.step}>
+              <Ionicons name={icon} size={22} color={colors.primary} style={{ marginTop: 2 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.stepLabel}>{label}</Text>
+                <Text style={styles.stepDetail}>{detail}</Text>
               </View>
-            );
-          })}
+            </View>
+          ))}
         </View>
       ) : null}
       </> : null}
 
-      {needsEligibilityConfirmation ? (
-        <TouchableOpacity
-          disabled={busy || loading || statusError}
-          style={styles.confirmRow}
-          onPress={() => setEligibleConfirmed((value) => !value)}
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: eligibleConfirmed }}
-        >
-          <Ionicons name={eligibleConfirmed ? 'checkbox' : 'square-outline'} size={24} color={colors.primary} />
-          <Text style={styles.confirmText}>I confirm that I am at least 18 and eligible to receive payouts in the United States.</Text>
-        </TouchableOpacity>
-      ) : null}
 
       <TouchableOpacity
         style={[enabled ? styles.secondaryButton : styles.button, (!status || loading || statusError || !eligibilityReady) && styles.disabled]}
@@ -237,6 +268,7 @@ function PayoutSetupController({ navigation, route }) {
         <Text style={enabled ? styles.secondaryText : styles.buttonText}>{updatingRequiredDetails ? 'Update payout details' : enabled ? 'Review payout details' : setupNotice?.kind === 'action_required' ? 'Continue payout setup' : checkingSetup ? 'Review payout setup' : 'Set up payouts'}</Text>
         {showBusy ? <ActivityIndicator size="small" color={enabled ? colors.primary : colors.white} style={styles.buttonSpinner} /> : null}
       </TouchableOpacity>
+      {needsEligibilityConfirmation ? <Text style={styles.confirmNote}>By continuing, you confirm you are at least 18 and can be paid in the United States.</Text> : null}
       <View style={styles.trustRow}><Ionicons name="lock-closed-outline" size={13} color={colors.muted} /><Text style={styles.trustText}><Text style={{ fontWeight: '800', color: colors.green }}>Secured by Stripe.</Text> Stripe checks your identity and sends your payouts. Litterbugs never receives your full bank-account number.</Text></View>
       {!enabled ? <View style={[styles.card, styles.expectations]}>
         <Text style={styles.cardTitle}>What to expect</Text>
@@ -248,6 +280,7 @@ function PayoutSetupController({ navigation, route }) {
 
 
     </ScrollView>
+    </>
   );
 }
 
@@ -265,19 +298,21 @@ const styles = StyleSheet.create({
   row: { marginTop: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 9 },
   rowText: { flex: 1, color: colors.body, fontSize: 14, lineHeight: 20 },
   confirmRow: { width: '100%', maxWidth: 420, marginTop: 18, flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  confirmNote: { marginTop: 10, color: colors.muted, fontSize: 13, lineHeight: 19, textAlign: 'center' },
   confirmText: { flex: 1, color: colors.body, fontSize: 14, lineHeight: 20 },
   buttonSpinner: { position: 'absolute', right: 12 },
   statusCheck: { minHeight: 24, justifyContent: 'center' },
   statusCheckText: { color: colors.muted, fontSize: 12 },
   trustRow: { marginTop: 14, flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   trustText: { flex: 1, color: colors.muted, fontSize: 13, lineHeight: 19 },
-  steps: { marginTop: 18, gap: 14 },
+  steps: { marginTop: 18, gap: 12 },
+  readyTitle: { color: colors.ink, fontSize: 15, fontFamily: fonts.heading },
   step: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   stepNumber: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.white },
   stepNumberCurrent: { borderColor: colors.green },
   stepNumberText: { color: colors.muted, fontSize: 13, fontWeight: '800' },
   stepNumberTextCurrent: { color: colors.green },
-  stepLabel: { marginTop: 3, color: colors.ink, fontSize: 15, lineHeight: 21, fontWeight: '700' },
+  stepLabel: { marginTop: 0, color: colors.ink, fontSize: 15, lineHeight: 21, fontWeight: '700' },
   stepDetail: { marginTop: 2, color: colors.muted, fontSize: 13, lineHeight: 19 },
   button: { width: '100%', maxWidth: 420, minHeight: 54, marginTop: 22, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary },
   buttonText: { color: colors.white, fontSize: 16, fontWeight: '800' },
