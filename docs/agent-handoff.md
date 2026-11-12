@@ -24,6 +24,16 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (cleanup-hours parity check)
+
+- Source audit: native CleanupSubmissionScreen already has optional decimal
+  hours input (How long did it take? (hrs), example 1.5). Website evidence
+  panel and submission action only collect bags/items and weight; no hours
+  entry, draft field or duration passed by that form yet.
+- CompletedCleanup already displays recorded duration_minutes as hours.
+  Answered owner's question; no workflow changes, push, deployment or DB
+  actions. Concurrent work preserved.
+
 ### 2026-11-12 — Codex (confirmed Facebook page added locally)
 
 - Owner supplied Facebook screenshot: Litterbugs Community Cleanup,
