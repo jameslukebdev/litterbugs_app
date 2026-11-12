@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { IoChevronDown, IoMenuOutline, IoPhonePortraitOutline, IoMapOutline } from 'react-icons/io5';
-import Link from 'next/link';
+import { ResponsiveLink as Link } from './responsive-link';
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 
 import { AppLink } from '@/components/app-link';
@@ -33,7 +33,6 @@ function HeaderLink({
   return (
     <Link
       href={href}
-      prefetch={true}
       className={styles.navLink}
       aria-current={activePath === href.split('?')[0] ? 'page' : undefined}
       onClick={onNavigate}

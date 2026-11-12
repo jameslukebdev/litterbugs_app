@@ -3,7 +3,7 @@
 
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { HeaderAreaSearch } from '../header-area-search';
-import Link from 'next/link';
+import { ResponsiveLink as Link } from '../responsive-link';
 import { AVAILABLE_CLEANUPS_MAP_HREF } from '@/lib/home-map-link';
 import styles from './report-carousel.module.css';
 import { photoBatchClass, PhotoBatchFallback, usePhotoBatch } from '../photo-batch';
@@ -11,6 +11,7 @@ import { photoBatchClass, PhotoBatchFallback, usePhotoBatch } from '../photo-bat
 export function ReportCarousel({ children, enabled, className }: { children: ReactNode; enabled: boolean; className: string }) {
   const [areaSearchOpen, setAreaSearchOpen] = useState(false);
   const track = useRef<HTMLDivElement>(null);
+  const scrollTarget = useRef<number | null>(null);
   usePhotoBatch(track);
   const cocoon = useRef<HTMLImageElement>(null);
   const id = useId();
@@ -30,18 +31,27 @@ export function ReportCarousel({ children, enabled, className }: { children: Rea
     const node = track.current;
     if (!enabled || !node) return;
     const update = () => setEdges({ start: node.scrollLeft < 2, end: node.scrollLeft + node.clientWidth >= node.scrollWidth - 2 });
-    const observer = new ResizeObserver(update);
+    const resetTarget = () => { scrollTarget.current = null; };
+    const observer = new ResizeObserver(() => { resetTarget(); update(); });
     observer.observe(node);
     node.addEventListener('scroll', update, { passive: true });
+    for (const event of ['scrollend', 'pointerdown', 'wheel', 'keydown']) node.addEventListener(event, resetTarget, { passive: true });
+    resetTarget();
     update();
-    return () => { observer.disconnect(); node.removeEventListener('scroll', update); };
+    return () => {
+      observer.disconnect(); node.removeEventListener('scroll', update);
+      for (const event of ['scrollend', 'pointerdown', 'wheel', 'keydown']) node.removeEventListener(event, resetTarget);
+    };
   }, [enabled, children]);
   if (!enabled) return <div ref={track} className={`${className} ${photoBatchClass}`}>{children}<PhotoBatchFallback /></div>;
   function move(direction: number) {
     const node = track.current;
     if (!node) return;
     const card = node.firstElementChild?.getBoundingClientRect().width ?? node.clientWidth;
-    node.scrollBy({ left: direction * (card + 22), behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+    // Continue from the requested destination, even while the previous scroll is moving.
+    const left = Math.max(0, Math.min(node.scrollWidth - node.clientWidth, (scrollTarget.current ?? node.scrollLeft) + direction * (card + 22)));
+    scrollTarget.current = left;
+    node.scrollTo({ left, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
   }
   return <section className={styles.carousel} aria-label="Reports needing a cleanup" aria-roledescription="carousel">
     <div className={styles.heading}>

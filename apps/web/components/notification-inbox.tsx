@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { ResponsiveLink } from './responsive-link';
 import { AccountSectionSkeleton } from './account-section-skeleton';
 import { IoChevronForward, IoNotificationsOutline } from 'react-icons/io5';
 import { BrandBug } from './brand-bug';
@@ -108,5 +109,5 @@ export function NotificationLink({ userId, className = '' }: { userId: string | 
     })().catch(() => { /* Keep the last known unread count until a successful refresh. */ });
     return () => { cancelled = true; };
   }, [userId, refresh]);
-  return <Link className={`notification-link ${className}`} href="/account/notifications" title="Notifications" aria-label={count ? `Notifications, ${count} unread` : userId ? 'Notifications' : 'Updates'}><IoNotificationsOutline aria-hidden />{count ? <span className="notification-count">{count > 99 ? '99+' : count}</span> : null}</Link>;
+  return <ResponsiveLink className={`notification-link ${className}`} href="/account/notifications" title="Notifications" aria-label={count ? `Notifications, ${count} unread` : userId ? 'Notifications' : 'Updates'}><IoNotificationsOutline aria-hidden />{count ? <span className="notification-count">{count > 99 ? '99+' : count}</span> : null}</ResponsiveLink>;
 }

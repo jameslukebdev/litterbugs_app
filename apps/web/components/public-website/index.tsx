@@ -7,7 +7,7 @@ import { CardPhotoSwitch } from './card-photo-switch';
 import { ReportCarousel } from './report-carousel';
 import { ReportCardContent } from '../report-card-content';
 import { PublicPhoto } from './public-photo';
-import Link from 'next/link';
+import { ResponsiveLink as Link } from '../responsive-link';
 import type { ReactNode } from 'react';
 import { PublicSiteHeader, type PublicPath } from '../public-site-header';
 import { PublicSiteFooter } from '../public-site-footer';

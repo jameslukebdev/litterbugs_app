@@ -24,6 +24,30 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (homepage button responsiveness follow-up, local only)
+
+- Owner requested broader homepage button checks. Added ResponsiveLink: original
+  labels/layout stay intact, pending navigation gets the existing subtle pulse,
+  full destination prefetch starts on mouse/focus/touch intent. Report cards keep
+  viewport prefetch disabled; hidden menu links no longer force full prefetch.
+  Applied to homepage actions/map/pins/cards/header/footer; signed-in Profile now
+  uses a real prefetchable account link; notification bell uses the same feedback.
+- Fixed rapid carousel clicks losing steps during smooth scroll: accumulate the
+  intended target, clamp at ends, reset after manual scroll/scrollend/resize.
+  Card photos warm both neighbors on mouse/touch/focus and prioritize the selected
+  image on click. Existing grouped photo reveal and reduced motion remain intact.
+-46 focused tests pass, TypeScript/scoped lint/diff check pass. Browser local3000:
+  desktop1440 and phone390 render without overflow/overlay/console errors; menus,
+  search focus, login dialog, photo switch work. Two rapid carousel clicks settle
+  at653px (two326.47px steps). Choose a spot pending cue appears at first18ms sample
+  with unchanged label. This is one local response sample, not production speed.
+- Production guest baseline samples: Report trash155ms / report card214ms to
+  route shell, with no button cue; destination data readiness measured separately.
+  All production visits excluded from analytics. Store/social hrefs preserved;
+  no actual sign-in, preference writes, money submissions or DB changes tested.
+- No deploy or push; previous live65a80e9 remains. Local3000 left running for review.
+  Preserve concurrent mobile/notification/preview edits and handoff additions.
+
 ### 2026-11-12 — Codex (approved button/save/map fixes deployed)
 
 - Owner approved deployment and GitHub push. Live source65a80e9 on

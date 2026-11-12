@@ -8,3 +8,9 @@ export function PendingLinkContent({ children }: { children: ReactNode }) {
   const { pending } = useLinkStatus();
   return <span className={styles.content} data-pending={pending || undefined} aria-busy={pending || undefined}>{children}</span>;
 }
+
+/** Out of flow so cards, icons and existing link layouts keep their geometry. */
+export function PendingLinkIndicator() {
+  const { pending } = useLinkStatus();
+  return <span className={styles.indicator} data-pending={pending || undefined} aria-busy={pending || undefined} aria-hidden="true" />;
+}

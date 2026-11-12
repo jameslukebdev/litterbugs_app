@@ -87,11 +87,10 @@ describe('PublicAccountAction', () => {
     currentUser.value = { id: 'member-id', email: 'member@example.com' };
     render(<PublicAccountAction />);
 
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Profile' })).toBeTruthy());
-    const accountButton = screen.getByRole('button', { name: 'Profile' });
+    await waitFor(() => expect(screen.getByRole('link', { name: 'Profile' })).toBeTruthy());
+    const accountButton = screen.getByRole('link', { name: 'Profile' });
     expect(accountButton.classList.contains('public-account-control-signed-out')).toBe(false);
-    fireEvent.click(accountButton);
-    expect(push).toHaveBeenCalledWith('/account');
+    expect(accountButton.getAttribute('href')).toBe('/account');
   });
 });
 
@@ -106,7 +105,7 @@ it('omits the compact map profile button for signed-out visitors', async () => {
   const { container } = render(<PublicAccountAction compactOnMobile />);
   await screen.findByRole('button', { name: 'Sign in' });
   const mobile = within(container.querySelector<HTMLElement>('.mobile-map-account')!);
-  expect(mobile.queryByRole('button', { name: 'Your profile' })).toBeNull();
+  expect(mobile.queryByRole('link', { name: 'Your profile' })).toBeNull();
   expect(mobile.getByRole('link', { name: 'Updates' }).getAttribute('href')).toBe('/account/notifications');
 });
 
@@ -115,8 +114,7 @@ it('opens the account from the compact map header for a signed-in member', async
   const { container } = render(<PublicAccountAction compactOnMobile />);
   const mobile = within(container.querySelector<HTMLElement>('.mobile-map-account')!);
   await mobile.findByRole('link', { name: 'Notifications, 3 unread' });
-  fireEvent.click(mobile.getByRole('button', { name: 'Your profile' }));
-  expect(push).toHaveBeenCalledWith('/account');
+  expect(mobile.getByRole('link', { name: 'Your profile' }).getAttribute('href')).toBe('/account');
 });
 
 
@@ -129,7 +127,7 @@ it('keeps the known photo across a header remount while auth refreshes', async (
   const second = render(<PublicAccountAction />);
   expect(second.container.querySelector('img')?.getAttribute('src')).toBe('https://example.com/avatar.jpg');
   expect(second.container.querySelector('.public-account-initials')?.textContent).toBe('');
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Profile' })).toBeTruthy());
+  await waitFor(() => expect(screen.getByRole('link', { name: 'Profile' })).toBeTruthy());
 });
 
 

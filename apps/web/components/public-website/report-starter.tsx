@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element -- tiny decorative bug mark, like BrandBug. */
 'use client';
-import Link from 'next/link';
+import { ResponsiveLink as Link } from '../responsive-link';
 import Image from 'next/image';
 import { BrandBug } from '@/components/brand-bug';
 import { AVAILABLE_CLEANUPS_MAP_HREF, REPORT_ENTRY_HREF } from '@/lib/home-map-link';

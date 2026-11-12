@@ -7,7 +7,7 @@ import { Suspense } from 'react';
 import { publicPageMetadata } from '@/lib/public-page-metadata';
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import Link from 'next/link';
+import { ResponsiveLink as Link } from '@/components/responsive-link';
 import { redirect } from 'next/navigation';
 import { legacyMapDestination } from '@/lib/legacy-map-url';
 import { loadLatestCleanup } from '@/lib/latest-cleanup';

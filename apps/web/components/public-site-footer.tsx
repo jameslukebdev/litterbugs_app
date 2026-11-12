@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import Link from 'next/link';
+import { ResponsiveLink as Link } from './responsive-link';
 import { IoChevronUp } from 'react-icons/io5';
 import { AnalyticsPreferences } from './website-analytics';
 import { SocialLinks } from './social-links';
