@@ -1,10 +1,11 @@
-import { FaInstagram, FaTiktok } from 'react-icons/fa6';
+import { FaFacebookF, FaInstagram, FaTiktok } from 'react-icons/fa6';
 import styles from './social-links.module.css';
 
 // Only owner-confirmed profiles belong here.
 const profiles = [
   { name: 'Instagram', href: 'https://www.instagram.com/litterbugs_app/', Icon: FaInstagram },
   { name: 'TikTok', href: 'https://www.tiktok.com/@litterbugs.commun', Icon: FaTiktok },
+  { name: 'Facebook', href: 'https://www.facebook.com/profile.php?id=61573402678573', Icon: FaFacebookF },
 ] as const;
 
 export function SocialLinks({ compact = false }: { compact?: boolean }) {

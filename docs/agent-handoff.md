@@ -24,6 +24,17 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (confirmed Facebook page added locally)
+
+- Owner supplied Facebook screenshot: Litterbugs Community Cleanup,
+  profile.php?id=61573402678573. Added that exact URL to SocialLinks with
+  Font Awesome Facebook brand icon, alongside confirmed Instagram/TikTok.
+- Footer, map footer and mobile drawer share the icon-only component.
+  Scoped lint/diff check pass; CUA confirms all three URLs, 44px targets,
+  no subheading and no overflow on the narrow local preview.
+- No push/deployment or account changes. Local preview remains open.
+  Concurrent native and handoff changes preserved with isolated index.
+
 ### 2026-11-12 — Codex (icon-only social links; Facebook search)
 
 - Removed visible Follow along label from shared SocialLinks and its CSS.
