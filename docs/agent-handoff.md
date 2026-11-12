@@ -24,6 +24,20 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (mint cleanup stats and recorded duration, local)
+
+- Matched the owner's phone reference: pale mint #E2F8F3 surface with #B9E9DD
+  border/dividers, purple outline icons, and aligned bag/item, pound, time stats.
+  Website now reads existing cleanup_submissions.duration_minutes and displays
+  hours like native (one decimal); older cleanups show “time not recorded”.
+- 48 cleanup/report tests pass, including recorded/missing/duration-only cases;
+  scoped ESLint, TypeScript and CSS-module compilation pass. Real local report
+  c9de971b checked at 390px and 320px with no overflow or browser errors. Preview
+  kept open and temporary viewport reset. No deployment, push or DB changes.
+- Read-only cache check found ~3.8 GB Codex updater cache and ~961 MB browser
+  cache under Library/Caches. Nothing deleted; chats/settings/project preserved.
+  Memory pressure normal (1). Other agents' native/launch/handoff work preserved.
+
 ### 2026-11-12 — Codex (cleanup summary restyled locally)
 
 - Restyled CompletedCleanup's About the cleanup panel: soft lavender surface,

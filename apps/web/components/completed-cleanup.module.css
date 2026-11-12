@@ -1,5 +1,5 @@
 /* "Cleanup complete" section in the report sheet. Doubled classes outrank the older globals.css rules. */
-.story.story { padding: 18px; border: 2px solid #e3dff0; border-radius: 20px; background: #f8f7fc; box-shadow: 0 3px 0 #eeeaf8; color: #292932; overflow-wrap: anywhere; }
+.story.story { padding: 18px; border: 1px solid #b9e9dd; border-radius: 20px; background: #e2f8f3; box-shadow: none; color: #292932; overflow-wrap: anywhere; }
 .story.story h3 { margin: 0 0 16px; color: #292932; font-size: 18px; font-weight: 800; line-height: 1.3; }
 .story.story p { margin: 12px 0 0; color: #45434d; font-size: 15px; line-height: 1.5; }
 .story.story h4 { margin: 0 0 10px; }
@@ -28,8 +28,12 @@
 .byline :global(.report-author):focus-visible { outline: 3px solid #5146ed; outline-offset: 4px; border-radius: 8px; }
 
 .paid.paid { display: flex; align-items: center; gap: 6px; color: #8a5a00; font-weight: 800; }
-.facts.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; margin-top: 16px; padding-top: 14px; border-top: 1px solid #e3dff0; font-size: 13px; }
-.facts strong { display: block; margin-bottom: 2px; color: #3f36c4; font-size: 20px; font-weight: 800; line-height: 1.25; }
+.facts.facts { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); margin-top: 16px; padding-top: 14px; border-top: 1px solid #b9e9dd; }
+.fact { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; padding: 0 6px; text-align: center; }
+.fact + .fact { border-left: 1px solid #b9e9dd; }
+.fact svg { flex: none; width: 20px; height: 20px; color: #5146ed; }
+.fact strong { color: #292932; font-size: 22px; font-weight: 800; line-height: 1.25; }
+.fact span { color: #686477; font-size: 12px; line-height: 1.4; }
 
 /* Inside the report's main photo frame: fill it exactly (the frame sets the size and corners). */
 .viewer.fill { width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; }
