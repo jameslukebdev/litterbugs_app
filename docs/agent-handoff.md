@@ -24,6 +24,37 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (approved button/save/map fixes deployed)
+
+- Owner approved deployment and GitHub push. Live source65a80e9 on
+  codex/navigation-map-release-20261112 contains exactly25 web/shared files
+  from tested local commits2f6c8e0,c8ce7b0,6b26f03, based on prior release.
+  Working branch codex/map-first-navigation also pushed through6b26f03.
+- Promoted exact verified production build dpl_2HqQdm5DFN686ELFm1Rom2YfheNs
+  (https://litterbugs-solpk74f6-grant-9890s-projects.vercel.app) to litterbugs.app.
+  Previous live/rollback: dpl_97HKBRMdUPK8wmDAP2CNvLdvNVPy. No DB migrations,
+  dependency changes, native updates or unapproved homepage redesign released.
+- Includes map startup timing/failure diagnostics, unchanged button labels with
+  subtle pending cue, report loading boundaries and streamed related reports,
+  responsive local preference saves during cloud sync, reliable map-type clicks
+  and12s browser-location deadline. Publication proximity checks unchanged.
+-145 targeted tests pass (130 web,10 shared sync,5 profile regression), web/shared
+  TypeScript, scoped lint and remote production build pass. Existing boundary
+  checker rejects four unchanged Stripe files/dependencies already live; no new
+  violation. Build retains pre-existing social-card filesystem tracing warnings.
+- Staged home/report/map HTTP200; local-only photos/hours/loading previews404.
+  Staged cleanup click keeps See this cleanup while aria-busy=true, renders
+  original/result images and six related reports. Temporary staged hostname is
+  intentionally not allowed by Google Maps referrer restrictions; actual live
+  domain renders map/pins and satellite toggle correctly. No key restrictions
+  weakened. Verified live deployment identity, home/map/report HTTP200,390px
+  phone report without overflow, working cleanup link/images, no Opening/Saving
+  labels. Browser console/runtime error scan clean. All browser tests excluded
+  from analytics before scripts; no real preference/profile/financial writes.
+- Root local3000 remains available. Preserve concurrent mobile, notification and
+  preview work; not part of this website release. New telemetry awaits real
+  visitor data for subsequent analytics review.
+
 ### 2026-11-12 — Codex (save/map delays and unchanged button labels fixed locally)
 
 - Owner requested local save/map fixes and no visible technical progress labels.
