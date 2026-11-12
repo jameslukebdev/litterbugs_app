@@ -119,7 +119,8 @@ export default function MapControls(props) {
           >
               {isLocatingReportLocation || isCheckingReportLocation ? (
                 <>
-                  <ActivityIndicator size="small" color={colors.primary} />
+                  {/* Website: the lightning bug glows while your location is found. */}
+                  <BrandBug kind="lightning-bug" size={24} loop />
                   <Text style={[styles.reportLitterButtonText, { flexShrink: 1, textAlign: 'center' }]}>{isCheckingReportLocation ? 'Checking distance…' : 'Finding your location…'}</Text>
                 </>
               ) : (

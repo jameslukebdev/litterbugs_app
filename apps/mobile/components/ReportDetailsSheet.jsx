@@ -5,6 +5,7 @@ import CompletedCleanupStory from '../CompletedCleanupStory';
 import ReportPhotoGallery from './ReportPhotoGallery';
 import { FlowDoneHost, showFlowDone } from './FlowDone';
 import HopOnTrue from './HopOnTrue';
+import FundAmount, { rememberFundBefore } from './FundAmount';
 import BrandBug from './BrandBug';
 import LoadingBee from './LoadingBee';
 import SlideUp from './SlideUp';
@@ -335,10 +336,7 @@ export default function ReportDetailsSheet({ state, actions }) {
                 <Text style={[styles.websiteReportStateText, { color: closed ? colors.muted : state.ink }]}>{statusText}</Text>
               </View>
               {!closed && cleanupState !== 'completed' && funded ? (
-                <View style={styles.websiteReportState}>
-                  <BrandBug kind="bee" size={18} />
-                  <Text style={[styles.websiteReportStateText, { color: colors.yellow }]}>{formatUsd(Number(selectedReport.funded_amount_cents))} in its cleanup fund</Text>
-                </View>
+                <FundAmount reportId={selectedReport.id} cents={Number(selectedReport.funded_amount_cents)} rowStyle={styles.websiteReportState} textStyle={[styles.websiteReportStateText, { color: colors.yellow }]} />
               ) : null}
               {cleanupCardFirst && selectedCleanupAttempt?.claim_expires_at ? (
                 <Text style={styles.cleanerDeadline}>You’re cleaning this one. Send your after photos by {new Date(selectedCleanupAttempt.claim_expires_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}.</Text>
@@ -541,7 +539,7 @@ export default function ReportDetailsSheet({ state, actions }) {
           {selectedReportCanOpenFunding ? (
             <TouchableOpacity
               style={[styles.reportActionButton, styles.reportFundButton]}
-              onPress={() => { setFundTaps(value => value + 1); openFundingContribution({ reportId: selectedReport.id }); }}
+              onPress={() => { setFundTaps(value => value + 1); rememberFundBefore(selectedReport.id, selectedReport.funded_amount_cents); openFundingContribution({ reportId: selectedReport.id }); }}
               disabled={payoutGateBusy}
               accessibilityRole="button"
               accessibilityLabel="Fund cleanup"

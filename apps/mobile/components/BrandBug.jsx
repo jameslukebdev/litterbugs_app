@@ -6,6 +6,7 @@ import { prefersReducedMotion } from '../lib/reduceMotion';
 // The logo bugs, matched to the website's BrandBug. Each bug labels a state
 // or step (ladybug = needs a cleanup, flower = cleaned up), never decoration.
 const BUGS = {
+  ant: require('../assets/bugs/ant.png'),
   bee: require('../assets/bugs/bee.png'),
   butterfly: require('../assets/bugs/butterfly.png'),
   flower: require('../assets/bugs/flower.png'),
@@ -75,17 +76,27 @@ const ENTRANCES = {
  * `playKey`: change it (for example, a counter bumped on press) to make the bug do its move.
  * `entrance`: 'bloom' or 'walk', played once when the bug appears (and again when `entranceKey` changes).
  * `active`: the bug does its move each time this becomes true.
+ * `loop`: repeat the move for as long as this is true.
  * `playOnMount`: also do the move once on arrival.
  * With none of these the bug is a plain still image.
  */
-export default function BrandBug({ kind, size = 20, style, playKey, active, playOnMount = false, entrance = null, entranceKey }) {
+export default function BrandBug({ kind, size = 20, style, playKey, active, loop = false, playOnMount = false, entrance = null, entranceKey }) {
   const source = BUGS[kind];
   // Some test doubles of react-native have no Animated; the bug is then simply still.
   const canAnimate = Boolean(Animated?.Value);
   const move = useRef(canAnimate ? new Animated.Value(0) : null).current;
   const arrive = useRef(canAnimate ? new Animated.Value(entrance ? 0 : 1) : null).current;
   const firstPlay = useRef(true);
-  const animated = canAnimate && (playKey !== undefined || active !== undefined || playOnMount || Boolean(entrance));
+  const animated = canAnimate && (playKey !== undefined || active !== undefined || loop || playOnMount || Boolean(entrance));
+  // `loop`: keep doing the move while something is in progress (the lightning bug while locating).
+  useEffect(() => {
+    const spec = MOVES[kind];
+    if (!loop || !spec || !move || prefersReducedMotion()) return undefined;
+    move.setValue(0);
+    const animation = Animated.loop(Animated.timing(move, { toValue: 1, duration: spec.duration, useNativeDriver: true }));
+    animation.start();
+    return () => { animation.stop(); move.setValue(0); };
+  }, [loop, kind, move]);
   // `active`: the bug does its move each time this turns true (a choice being picked).
   const wasActive = useRef(Boolean(active));
   useEffect(() => {

@@ -30,7 +30,8 @@ describe('report review cleanup-fund choices', () => {
 
   it('shows the fund with the bee and puts Fund before Clean in the footer, with Share in the top bar', () => {
     // Website report sheet: "$6.00 in its cleanup fund" beside the bee.
-    expect(mapScreenSource).toContain('{formatUsd(Number(selectedReport.funded_amount_cents))} in its cleanup fund');
+    expect(mapScreenSource).toContain('<FundAmount reportId={selectedReport.id} cents={Number(selectedReport.funded_amount_cents)}');
+    expect(readFileSync(new URL('../components/FundAmount.jsx', import.meta.url), 'utf8')).toContain("suffix = ' in its cleanup fund'");
     const share = mapScreenSource.indexOf("? 'Share completed cleanup'");
     // The website's sheet has no claim note; the report facts sit between Share and the footer.
     const cleanupCard = mapScreenSource.indexOf('style={styles.websiteAbout}');

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Easing, StyleSheet, Text, View } from 'react-native';
 import { Animated } from '../lib/safeAnimated';
 import { prefersReducedMotion } from '../lib/reduceMotion';
 import BrandBug from './BrandBug';
@@ -51,7 +51,8 @@ export default function MapPin({ kind = 'open', text = null, selected = false, e
   useEffect(() => {
     if (!land) return undefined;
     const posted = entrance === 'posted';
-    const animations = [Animated.timing(land, { toValue: 1, duration: LAND_MS, delay: posted ? 850 : Math.min(order, 8) * 60, useNativeDriver: true })];
+    // One eased glide down into place: no bounce at the end.
+    const animations = [Animated.timing(land, { toValue: 1, duration: LAND_MS, delay: posted ? 850 : Math.min(order, 8) * 60, easing: Easing?.out?.(Easing.cubic), useNativeDriver: true })];
     if (carrier) animations.push(Animated.timing(carrier, { toValue: 1, duration: 1000, useNativeDriver: true }));
     if (ripple) animations.push(Animated.timing(ripple, { toValue: 1, duration: 700, delay: 1100, useNativeDriver: true }));
     const all = Animated.parallel(animations);
@@ -82,17 +83,16 @@ export default function MapPin({ kind = 'open', text = null, selected = false, e
   const small = iconOnly && kind === 'done';
   const size = small ? 30 : PIN_HEIGHT;
   const landing = land ? (entrance === 'posted' ? {
-    opacity: land,
+    opacity: land.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 1, 1] }),
     transform: [
-      { translateY: land.interpolate({ inputRange: [0, 0.75, 1], outputRange: [-28, 2, 0] }) },
-      { scale: land.interpolate({ inputRange: [0, 0.75, 1], outputRange: [0.7, 1.04, 1] }) },
+      { translateY: land.interpolate({ inputRange: [0, 1], outputRange: [-28, 0] }) },
+      { scale: land.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) },
     ],
   } : {
-    opacity: land.interpolate({ inputRange: [0, 0.7, 1], outputRange: [0, 1, 1] }),
+    opacity: land.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 1, 1] }),
     transform: [
-      { translateY: land.interpolate({ inputRange: [0, 0.7, 1], outputRange: [-20, 2, 0] }) },
-      { scale: land.interpolate({ inputRange: [0, 0.7, 1], outputRange: [0.6, 1.04, 1] }) },
-      { rotate: land.interpolate({ inputRange: [0, 0.7, 1], outputRange: ['-8deg', '4deg', '0deg'] }) },
+      { translateY: land.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) },
+      { scale: land.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) },
     ],
   }) : null;
   const Wrap = landing ? Animated.View : View;

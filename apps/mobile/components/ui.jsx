@@ -1,9 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Easing, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import BrandBug from './BrandBug';
 import SteadyButtonContent from './SteadyButtonContent';
 import { hapticSelect, hapticTap } from '../lib/haptics';
+import { Animated } from '../lib/safeAnimated';
+import { prefersReducedMotion } from '../lib/reduceMotion';
 import { colors, fonts } from '../lib/theme';
 
 // Shared building blocks, matched to the website. Screens use these instead of
@@ -111,6 +114,24 @@ export function PullRefresh({ refreshing, onRefresh, ...props }) {
 // Outlined pill tabs: the selected one gets the purple line and darker words,
 // never a tinted fill. `options` is a list of [value, label].
 export function PillTabs({ options, value, onChange, stacked = false, fill = true, style }) {
+  // Website tabs: one outline glides from the tab you were on to the one you pick.
+  const glides = Boolean(Animated?.Value) && fill && !stacked && !prefersReducedMotion();
+  const left = useRef(glides ? new Animated.Value(0) : null).current;
+  const width = useRef(glides ? new Animated.Value(0) : null).current;
+  const frames = useRef({});
+  const placed = useRef(false);
+  const [ready, setReady] = useState(false);
+  const moveTo = (frame, animate) => {
+    if (!frame || !left) return;
+    if (!animate) { left.setValue(frame.x); width.setValue(frame.width); return; }
+    Animated.parallel([
+      Animated.timing(left, { toValue: frame.x, duration: 340, easing: Easing.inOut(Easing.cubic), useNativeDriver: false }),
+      Animated.timing(width, { toValue: frame.width, duration: 340, easing: Easing.inOut(Easing.cubic), useNativeDriver: false }),
+    ]).start();
+  };
+  useEffect(() => {
+    if (glides && placed.current) moveTo(frames.current[value], true);
+  }, [value]);
   return (
     <View style={[styles.tabs, stacked && styles.tabsStacked, !fill && styles.tabsWrap, style]} accessibilityRole="tablist">
       {options.map(([optionValue, label]) => {
@@ -118,8 +139,13 @@ export function PillTabs({ options, value, onChange, stacked = false, fill = tru
         return (
           <TouchableOpacity
             key={optionValue}
-            style={[styles.tab, fill && !stacked && styles.tabFill, selected && styles.tabSelected]}
+            style={[styles.tab, fill && !stacked && styles.tabFill, selected && (ready ? styles.tabSelectedGliding : styles.tabSelected)]}
             onPress={() => { if (!selected) hapticSelect(); onChange(optionValue); }}
+            onLayout={glides ? (event) => {
+              const { x, width: w } = event.nativeEvent.layout;
+              frames.current[optionValue] = { x, width: w };
+              if (optionValue === value) { moveTo({ x, width: w }, false); placed.current = true; setReady(true); }
+            } : undefined}
             accessibilityRole="tab"
             accessibilityState={{ selected }}
           >
@@ -127,6 +153,7 @@ export function PillTabs({ options, value, onChange, stacked = false, fill = tru
           </TouchableOpacity>
         );
       })}
+      {glides && ready ? <Animated.View pointerEvents="none" style={[styles.tabGlider, { left, width }]} /> : null}
     </View>
   );
 }
@@ -153,6 +180,9 @@ const styles = StyleSheet.create({
   tab: { minHeight: 44, paddingHorizontal: 14, paddingVertical: 6, alignItems: 'center', justifyContent: 'center', borderRadius: 22, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.white },
   tabFill: { flex: 1, paddingHorizontal: 6 },
   tabSelected: { borderWidth: 2, borderColor: colors.primary },
+  // While the outline glides, the chosen tab keeps its size but lets the glider draw the edge.
+  tabSelectedGliding: { borderWidth: 2, borderColor: 'transparent' },
+  tabGlider: { position: 'absolute', top: 0, bottom: 0, borderRadius: 22, borderWidth: 2, borderColor: colors.primary },
   tabText: { color: colors.muted, fontSize: 13, lineHeight: 18, fontWeight: '600', textAlign: 'center' },
   tabTextSelected: { color: colors.primaryDark },
 });
