@@ -88,3 +88,50 @@ export function trackParticipationFailure(action, stage, reason) {
   if (!client || !properties) return;
   try { client.capture('participation_failure', properties); } catch { /* optional */ }
 }
+
+// Payout setup, with the website's stage names (apps/web/lib/website-analytics.ts, PAYOUT_STAGES).
+const PAYOUT_STAGES = ['opened', 'form_opened', 'already_ready', 'ready', 'start_failed'];
+export const payoutSetupProperties = stage => (PAYOUT_STAGES.includes(stage) ? { stage } : null);
+export function trackPayoutSetup(stage) {
+  const properties = payoutSetupProperties(stage);
+  if (!client || !properties) return;
+  try { client.capture('payout_setup', properties); } catch { /* optional */ }
+}
+
+// Signing in from the app. `intent` is what the person was trying to do when asked
+// (report, fund, clean) or 'none' when they chose to sign in themselves.
+const SIGN_IN_STAGES = ['shown', 'submitted', 'verification_sent', 'succeeded'];
+const SIGN_IN_METHODS = ['email_login', 'email_signup', 'apple', 'google', 'facebook'];
+const SIGN_IN_INTENTS = ['report', 'fund', 'clean', 'none'];
+export function signInProperties(stage, { intent = 'none', method } = {}) {
+  if (!SIGN_IN_STAGES.includes(stage) || !SIGN_IN_INTENTS.includes(intent)) return null;
+  return SIGN_IN_METHODS.includes(method) ? { stage, intent, method } : { stage, intent };
+}
+// The sign-in screen says why it opened; later stages reuse that reason. "Succeeded" only
+// counts after the screen was shown, so restoring a saved session at launch is not a sign-in.
+let signInIntent = null;
+export function trackSignIn(stage, details = {}) {
+  if (stage === 'shown') signInIntent = details.intent || 'none';
+  else if (signInIntent === null) return;
+  const properties = signInProperties(stage, { ...details, intent: signInIntent });
+  if (stage === 'succeeded') signInIntent = null;
+  if (!client || !properties) return;
+  try { client.capture('app_sign_in', properties); } catch { /* optional */ }
+  // Also a step in that action's funnel, so app and web sign-in drop-off line up.
+  const step = { shown: 'auth_shown', submitted: 'auth_submitted', verification_sent: 'verification_sent', succeeded: 'auth_succeeded' }[stage];
+  if (properties.intent !== 'none') trackParticipation(properties.intent, step);
+}
+
+// The welcome screen and the map tour.
+const FIRST_RUN_STAGES = ['welcome_shown', 'welcome_get_started', 'welcome_sign_in', 'tour_started', 'tour_replayed', 'tour_step', 'tour_finished', 'tour_skipped'];
+const TOUR_STEP_KEYS = ['report', 'spot', 'fund', 'clean'];
+export function firstRunProperties(stage, step) {
+  if (!FIRST_RUN_STAGES.includes(stage)) return null;
+  if (stage !== 'tour_step' && stage !== 'tour_skipped') return { stage };
+  return TOUR_STEP_KEYS.includes(step) ? { stage, step } : null;
+}
+export function trackFirstRun(stage, step) {
+  const properties = firstRunProperties(stage, step);
+  if (!client || !properties) return;
+  try { client.capture('first_run', properties); } catch { /* optional */ }
+}

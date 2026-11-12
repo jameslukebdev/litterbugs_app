@@ -2,6 +2,7 @@ import { formatCleanupHours } from './lib/cleanupImpactPresentation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, usePreventRemove } from '@react-navigation/native';
 import RemotePhoto from './components/RemotePhoto';
+import { PhotoBatchProvider } from './components/PhotoBatch';
 import { createSignedPhotoUrl } from './lib/cleanupReview';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import useFocusedResource from './lib/useFocusedResource';
@@ -246,7 +247,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
     Alert.alert(
       'Approve this cleanup?',
       context?.attempt?.is_paid
-        ? 'This will mark the report as cleaned, end your dispute window, and start the protected reward payout.'
+        ? 'This will mark the report as cleaned, end your dispute window, and start the protected payout.'
         : 'This will mark the litter report as cleaned and preserve it as a completed cleanup.',
       [
         { text: 'Cancel', style: 'cancel' },
@@ -315,7 +316,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
               await clearReviewDraft();
               await retryContext();
               setMode('review');
-              Alert.alert('Dispute submitted', 'A Litterbugs team member will review it. The reward remains paused.');
+              Alert.alert('Dispute submitted', 'A Litterbugs team member will review it. The payout remains paused.');
             } catch (error) {
               Alert.alert('Couldn’t submit dispute', reviewErrorMessage(error));
             } finally {
@@ -348,6 +349,8 @@ export default function CleanupReviewScreen({ navigation, route }) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={90}
     >
+      {/* Before and after photos appear together. */}
+      <PhotoBatchProvider>
       <ScrollView
         contentContainerStyle={[
           styles.content,
@@ -554,6 +557,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
           </View>
         )}
       </ScrollView>
+      </PhotoBatchProvider>
     </KeyboardAvoidingView>
   );
 }

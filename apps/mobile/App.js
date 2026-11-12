@@ -1,4 +1,4 @@
-import { loadDiscoveryMemory, markWelcomeSeen } from './lib/discoveryMemory';
+import { loadDiscoveryMemory } from './lib/discoveryMemory';
 import { retryDeletedAccountDataCleanup } from './lib/deletedAccountData';
 import { authenticatedActionDestination } from './lib/authIntent';
 import { watchNativeProviderAuthorization } from './lib/nativeSocialAuth';
@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
-import { startAnalytics, trackScreen } from './lib/analytics';
+import { startAnalytics, trackScreen, trackSignIn } from './lib/analytics';
 
 startAnalytics();
 import {
@@ -16,17 +16,16 @@ import {
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {
   Alert,
-  Image,
   Linking,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from 'react-native';
 
 import AppTabs from './AppTabs';
+import WelcomeScreen from './WelcomeScreen';
 import { PrimaryButton, TextLink } from './components/ui';
 import BrandedLoadingState from './BrandedLoadingState';
 import AuthScreen from './AuthScreen';
@@ -86,32 +85,6 @@ const navigationLinking = {
     },
   },
 };
-
-function HomeScreen({ navigation }) {
-  const { width, height } = useWindowDimensions();
-  const logoSize = Math.min(width * 0.5, height * 0.45, 360);
-
-  return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[styles.homeContent, { minHeight: height }]}
-      alwaysBounceVertical={false}
-      showsVerticalScrollIndicator={false}
-    >
-      <Image
-        source={require('./assets/LB_Logo_PNG.png')}
-        style={[styles.logo, { width: logoSize, height: logoSize }]}
-        resizeMode="contain"
-      />
-      <Text style={styles.title}>A cleaner community starts here.</Text>
-      <Text style={styles.subtitle}>Report litter, help clean it up, or fund a local cleanup.</Text>
-
-      <PrimaryButton label="Explore the Map" style={styles.primaryButton} onPress={async () => { await markWelcomeSeen(); navigation.replace('App', { screen: 'Map' }); }} />
-      <TextLink tone="muted" label="Sign in or create account" style={styles.secondaryButton} onPress={async () => { await markWelcomeSeen(); navigation.navigate('Auth'); }} />
-      <StatusBar hidden={false} style="dark" backgroundColor={colors.white} />
-    </ScrollView>
-  );
-}
 
 function LoadingScreen({ onLogoReady }) {
   return <BrandedLoadingState logoOnly onLogoReady={onLogoReady} />;
@@ -275,7 +248,7 @@ function AppNavigation({
         // Android pushes slide in from the right like iOS, instead of the system default.
         screenOptions={{ headerShown: false, animation: Platform.OS === 'android' ? 'slide_from_right' : 'default' }}
       >
-        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="Home" component={WelcomeScreen} />
         <Stack.Screen name="App">
           {(screenProps) => (
             <AppTabs {...screenProps} onLaunchReady={onLaunchReady} />
@@ -418,6 +391,7 @@ export default function App() {
         if (!mounted) return;
         normalizeSession(nextSession);
         if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
+        if (event === 'SIGNED_IN') trackSignIn('succeeded');
       }
     );
 
@@ -532,26 +506,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.white,
   },
-  homeContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 32,
-    paddingHorizontal: 24,
-    backgroundColor: colors.white,
-  },
-  logo: { marginBottom: 12 },
-  title: { maxWidth: 330, color: colors.ink, fontSize: 30, lineHeight: 36, fontFamily: fonts.heading, textAlign: 'center' },
-  subtitle: {
-    maxWidth: 330,
-    marginTop: 10,
-    marginBottom: 34,
-    color: colors.muted,
-    fontSize: 16,
-    lineHeight: 23,
-    textAlign: 'center',
-  },
   primaryButton: { width: '100%', maxWidth: 390 },
-  secondaryButton: { minHeight: 52, marginTop: 12 },
   errorState: {
     flexGrow: 1,
     alignItems: 'center',

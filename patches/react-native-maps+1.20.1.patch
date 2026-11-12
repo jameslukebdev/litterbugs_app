@@ -1,27 +1,43 @@
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapMarker.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapMarker.java
-index b755f9b..df002f6 100644
+index b755f9b..e2f6cc2 100644
 --- a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapMarker.java
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapMarker.java
-@@ -9,6 +9,7 @@ import android.graphics.drawable.Animatable;
+@@ -9,8 +9,13 @@ import android.graphics.drawable.Animatable;
  import android.graphics.drawable.Drawable;
  import android.net.Uri;
  import android.view.View;
 +import android.view.ViewGroup;
  import android.widget.LinearLayout;
  import android.animation.ObjectAnimator;
++import android.animation.Animator;
++import android.animation.AnimatorListenerAdapter;
++import android.animation.ValueAnimator;
++import android.view.animation.PathInterpolator;
  import android.util.Property;
-@@ -50,6 +51,7 @@ public class MapMarker extends MapFeature {
-
+ import android.animation.TypeEvaluator;
+ 
+@@ -50,6 +55,7 @@ public class MapMarker extends MapFeature {
+ 
    private LatLng position;
    private String title;
 +  private String markerContentDescription;
    private String snippet;
-
+ 
    private boolean anchorIsSet;
-@@ -171,6 +173,11 @@ public class MapMarker extends MapFeature {
+@@ -69,6 +75,9 @@ public class MapMarker extends MapFeature {
+   private boolean draggable = false;
+   private int zIndex = 0;
+   private float opacity = 1.0f;
++  // Litterbugs: a pin's landing, played on the UI thread so it stays smooth while
++  // JavaScript is busy. While it runs, opacity and anchor updates from props are held back.
++  private ValueAnimator dropAnimator;
+ 
+   private float calloutAnchorX;
+   private float calloutAnchorY;
+@@ -171,6 +180,11 @@ public class MapMarker extends MapFeature {
      return this.identifier;
    }
-
+ 
 +  public void setMarkerContentDescription(String description) {
 +    markerContentDescription = description;
 +    // Google Maps reads this immutable option when the marker is added.
@@ -30,7 +46,115 @@ index b755f9b..df002f6 100644
    public void setTitle(String title) {
      this.title = title;
      if (marker != null) {
-@@ -477,6 +484,7 @@ public class MapMarker extends MapFeature {
+@@ -189,7 +203,8 @@ public class MapMarker extends MapFeature {
+ 
+   public void setRotation(float rotation) {
+     this.rotation = rotation;
+-    if (marker != null) {
++    // Litterbugs: a landing in progress owns the tilt; it settles on this one at the end.
++    if (marker != null && !isDropping()) {
+       marker.setRotation(rotation);
+     }
+     update(false);
+@@ -221,12 +236,86 @@ public class MapMarker extends MapFeature {
+ 
+   public void setOpacity(float opacity) {
+     this.opacity = opacity;
+-    if (marker != null) {
++    if (marker != null && !isDropping()) {
+       marker.setAlpha(opacity);
+     }
+     update(false);
+   }
+ 
++  private boolean isDropping() {
++    return dropAnimator != null && dropAnimator.isStarted();
++  }
++
++  /**
++   * Litterbugs: the website's pin landing (bug-land). The pin fades in and drops from `lift`
++   * above its spot (a share of its height) with a -8° tilt, reaches `overshoot` below the spot
++   * leaning 4° the other way at 70%, then settles. As in the website's CSS, the springy curve
++   * cubic-bezier(.3, 1.5, .5, 1) is applied to each of the two steps separately, so each one
++   * overshoots: that is the bounce. (Android cannot change a pin's size without redrawing its
++   * picture, which blinks, so the website's scale is left out.) The pin ends fully visible
++   * whatever the opacity prop says meanwhile; the app sets that prop to 1 once it is over.
++   */
++  public void drop(int delayMs, int durationMs, final float lift, final float overshoot) {
++    if (marker == null) return;
++    if (dropAnimator != null) dropAnimator.cancel();
++    final float baseX = anchorIsSet ? anchorX : 0.5f;
++    final float baseY = anchorIsSet ? anchorY : 1.0f;
++    final float restRotation = rotation;
++    final PathInterpolator spring = new PathInterpolator(0.3f, 1.5f, 0.5f, 1f);
++    marker.setAlpha(0f);
++    marker.setAnchor(baseX, baseY + lift);
++    marker.setRotation(restRotation - 8f);
++    final ValueAnimator animator = ValueAnimator.ofFloat(0f, 1f);
++    animator.setStartDelay(Math.max(0, delayMs));
++    animator.setDuration(Math.max(1, durationMs));
++    animator.setInterpolator(new android.view.animation.LinearInterpolator());
++    animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
++      @Override
++      public void onAnimationUpdate(ValueAnimator animation) {
++        if (marker == null) return;
++        float time = (float) animation.getAnimatedValue();
++        float alpha;
++        float raise;
++        float tilt;
++        // 0% { opacity 0; y -lift; rotate -8deg } 70% { opacity 1; y +overshoot; rotate 4deg } 100% { at rest }
++        if (time <= 0.7f) {
++          float share = spring.getInterpolation(time / 0.7f);
++          alpha = Math.max(0f, Math.min(1f, share));
++          raise = lift - (lift + overshoot) * share;
++          tilt = -8f + 12f * share;
++        } else {
++          float share = spring.getInterpolation((time - 0.7f) / 0.3f);
++          alpha = 1f;
++          raise = -overshoot + overshoot * share;
++          tilt = 4f - 4f * share;
++        }
++        marker.setAlpha(alpha);
++        marker.setAnchor(baseX, baseY + raise);
++        marker.setRotation(restRotation + tilt);
++      }
++    });
++    animator.addListener(new AnimatorListenerAdapter() {
++      private void settle() {
++        if (marker == null) return;
++        marker.setAlpha(1f);
++        marker.setAnchor(baseX, baseY);
++        marker.setRotation(rotation);
++      }
++
++      @Override
++      public void onAnimationEnd(Animator animation) {
++        settle();
++      }
++
++      @Override
++      public void onAnimationCancel(Animator animation) {
++        settle();
++      }
++    });
++    dropAnimator = animator;
++    animator.start();
++  }
++
+   public void setMarkerHue(float markerHue) {
+     this.markerHue = markerHue;
+     update(false);
+@@ -236,7 +325,8 @@ public class MapMarker extends MapFeature {
+     anchorIsSet = true;
+     anchorX = (float) x;
+     anchorY = (float) y;
+-    if (marker != null) {
++    // Litterbugs: a landing in progress owns the anchor; it settles on this one at the end.
++    if (marker != null && !isDropping()) {
+       marker.setAnchor(anchorX, anchorY);
+     }
+     update(false);
+@@ -477,6 +567,7 @@ public class MapMarker extends MapFeature {
      if (anchorIsSet) options.anchor(anchorX, anchorY);
      if (calloutAnchorIsSet) options.infoWindowAnchor(calloutAnchorX, calloutAnchorY);
      options.title(title);
@@ -38,10 +162,22 @@ index b755f9b..df002f6 100644
      options.snippet(snippet);
      options.rotation(rotation);
      options.flat(flat);
-@@ -521,9 +529,61 @@ public class MapMarker extends MapFeature {
+@@ -495,7 +586,10 @@ public class MapMarker extends MapFeature {
+     if (updateIcon)
+       updateMarkerIcon();
+ 
+-    if (anchorIsSet) {
++    // Litterbugs: a landing in progress owns the anchor.
++    if (isDropping()) {
++      // leave the anchor to the landing
++    } else if (anchorIsSet) {
+       marker.setAnchor(anchorX, anchorY);
+     } else {
+       marker.setAnchor(0.5f, 1.0f);
+@@ -521,9 +615,61 @@ public class MapMarker extends MapFeature {
      mLastBitmapCreated = null;
    }
-
+ 
 +  /**
 +   * Expand bitmap bounds using sizes already produced by RN layout. Do not call {@link
 +   * View#measure} on Catalyst/Fabric views because those views must be measured by React Native.
@@ -98,10 +234,10 @@ index b755f9b..df002f6 100644
 +    }
 +
      this.buildDrawingCache();
-
+ 
      // Do not create the doublebuffer-bitmap each time. reuse it to save memory.
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapMarkerManager.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapMarkerManager.java
-index 8cf3d72..0836665 100644
+index 8cf3d72..01cbea6 100644
 --- a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapMarkerManager.java
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapMarkerManager.java
 @@ -272,6 +272,7 @@ public class MapMarkerManager extends ViewGroupManager<MapMarker> {
@@ -110,8 +246,24 @@ index 8cf3d72..0836665 100644
          view.setTag(R.id.accessibility_label, accessibilityLabel);
 +        view.setMarkerContentDescription(accessibilityLabel);
      }
-
+ 
      @Override
+@@ -323,6 +324,15 @@ public class MapMarkerManager extends ViewGroupManager<MapMarker> {
+             case "redraw":
+                 view.updateMarkerIcon();
+                 break;
++
++            case "drop":
++                // Litterbugs: [delayMs, durationMs, lift, overshoot]; lift and overshoot are
++                // shares of the pin's height.
++                if (args == null || args.size() < 4) {
++                    break;
++                }
++                view.drop(args.getInt(0), args.getInt(1), (float) args.getDouble(2), (float) args.getDouble(3));
++                break;
+         }
+     }
+ 
 diff --git a/node_modules/react-native-maps/ios/AirMaps/AIRMapMarker.m b/node_modules/react-native-maps/ios/AirMaps/AIRMapMarker.m
 index 8c17ac7..43a8816 100644
 --- a/node_modules/react-native-maps/ios/AirMaps/AIRMapMarker.m
@@ -119,7 +271,7 @@ index 8c17ac7..43a8816 100644
 @@ -263,8 +263,8 @@ - (void)_handleTap:(UITapGestureRecognizer *)recognizer {
          }
      }
-
+ 
 -    // the actual marker got clicked
 -    CGPoint touchPointReal = [recognizer locationInView:self.calloutView];
 +    // Report touch coordinates in the same space as pointForCoordinate.

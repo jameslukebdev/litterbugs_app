@@ -13,10 +13,21 @@ const CURVE = Easing.bezier(0.3, 1.5, 0.5, 1); // the website's cubic-bezier(.3,
 
 export default function PinLanding({ x, y, kind, text, order = 0, posted = false, handover = false, onDone }) {
   const land = useRef(new Animated.Value(0)).current;
+  // bug-land in two parts, each with the website's springy curve, as CSS applies the curve to
+  // each step between keyframes: the fall (0-70%) overshoots the spot, the settle (70-100%)
+  // springs back. That double ease is the website's bounce.
+  const fall = useRef(new Animated.Value(0)).current;
+  const settle = useRef(new Animated.Value(0)).current;
   const carrier = useRef(new Animated.Value(0)).current;
   const ripple = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    const steps = [Animated.timing(land, { toValue: 1, duration: 520, delay: posted ? 850 : Math.min(order, 8) * 60, easing: CURVE, useNativeDriver: true })];
+    const steps = posted
+      ? [Animated.timing(land, { toValue: 1, duration: 520, delay: 850, easing: CURVE, useNativeDriver: true })]
+      : [Animated.sequence([
+        Animated.delay(Math.min(order, 8) * 60),
+        Animated.timing(fall, { toValue: 1, duration: 364, easing: CURVE, useNativeDriver: true }),
+        Animated.timing(settle, { toValue: 1, duration: 156, easing: CURVE, useNativeDriver: true }),
+      ])];
     if (posted) {
       steps.push(Animated.timing(carrier, { toValue: 1, duration: 1000, easing: Easing.bezier(0.45, 0, 0.25, 1), useNativeDriver: true }));
       steps.push(Animated.timing(ripple, { toValue: 1, duration: 700, delay: 1100, easing: Easing.out(Easing.quad), useNativeDriver: true }));
@@ -37,11 +48,12 @@ export default function PinLanding({ x, y, kind, text, order = 0, posted = false
       { scale: land.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) },
     ],
   } : {
-    opacity: land.interpolate({ inputRange: [0, 0.7, 1], outputRange: [0, 1, 1], ...clamp }),
+    opacity: fall.interpolate({ inputRange: [0, 1], outputRange: [0, 1], ...clamp }),
     transform: [
-      { translateY: land.interpolate({ inputRange: [0, 0.7, 1], outputRange: [-20, 2, 0] }) },
-      { scale: land.interpolate({ inputRange: [0, 0.7, 1], outputRange: [0.6, 1.04, 1] }) },
-      { rotate: land.interpolate({ inputRange: [0, 0.7, 1], outputRange: ['-8deg', '4deg', '0deg'] }) },
+      { translateY: Animated.add(fall.interpolate({ inputRange: [0, 1], outputRange: [-20, 2] }), settle.interpolate({ inputRange: [0, 1], outputRange: [0, -2] })) },
+      { scale: Animated.add(fall.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1.04] }), settle.interpolate({ inputRange: [0, 1], outputRange: [0, -0.04] })) },
+      { rotate: Animated.add(fall.interpolate({ inputRange: [0, 1], outputRange: [-8, 4] }), settle.interpolate({ inputRange: [0, 1], outputRange: [0, -4] }))
+        .interpolate({ inputRange: [-180, 180], outputRange: ['-180deg', '180deg'] }) },
     ],
   };
   return (

@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { reportAfterPhotoUrl } from './reportPhotoUrls';
 
 const SIGNED_PHOTO_DURATION_SECONDS = 60 * 60;
 
@@ -62,16 +63,20 @@ export async function loadCompletedCleanupImpact(reportId) {
   if (photosResult.error) throw photosResult.error;
   if (!submissionResult.data) throw new Error('cleanup_impact_submission_unavailable');
 
-  const afterPhotoUrls = await Promise.all(
-    (photosResult.data ?? []).map(({ storage_path: path }) => (
-      createCleanupPhotoUrl(path)
-    ))
+  const signedAfterPhotos = await Promise.all(
+    (photosResult.data ?? []).map(async ({ storage_path: path }, index) => ({
+      url: await createCleanupPhotoUrl(path),
+      // The website's resized copy loads far faster; the signed original is the fallback.
+      quickUrl: reportAfterPhotoUrl(reportId, { width: 1080, index }),
+    }))
   );
+  const afterPhotos = signedAfterPhotos.filter(({ url }) => url);
 
   return {
     attempt,
     submission: submissionResult.data,
     cleaner: cleanerResult.data ?? null,
-    afterPhotoUrls: afterPhotoUrls.filter(Boolean),
+    afterPhotoUrls: afterPhotos.map(({ url }) => url),
+    afterPhotoQuickUrls: afterPhotos.map(({ quickUrl }) => quickUrl),
   };
 }

@@ -18,8 +18,10 @@ export default function BrandedLoadingState({
   working = false,
 }) {
   const { width } = useWindowDimensions();
-  // Match the native splash dimensions so its fade does not resize the logo.
-  const launchLogoWidth = Math.min(width - 64, Platform.OS === 'android' ? 128 : 244);
+  // Exactly the size of the phone's own splash logo (app.json expo-splash-screen imageWidth:
+  // 300 on iPhone, 200 on Android), so the handover shows no jump and no size change.
+  // Changing either number means changing both and making a new native build.
+  const launchLogoWidth = Math.min(width - 64, Platform.OS === 'android' ? 200 : 300);
 
   return (
     <View

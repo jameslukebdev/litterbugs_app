@@ -21,7 +21,7 @@ export function payoutConnectionPresentation({ status, loading, error } = {}) {
 
   if (status?.payoutsEnabled === true) {
     return {
-      label: 'Ready to receive rewards',
+      label: 'Ready to receive payouts',
       icon: 'checkmark-circle',
       color: colors.primary,
       backgroundColor: colors.primarySoft,

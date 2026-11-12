@@ -10,7 +10,10 @@ import ReportWizardModal from './components/ReportWizardModal';
 import MapControls from './components/MapControls';
 
 import MapReportPreview from './components/MapReportPreview';
-import MapPin, { PinPlaceholder, pinCenterOffset, pinKind } from './components/MapPin';
+import FirstRunTour from './components/FirstRunTour';
+import { FIRST_RUN_START, useFirstRunStage } from './lib/firstRun';
+import MapPin, { PinPlaceholder, pinCenterOffset, pinHeight, pinKind } from './components/MapPin';
+import AndroidStillMarker from './components/AndroidStillMarker';
 import PinLanding from './components/PinLanding';
 import usePinLandings from './lib/usePinLandings';
 import useNearbyReportAlerts from './lib/useNearbyReportAlerts';
@@ -50,6 +53,7 @@ import {
 import { BOTTOM_NAV_METRICS, getBottomNavClearance } from './lib/navigationLayout';
 import { isCleanupAvailable } from './lib/cleanupEligibility';
 import { getDistanceMiles as reportDistanceMiles, useReports } from './lib/reports';
+import { loadReportPoints, startingRegion } from './lib/startingRegion';
 import { useSession } from './lib/session';
 
 
@@ -96,6 +100,10 @@ import { showLocationSettingsAlert, showPermanentAccountRequired } from './lib/m
 import { colors } from './lib/theme';
 
 
+// Map pins: the plain marker on iPhone; on Android one that is drawn a few fixed times and
+// then left alone while pin landings are on (see components/AndroidStillMarker.jsx).
+const PinMarker = Platform.OS === 'android' ? AndroidStillMarker : Marker;
+
 // State Functions
 export default function MapScreen({ route, navigation, onLaunchReady }) {
   const isMapScreenFocused = useIsFocused();
@@ -138,8 +146,9 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   // The report just filed: its pin is carried in by the dragonfly instead of landing.
   const [postedPinId, setPostedPinId] = useState(null);
-  // Website pin arrival, iPhone only (Android draws map pins from still snapshots).
-  const pinLandings = Platform.OS === 'ios' && !prefersReducedMotion();
+  // Website pin arrival on both phones. The landing plays in a layer above the map, and the
+  // real pin is put on the map, still, once it ends, so Android's still snapshots are fine.
+  const pinLandings = !prefersReducedMotion();
   const [reportPhotoUrls, setReportPhotoUrls] = useState([]);
   const [editingReportId, setEditingReportId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -212,7 +221,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const {
     favoriteIds, toggleFavorite, favoritesReady, hiddenIds, toggleHidden,
     markers,
-    restoredMap, searchPlace, clearSearchPlace, selectedMapReportId: previewId, setSelectedMapReportId: setPreviewId,
+    restoredMap, loadedRegion, searchPlace, clearSearchPlace, selectedMapReportId: previewId, setSelectedMapReportId: setPreviewId,
     mapRegion: region,
     setMapRegion: setRegion,
     commitMapRegion,
@@ -224,13 +233,20 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     upsertReport,
     removeReport,
   } = useReports();
-  const pins = usePinLandings({ enabled: pinLandings, mapRef: mapViewRef, region, hidden: showInitialMapLoading, postedPinId });
+  // First visit: a three-step tour of the map (lib/firstRun.js). Profile can replay it.
+  const [firstRunStage, setFirstRunStage] = useFirstRunStage();
+  const [tourReplay, setTourReplay] = useState(false);
+  // Android needs longer to draw the real pin under the landing stand-in before it is removed.
+  // Android pins play their own landing (components/AndroidStillMarker.jsx); iPhone uses a
+  // stand-in above the map (components/PinLanding.jsx).
+  const pinsLandInPlace = Platform.OS === 'android';
+  const pins = usePinLandings({ enabled: pinLandings, mapRef: mapViewRef, region, hidden: showInitialMapLoading, postedPinId, inPlace: pinsLandInPlace });
   const currentUserId = permanentUserId(currentUser);
   // The daily "New litter near you" alert: asked once here, with nothing else on screen.
   useNearbyReportAlerts({
     userId: currentUserId,
     location: locationPermissionGranted ? mapUserLocation : null,
-    canAsk: isMapScreenFocused && !showInitialMapLoading && !previewId && !reportPlacementActive && !detailsOpen && !formOpen,
+    canAsk: isMapScreenFocused && !showInitialMapLoading && !previewId && !reportPlacementActive && !detailsOpen && !formOpen && !firstRunStage && !tourReplay,
   });
   const reportFundingFeedback = useReportFundingFeedback({ geminiReviewEnabled, currentUserId, selectedReport });
   const [draftSaveError, setDraftSaveError] = useState(false);
@@ -318,11 +334,17 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     }
     let active = true;
 
-    locateAndCenterMap({ showPermissionAlert: false, requestPermission: false })
-      .catch((error) => console.log('Initial map location error:', error))
-      .finally(() => {
-        if (active) setInitialLocationResolved(true);
-      });
+    // No saved map: never open on an empty map. Start where the person is, widened to take in
+    // the nearest reports, or (without a location, or with none near) on the busiest area.
+    (async () => {
+      const points = loadReportPoints().catch(() => []);
+      const userRegion = await locateAndCenterMap({ showPermissionAlert: false, requestPermission: false, animateOnPosition: false, freshLocationTimeoutMs: 3_000 })
+        .catch((error) => { console.log('Initial map location error:', error); return null; });
+      const start = startingRegion({ origin: userRegion, points: await points });
+      if (active && (start || userRegion)) commitMapRegion(start || userRegion);
+    })().finally(() => {
+      if (active) setInitialLocationResolved(true);
+    });
 
     return () => {
       active = false;
@@ -367,11 +389,25 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
 
   useEffect(() => {
     if (!mapSurfaceLoaded || reportsLoading || !initialLocationResolved) return undefined;
+    // Keep the loading screen until the starting area's pins have loaded (at most six seconds).
+    if (!mapRegionsAreEquivalent(loadedRegion, region)) {
+      const fallback = setTimeout(() => { onLaunchReady?.(); setShowInitialMapLoading(false); }, 6000);
+      return () => clearTimeout(fallback);
+    }
 
     onLaunchReady?.();
     setShowInitialMapLoading(false);
     return undefined;
-  }, [initialLocationResolved, mapSurfaceLoaded, onLaunchReady, reportsLoading]);
+  }, [initialLocationResolved, mapSurfaceLoaded, onLaunchReady, reportsLoading, loadedRegion, region]);
+
+  useEffect(() => {
+    if (!route?.params?.tourKey) return;
+    navigation.setParams({ tourKey: undefined });
+    setPreviewId(null);
+    setTourReplay(true);
+  }, [route?.params?.tourKey]);
+  const tourVisible = (firstRunStage === FIRST_RUN_START || tourReplay) && isMapScreenFocused && !showInitialMapLoading
+    && !previewId && !reportPlacementActive && !detailsOpen && !formOpen;
 
   const mapControlsBottom = bottomNavClearance + BOTTOM_NAV_METRICS.mapControlGap;
   const reportControlWidth = fontScale > 1.5
@@ -484,13 +520,7 @@ const openReportLocationPicker = async (skipDraft = false) => {
     Alert.alert('Map location unavailable', 'Move the map and try again.');
     return;
   }
-  if (!isPermanentUser(currentUser)) {
-    setPendingAction(null);
-    setPendingReportCoordinate(initialCoordinate);
-    navigation.getParent()?.navigate('Auth');
-    return;
-  }
-
+  // Guests choose the spot first; sign-in is asked for when they confirm it (confirmReportLocation).
   let placementRegion = mapUserLocation
     ? reportLocationRegion({ coords: mapUserLocation })
     : region;
@@ -566,6 +596,14 @@ const confirmReportLocation = async () => {
     await requireReportLocation(Location, coord);
     if (reportLocationCheckRef.current !== request || !navigation.isFocused()) return;
     trackParticipation('report', 'location_confirmed');
+    if (!isPermanentUser(currentUser)) {
+      // The spot is kept through sign-in; the report form opens on it afterwards. Backing
+      // out of sign-in returns here with the pin still placed.
+      setPendingAction(null);
+      setPendingReportCoordinate(coord);
+      navigation.getParent()?.navigate('Auth');
+      return;
+    }
     setReportPlacementActive(false);
     setPlacementCoordinate(null);
     if (editingDraftLocationRef.current) {
@@ -593,13 +631,13 @@ const confirmReportLocation = async () => {
 useEffect(() => {
   if (!isMapScreenFocused || !currentUserId || !pendingReportCoordinate) return;
   const coordinate = consumePendingReportCoordinate();
+  // The spot was confirmed before sign-in, so go straight to the report form on it.
   if (coordinate) {
-    setPlacementCoordinate(coordinate);
-    setReportPlacementActive(true);
     mapViewRef.current?.animateToRegion?.({
       ...region,
       ...coordinate,
     }, 240);
+    beginReportAtCoordinate(coordinate);
   }
 }, [currentUserId, isMapScreenFocused, pendingReportCoordinate]);
 
@@ -1209,6 +1247,7 @@ useEffect(() => {
     && selectedReport?.renewal_status === 'active';
   const selectedReportHasUtilityActions = selectedReportCanOpenFunding
     || selectedReportIsShareable;
+  const [cardCleanReportId, setCardCleanReportId] = useState(null);
   const reportDetailsPreparing = photosLoading
     || cleanupAttemptLoading
     || (
@@ -1289,6 +1328,12 @@ useEffect(() => {
     setSelectedReport,
     upsertReport,
   });
+  useEffect(() => {
+    if (!cardCleanReportId || selectedReport?.id !== cardCleanReportId) return;
+    setCardCleanReportId(null);
+    beginCleanupClaim();
+  }, [cardCleanReportId, selectedReport?.id]);
+
 
 // =============================
 // Report Form Step Content
@@ -1322,6 +1367,7 @@ const revealBottomReportField = () => {
           initialRegion={region}
           region={region}
           onRegionChange={pins.regionChanging}
+          onTouchStart={pins.touched}
           onRegionChangeComplete={(nextRegion) => {
             pins.regionSettled(nextRegion);
             if (reportPlacementActive) {
@@ -1365,16 +1411,19 @@ const revealBottomReportField = () => {
             const groupKey = `group:${(reportClusterRef.current?.getLeaves(id, Infinity) || []).map(leaf => String(leaf?.properties?.identifier || '').split(':').pop()).sort().join(',')}`;
             const groupCoordinate = { latitude: geometry.coordinates[1], longitude: geometry.coordinates[0] };
             const groupShown = pins.isShown(groupKey);
+            // Android: the real pin is always on the map, invisible until it lands.
+            const groupReal = groupShown || pinsLandInPlace;
             return (
-              <Marker
-                key={groupShown ? `${groupKey}:${clusterKind}:${properties.point_count}:${groupCoordinate.latitude.toFixed(6)},${groupCoordinate.longitude.toFixed(6)}` : `${groupKey}:pending`}
+              <PinMarker
+                {...(pinsLandInPlace ? { hidden: !groupShown, drop: pins.dropFor(groupKey), dropHeight: pinHeight(clusterKind, `${properties.point_count}`) } : null)}
+                key={groupReal ? `${groupKey}:${clusterKind}:${properties.point_count}:${groupCoordinate.latitude.toFixed(6)},${groupCoordinate.longitude.toFixed(6)}` : `${groupKey}:pending`}
                 coordinate={{
                   latitude: geometry.coordinates[1],
                   longitude: geometry.coordinates[0],
                 }}
                 tracksViewChanges={Platform.OS === 'ios' ? true : tracksReportMarkers}
                 anchor={{ x: 0.5, y: 1 }}
-                centerOffset={groupShown ? pinCenterOffset(clusterKind, `${properties.point_count}`) : undefined}
+                centerOffset={groupReal ? pinCenterOffset(clusterKind, `${properties.point_count}`) : undefined}
                 accessibilityLabel={`${properties.point_count} reports: ${statusCounts.available} available, ${statusCounts.active} in progress, ${statusCounts.completed} completed`}
                 onPress={(event) => {
                   event?.stopPropagation?.();
@@ -1384,7 +1433,7 @@ const revealBottomReportField = () => {
                   onPress();
                 }}
               >
-                {groupShown ? (
+                {groupReal ? (
                   <MapPin kind={clusterKind} text={`${properties.point_count}`}
                     onMount={() => pins.track(groupKey, { coordinate: groupCoordinate, kind: clusterKind, text: `${properties.point_count}` })}
                     onUnmount={() => pins.untrack(groupKey)} />
@@ -1393,7 +1442,7 @@ const revealBottomReportField = () => {
                     onMount={() => pins.track(groupKey, { coordinate: groupCoordinate, kind: clusterKind, text: `${properties.point_count}` })}
                     onUnmount={() => pins.untrack(groupKey)} />
                 )}
-              </Marker>
+              </PinMarker>
             );
           }}
           onPress={(event) => {
@@ -1425,18 +1474,21 @@ const revealBottomReportField = () => {
           // Website pins: the bug alone, plus the amount only when there is money.
           const text = kind === 'open' && marker.report?.funded_amount_cents > 0 ? fundingLabel : null;
           const shown = pins.isShown(marker.id);
+          // Android: the real pin is always on the map, invisible until it lands.
+          const real = shown || pinsLandInPlace;
           const info = { coordinate: marker.coordinate, kind, text };
           return (
-            <Marker
+            <PinMarker
+              {...(pinsLandInPlace ? { hidden: !shown, drop: pins.dropFor(marker.id), dropHeight: pinHeight(kind, text) } : null)}
               // Never update a pin on the map (iPhone draws it in the wrong place): anything that
               // changes how it looks is in the key, so a change puts a new pin in its place.
               // Selecting a pin never touches it: the selected look is a second pin laid on top.
-              key={shown ? `${marker.id}:${kind}:${text ?? ''}` : `${marker.id}:pending`}
+              key={real ? `${marker.id}:${kind}:${text ?? ''}` : `${marker.id}:pending`}
               coordinate={marker.coordinate}
               identifier={`report:${tone.key}:${marker.id}`}
               tracksViewChanges={Platform.OS === 'ios' ? true : tracksReportMarkers}
               anchor={{ x: 0.5, y: 1 }}
-              centerOffset={shown ? pinCenterOffset(kind, text) : undefined}
+              centerOffset={real ? pinCenterOffset(kind, text) : undefined}
               accessibilityLabel={`${tone.accessibilityLabel}${tone.key === 'available' ? `, ${fundingLabel}` : ''}: ${marker.report?.title || 'Litter report'}`}
               onPress={(event) => {
                 event?.stopPropagation?.();
@@ -1444,13 +1496,13 @@ const revealBottomReportField = () => {
                 chooseMapReport(marker.report);
               }}
             >
-              {shown ? (
+              {real ? (
                 <MapPin kind={kind} text={text}
                   onMount={() => pins.track(marker.id, info)} onUnmount={() => pins.untrack(marker.id)} />
               ) : (
                 <PinPlaceholder onMount={() => pins.track(marker.id, info)} onUnmount={() => pins.untrack(marker.id)} />
               )}
-            </Marker>
+            </PinMarker>
           );
         })}
 
@@ -1463,7 +1515,7 @@ const revealBottomReportField = () => {
           const kind = pinKind(marker.report?.cleanup_state);
           const text = kind === 'open' && marker.report?.funded_amount_cents > 0 ? formatMapFundingLabel(marker.report?.funded_amount_cents) : null;
           return (
-            <Marker
+            <PinMarker
               key={`selected:${marker.id}:${kind}:${text ?? ''}`}
               cluster={false}
               zIndex={1000}
@@ -1476,7 +1528,7 @@ const revealBottomReportField = () => {
               onPress={(event) => { event?.stopPropagation?.(); }}
             >
               <MapPin kind={kind} text={text} selected />
-            </Marker>
+            </PinMarker>
           );
         })()}
 
@@ -1507,8 +1559,11 @@ const revealBottomReportField = () => {
             style={{ backgroundColor: colors.white, borderRadius: 14, padding: 12, marginTop: 8 }}>
             <Text style={{ color: colors.ink, fontWeight: '600' }}>Reports couldn’t refresh. Tap to try again.</Text>
           </TouchableOpacity> : null}
-          {searchPlace && !reportPlacementActive && !mapRegionsAreEquivalent(region, searchPlace.region) ? <TouchableOpacity onPress={() => { setPreviewId(null); commitMapRegion(searchPlace.region); }} accessibilityRole="button" accessibilityLabel="Re-center selected search area" style={{ alignSelf: 'center', backgroundColor: colors.white, borderRadius: 18, paddingHorizontal: 16, minHeight: 44, justifyContent: 'center', marginTop: 8 }}><Text style={{ color: colors.primaryDark, fontWeight: '600' }}>Re-center</Text></TouchableOpacity> : null}
-          {!reportPlacementActive ? <MapKey counts={mapKeyCounts(markers, region)} /> : null}
+          {/* The legend keeps its place: Re-center sits beside it on the right, never above it. */}
+          {!reportPlacementActive ? <View pointerEvents="box-none" style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <View pointerEvents="none" style={{ flexShrink: 1 }}><MapKey counts={mapKeyCounts(markers, region)} /></View>
+            {searchPlace && !mapRegionsAreEquivalent(region, searchPlace.region) ? <TouchableOpacity onPress={() => { setPreviewId(null); commitMapRegion(searchPlace.region); }} accessibilityRole="button" accessibilityLabel="Re-center selected search area" style={{ marginTop: 8, marginRight: 16, backgroundColor: colors.white, borderRadius: 18, paddingHorizontal: 16, minHeight: 44, justifyContent: 'center' }}><Text style={{ color: colors.primaryDark, fontWeight: '600' }}>Re-center</Text></TouchableOpacity> : null}
+          </View> : null}
 
           <Animated.View
             pointerEvents="none"
@@ -1568,7 +1623,7 @@ const revealBottomReportField = () => {
 
 {!reportPlacementActive && !detailsOpen && !showInitialMapLoading ? <MapReportPreview
         report={previewReport} nearby={nearbyReports} bottom={mapControlsBottom}
-        insetBottom={insets.bottom} getPhotoUrl={getReportPhotoUrl}
+        insetBottom={insets.bottom} insetTop={insets.top} getPhotoUrl={getReportPhotoUrl}
         isFavorite={favoriteIds.includes(previewReport?.id)} onFavorite={toggleFavorite} favoritesReady={favoritesReady}
         distance={reportDistanceMiles(mapUserLocation, previewReport)}
         onClose={() => setPreviewId(null)} onCloseNearby={() => setNearbyIds([])}
@@ -1577,7 +1632,16 @@ const revealBottomReportField = () => {
         canShare={isReportShareable(previewReport)}
         onShare={shareMapReport}
         onFund={(report) => { setSelectedReport(report); openFundingContribution({ reportId: report.id }); }}
+        canClean={isCleanupAvailable(previewReport)} cleanBusy={cleanupActionBusy}
+        onClean={(report) => { setSelectedCleanupAttempt(null); setSelectedReport(report); setCardCleanReportId(report.id); }}
       /> : null}
+
+      <FirstRunTour
+        visible={tourVisible}
+        replay={tourReplay}
+        reportButton={{ right: 16, bottom: mapControlsBottom, width: reportControlWidth, height: BOTTOM_NAV_METRICS.mapControlSize }}
+        onDone={() => { setTourReplay(false); if (firstRunStage) setFirstRunStage(null); }}
+      />
 
 {/* Multi-step Report Form */}
 <ReportWizardModal

@@ -57,16 +57,20 @@ const CLEANUP_NOTIFICATION_CONTENT: Record<string, { title: string; message: str
     message: 'The payout is paused while a Litterbugs team member reviews the cleanup.',
   },
   cleanup_reward_sent: {
-    title: 'Cleanup reward sent',
-    message: 'Your cleanup reward was sent to your payout account.',
+    title: 'Cleanup payout sent',
+    message: 'Your cleanup payout was sent to your payout account.',
   },
   cleanup_payout_failed: {
-    title: 'Cleanup reward needs attention',
-    message: 'Your cleanup is approved, but a Litterbugs team member needs to review the reward transfer.',
+    title: 'Cleanup payout needs attention',
+    message: 'Your cleanup is approved, but a Litterbugs team member needs to review the payout.',
+  },
+  reporter_payout_waiting: {
+    title: 'A payout is waiting for you',
+    message: 'A spot you reported was cleaned up. Set up payouts to receive your reporter payout.',
   },
   cleanup_fund_increased: {
     title: 'Cleanup fund increased',
-    message: 'A member added money to your report’s cleaner reward.',
+    message: 'A member added money to your report’s cleanup fund.',
   },
   cleanup_contribution_refunded: {
     title: 'Contribution refunded',
@@ -116,7 +120,7 @@ export function notificationHref(notice: Pick<CleanupNotification, 'event_type' 
   // A cleanup completed nearby is someone else's report: open it on the public map.
   if (notice.event_type === 'cleanup_completed_nearby' && notice.report_id) return `/?report=${encodeURIComponent(notice.report_id)}`;
   if (notice.event_type === 'cleanup_contribution_refunded') return notice.contribution_id ? `/account/payments/${encodeURIComponent(notice.contribution_id)}` : '/account/payments';
-  if (notice.event_type === 'cleanup_payout_failed' || notice.event_type === 'cleanup_reward_sent') return '/account/connect';
+  if (notice.event_type === 'cleanup_payout_failed' || notice.event_type === 'cleanup_reward_sent' || notice.event_type === 'reporter_payout_waiting') return '/account/connect';
   if (notice.event_type === 'report_renewal_due') return '/account/reports';
   const query = view ? notificationViewQuery(view) : new URLSearchParams();
   query.set('from', 'notifications');

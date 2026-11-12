@@ -28,27 +28,27 @@ function reportStatus(report, closed) {
 }
 
 const cleanupRewardStatus = (attempt) => (attempt.dispute_status === 'open'
-  ? 'Reward paused for dispute review'
+  ? 'Payout paused for dispute review'
   : attempt.financial_review_status === 'admin_review'
-    ? 'Reward paused for review'
+    ? 'Payout paused for review'
     : attempt.financial_review_status === 'better_photos'
       ? 'Replacement photos requested'
       : attempt.first_paid_admin_status === 'pending'
-        ? 'First reward is being reviewed'
+        ? 'First payout is being reviewed'
         : attempt.financial_review_status === 'passed'
-          ? 'Reward in 48-hour dispute window'
+          ? 'Payout in 48-hour dispute window'
           : attempt.financial_review_status === 'queued'
             ? 'Photos are being reviewed'
             : attempt.status === 'claimed'
-              ? 'Reward held for this cleanup'
-              : 'Reward pending');
+              ? 'Payout held for this cleanup'
+              : 'Payout pending');
 
 const payoutStatus = (attempt) => ({
   blocked: 'Awaiting release',
-  pending: 'Reward pending',
-  processing: 'Sending reward',
-  transferred: 'Reward sent',
-  failed: 'Reward needs attention',
+  pending: 'Payout pending',
+  processing: 'Sending payout',
+  transferred: 'Payout sent',
+  failed: 'Payout needs attention',
 }[attempt.payout_status] || 'Payout status unavailable');
 
 function ActivityRow({ title, onPress, divided, accessibilityLabel, children }) {

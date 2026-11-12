@@ -17,7 +17,7 @@ const GROUPS = [
     title: 'Your activity',
     rows: [
       { key: 'reportsAndCleanups', label: 'Your reports & cleanups', caption: 'Claims, reviews and approvals for your reports and cleanups.' },
-      { key: 'payments', label: 'Payments', caption: 'Contributions, rewards, refunds and payouts.' },
+      { key: 'payments', label: 'Payments', caption: 'Contributions, payouts and refunds.' },
     ],
   },
   {

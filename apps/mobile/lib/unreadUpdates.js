@@ -11,7 +11,14 @@ let count = 0;
 let owner = null;
 const listeners = new Set();
 
+// The number on the app's icon follows the same count, so opening an update or signing
+// out clears it. Best effort: a build without the notifications module just skips it.
+const setAppIconBadge = (value) => {
+  try { require('expo-notifications').setBadgeCountAsync?.(value)?.catch?.(() => {}); } catch { /* optional */ }
+};
+
 const publish = (next) => {
+  if (next !== count || next === 0) setAppIconBadge(next);
   count = next;
   listeners.forEach((listener) => listener(count));
 };

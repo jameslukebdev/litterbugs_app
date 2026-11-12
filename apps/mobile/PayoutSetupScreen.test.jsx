@@ -23,7 +23,7 @@ vi.mock('./lib/session', () => ({ useSession: () => ({ user: { id: 'test-member'
 vi.mock('./lib/funding', () => ({
   loadPayoutStatus: vi.fn(), createPayoutOnboardingLink: vi.fn(), createPayoutDashboardLink: vi.fn(), createPayoutSession: vi.fn(),
 }));
-vi.mock('./lib/analytics', () => ({ trackParticipation: vi.fn() }));
+vi.mock('./lib/analytics', () => ({ trackPayoutSetup: vi.fn() }));
 vi.mock('@stripe/stripe-react-native', () => ({
   loadConnectAndInitialize: vi.fn(params => ({ params })),
   ConnectComponentsProvider: ({ children }) => children,

@@ -132,11 +132,14 @@ export default function BrandBug({ kind, size = 20, style, playKey, active, loop
   if (!source) return null;
   const sizing = [{ width: size, height: size }, style];
   if (!animated) {
-    return <Image source={source} style={sizing} resizeMode="contain" accessible={false} importantForAccessibility="no" />;
+    // fadeDuration 0: Android otherwise fades every image in over 0.3s, and a map pin's picture
+    // taken during that fade keeps a pale bug for good (components/AndroidStillMarker.jsx).
+    return <Image source={source} style={sizing} resizeMode="contain" fadeDuration={0} accessible={false} importantForAccessibility="no" />;
   }
   const moveSpec = MOVES[kind];
   const image = (
     <Animated.Image
+      fadeDuration={0}
       source={source}
       style={[...sizing, moveSpec ? { transform: moveSpec.transform(move) } : null]}
       resizeMode="contain"

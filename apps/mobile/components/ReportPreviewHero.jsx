@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import SmoothImage from './SmoothImage';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,7 +6,9 @@ import { Ionicons } from '@expo/vector-icons';
 import BrandBug from './BrandBug';
 import HopOnTrue from './HopOnTrue';
 import RemotePhoto from './RemotePhoto';
+import { usePhotoBatchSlot } from './PhotoBatch';
 import { reportStatePresentation } from '../lib/reportState';
+import { reportAfterPhotoUrl, reportCardPhotoUrl } from '../lib/reportPhotoUrls';
 import { hapticTap } from '../lib/haptics';
 import { colors, fonts } from '../lib/theme';
 
@@ -19,11 +21,20 @@ export default function ReportPreviewHero({
   favoritesReady,
 }) {
   const status = reportStatePresentation(report);
-  // Website cards: a cleaned report leads with its after photo (the site's public
-  // after-photo address), falling back to the report photo when there is none.
-  const [afterFailed, setAfterFailed] = useState(false);
-  useEffect(() => { setAfterFailed(false); }, [report?.id]);
-  const showAfter = report?.cleanup_state === 'completed' && report?.id && !afterFailed;
+  // Website cards: a cleaned report leads with its after photo. Otherwise the card uses
+  // the website's small card copy of the report photo, which loads far faster than the
+  // original upload; each falls back to the next, ending at the original photo.
+  const photoPath = report?.photo_paths?.[0] ?? null;
+  const quickSources = useMemo(() => [
+    report?.cleanup_state === 'completed' && reportAfterPhotoUrl(report?.id),
+    reportCardPhotoUrl(photoPath),
+  ].filter(Boolean), [report?.cleanup_state, report?.id, photoPath]);
+  const [fallbacks, setFallbacks] = useState(0);
+  useEffect(() => { setFallbacks(0); }, [report?.id, photoPath]);
+  const quickSource = quickSources[fallbacks];
+  // One slot for the card's photo, kept while a missing after photo falls back to the
+  // report photo, so the fallback still appears together with the other cards.
+  const photoSlot = usePhotoBatchSlot(true, report?.id);
 
   return (
     <View style={styles.hero}>
@@ -35,18 +46,21 @@ export default function ReportPreviewHero({
         onPress={() => onPress?.(report)}
         style={styles.heroPhotoButton}
       >
-        {showAfter ? (
+        {quickSource ? (
           <SmoothImage
-            source={`https://litterbugs.app/reports/${encodeURIComponent(report.id)}/photo/after?width=640`}
+            key={quickSource}
+            source={quickSource}
             contentFit="cover"
             cachePolicy="memory-disk"
             style={styles.heroPhoto}
-            onError={() => setAfterFailed(true)}
-            accessibilityLabel={`${report?.title || 'Report'} after cleanup`}
+            batchSlot={photoSlot}
+            onError={() => { photoSlot?.restart(); setFallbacks(value => value + 1); }}
+            accessibilityLabel={quickSource.includes('/photo/after') ? `${report?.title || 'Report'} after cleanup` : `${report?.title || 'Report'} photo`}
           />
         ) : <RemotePhoto
-          path={report?.photo_paths?.[0] ?? null}
+          path={photoPath}
           getUrl={getPhotoUrl}
+          batchSlot={photoSlot}
           label={`${report?.title || 'Report'} photo`}
           style={styles.heroPhoto}
         />}

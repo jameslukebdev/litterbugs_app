@@ -2,7 +2,8 @@ import AppleSignInButton from './components/AppleSignInButton';
 import SteadyButtonContent from './components/SteadyButtonContent';
 import { openSupport } from './lib/support';
 import { useProfile } from './lib/profile';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { trackSignIn } from './lib/analytics';
 import {
   ActivityIndicator, Alert, Image, KeyboardAvoidingView, Linking, Modal, Platform,
   ScrollView, StyleSheet, Text, TextInput, TouchableOpacity,
@@ -59,7 +60,11 @@ const getProviderErrorMessage = (error) => {
 };
 
 export default function AuthScreen() {
-  const { pendingAction } = useProfile();
+  const { pendingAction, pendingReportCoordinate } = useProfile();
+  // Why this screen opened: a report, a fund or a cleanup in progress, or the person's own choice.
+  useEffect(() => {
+    trackSignIn('shown', { intent: pendingAction?.kind === 'cleanup' ? 'clean' : pendingAction?.kind === 'fund' ? 'fund' : pendingReportCoordinate ? 'report' : 'none' });
+  }, []);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [emailMode, setEmailMode] = useState('login');
   const [sentReason, setSentReason] = useState('signup');
@@ -118,6 +123,7 @@ export default function AuthScreen() {
       setLoadingEmail(true);
 
       if (emailMode === 'login') {
+        trackSignIn('submitted', { method: 'email_login' });
         const { error } = await signInWithEmail(cleanEmail, password);
         if (error) {
           const unverified = error.message?.toLowerCase().includes('email not confirmed');
@@ -134,6 +140,7 @@ export default function AuthScreen() {
       }
 
       if (emailMode === 'signup') {
+        trackSignIn('submitted', { method: 'email_signup' });
         const { data, error } = await signUpWithEmail(cleanEmail, password);
         const hiddenDuplicate = Array.isArray(data?.user?.identities)
           && data.user.identities.length === 0;
@@ -193,6 +200,7 @@ export default function AuthScreen() {
 
     try {
       setLoadingProvider(provider);
+      trackSignIn('submitted', { method: provider });
       await signInWithProvider(provider);
     } catch (error) {
       if (isProviderCancellation(error)) return;
@@ -253,8 +261,8 @@ export default function AuthScreen() {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <Image source={require('./assets/LB_Logo_PNG.png')} style={styles.logo} resizeMode="contain" />
-        <Text style={styles.title}>{pendingAction?.kind === 'cleanup' ? 'Sign in to help clean this up' : pendingAction?.kind === 'fund' ? 'Sign in to fund this cleanup' : 'Create a free account or sign in'}</Text>
-        <Text style={styles.subtitle}>{pendingAction ? 'Sign in or create an account to continue with this cleanup.' : 'Put litter on the map and earn cash from funded cleanups.'}</Text>
+        <Text style={styles.title}>{pendingAction?.kind === 'cleanup' ? 'Sign in to help clean this up' : pendingAction?.kind === 'fund' ? 'Sign in to fund this cleanup' : pendingReportCoordinate ? 'Sign in to post your report' : 'Create a free account or sign in'}</Text>
+        <Text style={styles.subtitle}>{pendingAction ? 'Sign in or create an account to continue with this cleanup.' : pendingReportCoordinate ? 'Your spot is saved. Next you’ll add a photo.' : 'Put litter on the map and earn cash from funded cleanups.'}</Text>
 
         <View style={styles.actions}>
           <AppleSignInButton onPress={() => handleProvider('apple')} disabled={Boolean(loadingProvider)} loading={loadingProvider === 'apple'} />

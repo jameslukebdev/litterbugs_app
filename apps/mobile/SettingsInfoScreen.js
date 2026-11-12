@@ -14,7 +14,7 @@ const pages = {
     sections: [
       ['Storage and file safety', 'Photos are stored by Litterbugs and checked by Cloudmersive for unsafe files.'],
       ['Report and cleanup checks', 'Report and cleanup photos may also be reviewed by Google Gemini for photo clarity, litter, hazards, and cleanup progress.'],
-      ['AI has limits', 'AI can make mistakes; it does not send rewards.'],
+      ['AI has limits', 'AI can make mistakes; it does not send payouts.'],
     ],
   },
   help: {

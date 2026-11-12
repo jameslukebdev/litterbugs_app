@@ -54,6 +54,11 @@ describe('cleanup notifications', () => {
     });
   });
 
+  it('tells a reporter a payout is waiting and opens payout setup', () => {
+    expect(cleanupNotificationPresentation([{ event_type: 'reporter_payout_waiting' }]).title).toBe('A payout is waiting for you');
+    expect(cleanupNotificationDestination({ event_type: 'reporter_payout_waiting', report_id: 'r1', cleanup_attempt_id: 'c1' })).toMatchObject({ name: 'PayoutSetup' });
+  });
+
   it('opens the map near the person for the daily nearby alert, and earnings for a sent reward', () => {
     expect(cleanupNotificationDestination({ eventType: 'nearby_reports_daily', notificationId: 'n' }))
       .toEqual({ name: 'App', label: 'See new reports', params: { screen: 'Map', params: { showNearby: true } } });

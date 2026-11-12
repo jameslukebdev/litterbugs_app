@@ -24,7 +24,8 @@ import { openSupport } from './lib/support';
 import * as WebBrowser from 'expo-web-browser';
 import { loadCurrentUserCleanupSummary } from './lib/cleanup';
 import { ReporterEarnings } from './components/ReporterEarnings';
-import { loadCleanupFeatureFlags, loadMyContributions, loadPayoutStatus } from './lib/funding';
+import { paymentTotals, shouldPromptReporterPayout } from './lib/paymentTotals';
+import { formatUsd, loadCleanupFeatureFlags, loadMyContributionAmounts, loadMyContributions, loadPayoutStatus, loadReporterRewards } from './lib/funding';
 import { emptyCleanupSummary } from './lib/cleanupProfile';
 import { getBottomNavClearance } from './lib/navigationLayout';
 import { payoutConnectionPresentation } from './lib/payoutConnectionPresentation';
@@ -108,6 +109,21 @@ function SignedOutProfile({ navigation, bottomPadding }) {
   );
 }
 
+// Shown when a reporter reward cannot be sent because payouts are not set up yet.
+function ReporterPayoutPrompt({ cents, onPress, style }) {
+  const amount = formatUsd(cents);
+  return (
+    <TouchableOpacity style={[styles.payoutPrompt, style]} onPress={onPress} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel={`A ${amount} reporter payout is waiting. Set up payouts to receive it.`}>
+      <BrandBug kind="dragonfly" size={34} playOnMount />
+      <View style={styles.payoutPromptCopy}>
+        <Text style={styles.payoutPromptTitle}>A {amount} reporter payout is waiting</Text>
+        <Text style={styles.payoutPromptLine}>Set up payouts to receive it.</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={colors.fundInk} />
+    </TouchableOpacity>
+  );
+}
+
 export default function ProfileScreen({ navigation, route }) {
   const { fontScale } = useWindowDimensions();
   const section = route?.params?.section || 'overview';
@@ -133,7 +149,11 @@ export default function ProfileScreen({ navigation, route }) {
   const flags = useFocusedResource(useCallback(() => loadCleanupFeatureFlags(), [user?.id]), { enabled: permanent, cacheKey: `funding-flags:${user?.id}` });
   const fundingSchemaReady = flags.hasLoaded;
   const fundingEnabled = fundingSchemaReady && Boolean(flags.data?.payments_enabled && flags.data?.gemini_financial_review_enabled);
-  const payout = useFocusedResource(useCallback(() => loadPayoutStatus(), [user?.id]), { enabled: permanent && section === 'payments' && fundingEnabled, cacheKey: `payout:${user?.id}` });
+  // Reporter rewards load on Profile too, so someone who is owed money is told before they
+  // ever open Payments. The payout account is only checked there when a reward is waiting.
+  const reporterRewards = useFocusedResource(useCallback(() => loadReporterRewards(user.id), [user?.id]), { enabled: permanent && (section === 'overview' || section === 'payments'), cacheKey: `reporter-rewards:${user?.id}` });
+  const reporterWaiting = (reporterRewards.data ?? []).some(reward => reward.status === 'pending');
+  const payout = useFocusedResource(useCallback(() => loadPayoutStatus(), [user?.id]), { enabled: permanent && fundingEnabled && (section === 'payments' || (section === 'overview' && reporterWaiting)), cacheKey: `payout:${user?.id}` });
   const cleanupSummary = cleanups.data ?? emptyCleanupSummary();
   const { loading: cleanupsLoading, error: cleanupsError, refresh: refreshCleanups } = cleanups;
   const { data: ranking, loading: rankingLoading, error: rankingError, refresh: refreshRanking } = rankingResource;
@@ -142,9 +162,13 @@ export default function ProfileScreen({ navigation, route }) {
   // appears in one piece.
   const contributions = useFocusedResource(useCallback(() => loadMyContributions({ userId: user?.id }), [user?.id]), { enabled: permanent && section === 'payments', cacheKey: `payments-preview:${user?.id}` });
   const contributionItems = contributions.data?.items ?? [];
+  const contributionAmounts = useFocusedResource(useCallback(() => loadMyContributionAmounts(user?.id), [user?.id]), { enabled: permanent && section === 'payments', cacheKey: `payment-amounts:${user?.id}` });
   const [paymentsView, setPaymentsView] = useState('donations');
   const settled = resource => resource.hasLoaded || Boolean(resource.error);
-  const paymentsReady = settled(contributions) && settled(flags) && settled(cleanups)
+  const totals = paymentTotals({ contributions: contributionAmounts.data ?? [], reporterRewards: reporterRewards.data ?? [], cleanups: cleanupSummary.completed });
+  const promptReporterPayout = fundingEnabled && shouldPromptReporterPayout(totals, payoutStatus);
+  const openPayoutSetup = () => navigation.navigate('PayoutSetup', payoutStatus ? { initialStatus: payoutStatus } : undefined);
+  const paymentsReady = settled(contributions) && settled(flags) && settled(cleanups) && settled(contributionAmounts) && settled(reporterRewards)
     && (!fundingEnabled || Boolean(payoutStatus) || Boolean(payoutStatusError));
   const savedDraft = useFocusedResource(useCallback(() => loadReportDraft(user.id), [user?.id]), { enabled: permanent && section === 'activity' });
   const accountBusy = signingOut || deletingAccount;
@@ -258,7 +282,7 @@ export default function ProfileScreen({ navigation, route }) {
               }
             } catch (error) {
               if (error?.code === 'PAYOUT_PENDING') {
-                Alert.alert('A reward is still being sent', 'Contact us for help completing your account deletion.', [
+                Alert.alert('A payout is still being sent', 'Contact us for help completing your account deletion.', [
                   { text: 'Cancel', style: 'cancel' },
                   { text: 'Get help', onPress: () => openSupport() },
                 ]);
@@ -286,7 +310,8 @@ export default function ProfileScreen({ navigation, route }) {
       refreshRanking(),
       flags.refresh(),
       ...(fundingEnabled ? [refreshPayoutStatus()] : []),
-      ...(section === 'payments' ? [contributions.refresh()] : []),
+      ...(section === 'payments' ? [contributions.refresh(), contributionAmounts.refresh()] : []),
+      ...(section === 'payments' || section === 'overview' ? [reporterRewards.refresh()] : []),
     ]);
     setPullRefreshing(false);
   };
@@ -338,7 +363,16 @@ export default function ProfileScreen({ navigation, route }) {
       />
 
       <PointsExplanation ranking={ranking} appearance="row" />
+      {/* Replays the map tour (components/FirstRunTour.jsx). Same look as "How points work" above it. */}
+      <TouchableOpacity style={styles.howRow} onPress={() => openAppTab('Map', { tourKey: Date.now() })} accessibilityRole="button" accessibilityLabel="How Litterbugs works">
+        <Text style={styles.howText}>How Litterbugs works</Text>
+        <Ionicons name="chevron-forward" size={16} color={colors.muted} />
+      </TouchableOpacity>
+      {/* Development builds only: a signed-in tester has no other way back to the first-launch screen. */}
+      {__DEV__ ? <TextLink tone="muted" align="start" label="Replay the welcome (test builds only)" onPress={() => navigation.navigate('Home')} /> : null}
       </View>
+
+      {promptReporterPayout ? <ReporterPayoutPrompt cents={totals.reporterWaitingCents} onPress={openPayoutSetup} style={styles.overviewPrompt} /> : null}
 
       {cleanupSummary.current.length > 0 ? <View style={[styles.card, styles.continueCleanupCard]}>
         <ActionRow label="Continue cleanup" icon="leaf-outline" onPress={() => openReport(cleanupSummary.current[0].report_id)} />
@@ -358,8 +392,22 @@ export default function ProfileScreen({ navigation, route }) {
           {/* One loader for the whole page, then everything at once: sections no longer
               arrive one by one and push each other around. */}
           {!paymentsReady ? <LoadingBee label="Loading payments" style={{ marginTop: 80 }} /> : <>
-          {/* Payouts first: getting paid is the thing to set up. */}
-          <View style={{ height: 16 }} />
+          {/* The whole picture first: what you have given and what you have been paid. */}
+          <View style={[styles.card, styles.paymentCard, styles.totals]} accessible accessibilityLabel={`Donated ${formatUsd(totals.donatedCents)}. Earned ${formatUsd(totals.earnedCents)}${totals.onTheWayCents > 0 ? `, with ${formatUsd(totals.onTheWayCents)} on the way` : ''}.`}>
+            <View style={styles.total}>
+              <View style={styles.totalLabelRow}><BrandBug kind="bee" size={16} /><Text style={styles.totalLabel}>Donated</Text></View>
+              <Text style={styles.totalAmount}>{contributionAmounts.error && !contributionAmounts.hasLoaded ? '—' : formatUsd(totals.donatedCents)}</Text>
+              {totals.donationsUnconfirmedCents > 0 ? <Text style={styles.totalNote}>+ {formatUsd(totals.donationsUnconfirmedCents)} not confirmed yet</Text> : null}
+            </View>
+            <View style={styles.totalDivider} />
+            <View style={styles.total}>
+              <View style={styles.totalLabelRow}><BrandBug kind="butterfly" size={16} /><Text style={styles.totalLabel}>Earned</Text></View>
+              <Text style={styles.totalAmount}>{reporterRewards.error && !reporterRewards.hasLoaded ? '—' : formatUsd(totals.earnedCents)}</Text>
+              {totals.onTheWayCents > 0 ? <Text style={styles.totalNote}>+ {formatUsd(totals.onTheWayCents)} on the way</Text> : null}
+            </View>
+          </View>
+          {promptReporterPayout ? <ReporterPayoutPrompt cents={totals.reporterWaitingCents} onPress={openPayoutSetup} style={styles.paymentsPrompt} /> : null}
+          <View style={{ height: 12 }} />
           <View style={[styles.card, styles.paymentCard]}>
             {flags.error ? <ActionRow label="Retry payout availability" icon="refresh-outline" onPress={flags.refresh} /> : fundingEnabled ? <>
             {<StripeConnectionStatus
@@ -367,7 +415,7 @@ export default function ProfileScreen({ navigation, route }) {
               loading={payoutStatusLoading && !payoutStatus}
               error={payoutStatusError}
               onRetry={refreshPayoutStatus}
-              onOpen={() => navigation.navigate('PayoutSetup', payoutStatus ? { initialStatus: payoutStatus } : undefined)}
+              onOpen={openPayoutSetup}
             />}
             </> : <Text style={{ padding: 17, color: colors.muted }}>Payout setup is currently unavailable. Your payment history is still available above.</Text>}
           </View>
@@ -540,10 +588,26 @@ const styles = StyleSheet.create({
   bellBadgeText: { color: colors.white, fontSize: 10, fontWeight: '800' },
   headerEditButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   rankPanel: { marginHorizontal: 20, backgroundColor: colors.white },
+  howRow: { alignSelf: 'stretch', minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 8, borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.white },
+  howText: { flex: 1, color: colors.primaryDark, fontSize: 14, fontWeight: '800' },
   card: { marginHorizontal: 20, overflow: 'hidden', borderRadius: 18, backgroundColor: colors.white },
   activityList: { marginTop: 16, borderWidth: 1, borderColor: colors.line },
   showAll: { borderTopWidth: 1, borderTopColor: colors.edge },
   paymentCard: { borderWidth: 1, borderColor: colors.line, borderRadius: 18 },
+  totals: { marginTop: 16, flexDirection: 'row', alignItems: 'stretch', paddingVertical: 14 },
+  total: { flex: 1, alignItems: 'center', gap: 4, paddingHorizontal: 10 },
+  totalLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  totalLabel: { color: colors.muted, fontSize: 13, fontWeight: '700' },
+  totalAmount: { color: colors.ink, fontSize: 26, lineHeight: 31, fontFamily: fonts.heading },
+  totalNote: { color: colors.muted, fontSize: 12, lineHeight: 16 },
+  totalDivider: { width: 1, backgroundColor: colors.line },
+  paymentsPrompt: { marginTop: 12 },
+  overviewPrompt: { marginTop: 4, marginBottom: 12 },
+  // Money is waiting: the yellow of the fund, with the reporter's dragonfly.
+  payoutPrompt: { marginHorizontal: 20, minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingLeft: 14, paddingRight: 12, borderRadius: 18, borderWidth: 1, borderBottomWidth: 4, borderColor: colors.yellowBorder, backgroundColor: colors.yellowPale },
+  payoutPromptCopy: { flex: 1, minWidth: 0, gap: 2 },
+  payoutPromptTitle: { color: colors.fundInk, fontSize: 16, lineHeight: 21, fontFamily: fonts.heading },
+  payoutPromptLine: { color: colors.body, fontSize: 14, lineHeight: 19 },
   // Payout status: coloured icon and words on white, as on the website.
   stripeConnectionRow: { minHeight: 60, paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: colors.white },
   stripeConnectionText: { flex: 1, fontSize: 15, lineHeight: 20, fontWeight: '700' },

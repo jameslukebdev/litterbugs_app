@@ -28,7 +28,7 @@ export const statusMessage = (item) => item.verificationUnavailable ? 'We couldn
   refund_processing: 'Your refund is being processed.',
   refunded: 'The contribution was refunded.',
   succeeded: 'Your contribution is in the cleanup fund.',
-  paid_out: 'This contribution was included in the cleaner’s reward.',
+  paid_out: 'This contribution was included in the cleaner’s payout.',
 }[paymentDisplayStatus(item)] || 'View payment details for an update.');
 
 export const formatContributionDate = (value) => new Date(value).toLocaleString(undefined, {

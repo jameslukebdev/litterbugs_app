@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ConnectAccountOnboarding, ConnectComponentsProvider, loadConnectAndInitialize } from '@stripe/stripe-react-native';
 
 import { createPayoutDashboardLink, createPayoutOnboardingLink, createPayoutSession, loadPayoutStatus } from './lib/funding';
-import { trackParticipation } from './lib/analytics';
+import { trackPayoutSetup } from './lib/analytics';
 import { payoutSetupPresentation } from './lib/payoutSetupPresentation';
 import {
   cancelPayoutWorkflow,
@@ -63,6 +63,13 @@ function PayoutSetupController({ navigation, route }) {
   const setupNotice = payoutSetupPresentation({ status, error: statusError, waiting });
   const checkingSetup = setupNotice?.kind === 'pending';
   const enabled = status?.payoutsEnabled === true;
+  // Counted once per visit, when the account's state is first known.
+  const openedTracked = useRef(false);
+  useEffect(() => {
+    if (!status || openedTracked.current) return;
+    openedTracked.current = true;
+    trackPayoutSetup(status.payoutsEnabled === true ? 'already_ready' : 'opened');
+  }, [status]);
   const updatingRequiredDetails = enabled && setupNotice?.kind === 'action_required';
   const openingOnboarding = !enabled || updatingRequiredDetails;
   // Pressing the button is the confirmation: the line under it says so. One tap fewer.
@@ -123,11 +130,11 @@ function PayoutSetupController({ navigation, route }) {
       const nextStatus = await waitForPayoutConnection(loadPayoutStatus);
       if (!mounted.current) return;
       const connected = isPayoutConnectionReady(nextStatus);
-      if (connected) connectionSuccessAlertRef.current = true;
+      if (connected) { connectionSuccessAlertRef.current = true; trackPayoutSetup('ready'); }
       if (nextStatus) setStatus(nextStatus);
       if (connected) {
         Alert.alert(
-          'Ready to receive rewards',
+          'Ready to receive payouts',
           workflowToken
             ? 'Your payout account is ready. Continue to return to the litter report and finish claiming the cleanup.'
             : 'Approved cleanups and reporter earnings can now be paid out to you.',
@@ -155,7 +162,7 @@ function PayoutSetupController({ navigation, route }) {
     try {
       setBusy(true);
       if (openingOnboarding) {
-        trackParticipation('payout', 'started');
+        trackPayoutSetup('form_opened');
         // Prefer Stripe's form inside the app; fall back to Stripe's hosted page.
         const session = await createPayoutSession();
         if (!mounted.current) return;
@@ -188,6 +195,7 @@ function PayoutSetupController({ navigation, route }) {
         else await refresh();
       }
     } catch (error) {
+      trackPayoutSetup('start_failed');
       Alert.alert('Payout setup unavailable', userMessage(error, 'Payout setup is unavailable. Please try again.'));
     } finally {
       setBusy(false);
@@ -239,8 +247,8 @@ function PayoutSetupController({ navigation, route }) {
       </Text>
       <Text style={styles.text}>
         {enabled
-          ? 'Use this account for cleanup and reporter rewards. Stripe sends rewards to your connected payout account.'
-          : workflowCopy?.text || 'Rewards go straight to your bank. Setup takes about 3 minutes and happens right here, on a secure form from Stripe.'}
+          ? 'Use this account for cleanup and reporter payouts. Stripe sends them to your connected payout account.'
+          : workflowCopy?.text || 'Payouts go straight to your bank. Setup takes about 3 minutes and happens right here, on a secure form from Stripe.'}
       </Text>
 
       {/* What to have ready, so nobody starts and then has to stop and look for something. */}

@@ -17,7 +17,8 @@ let pushRegistrationQueue = Promise.resolve();
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldPlaySound: true,
-    shouldSetBadge: false,
+    // A push carries the member's unread count for the app icon (send-cleanup-notifications).
+    shouldSetBadge: true,
     shouldShowBanner: true,
     shouldShowList: true,
   }),
@@ -84,7 +85,7 @@ const performPushRegistration = async (devicePushToken) => {
   await configureAndroidChannel();
   const existingPermission = await Notifications.getPermissionsAsync();
   const permission = existingPermission.status === 'undetermined'
-    ? await Notifications.requestPermissionsAsync()
+    ? await Notifications.requestPermissionsAsync({ ios: { allowAlert: true, allowBadge: true, allowSound: true } })
     : existingPermission;
   if (!permission.granted) return { status: 'denied' };
 

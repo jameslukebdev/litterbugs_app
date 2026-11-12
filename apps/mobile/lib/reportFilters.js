@@ -23,6 +23,12 @@ export function distanceMiles(a, b) {
       Math.sin(rad(b.longitude - a.longitude) / 2) ** 2;
   return 7917.6 * Math.asin(Math.sqrt(Math.min(1, n)));
 }
+// Keyword search covers the title, the reporter's notes and the litter types, so the
+// field's own examples ("Bottles, roadside…") find reports.
+export function reportSearchText(report) {
+  return [report.title, report.notes_other, ...(report.notes_presets ?? []), ...(report.litter_types ?? [])]
+    .filter(Boolean).join(' ').toLowerCase();
+}
 export function matchesReportFilters(report, filters, origin, favoriteIds = [], hiddenIds = []) {
   if (filters.favoritesOnly && !favoriteIds.includes(report.id)) return false;
   if (filters.visibility === 'hidden' ? !hiddenIds.includes(report.id) : hiddenIds.includes(report.id)) return false;
@@ -43,13 +49,7 @@ export function matchesReportFilters(report, filters, origin, favoriteIds = [], 
     String(report.severity).toLowerCase() !== filters.severity
   )
     return false;
-  if (
-    filters.query.trim() &&
-    !`${report.title || ''} ${report.notes || ''}`
-      .toLowerCase()
-      .includes(filters.query.trim().toLowerCase())
-  )
-    return false;
+  if (filters.query.trim() && !reportSearchText(report).includes(filters.query.trim().toLowerCase())) return false;
   const distance = distanceMiles(origin, report);
   return !filters.radius || (distance !== null && distance <= filters.radius);
 }

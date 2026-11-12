@@ -116,13 +116,36 @@ Deno.serve(async (request: Request) => {
     });
   }
 
+  // The number on the app icon: how many updates that member has not opened, this one
+  // included. If it cannot be counted the push still goes out, just without a number.
+  const badges = new Map<string, number>();
+  try {
+    const { data: owners } = await admin.from("cleanup_notifications").select("id, user_id")
+      .in("id", [...new Set(validDeliveries.map((delivery) => delivery.notification_id))]);
+    const userByNotification = new Map((owners ?? []).map((row) => [row.id as string, row.user_id as string]));
+    const unreadByUser = new Map<string, number>();
+    await Promise.all([...new Set(userByNotification.values())].map(async (userId) => {
+      const { count } = await admin.from("cleanup_notifications").select("id", { count: "exact", head: true })
+        .eq("user_id", userId).is("read_at", null);
+      if (typeof count === "number") unreadByUser.set(userId, count);
+    }));
+    for (const [notificationId, userId] of userByNotification) {
+      const unread = unreadByUser.get(userId);
+      if (unread !== undefined) badges.set(notificationId, Math.max(1, unread));
+    }
+  } catch (error) {
+    console.error("Unable to count unread updates for app icon badges", error);
+  }
+
   const messages = validDeliveries.map((delivery) => {
     const content = notificationContent(delivery.event_type)!;
+    const badge = badges.get(delivery.notification_id);
     return {
       to: delivery.expo_push_token,
       title: content.title,
       body: content.body,
       sound: "default",
+      ...(badge === undefined ? {} : { badge }),
       channelId: notificationChannel(delivery.event_type),
       data: {
         notificationId: delivery.notification_id,

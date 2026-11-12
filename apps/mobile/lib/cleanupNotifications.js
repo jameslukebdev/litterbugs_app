@@ -52,16 +52,20 @@ const CLEANUP_NOTIFICATION_CONTENT = Object.freeze({
     message: 'The payout is paused while a Litterbugs team member reviews the cleanup.',
   },
   cleanup_reward_sent: {
-    title: 'Cleanup reward sent',
-    message: 'Your cleanup reward was sent to your payout account.',
+    title: 'Cleanup payout sent',
+    message: 'Your cleanup payout was sent to your payout account.',
   },
   cleanup_payout_failed: {
-    title: 'Cleanup reward needs attention',
-    message: 'Your cleanup is approved, but a Litterbugs team member needs to review the reward transfer.',
+    title: 'Cleanup payout needs attention',
+    message: 'Your cleanup is approved, but a Litterbugs team member needs to review the payout.',
+  },
+  reporter_payout_waiting: {
+    title: 'A payout is waiting for you',
+    message: 'A spot you reported was cleaned up. Set up payouts to receive your reporter payout.',
   },
   cleanup_fund_increased: {
     title: 'Cleanup fund increased',
-    message: 'A member added money to your report’s cleaner reward.',
+    message: 'A member added money to your report’s cleanup fund.',
   },
   cleanup_contribution_refunded: {
     title: 'Contribution refunded',
@@ -156,7 +160,7 @@ export function cleanupNotificationDestination(notification) {
     };
   }
 
-  // As on the website: a sent reward opens your earnings.
+  // As on the website: a sent payout opens your earnings.
   if (eventType === 'cleanup_reward_sent') {
     return {
       name: 'Payments',
@@ -165,7 +169,8 @@ export function cleanupNotificationDestination(notification) {
     };
   }
 
-  if (eventType === 'cleanup_payout_failed') {
+  // A waiting reporter payout opens payout setup, like a payout that needs attention.
+  if (eventType === 'cleanup_payout_failed' || eventType === 'reporter_payout_waiting') {
     return {
       name: 'PayoutSetup',
       label: 'Review Payout Setup',

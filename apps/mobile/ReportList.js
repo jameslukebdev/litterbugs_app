@@ -1,8 +1,9 @@
 import ReportCardDetails from './components/ReportCardDetails';
 import ReportCardMenu from './components/ReportCardMenu';
 import ReportPreviewHero from './components/ReportPreviewHero';
+import { PhotoBatchGroup, PhotoBatchProvider, usePhotoBatch } from './components/PhotoBatch';
 import { isReportShareable, shareReportWithSystemSheet } from './lib/reportSharing';
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useScrollToTop } from '@react-navigation/native';
 import {
   FlatList,
@@ -82,8 +83,14 @@ export default function ReportList({
     listRef.current?.scrollToIndex({ index, animated: false, viewPosition: 0.3 });
   }, [selectedId, reports]);
   const data = useMemo(() => reports ?? [], [reports]);
+  // The cards on screen show their photos together; cards below the fold never hold them back.
+  const photoBatch = usePhotoBatch();
+  const onViewableItemsChanged = useCallback(({ viewableItems }) => {
+    photoBatch.setVisibleGroups(viewableItems.map(({ item }) => item?.id));
+  }, [photoBatch]);
 
   return (
+    <PhotoBatchProvider batch={photoBatch}>
     <FlatList
       ref={listRef}
       extraData={selectedId}
@@ -93,8 +100,11 @@ export default function ReportList({
       data={data}
       keyExtractor={(report) => String(report.id)}
       renderItem={({ item }) => (
-        <ReportListItem report={item} origin={origin} onPress={onReportPress} selected={item.id === selectedId} />
+        <PhotoBatchGroup id={item.id}>
+          <ReportListItem report={item} origin={origin} onPress={onReportPress} selected={item.id === selectedId} />
+        </PhotoBatchGroup>
       )}
+      onViewableItemsChanged={onViewableItemsChanged}
       ListEmptyComponent={initialLoading ? (
         <LoadingBee label="Loading nearby reports" message="Finding cleanups around you…" />
       ) : (
@@ -110,6 +120,7 @@ export default function ReportList({
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     />
+    </PhotoBatchProvider>
   );
 }
 

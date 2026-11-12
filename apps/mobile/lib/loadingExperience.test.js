@@ -54,7 +54,10 @@ describe('mobile loading experience', () => {
     expect(source).toContain(
       'if (!mapSurfaceLoaded || reportsLoading || !initialLocationResolved) return undefined;'
     );
-    expect(source).toContain('locateAndCenterMap({ showPermissionAlert: false, requestPermission: false })');
+    expect(source).toContain('locateAndCenterMap({ showPermissionAlert: false, requestPermission: false, animateOnPosition: false');
+    // A first-time map never opens empty: it starts on an area with pins and waits for them.
+    expect(source).toContain('startingRegion({ origin: userRegion, points: await points })');
+    expect(source).toContain('if (!mapRegionsAreEquivalent(loadedRegion, region)) {');
     expect(source).not.toContain('initialMapLoadingOpacity');
   });
 

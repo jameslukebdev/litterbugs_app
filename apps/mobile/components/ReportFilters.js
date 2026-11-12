@@ -2,9 +2,8 @@ import { loadDiscoveryReports } from '../lib/discoveryReports';
 import { useProfile } from '../lib/profile';
 import { mapLimitMessage } from '../lib/mapWorkBudget';
 import LocationSearch from './LocationSearch';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Image,
   KeyboardAvoidingView,
   Platform,
   Modal,
@@ -20,7 +19,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReports } from '../lib/reports';
-import { DEFAULT_REPORT_FILTERS } from '../lib/reportFilters';
+import { DEFAULT_REPORT_FILTERS, matchesReportFilters } from '../lib/reportFilters';
 import BrandBug from './BrandBug';
 import SlideUp from './SlideUp';
 import { colors, fonts } from '../lib/theme';
@@ -37,24 +36,49 @@ const groups = [
 ];
 export default function ReportFilters({ map = false }) {
   const { fontScale } = useWindowDimensions();
-  const { favoriteIds, filters, setFilters, filteredReports, loading, truncated, mapRegion, searchPlace } =
+  const { favoriteIds, hiddenIds, filters, setFilters, applyFilters, filteredReports, loading, truncated, mapRegion, searchPlace } =
     useReports();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(filters);
   const { blockedIds } = useProfile();
-  const [preview, setPreview] = useState(null);
   const draftChanged = Object.keys(filters).some(key => filters[key] !== draft[key]);
+  // While the sheet is open, every report in this map area is loaded once, so each tap
+  // recounts on the phone at once instead of waiting on a new search.
+  const [areaReports, setAreaReports] = useState(null);
   useEffect(() => {
-    if (!open || !draftChanged) { setPreview(null); return; }
+    if (!open) { setAreaReports(null); return undefined; }
     const controller = new AbortController();
-    setPreview(null);
-    const timer = setTimeout(() => loadDiscoveryReports({ area: mapRegion, filters: draft, searchPlace, blockedIds, favoriteIds, signal: controller.signal })
-      .then(result => { if (!controller.signal.aborted) setPreview({ count: result.reports.length, truncated: result.truncated }); })
+    loadDiscoveryReports({ area: mapRegion, filters: DEFAULT_REPORT_FILTERS, searchPlace, blockedIds, signal: controller.signal })
+      .then(result => { if (!controller.signal.aborted) setAreaReports(result); })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [open, mapRegion, searchPlace, blockedIds]);
+  const areaComplete = areaReports && !areaReports.truncated;
+  const localCount = useMemo(() => (areaComplete
+    ? areaReports.reports.filter(report => matchesReportFilters(report, draft, mapRegion, favoriteIds, hiddenIds)).length
+    : null), [areaComplete, areaReports, draft, mapRegion, favoriteIds, hiddenIds]);
+  // Very busy areas (more reports than one load holds) still ask the server for each count.
+  const [preview, setPreview] = useState(null);
+  const needsServerCount = open && draftChanged && areaReports?.truncated;
+  useEffect(() => {
+    if (!needsServerCount) return undefined;
+    const controller = new AbortController();
+    const timer = setTimeout(() => loadDiscoveryReports({ area: mapRegion, filters: draft, searchPlace, blockedIds, favoriteIds, hiddenIds, signal: controller.signal })
+      .then(result => { if (!controller.signal.aborted) setPreview({ draft, count: result.reports.length, truncated: result.truncated }); })
       .catch(() => {}), 300);
     return () => { clearTimeout(timer); controller.abort(); };
-  }, [open, draftChanged, draft, mapRegion, searchPlace, blockedIds, favoriteIds]);
-  const displayCount = draftChanged ? preview?.count : filteredReports.length;
-  const displayTruncated = draftChanged ? preview?.truncated : truncated;
+  }, [needsServerCount, draft, mapRegion, searchPlace, blockedIds, favoriteIds, hiddenIds]);
+  const current = !draftChanged
+    ? (loading ? null : { count: filteredReports.length, truncated })
+    : localCount != null ? { count: localCount, truncated: false }
+      : preview?.draft === draft ? preview : null;
+  // Keep the last count on the button until the next one is known, so it never blinks.
+  const lastShown = useRef(null);
+  if (current) lastShown.current = current;
+  const shown = current || lastShown.current;
+  const showLabel = !shown ? 'Show results'
+    : shown.count === 0 ? 'No matching reports'
+      : `Show ${shown.count}${shown.truncated ? '+' : ''} ${shown.count === 1 ? 'result' : 'results'}`;
   const insets = useSafeAreaInsets();
   const activeFilters = groups
     .filter(([key]) => filters[key] !== DEFAULT_REPORT_FILTERS[key])
@@ -66,37 +90,29 @@ export default function ReportFilters({ map = false }) {
   const count = activeFilters.length;
   const choose = (key, value) =>
     setFilters((current) => ({ ...current, [key]: value }));
+  const filterButton = (
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={count ? `Filters, ${count} active` : 'Filters'}
+          accessibilityHint="Choose cleanup status, reward, distance, severity, and report keywords"
+          onPress={() => { setDraft({ ...filters }); lastShown.current = null; setOpen(true); }}
+          style={[styles.filterButton, count > 0 && styles.selected]}
+        >
+          {/* Plum-outlined filter button with just its icon, on the map and the Reports page. */}
+          <Ionicons name="options-outline" size={22} color={colors.plum} />
+          {count > 0 ? <View style={styles.badge}><Text style={styles.badgeText} maxFontSizeMultiplier={1.3}>{count}</Text></View> : null}
+        </TouchableOpacity>
+  );
   return (
     <View
       style={[styles.header, map && styles.mapHeader]}
       pointerEvents="box-none"
     >
       <View style={[styles.searchRow, map && styles.mapSearchShell]}>
-        {map ? (
-          <View style={styles.mapLogoCard} pointerEvents="none">
-            <Image
-              source={require('../assets/LB_Logo_PNG.png')}
-              resizeMode="contain"
-              style={styles.mapLogo}
-              accessibilityLabel="Litterbugs"
-            />
-          </View>
-        ) : null}
-        <View style={[styles.searchSurface, map && styles.mapSearchRow]}>
+        <View style={styles.searchSurface}>
           <LocationSearch map={map} />
         </View>
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel={count ? `Filters, ${count} active` : 'Filters'}
-          accessibilityHint="Choose cleanup status, reward, distance, severity, and report keywords"
-          onPress={() => { setDraft({ ...filters }); setOpen(true); }}
-          style={[styles.filterButton, map && styles.mapFilterButton, count > 0 && styles.selected]}
-        >
-          {/* Website "Filters" button: plum outline with its label; the map keeps just the icon. */}
-          <Ionicons name="options-outline" size={map ? 25 : 20} color={colors.plum} />
-          {map ? null : <Text style={styles.filterButtonText}>Filters</Text>}
-          {count > 0 ? <View style={styles.badge}><Text style={styles.badgeText} maxFontSizeMultiplier={1.3}>{count}</Text></View> : null}
-        </TouchableOpacity>
+        {filterButton}
       </View>
       {truncated ? <Text style={{ padding: 10, color: colors.body, backgroundColor: colors.white, borderRadius: 12 }}>{mapLimitMessage(truncated)}</Text> : null}
       {count > 0 ? (
@@ -142,7 +158,7 @@ export default function ReportFilters({ map = false }) {
             <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.filterContent}>
               <View style={styles.filterSection}>
                 <Text style={styles.label}>Search report titles and notes</Text>
-                <TextInput value={draft.query} onChangeText={value => setDraft(current => ({ ...current, query: value }))} placeholder="Bottles, roadside…" placeholderTextColor={colors.subtle} accessibilityLabel="Search report titles and notes" style={styles.input} clearButtonMode="while-editing" />
+                <TextInput value={draft.query} onChangeText={value => setDraft(current => ({ ...current, query: value }))} placeholder="Bottles, roadside…" placeholderTextColor={colors.subtle} autoCapitalize="none" autoCorrect={false} returnKeyType="search" accessibilityLabel="Search report titles and notes" style={styles.input} clearButtonMode="while-editing" />
               </View>
               {groups.map(([key, label, options]) => (
                 key === 'favoritesOnly' ? (
@@ -178,11 +194,12 @@ export default function ReportFilters({ map = false }) {
               <TouchableOpacity
                 style={[styles.done, fontScale > 1.5 && { flex: 0, paddingVertical: 10 }]}
                 accessibilityRole="button"
-                onPress={() => { setFilters(draft); setOpen(false); }}
+                onPress={() => {
+                  if (draftChanged) applyFilters(draft, areaComplete ? areaReports : null);
+                  setOpen(false);
+                }}
               >
-                <Text style={[styles.doneText, { textAlign: 'center' }]}>
-                  {displayCount == null || (!draftChanged && loading) ? 'Show results' : `Show ${displayCount}${displayTruncated ? '+' : ''} ${displayCount === 1 ? 'result' : 'results'}`}
-                </Text>
+                <Text style={[styles.doneText, { textAlign: 'center' }]}>{showLabel}</Text>
               </TouchableOpacity>
             </View>
           </SlideUp>
@@ -198,16 +215,13 @@ const styles = StyleSheet.create({
   activeChipTarget: { minHeight: 44, maxWidth: 260, justifyContent: 'center' },
   activeChip: { minHeight: 32, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 18, borderWidth: 1, borderColor: colors.primary, backgroundColor: colors.primarySoft, flexDirection: 'row', alignItems: 'center', gap: 5 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  searchSurface: { flex: 1, minWidth: 0, minHeight: 50, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderWidth: 2, borderColor: colors.line, borderRadius: 14 },
+  // The search box and filter button look the same on the map and the Reports page.
+  searchSurface: { flex: 1, minWidth: 0, minHeight: 50, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderWidth: 2, borderColor: colors.line, borderRadius: 14, borderCurve: 'continuous', boxShadow: '0 2px 6px rgba(46, 37, 128, 0.14)' },
   input: { fontSize: 16, color: colors.ink, minHeight: 48, backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.lineStrong, borderRadius: 12, paddingHorizontal: 12 },
   mapHeader: { backgroundColor: 'transparent', paddingHorizontal: 16, paddingVertical: 0 },
-  mapSearchShell: { minHeight: 58, gap: 0, paddingHorizontal: 3, paddingVertical: 3, borderRadius: 29, borderCurve: 'continuous', borderWidth: 1, borderColor: colors.lineStrong, backgroundColor: colors.white, boxShadow: '0 3px 10px rgba(46, 37, 128, 0.14)' },
-  mapLogoCard: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
-  mapLogo: { width: 42, height: 30 },
-  mapSearchRow: { backgroundColor: 'transparent', borderWidth: 0, boxShadow: 'none' },
-  mapFilterButton: { width: 52, height: 52, paddingHorizontal: 0, borderRadius: 26, borderWidth: 0, backgroundColor: 'transparent', boxShadow: 'none', shadowOpacity: 0, elevation: 0 },
-  filterButton: { minWidth: 50, height: 50, paddingHorizontal: 14, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: colors.white, borderWidth: 2, borderColor: colors.cleanEdge },
-  filterButtonText: { color: colors.plum, fontSize: 16, fontWeight: '800' },
+  // On the map: a white outlined search field and a white round filter button, straight on the map.
+  mapSearchShell: { minHeight: 58, gap: 10, paddingVertical: 3 },
+  filterButton: { width: 50, minWidth: 50, height: 50, paddingHorizontal: 0, borderRadius: 14, borderCurve: 'continuous', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: colors.white, borderWidth: 2, borderColor: colors.cleanEdge, boxShadow: '0 2px 6px rgba(46, 37, 128, 0.14)' },
   badge: { position: 'absolute', top: -3, right: -2, minWidth: 21, minHeight: 21, paddingHorizontal: 4, borderRadius: 12, backgroundColor: colors.primary, borderWidth: 2, borderColor: colors.white, alignItems: 'center', justifyContent: 'center' },
   badgeText: { fontSize: 11, fontWeight: '700', color: colors.white },
   chip: {

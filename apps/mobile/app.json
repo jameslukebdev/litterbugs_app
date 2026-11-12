@@ -47,10 +47,10 @@
         {
           "backgroundColor": "#FFFFFF",
           "image": "./assets/LB_Logo_PNG.png",
-          "imageWidth": 244,
+          "imageWidth": 300,
           "resizeMode": "contain",
           "android": {
-            "imageWidth": 128
+            "imageWidth": 200
           }
         }
       ],

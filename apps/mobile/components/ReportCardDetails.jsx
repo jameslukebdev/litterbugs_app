@@ -47,7 +47,7 @@ function getLitterSummary(report) {
 }
 
 
-export default function ReportCardDetails({ report, distance, onPress, selected = false, options, preview = false }) {
+export default function ReportCardDetails({ report, distance, onPress, selected = false, options, preview = false, actions = null }) {
   const severity = { label: String(report?.severity || 'medium') };
   const normalizedSeverity = severity.label.charAt(0).toUpperCase() + severity.label.slice(1).toLowerCase();
   const presentation = reportPresentation(report);
@@ -99,6 +99,7 @@ export default function ReportCardDetails({ report, distance, onPress, selected 
               <Text style={[styles.websiteReward, styles.rewardLineText, fundedAmount > 0 && styles.websiteRewardFunded]}>{websiteReward(report)}</Text>
             </View>
             <Text style={styles.websiteSummary} numberOfLines={1}>{websiteSummary(report, distance == null ? null : `${distance < 10 ? distance.toFixed(1) : Math.round(distance)} mi`)}</Text>
+            {actions}
             <View style={styles.websiteMeta}>
               <View style={styles.websiteSeverity}>
                 <View style={[styles.severityDot, { backgroundColor: SEVERITY_DOT[normalizedSeverity] || SEVERITY_DOT.Medium }]} />

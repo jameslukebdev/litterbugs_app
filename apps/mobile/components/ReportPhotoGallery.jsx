@@ -11,10 +11,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useReports } from '../lib/reports';
+import { reportDetailPhotoUrl } from '../lib/reportPhotoUrls';
 import { colors } from '../lib/theme';
 function Photo({ uri, path, width, height, title }) {
   const { getReportPhotoUrl } = useReports();
-  return <RemotePhoto path={path} uri={uri} getUrl={getReportPhotoUrl} label={`Litter reported: ${title || 'cleanup location'}`} style={{ width, height }} />;
+  return <RemotePhoto path={path} uri={uri} quickUri={reportDetailPhotoUrl(path)} getUrl={getReportPhotoUrl} label={`Litter reported: ${title || 'cleanup location'}`} style={{ width, height }} />;
 }
 // `aspect` is width / height: 1.73 is the website's report photo shape.
 export default function ReportPhotoGallery({ report, urls, loading, width, aspect = 1.73 }) {
@@ -88,6 +89,7 @@ export default function ReportPhotoGallery({ report, urls, loading, width, aspec
           <RemotePhoto
             path={report.photo_paths?.[index]}
             uri={urls[index]}
+            quickUri={reportDetailPhotoUrl(report.photo_paths?.[index])}
             getUrl={getReportPhotoUrl}
             fit="contain"
             background={colors.black}

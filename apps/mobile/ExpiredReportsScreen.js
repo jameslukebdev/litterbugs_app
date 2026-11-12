@@ -10,6 +10,7 @@ import { useSession } from './lib/session';
 import LoadingBee from './components/LoadingBee';
 import { showFlowDone } from './components/FlowDone';
 import RemotePhoto from './components/RemotePhoto';
+import { PhotoBatchProvider } from './components/PhotoBatch';
 import BrandBug from './components/BrandBug';
 import { EmptyState, PrimaryButton, PullRefresh, TextLink } from './components/ui';
 import { colors, fonts } from './lib/theme';
@@ -57,6 +58,8 @@ export default function ExpiredReportsScreen() {
   );
 
   return (
+    // The renewal cards' photos appear together.
+    <PhotoBatchProvider>
     <ScrollView
       style={{ backgroundColor: colors.white }}
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]}
@@ -96,6 +99,7 @@ export default function ExpiredReportsScreen() {
         </View>
       ))}
     </ScrollView>
+    </PhotoBatchProvider>
   );
 }
 

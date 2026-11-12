@@ -23,16 +23,20 @@ import {
 import { hapticSelect } from './lib/haptics';
 import { colors, fonts } from './lib/theme';
 
-function AfterPhoto({ url, index, count, width }) {
+function AfterPhoto({ url: original, quickUrl, index, count, width }) {
   const screen = useWindowDimensions();
   const [fullOpen, setFullOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  // The website's resized copy first; the signed original if that copy can't load.
+  const [quickFailed, setQuickFailed] = useState(false);
+  const url = quickUrl && !quickFailed ? quickUrl : original;
 
   return (
     <View style={[styles.photoFrame, { width, height: Math.round(width * 0.75) }]}>
       {!failed ? (
         <SmoothImage
+          key={url}
           source={url}
           contentFit="cover"
           cachePolicy="memory-disk"
@@ -40,6 +44,7 @@ function AfterPhoto({ url, index, count, width }) {
           onLoadStart={() => setLoading(true)}
           onLoad={() => setLoading(false)}
           onError={() => {
+            if (url !== original) { setQuickFailed(true); return; }
             setLoading(false);
             setFailed(true);
           }}
@@ -166,6 +171,7 @@ export default function CompletedCleanupStory({
             <AfterPhoto
               key={`${url}-${index}`}
               url={url}
+              quickUrl={impact.afterPhotoQuickUrls?.[index]}
               index={index}
               count={impact.afterPhotoUrls.length}
               width={photoWidth}

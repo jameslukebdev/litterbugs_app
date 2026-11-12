@@ -9,7 +9,7 @@ export const NOTIFICATION_EVENT_TYPES = [
   "cleanup_contribution_refunded", "report_renewal_due", "report_renewed", "report_funding_photos_needed",
   "report_funding_review_required", "report_funding_approved", "report_funding_rejected",
   "admin_moderation_needed", "admin_cleanup_needed", "funded_cleanup_completed", "nearby_reports_daily",
-  "cleanup_completed_nearby",
+  "cleanup_completed_nearby", "reporter_payout_waiting",
 ] as const;
 
 /** The opt-in nearby alerts have their own Android channel. */
@@ -76,18 +76,23 @@ export const notificationContent = (eventType: string): { title: string; body: s
       };
     case "cleanup_reward_sent":
       return {
-        title: "Cleanup reward sent",
-        body: "Your cleanup reward was sent to your payout account.",
+        title: "Cleanup payout sent",
+        body: "Your cleanup payout was sent to your payout account.",
       };
     case "cleanup_payout_failed":
       return {
-        title: "Cleanup reward needs attention",
-        body: "Your cleanup is approved, but a Litterbugs team member needs to review the reward transfer.",
+        title: "Cleanup payout needs attention",
+        body: "Your cleanup is approved, but a Litterbugs team member needs to review the payout.",
       };
     case "cleanup_fund_increased":
       return {
         title: "Cleanup fund increased",
-        body: "A member added money to your report’s cleaner reward.",
+        body: "A member added money to your report’s cleanup fund.",
+      };
+    case "reporter_payout_waiting":
+      return {
+        title: "A payout is waiting for you",
+        body: "A spot you reported was cleaned up. Set up payouts to receive your reporter payout.",
       };
     case "cleanup_contribution_refunded":
       return {

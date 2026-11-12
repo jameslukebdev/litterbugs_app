@@ -17,6 +17,16 @@ const MAX_STAGGER = 8;
 const HANDOVER_MS = 140; // the stand-in stays until the real pin has surely been drawn under it
 const SETTLE_MS = 16; // one frame: let the clustering redraw after the map settles before looking
 
+// Whether two map views are the same. Android's extra "moving" report after the map stops
+// carries exactly the settled view, while even the slowest real drag moves at once, so this
+// only allows for rounding (a hundredth of a percent of the view).
+function sameView(a, b) {
+  if (!a || !b) return false;
+  const near = (x, y, span) => Math.abs(x - y) <= Math.abs(span) * 0.0001;
+  return near(a.latitude, b.latitude, a.latitudeDelta) && near(a.longitude, b.longitude, a.longitudeDelta)
+    && near(a.latitudeDelta, b.latitudeDelta, a.latitudeDelta) && near(a.longitudeDelta, b.longitudeDelta, a.longitudeDelta);
+}
+
 function inRegion(region, coordinate) {
   if (!region || !coordinate) return false;
   const halfLat = region.latitudeDelta / 2;
@@ -25,10 +35,20 @@ function inRegion(region, coordinate) {
     && Math.abs(coordinate.longitude - region.longitude) <= halfLng;
 }
 
-export default function usePinLandings({ enabled, mapRef, region, hidden, postedPinId }) {
+// `inPlace` (Android): the real pin plays its own landing (components/AndroidStillMarker.jsx)
+// instead of a stand-in above the map. Which pins land, and when, is decided exactly as on
+// iPhone; each landing pin is just handed a `drop` token to play.
+export default function usePinLandings({ enabled, mapRef, region, hidden, postedPinId, handoverMs = HANDOVER_MS, inPlace = false }) {
   const [shown, setShown] = useState(() => new Set());
+  const shownRef = useRef(shown);
+  shownRef.current = shown;
   const [ghosts, setGhosts] = useState([]);
+  // How many stand-ins are on screen, including ones handing over to their real pin.
+  const ghostCount = useRef(0);
+  ghostCount.current = ghosts.length;
   const [onMap, setOnMap] = useState(() => new Set()); // without landings: the pins on the map
+  const [drops, setDrops] = useState(() => new Map()); // inPlace: key -> { token, order }
+  const dropToken = useRef(0);
   const pins = useRef(new Map()); // key -> { coordinate, kind, text, mounts }
   const visible = useRef(new Set()); // keys that were in view when the map last settled
   const landing = useRef(new Set()); // keys hidden while their stand-in lands
@@ -81,6 +101,26 @@ export default function usePinLandings({ enabled, mapRef, region, hidden, posted
     reveal(offscreen);
     if (!toLand.length) return;
 
+    if (inPlace) {
+      // Only pins that are not showing yet land. A pin already showing (one that stayed on the
+      // map just off screen and was swiped back into view) stays put instead of vanishing and
+      // dropping in again.
+      const waiting = toLand.filter(key => !shownRef.current.has(key));
+      if (!waiting.length) return;
+      toLand.length = 0;
+      toLand.push(...waiting);
+      // The real pins are already on the map, invisible until now: each plays its own landing.
+      dropToken.current += 1;
+      const token = dropToken.current;
+      setDrops((current) => {
+        const next = new Map(current);
+        toLand.forEach((key, index) => next.set(key, { token, order: Math.min(index, MAX_STAGGER) }));
+        return next;
+      });
+      reveal(toLand);
+      return;
+    }
+
     // Hide the pins that are about to land (their real pin becomes an invisible placeholder).
     toLand.forEach(key => landing.current.add(key));
     setShown((current) => {
@@ -104,7 +144,7 @@ export default function usePinLandings({ enabled, mapRef, region, hidden, posted
     failed.forEach(key => landing.current.delete(key));
     reveal(failed);
     if (added.length) setGhosts(current => [...current.filter(ghost => !added.some(next => next.key === ghost.key)), ...added]);
-  }, [enabled, mapRef, reveal]);
+  }, [enabled, inPlace, mapRef, reveal]);
 
   const schedule = useCallback(() => {
     if (!enabled) return;
@@ -148,15 +188,28 @@ export default function usePinLandings({ enabled, mapRef, region, hidden, posted
     }, 0);
   }, []);
 
-  const regionChanging = useCallback(() => {
+  const regionChanging = useCallback((nextRegion) => {
     if (!enabled) return;
+    // Android reports one more "moving" right after the map has stopped, with the view it
+    // already settled on. That is not a move: treating it as one cancelled every landing
+    // mid-air, so pins popped in instead of dropping.
+    if (sameView(regionRef.current, nextRegion)) return;
     moving.current = true;
     if (timer.current) { clearTimeout(timer.current); timer.current = null; }
-    if (landing.current.size) finishAll();
+    // Stand-ins float above the map, so they cannot move with it: clear every one the moment
+    // the map moves, including any still handing over to its real pin (on Android that
+    // handover lasts over a second, and a stand-in left behind stayed fixed on the screen).
+    if (landing.current.size || ghostCount.current) finishAll();
     // Never stay stuck if a settle event is missed.
     if (movingFallback.current) clearTimeout(movingFallback.current);
     movingFallback.current = setTimeout(() => { moving.current = false; schedule(); }, 1500);
   }, [enabled, finishAll, schedule]);
+
+  // A finger touched the map: clear the floating stand-ins before anything moves, so none is
+  // ever left behind on the screen while the map slides under it.
+  const touched = useCallback(() => {
+    if (enabled && (landing.current.size || ghostCount.current)) finishAll();
+  }, [enabled, finishAll]);
 
   const regionSettled = useCallback((nextRegion) => {
     if (!enabled) return;
@@ -172,8 +225,8 @@ export default function usePinLandings({ enabled, mapRef, region, hidden, posted
     // shadows never stack (that showed as a dark blink at the end of each landing).
     reveal([key]);
     setGhosts(current => current.map(ghost => (ghost.key === key ? { ...ghost, handover: true } : ghost)));
-    setTimeout(() => setGhosts(current => current.filter(ghost => ghost.key !== key)), HANDOVER_MS);
-  }, [reveal]);
+    setTimeout(() => setGhosts(current => current.filter(ghost => ghost.key !== key)), handoverMs);
+  }, [reveal, handoverMs]);
 
   // The loading screen cleared, or the visible area changed: look for pins that need to land.
   useEffect(() => { if (!hidden) schedule(); }, [hidden, schedule]);
@@ -187,5 +240,8 @@ export default function usePinLandings({ enabled, mapRef, region, hidden, posted
   // Whether this pin stands on the map by itself and is fully shown (not in a group or landing).
   const isOnMap = useCallback((key) => (enabled ? shown.has(key) : onMap.has(key)), [enabled, shown, onMap]);
 
-  return { isShown, isOnMap, track, untrack, ghosts, ghostDone, regionChanging, regionSettled };
+  // inPlace: the landing a pin should play, if any.
+  const dropFor = useCallback((key) => drops.get(key), [drops]);
+
+  return { isShown, isOnMap, track, untrack, ghosts, ghostDone, regionChanging, regionSettled, touched, dropFor };
 }

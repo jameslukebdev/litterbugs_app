@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import SmoothImage from './SmoothImage';
+import { usePhotoBatchSlot } from './PhotoBatch';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../lib/theme';
 
@@ -8,9 +9,19 @@ import { colors } from '../lib/theme';
 export default function RemotePhoto(props) {
   return <PhotoRequest key={props.path || props.uri || 'empty'} {...props} />;
 }
-function PhotoRequest({ path, uri, getUrl, style, label = 'Report photo', fit = 'cover', background = colors.mist }) {
+function PhotoRequest({ path, uri, quickUri, getUrl, style, label = 'Report photo', fit = 'cover', background = colors.mist, batchSlot }) {
+  // A smaller copy to try first (for example the website's resized photo); the stored
+  // original stays the fallback if that copy can't load.
+  const [quickFailed, setQuickFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [result, setResult] = useState(uri ? { uri } : null);
+  // The slot is held from mount, so a photo still fetching its address also holds the group.
+  const ownSlot = usePhotoBatchSlot(!batchSlot);
+  const slot = batchSlot || ownSlot;
+  const missing = !path && !uri;
+  const failed = Boolean(result?.error);
+  const usingQuick = Boolean(quickUri) && !quickFailed;
+  useEffect(() => { if (slot && (missing || (failed && !usingQuick))) slot.settle(false); }, [slot, missing, failed, usingQuick]);
   const request = useRef({ path, uri, getUrl });
   request.current.getUrl = getUrl;
   request.current.uri = uri;
@@ -32,14 +43,19 @@ function PhotoRequest({ path, uri, getUrl, style, label = 'Report photo', fit = 
   }, [attempt]);
   const frame = [{ backgroundColor: background, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }, style];
   if (!path && !uri) return <View style={frame}><Ionicons name="image-outline" size={24} color={colors.muted} /><Text>No photo</Text></View>;
+  if (usingQuick) return <View key="quick" style={frame}>
+    <SmoothImage source={{ uri: quickUri }} style={StyleSheet.absoluteFill} contentFit={fit}
+      cachePolicy="memory-disk" recyclingKey={quickUri} batchSlot={slot} accessibilityLabel={label}
+      onError={() => { slot?.restart(); setQuickFailed(true); }} />
+  </View>;
   if (!result) return <View key="loading" style={frame} accessibilityRole="progressbar" accessibilityLabel="Loading report photo" />;
-  if (result.error) return <TouchableOpacity style={frame} accessibilityRole="button" accessibilityLabel="Retry report photo" onPress={() => { setResult(null); setAttempt(value => value + 1); }}><Ionicons name="refresh-outline" size={22} color={colors.muted} /><Text style={{ fontSize: 12, color: colors.muted, textAlign: 'center' }}>Retry photo</Text></TouchableOpacity>;
+  if (result.error) return <TouchableOpacity style={frame} accessibilityRole="button" accessibilityLabel="Retry report photo" onPress={() => { slot?.restart(); setResult(null); setAttempt(value => value + 1); }}><Ionicons name="refresh-outline" size={22} color={colors.muted} /><Text style={{ fontSize: 12, color: colors.muted, textAlign: 'center' }}>Retry photo</Text></TouchableOpacity>;
   // A distinct host prevents Android from retaining the old progress label
   // when it reuses the loading View for the finished photo.
   return <View key="loaded" style={frame}>
     <SmoothImage key={attempt} source={{ uri: result.uri, cacheKey: path || result.uri }}
       style={StyleSheet.absoluteFill} contentFit={fit}
-      cachePolicy="memory-disk" recyclingKey={path || result.uri}
+      cachePolicy="memory-disk" recyclingKey={path || result.uri} batchSlot={slot}
       accessibilityLabel={label} onError={() => setResult({ error: true })} />
   </View>;
 }

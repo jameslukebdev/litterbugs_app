@@ -18,6 +18,7 @@ import { matchesGeography } from './searchGeography';
 import { supabase } from './supabase';
 import { useProfile } from './profile';
 import { isVisibleReport } from './reportVisibility';
+import { mergeAreaReports } from './mergeAreaReports';
 
 export const DEFAULT_MAP_REGION = Object.freeze({
   latitude: 39.8283,
@@ -27,6 +28,7 @@ export const DEFAULT_MAP_REGION = Object.freeze({
 });
 
 const ReportsContext = createContext(null);
+const WHOLE_WORLD = Object.freeze({ latitude: 0, longitude: 0, latitudeDelta: 180, longitudeDelta: 360 });
 
 
 
@@ -93,6 +95,8 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
   const toggleFavorite = useCallback(id => updatePreference('favorites', id, !favoriteRef.current.ids.includes(id)), [updatePreference]);
   const toggleHidden = useCallback(id => updatePreference('hidden', id, !favoriteRef.current.hidden.includes(id)), [updatePreference]);
   const [truncated, setTruncated] = useState(false);
+  // The map area the most recent finished load covered, so first launch can wait for its pins.
+  const [loadedRegion, setLoadedRegion] = useState(null);
   const requestAbort = useRef(null);
   const [allReports, setAllReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -110,6 +114,7 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
     return () => clearTimeout(timer);
   }, [mapRegion, searchPlace]);
   const requestSequence = useRef(0);
+  const loadedSearchKey = useRef(null);
   const regionRef = useRef(mapRegion);
   regionRef.current = mapRegion;
   const photoUrlCache = useRef(new Map());
@@ -126,21 +131,47 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
     const controller = new AbortController();
     requestAbort.current = controller;
     const sequence = ++requestSequence.current;
+    const area = regionRef.current;
     try {
-      const result = await loadDiscoveryReports({ area: regionRef.current, ...discoveryRef.current, signal: controller.signal, includeNearby: true });
+      const search = discoveryRef.current;
+      const result = await loadDiscoveryReports({ area, ...search, signal: controller.signal, includeNearby: true });
       if (sequence !== requestSequence.current) return;
       setTruncated(result.truncated);
-      setAllReports(result.reports);
+      // Same search as the last load: keep the reports already on the map and only add new
+      // ones and remove ones that are gone (lib/mergeAreaReports.js). A new search starts over.
+      // Blocked, hidden and favourite reports are filtered on the phone as well, so only the
+      // filters and place decide what "the same search" is.
+      const searchKey = JSON.stringify([search.filters, search.searchPlace?.id ?? search.searchPlace?.label ?? null]);
+      const sameSearch = loadedSearchKey.current === searchKey;
+      loadedSearchKey.current = searchKey;
+      setAllReports(current => (sameSearch ? mergeAreaReports(current, result.reports, area, { truncated: result.truncated }) : result.reports));
       setError(null);
     } catch {
       if (sequence === requestSequence.current) setError('Reports could not be loaded. Pull to try again.');
     } finally {
-      if (sequence === requestSequence.current) { setLoading(false); setRefreshing(false); }
+      if (sequence === requestSequence.current) { setLoading(false); setRefreshing(false); setLoadedRegion(area); }
     }
   }, []);
 
+  // Filters applied from the sheet arrive with that area's reports already loaded, so the
+  // list updates at once and the follow-up refresh runs quietly in the background.
+  const primedFilters = useRef(false);
+  const applyFilters = useCallback((next, preloaded) => {
+    if (preloaded) {
+      requestSequence.current += 1;
+      requestAbort.current?.abort();
+      setAllReports(preloaded.reports);
+      setTruncated(preloaded.truncated);
+      setLoading(false);
+      primedFilters.current = true;
+    }
+    setFilters(next);
+  }, []);
+
   useEffect(() => {
-    const timer = setTimeout(() => refreshReports(), 250); // as soon after the map stops as the website
+    const background = primedFilters.current;
+    primedFilters.current = false;
+    const timer = setTimeout(() => refreshReports({ background }), 250); // as soon after the map stops as the website
     return () => { clearTimeout(timer); requestSequence.current += 1; requestAbort.current?.abort(); };
   }, [mapRegion, filters, searchPlace, blockedIds, refreshReports, filters.favoritesOnly ? favoriteIds : null, hiddenIds]);
 
@@ -171,8 +202,14 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
 
   const filteredReports = useMemo(() => reports.filter((report) => matchesReportFilters(report, filters, mapRegion, favoriteIds, hiddenIds) && matchesGeography(report, mapRegion, searchPlace)), [reports, filters, mapRegion, searchPlace, favoriteIds, hiddenIds]);
 
+  // Map pins: every loaded report that matches the filters and place, not only the ones in
+  // view (the Reports list and counts above stay limited to the view). Nearby pins are grouped,
+  // so grouping only what was on screen reshuffled the groups each time the map stopped and the
+  // list caught up with the new view. The map itself only draws what is in view.
+  const mapReports = useMemo(() => reports.filter((report) => matchesReportFilters(report, filters, mapRegion, favoriteIds, hiddenIds) && matchesGeography(report, WHOLE_WORLD, searchPlace)), [reports, filters, mapRegion, searchPlace, favoriteIds, hiddenIds]);
+
   const markers = useMemo(
-    () => filteredReports
+    () => mapReports
       .filter(
         (report) => typeof report.latitude === 'number'
           && typeof report.longitude === 'number'
@@ -185,7 +222,7 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
         },
         report,
       })),
-    [filteredReports]
+    [mapReports]
   );
 
   const commitMapRegion = useCallback((nextRegion) => {
@@ -249,9 +286,10 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
   const value = useMemo(() => ({
     favoriteIds, toggleFavorite, favoritesReady, hiddenIds, toggleHidden,
     restoredMap: Boolean(initialDiscovery),
+    loadedRegion,
     searchPlace, selectSearchPlace, clearSearchPlace, selectedMapReportId, setSelectedMapReportId,
     reports,
-    filteredReports, filters, setFilters, truncated,
+    filteredReports, filters, setFilters, applyFilters, truncated,
     markers,
     loading,
     refreshing,
@@ -267,7 +305,7 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
   }), [
     favoriteIds, toggleFavorite, favoritesReady, hiddenIds, toggleHidden,
     searchPlace, selectSearchPlace, clearSearchPlace, selectedMapReportId,
-    filteredReports, filters, truncated,
+    filteredReports, filters, applyFilters, truncated,
     commitMapRegion,
     error,
     getReportById,
@@ -280,6 +318,7 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
     removeReport,
     reports,
     upsertReport,
+    loadedRegion,
   ]);
 
   return (

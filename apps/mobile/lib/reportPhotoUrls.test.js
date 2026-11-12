@@ -22,3 +22,20 @@ describe('gallery URL coordination', () => {
     expect(result).toEqual([null, null, 'url-c']);
   });
 });
+
+describe('report card photo addresses', async () => {
+  const { reportCardPhotoUrl, reportAfterPhotoUrl } = await import('./reportPhotoUrls');
+  it('uses the website card copy for stored report photos', () => {
+    expect(reportCardPhotoUrl('u/r/a b.JPG')).toBe('https://litterbugs.app/api/report-photo?path=u%2Fr%2Fa%20b.JPG&variant=card');
+    expect(reportCardPhotoUrl('u/r/a.heic')).toContain('variant=card');
+  });
+  it('leaves full addresses and unsupported files to the original photo', () => {
+    expect(reportCardPhotoUrl('https://example.test/a.jpg')).toBeNull();
+    expect(reportCardPhotoUrl('u/r/a.gif')).toBeNull();
+    expect(reportCardPhotoUrl(null)).toBeNull();
+  });
+  it('builds the cleaned-report after photo address', () => {
+    expect(reportAfterPhotoUrl('abc')).toBe('https://litterbugs.app/reports/abc/photo/after?width=640');
+    expect(reportAfterPhotoUrl(null)).toBeNull();
+  });
+});

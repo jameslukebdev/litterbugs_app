@@ -83,16 +83,17 @@ export default function AppTabs({ onLaunchReady }) {
 }
 
 const styles = StyleSheet.create({
+  // Every header uses the larger logo (58 × 40).
   headerLogoArea: {
-    width: 52,
+    width: 64,
     height: 44,
     marginLeft: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerLogo: {
-    width: 42,
-    height: 34,
+    width: 58,
+    height: 40,
   },
   profileHeaderTitle: {
     color: colors.ink,

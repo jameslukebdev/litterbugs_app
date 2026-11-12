@@ -155,6 +155,19 @@ export async function requestGeminiReview(target) {
   return data;
 }
 
+// Every contribution's status and charged amount, for the "Donated" total on Payments.
+export async function loadMyContributionAmounts(userId) {
+  const amounts = [];
+  if (!userId) return amounts;
+  for (let start = 0; ; start += 500) {
+    const { data, error } = await supabase.from('cleanup_contributions')
+      .select('id, status, total_amount_cents').eq('contributor_id', userId).order('id').range(start, start + 499);
+    if (error) throw error;
+    amounts.push(...(data ?? []));
+    if (!data || data.length < 500) return amounts;
+  }
+}
+
 export async function loadReporterRewards(userId) {
   const rewards = [];
   for (let start = 0; ; start += 100) {

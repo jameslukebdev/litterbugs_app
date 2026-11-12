@@ -20,6 +20,7 @@ import BrandBug from './BrandBug';
 import SlideUp from './SlideUp';
 import { reportPresentation } from '../lib/reportPresentation';
 import { reportStatePresentation } from '../lib/reportState';
+import { hapticTap } from '../lib/haptics';
 import { colors, fonts } from '../lib/theme';
 
 function Summary({ report }) {
@@ -51,10 +52,13 @@ function FloatingCard({
   onFavorite,
   favoritesReady,
   animation,
+  canClean,
+  cleanBusy,
+  onClean,
+  insetTop = 0,
 }) {
   const { height } = useWindowDimensions();
   const actions = [
-    ...(canFund ? [{ text: 'Add funds', icon: 'wallet-outline', onPress: () => onFund(report) }] : []),
     ...(canShare ? [{ text: 'Share report', icon: 'share-outline', onPress: () => onShare(report) }] : []),
     { text: 'Close preview', icon: 'close-circle-outline', onPress: onClose },
   ];
@@ -74,7 +78,9 @@ function FloatingCard({
     ]}
   >
     <ScrollView
-      style={{ maxHeight: Math.min(height * 0.55, Math.max(160, height - bottom - 112)) }}
+      // The whole card shows without scrolling: it may rise to just under the search bar.
+      // It only scrolls on very short screens or with very large text.
+      style={{ maxHeight: Math.max(160, height - bottom - insetTop - 74) }}
       bounces={false}
       nestedScrollEnabled
     >
@@ -92,6 +98,23 @@ function FloatingCard({
         distance={distance}
         onPress={onDetails}
         options={<ReportCardMenu actions={actions} />}
+        actions={canFund || canClean ? (
+          // The report page's own actions (ReportDetailsSheet footer): Fund (bee, yellow) then Clean (butterfly, lilac).
+          <View style={styles.actionRow}>
+            {canFund ? (
+              <TouchableOpacity style={[styles.actionButton, styles.fundButton]} onPress={() => { hapticTap(); onFund(report); }} accessibilityRole="button" accessibilityLabel="Fund cleanup">
+                <BrandBug kind="bee" size={21} />
+                <Text style={[styles.actionText, { color: colors.fundInk }]}>Fund</Text>
+              </TouchableOpacity>
+            ) : null}
+            {canClean ? (
+              <TouchableOpacity style={[styles.actionButton, styles.cleanButton]} onPress={() => { hapticTap(); onClean(report); }} disabled={cleanBusy} accessibilityRole="button" accessibilityLabel="Clean up this report" accessibilityState={{ busy: Boolean(cleanBusy), disabled: Boolean(cleanBusy) }}>
+                <BrandBug kind="butterfly" size={21} />
+                <Text style={[styles.actionText, { color: colors.cleanInk }]}>Clean</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        ) : null}
       />
     </ScrollView>
   </Animated.View>;
@@ -102,6 +125,7 @@ export default function MapReportPreview({
   nearby,
   bottom,
   insetBottom,
+  insetTop = 0,
   getPhotoUrl,
   onClose,
   onChoose,
@@ -112,6 +136,9 @@ export default function MapReportPreview({
   onShare,
   canFund = false,
   canShare = false,
+  canClean = false,
+  cleanBusy = false,
+  onClean,
   isFavorite = false,
   onFavorite,
   favoritesReady = false,
@@ -167,6 +194,10 @@ export default function MapReportPreview({
         onFavorite,
         favoritesReady,
         animation,
+        canClean,
+        cleanBusy,
+        onClean,
+        insetTop,
       }}
     /> : null}
     <Modal visible={Boolean(nearby?.length)} transparent animationType="fade" onRequestClose={onCloseNearby}>
@@ -203,6 +234,12 @@ const styles = StyleSheet.create({
   // Website floating map card (.map-pin-card): white, lilac edge, soft purple shadow.
   card: { position: 'absolute', left: 16, right: 16, borderRadius: 20, backgroundColor: colors.white, borderWidth: 2, borderColor: colors.edge, boxShadow: '0 4px 0 #EBE7F8, 0 16px 32px rgba(42, 34, 90, 0.12)', elevation: 9 },
   completedCard: {},
+  // Same buttons as the report page footer (styles/MapScreen.styles.js reportActionButton).
+  actionRow: { marginTop: 10, flexDirection: 'row', gap: 10 },
+  actionButton: { flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, borderWidth: 1, borderBottomWidth: 4 },
+  fundButton: { borderColor: colors.fundEdge, backgroundColor: colors.fundFill },
+  cleanButton: { borderColor: colors.cleanEdge, backgroundColor: colors.cleanFill },
+  actionText: { fontSize: 16, fontWeight: '800' },
   copy: { flex: 1, gap: 5 },
   title: { fontSize: 15, fontWeight: '700', color: colors.ink },
   stateRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import BrandBug from './BrandBug';
 import { colors, fonts } from '../lib/theme';
 
@@ -64,6 +64,8 @@ export default function MapPin({ kind = 'open', text = null, selected = false, s
         styles.pill,
         { height: size, minWidth: size, borderRadius: size / 2, borderColor: edge, backgroundColor: fill },
         iconOnly ? { width: size, paddingLeft: 0, paddingRight: 0 } : null,
+        // Android draws its own drop shadow from `elevation`; a flat pin has none.
+        !shadow ? { elevation: 0 } : null,
       ]}>
         <BrandBug kind={bug.kind} style={{ width: bug.width, height: bug.height }} />
         {text ? <Text allowFontScaling={false} numberOfLines={1} style={styles.text}>{text}</Text> : null}
@@ -102,7 +104,10 @@ const styles = StyleSheet.create({
     paddingLeft: 7,
     paddingRight: 12,
     borderWidth: 2,
-    elevation: 3,
+    // No elevation on Android: it lifts the circle above the tail, so the tail's white fill
+    // could not cover the circle's bottom edge (a line across the top of the point). A map
+    // pin's picture draws no shadow anyway.
+    elevation: Platform.OS === 'android' ? 0 : 3,
   },
   text: { color: colors.ink, fontFamily: fonts.heading, fontSize: 15, lineHeight: 18 },
   tailEdge: {
