@@ -68,7 +68,7 @@ function AfterPhoto({ url, index, count, width }) {
       {/* Same as the report photos: the whole picture, uncropped, on a black screen. */}
       {!failed ? (
         <TouchableOpacity style={styles.fullPhotoButton} onPress={() => setFullOpen(true)} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={`View full after photo ${index + 1} of ${count}`}>
-          <Text style={styles.fullPhotoText}>View full photo</Text>
+          <Ionicons name="expand-outline" size={20} color={colors.ink} />
         </TouchableOpacity>
       ) : null}
       <Modal visible={fullOpen} animationType="fade" onRequestClose={() => setFullOpen(false)} statusBarTranslucent>
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: 'rgba(41, 41, 50, 0.72)',
   },
-  fullPhotoButton: { position: 'absolute', right: 12, bottom: 12, minHeight: 36, paddingHorizontal: 13, justifyContent: 'center', borderRadius: 16, backgroundColor: colors.white },
+  fullPhotoButton: { position: 'absolute', right: 12, bottom: 12, width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22, backgroundColor: colors.white },
   fullPhotoText: { color: colors.ink, fontSize: 13, fontWeight: '700' },
   fullPhotoBackdrop: { flex: 1, backgroundColor: colors.black, alignItems: 'center', justifyContent: 'center' },
   fullPhotoClose: { position: 'absolute', top: 58, right: 20, width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white },
