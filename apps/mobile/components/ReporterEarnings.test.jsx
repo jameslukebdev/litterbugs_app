@@ -22,18 +22,18 @@ beforeEach(() => {
 afterEach(async () => { await act(() => root.unmount()); });
 const render = onOpenReport => act(() => root.render(<ReporterEarnings userId="owner" onOpenReport={onOpenReport} />));
 it('explains empty earnings without displaying a payout as earned', async () => {
-  await render(); expect(host.textContent).toContain('No reporter earnings yet');
-  expect(host.textContent).toContain('Earn 5%'); expect(host.querySelector('button')).toBeNull();
+  await render(); expect(host.textContent).toContain('None yet');
+  expect(host.textContent).toContain('You earn 5%'); expect(host.querySelector('button')).toBeNull();
 });
 it('shows earned amounts and Stripe transfer status and opens the matching report', async () => {
   state.resource.data = [{ cleanup_attempt_id: 'cleanup', report_id: 'report', amount_cents: 500, status: 'transferred', report: { title: 'Park cleanup' } }];
   const open = vi.fn(); await render(open);
   expect(host.textContent).toContain('$5.00 · Sent to Stripe');
-  expect(host.textContent).toContain('Bank arrival follows your Stripe payout schedule');
+  expect(host.textContent).not.toContain('None yet');
   await act(() => host.querySelector('button').click()); expect(open).toHaveBeenCalledWith('report');
 });
 it('offers a retry when rewards cannot load', async () => {
   state.resource.error = new Error('Network unavailable'); await render();
-  expect(host.textContent).not.toContain('No reporter earnings yet');
+  expect(host.textContent).not.toContain('None yet');
   await act(() => host.querySelector('button').click()); expect(state.resource.refresh).toHaveBeenCalledOnce();
 });

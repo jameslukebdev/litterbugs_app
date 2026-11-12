@@ -372,6 +372,11 @@ export default function ProfileScreen({ navigation, route }) {
             />
             </> : <Text style={{ padding: 17, color: colors.muted }}>Payout setup is currently unavailable. Your payment history is still available above.</Text>}
           </View>
+          {/* Who holds the money, said once and plainly. */}
+          <View style={styles.paymentsTrust}>
+            <Ionicons name="lock-closed-outline" size={15} color={colors.muted} />
+            <Text style={styles.paymentsTrustText}>Payments and payouts run through Stripe. Litterbugs never sees your full card or bank number.</Text>
+          </View>
           <Text style={styles.activityHeading}>Your contributions</Text>
           <View style={[styles.card, styles.paymentCard]}>
             {contributions.error && !contributions.hasLoaded ? <LoadFailure title="Couldn’t load contributions" onRetry={contributions.refresh} />
@@ -545,6 +550,8 @@ const styles = StyleSheet.create({
   stripeConnectionDetail: { fontSize: 12, fontWeight: '800' },
   emailLabel: { color: colors.ink, fontSize: 16, fontWeight: '600' },
   emailText: { flexShrink: 1, color: colors.muted, fontSize: 15, fontWeight: '700' },
+  paymentsTrust: { marginTop: 12, paddingHorizontal: 4, flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  paymentsTrustText: { flex: 1, color: colors.muted, fontSize: 13, lineHeight: 19 },
   signedOutContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, backgroundColor: colors.white },
   signedOutTitle: { marginTop: 20, color: colors.ink, fontSize: 24, fontFamily: fonts.heading, textAlign: 'center' },
   signedOutText: { maxWidth: 360, marginTop: 10, color: colors.muted, fontSize: 15, lineHeight: 22, textAlign: 'center' },
