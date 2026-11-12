@@ -24,6 +24,37 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (coordinated photo reveal and clearer glow, local)
+
+- Visible report photos now download/decode behind fixed-size frames and reveal
+  together in one animation frame, with a 180ms fade. Added shared batching to
+  map results, public report grids/carousels, existing homepage collage and
+  before/after proof pairs. Content/links stay usable; offscreen/hidden slides
+  never hold the group or get promoted to eager loading by the coordinator.
+- Observer work is scheduled by intersection/layout/source changes, not per-
+  pixel scrolling in supported browsers. Reuses existing img requests (no extra
+  full-size preloads). Handles cache, errors, retry/source changes and cleanup.
+  A 5s outlier deadline releases ready photos; late photos can still recover.
+  No-JS public pages get a noscript visibility fallback. Reduced motion skips
+  the fade. Report loader stays continuous from fetching to visible decoding.
+- Strengthened the firefly halo: .22–.65 opacity and .92–1.12 scale over slow
+  alternating 1.8s phases. Body stays still; reduced-motion glow remains static.
+- Local /dev-review-preview/photos uses three intentionally staggered local
+  image responses (180/1400/2600ms); page/image route are production-404 guarded.
+  References: MDN HTMLImageElement.decode and Intersection Observer docs, local
+  Next Image docs; existing brand/motion rules remain the visual reference.
+- 76 focused tests pass; lint, TypeScript, CSS compilation and diff check pass.
+  Tests cover atomic decode/reveal, cache, failure, stale source, scroll groups,
+  5s deadline/recovery and resource cleanup. CUA saw image 1 fully downloaded
+  while all 3 remained at opacity 0, followed by all at opacity 1. Real report,
+  homepage collage/proof and phone preview checks pass with no browser errors.
+  Stronger glow confirmed running at 1.8s; temporary network/viewport settings
+  restored, loaders stopped and previews kept open.
+- No push, deployment, DB changes or local production build. Memory pressure
+  moderate (2); tests use one worker. Other agents' notification/native files
+  and handoff changes preserved with an isolated index. Approved filter/card
+  deployment remains paused while the owner reviews these loading updates.
+
 ### 2026-11-12 — Codex (GivePulse individual participation clarified)
 
 - Official volunteer guide confirms free individual accounts, opportunity

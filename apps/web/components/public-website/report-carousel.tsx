@@ -6,10 +6,12 @@ import { HeaderAreaSearch } from '../header-area-search';
 import Link from 'next/link';
 import { AVAILABLE_CLEANUPS_MAP_HREF } from '@/lib/home-map-link';
 import styles from './report-carousel.module.css';
+import { photoBatchClass, PhotoBatchFallback, usePhotoBatch } from '../photo-batch';
 
 export function ReportCarousel({ children, enabled, className }: { children: ReactNode; enabled: boolean; className: string }) {
   const [areaSearchOpen, setAreaSearchOpen] = useState(false);
   const track = useRef<HTMLDivElement>(null);
+  usePhotoBatch(track);
   const cocoon = useRef<HTMLImageElement>(null);
   const id = useId();
   const [edges, setEdges] = useState({ start: true, end: false });
@@ -34,7 +36,7 @@ export function ReportCarousel({ children, enabled, className }: { children: Rea
     update();
     return () => { observer.disconnect(); node.removeEventListener('scroll', update); };
   }, [enabled, children]);
-  if (!enabled) return <div className={className}>{children}</div>;
+  if (!enabled) return <div ref={track} className={`${className} ${photoBatchClass}`}>{children}<PhotoBatchFallback /></div>;
   function move(direction: number) {
     const node = track.current;
     if (!node) return;
@@ -51,6 +53,6 @@ export function ReportCarousel({ children, enabled, className }: { children: Rea
       <button type="button" onClick={() => move(1)} disabled={edges.end} aria-label="Next reports" aria-controls={id}>→</button>
       </div>
     </div>
-    <div ref={track} id={id} className={`${className} ${styles.track}`} tabIndex={0} aria-label="Report cards; scroll to see more">{children}</div>
+    <div ref={track} id={id} className={`${className} ${styles.track} ${photoBatchClass}`} tabIndex={0} aria-label="Report cards; scroll to see more">{children}<PhotoBatchFallback /></div>
   </section>;
 }

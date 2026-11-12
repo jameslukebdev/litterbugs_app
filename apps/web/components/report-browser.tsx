@@ -8,6 +8,7 @@ import { ReportSortMenu } from './report-sort';
 import controls from './report-controls.module.css';
 import { BrandBug } from './brand-bug';
 import { LoadingFirefly } from './loading-firefly';
+import { photoBatchClass, usePhotoBatch } from './photo-batch';
 import { ReportCardContent } from './report-card-content';
 import { reportWorkflowTone } from '@/lib/report-visibility';
 import { getDistanceMiles, type Coordinates, type MappableReport } from '@litterbugs/report-contract';
@@ -151,6 +152,7 @@ function ReportThumbnail({ report, priority, retry, index, onError }: { report: 
       <img
         key={current.src}
         className="report-card-image"
+        data-batch-photo=""
         data-loaded={loadedSrc === current.src}
         onLoad={() => setLoadedSrc(current.src)}
         src={current.after ? current.src : retryReportPhotoUrl(current.src, retry)}
@@ -367,6 +369,8 @@ export function ReportBrowser({
   }, [resultsLoading, applied, mapCenter, favoriteReportIds, hiddenReportIds, reports, sort, boundary, locationOrigin]);
 
   const displayedReports = useMemo(() => visibleReports.slice(0, displayLimit), [visibleReports, displayLimit]);
+  const photosLoading = usePhotoBatch(listRef, open, displayedReports)
+    && displayedReports.some(report => report.cleanup_state === 'completed' || report.photo_paths?.length);
   useEffect(() => {
     if (!open || !showAuthors) return;
     let cancelled = false;
@@ -479,8 +483,8 @@ export function ReportBrowser({
           {sort === 'closest' && locationMessage && <p role="status">{locationMessage}</p>}
           <p className="discovery-status" role="status">{discoveryError || (truncated ? 'Showing up to 1,000 matches. Zoom in or narrow your filters to see more.' : '')}</p>
         </header>
-        <div className={`report-browser-list${resultsLoading ? ` ${controls.loadingList}` : ''}`} ref={listRef} onScroll={() => { if (memoryReady && !resultsLoading) saveBrowserMemory({ filters: applied, sort, scroll: listRef.current?.scrollTop ?? 0, displayLimit }); }} aria-busy={resultsLoading || refreshing}>
-          <LoadingFirefly active={resultsLoading} />
+        <div className={`report-browser-list ${photoBatchClass}${resultsLoading ? ` ${controls.loadingList}` : ''}`} ref={listRef} onScroll={() => { if (memoryReady && !resultsLoading) saveBrowserMemory({ filters: applied, sort, scroll: listRef.current?.scrollTop ?? 0, displayLimit }); }} aria-busy={resultsLoading || refreshing || photosLoading}>
+          <LoadingFirefly active={resultsLoading || photosLoading} />
           {visibleReports.length ? displayedReports.map((report, index) => {
             const selected = report.id === selectedReportId;
             const previewed = report.id === previewedReportId;

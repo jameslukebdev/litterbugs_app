@@ -20,6 +20,7 @@ import {
 import heroStyles from '@/components/public-website/home-hero.module.css';
 import { APP_STORE_URL, GOOGLE_PLAY_URL } from '@/lib/app-links';
 import { WebsiteStructuredData } from '@/components/public-website/structured-data';
+import { PhotoBatch } from '@/components/photo-batch';
 
 /** The bee's dotted route through the hero, weaving down the gap between the photos (560 × 540 design box). */
 const BEE_FLIGHT = 'M 118 26 C 200 -8 300 36 272 118 S 226 236 282 278 S 334 352 276 380 S 238 466 295 498';
@@ -60,32 +61,32 @@ export default async function HomePage({
               </a>
             </div>
           </div>
-          <div className={heroStyles.collage}>
+          <PhotoBatch className={heroStyles.collage}>
             <svg className={heroStyles.trail} viewBox="0 0 560 540" aria-hidden="true" focusable="false">
               <path d={BEE_FLIGHT} />
             </svg>
             <ol className={heroStyles.steps} aria-label="How Litterbugs works">
               <li className={`${heroStyles.step} ${heroStyles.spot}`}>
                 <div className={heroStyles.photo}>
-                  <Image src="/homepage-photos/walk.webp" alt="A person checking their phone while walking outdoors" fill sizes="(max-width:700px) 40vw, 240px" preload />
+                  <Image data-batch-photo="" src="/homepage-photos/walk.webp" alt="A person checking their phone while walking outdoors" fill sizes="(max-width:700px) 40vw, 240px" preload />
                 </div>
                 <span className={heroStyles.tag}><Image className={heroStyles.tagBug} src="/brand/ranks/lightning-bug.svg" alt="" width={64} height={64} unoptimized />Spot litter</span>
               </li>
               <li className={`${heroStyles.step} ${heroStyles.report}`}>
                 <div className={heroStyles.photo}>
-                  <Image src="/homepage-photos/reported-litter.webp" alt="Discarded cardboard on a grassy verge, photographed in a Litterbugs report" fill sizes="(max-width:700px) 42vw, 250px" loading="eager" />
+                  <Image data-batch-photo="" src="/homepage-photos/reported-litter.webp" alt="Discarded cardboard on a grassy verge, photographed in a Litterbugs report" fill sizes="(max-width:700px) 42vw, 250px" loading="eager" />
                 </div>
                 <span className={heroStyles.tag}><Image className={heroStyles.tagBug} src="/brand/ranks/dragonfly.svg" alt="" width={64} height={64} unoptimized />Snap a report</span>
               </li>
               <li className={`${heroStyles.step} ${heroStyles.clean}`}>
                 <div className={heroStyles.photo}>
-                  <Image src="/homepage-photos/cleanup.webp" alt="Two volunteers collecting a discarded plastic bottle" fill sizes="(max-width:700px) 44vw, 260px" loading="eager" />
+                  <Image data-batch-photo="" src="/homepage-photos/cleanup.webp" alt="Two volunteers collecting a discarded plastic bottle" fill sizes="(max-width:700px) 44vw, 260px" loading="eager" />
                 </div>
                 <span className={heroStyles.tag}><Image className={heroStyles.tagBug} src="/brand/ranks/caterpillar.svg" alt="" width={64} height={64} unoptimized />It gets cleaned up</span>
               </li>
               <li className={`${heroStyles.step} ${heroStyles.paid}`}>
                 <div className={heroStyles.photo}>
-                  <Image src="/homepage-photos/phone.webp" alt="Hands using a phone outdoors in the sunshine" fill sizes="(max-width:700px) 40vw, 240px" loading="eager" />
+                  <Image data-batch-photo="" src="/homepage-photos/phone.webp" alt="Hands using a phone outdoors in the sunshine" fill sizes="(max-width:700px) 40vw, 240px" loading="eager" />
                 </div>
                 <span className={heroStyles.toast}>
                   <Image className={heroStyles.toastBug} src="/brand/bugs/butterfly.png" alt="" width={99} height={98} unoptimized />
@@ -100,7 +101,7 @@ export default async function HomePage({
               </g>
               <image className={heroStyles.restingBee} href="/brand/bugs/bee.png" x="270" y="474" width="50" height="48" />
             </svg>
-          </div>
+          </PhotoBatch>
         </section>
         <div className={`${styles.wide} ${homeStyles.sections}`}>
           <ReportStarter />
