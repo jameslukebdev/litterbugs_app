@@ -39,7 +39,7 @@ function Section({ id, icon, title, open, read, onToggle, children }) {
         accessibilityState={{ expanded: open }}
         accessibilityLabel={`${title}${read ? ', opened' : ''}`}
       >
-        <Ionicons name={icon} size={20} color={colors.cleanInk} />
+        <Ionicons name={icon} size={20} color={colors.body} />
         <Text style={styles.sectionTitle}>{title}</Text>
         {read ? <Ionicons name="checkmark-circle" size={20} color={colors.done} accessibilityElementsHidden /> : null}
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={20} color={colors.muted} />
@@ -49,7 +49,7 @@ function Section({ id, icon, title, open, read, onToggle, children }) {
   );
 }
 
-function Checkbox({ checked, disabled, onPress, children }) {
+function Checkbox({ checked, disabled, locked = false, onPress, children }) {
   return (
     <TouchableOpacity
       style={[styles.check, checked && styles.checkOn, disabled && styles.checkLocked]}
@@ -58,8 +58,9 @@ function Checkbox({ checked, disabled, onPress, children }) {
       activeOpacity={0.8}
       accessibilityRole="checkbox"
       accessibilityState={{ checked, disabled }}
+      accessibilityHint={locked ? 'Open each section above first' : undefined}
     >
-      <Ionicons name={checked ? 'checkbox' : 'square-outline'} size={26} color={checked ? colors.primary : colors.muted} />
+      <Ionicons name={locked ? 'lock-closed-outline' : checked ? 'checkbox' : 'square-outline'} size={26} color={checked ? colors.primary : colors.muted} />
       <Text style={styles.checkText}>{children}</Text>
     </TouchableOpacity>
   );
@@ -124,45 +125,29 @@ export default function CleanupWaiverModal({
             </TouchableOpacity>
             <View style={styles.heroBug}><BrandBug kind="butterfly" size={46} playOnMount /></View>
             <Text style={styles.title} accessibilityRole="header">Let’s clean this spot</Text>
-            {report?.title ? <Text style={styles.reportTitle} numberOfLines={2}>{report.title}</Text> : null}
           </View>
 
-          {/* What happens next, in three friendly steps. */}
+          {/* What happens next, in three steps, each in its own colour. */}
           <View style={styles.steps}>
             <View style={styles.step}>
-              <View style={styles.stepIcon}><Ionicons name="time-outline" size={20} color={colors.cleanInk} /></View>
-              <View style={styles.stepCopy}>
-                <Text style={styles.stepTitle}>Clean it within 24 hours</Text>
-                <Text style={styles.stepLine}>The spot is yours while you work on it.</Text>
-              </View>
+              <View style={[styles.stepIcon, styles.stepTime]}><Ionicons name="time-outline" size={20} color={colors.reportInk} /></View>
+              <Text style={styles.stepTitle}>Clean it within 24 hours</Text>
             </View>
             <View style={styles.step}>
-              <View style={styles.stepIcon}><Ionicons name="camera-outline" size={20} color={colors.cleanInk} /></View>
-              <View style={styles.stepCopy}>
-                <Text style={styles.stepTitle}>Snap an after photo</Text>
-                <Text style={styles.stepLine}>From the same spot as the report photo.</Text>
-              </View>
+              <View style={[styles.stepIcon, styles.stepPhoto]}><Ionicons name="camera-outline" size={20} color={colors.done} /></View>
+              <Text style={styles.stepTitle}>Snap an after photo from the same spot</Text>
             </View>
             <View style={styles.step}>
-              <View style={[styles.stepIcon, funded && styles.stepIconFund]}>
-                {funded ? <BrandBug kind="bee" size={22} /> : <Ionicons name="ribbon-outline" size={20} color={colors.cleanInk} />}
+              <View style={[styles.stepIcon, funded ? styles.stepFund : styles.stepPoints]}>
+                {funded ? <BrandBug kind="bee" size={22} /> : <Ionicons name="ribbon-outline" size={20} color={colors.primaryDark} />}
               </View>
-              <View style={styles.stepCopy}>
-                {funded ? <>
-                  <Text style={[styles.stepTitle, styles.payTitle]}>Get paid {formatUsd(Number(report.funded_amount_cents))}</Text>
-                  <Text style={styles.stepLine}>Once your cleanup is approved. Payout setup comes first.</Text>
-                </> : <>
-                  <Text style={styles.stepTitle}>Earn 3 points</Text>
-                  <Text style={styles.stepLine}>Toward your next rank, once it’s approved.</Text>
-                </>}
-              </View>
+              {funded
+                ? <Text style={[styles.stepTitle, styles.payTitle]}>Get paid {formatUsd(Number(report.funded_amount_cents))} once approved</Text>
+                : <Text style={styles.stepTitle}>Earn 3 points once approved</Text>}
             </View>
           </View>
 
           <Text style={styles.groupTitle} accessibilityRole="header">Safety and agreement</Text>
-          {!agreementSaved ? (
-            <Text style={styles.groupHint}>{allRead ? 'Thanks for reading. Tick both boxes below to start.' : 'Tap each section to read it before you start.'}</Text>
-          ) : null}
 
           <Section id="safety" icon="shield-checkmark-outline" title="Stay safe" open={open === 'safety'} read={read.has('safety')} onToggle={toggle}>
             {waiver?.guidelines_body ? <Text style={styles.sectionText}>{waiver.guidelines_body.trim()}</Text> : null}
@@ -182,6 +167,7 @@ export default function CleanupWaiverModal({
             <Checkbox
               checked={acknowledged}
               disabled={accepting || !allRead}
+              locked={!allRead}
               onPress={() => { hapticSelect(); setAcknowledged(current => !current); }}
             >
               I confirm I am 18 or older. I have read and accept this version of the safety guidelines, funded reward acknowledgment, assumption of risk, and release.
@@ -222,26 +208,26 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 20, paddingBottom: 30 },
 
   // Lilac, the Clean colour, with the butterfly.
-  hero: { marginHorizontal: -20, paddingTop: 22, paddingBottom: 22, paddingHorizontal: 24, alignItems: 'center', backgroundColor: colors.cleanFill, borderBottomWidth: 1, borderBottomColor: colors.cleanEdge },
-  closeButton: { position: 'absolute', top: 12, right: 12, width: 44, height: 44, borderRadius: 22, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
-  heroBug: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white, borderWidth: 2, borderColor: colors.cleanEdge },
-  title: { marginTop: 12, color: colors.cleanInk, fontSize: 26, lineHeight: 31, fontFamily: fonts.heading, textAlign: 'center' },
-  reportTitle: { marginTop: 4, color: colors.body, fontSize: 15, lineHeight: 21, textAlign: 'center' },
+  hero: { paddingTop: 26, paddingBottom: 6, alignItems: 'center' },
+  closeButton: { position: 'absolute', top: 12, right: -8, width: 44, height: 44, borderRadius: 22, backgroundColor: colors.mist, alignItems: 'center', justifyContent: 'center' },
+  heroBug: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.cleanFill, borderWidth: 2, borderColor: colors.cleanEdge },
+  title: { marginTop: 12, color: colors.ink, fontSize: 26, lineHeight: 31, fontFamily: fonts.heading, textAlign: 'center' },
 
   steps: { marginTop: 20, gap: 14 },
   step: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  stepIcon: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.cleanFill },
-  stepIconFund: { backgroundColor: colors.yellowPale, borderWidth: 1, borderColor: colors.yellowBorder },
-  stepCopy: { flex: 1, minWidth: 0 },
-  stepTitle: { color: colors.ink, fontSize: 16, lineHeight: 21, fontFamily: fonts.heading },
+  stepIcon: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  stepTime: { backgroundColor: colors.reportSoft, borderColor: colors.reportEdge },
+  // The mint family (AGENTS.md): fill #b9e9dd-ish soft mint, border #8ed7c5.
+  stepPhoto: { backgroundColor: colors.doneSoft, borderColor: '#8ED7C5' },
+  stepFund: { backgroundColor: colors.yellowPale, borderColor: colors.yellowBorder },
+  stepPoints: { backgroundColor: colors.primarySoft, borderColor: colors.primaryBorder },
+  stepTitle: { flex: 1, minWidth: 0, color: colors.ink, fontSize: 16, lineHeight: 21, fontFamily: fonts.heading },
   payTitle: { color: colors.gold },
-  stepLine: { color: colors.muted, fontSize: 14, lineHeight: 19 },
 
-  groupTitle: { marginTop: 28, color: colors.ink, fontSize: 17, lineHeight: 22, fontFamily: fonts.heading },
-  groupHint: { marginTop: 2, marginBottom: 4, color: colors.muted, fontSize: 14, lineHeight: 20 },
+  groupTitle: { marginTop: 28, marginBottom: 2, color: colors.ink, fontSize: 17, lineHeight: 22, fontFamily: fonts.heading },
 
   section: { marginTop: 10, borderRadius: 16, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
-  sectionOpen: { borderColor: colors.cleanEdge },
+  sectionOpen: { borderColor: colors.lineStrong },
   sectionHeader: { minHeight: 54, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 10 },
   sectionTitle: { flex: 1, color: colors.ink, fontSize: 15, fontWeight: '700' },
   sectionBody: { paddingHorizontal: 14, paddingBottom: 14, gap: 8 },
