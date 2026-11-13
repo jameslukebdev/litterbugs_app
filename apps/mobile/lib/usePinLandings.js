@@ -76,6 +76,20 @@ export default function usePinLandings({ enabled, mapRef, region, hidden, posted
     });
   }, []);
 
+  // iPhone's stand-in must land into an empty spot. Forget a pin as soon as it
+  // leaves view, while it is still off screen, so its old native marker cannot
+  // slide back into view underneath the next landing.
+  const hide = useCallback((keys) => {
+    if (!keys.length) return;
+    keys.forEach(key => visible.current.delete(key));
+    setShown((current) => {
+      if (!keys.some(key => current.has(key))) return current;
+      const next = new Set(current);
+      keys.forEach(key => next.delete(key));
+      return next;
+    });
+  }, []);
+
   // The map started moving: anything mid-landing would drift away from its spot, so finish now.
   const finishAll = useCallback(() => {
     generation.current += 1;
@@ -98,7 +112,8 @@ export default function usePinLandings({ enabled, mapRef, region, hidden, posted
       if (!visible.current.has(key) && !landing.current.has(key)) toLand.push(key);
     }
     visible.current = nowVisible;
-    reveal(offscreen);
+    if (inPlace) reveal(offscreen);
+    else hide(offscreen);
     if (!toLand.length) return;
 
     if (inPlace) {
@@ -144,7 +159,7 @@ export default function usePinLandings({ enabled, mapRef, region, hidden, posted
     failed.forEach(key => landing.current.delete(key));
     reveal(failed);
     if (added.length) setGhosts(current => [...current.filter(ghost => !added.some(next => next.key === ghost.key)), ...added]);
-  }, [enabled, inPlace, mapRef, reveal]);
+  }, [enabled, inPlace, mapRef, reveal, hide]);
 
   const schedule = useCallback(() => {
     if (!enabled) return;
@@ -200,10 +215,17 @@ export default function usePinLandings({ enabled, mapRef, region, hidden, posted
     // the map moves, including any still handing over to its real pin (on Android that
     // handover lasts over a second, and a stand-in left behind stayed fixed on the screen).
     if (landing.current.size || ghostCount.current) finishAll();
+    if (!inPlace && nextRegion) {
+      const offscreen = [];
+      for (const [key, pin] of pins.current) {
+        if (!inRegion(nextRegion, pin.coordinate)) offscreen.push(key);
+      }
+      hide(offscreen);
+    }
     // Never stay stuck if a settle event is missed.
     if (movingFallback.current) clearTimeout(movingFallback.current);
     movingFallback.current = setTimeout(() => { moving.current = false; schedule(); }, 1500);
-  }, [enabled, finishAll, schedule]);
+  }, [enabled, finishAll, schedule, inPlace, hide]);
 
   // A finger touched the map: clear the floating stand-ins before anything moves, so none is
   // ever left behind on the screen while the map slides under it.
@@ -221,11 +243,16 @@ export default function usePinLandings({ enabled, mapRef, region, hidden, posted
 
   const ghostDone = useCallback((key) => {
     landing.current.delete(key);
+    const run = generation.current;
     // Show the real pin and, in the same screen update, drop the stand-in's shadow, so the two
     // shadows never stack (that showed as a dark blink at the end of each landing).
     reveal([key]);
     setGhosts(current => current.map(ghost => (ghost.key === key ? { ...ghost, handover: true } : ghost)));
-    setTimeout(() => setGhosts(current => current.filter(ghost => ghost.key !== key)), handoverMs);
+    setTimeout(() => {
+      // A swipe may have started a fresh drop for this same pin in the meantime.
+      if (run !== generation.current) return;
+      setGhosts(current => current.filter(ghost => ghost.key !== key));
+    }, handoverMs);
   }, [reveal, handoverMs]);
 
   // The loading screen cleared, or the visible area changed: look for pins that need to land.
