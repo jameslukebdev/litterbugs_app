@@ -15,7 +15,7 @@ export default function TermsPage() {
       eyebrow="LITTERBUGS TERMS"
       title="Terms of use"
       summary="These terms govern Litterbugs accounts, community reports, cleanup funding, cleaner rewards, safety, reviews, disputes, and refunds."
-      effectiveDate="October 21, 2026"
+      effectiveDate="November 13, 2026"
       sections={[
         {
           title: 'Agreement and who may use Litterbugs',
