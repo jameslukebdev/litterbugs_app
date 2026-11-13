@@ -147,6 +147,9 @@ export default function CleanupWaiverModal({
             </View>
           </View>
 
+          {/* As on the website: the full agreement only when this version has not been accepted
+              yet; after that, only the site-safety confirmation below. */}
+          {agreementSaved ? null : <>
           <Text style={styles.groupTitle} accessibilityRole="header">Safety and agreement</Text>
 
           <Section id="safety" icon="shield-checkmark-outline" title="Stay safe" open={open === 'safety'} read={read.has('safety')} onToggle={toggle}>
@@ -162,6 +165,8 @@ export default function CleanupWaiverModal({
               <Text style={styles.sectionText}>{waiver.release_body.trim()}</Text>
             </Section>
           ) : null}
+
+          </>}
 
           {agreementSaved ? null : (
             <Checkbox
