@@ -71,6 +71,24 @@ Chrome verified both date ranges and app awaiting release. A signed-out HTTP rea
 contained only sign-in and no private metrics/key. Local credential/cache files
 are0600 and ignored. No production build, dashboard deployment or GitHub push.
 
+Additional review-account/date verification: business reads exclude users whose
+server-owned `raw_app_meta_data.review_account` is boolean true, including their
+reports, cleanup actions, contributions/refunds and fixtures on their reports.
+User-editable metadata cannot opt a real account out of business measurements.
+The persistent Apple review account was verified flagged with zero business rows;
+no credentials, identity details or account IDs were added to analytics events.
+
+The read-only CTE regression exposed PostgreSQL's implicit DATE AT TIME ZONE
+overload. Date bounds now explicitly cast to timestamp first, producing NY
+midnight timestamptz values for current and comparison periods. This corrected
+7-day principal funding from$47 to$37; other new-report/cleanup counts remain6/4.
+The former cutoff included$10 in payments outside the selected complete-day window.
+Regression command: `node scripts/check-owner-analytics-business.mjs --linked`
+(or `--local` on a local DB). It substitutes CTE-only fake rows and performs no
+writes. Both7/28 windows passed reviewer author/cleaner/funder/parent exclusion,
+user-metadata spoof resistance, real refunds, late-night activity, boundary funding
+and graph reconciliation. Live aggregate query also passes; no DB migration.
+
 This supersedes older unconfigured-connection and snapshot-only notes below.
 
 ## Implemented owner metrics and simpler page — November13

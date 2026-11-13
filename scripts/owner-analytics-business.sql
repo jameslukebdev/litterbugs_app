@@ -1,26 +1,35 @@
 -- Aggregate-only, read-only local owner dashboard query. No user input or PII
 -- leaves the database. Publication resets reports.created_at in the existing
 -- publication trigger. Each completed attempt uses its final submission once.
-with windows as (
+with review_accounts as (
+  -- Server-owned metadata, not user-editable profile claims. Keep persistent
+  -- store reviewers and any future fixtures out of real business measurements.
+  select id from auth.users where raw_app_meta_data @> '{"review_account":true}'::jsonb
+), windows as (
+  -- Explicit timestamp casts make these NY midnights timestamptz values.
+  -- DATE AT TIME ZONE otherwise chooses a different implicit overload.
   select days,
-    ((now() at time zone 'America/New_York')::date - days) at time zone 'America/New_York' as starts,
-    (now() at time zone 'America/New_York')::date at time zone 'America/New_York' as ends
+    (((now() at time zone 'America/New_York')::date - days)::timestamp) at time zone 'America/New_York' as starts,
+    ((now() at time zone 'America/New_York')::date::timestamp) at time zone 'America/New_York' as ends
   from (values (7), (28)) p(days)
 ), reports as (
   select id,user_id,created_at,cleanup_state,funded_amount_cents,expires_at,expired_at,cancelled_at
-  from public.reports
+  from public.reports r
   where is_published and not is_sample and status is distinct from 'removed'
+    and not exists(select 1 from review_accounts qa where qa.id=r.user_id)
 ), cleanups as (
   select a.id,a.cleaner_id,a.completed_at,a.is_paid,s.bags_or_items_removed,s.weight_pounds,s.duration_minutes
   from public.cleanup_attempts a
   join reports r on r.id=a.report_id
   left join public.cleanup_submissions s on s.id=a.final_submission_id and s.cleanup_attempt_id=a.id
   where a.status='completed' and a.completed_at is not null
+    and not exists(select 1 from review_accounts qa where qa.id=a.cleaner_id)
 ), contributions as (
   select c.contributor_id,c.principal_amount_cents,c.succeeded_at,c.refunded_at,c.status
   from public.cleanup_contributions c join public.reports r on r.id=c.report_id
   -- Later report moderation does not erase a real payment or its refund.
   where not r.is_sample and c.succeeded_at is not null and c.currency='usd'
+    and not exists(select 1 from review_accounts qa where qa.id=r.user_id or qa.id=c.contributor_id)
     and c.stripe_payment_intent_id is not null
     and c.status in ('succeeded','refund_pending','refunded','paid_out')
 ), backlog as (
@@ -30,7 +39,7 @@ with windows as (
 ), periods as (
   select days,starts,ends,false as previous from windows
   union all
-  select days,((starts at time zone 'America/New_York')::date-days) at time zone 'America/New_York',starts,true from windows
+  select days,(((starts at time zone 'America/New_York')::date-days)::timestamp) at time zone 'America/New_York',starts,true from windows
 ), totals as (
   select p.*,
     (select count(*) from reports r where r.created_at>=p.starts and r.created_at<p.ends) as new_reports,
@@ -42,7 +51,8 @@ with windows as (
       union select c.cleaner_id from cleanups c where c.completed_at>=p.starts and c.completed_at<p.ends
       union select f.contributor_id from contributions f where f.succeeded_at>=p.starts and f.succeeded_at<p.ends
     ) accounts join auth.users u on u.id=accounts.account
-      where not coalesce(u.is_anonymous,false)) as contributors,
+      where not coalesce(u.is_anonymous,false)
+        and not exists(select 1 from review_accounts qa where qa.id=u.id)) as contributors,
     (select count(*) from cleanups c where c.completed_at>=p.starts and c.completed_at<p.ends and c.is_paid) as paid_cleanups,
     (select coalesce(sum(c.weight_pounds),0) from cleanups c where c.completed_at>=p.starts and c.completed_at<p.ends and c.weight_pounds>0) as pounds,
     (select count(*) from cleanups c where c.completed_at>=p.starts and c.completed_at<p.ends and c.weight_pounds>0) as weight_count,
