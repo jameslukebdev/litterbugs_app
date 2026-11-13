@@ -82,6 +82,13 @@ export default function PrivacyPage() {
           </>,
         },
         {
+          title: 'App analytics and diagnostics',
+          content: <>
+            <p>The Litterbugs mobile app uses PostHog to understand how the app is used and to diagnose problems. It sends the screens and steps you reach (for example, opening a report or finishing a payment), how long they take, rounded result counts, error and crash reports, and basic device, app version and network information. These events are not linked to your account and do not include your name, email address, account ID, report text, photos, payment details or precise location. Error messages are stripped of email addresses, links, identifiers and coordinates before they are sent.</p>
+            <p>The app may also record masked session replays: screen recordings in which all text and images are hidden. Recording stops on sign-in, payment, payout and account screens and while the map is shown. PostHog may estimate an approximate location, such as a country or city, from your network address. We do not use app analytics for advertising or to track you across other companies’ apps or websites.</p>
+          </>,
+        },
+        {
           title: 'Public and member-visible information',
           content: <p>Report facts, general locations, report photos, cleanup status, and accepted cleanup evidence may be visible to other members or the public as part of the community map and completed-cleanup history. Pending private cleanup evidence is limited to the cleaner, reporter, authorized reviewers, and service providers needed for review. Do not submit information you do not want processed for these purposes.</p>,
         },

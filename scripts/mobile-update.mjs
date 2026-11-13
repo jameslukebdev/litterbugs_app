@@ -38,7 +38,19 @@ export function mobileUpdatePlan(target, args, environment = process.env) {
     '--platform', options.platform, '--message', options.message,
     ...(options.rollout ? ['--rollout-percentage', options.rollout] : []),
   ];
-  return { dryRun, command: 'npx', args: commandArgs, cwd: mobileDirectory, env };
+  // Error diagnostics for this update: with POSTHOG_UPLOAD_SYMBOLS=true the bundles get debug
+  // IDs (metro.config.js) and, after a successful publish, the Hermes source maps that
+  // `eas update` leaves in dist/ go to PostHog. Credentials stay in the environment only.
+  let symbolUpload = null;
+  if (env.POSTHOG_UPLOAD_SYMBOLS === 'true') {
+    const missing = ['POSTHOG_CLI_API_KEY', 'POSTHOG_CLI_PROJECT_ID'].filter((name) => !env[name]);
+    if (missing.length) throw new Error(`POSTHOG_UPLOAD_SYMBOLS=true needs ${missing.join(', ')}.`);
+    symbolUpload = {
+      command: 'npx',
+      args: ['--yes', '@posthog/cli@0.19.0', 'hermes', 'upload', '--directory', 'dist', '--skip-on-conflict'],
+    };
+  }
+  return { dryRun, command: 'npx', args: commandArgs, cwd: mobileDirectory, env, symbolUpload };
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
@@ -46,11 +58,19 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     const plan = mobileUpdatePlan(process.argv[2], process.argv.slice(3));
     if (plan.dryRun) {
       // Print the command only; environment variables can contain credentials.
-      console.log(JSON.stringify({ command: plan.command, args: plan.args, cwd: plan.cwd }, null, 2));
+      console.log(JSON.stringify({ command: plan.command, args: plan.args, cwd: plan.cwd, symbolUpload: plan.symbolUpload }, null, 2));
     } else {
       const result = spawnSync(plan.command, plan.args, { cwd: plan.cwd, env: plan.env, stdio: 'inherit' });
       if (result.error) throw result.error;
       process.exitCode = result.status ?? 1;
+      if (process.exitCode === 0 && plan.symbolUpload) {
+        const upload = spawnSync(plan.symbolUpload.command, plan.symbolUpload.args, { cwd: plan.cwd, env: plan.env, stdio: 'inherit' });
+        if (upload.error || upload.status !== 0) {
+          // The update is already live; only its error diagnostics are missing.
+          console.error('The update was published, but its source maps did not reach PostHog. Re-run: npx --yes @posthog/cli@0.19.0 hermes upload --directory dist (in apps/mobile).');
+          process.exitCode = 1;
+        }
+      }
     }
   } catch (error) {
     console.error(error.message);

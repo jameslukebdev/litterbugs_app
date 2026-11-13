@@ -21,6 +21,23 @@ account holder's direction; support case 102959897494 does not block debugging.
 | Stripe SDK interaction events | Product interaction | App interactions | Functionality and analytics/fraud prevention; provider guidance says these may be linked |
 | Google Maps SDK on Android | Assess iOS separately; do not copy Android-only collection | App interactions, diagnostics, device or other IDs; assess approximate location from IP | Maps functionality and provider improvement; see the version-specific qualification in the source record |
 
+## Addendum — app analytics (PostHog), November 13, 2026
+
+The release app now sends PostHog analytics, crash reports and masked session replays
+(`apps/mobile/lib/analytics.js`, `docs/mobile-analytics.md`). Add these to the forms:
+
+| Data flow | Apple categories | Play categories | Purpose and association |
+| --- | --- | --- | --- |
+| Screens, steps, search/filter categories, timings | Usage data → Product interaction | App activity → App interactions | Analytics, app functionality. **Not linked** (no account ID; `personProfiles: never`), not tracking |
+| JS errors, native crashes | Diagnostics → Crash data | App info and performance → Crash logs | App functionality/troubleshooting. Not linked |
+| Launch/report/upload timings, device and app version | Diagnostics → Performance data, Other diagnostic data | App info and performance → Diagnostics | Analytics, troubleshooting. Not linked |
+| Masked session replay (all text and images hidden) | Usage data → Product interaction (and Other usage data if the form asks) | App activity → App interactions | Analytics. Not linked |
+| Anonymous install analytics ID | Identifiers → Device ID (conservative; it is install-scoped, not an advertising ID) | Device or other IDs | Analytics. Not linked |
+| PostHog GeoIP from the request IP | Location → Coarse location, unless "Discard client IP data" is turned on in PostHog | Approximate location (same condition) | Analytics. Not linked |
+
+PostHog processes this on Litterbugs' behalf (service provider). The published privacy policy needs the
+"App analytics and diagnostics" section drafted in `apps/web/app/privacy/page.tsx` before release.
+
 Source anchors: `apps/mobile/MapScreen.js` (location permission and report
 placement), `apps/mobile/FundingContributionScreen.js` (PaymentSheet and
 contributor association), `apps/mobile/lib/pushNotifications.js` (installation

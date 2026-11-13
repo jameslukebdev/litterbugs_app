@@ -24,6 +24,17 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Claude (mobile analytics release prep, local only)
+
+- OTA updates: `scripts/mobile-update.mjs` uploads Hermes source maps to PostHog after a successful
+  `eas update` when `POSTHOG_UPLOAD_SYMBOLS=true` and `POSTHOG_CLI_*` are set; refuses to publish if the flag
+  is set without credentials; unchanged otherwise.
+- Drafted (not deployed) "App analytics and diagnostics" in `apps/web/app/privacy/page.tsx` (effective date
+  not changed) and a PostHog addendum to the App Store/Play privacy notes. Needs Grant's review before
+  the website deploy and store forms.
+- Notification-tap opens still unverified on device: enabling notifications in the signed-in QA app would
+  register a production push token, so not done. Unit-tested; shares the link-open tracking verified natively.
+
 ### 2026-11-13 — Codex (LBAnalyticsTest crash alert identified)
 
 - Owner screenshot shows macOS crash dialog for LBAnalyticsTest. Read local

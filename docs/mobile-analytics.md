@@ -149,5 +149,15 @@ exception autocapture" on. Replay sampling/minimum duration are set in the proje
   `posthog-react-native/expo` plugin (`uploadNativeSymbols`, `skipOnConflict`), the Metro debug-ID serializer, and an
   `eas-build-pre-install` step that installs `@posthog/cli@0.19.0`. The config fails the build on the worker if the flag
   is set without the credentials. Credentials are never in the bundle or the repo.
-- OTA updates: export with `POSTHOG_UPLOAD_SYMBOLS=true` (so the bundle gets debug IDs), then upload its Hermes maps
-  with `posthog-cli hermes upload`; `scripts/mobile-update.mjs` does not do this yet.
+- OTA updates: run `npm run mobile:update:production -- --message "…"` with `POSTHOG_UPLOAD_SYMBOLS=true` and the
+  `POSTHOG_CLI_*` values in the shell environment. `eas update` then bundles with debug IDs, and after a successful
+  publish `scripts/mobile-update.mjs` uploads the Hermes maps from `apps/mobile/dist` with `@posthog/cli@0.19.0`
+  (`--skip-on-conflict`). Without the flag it behaves as before; with the flag but no credentials it stops before
+  publishing.
+
+## Privacy disclosures
+
+Draft (not published): "App analytics and diagnostics" section in `apps/web/app/privacy/page.tsx`, and an
+App Store / Play Data safety addendum in `docs/reviews/2026-09-11-store-privacy-handoff.md` (product interaction,
+crash/performance/diagnostic data, install analytics ID, coarse location from GeoIP unless PostHog discards IPs;
+all not linked, no tracking).

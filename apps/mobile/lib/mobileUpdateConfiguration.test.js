@@ -36,6 +36,18 @@ describe('mobile over-the-air updates', () => {
     expect(profiles['production-simulator'].env).toEqual(productionEnv);
   });
 
+  it('uploads update source maps to PostHog only when asked, with credentials from the environment', () => {
+    expect(mobileUpdatePlan('production', ['--message', 'Fix'], {}).symbolUpload).toBeNull();
+    expect(() => mobileUpdatePlan('production', ['--message', 'Fix'], { POSTHOG_UPLOAD_SYMBOLS: 'true' }))
+      .toThrow('POSTHOG_UPLOAD_SYMBOLS=true needs POSTHOG_CLI_API_KEY, POSTHOG_CLI_PROJECT_ID.');
+    const plan = mobileUpdatePlan('production', ['--message', 'Fix'], {
+      POSTHOG_UPLOAD_SYMBOLS: 'true', POSTHOG_CLI_API_KEY: 'phx_secret_value', POSTHOG_CLI_PROJECT_ID: '1',
+    });
+    expect(plan.env.POSTHOG_UPLOAD_SYMBOLS).toBe('true'); // metro.config.js adds debug IDs to the bundles
+    expect(plan.symbolUpload.args).toEqual(['--yes', '@posthog/cli@0.19.0', 'hermes', 'upload', '--directory', 'dist', '--skip-on-conflict']);
+    expect(JSON.stringify([plan.args, plan.symbolUpload])).not.toContain('phx_secret_value');
+  });
+
   it('publishes a production test using production configuration rather than local QA settings', () => {
     const plan = mobileUpdatePlan('production-preview', ['--message', 'Payout guidance', '--dry-run'], {
       APP_VARIANT: 'qa', IOS_BUNDLE_IDENTIFIER: 'qa.bundle', EAS_BUILD_PLATFORM: 'ios', EAS_BUILD: 'true',
