@@ -24,6 +24,29 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (local link outreach approach researched)
+
+- Advice/research only;no outreach, forms, partner enrollment, spending or
+  live changes. Recommend one useful ask per prospect:existing Boone resource
+  link, public volunteer/event listing, or editorial cleanup coverage. Businesses
+  can participate in a real cleanup and choose to publish a linked recap.
+- Verified primary routes:App State CEL partner/community pages list
+  cel@appstate.edu for service newsletter requests and jamesba@appstate.edu
+  for volunteer requests (~6 weeks ahead). Formal database targets nonprofits;
+  Litterbugs eligibility unconfirmed. Sources:cel.appstate.edu/community-partners/
+  and /community-partners/partner-with-us/.
+- High Country Press hcpress.com/about-us lists info@highcountrypress.com
+  for calendar/general submissions. Watauga Democrat site/contact.html lists
+  editor Moss Brennan,moss.brennan@wataugademocrat.com;official forms directory
+  includes photo/news-release submissions. Boone Area Chamber correct domain
+  boonechamber.com/contact-us (828-264-2225);excluded unrelated Boone County
+  boonechamber.org result and made no membership/free-placement claim.
+- MountainTrue current site links volunteer opportunities and partnership
+  routes;existing directory entry is not an affiliation. Proposed small
+  personalized batch,existing page URL,original photos/credits,dates,clear
+  request for public website link;one follow-up. No ranking/link guarantees,
+  fabricated partner claims or paid-link arrangement. Prior work preserved.
+
 ### 2026-11-13 — Codex (nine external-link sources identified)
 
 - GSC drilldowns identify5 AppAgg copies of the Android listing (cs/fr/hu/it/pl)
