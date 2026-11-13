@@ -23,3 +23,10 @@ Owner instruction: finish release preparation; analytics enabled by default; do 
 - Review legacy direct-upload policies before claiming universal enforcement. The compatibility window in docs/MEDIA_SECURITY.md must not be closed blindly while old store clients remain supported.
 - Apple privacy answers remain prepared account-holder release work. Google Play analytics disclosures were already reviewed and cover the app additions; retain approximate location because raw-IP discard does not disable GeoIP.
 - Store submission is explicitly withheld. Excluded Apple revocation and separate-user Facebook testing remain excluded, not passed.
+
+## First fresh-build finding
+
+- EAS iOS 9c0741d2-cd98-4528-a5ad-a83eecfb5969 failed during clean npm install: retained Stripe0.50.3 patch targeted a root package that no longer exists after the0.72.0 upgrade.
+- Verified the official npm0.72.0 tarball (matching lockfile integrity) already declares STPPaymentStatus as NSInteger. Removed the obsolete patch; retained the other four native patches and verified idempotent postinstall locally. No Stripe runtime code or payment behavior changed.
+- Superseded Android22 and the first acceptance job were canceled to avoid building the same known install failure. Build numbers may have gaps; no store submission occurred.
+- Real isolated production-config media acceptance succeeded with a synthetic mint JPEG through malware + NSFW + reconstruction + storage. Temporary auth account and photos removed. Website candidate b1e32c2 / dpl_DSxBerF1jTvq9xKqtEokeVqCcVT6 remains unaliased pending final checks.
