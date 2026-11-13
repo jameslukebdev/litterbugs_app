@@ -24,6 +24,24 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (organic search growth priorities)
+
+- Read-only fresh query export Aug13–Nov10 retains7 query rows/35 impressions,
+  including litterbugs25 and unrelated game/meaning/TV terms; hidden queries
+  prevent a complete intent diagnosis. Evidence at
+  /tmp/litterbugs-gsc-query-growth-2026-11-13.json.
+- Network SEO audits of homepage and Boone hub:200, robots allowed, single
+  matching canonicals, zero tool-reported issues; two-page scope only. Existing
+  Boone hub already has resources/results; reporting, funding and cleaner
+  guides exist. Recommended improve those existing pages, original local
+  cleanup evidence, genuine participant/organization links, then expand hubs
+  where real activity supports them. Candidate search phrases are proposals,
+  not measured keyword-volume evidence. Track nonbrand impressions and useful
+  participation over28-day periods; no ranking forecast.
+- Advice only: no product edits, outreach, index submissions, database/store
+  changes, deployments or push. HTTP/API checks generated no browser visitor
+  traffic. Existing Claude/mobile/preview work preserved.
+
 ### 2026-11-13 — Codex (Search Console graph explained)
 
 - Read-only fresh GSC API check matches owner's screenshot:14 clicks,131
