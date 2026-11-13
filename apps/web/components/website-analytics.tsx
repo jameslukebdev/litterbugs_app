@@ -5,19 +5,21 @@ import { usePathname } from 'next/navigation';
 import Script from 'next/script';
 import Link from 'next/link';
 import type { PostHog } from 'posthog-js';
-import { WORKFLOW_VERSION, MEMBER_PROFILE_PAGE, JOURNEY_EVENTS, clearParticipationContext, drainJourneys, journeyProperties, entrySourceForPath, ANALYTICS_CONSENT_KEY, ANALYTICS_EVENT, ANALYTICS_PREFERENCES, ANALYTICS_REPLAY_CHOICE_KEY, analyticsAllowed, analyticsPage, analyticsReferrer, drainParticipation, drainParticipationFailures, drainWebsiteOutcomes, participationProperties, participationFailureProperties, consumeParticipationAuthResult, consumeSharedReportAuthResult, trackParticipation, trackParticipationFailure, type AnalyticsConfig, type JourneyEvent } from '@/lib/website-analytics';
+import { WORKFLOW_VERSION, MEMBER_PROFILE_PAGE, JOURNEY_EVENTS, clearParticipationContext, drainJourneys, drainWebsiteFlows, journeyProperties, entrySourceForPath, ANALYTICS_CONSENT_KEY, ANALYTICS_EVENT, ANALYTICS_PREFERENCES, ANALYTICS_REPLAY_CHOICE_KEY, analyticsAllowed, analyticsPage, analyticsReferrer, drainParticipation, drainParticipationFailures, drainWebsiteOutcomes, participationProperties, participationFailureProperties, consumeParticipationAuthResult, consumeSharedReportAuthResult, trackParticipation, trackParticipationFailure, type AnalyticsConfig, type JourneyEvent } from '@/lib/website-analytics';
 import { COMMUNITY_ENGAGEMENT_EVENTS, communityClick, communityForPath, communityProperties, participationLinkAction } from '@/lib/community-metrics';
 import styles from './website-analytics.module.css';
 import { isInstagramStoreVisit, storeBadgeDestination, storeBadgeProperties } from '@/lib/app-links';
 import { participationIntent } from '@/lib/participation-auth';
+import { clarityJourney, immediateFlowDelivery, type WebsiteFlowEvent } from '@/lib/clarity-journey';
 import { supportCheckoutProperties } from '@/lib/monthly-support';
 
 type AnalyticsWindow = Window & { dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void; clarity?: ((...args: unknown[]) => void) & { q?: unknown[][] } };
 type PendingFlowDelivery = {
-  event: JourneyEvent | 'participation_step' | 'participation_failure';
+  event: WebsiteFlowEvent;
   properties: Record<string, unknown>;
   googleSent: boolean;
   posthogSent: boolean;
+  claritySent: boolean;
 };
 type PendingOutcomeDelivery = ReturnType<typeof drainWebsiteOutcomes>[number] & { page_type: string };
 function google(...args: unknown[]) {
@@ -49,6 +51,7 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
   const [ready, setReady] = useState(false);
   const [gaConfigured, setGaConfigured] = useState(false);
   const [gaReady, setGaReady] = useState(false);
+  const [clarityReady, setClarityReady] = useState(false);
   const posthog = useRef<PostHog | null>(null);
   const lastGooglePage = useRef<string | null>(null);
   const lastPosthogPage = useRef<{ pathname: string; page: string; started: number } | null>(null);
@@ -58,6 +61,7 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
   const pendingOutcomeDeliveries = useRef(new Map<string, PendingOutcomeDelivery>());
   const active = allowed && consent !== 'declined';
   const aggregate = allowed && consent !== 'declined';
+  const clarityConfigured = Boolean(config.clarityId && /^[a-z0-9]+$/.test(config.clarityId));
 
   const finishPosthogPage = useCallback((unloading = false) => {
     const previous = lastPosthogPage.current;
@@ -159,17 +163,42 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
     // Load the tag only after its initial configuration is queued.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setGaConfigured(true);
-    if (config.clarityId && /^[a-z0-9]+$/.test(config.clarityId)) {
-      if (!analyticsWindow.clarity) {
-        const clarity = function (...args: unknown[]) { (clarity.q ??= []).push(args); } as NonNullable<AnalyticsWindow['clarity']>;
-        analyticsWindow.clarity = clarity;
-        const script = document.createElement('script'); script.async = true;
-        script.src = `https://www.clarity.ms/tag/${config.clarityId}`;
-        document.head.appendChild(script);
-      }
-      if (consent === 'accepted') analyticsWindow.clarity?.('consentv2', { ad_Storage: 'denied', analytics_Storage: 'granted' });
-    }
   }, [active, config, consent]);
+
+  useEffect(() => {
+    if (!active || !clarityConfigured) return;
+    const analyticsWindow = window as AnalyticsWindow;
+    const alreadyLoaded = analyticsWindow.clarity && !analyticsWindow.clarity.q;
+    analyticsWindow.clarity ??= Object.assign(function (...args: unknown[]) {
+      const queue = analyticsWindow.clarity!.q ??= [];
+      // The tag can load before its recorder dependency. Bound our bootstrap
+      // too, keeping consent and the bundle tag if that dependency is blocked.
+      if (queue.length >= 250) {
+        const removable = queue.findIndex(call => call[0] === 'event' || (call[0] === 'set' && call[1] !== 'lb_workflow_version'));
+        queue.splice(removable < 0 ? 0 : removable, 1);
+      }
+      queue.push(args);
+    }, { q: [] as unknown[][] });
+    const src = `https://www.clarity.ms/tag/${config.clarityId}`;
+    let script = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
+    const created = !script && !alreadyLoaded;
+    if (created) { script = document.createElement('script'); script.async = true; script.src = src; }
+    const loaded = () => {
+      if (script) script.dataset.litterbugsLoaded = 'true';
+      if (!permitted.current || privacySignal()) return;
+      try {
+        analyticsWindow.clarity?.('set', 'lb_workflow_version', WORKFLOW_VERSION);
+        setClarityReady(true);
+      } catch { /* Recording availability must not affect participation. */ }
+    };
+    // Keep events in our bounded provider queue until Clarity loads. A blocked
+    // script must not grow its unbounded bootstrap queue with polling events.
+    script?.addEventListener('load', loaded);
+    if (alreadyLoaded || script?.dataset.litterbugsLoaded === 'true') loaded();
+    if (consent === 'accepted') analyticsWindow.clarity?.('consentv2', { ad_Storage: 'denied', analytics_Storage: 'granted' });
+    if (created && script) document.head.appendChild(script);
+    return () => script?.removeEventListener('load', loaded);
+  }, [active, clarityConfigured, config.clarityId, consent]);
 
   useEffect(() => {
     const page = analyticsPage(pathname);
@@ -209,25 +238,19 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
     const flushParticipation = () => {
       if (!permitted.current || privacySignal()) { pendingFlowDeliveries.current = []; pendingOutcomeDeliveries.current.clear(); return; }
       const enqueue = (event: PendingFlowDelivery['event'], properties: PendingFlowDelivery['properties']) => {
-        pendingFlowDeliveries.current.push({ event, properties, posthogSent: false,
+        pendingFlowDeliveries.current.push({ event, properties, posthogSent: false, claritySent: !clarityConfigured || !clarityJourney(event, properties),
           // Shared-report provider handoffs are intentionally PostHog-only.
           googleSent: event === 'shared_report_sign_in' });
       };
-      for (const item of drainJourneys()) {
+      for (const item of drainWebsiteFlows()) {
         enqueue(item.event, item.properties);
-      }
-      for (const failure of drainParticipationFailures()) {
-        enqueue('participation_failure', failure);
-      }
-      for (const step of drainParticipation()) {
-        enqueue('participation_step', step);
       }
       // In-memory, safe properties only; a blocked provider cannot grow this indefinitely.
       if (pendingFlowDeliveries.current.length > 150) pendingFlowDeliveries.current.splice(0, pendingFlowDeliveries.current.length - 150);
       for (const item of pendingFlowDeliveries.current) {
         if (aggregate && ready && posthog.current && !item.posthogSent) {
           try {
-            if (item.event === 'shared_report_sign_in' || item.event === 'app_choice') posthog.current.capture(item.event, item.properties, { transport: 'sendBeacon', send_instantly: true });
+            if (immediateFlowDelivery(item.event, item.properties)) posthog.current.capture(item.event, item.properties, { transport: 'sendBeacon', send_instantly: true });
             else posthog.current.capture(item.event, item.properties);
             item.posthogSent = true;
           } catch { /* One unavailable provider must not block the other or the user action. */ }
@@ -236,8 +259,19 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
           try { google('event', item.event, item.properties); item.googleSent = true; }
           catch { /* Keep the bounded event for a later readiness/action flush. */ }
         }
+        if (active && clarityReady && !item.claritySent) {
+          const signal = clarityJourney(item.event, item.properties);
+          try {
+            const clarity = (window as AnalyticsWindow).clarity;
+            if (clarity && signal) {
+              for (const [key, value] of Object.entries(signal.tags)) clarity('set', key, value);
+              clarity('event', signal.event);
+              item.claritySent = true;
+            }
+          } catch { /* Keep this provider's event without blocking the others. */ }
+        }
       }
-      pendingFlowDeliveries.current = pendingFlowDeliveries.current.filter(item => !item.googleSent || !item.posthogSent);
+      pendingFlowDeliveries.current = pendingFlowDeliveries.current.filter(item => !item.googleSent || !item.posthogSent || !item.claritySent);
     };
     const outcome = (raw: Event) => {
       if (!permitted.current || privacySignal()) { pendingOutcomeDeliveries.current.clear(); return; }
@@ -318,7 +352,7 @@ export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
     window.addEventListener(ANALYTICS_EVENT, outcome);
     document.addEventListener('click', click, true);
     return () => { window.removeEventListener(ANALYTICS_EVENT, outcome); document.removeEventListener('click', click, true); };
-  }, [active, aggregate, ready, gaReady, consent]);
+  }, [active, aggregate, ready, gaReady, clarityReady, clarityConfigured, consent]);
 
   function choose(value: 'accepted' | 'declined') {
     try { localStorage.setItem(ANALYTICS_REPLAY_CHOICE_KEY, value); localStorage.setItem(ANALYTICS_CONSENT_KEY, value); } catch {}

@@ -24,6 +24,36 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (website PostHog/Clarity friction events, local only)
+
+- Owner requested local website analytics for map failures and cleanup exits.
+  Added safe Clarity projection in lib/clarity-journey.ts: map started/ready/
+  failed/recovered/empty/results-failed; cleanup start/safety/claim/evidence/
+  submission/other-step/failure/explicit-exit/resume markers. Fixed enum tags
+  include failure reason, stage, foreground/background, load-duration bucket.
+  Version v9 is tagged in Clarity and PostHog. No raw IDs/text/locations/photos,
+  filenames, URLs or provider error payloads; anonymous identity policy unchanged.
+- Existing PostHog event names retained. Critical map failures/recovery and
+  cleanup failures/decisions now request immediate beacon delivery. SDK-readiness
+  buffering preserves original order across steps, failures and decisions via
+  a local WeakMap sequence that never becomes a provider property.
+- Clarity delivery is independent of PostHog/Google readiness, each provider
+  sends once per accepted delivery. Tag bootstrap waits for load; provider queue
+  capped150, bootstrap capped250 if recorder dependency blocked. All tracking
+  remains best effort. Saved exclusion/DNT/GPC/local/preview behavior preserved.
+  No inferred permanent abandonment from pagehide, hidden tabs or OAuth handoff.
+-100 focused tests pass; web TypeScript/scoped ESLint/diff checks pass. Covers
+  late/blocked/failed providers, mixed-event ordering, privacy, Strict Mode,
+  queue bounds, cancellation/claim separation and no duplicate sends. Browser
+  localhost3000: renders, no horizontal overflow/runtime errors; zero external
+  analytics requests and no Clarity/Google initialization. Existing CSS preload
+  warning only. Delivery verified with mocked providers, not real ingestion.
+- Event/filter guide: docs/plans/2026-11-12-website-recording-events.md.
+  New live Clarity filter choices require deployment plus first received events;
+  no Clarity/PostHog project settings, saved segments or dashboards changed here.
+  Local3000 stays available. No deploy/push/DB migration. Preserve Claude's
+  concurrent native analytics, package-lock and unrelated preview changes.
+
 ### 2026-11-12 — Claude (unreleased mobile analytics finished and verified locally)
 
 - Audit fixes: `payment_submitted` was sent before Stripe's sheet opened (cancelled sheets counted); now
