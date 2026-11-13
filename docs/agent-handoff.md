@@ -24,6 +24,10 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (simulator versus submitted app clarified)
+
+- Read-only comparison: no committed or uncommitted apps/mobile differences between frozen7e4275b store source and current mobile workspace. Existing Metro8081 serves that workspace, development client/one worker, analytics explicitly false; submitted originals use production analytics true. Same implemented mobile UI/styles, different development/production configuration and native shell. No claim of identical pixels, account state or simulator-native binaries. No code/store/phone/deployment changes.
+
 ### 2026-11-13 — Codex (Stripe support updates checked)
 
 - Original case `sco_VJarfjNbi0QKE3`: Stacy acknowledged our answers November6;
