@@ -24,6 +24,11 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (removed test-only welcome replay link)
+
+- Source `0d7bedb49c763363da22ab978fc5f783ff1af6d6` removes the Profile “Replay the welcome (test builds only)” row/comment from the shared iPhone/Android screen. It was already guarded by __DEV__ and absent from store builds; it is now absent from test builds too. “How Litterbugs works,” normal first-launch welcome and map tour remain unchanged. No map/animation/style changes.
+-8 existing onboarding/discovery-memory tests, Profile lint and225-module source check pass. Two-line source removal applies to both platforms; no additional native UI verification claimed. Local only: no build/upload/resubmission/public release/OTA/deploy/push. Existing manual public-release holds retained; submitted28/25 unchanged. Other work preserved.
+
 ### 2026-11-13 — Codex (smooth Android map-card entry and exit)
 
 - Source `00e95d84d295d38964da02072cf149a22aa12cce`: Android floating previews wait for native card layout and translate by measured card height + bottom clearance/shadow, instead of a full screen. Native transform360ms up/280ms down with eased endpoints and hardware texture; retain card until exit completes. Content relayout cannot restart entry; quick reopen reverses from current position; stale exit cannot clear new selection. iPhone retains original240/180ms transition and distance; pins/maps otherwise untouched.

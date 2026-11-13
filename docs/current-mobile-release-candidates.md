@@ -1,5 +1,14 @@
 # Current Mobile Release Candidates
 
+## Welcome replay test link removed — local only, November13
+
+Source `0d7bedb49c763363da22ab978fc5f783ff1af6d6` removes the Profile welcome-replay test row from both
+platforms. Previously __DEV__-only, so it was already absent from store builds;
+now test screens also omit it. “How Litterbugs works” and normal first-launch
+welcome remain.8 existing onboarding/discovery-memory checks, Profile lint and
+225-module source check pass. No map/animation changes, native build, upload,
+resubmission, OTA, deploy or push; existing manual public-release holds retained.
+
 ## Android report-card motion — local only, November13
 
 Source `00e95d84d295d38964da02072cf149a22aa12cce` smooths Android map preview opening and closing. Waits for
