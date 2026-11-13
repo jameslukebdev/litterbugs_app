@@ -2,6 +2,39 @@
 
 Owner instruction, updated November13: upload and submit both refreshed builds for store review; keep public release manual. Analytics ON by default. No GitHub push or mobile OTA publication.
 
+## Post-submission iPhone map correction — local only
+
+Owner requested iPhone-only behavior: when a landed pin leaves the viewport and
+returns, the old resting pin should stay hidden until a complete new drop starts.
+Source `225a0bec528424fa241b81624961b77a9ea96db5` updates only the floating-landing
+branch of usePinLandings (inPlace=false, used by iPhone). Off-screen pins are
+hidden while panning, their visibility history cleared even within one continuous
+swipe, and remain hidden while their new stand-in lands. Android inPlace=true
+keeps its existing native marker/drop behavior. A generation guard stops a stale
+140ms handover timer from deleting the next landing for the same pin.
+
+Regression-first checks reproduced3 returning-pin failures, then a separate
+quick-return cleanup failure. All6 hook tests now pass, including report/group
+re-entry, a continuous out-and-back swipe, retained in-view pins, quick-return
+cleanup and unchanged Android drop identity. Alongside map framing/marker tests:
+12 focused tests pass. Hook ESLint passes;224-module mobile source check0 errors.
+Existing ESLint configuration excludes test JSX; no test lint coverage claimed.
+
+CUA taps reached the simulator, but repeated remote drags did not move the map.
+Owner explicitly made it idle, then performed the actual swipe and confirmed:
+“Yes, it now drops into an empty spot.” This is owner-observed simulator
+acceptance of the hide/drop behavior, not an automated native gesture result.
+The extra fast-return timer guard is covered by the regression test. No physical
+Android retest/new native build/simulator was started. Existing Metro retained
+(one worker/768MB heap, test analytics OFF); observed free memory38%.
+
+**Release follow-up:** submitted iOS28 does not contain this newer local fix.
+Include it in a refreshed iOS build before public release. Android25 and both
+current store review submissions are unchanged; no upload, submission, OTA,
+provider/backend setting, deploy or GitHub push. Apple privacy19 categories remain
+complete and public release is still manual. Evidence:
+`artifacts/mobile-2.1.0/device-evidence/iphone-pin-reentry-local-fix.json`.
+
 ## Latest candidates and submitted review — supersedes the original builds below
 
 The owner-reported pin issue is fixed: Metro had stopped loading newly mounted

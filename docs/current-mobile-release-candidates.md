@@ -1,5 +1,19 @@
 # Current Mobile Release Candidates
 
+## November13 — iPhone map follow-up, local only
+
+Owner requested an iPhone-only correction after submission. Source
+`225a0bec528424fa241b81624961b77a9ea96db5` hides already-landed pins when they
+leave view, then starts the full drop into an empty spot on return. Android's
+in-place marker behavior remains unchanged. Also guards an old animation cleanup
+from cutting short a fresh drop. Owner manually verified the simulator behavior;
+6 hook regressions/12 focused tests pass, hook lint and224-module source check pass.
+
+This local correction is **not included in submitted iOS2.1.0(28)**. A refreshed
+iOS candidate is needed to include it before public release. Android25 and both
+existing review submissions are unchanged; no new native build/OTA/upload was
+started. Apple privacy remains complete and public release remains manual.
+
 ## November13 — full2.1.0 app submitted; public release manual
 
 Owner found missing artwork and a selected pin partly hidden by the report card.

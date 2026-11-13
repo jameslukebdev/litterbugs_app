@@ -24,6 +24,12 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (iPhone re-entry drop fixed locally; new iOS build pending)
+
+- Owner explicitly requested iPhone-only map change. Source225a0bec528424fa241b81624961b77a9ea96db5: iPhone floating-landings hide resting pins as they leave view and clear visibility so returning pins drop into an empty spot, even during one continuous swipe. Stale handover timer cannot cut short the new drop. Android inPlace=true path/marker files unchanged; Android drop-identity regression passes.
+-6 hook regressions/12 focused tests pass, hook lint and224-module source check pass. Remote simulator drag did not move map; owner manually swiped and confirmed the empty-spot full drop. Quick-return timer guard verified by test. No automated native gesture/physical Android result claimed. Metro retained; no new native worker/simulator, free memory38%.
+- Local only: submitted iOS28 lacks this follow-up and needs a refreshed iOS build before public release. Android25 and both review submissions unchanged; Apple privacy19 remains complete/manual public release. No build/upload/OTA/deploy/GitHub push. Updated current candidates/readiness/evidence; preserved other Claude/dashboard/preview work.
+
 ### 2026-11-13 — Codex (platform-specific map work guidance)
 
 - Owner asked how to work on Android maps without changing iPhone. Read-only source check: MapScreen/styles/MapPin/mapFraming remain shared; AndroidStillMarker and PinLanding already separate native marker/landing behavior. Recommended keeping shared report/business logic, isolating Android/iOS rendering/config only where needed, scoping small changes with Platform.OS and checking both platforms after shared edits. No cause or fix for the unspecified reported regression claimed. No code/build/store/OTA changes; uploaded review binaries remain frozen.
