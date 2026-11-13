@@ -1,6 +1,6 @@
-// Where a tapped pin sits: about a third of the way down the screen, in the open map between the
-// search bar and the report card (the card covers the middle of the screen).
-export const SELECTED_PIN_HEIGHT = 0.3;
+// Keep the entire selected pin in the open map below search. At 30%, taller
+// report previews cover its point and can hide the bug when switching reports.
+export const SELECTED_PIN_HEIGHT = 0.22;
 
 /**
  * The view, at the current zoom, that puts `coordinate` at `pointY` points down a map `mapHeight`
