@@ -24,6 +24,12 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (Apple2.1.0 draft saved; phone testing skipped)
+
+- Luke accepted Apple's Developer agreement; refreshed App Store Connect cleared the block. Created2.1.0 in Prepare for Submission for existing app6757313862. Saved short release notes, updated2.1/build27 review instructions, litterbugs.app/support and marketing URL. Saved litterbugs.app/privacy for the next version; URL dialog explicitly releases it with that version. Reload verified saved fields and manual release. No build attached/uploaded and Add for Review not clicked.
+- Existing listing assets present: seven inherited iPhone thumbnails plus three iPad screenshots. No screenshot upload or artwork change. Proof: artifacts/mobile-2.1.0/apple-2.1.0-draft-20261113.jpg and apple-privacy-url-20261113.jpg. Privacy data-type wizard still ends in immediate Publish even with version draft; canceled inspection, no label published/draft saved. Prepared16-type inventory remains local for release. Guest review notes inherited with sign-in-required unchecked and no demo credentials; full reviewer access must be verified before eventual submission.
+- Owner skipped further phone testing. Remote-push harness export completed with one worker/768MB heap but never installed, sent no push or registered a token; temporary source and unused APK/bundle copies removed. Phones/original artifacts untouched. Existing older simulator showed host keychain error and was not used as2.1 evidence. Memory readings53/57/41% free; disk6.1/5.9GiB before final cleanup. No new simulator/native build or lingering test worker. Dashboard excluded from this app pass; unrelated edits preserved. No deployment, GitHub push, OTA or store upload/submission.
+
 ### 2026-11-13 — Codex (Luke emailed; local release copy prepared)
 
 - At Grant's explicit request, sent the approved “Apple Developer agreement update” email from gegibson@icloud.com to jameslukeb.evj@gmail.com. Apple Mail Sent confirmed the subject/recipient today at1:40pm ET; no claim of delivered/read/accepted. Apple account-holder agreement remains pending.

@@ -269,3 +269,48 @@ Sources: [Apple App Privacy management](https://developer.apple.com/help/app-sto
 (current-version answers, editable-version policy URL and publication flow),
 [Apple App Privacy definitions](https://developer.apple.com/app-store/app-privacy-details/)
 (aggregate SDK collection, linkage, tracking and embedded payment rules).
+
+## November 13 follow-up: agreement cleared and2.1.0 version draft saved
+
+This supersedes the agreement-blocked state above. Luke told Grant he accepted
+the Apple agreement. The initial cached page still blocked version creation;
+refreshing cleared it and allowed creating **2.1.0** on existing app6757313862.
+Current state is **Prepare for Submission**, alongside live2.0.1. No build was
+uploaded or attached; **Add for Review was not clicked**.
+
+Saved and verified after leaving/reloading the version page:
+
+- What’s New: the four short items in `release-assets/mobile-2.1.0-release-notes.md`.
+- Updated review notes for2.1.0/build27: guest access versus account features,
+  actual embedded Stripe Connect flow, separate photo-processing acknowledgment,
+  optional nearby alerts/rounded area and default-on device-wide analytics choice.
+- Support URL https://litterbugs.app/support (HTTP200 checked without browser JS);
+  marketing URL https://litterbugs.app.
+- Privacy Policy URL https://litterbugs.app/privacy. Apple's edit dialog explicitly
+  says this URL change is released with the next version; no claim of immediate
+  public-policy-link replacement. Privacy choices URL remains blank.
+- **Manually release this version** remains selected. Existing rating retained.
+- Screenshot inventory: seven inherited iPhone thumbnails marked Using Existing
+  Assets (new-upload count0), and three iPad13-inch screenshots. No new screenshots
+  uploaded; October30 alternate artwork remains a local alternative. Existing
+  content was retained rather than treated as a fresh2.1 native capture.
+
+Creating the version did **not** enable draft-saving privacy labels. An existing
+Email Address wizard was checked with App Functionality / linked Yes / tracking
+No; its final action remained **Publish**. It was canceled without publishing.
+The original four-type data label remains public; the reviewed16-type2.1 inventory
+above remains local. Coordinate publication of2.1-only collection with actual
+release, per Apple's current-version guidance; do not call these answers saved.
+
+Review access is carried forward as guest instructions with **Sign-in required
+unchecked and no demo credentials entered**. Those instructions distinguish the
+account-required features. No reviewer login was tested or certified; verify full
+review access before any eventual submission. Do not use Grant's Apple identity
+for deletion/revocation or claim that a signup instruction proves a test login.
+
+Local proof: `artifacts/mobile-2.1.0/apple-2.1.0-draft-20261113.jpg` and
+`artifacts/mobile-2.1.0/apple-privacy-url-20261113.jpg`.
+Further phone testing was explicitly skipped by the owner. The prepared remote-
+push harness was not installed, sent no push and registered no token. No app code,
+provider/production analytics setting, device data, deployment, GitHub push, OTA,
+store build upload or review submission changed during this follow-up.

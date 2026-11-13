@@ -1,7 +1,8 @@
 # Mobile2.1.0 — local store preparation
 
-Prepared November13,2026. Draft copy only; not saved to either store. App upload,
-review submission and release remain withheld.
+Prepared November13,2026. Apple2.1.0 version draft now exists; the release notes
+below and updated review instructions are saved there. Google Play copy remains
+local. App upload, review submission and release remain withheld.
 
 ## What’s new (Apple and Google Play draft)
 
@@ -26,26 +27,31 @@ review submission and release remain withheld.
   release status and build identifiers. Dedicated live read connections remain
   separate dashboard work, not an app-store release prerequisite. App and combined
   visits must stay unknown until actual2.1 production release.
-- Additional real server-push delivery is a useful acceptance check, distinct from
+- Further phone testing was skipped by the owner. No remote push was sent or
+  token registered. Real server-push delivery remains unverified, distinct from
   the completed native local-notification taps. Actual identity/bank submission
   is not claimed by the sandbox Connect rendering/payment checks. Any added device
   test must use disposable fixtures and preserve staff analytics exclusions.
 
 ## Apple prerequisite and later release sequence
 
-1. Account Holder James Luke Barber accepts the updated Apple Developer Program
-   License Agreement in his existing account. Grant’s admin access is verified.
+1. **Done:** James Luke Barber accepted the updated Apple Developer Program
+   License Agreement; refreshed App Store Connect confirmed the block cleared.
    Request emailed to jameslukeb.evj@gmail.com from gegibson@icloud.com;
    Apple Mail Sent verified November13 at1:40pm ET, subject
    “Apple Developer agreement update.” This is a sent-mail receipt, not proof of
    recipient delivery or acceptance.
-2. Create2.1.0 version draft in existing app6757313862; set the policy URL to
-   https://litterbugs.app/privacy. Enter the reviewed privacy answers from the
+2. **Done:**2.1.0 version exists in Prepare for Submission in app6757313862,
+   manual release selected, policy URL https://litterbugs.app/privacy saved for
+   the next version. Release/review notes and support/marketing URLs saved.
+   **Pending release:** publish the reviewed privacy data-type answers from the
    [store handoff](../docs/reviews/2026-09-11-store-privacy-handoff.md#november-13-app-store-connect-admin-access-and-agreement-blocker).
    The present UI only offers per-type Publish; no draft was saved. Public privacy
    answers must describe the currently available version, with2.1-only collection
    coordinated with release.
-3. Review final listing screenshots, release notes and existing reviewer access
+3. Existing iPhone/iPad screenshot assets are present and release notes saved.
+   Before submission, verify reviewer access to account-required features; the
+   Apple draft has guest instructions and no demo login. Review final listing copy
    without exposing credentials in documentation. Do not assume historical
    reviewer credentials are proven merely because they are present in a form.
 4. Obtain the owner’s explicit instruction before any store upload/submission.

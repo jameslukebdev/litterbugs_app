@@ -9,10 +9,13 @@ physical-device evidence and store handoff are in
 [the November13 readiness record](reviews/2026-11-13-mobile-release-readiness.md).
 Analytics stays ON by default; test-device exclusions persist. No store upload/submission,
 GitHub push or mobile OTA publication. Submission remains withheld; apply the prepared
-Apple privacy entries before any later submission. Grant’s admin access is now verified,
-but Apple blocks creating the2.1.0 draft until Account Holder James Luke Barber accepts
-the updated Developer Program License Agreement. No privacy draft was saved; the live
-label and old policy URL remain unchanged. See the current store handoff in the readiness record.
+Apple privacy entries in coordination with release. Luke accepted the updated agreement;
+App Store Connect now has2.1.0 in **Prepare for Submission**, with release notes,
+review instructions and support/marketing URLs saved. The policy URL for the next
+version is https://litterbugs.app/privacy. Manual release remains selected; no build
+is attached/uploaded. Privacy data-type answers still require immediate Publish,
+so no privacy-label draft is claimed. Further phone testing was skipped at the
+owner’s request. See the latest store handoff in the readiness record.
 
 Public status checked November13: Apple **2.0.1**, released October31;
 Google Play **2.0.1 (21)**, released October29. The historical October30 Apple
