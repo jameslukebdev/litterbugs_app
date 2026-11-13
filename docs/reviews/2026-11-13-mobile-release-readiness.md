@@ -45,7 +45,7 @@ Both EAS jobs finished. Original artifacts retain production package `com.litter
 ## Release handoff and verification limits
 
 - Final media enforcement is complete. The owner confirmed older direct-upload builds were unused development versions and authorized closure. Source `13dc98f`, migration `20261113170000_enforce_sanitized_media_outputs.sql`, applied and recorded in production. All four final-bucket insert/update policies are gone; only private draft/quarantine client writes remain, and final buckets accept JPEG only. Live disposable-user tests denied direct report, cleanup and avatar uploads plus avatar replacement, while both new Google and released-client legacy avatar processing succeeded. Test files/accounts removed. Exact rollback was verified locally inside a rolled-back transaction.
-- Actual payout identity/bank submission and live server-push delivery are not simulated as passed by the SDK harness. Current native component, sandbox card, local notification and shared-link checks are complete. Owner explicitly skipped further phone testing on November13; a prepared remote-push harness was not installed, no push sent or token registered. Its unused APK/bundle copies were removed; no phone apps/data were changed.
+- Actual payout identity/bank submission is not simulated as passed by the SDK harness. After initially skipping further phone testing, the owner made the Pixel available again. Real Expo/FCM delivery and notification tap passed in an isolated native-module copy; see the follow-up below. This does not certify the full production notification queue or production iOS APNs delivery. Original phone apps/data were preserved.
 - Grant's App Store Connect admin access is verified for app6757313862 under James Luke Barber. Luke accepted the agreement; refreshed UI allowed creation of2.1.0, now Prepare for Submission. Release notes,2.1 review instructions and support/marketing URLs were saved and verified after reload. Privacy-policy URL is saved as https://litterbugs.app/privacy for the next version. Existing iPhone assets (seven inherited thumbnails) and three iPad screenshots are present. Manual release stays selected; no build attached/uploaded and Add for Review was not clicked. The data-type wizard still ends in immediate Publish; no privacy-label draft is saved. Reviewed16-type answers stay local pending release, per Apple's current-version rule. [Latest store handoff](2026-09-11-store-privacy-handoff.md#november-13-follow-up-agreement-cleared-and210-version-draft-saved) records exact state and review-access limitation. Grant's personal developer settings/sign-in account remain untouched. Google Play's disclosures cover analytics; retain approximate location.
 - Apple authorization-revocation integration and separate-user Facebook login remain owner-excluded, not passed. Store submission is withheld.
 
@@ -62,3 +62,48 @@ were removed after the owner skipped phone testing. Memory-free readings were53%
 simulator's older2.0.1 QA shell showed a host keychain error, so it was not used as
 2.1 screenshot evidence or treated as a reproduced2.1 device failure. Existing
 phone release evidence and original candidates remain unchanged.
+
+## Reviewer login and Pixel remote push follow-up
+
+Owner explicitly approved creating a dedicated standard review login and saving
+its email/password in Apple's private App Review fields. Created
+`app-review-210@litterbugs.app`, user `3f455759-11f0-4387-bf0f-244e7852038e`, with
+server marker `app_metadata.review_account=true`. Password sign-in and the member's
+own profile read passed through the production app's anon-key Auth/Data API. Email
+is confirmed, role is authenticated, admin membership count is0; verification
+sessions signed out globally. No personal Apple identity or admin access granted.
+Apple's2.1 draft now has Sign-in required checked, credentials entered and updated
+access instructions; reload confirmed saved/masked fields and disabled Save.
+Apple masks credential reads, so exact secret readback is not claimed. Local
+plaintext password copy was removed after saving; no password is in source/logs.
+Evidence: `artifacts/mobile-2.1.0/device-evidence/reviewer-login-verification.json`
+and `apple-review-login-saved.jpg`. Full physical UI login with this new account
+was not performed; this verifies Auth, profile availability and store-field save.
+
+The owner then made the Pixel available again. A disposable
+`com.litterbugs.pqa` copy reused native/resource bytes from the2.1.0(24) acceptance
+APK;95 dex/native/resource/service entries matched exactly. Only test package/
+provider authorities, updates configuration, signing and a push-only JS entry
+changed. Analytics was never initialized, no account sign-in or database push-token
+registration occurred. The Expo token request explicitly used production app ID
+`com.litterbugs.app` with project `df0d0855-71d9-4943-b278-d1f083ab6b06`, allowing
+existing production FCM credentials to deliver to the isolated test installation.
+
+- Backgrounded test copy received “Litterbugs release test” / clearly labeled
+  synthetic text. No cleanup, payment or other member notification was generated.
+- Expo ticket `01a1d64b-b70f-735d-804f-8fd26550f519` and FCM delivery receipt both
+  returned status ok. Native notification tray showed the exact test title/body.
+- Physical tap reopened the test copy and called the actual release helper with
+  eventType nearby_reports_daily, returning App > Map / showNearby true.
+- This proves remote transport, receipt and tap/helper handling with the release
+  native modules; the full production App navigator and business queue were not
+  invoked by this push harness. Existing database queue tests remain separate.
+- Evidence: `remote-push-verification.json`, `pixel-remote-push-opened.png` under
+  `artifacts/mobile-2.1.0/device-evidence`. Test copy uninstalled; temporary APKs,
+  bundle, entry source, token, phone XML and private UI dumps removed. Original
+  com.litterbugs.app and com.litterbugs.app.qa apps/data retained.
+
+Dashboard chat received the review-account UUID/marker for exclusion from real
+member metrics; no password sent. No deployment, migration, push-provider setting,
+GitHub push, OTA, store build upload or review submission. Manual release remains
+selected. Privacy-label publication stays coordinated with actual2.1 release.

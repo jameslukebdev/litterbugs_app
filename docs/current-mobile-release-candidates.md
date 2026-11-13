@@ -13,9 +13,12 @@ Apple privacy entries in coordination with release. Luke accepted the updated ag
 App Store Connect now has2.1.0 in **Prepare for Submission**, with release notes,
 review instructions and support/marketing URLs saved. The policy URL for the next
 version is https://litterbugs.app/privacy. Manual release remains selected; no build
-is attached/uploaded. Privacy data-type answers still require immediate Publish,
-so no privacy-label draft is claimed. Further phone testing was skipped at the
-owner’s request. See the latest store handoff in the readiness record.
+is attached/uploaded. Dedicated standard reviewer credentials are now saved in
+Apple’s private fields; password sign-in/profile access verified, no admin rights.
+Privacy data-type answers still require immediate Publish, so no privacy-label
+draft is claimed. Pixel remote Expo/FCM delivery and tap/helper handling passed in
+a disposable copy after the owner made it available again. Original phone data
+was preserved. See the latest store handoff in the readiness record.
 
 Public status checked November13: Apple **2.0.1**, released October31;
 Google Play **2.0.1 (21)**, released October29. The historical October30 Apple

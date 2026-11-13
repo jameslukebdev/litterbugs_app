@@ -24,6 +24,13 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (dedicated reviewer login saved; Pixel remote push passed)
+
+- Owner explicitly approved creating/saving a dedicated review login. Created standard member app-review-210@litterbugs.app, UUID3f455759-11f0-4387-bf0f-244e7852038e, server app_metadata.review_account=true, email confirmed and zero admin memberships. Production Auth password sign-in and own-profile read passed; verification sessions globally signed out. Apple2.1 draft has Sign-in required enabled, credentials saved and updated access instructions; reload confirmed masked fields/disabled Save. Local plaintext secret removed; no password in repo/logs or dashboard message. Personal Apple identity untouched. Native full-flow login with this account is not claimed.
+- Owner then made Pixel available again after earlier skip. Disposable com.litterbugs.pqa reused95 unchanged native/dex/resource/service entries from2.1(24) acceptance APK, with only package/config/signing/push-only JS changes. Expo token request explicitly mapped app ID com.litterbugs.app to existing production FCM credentials. A labeled remote test arrived in background; Expo ticket01a1d64b-b70f-735d-804f-8fd26550f519 and FCM receipt ok. Tap reopened test copy; actual app helper returned App > Map/showNearby for nearby_reports_daily. This is transport/tap-helper proof, not production queue/full navigator/iOS production APNs acceptance.
+- Test copy uninstalled; original installed apps/data retained. Temporary APKs/bundle/source/token/phone XML/private UI dumps removed. No app DB push registration or real business events. Evidence in artifacts/mobile-2.1.0/device-evidence; readiness/store/candidate notes updated. Dashboard chat received reviewer UUID/marker for exclusions only, no password. Memory remained51–59% available; final52%, disk5.0GiB. No new simulator/native build or lingering test worker.
+- Apple remains Prepare for Submission, manual release, no build upload/attachment and no Add for Review action. Privacy-label publication remains for actual release; no provider setting, migration, deploy, GitHub push or OTA. Existing unrelated dashboard/Claude/preview edits preserved.
+
 ### 2026-11-13 — Codex (automatic owner dashboard connections, local only)
 
 - Source `6cb5cfc0c2a7ecaba34a0c31e643ceec7707a2ee`. GA/GSC, PostHog web/app and

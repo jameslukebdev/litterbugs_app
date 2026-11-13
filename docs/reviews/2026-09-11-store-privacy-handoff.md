@@ -314,3 +314,22 @@ Further phone testing was explicitly skipped by the owner. The prepared remote-
 push harness was not installed, sent no push and registered no token. No app code,
 provider/production analytics setting, device data, deployment, GitHub push, OTA,
 store build upload or review submission changed during this follow-up.
+
+## November13 reviewer access follow-up
+
+The prior no-demo-login state is superseded. With explicit owner approval, created
+standard Litterbugs member `app-review-210@litterbugs.app`, UUID
+`3f455759-11f0-4387-bf0f-244e7852038e`, confirmed email, server review_account marker,
+and zero admin memberships. Production password sign-in and own-profile read
+passed; verification sessions were signed out. Apple2.1 App Review now has Sign-in
+required enabled, dedicated credentials saved and instructions identifying their
+purpose. Reload confirmed the saved/masked fields; exact password readback is
+unavailable because browser tools mask sensitive fields. Local plaintext secret
+removed, no credential in source or logs. No personal Apple account used.
+
+This is an Auth/profile and store-save check, not a new full-device workflow test
+with this account. No reports, payments, push devices, payout identities or bank
+records were created for the reviewer. Dashboard chat received its UUID/marker
+for exclusion, without the password.2.1 remains Prepare for Submission with no
+build attached/uploaded, manual release selected and no Add for Review action.
+Privacy-label data-type publication remains pending actual release as above.
