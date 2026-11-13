@@ -24,6 +24,25 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (review-account exclusions and date-boundary correction)
+
+- Source `6a071c5494656d940d6305f00b64b34a0acfcea6`, local only. Business aggregates
+  exclude server-marked review accounts as report authors, cleaners, funders and
+  contributors, plus fixtures on their reports. Verified the new Apple review
+  account's flag and zero business rows. No identity sent to analytics.
+- Read-only CTE fixtures exposed implicit DATE AT TIME ZONE selecting timestamp
+  without time zone. Explicit casts now produce true NY-midnight timestamptz
+  bounds, including prior periods. Correct7-day funding is$37 versus$47: the old
+  cutoff included two Nov5 payments totaling$10 outside Nov6–12. Counts6 reports /
+  4 completed cleanups and28-day funding$77 remain. No payment record changed.
+- New manual regression `node scripts/check-owner-analytics-business.mjs --linked`
+  (or --local) uses CTE-only fake rows: both periods pass reviewer/parent exclusion,
+  user-metadata spoof resistance, real refunds, late-night/boundary funding and
+  daily reconciliation. Actual aggregate query passes;9 focused adapter tests,
+  script syntax and diff checks pass. No DB migration/writes, deploy or push.
+- App release flags and production/test telemetry filters unchanged; app/combined
+  visits remain unknown pending release. Other native/preview/Claude work preserved.
+
 ### 2026-11-13 — Codex (dedicated reviewer login saved; Pixel remote push passed)
 
 - Owner explicitly approved creating/saving a dedicated review login. Created standard member app-review-210@litterbugs.app, UUID3f455759-11f0-4387-bf0f-244e7852038e, server app_metadata.review_account=true, email confirmed and zero admin memberships. Production Auth password sign-in and own-profile read passed; verification sessions globally signed out. Apple2.1 draft has Sign-in required enabled, credentials saved and updated access instructions; reload confirmed masked fields/disabled Save. Local plaintext secret removed; no password in repo/logs or dashboard message. Personal Apple identity untouched. Native full-flow login with this account is not claimed.
