@@ -24,6 +24,23 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (local cleanup story preview)
+
+- Owner requested a concrete preview of a shareable cleanup story. Created
+  conversation-only draft at thread visualization root/boone-cleanup-story.html
+  with story/post tabs and real public Winkler Cemetery report photos/details
+  (ea46b81e-7000-4f5f-82af-64a6c624e040):reported Nov5, completed Nov8 by
+  Nevan, reporter James Luke Barber;3 bags/items and100 lb labeled cleaner
+  recorded. Photos show original litter and collected bags, not matched views.
+- Reference lock: existing Litterbugs rounded sans/purple, owner mint CTA;
+  Airbnb.org photo-first story hierarchy, Clipdrop input/result pairing.
+  No fabricated quotations or impact metrics. Desktop render and390px mobile
+  inspection completed; photo sizing corrected, no horizontal overflow, both
+  tabs work and all embedded photos load. Preview and assets outside repo.
+- No live page/publication/social post/outreach/deploy/push/database/store
+  changes. HTTP-only public evidence; local browser QA generated no visitor
+  traffic. Existing Claude/mobile/preview edits preserved.
+
 ### 2026-11-13 — Codex (organic search growth priorities)
 
 - Read-only fresh query export Aug13–Nov10 retains7 query rows/35 impressions,
