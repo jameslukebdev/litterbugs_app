@@ -48,3 +48,12 @@ services/auth-bridge/.wrangler/
 .agents/
 skills-lock.json
 **/*.swp
+
+# Release artwork, research and local scratch copies are not native build input.
+release-assets/
+design/
+docs/
+work/
+.claude/
+.codex/
+**/dev-review-preview/
