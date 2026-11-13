@@ -1,8 +1,69 @@
 # Mobile 2.1.0 release preparation — November 13, 2026
 
-Owner instruction: finish release preparation; analytics ON by default; do not submit either store. No GitHub push or mobile OTA publication.
+Owner instruction, updated November13: upload and submit both refreshed builds for store review; keep public release manual. Analytics ON by default. No GitHub push or mobile OTA publication.
 
-## Frozen candidates
+## Latest candidates and submitted review — supersedes the original builds below
+
+The owner-reported pin issue is fixed: Metro had stopped loading newly mounted
+artwork in the existing simulator; restarting it restored the ladybug. Source
+`eaa461a` changes only selected-pin height from30% to22% of the map to keep the
+bug and pin tail above the report preview. Both pins were repeatedly selected;
+two focused map-framing tests pass. Screenshot:
+`artifacts/mobile-2.1.0/device-evidence/selected-pin-fixed.png`.
+
+Frozen release source `7e4275b598cb37c1932294d451f3e110e171f7ff` contains that
+one helper change over the previously accepted c34f569 source. Both new EAS jobs
+finished. These originals supersede27/24:
+
+| Platform | Version | EAS build | SHA-256 |
+| --- | --- | --- | --- |
+| iOS |2.1.0 (28)|a065e139-0a41-4aed-aea7-d18dc0382e62|e3632c74188b7dd1a49a88cb545065851a9b76c96575c58bc3a409f3a00ad9e6|
+| Android |2.1.0 (25)|30f89079-7077-45ef-bd8b-dc7b88cef85c|6b1dfdf1efe0e310ad2764f0f180740bdf96a301061b88bb663a8a7bf6e85f82|
+
+Original IPA/AAB are under `artifacts/mobile-2.1.0`. Both signatures verified;
+Android signing certificate matches24. Package com.litterbugs.app, version2.1.0,
+production analytics enabled; Android minimum24/target36 unchanged. iOS production
+update channel/runtime2.1.0 verified. EAS retained symbol-upload configuration;
+iOS native PostHog upload phase executed. The exact uploaded symbol UUID matches
+listed below belong to27/24; refreshed28/25 UUID readback is not claimed.
+
+- Apple EAS upload job0b131cee-2e1c-446f-b3bd-e823c2b80e49 finished. Build28 processed,
+  attached and saved. Submit for Review completed at2:52PM ET; submission
+  `2abda04e-5782-41bf-99ed-d2005198cc12` visibly **Waiting for Review** for2.1.0(28).
+  **Manually release this version** remains selected. Dedicated standard review
+  login, instructions, existing screenshots and updated policy URL retained.
+- Google production draft4 accepted only25(2.1.0); previous21 is excluded.
+  Validation: no blocking errors, one existing deobfuscation-file warning and
+  zero lost supported devices. Production rollout/country settings preserved.
+  At2:55PM ET, Send changes for review completed: Production25 and Data safety
+  visibly appear under **Changes in review**, quick checks still running/up to
+  14minutes. This confirms submission to Google's workflow, not approval or
+  completion of its checks. **Managed publishing ON** holds approved changes.
+- Google added Address, Phone number and Other info for embedded Stripe onboarding;
+  existing analytics disclosures preserved. Apple corrected13 current-version
+  baseline categories; the additional2.1 categories are prepared for manual
+  release because Apple immediately publishes label edits. Full details in
+  [store privacy handoff](2026-09-11-store-privacy-handoff.md#november13-submission-follow-up--current-baseline-corrected).
+- No mobile public release, OTA, backend deployment or GitHub push in this pass.
+  Dashboard chat received the review/manual-hold status; app metrics remain
+  marked unreleased. Existing dashboard production deployment is separate work.
+
+Before public release: store approvals, resolve any actual review feedback, apply
+Apple's remaining2.1 privacy categories/purposes, then obtain the owner's explicit
+public-release instruction. Apple revocation and separate Facebook tests remain
+excluded, not passed; prior physical-notification limitations remain documented.
+
+Evidence: `ios28-build-verification.json`, `android25-build-verification.json`,
+`store-review-submissions-20261113.json`, `litterbugs-apple28-waiting-review.jpg`
+in `artifacts/mobile-2.1.0/device-evidence`. Google's final accessibility state
+showed Changes in review and Managed publishing on. Native file-picker upload
+succeeded after the browser chooser returned a generic upload error. Memory
+available42% at completion; cloud builds avoided new local native workers.
+Metro8081 remains running with768MB heap/one worker and analytics disabled for
+the existing simulator; stopping it can make newly mounted preview assets blank.
+
+## Original frozen candidates (superseded)
+
 
 Source `c34f5698b7c880e3392512206d8f588f0b846d8e` on local `codex/mobile-2.1.0-release-20261113`, isolated from dashboard and preview work. App changes correspond to main-branch `8ec516e`, plus the obsolete Stripe0.50.3 patch removal and archive exclusions. Native source did not change during device acceptance.
 

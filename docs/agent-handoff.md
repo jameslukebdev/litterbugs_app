@@ -24,6 +24,13 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (pin fixed; both2.1 apps submitted, public release manual)
+
+- Owner authorized upload and review submission with manual public release. Fixed selected-pin framing30%→22% (eaa461a); Metro restart restored the existing ladybug artwork. Two focused tests and repeated simulator selection passed. Frozen release7e4275b contains only that helper change over acceptedc34f569; refreshed signed iOS28 / Android25 built successfully, signatures/config verified. Original hashes/evidence are in current candidates/readiness records;27/24 superseded.
+- Apple28 upload finished, attached and submitted2:52PM ET:2abda04e-5782-41bf-99ed-d2005198cc12 visibly Waiting for Review. Manual release remains selected. Google25 and Data safety submitted2:55PM ET, visibly Changes in review with quick checks still running; managed publishing ON. No public mobile release, OTA, backend deploy or GitHub push. Native file picker succeeded after the browser chooser's generic upload failure.
+- Corrected Apple's current2.0.1 privacy baseline to13 complete linked/no-tracking categories. Apple publishes label edits immediately; six additional2.1 categories plus Coarse Location Analytics remain prepared for manual public release, not a saved label draft. Full new collection disclosed in private review notes/published policy. Google saved and submitted Address/Phone/Other info for embedded Stripe onboarding, preserving SDK analytics declarations. See store privacy handoff.
+- Dedicated reviewer login preserved; no credentials printed/extracted. Dashboard chat informed both apps remain unreleased. Existing dashboard/Claude/preview changes preserved. Memory42% available; cloud builds avoided new local native workers. Metro8081 retained with768MB heap/one worker/analytics disabled for current simulator assets. Before public release: approvals/actual feedback, final Apple2.1 labels, then explicit owner release instruction.
+
 ### 2026-11-13 — Codex (owner analytics dashboard deployed)
 
 - Live at https://litterbugs.app/admin/analytics. Source `388c930`, isolated release

@@ -25,15 +25,19 @@ See `docs/user-testing-known-issues.md` for the current testing limitations and
 
 Grant confirmed admin access and successfully signed into the existing Litterbugs
 App Store Connect listing under James Luke Barber. Authorized release preparation
-includes store privacy/metadata work, but no build upload or store submission.
+initially included store privacy/metadata work without upload/submission. The
+owner subsequently authorized uploading and submitting the refreshed2.1.0 builds
+for Apple/Google review, with public release kept manual. This includes the pin
+fix: iOS28 / Android25 from frozen source7e4275b; earlier27/24 are superseded.
+Do not publicly release either store version without a later explicit instruction.
 Luke accepted the updated Apple Developer Program License Agreement on
-November13; the block is cleared and the2.1.0 version now exists in Prepare for
-Submission. Release notes, review instructions, support/marketing URLs and the
-next-version privacy-policy URL are saved. No build is attached or uploaded.
-Privacy data-type answers still end in immediate Publish, not Save Draft; they
-remain prepared locally for the release. See the current store privacy handoff
-for the verified state; do not claim a saved privacy-label draft or repeat login
-troubleshooting.
+November13; the block is cleared. Apple2.1.0(28) is uploaded, attached and
+Waiting for Review (submission2abda04e-5782-41bf-99ed-d2005198cc12). Manual
+release is selected. Release notes, review login and privacy-policy URL are saved.
+The current2.0.1 privacy baseline was corrected to13 published data types; the
+additional2.1 categories remain prepared for manual release because Apple
+privacy data-type answers publish immediately. See the current store privacy
+handoff; do not claim a saved privacy-label draft or repeat login troubleshooting.
 
 This scoped access update does not reopen the excluded Apple authorization
 revocation or separate-user Facebook tests, permit changes to Grant's personal

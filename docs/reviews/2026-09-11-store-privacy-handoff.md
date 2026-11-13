@@ -7,6 +7,48 @@ production binary and the unresolved provider questions below must be reconciled
 before calling the store forms final. Apple access resolution is deferred at the
 account holder's direction; support case 102959897494 does not block debugging.
 
+## November13 submission follow-up — current baseline corrected
+
+This section supersedes earlier statements about a four-type public label and
+no published answers. Owner authorized store uploads/review, with manual public
+release. Apple2.1.0(28) was submitted at2:52PM ET, submission
+`2abda04e-5782-41bf-99ed-d2005198cc12`, and visibly shows Waiting for Review.
+
+Apple data-type edits publish immediately. Following Apple's instruction to
+answer for the currently available version, corrected the released2.0.1 baseline
+to13 completed data types, all linked to identity and none used for tracking:
+Name, Email Address, Payment Info, Other Financial Info, Precise Location,
+Coarse Location, User ID, Device ID, Purchase History, Photos or Videos,
+Other User Content, Product Interaction and Other Usage Data. App Functionality
+applies to all except Other Usage Data; Analytics additionally applies to User ID,
+Device ID and Product Interaction, and is the sole purpose for Other Usage Data.
+Account/SDK collection controls the aggregate linked answer, even when PostHog
+alone is anonymous. Existing broader provider collection was not removed.
+
+Before manually releasing2.1, update to19 categories: add Phone Number, Physical
+Address and Other Data for embedded Stripe contact/identity/tax verification
+(App Functionality, linked, no tracking), plus Crash Data (App Functionality,
+unlinked), Performance Data and Other Diagnostic Data (App Functionality and
+Analytics, unlinked). Add Analytics to Coarse Location. These are prepared
+release-time answers, not a saved Apple privacy-label draft. The private2.1
+review notes already disclose all these new flows and link the published policy.
+The policy URL https://litterbugs.app/privacy is included in the submitted version.
+[Apple's current-version and immediate-publication guidance](https://developer.apple.com/help/app-store-connect/manage-app-information/manage-app-privacy/).
+
+Google Data safety now also includes Address, Phone number and Other info for
+embedded Stripe onboarding: collected, optional, non-ephemeral; App functionality,
+Fraud prevention/security/compliance and Account management. Not Shared follows
+the user-initiated transfer exception for those onboarding details only. Existing
+sharing/required answers for all other SDK categories remain unchanged. Saved
+at final Preview, then submitted together with production25. Both are visible
+under Changes in review; quick checks were still running at2:55PM ET.
+Managed publishing is ON to hold approval
+until a later explicit public-release instruction.
+
+Evidence: `artifacts/mobile-2.1.0/device-evidence/litterbugs-apple-current-privacy-13.jpg`,
+`litterbugs-google-data-safety-210-preview.jpg`, and
+`litterbugs-google-managed-publishing-on-20261113.jpg` in that folder.
+
 ## Answers supported by the current implementation
 
 | Data flow | Apple categories to include | Play categories to include | Purpose and association |

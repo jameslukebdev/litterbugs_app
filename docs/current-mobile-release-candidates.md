@@ -1,6 +1,26 @@
 # Current Mobile Release Candidates
 
-## November 13 —2.1.0 built and verified, unsubmitted
+## November13 — selected-pin fix and refreshed candidates
+
+Owner found missing artwork and a selected pin partly hidden by the report card.
+The simulator's stopped Metro server caused missing newly loaded images; restarting
+it with analytics disabled restored the existing artwork. Source eaa461a changes
+only selected-pin vertical framing from30% to22%; repeated selection of both
+reported cards verified the bug and tail visible above the preview. Two targeted
+map-framing tests pass. Screenshot: artifacts/mobile-2.1.0/device-evidence/selected-pin-fixed.png.
+
+Frozen release source is now7e4275b598cb37c1932294d451f3e110e171f7ff (c34f569 plus
+that one helper change). Both refreshed production builds finished: iOS28 / Android25. Previous iOS27 /
+Android24 originals remain historical evidence and do not contain this fix. Do
+not upload them as the latest candidate. Owner subsequently authorized upload
+and store review submission, with public release held manual. See the latest
+readiness addendum for exact submission state. Apple28 is Waiting for Review;
+Google25 and Data safety show Changes in review with quick checks running.
+Apple manual release and Google managed publishing ON hold public release.
+Before public release, apply the remaining Apple2.1 privacy-label additions.
+
+
+## November 13 — original27/24 verification (superseded)
 
 The latest unreleased candidate is local source `c34f5698b7c880e3392512206d8f588f0b846d8e`.
 Both production EAS builds finished: iOS **2.1.0 (27)** / `14f76fb5-40d9-4f3d-8c95-13489935ec7f`, Android **2.1.0 (24)** / `e6a72070-4f04-4626-afec-29e9956874be`.
