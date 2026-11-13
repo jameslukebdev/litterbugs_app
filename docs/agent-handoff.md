@@ -24,6 +24,15 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (final mobile handoff synced to dashboard notes)
+
+- Verified mobile handoff/evidence for local e690eb5: event/timing schemas unchanged,
+  staff opt-out complete, local symbol files verified without production binding.
+  Updated owner dashboard plan; no dashboard code or data-definition changes.
+- App remains unreleased and dashboard awaits production data/read connections.
+  Native crash coverage stays unclassified. Separate privacy-only4d4e2e8 is live;
+  dashboard452c394 and app changes were excluded. No deploy/push from this chat.
+
 ### 2026-11-13 — Codex (mobile analytics verified; privacy published)
 
 - Finished local app analytics: replay starts paused; install/open attribution; nested person-property scrubbing;

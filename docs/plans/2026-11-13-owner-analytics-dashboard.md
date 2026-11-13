@@ -158,3 +158,14 @@ validate real API responses and site/property timezone/access, and persist Clari
 ingestion for a strict quota/history. Local reviewed snapshots cover both7/28
 days for GA/GSC/PostHog and the recent Clarity UI window; GA daily values and
 user counts remain unavailable rather than inferred from other metrics.
+
+Final mobile handoff received: local source `e690eb5`,617 passing tests, lint and
+223-module source check. The event/timing schemas remain unchanged; device-wide
+staff opt-out is complete. Verified uploaded local iOS/Android symbol files have
+no production-release binding, so native-crash production coverage stays
+unclassified. The mobile app has not been released or pushed. Evidence:
+`docs/reviews/2026-11-13-mobile-analytics-verification.md`.
+The separate privacy-only source `4d4e2e8` is now live on litterbugs.app/privacy
+(effective November13,2026), deployment `dpl_2A2dd4XGKrLZ2kEyK1wSSn3eWd2d`.
+That deployment excluded this dashboard and the mobile changes. No further event
+fields are needed from the mobile thread for the current dashboard integration.
