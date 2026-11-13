@@ -51,8 +51,7 @@ PostHog processes this on Litterbugs' behalf (service provider). The privacy pol
 - The app's new device opt-out controls PostHog. It does not establish optional collection for an entire
   Play category across Maps, Stripe, notification SDKs and older supported app versions; existing Required
   and Shared answers were preserved. Do not label all diagnostic or identifier collection optional on that basis.
-- Apple: prepared answers remain the table above. No Apple form was saved or published; Luke's account
-  access remains unavailable. Grant's developer settings and only Apple sign-in account were untouched.
+- Apple: initial review was prepared only. The later admin-access verification and agreement blocker below supersede the access limitation for store privacy work. No form has been saved or published. Grant's personal developer settings and Apple sign-in account remain untouched.
 
 Source anchors: `apps/mobile/MapScreen.js` (location permission and report
 placement), `apps/mobile/FundingContributionScreen.js` (PaymentSheet and
@@ -188,3 +187,85 @@ Google Play's aggregate Approximate Location declaration already includes App
 Functionality and Analytics, but retain the account-linked functionality purpose
 in the release review. This does not change the existing Maps/location disclosures.
 The analytics switch does not control requested nearby notifications.
+
+## November 13: App Store Connect admin access and agreement blocker
+
+Grant explicitly authorized applying the prepared store privacy answers and
+completed sign-in. Verified account **Grant Gibson**, team **James Luke Barber**,
+existing app **6757313862**, bundle **com.litterbugs.app**. The current iOS version
+is **2.0.1**, build24, **Ready for Distribution**. No2.1.0 build was uploaded,
+version created or review submitted.
+
+Clicking **Add iOS App** produces **Agreement Update**: Apple requires the
+**Account Holder** to review and accept the updated Apple Developer Program
+License Agreement at developer.apple.com/account before updating existing apps.
+Grant's App Store Connect admin role does not satisfy this account-holder step.
+No agreement was accepted and no personal developer-account settings were changed.
+Local evidence: `artifacts/mobile-2.1.0/apple-agreement-blocker-20261113.jpg`.
+
+The currently published privacy label contains only Email Address, Precise
+Location, User ID and Photos or Videos, all App Functionality and shown unlinked.
+Its policy URL is `https://github.com/jameslukebdev/litterbugs_app`, with no privacy
+choices URL. These omit other current data flows and misclassify account-linked
+records. Adding12 missing categories opens per-type setup, whose final action is
+**Publish**, with no Save Draft control in this current-version UI. Those temporary
+selections were abandoned; a reload verified the original four-type label and URL.
+**No privacy draft was saved and no privacy answer was published.**
+
+### Reviewed2.1.0 aggregate Apple answers
+
+These combine app records and every configured SDK, rather than copying anonymous
+PostHog linkage onto an entire category. All rows are **not used for tracking**;
+no advertising/marketing purpose was identified in the audited implementation.
+
+| Apple data type | Purposes | Linked to identity | Evidence/qualification |
+| --- | --- | --- | --- |
+| Name; Email Address | App Functionality | Yes | Sign-in and account profiles |
+| Payment Info | App Functionality | Yes | Native Stripe PaymentSheet; the outside-app payment exception does not apply to this embedded flow |
+| Other Financial Info; Purchases | App Functionality | Yes | Account-associated reward/payout balances, contributions and refunds; not a claim that full bank/tax documents are stored by Litterbugs |
+| Precise Location | App Functionality | Yes | Submitted report coordinates associated with the reporter |
+| Coarse Location | App Functionality; Analytics | Yes | Optional account-linked rounded nearby area plus anonymous PostHog GeoIP; anonymous analytics does not override linked functional collection |
+| Photos or Videos; Other User Content | App Functionality | Yes | Account-associated submitted photos, descriptions and disputes |
+| User ID | App Functionality; Analytics | Yes | Account IDs and configured Google Sign-In native disclosure |
+| Device ID | App Functionality; Analytics | Yes | Account-linked push installation/token plus anonymous install analytics and SDK identifiers |
+| Product Interaction | App Functionality; Analytics | Yes | Stripe's linked native disclosure plus anonymous PostHog interaction data |
+| Other Usage Data | Analytics | Yes | Configured Google Sign-In linked native disclosure plus anonymous PostHog replay/use data |
+| Crash Data | App Functionality | No | De-identified PostHog/PLCrashReporter crash diagnostics |
+| Performance Data; Other Diagnostic Data | App Functionality; Analytics | No | Scrubbed technical diagnostics and timings |
+
+Native privacy-manifest reconciliation used the accepted QA archive at
+`/tmp/litterbugs-ios27-qa/LitterbugsReleaseQA.app`, whose native/JS bytes match the
+production candidate (test identity/config/signing differ, as documented in the
+readiness record). PostHog/PLCrashReporter declare unlinked diagnostics/usage;
+Stripe's main/core/PaymentSheet bundles include linked product interaction and
+payment information; Google Sign-In declares linked IDs/usage. Broad SDK fields
+such as phone numbers are not automatically added without actual configured use.
+The app's account-linked records take precedence over unlinked SDK-only examples.
+No general contacts, health, audio, browsing history, advertising data or body/
+environment tracking was established. This inventory supersedes the older native
+version assumptions above for the2.1.0 candidate.
+
+### Remaining steps after the account-holder agreement
+
+1. Account Holder James Luke Barber accepts the Apple Developer agreement in his
+   existing developer account. Do not request his password or substitute Grant's
+   personal developer account. The owner-excluded revocation/FB tests stay excluded.
+2. Create the existing app's **2.1.0** editable version, without a build upload or
+   review submission. Update its privacy-policy URL to
+   **https://litterbugs.app/privacy**; a new editable version is required by the UI.
+3. Enter/review the16 data types above, correct aggregate linked answers and
+   reconcile the final preview. Check whether the editable version enables a
+   true draft save; do not call unsaved selections a saved draft.
+4. Publish answers describing the currently available app. Future-only2.1
+   analytics must be coordinated with2.1 release; Apple's guidance explicitly
+   requires answers to describe the current available version. Publishing privacy
+   answers is separate from submitting the build and may immediately change the
+   public listing. Review any final attestation at the action itself.
+5. Store upload/submission remains withheld until the owner explicitly authorizes
+   it. Existing signed candidates, symbol uploads and phone checks remain valid;
+   this account prerequisite does not require rebuilding the app.
+
+Sources: [Apple App Privacy management](https://developer.apple.com/help/app-store-connect/manage-app-information/manage-app-privacy/)
+(current-version answers, editable-version policy URL and publication flow),
+[Apple App Privacy definitions](https://developer.apple.com/app-store/app-privacy-details/)
+(aggregate SDK collection, linkage, tracking and embedded payment rules).

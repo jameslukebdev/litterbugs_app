@@ -21,6 +21,20 @@ login available. These are unavailable resources, not pending owner actions.
 See `docs/user-testing-known-issues.md` for the current testing limitations and
 `docs/reviews/2026-09-11-deletion-moderation-financial-audit.md` for evidence.
 
+## App Store Connect access clarification — November 13, 2026
+
+Grant confirmed admin access and successfully signed into the existing Litterbugs
+App Store Connect listing under James Luke Barber. Authorized release preparation
+includes store privacy/metadata work, but no build upload or store submission.
+Apple currently blocks creating the2.1.0 version until the Account Holder accepts
+the updated Apple Developer Program License Agreement. Admin access does not
+replace that requirement. See the current store privacy handoff for the verified
+state; do not claim a saved privacy draft or repeat login troubleshooting.
+
+This scoped access update does not reopen the excluded Apple authorization
+revocation or separate-user Facebook tests, permit changes to Grant's personal
+Apple developer settings, or authorize account deletion/revocation testing.
+
 ## Website analytics and internal testing
 
 - Keep normal visitor analytics enabled by default without an automatic

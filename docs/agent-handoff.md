@@ -24,6 +24,13 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (Apple admin access verified; agreement blocks version draft)
+
+- Owner authorized applying Apple privacy answers and completed sign-in. Grant Gibson admin access works for Litterbugs6757313862 under James Luke Barber; current iOS2.0.1/build24 is Ready for Distribution. This updates store-access scope only; Apple revocation/FB exclusions remain unchanged.
+- Add iOS App is blocked by Apple's updated Developer Program License Agreement, which must be accepted by Account Holder James Luke Barber. No agreement accepted, version created, build uploaded or review submitted. Evidence: `artifacts/mobile-2.1.0/apple-agreement-blocker-20261113.jpg`.
+- Current privacy label has four unlinked functional types and an old GitHub policy URL. Prepared/reconciled16-type2.1 inventory against actual native manifests and account-linked flows; recorded in store handoff. Current UI ends in Publish, not Save Draft. Temporary category selections discarded; reload verified original label/URL. No saved draft or published answer claimed. After account-holder agreement: create2.1 draft, update policy URL to litterbugs.app/privacy, enter reviewed answers and coordinate public analytics declarations with actual release per Apple's current-version rule.
+- Updated AGENTS/readiness/candidate/store notes only. Existing production candidates and checks unchanged; no deployment, GitHub push, mobile OTA or store submission. Unrelated Claude/dashboard/preview changes preserved.
+
 ### 2026-11-13 — Codex (app/dashboard connection status checked)
 
 - Read final release-readiness evidence: PostHog event/replay/privacy and saved
