@@ -18,6 +18,16 @@ vi.mock('next/script', () => ({ default: function FakeScript({ onReady }: { onRe
   return <div data-testid="google-script" />;
 } }));
 const config = { enabled: true, production: true, gaId: 'G-TEST', posthogKey: 'phc_test', posthogHost: 'https://us.i.posthog.com' };
+
+it('excludes admin analytics and staff browser use before any provider mounts', async () => {
+  mock.allowed = true; mock.path = '/admin/analytics';
+  render(<WebsiteAnalytics config={{ ...config, clarityId: 'z60itnrbpn' }} />);
+  await waitFor(() => expect(localStorage.getItem('litterbugs:analytics-consent:v1')).toBe('declined'));
+  expect(mock.init).not.toHaveBeenCalled();
+  expect(mock.capture).not.toHaveBeenCalled();
+  expect(mock.scriptMount).not.toHaveBeenCalled();
+  expect(document.querySelector('script[src*="clarity.ms/tag/"]')).toBeNull();
+});
 beforeEach(() => {
   const storage = new Map<string, string>();
   vi.stubGlobal('localStorage', { getItem: (key: string) => storage.get(key) ?? null,

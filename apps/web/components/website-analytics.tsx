@@ -36,6 +36,24 @@ export function AnalyticsPreferences() {
 
 export function WebsiteAnalytics({ config }: { config: AnalyticsConfig }) {
   const pathname = usePathname();
+  const privateAdmin = pathname === '/admin' || pathname.startsWith('/admin/');
+  useEffect(() => {
+    if (!privateAdmin) return;
+    // An owner browser should not become visitor traffic after leaving admin.
+    // Use the existing exclusion keys; normal visitors keep their defaults.
+    try {
+      localStorage.setItem(ANALYTICS_CONSENT_KEY, 'declined');
+      localStorage.setItem(ANALYTICS_REPLAY_CHOICE_KEY, 'declined');
+    } catch { /* Private routes still never mount analytics below. */ }
+    // A recorder already loaded on a previous public SPA route cannot be
+    // unloaded by removing its script. A fresh private document resets it.
+    if ((window as AnalyticsWindow).clarity) window.location.reload();
+  }, [privateAdmin]);
+  return privateAdmin ? null : <VisitorAnalytics config={config} />;
+}
+
+function VisitorAnalytics({ config }: { config: AnalyticsConfig }) {
+  const pathname = usePathname();
   useEffect(() => {
     const url = new URL(window.location.href);
     consumeParticipationAuthResult();

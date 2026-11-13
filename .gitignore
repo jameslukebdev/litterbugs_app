@@ -31,6 +31,7 @@ pnpm-debug.log*
 .env
 .env.*
 !.env.example
+.analytics-local/
 *.pem
 
 # Generated native projects

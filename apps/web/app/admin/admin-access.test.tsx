@@ -44,6 +44,14 @@ afterEach(() => {
 });
 
 describe('admin access', () => {
+  it('returns to analytics with a stable button label during Google handoff', async () => {
+    signInWithOAuth.mockResolvedValue({ error: null });
+    render(<AdminAccess state="signed_out" destination="analytics" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Continue with Google' }));
+    await waitFor(() => expect(signInWithOAuth).toHaveBeenCalledWith({ provider: 'google', options: { redirectTo: `${window.location.origin}/auth/callback?next=/admin/analytics` } }));
+    expect((screen.getByRole('button', { name: 'Continue with Google' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByText('Opening Google…')).toBeNull();
+  });
   it('returns Google sign-in to the protected admin route', async () => {
     signInWithOAuth.mockResolvedValue({ error: null });
 
