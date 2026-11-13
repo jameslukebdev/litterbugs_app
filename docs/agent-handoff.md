@@ -24,6 +24,17 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (release-readiness and analytics-choice clarification)
+
+- Read-only readiness review: analytics setup is complete; latest2.1.0 still needs a frozen mobile candidate,
+  fresh native production artifacts and final-device acceptance. Current local UI/payment-total edits remain
+  outside analytics commit e690eb5. Older AI-photo/data-sharing and offensive-content findings lack a current
+  closure record; flag for review without restoring owner-removed UI or treating excluded Apple revocation /
+  separate-user Facebook tests as blockers. Apple store labels/submission remain account-holder release work.
+- Clarified analytics choice defaults on in production (saved exclusion persists); screenshot is off because
+  the test simulator was excluded. Off stops future PostHog events/diagnostics/replay on that device, not core
+  application records, existing analytics or separately controlled website analytics. No product/provider change.
+
 ### 2026-11-13 — Codex (final mobile handoff synced to dashboard notes)
 
 - Verified mobile handoff/evidence for local e690eb5: event/timing schemas unchanged,
