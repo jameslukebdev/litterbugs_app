@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
   Animated,
+  Easing,
   FlatList,
   Modal,
   PanResponder,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -62,10 +64,32 @@ function FloatingCard({
   insetTop = 0,
   isOpen,
   reduceMotion,
+  onExited,
 }) {
   const { height } = useWindowDimensions();
   const dragY = useRef(new Animated.Value(0)).current;
   const scrollOffset = useRef(0);
+  const androidOffset = useRef(new Animated.Value(height)).current;
+  const [androidCardHeight, setAndroidCardHeight] = useState(0);
+  const androidEntered = useRef(false);
+  useEffect(() => {
+    if (Platform.OS !== 'android' || !androidCardHeight || reduceMotion === null) return undefined;
+    // Wait for the native card to be laid out. Moving a full screen's height
+    // spends much of the transition off screen, making the visible part snap.
+    const offscreen = androidCardHeight + bottom + 24; // include the bottom shadow
+    if (isOpen && !androidEntered.current) {
+      androidOffset.setValue(offscreen);
+      androidEntered.current = true;
+    }
+    const movement = Animated.timing(androidOffset, {
+      toValue: isOpen ? 0 : offscreen,
+      duration: reduceMotion ? 0 : isOpen ? 360 : 280,
+      easing: Easing.inOut(Easing.quad),
+      useNativeDriver: true,
+    });
+    movement.start(({ finished }) => { if (finished && !isOpen) onExited?.(report.id); });
+    return () => movement.stop();
+  }, [androidCardHeight, androidOffset, bottom, isOpen, onExited, reduceMotion, report.id]);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   const maxHeight = Math.max(160, height - bottom - insetTop - 74);
@@ -99,6 +123,11 @@ function FloatingCard({
 
   return <Animated.View
     {...pan.panHandlers}
+    onLayout={Platform.OS === 'android' ? (event) => {
+      const measured = event.nativeEvent.layout.height;
+      if (measured > 0) setAndroidCardHeight(current => current || measured);
+    } : undefined}
+    renderHardwareTextureAndroid={Platform.OS === 'android'}
     pointerEvents={isOpen ? 'auto' : 'none'}
     onAccessibilityEscape={onClose}
     style={[
@@ -108,7 +137,7 @@ function FloatingCard({
         bottom,
         maxHeight,
         transform: [
-          { translateY: Animated.add(animation.interpolate({ inputRange: [0, 1], outputRange: [height, 0] }), dragY) },
+          { translateY: Animated.add(Platform.OS === 'android' ? androidOffset : animation.interpolate({ inputRange: [0, 1], outputRange: [height, 0] }), dragY) },
         ],
       },
     ]}
@@ -191,6 +220,12 @@ export default function MapReportPreview({
   const animation = useRef(new Animated.Value(0)).current;
   const [displayedReport, setDisplayedReport] = useState(report ?? null);
   const [reduceMotion, setReduceMotion] = useState(null);
+  const reportRef = useRef(report);
+  reportRef.current = report;
+  const finishAndroidExit = useCallback((id) => {
+    // A dismissed card must not clear a new selection made during its exit.
+    if (!reportRef.current) setDisplayedReport(current => current?.id === id ? null : current);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -201,6 +236,10 @@ export default function MapReportPreview({
   }, []);
 
   useEffect(() => {
+    if (Platform.OS === 'android') {
+      if (report) setDisplayedReport(report);
+      return undefined; // The laid-out native card owns Android entry and exit.
+    }
     animation.stopAnimation();
     if (reduceMotion === null) return;
 
@@ -237,6 +276,7 @@ export default function MapReportPreview({
       report={displayedReport}
       isOpen={Boolean(report)}
       reduceMotion={reduceMotion}
+      onExited={finishAndroidExit}
       {...{
         bottom,
         getPhotoUrl,

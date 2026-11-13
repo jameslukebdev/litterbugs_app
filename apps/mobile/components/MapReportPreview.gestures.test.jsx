@@ -12,25 +12,39 @@ const native = vi.hoisted(() => ({
   reduced: false,
   timings: [],
   values: [],
+  layout: null,
+  animations: [],
+  autoFinish: true,
 }));
 vi.mock('react-native', () => {
-  const Box = ({ children, onAccessibilityEscape }) => <div onKeyDown={(event) => { if (event.key === 'Escape') onAccessibilityEscape?.(); }}>{children}</div>;
+  const Box = ({ children, onAccessibilityEscape, onLayout }) => {
+    if (onLayout) native.layout = onLayout;
+    return <div onKeyDown={(event) => { if (event.key === 'Escape') onAccessibilityEscape?.(); }}>{children}</div>;
+  };
   class Value {
     constructor(value) { this.value = value; native.values.push(this); }
     interpolate(config) { return config.outputRange[this.value === 1 ? 1 : 0]; }
     setValue(value) { this.value = value; }
     stopAnimation() {}
   }
-  const animate = (value, config) => ({ start: (callback) => {
-    native.timings.push(config);
-    value.setValue(config.toValue);
-    callback?.({ finished: true });
-  } });
+  const animate = (value, config) => {
+    const movement = { value, config, stop: vi.fn(), start: (callback) => {
+      movement.complete = callback;
+      native.animations.push(movement);
+      native.timings.push(config);
+      if (native.autoFinish) {
+        value.setValue(config.toValue);
+        callback?.({ finished: true });
+      }
+    } };
+    return movement;
+  };
   return {
     Platform: native.platform,
+    Easing: { quad: value => value * value, inOut: easing => easing },
     AccessibilityInfo: { isReduceMotionEnabled: async () => native.reduced, addEventListener: () => ({ remove() {} }) },
     useWindowDimensions: () => ({ width: 320, height: native.height, fontScale: native.fontScale }),
-    Animated: { Value, View: Box, add: (a, b) => a + b.value, timing: animate, spring: animate },
+    Animated: { Value, View: Box, add: (a, b) => (a.value ?? a) + b.value, timing: animate, spring: animate },
     PanResponder: { create: (config) => { native.pan = config; return { panHandlers: {} }; } },
     View: Box, Text: Box,
     ScrollView: (props) => { native.scroll = props; return <div>{props.children}</div>; },
@@ -71,6 +85,9 @@ beforeEach(() => {
   native.reduced = false;
   native.timings = [];
   native.values = [];
+  native.layout = null;
+  native.animations = [];
+  native.autoFinish = true;
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
@@ -139,4 +156,82 @@ it('skips automatic sheet motion for the reduced-motion preference', async () =>
   await mount();
   expect(native.timings).toContainEqual(expect.objectContaining({ toValue: 1, duration: 0 }));
   expect(native.timings.some(config => config.duration > 0)).toBe(false);
+});
+
+
+it('preserves the approved iPhone entry and exit timing without waiting for Android layout', async () => {
+  await mount();
+  expect(native.layout).toBeNull();
+  expect(native.timings.at(-1)).toMatchObject({ toValue: 1, duration: 240, useNativeDriver: true });
+  await mount({ report: null });
+  expect(native.timings.at(-1)).toMatchObject({ toValue: 0, duration: 180, useNativeDriver: true });
+  expect(container.querySelector('[aria-label="Back to map"]')).toBeNull();
+});
+
+describe('Android native card transitions', () => {
+  beforeEach(() => { native.platform.OS = 'android'; });
+  const measure = (height = 300) => act(() => native.layout({ nativeEvent: { layout: { height } } }));
+
+  it('waits for native layout, then slides only the distance needed to clear the bottom', async () => {
+    native.autoFinish = false;
+    await mount();
+    expect(native.timings).toHaveLength(0);
+    measure();
+    expect(native.animations).toHaveLength(1);
+    const entrance = native.animations[0];
+    expect(entrance.value.value).toBe(300 + 100 + 24);
+    expect(entrance.config).toMatchObject({ toValue: 0, duration: 360, useNativeDriver: true });
+    // A later photo/content layout must not restart the entrance mid-slide.
+    measure(310);
+    expect(native.animations).toHaveLength(1);
+  });
+
+  it('keeps the card mounted until its downward slide finishes', async () => {
+    await mount();
+    measure();
+    native.autoFinish = false;
+    await mount({ report: null });
+    expect(container.querySelector('[aria-label="Back to map"]')).not.toBeNull();
+    const exit = native.animations.at(-1);
+    expect(exit.config).toMatchObject({ toValue: 424, duration: 280, useNativeDriver: true });
+    act(() => exit.complete({ finished: true }));
+    expect(container.querySelector('[aria-label="Back to map"]')).toBeNull();
+  });
+
+  it('does not let an old exit remove a newly selected report', async () => {
+    await mount();
+    measure();
+    native.autoFinish = false;
+    await mount({ report: null });
+    const exit = native.animations.at(-1);
+    await mount({ report: { ...report, id: 'b' } });
+    measure();
+    act(() => exit.complete({ finished: true }));
+    expect(container.querySelector('[aria-label="Back to map"]')).not.toBeNull();
+    expect(exit.stop).toHaveBeenCalled();
+  });
+
+  it('reverses a partly closed card from its current position when reopened', async () => {
+    await mount();
+    measure();
+    native.autoFinish = false;
+    await mount({ report: null });
+    const exit = native.animations.at(-1);
+    exit.value.setValue(120); // native slide is partway down
+    await mount();
+    const reopened = native.animations.at(-1);
+    expect(exit.stop).toHaveBeenCalled();
+    expect(reopened.config.toValue).toBe(0);
+    expect(reopened.value.value).toBe(120);
+  });
+
+  it('honors reduced motion for both entry and exit', async () => {
+    native.reduced = true;
+    await mount();
+    measure();
+    await mount({ report: null });
+    expect(native.timings).toHaveLength(2);
+    expect(native.timings.every(config => config.duration === 0)).toBe(true);
+    expect(container.querySelector('[aria-label="Back to map"]')).toBeNull();
+  });
 });
