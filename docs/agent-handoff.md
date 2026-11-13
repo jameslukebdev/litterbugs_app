@@ -24,6 +24,10 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (platform-specific map work guidance)
+
+- Owner asked how to work on Android maps without changing iPhone. Read-only source check: MapScreen/styles/MapPin/mapFraming remain shared; AndroidStillMarker and PinLanding already separate native marker/landing behavior. Recommended keeping shared report/business logic, isolating Android/iOS rendering/config only where needed, scoping small changes with Platform.OS and checking both platforms after shared edits. No cause or fix for the unspecified reported regression claimed. No code/build/store/OTA changes; uploaded review binaries remain frozen.
+
 ### 2026-11-13 — Codex (simulator versus submitted app clarified)
 
 - Read-only comparison: no committed or uncommitted apps/mobile differences between frozen7e4275b store source and current mobile workspace. Existing Metro8081 serves that workspace, development client/one worker, analytics explicitly false; submitted originals use production analytics true. Same implemented mobile UI/styles, different development/production configuration and native shell. No claim of identical pixels, account state or simulator-native binaries. No code/store/phone/deployment changes.
