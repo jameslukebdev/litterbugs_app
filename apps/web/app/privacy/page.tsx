@@ -16,7 +16,7 @@ export default function PrivacyPage() {
       eyebrow="LITTERBUGS PRIVACY"
       title="Privacy policy"
       summary="This policy explains how Litterbugs collects, uses, shares, and protects information when providing our services."
-      effectiveDate="October 31, 2026"
+      effectiveDate="November 13, 2026"
       sections={[
         {
           title: 'Scope and responsible company',
@@ -79,6 +79,14 @@ export default function PrivacyPage() {
             <p>PostHog helps us understand visits using cookieless measurement, without placing analytics cookies or using browser storage for its analytics identifiers. Google Analytics and Microsoft Clarity also help us understand site usage and may use cookies. Clarity may reconstruct masked sessions and interactions. These services may operate with limited functionality in some locations until you allow analytics. Turning analytics off does not affect your ability to use Litterbugs. We honor browser Do Not Track and Global Privacy Control signals.</p>
             <p>Analytics providers may process online identifiers, pages, referring websites, and basic device or network information. We exclude report content, account identifiers, and payment details from the events we send to Google Analytics and PostHog. Clarity uses masking for sensitive content, but may process other page content, page URLs and interactions. Google Analytics and Clarity may store cookies depending on your settings and location. We do not enable advertising personalization or Google signals.</p>
             <p><AnalyticsPreferences /> lets you enable, decline, or withdraw optional analytics. Withdrawing stops further measurement on this browser; it does not automatically delete events already processed by a provider. Contact us for privacy requests.</p>
+          </>,
+        },
+        {
+          title: 'App analytics and diagnostics',
+          content: <>
+            <p>The Litterbugs mobile app uses PostHog to understand how the app is used and to diagnose problems. App versions with analytics send the screens and steps you reach (for example, opening a report or finishing a payment), how long they take, rounded result counts, error and crash reports, an anonymous installation identifier, and basic device, app version and network information. We do not associate these analytics with your account or include your name, email address, account ID, report text, photos, payment details or precise location in our usage events. JavaScript error messages are filtered to remove email addresses, links, identifiers and coordinates; native crash reports contain technical crash information and stack traces.</p>
+            <p>The app may also record masked session replays: screen recordings in which all text and images are hidden. Recording stops on sign-in, payment, payout and account screens and while the map is shown. PostHog may estimate an approximate location, such as a country or city, from your network address. We do not use app analytics for advertising or to track you across other companies’ apps or websites.</p>
+            <p>We configure PostHog to discard client IP addresses from stored events. This does not prevent approximate location from being estimated before the address is discarded. In app versions with Analytics choices, you can turn off app analytics, diagnostics and recordings from Profile, or from Settings when signed in. The choice applies to that device, including while signed out. Turning it off does not affect app features or delete information already sent.</p>
           </>,
         },
         {
