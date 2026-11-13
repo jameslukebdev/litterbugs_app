@@ -1,14 +1,15 @@
 # Current Mobile Release Candidates
 
-## November 13 —2.1.0 built, device acceptance in progress, unsubmitted
+## November 13 —2.1.0 built and verified, unsubmitted
 
 The latest unreleased candidate is local source `c34f5698b7c880e3392512206d8f588f0b846d8e`.
 Both production EAS builds finished: iOS **2.1.0 (27)** / `14f76fb5-40d9-4f3d-8c95-13489935ec7f`, Android **2.1.0 (24)** / `e6a72070-4f04-4626-afec-29e9956874be`.
 Original signed IPA/AAB are under `artifacts/mobile-2.1.0`; hashes, symbol matches,
-physical-device evidence and remaining gates are in
+physical-device evidence and store handoff are in
 [the November13 readiness record](reviews/2026-11-13-mobile-release-readiness.md).
 Analytics stays ON by default; test-device exclusions persist. No store upload/submission,
-GitHub push or mobile OTA publication. Do not submit until the remaining gates are resolved.
+GitHub push or mobile OTA publication. Submission remains withheld; apply the prepared
+Apple privacy entries in the owning account before any later submission.
 
 Public status checked November13: Apple **2.0.1**, released October31;
 Google Play **2.0.1 (21)**, released October29. The historical October30 Apple
