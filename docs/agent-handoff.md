@@ -24,6 +24,35 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (website PostHog dashboard created)
+
+- Owner authorized website dashboard only; native analytics remain Claude's work.
+  Created and pinned private project695338 dashboard2346165:
+  https://us.posthog.com/project/695338/dashboard/2346165
+  Name: Litterbugs website performance. Default last7days, America/New_York.
+-16 native insights plus2 notes: traffic/map-reach/report-open/failure cards,
+  devices/referrers/pages, homepage-map-report funnel, daily map reach by device,
+  map results/recovery, report/fund/claim/evidence funnels, auth outcomes and
+  failure reasons. Ordered visitor funnels use30min; map reach uses distinct
+  sessions and includes direct arrivals, distinct from homepage-only conversion.
+- Dashboard and every insight restrict production host, exclude is_test=true,
+  virtual bots, test_environment/test_run_id, .invalid QA referrers, and apply
+  filterTestAccounts. Existing cohort673394 has0 members: older unmarked testing
+  may remain. Found historical QA referrer absent normal test flags; excluded.
+  Starter dashboard and prior phone insight untouched; no capture setting changes.
+- All16 saved charts executed successfully; evidence funnel honestly has no data.
+  Map-loading taxonomy still absent: no misleading0ms chart. Visible note explains
+  timing coverage and first observed map/participation eventsNov9. Browser counts
+  are not platform totals/financial ledger; repeat result polling isn't visits.
+- Catalog initially empty. Saved3 source-insight metric proposals (NOT approved):
+  litterbugs_website_tracked_visits (ze7I0H10), litterbugs_website_map_reach
+  (CjpWYru8), litterbugs_website_workflow_failures (9jDVgAeH). No canonical claims.
+- Browser verified saved7day filters,156visits/28.2% map reach at audit time,
+  successful14day override recalculation, no horizontal document overflow.
+  Widened metric cards and switched funnels horizontal for readable step labels.
+  No visitor-site tests, app/web source changes, deploy, push or DB migration.
+  Dashboard remains private; no alerts, subscriptions or invitations created.
+
 ### 2026-11-12 — Codex (unreleased app analytics and dashboard recommendation)
 
 - Owner clarified latest app is not deployed. Reviewed local mobile code only;
