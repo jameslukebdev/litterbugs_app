@@ -2,6 +2,47 @@
 
 Owner instruction, updated November13: upload and submit both refreshed builds for store review; keep public release manual. Analytics ON by default. No GitHub push or mobile OTA publication.
 
+## Shared report-card behavior and final polish — local only
+
+Source `06fcdef4e95e3eabdb431af6fb099d241f6d73ac`, on top of iPhone re-entry
+fix225a0be, preserves the existing Litterbugs photo, bug artwork, lilac edge,
+funding/cleanup actions and card content. The owner requested faster iPhone pins
+and shared swipe-down report cards, then refined the header appearance.
+
+| Decision | Reference/constraint | Final behavior |
+| --- | --- | --- |
+| One continuous card | Owner screenshot/existing design; Google Maps sheet pattern | Photo top corners merge with header; unrelated hero callers retain their old style |
+| Compact dismissal | Owner's X/grabber preference; circular controls reviewed in ElevenLabs |36-point header,3-point neutral grabber; final owner preference removes circle and preserves18-point X, centered vertically within header with44×44 hit target |
+| Motion | Owner request; Refero motion guidance | Full-screen-height entry from bottom240ms, exit180ms; system reduced motion skips automatic movement |
+| Short-phone access | Owner request; native bottom-sheet pattern | Fixed close remains outside ScrollView; downward pull from content top dismisses, normal content/horizontal scrolling and action taps retained |
+| Faster arrivals | iPhone-only scope | Normal floating drop196+84=280ms, stagger25ms; AndroidStillMarker native520/60ms unchanged |
+
+Research: existing screenshot/style is the primary reference lock. Reviewed
+[Google Maps sheet](https://refero.design/screens/e2a89712-e762-4fe6-b3fb-edeb1568fe05),
+[ElevenLabs control treatment](https://refero.design/screens/f49df7d6-3188-411e-bac1-c95dfc5b1eff)
+and [Mapbox product framing](https://mapbox.com) through Refero; retained the
+Litterbugs visual language rather than adopting their brand tokens. Bundled
+motion/touch guidance informed short transitions and the44-point close target.
+
+Verification: full mobile suite634 passed/1 existing skip. Final focused gesture,
+content and landing checks22 passed after close focus-order/alignment refinements;
+production component ESLint passes and224-module source check0 errors. Final
+circle removal is cosmetic, same close callback and hit target. Gesture tests
+cover both platform settings, small viewport, scrolling versus dismissal, short
+pull cancellation, downward flick, content actions and reduced motion. No physical
+Android result claimed. CUA verified the X returns to the map. Owner manually
+confirmed “Yes, it dismisses cleanly” for the downward gesture. Simulator visual
+review confirmed the final thinner grabber/plain centered X. Existing single-worker
+Metro retained; no new simulator/native worker; free memory35% during full tests.
+
+**Release follow-up:** these shared card changes are absent from both submitted
+iOS28 and Android25; refresh both candidates before public release. Prior
+readiness notes saying only iOS needs a refresh are superseded by this section.
+Existing reviews and manual public-release settings unchanged. No build/upload,
+OTA, deployment, production provider change or GitHub push. Apple privacy remains
+complete. Evidence: `artifacts/mobile-2.1.0/device-evidence/report-card-final.png`
+and `map-preview-motion-local.json`.
+
 ## Post-submission iPhone map correction — local only
 
 Owner requested iPhone-only behavior: when a landed pin leaves the viewport and

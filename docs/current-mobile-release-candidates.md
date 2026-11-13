@@ -1,5 +1,21 @@
 # Current Mobile Release Candidates
 
+## November13 — report card follow-up on both phones, local only
+
+Source `06fcdef4e95e3eabdb431af6fb099d241f6d73ac` adds bottom-up report previews,
+swipe-down dismissal at the top of content, a fixed44-point close target and
+short-screen scrolling on iPhone and Android. Header polished to one continuous
+card/photo edge,36-point rail,3-point gray grabber and vertically centered18-point
+plain X (no gray circle). iPhone normal pin drop shortened520→280ms with25ms
+stagger; Android native pin timing unchanged. Prior iPhone re-entry fix225a0be retained.
+
+634 mobile tests passed/1 existing skip;22 focused checks and scoped component
+lint pass.224-module source check0 errors. Simulator X dismissal verified;
+owner confirmed swipe-down closes cleanly. Both submitted iOS28 and Android25
+lack these newer shared card changes, so refreshed builds for **both platforms**
+are needed before public release. Existing reviews/manual release unchanged;
+no build/upload/OTA/deploy/push started. Privacy details remain complete.
+
 ## November13 — iPhone map follow-up, local only
 
 Owner requested an iPhone-only correction after submission. Source

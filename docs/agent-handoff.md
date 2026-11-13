@@ -24,6 +24,12 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (faster iPhone pins; swipe-down cards on both phones)
+
+- Source06fcdef4e95e3eabdb431af6fb099d241f6d73ac, local only. iPhone floating drops280ms/stagger25; Android native520/60 timing unchanged. Both platforms' map previews enter from bottom240ms/exit180ms, swipe down from content top to close, retain normal scrolling/actions and honor reduced motion. Fixed close44×44 stays reachable on short phones. Prior225a0be re-entry fix retained.
+- Owner refined header after Refero research: continuous photo/card edge,36-point rail,3-point gray grabber,18-point X vertically centered, gray circle removed per final instruction.634 mobile tests pass/1 existing skip;22 focused checks, component lint and224-module source check pass. CUA verified X dismissal and final appearance; owner confirmed swipe closes cleanly. No physical Android claim. Evidence report-card-final.png/map-preview-motion-local.json; memory35%, no new native worker/simulator.
+- Both submitted iOS28 and Android25 now need refreshed builds to include shared card changes before public release; supersedes earlier iOS-only refresh note. Existing reviews/manual release and completed Apple privacy unchanged. No build/upload/OTA/deploy/GitHub push. Other Claude/dashboard/preview changes preserved.
+
 ### 2026-11-13 — Codex (iPhone re-entry drop fixed locally; new iOS build pending)
 
 - Owner explicitly requested iPhone-only map change. Source225a0bec528424fa241b81624961b77a9ea96db5: iPhone floating-landings hide resting pins as they leave view and clear visibility so returning pins drop into an empty spot, even during one continuous swipe. Stale handover timer cannot cut short the new drop. Android inPlace=true path/marker files unchanged; Android drop-identity regression passes.
