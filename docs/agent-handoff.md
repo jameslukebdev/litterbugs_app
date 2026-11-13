@@ -24,6 +24,15 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (read-only mobile map screenshot review)
+
+- Reviewed `/tmp/litterbugs-release-pixel-map.png` and current map source for the
+  mobile release chat. Colorful lower-left lines are likely Google's ski-run/lift
+  geometry near Appalachian Ski Mtn.; map style hides labels but retains geometry.
+  No matching app-drawn multi-color polylines found. Sent source/reference evidence;
+  fresh-binary geographic zoom/pan confirmation stays with the mobile chat.
+- No mobile edits, provider changes, database writes, deployment or push.
+
 ### 2026-11-13 — Codex (simplified owner metrics dashboard, local only)
 
 - Source commit `ef258db32ce00cf757afbd7f222d3d8fdcdc3030`. Added six overview metrics:
