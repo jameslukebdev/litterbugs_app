@@ -10,13 +10,14 @@ import {
   MEDIA_QUARANTINE_BUCKET,
   MediaSecurityError,
   requireCleanMalwareScan,
+  requireAppropriatePhoto,
   sanitizeImage,
   validateSecureMediaRequest,
   type ValidatedSecureMediaRequest,
 } from '@/lib/media-security';
 
 export const runtime = 'nodejs';
-export const maxDuration = 30;
+export const maxDuration = 45;
 
 function errorResponse(status: number, code: string, message: string) {
   return Response.json({ error: { code, message } }, {
@@ -182,6 +183,7 @@ export async function POST(request: Request) {
     try {
       await requireCleanMalwareScan(sourceBytes, sourceMimeType);
       const sanitized = await sanitizeImage(sourceBytes, sourceMimeType);
+      await requireAppropriatePhoto(sanitized.bytes);
       const { error: uploadError } = await admin.storage
         .from(mediaRequest.destinationBucket)
         .upload(mediaRequest.destinationPath, sanitized.bytes, {
