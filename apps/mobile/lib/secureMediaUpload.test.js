@@ -50,7 +50,7 @@ describe('secure mobile media upload', () => {
     );
     expect(fetchImpl).toHaveBeenCalledWith(MEDIA_PROCESSING_URL, expect.objectContaining({
       method: 'POST',
-      headers: expect.objectContaining({ Authorization: 'Bearer signed-user-token' }),
+      headers: expect.objectContaining({ Authorization: 'Bearer signed-user-token', 'X-Litterbugs-Photo-Review': 'approved-v1' }),
     }));
     const request = JSON.parse(fetchImpl.mock.calls[0][1].body);
     expect(request).toEqual({

@@ -28,6 +28,7 @@ it('discloses the actual avatar processor and keeps policy links available', () 
   const node = document.createElement('div'); root = createRoot(node);
   act(() => root.render(<PhotoReviewChoice avatar accepted={false} onChange={() => {}} />));
   expect(node.textContent).toContain('Cloudmersive');
-  expect(node.textContent).not.toContain('Google Gemini');
+  expect(node.textContent).toContain('Google Gemini');
+  expect(node.textContent).not.toContain('cleanup progress');
   expect(node.querySelectorAll('[role="link"]').length).toBe(2);
 });

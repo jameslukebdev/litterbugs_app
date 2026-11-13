@@ -5,7 +5,7 @@ import { colors } from '../lib/theme';
 // Approval belongs to this submission, never to the analytics preference.
 export default function PhotoReviewChoice({ accepted, onChange, disabled = false, avatar = false }) {
   return <View style={styles.container}>
-    <Text style={styles.description}>Litterbugs sends uploaded photos to Cloudmersive for malware and inappropriate-content checks.{avatar ? '' : ' Report and cleanup photos may also go to Google Gemini to check clarity, litter, hazards and cleanup progress.'} Photos can contain personal information. Avoid faces, addresses and other private details. AI can make mistakes.</Text>
+    <Text style={styles.description}>Litterbugs sends uploaded photos to Cloudmersive for malware checks and Google Gemini for inappropriate-content checks.{avatar ? '' : ' Gemini may also check report and cleanup photos for clarity, litter, hazards and cleanup progress.'} Photos can contain personal information. Avoid faces, addresses and other private details. AI can make mistakes.</Text>
     <TouchableOpacity accessibilityRole="checkbox" accessibilityLabel="I agree to the Terms and allow these photo checks" accessibilityState={{ checked: accepted, disabled }} disabled={disabled} onPress={() => onChange(!accepted)} style={styles.choice}>
       <Ionicons name={accepted ? 'checkbox' : 'square-outline'} size={25} color={colors.primary} />
       <Text style={styles.label}>I agree to the Terms and allow these photo checks.</Text>

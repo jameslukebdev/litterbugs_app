@@ -68,6 +68,7 @@ export async function uploadSecureMedia({
           headers: {
             Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
+            'X-Litterbugs-Photo-Review': 'approved-v1',
           },
           body: JSON.stringify(body),
           signal: controller.signal,
