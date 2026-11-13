@@ -231,7 +231,7 @@ begin
   end if;
 
   sent := private.send_nearby_report_alerts();
-  if sent <> 0 or (select count(*) from public.cleanup_notifications where event_type = 'nearby_reports_daily') <> 1 then
+  if sent <> 0 or (select count(*) from public.cleanup_notifications where event_type = 'nearby_reports_daily' and user_id = 'a1111111-1111-4111-8111-111111111111') <> 1 then
     raise exception 'The new-litter alert was sent more than once in a day';
   end if;
 end;
@@ -269,10 +269,10 @@ where id = 'f0000000-0000-4000-8000-000000000001';
 do $$
 begin
   -- Only the nearby member hears about it: not the far member, the cleaner, the reporter or the funder.
-  if (select array_agg(user_id order by user_id) from public.cleanup_notifications where event_type = 'cleanup_completed_nearby')
+  if (select array_agg(user_id order by user_id) from public.cleanup_notifications where event_type = 'cleanup_completed_nearby' and cleanup_attempt_id = 'f0000000-0000-4000-8000-000000000001')
     is distinct from array['a1111111-1111-4111-8111-111111111111'::uuid, 'a2222222-2222-4222-8222-222222222222'::uuid] then
     raise exception 'Completed-nearby went to the wrong members: %',
-      (select array_agg(user_id order by user_id) from public.cleanup_notifications where event_type = 'cleanup_completed_nearby');
+      (select array_agg(user_id order by user_id) from public.cleanup_notifications where event_type = 'cleanup_completed_nearby' and cleanup_attempt_id = 'f0000000-0000-4000-8000-000000000001');
   end if;
   perform 1 from public.cleanup_notifications
   where event_type = 'cleanup_completed_nearby' and user_id = 'a1111111-1111-4111-8111-111111111111'
@@ -293,7 +293,7 @@ $$;
 update public.cleanup_attempts set status = 'completed' where id = 'f0000000-0000-4000-8000-000000000001';
 do $$
 begin
-  if (select count(*) from public.cleanup_notifications where event_type = 'cleanup_completed_nearby') <> 2 then
+  if (select count(*) from public.cleanup_notifications where event_type = 'cleanup_completed_nearby' and cleanup_attempt_id = 'f0000000-0000-4000-8000-000000000001') <> 2 then
     raise exception 'Completed-nearby was sent twice for one cleanup';
   end if;
 end;
@@ -321,6 +321,46 @@ do $$
 begin
   if exists (select 1 from public.notification_preferences where user_id = 'a3333333-3333-4333-8333-333333333333') then
     raise exception 'Notification preferences outlived the account';
+  end if;
+end;
+$$;
+
+-- Reporter payouts use the same payments topic. Exercise the committed trigger with a
+-- temporary NEW-row fixture; this does not earn a real reward or call Stripe.
+create temporary table reporter_notice_fixture (
+  reporter_id uuid, cleanup_attempt_id uuid, report_id uuid
+) on commit drop;
+create trigger reporter_notice_fixture_notify after insert on reporter_notice_fixture
+  for each row execute function private.notify_reporter_payout_waiting();
+insert into reporter_notice_fixture values
+  ('b1111111-1111-4111-8111-111111111111', 'f0000000-0000-4000-8000-000000000001', 'e0000000-0000-4000-8000-000000000001'),
+  ('b1111111-1111-4111-8111-111111111111', 'f0000000-0000-4000-8000-000000000001', 'e0000000-0000-4000-8000-000000000001');
+do $$
+begin
+  if (select count(*) from public.cleanup_notifications where event_type = 'reporter_payout_waiting'
+    and user_id = 'b1111111-1111-4111-8111-111111111111'
+    and cleanup_attempt_id = 'f0000000-0000-4000-8000-000000000001') <> 1 then
+    raise exception 'The reporter payout notice was missing or duplicated';
+  end if;
+  if private.notification_topic('reporter_payout_waiting') <> 'payments' then
+    raise exception 'Reporter payout notices bypass the payments preference';
+  end if;
+end;
+$$;
+-- Once that reporter can receive payouts, the same trigger does not request setup.
+delete from public.cleanup_notifications where event_type = 'reporter_payout_waiting'
+  and user_id = 'b1111111-1111-4111-8111-111111111111'
+  and cleanup_attempt_id = 'f0000000-0000-4000-8000-000000000001';
+insert into public.cleaner_payout_accounts (user_id, stripe_account_id, payouts_enabled, country, age_18_confirmed_at)
+values ('b1111111-1111-4111-8111-111111111111', 'acct_local_reporter_notice_fixture', true, 'US', now());
+insert into reporter_notice_fixture values
+  ('b1111111-1111-4111-8111-111111111111', 'f0000000-0000-4000-8000-000000000001', 'e0000000-0000-4000-8000-000000000001');
+do $$
+begin
+  if exists (select 1 from public.cleanup_notifications where event_type = 'reporter_payout_waiting'
+    and user_id = 'b1111111-1111-4111-8111-111111111111'
+    and cleanup_attempt_id = 'f0000000-0000-4000-8000-000000000001') then
+    raise exception 'A payout-ready reporter was asked to set up payouts';
   end if;
 end;
 $$;
