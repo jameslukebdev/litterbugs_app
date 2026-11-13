@@ -2,6 +2,24 @@
 
 Owner instruction, updated November13: upload and submit both refreshed builds for store review; keep public release manual. Analytics ON by default. No GitHub push or mobile OTA publication.
 
+## Larger report controls; Hide removed — local only
+
+Owner requested big, clearly visible favorite/share controls on iPhone and
+Android. Source `f37328aee983c15e165d8456bb22eef8b23fe980` increases the detail
+toolbar glyphs20→32 points and touch targets44→52, moves the two controls into
+the space vacated by Hide, and keeps Back to map within its own width. Hide is
+removed from the detail toolbar and report list's new-hide menu action. Existing
+hidden preferences/filtering remain intact; already-hidden list items retain
+Restore report so they are not stranded. No preference/database writes.
+
+9 existing report presentation/loading/preference tests pass; scoped lint and
+224-module source check pass. Simulator screenshot/AX confirm larger favorite/
+share and no Hide control. No physical Android result claimed; shared code applies
+to both platforms. Evidence: `device-evidence/large-report-toolbar.png` and
+`large-report-toolbar.json` under the2.1 artifact folder. Local only; no native
+build/upload, review changes, public release, OTA, deploy or GitHub push. Both
+candidates need refresh to include this and the prior shared card follow-up.
+
 ## Shared report-card behavior and final polish — local only
 
 Source `06fcdef4e95e3eabdb431af6fb099d241f6d73ac`, on top of iPhone re-entry

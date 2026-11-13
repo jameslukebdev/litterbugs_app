@@ -24,6 +24,11 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (large report controls; Hide removed on both phones)
+
+- Sourcef37328aee983c15e165d8456bb22eef8b23fe980: detail-toolbar heart/share20→32-point glyphs,52-point targets, spaced into removed Hide slot. Back label stays clear. Removed Hide action from detail toolbar and report list menus; existing hidden items can still Restore, with saved preferences/filtering preserved and no DB writes.
+-9 existing focused tests, scoped lint and224-module source check pass. Native simulator visual/AX check confirms large favorite/share and no Hide; screenshot large-report-toolbar.png. Shared iPhone/Android implementation; no physical Android claim. Local only, both release candidates still need refresh before public release. No builds, uploads, review changes, OTA, deploy or push; manual public release and completed privacy retained. Other work preserved.
+
 ### 2026-11-13 — Codex (faster iPhone pins; swipe-down cards on both phones)
 
 - Source06fcdef4e95e3eabdb431af6fb099d241f6d73ac, local only. iPhone floating drops280ms/stagger25; Android native520/60 timing unchanged. Both platforms' map previews enter from bottom240ms/exit180ms, swipe down from content top to close, retain normal scrolling/actions and honor reduced motion. Fixed close44×44 stays reachable on short phones. Prior225a0be re-entry fix retained.

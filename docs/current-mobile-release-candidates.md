@@ -2,6 +2,12 @@
 
 ## November13 — report card follow-up on both phones, local only
 
+Latest local source `f37328aee983c15e165d8456bb22eef8b23fe980` additionally
+makes detail-toolbar favorite/share icons32 points (was20), touch targets52,
+and removes Hide from the toolbar/list menu on both platforms. Old hidden items
+can still be restored.9 focused tests, scoped lint and source check pass;
+iPhone simulator appearance verified. Both refreshed builds still pending.
+
 Source `06fcdef4e95e3eabdb431af6fb099d241f6d73ac` adds bottom-up report previews,
 swipe-down dismissal at the top of content, a fixed44-point close target and
 short-screen scrolling on iPhone and Android. Header polished to one continuous
