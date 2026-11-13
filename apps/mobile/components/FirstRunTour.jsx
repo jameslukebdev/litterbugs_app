@@ -83,6 +83,7 @@ export default function FirstRunTour({ visible, replay = false, reportButton, on
   const insets = useSafeAreaInsets();
   const { width, height, fontScale } = useWindowDimensions();
   const [index, setIndex] = useState(0);
+  const [demoRoom, setDemoRoom] = useState(0);
   // The map's Report Litter button grows with very large text (components/MapControls.jsx),
   // so its lit copy here grows the same way and the words sit above its real height.
   const [reportHeight, setReportHeight] = useState(reportButton.height);
@@ -200,8 +201,9 @@ export default function FirstRunTour({ visible, replay = false, reportButton, on
   // Short phones get a shorter example photo and no priority row, so the pin and card
   // always sit clear of the words above them.
   const room = height - insets.top - reportButton.bottom;
-  const compact = room < 600;
-  const photoHeight = Math.max(70, Math.min(150, room - (compact ? 470 : 566)));
+  const compact = room < 600 || fontScale >= 1.5;
+  const tightDemo = compact && (demoRoom < 300 || fontScale >= 1.5);
+  const photoHeight = tightDemo ? Math.max(0, Math.min(70, demoRoom - 170)) : Math.max(70, Math.min(150, room - (compact ? 470 : 566)));
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={skip} statusBarTranslucent>
@@ -212,31 +214,35 @@ export default function FirstRunTour({ visible, replay = false, reportButton, on
             <Coach step={step} index={index} onNext={next} onSkip={skip} />
           </Animated.View>
           {/* Drawn exactly over the map's own Report Litter button. */}
-          <Highlight lit={lit} innerRef={register('report')} bug="dragonfly" radius={25} onPress={next} label="Report Litter" onLayout={(event) => setReportHeight(event.nativeEvent.layout.height)} style={[styles.reportButton, { right: reportButton.right, bottom: reportButton.bottom, width: reportButton.width, minHeight: reportButton.height, paddingVertical: fontScale > 1.5 ? 12 : 0 }]}>
+          <Highlight lit={lit} innerRef={register('report')} bug="dragonfly" radius={25} onPress={next} label="Report Litter" onLayout={(event) => setReportHeight(event.nativeEvent.layout.height)} style={[styles.reportButton, { right: reportButton.right, bottom: reportButton.bottom, width: reportButton.width, minHeight: reportButton.height, paddingVertical: fontScale >= 1.5 ? 12 : 0 }]}>
             <View style={styles.reportBugSpace} />
-            <Text style={[styles.reportText, { textAlign: 'center' }]} numberOfLines={fontScale > 1.5 ? undefined : 1}>Report Litter</Text>
+            <Text style={[styles.reportText, { textAlign: 'center' }]} numberOfLines={fontScale >= 1.5 ? undefined : 1}>Report Litter</Text>
           </Highlight>
-        </> : <>
-          <Animated.View style={[styles.coachDock, { top: insets.top + 14 }, rise]}>
+        </> : <View pointerEvents="box-none" style={compact ? [styles.compactJourney, { top: insets.top + 14, bottom: reportButton.bottom }] : StyleSheet.absoluteFill}>
+          <Animated.View style={[!compact && styles.coachDock, !compact && { top: insets.top + 14 }, rise]}>
             <Coach step={step} index={index} onNext={next} onSkip={skip} />
           </Animated.View>
-          <View style={[styles.spot, { bottom: reportButton.bottom }]}>
+          <View pointerEvents="box-none" style={compact ? styles.compactDemoArea : StyleSheet.absoluteFill}
+            onLayout={compact ? (event) => setDemoRoom(event.nativeEvent.layout.height) : undefined}>
+          <View style={[styles.spot, compact ? styles.compactSpot : { bottom: reportButton.bottom }]}>
             {/* The ladybug you would tap on the map: a spot that needs a cleanup, with $6 in its fund. */}
             <Animated.View ref={register('pin')} style={[styles.spotPin, { opacity: spot, transform: [{ translateY: spot.interpolate({ inputRange: [0, 1], outputRange: [-60, 0] }) }] }]}>
               {index === 1
                 ? <Highlight lit={lit} radius={22} onPress={next} label="Open this spot" style={styles.spotPinLit}><MapPin kind="open" text="$6" /></Highlight>
                 : <MapPin kind="open" text="$6" selected />}
             </Animated.View>
-            <Animated.View pointerEvents={index > 1 ? 'auto' : 'none'} style={[styles.card, { opacity: card, transform: [{ translateY: card.interpolate({ inputRange: [0, 1], outputRange: [CARD_RISE, 0] }) }] }]}>
-              <View style={[styles.photo, { height: photoHeight }]}>
+            {!compact || index > 1 ? <Animated.View pointerEvents={index > 1 ? 'auto' : 'none'} style={[styles.card, { opacity: card, transform: [{ translateY: card.interpolate({ inputRange: [0, 1], outputRange: [CARD_RISE, 0] }) }] }]}>
+              {photoHeight >= 32 ? <View style={[styles.photo, { height: photoHeight }]}>
                 <Image source={require('../assets/tour-example-spot.jpg')} style={styles.photoImage} resizeMode="cover" accessible={false} />
                 <View style={styles.badge}><BrandBug kind="ladybug" size={15} /><Text style={styles.badgeText} allowFontScaling={false}>Available</Text></View>
-              </View>
+              </View> : null}
               <View style={styles.cardBody}>
+                {!tightDemo ? <>
                 <Text style={styles.cardTitle} numberOfLines={1} maxFontSizeMultiplier={TEXT_MAX}>Cardboard and packaging by the road</Text>
                 <View style={styles.pays}><BrandBug kind="bee" size={17} /><Text style={styles.paysText} maxFontSizeMultiplier={TEXT_MAX}>Pays $6</Text></View>
                 <Text style={styles.summary} numberOfLines={1} maxFontSizeMultiplier={TEXT_MAX}>0.4 mi · Cardboard · Paper products · Near roadside</Text>
-                <View style={styles.actions}>
+                </> : null}
+                <View style={[styles.actions, tightDemo && { marginTop: 14 }]}>
                   {index === 2
                     ? <Highlight lit={lit} innerRef={register('fund')} onCard bug="bee" radius={14} onPress={next} label="Fund" style={[styles.action, styles.fund]}><BrandBug kind="bee" size={21} /><Text style={[styles.actionText, { color: colors.fundInk }]} maxFontSizeMultiplier={TEXT_MAX}>Fund</Text></Highlight>
                     : <View ref={register('fund')} style={[styles.action, styles.fund, styles.resting]}><BrandBug kind="bee" size={21} /><Text style={[styles.actionText, { color: colors.fundInk }]} maxFontSizeMultiplier={TEXT_MAX}>Fund</Text></View>}
@@ -249,9 +255,10 @@ export default function FirstRunTour({ visible, replay = false, reportButton, on
                   <Text style={styles.metaText} maxFontSizeMultiplier={TEXT_MAX}>Reported 3 days ago</Text>
                 </View>}
               </View>
-            </Animated.View>
+            </Animated.View> : null}
           </View>
-        </>}
+          </View>
+        </View>}
         {/* The fingertip, above everything; taps pass through it. */}
         <Animated.View pointerEvents="none" style={[styles.finger, { opacity: fingerShow, transform: [...finger.getTranslateTransform(), { scale: press.interpolate({ inputRange: [0, 1], outputRange: [1, 0.8] }) }] }]}>
           <Animated.View style={[styles.fingerRipple, { opacity: ripple.interpolate({ inputRange: [0, 0.05, 1], outputRange: [0, 0.8, 0] }), transform: [{ scale: ripple.interpolate({ inputRange: [0, 1], outputRange: [0.7, 2.3] }) }] }]} />
@@ -296,6 +303,9 @@ const styles = StyleSheet.create({
   reportBugSpace: { width: 26 }, // the dragonfly has flown up to the corner as the guide
   reportText: { flexShrink: 1, color: colors.reportInk, fontSize: 16, fontFamily: fonts.heading },
 
+  compactJourney: { position: 'absolute', left: 16, right: 16 },
+  compactDemoArea: { flex: 1, minHeight: 0, paddingTop: 12, justifyContent: 'flex-end', overflow: 'hidden' },
+  compactSpot: { position: 'relative', left: 0, right: 0 },
   spot: { position: 'absolute', left: 16, right: 16, alignItems: 'center' },
   spotPin: { marginBottom: 12 },
   spotPinLit: { paddingHorizontal: 10, paddingTop: 8, paddingBottom: 2 },

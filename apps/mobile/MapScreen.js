@@ -36,7 +36,7 @@ import { Marker, Polygon } from 'react-native-maps';
 import ClusteredMapView from 'react-native-map-clustering';
 import { calculateBBox, returnMapZoom } from 'react-native-map-clustering/lib/helpers';
 import { regionForGroup } from './lib/clusterZoom';
-import { regionWithPointAt, SELECTED_PIN_HEIGHT } from './lib/mapFraming';
+import { regionWithPointAt, selectedPinPointY } from './lib/mapFraming';
 import { useIsFocused } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import * as Device from 'expo-device';
@@ -284,6 +284,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
 
   const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight, fontScale } = useWindowDimensions();
+  const [mapSearchHeight, setMapSearchHeight] = useState(48);
   const previewReport = markers.find((marker) => marker.id === previewId)?.report;
   const [previewControlsHidden, setPreviewControlsHidden] = useState(Boolean(previewReport));
   useEffect(() => {
@@ -294,6 +295,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     const timer = setTimeout(() => setPreviewControlsHidden(false), 180);
     return () => clearTimeout(timer);
   }, [previewReport]);
+  const compactMapPreview = screenHeight < 700 || fontScale >= 1.5;
   const nearbyReports = nearbyIds.map((id) => markers.find((marker) => marker.id === id)?.report).filter(Boolean);
   const chooseMapReport = (report) => {
     setNearbyIds([]);
@@ -301,7 +303,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     const marker = markers.find((item) => item.id === report.id);
     // Bring the pin into the open map above the report card (which covers the middle of the
     // screen), so it stays in sight next to its card instead of hiding behind it.
-    if (marker) mapViewRef.current?.animateToRegion(regionWithPointAt(region, marker.coordinate, SELECTED_PIN_HEIGHT * screenHeight, screenHeight), 240);
+    if (marker) mapViewRef.current?.animateToRegion(regionWithPointAt(region, marker.coordinate, selectedPinPointY(screenHeight, insets.top, mapSearchHeight), screenHeight), 240);
   };
   const bottomNavClearance = getBottomNavClearance(insets.bottom);
 
@@ -435,7 +437,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     && !previewId && !reportPlacementActive && !detailsOpen && !formOpen;
 
   const mapControlsBottom = bottomNavClearance + BOTTOM_NAV_METRICS.mapControlGap;
-  const reportControlWidth = fontScale > 1.5
+  const reportControlWidth = fontScale >= 1.5
     ? screenWidth - 32
     : reportPlacementActive || isLocatingReportLocation
       ? Math.min(screenWidth - 100, 194 + 120 * (fontScale - 1))
@@ -1631,14 +1633,14 @@ const revealBottomReportField = () => {
           pointerEvents="box-none"
           accessible={false}
         >
-          {!reportPlacementActive ? <ReportFilters map /> : null}
+          {!reportPlacementActive ? <View onLayout={(event) => setMapSearchHeight(event.nativeEvent.layout.height)}><ReportFilters map /></View> : null}
           {reportsError && !reportPlacementActive ? <TouchableOpacity
             accessibilityRole="button" onPress={() => refreshReports({ showRefresh: true })}
             style={{ backgroundColor: colors.white, borderRadius: 14, padding: 12, marginTop: 8 }}>
             <Text style={{ color: colors.ink, fontWeight: '600' }}>Reports couldn’t refresh. Tap to try again.</Text>
           </TouchableOpacity> : null}
           {/* The legend keeps its place: Re-center sits beside it on the right, never above it. */}
-          {!reportPlacementActive ? <View pointerEvents="box-none" style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          {!reportPlacementActive && !(previewReport && compactMapPreview) ? <View pointerEvents="box-none" style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
             <View pointerEvents="none" style={{ flexShrink: 1 }}><MapKey counts={mapKeyCounts(markers, region)} /></View>
             {searchPlace && !mapRegionsAreEquivalent(region, searchPlace.region) ? <TouchableOpacity onPress={() => { setPreviewId(null); commitMapRegion(searchPlace.region); }} accessibilityRole="button" accessibilityLabel="Re-center selected search area" style={{ marginTop: 8, marginRight: 16, backgroundColor: colors.white, borderRadius: 18, paddingHorizontal: 16, minHeight: 44, justifyContent: 'center' }}><Text style={{ color: colors.primaryDark, fontWeight: '600' }}>Re-center</Text></TouchableOpacity> : null}
           </View> : null}
@@ -1701,6 +1703,7 @@ const revealBottomReportField = () => {
 
 {!reportPlacementActive && !detailsOpen && !showInitialMapLoading ? <MapReportPreview
         report={previewReport} nearby={nearbyReports} bottom={mapControlsBottom}
+        minimumTop={compactMapPreview ? selectedPinPointY(screenHeight, insets.top, mapSearchHeight) + 12 : 0}
         insetBottom={insets.bottom} insetTop={insets.top} getPhotoUrl={getReportPhotoUrl}
         isFavorite={favoriteIds.includes(previewReport?.id)} onFavorite={toggleFavorite} favoritesReady={favoritesReady}
         distance={reportDistanceMiles(mapUserLocation, previewReport)}

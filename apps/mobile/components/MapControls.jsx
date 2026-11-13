@@ -56,7 +56,7 @@ export default function MapControls(props) {
           pointerEvents={reportPlacementActive ? 'auto' : 'none'}
           style={[
             styles.reportPlacementCloseWrap,
-            fontScale > 1.5
+            fontScale >= 1.5
               ? { left: 16, bottom: 90 * fontScale }
               : { right: reportControlWidth + 26 },
             {
@@ -103,7 +103,7 @@ export default function MapControls(props) {
           }}
         >
           <TouchableOpacity
-            style={[styles.reportLitterButton, reportPlacementActive && !isCheckingReportLocation && { backgroundColor: colors.primary }, { width: reportControlWidth, height: fontScale > 1.5 ? undefined : BOTTOM_NAV_METRICS.mapControlSize, minHeight: 44, paddingVertical: fontScale > 1.5 ? 12 : 0 }]}
+            style={[styles.reportLitterButton, reportPlacementActive && !isCheckingReportLocation && { backgroundColor: colors.primary }, { width: reportControlWidth, height: fontScale >= 1.5 ? undefined : BOTTOM_NAV_METRICS.mapControlSize, minHeight: 44, paddingVertical: fontScale >= 1.5 ? 12 : 0 }]}
             onPress={reportPlacementActive ? confirmReportLocation : openReportLocationPicker}
             disabled={showInitialMapLoading || formOpen || detailsOpen || isSaving || isLocatingReportLocation || isCheckingReportLocation}
             activeOpacity={0.82}
@@ -127,7 +127,7 @@ export default function MapControls(props) {
                 <>
                   {/* Website: the dragonfly labels Report Litter; placing the pin turns it into the purple confirm button. */}
                   {reportPlacementActive ? null : <BrandBug kind="dragonfly" size={26} playOnMount />}
-                  <Text numberOfLines={fontScale > 1.5 ? undefined : 1} style={[styles.reportLitterButtonText, reportPlacementActive && { color: colors.white }, { flexShrink: 1, textAlign: 'center' }]}>{reportPlacementActive ? 'Use this location' : 'Report Litter'}</Text>
+                  <Text numberOfLines={fontScale >= 1.5 ? undefined : 1} style={[styles.reportLitterButtonText, reportPlacementActive && { color: colors.white }, { flexShrink: 1, textAlign: 'center' }]}>{reportPlacementActive ? 'Use this location' : 'Report Litter'}</Text>
                 </>
               )}
           </TouchableOpacity>
@@ -139,7 +139,7 @@ export default function MapControls(props) {
         style={[
           styles.centerButton,
           {
-            bottom: mapControlsBottom + (fontScale > 1.5 ? 90 * fontScale : 58),
+            bottom: mapControlsBottom + (fontScale >= 1.5 ? 90 * fontScale : 58),
           },
         ]}
         onPress={() => { clearSearchPlace(); centerOnUser(); }}
@@ -159,7 +159,7 @@ export default function MapControls(props) {
         style={[
           styles.mapTypeButton,
           {
-            bottom: mapControlsBottom + (fontScale > 1.5 ? 90 * fontScale : 58) + BOTTOM_NAV_METRICS.mapControlSize + 10,
+            bottom: mapControlsBottom + (fontScale >= 1.5 ? 90 * fontScale : 58) + BOTTOM_NAV_METRICS.mapControlSize + 10,
           },
         ]}
         onPress={toggleMapType}

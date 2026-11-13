@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { regionWithPointAt, SELECTED_PIN_HEIGHT } from './mapFraming';
+import { regionWithPointAt, selectedPinPointY, SELECTED_PIN_HEIGHT } from './mapFraming';
 
 describe('framing a tapped pin', () => {
   const region = { latitude: 36.2, longitude: -81.7, latitudeDelta: 0.04, longitudeDelta: 0.02 };
@@ -21,4 +21,13 @@ describe('framing a tapped pin', () => {
     const top = next.latitude + region.latitudeDelta / 2;
     expect(((top - pin.latitude) / region.latitudeDelta) * height).toBeCloseTo(SELECTED_PIN_HEIGHT * height, 6);
   });
+});
+
+
+it.each([[511, 24, 48], [568, 24, 72]])('keeps the entire pin below search in a short %s-point window', (height, inset, search) => {
+  expect(selectedPinPointY(height, inset, search) - 43).toBeGreaterThanOrEqual(inset + 10 + search + 12);
+});
+
+it.each([[667, 20], [852, 59], [874, 62], [932, 62]])('preserves approved framing on %s-point screens with enough room', (height, inset) => {
+  expect(selectedPinPointY(height, inset)).toBe(SELECTED_PIN_HEIGHT * height);
 });

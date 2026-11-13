@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const native = vi.hoisted(() => ({
   platform: { OS: 'ios' },
   pan: null,
+  headerPan: null,
+  pans: [],
   scroll: null,
   height: 568,
   fontScale: 1,
@@ -45,7 +47,7 @@ vi.mock('react-native', () => {
     AccessibilityInfo: { isReduceMotionEnabled: async () => native.reduced, addEventListener: () => ({ remove() {} }) },
     useWindowDimensions: () => ({ width: 320, height: native.height, fontScale: native.fontScale }),
     Animated: { Value, View: Box, add: (a, b) => (a.value ?? a) + b.value, timing: animate, spring: animate },
-    PanResponder: { create: (config) => { native.pan = config; return { panHandlers: {} }; } },
+    PanResponder: { create: (config) => { native[native.pans.length % 2 === 0 ? 'pan' : 'headerPan'] = config; native.pans.push(config); return { panHandlers: {} }; } },
     View: Box, Text: Box,
     ScrollView: (props) => { native.scroll = props; return <div>{props.children}</div>; },
     TouchableOpacity: ({ children, accessibilityLabel, onPress }) => <button aria-label={accessibilityLabel} onClick={onPress}>{children}</button>,
@@ -85,6 +87,7 @@ beforeEach(() => {
   native.reduced = false;
   native.timings = [];
   native.values = [];
+  native.pans = [];
   native.layout = null;
   native.animations = [];
   native.autoFinish = true;
@@ -111,6 +114,15 @@ describe.each(['ios', 'android'])('%s report preview dismissal', (platform) => {
     expect(close).toHaveBeenCalledOnce();
   });
 
+  it('keeps the fixed dismissal controls below the selected pin on a compact map', async () => {
+    const close = await mount({ minimumTop: 160 });
+    expect(native.scroll.style.maxHeight).toBeLessThanOrEqual(native.height - 100 - 160 - 36);
+    const button = container.querySelector('[aria-label="Back to map"]');
+    expect(button).not.toBeNull();
+    act(() => button.click());
+    expect(close).toHaveBeenCalledOnce();
+  });
+
   it('dismisses a downward pull from the top without stealing content or sideways scrolling', async () => {
     const close = await mount();
     const capture = values => native.pan.onMoveShouldSetPanResponderCapture(null, gesture(values));
@@ -122,6 +134,16 @@ describe.each(['ios', 'android'])('%s report preview dismissal', (platform) => {
     native.scroll.onScroll({ nativeEvent: { contentOffset: { y: 0 } } });
     expect(capture({ dy: 90 })).toBe(true);
     act(() => native.pan.onPanResponderRelease(null, gesture({ dy: 95 })));
+    expect(close).toHaveBeenCalledOnce();
+  });
+
+  it('lets the fixed grab bar dismiss even after the contents have scrolled', async () => {
+    const close = await mount();
+    native.scroll.onScroll({ nativeEvent: { contentOffset: { y: 120 } } });
+    expect(native.pan.onMoveShouldSetPanResponderCapture(null, gesture({ dy: 90 }))).toBe(false);
+    expect(native.headerPan.onMoveShouldSetPanResponderCapture(null, gesture({ dy: 90 }))).toBe(true);
+    expect(native.headerPan.onMoveShouldSetPanResponderCapture(null, gesture({ dy: -90 }))).toBe(false);
+    act(() => native.headerPan.onPanResponderRelease(null, gesture({ dy: 95 })));
     expect(close).toHaveBeenCalledOnce();
   });
 

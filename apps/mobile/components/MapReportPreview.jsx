@@ -62,6 +62,7 @@ function FloatingCard({
   cleanBusy,
   onClean,
   insetTop = 0,
+  minimumTop = 0,
   isOpen,
   reduceMotion,
   onExited,
@@ -92,7 +93,7 @@ function FloatingCard({
   }, [androidCardHeight, androidOffset, bottom, isOpen, onExited, reduceMotion, report.id]);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
-  const maxHeight = Math.max(160, height - bottom - insetTop - 74);
+  const maxHeight = Math.max(160, height - bottom - Math.max(insetTop + 74, minimumTop));
   useEffect(() => {
     if (isOpen) dragY.setValue(0);
     return () => dragY.stopAnimation();
@@ -102,11 +103,8 @@ function FloatingCard({
       if (reduceMotion) dragY.setValue(0);
       else Animated.spring(dragY, { toValue: 0, damping: 28, stiffness: 320, useNativeDriver: true }).start();
     };
-    return PanResponder.create({
-      // Let upward swipes and scrolled content keep their normal scrolling.
-      // Only a downward pull from the top takes over to dismiss the card.
-      onMoveShouldSetPanResponderCapture: (_, gesture) => scrollOffset.current <= 0
-        && gesture.dy > 8 && gesture.dy > Math.abs(gesture.dx) * 1.3,
+    const isDownward = (_, gesture) => gesture.dy > 8 && gesture.dy > Math.abs(gesture.dx) * 1.3;
+    const handlers = {
       onPanResponderGrant: () => dragY.stopAnimation(),
       onPanResponderMove: (_, gesture) => dragY.setValue(Math.max(0, gesture.dy)),
       onPanResponderRelease: (_, gesture) => {
@@ -114,7 +112,12 @@ function FloatingCard({
         else reset();
       },
       onPanResponderTerminate: reset,
-    });
+    };
+    return {
+      content: PanResponder.create({ ...handlers, onMoveShouldSetPanResponderCapture: (_, gesture) => scrollOffset.current <= 0 && isDownward(null, gesture) }),
+      // The fixed grab bar must still dismiss after the photo/details scroll.
+      header: PanResponder.create({ ...handlers, onMoveShouldSetPanResponderCapture: isDownward }),
+    };
   }, [dragY, reduceMotion]);
   const actions = [
     ...(canShare ? [{ text: 'Share report', icon: 'share-outline', onPress: () => onShare(report) }] : []),
@@ -122,7 +125,7 @@ function FloatingCard({
   ];
 
   return <Animated.View
-    {...pan.panHandlers}
+    {...pan.content.panHandlers}
     onLayout={Platform.OS === 'android' ? (event) => {
       const measured = event.nativeEvent.layout.height;
       if (measured > 0) setAndroidCardHeight(current => current || measured);
@@ -142,7 +145,7 @@ function FloatingCard({
       },
     ]}
   >
-    <View style={styles.cardHeader}>
+    <View {...pan.header.panHandlers} style={styles.cardHeader}>
       <View style={styles.grabber} pointerEvents="none" />
     </View>
     <TouchableOpacity style={styles.cardClose} onPress={onClose} accessibilityRole="button" accessibilityLabel="Back to map" accessibilityHint="Closes the report preview. You can also swipe the card down.">
@@ -199,6 +202,7 @@ export default function MapReportPreview({
   bottom = 0,
   insetBottom,
   insetTop = 0,
+  minimumTop = 0,
   getPhotoUrl,
   onClose,
   onChoose,
@@ -295,6 +299,7 @@ export default function MapReportPreview({
         cleanBusy,
         onClean,
         insetTop,
+        minimumTop,
       }}
     /> : null}
     <Modal visible={Boolean(nearby?.length)} transparent animationType="fade" onRequestClose={onCloseNearby}>
@@ -329,7 +334,7 @@ export default function MapReportPreview({
 
 const styles = StyleSheet.create({
   // Website floating map card (.map-pin-card): white, lilac edge, soft purple shadow.
-  card: { position: 'absolute', left: 16, right: 16, borderRadius: 20, backgroundColor: colors.white, borderWidth: 2, borderColor: colors.edge, boxShadow: '0 4px 0 #EBE7F8, 0 16px 32px rgba(42, 34, 90, 0.12)', elevation: 9 },
+  card: { position: 'absolute', zIndex: 20, left: 16, right: 16, borderRadius: 20, backgroundColor: colors.white, borderWidth: 2, borderColor: colors.edge, boxShadow: '0 4px 0 #EBE7F8, 0 16px 32px rgba(42, 34, 90, 0.12)', elevation: 9 },
   completedCard: {},
   cardHeader: { height: CARD_HEADER_HEIGHT, flexShrink: 0, alignItems: 'center', paddingTop: 10 },
   grabber: { width: 36, height: 3, borderRadius: 2, backgroundColor: '#B9B5C4' },

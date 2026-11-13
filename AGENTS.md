@@ -72,6 +72,16 @@ unchanged. Do not rebuild or resubmit iOS during this Android pass. Keep the
 existing manual public-release holds. Leave the iPhone simulator open at the
 owner's later request; use a low-resource mirror of the physical Pixel.
 
+## Screen-size audit and release hold — November 13, 2026
+
+After the Android-only pass, Grant requested refreshed builds for both platforms,
+then explicitly put that work on hold for a multi-size UI audit. Responsive fixes
+on both iPhone and Android are now authorized within that audit. Preserve the
+approved normal-screen styling and platform-specific camera/drop/card timings.
+No earlier review was canceled and no replacement build/upload was started.
+Keep rebuilds and replacement submissions held for review of the audit results;
+public release must remain manual on both stores.
+
 ## Working alongside Claude
 
 Grant also uses Claude (Cowork) on this project. Before starting work, read
