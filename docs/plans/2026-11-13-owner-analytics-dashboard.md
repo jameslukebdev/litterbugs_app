@@ -6,6 +6,57 @@ He subsequently requested the unreleased app analytics from the parallel
 “Finish mobile analytics verification” chat. Overview / Website / App views keep
 both surfaces distinct while using the same7/28 complete-day period control.
 
+## Implemented owner metrics and simpler page — November13
+
+Grant approved the six proposed metrics below for local implementation. The
+overview now leads with total visits (website/app split), completed cleanups,
+cleanup funding, new litter reports, active contributors and reports awaiting
+cleanup now. It includes the reports/cleanups daily chart, backlog attention
+items and reported weight/bags/hours with field coverage. Website and App views
+remain. Provider names, source/freshness sections, citations, definition catalog,
+release diagnostics and technical commentary are removed from the rendered page.
+Compact dates remain where search/recordings cover a different reporting window.
+
+Design reference follow-up: Refero Visitors screens
+`c522c494-3c66-4f83-9be7-0b8b608d2f4b` and
+`f69b345c-3bb7-4880-9dc9-e45166d54624`: short metric labels, quiet date controls,
+white space and a primary chart. Retained Litterbugs typography/purple and mint;
+rejected reference forest-green styling. This supersedes the older presentation
+notes below; source definitions remain internal implementation documentation.
+
+Business records now load through `lib/admin-analytics/business.ts` only in
+development, after full admin/MFA authorization. The owner's already linked
+Supabase CLI executes fixed `scripts/owner-analytics-business.sql`, with project
+verification, a20-second timeout and5-minute aggregate cache. No credentials
+copied, raw user rows returned, schema changes or database writes. It is disabled
+in production: a separately reviewed private aggregate connection is still
+required before publication. Other provider connections remain as described below.
+
+The query excludes samples, drafts and removed reports. Publication's existing
+trigger resets `created_at`; completed attempts use `completed_at` and each final
+submission once. Successful USD contributions count principal, exclude fees and
+pending/failed attempts, and retain later-refunded payments; actual principal
+refunds appear separately by refund date. Registered contributor accounts are
+deduplicated privately across reports, successful funding and completed cleanups;
+anonymous users are excluded. Current available backlog excludes cancelled/expired
+reports. Missing impact fields remain unknown. NY calendar-day comparisons handle
+the November DST change; daily totals reconcile to their headline counts.
+
+App visits use full-period distinct PostHog sessions across `$screen` OR
+`Application Opened`, with the existing production/test/emulator filters. A real
+read-only API query accepted the grouped session definition. No launch/session
+mixing or GA/PostHog double-counting. Unreleased app data is unknown, so combined
+visits remain a dash while the website count is visible. The future server-only
+`ADMIN_ANALYTICS_APP_RELEASED=true` flag permits a verified released app's genuinely
+quiet period to remain zero. It is not set now; the latest app is still unreleased.
+
+Verification:66 focused tests, TypeScript and scoped ESLint pass. Authorized
+desktop/320px/390px layouts fit, date changes preserve the selected tab, separate
+signed-out context exposes only admin sign-in/noindex, and test browsers stay
+excluded with no external analytics requests. No dashboard runtime errors. Real
+7/28-day aggregate query runs and DST boundaries reconciled. No production build
+against the active dev server, deployment or GitHub push.
+
 ## Local page and access
 
 `http://localhost:3000/admin/analytics` uses the existing cleanup-admin membership
@@ -170,7 +221,7 @@ The separate privacy-only source `4d4e2e8` is now live on litterbugs.app/privacy
 That deployment excluded this dashboard and the mobile changes. No further event
 fields are needed from the mobile thread for the current dashboard integration.
 
-## Proposed owner metrics — November13 research, not yet implemented
+## Original owner metric proposal — November13 research
 
 Primary recommendation: completed cleanups per week, supported by active
 contributor accounts and confirmed cleanup funding. Traffic and incoming reports

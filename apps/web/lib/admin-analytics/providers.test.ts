@@ -11,14 +11,17 @@ describe('owner analytics providers', () => {
     expect(query.properties).toContainEqual({ key: 'surface', type: 'event', operator: 'exact', value: ['app'] });
     expect(query.properties).toContainEqual({ key: 'app_environment', type: 'event', operator: 'exact', value: ['production'] });
     expect(query.properties).toContainEqual({ key: '$is_emulator', type: 'event', operator: 'is_not', value: ['true'] });
-    expect(query.series[8].properties).toContainEqual({ key: 'backgrounded', type: 'event', operator: 'exact', value: ['false'] });
-    expect(query.series.some(row => row.event === '$exception')).toBe(false);
+    const timing = query.series[8];
+    expect('properties' in timing && timing.properties).toContainEqual({ key: 'backgrounded', type: 'event', operator: 'exact', value: ['false'] });
+    expect(query.series.some(row => 'event' in row && row.event === '$exception')).toBe(false);
+    expect(query.series.at(-1)).toMatchObject({ kind: 'GroupNode', operator: 'OR', math: 'unique_session' });
   });
   it('does not call a missing app timing sample a zero-millisecond load', () => {
-    const values = [0,0,0,0,0,0,0,0,null,0,null,0];
+    const values = [0,0,0,0,0,0,0,0,null,0,null,0,0];
     const result = normalizeApp({ results: values.map(aggregated_value => ({ aggregated_value })) });
     expect(result.reportReadyMedian).toBeNull();
     expect(result.mapReadyMedian).toBeNull();
+    expect(result.visits).toBe(0);
     values[9] = 1;
     expect(() => normalizeApp({ results: values.map(aggregated_value => ({ aggregated_value })) })).toThrow();
   });

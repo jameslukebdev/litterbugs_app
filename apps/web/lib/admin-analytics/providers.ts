@@ -91,6 +91,7 @@ export function appQuery(window: Window) {
     event('$screen'), event('Application Opened'), step('report', 'published'), step('clean', 'claim_confirmed'), step('clean', 'evidence_submitted'), event('cleanup_approved'), event('participation_failure'), event('app_sign_in', [prop('stage', ['succeeded'])]),
     event('app_timing', timing('report_details'), 'median', 'elapsed_ms'), event('app_timing', timing('report_details')),
     event('app_timing', timing('launch_to_map'), 'median', 'elapsed_ms'), event('app_timing', timing('launch_to_map')),
+    { kind: 'GroupNode', operator: 'OR', math: 'unique_session', nodes: [event('$screen', [], 'unique_session'), event('Application Opened', [], 'unique_session')] },
   ] };
 }
 export function normalizeApp(raw: unknown): SourceData['app'] {
@@ -98,9 +99,9 @@ export function normalizeApp(raw: unknown): SourceData['app'] {
     const value = object(row).aggregated_value;
     return (index === 8 || index === 10) && value == null ? null : number(value);
   });
-  if (values.length !== 12) throw new Error('Incomplete app analytics');
+  if (values.length !== 13) throw new Error('Incomplete app analytics');
   if ((values[9] && values[8] == null) || (values[11] && values[10] == null)) throw new Error('Missing timing aggregate');
-  return { screens: values[0]!, launches: values[1]!, reports: values[2]!, claims: values[3]!, submissions: values[4]!, approvals: values[5]!, failures: values[6]!, signIns: values[7]!, reportReadyMedian: values[9] ? values[8] : null, reportReadySamples: values[9]!, mapReadyMedian: values[11] ? values[10] : null, mapReadySamples: values[11]! };
+  return { visits: values[12]!, screens: values[0]!, launches: values[1]!, reports: values[2]!, claims: values[3]!, submissions: values[4]!, approvals: values[5]!, failures: values[6]!, signIns: values[7]!, reportReadyMedian: values[9] ? values[8] : null, reportReadySamples: values[9]!, mapReadyMedian: values[11] ? values[10] : null, mapReadySamples: values[11]! };
 }
 export async function fetchApp(window: Window) {
   return normalizeApp(await post('https://us.posthog.com/api/projects/695338/query/', process.env.ADMIN_ANALYTICS_POSTHOG_KEY ?? '', { query: appQuery(window) }));
