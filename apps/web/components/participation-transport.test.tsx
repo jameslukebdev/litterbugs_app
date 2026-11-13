@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // @vitest-environment-options {"url":"https://litterbugs.app/map"}
 import { act, cleanup, render, waitFor } from '@testing-library/react';
-import { useEffect } from 'react';
+import { StrictMode, useEffect } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { WebsiteAnalytics } from './website-analytics';
 import { WORKFLOW_VERSION, clearParticipationContext, drainJourneys, trackAppChoice, trackMapDiscovery, trackMapLoading, trackPayoutSetup, trackParticipationExit, drainParticipation, drainParticipationFailures, drainWebsiteOutcomes, rememberContributionAttempt, trackParticipation, trackParticipationFailure, trackWebsiteOutcome } from '@/lib/website-analytics';
@@ -19,7 +19,12 @@ beforeEach(() => {
   drainParticipation(); drainParticipationFailures(); drainWebsiteOutcomes(); drainJourneys(); clearParticipationContext();
   window.history.replaceState({}, '', '/map');
 });
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); delete (window as Window & { gtag?: unknown }).gtag; });
+afterEach(() => {
+  cleanup(); vi.unstubAllGlobals();
+  delete (window as Window & { gtag?: unknown }).gtag;
+  delete (window as Window & { clarity?: unknown }).clarity;
+  document.querySelectorAll('script[src*="clarity.ms/tag/"]').forEach(script => script.remove());
+});
 
 it('delivers early flow events once to Google when its script becomes ready later than PostHog', async () => {
   const gtag = vi.fn();
@@ -126,7 +131,7 @@ it.each(['report', 'fund', 'clean'] as const)('records a one-use successful %s a
 it('records a callback failure without sending the callback URL or code', async () => {
   window.history.replaceState({}, '', '/?authError=callback&participation_auth=clean%3Afailed');
   render(<WebsiteAnalytics config={config} />);
-  await waitFor(() => expect(sdk.capture).toHaveBeenCalledWith('participation_failure', { action: 'clean', stage: 'auth_submitted', reason: 'auth_return_failed', page_type: '/' }));
+  await waitFor(() => expect(sdk.capture).toHaveBeenCalledWith('participation_failure', { action: 'clean', stage: 'auth_submitted', reason: 'auth_return_failed', page_type: '/' }, { transport: 'sendBeacon', send_instantly: true }));
 });
 
 it('records auth success before a resumed photo step even when the form mounts before analytics', async () => {
@@ -168,10 +173,11 @@ it.each(['declined', 'doNotTrack', 'globalPrivacyControl'])('does not queue or t
   trackPayoutSetup('opened');
   trackParticipationExit('clean', 'safety_review', 'cancelled');
   trackAppChoice('website_continued', 'report');
-  render(<WebsiteAnalytics config={config} />);
+  render(<WebsiteAnalytics config={{ ...config, clarityId: 'test123' }} />);
   await act(async () => {});
   expect(sdk.init).not.toHaveBeenCalled();
   expect(sdk.capture).not.toHaveBeenCalled();
+  expect(document.querySelector('script[src*="clarity.ms/tag/"]')).toBeNull();
   expect([...drainParticipation(), ...drainParticipationFailures(), ...drainWebsiteOutcomes(), ...drainJourneys()]).toEqual([]);
 });
 
@@ -247,7 +253,7 @@ it('delivers map startup failures queued before SDK readiness and sanitizes thei
   render(<WebsiteAnalytics config={config} />);
   await waitFor(() => expect(sdk.capture).toHaveBeenCalledWith('map_loading', {
     stage: 'failed', reason: 'authorization_failed', elapsed_ms: 2400, backgrounded: false, page_type: '/map',
-  }));
+  }, { transport: 'sendBeacon', send_instantly: true }));
   const sanitize = sdk.init.mock.calls[0][1].before_send;
   const result = sanitize({ event: 'map_loading', properties: {
     stage: 'failed', reason: 'initialization_failed', elapsed_ms: 1234, backgrounded: false, page_type: '/map',
@@ -257,4 +263,129 @@ it('delivers map startup failures queued before SDK readiness and sanitizes thei
   expect(JSON.stringify(result)).not.toMatch(/latitude|longitude|private|secret/);
   expect(sanitize({ event: 'map_loading', properties: { stage: 'failed', reason: 'private error', elapsed_ms: 10, backgrounded: false } })).toBeNull();
   expect(sdk.capture.mock.calls.filter(([event]) => event === 'map_loading')).toHaveLength(2);
+});
+
+const recordingConfig = { ...config, clarityId: 'test123' };
+function finishClarityLoad(clarity = vi.fn()) {
+  Object.defineProperty(window, 'clarity', { configurable: true, writable: true, value: clarity });
+  act(() => document.querySelector('script[src="https://www.clarity.ms/tag/test123"]')!.dispatchEvent(new Event('load')));
+  return clarity;
+}
+
+it('preserves interleaved steps, failures and exits for late Clarity without resending to PostHog', async () => {
+  trackParticipation('clean', 'action_tapped');
+  trackParticipation('clean', 'safety_review');
+  trackParticipationFailure('clean', 'safety_review', 'claim_failed');
+  trackParticipationExit('clean', 'safety_review', 'cancelled');
+  const view = render(<WebsiteAnalytics config={recordingConfig} />);
+  await waitFor(() => expect(sdk.capture.mock.calls.filter(([name]) => name !== '$pageview')).toHaveLength(4));
+  expect(sdk.capture.mock.calls.filter(([name]) => name !== '$pageview').map(([name, props]) => [name, props.stage])).toEqual([
+    ['participation_step', 'action_tapped'], ['participation_step', 'safety_review'],
+    ['participation_failure', 'safety_review'], ['participation_decision', 'safety_review'],
+  ]);
+  expect((window as Window & { clarity?: { q: unknown[][] } }).clarity?.q).toEqual([]);
+  const clarity = finishClarityLoad();
+  await waitFor(() => expect(clarity.mock.calls.filter(([cmd]) => cmd === 'event').map(([, name]) => name)).toEqual([
+    'lb_cleanup_started', 'lb_cleanup_safety_shown', 'lb_cleanup_failed', 'lb_cleanup_cancelled',
+  ]));
+  expect(clarity).toHaveBeenCalledWith('set', 'lb_workflow_version', WORKFLOW_VERSION);
+  expect(clarity).toHaveBeenCalledWith('set', 'lb_cleanup_failure_reason', 'claim_failed');
+  sdk.googleReady = true;
+  view.rerender(<WebsiteAnalytics config={recordingConfig} />);
+  await waitFor(() => expect((window as unknown as { dataLayer: unknown[][] }).dataLayer.some(call => call[1] === 'participation_decision')).toBe(true));
+  expect(clarity.mock.calls.filter(([cmd]) => cmd === 'event')).toHaveLength(4);
+  expect(sdk.capture.mock.calls.filter(([name]) => name !== '$pageview')).toHaveLength(4);
+  expect(sdk.capture).toHaveBeenCalledWith('participation_decision', expect.objectContaining({ action: 'clean', exit_type: 'cancelled' }), { transport: 'sendBeacon', send_instantly: true });
+});
+
+it('delivers map failure and recovery to Clarity when PostHog fails and Google never loads', async () => {
+  sdk.init.mockImplementationOnce(() => { throw new Error('unavailable'); });
+  const view = render(<WebsiteAnalytics config={recordingConfig} />);
+  act(() => {
+    trackMapLoading({ stage: 'failed', elapsed_ms: 12000, backgrounded: false, reason: 'startup_timeout' });
+    trackMapLoading({ stage: 'recovered', elapsed_ms: 14000, backgrounded: false });
+  });
+  window.history.replaceState({}, '', '/reports/private-id?token=secret');
+  const clarity = finishClarityLoad();
+  await waitFor(() => expect(clarity).toHaveBeenCalledWith('event', 'lb_map_recovered'));
+  view.rerender(<WebsiteAnalytics config={recordingConfig} />);
+  expect(clarity.mock.calls.filter(([cmd]) => cmd === 'event')).toEqual([
+    ['event', 'lb_map_failed'], ['event', 'lb_map_recovered'],
+  ]);
+  expect(JSON.stringify(clarity.mock.calls)).not.toMatch(/private-id|secret|token|report_id/);
+  expect(sdk.capture).not.toHaveBeenCalled();
+});
+
+it('bounds the queue for a blocked Clarity script while other providers keep receiving events', async () => {
+  render(<WebsiteAnalytics config={recordingConfig} />);
+  await waitFor(() => expect(sdk.init).toHaveBeenCalled());
+  act(() => { for (let i = 0; i < 200; i++) trackMapDiscovery('results_empty', { filtered: false }); });
+  expect(sdk.capture.mock.calls.filter(([name]) => name === 'map_discovery')).toHaveLength(200);
+  expect((window as Window & { clarity?: { q: unknown[][] } }).clarity?.q).toEqual([]);
+  const clarity = finishClarityLoad();
+  await waitFor(() => expect(clarity.mock.calls.filter(([cmd]) => cmd === 'event')).toHaveLength(150));
+  expect(sdk.capture.mock.calls.filter(([name]) => name === 'map_discovery')).toHaveLength(200);
+});
+
+it('does not let a Clarity error interrupt PostHog or duplicate an accepted marker on retry', async () => {
+  const view = render(<WebsiteAnalytics config={recordingConfig} />);
+  await waitFor(() => expect(sdk.init).toHaveBeenCalled());
+  const clarity = finishClarityLoad();
+  await waitFor(() => expect(clarity).toHaveBeenCalledWith('set', 'lb_workflow_version', WORKFLOW_VERSION));
+  clarity.mockImplementationOnce(() => { throw new Error('recording unavailable'); });
+  act(() => trackParticipation('clean', 'safety_review'));
+  expect(sdk.capture).toHaveBeenCalledWith('participation_step', expect.objectContaining({ stage: 'safety_review' }));
+  act(() => trackMapDiscovery('results_loaded'));
+  expect(clarity.mock.calls.filter(([cmd, name]) => cmd === 'event' && name === 'lb_cleanup_safety_shown')).toHaveLength(1);
+  view.rerender(<WebsiteAnalytics config={recordingConfig} />);
+  expect(clarity.mock.calls.filter(([cmd]) => cmd === 'event')).toHaveLength(1);
+});
+
+it.each(['doNotTrack', 'globalPrivacyControl'])('discards delayed Clarity markers when %s is enabled', async signal => {
+  render(<WebsiteAnalytics config={recordingConfig} />);
+  await waitFor(() => expect(sdk.init).toHaveBeenCalled());
+  act(() => trackParticipation('clean', 'safety_review'));
+  vi.stubGlobal('navigator', { [signal]: signal === 'doNotTrack' ? '1' : true });
+  const clarity = finishClarityLoad();
+  act(() => trackParticipationExit('clean', 'safety_review', 'cancelled'));
+  await act(async () => {});
+  expect(clarity).not.toHaveBeenCalled();
+});
+
+it('does not infer cleanup abandonment from a hidden tab, pagehide, or a successful claim', async () => {
+  render(<WebsiteAnalytics config={recordingConfig} />);
+  await waitFor(() => expect(sdk.init).toHaveBeenCalled());
+  const clarity = finishClarityLoad();
+  await waitFor(() => expect(clarity).toHaveBeenCalledWith('set', 'lb_workflow_version', WORKFLOW_VERSION));
+  act(() => {
+    trackParticipation('clean', 'action_tapped');
+    document.dispatchEvent(new Event('visibilitychange'));
+    trackParticipation('clean', 'claim_confirmed');
+    window.dispatchEvent(new Event('pagehide'));
+  });
+  expect(clarity.mock.calls.filter(([cmd]) => cmd === 'event')).toEqual([
+    ['event', 'lb_cleanup_started'], ['event', 'lb_cleanup_claimed'],
+  ]);
+});
+
+it('loads only one Clarity script in Strict Mode and records one queued marker', async () => {
+  trackParticipationExit('clean', 'safety_review', 'cancelled');
+  render(<StrictMode><WebsiteAnalytics config={recordingConfig} /></StrictMode>);
+  await waitFor(() => expect(sdk.init).toHaveBeenCalled());
+  expect(document.querySelectorAll('script[src="https://www.clarity.ms/tag/test123"]')).toHaveLength(1);
+  const clarity = finishClarityLoad();
+  await waitFor(() => expect(clarity.mock.calls.filter(([cmd]) => cmd === 'event')).toEqual([['event', 'lb_cleanup_cancelled']]));
+});
+
+it('bounds the bootstrap if the tag loads but its recorder dependency stays blocked', async () => {
+  localStorage.setItem('litterbugs:analytics-replay-consent:v1', 'accepted');
+  render(<WebsiteAnalytics config={recordingConfig} />);
+  await waitFor(() => expect(sdk.init).toHaveBeenCalled());
+  act(() => document.querySelector('script[src="https://www.clarity.ms/tag/test123"]')!.dispatchEvent(new Event('load')));
+  await act(async () => {});
+  act(() => { for (let i = 0; i < 200; i++) trackMapDiscovery('results_empty', { filtered: true }); });
+  const queue = (window as Window & { clarity?: { q: unknown[][] } }).clarity?.q ?? [];
+  expect(queue).toHaveLength(250);
+  expect(queue).toContainEqual(['consentv2', { ad_Storage: 'denied', analytics_Storage: 'granted' }]);
+  expect(queue).toContainEqual(['set', 'lb_workflow_version', WORKFLOW_VERSION]);
 });

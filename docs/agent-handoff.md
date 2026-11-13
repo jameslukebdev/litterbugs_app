@@ -24,6 +24,19 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (approved website recording analytics release candidate)
+
+- Owner authorized website analytics deployment/GitHub push and excluded Claude's
+  native work. Clean release branch codex/website-analytics-release-20261112 is
+  based on prior production e5411e2 plus its documentation-only closure cdf50db.
+  Imported only6 tested website source/test files and the event guide from a24f6a8.
+  Native files, lockfiles/dependencies, extra local previews and fee pages unchanged.
+- Adds safe Clarity map/cleanup markers, provider-isolated bounded delivery,
+  chronological early-event buffering and immediate critical PostHog signals.
+  Workflow version v9. Website dashboard remains in PostHog2346165, not /admin.
+- Verification and staged production build/promotion pending. Prior production
+  dpl_7ybf24ASXLanJNFKCqq6FtyWMyCn is the rollback target. No DB migrations.
+
 ### 2026-11-12 — Codex (cleanup start and button improvements deployed)
 
 - Owner approved cleanup-start and tested button improvements. Live sourcee5411e2

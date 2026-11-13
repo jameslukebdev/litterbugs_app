@@ -109,7 +109,7 @@ it('sends a consent signal only after an explicit analytics choice', async () =>
 });
 it('does not initialize either provider in local/preview environments even with saved consent', () => {
   localStorage.setItem(ANALYTICS_CONSENT_KEY, 'accepted'); localStorage.setItem('litterbugs:analytics-replay-consent:v1', 'accepted');
-  render(<><WebsiteAnalytics config={config} /><AnalyticsPreferences /></>);
+  render(<><WebsiteAnalytics config={{ ...config, clarityId: 'test123' }} /><AnalyticsPreferences /></>);
   fireEvent.click(screen.getByText('Analytics choices'));
   expect(screen.getByText(/Optional usage tracking is off/)).toBeTruthy();
   expect(screen.queryByTestId('google-script')).toBeNull();

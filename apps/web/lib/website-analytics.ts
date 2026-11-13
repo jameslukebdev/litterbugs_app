@@ -2,7 +2,7 @@ import { AUTH_RESULT_PARAM, SHARED_REPORT_AUTH_PARAM, isSharedReportAuthProvider
 import { mapLoadingProperties, type MapLoadingSignal } from './map-loading-metrics';
 import { communityForEntry, communityForPath, communityProperties, type CommunityEngagementEvent, type CommunityProperties } from './community-metrics';
 // Bump when participation semantics/workflows change; compiled into each browser bundle.
-export const WORKFLOW_VERSION = 'web-participation-2026-11-12-v8';
+export const WORKFLOW_VERSION = 'web-participation-2026-11-12-v9';
 export const ANALYTICS_CONSENT_KEY = 'litterbugs:analytics-consent:v1';
 export const ANALYTICS_REPLAY_CHOICE_KEY = 'litterbugs:analytics-replay-consent:v1';
 export const ANALYTICS_EVENT = 'litterbugs:analytics-event';
@@ -129,6 +129,13 @@ export function participationProperties(value: { action?: unknown; stage?: unkno
   return { action: action as ParticipationAction, stage, ...(isEntrySource(value.source) ? { source: value.source } : {}) };
 }
 
+// Local ordering only: no sequence, identifier or timestamp is sent to providers.
+const flowOrder = new WeakMap<object, number>();
+let flowSequence = 0;
+function orderedFlow<T extends object>(value: T): T {
+  flowOrder.set(value, ++flowSequence);
+  return value;
+}
 const pendingParticipation: Array<NonNullable<ReturnType<typeof participationProperties>> & { page_type: string }> = [];
 export function drainParticipation() {
   return pendingParticipation.splice(0);
@@ -142,7 +149,7 @@ export function trackParticipation(action: ParticipationAction, stage: Participa
     const safe = participationProperties({ action, stage, source: source ?? participationSources.get(action) });
     if (!safe) return;
     if (pendingParticipation.length >= 30) pendingParticipation.shift();
-    pendingParticipation.push({ ...safe, page_type: analyticsPage(window.location.pathname) ?? '/private' });
+    pendingParticipation.push(orderedFlow({ ...safe, page_type: analyticsPage(window.location.pathname) ?? '/private' }));
     window.dispatchEvent(new CustomEvent(ANALYTICS_EVENT, { detail: { event: 'participation_step' } }));
   } catch { /* Optional measurement must not interrupt participation. */ }
 }
@@ -169,7 +176,7 @@ export function trackParticipationFailure(action: ParticipationAction, stage: Pa
     const safe = participationFailureProperties({ action, stage, reason, source: participationSources.get(action) });
     if (!safe) return;
     if (pendingFailures.length >= 30) pendingFailures.shift();
-    pendingFailures.push({ ...safe, page_type: analyticsPage(window.location.pathname) ?? '/private' });
+    pendingFailures.push(orderedFlow({ ...safe, page_type: analyticsPage(window.location.pathname) ?? '/private' }));
     window.dispatchEvent(new CustomEvent(ANALYTICS_EVENT, { detail: { event: 'participation_failure' } }));
   } catch { /* Optional measurement must not interrupt the task. */ }
 }
@@ -285,6 +292,15 @@ export function reportDistanceBucket(miles: number) {
 }
 const pendingJourneys: Array<{ event: JourneyEvent; properties: NonNullable<ReturnType<typeof journeyProperties>> & { page_type: string } }> = [];
 export function drainJourneys() { return pendingJourneys.splice(0); }
+/** Preserve the actual order across steps, failures and decisions during SDK load. */
+export function drainWebsiteFlows() {
+  const flows: Array<{ event: JourneyEvent | 'participation_step' | 'participation_failure'; properties: Record<string, unknown> }> = [
+    ...drainParticipation().map(properties => ({ event: 'participation_step' as const, properties })),
+    ...drainParticipationFailures().map(properties => ({ event: 'participation_failure' as const, properties })),
+    ...drainJourneys(),
+  ];
+  return flows.sort((a, b) => (flowOrder.get(a.properties) ?? 0) - (flowOrder.get(b.properties) ?? 0));
+}
 function trackJourney(event: JourneyEvent, input: JourneyInput) {
   try {
     if (!analyticsProductionBrowser()) return;
@@ -292,7 +308,7 @@ function trackJourney(event: JourneyEvent, input: JourneyInput) {
     if (!safe) return;
     if (event === 'map_discovery' && input.stage === 'report_opened' && isEntrySource(input.source)) reportEntrySource = input.source;
     if (pendingJourneys.length >= 50) pendingJourneys.shift();
-    pendingJourneys.push({ event, properties: { ...safe, page_type: analyticsPage(window.location.pathname) ?? '/private' } });
+    pendingJourneys.push({ event, properties: orderedFlow({ ...safe, page_type: analyticsPage(window.location.pathname) ?? '/private' }) });
     window.dispatchEvent(new CustomEvent(ANALYTICS_EVENT, { detail: { event } }));
   } catch { /* Measurement cannot change navigation, saves or payouts. */ }
 }
