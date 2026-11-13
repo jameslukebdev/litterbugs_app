@@ -48,6 +48,16 @@ module.exports = ({ config }) => {
     throw new Error('STRIPE_APPLE_MERCHANT_IDENTIFIER is required when ENABLE_APPLE_PAY=true.');
   }
   const appleSignInEnabled = process.env.EXPO_PUBLIC_APPLE_SIGN_IN_ENABLED === 'true';
+  // Release error diagnostics: upload Hermes source maps, iOS dSYMs and Android R8/NDK
+  // symbols to PostHog during the native build. Off unless the build sets
+  // POSTHOG_UPLOAD_SYMBOLS=true; the POSTHOG_CLI_* credentials come only from the build
+  // environment (EAS secrets) and are never written into the app or this repository.
+  const uploadPosthogSymbols = process.env.POSTHOG_UPLOAD_SYMBOLS === 'true';
+  // Which traffic this build sends: "production" (store profile), "test" (an isolated
+  // test build) or "internal", which never sends anything (lib/analytics.js).
+  const analyticsEnvironment = ['production', 'test'].includes(process.env.EXPO_PUBLIC_ANALYTICS_ENVIRONMENT)
+    ? process.env.EXPO_PUBLIC_ANALYTICS_ENVIRONMENT
+    : 'internal';
   const plugins = [...(config.plugins || [])];
   if (appleSignInEnabled && shouldConfigureIos) plugins.push('expo-apple-authentication');
   if (!plugins.some((plugin) => (
@@ -62,6 +72,12 @@ module.exports = ({ config }) => {
         },
       },
     ]);
+  }
+  if (uploadPosthogSymbols && !plugins.some((plugin) => (
+    plugin === 'posthog-react-native/expo'
+    || (Array.isArray(plugin) && plugin[0] === 'posthog-react-native/expo')
+  ))) {
+    plugins.push(['posthog-react-native/expo', { uploadNativeSymbols: true, skipOnConflict: true }]);
   }
   if (!plugins.includes('./plugins/with-ios-fmt-xcode26-fix')) {
     plugins.push('./plugins/with-ios-fmt-xcode26-fix');
@@ -149,6 +165,13 @@ module.exports = ({ config }) => {
       );
     }
 
+    const missingSymbolValues = uploadPosthogSymbols
+      ? ['POSTHOG_CLI_API_KEY', 'POSTHOG_CLI_PROJECT_ID'].filter((name) => !process.env[name])
+      : [];
+    if (missingSymbolValues.length) {
+      throw new Error(`POSTHOG_UPLOAD_SYMBOLS=true needs ${missingSymbolValues.join(', ')}.`);
+    }
+
     if (isIosBuild && googleIosClientBundleId !== iosBundleIdentifier) {
       throw new Error(
         `Google iOS client is for ${googleIosClientBundleId}, not ${iosBundleIdentifier}.`
@@ -201,7 +224,8 @@ module.exports = ({ config }) => {
       ...config.extra,
       stripeApplePayEnabled,
       analytics: {
-        enabled: process.env.EXPO_PUBLIC_ANALYTICS_ENABLED === 'true',
+        enabled: process.env.EXPO_PUBLIC_ANALYTICS_ENABLED === 'true' && analyticsEnvironment !== 'internal',
+        environment: analyticsEnvironment,
         posthogKey: process.env.EXPO_PUBLIC_POSTHOG_KEY || '',
         posthogHost: process.env.EXPO_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
       },

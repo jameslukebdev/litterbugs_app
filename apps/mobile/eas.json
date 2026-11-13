@@ -101,7 +101,8 @@
         "ENABLE_IOS_ASSOCIATED_DOMAINS": "false",
         "IOS_BUNDLE_IDENTIFIER": "com.litterbugs.app",
         "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app",
-        "EXPO_PUBLIC_ANALYTICS_ENABLED": "true"
+        "EXPO_PUBLIC_ANALYTICS_ENABLED": "true",
+        "EXPO_PUBLIC_ANALYTICS_ENVIRONMENT": "production"
       },
       "autoIncrement": true,
       "channel": "production"

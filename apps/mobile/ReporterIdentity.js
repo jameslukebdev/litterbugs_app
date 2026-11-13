@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import PrivateView from './components/PrivateView';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import CompactRankBadge from './CompactRankBadge';
@@ -19,6 +20,7 @@ export default function ReporterIdentity({ profile, onPress }) {
   }
 
   return (
+    <PrivateView>
     <TouchableOpacity
       style={styles.row}
       onPress={onPress}
@@ -36,6 +38,7 @@ export default function ReporterIdentity({ profile, onPress }) {
       </View>
       {onPress ? <Ionicons name="chevron-forward" size={18} color={colors.muted} /> : null}
     </TouchableOpacity>
+    </PrivateView>
   );
 }
 

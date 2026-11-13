@@ -84,6 +84,7 @@ export default function useCleanupFlow(screen) {
       if (!skipPayoutConnectionCheck && cleanupClaimRequiresPayoutSetup(report)) {
         const payout = await loadPayoutStatus();
         if (!isPayoutConnectionReady(payout)) {
+          trackParticipation('clean', 'payout_setup');
           openPayoutSetupForWorkflow({
             kind: PAYOUT_WORKFLOW_KIND.CLEANUP_CLAIM,
             reportId: report.id,
@@ -115,6 +116,7 @@ export default function useCleanupFlow(screen) {
       return 'claimed';
     } catch (error) {
       if (/cleaner_payout_onboarding_required/i.test(error?.message ?? '')) {
+        trackParticipation('clean', 'payout_setup');
         openPayoutSetupForWorkflow({
           kind: PAYOUT_WORKFLOW_KIND.CLEANUP_CLAIM,
           reportId: report.id,

@@ -24,6 +24,27 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Claude (unreleased mobile analytics finished and verified locally)
+
+- Audit fixes: `payment_submitted` was sent before Stripe's sheet opened (cancelled sheets counted); now
+  `payment_ready` → `payment_submitted` only when submitted. Added missing payment start/form/confirmation, report
+  upload and cleanup photo-step failures, sign-in `verification_sent`/`closed`, claim `payout_setup`, `cleanup_approved`.
+- New: `map_discovery` (search sessions, results after filter/search changes, empty recovery, filter changes),
+  `app_timing` (launch_to_map, report_details, photo_upload, submission with attempts/recovery), `app_open_target`
+  (shared links/notifications, `shown` only when the destination appears). Definitions: `docs/mobile-analytics.md`.
+- Privacy: `before_send` scrub; SDK was attaching the launch link (report IDs / auth tokens) to Application Opened.
+  Push token registration, replay console/network capture off. Replay stops on auth, payment, payout and account
+  screens; notes/names masked. Environment gate: production|test only, never simulators (unless test).
+- Crashes: replaced legacy replay package with `@posthog/react-native-plugin` 2.13.0 (native + NDK crashes).
+  Symbol/source-map upload wired behind `POSTHOG_UPLOAD_SYMBOLS=true` + EAS secrets `POSTHOG_CLI_API_KEY`,
+  `POSTHOG_CLI_PROJECT_ID` (not set yet). Release attribution adds `app_environment` and `$expo_*` update keys.
+- Verified: 606 tests, lint, source check, release iOS export with debug IDs, no secrets in bundle. Real SDK
+  delivery checked in the simulator against a local mock collector (temporary dev hook, removed): events, offline
+  queue and redelivery, no leaks; nothing sent once removed. **Not verified:** native build with the new plugin,
+  replay masking, native crash capture, symbol upload, Android, deep-link/notification opens on device.
+- No deploy, store build, push, migrations or PostHog setting changes. Native builds need a fresh prebuild/pod
+  install for the new plugin. Concurrent ProfileScreen/WelcomeScreen/ui/paymentTotals/launch.json edits untouched.
+
 ### 2026-11-12 — Codex (website PostHog dashboard created)
 
 - Owner authorized website dashboard only; native analytics remain Claude's work.

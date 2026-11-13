@@ -2,6 +2,7 @@ import { loadDiscoveryReports } from '../lib/discoveryReports';
 import { useProfile } from '../lib/profile';
 import { mapLimitMessage } from '../lib/mapWorkBudget';
 import LocationSearch from './LocationSearch';
+import { trackFilterChanges } from '../lib/analytics';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -88,8 +89,10 @@ export default function ReportFilters({ map = false }) {
     });
   if (filters.query.trim()) activeFilters.push({ key: 'query', label: `“${filters.query.trim()}”` });
   const count = activeFilters.length;
-  const choose = (key, value) =>
+  const choose = (key, value) => {
+    trackFilterChanges(filters, { ...filters, [key]: value }, 'chip');
     setFilters((current) => ({ ...current, [key]: value }));
+  };
   const filterButton = (
         <TouchableOpacity
           accessibilityRole="button"
@@ -195,7 +198,10 @@ export default function ReportFilters({ map = false }) {
                 style={[styles.done, fontScale > 1.5 && { flex: 0, paddingVertical: 10 }]}
                 accessibilityRole="button"
                 onPress={() => {
-                  if (draftChanged) applyFilters(draft, areaComplete ? areaReports : null);
+                  if (draftChanged) {
+                    trackFilterChanges(filters, draft, 'sheet');
+                    applyFilters(draft, areaComplete ? areaReports : null);
+                  }
                   setOpen(false);
                 }}
               >

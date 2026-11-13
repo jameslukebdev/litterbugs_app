@@ -64,6 +64,8 @@ export default function AuthScreen() {
   // Why this screen opened: a report, a fund or a cleanup in progress, or the person's own choice.
   useEffect(() => {
     trackSignIn('shown', { intent: pendingAction?.kind === 'cleanup' ? 'clean' : pendingAction?.kind === 'fund' ? 'fund' : pendingReportCoordinate ? 'report' : 'none' });
+    // Leaving without signing in. Ignored after a success, or while an emailed link is pending.
+    return () => trackSignIn('closed');
   }, []);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [emailMode, setEmailMode] = useState('login');
@@ -158,6 +160,7 @@ export default function AuthScreen() {
           setPassword('');
           return;
         }
+        trackSignIn('verification_sent', { method: 'email_signup' });
         setSentReason('signup');
         setEmailMode('sent');
         setPassword('');

@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
-import { startAnalytics, trackScreen, trackSignIn } from './lib/analytics';
+import { beginAppOpen, finishAppOpen, isSharedReportLink, notificationDestinationKey, startAnalytics, trackScreen, trackSignIn } from './lib/analytics';
 
 startAnalytics();
 import {
@@ -151,10 +151,19 @@ function AppNavigation({
 
     handledNotificationId.current = notificationId ?? null;
     pendingNotificationData.current = null;
+    const destinationKey = notificationDestinationKey(destination);
+    if (destinationKey) beginAppOpen('notification', destinationKey);
     if (destination.url) {
-      Linking.openURL(destination.url).catch(() => Alert.alert('Couldn’t open the inbox', 'Visit litterbugs.app/admin to review community reports.'));
+      Linking.openURL(destination.url)
+        .then(() => finishAppOpen('handed_off', 'admin_web'))
+        .catch(() => {
+          finishAppOpen('failed', 'admin_web');
+          Alert.alert('Couldn’t open the inbox', 'Visit litterbugs.app/admin to review community reports.');
+        });
     } else {
       navigationRef.navigate(destination.name, destination.params);
+      // Already on the destination screen (e.g. the map): no screen change will report it.
+      trackScreen(navigationRef.getCurrentRoute()?.name);
     }
     if (notificationId) {
       acknowledgeCleanupNotifications([notificationId]).catch((error) => {
@@ -196,6 +205,7 @@ function AppNavigation({
   }, [openNotificationData, permanent]);
 
   if (passwordRecovery && permanent) {
+    trackScreen('ResetPassword'); // not a route; keeps replay off on this screen
     return (
       <ResetPasswordScreen
         onCancel={onRecoveryComplete}
@@ -397,6 +407,8 @@ export default function App() {
 
     const processAuthUrl = async (url) => {
       if (!url) return;
+      // A shared report link: whether the report then actually appears is recorded by the map.
+      if (isSharedReportLink(url)) beginAppOpen('report_link', 'report');
       // The active browser flow owns its callback and user feedback. Cold-start
       // and password-recovery links still use the global listener.
       if (isBrowserAuthInProgress() && url.startsWith(`litterbugs://${AUTH_CALLBACK_PATH}`)) return;

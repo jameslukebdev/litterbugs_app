@@ -1,5 +1,5 @@
 import { userMessage } from './lib/userMessage';
-import { trackParticipation, trackParticipationFailure } from './lib/analytics';
+import { finishAppOpen, pendingAppOpenSource, startTiming, trackLaunchToMap, trackParticipation, trackParticipationFailure } from './lib/analytics';
 import { requireReportLocation } from './lib/reportLocationCheck';
 import { publishReportDraft, clearReportSubmission } from './lib/reportSubmissionStore';
 import ReportDetailsSheet from './components/ReportDetailsSheet';
@@ -141,6 +141,12 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   });
   const [mapType, setMapType] = useState('standard');
   const [selectedReport, setSelectedReport] = useState(null);
+  // Measurement only (lib/analytics.js): what the launch map's readiness rests on, and the
+  // open report-details timer with the report it is waiting for.
+  const mapReadySignal = useRef('map_ready_fallback');
+  const detailsTiming = useRef(null);
+  const requestTiming = useRef(null);
+  const submissionTiming = useRef(null);
   const [mapUserLocation, setMapUserLocation] = useState(null);
   const [nearbyIds, setNearbyIds] = useState([]);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -393,7 +399,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     // Apple Maps does not emit onMapLoaded. Keep the branded transition in
     // place briefly, then use onMapReady as a guarded fallback so startup can
     // never become trapped behind the loading screen.
-    const fallback = setTimeout(() => setMapSurfaceLoaded(true), 4000);
+    const fallback = setTimeout(() => { mapReadySignal.current = 'map_ready_fallback'; setMapSurfaceLoaded(true); }, 4000);
     return () => clearTimeout(fallback);
   }, [mapReady, mapSurfaceLoaded]);
 
@@ -401,12 +407,16 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     if (!mapSurfaceLoaded || reportsLoading || !initialLocationResolved) return undefined;
     // Keep the loading screen until the starting area's pins have loaded (at most six seconds).
     if (!mapRegionsAreEquivalent(loadedRegion, region)) {
-      const fallback = setTimeout(() => { onLaunchReady?.(); setShowInitialMapLoading(false); }, 6000);
+      const fallback = setTimeout(() => {
+        onLaunchReady?.(); setShowInitialMapLoading(false);
+        trackLaunchToMap({ mapSignal: mapReadySignal.current, pins: 'timeout' });
+      }, 6000);
       return () => clearTimeout(fallback);
     }
 
     onLaunchReady?.();
     setShowInitialMapLoading(false);
+    trackLaunchToMap({ mapSignal: mapReadySignal.current, pins: 'loaded' });
     return undefined;
   }, [initialLocationResolved, mapSurfaceLoaded, onLaunchReady, reportsLoading, loadedRegion, region]);
 
@@ -814,12 +824,14 @@ const openPayoutSetupForWorkflow = (action) => {
         }
 
         if (!isEditing) trackParticipationFailure('report', 'review', 'publication_unconfirmed');
+        submissionTiming.current?.finish('failed');
         Alert.alert('Couldn’t save report', userMessage(error, 'Your report hasn’t been saved. Please try again.'));
         return;
       }
 
       if (!isEditing) {
         trackParticipation('report', 'published');
+        submissionTiming.current?.finish('ready');
         hapticSuccess();
         showFlowDone({ bug: 'dragonfly', title: 'Report posted', text: 'Thanks for helping keep the community clean!' });
         setPostedPinId(data.id);
@@ -856,6 +868,10 @@ const openPayoutSetupForWorkflow = (action) => {
       }
     } catch (e) {
       console.error('Unexpected save error:', e);
+      if (!isEditing) {
+        trackParticipationFailure('report', 'review', e?.photoStep === 'prepare' ? 'photo_prepare_failed' : e?.photoStep === 'upload' ? 'photo_upload_failed' : 'publication_unconfirmed');
+        submissionTiming.current?.finish('failed');
+      }
       Alert.alert(
         'Couldn’t finish saving report',
         isEditing ? userMessage(e, 'Your changes haven’t been saved. Please try again.') : `${userMessage(e, 'The upload was interrupted.')} Your answers remain here. Try submitting again to continue.`
@@ -907,10 +923,13 @@ const submitReport = async () => {
   submissionLock.current = true;
   setIsSaving(true);
   setSaveStage('Saving report details…');
+  submissionTiming.current = isEditing ? null : startTiming('submission', { flow: 'report' });
 
   try {
     await saveReport();
   } finally {
+    submissionTiming.current?.cancel(); // ended without an outcome (e.g. signed out)
+    submissionTiming.current = null;
     submissionLock.current = false;
     setIsSaving(false);
     setSaveStage('Saving report…');
@@ -1088,8 +1107,14 @@ const getClusterStatusCounts = (clusterId) => {
   return clusterStatusCounts(leaves);
 };
 
-const openReportDetails = (report) => {
+const openReportDetails = (report, source = 'preview_card', timing = null) => {
   if (!report) return;
+  if (detailsTiming.current?.reportId === report.id) {
+    if (timing && timing !== detailsTiming.current.timer) timing.cancel(); // already waiting for it
+  } else {
+    detailsTiming.current?.timer.finish('closed');
+    detailsTiming.current = { reportId: report.id, timer: timing ?? startTiming('report_details', { source }, { timeoutMs: 30000 }) };
+  }
   setReportOpenRevision(value => value + 1);
   setPreviewId(null);
   setNearbyIds([]);
@@ -1132,6 +1157,9 @@ const editReportPhotos = (report) => {
 };
 
 const closeReportDetails = () => {
+  detailsTiming.current?.timer.finish('closed');
+  detailsTiming.current = null;
+  finishAppOpen('closed', 'report');
   setDetailsOpen(false);
   setSelectedReport(null);
   setPreviewId(null);
@@ -1143,6 +1171,8 @@ const closeReportDetails = () => {
 
 useEffect(() => {
   if (selectedReport?.user_id && blockedIds.includes(selectedReport.user_id)) {
+    detailsTiming.current?.timer.finish('closed');
+    detailsTiming.current = null;
     setDetailsOpen(false);
     setSelectedReport(null);
   }
@@ -1165,6 +1195,14 @@ useEffect(() => {
   if (!requestedReportId) return undefined;
 
   let active = true;
+  // Timed from the request (list tap, shared link, notification), including the report fetch.
+  // This effect re-runs when pins refresh; the same request keeps its first start time.
+  if (!route?.params?.editPhotos && (requestTiming.current?.id !== requestedReportId || !requestTiming.current.timer.active)) {
+    const source = pendingAppOpenSource('report') ?? (route?.params?.returnTo === 'Reports' ? 'report_list' : 'in_app');
+    requestTiming.current = { id: requestedReportId, source, timer: startTiming('report_details', { source }, { timeoutMs: 30000 }) };
+  }
+  const timing = route?.params?.editPhotos ? null : requestTiming.current.timer;
+  const openSource = route?.params?.editPhotos ? 'in_app' : requestTiming.current.source;
 
   const openRequestedReport = async () => {
     const requestedMarker = markers.find(
@@ -1180,6 +1218,8 @@ useEffect(() => {
       if (!active) return;
 
       if (!report) {
+        timing?.finish('unavailable');
+        finishAppOpen('unavailable', 'report');
         Alert.alert('Report unavailable', 'This cleanup report could not be opened.');
         navigation.setParams({ reportId: undefined });
         return;
@@ -1196,10 +1236,13 @@ useEffect(() => {
         });
       }
 
-      if (!route?.params?.editPhotos || !editReportPhotos(report)) openReportDetails(report);
+      if (!route?.params?.editPhotos || !editReportPhotos(report)) openReportDetails(report, openSource, timing);
+      else timing?.cancel();
       navigation.setParams({ reportId: undefined, editPhotos: undefined });
     } catch (error) {
       console.log('Requested report load error:', error);
+      timing?.finish('failed');
+      finishAppOpen('failed', 'report');
       if (active) {
         Alert.alert('Report unavailable', 'Check your connection and try again.');
       }
@@ -1264,6 +1307,15 @@ useEffect(() => {
       selectedReport?.cleanup_state === 'completed'
       && completedCleanupImpactLoading
     );
+
+  useEffect(() => {
+    const pending = detailsTiming.current;
+    if (!pending || !detailsOpen || selectedReport?.id !== pending.reportId || reportDetailsPreparing) return;
+    detailsTiming.current = null;
+    const photos = !selectedReport.photo_paths?.length ? 'none' : reportPhotoUrls.length ? 'ready' : 'unavailable';
+    pending.timer.finish('ready', { photos });
+    finishAppOpen('shown', 'report');
+  }, [detailsOpen, selectedReport, reportDetailsPreparing, reportPhotoUrls.length]);
 
   useEffect(() => {
     if (!detailsOpen || !selectedReport?.id) return;
@@ -1371,6 +1423,7 @@ const revealBottomReportField = () => {
           style={StyleSheet.absoluteFill}
           onMapReady={() => setMapReady(true)}
           onMapLoaded={() => {
+            if (!mapSurfaceLoaded) mapReadySignal.current = 'map_loaded';
             setMapReady(true);
             setMapSurfaceLoaded(true);
           }}

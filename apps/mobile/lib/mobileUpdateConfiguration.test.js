@@ -27,8 +27,11 @@ describe('mobile over-the-air updates', () => {
     expect(profiles.development.channel).toBe('development');
     // Test builds match production except analytics, which only store builds send,
     // so staff and simulator testing is never counted as visitor traffic.
-    const { EXPO_PUBLIC_ANALYTICS_ENABLED: analytics, ...productionEnv } = profiles.production.env;
+    const { EXPO_PUBLIC_ANALYTICS_ENABLED: analytics, EXPO_PUBLIC_ANALYTICS_ENVIRONMENT: environment, ...productionEnv } = profiles.production.env;
     expect(analytics).toBe('true');
+    expect(environment).toBe('production');
+    // The Android acceptance build extends production but never sends analytics.
+    expect(profiles['production-acceptance-android'].env.EXPO_PUBLIC_ANALYTICS_ENABLED).toBe('false');
     expect(profiles['production-internal'].env).toEqual(productionEnv);
     expect(profiles['production-simulator'].env).toEqual(productionEnv);
   });

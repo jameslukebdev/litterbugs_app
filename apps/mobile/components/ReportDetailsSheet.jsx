@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import PrivateView from './PrivateView';
 import { Modal, View, Text, TouchableOpacity, ActivityIndicator, ScrollView, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CompletedCleanupStory from '../CompletedCleanupStory';
@@ -478,7 +479,8 @@ export default function ReportDetailsSheet({ state, actions }) {
               else navigation.getParent()?.navigate('PublicProfile', { profileId: reporter.id, sourceReportId: selectedReport.id });
             } : undefined;
             return (
-              <View style={styles.websiteAbout}>
+              // Notes and the reporter's name stay out of session replay.
+              <PrivateView style={styles.websiteAbout}>
                 {[['Litter', litter.join(', ')], ['Notes', conditions.join(', ')], ['Details', selectedReport?.notes_other]].filter(([, value]) => value).map(([label, value]) => (
                   <View key={label} style={styles.websiteFact}>
                     <Text style={styles.websiteFactLabel}>{label}</Text>
@@ -504,7 +506,7 @@ export default function ReportDetailsSheet({ state, actions }) {
                     </TouchableOpacity>
                   </View>
                 ) : null}
-              </View>
+              </PrivateView>
             );
           })()}
 

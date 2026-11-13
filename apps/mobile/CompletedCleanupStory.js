@@ -15,6 +15,7 @@ import { Image as ExpoImage } from 'expo-image';
 import CompactRankBadge from './CompactRankBadge';
 import BrandBug from './components/BrandBug';
 import SmoothImage from './components/SmoothImage';
+import PrivateView from './components/PrivateView';
 import ProfileAvatar from './ProfileAvatar';
 import {
   cleanupImpactFacts,
@@ -186,8 +187,9 @@ export default function CompletedCleanupStory({
       )}
       </View>
 
-      {/* About the cleanup: the cleaner's own words first, then the numbers as one stat row. */}
-      <View style={styles.aboutCard}>
+      {/* About the cleanup: the cleaner's own words first, then the numbers as one stat row.
+          The cleaner's name and words stay out of session replay. */}
+      <PrivateView style={styles.aboutCard}>
         <Text style={styles.aboutTitle}>About the cleanup</Text>
         <TouchableOpacity
           style={styles.cleanerRow}
@@ -227,7 +229,7 @@ export default function CompletedCleanupStory({
             ))}
           </View>
         ) : null}
-      </View>
+      </PrivateView>
     </View>
   );
 }

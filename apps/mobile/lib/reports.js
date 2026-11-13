@@ -19,6 +19,7 @@ import { supabase } from './supabase';
 import { useProfile } from './profile';
 import { isVisibleReport } from './reportVisibility';
 import { mergeAreaReports } from './mergeAreaReports';
+import { discoveryOutcomeTracker } from './analytics';
 
 export const DEFAULT_MAP_REGION = Object.freeze({
   latitude: 39.8283,
@@ -103,11 +104,15 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [mapRegion, setMapRegion] = useState(initialDiscovery?.region || DEFAULT_MAP_REGION);
-  const [filters, setFilters] = useState(DEFAULT_REPORT_FILTERS);
+  const [filters, setFilterState] = useState(DEFAULT_REPORT_FILTERS);
   const [searchPlace, setSearchPlace] = useState(initialDiscovery?.place || null);
   const [selectedMapReportId, setSelectedMapReportId] = useState(null);
-  const selectSearchPlace = useCallback(place => { setSearchPlace(place); setMapRegion(place.region); setSelectedMapReportId(null); }, []);
-  const clearSearchPlace = useCallback(() => { setSearchPlace(null); setSelectedMapReportId(null); }, []);
+  // Measurement only: what the next finished load answers (lib/analytics.js discovery).
+  const discoveryTrigger = useRef('launch');
+  const [discoveryLoad, setDiscoveryLoad] = useState(null);
+  const setFilters = useCallback((next) => { discoveryTrigger.current = 'filter'; setFilterState(next); }, []);
+  const selectSearchPlace = useCallback(place => { discoveryTrigger.current = 'search'; setSearchPlace(place); setMapRegion(place.region); setSelectedMapReportId(null); }, []);
+  const clearSearchPlace = useCallback(() => { discoveryTrigger.current = 'search_cleared'; setSearchPlace(null); setSelectedMapReportId(null); }, []);
   useEffect(() => {
     if (mapRegion === DEFAULT_MAP_REGION) return;
     const timer = setTimeout(() => saveMapMemory(mapRegion, searchPlace), 500);
@@ -146,8 +151,13 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
       loadedSearchKey.current = searchKey;
       setAllReports(current => (sameSearch ? mergeAreaReports(current, result.reports, area, { truncated: result.truncated }) : result.reports));
       setError(null);
+      setDiscoveryLoad({ trigger: discoveryTrigger.current, truncated: Boolean(result.truncated), failed: false });
+      discoveryTrigger.current = 'map_update';
     } catch {
-      if (sequence === requestSequence.current) setError('Reports could not be loaded. Pull to try again.');
+      if (sequence === requestSequence.current) {
+        setError('Reports could not be loaded. Pull to try again.');
+        if (!controller.signal.aborted) setDiscoveryLoad({ trigger: discoveryTrigger.current, failed: true });
+      }
     } finally {
       if (sequence === requestSequence.current) { setLoading(false); setRefreshing(false); setLoadedRegion(area); }
     }
@@ -166,7 +176,7 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
       primedFilters.current = true;
     }
     setFilters(next);
-  }, []);
+  }, [setFilters]);
 
   useEffect(() => {
     const background = primedFilters.current;
@@ -201,6 +211,15 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
   }, [allReports, blockedIds]);
 
   const filteredReports = useMemo(() => reports.filter((report) => matchesReportFilters(report, filters, mapRegion, favoriteIds, hiddenIds) && matchesGeography(report, mapRegion, searchPlace)), [reports, filters, mapRegion, searchPlace, favoriteIds, hiddenIds]);
+
+  // After each finished load: matching reports in view, as fixed buckets (lib/analytics.js).
+  const discoveryOutcomes = useRef(null);
+  useEffect(() => {
+    if (!discoveryLoad) return;
+    discoveryOutcomes.current ??= discoveryOutcomeTracker();
+    const filtered = Boolean(searchPlace) || Object.keys(DEFAULT_REPORT_FILTERS).some(key => filters[key] !== DEFAULT_REPORT_FILTERS[key]);
+    try { discoveryOutcomes.current.loaded({ ...discoveryLoad, count: filteredReports.length, filtered }); } catch { /* optional */ }
+  }, [discoveryLoad]); // only when a load finishes, with that render's counts
 
   // Map pins: every loaded report that matches the filters and place, not only the ones in
   // view (the Reports list and counts above stay limited to the view). Nearby pins are grouped,

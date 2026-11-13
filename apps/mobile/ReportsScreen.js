@@ -1,4 +1,5 @@
 import { DEFAULT_REPORT_FILTERS } from './lib/reportFilters';
+import { trackFilterChanges } from './lib/analytics';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
@@ -116,7 +117,7 @@ export default function ReportsScreen({ navigation }) {
         refreshing={refreshing}
         initialLoading={reportsLoading}
         onRefresh={() => { if (sort === 'closest') refreshLocation(); refreshReports({ showRefresh: true }); }}
-        emptyAction={error ? { label: 'Try again', onPress: () => refreshReports({ showRefresh: true }) } : Object.keys(DEFAULT_REPORT_FILTERS).some(key => filters[key] !== DEFAULT_REPORT_FILTERS[key]) ? { label: 'Clear filters', onPress: () => setFilters({ ...DEFAULT_REPORT_FILTERS }) } : { label: 'Explore the map', onPress: () => navigation.navigate('Map') }}
+        emptyAction={error ? { label: 'Try again', onPress: () => refreshReports({ showRefresh: true }) } : Object.keys(DEFAULT_REPORT_FILTERS).some(key => filters[key] !== DEFAULT_REPORT_FILTERS[key]) ? { label: 'Clear filters', onPress: () => { trackFilterChanges(filters, DEFAULT_REPORT_FILTERS, 'empty_state'); setFilters({ ...DEFAULT_REPORT_FILTERS }); } } : { label: 'Explore the map', onPress: () => navigation.navigate('Map') }}
         emptyTitle={error ? 'Reports unavailable' : 'No reports in this area'}
         emptyMessage={error
           ? 'Check your connection, then pull down to try again.'

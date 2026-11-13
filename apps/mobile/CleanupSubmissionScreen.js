@@ -1,7 +1,7 @@
 import { usePreventRemove } from '@react-navigation/native';
 import * as Crypto from 'expo-crypto';
 import CloudDraftStatus from './components/CloudDraftStatus';
-import { trackParticipation, trackParticipationFailure } from './lib/analytics';
+import { startTiming, trackParticipation, trackParticipationFailure } from './lib/analytics';
 import { cloudDrafts } from './lib/cloudDrafts';
 import { loadCleanupDraft, saveCleanupDraft, clearCleanupDraft } from './lib/savedCleanupDraft';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -268,6 +268,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
       return;
     }
 
+    const timing = startTiming('submission', { flow: 'clean' });
     try {
       setSubmitting(true);
       setSubmissionProgress({ stage: 'preparing', current: 1, total: photos.length });
@@ -284,6 +285,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
       });
       submitted.current = true;
       trackParticipation('clean', 'evidence_submitted');
+      timing.finish('ready');
       await clearCleanupDraft(userId, cleanupId).catch(() => {});
       await refreshReports({ showRefresh: false }).catch(() => {});
 
@@ -315,7 +317,8 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
       }
     } catch (error) {
       console.log('Cleanup submission error:', error);
-      trackParticipationFailure('clean', 'evidence_submitted', 'evidence_submit_unconfirmed');
+      trackParticipationFailure('clean', 'evidence_submitted', error?.photoStep === 'prepare' ? 'photo_prepare_failed' : error?.photoStep === 'upload' ? 'photo_upload_failed' : 'evidence_submit_unconfirmed');
+      timing.finish(error?.photoStep ? 'failed' : 'unconfirmed');
       Alert.alert('Couldn’t submit cleanup', submissionErrorMessage(error));
     } finally {
       setSubmitting(false);

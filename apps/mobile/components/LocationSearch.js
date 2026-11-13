@@ -5,6 +5,7 @@ import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { searchPlaces, resolvePlace } from '../lib/placeSearch';
 import { useReports } from '../lib/reports';
+import { locationSearchSession, trackMapDiscovery } from '../lib/analytics';
 import { colors } from '../lib/theme';
 
 export default function LocationSearch({ map }) {
@@ -13,8 +14,10 @@ export default function LocationSearch({ map }) {
   const [open, setOpen] = useState(false), [text, setText] = useState('');
   const [results, setResults] = useState([]), [busy, setBusy] = useState(false), [error, setError] = useState(null);
   const sequence = useRef(0), selecting = useRef(false);
+  // One measured search per opening of this screen (lib/analytics.js); never the text typed.
+  const session = useRef(null);
   const insets = useSafeAreaInsets();
-  const close = () => { sequence.current += 1; selecting.current = false; setBusy(false); setOpen(false); };
+  const close = () => { session.current?.closed(); sequence.current += 1; selecting.current = false; setBusy(false); setOpen(false); };
   useEffect(() => {
     const seq = ++sequence.current;
     setResults([]); setError(null); setBusy(false); selecting.current = false;
@@ -22,11 +25,12 @@ export default function LocationSearch({ map }) {
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       setBusy(true);
+      session.current?.started();
       const timeout = setTimeout(() => controller.abort(), 12000);
       try {
         const places = await searchPlaces(text, { signal: controller.signal });
-        if (seq === sequence.current) setResults(places);
-      } catch { if (seq === sequence.current) setError('City search could not load. Retry or search the address.'); }
+        if (seq === sequence.current) { setResults(places); session.current?.results(places.length); }
+      } catch { if (seq === sequence.current) { setError('City search could not load. Retry or search the address.'); session.current?.failed(); } }
       finally { clearTimeout(timeout); if (seq === sequence.current) setBusy(false); }
     }, 400);
     return () => { clearTimeout(timer); controller.abort(); };
@@ -38,8 +42,8 @@ export default function LocationSearch({ map }) {
     setBusy(true); setError(null);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
-    try { const resolved = await resolvePlace(place, { signal: controller.signal }); if (seq === sequence.current) { selectSearchPlace(resolved); close(); } }
-    catch { if (seq === sequence.current) setError('Boundary could not load. Tap the city to try again.'); }
+    try { const resolved = await resolvePlace(place, { signal: controller.signal }); if (seq === sequence.current) { session.current?.selected('city', results.length || 1); selectSearchPlace(resolved); close(); } }
+    catch { if (seq === sequence.current) { setError('Boundary could not load. Tap the city to try again.'); session.current?.failed(); } }
     finally { clearTimeout(timeout); if (seq === sequence.current) { selecting.current = false; setBusy(false); } }
   };
   const findAddress = async () => {
@@ -49,10 +53,12 @@ export default function LocationSearch({ map }) {
     try {
       const points = await Location.geocodeAsync(text.trim());
       if (seq !== sequence.current) return;
+      session.current?.started();
+      session.current?.results(points.length);
       if (!points.length) { setError('No location found. Try a city and state or a full address.'); return; }
       // Address results are centers, never presented as a city boundary.
       setResults(points.slice(0, 5).map((p, i) => ({ id: `address:${i}`, label: text.trim(), subtitle: 'Address / area center · no boundary', region: { latitude: p.latitude, longitude: p.longitude, latitudeDelta: 0.02, longitudeDelta: 0.02 } })));
-    } catch { if (seq === sequence.current) setError('Address search is unavailable. Please try again.'); }
+    } catch { if (seq === sequence.current) { setError('Address search is unavailable. Please try again.'); session.current?.failed(); } }
     finally { if (seq === sequence.current) { selecting.current = false; setBusy(false); } }
   };
   const submitSearch = async () => {
@@ -80,11 +86,11 @@ export default function LocationSearch({ map }) {
     }
   };
   return <>
-    <TouchableOpacity style={[styles.trigger, map && { backgroundColor: 'transparent' }]} accessibilityRole="button" accessibilityLabel={searchPlace ? `Search location: ${searchPlace.label}` : 'Search city or address'} onPress={() => { setText(''); setOpen(true); }}>
+    <TouchableOpacity style={[styles.trigger, map && { backgroundColor: 'transparent' }]} accessibilityRole="button" accessibilityLabel={searchPlace ? `Search location: ${searchPlace.label}` : 'Search city or address'} onPress={() => { session.current = locationSearchSession(); setText(''); setOpen(true); }}>
       <Ionicons name="search" size={18} color={colors.muted} />
       <Text numberOfLines={1} style={[styles.triggerText, !searchPlace && { color: colors.muted }]}>{searchPlace?.label || (fontScale > 1.5 ? 'Search' : 'City or address')}</Text>
     </TouchableOpacity>
-    {searchPlace ? <TouchableOpacity style={styles.clear} onPress={clearSearchPlace} accessibilityRole="button" accessibilityLabel="Clear location boundary"><Ionicons name="close-circle" size={21} color={colors.muted} /></TouchableOpacity> : null}
+    {searchPlace ? <TouchableOpacity style={styles.clear} onPress={() => { trackMapDiscovery('search_cleared'); clearSearchPlace(); }} accessibilityRole="button" accessibilityLabel="Clear location boundary"><Ionicons name="close-circle" size={21} color={colors.muted} /></TouchableOpacity> : null}
     <Modal visible={open} animationType="slide" onRequestClose={close}>
       <View style={[styles.screen, { paddingTop: insets.top + 12, paddingBottom: insets.bottom }]}>
         <View style={styles.row}>
@@ -94,7 +100,7 @@ export default function LocationSearch({ map }) {
         {busy ? <ActivityIndicator style={{ margin: 20 }} color={colors.primary} accessibilityLabel="Finding location" /> : null}
         {error ? <Text accessibilityLiveRegion="polite" style={styles.error}>{error}</Text> : null}
         <ScrollView keyboardShouldPersistTaps="handled">
-          {results.map(place => <TouchableOpacity key={place.id} accessibilityRole="button" style={styles.result} onPress={() => place.region ? (selectSearchPlace(place), close()) : choose(place)}>
+          {results.map(place => <TouchableOpacity key={place.id} accessibilityRole="button" style={styles.result} onPress={() => place.region ? (session.current?.selected('address', results.length), selectSearchPlace(place), close()) : choose(place)}>
             <Ionicons name={place.region ? 'location-outline' : 'map-outline'} size={23} color={colors.primary} />
             <View style={{ flex: 1 }}><Text style={styles.name}>{place.label}</Text><Text style={styles.subtitle}>{place.subtitle}</Text></View>
             <Ionicons name="chevron-forward" size={18} color={colors.muted} />

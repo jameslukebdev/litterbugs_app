@@ -1,10 +1,17 @@
 // Product analytics for the app, sent to the same PostHog project as the
 // website so app and web funnels line up. Off in development, QA and
 // simulator builds: only the store "production" EAS profile turns it on
-// (EXPO_PUBLIC_ANALYTICS_ENABLED), so staff testing is never counted.
+// (EXPO_PUBLIC_ANALYTICS_ENABLED with EXPO_PUBLIC_ANALYTICS_ENVIRONMENT=production),
+// so staff testing is never counted. A deliberately isolated test build uses
+// environment "test", which every event carries as `app_environment`.
 //
-// Event names and fields match apps/web/lib/website-analytics.ts. Only fixed
-// categories are sent, never report text, photos, names or emails.
+// Event names and fields match apps/web/lib/website-analytics.ts where the website
+// has them. Only fixed categories, buckets and rounded durations are sent: never
+// report text, photos, names, emails, coordinates, search text or record IDs.
+// Every call is synchronous, wrapped in try/catch and never awaited, so
+// measurement cannot delay navigation, saves, uploads or payments.
+
+import { scrubAnalyticsEvent } from './analyticsPrivacy';
 
 let client = null;
 let config = null;
@@ -16,36 +23,131 @@ function analyticsConfig() {
   return config;
 }
 
-export function analyticsEnabled() {
-  const config = analyticsConfig();
-  return !(typeof __DEV__ !== 'undefined' && __DEV__) && config.enabled === true && typeof config.posthogKey === 'string' && config.posthogKey.length > 0;
+const ENVIRONMENTS = ['production', 'test'];
+function runningOnSimulator() {
+  try { return require('expo-device').isDevice === false; } catch { return false; }
 }
 
+export function analyticsEnabled(options = {}) {
+  const settings = options.config ?? analyticsConfig();
+  const dev = options.dev ?? (typeof __DEV__ !== 'undefined' && __DEV__);
+  if (dev || settings.enabled !== true || typeof settings.posthogKey !== 'string' || !settings.posthogKey) return false;
+  if (!ENVIRONMENTS.includes(settings.environment)) return false;
+  // Simulators and emulators never count as visitors. Only an explicitly isolated test
+  // build may send from one, and its events are labelled app_environment: test.
+  const simulator = options.simulator ?? runningOnSimulator();
+  return !simulator || settings.environment === 'test';
+}
+
+// Which build and which over-the-air update produced an event. The SDK already adds
+// $app_version, $app_build, $app_namespace, $os_name, $os_version and $is_emulator to
+// every event, and the $expo_* keys only to exceptions; registering the same $expo_*
+// keys here makes them available on every event without a second copy.
+export function releaseProperties(settings = analyticsConfig(), updates = null) {
+  const properties = { surface: 'app', app_environment: ENVIRONMENTS.includes(settings.environment) ? settings.environment : 'internal' };
+  try {
+    const module = updates ?? require('expo-updates');
+    if (module?.isEnabled !== true) return properties;
+    const known = value => typeof value === 'string' && value && value !== 'unknown';
+    if (known(module.updateId)) properties.$expo_update_id = module.updateId;
+    if (known(module.runtimeVersion)) properties.$expo_runtime_version = module.runtimeVersion;
+    if (known(module.channel)) properties.$expo_channel = module.channel;
+    if (typeof module.isEmbeddedLaunch === 'boolean') properties.$expo_is_embedded_launch = module.isEmbeddedLaunch;
+  } catch { /* Release metadata is optional. */ }
+  return properties;
+}
+
+// Bounded delivery: at most 200 events wait on the phone (oldest dropped first), sent in
+// batches of 50 with three retries. Offline events wait in that queue; nothing retries forever.
+export const DELIVERY_OPTIONS = Object.freeze({ flushAt: 20, flushInterval: 10000, maxBatchSize: 50, maxQueueSize: 200, fetchRetryCount: 3, requestTimeout: 10000 });
+
+export function posthogOptions(settings = analyticsConfig()) {
+  return {
+    host: settings.posthogHost || 'https://us.i.posthog.com',
+    personProfiles: 'never',
+    captureAppLifecycleEvents: true,
+    ...DELIVERY_OPTIONS,
+    // Push tokens and notification opens stay out of analytics; the app records
+    // notification opens itself, with the destination that actually appeared.
+    capturePushNotificationSubscriptions: false,
+    capturePushNotificationOpened: false,
+    before_send: scrubAnalyticsEvent,
+    enableSessionReplay: true,
+    sessionReplayConfig: {
+      maskAllTextInputs: true,
+      maskAllImages: true,
+      maskAllSandboxedViews: true,
+      // Console lines and network URLs can carry IDs, signed photo links and error text.
+      captureLog: false,
+      captureNetworkTelemetry: false,
+    },
+    errorTracking: {
+      autocapture: { uncaughtExceptions: true, unhandledRejections: true, nativeCrashes: true, androidNdkCrashes: true, console: false },
+      exceptionSteps: { enabled: false },
+    },
+  };
+}
+
+let backgroundEpoch = 0;
 export function startAnalytics() {
   if (client || !analyticsEnabled()) return client;
-  const config = analyticsConfig();
+  const settings = analyticsConfig();
   try {
     // Loaded lazily so builds without analytics never touch the native module.
     const module = require('posthog-react-native');
     const PostHog = module.PostHog ?? module.default;
-    client = new PostHog(config.posthogKey, {
-      host: config.posthogHost || 'https://us.i.posthog.com',
-      personProfiles: 'never',
-      captureAppLifecycleEvents: true,
-      enableSessionReplay: true,
-      sessionReplayConfig: { maskAllTextInputs: true, maskAllImages: true },
-      errorTracking: { autocapture: { uncaughtExceptions: true, unhandledRejections: true } },
-    });
-    client.register({ surface: 'app' });
+    client = new PostHog(settings.posthogKey, posthogOptions(settings));
+    client.register(releaseProperties(settings));
+    require('react-native').AppState.addEventListener('change', (state) => { if (state === 'background') backgroundEpoch += 1; });
   } catch {
     client = null; // Measurement must never stop the app from starting.
   }
   return client;
 }
 
+function send(event, properties) {
+  if (!client || !properties) return false;
+  try { client.capture(event, properties); return true; } catch { return false; }
+}
+
+// ---------------------------------------------------------------------------
+// Session replay privacy. Replay stops (no frames recorded) while any of these
+// screens is in front, because they show sign-in, payment, payout or personal
+// account details that masking alone cannot be guaranteed to hide. Stripe's
+// payment and payout sheets open over FundingContribution and PayoutSetup.
+export const PRIVATE_REPLAY_SCREENS = Object.freeze([
+  'Auth', 'SignInMethods', 'ResetPassword', 'CompleteProfile', 'EditProfile',
+  'Profile', 'MyActivity', 'Payments', 'PaymentDetail', 'ContributionHistory', 'Settings', 'SettingsInfo',
+  'NotificationSettings', 'BlockedAccounts', 'PublicProfile', 'ReportUser',
+  'FundingContribution', 'PayoutSetup', 'CleanupReview',
+]);
+export const replayAllowedOn = name => typeof name === 'string' && !PRIVATE_REPLAY_SCREENS.includes(name);
+let replayPaused = false;
+let resumeReplay = false;
+function updateReplayForScreen(name) {
+  const pause = !replayAllowedOn(name);
+  if (!client || pause === replayPaused) return;
+  replayPaused = pause;
+  try {
+    if (pause) {
+      // Stop at once; only resume afterwards if replay was recording when it stopped, so
+      // leaving a private screen never starts a session that sampling or settings left off.
+      const wasActive = client.isSessionReplayActive?.();
+      client.stopSessionRecording?.()?.catch?.(() => {});
+      resumeReplay = false;
+      Promise.resolve(wasActive).then((active) => { resumeReplay = active === true; }, () => {});
+    } else if (resumeReplay) {
+      client.startSessionRecording?.(true)?.catch?.(() => {});
+    }
+  } catch { /* optional */ }
+}
+
 let lastScreen = null;
 export function trackScreen(name) {
-  if (!client || !name || name === lastScreen) return;
+  if (!name) return;
+  noteAppOpenScreen(name);
+  updateReplayForScreen(name);
+  if (!client || name === lastScreen) return;
   lastScreen = name;
   try { client.screen(name); } catch { /* optional */ }
 }
@@ -78,29 +180,23 @@ export function participationFailureProperties(action, stage, reason) {
 }
 
 export function trackParticipation(action, stage) {
-  const properties = participationProperties(action, stage);
-  if (!client || !properties) return;
-  try { client.capture('participation_step', properties); } catch { /* optional */ }
+  send('participation_step', participationProperties(action, stage));
 }
 
 export function trackParticipationFailure(action, stage, reason) {
-  const properties = participationFailureProperties(action, stage, reason);
-  if (!client || !properties) return;
-  try { client.capture('participation_failure', properties); } catch { /* optional */ }
+  send('participation_failure', participationFailureProperties(action, stage, reason));
 }
 
 // Payout setup, with the website's stage names (apps/web/lib/website-analytics.ts, PAYOUT_STAGES).
 const PAYOUT_STAGES = ['opened', 'form_opened', 'already_ready', 'ready', 'start_failed'];
 export const payoutSetupProperties = stage => (PAYOUT_STAGES.includes(stage) ? { stage } : null);
 export function trackPayoutSetup(stage) {
-  const properties = payoutSetupProperties(stage);
-  if (!client || !properties) return;
-  try { client.capture('payout_setup', properties); } catch { /* optional */ }
+  send('payout_setup', payoutSetupProperties(stage));
 }
 
 // Signing in from the app. `intent` is what the person was trying to do when asked
 // (report, fund, clean) or 'none' when they chose to sign in themselves.
-const SIGN_IN_STAGES = ['shown', 'submitted', 'verification_sent', 'succeeded'];
+const SIGN_IN_STAGES = ['shown', 'submitted', 'verification_sent', 'succeeded', 'closed'];
 const SIGN_IN_METHODS = ['email_login', 'email_signup', 'apple', 'google', 'facebook'];
 const SIGN_IN_INTENTS = ['report', 'fund', 'clean', 'none'];
 export function signInProperties(stage, { intent = 'none', method } = {}) {
@@ -109,16 +205,19 @@ export function signInProperties(stage, { intent = 'none', method } = {}) {
 }
 // The sign-in screen says why it opened; later stages reuse that reason. "Succeeded" only
 // counts after the screen was shown, so restoring a saved session at launch is not a sign-in.
+// "Closed" means the screen went away without a sign-in; either ends the attempt, so one
+// attempt has at most one outcome.
 let signInIntent = null;
+let signInLinkSent = false;
 export function trackSignIn(stage, details = {}) {
-  if (stage === 'shown') signInIntent = details.intent || 'none';
-  else if (signInIntent === null) return;
+  if (stage === 'shown') { signInIntent = details.intent || 'none'; signInLinkSent = false; }
+  else if (signInIntent === null || (stage === 'closed' && signInLinkSent)) return;
+  if (stage === 'verification_sent') signInLinkSent = true;
   const properties = signInProperties(stage, { ...details, intent: signInIntent });
-  if (stage === 'succeeded') signInIntent = null;
-  if (!client || !properties) return;
-  try { client.capture('app_sign_in', properties); } catch { /* optional */ }
+  if (stage === 'succeeded' || stage === 'closed') signInIntent = null;
+  if (!properties || !send('app_sign_in', properties)) return;
   // Also a step in that action's funnel, so app and web sign-in drop-off line up.
-  const step = { shown: 'auth_shown', submitted: 'auth_submitted', verification_sent: 'verification_sent', succeeded: 'auth_succeeded' }[stage];
+  const step = { shown: 'auth_shown', submitted: 'auth_submitted', verification_sent: 'verification_sent', succeeded: 'auth_succeeded', closed: 'auth_closed' }[stage];
   if (properties.intent !== 'none') trackParticipation(properties.intent, step);
 }
 
@@ -131,7 +230,320 @@ export function firstRunProperties(stage, step) {
   return TOUR_STEP_KEYS.includes(step) ? { stage, step } : null;
 }
 export function trackFirstRun(stage, step) {
-  const properties = firstRunProperties(stage, step);
-  if (!client || !properties) return;
-  try { client.capture('first_run', properties); } catch { /* optional */ }
+  send('first_run', firstRunProperties(stage, step));
 }
+
+// A cleanup approved by its reviewer in the app (the website sends the same event name).
+// The cleanup ID is only a local duplicate check and is never sent. Approvals made on the
+// website, by an admin or automatically after the review window are not seen here.
+const approvedCleanups = new Set();
+export function trackCleanupApproved(cleanupId) {
+  if (!cleanupId || approvedCleanups.has(cleanupId)) return;
+  if (approvedCleanups.size >= 50) approvedCleanups.clear();
+  approvedCleanups.add(cleanupId);
+  send('cleanup_approved', { stage: 'approved' });
+}
+
+// ---------------------------------------------------------------------------
+// Buckets shared with the website (RESULT_BUCKETS) and fixed duration rounding.
+export function resultBucket(count) {
+  const n = Number(count);
+  if (!Number.isFinite(n) || n <= 0) return '0';
+  return n === 1 ? '1' : n <= 5 ? '2-5' : n <= 20 ? '6-20' : '21+';
+}
+// Durations: rounded to 100 ms and capped at two minutes, as the website's map_loading.
+export function roundedDuration(ms) {
+  const n = Number(ms);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return Math.min(120000, Math.round(n / 100) * 100);
+}
+
+let clock = () => (globalThis.performance?.now ? globalThis.performance.now() : Date.now());
+const LAUNCH_STARTED_AT = clock();
+
+// ---------------------------------------------------------------------------
+// Timings (`app_timing`). Each timer finishes exactly once; later finishes are ignored.
+//   launch_to_map   start: this file is first evaluated (the app's first JavaScript, after the
+//                   native process and bundle have loaded). end: the launch logo leaves the map
+//                   because the map view reported ready and the starting area's pins finished
+//                   loading (pins: loaded) or the 6 s pin wait ran out (pins: timeout).
+//                   map_signal says what "ready" rests on: map_loaded = the map's onMapLoaded
+//                   (Google Maps: first render finished); map_ready_fallback = onMapReady plus
+//                   the 4 s wait used where onMapLoaded never fires (Apple Maps). Neither proves
+//                   every tile is drawn. Sent once per app process.
+//   report_details  start: a report is chosen (card/preview tap, a list item, a shared link or a
+//                   notification asking for it). end: the details sheet is open for that report
+//                   with its first photo link resolved (or no photos) and its cleanup status
+//                   loaded (outcome ready), or the sheet closes first (closed), the report is
+//                   unavailable or fails to load, or 30 s pass (timeout). Photo pixels are not
+//                   observed: photos: ready means the link resolved.
+//   photo_upload    start: photo preparation begins on submit. end: every photo is prepared and
+//                   uploaded (ready) or one fails (failed). prepare_ms / upload_ms are the summed
+//                   per-photo time in each step (photos are processed two at a time).
+//   submission      start: the final submit tap (Post report, Send photos) or, for funding, the
+//                   payment form returning the person's submitted payment. end: the server or
+//                   Stripe confirms (ready), it fails (failed) or is still unconfirmed.
+const TIMING_METRICS = {
+  launch_to_map: { outcomes: ['ready'], dimensions: { map_signal: ['map_loaded', 'map_ready_fallback'], pins: ['loaded', 'timeout'] } },
+  report_details: { outcomes: ['ready', 'closed', 'unavailable', 'failed', 'timeout'], dimensions: { source: ['preview_card', 'report_list', 'report_link', 'notification', 'in_app'], photos: ['ready', 'none', 'unavailable'] } },
+  photo_upload: { outcomes: ['ready', 'failed'], dimensions: { flow: ['report', 'clean'], photo_bucket: ['1', '2-5', '6-20', '21+'], failed_step: ['prepare', 'upload'] }, durations: ['prepare_ms', 'upload_ms'] },
+  submission: { outcomes: ['ready', 'failed', 'unconfirmed'], dimensions: { flow: ['report', 'clean', 'fund'] } },
+};
+
+// Consecutive failures of the same operation, so a later success is counted as a recovery
+// after N attempts. Forgotten after 30 minutes or on success.
+const failureStreaks = new Map();
+const attemptBucket = n => (n >= 3 ? '3+' : String(n));
+
+export function timingProperties(metric, outcome, elapsedMs, extra = {}) {
+  const definition = TIMING_METRICS[metric];
+  const elapsed_ms = roundedDuration(elapsedMs);
+  if (!definition || !definition.outcomes.includes(outcome) || elapsed_ms === null) return null;
+  const properties = { metric, outcome, elapsed_ms, backgrounded: extra.backgrounded === true };
+  for (const [key, allowed] of Object.entries(definition.dimensions)) {
+    if (allowed.includes(extra[key])) properties[key] = extra[key];
+  }
+  for (const key of definition.durations ?? []) {
+    const value = roundedDuration(extra[key]);
+    if (value !== null && extra[key] !== undefined) properties[key] = value;
+  }
+  if (['1', '2', '3+'].includes(extra.attempt)) properties.attempt = extra.attempt;
+  if (typeof extra.recovered === 'boolean') properties.recovered = extra.recovered;
+  return properties;
+}
+
+const openTimers = new Set();
+export function startTiming(metric, dimensions = {}, { timeoutMs } = {}) {
+  const startedAt = clock();
+  const epoch = backgroundEpoch;
+  let done = false;
+  let timeout = null;
+  const streakKey = `${metric}:${dimensions.flow ?? ''}`;
+  const timer = {
+    dimensions: { ...dimensions },
+    get active() { return !done; },
+    // Returns the properties sent (null when nothing was sent), mostly for tests.
+    finish(outcome, extra = {}) {
+      if (done) return null;
+      done = true;
+      openTimers.delete(timer);
+      if (timeout) clearTimeout(timeout);
+      const retried = metric === 'photo_upload' || metric === 'submission';
+      let attempt = {};
+      if (retried) {
+        const streak = failureStreaks.get(streakKey);
+        const previous = streak && clock() - streak.at < 30 * 60 * 1000 ? streak.count : 0;
+        attempt = { attempt: attemptBucket(previous + 1), recovered: outcome === 'ready' && previous > 0 };
+        if (outcome === 'ready') failureStreaks.delete(streakKey);
+        else if (outcome === 'failed') failureStreaks.set(streakKey, { count: previous + 1, at: clock() });
+      }
+      const properties = timingProperties(metric, outcome, clock() - startedAt, {
+        ...timer.dimensions, ...extra, ...attempt, backgrounded: backgroundEpoch !== epoch,
+      });
+      return send('app_timing', properties) ? properties : null;
+    },
+    cancel() { if (!done) { done = true; openTimers.delete(timer); if (timeout) clearTimeout(timeout); } },
+  };
+  // Keep the number of unfinished timers small; the oldest is dropped without sending.
+  if (openTimers.size >= 20) openTimers.values().next().value.cancel();
+  openTimers.add(timer);
+  if (timeoutMs) timeout = setTimeout(() => timer.finish('timeout'), timeoutMs);
+  return timer;
+}
+
+let launchTracked = false;
+export function trackLaunchToMap({ mapSignal, pins }) {
+  if (launchTracked) return null;
+  launchTracked = true;
+  const properties = timingProperties('launch_to_map', 'ready', clock() - LAUNCH_STARTED_AT, { map_signal: mapSignal, pins, backgrounded: backgroundEpoch > 0 });
+  return send('app_timing', properties) ? properties : null;
+}
+
+// Times photo preparation and upload separately inside a batch upload.
+export function photoUploadTimer(flow, photoCount) {
+  const timer = startTiming('photo_upload', { flow, photo_bucket: resultBucket(photoCount) });
+  let prepare = 0;
+  let upload = 0;
+  let failedStep = null;
+  const measure = async (step, work) => {
+    const started = clock();
+    try { return await work(); }
+    catch (error) { failedStep = failedStep ?? step; throw error; }
+    finally { if (step === 'prepare') prepare += clock() - started; else upload += clock() - started; }
+  };
+  return {
+    prepare: work => measure('prepare', work),
+    upload: work => measure('upload', work),
+    get failedStep() { return failedStep; },
+    finish: outcome => timer.finish(outcome, { prepare_ms: prepare, upload_ms: upload, ...(failedStep ? { failed_step: failedStep } : {}) }),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Map discovery (`map_discovery`), website stage names plus app-only stages.
+// Search text, places, coordinates and report IDs are never sent.
+const DISCOVERY_STAGES = [
+  'location_search_started', 'location_suggestions_shown', 'location_search_empty', 'location_search_failed', 'location_selected',
+  'location_search_closed', 'search_cleared',
+  'results_loaded', 'results_empty', 'results_failed', 'empty_recovered', 'filter_changed',
+];
+const FILTER_VALUES = {
+  status: ['all', 'available', 'progress', 'completed'],
+  funding: ['all', 'funded', 'volunteer'],
+  severity: ['all', 'low', 'medium', 'high'],
+  radius: ['0', '5', '25', '50'],
+  visibility: ['visible', 'hidden'],
+  favoritesOnly: ['true', 'false'],
+  query: ['set', 'cleared'],
+};
+const DISCOVERY_FIELDS = {
+  surface: ['toolbar_search'],
+  result_bucket: ['0', '1', '2-5', '6-20', '21+'],
+  place_kind: ['city', 'address'],
+  trigger: ['launch', 'filter', 'search', 'search_cleared', 'map_update'],
+  source: ['sheet', 'chip', 'empty_state'],
+};
+export function discoveryProperties(stage, details = {}) {
+  if (!DISCOVERY_STAGES.includes(stage)) return null;
+  const properties = { stage };
+  for (const [key, allowed] of Object.entries(DISCOVERY_FIELDS)) if (allowed.includes(details[key])) properties[key] = details[key];
+  for (const key of ['filtered', 'truncated', 'had_empty']) if (typeof details[key] === 'boolean') properties[key] = details[key];
+  if (stage === 'filter_changed') {
+    const allowed = FILTER_VALUES[details.filter];
+    const value = String(details.value);
+    if (!allowed || !allowed.includes(value)) return null;
+    properties.filter = details.filter;
+    properties.value = value;
+  }
+  if (stage === 'empty_recovered') {
+    const elapsed = roundedDuration(details.elapsed_ms);
+    if (elapsed !== null) properties.elapsed_ms = elapsed;
+  }
+  return properties;
+}
+export function trackMapDiscovery(stage, details) {
+  send('map_discovery', discoveryProperties(stage, details));
+}
+export function filterChangeValue(key, value) {
+  if (key === 'query') return String(value ?? '').trim() ? 'set' : 'cleared';
+  return String(value);
+}
+// One event per filter that differs, with the chosen category (search text only as set/cleared).
+export function trackFilterChanges(before = {}, after = {}, source) {
+  for (const key of Object.keys(FILTER_VALUES)) {
+    if (before[key] !== after[key]) trackMapDiscovery('filter_changed', { filter: key, value: filterChangeValue(key, after[key]), source });
+  }
+}
+
+// One location-search session: the search screen opening until a place is chosen or the
+// screen closes. Each outcome is sent at most once per session.
+export function locationSearchSession() {
+  const sent = new Set();
+  let hadEmpty = false;
+  let finished = false;
+  const once = (stage, details) => {
+    if (finished || sent.has(stage)) return;
+    sent.add(stage);
+    trackMapDiscovery(stage, { surface: 'toolbar_search', ...details });
+  };
+  return {
+    started: () => once('location_search_started'),
+    results: (count) => {
+      if (count > 0) once('location_suggestions_shown', { result_bucket: resultBucket(count) });
+      else { hadEmpty = true; once('location_search_empty', { result_bucket: '0' }); }
+    },
+    failed: () => once('location_search_failed'),
+    selected: (placeKind, count) => { once('location_selected', { place_kind: placeKind, result_bucket: resultBucket(count), had_empty: hadEmpty }); finished = true; },
+    closed: () => { if (sent.has('location_search_started')) once('location_search_closed', { had_empty: hadEmpty }); finished = true; },
+  };
+}
+
+// Map results after a change in what the person is looking for (trigger launch, filter,
+// search, search_cleared). Loads after a map move or the 30 s refresh (trigger map_update)
+// send nothing themselves; they only count as recovery from an empty result.
+export function discoveryOutcomeTracker() {
+  let emptySince = null;
+  return {
+    loaded({ trigger, count, failed = false, filtered = false, truncated = false }) {
+      if (failed) {
+        if (trigger !== 'map_update') trackMapDiscovery('results_failed', { trigger, filtered });
+        return;
+      }
+      if (count > 0 && emptySince !== null) {
+        trackMapDiscovery('empty_recovered', { trigger, filtered, result_bucket: resultBucket(count), elapsed_ms: clock() - emptySince });
+        emptySince = null;
+      }
+      if (trigger === 'map_update') return;
+      trackMapDiscovery(count > 0 ? 'results_loaded' : 'results_empty', { trigger, filtered, truncated, result_bucket: resultBucket(count) });
+      if (count === 0 && emptySince === null) emptySince = clock();
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Opening the app from a shared report link or a notification (`app_open_target`).
+// "requested" is the link or tap arriving; "shown" only once the intended destination is on
+// screen (for a report: report_details ready). Installs and plain opens are the SDK's own
+// Application Installed / Application Opened events, without the link.
+const OPEN_SOURCES = ['report_link', 'notification'];
+const OPEN_DESTINATIONS = ['report', 'map_nearby', 'cleanup_review', 'cleanup_feedback', 'payments', 'payout_setup', 'contribution_history', 'expired_reports', 'admin_web'];
+const OPEN_STAGES = ['requested', 'shown', 'handed_off', 'unavailable', 'failed', 'closed', 'timeout', 'superseded'];
+const DESTINATION_SCREENS = { map_nearby: 'Map', cleanup_review: 'CleanupReview', cleanup_feedback: 'CleanupFeedback', payments: 'Payments', payout_setup: 'PayoutSetup', contribution_history: 'ContributionHistory', expired_reports: 'ExpiredReports' };
+export function appOpenProperties(stage, source, destination, elapsedMs) {
+  if (!OPEN_STAGES.includes(stage) || !OPEN_SOURCES.includes(source) || !OPEN_DESTINATIONS.includes(destination)) return null;
+  const properties = { stage, source, destination };
+  if (stage !== 'requested') {
+    const elapsed = roundedDuration(elapsedMs);
+    if (elapsed !== null) properties.elapsed_ms = elapsed;
+  }
+  return properties;
+}
+let pendingOpen = null;
+export function beginAppOpen(source, destination) {
+  if (!appOpenProperties('requested', source, destination)) return;
+  if (pendingOpen) finishAppOpen('superseded');
+  const open = { source, destination, startedAt: clock(), timeout: setTimeout(() => { if (pendingOpen === open) finishAppOpen('timeout'); }, 30000) };
+  pendingOpen = open;
+  send('app_open_target', appOpenProperties('requested', source, destination));
+}
+export function finishAppOpen(stage, destination) {
+  const open = pendingOpen;
+  if (!open || (destination && destination !== open.destination)) return;
+  pendingOpen = null;
+  clearTimeout(open.timeout);
+  send('app_open_target', appOpenProperties(stage, open.source, open.destination, clock() - open.startedAt));
+}
+// Where the pending open came from, if it is for this destination ('report_link', 'notification').
+export const pendingAppOpenSource = destination => (pendingOpen?.destination === destination ? pendingOpen.source : null);
+function noteAppOpenScreen(name) {
+  if (pendingOpen && DESTINATION_SCREENS[pendingOpen.destination] === name) finishAppOpen('shown');
+}
+export function notificationDestinationKey(destination) {
+  if (!destination) return null;
+  if (destination.url) return 'admin_web';
+  if (destination.name === 'App') return destination.params?.params?.showNearby ? 'map_nearby' : destination.params?.params?.reportId ? 'report' : null;
+  return Object.entries(DESTINATION_SCREENS).find(([, screen]) => screen === destination.name)?.[0] ?? null;
+}
+export function isSharedReportLink(url) {
+  return typeof url === 'string' && /^(?:https:\/\/(?:www\.)?litterbugs\.app|litterbugs:\/)\/reports\/[^/?#]+/i.test(url);
+}
+
+// Test hooks.
+export function __resetAnalyticsForTests({ testClient = null, now } = {}) {
+  client = testClient;
+  config = null;
+  if (now) clock = now;
+  lastScreen = null;
+  replayPaused = false;
+  resumeReplay = false;
+  signInIntent = null;
+  signInLinkSent = false;
+  launchTracked = false;
+  backgroundEpoch = 0;
+  failureStreaks.clear();
+  approvedCleanups.clear();
+  for (const timer of [...openTimers]) timer.cancel();
+  if (pendingOpen) clearTimeout(pendingOpen.timeout);
+  pendingOpen = null;
+}
+export function __markBackgroundedForTests() { backgroundEpoch += 1; }

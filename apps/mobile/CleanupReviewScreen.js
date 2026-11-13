@@ -1,4 +1,5 @@
 import { formatCleanupHours } from './lib/cleanupImpactPresentation';
+import { trackCleanupApproved } from './lib/analytics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, usePreventRemove } from '@react-navigation/native';
 import RemotePhoto from './components/RemotePhoto';
@@ -225,6 +226,8 @@ export default function CleanupReviewScreen({ navigation, route }) {
         Alert.alert('Review still pending', 'The cleanup has not been approved yet. Your feedback is saved. Check the current review status and try again.');
         return;
       }
+      // Only the server's completed status counts; a sent decision alone does not.
+      if (reviewedAttempt?.status === 'completed') trackCleanupApproved(context.attempt.id);
       await clearReviewDraft();
       await refreshReports({ showRefresh: false });
 

@@ -11,6 +11,7 @@ import {
   CLEANUP_PHOTO_UPLOAD_CONCURRENCY,
   mapInConcurrentBatches,
 } from './concurrentBatch';
+import { photoUploadTimer } from './analytics';
 import { uploadSecureMedia } from './secureMediaUpload';
 import { preparePhotoForSafetyScan } from './photoSafetyPreparation';
 
@@ -159,22 +160,27 @@ export async function uploadCleanupSubmission({
   const uploadedPaths = [];
   let completedPhotos = 0;
 
+  const timing = photoUploadTimer('clean', photos.length);
+  let photosDone = false;
+
   try {
     onProgress({ stage: 'preparing', current: 1, total: photos.length });
     await mapInConcurrentBatches(
       photos,
       async (asset, index) => {
-        const preparedPhoto = await preparePhotoForSafetyScan(asset.uri, { width: asset.width, height: asset.height });
-        const { mimeType: originalMimeType } = await cleanupPhotoMetadata({
-          ...asset,
-          uri: preparedPhoto.uri,
-          fileSize: preparedPhoto.byteSize,
+        const { mimeType, base64 } = await timing.prepare(async () => {
+          const preparedPhoto = await preparePhotoForSafetyScan(asset.uri, { width: asset.width, height: asset.height });
+          const { mimeType: originalMimeType } = await cleanupPhotoMetadata({
+            ...asset,
+            uri: preparedPhoto.uri,
+            fileSize: preparedPhoto.byteSize,
+          });
+          return {
+            mimeType: preparedPhoto.mimeType ?? originalMimeType,
+            base64: await FileSystem.readAsStringAsync(preparedPhoto.uri, { encoding: 'base64' }),
+          };
         });
-        const mimeType = preparedPhoto.mimeType ?? originalMimeType;
-        const base64 = await FileSystem.readAsStringAsync(preparedPhoto.uri, {
-          encoding: 'base64',
-        });
-        return uploadSecureMedia({
+        return timing.upload(() => uploadSecureMedia({
           userId,
           kind: 'cleanup',
           bytes: base64ToUint8Array(base64),
@@ -182,7 +188,7 @@ export async function uploadCleanupSubmission({
           subjectId: cleanupId,
           submissionId,
           position: index + 1,
-        });
+        }));
       },
       {
         concurrency: CLEANUP_PHOTO_UPLOAD_CONCURRENCY,
@@ -198,6 +204,8 @@ export async function uploadCleanupSubmission({
       },
     );
 
+    timing.finish('ready');
+    photosDone = true;
     onProgress({ stage: 'saving', current: photos.length, total: photos.length });
     saveDispatched = true;
     const saveArguments = {
@@ -230,6 +238,10 @@ export async function uploadCleanupSubmission({
     }
     return { submission: data, aiReview };
   } catch (error) {
+    if (!photosDone) {
+      timing.finish('failed');
+      try { Object.defineProperty(error, 'photoStep', { value: timing.failedStep, configurable: true }); } catch { /* frozen error */ }
+    }
     if (saveDispatched) {
       const saved = await findSavedSubmission().catch(() => null);
       if (saved) return recoveredResult(saved);

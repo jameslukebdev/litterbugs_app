@@ -7,7 +7,7 @@ import { useSession } from './lib/session';
 import { supabase } from './lib/supabase';
 import { loadPaymentAttempt, savePaymentAttempt, clearPaymentAttempt } from './lib/contributionRecovery';
 import { useEffect, useRef, useState } from 'react';
-import { trackParticipation, trackParticipationFailure } from './lib/analytics';
+import { startTiming, trackParticipation, trackParticipationFailure } from './lib/analytics';
 import {
   ActivityIndicator,
   Alert,
@@ -268,6 +268,9 @@ function FundingContributionController({ navigation, route }) {
   const pay = async () => {
     if (!principalCents || payLock.current || !recoveryReady || confirmationPending) return;
     payLock.current = true;
+    // Measurement only: how far this attempt got, so a failure names the right step.
+    let paymentStep = 'start';
+    let submission = null;
     try {
       setPaying(true);
       // Reconcile first, including after navigation or a process restart.
@@ -308,6 +311,7 @@ function FundingContributionController({ navigation, route }) {
       ));
       if (!accepted || !mounted.current) return;
       trackParticipation('fund', 'payment_form');
+      paymentStep = 'form';
       const applePayEnabled = Platform.OS === 'ios'
         && Constants.expoConfig?.extra?.stripeApplePayEnabled === true;
       await initStripe(stripeInitializationConfiguration({
@@ -329,10 +333,16 @@ function FundingContributionController({ navigation, route }) {
       await savePaymentAttempt(user.id, reportId, { ...attempt, phase: 'submitted' }, { updating: true });
       attemptRef.current = { ...attempt, phase: 'submitted' };
       if (!mounted.current) return;
-      trackParticipation('fund', 'payment_submitted');
+      // The sheet is on screen; nothing is submitted until it returns without "Canceled".
+      trackParticipation('fund', 'payment_ready');
       const { error: paymentError } = await presentPaymentSheet();
+      submission = paymentError?.code === 'Canceled' ? null : startTiming('submission', { flow: 'fund' });
+      if (submission) { trackParticipation('fund', 'payment_submitted'); paymentStep = 'submitted'; }
       if (paymentError) {
-        if (paymentError.code !== 'Canceled') trackParticipationFailure('fund', 'payment_submitted', 'payment_rejected');
+        if (paymentError.code !== 'Canceled') {
+          trackParticipationFailure('fund', 'payment_submitted', 'payment_rejected');
+          submission?.finish('failed');
+        }
         if (paymentError.code === 'Canceled') {
           await savePaymentAttempt(user.id, reportId, attempt, { updating: true });
           attemptRef.current = attempt;
@@ -347,6 +357,7 @@ function FundingContributionController({ navigation, route }) {
       );
       if (!paymentConfirmation.confirmed) {
         trackParticipationFailure('fund', 'payment_submitted', 'payment_confirmation_unavailable');
+        submission?.finish('unconfirmed');
         setConfirmationPending(true);
         await refreshReports({ showRefresh: false });
         Alert.alert('Payment confirmation pending', paymentConfirmation.message);
@@ -354,6 +365,7 @@ function FundingContributionController({ navigation, route }) {
       }
 
       trackParticipation('fund', 'payment_confirmed');
+      submission?.finish('ready');
       hapticSuccess();
       setReceipt(intent);
       await clearPaymentAttempt(user.id, reportId, attempt.clientRequestId);
@@ -363,6 +375,13 @@ function FundingContributionController({ navigation, route }) {
       });
       await refreshReports({ showRefresh: false });
     } catch (error) {
+      // Failures before Stripe returns, and confirmation checks that throw afterwards.
+      if (paymentStep === 'start') trackParticipationFailure('fund', 'amount_review', 'payment_start_failed');
+      else if (paymentStep === 'form') trackParticipationFailure('fund', 'payment_form', 'payment_form_failed');
+      else if (submission?.active) {
+        trackParticipationFailure('fund', 'payment_submitted', 'payment_confirmation_unavailable');
+        submission.finish('unconfirmed');
+      }
       setQuote(null);
       setQuoteRetry(value => value + 1);
       if (attemptRef.current?.phase === 'submitted') setConfirmationPending(true);

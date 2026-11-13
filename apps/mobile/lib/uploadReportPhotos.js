@@ -1,5 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy';
 
+import { photoUploadTimer } from './analytics';
 import { mapInConcurrentBatches, REPORT_PHOTO_UPLOAD_CONCURRENCY } from './concurrentBatch';
 import { validatePreparedPhotoForSafetyScan } from './photoSafetyPreparation';
 import { uploadSecureMedia } from './secureMediaUpload';
@@ -20,6 +21,7 @@ const base64ToUint8Array = (base64) => {
 export const uploadReportPhotos = async (photoUris, reportId, userId, onProgress = () => {}) => {
   const uploadedPaths = [];
   let completedPhotos = 0;
+  const timing = photoUploadTimer('report', photoUris.length);
 
   try {
     onProgress(
@@ -27,17 +29,20 @@ export const uploadReportPhotos = async (photoUris, reportId, userId, onProgress
         ? 'Preparing and safety-checking your photo…'
         : `Preparing and safety-checking ${photoUris.length} photos…`,
     );
-    return await mapInConcurrentBatches(
+    const paths = await mapInConcurrentBatches(
       photoUris,
       async (uri) => {
-        const preparedPhoto = await validatePreparedPhotoForSafetyScan(uri);
-        const base64 = await FileSystem.readAsStringAsync(preparedPhoto.uri, {
-          encoding: 'base64',
+        const { preparedPhoto, bytes } = await timing.prepare(async () => {
+          const prepared = await validatePreparedPhotoForSafetyScan(uri);
+          const base64 = await FileSystem.readAsStringAsync(prepared.uri, {
+            encoding: 'base64',
+          });
+          const photoBytes = base64ToUint8Array(base64);
+          if (photoBytes.byteLength > 5 * 1024 * 1024) {
+            throw new Error('Each report photo must be 5 MB or smaller.');
+          }
+          return { preparedPhoto: prepared, bytes: photoBytes };
         });
-        const bytes = base64ToUint8Array(base64);
-        if (bytes.byteLength > 5 * 1024 * 1024) {
-          throw new Error('Each report photo must be 5 MB or smaller.');
-        }
 
         const candidateExt = (preparedPhoto.uri.split('?')[0].split('.').pop() || 'jpg').toLowerCase();
         const fileExt = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'].includes(candidateExt)
@@ -45,13 +50,13 @@ export const uploadReportPhotos = async (photoUris, reportId, userId, onProgress
           : 'jpg';
         const mimeType = preparedPhoto.mimeType
           ?? `image/${['jpg', 'jpeg'].includes(fileExt) ? 'jpeg' : fileExt}`;
-        return uploadSecureMedia({
+        return timing.upload(() => uploadSecureMedia({
           userId,
           kind: 'report',
           bytes,
           mimeType,
           subjectId: reportId,
-        });
+        }));
       },
       {
         concurrency: REPORT_PHOTO_UPLOAD_CONCURRENCY,
@@ -64,7 +69,12 @@ export const uploadReportPhotos = async (photoUris, reportId, userId, onProgress
         },
       },
     );
+    timing.finish('ready');
+    return paths;
   } catch (error) {
+    timing.finish('failed');
+    // Which step failed, for the report's failure reason (never sent as text).
+    try { Object.defineProperty(error, 'photoStep', { value: timing.failedStep, configurable: true }); } catch { /* frozen error */ }
     if (uploadedPaths.length > 0) {
       const { error: cleanupError } = await supabase.storage
         .from('report_photos')
