@@ -24,6 +24,20 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (Search Console graph explained)
+
+- Read-only fresh GSC API check matches owner's screenshot:14 clicks,131
+  impressions,10.7% CTR,14.4 weighted position. Final daily rows cover
+  Aug13–Nov10;42 of90 days have zero impressions and78 have zero clicks.
+  Requested Nov11–12 final rows were unavailable, not assumed zero. Sparse
+  volume explains jagged clicks/impressions and gaps in recorded position;
+  no reporting mismatch established. Recommended weekly clicks/impressions
+  and equal28-day comparisons; GSC covers Google Search, not all visitors.
+- Prior Nov11 inspection evidence showed four pending pages newly indexed;
+  no new indexing-health claim or submissions. API-only, no visitor traffic,
+  code/settings/database/store/build/deploy/push changes. Raw evidence:
+  /tmp/litterbugs-gsc-reading-2026-11-13.json. Existing work preserved.
+
 ### 2026-11-13 — Codex (removed test-only welcome replay link)
 
 - Source `0d7bedb49c763363da22ab978fc5f783ff1af6d6` removes the Profile “Replay the welcome (test builds only)” row/comment from the shared iPhone/Android screen. It was already guarded by __DEV__ and absent from store builds; it is now absent from test builds too. “How Litterbugs works,” normal first-launch welcome and map tour remain unchanged. No map/animation/style changes.
