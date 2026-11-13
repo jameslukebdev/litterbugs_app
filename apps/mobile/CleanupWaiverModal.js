@@ -1,20 +1,69 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
+  LayoutAnimation,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
+  UIManager,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import BrandBug from './components/BrandBug';
 import { formatUsd } from './lib/funding';
+import { hapticSelect } from './lib/haptics';
+import { prefersReducedMotion } from './lib/reduceMotion';
 import { colors, fonts } from './lib/theme';
 
+if (Platform.OS === 'android') UIManager.setLayoutAnimationEnabledExperimental?.(true);
+
+// The step before a cleanup is claimed. It leads with what the person is about to do (the
+// butterfly is the Clean bug), and keeps the safety guidelines, agreement and release in
+// sections that open on a tap. Legal requirements (docs/legal-acceptance-and-review.md):
+// the full acknowledgment is presented once per document version, so the first time a
+// version is accepted every section must be opened before the agreement can be ticked; the
+// release keeps its own clearly titled section; and both checkboxes start unticked.
+function Section({ id, icon, title, open, read, onToggle, children }) {
+  return (
+    <View style={[styles.section, open && styles.sectionOpen]}>
+      <TouchableOpacity
+        style={styles.sectionHeader}
+        onPress={() => onToggle(id)}
+        activeOpacity={0.75}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        accessibilityLabel={`${title}${read ? ', opened' : ''}`}
+      >
+        <Ionicons name={icon} size={20} color={colors.cleanInk} />
+        <Text style={styles.sectionTitle}>{title}</Text>
+        {read ? <Ionicons name="checkmark-circle" size={20} color={colors.done} accessibilityElementsHidden /> : null}
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={20} color={colors.muted} />
+      </TouchableOpacity>
+      {open ? <View style={styles.sectionBody}>{children}</View> : null}
+    </View>
+  );
+}
+
+function Checkbox({ checked, disabled, onPress, children }) {
+  return (
+    <TouchableOpacity
+      style={[styles.check, checked && styles.checkOn, disabled && styles.checkLocked]}
+      onPress={onPress}
+      disabled={disabled}
+      activeOpacity={0.8}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked, disabled }}
+    >
+      <Ionicons name={checked ? 'checkbox' : 'square-outline'} size={26} color={checked ? colors.primary : colors.muted} />
+      <Text style={styles.checkText}>{children}</Text>
+    </TouchableOpacity>
+  );
+}
 
 export default function CleanupWaiverModal({
   visible,
@@ -27,14 +76,32 @@ export default function CleanupWaiverModal({
   const insets = useSafeAreaInsets();
   const [acknowledged, setAcknowledged] = useState(false);
   const [siteConfirmed, setSiteConfirmed] = useState(false);
+  const [open, setOpen] = useState(null);
+  const [read, setRead] = useState(() => new Set());
   // Someone who already accepted this version only confirms the site is safe.
   const agreementSaved = Boolean(waiver?.alreadyAccepted);
+  const sections = ['safety', 'agreement', ...(waiver?.release_body ? ['release'] : [])];
+  const allRead = sections.every(id => read.has(id));
   const ready = (agreementSaved || acknowledged) && siteConfirmed;
+  const funded = Number(report?.funded_amount_cents) > 0;
 
   useEffect(() => {
     setAcknowledged(false);
     setSiteConfirmed(false);
+    setOpen(null);
+    setRead(new Set());
   }, [visible, waiver?.waiver_version, waiver?.guidelines_version]);
+
+  const toggle = (id) => {
+    hapticSelect();
+    if (!prefersReducedMotion()) LayoutAnimation.configureNext(LayoutAnimation.create(200, 'easeInEaseOut', 'opacity'));
+    setOpen(current => (current === id ? null : id));
+    setRead(current => (current.has(id) ? current : new Set(current).add(id)));
+  };
+
+  const updated = waiver?.published_at && Number.isFinite(Date.parse(waiver.published_at))
+    ? new Date(waiver.published_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })
+    : null;
 
   return (
     <Modal
@@ -44,128 +111,104 @@ export default function CleanupWaiverModal({
       onRequestClose={onClose}
     >
       <View style={styles.container}>
-        <View style={styles.header}>
-          {/* Website claim step: the caterpillar labels "Before you start", with the report under it. */}
-          <Image source={require('./assets/bugs/caterpillar.png')} style={styles.headerBug} resizeMode="contain" accessible={false} />
-          <View style={styles.headerCopy}>
-            <Text style={styles.title} accessibilityRole="header">Before you start</Text>
-            {report ? <Text style={styles.headerReport} numberOfLines={2}>{report.title || 'This cleanup'}</Text> : null}
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.hero}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={onClose}
+              disabled={accepting}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+            >
+              <Ionicons name="close" size={24} color={colors.ink} />
+            </TouchableOpacity>
+            <View style={styles.heroBug}><BrandBug kind="butterfly" size={46} playOnMount /></View>
+            <Text style={styles.title} accessibilityRole="header">Let’s clean this spot</Text>
+            {report?.title ? <Text style={styles.reportTitle} numberOfLines={2}>{report.title}</Text> : null}
           </View>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={onClose}
-            disabled={accepting}
-            accessibilityRole="button"
-            accessibilityLabel="Close cleanup acknowledgment"
-          >
-            <Ionicons name="close" size={25} color={colors.ink} />
-          </TouchableOpacity>
-        </View>
 
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator
-        >
-          {report ? <View style={styles.reportSummary}>
-            {/* Facts as soft chips, as on the website; colour comes from the chip words. */}
-            <View style={styles.factChip}>
-              <Ionicons name="calendar-outline" size={16} color={colors.greenDeep} />
-              <Text style={styles.factText}>24 hours to clean and send photos</Text>
+          {/* What happens next, in three friendly steps. */}
+          <View style={styles.steps}>
+            <View style={styles.step}>
+              <View style={styles.stepIcon}><Ionicons name="time-outline" size={20} color={colors.cleanInk} /></View>
+              <View style={styles.stepCopy}>
+                <Text style={styles.stepTitle}>Clean it within 24 hours</Text>
+                <Text style={styles.stepLine}>The spot is yours while you work on it.</Text>
+              </View>
             </View>
-            <View style={styles.factChip}>
-              <Ionicons name="camera-outline" size={16} color={colors.greenDeep} />
-              <Text style={styles.factText}>Take after photos from the same spot</Text>
+            <View style={styles.step}>
+              <View style={styles.stepIcon}><Ionicons name="camera-outline" size={20} color={colors.cleanInk} /></View>
+              <View style={styles.stepCopy}>
+                <Text style={styles.stepTitle}>Snap an after photo</Text>
+                <Text style={styles.stepLine}>From the same spot as the report photo.</Text>
+              </View>
             </View>
-            {Number(report.funded_amount_cents) > 0 ? (
-              <>
-                <View style={[styles.factChip, styles.payChip]}>
-                  <Text style={[styles.factText, styles.payText]}>Pays {formatUsd(Number(report.funded_amount_cents))} once approved</Text>
-                </View>
-                <Text style={styles.summaryText}>Payout setup is required before claiming a funded cleanup.</Text>
-              </>
-            ) : null}
-          </View> : null}
-
-          {waiver?.guidelines_body ? (
-            <View style={styles.guidelinesCard}>
-              <Text style={styles.guidelinesTitle}>Stay safe</Text>
-              <Text style={styles.guidelinesBody}>{waiver.guidelines_body}</Text>
-              <Text style={[styles.guidelinesBody, { fontWeight: '700' }]}>Only continue if the location is safe to clean.</Text>
+            <View style={styles.step}>
+              <View style={[styles.stepIcon, funded && styles.stepIconFund]}>
+                {funded ? <BrandBug kind="bee" size={22} /> : <Ionicons name="ribbon-outline" size={20} color={colors.cleanInk} />}
+              </View>
+              <View style={styles.stepCopy}>
+                {funded ? <>
+                  <Text style={[styles.stepTitle, styles.payTitle]}>Get paid {formatUsd(Number(report.funded_amount_cents))}</Text>
+                  <Text style={styles.stepLine}>Once your cleanup is approved. Payout setup comes first.</Text>
+                </> : <>
+                  <Text style={styles.stepTitle}>Earn 3 points</Text>
+                  <Text style={styles.stepLine}>Toward your next rank, once it’s approved.</Text>
+                </>}
+              </View>
             </View>
-          ) : (
-            <View style={styles.guidelinesCard}>
-              <Text style={styles.guidelinesTitle}>Stay safe</Text>
-              <Text style={styles.guidelinesBody}>Only continue if the location is safe to clean.</Text>
-            </View>
-          )}
-
-          <View style={styles.agreementHeading}>
-            <Text style={styles.agreementTitle}>Cleanup agreement</Text>
-            {waiver?.published_at && Number.isFinite(Date.parse(waiver.published_at)) ? <Text style={styles.agreementUpdated}>
-              Updated {new Date(waiver.published_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
-            </Text> : null}
           </View>
-          <Text style={styles.body}>{waiver?.body ?? ''}</Text>
 
+          <Text style={styles.groupTitle} accessibilityRole="header">Safety and agreement</Text>
+          {!agreementSaved ? (
+            <Text style={styles.groupHint}>{allRead ? 'Thanks for reading. Tick both boxes below to start.' : 'Tap each section to read it before you start.'}</Text>
+          ) : null}
+
+          <Section id="safety" icon="shield-checkmark-outline" title="Stay safe" open={open === 'safety'} read={read.has('safety')} onToggle={toggle}>
+            {waiver?.guidelines_body ? <Text style={styles.sectionText}>{waiver.guidelines_body.trim()}</Text> : null}
+            <Text style={[styles.sectionText, styles.strong]}>Only continue if the location is safe to clean.</Text>
+          </Section>
+          <Section id="agreement" icon="document-text-outline" title="Cleanup agreement" open={open === 'agreement'} read={read.has('agreement')} onToggle={toggle}>
+            {updated ? <Text style={styles.updated}>Updated {updated}</Text> : null}
+            <Text style={styles.sectionText}>{(waiver?.body ?? '').trim()}</Text>
+          </Section>
           {waiver?.release_body ? (
-            <View style={styles.releaseCard}>
-              <Text style={styles.releaseTitle}>Assumption of risk and release</Text>
-              <Text style={styles.releaseBody}>{waiver.release_body}</Text>
-            </View>
+            <Section id="release" icon="alert-circle-outline" title="Assumption of risk and release" open={open === 'release'} read={read.has('release')} onToggle={toggle}>
+              <Text style={styles.sectionText}>{waiver.release_body.trim()}</Text>
+            </Section>
           ) : null}
 
           {agreementSaved ? null : (
-            <TouchableOpacity
-              style={styles.acknowledgmentRow}
-              onPress={() => setAcknowledged((current) => !current)}
-              disabled={accepting}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: acknowledged }}
+            <Checkbox
+              checked={acknowledged}
+              disabled={accepting || !allRead}
+              onPress={() => { hapticSelect(); setAcknowledged(current => !current); }}
             >
-              <Ionicons
-                name={acknowledged ? 'checkbox' : 'square-outline'}
-                size={27}
-                color={acknowledged ? colors.primary : colors.muted}
-              />
-              <Text style={styles.acknowledgmentText}>
-                I confirm I am 18 or older. I have read and accept this version of the safety guidelines, funded reward acknowledgment, assumption of risk, and release.
-              </Text>
-            </TouchableOpacity>
+              I confirm I am 18 or older. I have read and accept this version of the safety guidelines, funded reward acknowledgment, assumption of risk, and release.
+            </Checkbox>
           )}
-          <TouchableOpacity
-            style={styles.acknowledgmentRow}
-            onPress={() => setSiteConfirmed((current) => !current)}
+          <Checkbox
+            checked={siteConfirmed}
             disabled={accepting}
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: siteConfirmed }}
+            onPress={() => { hapticSelect(); setSiteConfirmed(current => !current); }}
           >
-            <Ionicons
-              name={siteConfirmed ? 'checkbox' : 'square-outline'}
-              size={27}
-              color={siteConfirmed ? colors.primary : colors.muted}
-            />
-            <Text style={styles.acknowledgmentText}>
-              I can legally access this site and clean safely with my equipment, away from moving traffic and hazardous materials. I will stop if conditions become unsafe.
-            </Text>
-          </TouchableOpacity>
+            I can legally access this site and clean safely with my equipment, away from moving traffic and hazardous materials. I will stop if conditions become unsafe.
+          </Checkbox>
         </ScrollView>
 
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 18) }]}>
           <TouchableOpacity
-            style={[
-              styles.acceptButton,
-              !ready && styles.acceptButtonDisabled,
-            ]}
-            activeOpacity={1}
+            style={[styles.startButton, !ready && styles.startButtonDisabled]}
+            activeOpacity={0.85}
             onPress={onAccept}
             disabled={!ready || accepting}
             accessibilityRole="button"
-            accessibilityLabel="Claim this cleanup"
+            accessibilityLabel="Start my cleanup"
             accessibilityState={{ busy: accepting, disabled: !ready || accepting }}
           >
-            <Text style={styles.acceptButtonText}>Claim this cleanup</Text>
-            {accepting ? <View style={styles.acceptSpinner} pointerEvents="none"><ActivityIndicator size="small" color={colors.white} /></View> : null}
+            <BrandBug kind="butterfly" size={22} />
+            <Text style={styles.startButtonText}>Start my cleanup</Text>
+            {accepting ? <View style={styles.startSpinner} pointerEvents="none"><ActivityIndicator size="small" color={colors.cleanInk} /></View> : null}
           </TouchableOpacity>
         </View>
       </View>
@@ -175,50 +218,46 @@ export default function CleanupWaiverModal({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.white },
-  header: {
-    minHeight: 76,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.line,
-  },
-  headerBug: { width: 40, height: 40, marginRight: 10 },
-  headerReport: { marginTop: 2, color: colors.muted, fontSize: 14, lineHeight: 21 },
-  factChip: { alignSelf: 'flex-start', maxWidth: '100%', flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 7, paddingHorizontal: 12, borderRadius: 999, backgroundColor: colors.greenSoft },
-  factText: { flexShrink: 1, color: colors.greenDeep, fontSize: 14, fontWeight: '800' },
-  payChip: { backgroundColor: colors.redSoft },
-  payText: { color: colors.red },
-  agreementHeading: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 10, marginBottom: 8 },
-  agreementTitle: { color: colors.ink, fontSize: 17, fontFamily: fonts.heading },
-  agreementUpdated: { color: colors.muted, fontSize: 12, fontWeight: '600' },
-  headerCopy: { flex: 1, paddingRight: 12 },
-  title: { color: colors.ink, fontSize: 20, lineHeight: 24, fontFamily: fonts.heading },
-  closeButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.mist, alignItems: 'center', justifyContent: 'center' },
   scroll: { flex: 1 },
-  content: { padding: 20, paddingBottom: 34 },
-  reportSummary: { gap: 10, marginBottom: 20 },
-  summaryText: { color: colors.muted, fontSize: 14, lineHeight: 21 },
-  claimNote: { color: colors.muted, fontSize: 13, lineHeight: 19 },
-  body: { color: colors.muted, fontSize: 13, lineHeight: 19.5 },
-  guidelinesCard: { marginBottom: 22, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 18, borderWidth: 2, borderColor: colors.greenBorder, backgroundColor: colors.greenPale },
-  guidelinesTitle: { color: colors.greenDeep, fontSize: 17, lineHeight: 22, fontFamily: fonts.heading },
-  guidelinesBody: { marginTop: 6, color: colors.body, fontSize: 14, lineHeight: 21.7 },
-  releaseCard: { marginTop: 14 },
-  releaseTitle: { color: colors.ink, fontSize: 14, lineHeight: 20, fontWeight: '800' },
-  releaseBody: { marginTop: 4, color: colors.muted, fontSize: 13, lineHeight: 19.5 },
-  acknowledgmentRow: { marginTop: 22, paddingVertical: 14, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderWidth: 2, borderColor: colors.edge, borderRadius: 16, backgroundColor: colors.white },
-  acknowledgmentText: { flex: 1, color: colors.body, fontSize: 14, lineHeight: 21 },
-  footer: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.line,
-    backgroundColor: colors.white,
-  },
-  acceptButton: { minHeight: 52, paddingHorizontal: 36, paddingVertical: 12, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: colors.primary },
-  acceptButtonDisabled: { opacity: 0.45 },
-  acceptButtonText: { color: colors.white, fontSize: 16, fontWeight: '800' },
-  acceptSpinner: { position: 'absolute', right: 10, top: 0, bottom: 0, justifyContent: 'center' },
+  content: { paddingHorizontal: 20, paddingBottom: 30 },
+
+  // Lilac, the Clean colour, with the butterfly.
+  hero: { marginHorizontal: -20, paddingTop: 22, paddingBottom: 22, paddingHorizontal: 24, alignItems: 'center', backgroundColor: colors.cleanFill, borderBottomWidth: 1, borderBottomColor: colors.cleanEdge },
+  closeButton: { position: 'absolute', top: 12, right: 12, width: 44, height: 44, borderRadius: 22, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
+  heroBug: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white, borderWidth: 2, borderColor: colors.cleanEdge },
+  title: { marginTop: 12, color: colors.cleanInk, fontSize: 26, lineHeight: 31, fontFamily: fonts.heading, textAlign: 'center' },
+  reportTitle: { marginTop: 4, color: colors.body, fontSize: 15, lineHeight: 21, textAlign: 'center' },
+
+  steps: { marginTop: 20, gap: 14 },
+  step: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  stepIcon: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.cleanFill },
+  stepIconFund: { backgroundColor: colors.yellowPale, borderWidth: 1, borderColor: colors.yellowBorder },
+  stepCopy: { flex: 1, minWidth: 0 },
+  stepTitle: { color: colors.ink, fontSize: 16, lineHeight: 21, fontFamily: fonts.heading },
+  payTitle: { color: colors.gold },
+  stepLine: { color: colors.muted, fontSize: 14, lineHeight: 19 },
+
+  groupTitle: { marginTop: 28, color: colors.ink, fontSize: 17, lineHeight: 22, fontFamily: fonts.heading },
+  groupHint: { marginTop: 2, marginBottom: 4, color: colors.muted, fontSize: 14, lineHeight: 20 },
+
+  section: { marginTop: 10, borderRadius: 16, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
+  sectionOpen: { borderColor: colors.cleanEdge },
+  sectionHeader: { minHeight: 54, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  sectionTitle: { flex: 1, color: colors.ink, fontSize: 15, fontWeight: '700' },
+  sectionBody: { paddingHorizontal: 14, paddingBottom: 14, gap: 8 },
+  sectionText: { color: colors.body, fontSize: 14, lineHeight: 21 },
+  strong: { fontWeight: '700', color: colors.ink },
+  updated: { color: colors.muted, fontSize: 12, fontWeight: '600' },
+
+  check: { marginTop: 14, paddingVertical: 14, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: 16, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.white },
+  checkOn: { borderColor: colors.primaryBorder, backgroundColor: colors.primaryTint },
+  checkLocked: { opacity: 0.5 },
+  checkText: { flex: 1, color: colors.body, fontSize: 14, lineHeight: 21 },
+
+  footer: { paddingHorizontal: 20, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line, backgroundColor: colors.white },
+  // The Clean button's look (map card and report page): lilac with the butterfly.
+  startButton: { minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, borderWidth: 1, borderBottomWidth: 4, borderColor: colors.cleanEdge, backgroundColor: colors.cleanFill },
+  startButtonDisabled: { opacity: 0.45 },
+  startButtonText: { color: colors.cleanInk, fontSize: 17, fontWeight: '800' },
+  startSpinner: { position: 'absolute', right: 14, top: 0, bottom: 0, justifyContent: 'center' },
 });
