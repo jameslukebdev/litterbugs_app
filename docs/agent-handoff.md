@@ -24,6 +24,22 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (LBAnalyticsTest crash alert identified)
+
+- Owner screenshot shows macOS crash dialog for LBAnalyticsTest. Read local
+  DiagnosticReports: five reports belong to separate simulator bundle
+  com.gegibson.litterbugs.analyticstest, all Nov12 evening; none from today.
+  Earliest reports show test-build startup faults; later native signals align
+  with Claude's documented deliberate crash-reporting verification. Do not
+  characterize every historical report as an intentional crash.
+- No LBAnalyticsTest process running; simctl confirms its app container is
+  absent from the booted simulator. Existing Litterbugs app remains running.
+  Owner can dismiss this old test-app alert with Ignore. No application code,
+  simulator settings, website deployment or analytics settings changed.
+- Clarified dashboard is hosted in PostHog695338/dashboard2346165, not website
+  /admin. Website tracking deployed Nov12; an /admin analytics view was never
+  implemented. No new dashboard work or publication authorized in this turn.
+
 ### 2026-11-12 — Claude (mobile analytics verified in native release test builds)
 
 - Built isolated iOS (simulator) and Android (emulator) release test apps with the new PostHog plugin, sending only
