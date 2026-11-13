@@ -1,0 +1,44 @@
+/* The native cleanup-start sheet: white canvas, butterfly and lilac Clean action. */
+.dialog.dialog { width: min(520px, 100%); height: min(740px, calc(100dvh - 44px)); max-height: calc(100dvh - 44px); padding: 0; overflow: hidden; background: #fff; }
+.dialog > :global(.modal-close) { top: 12px; right: 12px; z-index: 2; width: 40px; height: 40px; border: 0; border-radius: 50%; background: #f5f4f8; color: #292932; }
+.panel { display: flex; flex-direction: column; height: 100%; min-height: 0; color: #292932; }
+.scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 30px 24px; scrollbar-gutter: stable; }
+.hero { display: grid; justify-items: center; gap: 12px; margin-bottom: 28px; }
+.hero h2 { margin: 0; color: #292932; font-family: 'Playful Nunito', system-ui, sans-serif; font-size: 26px; font-weight: 900; line-height: 1.2; text-align: center; letter-spacing: 0; }
+.steps { display: grid; gap: 14px; margin: 0 0 18px; padding: 0; list-style: none; }
+.steps li { display: flex; align-items: center; gap: 14px; }
+.steps strong { font-family: 'Playful Nunito', system-ui, sans-serif; font-size: 16px; font-weight: 900; line-height: 1.35; }
+.stepIcon { display: grid; place-items: center; flex: none; width: 42px; height: 42px; border: 1px solid; border-radius: 50%; }
+.stepIcon svg { width: 20px; height: 20px; }
+.time { color: #315db5; background: #e8f1ff; border-color: #a5c0ff; }
+.photo { color: #17685b; background: #e2f8f3; border-color: #8ed7c5; }
+.fund { background: #fff9e7; border-color: #f3dda0; }
+.points { color: #5146b8; background: #f1edff; border-color: #d8cff5; }
+.pay { color: #8a5a00; }
+.confirmation { border: 1.5px solid #e1daf2; border-radius: 16px; padding: 14px; }
+.confirmation:has(input:checked) { background: #fbf8ff; border-color: #cfb7e8; }
+.check { display: grid; grid-template-columns: 22px minmax(0, 1fr); align-items: start; gap: 12px; color: #514d60; font-size: 14px; line-height: 1.55; cursor: pointer; }
+.check input { width: 20px; height: 20px; min-height: 0; margin: 2px 0 0; accent-color: #a34bc5; }
+.check:has(input:disabled) { color: #777282; cursor: default; }
+.check:has(input:focus-visible) { outline: 3px solid #b3a6e5; outline-offset: 5px; border-radius: 4px; }
+.read { display: flex; align-items: center; gap: 8px; min-height: 44px; margin: 8px 0 0 34px; padding: 6px 0; border: 0; background: transparent; color: #5146b8; font: inherit; font-size: 14px; font-weight: 750; text-align: left; cursor: pointer; }
+.read > svg { flex: none; width: 18px; height: 18px; }
+.read:hover { color: #3e349b; }
+.read .chevron { margin-left: auto; transition: transform 160ms ease-out; }
+.read[aria-expanded='true'] .chevron { transform: rotate(180deg); }
+.read:focus-visible, .start:focus-visible { outline: 3px solid #b3a6e5; outline-offset: 3px; border-radius: 8px; }
+.agreement { margin-top: 12px; padding-top: 14px; border-top: 1px solid #ece8f8; color: #514d60; font-size: 14px; line-height: 1.6; }
+.agreement h3 { margin: 18px 0 6px; color: #292932; font-size: 16px; font-weight: 800; }
+.agreement p { margin: 0 0 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.agreement .updated { color: #777282; font-size: 12px; }
+.footer { flex: none; padding: 14px 24px max(20px, env(safe-area-inset-bottom)); border-top: 1px solid #f0edf7; background: #fff; }
+.start { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 54px; padding: 12px 16px; border: 1px solid #cfa2e5; border-bottom-width: 4px; border-radius: 14px; background: #f2e5fa; color: #60237e; font: inherit; font-size: 17px; font-weight: 800; cursor: pointer; transition: background-color 120ms ease-out; }
+.start:hover:not(:disabled) { background: #ead5f6; }
+.start:disabled { opacity: .45; cursor: default; }
+@media (max-width: 760px) {
+  .dialog.dialog { width: 100%; height: calc(100dvh - 16px); max-height: calc(100dvh - 16px); margin: auto 0 0; border: 0; border-radius: 26px 26px 0 0; }
+  .scroll { padding: 28px 20px; }
+  .hero { padding-top: 2px; }
+  .footer { padding-inline: 20px; }
+}
+@media (prefers-reduced-motion: reduce) { .read .chevron, .start { transition: none; } }

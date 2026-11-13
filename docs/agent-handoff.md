@@ -24,6 +24,32 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (website cleanup start matches native, local only)
+
+- Owner supplied native cleanup-start screenshot and requested website parity.
+  Real CleanupAction now opens a white butterfly sheet with three colored steps,
+  exact funded amount (or3 points for volunteer), lilac Start my cleanup button,
+  and a fixed footer. Scoped CSS leaves later evidence/review screens unchanged.
+- Matches current native CleanupWaiverModal: first-time full agreement opens from
+  Read the cleanup agreement; one initially unchecked box affirms both agreement
+  and site safety, locked until opened. Returning users only confirm site safety.
+  Full current guidelines/body/release and separate release heading retained.
+  Existing accept_cleanup_waiver/claim_cleanup RPCs, active version checks and
+  payout gates unchanged. Version-pair key resets local document-open state.
+-27 focused tests pass (21 cleanup workflow,4 UI,2 document integrity), including
+  no automatic consent/claim, saved agreement/site confirmation, busy labels,
+  payout failures, and new-version reacceptance after a rejected claim. TypeScript,
+  scoped lint and diff check pass. No production writes, DB migration or deployment.
+- Browser actual shared panel:390/320px phone and1440px desktop, first-time and
+  returning states, accordion enablement, scroll-to-release, stable footer,
+  no horizontal overflow or browser errors. Refero Contra acceptance dialog was
+  secondary structure reference; screenshot/native source own visual direction.
+- Safe owner preview: http://localhost:3000/dev-review-preview/cleanup-start.
+  Close modal to switch accepted-agreement/funded flags and reopen. Start in this
+  preview performs no write; production NODE_ENV returns404. Real website workflow
+  uses the updated panel. Local3000 remains running; no deploy/push. Preserve
+  concurrent mobile work and other local-only previews/handoff additions.
+
 ### 2026-11-12 — Codex (subtle button shade replaces pending underline, local only)
 
 - Owner disliked the underline. Replaced pending-line/pulsing styles with a5.5%

@@ -5,7 +5,6 @@ import { Icon } from '@/components/icon';
 import { BugCelebration } from '@/components/bug-celebration';
 
 const when = (iso: string) => new Date(iso).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-const money = (cents: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(cents / 100);
 const PHOTO_TYPES = 'image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif';
 
 function FlowHead({ title, children }: { title: string; children?: ReactNode }) {
@@ -17,55 +16,7 @@ function FlowHead({ title, children }: { title: string; children?: ReactNode }) 
   );
 }
 
-/**
- * Step 1 of the cleaner flow: what claiming means, the safety guidelines, the agreement (first time only),
- * and two plain confirmations before the claim.
- */
-export function CleanupSafetyPanel({
-  reportTitle, rewardCents, agreementSaved, waiver, waiverAccepted, onWaiverAccepted, siteConfirmed, onSiteConfirmed,
-  busy, disabled, onClaim, notice,
-}: {
-  reportTitle?: string | null; rewardCents: number; agreementSaved: boolean;
-  waiver: { body: string; guidelines_body?: string | null; release_body?: string | null; published_at: string };
-  waiverAccepted: boolean; onWaiverAccepted: (value: boolean) => void;
-  siteConfirmed: boolean; onSiteConfirmed: (value: boolean) => void;
-  busy: boolean; disabled: boolean; onClaim: () => void; notice?: ReactNode;
-}) {
-  return (
-    <div className="cleaner-flow">
-      {notice}
-      <FlowHead title={agreementSaved ? 'Quick safety check' : 'Before you start'}>{reportTitle}</FlowHead>
-      <ul className="cleaner-facts">
-        <li><Icon name="calendar" />24 hours to clean and send photos</li>
-        <li><Icon name="camera" />Take after photos from the same spot</li>
-        {rewardCents > 0 && <li className="cleaner-fact-pay">Pays {money(rewardCents)} once approved</li>}
-      </ul>
-      {!agreementSaved && (
-        <>
-          {waiver.guidelines_body && <section className="cleaner-guidelines"><h3>Stay safe</h3><p>{waiver.guidelines_body}</p></section>}
-          <section className="cleaner-agreement" aria-label="Cleanup agreement">
-            <h3>Cleanup agreement <span>Updated {new Date(waiver.published_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</span></h3>
-            <div className="cleaner-agreement-text" tabIndex={0}>
-              <p>{waiver.body}</p>
-              {waiver.release_body && <><h4>Assumption of risk and release</h4><p>{waiver.release_body}</p></>}
-            </div>
-          </section>
-          <label className="cleaner-check">
-            <input type="checkbox" checked={waiverAccepted} onChange={event => onWaiverAccepted(event.target.checked)} />
-            <span>I confirm I am 18 or older. I have read and accept this version of the safety guidelines, funded reward acknowledgment, assumption of risk, and release.</span>
-          </label>
-        </>
-      )}
-      <label className="cleaner-check">
-        <input type="checkbox" checked={siteConfirmed} onChange={event => onSiteConfirmed(event.target.checked)} />
-        <span>I can legally access this site and clean safely with my equipment, away from moving traffic and hazardous materials. I will stop if conditions become unsafe.</span>
-      </label>
-      <button className="primary-button cleaner-claim" onClick={onClaim} disabled={disabled || (!agreementSaved && !waiverAccepted) || !siteConfirmed || busy}>
-        {busy ? 'Claiming…' : 'Claim this cleanup'}
-      </button>
-    </div>
-  );
-}
+export { CleanupSafetyPanel } from './cleanup-start-panel';
 
 export type EvidencePhoto = { key: string; src: string | null; name: string };
 
