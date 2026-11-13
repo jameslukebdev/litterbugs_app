@@ -174,3 +174,17 @@ saved during this pass. The existing labels remain unchanged.
 The separate AI permission and user-content moderation questions documented in
 the September 9 pre-store audit also remain release work; this privacy inventory
 does not certify those product requirements. No removed consent UI was restored.
+
+## November 13: account-linked area for optional nearby alerts
+
+The unreleased mobile2.1.0 also includes optional new-litter/completed-cleanup
+notifications. These are separate from anonymous analytics. When enabled, the
+server stores latitude/longitude rounded to two decimal places (roughly1km) and
+time zone in a row keyed by the member's auth user ID. Both alerts start off;
+turning both off clears the area. Include **Coarse Location, linked to the user,
+App Functionality**, with optional collection for this feature, on Apple's forms.
+Do not describe all app location as anonymous merely because PostHog is anonymous.
+Google Play's aggregate Approximate Location declaration already includes App
+Functionality and Analytics, but retain the account-linked functionality purpose
+in the release review. This does not change the existing Maps/location disclosures.
+The analytics switch does not control requested nearby notifications.

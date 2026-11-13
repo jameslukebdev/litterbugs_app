@@ -60,6 +60,13 @@ export default function PrivacyPage() {
           </>,
         },
         {
+          title: 'Optional nearby notifications',
+          content: <>
+            <p>If you turn on new-litter or completed-cleanup alerts near you, Litterbugs stores your phone&apos;s location rounded to two decimal places (roughly a kilometre), your time zone, and your notification choices with your account. This area is used to find nearby reports and send the alerts you requested; it is separate from app analytics.</p>
+            <p>Nearby alerts start off. You can change them in Profile → Notifications. Turning off both nearby alerts removes the saved area. Operating-system notification and location permissions still apply.</p>
+          </>,
+        },
+        {
           title: 'Payments and Stripe',
           content: <>
             <p>Stripe processes card and wallet payments, identity and payout onboarding, connected accounts, refunds, disputes, transfers, and related compliance. Stripe may collect payment-card, bank-account, identity, tax, device, and fraud-prevention information under its own privacy policy.</p>
