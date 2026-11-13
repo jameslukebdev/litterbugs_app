@@ -29,8 +29,12 @@ describe('secure media processing route admission', () => {
   const originalScannerEnabled = process.env.REPORT_MEDIA_MALWARE_SCANNER_ENABLED;
   const originalScannerProvider = process.env.REPORT_MEDIA_MALWARE_SCANNER_PROVIDER;
   const originalScannerKey = process.env.REPORT_MEDIA_MALWARE_SCANNER_API_KEY;
+  const originalRelayUrl = process.env.GEMINI_RELAY_URL;
+  const originalRelaySecret = process.env.GEMINI_RELAY_SHARED_SECRET;
 
   afterEach(() => {
+    if (originalRelayUrl === undefined) delete process.env.GEMINI_RELAY_URL; else process.env.GEMINI_RELAY_URL = originalRelayUrl;
+    if (originalRelaySecret === undefined) delete process.env.GEMINI_RELAY_SHARED_SECRET; else process.env.GEMINI_RELAY_SHARED_SECRET = originalRelaySecret;
     vi.restoreAllMocks();
     createSupabaseClient.mockReset();
     if (originalServiceRole === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -95,11 +99,13 @@ describe('secure media processing route admission', () => {
     });
   });
 
-  it.each(['clean', 'rejected', 'unavailable'])('keeps photos private until both checks pass: %s', async outcome => {
+  it.each(['report', 'legacy-avatar', 'approved-avatar'].flatMap(kind => ['clean', 'rejected', 'unavailable'].map(outcome => [kind, outcome])))('keeps photos private until both checks pass: %s %s', async (kind, outcome) => {
     process.env.SUPABASE_SECRET_KEY = 'server-secret-key';
     process.env.REPORT_MEDIA_MALWARE_SCANNER_ENABLED = 'true';
     process.env.REPORT_MEDIA_MALWARE_SCANNER_PROVIDER = 'cloudmersive';
     process.env.REPORT_MEDIA_MALWARE_SCANNER_API_KEY = 'cloudmersive-test-key';
+    process.env.GEMINI_RELAY_URL = 'https://relay.example';
+    process.env.GEMINI_RELAY_SHARED_SECRET = 'test-only-relay-secret-with-at-least-32-characters';
     const userId = '11111111-1111-4111-8111-111111111111';
     const reportId = '22222222-2222-4222-8222-222222222222';
     const uploadId = '33333333-3333-4333-8333-333333333333';
@@ -151,38 +157,41 @@ describe('secure media processing route admission', () => {
       .mockReturnValueOnce(audit);
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response(JSON.stringify({ CleanResult: true, FoundViruses: [] })))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ Successful: true, Score: outcome === 'rejected' ? 0.95 : 0.05, ClassificationOutcome: outcome === 'rejected' ? 'UnsafeContent_HighProbability' : 'SafeContent_HighProbability' }), { status: outcome === 'unavailable' ? 429 : 200 }));
+      .mockResolvedValueOnce(new Response(JSON.stringify(kind === 'legacy-avatar' ? { Successful: true, Score: outcome === 'rejected' ? 0.95 : 0.05, ClassificationOutcome: outcome === 'rejected' ? 'UnsafeContent_HighProbability' : 'SafeContent_HighProbability' } : { decision: outcome === 'rejected' ? 'reject' : 'allow' }), { status: outcome === 'unavailable' ? 429 : 200 }));
 
     const response = await POST(new Request('https://litterbugs.app/api/media/process', {
       method: 'POST',
       headers: {
         Authorization: 'Bearer signed-user-token',
         'Content-Type': 'application/json',
+        ...(kind === 'approved-avatar' ? { 'X-Litterbugs-Photo-Review': 'approved-v1' } : {}),
       },
       body: JSON.stringify({
-        kind: 'report',
-        quarantinePath: `${userId}/report/${uploadId}.png`,
-        subjectId: reportId,
+        kind: kind === 'report' ? 'report' : 'avatar',
+        quarantinePath: `${userId}/${kind === 'report' ? 'report' : 'avatar'}/${uploadId}.png`,
+        ...(kind === 'report' ? { subjectId: reportId } : {}),
       }),
     }));
 
+    expect(String(vi.mocked(fetch).mock.calls[1][0])).toContain(kind === 'legacy-avatar' ? '/image/nsfw/classify' : '/v1/content-check');
     if (outcome !== 'clean') {
       expect(response.status).toBe(outcome === 'rejected' ? 422 : 503);
       expect(finalUpload).not.toHaveBeenCalled();
-      expect(quarantineRemove).toHaveBeenCalledWith([`${userId}/report/${uploadId}.png`]);
+      expect(quarantineRemove).toHaveBeenCalledWith([`${userId}/${kind === 'report' ? 'report' : 'avatar'}/${uploadId}.png`]);
       return;
     }
     expect(response.status).toBe(200);
     const payload = await response.json();
     expect(payload).toMatchObject({ contentType: 'image/jpeg' });
-    expect(payload.path).toMatch(new RegExp(`^${userId}/${reportId}/[0-9a-f-]+\\.jpg$`));
+    if (kind === 'report') expect(payload.path).toMatch(new RegExp(`^${userId}/${reportId}/[0-9a-f-]+\\.jpg$`));
+    else expect(payload.path).toBe(`${userId}/avatar`);
     expect(finalUpload).toHaveBeenCalledWith(
       payload.path,
       expect.any(Uint8Array),
-      { contentType: 'image/jpeg', cacheControl: '3600', upsert: false },
+      { contentType: 'image/jpeg', cacheControl: '3600', upsert: kind !== 'report' },
     );
     expect(quarantineRemove).toHaveBeenCalledWith([
-      `${userId}/report/${uploadId}.png`,
+      `${userId}/${kind === 'report' ? 'report' : 'avatar'}/${uploadId}.png`,
     ]);
   });
 });

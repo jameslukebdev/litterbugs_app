@@ -4,6 +4,7 @@ import { createClient as createSupabaseClient, type SupabaseClient } from '@supa
 import type { Database } from '@litterbugs/report-contract';
 
 import { getSupabaseEnv } from '@/lib/env';
+import { requireGooglePhotoReview } from '@/lib/photo-content-review';
 import {
   MEDIA_MAX_SOURCE_BYTES,
   MEDIA_SCANNER_MAX_SOURCE_BYTES,
@@ -183,7 +184,13 @@ export async function POST(request: Request) {
     try {
       await requireCleanMalwareScan(sourceBytes, sourceMimeType);
       const sanitized = await sanitizeImage(sourceBytes, sourceMimeType);
-      await requireAppropriatePhoto(sanitized.bytes);
+      if (mediaRequest.kind !== 'avatar' || request.headers.get('x-litterbugs-photo-review') === 'approved-v1') {
+        await requireGooglePhotoReview(sanitized.bytes);
+      } else {
+        // Old avatars had no Google permission. Keep their existing provider;
+        // current mobile discloses Google and requires approval before upload.
+        await requireAppropriatePhoto(sanitized.bytes);
+      }
       const { error: uploadError } = await admin.storage
         .from(mediaRequest.destinationBucket)
         .upload(mediaRequest.destinationPath, sanitized.bytes, {
