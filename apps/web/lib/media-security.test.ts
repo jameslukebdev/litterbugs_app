@@ -203,10 +203,10 @@ describe('image content disarm', () => {
 
 describe('inappropriate-photo publication gate', () => {
   it('sends only the reconstructed image to the fixed content endpoint', async () => {
-    const fetchImpl = vi.fn(async () => jsonResponse({ Successful: true, Score: 0.05, ClassificationOutcome: 'SafeContent_HighProbability' }));
+    const fetchImpl = vi.fn(async (_url: string | URL | Request, _init?: RequestInit) => jsonResponse({ Successful: true, Score: 0.05, ClassificationOutcome: 'SafeContent_HighProbability' }));
     await requireAppropriatePhoto(new Uint8Array([1, 2, 3]), { env: enabledEnv, fetchImpl });
     expect(fetchImpl).toHaveBeenCalledWith(CLOUDMERSIVE_CONTENT_ENDPOINT, expect.objectContaining({ redirect: 'error' }));
-    const form = fetchImpl.mock.calls[0][1].body as FormData;
+    const form = fetchImpl.mock.calls[0][1]!.body as FormData;
     expect([...form.keys()]).toEqual(['imageFile']);
     expect((form.get('imageFile') as File).name).toBe('litterbugs-photo.jpg');
   });
