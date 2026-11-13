@@ -24,6 +24,35 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (website PostHog/Clarity analytics deployed)
+
+- Owner approved deploy/push with Claude's app changes excluded. Website source
+  30adc6cc201791298fe6116b11383912d909f98f is on GitHub branch
+  codex/website-analytics-release-20261112. Its diff from live e5411e2 contains
+  only6 web source/test files plus event guide/handoff. Native files, lockfiles,
+  dependencies, extra local previews and fee pages unchanged; no native commits
+  were pushed. Root development history remains local to preserve that boundary.
+- Promoted exact verified production build dpl_7sr5ycQSEebuddcoSr7pg22oiwo5
+  (https://litterbugs-7wfkv8lz0-grant-9890s-projects.vercel.app) to litterbugs.app.
+  Alias deployment/source SHA verified. Rollback: dpl_7ybf24ASXLanJNFKCqq6FtyWMyCn.
+  Dashboard is https://us.posthog.com/project/695338/dashboard/2346165, not /admin.
+-100 tests pass in isolated release checkout; TypeScript/scoped lint pass.
+  Local jsdom checks use NODE_OPTIONS=--no-experimental-webstorage and existing
+  workspace dependency links. Remote production build passes; unchanged social
+  image filesystem-tracing warnings remain. No DB migration or provider-setting
+  changes. Production protection retained; staged QA used authenticated vercel curl.
+- Staged home/map/report200; cleanup-start/loading/report-sheet dev previews404.
+ 22 deployed chunks contain v9, lb_map_failed/lb_cleanup_cancelled/version tags.
+  Live home and390px report render without overflow/errors; mobile map/markers
+  render and report-data GET/OPTIONS200 after reload. One initial connection-
+  closed report request recovered on reload; no persistent failure reproduced.
+  Deployment runtime error scan returned0 records. Every browser visit excluded
+  before scripts; zero analytics requests. No real claim/auth/preference/money
+  submissions or synthetic visitor events. Real Clarity ingestion/new filter
+  availability awaits genuine activity; mocked delivery/ordering tests passed.
+- Local3000 remains available. Concurrent Claude native edits and unrelated
+  local previews/handoff additions preserved. No store build or app deployment.
+
 ### 2026-11-12 — Codex (approved website recording analytics release candidate)
 
 - Owner authorized website analytics deployment/GitHub push and excluded Claude's
