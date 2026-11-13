@@ -26,8 +26,8 @@ const formatShortDate = value => new Date(value).toLocaleDateString('en-US', { m
 
 // The map owns report operations; this component owns the detail presentation.
 export default function ReportDetailsSheet({ state, actions }) {
-  const { detailsOpen, reportShareSheetOpen, reportShareBusyAction, selectedReport, insets, reportDetailsPreparing, selectedReportHasUtilityActions, completedCleanupImpact, completedCleanupImpactLoading, completedCleanupImpactError, reportHeroWidth, currentUserId, reportPhotoUrls, photosLoading, geminiReviewEnabled, userOwnsSelectedReport, reportFundingFeedback, cleanupDiscoverable, cleanupStatus, currentUserIsCleaner, selectedCleanupAttempt, cleanupAttemptLoading, cleanupActionBusy, canEditOrDeleteSelectedReport, selectedReportCanOpenFunding, payoutGateBusy, selectedReportIsShareable, isFavorite, favoritesReady, isHidden } = state;
-  const { setReportShareSheetOpen, closeReportDetails, setDetailsOpen, setSelectedReport, navigation, setCompletedCleanupImpact, setCompletedCleanupImpactError, setCompletedCleanupImpactLoading, setCompletedCleanupImpactReloadKey, openCleanupNavigation, openCleanupSubmission, confirmCleanupRelease, openCleanupFeedback, openCleanupReview, beginCleanupClaim, openFundingContribution, removeReport, setForm, setEditingReportId, setIsEditing, setDraftCoord, resetReportWizard, setFormOpen, shareSelectedReport, shareSelectedReportLink, shareSelectedReportToInstagram, editReportPhotos, toggleFavorite, toggleHidden } = actions;
+  const { detailsOpen, reportShareSheetOpen, reportShareBusyAction, selectedReport, insets, reportDetailsPreparing, selectedReportHasUtilityActions, completedCleanupImpact, completedCleanupImpactLoading, completedCleanupImpactError, reportHeroWidth, currentUserId, reportPhotoUrls, photosLoading, geminiReviewEnabled, userOwnsSelectedReport, reportFundingFeedback, cleanupDiscoverable, cleanupStatus, currentUserIsCleaner, selectedCleanupAttempt, cleanupAttemptLoading, cleanupActionBusy, canEditOrDeleteSelectedReport, selectedReportCanOpenFunding, payoutGateBusy, selectedReportIsShareable, isFavorite, favoritesReady } = state;
+  const { setReportShareSheetOpen, closeReportDetails, setDetailsOpen, setSelectedReport, navigation, setCompletedCleanupImpact, setCompletedCleanupImpactError, setCompletedCleanupImpactLoading, setCompletedCleanupImpactReloadKey, openCleanupNavigation, openCleanupSubmission, confirmCleanupRelease, openCleanupFeedback, openCleanupReview, beginCleanupClaim, openFundingContribution, removeReport, setForm, setEditingReportId, setIsEditing, setDraftCoord, resetReportWizard, setFormOpen, shareSelectedReport, shareSelectedReportLink, shareSelectedReportToInstagram, editReportPhotos, toggleFavorite } = actions;
   const editSelectedReport = () => editReportPhotos(selectedReport);
   const confirmDeleteReport = () => {
 
@@ -238,11 +238,11 @@ export default function ReportDetailsSheet({ state, actions }) {
       <FlowDoneHost />
 
       {/* A solid bar behind the top buttons, so the report scrolls under it instead of through them. */}
-      <View pointerEvents="none" style={[styles.reportTopBar, { height: reportControlsTop + 54 }]} />
-      {/* Website toolbar: "Back to map" on the left; heart, share and hide on the right. */}
+      <View pointerEvents="none" style={[styles.reportTopBar, { height: reportControlsTop + 62 }]} />
+      {/* Back to map on the left; large favorite and share controls on the right. */}
       <TouchableOpacity onPress={closeReportDetails} accessibilityRole="button" accessibilityLabel="Back to map" style={[styles.reportBackControl, { top: reportControlsTop }]}>
         <Ionicons name="chevron-back" size={20} color={colors.ink} />
-        <Text style={styles.reportBackText}>Back to map</Text>
+        <Text style={styles.reportBackText} numberOfLines={1}>Back to map</Text>
       </TouchableOpacity>
       {selectedReportIsShareable ? (
         <TouchableOpacity
@@ -251,19 +251,7 @@ export default function ReportDetailsSheet({ state, actions }) {
           accessibilityLabel={selectedReport?.cleanup_state === 'completed' ? 'Share completed cleanup' : 'Share litter report'}
           style={[styles.reportPhotoControl, styles.reportPhotoShareControl, { top: reportControlsTop }]}
         >
-          <Ionicons name="share-social-outline" size={20} color={colors.ink} />
-        </TouchableOpacity>
-      ) : null}
-
-      {/* Website report sheet: hide, share and the heart sit together in the top bar. */}
-      {favoritesReady && selectedReport?.id ? (
-        <TouchableOpacity
-          onPress={() => { toggleHidden(selectedReport.id); if (!isHidden) closeReportDetails(); }}
-          accessibilityRole="button"
-          accessibilityLabel={isHidden ? 'Show this report again' : 'Hide this report'}
-          style={[styles.reportPhotoControl, styles.reportPhotoHideControl, { top: reportControlsTop }]}
-        >
-          <Ionicons name={isHidden ? 'eye-outline' : 'eye-off-outline'} size={20} color={colors.ink} />
+          <Ionicons name="share-social-outline" size={32} color={colors.ink} />
         </TouchableOpacity>
       ) : null}
 
@@ -275,7 +263,7 @@ export default function ReportDetailsSheet({ state, actions }) {
           accessibilityState={{ selected: Boolean(isFavorite) }}
           style={[styles.reportPhotoControl, styles.reportPhotoFavoriteControl, { top: reportControlsTop }, !selectedReportIsShareable && styles.reportPhotoShareControl]}
         >
-          <HopOnTrue active={Boolean(isFavorite)}><Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={20} color={isFavorite ? colors.severityHigh : colors.ink} /></HopOnTrue>
+          <HopOnTrue active={Boolean(isFavorite)}><Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={32} color={isFavorite ? colors.severityHigh : colors.ink} /></HopOnTrue>
         </TouchableOpacity>
       ) : null}
 

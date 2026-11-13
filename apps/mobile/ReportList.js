@@ -24,7 +24,8 @@ export function ReportListItem({ report, origin, onPress, selected = false }) {
   const { favoriteIds, toggleFavorite, favoritesReady, hiddenIds, toggleHidden, getReportPhotoUrl } = useReports();
   const isFavorite = favoriteIds.includes(report.id);
   const actions = [
-    ...(favoritesReady ? [{ text: hiddenIds.includes(report.id) ? 'Restore report' : 'Hide report', icon: 'eye-off-outline', onPress: () => toggleHidden(report.id) }] : []),
+    // Existing hidden reports can still be restored; new reports can no longer be hidden.
+    ...(favoritesReady && hiddenIds.includes(report.id) ? [{ text: 'Restore report', icon: 'eye-outline', onPress: () => toggleHidden(report.id) }] : []),
     ...(isReportShareable(report) ? [{ text: 'Share report', icon: 'share-outline', onPress: async () => {
       try { await shareReportWithSystemSheet({ report, platform: Platform.OS, share: Share.share }); }
       catch { Alert.alert('Sharing unavailable', 'We couldn’t open the share menu. Please try again.'); }
