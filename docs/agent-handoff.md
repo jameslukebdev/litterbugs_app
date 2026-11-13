@@ -24,6 +24,32 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (PostHog/Clarity capability and configuration review)
+
+- Read-only review requested. Confirmed PostHog695338: one starter dashboard
+  (2274370), zero alerts/surveys/experiments/flags. Automatic exceptions/vitals,
+  PostHog replay/heatmaps/surveys off; site disables flags/surveys, uses cookieless
+  mode and person_profiles never. Starter retention isn't authoritative member
+  retention under this identity setup. No settings or capture changes made.
+- Signed-in Clarityz60itnrbpn inspected through existing main-Chrome MCP connection
+  in a separate temporary tab: five Clarity-defined events (Find a location,
+  Login, Outbound click, Sign up, Submit form), zero funnels. Site code only
+  configures Clarity/consent, not custom event/tag delivery. Closed only audit tab;
+  original recordings/user tabs intact. No site visits or test traffic generated.
+- Highest-value next work: site-specific PostHog funnels/health dashboard using
+  existing bounded journey events; safe named button/outcome/timing signals;
+  mirror important outcomes into Clarity events/release tags and save segments;
+  inspect mobile homepage scroll/attention and slow-interaction recordings.
+  Threshold alerts after baseline; sparse-traffic minimum-volume guards needed.
+- Reviewed current PostHog docs via connected docs-search and Microsoft Learn:
+  funnels/paths, flags/experiments, surveys, errors/performance, identity limits,
+  Clarity heatmaps/Smart Events/funnels/Copilot/performance/export. API export is
+  aggregate dashboard data (1–3-day window,10 requests/day), not replay download.
+  Additional options: selected error diagnostics, later stable-assignment tests,
+  optional feedback, aggregate database outcomes/retention and AI metadata costs.
+- Recommendations only: no dashboard/alert/survey/flag launch, deploy, push,
+  identity expansion or private-data collection. Website remains releasee5411e2.
+
 ### 2026-11-12 — Codex (cleanup start and button improvements deployed)
 
 - Owner approved cleanup-start and tested button improvements. Live sourcee5411e2
