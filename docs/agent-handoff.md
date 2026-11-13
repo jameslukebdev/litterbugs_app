@@ -24,6 +24,20 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (owner analytics website release candidate)
+
+- Owner approved live dashboard/GitHub; isolated `codex/website-analytics-20261113`
+  starts at live `5c32ab8` and imports only dashboard sources. No new native files,
+  app build, mobile update or store publication. Root history is not pushed.
+- Added hosted Google read-only OAuth refresh, admin/MFA aggregate business RPC,
+  and shared Clarity quota/cache. Credentials are sensitive production Vercel envs;
+  no service-role/SQL credential added. Existing local adapters stay development-only.
+- 86 focused tests, web typecheck and scoped lint passed. Rollback-only SQL admin/
+  quota checks passed. Production migration and staged deployment/promotion are next;
+  final deployment/commit evidence will follow. Migration filename:
+  `20261113191709_owner_analytics_hosted_connections.sql`.
+
+
 ### 2026-11-12 — Codex (approved website recording analytics release candidate)
 
 - Owner authorized website analytics deployment/GitHub push and excluded Claude's

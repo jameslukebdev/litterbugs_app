@@ -382,3 +382,33 @@ Checked current mobile cleanup summaries/approval labels and impact presentation
 plus the released/unreleased event contracts. No live business totals were
 queried, no source was connected, and no dashboard code or metric object changed
 as part of this research.
+
+## Hosted website release — November 13
+
+The owner approved deploying the dashboard. The release is isolated on
+`codex/website-analytics-20261113`, based on live website source `5c32ab8` plus
+only dashboard commits. Unreleased native changes and root history are excluded.
+
+Production Google reads refresh the existing read-only OAuth authorization,
+kept in Vercel sensitive server environment variables. PostHog uses the dedicated
+project query key; Clarity uses its project export token. No credential reaches
+client components, logs or Git. The local Google CLI and local business CLI never
+run in production. Google scopes are checked against the read-only allowlist.
+
+Business totals use `owner_analytics_business`, an aggregate-only RPC guarded by
+active admin membership, permanent-user status and MFA. The web server uses the
+requesting admin's Supabase session; it has no new service-role or SQL key.
+Clarity's private cache uses the same gates and an atomic request reservation,
+six-hour cooldown, eight-attempt UTC daily ceiling and one-use completion lease.
+Only normalized aggregates are stored, including failed observations. This quota
+survives server instances, period/view switches and deployments. Dashboard refresh
+runs every five minutes while visible; Google/PostHog cache successful reads for
+15 minutes, and business totals refresh with the page. Provider outages stay
+unknown rather than appearing as zero. App production traffic remains excluded
+until it actually exists; no app build or release is part of this deployment.
+
+Migration: `20261113191709_owner_analytics_hosted_connections.sql`. Rollback-only
+SQL checks validate the migration, admin/MFA gates, private cache permissions,
+leases, cooldown and budget. The read-only business fixture checks NY boundaries,
+review-account exclusions and reconciliation. Hosted verification and final
+release evidence are recorded in the agent handoff log.

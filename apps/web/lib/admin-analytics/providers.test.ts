@@ -6,10 +6,10 @@ vi.mock('next/cache', () => ({ unstable_cache: (fn: () => unknown, keys: string[
   if (!cache.has(key)) cache.set(key, Promise.resolve().then(fn).catch(error => { cache.delete(key); throw error; }));
   return cache.get(key);
 } }));
-import { appQuery, liveSource, normalizeApp, normalizeFriction, normalizeProduct, productQuery } from './providers';
+import { fetchGoogle, appQuery, liveSource, normalizeApp, normalizeFriction, normalizeProduct, productQuery } from './providers';
 
 beforeEach(() => cache.clear());
-afterEach(() => { vi.unstubAllEnvs(); });
+afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 const window = { start: '2026-11-06', end: '2026-11-12', timezone: 'America/New_York' };
 describe('owner analytics providers', () => {
   it('keeps app production activity separate from web and test builds', () => {
@@ -51,6 +51,18 @@ describe('owner analytics providers', () => {
     expect(normalizeFriction([{ metricName: 'Traffic', information: [{ totalSessionCount: '21' }] }, { metricName: 'DeadClickCount', information: [{ clickCount: 2 }] }]).deadSessions).toBeNull();
     expect(() => normalizeFriction([])).toThrow('Clarity traffic coverage unavailable');
     expect(() => normalizeFriction([{ metricName: 'Traffic', information: [{ totalSessionCount: '29' }] }, { metricName: 'DeadClickCount', information: [{ sessionsWithMetricPercentage: 101 }] }])).toThrow();
+  });
+  it('refreshes the existing read-only Google grant on the server', async () => {
+    vi.stubEnv('ADMIN_ANALYTICS_GOOGLE_LOCAL_CLI', 'false');
+    vi.stubEnv('ADMIN_ANALYTICS_GOOGLE_OAUTH', JSON.stringify({ client_id: 'id', client_secret: 'secret', refresh_token: 'refresh', scope: 'openid https://www.googleapis.com/auth/analytics.readonly https://www.googleapis.com/auth/webmasters.readonly' }));
+    const fetch = vi.fn().mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: 'access' }) }).mockResolvedValue({ ok: true, json: async () => ({ metricHeaders: [{}], rows: [] }) });
+    vi.stubGlobal('fetch', fetch);
+    expect((await fetchGoogle(window)).sessions).toBe(0);
+    expect(fetch.mock.calls[0][0]).toBe('https://oauth2.googleapis.com/token');
+    expect(fetch.mock.calls[0][1].body.get('grant_type')).toBe('refresh_token');
+    expect(fetch.mock.calls[1][1].headers.Authorization).toBe('Bearer access');
+    vi.stubEnv('ADMIN_ANALYTICS_GOOGLE_OAUTH', JSON.stringify({ client_id: 'id', client_secret: 'secret', refresh_token: 'refresh', scope: 'https://www.googleapis.com/auth/cloud-platform' }));
+    fetch.mockClear(); await expect(fetchGoogle(window)).rejects.toThrow('read-only'); expect(fetch).not.toHaveBeenCalled();
   });
   it('does not call a provider without a private credential', async () => {
     vi.stubEnv('ADMIN_ANALYTICS_POSTHOG_KEY', '');
