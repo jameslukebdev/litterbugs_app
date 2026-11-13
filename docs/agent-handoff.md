@@ -24,6 +24,30 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (live SEO gaps audited; earlier story proposal corrected)
+
+- Read-only sitemap health:49/49 HTTP200. Linked crawl100 URLs/180 discovered,
+  capped, JS off. Independently parsed live homepage/Boone/About/Beacon pages
+  to reject false Please wait thin-content counts and streamed-metadata noise.
+  GSC UI reports59 indexed/13 excluded as of Nov8;2 crawled-not-indexed are
+  images,1 discovered-only is old unavailable report outside current sitemap.
+  That old report currently streams200 with Report unavailable/noindex.
+- Fresh focused Google snapshots:homepage, report/clean/fund guides, cleanups,
+  Winkler, Beacon and Boone all indexed. Full sitemap monitor timed out at
+  300s; no complete49-URL indexing claim. Winkler still last crawled Nov6.
+- Actual priorities:GSC Links sample9 external links from AppAgg5/ChromeStats4,
+  all homepage;seek genuine relevant references to existing hub/report pages.
+ 11/31 sitemap report titles lack generated locality outside Boone;Beacon body
+  lacks town/state. Add only verified broad locality. Homepage has zero direct
+  Boone-hub anchors;add contextual link.22 long report-title review candidates;
+  shorten search text while preserving original report titles. No new duplicate
+  story page. Existing guides/local resources/photos/stories/schema retained.
+- Evidence:docs/reviews/2026-11-13-live-seo-gap-audit.json. Semrush insufficient
+  API units;live SERP provider unavailable;no demand/ranking forecasts. GSC
+  Core Web Vitals lacks field data. No site edits/settings/index requests,
+  outreach/deploy/push/database/store changes;HTTP/local reads did not execute
+  visitor analytics. All other Claude/mobile/preview edits preserved.
+
 ### 2026-11-13 — Codex (local cleanup story preview)
 
 - Owner requested a concrete preview of a shareable cleanup story. Created
