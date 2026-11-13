@@ -169,3 +169,63 @@ The separate privacy-only source `4d4e2e8` is now live on litterbugs.app/privacy
 (effective November13,2026), deployment `dpl_2A2dd4XGKrLZ2kEyK1wSSn3eWd2d`.
 That deployment excluded this dashboard and the mobile changes. No further event
 fields are needed from the mobile thread for the current dashboard integration.
+
+## Proposed owner metrics — November13 research, not yet implemented
+
+Primary recommendation: completed cleanups per week, supported by active
+contributor accounts and confirmed cleanup funding. Traffic and incoming reports
+explain growth; they do not alone establish that litter was removed. No numeric
+targets are proposed without measured baselines and agreed operating cadence.
+
+Suggested overview cards:
+
+| Metric | Proposed meaning and controlling source |
+| --- | --- |
+| Total visits | PostHog website sessions plus production app sessions, with a web/app breakdown. Same complete period/timezone and verified session rules; never add GA website sessions to PostHog website sessions. Not unique people; app launches/pageviews are different units. |
+| New litter reports | Distinct valid reports first published in the period, from backend business records; exclude drafts, rejected/test reports and retry duplicates. Confirm historical publication/moderation timestamps before implementing. |
+| Completed cleanups | Distinct cleanup attempts reaching the existing completed workflow state in the period, from backend records. Claims and photo submissions stay separate. Break down reporter/automatic/self approval and funded/volunteer rather than implying every completion received independent human verification. |
+| Cleanup funding received | Confirmed successful contribution principal received in the period, excluding service fees and unsuccessful/pending attempts. Payment ledger supplies totals. Show actual principal refunds separately by refund date; any net-flow figure subtracts those refunds and is not a current fund balance or platform revenue. Currency stays explicit. |
+| Active contributors | Distinct registered accounts with at least one qualifying published report, successful contribution or completed cleanup in the period. Deduplicate accounts across devices/surfaces and overlapping roles in the private backend; never send account IDs into analytics to achieve this. Label account scope and handle any guest contributions separately. |
+| Reports awaiting cleanup | Current eligible open-report backlog, split funded/unfunded and aged. Snapshot metric as of fetch time, not a sum of reports created during the selected period. |
+
+Supporting decisions: funded reports waiting for a cleaner and oldest backlog age;
+report-to-completion median together with unfinished report age (avoid completed-
+only survivorship conclusions); month-to-month repeat contribution by role;
+Google search/marketing acquisition; separate report/fund/cleanup funnels;
+map/report readiness and failure-session rates with sample coverage. Clarity
+signals point to recordings, rather than functioning as confirmed bug totals.
+
+Impact detail: sum reported pounds, bags/items and cleanup hours only from the
+final accepted submission of each counted completed attempt. Label as reported,
+show how many completed attempts supplied each field, and keep missing values
+unknown. Bags/items are mixed units; do not turn them into bags or weight.
+
+A future report-to-cleanup rate should use a fixed follow-up window (for example
+30 days) and only mature report cohorts. Do not divide this week's completions
+by this week's newly created reports. Repeat participation should match the
+natural weekly/monthly cadence, rather than assuming daily use is the goal.
+
+Presentation proposal: complete7-day totals versus prior7 days,28-day trend,
+optional clearly labeled all-time impact. Break down business results by town/
+community and funded/volunteer cleanup; visitors stay separately attributable
+to web/app/device/acquisition. Small samples need counts alongside percentages.
+
+Feasibility: existing frontend telemetry is sufficient for some usage/diagnostic
+metrics, but the current dashboard does not query authoritative application or
+payment-ledger totals. Those need a reviewed private aggregate connection and
+date/status/test-data definitions before implementation. Current privacy forbids
+cross-platform identification in analytics; backend aggregate account counts
+must not turn into tracking identities. App production coverage is still pending.
+
+Research grounding (recommendations adapted to Litterbugs, not industry targets):
+
+- Amplitude's value-based outcome framework: https://www.amplitude.com/books/north-star/about-north-star-framework
+- Marketplace fulfillment and liquidity: https://www.sharetribe.com/academy/measure-your-success-key-marketplace-metrics/
+- Session definitions across PostHog web/mobile: https://posthog.com/docs/data/sessions
+- Transaction volume versus marketplace earnings: https://stripe.com/resources/more/14-key-marketplace-metrics
+- Clarity diagnostic signal meanings: https://learn.microsoft.com/en-us/clarity/insights/semantic-metrics
+
+Checked current mobile cleanup summaries/approval labels and impact presentation,
+plus the released/unreleased event contracts. No live business totals were
+queried, no source was connected, and no dashboard code or metric object changed
+as part of this research.

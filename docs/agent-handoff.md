@@ -24,6 +24,21 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (owner KPI research and proposed definitions)
+
+- Researched Amplitude value metrics, marketplace fulfillment/liquidity, Stripe
+  transaction-volume distinctions, PostHog session definitions and Clarity signals.
+  Added proposed owner metrics to existing dashboard plan: total visits, new reports,
+  completed cleanups, confirmed cleanup funding, active contributor accounts and
+  aged report backlog; impact/retention/conversion/health remain supporting views.
+- Total visits may combine same-rule web/app sessions, not launches/pageviews or
+  unique people. Business totals need private backend/payment records, not browser
+  event counts. Funding excludes service fees; refunds, balance and revenue differ.
+  Impact is reported data with field coverage and one final submission per cleanup.
+- Recommendations only: no dashboard implementation, live business query, provider
+  setting, credential, DB migration, deployment or GitHub push. Existing app/dashboard
+  source and unrelated Claude edits preserved; documentation diff check passes.
+
 ### 2026-11-13 — Codex (release-readiness and analytics-choice clarification)
 
 - Read-only readiness review: analytics setup is complete; latest2.1.0 still needs a frozen mobile candidate,
