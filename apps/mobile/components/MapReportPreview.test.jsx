@@ -10,7 +10,7 @@ vi.mock('react-native', async () => {
     setValue() {}
     stopAnimation() {}
   }
-  return { useWindowDimensions: () => ({ width: 393, height: 852, fontScale: 1 }), Animated: { View: Box, Value, timing: () => ({ start: vi.fn() }) }, View: Box, Text: Box, Image: () => null, ScrollView: Box, Platform: { OS: 'ios' }, ActionSheetIOS: { showActionSheetWithOptions: vi.fn() }, Alert: { alert: vi.fn() }, TouchableOpacity: Box, Modal: ({ visible, children }) => visible ? children : null,
+  return { useWindowDimensions: () => ({ width: 393, height: 852, fontScale: 1 }), PanResponder: { create: () => ({ panHandlers: {} }) }, Animated: { View: Box, Value, add: () => 0, timing: () => ({ start: vi.fn() }) }, View: Box, Text: Box, Image: () => null, ScrollView: Box, Platform: { OS: 'ios' }, ActionSheetIOS: { showActionSheetWithOptions: vi.fn() }, Alert: { alert: vi.fn() }, TouchableOpacity: Box, Modal: ({ visible, children }) => visible ? children : null,
     FlatList: ({ data, renderItem }) => data.map(item => createElement('div', { key: item.id }, renderItem({ item }))),
     StyleSheet: { create: value => value, hairlineWidth: 1 } };
 });
@@ -35,6 +35,7 @@ describe('map preview states', () => {
     expect(html).toContain('Cleanup reward $6.00');
     expect(html).toContain('0.4 mi');
     expect(html).toContain('View report');
+    expect(html).toContain('Back to map');
   });
   it('does not advertise a completed report as an available reward', () => {
     const html = render({ report: { ...report, cleanup_state: 'completed', completedRewardCents: 500, funded_amount_cents: 0 } });

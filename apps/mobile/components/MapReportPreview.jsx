@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  AccessibilityInfo,
   Animated,
   FlatList,
   Modal,
+  PanResponder,
   ScrollView,
   StyleSheet,
   Text,
@@ -22,6 +24,8 @@ import { reportPresentation } from '../lib/reportPresentation';
 import { reportStatePresentation } from '../lib/reportState';
 import { hapticTap } from '../lib/haptics';
 import { colors, fonts } from '../lib/theme';
+
+const CARD_HEADER_HEIGHT = 36;
 
 function Summary({ report }) {
   const presentation = reportPresentation(report);
@@ -56,35 +60,75 @@ function FloatingCard({
   cleanBusy,
   onClean,
   insetTop = 0,
+  isOpen,
+  reduceMotion,
 }) {
   const { height } = useWindowDimensions();
+  const dragY = useRef(new Animated.Value(0)).current;
+  const scrollOffset = useRef(0);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const maxHeight = Math.max(160, height - bottom - insetTop - 74);
+  useEffect(() => {
+    if (isOpen) dragY.setValue(0);
+    return () => dragY.stopAnimation();
+  }, [dragY, isOpen]);
+  const pan = useMemo(() => {
+    const reset = () => {
+      if (reduceMotion) dragY.setValue(0);
+      else Animated.spring(dragY, { toValue: 0, damping: 28, stiffness: 320, useNativeDriver: true }).start();
+    };
+    return PanResponder.create({
+      // Let upward swipes and scrolled content keep their normal scrolling.
+      // Only a downward pull from the top takes over to dismiss the card.
+      onMoveShouldSetPanResponderCapture: (_, gesture) => scrollOffset.current <= 0
+        && gesture.dy > 8 && gesture.dy > Math.abs(gesture.dx) * 1.3,
+      onPanResponderGrant: () => dragY.stopAnimation(),
+      onPanResponderMove: (_, gesture) => dragY.setValue(Math.max(0, gesture.dy)),
+      onPanResponderRelease: (_, gesture) => {
+        if (gesture.dy > 80 || (gesture.dy > 20 && gesture.vy > 0.75)) closeRef.current?.();
+        else reset();
+      },
+      onPanResponderTerminate: reset,
+    });
+  }, [dragY, reduceMotion]);
   const actions = [
     ...(canShare ? [{ text: 'Share report', icon: 'share-outline', onPress: () => onShare(report) }] : []),
     { text: 'Close preview', icon: 'close-circle-outline', onPress: onClose },
   ];
 
   return <Animated.View
+    {...pan.panHandlers}
+    pointerEvents={isOpen ? 'auto' : 'none'}
+    onAccessibilityEscape={onClose}
     style={[
       styles.card,
       report.cleanup_state === 'completed' && styles.completedCard,
       {
         bottom,
-        opacity: animation,
+        maxHeight,
         transform: [
-          { translateY: animation.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) },
-          { scale: animation.interpolate({ inputRange: [0, 1], outputRange: [0.98, 1] }) },
+          { translateY: Animated.add(animation.interpolate({ inputRange: [0, 1], outputRange: [height, 0] }), dragY) },
         ],
       },
     ]}
   >
+    <View style={styles.cardHeader}>
+      <View style={styles.grabber} pointerEvents="none" />
+    </View>
+    <TouchableOpacity style={styles.cardClose} onPress={onClose} accessibilityRole="button" accessibilityLabel="Back to map" accessibilityHint="Closes the report preview. You can also swipe the card down.">
+      <Ionicons name="close" size={18} color={colors.body} />
+    </TouchableOpacity>
     <ScrollView
-      // The whole card shows without scrolling: it may rise to just under the search bar.
-      // It only scrolls on very short screens or with very large text.
-      style={{ maxHeight: Math.max(160, height - bottom - insetTop - 74) }}
+      // Keep the close control outside the scroll area, even on short phones.
+      style={{ maxHeight: maxHeight - CARD_HEADER_HEIGHT }}
       bounces={false}
       nestedScrollEnabled
+      onScroll={(event) => { scrollOffset.current = Math.max(0, event.nativeEvent.contentOffset.y); }}
+      scrollEventThrottle={16}
     >
       <ReportPreviewHero
+        sheet
         report={report}
         getPhotoUrl={getPhotoUrl}
         onPress={onDetails}
@@ -123,7 +167,7 @@ function FloatingCard({
 export default function MapReportPreview({
   report,
   nearby,
-  bottom,
+  bottom = 0,
   insetBottom,
   insetTop = 0,
   getPhotoUrl,
@@ -144,31 +188,42 @@ export default function MapReportPreview({
   favoritesReady = false,
 }) {
   const { fontScale } = useWindowDimensions();
-  const animation = useRef(new Animated.Value(report ? 1 : 0)).current;
+  const animation = useRef(new Animated.Value(0)).current;
   const [displayedReport, setDisplayedReport] = useState(report ?? null);
+  const [reduceMotion, setReduceMotion] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    const update = (value) => { if (active) setReduceMotion(Boolean(value)); };
+    Promise.resolve(AccessibilityInfo.isReduceMotionEnabled?.() ?? false).then(update).catch(() => update(false));
+    const subscription = AccessibilityInfo.addEventListener?.('reduceMotionChanged', update);
+    return () => { active = false; subscription?.remove(); };
+  }, []);
 
   useEffect(() => {
     animation.stopAnimation();
+    if (reduceMotion === null) return;
 
     if (report) {
       setDisplayedReport(report);
       animation.setValue(0);
       Animated.timing(animation, {
         toValue: 1,
-        duration: 220,
+        duration: reduceMotion ? 0 : 240,
         useNativeDriver: true,
       }).start();
-      return;
+      return () => animation.stopAnimation();
     }
 
     Animated.timing(animation, {
       toValue: 0,
-      duration: 180,
+      duration: reduceMotion ? 0 : 180,
       useNativeDriver: true,
     }).start(({ finished }) => {
       if (finished) setDisplayedReport(null);
     });
-  }, [animation, report?.id]);
+    return () => animation.stopAnimation();
+  }, [animation, report?.id, reduceMotion]);
 
   useEffect(() => {
     if (report && displayedReport?.id === report.id && displayedReport !== report) {
@@ -180,6 +235,8 @@ export default function MapReportPreview({
     {displayedReport ? <FloatingCard
       key={displayedReport.id}
       report={displayedReport}
+      isOpen={Boolean(report)}
+      reduceMotion={reduceMotion}
       {...{
         bottom,
         getPhotoUrl,
@@ -234,6 +291,10 @@ const styles = StyleSheet.create({
   // Website floating map card (.map-pin-card): white, lilac edge, soft purple shadow.
   card: { position: 'absolute', left: 16, right: 16, borderRadius: 20, backgroundColor: colors.white, borderWidth: 2, borderColor: colors.edge, boxShadow: '0 4px 0 #EBE7F8, 0 16px 32px rgba(42, 34, 90, 0.12)', elevation: 9 },
   completedCard: {},
+  cardHeader: { height: CARD_HEADER_HEIGHT, flexShrink: 0, alignItems: 'center', paddingTop: 10 },
+  grabber: { width: 36, height: 3, borderRadius: 2, backgroundColor: '#B9B5C4' },
+  // The visual button is compact; its full touch target stays fixed above scrolled content.
+  cardClose: { position: 'absolute', zIndex: 2, right: 2, top: 0, width: 44, height: 44, paddingBottom: 44 - CARD_HEADER_HEIGHT, alignItems: 'center', justifyContent: 'center' },
   // Same buttons as the report page footer (styles/MapScreen.styles.js reportActionButton).
   actionRow: { marginTop: 10, flexDirection: 'row', gap: 10 },
   actionButton: { flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, borderWidth: 1, borderBottomWidth: 4 },

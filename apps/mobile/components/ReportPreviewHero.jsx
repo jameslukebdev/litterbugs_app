@@ -19,6 +19,7 @@ export default function ReportPreviewHero({
   isFavorite,
   onFavorite,
   favoritesReady,
+  sheet = false,
 }) {
   const status = reportStatePresentation(report);
   // Website cards: a cleaned report leads with its after photo. Otherwise the card uses
@@ -37,7 +38,7 @@ export default function ReportPreviewHero({
   const photoSlot = usePhotoBatchSlot(true, report?.id);
 
   return (
-    <View style={styles.hero}>
+    <View style={[styles.hero, sheet && styles.sheetHero]}>
       <TouchableOpacity
         activeOpacity={0.9}
         accessibilityRole="button"
@@ -71,7 +72,7 @@ export default function ReportPreviewHero({
         <Text style={[styles.badgeText, { color: status.ink }]}>{status.tone === 'open' ? 'Available' : status.tone === 'busy' ? 'In progress' : status.tone === 'done' ? 'Cleaned' : status.label}</Text>
       </View>
       <TouchableOpacity
-        style={[styles.favorite, isFavorite && styles.favoriteSelected]}
+        style={[styles.favorite, sheet && styles.sheetFavorite, isFavorite && styles.favoriteSelected]}
         accessibilityRole="button"
         accessibilityLabel={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
         accessibilityState={{ selected: Boolean(isFavorite), disabled: !favoritesReady }}
@@ -102,6 +103,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.mist,
   },
   heroPhotoButton: { width: '100%', height: '100%' },
+  // A map sheet already owns the rounded top edge and its grabber rail.
+  sheetHero: { borderTopLeftRadius: 0, borderTopRightRadius: 0 },
   heroPhoto: { width: '100%', height: '100%' },
   badge: {
     position: 'absolute',
@@ -132,6 +135,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   favoriteSelected: { borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.94)' },
+  // Leave the sheet's fixed close target clear of the favorite button's hit slop.
+  sheetFavorite: { top: 14 },
   favoriteOutline: {
     textShadowColor: 'rgba(0,0,0,0.55)',
     textShadowOffset: { width: 0, height: 1 },

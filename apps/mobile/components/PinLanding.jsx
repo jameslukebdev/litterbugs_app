@@ -24,9 +24,10 @@ export default function PinLanding({ x, y, kind, text, order = 0, posted = false
     const steps = posted
       ? [Animated.timing(land, { toValue: 1, duration: 520, delay: 850, easing: CURVE, useNativeDriver: true })]
       : [Animated.sequence([
-        Animated.delay(Math.min(order, 8) * 60),
-        Animated.timing(fall, { toValue: 1, duration: 364, easing: CURVE, useNativeDriver: true }),
-        Animated.timing(settle, { toValue: 1, duration: 156, easing: CURVE, useNativeDriver: true }),
+        // iPhone's floating pins arrive quickly; Android keeps its own native timing.
+        Animated.delay(Math.min(order, 8) * 25),
+        Animated.timing(fall, { toValue: 1, duration: 196, easing: CURVE, useNativeDriver: true }),
+        Animated.timing(settle, { toValue: 1, duration: 84, easing: CURVE, useNativeDriver: true }),
       ])];
     if (posted) {
       steps.push(Animated.timing(carrier, { toValue: 1, duration: 1000, easing: Easing.bezier(0.45, 0, 0.25, 1), useNativeDriver: true }));
