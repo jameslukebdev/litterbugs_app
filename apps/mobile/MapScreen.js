@@ -240,6 +240,16 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   // Android pins play their own landing (components/AndroidStillMarker.jsx); iPhone uses a
   // stand-in above the map (components/PinLanding.jsx).
   const pinsLandInPlace = Platform.OS === 'android';
+  // Android: once the selected pin laid over a pin has had time to draw, the pin underneath
+  // goes invisible (an opacity change, which redraws nothing). Android does not reliably keep
+  // the selected pin on top, so the plain one showed through it.
+  const [selectedCovered, setSelectedCovered] = useState(null);
+  useEffect(() => {
+    setSelectedCovered(null);
+    if (Platform.OS !== 'android' || !previewId) return undefined;
+    const timer = setTimeout(() => setSelectedCovered(previewId), 160);
+    return () => clearTimeout(timer);
+  }, [previewId]);
   const pins = usePinLandings({ enabled: pinLandings, mapRef: mapViewRef, region, hidden: showInitialMapLoading, postedPinId, inPlace: pinsLandInPlace });
   const currentUserId = permanentUserId(currentUser);
   // The daily "New litter near you" alert: asked once here, with nothing else on screen.
@@ -1479,7 +1489,7 @@ const revealBottomReportField = () => {
           const info = { coordinate: marker.coordinate, kind, text };
           return (
             <PinMarker
-              {...(pinsLandInPlace ? { hidden: !shown, drop: pins.dropFor(marker.id), dropHeight: pinHeight(kind, text) } : null)}
+              {...(pinsLandInPlace ? { hidden: !shown || selectedCovered === marker.id, drop: pins.dropFor(marker.id), dropHeight: pinHeight(kind, text) } : null)}
               // Never update a pin on the map (iPhone draws it in the wrong place): anything that
               // changes how it looks is in the key, so a change puts a new pin in its place.
               // Selecting a pin never touches it: the selected look is a second pin laid on top.

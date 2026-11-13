@@ -59,7 +59,7 @@ export default function MapPin({ kind = 'open', text = null, selected = false, s
   const small = iconOnly && kind === 'done';
   const size = small ? 30 : PIN_HEIGHT;
   return (
-    <View collapsable={false} style={[styles.wrap, !shadow && styles.flat, selected && styles.selected]}>
+    <View collapsable={false} style={[styles.wrap, !shadow && styles.flat, selected && styles.selected, selected && Platform.OS === 'android' && styles.selectedRoom]}>
       <View style={[
         styles.pill,
         { height: size, minWidth: size, borderRadius: size / 2, borderColor: edge, backgroundColor: fill },
@@ -96,6 +96,9 @@ const styles = StyleSheet.create({
   },
   flat: { shadowOpacity: 0 },
   selected: { transform: [{ translateY: -3 }, { scale: 1.08 }] },
+  // Android draws a map pin from a picture the size of its layout; the selected pin is raised
+  // and slightly larger, so it needs room around it or its top is cut off.
+  selectedRoom: { paddingTop: 7, paddingHorizontal: 4 },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
