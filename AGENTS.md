@@ -34,10 +34,11 @@ Luke accepted the updated Apple Developer Program License Agreement on
 November13; the block is cleared. Apple2.1.0(28) is uploaded, attached and
 Waiting for Review (submission2abda04e-5782-41bf-99ed-d2005198cc12). Manual
 release is selected. Release notes, review login and privacy-policy URL are saved.
-The current2.0.1 privacy baseline was corrected to13 published data types; the
-additional2.1 categories remain prepared for manual release because Apple
-privacy data-type answers publish immediately. See the current store privacy
-handoff; do not claim a saved privacy-label draft or repeat login troubleshooting.
+At the owner’s explicit follow-up request, all19 privacy categories for2.1.0
+were completed and published on November13, including diagnostics, embedded
+Stripe verification details and Coarse Location Analytics. Reload verified no
+unfinished setup; manual app release remains selected. Privacy details are
+published, not a saved draft. See the current store privacy handoff.
 
 This scoped access update does not reopen the excluded Apple authorization
 revocation or separate-user Facebook tests, permit changes to Grant's personal

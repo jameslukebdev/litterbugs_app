@@ -40,17 +40,17 @@ listed below belong to27/24; refreshed28/25 UUID readback is not claimed.
   14minutes. This confirms submission to Google's workflow, not approval or
   completion of its checks. **Managed publishing ON** holds approved changes.
 - Google added Address, Phone number and Other info for embedded Stripe onboarding;
-  existing analytics disclosures preserved. Apple corrected13 current-version
-  baseline categories; the additional2.1 categories are prepared for manual
-  release because Apple immediately publishes label edits. Full details in
+  existing analytics disclosures preserved. Apple privacy now has all19
+  completed/published categories after the owner’s explicit follow-up instruction.
+  The3:18PM verification below supersedes the earlier13-category baseline. Details in
   [store privacy handoff](2026-09-11-store-privacy-handoff.md#november13-submission-follow-up--current-baseline-corrected).
 - No mobile public release, OTA, backend deployment or GitHub push in this pass.
   Dashboard chat received the review/manual-hold status; app metrics remain
   marked unreleased. Existing dashboard production deployment is separate work.
 
-Before public release: store approvals, resolve any actual review feedback, apply
-Apple's remaining2.1 privacy categories/purposes, then obtain the owner's explicit
-public-release instruction. Apple revocation and separate Facebook tests remain
+Before public release: store approvals, resolve any actual review feedback, then
+obtain the owner’s explicit public-release instruction. Apple privacy details
+are complete as of the3:18PM follow-up below. Apple revocation and separate Facebook tests remain
 excluded, not passed; prior physical-notification limitations remain documented.
 
 Evidence: `ios28-build-verification.json`, `android25-build-verification.json`,
@@ -61,6 +61,31 @@ succeeded after the browser chooser returned a generic upload error. Memory
 available42% at completion; cloud builds avoided new local native workers.
 Metro8081 remains running with768MB heap/one worker and analytics disabled for
 the existing simulator; stopping it can make newly mounted preview assets blank.
+
+## Apple privacy completion —3:18PM ET
+
+Owner explicitly requested finishing Apple's2.1 privacy details now while keeping
+public app release manual. Added and completed Phone Number, Physical Address
+and Other Data Types for embedded Stripe onboarding (App Functionality, linked,
+no tracking); Crash Data (App Functionality, unlinked, no tracking); Performance
+Data and Other Diagnostic Data (App Functionality and Analytics, unlinked,
+no tracking). Added Analytics to Coarse Location while retaining functional
+collection. Existing13 types and provider disclosures preserved.
+
+Apple immediately published the answers. Full reload confirms19 collected types,
+zero Set Up items, published timestamp, linked-data and unlinked diagnostics
+preview cards. The optional User Privacy Choices URL stays blank; the submitted
+policy URL is https://litterbugs.app/privacy. No legal agreement prompt appeared.
+Version2.1.0(28) still Waiting for Review and **Manually release this version**
+remains selected (automatic release options0). No binary public release,
+resubmission, provider setting, code, build, deployment, push or OTA change.
+Apple privacy is no longer pending release work. Remaining: approvals/actual
+review feedback and explicit owner authorization for manual public release.
+
+Evidence in `artifacts/mobile-2.1.0/device-evidence`:
+`apple-privacy-210-completion.json`, `litterbugs-apple-privacy-210-complete.txt`,
+`litterbugs-apple-privacy-210-complete.jpg`,
+`litterbugs-apple-privacy-manual-release.txt`.
 
 ## Luke TestFlight access and review follow-up —3:08PM ET
 

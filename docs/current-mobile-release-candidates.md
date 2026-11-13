@@ -1,6 +1,6 @@
 # Current Mobile Release Candidates
 
-## November13 — selected-pin fix and refreshed candidates
+## November13 — full2.1.0 app submitted; public release manual
 
 Owner found missing artwork and a selected pin partly hidden by the report card.
 The simulator's stopped Metro server caused missing newly loaded images; restarting
@@ -18,7 +18,9 @@ readiness addendum for exact submission state. Apple28 is Waiting for Review;
 Google25 and Data safety are in review; quick checks completed at the3:08PM
 follow-up. Luke was added to Burrow Bros;28 shows internal Testing for that group.
 Apple manual release and Google managed publishing ON hold public release.
-Before public release, apply the remaining Apple2.1 privacy-label additions.
+At the owner’s follow-up request, Apple2.1 privacy details are now complete and
+published:19 categories, no unfinished setup, reload verified at3:18PM ET.
+Remaining: store approvals/actual feedback and explicit owner release instruction.
 
 
 ## November 13 — original27/24 verification (superseded)

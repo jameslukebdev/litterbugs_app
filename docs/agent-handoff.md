@@ -24,6 +24,11 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (Apple2.1 privacy complete; public release manual)
+
+- Owner explicitly requested completing Apple privacy details now. Published six remaining types (Phone Number, Physical Address, Other Data Types; Crash/Performance/Other Diagnostic Data) with prepared purposes/linkage/no tracking, plus Analytics for Coarse Location. Existing13 declarations preserved. Reload verified19 types, zero Set Up items and published timestamp. This supersedes earlier pending-label handoffs; Apple privacy no longer remains for launch.
+-3:18PM ET readback:2.1.0(28) still Waiting for Review, Manually release selected, automatic options0. No app public release, review resubmission, provider changes, code/build/deploy/push/OTA. Evidence in device-evidence/apple-privacy-210-completion.json and matching screenshot/AX snapshots. Current candidates/readiness/store handoff/AGENTS updated. Remaining: store approvals/actual review feedback and owner’s explicit manual public-release instruction. Other dashboard/Claude changes preserved.
+
 ### 2026-11-13 — Codex (release checklist status readback)
 
 - Read-only store check for owner's remaining-release question: Apple2.1.0(28) still Waiting for Review; Google25/Data safety explicitly in review, managed publishing ON. Luke's internal access remains configured. Remaining launch work: approvals/actual review feedback, prepared Apple2.1 privacy-label additions, then explicit owner instruction for manual public release. No store settings, code, build, upload, deploy or submission changes in this check.

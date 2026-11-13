@@ -7,6 +7,22 @@ production binary and the unresolved provider questions below must be reconciled
 before calling the store forms final. Apple access resolution is deferred at the
 account holder's direction; support case 102959897494 does not block debugging.
 
+## November13 final2.1 privacy details published —3:18PM ET
+
+Owner explicitly requested finishing all Apple privacy details now, retaining
+manual public release. All19 categories are now completed and published; the
+13-category baseline/remaining-six statements below are historical. Added Phone
+Number, Physical Address, Other Data Types, Crash Data, Performance Data and
+Other Diagnostic Data with the prepared purposes/linkage/no-tracking answers.
+Coarse Location now includes Analytics as well as App Functionality. Reload
+verified19 collected types, no unfinished Set Up items and published timestamp.
+App2.1.0(28) still Waiting for Review; manual release selected, both automatic
+options unselected. No binary release or review resubmission occurred.
+
+Apple privacy is complete; no further privacy-label additions are pending for
+this candidate. Evidence and exact answers are in the3:18PM section of
+[the mobile readiness record](2026-11-13-mobile-release-readiness.md#apple-privacy-completion--318pm-et).
+
 ## November13 submission follow-up — current baseline corrected
 
 This section supersedes earlier statements about a four-type public label and
