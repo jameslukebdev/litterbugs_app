@@ -24,6 +24,28 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (simplified owner metrics dashboard, local only)
+
+- Source commit `ef258db32ce00cf757afbd7f222d3d8fdcdc3030`. Added six overview metrics:
+  total visits with web/app split, completed cleanups, cleanup funding principal,
+  new reports, distinct registered contributors and current eligible backlog.
+  Daily chart, attention items and reported impact retain field coverage.
+- Simplified Overview/Website/App presentation; removed provider/source/freshness,
+  citation and technical explanatory UI. White/purple/mint style, no added imagery.
+- Local-only business adapter runs a fixed aggregate SELECT through the existing
+  verified linked CLI after admin/MFA auth; bounded timeout/cache, no credentials
+  copied or raw identities returned. Read-only live records checked for7/28-day
+  totals, final-submission deduplication and NY calendar/DST comparisons. No DB
+  migrations, writes or provider changes. Production business connection remains
+  pending; original website tool snapshots/read-credential limitations remain.
+- App sessions query verified read-only; never sum launches with website sessions.
+  Unreleased app and combined visits remain unknown, website count stays visible.
+  Future release flag documented but unset; native production coverage unchanged.
+-66 focused tests, TypeScript, scoped ESLint and diff checks pass. Desktop/320/390px,
+  period/tab retention, signed-out no-data gate and analytics exclusion verified.
+  No deployment or GitHub push. Claude/native/preview edits preserved; latest app
+  release prep and separate media/legal work remain with the mobile chat.
+
 ### 2026-11-13 — Codex (owner KPI research and proposed definitions)
 
 - Researched Amplitude value metrics, marketplace fulfillment/liquidity, Stripe
