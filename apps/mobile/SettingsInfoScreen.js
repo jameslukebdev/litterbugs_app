@@ -6,8 +6,13 @@ import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
 import { openSupport } from './lib/support';
 import { colors, fonts } from './lib/theme';
+import AnalyticsChoice from './components/AnalyticsChoice';
 
 const pages = {
+  analytics: {
+    title: 'Analytics choices', icon: 'options-outline', heading: 'Your analytics choice',
+    description: 'You can use every Litterbugs feature with app analytics turned off.', sections: [],
+  },
   photos: {
     title: 'About photo review', icon: 'images-outline', heading: 'How your photos are reviewed',
     description: 'Photo checks help assess reports and cleanup progress. Here’s what happens after you upload.',
@@ -37,14 +42,14 @@ export default function SettingsInfoScreen({ navigation, route }) {
       <View style={styles.icon}><Ionicons name={page.icon} size={26} color={colors.primary} /></View>
       <Text style={styles.heading}>{page.heading}</Text>
       <Text style={styles.description}>{page.description}</Text>
-      <View style={styles.panel}>
+      {topic === 'analytics' ? <AnalyticsChoice /> : <View style={styles.panel}>
         {page.sections.map(([title, body], index) => (
           <View key={title} style={[styles.section, index > 0 && styles.divider]}>
             <Text style={styles.sectionTitle}>{title}</Text>
             <Text style={styles.body}>{body}</Text>
           </View>
         ))}
-      </View>
+      </View>}
       {topic === 'photos' ? <TouchableOpacity style={styles.secondary} accessibilityRole="button" onPress={() => navigation.push('SettingsInfo', { topic: 'help' })}><Text style={styles.secondaryText}>Have a question? Get help</Text><Ionicons name="chevron-forward" size={18} color={colors.primary} /></TouchableOpacity> : null}
       {topic === 'help' ? <>
         <Text selectable style={styles.email}>admin@litterbugs.app</Text>

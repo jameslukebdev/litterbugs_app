@@ -33,10 +33,26 @@ The release app now sends PostHog analytics, crash reports and masked session re
 | Launch/report/upload timings, device and app version | Diagnostics → Performance data, Other diagnostic data | App info and performance → Diagnostics | Analytics, troubleshooting. Not linked |
 | Masked session replay (all text and images hidden) | Usage data → Product interaction (and Other usage data if the form asks) | App activity → App interactions | Analytics. Not linked |
 | Anonymous install analytics ID | Identifiers → Device ID (conservative; it is install-scoped, not an advertising ID) | Device or other IDs | Analytics. Not linked |
-| PostHog GeoIP from the request IP | Location → Coarse location, unless "Discard client IP data" is turned on in PostHog | Approximate location (same condition) | Analytics. Not linked |
+| PostHog GeoIP from the request IP | Location → Coarse location | Approximate location | Analytics. Not linked; IP discarding alone does not disable enrichment |
 
-PostHog processes this on Litterbugs' behalf (service provider). The published privacy policy needs the
-"App analytics and diagnostics" section drafted in `apps/web/app/privacy/page.tsx` before release.
+PostHog processes this on Litterbugs' behalf (service provider). The privacy policy's
+"App analytics and diagnostics" section was published November 13, 2026.
+
+### November 13 live form review
+
+- PostHog project 695338 already had Discard client IP data enabled; retained. It prevents raw-IP storage,
+  but GeoIP can run before discard. Do not remove coarse/approximate location because of that switch.
+  [PostHog IP storage behavior](https://posthog.com/docs/privacy/data-storage#discarding-ip-addresses-at-project-level).
+- Google Play app `com.litterbugs.app`, app ID `4975441562384229541`, developer `6493490019570582000`:
+  existing Data safety answers already select App interactions, Crash logs, Diagnostics, Device or other IDs,
+  and Approximate location. Each already includes Analytics and App functionality purposes, non-ephemeral
+  collection, and broader existing sharing declarations. No category/purpose changes are needed just to add
+  this PostHog processing; no new store review or build was submitted. The existing privacy URL is unchanged.
+- The app's new device opt-out controls PostHog. It does not establish optional collection for an entire
+  Play category across Maps, Stripe, notification SDKs and older supported app versions; existing Required
+  and Shared answers were preserved. Do not label all diagnostic or identifier collection optional on that basis.
+- Apple: prepared answers remain the table above. No Apple form was saved or published; Luke's account
+  access remains unavailable. Grant's developer settings and only Apple sign-in account were untouched.
 
 Source anchors: `apps/mobile/MapScreen.js` (location permission and report
 placement), `apps/mobile/FundingContributionScreen.js` (PaymentSheet and

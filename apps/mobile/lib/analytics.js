@@ -2,7 +2,7 @@
 // website so app and web funnels line up. Off in development, QA and
 // simulator builds: only the store "production" EAS profile turns it on
 // (EXPO_PUBLIC_ANALYTICS_ENABLED with EXPO_PUBLIC_ANALYTICS_ENVIRONMENT=production),
-// so staff testing is never counted. A deliberately isolated test build uses
+// so QA builds are not counted (staff on store builds still are). An isolated test build uses
 // environment "test", which every event carries as `app_environment`.
 //
 // Event names and fields match apps/web/lib/website-analytics.ts where the website
@@ -15,6 +15,41 @@ import { scrubAnalyticsEvent } from './analyticsPrivacy';
 
 let client = null;
 let config = null;
+let startupPromise = null;
+let starting = false;
+let collectionAllowed = true;
+const earlyEvents = [];
+const COLLECTION_KEY = '@litterbugs/analytics-enabled';
+let testPreferenceStorage = null;
+function preferenceStorage() { return testPreferenceStorage ?? require('@react-native-async-storage/async-storage').default; }
+
+export async function analyticsCollectionEnabled() {
+  const value = await preferenceStorage().getItem(COLLECTION_KEY);
+  return value !== 'false';
+}
+
+// Device-wide, independent of sign-in: staff can exclude a store build before
+// testing. The SDK's own opt-out also stops native replay and crash collection.
+export async function setAnalyticsCollectionEnabled(enabled) {
+  if (typeof enabled !== 'boolean') throw new Error('Choose on or off.');
+  collectionAllowed = enabled;
+  if (!enabled) {
+    earlyEvents.length = 0;
+    clearTimeout(coverTimer);
+    coverTimer = null;
+    replayPaused = true;
+    const stopped = client?.stopSessionRecording?.();
+    const optedOut = client?.optOut?.();
+    await Promise.all([stopped, optedOut, preferenceStorage().setItem(COLLECTION_KEY, 'false')]);
+  } else {
+    await preferenceStorage().setItem(COLLECTION_KEY, 'true');
+    await startAnalytics();
+    // A previous opt-out is also persisted inside the SDK.
+    await client?.optIn?.();
+    replayPaused = true;
+    updateReplayForScreen();
+  }
+}
 // Read lazily so importing this file never loads native modules (tests, early startup).
 function analyticsConfig() {
   if (!config) {
@@ -61,9 +96,12 @@ export function releaseProperties(settings = analyticsConfig(), updates = null) 
 // batches of 50 with three retries. Offline events wait in that queue; nothing retries forever.
 export const DELIVERY_OPTIONS = Object.freeze({ flushAt: 20, flushInterval: 10000, maxBatchSize: 50, maxQueueSize: 200, fetchRetryCount: 3, requestTimeout: 10000 });
 
-export function posthogOptions(settings = analyticsConfig()) {
+export function posthogOptions(settings = analyticsConfig(), updates = null) {
   return {
     host: settings.posthogHost || 'https://us.i.posthog.com',
+    // The SDK can emit installation/open events inside its constructor, before
+    // register() runs. Attribute those events at construction time too.
+    customAppProperties: properties => ({ ...properties, ...releaseProperties(settings, updates) }),
     personProfiles: 'never',
     captureAppLifecycleEvents: true,
     ...DELIVERY_OPTIONS,
@@ -72,7 +110,9 @@ export function posthogOptions(settings = analyticsConfig()) {
     capturePushNotificationSubscriptions: false,
     capturePushNotificationOpened: false,
     before_send: scrubAnalyticsEvent,
-    enableSessionReplay: true,
+    // Navigation must establish a safe screen before the recorder can start. Auto-start
+    // can otherwise capture a restored private screen before onReady pauses it.
+    enableSessionReplay: false,
     sessionReplayConfig: {
       maskAllTextInputs: true,
       maskAllImages: true,
@@ -91,23 +131,45 @@ export function posthogOptions(settings = analyticsConfig()) {
 let backgroundEpoch = 0;
 export function startAnalytics() {
   if (client || !analyticsEnabled()) return client;
-  const settings = analyticsConfig();
-  try {
-    // Loaded lazily so builds without analytics never touch the native module.
-    const module = require('posthog-react-native');
-    const PostHog = module.PostHog ?? module.default;
-    client = new PostHog(settings.posthogKey, posthogOptions(settings));
-    client.register(releaseProperties(settings));
-    require('react-native').AppState.addEventListener('change', (state) => { if (state === 'background') backgroundEpoch += 1; });
-  } catch {
-    client = null; // Measurement must never stop the app from starting.
-  }
-  return client;
+  if (startupPromise) return startupPromise;
+  starting = true;
+  startupPromise = (async () => {
+    try {
+      // Resolve the device preference before even constructing the SDK, so a
+      // relaunch after opt-out cannot send an install/open or start native capture.
+      const enabled = await analyticsCollectionEnabled();
+      if (!enabled || !collectionAllowed) { collectionAllowed = false; return null; }
+      const settings = analyticsConfig();
+      // Loaded lazily so builds without analytics never touch the native module.
+      const module = require('posthog-react-native');
+      const PostHog = module.PostHog ?? module.default;
+      client = new PostHog(settings.posthogKey, posthogOptions(settings));
+      client.register(releaseProperties(settings));
+      require('react-native').AppState.addEventListener('change', (state) => { if (state === 'background') backgroundEpoch += 1; });
+      for (const [event, properties] of earlyEvents.splice(0)) send(event, properties);
+      updateReplayForScreen();
+      return client;
+    } catch {
+      client = null; // A failed preference read also fails closed.
+      return null;
+    } finally { starting = false; startupPromise = null; earlyEvents.length = 0; }
+  })();
+  return startupPromise;
 }
 
 function send(event, properties) {
-  if (!client || !properties) return false;
-  try { client.capture(event, properties); return true; } catch { return false; }
+  if (!properties || !collectionAllowed) return false;
+  if (!client) {
+    if (!starting) return false;
+    if (earlyEvents.length >= 50) earlyEvents.shift();
+    earlyEvents.push([event, properties]);
+    return true;
+  }
+  try {
+    if (event === '$screen') client.screen(properties.$screen_name);
+    else client.capture(event, properties);
+    return true;
+  } catch { return false; }
 }
 
 // ---------------------------------------------------------------------------
@@ -119,7 +181,8 @@ export const PRIVATE_REPLAY_SCREENS = Object.freeze([
   'Auth', 'SignInMethods', 'ResetPassword', 'CompleteProfile', 'EditProfile',
   'Profile', 'MyActivity', 'Payments', 'PaymentDetail', 'ContributionHistory', 'Settings', 'SettingsInfo',
   'NotificationSettings', 'BlockedAccounts', 'PublicProfile', 'ReportUser',
-  'FundingContribution', 'PayoutSetup', 'CleanupReview',
+  'FundingContribution', 'PayoutSetup', 'CleanupReview', 'CleanupFeedback',
+  'CleanupSubmission', 'Updates', 'ExpiredReports',
 ]);
 // The map shows street and place names around where the person is, and replay masking
 // can only black out the whole map (which blanks everything drawn over it). So replay
@@ -128,11 +191,11 @@ export const PRIVATE_REPLAY_SCREENS = Object.freeze([
 let mapCovered = false;
 export const replayAllowedOn = (name, covered = mapCovered) => typeof name === 'string'
   && !PRIVATE_REPLAY_SCREENS.includes(name) && (name !== 'Map' || covered);
-let replayPaused = false;
+let replayPaused = true;
 let currentScreen = null;
 function updateReplayForScreen(name = currentScreen) {
   const pause = !replayAllowedOn(name);
-  if (!client || pause === replayPaused) return;
+  if (!client || !collectionAllowed || pause === replayPaused) return;
   replayPaused = pause;
   try {
     // A resume never forces recording: the native SDK still applies the project's
@@ -160,9 +223,7 @@ export function trackScreen(name) {
   firstScreen ??= name;
   currentScreen = name;
   updateReplayForScreen(name);
-  if (!client || name === lastScreen) return;
-  lastScreen = name;
-  try { client.screen(name); } catch { /* optional */ }
+  if (name !== lastScreen && send('$screen', { $screen_name: name })) lastScreen = name;
 }
 
 // Same steps and failure reasons as the website (apps/web/lib/website-analytics.ts),
@@ -545,13 +606,18 @@ export function isSharedReportLink(url) {
 }
 
 // Test hooks.
-export function __resetAnalyticsForTests({ testClient = null, now } = {}) {
+export function __resetAnalyticsForTests({ testClient = null, testStorage = null, testConfig = null, now } = {}) {
   client = testClient;
-  config = null;
+  config = testConfig;
+  testPreferenceStorage = testStorage;
+  startupPromise = null;
+  starting = false;
+  collectionAllowed = true;
+  earlyEvents.length = 0;
   if (now) clock = now;
   lastScreen = null;
   firstScreen = null;
-  replayPaused = false;
+  replayPaused = true;
   currentScreen = null;
   mapCovered = false;
   clearTimeout(coverTimer);

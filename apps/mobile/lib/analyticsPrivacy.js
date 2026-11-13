@@ -28,7 +28,7 @@ export function scrubText(value, maxLength = 300) {
 
 // Properties the SDK may add that can hold a link (shared report links carry the report
 // ID; sign-in callbacks can carry tokens) or person data this app never sends.
-const DROPPED_PROPERTIES = ['url', '$current_url', '$referrer', '$referring_domain', '$pathname', '$host', '$ip', '$exception_steps'];
+const DROPPED_PROPERTIES = ['url', '$current_url', '$referrer', '$referring_domain', '$pathname', '$host', '$ip', '$exception_steps', '$set', '$set_once'];
 
 function scrubException(properties) {
   const list = Array.isArray(properties.$exception_list) ? properties.$exception_list : [];

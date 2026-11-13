@@ -24,6 +24,27 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (mobile analytics verified; privacy published)
+
+- Finished local app analytics: replay starts paused; install/open attribution; nested person-property scrubbing;
+  stale-link failure guard; device-wide Profile/Settings → Analytics choices (also signed out). Saved choice is
+  read before SDK startup. Simulator switch verified off after reopening; no account/push/database writes.
+-617 mobile tests pass (1 existing skip), lint and223-module source check pass. Both Hermes exports/debug IDs
+  verified. Real SDK/mock-native tests cover privacy, offline redelivery, notifications, opt-out and excluded relaunch.
+- At Grant's later explicit request, enabled PostHog695338 recording and exception autocapture; read back.
+  Existing IP discard stays on, but does not disable GeoIP: retain coarse location disclosure. Website explicitly
+  disables its PostHog replay/exception capture; Clarity unchanged. Production EAS now has project-restricted
+  error_tracking:write key and project ID secrets; production upload flag on, acceptance off. Actual CLI upload
+  and PostHog symbol-set readback verified both local maps. No secret values stored in repo/logs.
+- Privacy-only production source4d4e2e8 (based on prior live30adc6c), deploymentdpl_2A2dd4XGKrLZ2kEyK1wSSn3eWd2d,
+  is live on litterbugs.app; effectiveNov13. Live alias/HTTP200 checked. Rollbackdpl_7sr5ycQSEebuddcoSr7pg22oiwo5.
+  Google Play's existing five analytics categories/purposes already cover the additions; verified, unchanged.
+  Apple answers prepared only: Luke's access unavailable; Grant's Apple settings/account untouched.
+- Coordinated with Finish bug animation preview: dashboard452c394 stays local and was excluded from deployment.
+  No GitHub push, mobile OTA/store build or submission. Phone notification taps, NDK crash and physical-device
+  performance still unverified; prior native replay/crash evidence is Claude'sNov12 isolated builds. Fresh native
+  prebuild required (workspace generated iOS Pods are stale). Details: docs/reviews/2026-11-13-mobile-analytics-verification.md.
+
 ### 2026-11-13 — Codex (private owner analytics dashboard, local only)
 
 - Source commit 452c394da27df420c5a3a1f60312cce4d4a83d9d. New /admin/analytics combines GA, GSC,

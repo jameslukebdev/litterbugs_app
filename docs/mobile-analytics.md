@@ -12,21 +12,28 @@ Analytics sends only when **all** of these hold (`analyticsEnabled`):
 - `EXPO_PUBLIC_ANALYTICS_ENABLED=true` and a PostHog key are set;
 - `EXPO_PUBLIC_ANALYTICS_ENVIRONMENT` is `production` or `test` (anything else is `internal` and sends nothing);
 - it runs on a real device, unless the environment is `test`.
+- the device's Analytics choices setting is on. Its saved choice is read before constructing the SDK;
+  an unreadable preference fails closed. Up to 50 early events wait only while the preference is loading.
 
 Only the `production` EAS profile sets `ENABLED=true` + `ENVIRONMENT=production`. `production-acceptance-android`
 inherits the environment but sets `ENABLED=false`. QA, preview, simulator and development profiles send nothing.
 OTA updates (`scripts/mobile-update.mjs`) apply the same profile env, so `eas update` keeps the same setting.
 An isolated test build sets `ENVIRONMENT=test` and its own host/key; every event then carries `app_environment: test`.
 
-Staff using a store build on their own phone are still counted: the app has no analytics opt-out (unchanged,
-pending a decision by Grant).
+Staff on store builds should turn off **Profile → Settings → Analytics choices** before testing.
+Signed-out users can reach **Profile → Analytics choices** directly. This device-wide choice survives
+sign-out and relaunch; it stops future SDK events, JS/native diagnostics and replay. Already sent data is
+not deleted, and native SDK events queued before opt-out are not promised to be erased. QA/development
+build gates still apply even if the switch is on. No analytics-permission pop-up is added.
 
 ## Every event carries
 
 `surface: app`, `app_environment` (`production`/`test`), and when expo-updates is on `$expo_update_id`,
 `$expo_runtime_version`, `$expo_channel`, `$expo_is_embedded_launch`. These `$expo_*` keys are the ones the SDK puts on
 exceptions, so exceptions don't get a second copy. The SDK adds `$app_version`, `$app_build`, `$app_namespace`,
-`$os_name`, `$os_version` and `$is_emulator` itself. `personProfiles: 'never'` and no `identify` call.
+`$os_name`, `$os_version` and `$is_emulator` itself. Release metadata is supplied through
+`customAppProperties` at construction and registered afterward, so constructor-time installation/open
+events are attributed too. `personProfiles: 'never'` and no `identify` call.
 
 ## Events
 
@@ -110,14 +117,16 @@ expired_reports, admin_web. Store-link taps are not app opens; installs and open
 
 - `before_send` (`analyticsPrivacy.js`) removes `url` (the SDK attaches the launch link to `Application Opened`;
   shared links carry report IDs and auth callbacks can carry tokens), `$current_url`, `$referrer`, `$ip`, `$set`,
-  `$set_once`, exception steps; scrubs exception messages (emails, links, tokens, UUIDs, keys, coordinates, phone-like
+  `$set_once` both on the event and inside its properties, exception steps; scrubs exception messages (emails, links, tokens, UUIDs, keys, coordinates, phone-like
   numbers, long opaque strings; 300 chars max) and drops frame variables/source lines. If scrubbing fails the event is dropped.
 - Push tokens are not registered with PostHog and the SDK's notification-open event is off.
 - Native crash reports are built by the native SDK and do not pass through `before_send`.
 
 ## Session replay
 
-`maskAllTextInputs`, `maskAllImages`, `maskAllSandboxedViews` on; console logs and network URLs off. In the iOS
+Replay starts paused (`enableSessionReplay: false`) until navigation establishes a safe screen. This prevents
+constructor-time recording of a restored private screen. `maskAllTextInputs`, `maskAllImages`,
+`maskAllSandboxedViews` on; console logs and network URLs off. In the iOS
 release test build (PostHog iOS 3.92.7) every piece of text, not only inputs, and every image is drawn as a black
 block, so replay shows layout, taps and navigation only.
 
@@ -125,7 +134,8 @@ Replay stops while these screens are in front, and resumes when they close (a ma
 project's replay setting, sampling and triggers):
 Auth, SignInMethods, ResetPassword, CompleteProfile, EditProfile, Profile, MyActivity, Payments, PaymentDetail,
 ContributionHistory, Settings, SettingsInfo, NotificationSettings, BlockedAccounts, PublicProfile, ReportUser,
-FundingContribution (Stripe sheet), PayoutSetup (Stripe Connect), CleanupReview — and **the map itself**.
+FundingContribution (Stripe sheet), PayoutSetup (Stripe Connect), CleanupReview, CleanupFeedback,
+CleanupSubmission, Updates, ExpiredReports — and **the map itself**.
 
 The map's tiles show street and place names around where the person is, and masking can only black out the whole
 map, which blanks everything drawn over it too (and then every frame is identical and dropped). So replay is off
@@ -135,6 +145,8 @@ completed-cleanup "About the cleanup" card and the small location map on the rep
 
 PostHog project requirements: Session replay → "Record user sessions" on (mobile), and Error tracking → "Enable
 exception autocapture" on. Replay sampling/minimum duration are set in the project, not the app.
+Both project switches were enabled and read back on November 13, 2026. Website PostHog replay and exception
+capture stay explicitly disabled in website code; Clarity is unchanged.
 
 ## Crashes and symbols
 
@@ -144,20 +156,30 @@ exception autocapture" on. Replay sampling/minimum duration are set in the proje
   with native frames and debug images (for dSYM symbolication). They carry `$app_version`/`$app_namespace` but not the
   JS-registered `app_environment` or `$expo_*` keys. Crashes before the SDK starts (native start-up, before the first
   JavaScript runs) are not captured. Signals sent from outside the app (`kill`) are not reported.
-- Symbols: set `POSTHOG_UPLOAD_SYMBOLS=true` with EAS secrets `POSTHOG_CLI_API_KEY` (personal key with error tracking
-  write + organization read), `POSTHOG_CLI_PROJECT_ID` (and `POSTHOG_CLI_HOST` if not US). This adds the
+- Symbols: the production EAS profile sets `POSTHOG_UPLOAD_SYMBOLS=true`; the Android acceptance profile overrides
+  it to false. Production EAS project `df0d0855-71d9-4943-b278-d1f083ab6b06` now has secrets
+  `POSTHOG_CLI_API_KEY` and `POSTHOG_CLI_PROJECT_ID` (`695338`). The key named **Litterbugs mobile symbols** is restricted
+  to project 695338 and `error_tracking:write`. Although general CLI setup docs also mention organization read,
+  a real CLI 0.19.0 Hermes upload succeeded with this narrower key and an explicit project ID; both uploaded maps
+  were read back through the symbol-set API. No broader organization access was granted. This adds the
   `posthog-react-native/expo` plugin (`uploadNativeSymbols`, `skipOnConflict`), the Metro debug-ID serializer, and an
   `eas-build-pre-install` step that installs `@posthog/cli@0.19.0`. The config fails the build on the worker if the flag
   is set without the credentials. Credentials are never in the bundle or the repo.
-- OTA updates: run `npm run mobile:update:production -- --message "…"` with `POSTHOG_UPLOAD_SYMBOLS=true` and the
+- OTA updates: production now inherits `POSTHOG_UPLOAD_SYMBOLS=true` from its profile and requires the
   `POSTHOG_CLI_*` values in the shell environment. `eas update` then bundles with debug IDs, and after a successful
   publish `scripts/mobile-update.mjs` uploads the Hermes maps from `apps/mobile/dist` with `@posthog/cli@0.19.0`
-  (`--skip-on-conflict`). Without the flag it behaves as before; with the flag but no credentials it stops before
-  publishing.
+  (`--skip-on-conflict`). Production-preview remains opt-in via the flag. If the flag is true but credentials are
+  missing locally, publishing stops before any update is sent. EAS secret values cannot be read back for a local
+  OTA command; the operator must supply authorized CLI credentials through its environment.
 
 ## Privacy disclosures
 
-Draft (not published): "App analytics and diagnostics" section in `apps/web/app/privacy/page.tsx`, and an
-App Store / Play Data safety addendum in `docs/reviews/2026-09-11-store-privacy-handoff.md` (product interaction,
-crash/performance/diagnostic data, install analytics ID, coarse location from GeoIP unless PostHog discards IPs;
-all not linked, no tracking).
+The "App analytics and diagnostics" policy section in `apps/web/app/privacy/page.tsx` was published November 13, 2026.
+The App Store / Play Data safety inventory in `docs/reviews/2026-09-11-store-privacy-handoff.md` covers product interaction,
+crash/performance/diagnostic data, install analytics ID, coarse location from GeoIP; all not linked to accounts,
+no tracking. **IP discarding does not disable GeoIP enrichment before discard.** The project's
+`anonymize_ips` was already true and remains true; coarse location disclosures remain applicable.
+Existing Google Play answers already cover these types and Analytics purposes and were reviewed without changing
+other SDK disclosures. Apple answers remain prepared only; Luke's account access remains unavailable.
+
+See [November 13 verification](reviews/2026-11-13-mobile-analytics-verification.md) for current evidence and limits.

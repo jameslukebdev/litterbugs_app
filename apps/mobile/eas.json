@@ -102,7 +102,8 @@
         "IOS_BUNDLE_IDENTIFIER": "com.litterbugs.app",
         "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app",
         "EXPO_PUBLIC_ANALYTICS_ENABLED": "true",
-        "EXPO_PUBLIC_ANALYTICS_ENVIRONMENT": "production"
+        "EXPO_PUBLIC_ANALYTICS_ENVIRONMENT": "production",
+        "POSTHOG_UPLOAD_SYMBOLS": "true"
       },
       "autoIncrement": true,
       "channel": "production"
@@ -115,7 +116,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_ANALYTICS_ENABLED": "false"
+        "EXPO_PUBLIC_ANALYTICS_ENABLED": "false",
+        "POSTHOG_UPLOAD_SYMBOLS": "false"
       }
     }
   },

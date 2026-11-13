@@ -51,6 +51,7 @@ describe('SDK configuration', () => {
     expect(options.before_send).toBe(scrubAnalyticsEvent);
   });
   it('masks replay and records no console lines or network URLs', () => {
+    expect(options.enableSessionReplay).toBe(false); // navigation explicitly starts safe screens
     expect(options.sessionReplayConfig).toMatchObject({ maskAllTextInputs: true, maskAllImages: true, maskAllSandboxedViews: true, captureLog: false, captureNetworkTelemetry: false });
   });
   it('captures JavaScript and native crashes, without console errors or breadcrumbs', () => {
@@ -81,6 +82,12 @@ describe('privacy filter before sending', () => {
     const event = scrubAnalyticsEvent({ event: 'Application Opened', properties: { url: 'https://litterbugs.app/reports/7c9e6679-7425-40de-944b-e07fc1f90ae7', $app_version: '2.1.0' }, $set: { email: 'a@b.co' } });
     expect(event.properties).toEqual({ $app_version: '2.1.0' });
     expect(event).not.toHaveProperty('$set');
+  });
+  it('removes person updates inside SDK event properties as well as at the top level', () => {
+    const event = scrubAnalyticsEvent({ event: '$exception', properties: {
+      $set: { email: 'private@example.com' }, $set_once: { name: 'Private Member' },
+    }, $set_once: { phone: '5551234567' } });
+    expect(JSON.stringify(event)).not.toMatch(/private@example|Private Member|5551234567|\$set/);
   });
   it('scrubs error messages and source context', () => {
     const event = scrubAnalyticsEvent({ event: '$exception', properties: { $exception_list: [{ type: 'Error', value: 'Key (email)=(sam@example.com) at 40.71283,-74.00601 id 7c9e6679-7425-40de-944b-e07fc1f90ae7 https://x.supabase.co/a?token=abc eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTYifQ.sig +1 (555) 010-9999', stacktrace: { frames: [{ filename: 'main.jsbundle', lineno: 1, vars: { password: 'x' }, context_line: 'secret' }] } }] } });
@@ -280,23 +287,23 @@ describe('session replay on private screens', () => {
     trackScreen('PayoutSetup');
     trackScreen('Reports');
     expect(client.stopSessionRecording).toHaveBeenCalledTimes(1);
-    expect(client.startSessionRecording).toHaveBeenCalledTimes(1);
+    expect(client.startSessionRecording).toHaveBeenCalledTimes(2);
     expect(client.startSessionRecording).toHaveBeenCalledWith(true);
-    for (const name of ['Auth', 'ResetPassword', 'Payments', 'PaymentDetail', 'Profile', 'EditProfile']) expect(replayAllowedOn(name)).toBe(false);
+    for (const name of ['Auth', 'ResetPassword', 'Payments', 'PaymentDetail', 'Profile', 'EditProfile', 'CleanupFeedback', 'CleanupSubmission', 'Updates', 'ExpiredReports']) expect(replayAllowedOn(name)).toBe(false);
     expect(replayAllowedOn('Reports')).toBe(true);
   });
   it('keeps the map itself out of replay, but records sheets that cover it', () => {
     expect(replayAllowedOn('Map', false)).toBe(false);
     expect(replayAllowedOn('Map', true)).toBe(true);
     trackScreen('Map');
-    expect(client.stopSessionRecording).toHaveBeenCalledTimes(1);
+    expect(client.stopSessionRecording).not.toHaveBeenCalled(); // starts paused
     setMapCoveredForReplay(true);
     vi.advanceTimersByTime(699);
     expect(client.startSessionRecording).not.toHaveBeenCalled(); // waits for the sheet to finish sliding in
     vi.advanceTimersByTime(1);
     expect(client.startSessionRecording).toHaveBeenCalledTimes(1);
     setMapCoveredForReplay(false);
-    expect(client.stopSessionRecording).toHaveBeenCalledTimes(2);
+    expect(client.stopSessionRecording).toHaveBeenCalledTimes(1);
   });
   it('a sheet that closes before it finished opening never resumes replay', () => {
     trackScreen('Map');

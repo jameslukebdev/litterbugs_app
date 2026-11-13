@@ -101,6 +101,7 @@ function SignedOutProfile({ navigation, bottomPadding }) {
       </Text>
       <PrimaryButton label="Sign in or create account" onPress={() => navigation.navigate('Auth')} style={styles.primaryButton} />
       <View style={styles.signedOutSupport}>
+        <ActionRow appearance="profile" divided={true} label="Analytics choices" icon="options-outline" onPress={() => navigation.navigate('SettingsInfo', { topic: 'analytics' })} />
         <ActionRow appearance="profile" divided={true} label="Get help" icon="help-circle-outline" onPress={() => navigation.navigate('SettingsInfo', { topic: 'help' })} />
         <ActionRow appearance="profile" divided={true} label="Terms of use" icon="document-text-outline" onPress={() => openLitterbugsLink(TERMS_URL)} />
         <ActionRow appearance="profile" divided={false} label="Privacy policy" icon="shield-checkmark-outline" onPress={() => openLitterbugsLink(PRIVACY_URL)} />
@@ -527,6 +528,7 @@ export default function ProfileScreen({ navigation, route }) {
           <ActionRow appearance="profile" divided label="Cleanup safety" icon="shield-outline" onPress={() => openLitterbugsLink(CLEANUP_SAFETY_URL)} />
           <ActionRow appearance="profile" divided label="Terms of use" icon="document-text-outline" onPress={() => openLitterbugsLink(TERMS_URL)} />
           <ActionRow appearance="profile" divided label="Privacy policy" icon="shield-checkmark-outline" onPress={() => openLitterbugsLink(PRIVACY_URL)} />
+          <ActionRow appearance="profile" divided label="Analytics choices" icon="options-outline" onPress={() => openScreen('SettingsInfo', { topic: 'analytics' })} />
           <ActionRow appearance="profile" divided label="Cleanup & reward policy" icon="leaf-outline" onPress={() => openLitterbugsLink(CLEANUP_POLICY_URL)} />
           <ActionRow appearance="profile" label="About photo review" icon="images-outline" onPress={() => openScreen('SettingsInfo', { topic: 'photos' })} />
         </View>

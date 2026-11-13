@@ -1198,6 +1198,7 @@ useEffect(() => {
   // Timed from the request (list tap, shared link, notification), including the report fetch.
   // This effect re-runs when pins refresh; the same request keeps its first start time.
   if (!route?.params?.editPhotos && (requestTiming.current?.id !== requestedReportId || !requestTiming.current.timer.active)) {
+    requestTiming.current?.timer.cancel();
     const source = pendingAppOpenSource('report') ?? (route?.params?.returnTo === 'Reports' ? 'report_list' : 'in_app');
     requestTiming.current = { id: requestedReportId, source, timer: startTiming('report_details', { source }, { timeoutMs: 30000 }) };
   }
@@ -1241,6 +1242,9 @@ useEffect(() => {
       navigation.setParams({ reportId: undefined, editPhotos: undefined });
     } catch (error) {
       console.log('Requested report load error:', error);
+      // A previous fetch can reject after another link has superseded it. It must
+      // not finish the newer link's analytics outcome or show its error alert.
+      if (!active) return;
       timing?.finish('failed');
       finishAppOpen('failed', 'report');
       if (active) {
