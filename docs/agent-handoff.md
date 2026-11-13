@@ -24,6 +24,16 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (Stripe support updates checked)
+
+- Original case `sco_VJarfjNbi0QKE3`: Stacy acknowledged our answers November6;
+  latest November13 follow-up says internal review continues, no final guidance.
+  No new information requested in that reply. Case remains open.
+- Pricing case `sco_VZJHsoGY2oq3z3`: Ellah’s November5 reply says Express/Custom
+  volume discount analysis generally requires net$150k/month for3 calendar
+  months; discounts not guaranteed. Case closed November5. No reply sent,
+  settings changed, financial action or deployment made.
+
 ### 2026-11-13 — Codex (Apple2.1 privacy complete; public release manual)
 
 - Owner explicitly requested completing Apple privacy details now. Published six remaining types (Phone Number, Physical Address, Other Data Types; Crash/Performance/Other Diagnostic Data) with prepared purposes/linkage/no tracking, plus Analytics for Coarse Location. Existing13 declarations preserved. Reload verified19 types, zero Set Up items and published timestamp. This supersedes earlier pending-label handoffs; Apple privacy no longer remains for launch.
