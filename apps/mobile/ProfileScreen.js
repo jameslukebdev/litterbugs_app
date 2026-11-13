@@ -369,8 +369,6 @@ export default function ProfileScreen({ navigation, route }) {
         <Text style={styles.howText}>How Litterbugs works</Text>
         <Ionicons name="chevron-forward" size={16} color={colors.muted} />
       </TouchableOpacity>
-      {/* Development builds only: a signed-in tester has no other way back to the first-launch screen. */}
-      {__DEV__ ? <TextLink tone="muted" align="start" label="Replay the welcome (test builds only)" onPress={() => navigation.navigate('Home')} /> : null}
       </View>
 
       {promptReporterPayout ? <ReporterPayoutPrompt cents={totals.reporterWaitingCents} onPress={openPayoutSetup} style={styles.overviewPrompt} /> : null}
