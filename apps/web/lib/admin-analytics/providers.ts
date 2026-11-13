@@ -6,6 +6,7 @@ import { unstable_cache } from 'next/cache';
 import { list, number, object, ratio, reportWindow, type Period, type Source, type SourceData, type Window } from './model';
 import { localGoogleEnabled, localGoogleReports } from './local-google';
 import { localClaritySource } from './local-clarity-cache';
+import { hostedClaritySource } from './hosted-clarity-cache';
 
 const TIMEOUT = 12_000;
 async function request(url: string, init: RequestInit = {}): Promise<unknown> {
@@ -19,6 +20,16 @@ function post(url: string, token: string, body: unknown) {
 
 // Dedicated read-only Google service account. Never reuse the site's public GA tag.
 async function googleToken() {
+  if (process.env.ADMIN_ANALYTICS_GOOGLE_OAUTH) {
+    const account = object(JSON.parse(process.env.ADMIN_ANALYTICS_GOOGLE_OAUTH));
+    if (![account.client_id, account.client_secret, account.refresh_token, account.scope].every(value => typeof value === 'string' && value.length > 0)) throw new Error('Google connection not configured');
+    const scopes = String(account.scope).split(/\s+/);
+    const allowed = ['openid', 'email', 'https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/analytics.readonly', 'https://www.googleapis.com/auth/webmasters.readonly'];
+    if (scopes.some(scope => !allowed.includes(scope)) || !allowed.slice(-2).every(scope => scopes.includes(scope))) throw new Error('Google read-only connection required');
+    const result = object(await request('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'refresh_token', client_id: String(account.client_id), client_secret: String(account.client_secret), refresh_token: String(account.refresh_token) }) }));
+    if (typeof result.access_token !== 'string') throw new Error('Google authorization unavailable');
+    return result.access_token;
+  }
   const account = object(JSON.parse(process.env.ADMIN_ANALYTICS_GOOGLE_SERVICE_ACCOUNT ?? '{}'));
   if (typeof account.client_email !== 'string' || typeof account.private_key !== 'string') throw new Error('Google connection not configured');
   const now = Math.floor(Date.now() / 1000);
@@ -134,11 +145,15 @@ export async function fetchFriction() {
 }
 
 export async function liveSource<K extends keyof SourceData>(id: K, window: Window, loader: () => Promise<SourceData[K]>, note: string): Promise<Source<SourceData[K]>> {
-  const credential = id === 'posthog' || id === 'app' ? process.env.ADMIN_ANALYTICS_POSTHOG_KEY : id === 'clarity' ? process.env.ADMIN_ANALYTICS_CLARITY_TOKEN : localGoogleEnabled() ? 'local-google-read-connection' : process.env.ADMIN_ANALYTICS_GOOGLE_SERVICE_ACCOUNT;
+  const credential = id === 'posthog' || id === 'app' ? process.env.ADMIN_ANALYTICS_POSTHOG_KEY : id === 'clarity' ? process.env.ADMIN_ANALYTICS_CLARITY_TOKEN : localGoogleEnabled() ? 'local-google-read-connection' : process.env.ADMIN_ANALYTICS_GOOGLE_OAUTH || process.env.ADMIN_ANALYTICS_GOOGLE_SERVICE_ACCOUNT;
   if (!credential) return { status: 'unconfigured', updatedAt: null, window, data: null, note: 'Automatic connection not set up yet.' };
   // Authorization happens before this function. Cache only aggregates, independent
   // of the requesting admin. Clarity shares one cache across both period choices.
   const key = createHash('sha256').update(credential).digest('hex');
+  if (id === 'clarity' && process.env.ADMIN_ANALYTICS_HOSTED_CONNECTIONS === 'true') {
+    return hostedClaritySource(window, loader as () => Promise<SourceData['clarity']>, note) as Promise<Source<SourceData[K]>>;
+  }
+  if (id === 'clarity' && process.env.NODE_ENV !== 'development') return { status: 'unconfigured', updatedAt: null, window, data: null, note: '' };
   if (id === 'clarity' && process.env.NODE_ENV === 'development') {
     return localClaritySource(key, window, loader as () => Promise<SourceData['clarity']>, note) as Promise<Source<SourceData[K]>>;
   }

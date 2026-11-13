@@ -1370,6 +1370,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      owner_analytics_business: { Args: never; Returns: Json };
+      owner_analytics_clarity_cache: { Args: { target_lease?: string; observed_source?: Json }; Returns: Json };
       write_customer_draft: { Args: DraftWrite; Returns: CloudDraft };
       expire_customer_drafts: { Args: Record<string, never>; Returns: { path: string }[] };
       sync_report_preferences: {

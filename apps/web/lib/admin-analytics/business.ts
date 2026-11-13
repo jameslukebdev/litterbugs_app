@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { getAdminAccessState } from '@/lib/admin-access';
+import { createClient } from '@/lib/supabase/server';
 import { list, number, object, reportWindow, type BusinessData, type Period, type Source } from './model';
 
 const execute = promisify(execFile);
@@ -35,17 +36,20 @@ export function normalizeBusiness(value: unknown): BusinessData {
   return data;
 }
 
-// This local-only adapter uses the owner's existing CLI authentication. It
-// executes a fixed, reviewed SELECT, excluding marked review accounts and using
-// explicit local-midnight boundaries. It returns only aggregates. No credential
-// is copied into the app and no database/schema change is made. Production
-// enablement will use a separately reviewed read-only aggregate connection.
+// Both adapters run the same fixed aggregate query. Hosted reads use the admin's
+// own MFA session and an independently guarded RPC, never a service-role key.
 export async function loadBusiness(period: Period): Promise<Source<BusinessData>> {
   const window = reportWindow(period);
   const unavailable: Source<BusinessData> = { status: 'unconfigured', data: null, window, updatedAt: null, note: '' };
-  if (process.env.NODE_ENV !== 'development') return unavailable;
   if (await getAdminAccessState() !== 'authorized') throw new Error('Admin access required');
   try {
+    if (process.env.ADMIN_ANALYTICS_HOSTED_CONNECTIONS === 'true') {
+      const client = await createClient();
+      const { data, error } = await client.rpc('owner_analytics_business');
+      if (error) throw new Error('Business connection unavailable');
+      return businessSource(list(data), period, new Date().toISOString());
+    }
+    if (process.env.NODE_ENV !== 'development') return unavailable;
     const root = resolve(process.cwd(), '../..');
     const linked = (await readFile(resolve(root, 'supabase/.temp/project-ref'), 'utf8')).trim();
     if (linked !== EXPECTED_PROJECT) throw new Error('Unexpected linked project');
@@ -53,16 +57,21 @@ export async function loadBusiness(period: Period): Promise<Source<BusinessData>
       pending = { day: window.end, expires: Date.now() + 300_000, result: execute('supabase', ['db', 'query', '--linked', '--file', resolve(root, 'scripts/owner-analytics-business.sql'), '--output', 'json'], { cwd: root, timeout: 20_000, maxBuffer: 256_000 }).then(({ stdout }) => ({ rows: list(object(JSON.parse(stdout)).rows), updatedAt: new Date().toISOString() })) };
     }
     const result = await pending.result;
-    const row = object(result.rows.find(raw => object(raw).period === period));
-    if (row.starts !== window.start || row.ends !== window.end) throw new Error('Business period mismatch');
-    const previousWindow = reportWindow(period, 'America/New_York', period + 1);
-    if (row.previous_starts !== previousWindow.start || row.previous_ends !== previousWindow.end) throw new Error('Business comparison period mismatch');
-    const data = normalizeBusiness(row.data);
-    if (data.daily.length !== period) throw new Error('Incomplete daily business data');
-    return { status: 'live', data, window, updatedAt: result.updatedAt, note: '' };
+    return businessSource(result.rows, period, result.updatedAt);
   } catch {
     // A temporary provider failure never becomes a false zero or a raw error.
     pending = undefined;
     return { ...unavailable, status: 'error' };
   }
+}
+
+function businessSource(rows: unknown[], period: Period, updatedAt: string): Source<BusinessData> {
+    const window = reportWindow(period);
+    const row = object(rows.find(raw => object(raw).period === period));
+    if (row.starts !== window.start || row.ends !== window.end) throw new Error('Business period mismatch');
+    const previousWindow = reportWindow(period, 'America/New_York', period + 1);
+    if (row.previous_starts !== previousWindow.start || row.previous_ends !== previousWindow.end) throw new Error('Business comparison period mismatch');
+    const data = normalizeBusiness(row.data);
+    if (data.daily.length !== period) throw new Error('Incomplete daily business data');
+    return { status: 'live', data, window, updatedAt, note: '' };
 }

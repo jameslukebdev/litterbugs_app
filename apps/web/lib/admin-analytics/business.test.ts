@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-const mocks = vi.hoisted(() => ({ access: vi.fn(), read: vi.fn(), exec: vi.fn() }));
+const mocks = vi.hoisted(() => ({ access: vi.fn(), read: vi.fn(), exec: vi.fn(), rpc: vi.fn(), create: vi.fn() }));
+vi.mock('@/lib/supabase/server', () => ({ createClient: mocks.create }));
 vi.mock('server-only', () => ({}));
 vi.mock('@/lib/admin-access', () => ({ getAdminAccessState: mocks.access }));
 vi.mock('node:fs/promises', () => ({ readFile: mocks.read }));
@@ -22,6 +23,16 @@ describe('local business totals', () => {
     const { loadBusiness } = await import('./business');
     await expect(loadBusiness(7)).rejects.toThrow('Admin access required');
     expect(mocks.exec).not.toHaveBeenCalled(); expect(mocks.read).not.toHaveBeenCalled();
+  });
+  it('uses only the admin session RPC for hosted totals', async () => {
+    vi.stubEnv('NODE_ENV', 'production'); vi.stubEnv('ADMIN_ANALYTICS_HOSTED_CONNECTIONS', 'true');
+    vi.useFakeTimers(); vi.setSystemTime(new Date('2026-11-13T15:00:00Z'));
+    mocks.create.mockResolvedValue({ rpc: mocks.rpc }); mocks.rpc.mockResolvedValue({ data: JSON.parse(response()).rows, error: null });
+    const { loadBusiness } = await import('./business');
+    expect((await loadBusiness(7)).data?.newReports).toBe(6);
+    expect(mocks.rpc).toHaveBeenCalledWith('owner_analytics_business'); expect(mocks.exec).not.toHaveBeenCalled();
+    mocks.rpc.mockResolvedValue({ data: null, error: { message: 'private detail' } });
+    expect((await loadBusiness(7)).status).toBe('error');
   });
   it('never runs the local CLI in production', async () => {
     vi.stubEnv('NODE_ENV', 'production');
