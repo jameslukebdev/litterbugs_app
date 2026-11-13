@@ -1,8 +1,14 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+const cache = vi.hoisted(() => new Map<string, Promise<unknown>>());
 vi.mock('server-only', () => ({}));
-vi.mock('next/cache', () => ({ unstable_cache: (fn: () => unknown) => fn }));
+vi.mock('next/cache', () => ({ unstable_cache: (fn: () => unknown, keys: string[]) => async () => {
+  const key = JSON.stringify(keys);
+  if (!cache.has(key)) cache.set(key, Promise.resolve().then(fn).catch(error => { cache.delete(key); throw error; }));
+  return cache.get(key);
+} }));
 import { appQuery, liveSource, normalizeApp, normalizeFriction, normalizeProduct, productQuery } from './providers';
 
+beforeEach(() => cache.clear());
 afterEach(() => { vi.unstubAllEnvs(); });
 const window = { start: '2026-11-06', end: '2026-11-12', timezone: 'America/New_York' };
 describe('owner analytics providers', () => {
@@ -41,9 +47,10 @@ describe('owner analytics providers', () => {
     expect(query.properties.at(-1)?.value).toBe('\\.invalid$');
   });
   it('keeps missing or unknown Clarity metric fields unknown', () => {
-    expect(normalizeFriction([{ metricName: 'Traffic', information: [{ totalSessionCount: '21' }] }, { metricName: 'DeadClickCount', information: [{ sessionsCount: '1' }] }, { metricName: 'RageClickCount', information: [{ sessionsCount: '0' }] }])).toEqual({ sessions: 21, deadSessions: 1, rageSessions: 0, quickBackSessions: null, scriptErrorSessions: null });
+    expect(normalizeFriction([{ metricName: 'Traffic', information: [{ totalSessionCount: '29' }] }, { metricName: 'DeadClickCount', information: [{ sessionsCount: '29', sessionsWithMetricPercentage: 6.9 }] }, { metricName: 'RageClickCount', information: [{ sessionsCount: '29', sessionsWithMetricPercentage: 0 }] }])).toEqual({ sessions: 29, deadSessions: null, rageSessions: null, quickBackSessions: null, scriptErrorSessions: null, deadRate: 0.069, rageRate: 0, quickBackRate: null, scriptErrorRate: null });
     expect(normalizeFriction([{ metricName: 'Traffic', information: [{ totalSessionCount: '21' }] }, { metricName: 'DeadClickCount', information: [{ clickCount: 2 }] }]).deadSessions).toBeNull();
     expect(() => normalizeFriction([])).toThrow('Clarity traffic coverage unavailable');
+    expect(() => normalizeFriction([{ metricName: 'Traffic', information: [{ totalSessionCount: '29' }] }, { metricName: 'DeadClickCount', information: [{ sessionsWithMetricPercentage: 101 }] }])).toThrow();
   });
   it('does not call a provider without a private credential', async () => {
     vi.stubEnv('ADMIN_ANALYTICS_POSTHOG_KEY', '');
@@ -58,5 +65,14 @@ describe('owner analytics providers', () => {
     expect(result.data).toBeNull();
     expect(JSON.stringify(result)).not.toContain('private-credential');
     expect(JSON.stringify(result)).not.toContain('personal data');
+  });
+  it('recovers from a failed read rather than caching an error as empty data', async () => {
+    vi.stubEnv('ADMIN_ANALYTICS_POSTHOG_KEY', 'private-credential');
+    const data = normalizeProduct({ results: [108,36,11,4,1,0,1,0,0,0].map(aggregated_value => ({ aggregated_value })) });
+    const loader = vi.fn().mockRejectedValueOnce(new Error('Transient connection failure')).mockResolvedValue(data);
+    expect((await liveSource('posthog', window, loader, '')).status).toBe('error');
+    expect((await liveSource('posthog', window, loader, '')).data?.visits).toBe(108);
+    expect((await liveSource('posthog', window, loader, '')).status).toBe('live');
+    expect(loader).toHaveBeenCalledTimes(2);
   });
 });
