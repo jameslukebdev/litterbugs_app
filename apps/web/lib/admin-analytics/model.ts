@@ -6,7 +6,7 @@ export type Row = { label: string; value: number };
 export type GoogleData = { sessions: number; users: number | null; views: number | null; daily: SeriesPoint[]; channels: Row[] };
 export type SearchData = { clicks: number; impressions: number; ctr: number | null; position: number | null; daily: SeriesPoint[]; queries: Row[] };
 export type ProductData = { visits: number; mapVisits: number; reportOpens: number; cleanupStarts: number; cleanupClaims: number; cleanupSubmissions: number; failures: number; mapStarts: number; mapReady: number; mapFailures: number };
-export type FrictionData = { sessions: number | null; rageSessions: number | null; deadSessions: number | null; quickBackSessions: number | null; scriptErrorSessions: number | null };
+export type FrictionData = { sessions: number | null; rageSessions: number | null; deadSessions: number | null; quickBackSessions: number | null; scriptErrorSessions: number | null; rageRate?: number | null; deadRate?: number | null; quickBackRate?: number | null; scriptErrorRate?: number | null };
 export type AppData = { visits: number | null; screens: number; launches: number; reports: number; claims: number; submissions: number; approvals: number; failures: number; signIns: number; reportReadyMedian: number | null; reportReadySamples: number; mapReadyMedian: number | null; mapReadySamples: number };
 export type BusinessData = {
   newReports: number; completedCleanups: number; fundedCents: number; refundedCents: number; contributors: number;
@@ -88,6 +88,9 @@ export function validateData<K extends SourceId>(id: K, input: unknown): SourceD
   else if (id === 'gsc') result = { clicks: metric('clicks'), impressions: metric('impressions'), ctr: optional('ctr'), position: optional('position'), daily: daily(), queries: rows('queries') };
   else if (id === 'posthog') result = Object.fromEntries(['visits', 'mapVisits', 'reportOpens', 'cleanupStarts', 'cleanupClaims', 'cleanupSubmissions', 'failures', 'mapStarts', 'mapReady', 'mapFailures'].map(key => [key, metric(key)])) as ProductData;
   else if (id === 'app') result = { visits: optional('visits'), screens: metric('screens'), launches: metric('launches'), reports: metric('reports'), claims: metric('claims'), submissions: metric('submissions'), approvals: metric('approvals'), failures: metric('failures'), signIns: metric('signIns'), reportReadyMedian: optional('reportReadyMedian'), reportReadySamples: metric('reportReadySamples'), mapReadyMedian: optional('mapReadyMedian'), mapReadySamples: metric('mapReadySamples') };
-  else result = { sessions: optional('sessions'), rageSessions: optional('rageSessions'), deadSessions: optional('deadSessions'), quickBackSessions: optional('quickBackSessions'), scriptErrorSessions: optional('scriptErrorSessions') };
+  else {
+    const rate = (key: string) => { const value = optional(key); if (value != null && value > 1) throw new Error('Invalid signal rate'); return value; };
+    result = { sessions: optional('sessions'), rageSessions: optional('rageSessions'), deadSessions: optional('deadSessions'), quickBackSessions: optional('quickBackSessions'), scriptErrorSessions: optional('scriptErrorSessions'), rageRate: rate('rageRate'), deadRate: rate('deadRate'), quickBackRate: rate('quickBackRate'), scriptErrorRate: rate('scriptErrorRate') };
+  }
   return result as SourceData[K];
 }

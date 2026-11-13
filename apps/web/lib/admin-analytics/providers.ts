@@ -4,6 +4,8 @@ import { createSign, createHash } from 'node:crypto';
 import { unstable_cache } from 'next/cache';
 
 import { list, number, object, ratio, reportWindow, type Period, type Source, type SourceData, type Window } from './model';
+import { localGoogleEnabled, localGoogleReports } from './local-google';
+import { localClaritySource } from './local-clarity-cache';
 
 const TIMEOUT = 12_000;
 async function request(url: string, init: RequestInit = {}): Promise<unknown> {
@@ -37,23 +39,25 @@ function gaRows(raw: unknown) {
   });
 }
 export async function fetchGoogle(window: Window): Promise<SourceData['ga']> {
-  const token = await googleToken();
+  const local = localGoogleEnabled();
+  const token = local ? '' : await googleToken();
   const base = { dateRanges: [{ startDate: window.start, endDate: window.end }], dimensionFilter: { filter: { fieldName: 'hostName', stringFilter: { matchType: 'EXACT', value: 'litterbugs.app' } } } };
-  const run = (body: unknown) => post('https://analyticsdata.googleapis.com/v1beta/properties/561329300:runReport', token, body);
-  const [total, daily, channels] = await Promise.all([
-    run({ ...base, metrics: ['sessions', 'totalUsers', 'screenPageViews'].map(name => ({ name })) }),
-    run({ ...base, dimensions: [{ name: 'date' }], metrics: [{ name: 'sessions' }], orderBys: [{ dimension: { dimensionName: 'date' } }], limit: 28 }),
-    run({ ...base, dimensions: [{ name: 'sessionDefaultChannelGroup' }], metrics: [{ name: 'sessions' }], orderBys: [{ metric: { metricName: 'sessions' }, desc: true }], limit: 8 }),
-  ]);
+  const requests = [
+    { ...base, dimensions: [], metrics: ['sessions', 'totalUsers', 'screenPageViews'].map(name => ({ name })) },
+    { ...base, dimensions: [{ name: 'date' }], metrics: [{ name: 'sessions' }], orderBys: [{ dimension: { dimensionName: 'date' } }], limit: 28 },
+    { ...base, dimensions: [{ name: 'sessionDefaultChannelGroup' }], metrics: [{ name: 'sessions' }], orderBys: [{ metric: { metricName: 'sessions' }, desc: true }], limit: 8 },
+  ];
+  const [total, daily, channels] = local ? await localGoogleReports('ga', requests) : await Promise.all(requests.map(body => post('https://analyticsdata.googleapis.com/v1beta/properties/561329300:runReport', token, body)));
   const totals = gaRows(total)[0]?.metrics ?? [0, 0, 0];
   return { sessions: totals[0], users: totals[1], views: totals[2], daily: gaRows(daily).map(row => ({ date: row.dimensions[0].replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3'), value: row.metrics[0] })), channels: gaRows(channels).map(row => ({ label: row.dimensions[0], value: row.metrics[0] })) };
 }
 
 export async function fetchSearch(window: Window): Promise<SourceData['gsc']> {
-  const token = await googleToken();
-  const base = { startDate: window.start, endDate: window.end, type: 'web', dataState: 'final' };
-  const run = (body: unknown) => post('https://www.googleapis.com/webmasters/v3/sites/sc-domain%3Alitterbugs.app/searchAnalytics/query', token, body);
-  const [total, daily, queries] = await Promise.all([run(base), run({ ...base, dimensions: ['date'], rowLimit: 28 }), run({ ...base, dimensions: ['query'], rowLimit: 8 })]);
+  const local = localGoogleEnabled();
+  const token = local ? '' : await googleToken();
+  const base = { startDate: window.start, endDate: window.end, type: 'web', dataState: 'final', dimensions: [] };
+  const requests = [base, { ...base, dimensions: ['date'], rowLimit: 28 }, { ...base, dimensions: ['query'], rowLimit: 8 }];
+  const [total, daily, queries] = local ? await localGoogleReports('gsc', requests) : await Promise.all(requests.map(body => post('https://www.googleapis.com/webmasters/v3/sites/sc-domain%3Alitterbugs.app/searchAnalytics/query', token, body)));
   const rows = (raw: unknown) => list(object(raw).rows ?? []).map(object);
   const summary = rows(total)[0];
   const clicks = summary ? number(summary.clicks) : 0;
@@ -80,7 +84,7 @@ export function normalizeProduct(raw: unknown): SourceData['posthog'] {
   return Object.fromEntries(['visits', 'mapVisits', 'reportOpens', 'cleanupStarts', 'cleanupClaims', 'cleanupSubmissions', 'failures', 'mapStarts', 'mapReady', 'mapFailures'].map((name, i) => [name, values[i]])) as SourceData['posthog'];
 }
 export async function fetchProduct(window: Window) {
-  return normalizeProduct(await post('https://us.posthog.com/api/projects/695338/query/', process.env.ADMIN_ANALYTICS_POSTHOG_KEY ?? '', { query: productQuery(window) }));
+  return normalizeProduct(await post('https://us.posthog.com/api/projects/695338/query/', process.env.ADMIN_ANALYTICS_POSTHOG_KEY ?? '', { query: productQuery(window), name: 'Litterbugs owner dashboard website' }));
 }
 
 export function appQuery(window: Window) {
@@ -104,11 +108,12 @@ export function normalizeApp(raw: unknown): SourceData['app'] {
   return { visits: values[12]!, screens: values[0]!, launches: values[1]!, reports: values[2]!, claims: values[3]!, submissions: values[4]!, approvals: values[5]!, failures: values[6]!, signIns: values[7]!, reportReadyMedian: values[9] ? values[8] : null, reportReadySamples: values[9]!, mapReadyMedian: values[11] ? values[10] : null, mapReadySamples: values[11]! };
 }
 export async function fetchApp(window: Window) {
-  return normalizeApp(await post('https://us.posthog.com/api/projects/695338/query/', process.env.ADMIN_ANALYTICS_POSTHOG_KEY ?? '', { query: appQuery(window) }));
+  return normalizeApp(await post('https://us.posthog.com/api/projects/695338/query/', process.env.ADMIN_ANALYTICS_POSTHOG_KEY ?? '', { query: appQuery(window), name: 'Litterbugs owner dashboard app' }));
 }
 
-// Clarity returns sessions with a signal, not a count of people or clicks.
-// Unrecognized/missing metrics stay null; they must not appear as a reassuring zero.
+// Clarity's sessionsCount is the examined population, not affected sessions.
+// Use its supplied percentage directly; rounded rates cannot establish exact
+// affected-session counts. Missing fields remain unknown, never false zeros.
 export function normalizeFriction(raw: unknown): SourceData['clarity'] {
   const metrics = list(raw).map(object);
   const get = (metricName: string, field: string) => {
@@ -121,22 +126,29 @@ export function normalizeFriction(raw: unknown): SourceData['clarity'] {
   };
   const sessions = get('Traffic', 'totalSessionCount');
   if (sessions == null) throw new Error('Clarity traffic coverage unavailable');
-  return { sessions, rageSessions: get('RageClickCount', 'sessionsCount'), deadSessions: get('DeadClickCount', 'sessionsCount'), quickBackSessions: get('QuickbackClick', 'sessionsCount'), scriptErrorSessions: get('ScriptErrorCount', 'sessionsCount') };
+  const rate = (name: string) => { const value = get(name, 'sessionsWithMetricPercentage'); if (value != null && value > 100) throw new Error('Invalid signal percentage'); return value == null ? null : value / 100; };
+  return { sessions, rageSessions: null, deadSessions: null, quickBackSessions: null, scriptErrorSessions: null, rageRate: rate('RageClickCount'), deadRate: rate('DeadClickCount'), quickBackRate: rate('QuickbackClick'), scriptErrorRate: rate('ScriptErrorCount') };
 }
 export async function fetchFriction() {
   return normalizeFriction(await request('https://www.clarity.ms/export-data/api/v1/project-live-insights?numOfDays=3', { headers: { Authorization: `Bearer ${process.env.ADMIN_ANALYTICS_CLARITY_TOKEN ?? ''}` } }));
 }
 
 export async function liveSource<K extends keyof SourceData>(id: K, window: Window, loader: () => Promise<SourceData[K]>, note: string): Promise<Source<SourceData[K]>> {
-  const credential = id === 'posthog' || id === 'app' ? process.env.ADMIN_ANALYTICS_POSTHOG_KEY : id === 'clarity' ? process.env.ADMIN_ANALYTICS_CLARITY_TOKEN : process.env.ADMIN_ANALYTICS_GOOGLE_SERVICE_ACCOUNT;
+  const credential = id === 'posthog' || id === 'app' ? process.env.ADMIN_ANALYTICS_POSTHOG_KEY : id === 'clarity' ? process.env.ADMIN_ANALYTICS_CLARITY_TOKEN : localGoogleEnabled() ? 'local-google-read-connection' : process.env.ADMIN_ANALYTICS_GOOGLE_SERVICE_ACCOUNT;
   if (!credential) return { status: 'unconfigured', updatedAt: null, window, data: null, note: 'Automatic connection not set up yet.' };
   // Authorization happens before this function. Cache only aggregates, independent
   // of the requesting admin. Clarity shares one cache across both period choices.
   const key = createHash('sha256').update(credential).digest('hex');
-  return unstable_cache(async () => {
-    try { return { status: 'live' as const, updatedAt: new Date().toISOString(), window, data: await loader(), note }; }
-    catch { return { status: 'error' as const, updatedAt: new Date().toISOString(), window, data: null, note: 'This source could not be reached. Its other reports are unaffected.' }; }
-  }, ['owner-analytics-v1', id, key, ...(id === 'clarity' ? [] : [window.start, window.end])], { revalidate: id === 'clarity' ? 21_600 : 900 })();
+  if (id === 'clarity' && process.env.NODE_ENV === 'development') {
+    return localClaritySource(key, window, loader as () => Promise<SourceData['clarity']>, note) as Promise<Source<SourceData[K]>>;
+  }
+  try {
+    return await unstable_cache(async () => ({ status: 'live' as const, updatedAt: new Date().toISOString(), window, data: await loader(), note }),
+      ['owner-analytics-live-v1', id, key, ...(id === 'clarity' ? [] : [window.start, window.end])], { revalidate: id === 'clarity' ? 21_600 : 900 })();
+  } catch {
+    // Failed connections must not be cached as empty results for fifteen minutes.
+    return { status: 'error', updatedAt: new Date().toISOString(), window, data: null, note: 'This source could not be reached. Its other reports are unaffected.' };
+  }
 }
 
 export function sourceWindows(period: Period) {

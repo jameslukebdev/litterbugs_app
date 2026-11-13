@@ -6,6 +6,73 @@ He subsequently requested the unreleased app analytics from the parallel
 “Finish mobile analytics verification” chat. Overview / Website / App views keep
 both surfaces distinct while using the same7/28 complete-day period control.
 
+## Automatic local connections — November13
+
+Grant authorized live connections for local review only. The existing dashboard
+now reads GA561329300, GSC sc-domain:litterbugs.app, PostHog695338 (website and
+production app) and Clarity z60itnrbpn automatically. It retains the business
+aggregate adapter. All five provider adapters and business reads passed real
+7/28-day checks; private evidence lives in ignored
+`apps/web/.analytics-local/live-connection-verification.json`.
+
+- PostHog: a new personal key named **Litterbugs owner dashboard (read only)**,
+  only `query:read`, restricted to project695338. The mobile symbols key is unchanged.
+- Clarity: new export token **Litterbugs-owner-dashboard** for this project only.
+  Verified the real API response shape. `sessionsCount` is the examined population;
+  use `sessionsWithMetricPercentage` for signal rates. Do not report all examined
+  sessions as affected sessions or infer exact counts from rounded percentages.
+- Google: the existing SEO connection has the required read-only OAuth scopes.
+  The local bridge uses its installed public SDK to obtain a short-lived token
+  inside a bounded child process, then reads fixed GA/GSC report endpoints. OAuth
+  refresh credentials remain in the tool's original store and no access token
+  leaves that process. Three reports per provider share authorization; no copied
+  OAuth refresh token or cached CLI report is used as a newly fetched report.
+  Google's occasional cold-request timeouts receive one bounded retry; HTTP401,
+  403 and429 are not automatically retried. Successful aggregates cache15minutes.
+  Failed reads remain unknown and are not cached as empty results for15minutes.
+- A temporary dedicated Google service account was explored but organization
+  policy blocks keys and excludes the existing OAuth identity from impersonation.
+  Policies were not weakened. Its temporary GA/GSC grants and IAM binding were
+  removed and the unused account deleted. No service-account key was created.
+  Reporting/IAM credential APIs were enabled in litterbugs-auth; no broad IAM role
+  was granted. The working local connection uses the already authorized OAuth SDK.
+- Local-only settings live in ignored `.env.development.local`, mode0600. Tokens
+  never enter NEXT_PUBLIC variables, client components, screenshots, Git or logs.
+  The SDK module path is local configuration, not a committed machine path.
+
+The page checks for updates every5minutes while visible, and when returning to
+an overdue tab. Date/view selections remain unchanged and leaving the page removes
+its timer. Provider reads remain behind server membership/MFA checks. GA/GSC/
+PostHog refresh at most every15minutes; business totals every5minutes. Complete-day
+windows and GSC's existing final-data lag are unchanged. No separate scheduled
+agent, cron job or cloud publication was created for this local-only request.
+
+Clarity has a persistent local aggregate ledger with six-hour cooldown, atomic
+request reservation/lock, failure cooldown and a cap of8 requests per UTC day,
+leaving2 for diagnostics. Date/view switches and dev-server restarts share it.
+Only normalized aggregates are stored; no raw visit records/URLs or token.
+A quota lock/cache write failure returns unavailable data rather than bypassing
+its budget. The first verified API response seeded this ledger without a second
+call. For future publication, replace the local SDK/database adapters and local
+Clarity ledger with reviewed server credentials/storage; this does not establish
+production-host automatic reporting. The dashboard remains undeployed.
+
+App reads are connected but the latest app remains unreleased. Its production
+query excludes QA/emulators/test flags; app and combined visits stay unknown.
+Keep the release flag unset until actual public activation. Native symbols alone
+remain insufficient proof of end-to-end current-production crash capture.
+
+Verification:77 focused tests pass, including hidden-tab/unmount timer behavior,
+private route/MFA gates, unknown-versus-zero handling, Clarity denominator/rate
+mapping, persistent quota/failure cooldown and recovery after failed provider reads.
+TypeScript, scoped ESLint, script syntax and diff checks pass. Real credentialed
+7/28 reads returned live for all five adapters and business totals. Authenticated
+Chrome verified both date ranges and app awaiting release. A signed-out HTTP read
+contained only sign-in and no private metrics/key. Local credential/cache files
+are0600 and ignored. No production build, dashboard deployment or GitHub push.
+
+This supersedes older unconfigured-connection and snapshot-only notes below.
+
 ## Implemented owner metrics and simpler page — November13
 
 Grant approved the six proposed metrics below for local implementation. The

@@ -50,4 +50,11 @@ describe('simple owner analytics', () => {
     expect(within(tile('Completed cleanups')).getByText('—')).toBeTruthy();
     expect(screen.queryByText('$0')).toBeNull();
   });
+  it('shows Clarity signal rates instead of misreading its total-session denominator', () => {
+    render(<AnalyticsDashboard dashboard={{ ...dashboard, sources: { ...dashboard.sources, clarity: source({ sessions: 29, rageSessions: null, deadSessions: null, quickBackSessions: null, scriptErrorSessions: null, rageRate: 0, deadRate: 0.069, quickBackRate: 0.1724 }) } }} view="website" />);
+    expect(screen.getByText('0.0%')).toBeTruthy();
+    expect(screen.getByText('6.9%')).toBeTruthy();
+    expect(screen.getByText('17.2%')).toBeTruthy();
+    expect(screen.queryByText('29')).toBeNull();
+  });
 });

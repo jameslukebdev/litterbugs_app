@@ -5,6 +5,7 @@ import { getAdminAccessState } from '@/lib/admin-access';
 import { loadDashboard } from '@/lib/admin-analytics/load';
 import { parsePeriod } from '@/lib/admin-analytics/model';
 import { AnalyticsDashboard } from './dashboard';
+import { AnalyticsAutoRefresh } from './auto-refresh';
 import adminStyles from '../admin.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -19,5 +20,5 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
   const params = await searchParams;
   const period = parsePeriod(params.days);
   const view = params.view === 'app' || params.view === 'website' ? params.view : 'overview';
-  return <AnalyticsDashboard dashboard={await loadDashboard(period)} view={view} />;
+  return <><AnalyticsAutoRefresh /><AnalyticsDashboard dashboard={await loadDashboard(period)} view={view} /></>;
 }

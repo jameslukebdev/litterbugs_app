@@ -24,7 +24,8 @@ describe('owner dashboard measurement rules', () => {
   });
   it('whitelists snapshot fields and distinguishes missing from observed zero', () => {
     const data = validateData('clarity', { sessions: 21, deadSessions: 1, rageSessions: 0, quickBackSessions: 4, email: 'private@example.invalid', token: 'secret' });
-    expect(data).toEqual({ sessions: 21, deadSessions: 1, rageSessions: 0, quickBackSessions: 4, scriptErrorSessions: null });
+    expect(data).toEqual({ sessions: 21, deadSessions: 1, rageSessions: 0, quickBackSessions: 4, scriptErrorSessions: null, rageRate: null, deadRate: null, quickBackRate: null, scriptErrorRate: null });
+    expect(() => validateData('clarity', { sessions: 21, rageRate: 1.2 })).toThrow();
     expect(() => validateData('ga', { sessions: null })).toThrow();
   });
 });
