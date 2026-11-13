@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { ResponsiveLink } from './responsive-link';
 import { useRouter } from 'next/navigation';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, useSyncExternalStore } from 'react';
 
@@ -111,10 +112,10 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
     <>
       <div className={`public-account-actions${compactOnMobile ? ' public-account-actions-desktop' : ''}`}>
         {userId && <NotificationLink key={userId} userId={userId} />}
-        {!authChecked && !userId ? <span className="public-account-placeholder" role="status" aria-label="Loading profile" /> : userId ? <button
-          type="button" className="public-account-control public-account-control-profile" title="Your profile" onClick={() => router.push('/account')}>
+        {!authChecked && !userId ? <span className="public-account-placeholder" role="status" aria-label="Loading profile" /> : userId ? <ResponsiveLink
+          href="/account" className="public-account-control public-account-control-profile" title="Your profile">
           {avatar}<span className="public-account-label">Profile</span>
-        </button> : <>
+        </ResponsiveLink> : <>
           <button type="button" className="public-sign-in" onClick={() => { setAuthIntent(null); setEntryMode('login'); setAuthOpen(true); }}>Sign in</button>
           <button type="button" className="public-account-control public-account-control-signed-out" onClick={() => { setAuthIntent(null); setEntryMode('signup'); setAuthOpen(true); }}>
             <span className="public-account-label account-label-desktop">Get started</span><span className="public-account-label account-label-mobile">Log in / Sign up</span>
@@ -125,9 +126,9 @@ export const PublicAccountAction = forwardRef<PublicAccountActionHandle, {
       {compactOnMobile && (
         <div className="mobile-map-account">
           <NotificationLink key={userId ?? 'guest'} userId={userId} />
-          {userId && <button type="button" className="mobile-profile-button" aria-label="Your profile" onClick={() => router.push('/account')}>
+          {userId && <ResponsiveLink href="/account" className="mobile-profile-button" aria-label="Your profile">
             {avatar}
-          </button>}
+          </ResponsiveLink>}
         </div>
       )}
 

@@ -16,7 +16,7 @@ vi.mock('@/lib/funding', async original => ({ ...await original<object>(), loadP
 vi.mock('@/components/payout-setup-action', () => ({ PayoutSetupAction: ({ onReady, onDismiss }: { onReady: () => void; onDismiss: (reason: 'closed') => void }) => <div role="dialog" aria-label="Payout setup"><button onClick={onReady}>Finish payout fixture</button><button onClick={() => onDismiss('closed')}>Close payout setup</button></div> }));
 
 const { from, rpc, state } = vi.hoisted(() => ({
-  from: vi.fn(), rpc: vi.fn(), state: { accepted: true, error: false, claimed: false, attemptError: false, revision: 0 },
+  from: vi.fn(), rpc: vi.fn(), state: { accepted: true, error: false, claimed: false, attemptError: false, revision: 0, waiverVersion: 'v4' },
 }));
 const { loadDraft, saveDraft } = vi.hoisted(() => ({ loadDraft: vi.fn(), saveDraft: vi.fn() }));
 vi.mock('@/lib/saved-cleanup-draft', () => ({ loadCleanupDraft: loadDraft, saveCleanupDraft: saveDraft, clearCleanupDraft: vi.fn().mockResolvedValue(undefined) }));
@@ -31,16 +31,16 @@ beforeEach(() => {
   saveDraft.mockResolvedValue(undefined);
   Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:evidence') });
   Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
-  state.accepted = true;
+  state.accepted = true; state.waiverVersion = 'v4';
   state.error = false;
   rpc.mockResolvedValue({ data: {}, error: null });
   from.mockImplementation((table: string) => {
     const chain = {
       select: vi.fn(), eq: vi.fn(), in: vi.fn(), is: vi.fn(), order: vi.fn(), limit: vi.fn(),
       maybeSingle: vi.fn().mockImplementation(async () => table === 'cleanup_waiver_versions'
-        ? { data: { waiver_version: 'v4', guidelines_version: 'v2', body: 'Full versioned agreement', published_at: '2026-09-23' }, error: null }
+        ? { data: { waiver_version: state.waiverVersion, guidelines_version: 'v2', body: 'Full versioned agreement', published_at: '2026-09-23' }, error: null }
         : table === 'cleanup_waiver_acceptances'
-          ? { data: state.accepted ? { waiver_version: 'v4' } : null, error: state.error ? new Error('offline') : null }
+          ? { data: state.accepted ? { waiver_version: state.waiverVersion } : null, error: state.error ? new Error('offline') : null }
           : { data: state.attemptError ? null : state.claimed ? { id: 'attempt-1', cleaner_id: 'cleaner-1', status: 'claimed', claim_expires_at: '2026-09-30' } : null, error: state.attemptError ? new Error('offline') : null }),
     };
     for (const method of ['select', 'eq', 'in', 'is', 'order', 'limit'] as const) chain[method].mockReturnValue(chain);
@@ -55,7 +55,7 @@ describe('cleanup agreement and site confirmation', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Clean' }));
     await screen.findByRole('dialog');
     expect(screen.queryByText('Full versioned agreement')).toBeNull();
-    const confirm = screen.getByRole('button', { name: 'Claim this cleanup' }) as HTMLButtonElement;
+    const confirm = screen.getByRole('button', { name: 'Start my cleanup' }) as HTMLButtonElement;
     expect(confirm.disabled).toBe(true);
     fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(confirm);
@@ -65,19 +65,48 @@ describe('cleanup agreement and site confirmation', () => {
     expect(telemetry.step).toHaveBeenCalledWith('clean', 'safety_review');
     await waitFor(() => expect(telemetry.step).toHaveBeenCalledWith('clean', 'claim_confirmed'));
   });
-  it('requires both the new agreement and a site confirmation', async () => {
+  it('requires opening the new agreement before one affirmative agreement and site confirmation', async () => {
     state.accepted = false;
     render(<CleanupAction report={report} userId="cleaner-1" />);
     fireEvent.click(await screen.findByRole('button', { name: 'Clean' }));
-    await screen.findByText('Full versioned agreement');
-    const boxes = screen.getAllByRole('checkbox');
-    const confirm = screen.getByRole('button', { name: 'Claim this cleanup' }) as HTMLButtonElement;
-    fireEvent.click(boxes[0]);
+    const read = await screen.findByRole('button', { name: 'Read the cleanup agreement' });
+    const box = screen.getByRole('checkbox') as HTMLInputElement;
+    const confirm = screen.getByRole('button', { name: 'Start my cleanup' }) as HTMLButtonElement;
+    expect(screen.queryByText('Full versioned agreement')).toBeNull();
+    expect(box.disabled).toBe(true);
+    expect(box.checked).toBe(false);
     expect(confirm.disabled).toBe(true);
-    fireEvent.click(boxes[1]);
+    fireEvent.click(confirm);
+    expect(rpc).not.toHaveBeenCalled();
+    fireEvent.click(read);
+    expect(screen.getByText('Full versioned agreement')).toBeTruthy();
+    expect(box.disabled).toBe(false);
+    expect(confirm.disabled).toBe(true);
+    fireEvent.click(box);
     fireEvent.click(confirm);
     await waitFor(() => expect(rpc).toHaveBeenCalledWith('accept_cleanup_waiver', { accepted_waiver_version: 'v4', accepted_guidelines_version: 'v2' }));
     expect(rpc).toHaveBeenCalledWith('claim_cleanup', { target_report_id: 'report-1' });
+  });
+  it('requires the new document to be opened and accepted if the active version changes during a claim', async () => {
+    let changed = false;
+    rpc.mockImplementation(async (name: string) => {
+      if (name === 'claim_cleanup' && !changed) {
+        changed = true; state.accepted = false; state.waiverVersion = 'v5';
+        return { error: new Error('cleanup_waiver_outdated') };
+      }
+      return { data: {}, error: null };
+    });
+    render(<CleanupAction report={report} userId="cleaner-1" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Clean' }));
+    fireEvent.click(await screen.findByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: 'Start my cleanup' }));
+    const read = await screen.findByRole('button', { name: 'Read the cleanup agreement' });
+    const box = screen.getByRole('checkbox') as HTMLInputElement;
+    expect(box.disabled).toBe(true); expect(box.checked).toBe(false);
+    expect(rpc).not.toHaveBeenCalledWith('accept_cleanup_waiver', expect.anything());
+    fireEvent.click(read); fireEvent.click(box);
+    fireEvent.click(screen.getByRole('button', { name: 'Start my cleanup' }));
+    await waitFor(() => expect(rpc).toHaveBeenCalledWith('accept_cleanup_waiver', { accepted_waiver_version: 'v5', accepted_guidelines_version: 'v2' }));
   });
   it('does not claim when saved acceptance cannot be checked', async () => {
     state.error = true;
@@ -190,7 +219,7 @@ it('opens safety review after sign-in without accepting an agreement or claiming
   const view = render(<CleanupAction report={report} userId={null} autoOpen />);
   expect(screen.queryByRole('dialog')).toBeNull();
   view.rerender(<CleanupAction report={report} userId="cleaner-1" autoOpen />);
-  const confirm = await screen.findByRole('button', { name: 'Claim this cleanup' }) as HTMLButtonElement;
+  const confirm = await screen.findByRole('button', { name: 'Start my cleanup' }) as HTMLButtonElement;
   expect(confirm.disabled).toBe(true);
   expect(rpc).not.toHaveBeenCalled();
 });
@@ -215,7 +244,7 @@ it.each(['returned', 'thrown'])('records a %s claim failure without a confirmed-
   fireEvent.click(await screen.findByRole('button', { name: 'Clean' }));
   await screen.findByRole('dialog');
   fireEvent.click(screen.getByRole('checkbox'));
-  fireEvent.click(screen.getByRole('button', { name: 'Claim this cleanup' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Start my cleanup' }));
   await waitFor(() => expect(telemetry.failure).toHaveBeenCalledWith('clean', 'safety_review', 'claim_failed'));
   expect(telemetry.step).not.toHaveBeenCalledWith('clean', 'claim_confirmed');
 });
@@ -227,12 +256,12 @@ it('opens payout setup before safety for a funded cleanup, then rechecks readine
   render(<CleanupAction report={fundedReport} userId="cleaner-1" />);
   fireEvent.click(await screen.findByRole('button', { name: 'Clean' }));
   await screen.findByRole('dialog', { name: 'Payout setup' });
-  expect(screen.queryByRole('button', { name: 'Claim this cleanup' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Start my cleanup' })).toBeNull();
   expect(from.mock.calls.some(([table]) => table === 'cleanup_waiver_versions')).toBe(false);
   expect(rpc).not.toHaveBeenCalled();
   payout.status.mockResolvedValue(readyPayout);
   fireEvent.click(screen.getByRole('button', { name: 'Finish payout fixture' }));
-  await screen.findByRole('button', { name: 'Claim this cleanup' });
+  await screen.findByRole('button', { name: 'Start my cleanup' });
   expect(payout.status).toHaveBeenCalledTimes(2);
   expect(screen.queryByRole('dialog', { name: 'Payout setup' })).toBeNull();
   expect(rpc).not.toHaveBeenCalled();
@@ -244,7 +273,7 @@ it('goes straight to safety when the funded cleaner already has enabled payouts'
   payout.status.mockResolvedValue(readyPayout);
   render(<CleanupAction report={fundedReport} userId="cleaner-1" />);
   fireEvent.click(await screen.findByRole('button', { name: 'Clean' }));
-  await screen.findByRole('button', { name: 'Claim this cleanup' });
+  await screen.findByRole('button', { name: 'Start my cleanup' });
   expect(screen.queryByRole('dialog', { name: 'Payout setup' })).toBeNull();
   expect(rpc).not.toHaveBeenCalled();
 });
@@ -259,7 +288,7 @@ it('keeps the claim closed when payout status fails and allows another check', a
   expect(telemetry.failure).toHaveBeenCalledWith('clean', 'payout_check', 'payout_status_load_failed');
   payout.status.mockResolvedValue(readyPayout);
   fireEvent.click(screen.getByRole('button', { name: 'Clean' }));
-  await screen.findByRole('button', { name: 'Claim this cleanup' });
+  await screen.findByRole('button', { name: 'Start my cleanup' });
 });
 
 it('cancels payout setup without opening safety or claiming and checks again on the next Clean', async () => {
@@ -283,7 +312,7 @@ it('does not open a stale funded flow after switching reports', async () => {
   await act(async () => finish(readyPayout));
   expect(screen.queryByRole('dialog')).toBeNull();
   fireEvent.click(await screen.findByRole('button', { name: 'Clean' }));
-  await screen.findByRole('button', { name: 'Claim this cleanup' });
+  await screen.findByRole('button', { name: 'Start my cleanup' });
   expect(payout.status).toHaveBeenCalledOnce();
 });
 
@@ -293,15 +322,15 @@ it('returns to payout setup if readiness changes between safety and the server c
   render(<CleanupAction report={fundedReport} userId="cleaner-1" />);
   fireEvent.click(await screen.findByRole('button', { name: 'Clean' }));
   fireEvent.click(await screen.findByRole('checkbox'));
-  fireEvent.click(screen.getByRole('button', { name: 'Claim this cleanup' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Start my cleanup' }));
   await screen.findByRole('dialog', { name: 'Payout setup' });
-  expect(screen.queryByRole('button', { name: 'Claim this cleanup' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Start my cleanup' })).toBeNull();
   expect(telemetry.step).not.toHaveBeenCalledWith('clean', 'claim_confirmed');
 });
 
 it('opens the funded sign-in continuation under the development Strict Mode lifecycle', async () => {
   render(<StrictMode><CleanupAction report={fundedReport} userId="cleaner-1" autoOpen /></StrictMode>);
   await screen.findByRole('dialog', { name: 'Payout setup' });
-  expect(screen.queryByRole('button', { name: 'Claim this cleanup' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Start my cleanup' })).toBeNull();
   expect(rpc).not.toHaveBeenCalled();
 });

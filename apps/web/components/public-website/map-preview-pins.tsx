@@ -1,6 +1,6 @@
 'use client';
 /* eslint-disable @next/next/no-img-element -- card thumbnails use the report photo route directly, like PublicPhoto. */
-import Link from 'next/link';
+import { ResponsiveLink as Link } from '../responsive-link';
 import { useMemo, useRef, useState, type CSSProperties } from 'react';
 import { IoChevronForward, IoClose } from 'react-icons/io5';
 import { MapPinBug } from './map-pin-bug';

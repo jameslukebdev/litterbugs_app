@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element -- small heading bug, like the map's bugs. */
 import Image from 'next/image';
-import Link from 'next/link';
+import { ResponsiveLink as Link } from '../responsive-link';
 import type { CSSProperties } from 'react';
 import { LITTER_MAP_HREF } from '@/lib/home-map-link';
 import { BOONE_PREVIEW, type MapPreviewPin } from '@/lib/map-preview';

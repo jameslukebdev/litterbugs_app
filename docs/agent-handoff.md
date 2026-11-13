@@ -24,6 +24,18 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (approved cleanup-start/button release prepared)
+
+- Owner approved cleanup-start58778ad and button00318cb/6a90480 deployment.
+  Clean release applies only their25 web source/test files to previous release
+  notes2bdce38/source65a80e9. Includes shade feedback (no underline), intent
+  prefetch, reliable carousel/photo controls, and native-style first-use and
+  returning-cleaner safety UI with the existing versioned acceptance/payout gates.
+-82 focused tests, TypeScript, scoped lint and diff check pass. Native, dependencies,
+  database and concurrent notification changes excluded; local preview pages remain
+  local. Remote production build and staged verification precede promotion.
+- Previous live/rollback: dpl_2HqQdm5DFN686ELFm1Rom2YfheNs. No migrations.
+
 ### 2026-11-12 — Codex (approved button/save/map fixes deployed)
 
 - Owner approved deployment and GitHub push. Live source65a80e9 on

@@ -17,6 +17,7 @@ import { CleanupDone, CleanupEvidencePanel, CleanupSafetyPanel } from '@/compone
 import { getReportCardPhotoUrl } from '@/lib/report-photo';
 import { BrandBug } from '@/components/brand-bug';
 import { ModalShell } from '@/components/modal-shell';
+import cleanupStartStyles from './cleanup-start-panel.module.css';
 import { submitCleanupEvidence } from '@/lib/cleanup-submission';
 import { parseCleanupHours } from '@/lib/cleanup-duration';
 import { useDataRefresh, notifyDataChanged } from '@/lib/use-data-refresh';
@@ -452,8 +453,9 @@ function CleanupActionForReport({
         : <button className="secondary-button compact-button" onClick={() => setReleaseConfirming(true)} disabled={attemptFailed || Boolean(busy) || preparing}>I can&rsquo;t do this cleanup</button>)}
 
       {waiverOpen && waiver && (
-        <ModalShell onClose={() => { trackParticipationExit('clean', 'safety_review', 'cancelled'); setWaiverOpen(false); }} label="Cleanup safety and funded reward acknowledgment" className="cleanup-flow-dialog cleanup-waiver-dialog" closeDisabled={busy === 'claim'}>
+        <ModalShell onClose={() => { trackParticipationExit('clean', 'safety_review', 'cancelled'); setWaiverOpen(false); }} label="Cleanup safety and funded reward acknowledgment" className={cleanupStartStyles.dialog} closeDisabled={busy === 'claim'}>
           <CleanupSafetyPanel
+            key={`${waiver.waiver_version}:${waiver.guidelines_version}`}
             notice={attemptNotice}
             reportTitle={report.title}
             rewardCents={report.funded_amount_cents ?? 0}

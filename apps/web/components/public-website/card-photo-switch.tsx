@@ -18,18 +18,25 @@ export function CardPhotoSwitch({ count, title }: { count: number; title: string
     const image = slides[(at + count) % count]?.querySelector('img');
     if (image) image.loading = 'eager';
   };
-  // Hovering the card fetches the second photo, so the first arrow click shows it straight away.
+  // Touch and keyboard users need the same adjacent-photo warmup as a mouse.
   useEffect(() => {
     const { card, slides } = parts();
     if (!card) return;
-    const warm = () => preload(slides, index.current + 1);
-    card.addEventListener('pointerenter', warm, { once: true });
-    return () => card.removeEventListener('pointerenter', warm);
+    const warm = () => { preload(slides, index.current + 1); preload(slides, index.current - 1); };
+    card.addEventListener('pointerenter', warm);
+    card.addEventListener('pointerdown', warm);
+    card.addEventListener('focusin', warm);
+    return () => {
+      card.removeEventListener('pointerenter', warm);
+      card.removeEventListener('pointerdown', warm);
+      card.removeEventListener('focusin', warm);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once per card
   }, []);
   const step = (by: number) => {
     const { slides, dots } = parts();
     index.current = (index.current + by + count) % count;
+    preload(slides, index.current);
     slides.forEach((slide, n) => slide.toggleAttribute('data-active', n === index.current));
     dots.forEach((dot, n) => dot.toggleAttribute('data-active', n === Math.min(index.current, dots.length - 1)));
     preload(slides, index.current + by);

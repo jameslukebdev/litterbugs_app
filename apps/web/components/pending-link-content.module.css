@@ -1,4 +1,6 @@
 .content { position: relative; display: inline-block; }
-.content[data-pending]::after { content: ''; position: absolute; inset: auto 0 -4px; height: 2px; border-radius: 2px; background: currentColor; opacity: .4; animation: breathe 1.2s ease-in-out infinite alternate; pointer-events: none; }
-@keyframes breathe { to { opacity: .8; } }
-@media (prefers-reduced-motion: reduce) { .content[data-pending]::after { animation: none; } }
+:where(.link) { position: relative; }
+.indicator, .content::before { position: absolute; inset: 0; border-radius: inherit; background: currentColor; opacity: 0; pointer-events: none; transition: opacity 120ms ease-out; }
+.content::before { content: ''; }
+.indicator[data-pending], .content[data-pending]::before { opacity: .055; }
+@media (prefers-reduced-motion: reduce) { .indicator, .content::before { transition: none; } }
