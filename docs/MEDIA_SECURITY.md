@@ -18,7 +18,9 @@ pipeline on mobile and web:
 6. The processor verifies the actual file signature instead of trusting the
    client MIME type, decodes under dimension/pixel/page limits, rotates it, and
    reconstructs a metadata-free JPEG.
-7. The service-role client writes that sanitized JPEG to the existing final
+7. Before promotion, report/cleanup photos also pass a separate inappropriate-content check through the existing paid Google Cloud relay. Current mobile requires inline photo-processing/Terms approval before any upload, including avatars, and marks that approved flow with a versioned request header. These new avatar uploads use the same Google content check. Legacy avatar requests retain Cloudmersive's basic NSFW classifier, avoiding a new Google sharing path without that approval. The header is a client declaration, not an authorization credential; server authentication, ownership, quotas and all safety checks remain mandatory.
+8. A structured allow is required before public/final storage. Rejection, refusal, malformed verdict, timeout or quota failure keeps the candidate private and deletes quarantine. Only reconstructed image bytes are sent for content checks: no account, report, location or storage path. This filter is separate from owner-approved Gemini funding triage and cannot release rewards.
+9. The service-role client writes that sanitized JPEG to the existing final
    bucket and removes the quarantined original. Legacy direct-write policies
    remain only for the documented App Store compatibility window, then the
    final rollout step removes them.
@@ -38,6 +40,8 @@ REPORT_MEDIA_MALWARE_SCANNER_ENABLED=true
 REPORT_MEDIA_MALWARE_SCANNER_PROVIDER=cloudmersive
 REPORT_MEDIA_MALWARE_SCANNER_API_KEY=<server-only Cloudmersive key>
 REPORT_MEDIA_MALWARE_SCANNER_TIMEOUT_MS=8000
+GEMINI_RELAY_URL=<existing HTTPS Cloud Run origin>
+GEMINI_RELAY_SHARED_SECRET=<existing server-only relay secret>
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` is accepted only as a legacy fallback. None of
@@ -71,3 +75,21 @@ quarantine bucket, server credentials, or scanner is missing.
 
 Never use real user images for provider acceptance testing and never place an
 EICAR fixture in source control.
+
+
+## November 13 release capacity and compatibility
+
+The basic Cloudmersive NSFW endpoint consumes 20 API credits per image (plus
+malware scanning); the advanced endpoint requires a managed/private GPU and is
+not used. At 87 recent photo scans/30 days, checking every photo with that API
+would need about 1,740 extra credits. Report/cleanup checks and approved new
+mobile avatars use the existing paid Google relay instead. Legacy avatar checks
+still consume 20 credits; the original Cloudmersive production account plan is
+not independently accessible. Malware-scanning quota remains an operating limit.
+The separate free preview key is not substituted for the production key.
+
+The current public Apple and Google versions are both2.0.1 and their checked
+source uses quarantine for report, cleanup and avatar uploads. Older direct-write
+policies remain live as a compatibility exception until the final rollout SQL is
+applied. Do not claim universal enforcement while those policies remain. No older
+client retirement or database-policy rollout has been silently applied.
