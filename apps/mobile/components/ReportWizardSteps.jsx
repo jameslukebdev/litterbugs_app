@@ -10,6 +10,7 @@ import { getSeveritySelectionColors } from '../lib/severitySelectionColors';
 import styles from '../styles/MapScreen.styles';
 import MapView, { Marker } from 'react-native-maps';
 import MapPin, { pinCenterOffset } from './MapPin';
+import PrivateView from './PrivateView';
 import { CALM_MAP_STYLE } from '../lib/calmMapStyle';
 import { colors } from '../lib/theme';
 
@@ -477,7 +478,8 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                   </TouchableOpacity>
                 ) : null}
               </View>
-              <View style={styles.reportReviewMap} pointerEvents="none">
+              {/* The report's location stays out of session replay. */}
+              <PrivateView style={styles.reportReviewMap} pointerEvents="none">
                 <MapView style={{ flex: 1 }} initialRegion={{ ...coordinate, latitudeDelta: 0.008, longitudeDelta: 0.008 }}
                   scrollEnabled={false} zoomEnabled={false} rotateEnabled={false} pitchEnabled={false}
                   mapType={Platform.OS === 'ios' ? 'mutedStandard' : 'standard'}
@@ -486,7 +488,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
                   accessibilityLabel="Confirmed report location">
                   <Marker coordinate={coordinate} anchor={{ x: 0.5, y: 1 }} centerOffset={pinCenterOffset('open', null)}><MapPin kind="open" /></Marker>
                 </MapView>
-              </View>
+              </PrivateView>
             </View>
           ) : null}
 

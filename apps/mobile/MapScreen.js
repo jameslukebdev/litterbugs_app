@@ -1,5 +1,5 @@
 import { userMessage } from './lib/userMessage';
-import { finishAppOpen, pendingAppOpenSource, startTiming, trackLaunchToMap, trackParticipation, trackParticipationFailure } from './lib/analytics';
+import { finishAppOpen, pendingAppOpenSource, setMapCoveredForReplay, startTiming, trackLaunchToMap, trackParticipation, trackParticipationFailure } from './lib/analytics';
 import { requireReportLocation } from './lib/reportLocationCheck';
 import { publishReportDraft, clearReportSubmission } from './lib/reportSubmissionStore';
 import ReportDetailsSheet from './components/ReportDetailsSheet';
@@ -1307,6 +1307,12 @@ useEffect(() => {
       selectedReport?.cleanup_state === 'completed'
       && completedCleanupImpactLoading
     );
+
+  // Session replay stays off while the map itself is in front (lib/analytics.js); it resumes
+  // while report details or the report form (except its map placement step) cover the map.
+  const mapCoveredBySheet = isMapScreenFocused && (detailsOpen || (formOpen && !reportPlacementActive));
+  useEffect(() => { setMapCoveredForReplay(mapCoveredBySheet); }, [mapCoveredBySheet]);
+  useEffect(() => () => setMapCoveredForReplay(false), []);
 
   useEffect(() => {
     const pending = detailsTiming.current;

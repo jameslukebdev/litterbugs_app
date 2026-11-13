@@ -89,7 +89,7 @@ during the span. Each timer sends once.
 
 | metric | starts | ends (`outcome`) | fields |
 | --- | --- | --- | --- |
-| `launch_to_map` | first app JavaScript evaluated (after the native process and bundle load) | launch logo leaves the map: map view ready **and** starting-area pins loaded (`pins: loaded`) or the 6 s pin wait expired (`pins: timeout`) — `ready` | `map_signal`: `map_loaded` = map's `onMapLoaded` (Google Maps first render), `map_ready_fallback` = `onMapReady` + 4 s wait (Apple Maps never fires `onMapLoaded`). Neither proves all tiles are drawn. Once per process. |
+| `launch_to_map` | first app JavaScript evaluated (after the native process and bundle load) | launch logo leaves the map: map view ready **and** starting-area pins loaded (`pins: loaded`) or the 6 s pin wait expired (`pins: timeout`) — `ready` | `map_signal`: `map_loaded` = map's `onMapLoaded` (Google Maps first render), `map_ready_fallback` = `onMapReady` + 4 s wait (Apple Maps never fires `onMapLoaded`). Neither proves all tiles are drawn. Once per process, only when the first screen is the map (a launch through the welcome or sign-in screen is not timed). |
 | `report_details` | a report is chosen: preview card/hero tap, list item, shared link or notification (request time, includes the fetch) | sheet open for that report with its first photo link resolved (or no photos) and cleanup status loaded — `ready`; sheet closed first — `closed`; report missing — `unavailable`; fetch error — `failed`; 30 s — `timeout` | `source` preview_card/report_list/report_link/notification/in_app; `photos` ready/none/unavailable (link resolved, pixels not observed) |
 | `photo_upload` | photo preparation begins on submit | all photos prepared and uploaded — `ready`; one fails — `failed` | `flow` report/clean, `photo_bucket`, `prepare_ms`, `upload_ms` (summed per photo; two run at a time), `failed_step` prepare/upload |
 | `submission` | report: Post tap; clean: Send photos tap; fund: Stripe sheet returns a submitted payment | server/Stripe confirms — `ready`; error — `failed`; not confirmed — `unconfirmed` | `flow` report/clean/fund |
@@ -117,14 +117,21 @@ expired_reports, admin_web. Store-link taps are not app opens; installs and open
 
 ## Session replay
 
-`maskAllTextInputs`, `maskAllImages`, `maskAllSandboxedViews` on; console logs and network URLs off.
-Replay stops while these screens are in front and resumes only if it was recording before:
+`maskAllTextInputs`, `maskAllImages`, `maskAllSandboxedViews` on; console logs and network URLs off. In the iOS
+release test build (PostHog iOS 3.92.7) every piece of text, not only inputs, and every image is drawn as a black
+block, so replay shows layout, taps and navigation only.
+
+Replay stops while these screens are in front, and resumes when they close (a manual resume still obeys the
+project's replay setting, sampling and triggers):
 Auth, SignInMethods, ResetPassword, CompleteProfile, EditProfile, Profile, MyActivity, Payments, PaymentDetail,
 ContributionHistory, Settings, SettingsInfo, NotificationSettings, BlockedAccounts, PublicProfile, ReportUser,
-FundingContribution (Stripe sheet), PayoutSetup (Stripe Connect), CleanupReview.
-`PrivateView` masks report notes/reporter byline and the completed-cleanup "About the cleanup" card.
-Report titles on cards stay visible in replay; photos are masked by `maskAllImages`. Whether `maskAllTextInputs`
-also masks static text differs between PostHog's docs pages, so this is to be checked in a native test build.
+FundingContribution (Stripe sheet), PayoutSetup (Stripe Connect), CleanupReview — and **the map itself**.
+
+The map's tiles show street and place names around where the person is, and masking can only black out the whole
+map, which blanks everything drawn over it too (and then every frame is identical and dropped). So replay is off
+while the map is in front and resumes 0.7 s after report details or the report form (except its map placement
+step) cover it; it stops again the moment they close. `PrivateView` still masks report notes/reporter byline, the
+completed-cleanup "About the cleanup" card and the small location map on the report review step.
 
 PostHog project requirements: Session replay → "Record user sessions" on (mobile), and Error tracking → "Enable
 exception autocapture" on. Replay sampling/minimum duration are set in the project, not the app.
@@ -133,7 +140,10 @@ exception autocapture" on. Replay sampling/minimum duration are set in the proje
 
 - JS: uncaught exceptions and unhandled rejections (SDK autocapture); console errors are not captured.
 - Native: `nativeCrashes` + `androidNdkCrashes` via `@posthog/react-native-plugin` 2.13.0 (replaces the legacy
-  `posthog-react-native-session-replay`, which cannot capture native crashes).
+  `posthog-react-native-session-replay`, which cannot capture native crashes). Reports are sent on the next launch
+  with native frames and debug images (for dSYM symbolication). They carry `$app_version`/`$app_namespace` but not the
+  JS-registered `app_environment` or `$expo_*` keys. Crashes before the SDK starts (native start-up, before the first
+  JavaScript runs) are not captured. Signals sent from outside the app (`kill`) are not reported.
 - Symbols: set `POSTHOG_UPLOAD_SYMBOLS=true` with EAS secrets `POSTHOG_CLI_API_KEY` (personal key with error tracking
   write + organization read), `POSTHOG_CLI_PROJECT_ID` (and `POSTHOG_CLI_HOST` if not US). This adds the
   `posthog-react-native/expo` plugin (`uploadNativeSymbols`, `skipOnConflict`), the Metro debug-ID serializer, and an

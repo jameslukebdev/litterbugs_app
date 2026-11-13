@@ -3,7 +3,7 @@ import {
   __markBackgroundedForTests, __resetAnalyticsForTests, analyticsEnabled, appOpenProperties, beginAppOpen,
   discoveryOutcomeTracker, discoveryProperties, filterChangeValue, finishAppOpen, isSharedReportLink,
   locationSearchSession, notificationDestinationKey, pendingAppOpenSource, photoUploadTimer, posthogOptions,
-  releaseProperties, replayAllowedOn, resultBucket, roundedDuration, startTiming, timingProperties,
+  releaseProperties, replayAllowedOn, resultBucket, roundedDuration, setMapCoveredForReplay, startTiming, timingProperties,
   trackCleanupApproved, trackLaunchToMap, trackMapDiscovery, trackParticipation, trackScreen, trackSignIn,
 } from './analytics';
 import { scrubAnalyticsEvent, scrubText } from './analyticsPrivacy';
@@ -141,7 +141,14 @@ describe('timings', () => {
     timer.finish('ready');
     expect(named('app_timing')).toEqual([]);
   });
+  it('skips launches that start on another screen', () => {
+    trackScreen('Home');
+    time += 40000;
+    expect(trackLaunchToMap({ mapSignal: 'map_loaded', pins: 'loaded' })).toBeNull();
+    expect(named('app_timing')).toEqual([]);
+  });
   it('measures launch to the usable map once per app process', () => {
+    trackScreen('Map');
     time += 2840;
     trackLaunchToMap({ mapSignal: 'map_ready_fallback', pins: 'loaded' });
     trackLaunchToMap({ mapSignal: 'map_loaded', pins: 'loaded' });
@@ -267,22 +274,36 @@ describe('opening shared links and notifications', () => {
 });
 
 describe('session replay on private screens', () => {
-  it('stops on sign-in, payment, payout and account screens and resumes afterwards', async () => {
-    trackScreen('Map');
+  it('stops on sign-in, payment, payout and account screens and resumes afterwards', () => {
+    trackScreen('Reports');
     trackScreen('FundingContribution');
     trackScreen('PayoutSetup');
-    await Promise.resolve();
-    trackScreen('Map');
+    trackScreen('Reports');
     expect(client.stopSessionRecording).toHaveBeenCalledTimes(1);
+    expect(client.startSessionRecording).toHaveBeenCalledTimes(1);
     expect(client.startSessionRecording).toHaveBeenCalledWith(true);
     for (const name of ['Auth', 'ResetPassword', 'Payments', 'PaymentDetail', 'Profile', 'EditProfile']) expect(replayAllowedOn(name)).toBe(false);
-    expect(replayAllowedOn('Map')).toBe(true);
+    expect(replayAllowedOn('Reports')).toBe(true);
   });
-  it('does not start replay that was not recording before', async () => {
-    client.isSessionReplayActive.mockResolvedValue(false);
-    trackScreen('Auth');
-    await Promise.resolve();
+  it('keeps the map itself out of replay, but records sheets that cover it', () => {
+    expect(replayAllowedOn('Map', false)).toBe(false);
+    expect(replayAllowedOn('Map', true)).toBe(true);
     trackScreen('Map');
+    expect(client.stopSessionRecording).toHaveBeenCalledTimes(1);
+    setMapCoveredForReplay(true);
+    vi.advanceTimersByTime(699);
+    expect(client.startSessionRecording).not.toHaveBeenCalled(); // waits for the sheet to finish sliding in
+    vi.advanceTimersByTime(1);
+    expect(client.startSessionRecording).toHaveBeenCalledTimes(1);
+    setMapCoveredForReplay(false);
+    expect(client.stopSessionRecording).toHaveBeenCalledTimes(2);
+  });
+  it('a sheet that closes before it finished opening never resumes replay', () => {
+    trackScreen('Map');
+    setMapCoveredForReplay(true);
+    vi.advanceTimersByTime(300);
+    setMapCoveredForReplay(false);
+    vi.advanceTimersByTime(1000);
     expect(client.startSessionRecording).not.toHaveBeenCalled();
   });
 });

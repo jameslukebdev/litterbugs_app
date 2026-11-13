@@ -121,31 +121,44 @@ export const PRIVATE_REPLAY_SCREENS = Object.freeze([
   'NotificationSettings', 'BlockedAccounts', 'PublicProfile', 'ReportUser',
   'FundingContribution', 'PayoutSetup', 'CleanupReview',
 ]);
-export const replayAllowedOn = name => typeof name === 'string' && !PRIVATE_REPLAY_SCREENS.includes(name);
+// The map shows street and place names around where the person is, and replay masking
+// can only black out the whole map (which blanks everything drawn over it). So replay
+// also stops while the map itself is in front, and resumes while a full-screen sheet
+// (report details, report form) covers it.
+let mapCovered = false;
+export const replayAllowedOn = (name, covered = mapCovered) => typeof name === 'string'
+  && !PRIVATE_REPLAY_SCREENS.includes(name) && (name !== 'Map' || covered);
 let replayPaused = false;
-let resumeReplay = false;
-function updateReplayForScreen(name) {
+let currentScreen = null;
+function updateReplayForScreen(name = currentScreen) {
   const pause = !replayAllowedOn(name);
   if (!client || pause === replayPaused) return;
   replayPaused = pause;
   try {
-    if (pause) {
-      // Stop at once; only resume afterwards if replay was recording when it stopped, so
-      // leaving a private screen never starts a session that sampling or settings left off.
-      const wasActive = client.isSessionReplayActive?.();
-      client.stopSessionRecording?.()?.catch?.(() => {});
-      resumeReplay = false;
-      Promise.resolve(wasActive).then((active) => { resumeReplay = active === true; }, () => {});
-    } else if (resumeReplay) {
-      client.startSessionRecording?.(true)?.catch?.(() => {});
-    }
+    // A resume never forces recording: the native SDK still applies the project's
+    // replay setting, sampling and triggers to a manual start.
+    const result = pause ? client.stopSessionRecording?.() : client.startSessionRecording?.(true);
+    result?.catch?.(() => {});
   } catch { /* optional */ }
+}
+// Called by the map with whether a full-screen sheet covers it. Covering waits for the
+// sheet's slide-in to finish so no frame catches the map mid-animation; uncovering is immediate.
+let coverTimer = null;
+export function setMapCoveredForReplay(covered, { delayMs = 700 } = {}) {
+  clearTimeout(coverTimer);
+  coverTimer = null;
+  if (!covered) { mapCovered = false; updateReplayForScreen(); return; }
+  if (mapCovered) return;
+  coverTimer = setTimeout(() => { coverTimer = null; mapCovered = true; updateReplayForScreen(); }, delayMs);
 }
 
 let lastScreen = null;
+let firstScreen = null;
 export function trackScreen(name) {
   if (!name) return;
   noteAppOpenScreen(name);
+  firstScreen ??= name;
+  currentScreen = name;
   updateReplayForScreen(name);
   if (!client || name === lastScreen) return;
   lastScreen = name;
@@ -270,7 +283,7 @@ const LAUNCH_STARTED_AT = clock();
 //                   map_signal says what "ready" rests on: map_loaded = the map's onMapLoaded
 //                   (Google Maps: first render finished); map_ready_fallback = onMapReady plus
 //                   the 4 s wait used where onMapLoaded never fires (Apple Maps). Neither proves
-//                   every tile is drawn. Sent once per app process.
+//                   every tile is drawn. Sent once per app process, only when the first screen is the map.
 //   report_details  start: a report is chosen (card/preview tap, a list item, a shared link or a
 //                   notification asking for it). end: the details sheet is open for that report
 //                   with its first photo link resolved (or no photos) and its cleanup status
@@ -352,9 +365,12 @@ export function startTiming(metric, dimensions = {}, { timeoutMs } = {}) {
 }
 
 let launchTracked = false;
+// Only launches that open straight onto the map: after the welcome screen or sign-in, the
+// time would mostly measure the person reading, not the app starting.
 export function trackLaunchToMap({ mapSignal, pins }) {
   if (launchTracked) return null;
   launchTracked = true;
+  if (firstScreen !== null && firstScreen !== 'Map') return null;
   const properties = timingProperties('launch_to_map', 'ready', clock() - LAUNCH_STARTED_AT, { map_signal: mapSignal, pins, backgrounded: backgroundEpoch > 0 });
   return send('app_timing', properties) ? properties : null;
 }
@@ -534,8 +550,12 @@ export function __resetAnalyticsForTests({ testClient = null, now } = {}) {
   config = null;
   if (now) clock = now;
   lastScreen = null;
+  firstScreen = null;
   replayPaused = false;
-  resumeReplay = false;
+  currentScreen = null;
+  mapCovered = false;
+  clearTimeout(coverTimer);
+  coverTimer = null;
   signInIntent = null;
   signInLinkSent = false;
   launchTracked = false;

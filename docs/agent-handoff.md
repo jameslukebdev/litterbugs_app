@@ -24,6 +24,21 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Claude (mobile analytics verified in native release test builds)
+
+- Built isolated iOS (simulator) and Android (emulator) release test apps with the new PostHog plugin, sending only
+  to a local mock collector (separate bundle IDs; app copy deleted afterwards, no store/EAS builds). Both compile
+  and run. Verified: delivery with `app_environment: test` and update keys; replay masks all text and images;
+  replay stops on sign-in/payment/account screens; JS fatal errors and rejections arrive scrubbed; native crashes
+  (iOS SIGSEGV/SIGABRT with debug images, Android Java crash) arrive on next launch; shared-link opens report
+  `shown`/`unavailable`. Symbol upload wiring generated on both platforms but not run (needs PostHog CLI key).
+- Fixes from that testing: replay now also stops while the map itself is in front (tiles show street names
+  around the person; masking the map blanked every frame) and resumes when report details/form cover it;
+  `launch_to_map` only times launches that open on the map. Docs: `docs/mobile-analytics.md`.
+- Freed disk: pruned uv's unused package cache and npm's download cache (both re-downloadable).
+- Local builds from this folder hit expo-updates/Expo script bugs with the space in "Burrow Base" (EAS unaffected).
+- Not verified: notification-tap opens on a device, symbol upload, Android NDK crash, real-phone performance.
+
 ### 2026-11-12 — Codex (website PostHog/Clarity analytics deployed)
 
 - Owner approved deploy/push with Claude's app changes excluded. Website source
