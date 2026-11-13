@@ -24,6 +24,30 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (automatic owner dashboard connections, local only)
+
+- Source `6cb5cfc0c2a7ecaba34a0c31e643ceec7707a2ee`. GA/GSC, PostHog web/app and
+  Clarity now use live private reads locally; all five adapters plus business
+  totals passed actual7/28-day reads. Existing layout retained. Visible page
+  refreshes every5minutes; successful GA/GSC/PostHog reads cache15minutes,
+  business5minutes, Clarity6hours with persistent local request/failure budget.
+- New project695338 query:read key and project z60itnrbpn export token stored only
+  in ignored0600 local settings. Google uses the existing read-only OAuth SDK in
+  a bounded child process; credentials stay in its store and access tokens stay
+  in the child. Temporary service-account route was blocked by org policy,
+  then its grants/binding/account were cleaned up; no security policy weakened
+  or key created. Reporting/IAM APIs enabled; no capture/privacy settings changed.
+- Corrected Clarity denominator semantics: sessionsCount is the examined total,
+  not affected sessions. Dashboard uses API signal percentages. Missing/error
+  results stay unknown; failed provider reads do not poison the15-minute cache.
+-77 focused tests, types, scoped lint, script/diff checks pass. Real browser
+ 7/28 views and app awaiting release checked, private signed-out gate verified.
+  Evidence under ignored output/owner-analytics and apps/web/.analytics-local.
+- No dashboard deployment, GitHub push, mobile edits or database writes. Latest
+  app still unreleased; QA/emulator exclusions and unknown app/combined visits
+  retained. Production publication still needs hosted Google/business credentials
+  and persistent hosted Clarity ingestion. Local server is running on3000.
+
 ### 2026-11-13 — Codex (Apple2.1.0 draft saved; phone testing skipped)
 
 - Luke accepted Apple's Developer agreement; refreshed App Store Connect cleared the block. Created2.1.0 in Prepare for Submission for existing app6757313862. Saved short release notes, updated2.1/build27 review instructions, litterbugs.app/support and marketing URL. Saved litterbugs.app/privacy for the next version; URL dialog explicitly releases it with that version. Reload verified saved fields and manual release. No build attached/uploaded and Add for Review not clicked.
