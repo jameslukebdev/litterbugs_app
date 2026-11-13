@@ -36,7 +36,8 @@ export function normalizeBusiness(value: unknown): BusinessData {
 }
 
 // This local-only adapter uses the owner's existing CLI authentication. It
-// executes a fixed, reviewed SELECT and returns only aggregates. No credential
+// executes a fixed, reviewed SELECT, excluding marked review accounts and using
+// explicit local-midnight boundaries. It returns only aggregates. No credential
 // is copied into the app and no database/schema change is made. Production
 // enablement will use a separately reviewed read-only aggregate connection.
 export async function loadBusiness(period: Period): Promise<Source<BusinessData>> {
