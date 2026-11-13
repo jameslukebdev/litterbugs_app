@@ -10,7 +10,7 @@ import styles from './admin.module.css';
 
 type TotpEnrollment = { id: string; qrCode: string; secret: string };
 
-export function AdminAccess({ state }: { state: Exclude<AdminAccessState, 'authorized'> }) {
+export function AdminAccess({ state, destination = 'inbox' }: { state: Exclude<AdminAccessState, 'authorized'>; destination?: 'inbox' | 'analytics' }) {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -68,7 +68,7 @@ export function AdminAccess({ state }: { state: Exclude<AdminAccessState, 'autho
     setMessage('');
     const { error } = await createClient().auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/admin` },
+      options: { redirectTo: `${window.location.origin}/auth/callback?next=${destination === 'analytics' ? '/admin/analytics' : '/admin'}` },
     });
     if (error) {
       setBusy(false);
@@ -106,7 +106,7 @@ export function AdminAccess({ state }: { state: Exclude<AdminAccessState, 'autho
     return (
       <section className={styles.accessCard}>
         <h2>Verify with your authenticator</h2>
-        <p>Enter the code from your authenticator app to open the review inbox.</p>
+        <p>Enter the code from your authenticator app to open {destination === 'analytics' ? 'website analytics' : 'the review inbox'}.</p>
         {enrollment ? (
           <div className={styles.enrollment}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -117,7 +117,7 @@ export function AdminAccess({ state }: { state: Exclude<AdminAccessState, 'autho
         <form className={styles.accessForm} onSubmit={verifyMfa}>
           <label>6-digit code<input inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ''))} /></label>
           {message && <p className={styles.error} role="alert">{message}</p>}
-          <button className={styles.primaryButton} disabled={busy || !factorId}>{busy ? 'Verifying…' : 'Verify and open inbox'}</button>
+          <button className={styles.primaryButton} aria-busy={busy || undefined} disabled={busy || !factorId}>{destination === 'analytics' ? 'Verify and view analytics' : busy ? 'Verifying…' : 'Verify and open inbox'}</button>
         </form>
         <button className={styles.linkButton} onClick={signOut}>Use another account</button>
       </section>
@@ -128,15 +128,15 @@ export function AdminAccess({ state }: { state: Exclude<AdminAccessState, 'autho
     <section className={styles.accessCard}>
       <h2>Admin sign in</h2>
       <p>Sign in with your Litterbugs administrator account. You’ll then confirm a code from your authenticator app.</p>
-      <button className={styles.googleButton} type="button" onClick={signInWithGoogle} disabled={busy}>
-        {busy ? 'Opening Google…' : 'Continue with Google'}
+      <button className={styles.googleButton} type="button" onClick={signInWithGoogle} disabled={busy} aria-busy={busy || undefined}>
+        {busy && destination !== 'analytics' ? 'Opening Google…' : 'Continue with Google'}
       </button>
       <div className={styles.accessDivider}><span>or use email</span></div>
       <form className={styles.accessForm} onSubmit={signIn}>
         <label>Email<input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required disabled={busy} /></label>
         <label>Password<input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required disabled={busy} /></label>
         {message && <p className={styles.error} role="alert">{message}</p>}
-        <button className={styles.primaryButton} disabled={busy}>{busy ? 'Signing in…' : 'Sign in with email'}</button>
+        <button className={styles.primaryButton} disabled={busy} aria-busy={busy || undefined}>{busy && destination !== 'analytics' ? 'Signing in…' : 'Sign in with email'}</button>
       </form>
     </section>
   );
