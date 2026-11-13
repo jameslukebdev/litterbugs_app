@@ -24,6 +24,30 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (owner analytics dashboard deployed)
+
+- Live at https://litterbugs.app/admin/analytics. Source `388c930`, isolated release
+  branch `codex/website-analytics-20261113` pushed to GitHub; production deployment
+  `dpl_8MYNXYQc8CDo2aHCUTCgy3ATLFQT`. Previous deployment/rollback:
+  `dpl_6HFe4Af232YP6LiQjUPDw3pWKkhg` (source `5c32ab8`). Root native history not pushed.
+- Verified live admin/MFA session: business totals and PostHog website sessions,
+  GA acquisition, GSC search data and Clarity signals all returned real hosted
+  data for both periods. Clarity kept one completed request across period/view
+  switches. App correctly awaits release; no native changes/build/update released.
+- Applied only `20261113191709_owner_analytics_hosted_connections.sql`: guarded
+  aggregate business RPC and private shared Clarity quota/cache. Read-only Google
+  OAuth/PostHog/Clarity credentials are sensitive Vercel production envs. No new
+  service-role/SQL key. Local source connection changes retained as `bf543fa`.
+- 86 focused tests, typecheck, scoped lint, business fixtures, rollback SQL security/
+  quota checks and Linux production build passed. Signed-out gate/noindex verified.
+  Existing unrelated Stripe boundary failures and social-card tracing warnings are
+  recorded, unchanged, in `docs/reviews/2026-11-13-owner-analytics-production.md`.
+- Five-minute visible-page refresh; Google/PostHog cache 15 minutes; Clarity at
+  most six-hourly. Missing app/impact data stays unknown. No outstanding dashboard
+  connection blocker. Preserve provider exclusions, permanent-user/MFA checks and
+  private aggregate-only storage.
+
+
 ### 2026-11-13 — Codex (owner analytics website release candidate)
 
 - Owner approved live dashboard/GitHub; isolated `codex/website-analytics-20261113`
