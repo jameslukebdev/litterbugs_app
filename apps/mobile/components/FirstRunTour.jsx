@@ -25,6 +25,7 @@ import { colors, fonts } from '../lib/theme';
 const FINGER = 38;
 const TARGETS = ['report', 'pin', 'fund', 'clean'];
 const CARD_RISE = 30; // how far the example card slides up as it appears
+const STEP_SETTLE_MS = 350; // taps this soon after a step changes are ignored
 
 // The tour is laid over fixed spots on the map and cannot scroll, so its words grow with the
 // phone's text size only this far (the welcome screen caps its words the same way).
@@ -102,6 +103,8 @@ export default function FirstRunTour({ visible, replay = false, reportButton, on
 
   useEffect(() => { if (visible) { setIndex(0); trackFirstRun(replay ? 'tour_replayed' : 'tour_started'); } }, [visible]);
   useEffect(() => { if (visible) trackFirstRun('tour_step', TOUR_STEPS[index].key); }, [visible, index]);
+  const stepShownAt = useRef(0);
+  useEffect(() => { stepShownAt.current = Date.now(); }, [visible, index]);
   // Each step is played as a short journey from the plain map: the fingertip comes onto the
   // map and taps its way to the step's button (a ladybug first, whose card slides up, for Fund
   // and Clean). Only then does the map darken around that button and the words appear. The
@@ -183,7 +186,14 @@ export default function FirstRunTour({ visible, replay = false, reportButton, on
   }, [visible, index]);
 
   const step = TOUR_STEPS[index];
-  const next = () => { hapticTap(); if (index === TOUR_STEPS.length - 1) { trackFirstRun('tour_finished'); onDone(); } else setIndex(index + 1); };
+  // Next and Got it sit in nearly the same spot on steps 3 and 4, so one tap that counts
+  // twice (or a quick double tap) would skip a step or close the tour: a tap that comes
+  // right after the step changed is ignored.
+  const next = () => {
+    if (Date.now() - stepShownAt.current < STEP_SETTLE_MS) return;
+    hapticTap();
+    if (index === TOUR_STEPS.length - 1) { trackFirstRun('tour_finished'); onDone(); } else setIndex(index + 1);
+  };
   const skip = () => { trackFirstRun('tour_skipped', TOUR_STEPS[index].key); onDone(); };
   const rise = { opacity: enter, transform: [{ translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] };
   const onSpot = index > 0;
