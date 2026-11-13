@@ -1,5 +1,23 @@
 # Current Mobile Release Candidates
 
+## Android report-card motion — local only, November13
+
+Source `00e95d84d295d38964da02072cf149a22aa12cce` smooths Android map preview opening and closing. Waits for
+native card layout; travel is the measured card height plus bottom/shadow
+clearance, with native eased360ms entry/280ms exit. Card stays mounted through
+exit, content updates do not restart entry, quick reopen reverses from current
+position, and old exits cannot clear a newer selection. iPhone's original
+240/180ms motion and full-screen distance remain unchanged; explicit regression
+passes. No pin/camera behavior changes in this follow-up.
+
+648 mobile tests pass/1 existing skip; scoped production lint and225-module
+source check pass. Physical Pixel QA recordings show continuous up/down travel.
+Owner confirmed “Yes, both directions feel smooth.” Local evidence:
+`device-evidence/android-card-smooth.json`, `android-card-smooth-open.mp4` and
+`android-card-smooth-close.mp4` under artifacts/mobile-2.1.0. No native build,
+store upload/review change, OTA, deploy or push. Manual public release holds
+retained; submitted iOS28/Android25 remain unchanged and lack local follow-ups.
+
 ## November13 — Android camera and prompt drop start, local only
 
 Source `419f6377c1f912e27098df37948882ada3c59f6e` scopes camera corrections to Android's own map adapter.

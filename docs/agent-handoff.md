@@ -24,6 +24,12 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (smooth Android map-card entry and exit)
+
+- Source `00e95d84d295d38964da02072cf149a22aa12cce`: Android floating previews wait for native card layout and translate by measured card height + bottom clearance/shadow, instead of a full screen. Native transform360ms up/280ms down with eased endpoints and hardware texture; retain card until exit completes. Content relayout cannot restart entry; quick reopen reverses from current position; stale exit cannot clear new selection. iPhone retains original240/180ms transition and distance; pins/maps otherwise untouched.
+-648 mobile tests pass/1 existing skip, scoped production lint and225-module source check pass. Physical Pixel QA open/close recordings show continuous movement; owner confirmed “Yes, both directions feel smooth.” Gesture/short-screen/scroll/action/reduced-motion tests pass, with explicit iPhone timing preservation. Evidence android-card-smooth.json/open+close MP4 and frame sheets in local device-evidence. Single existing Metro/mirror; free memory46% during check.
+- Local only, no native build/upload/store review changes/public release/OTA/deploy/push. iPhone simulator stays open, existing manual release holds retained. Submitted iOS28/Android25 still need refresh to include local follow-ups; no iOS rebuild/resubmission during Android pass. Other Claude/dashboard/preview work preserved.
+
 ### 2026-11-13 — Codex (Android map steady; drop starts on rediscovery)
 
 - Source `419f6377c1f912e27098df37948882ada3c59f6e`: Android-only clustered map adapter lets Google Maps own gestures; native settled regions update app state without being sent back as camera moves. External search/location requests still animate, duplicate Android camera commands removed, automatic native marker centering disabled. iPhone uses the original clustered map component/configuration.
