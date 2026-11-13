@@ -24,6 +24,26 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (unreleased app analytics and dashboard recommendation)
+
+- Owner clarified latest app is not deployed. Reviewed local mobile code only;
+  no claims of live native telemetry or release readiness. Existing analytics
+  covers screens, first-run tour, sign-in, participation and payout stages;
+  production profile enables analytics while acceptance profile disables it.
+- Local config requests replay and JS error capture, not full native crashes.
+  Recommend real-build delivery/masking checks, native crash symbols/source maps,
+  full interaction timings, missing discovery/deep-link/notification outcomes,
+  build/update attribution and separately labeled QA validation before release.
+  Replay uses legacy plugin still listed as supported peer by installed SDK;
+  current docs recommend renamed plugin. No confirmed incompatibility asserted.
+- Recommend PostHog for behavior/funnels/performance, existing MFA/admin-gated
+  /admin for authoritative cleanup/review/financial operations and a small
+  summary linking to analytics. Avoid duplicating entire analytics platform.
+  Clarity supports native React Native but isn't installed; prefer verifying
+  existing PostHog replay before adding a second native recorder.
+- Advice only: no app/web/analytics settings changes, deploy, push or DB changes.
+  Preserve concurrent mobile, preview and handoff work.
+
 ### 2026-11-12 — Codex (PostHog/Clarity capability and configuration review)
 
 - Read-only review requested. Confirmed PostHog695338: one starter dashboard
