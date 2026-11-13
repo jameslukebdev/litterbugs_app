@@ -24,6 +24,23 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (multi-size mobile audit; local responsive fixes)
+
+- Source `16582b9fc7cacd7248dfe8a09ab3eaabce0c3a14` keeps compact map pins, card grabber/X and
+  all tutorial Next/Skip controls clear;150% text gets the existing enlarged
+  Report Litter layout. Header drag now dismisses after content scroll. Normal
+  styling and approved iOS/Android motion timings preserved.658 tests pass/1
+  skip; scoped lint and225-module source check pass.
+- Native UI checks: iPhone6s375×667 (current local JS in isolated27 QA shell),
+  iPhone17Pro simulator402×874/default+larger text, Pixel5 virtual displays
+  320×568/default+150%,360×640,412×915. Both phones passed scrolled grabber
+  dismissal. Pixel display/font and simulator text restored; simulator left
+  open. Existing draft preserved; no live publishing/payment/claim test.
+- Evidence: local artifacts/mobile-2.1.0/device-evidence/screen-size-audit.
+  Owner paused rebuild/replacement submissions for size review: no earlier
+  review canceled, new store binary/upload/submission, OTA/deploy or push.
+  Both refreshed store artifacts/checks pending; public release stays manual.
+
 ### 2026-11-13 — Codex (local link outreach approach researched)
 
 - Advice/research only;no outreach, forms, partner enrollment, spending or

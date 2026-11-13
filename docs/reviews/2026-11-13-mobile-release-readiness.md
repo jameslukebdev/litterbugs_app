@@ -2,6 +2,35 @@
 
 Owner instruction, updated November13: upload and submit both refreshed builds for store review; keep public release manual. Analytics ON by default. No GitHub push or mobile OTA publication.
 
+## Multi-size audit — local only, November13
+
+Source `16582b9fc7cacd7248dfe8a09ab3eaabce0c3a14` fixes compact-screen tutorial overlap, exactly150%
+text truncation of Report Litter, and selected pins obscured by search/card.
+Short/large-text map previews reserve the pin and fixed grabber/X; content
+scrolls inside. Dragging the fixed header dismisses even after content has
+scrolled. Existing normal/larger styling and platform motion timings remain.
+
+Native checks: physical iPhone6s375×667; existing iPhone17Pro simulator402×874
+(default and accessibility-medium text); physical Pixel5 with temporary logical
+displays320×568 (default/150% text),360×640 and412×915. These Android sizes
+are virtual-display configurations on one Pixel, not separate phone models.
+iPhone6s used current local JS/assets in the existing isolated27 native shell,
+not a new store binary. Map/cards, tutorial, reports/details and profile/navigation
+were inspected. Both physical phones passed scrolled-content→grabber dismissal;
+X also closes. Pixel1080×2340/density440/font1.0 and simulator large text restored.
+
+658 mobile tests pass/1 existing skip; scoped ESLint and225-module source check
+pass. Evidence: `artifacts/mobile-2.1.0/device-evidence/screen-size-audit/audit.json`
+and selected native screenshots. Existing Pixel draft preserved; no publication,
+payment/funding/cleanup transaction or new authentication-integration claim.
+Existing Apple-revocation/Facebook exclusions retained.
+
+Owner explicitly held rebuild/replacement work to inspect sizes. No prior review
+was canceled; no new build/upload/submission, OTA, deployment or push started.
+Submitted iOS28/Android25 still lack the local follow-ups. Both refreshed store
+binaries and their final artifact checks remain pending. Public release stays
+manual; simulator remains open.
+
 ## Android report-card motion — local only, November13
 
 Source `00e95d84d295d38964da02072cf149a22aa12cce` smooths Android map preview opening and closing. Waits for
