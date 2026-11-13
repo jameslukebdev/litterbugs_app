@@ -24,6 +24,12 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (Luke emailed; local release copy prepared)
+
+- At Grant's explicit request, sent the approved “Apple Developer agreement update” email from gegibson@icloud.com to jameslukeb.evj@gmail.com. Apple Mail Sent confirmed the subject/recipient today at1:40pm ET; no claim of delivered/read/accepted. Apple account-holder agreement remains pending.
+- Prepared `release-assets/mobile-2.1.0-release-notes.md`: short public notes, exact candidate references, review checklist and clear separation of completed native checks versus additional live server-push/identity checks. Sent the authorized dashboard chat an update; its live read connections can proceed independently, with app/combined visits unknown until release.
+- Mail controls briefly failed with disk nearly full; removed only regenerable inactive `apps/web/.next/cache/turbopack`, preserving active dev cache/source/release artifacts. Free space recovered to933MiB. No code/settings/deployment/push/store upload or submission changes; unrelated work preserved.
+
 ### 2026-11-13 — Codex (Apple admin access verified; agreement blocks version draft)
 
 - Owner authorized applying Apple privacy answers and completed sign-in. Grant Gibson admin access works for Litterbugs6757313862 under James Luke Barber; current iOS2.0.1/build24 is Ready for Distribution. This updates store-access scope only; Apple revocation/FB exclusions remain unchanged.
