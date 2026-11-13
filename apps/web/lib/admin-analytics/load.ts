@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { getAdminAccessState } from '@/lib/admin-access';
 import { object, validateData, type Dashboard, type Period, type Source, type SourceData, type SourceId } from './model';
 import { fetchApp, fetchFriction, fetchGoogle, fetchProduct, fetchSearch, liveSource, sourceWindows } from './providers';
+import { loadBusiness } from './business';
 
 async function localSnapshot<K extends SourceId>(id: K, period: Period): Promise<Source<SourceData[K]> | null> {
   // Local review data must never become an accidental production data source.
@@ -30,15 +31,16 @@ export async function loadDashboard(period: Period): Promise<Dashboard> {
     const live = await liveSource(id, windows[id], loader, note);
     return live.status === 'unconfigured' ? await localSnapshot(id, period) ?? live : live;
   }
-  const [ga, gsc, posthog, clarity, appResult] = await Promise.all([
+  const [ga, gsc, posthog, clarity, appResult, business] = await Promise.all([
     source('ga', () => fetchGoogle(windows.ga), 'Production hostname only. GA sessions and users use Google’s definitions; internal traffic settings apply in GA.'),
     source('gsc', () => fetchSearch(windows.gsc), 'Final web-search data, ending three days ago. Query rows omit anonymized searches and show only the top eight.'),
     source('posthog', () => fetchProduct(windows.posthog), 'Production only; known tests and bots excluded. Older unmarked staff visits may remain. Definitions are proposed, not approved catalog metrics.'),
     source('clarity', fetchFriction, 'Rolling last 72 hours, UTC. Refreshed at most every six hours. Signals can overlap; they are not confirmed bugs.'),
     source('app', () => fetchApp(windows.app), 'Production app only; test builds and emulators excluded. Anonymous install identities are not people. Native crashes without release attribution require a separate review.'),
+    loadBusiness(period),
   ]);
-  const app = appResult.status === 'unconfigured' || (appResult.data && !Object.values(appResult.data).some(value => typeof value === 'number' && value > 0))
+  const app = process.env.ADMIN_ANALYTICS_APP_RELEASED !== 'true' && (appResult.status === 'unconfigured' || (appResult.data && !Object.values(appResult.data).some(value => typeof value === 'number' && value > 0)))
     ? { ...appResult, status: 'awaiting_release' as const, data: null, note: appResult.status === 'unconfigured' ? 'Latest app analytics are still being finished. Production activity will appear after release and connection; test-build activity stays excluded.' : 'No production app activity returned for this period. Test builds and emulators are excluded.' }
     : appResult;
-  return { period, sources: { ga, gsc, posthog, clarity, app } };
+  return { period, business, sources: { ga, gsc, posthog, clarity, app } };
 }

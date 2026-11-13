@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { parsePeriod, ratio, reportWindow, validateData } from './model';
+import { parsePeriod, ratio, reportWindow, totalVisits, validateData } from './model';
 
 describe('owner dashboard measurement rules', () => {
+  it('combines visits only when both web and app counts are available', () => {
+    expect(totalVisits(108, 25)).toBe(133);
+    expect(totalVisits(108, 0)).toBe(108);
+    expect(totalVisits(108, null)).toBeNull();
+    expect(totalVisits(undefined, 25)).toBeNull();
+  });
   it('uses complete local dates across the daylight saving boundary', () => {
     expect(reportWindow(7, 'America/New_York', 1, new Date('2026-11-03T03:00:00Z'))).toEqual({ start: '2026-10-26', end: '2026-11-01', timezone: 'America/New_York' });
     expect(reportWindow(28, 'America/Los_Angeles', 3, new Date('2026-11-13T13:00:00Z'))).toEqual({ start: '2026-10-14', end: '2026-11-10', timezone: 'America/Los_Angeles' });

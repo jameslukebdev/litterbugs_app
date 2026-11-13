@@ -24,4 +24,14 @@ describe('private dashboard loading', () => {
     expect(mocks.read).not.toHaveBeenCalled();
     expect(dashboard.sources.app.status).toBe('awaiting_release');
   });
+  it.each([false, true])('keeps a quiet app period unknown until its public release is confirmed (%s)', async released => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('ADMIN_ANALYTICS_APP_RELEASED', String(released));
+    mocks.access.mockResolvedValue('authorized');
+    mocks.source.mockImplementation(async (id, window) => ({ status: 'live', data: id === 'app' ? { visits: 0, screens: 0, launches: 0, reports: 0, claims: 0, submissions: 0, approvals: 0, failures: 0, signIns: 0, reportReadyMedian: null, reportReadySamples: 0, mapReadyMedian: null, mapReadySamples: 0 } : null, updatedAt: null, window, note: '' }));
+    const dashboard = await loadDashboard(7);
+    expect(dashboard.sources.app.status).toBe(released ? 'live' : 'awaiting_release');
+    expect(dashboard.sources.app.data?.visits ?? null).toBe(released ? 0 : null);
+    expect(mocks.read).not.toHaveBeenCalled();
+  });
 });
