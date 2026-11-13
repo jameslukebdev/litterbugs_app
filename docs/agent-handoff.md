@@ -24,6 +24,39 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (private owner analytics dashboard, local only)
+
+- Source commit 452c394da27df420c5a3a1f60312cce4d4a83d9d. New /admin/analytics combines GA, GSC,
+  PostHog and Clarity in Litterbugs styling, with Overview / Website / App views,
+  7/28 complete-day controls and per-source dates/freshness. Existing /admin
+  moderation inbox retained; server membership+MFA checked before data retrieval.
+- Real local aggregate snapshots cover all4 website tools; ignored directory
+  apps/web/.analytics-local is development-only and never read in production.
+  GA CLI requests returned502; signed-in GA UI supplied audited session totals
+  and channels only (no fabricated daily trend/unique users; property-wide scope).
+  GSC totals use dimensions=[] and reconcile with daily clicks. Clarity's recent
+  3-day window stays separate from7/28 periods. No cross-provider visitor sum.
+- Server-only live adapters prepared, but dedicated read credentials are NOT set
+  up or credential-tested. Automatic refresh and persistent Clarity quota/history
+  ingestion remain setup work before publication. Source guide and references:
+  docs/plans/2026-11-13-owner-analytics-dashboard.md.
+- App queries follow docs/mobile-analytics.md and the parallel mobile thread's
+  production/test/emulator rules. New app remains awaiting production data;
+  timings exclude background spans and show sample counts. Native crash production
+  coverage explicitly unclassified pending verified release/build attribution.
+  EAS symbol-upload write key must never be reused for dashboard reads.
+- Admin routes do not mount visitor analytics; existing browser exclusion keys
+  also keep subsequent staff use out. Already running Clarity is reset with a
+  fresh private document on SPA entry. Normal visitor defaults unchanged.
+- 51 focused tests, TypeScript, scoped ESLint, script syntax and diff checks pass.
+  Authorized desktop and320/390px layouts verified; date/view selection retained;
+  separate signed-out context exposes only sign-in, noindex and zero telemetry.
+  No dashboard runtime errors; existing unused CSS/ladybug preload warnings remain.
+- No deployment, GitHub push, DB migration, native edit or provider-setting change
+  from this chat. Preserve concurrent mobile/preview/privacy edits. Mobile thread
+  separately owns app diagnostics settings, staff opt-out, EAS/store disclosures
+  and privacy-only deployment; its app is still unreleased.
+
 ### 2026-11-13 — Claude (mobile analytics release prep, local only)
 
 - OTA updates: `scripts/mobile-update.mjs` uploads Hermes source maps to PostHog after a successful
