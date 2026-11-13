@@ -14,6 +14,7 @@ import FirstRunTour from './components/FirstRunTour';
 import { FIRST_RUN_START, useFirstRunStage } from './lib/firstRun';
 import MapPin, { PinPlaceholder, pinCenterOffset, pinHeight, pinKind } from './components/MapPin';
 import AndroidStillMarker from './components/AndroidStillMarker';
+import AndroidClusteredMapView from './components/AndroidClusteredMapView';
 import PinLanding from './components/PinLanding';
 import usePinLandings from './lib/usePinLandings';
 import useNearbyReportAlerts from './lib/useNearbyReportAlerts';
@@ -98,6 +99,8 @@ import useSelectedReportLoaders from './lib/useSelectedReportLoaders';
 import { promptCleanupNavigation } from './lib/promptCleanupNavigation';
 import { showLocationSettingsAlert, showPermanentAccountRequired } from './lib/mapAlerts';
 import { colors } from './lib/theme';
+
+const DiscoveryMapView = Platform.OS === 'android' ? AndroidClusteredMapView : ClusteredMapView;
 
 
 // Map pins: the plain marker on iPhone; on Android one that is drawn a few fixed times and
@@ -258,7 +261,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
     const timer = setTimeout(() => setSelectedCovered(previewId), 160);
     return () => clearTimeout(timer);
   }, [previewId]);
-  const pins = usePinLandings({ enabled: pinLandings, mapRef: mapViewRef, region, hidden: showInitialMapLoading, postedPinId, inPlace: pinsLandInPlace });
+  const pins = usePinLandings({ enabled: pinLandings, mapRef: mapViewRef, region, hidden: showInitialMapLoading, postedPinId, inPlace: pinsLandInPlace, replayOnReentry: pinsLandInPlace });
   const currentUserId = permanentUserId(currentUser);
   // The daily "New litter near you" alert: asked once here, with nothing else on screen.
   useNearbyReportAlerts({
@@ -332,7 +335,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
         const nextRegion = regionForPosition(position);
         latestRegion = nextRegion;
         if (animateOnPosition) {
-          mapViewRef.current?.animateToRegion?.(nextRegion, 240);
+          if (Platform.OS !== 'android') mapViewRef.current?.animateToRegion?.(nextRegion, 240);
           commitMapRegion(nextRegion);
         }
       },
@@ -576,7 +579,7 @@ const openReportLocationPicker = async (skipDraft = false) => {
   setSelectedReport(null);
   setDetailsOpen(false);
   setPreviewId(null);
-  mapViewRef.current?.animateToRegion?.(placementRegion, 280);
+  if (Platform.OS !== 'android') mapViewRef.current?.animateToRegion?.(placementRegion, 280);
   commitMapRegion(placementRegion);
   setPlacementCoordinate(coord);
   setReportPlacementActive(true);
@@ -589,7 +592,7 @@ const changeDraftLocation = () => {
   setReportPlacementActive(true);
   const nextRegion = { ...region, ...draftCoord };
   commitMapRegion(nextRegion);
-  mapViewRef.current?.animateToRegion(nextRegion, 240);
+  if (Platform.OS !== 'android') mapViewRef.current?.animateToRegion(nextRegion, 240);
 };
 
 const cancelReportLocationPicker = () => {
@@ -1429,7 +1432,7 @@ const revealBottomReportField = () => {
   // Map View . . .
   return (
     <View style={styles.container}>
-        <ClusteredMapView
+        <DiscoveryMapView
           ref={mapViewRef}
           testID="discovery-map"
           style={StyleSheet.absoluteFill}
@@ -1607,7 +1610,7 @@ const revealBottomReportField = () => {
           );
         })()}
 
-      </ClusteredMapView>
+      </DiscoveryMapView>
 
       {/* Pins and groups land here, above the map, then a new real pin appears underneath. */}
       <View pointerEvents="none" style={StyleSheet.absoluteFill}>

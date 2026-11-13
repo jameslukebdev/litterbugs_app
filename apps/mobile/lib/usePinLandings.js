@@ -38,7 +38,7 @@ function inRegion(region, coordinate) {
 // `inPlace` (Android): the real pin plays its own landing (components/AndroidStillMarker.jsx)
 // instead of a stand-in above the map. Which pins land, and when, is decided exactly as on
 // iPhone; each landing pin is just handed a `drop` token to play.
-export default function usePinLandings({ enabled, mapRef, region, hidden, postedPinId, handoverMs = HANDOVER_MS, inPlace = false }) {
+export default function usePinLandings({ enabled, mapRef, region, hidden, postedPinId, handoverMs = HANDOVER_MS, inPlace = false, replayOnReentry = false }) {
   const [shown, setShown] = useState(() => new Set());
   const shownRef = useRef(shown);
   shownRef.current = shown;
@@ -101,7 +101,7 @@ export default function usePinLandings({ enabled, mapRef, region, hidden, posted
 
   const land = useCallback(async () => {
     timer.current = null;
-    if (!enabled || moving.current || hiddenRef.current) return;
+    if (!enabled || (moving.current && !(inPlace && replayOnReentry)) || hiddenRef.current) return;
     const currentRegion = regionRef.current;
     const nowVisible = new Set();
     const toLand = [];
@@ -112,14 +112,13 @@ export default function usePinLandings({ enabled, mapRef, region, hidden, posted
       if (!visible.current.has(key) && !landing.current.has(key)) toLand.push(key);
     }
     visible.current = nowVisible;
-    if (inPlace) reveal(offscreen);
+    if (inPlace && !replayOnReentry) reveal(offscreen);
     else hide(offscreen);
     if (!toLand.length) return;
 
     if (inPlace) {
-      // Only pins that are not showing yet land. A pin already showing (one that stayed on the
-      // map just off screen and was swiped back into view) stays put instead of vanishing and
-      // dropping in again.
+      // A rediscovered pin can land again after the Android-only replay option
+      // has hidden it on its way out of view. Pins that stayed in view stay still.
       const waiting = toLand.filter(key => !shownRef.current.has(key));
       if (!waiting.length) return;
       toLand.length = 0;
@@ -159,7 +158,7 @@ export default function usePinLandings({ enabled, mapRef, region, hidden, posted
     failed.forEach(key => landing.current.delete(key));
     reveal(failed);
     if (added.length) setGhosts(current => [...current.filter(ghost => !added.some(next => next.key === ghost.key)), ...added]);
-  }, [enabled, inPlace, mapRef, reveal, hide]);
+  }, [enabled, inPlace, mapRef, reveal, hide, replayOnReentry]);
 
   const schedule = useCallback(() => {
     if (!enabled) return;
@@ -210,22 +209,29 @@ export default function usePinLandings({ enabled, mapRef, region, hidden, posted
     // mid-air, so pins popped in instead of dropping.
     if (sameView(regionRef.current, nextRegion)) return;
     moving.current = true;
-    if (timer.current) { clearTimeout(timer.current); timer.current = null; }
+    if (timer.current && !(inPlace && replayOnReentry)) { clearTimeout(timer.current); timer.current = null; }
     // Stand-ins float above the map, so they cannot move with it: clear every one the moment
     // the map moves, including any still handing over to its real pin (on Android that
     // handover lasts over a second, and a stand-in left behind stayed fixed on the screen).
     if (landing.current.size || ghostCount.current) finishAll();
-    if (!inPlace && nextRegion) {
+    if ((!inPlace || replayOnReentry) && nextRegion) {
       const offscreen = [];
       for (const [key, pin] of pins.current) {
         if (!inRegion(nextRegion, pin.coordinate)) offscreen.push(key);
       }
       hide(offscreen);
     }
+    // Android's native marker stays attached to its coordinate while the map moves.
+    // Start as soon as its location enters view instead of waiting for camera inertia
+    // and the region-complete event. Keep one pending frame during continuous movement.
+    if (inPlace && replayOnReentry && nextRegion) {
+      regionRef.current = nextRegion;
+      if (!timer.current) timer.current = setTimeout(land, SETTLE_MS);
+    }
     // Never stay stuck if a settle event is missed.
     if (movingFallback.current) clearTimeout(movingFallback.current);
     movingFallback.current = setTimeout(() => { moving.current = false; schedule(); }, 1500);
-  }, [enabled, finishAll, schedule, inPlace, hide]);
+  }, [enabled, finishAll, schedule, inPlace, hide, replayOnReentry, land]);
 
   // A finger touched the map: clear the floating stand-ins before anything moves, so none is
   // ever left behind on the screen while the map slides under it.

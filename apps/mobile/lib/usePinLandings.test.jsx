@@ -12,10 +12,10 @@ let container;
 let pins;
 let previousActEnvironment;
 
-function mountPins(inPlace = false) {
+function mountPins(inPlace = false, replayOnReentry = false) {
   const mapRef = { current: { pointForCoordinate: vi.fn().mockResolvedValue({ x: 150, y: 200 }) } };
   function Probe() {
-    pins = usePinLandings({ enabled: true, mapRef, region: home, hidden: false, inPlace });
+    pins = usePinLandings({ enabled: true, mapRef, region: home, hidden: false, inPlace, replayOnReentry });
     return null;
   }
   act(() => root.render(<Probe />));
@@ -131,4 +131,74 @@ it('preserves Android: an already drawn off-screen pin returns without a new dro
   expect(pins.isShown('a')).toBe(true);
   expect(pins.dropFor('a')).toBe(firstDrop);
   expect(pins.ghosts).toHaveLength(0);
+});
+
+describe('Android rediscovery enabled', () => {
+  it('starts a rediscovered pin during the pan, before the map settles', async () => {
+    mountPins(true, true);
+    act(() => pins.track('a', info));
+    await settle(home);
+    const original = pins.dropFor('a');
+    act(() => pins.regionChanging(away));
+    await act(async () => { await vi.advanceTimersByTimeAsync(16); });
+    expect(pins.isShown('a')).toBe(false);
+    act(() => pins.regionChanging(home));
+    await act(async () => { await vi.advanceTimersByTimeAsync(16); });
+    expect(pins.dropFor('a').token).toBeGreaterThan(original.token);
+    expect(pins.isShown('a')).toBe(true);
+  });
+
+  it('does not postpone the drop on every continuous camera event', async () => {
+    mountPins(true, true);
+    act(() => pins.track('a', info));
+    await settle(away);
+    act(() => pins.regionChanging(home));
+    await act(async () => { await vi.advanceTimersByTimeAsync(8); });
+    act(() => pins.regionChanging({ ...home, longitude: home.longitude + 0.001 }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(8); });
+    expect(pins.dropFor('a')).toBeDefined();
+    expect(pins.isShown('a')).toBe(true);
+  });
+
+  it.each(['report-a', 'group:a,b'])('hides %s off screen and sends a fresh native drop on return', async (key) => {
+    mountPins(true, true);
+    act(() => pins.track(key, info));
+    await settle(home);
+    const original = pins.dropFor(key);
+    expect(pins.isShown(key)).toBe(true);
+    act(() => pins.regionChanging(away));
+    expect(pins.isShown(key)).toBe(false);
+    await settle(away);
+    expect(pins.isShown(key)).toBe(false);
+    act(() => pins.regionChanging(home));
+    expect(pins.isShown(key)).toBe(false);
+    await settle(home);
+    expect(pins.dropFor(key).token).toBeGreaterThan(original.token);
+    expect(pins.isShown(key)).toBe(true);
+    expect(pins.ghosts).toHaveLength(0);
+  });
+
+  it('replays after going out and back without stopping the gesture', async () => {
+    mountPins(true, true);
+    act(() => pins.track('a', info));
+    await settle(home);
+    const original = pins.dropFor('a');
+    act(() => {
+      pins.regionChanging(away);
+      pins.regionChanging(home);
+    });
+    await settle(home);
+    expect(pins.dropFor('a').token).toBeGreaterThan(original.token);
+  });
+
+  it('does not replay a pin that stays visible while the map moves', async () => {
+    mountPins(true, true);
+    act(() => pins.track('a', info));
+    await settle(home);
+    const original = pins.dropFor('a');
+    const nearby = { ...home, longitude: home.longitude + 0.01 };
+    act(() => pins.regionChanging(nearby));
+    await settle(nearby);
+    expect(pins.dropFor('a')).toBe(original);
+  });
 });

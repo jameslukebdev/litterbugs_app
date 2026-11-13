@@ -61,6 +61,17 @@ Apple developer settings, or authorize account deletion/revocation testing.
   dark text. Avoid the legacy forest-green styling.
 - Apply this to the work in scope; preserve unrelated screens and bug artwork.
 
+## Current Android map pass — November 13, 2026
+
+Grant confirmed the iPhone map/UI is finished and asked to work on the connected
+Pixel without changing it. Preserve the approved iPhone behavior (mobile source
+`f37328a` includes the final shared controls/cards and prior iPhone-only fixes).
+Scope new map corrections to Android-only components/configuration. If a shared
+file needs editing, guard the change to Android and verify the iPhone path is
+unchanged. Do not rebuild or resubmit iOS during this Android pass. Keep the
+existing manual public-release holds. Leave the iPhone simulator open at the
+owner's later request; use a low-resource mirror of the physical Pixel.
+
 ## Working alongside Claude
 
 Grant also uses Claude (Cowork) on this project. Before starting work, read
