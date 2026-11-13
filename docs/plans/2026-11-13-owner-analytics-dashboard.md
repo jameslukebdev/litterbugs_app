@@ -57,6 +57,23 @@ excluded with no external analytics requests. No dashboard runtime errors. Real
 7/28-day aggregate query runs and DST boundaries reconciled. No production build
 against the active dev server, deployment or GitHub push.
 
+## Latest app handoff — November13, after device verification
+
+Final native production candidates are frozen at `c34f569`, version2.1.0 iOS27 /
+Android24, both finished but unsubmitted and unreleased. Matching Hermes and native
+symbol sets are uploaded and bound to those versions. Physical QA verified events,
+replay privacy and saved opt-out; this supersedes older unbound-symbol/device-QA
+notes below. Symbols prove availability, not a current-production crash occurrence.
+QA namespaces/environment test remain excluded, including
+`com.gegibson.litterbugs.releaseqa`. App/combined visits remain unknown until actual
+public activation. Final evidence: `docs/reviews/2026-11-13-mobile-release-readiness.md`.
+
+Current local key-presence check: dedicated Google service-account, PostHog read
+key and Clarity export token remain unconfigured. The existing local snapshots
+and development-only business aggregate adapter support review; the owner page
+is not yet automatically live-connected or deployed. No credentials inspected
+or changed by this status review; no provider settings or release flag changed.
+
 ## Local page and access
 
 `http://localhost:3000/admin/analytics` uses the existing cleanup-admin membership

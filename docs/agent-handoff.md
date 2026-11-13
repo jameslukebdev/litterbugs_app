@@ -24,6 +24,18 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (app/dashboard connection status checked)
+
+- Read final release-readiness evidence: PostHog event/replay/privacy and saved
+  opt-out verification complete; production build27/24 symbol uploads match.
+  Latest app remains unreleased, QA excluded; no production crash occurrence
+  claimed. Clarity remains website-only.
+- Checked local dashboard configuration by key presence only: dedicated Google,
+  PostHog-read and Clarity-export credentials are not configured; local reviewed
+  snapshots remain in use. Business read adapter is development-only. Dashboard
+  is not yet automatically live-connected or deployed; release flag remains off.
+- Status review only; no settings, credentials, code, deployment or push changes.
+
 ### 2026-11-13 — Codex (release preparation verified; stores withheld)
 
 - Frozen production source `c34f569`: iOS2.1.0(27), EAS `14f76fb5-40d9-4f3d-8c95-13489935ec7f`; Android2.1.0(24), EAS `e6a72070-4f04-4626-afec-29e9956874be`. Both finished, original signatures/config/hashes verified and matching PostHog JS/native symbol uploads confirmed. Production analytics defaults ON with no automatic permission popup. Readiness/hashes/evidence: `docs/reviews/2026-11-13-mobile-release-readiness.md`; local artifacts `artifacts/mobile-2.1.0`.
