@@ -24,6 +24,13 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (Android map steady; drop starts on rediscovery)
+
+- Source `419f6377c1f912e27098df37948882ada3c59f6e`: Android-only clustered map adapter lets Google Maps own gestures; native settled regions update app state without being sent back as camera moves. External search/location requests still animate, duplicate Android camera commands removed, automatic native marker centering disabled. iPhone uses the original clustered map component/configuration.
+- Android replay opt-in hides pins offscreen, sends a fresh native drop on return and starts during movement (next scheduled frame), rather than waiting for camera settling. Owner clarified startup delay, so native520ms fall/60ms stagger/100ms first-image readiness are unchanged. Shared hook default/iPhone branch preserved; approved PinLanding/cards/MapPin/framing hashes match.
+-642 mobile tests pass/1 existing skip; scoped production lint and225-module source check pass. Physical Pixel QA reload verified new module; search, cluster zoom, pan away/return and identical idle map crop recorded. Owner confirmed prompt start and stable map: “Yes, both feel right.” Evidence android-map-rediscovery.json/mp4 in local device-evidence. Single low-resource mirror/Metro retained; memory36%, iPhone simulator open.
+- Local only. No native build, store upload/submission/review change, public release, OTA, deploy or GitHub push; submitted iOS28/Android25 remain unchanged and lack this/local shared-card follow-ups. Future candidate refresh remains pending; no iOS build authorized in this Android pass. Other Claude/dashboard/preview work preserved.
+
 ### 2026-11-13 — Codex (large report controls; Hide removed on both phones)
 
 - Sourcef37328aee983c15e165d8456bb22eef8b23fe980: detail-toolbar heart/share20→32-point glyphs,52-point targets, spaced into removed Hide slot. Back label stays clear. Removed Hide action from detail toolbar and report list menus; existing hidden items can still Restore, with saved preferences/filtering preserved and no DB writes.

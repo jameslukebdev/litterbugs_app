@@ -2,6 +2,27 @@
 
 Owner instruction, updated November13: upload and submit both refreshed builds for store review; keep public release manual. Analytics ON by default. No GitHub push or mobile OTA publication.
 
+## Android camera and prompt drop start — local only
+
+Source `419f6377c1f912e27098df37948882ada3c59f6e` scopes camera corrections to Android's own map adapter.
+Native gestures no longer echo camera positions back through a controlled region;
+search/location requests still move the map. Android pins hide offscreen and
+replay on return, starting during camera movement instead of waiting for the
+map to settle. This shortens the delay before dropping; native fall520ms,
+stagger60ms and first-image readiness100ms are unchanged. iPhone behavior stays
+approved, with its original map component and all iPhone branches preserved.
+
+642 mobile tests pass/1 existing skip; scoped lint and225-module source check
+pass. Physical Pixel search, cluster zoom, panning/reentry and idle stability
+checked. Owner confirmed “Yes, both feel right.” iPhone artwork/animation/card/
+framing file hashes match the saved approved baseline; existing iPhone hook
+regressions pass. Evidence: local device-evidence/android-map-rediscovery.json/mp4.
+
+No native build, upload, review change, OTA, deploy or push. iPhone simulator stays
+open. Existing submitted iOS28/Android25 remain unchanged, with manual public
+release holds retained. Refreshed candidates are still needed to include local
+follow-ups; no iOS rebuild/resubmission during this Android-only pass.
+
 ## Larger report controls; Hide removed — local only
 
 Owner requested big, clearly visible favorite/share controls on iPhone and
