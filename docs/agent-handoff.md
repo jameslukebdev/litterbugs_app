@@ -24,6 +24,10 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (release checklist status readback)
+
+- Read-only store check for owner's remaining-release question: Apple2.1.0(28) still Waiting for Review; Google25/Data safety explicitly in review, managed publishing ON. Luke's internal access remains configured. Remaining launch work: approvals/actual review feedback, prepared Apple2.1 privacy-label additions, then explicit owner instruction for manual public release. No store settings, code, build, upload, deploy or submission changes in this check.
+
 ### 2026-11-13 — Codex (Luke TestFlight access; Google checks finished)
 
 - Owner asked to ensure Luke can test28 and both stores are submitted. Added existing Account Holder james barber (jameslukeb@yahoo.com) to existing Burrow Bros internal group;1 tester added confirmed, now2 testers. Group Builds shows2.1.0(28) Testing. Existing prior install2.0.0(18);28 installation not claimed. No account/role/security credential changes.
