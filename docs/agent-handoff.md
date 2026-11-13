@@ -24,6 +24,11 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (Luke TestFlight access; Google checks finished)
+
+- Owner asked to ensure Luke can test28 and both stores are submitted. Added existing Account Holder james barber (jameslukeb@yahoo.com) to existing Burrow Bros internal group;1 tester added confirmed, now2 testers. Group Builds shows2.1.0(28) Testing. Existing prior install2.0.0(18);28 installation not claimed. No account/role/security credential changes.
+-3:08PM ET readback: Apple28 remains Waiting for Review; Google quick checks finished and overview explicitly says Your changes are now in review for Production25/Data safety. No duplicate submissions or public release. Manual Apple release/Google managed publishing preserved. Evidence/readiness/current candidates updated; no code/build/deployment/push/OTA changes. Remaining Apple2.1 label additions stay for authorized manual public release.
+
 ### 2026-11-13 — Codex (pin fixed; both2.1 apps submitted, public release manual)
 
 - Owner authorized upload and review submission with manual public release. Fixed selected-pin framing30%→22% (eaa461a); Metro restart restored the existing ladybug artwork. Two focused tests and repeated simulator selection passed. Frozen release7e4275b contains only that helper change over acceptedc34f569; refreshed signed iOS28 / Android25 built successfully, signatures/config verified. Original hashes/evidence are in current candidates/readiness records;27/24 superseded.

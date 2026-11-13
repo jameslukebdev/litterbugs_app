@@ -15,7 +15,8 @@ Android24 originals remain historical evidence and do not contain this fix. Do
 not upload them as the latest candidate. Owner subsequently authorized upload
 and store review submission, with public release held manual. See the latest
 readiness addendum for exact submission state. Apple28 is Waiting for Review;
-Google25 and Data safety show Changes in review with quick checks running.
+Google25 and Data safety are in review; quick checks completed at the3:08PM
+follow-up. Luke was added to Burrow Bros;28 shows internal Testing for that group.
 Apple manual release and Google managed publishing ON hold public release.
 Before public release, apply the remaining Apple2.1 privacy-label additions.
 

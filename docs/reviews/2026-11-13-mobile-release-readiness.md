@@ -62,6 +62,25 @@ available42% at completion; cloud builds avoided new local native workers.
 Metro8081 remains running with768MB heap/one worker and analytics disabled for
 the existing simulator; stopping it can make newly mounted preview assets blank.
 
+## Luke TestFlight access and review follow-up —3:08PM ET
+
+At the owner's request, added Luke's existing Account Holder account
+(`jameslukeb@yahoo.com`, james barber) to the existing Burrow Bros internal group.
+Apple confirmed1 tester added; group now has2 testers. Its Builds page shows
+2.1.0(28) with internal status **Testing**. This grants access without changing
+his App Store Connect role. His recorded prior installation is2.0.0(18), so
+installation/receipt of28 is not claimed. He should open TestFlight using that
+Apple account and update Litterbugs to2.1.0(28).
+
+Confirmed the existing Apple submission still **Waiting for Review**; no duplicate
+submission. Google quick checks have now completed and its overview explicitly
+says **Your changes are now in review**, covering Production25 and Data safety.
+Managed publishing remains ON; Apple's manual release remains unchanged. Neither
+app was publicly released. Evidence: `litterbugs-luke-testflight-added.jpg`,
+`litterbugs-luke-build28-testing.jpg`, `litterbugs-apple28-review-followup.jpg`,
+`litterbugs-google25-review-followup.jpg` in the device-evidence folder. No code,
+credentials, store roles, backend, deployment or build changes in this follow-up.
+
 ## Original frozen candidates (superseded)
 
 
