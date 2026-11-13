@@ -123,7 +123,7 @@ export default function CleanupWaiverModal({
             >
               <Ionicons name="close" size={24} color={colors.ink} />
             </TouchableOpacity>
-            <View style={styles.heroBug}><BrandBug kind="butterfly" size={46} playOnMount /></View>
+            <View style={styles.heroBug}><BrandBug kind="butterfly" size={56} playOnMount /></View>
             <Text style={styles.title} accessibilityRole="header">Let’s clean this spot</Text>
           </View>
 
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
   // Lilac, the Clean colour, with the butterfly.
   hero: { paddingTop: 26, paddingBottom: 6, alignItems: 'center' },
   closeButton: { position: 'absolute', top: 12, right: -8, width: 44, height: 44, borderRadius: 22, backgroundColor: colors.mist, alignItems: 'center', justifyContent: 'center' },
-  heroBug: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.cleanFill, borderWidth: 2, borderColor: colors.cleanEdge },
+  heroBug: { alignItems: 'center', justifyContent: 'center' },
   title: { marginTop: 12, color: colors.ink, fontSize: 26, lineHeight: 31, fontFamily: fonts.heading, textAlign: 'center' },
 
   steps: { marginTop: 20, gap: 14 },
