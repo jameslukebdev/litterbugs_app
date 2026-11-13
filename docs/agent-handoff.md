@@ -24,6 +24,34 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-12 — Codex (cleanup start and button improvements deployed)
+
+- Owner approved cleanup-start and tested button improvements. Live sourcee5411e2
+  on codex/cleanup-buttons-release-20261112 contains exactly25 web source/test
+  files from00318cb,6a90480,58778ad, based on prior production65a80e9.
+  Release branch pushed to GitHub; unrelated native/root history not published.
+- Promoted tested build dpl_7ybf24ASXLanJNFKCqq6FtyWMyCn
+  (https://litterbugs-nt7t4wv92-grant-9890s-projects.vercel.app) to litterbugs.app.
+  Rollback: dpl_2HqQdm5DFN686ELFm1Rom2YfheNs. No dependencies/DB migrations,
+  native changes, fee-page edits, unapproved homepage redesign or local previews.
+- Includes native-style butterfly cleanup start/first-time agreement dropdown,
+  saved-agreement site check, stable footer/button label and existing payout/version
+  guards; homepage intent prefetch/shade feedback, responsive carousel/photo arrows,
+  profile/bell navigation. Pending feedback has no underline or repeating animation.
+-82 focused tests, TypeScript/scoped lint/diff check and remote production build
+  pass. Existing social-card filesystem tracing warnings persist in unchanged code.
+  Staged home/map/report200 and local cleanup-start/cleaner previews404. Actual
+  staged pending cue fades to opacity.055 with unchanged See this cleanup label,
+  no underline/animation, then report/images render. Live alias identity verified.
+- Live390px and1440px smoke checks: home/report/map render, no horizontal overflow,
+  two rapid carousel clicks settle653px (two steps), photo arrow selects loaded
+  image, homepage Open map renders Google map. Browser and runtime-error scans
+  clean. Analytics excluded before all visits. Cleanup first-use/version/payout
+  acceptance is verified with local workflow tests; no real acceptance, claim,
+  sign-in, preference/profile write or money submission used for production QA.
+- Local3000 remains running, including safe cleanup-start preview. Concurrent
+  mobile edits and other preview/handoff additions remain intact.
+
 ### 2026-11-12 — Codex (approved cleanup-start/button release prepared)
 
 - Owner approved cleanup-start58778ad and button00318cb/6a90480 deployment.
