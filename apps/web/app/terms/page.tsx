@@ -115,7 +115,7 @@ export default function TermsPage() {
         {
           title: 'Prohibited conduct and enforcement',
           content: <>
-            <p>You may not misuse the service, trespass, submit false or infringing content, manipulate evidence, impersonate another person, create duplicate or coordinated accounts to evade rules, interfere with security, scrape protected data, exploit payment flows, harass another member, or use Litterbugs for unlawful activity.</p>
+            <p>Do not post pornography, sexual content involving minors, graphic violence, hateful or threatening content, harassment, or content that violates another person’s privacy. You may not misuse the service, trespass, submit false or infringing content, manipulate evidence, impersonate another person, create duplicate or coordinated accounts to evade rules, interfere with security, scrape protected data, exploit payment flows, harass another member, or use Litterbugs for unlawful activity.</p>
             <p>Litterbugs may remove content; restrict reports, contributions, claims, disputes, rewards, or accounts; preserve evidence; and cooperate with providers or authorities when reasonably needed to enforce these terms, investigate fraud or safety issues, comply with law, or protect the service and its users.</p>
           </>,
         },

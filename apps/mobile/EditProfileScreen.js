@@ -1,3 +1,4 @@
+import PhotoReviewChoice from './components/PhotoReviewChoice';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { usePreventRemove } from '@react-navigation/native';
 import ProfilePhotoEditor from './components/ProfilePhotoEditor';
@@ -43,6 +44,8 @@ export default function EditProfileScreen({ navigation }) {
   const [location, setLocation] = useState(profile?.location || '');
   const [photoEditorOpen, setPhotoEditorOpen] = useState(false);
   const [avatarAsset, setAvatarAsset] = useState(null);
+  const [photoReviewAccepted, setPhotoReviewAccepted] = useState(false);
+  const needsPhotoApproval = Boolean(avatarAsset) && !photoReviewAccepted;
   const [removeAvatar, setRemoveAvatar] = useState(false);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -63,7 +66,7 @@ export default function EditProfileScreen({ navigation }) {
   }, [discardAction, saved, navigation]);
 
   const save = async () => {
-    if (saving || !dirty) return;
+    if (saving || !dirty || needsPhotoApproval) return;
     const validation = validateProfileDraft({ displayName, username, bio, location });
     if (!validation.valid) {
       setErrors(validation.errors);
@@ -93,8 +96,8 @@ export default function EditProfileScreen({ navigation }) {
   };
 
   useLayoutEffect(() => {
-    navigation.setOptions({ gestureEnabled: !dirty && !saving, headerLeft: () => <TouchableOpacity accessibilityRole="button" accessibilityLabel="Back" disabled={saving} onPress={() => navigation.goBack()} style={{ minWidth: 44, minHeight: 44, justifyContent: 'center' }}><Ionicons name="chevron-back" size={26} color={colors.primary} /></TouchableOpacity>, headerRight: () => <TouchableOpacity accessibilityRole="button" accessibilityLabel="Save profile" accessibilityState={{ disabled: saving || !dirty, busy: saving }} disabled={saving || !dirty} onPress={save} style={styles.saveButton}><Text style={{ color: !dirty ? colors.subtle : colors.primary, fontSize: 16, fontWeight: '600', opacity: saving ? 0 : 1 }}>Save</Text>{saving ? <ActivityIndicator color={colors.primary} size="small" style={StyleSheet.absoluteFill} /> : null}</TouchableOpacity> });
-  }, [navigation, saving, dirty, displayName, username, bio, location, avatarAsset, removeAvatar]);
+    navigation.setOptions({ gestureEnabled: !dirty && !saving, headerLeft: () => <TouchableOpacity accessibilityRole="button" accessibilityLabel="Back" disabled={saving} onPress={() => navigation.goBack()} style={{ minWidth: 44, minHeight: 44, justifyContent: 'center' }}><Ionicons name="chevron-back" size={26} color={colors.primary} /></TouchableOpacity>, headerRight: () => <TouchableOpacity accessibilityRole="button" accessibilityLabel="Save profile" accessibilityState={{ disabled: saving || !dirty || needsPhotoApproval, busy: saving }} disabled={saving || !dirty || needsPhotoApproval} onPress={save} style={styles.saveButton}><Text style={{ color: !dirty ? colors.subtle : colors.primary, fontSize: 16, fontWeight: '600', opacity: saving ? 0 : 1 }}>Save</Text>{saving ? <ActivityIndicator color={colors.primary} size="small" style={StyleSheet.absoluteFill} /> : null}</TouchableOpacity> });
+  }, [navigation, saving, dirty, displayName, username, bio, location, avatarAsset, removeAvatar, photoReviewAccepted]);
 
   const setField = (setter, key) => (value) => {
     setter(value);
@@ -103,7 +106,7 @@ export default function EditProfileScreen({ navigation }) {
 
   return (
     <KeyboardAvoidingView style={styles.container} keyboardVerticalOffset={headerHeight} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      {photoEditorOpen ? <ProfilePhotoEditor profile={{ ...profile, display_name: displayName }} initialAsset={avatarAsset} initialRemoved={removeAvatar} onCancel={() => setPhotoEditorOpen(false)} onDone={(asset, removed) => { setAvatarAsset(asset); setRemoveAvatar(removed); setPhotoEditorOpen(false); }} /> : null}
+      {photoEditorOpen ? <ProfilePhotoEditor profile={{ ...profile, display_name: displayName }} initialAsset={avatarAsset} initialRemoved={removeAvatar} onCancel={() => setPhotoEditorOpen(false)} onDone={(asset, removed) => { setAvatarAsset(asset); setPhotoReviewAccepted(false); setRemoveAvatar(removed); setPhotoEditorOpen(false); }} /> : null}
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <TouchableOpacity
           style={styles.avatarButton}
@@ -124,6 +127,8 @@ export default function EditProfileScreen({ navigation }) {
           <Text style={styles.avatarAction}>{avatarAsset || (!removeAvatar && (profile?.avatar_path || profile?.provider_avatar_url)) ? 'Change photo' : 'Add photo'}</Text></View>
           <Ionicons name="chevron-forward" size={18} color={colors.subtle} />
         </TouchableOpacity>
+
+        {avatarAsset ? <PhotoReviewChoice avatar accepted={photoReviewAccepted} onChange={setPhotoReviewAccepted} disabled={saving} /> : null}
 
         <View style={styles.fieldHeading}><Text style={styles.label}>Display name</Text><Text style={styles.counter}>{displayName.length}/60</Text></View>
         <TextInput editable={!saving} onFocus={() => setFocusedField('displayName')} onBlur={() => setFocusedField(null)} selectionColor={colors.primary} placeholderTextColor={colors.subtle} value={displayName} onChangeText={setField(setDisplayName, 'displayName')} maxLength={60} autoCapitalize="words" style={[styles.input, focusedField === 'displayName' && styles.inputFocused, errors.displayName && styles.inputError]} accessibilityLabel="Display name" />

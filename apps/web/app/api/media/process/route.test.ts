@@ -95,7 +95,7 @@ describe('secure media processing route admission', () => {
     });
   });
 
-  it('authenticates, scans, reconstructs, stores, and removes a clean candidate', async () => {
+  it.each(['clean', 'rejected', 'unavailable'])('keeps photos private until both checks pass: %s', async outcome => {
     process.env.SUPABASE_SECRET_KEY = 'server-secret-key';
     process.env.REPORT_MEDIA_MALWARE_SCANNER_ENABLED = 'true';
     process.env.REPORT_MEDIA_MALWARE_SCANNER_PROVIDER = 'cloudmersive';
@@ -149,10 +149,9 @@ describe('secure media processing route admission', () => {
       .mockReturnValueOnce(userClient)
       .mockReturnValueOnce(admin)
       .mockReturnValueOnce(audit);
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({
-      CleanResult: true,
-      FoundViruses: [],
-    }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify({ CleanResult: true, FoundViruses: [] })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ Successful: true, Score: outcome === 'rejected' ? 0.95 : 0.05, ClassificationOutcome: outcome === 'rejected' ? 'UnsafeContent_HighProbability' : 'SafeContent_HighProbability' }), { status: outcome === 'unavailable' ? 429 : 200 }));
 
     const response = await POST(new Request('https://litterbugs.app/api/media/process', {
       method: 'POST',
@@ -167,6 +166,12 @@ describe('secure media processing route admission', () => {
       }),
     }));
 
+    if (outcome !== 'clean') {
+      expect(response.status).toBe(outcome === 'rejected' ? 422 : 503);
+      expect(finalUpload).not.toHaveBeenCalled();
+      expect(quarantineRemove).toHaveBeenCalledWith([`${userId}/report/${uploadId}.png`]);
+      return;
+    }
     expect(response.status).toBe(200);
     const payload = await response.json();
     expect(payload).toMatchObject({ contentType: 'image/jpeg' });

@@ -72,7 +72,7 @@ export async function uploadSecureMedia({
           body: JSON.stringify(body),
           signal: controller.signal,
         }),
-        35_000,
+        55_000,
         'Photo safety checking is taking too long. Please try again.',
       );
     } catch (error) {

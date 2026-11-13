@@ -21,8 +21,6 @@ export function paymentTotals({ contributions = [], reporterRewards = [], cleanu
     onTheWayCents: sum(reporterRewards.filter(reward => unsent.includes(reward?.status)), reward => reward.amount_cents)
       + sum(paidCleanups.filter(attempt => unsent.includes(attempt.payout_status)), attempt => attempt.reward_amount_cents),
     reporterWaitingCents,
-    // Charged but not yet confirmed by the bank or Stripe: listed below as "Confirmation needed".
-    donationsUnconfirmedCents: sum(contributions.filter(item => ['payment_pending', 'processing'].includes(item?.status)), item => item.total_amount_cents),
   };
 }
 

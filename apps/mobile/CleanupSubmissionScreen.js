@@ -1,3 +1,4 @@
+import PhotoReviewChoice from './components/PhotoReviewChoice';
 import { usePreventRemove } from '@react-navigation/native';
 import * as Crypto from 'expo-crypto';
 import CloudDraftStatus from './components/CloudDraftStatus';
@@ -116,6 +117,8 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
   const [step, setStep] = useState('form');
   useEffect(() => { trackParticipation('clean', 'evidence_form'); }, []);
   const [photos, setPhotos] = useState([]);
+  const [photoReviewAccepted, setPhotoReviewAccepted] = useState(false);
+  useEffect(() => { setPhotoReviewAccepted(false); }, [photos]);
   const [description, setDescription] = useState('');
   const [bagsOrItemsRemoved, setBagsOrItemsRemoved] = useState('');
   const [weightPounds, setWeightPounds] = useState('');
@@ -260,7 +263,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
   };
 
   const submit = async () => {
-    if (submitting || !context) return;
+    if (submitting || !context || !photoReviewAccepted) return;
     const validation = currentValidation();
     setErrors(validation.errors);
     if (!validation.valid) {
@@ -597,10 +600,11 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
                 : 'The reporter has 48 hours to check it. If they don’t respond, it’s approved automatically.'}
             </Text>
 
+            <PhotoReviewChoice accepted={photoReviewAccepted} onChange={setPhotoReviewAccepted} disabled={submitting} />
             <TouchableOpacity
-              style={[styles.primaryButton, submitting && styles.disabled]}
+              style={[styles.primaryButton, (submitting || !photoReviewAccepted) && styles.disabled]}
               onPress={submit}
-              disabled={submitting}
+              disabled={submitting || !photoReviewAccepted}
             >
               {submitting ? (
                 <LoadingButtonContent label="Submitting cleanup…" />

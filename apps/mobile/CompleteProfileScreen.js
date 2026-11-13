@@ -1,3 +1,4 @@
+import PhotoReviewChoice from './components/PhotoReviewChoice';
 import { useState } from 'react';
 import { userMessage } from './lib/userMessage';
 import {
@@ -25,11 +26,13 @@ export default function CompleteProfileScreen({ navigation }) {
   const { refreshReports } = useReports();
   const [displayName, setDisplayName] = useState(profile?.display_name || '');
   const [avatarAsset, setAvatarAsset] = useState(null);
+  const [photoReviewAccepted, setPhotoReviewAccepted] = useState(false);
+  const needsPhotoApproval = Boolean(avatarAsset) && !photoReviewAccepted;
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
-    if (saving) return;
+    if (saving || needsPhotoApproval) return;
     const cleanName = displayName.trim();
     if (!cleanName) {
       setError('Enter the name you want people to see.');
@@ -68,7 +71,7 @@ export default function CompleteProfileScreen({ navigation }) {
         <TouchableOpacity
           style={styles.avatarButton}
           onPress={() => showAvatarSourceMenu({
-            onAsset: setAvatarAsset,
+            onAsset: asset => { setAvatarAsset(asset); setPhotoReviewAccepted(false); },
             canRemove: Boolean(avatarAsset),
             onRemove: () => setAvatarAsset(null),
           })}
@@ -96,7 +99,8 @@ export default function CompleteProfileScreen({ navigation }) {
         <Text style={styles.counter}>{displayName.length}/60</Text>
         <ErrorText style={styles.error}>{error}</ErrorText>
 
-        <PrimaryButton label="Continue" busy={saving} busyLabel="Saving profile…" onPress={save} style={styles.primaryButton} />
+        {avatarAsset ? <PhotoReviewChoice avatar accepted={photoReviewAccepted} onChange={setPhotoReviewAccepted} disabled={saving} /> : null}
+        <PrimaryButton label="Continue" disabled={needsPhotoApproval} busy={saving} busyLabel="Saving profile…" onPress={save} style={styles.primaryButton} />
 
         <TextLink tone="muted" label="Sign out" disabled={saving} style={styles.signOutButton} onPress={async () => { try { const result = await signOut(); if (result.error) throw result.error; } catch { setError('Couldn’t sign out. Check your connection and try again.'); } }} />
       </ScrollView>

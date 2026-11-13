@@ -398,7 +398,6 @@ export default function ProfileScreen({ navigation, route }) {
             <View style={styles.total}>
               <View style={styles.totalLabelRow}><BrandBug kind="bee" size={16} /><Text style={styles.totalLabel}>Donated</Text></View>
               <Text style={styles.totalAmount}>{contributionAmounts.error && !contributionAmounts.hasLoaded ? '—' : formatUsd(totals.donatedCents)}</Text>
-              {totals.donationsUnconfirmedCents > 0 ? <Text style={styles.totalNote}>+ {formatUsd(totals.donationsUnconfirmedCents)} not confirmed yet</Text> : null}
             </View>
             <View style={styles.totalDivider} />
             <View style={styles.total}>

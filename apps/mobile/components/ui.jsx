@@ -14,7 +14,7 @@ import { colors, fonts } from '../lib/theme';
 
 // The purple action button. `busy` keeps the label in place and shows progress
 // only when a request runs long (see SteadyButtonContent).
-export function PrimaryButton({ label, onPress, busy = false, busyLabel, disabled = false, style, accessibilityLabel, accessibilityHint }) {
+export function PrimaryButton({ label, onPress, busy = false, busyLabel, disabled = false, style, accessibilityLabel, accessibilityHint, maxFontSizeMultiplier }) {
   const inactive = busy || disabled;
   return (
     <TouchableOpacity
@@ -27,7 +27,7 @@ export function PrimaryButton({ label, onPress, busy = false, busyLabel, disable
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: inactive, busy }}
     >
-      <SteadyButtonContent label={label} busy={busy} busyLabel={busyLabel} />
+      <SteadyButtonContent label={label} busy={busy} busyLabel={busyLabel} maxFontSizeMultiplier={maxFontSizeMultiplier} />
     </TouchableOpacity>
   );
 }
@@ -50,7 +50,7 @@ export function SecondaryButton({ label, onPress, disabled = false, style, acces
 }
 
 // Words-only action: purple for links and retries, red for destructive choices.
-export function TextLink({ label, onPress, tone = 'primary', disabled = false, align = 'center', style, accessibilityLabel }) {
+export function TextLink({ label, onPress, tone = 'primary', disabled = false, align = 'center', style, accessibilityLabel, maxFontSizeMultiplier }) {
   return (
     <TouchableOpacity
       style={[styles.textLink, align === 'start' && styles.textLinkStart, disabled && styles.inactive, style]}
@@ -61,7 +61,7 @@ export function TextLink({ label, onPress, tone = 'primary', disabled = false, a
       accessibilityLabel={accessibilityLabel || label}
       accessibilityState={{ disabled }}
     >
-      <Text style={[styles.textLinkLabel, tone === 'danger' && styles.textLinkDanger, tone === 'muted' && styles.textLinkMuted]}>{label}</Text>
+      <Text style={[styles.textLinkLabel, tone === 'danger' && styles.textLinkDanger, tone === 'muted' && styles.textLinkMuted]} maxFontSizeMultiplier={maxFontSizeMultiplier}>{label}</Text>
     </TouchableOpacity>
   );
 }

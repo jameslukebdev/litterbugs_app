@@ -182,8 +182,9 @@ export default function WelcomeScreen({ navigation }) {
       </View>
       <Story step={step} loop={loop} />
       <Text style={styles.caption} maxFontSizeMultiplier={1.3} accessibilityLiveRegion="polite">{START_PATHS[step].caption}</Text>
-      <PrimaryButton label="Get started" style={styles.start} onPress={() => leave(() => (navigation.canGoBack() ? navigation.popTo('App', { screen: 'Map' }) : navigation.replace('App', { screen: 'Map' })), 'welcome_get_started')} />
-      <TextLink tone="muted" label="Sign in or create account" style={styles.signIn} onPress={() => leave(() => navigation.navigate('Auth'), 'welcome_sign_in')} />
+      {/* Capped like the caption so both choices stay on screen at the largest text sizes (the screen does not scroll). */}
+      <PrimaryButton label="Get started" style={styles.start} maxFontSizeMultiplier={1.5} onPress={() => leave(() => (navigation.canGoBack() ? navigation.popTo('App', { screen: 'Map' }) : navigation.replace('App', { screen: 'Map' })), 'welcome_get_started')} />
+      <TextLink tone="muted" label="Sign in or create account" style={styles.signIn} maxFontSizeMultiplier={1.5} onPress={() => leave(() => navigation.navigate('Auth'), 'welcome_sign_in')} />
     </View>
   );
 }

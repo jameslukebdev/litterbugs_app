@@ -51,6 +51,8 @@ export default function ReportWizardModal(props) {
     stepOpacity,
     stepTranslateX,
     submitReport,
+    photoReviewAccepted,
+    setPhotoReviewAccepted,
     wantsStartingFunding,
   } = props;
 
@@ -184,6 +186,8 @@ export default function ReportWizardModal(props) {
                       startingContributionCents={startingContributionCents}
                       hasStartingFundingChoice={hasStartingFundingChoice}
                       submitReport={submitReport}
+                      photoReviewAccepted={photoReviewAccepted}
+                      setPhotoReviewAccepted={setPhotoReviewAccepted}
                     />
                   </View>
                 </TouchableWithoutFeedback>

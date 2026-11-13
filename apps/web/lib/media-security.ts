@@ -13,6 +13,7 @@ export const MEDIA_MAX_DIMENSION = 12_000;
 export const MEDIA_MAX_PIXELS = 40_000_000;
 export const MEDIA_SCAN_TIMEOUT_MS = 8_000;
 export const CLOUDMERSIVE_SCAN_ENDPOINT = 'https://api.cloudmersive.com/virus/scan/file';
+export const CLOUDMERSIVE_CONTENT_ENDPOINT = 'https://api.cloudmersive.com/image/nsfw/classify';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const QUARANTINE_EXTENSION_PATTERN = /\.(jpe?g|png|webp|heic|heif)$/i;
@@ -257,6 +258,44 @@ export async function requireCleanMalwareScan(
   } catch (error) {
     if (error instanceof MediaSecurityError) throw error;
     throw new MediaSecurityError('MEDIA_SCAN_UNAVAILABLE', 503, 'Photo safety checking is temporarily unavailable. Please try again shortly.');
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+// This check is separate from malware scanning and funding/photo-quality review.
+// Only the reconstructed JPEG is shared; no account, location or storage URL.
+export async function requireAppropriatePhoto(
+  bytes: Uint8Array,
+  options: { env?: MediaScannerEnvironment; fetchImpl?: typeof fetch } = {},
+) {
+  const configuration = scanConfiguration(options.env ?? process.env);
+  const unavailable = () => new MediaSecurityError('MEDIA_CONTENT_UNAVAILABLE', 503, 'Photo content checking is temporarily unavailable. Please try again shortly.');
+  if (!configuration) throw unavailable();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+  try {
+    const form = new FormData();
+    form.append('imageFile', new Blob([new Uint8Array(bytes).buffer], { type: 'image/jpeg' }), 'litterbugs-photo.jpg');
+    const response = await (options.fetchImpl ?? fetch)(CLOUDMERSIVE_CONTENT_ENDPOINT, {
+      method: 'POST', redirect: 'error', cache: 'no-store', credentials: 'omit',
+      headers: { apikey: configuration.apiKey, accept: 'application/json' },
+      body: form, signal: controller.signal,
+    });
+    if (!response.ok || Number(response.headers.get('content-length') ?? 0) > 2048) throw unavailable();
+    const resultBytes = new Uint8Array(await response.arrayBuffer());
+    if (resultBytes.length < 1 || resultBytes.length > 2048) throw unavailable();
+    const result: unknown = JSON.parse(new TextDecoder().decode(resultBytes));
+    if (!isRecord(result) || result.Successful !== true
+      || typeof result.Score !== 'number' || !Number.isFinite(result.Score)
+      || result.Score < 0 || result.Score > 1
+      || !['SafeContent_HighProbability', 'SafeContent_ModerateProbability', 'RacyContent', 'UnsafeContent_HighProbability'].includes(String(result.ClassificationOutcome))) throw unavailable();
+    if (result.Score > 0.2 || result.ClassificationOutcome !== 'SafeContent_HighProbability') {
+      throw new MediaSecurityError('MEDIA_CONTENT_REJECTED', 422, 'This photo may contain inappropriate content. Choose another photo. If this seems wrong, contact admin@litterbugs.app.');
+    }
+  } catch (error) {
+    if (error instanceof MediaSecurityError) throw error;
+    throw unavailable();
   } finally {
     clearTimeout(timeout);
   }

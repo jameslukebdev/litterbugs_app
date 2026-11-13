@@ -14,10 +14,10 @@ const data = {
 };
 
 it('counts only donations that went through and only rewards already sent', () => {
-  expect(paymentTotals(data)).toEqual({ donatedCents: 1800, earnedCents: 1050, onTheWayCents: 530, reporterWaitingCents: 30, donationsUnconfirmedCents: 600 });
+  expect(paymentTotals(data)).toEqual({ donatedCents: 1800, earnedCents: 1050, onTheWayCents: 530, reporterWaitingCents: 30 });
 });
 it('is all zero for a new member', () => {
-  expect(paymentTotals()).toEqual({ donatedCents: 0, earnedCents: 0, onTheWayCents: 0, reporterWaitingCents: 0, donationsUnconfirmedCents: 0 });
+  expect(paymentTotals()).toEqual({ donatedCents: 0, earnedCents: 0, onTheWayCents: 0, reporterWaitingCents: 0 });
 });
 it('prompts for payout setup only when reporter money is waiting and payouts are not ready', () => {
   const totals = paymentTotals(data);

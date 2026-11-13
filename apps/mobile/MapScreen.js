@@ -160,6 +160,8 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const [isEditing, setIsEditing] = useState(false);
   const submissionLock = useRef(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [photoReviewAccepted, setPhotoReviewAccepted] = useState(false);
+  useEffect(() => { setPhotoReviewAccepted(false); }, [formOpen, form.photos]);
   const [saveStage, setSaveStage] = useState('Saving report…');
   const [photoPreparationStatus, setPhotoPreparationStatus] = useState(null);
   const {
@@ -881,7 +883,7 @@ const openPayoutSetupForWorkflow = (action) => {
 
 // Final submit from Review screen
 const submitReport = async () => {
-  if (isSaving || submissionLock.current) return;
+  if (isSaving || submissionLock.current || !photoReviewAccepted) return;
 
   if (!hasAttachedReportPhoto()) {
     Alert.alert(
@@ -1756,6 +1758,8 @@ const revealBottomReportField = () => {
   stepOpacity={stepOpacity}
   stepTranslateX={stepTranslateX}
   submitReport={submitReport}
+  photoReviewAccepted={photoReviewAccepted}
+  setPhotoReviewAccepted={setPhotoReviewAccepted}
   wantsStartingFunding={wantsStartingFunding}
 />
 

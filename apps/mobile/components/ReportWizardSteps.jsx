@@ -2,6 +2,7 @@ import { View, Text, TextInput, Image, TouchableOpacity, Keyboard, ActivityIndic
 import { Ionicons } from '@expo/vector-icons';
 import { MAX_REPORT_PHOTOS } from '../lib/reportPhotoSelection';
 import { formatUsd } from '../lib/funding';
+import PhotoReviewChoice from './PhotoReviewChoice';
 import FeeExplanationLabel from './FeeExplanationLabel';
 import { LoadingButtonContent } from '../BrandedLoadingState';
 // Website report form: one soft blue for every selected litter type and site condition.
@@ -20,7 +21,7 @@ const SEVERITY_OPTIONS = [
   { level: 'High', icon: 'layers-outline', description: 'A large amount' },
 ];
 
-export default function ReportWizardSteps({ form, coordinate, onChangeLocation, isEditing, reportPhotoUrls, reportStep, selectedReport, pickImage, isSaving, showPhotoPreparation, setForm, removePhoto, hasAttachedReportPhoto, LITTER_OPTIONS, revealBottomReportField, NOTES_OPTIONS, jumpToReportStep, fundingEnabled, wantsStartingFunding, startingContributionCents, hasStartingFundingChoice, submitReport }) {
+export default function ReportWizardSteps({ form, coordinate, onChangeLocation, isEditing, reportPhotoUrls, reportStep, selectedReport, pickImage, isSaving, showPhotoPreparation, setForm, removePhoto, hasAttachedReportPhoto, LITTER_OPTIONS, revealBottomReportField, NOTES_OPTIONS, jumpToReportStep, fundingEnabled, wantsStartingFunding, startingContributionCents, hasStartingFundingChoice, submitReport, photoReviewAccepted, setPhotoReviewAccepted }) {
   const reviewPhotos = form.photos.length > 0 ? form.photos : isEditing ? reportPhotoUrls : [];
   const renderPhotoSlot = (index) => {
     const uri = form.photos[index];
@@ -688,19 +689,21 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
             </View>
           ) : null}
 
+          <PhotoReviewChoice accepted={photoReviewAccepted} onChange={setPhotoReviewAccepted} disabled={isSaving} />
+
           {/* Website review: says what posting needs before the button is pressed. */}
           {!isEditing ? <Text style={styles.reportPostingNote}>To post, allow location access and be within 50 miles of the pin.</Text> : null}
 
           <TouchableOpacity
             style={[
               styles.wizardSubmitButton,
-              isSaving && styles.wizardDisabled,
+              (isSaving || !photoReviewAccepted) && styles.wizardDisabled,
             ]}
             onPress={submitReport}
-            disabled={isSaving}
+            disabled={isSaving || !photoReviewAccepted}
             accessibilityRole="button"
             accessibilityLabel="Submit litter report"
-            accessibilityState={{ disabled: isSaving, busy: isSaving }}
+            accessibilityState={{ disabled: isSaving || !photoReviewAccepted, busy: isSaving }}
           >
             {isSaving ? (
               <LoadingButtonContent label="Creating report…" />
