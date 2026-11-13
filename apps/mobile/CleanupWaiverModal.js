@@ -20,36 +20,18 @@ import { hapticSelect } from './lib/haptics';
 import { prefersReducedMotion } from './lib/reduceMotion';
 import { colors, fonts } from './lib/theme';
 
+const SITE_CONFIRMATION = 'I can legally access this site and clean safely with my equipment, away from moving traffic and hazardous materials. I will stop if conditions become unsafe.';
+
 if (Platform.OS === 'android') UIManager.setLayoutAnimationEnabledExperimental?.(true);
 
 // The step before a cleanup is claimed. It leads with what the person is about to do (the
-// butterfly is the Clean bug), and keeps the safety guidelines, agreement and release in
-// sections that open on a tap. Legal requirements (docs/legal-acceptance-and-review.md):
+// butterfly is the Clean bug). The safety guidelines, agreement and release open together
+// from one "Read the cleanup agreement" row. Legal requirements (docs/legal-acceptance-and-review.md):
 // the full acknowledgment is presented once per document version, so the first time a
-// version is accepted every section must be opened before the agreement can be ticked; the
-// release keeps its own clearly titled section; and both checkboxes start unticked.
-function Section({ id, icon, title, open, read, onToggle, children }) {
-  return (
-    <View style={[styles.section, open && styles.sectionOpen]}>
-      <TouchableOpacity
-        style={styles.sectionHeader}
-        onPress={() => onToggle(id)}
-        activeOpacity={0.75}
-        accessibilityRole="button"
-        accessibilityState={{ expanded: open }}
-        accessibilityLabel={`${title}${read ? ', opened' : ''}`}
-      >
-        <Ionicons name={icon} size={20} color={colors.body} />
-        <Text style={styles.sectionTitle}>{title}</Text>
-        {read ? <Ionicons name="checkmark-circle" size={20} color={colors.done} accessibilityElementsHidden /> : null}
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={20} color={colors.muted} />
-      </TouchableOpacity>
-      {open ? <View style={styles.sectionBody}>{children}</View> : null}
-    </View>
-  );
-}
-
-function Checkbox({ checked, disabled, locked = false, onPress, children }) {
+// version is accepted it must be opened before the agreement can be ticked; the release keeps
+// its own clear heading inside it; and both checkboxes start unticked. Members who already
+// accepted this version only confirm the site is safe, as on the website.
+function Checkbox({ checked, disabled, onPress, children }) {
   return (
     <TouchableOpacity
       style={[styles.check, checked && styles.checkOn, disabled && styles.checkLocked]}
@@ -58,9 +40,8 @@ function Checkbox({ checked, disabled, locked = false, onPress, children }) {
       activeOpacity={0.8}
       accessibilityRole="checkbox"
       accessibilityState={{ checked, disabled }}
-      accessibilityHint={locked ? 'Open each section above first' : undefined}
     >
-      <Ionicons name={locked ? 'lock-closed-outline' : checked ? 'checkbox' : 'square-outline'} size={26} color={checked ? colors.primary : colors.muted} />
+      <Ionicons name={checked ? 'checkbox' : 'square-outline'} size={26} color={checked ? colors.primary : colors.muted} />
       <Text style={styles.checkText}>{children}</Text>
     </TouchableOpacity>
   );
@@ -81,8 +62,8 @@ export default function CleanupWaiverModal({
   const [read, setRead] = useState(() => new Set());
   // Someone who already accepted this version only confirms the site is safe.
   const agreementSaved = Boolean(waiver?.alreadyAccepted);
-  const sections = ['safety', 'agreement', ...(waiver?.release_body ? ['release'] : [])];
-  const allRead = sections.every(id => read.has(id));
+  // The whole agreement is one section; it must be opened before the agreement can be ticked.
+  const allRead = read.has('agreement');
   const ready = (agreementSaved || acknowledged) && siteConfirmed;
   const funded = Number(report?.funded_amount_cents) > 0;
 
@@ -149,42 +130,60 @@ export default function CleanupWaiverModal({
 
           {/* As on the website: the full agreement only when this version has not been accepted
               yet; after that, only the site-safety confirmation below. */}
-          {agreementSaved ? null : <>
-          <Text style={styles.groupTitle} accessibilityRole="header">Safety and agreement</Text>
-
-          <Section id="safety" icon="shield-checkmark-outline" title="Stay safe" open={open === 'safety'} read={read.has('safety')} onToggle={toggle}>
-            {waiver?.guidelines_body ? <Text style={styles.sectionText}>{waiver.guidelines_body.trim()}</Text> : null}
-            <Text style={[styles.sectionText, styles.strong]}>Only continue if the location is safe to clean.</Text>
-          </Section>
-          <Section id="agreement" icon="document-text-outline" title="Cleanup agreement" open={open === 'agreement'} read={read.has('agreement')} onToggle={toggle}>
-            {updated ? <Text style={styles.updated}>Updated {updated}</Text> : null}
-            <Text style={styles.sectionText}>{(waiver?.body ?? '').trim()}</Text>
-          </Section>
-          {waiver?.release_body ? (
-            <Section id="release" icon="alert-circle-outline" title="Assumption of risk and release" open={open === 'release'} read={read.has('release')} onToggle={toggle}>
-              <Text style={styles.sectionText}>{waiver.release_body.trim()}</Text>
-            </Section>
-          ) : null}
-
-          </>}
-
-          {agreementSaved ? null : (
+          {agreementSaved ? (
             <Checkbox
-              checked={acknowledged}
-              disabled={accepting || !allRead}
-              locked={!allRead}
-              onPress={() => { hapticSelect(); setAcknowledged(current => !current); }}
+              checked={siteConfirmed}
+              disabled={accepting}
+              onPress={() => { hapticSelect(); setSiteConfirmed(current => !current); }}
             >
-              I confirm I am 18 or older. I have read and accept this version of the safety guidelines, funded reward acknowledgment, assumption of risk, and release.
+              {SITE_CONFIRMATION}
             </Checkbox>
+          ) : (
+            // First acceptance of this version: one box covers the agreement and this site. It
+            // stays locked until the agreement inside it has been opened.
+            <View style={[styles.check, styles.checkFirst, acknowledged && styles.checkOn]}>
+              <TouchableOpacity
+                style={[styles.checkRow, !allRead && styles.checkLocked]}
+                onPress={() => { hapticSelect(); const next = !acknowledged; setAcknowledged(next); setSiteConfirmed(next); }}
+                disabled={accepting || !allRead}
+                activeOpacity={0.8}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: acknowledged, disabled: accepting || !allRead }}
+                accessibilityHint={allRead ? undefined : 'Read the cleanup agreement first'}
+              >
+                <Ionicons name={!allRead ? 'lock-closed-outline' : acknowledged ? 'checkbox' : 'square-outline'} size={26} color={acknowledged ? colors.primary : colors.muted} />
+                <Text style={styles.checkText}>
+                  I confirm I am 18 or older. I have read and accept this version of the safety guidelines, funded reward acknowledgment, assumption of risk, and release. {SITE_CONFIRMATION}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.readLink}
+                onPress={() => toggle('agreement')}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: open === 'agreement' }}
+                accessibilityLabel={`Read the cleanup agreement${read.has('agreement') ? ', opened' : ''}`}
+              >
+                <Ionicons name="document-text-outline" size={18} color={colors.primaryDark} />
+                <Text style={styles.readLinkText}>Read the cleanup agreement</Text>
+                {read.has('agreement') ? <Ionicons name="checkmark-circle" size={18} color={colors.done} /> : null}
+                <Ionicons name={open === 'agreement' ? 'chevron-up' : 'chevron-down'} size={18} color={colors.primaryDark} />
+              </TouchableOpacity>
+              {open === 'agreement' ? (
+                <View style={styles.agreementText}>
+                  {updated ? <Text style={styles.updated}>Updated {updated}</Text> : null}
+                  <Text style={styles.partTitle}>Stay safe</Text>
+                  {waiver?.guidelines_body ? <Text style={styles.sectionText}>{waiver.guidelines_body.trim()}</Text> : null}
+                  <Text style={[styles.sectionText, styles.strong]}>Only continue if the location is safe to clean.</Text>
+                  <Text style={styles.partTitle}>Cleanup agreement</Text>
+                  <Text style={styles.sectionText}>{(waiver?.body ?? '').trim()}</Text>
+                  {waiver?.release_body ? <>
+                    <Text style={styles.partTitle}>Assumption of risk and release</Text>
+                    <Text style={styles.sectionText}>{waiver.release_body.trim()}</Text>
+                  </> : null}
+                </View>
+              ) : null}
+            </View>
           )}
-          <Checkbox
-            checked={siteConfirmed}
-            disabled={accepting}
-            onPress={() => { hapticSelect(); setSiteConfirmed(current => !current); }}
-          >
-            I can legally access this site and clean safely with my equipment, away from moving traffic and hazardous materials. I will stop if conditions become unsafe.
-          </Checkbox>
         </ScrollView>
 
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 18) }]}>
@@ -229,20 +228,20 @@ const styles = StyleSheet.create({
   stepTitle: { flex: 1, minWidth: 0, color: colors.ink, fontSize: 16, lineHeight: 21, fontFamily: fonts.heading },
   payTitle: { color: colors.gold },
 
-  groupTitle: { marginTop: 28, marginBottom: 2, color: colors.ink, fontSize: 17, lineHeight: 22, fontFamily: fonts.heading },
 
-  section: { marginTop: 10, borderRadius: 16, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
-  sectionOpen: { borderColor: colors.lineStrong },
-  sectionHeader: { minHeight: 54, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  sectionTitle: { flex: 1, color: colors.ink, fontSize: 15, fontWeight: '700' },
-  sectionBody: { paddingHorizontal: 14, paddingBottom: 14, gap: 8 },
   sectionText: { color: colors.body, fontSize: 14, lineHeight: 21 },
   strong: { fontWeight: '700', color: colors.ink },
   updated: { color: colors.muted, fontSize: 12, fontWeight: '600' },
+  partTitle: { marginTop: 6, color: colors.ink, fontSize: 15, fontWeight: '800' },
 
   check: { marginTop: 14, paddingVertical: 14, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: 16, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.white },
   checkOn: { borderColor: colors.primaryBorder, backgroundColor: colors.primaryTint },
-  checkLocked: { opacity: 0.5 },
+  checkLocked: { opacity: 0.55 },
+  checkFirst: { flexDirection: 'column', alignItems: 'stretch', gap: 0 },
+  checkRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  readLink: { marginTop: 10, marginLeft: 38, minHeight: 40, flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
+  readLinkText: { color: colors.primaryDark, fontSize: 15, fontWeight: '700', textDecorationLine: 'underline' },
+  agreementText: { marginTop: 6, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.line, gap: 8 },
   checkText: { flex: 1, color: colors.body, fontSize: 14, lineHeight: 21 },
 
   footer: { paddingHorizontal: 20, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line, backgroundColor: colors.white },
