@@ -24,6 +24,16 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-13 — Codex (nine external-link sources identified)
+
+- GSC drilldowns identify5 AppAgg copies of the Android listing (cs/fr/hu/it/pl)
+  plus4 Chrome-Stats pages:one /a/ listing and app copies fr/ko/zh-CN. All
+  resolve in GSC to homepage;AppAgg adds referral parameters. Nine recorded
+  pages across two domains, mostly translated app listings. Exact URLs added
+  to live-seo-gap-audit.json. Two source-page web reads inaccessible;current
+  link presence not independently confirmed. No outreach/settings/site/deploy
+  changes;existing work preserved.
+
 ### 2026-11-13 — Codex (live SEO gaps audited; earlier story proposal corrected)
 
 - Read-only sitemap health:49/49 HTTP200. Linked crawl100 URLs/180 discovered,

@@ -37,7 +37,58 @@
           "links": 9
         }
       ],
-      "limitation": "Google reports a sample, not a complete backlink index; rows do not establish that every link still exists or passes ranking value."
+      "limitation": "Google reports a sample, not a complete backlink index; rows do not establish that every link still exists or passes ranking value.",
+      "referringPages": [
+        {
+          "domain": "appagg.com",
+          "url": "https://appagg.com/android/tools/litterbugs-community-cleanup-44443109.html?hl=cs",
+          "languageCode": "cs"
+        },
+        {
+          "domain": "appagg.com",
+          "url": "https://appagg.com/android/tools/litterbugs-community-cleanup-44443109.html?hl=fr",
+          "languageCode": "fr"
+        },
+        {
+          "domain": "appagg.com",
+          "url": "https://appagg.com/android/tools/litterbugs-community-cleanup-44443109.html?hl=hu",
+          "languageCode": "hu"
+        },
+        {
+          "domain": "appagg.com",
+          "url": "https://appagg.com/android/tools/litterbugs-community-cleanup-44443109.html?hl=it",
+          "languageCode": "it"
+        },
+        {
+          "domain": "appagg.com",
+          "url": "https://appagg.com/android/tools/litterbugs-community-cleanup-44443109.html?hl=pl",
+          "languageCode": "pl"
+        },
+        {
+          "domain": "chrome-stats.com",
+          "url": "https://chrome-stats.com/a/QnVycm93K0Jhc2U"
+        },
+        {
+          "domain": "chrome-stats.com",
+          "url": "https://chrome-stats.com/d/com.litterbugs.app?hl=fr",
+          "languageCode": "fr"
+        },
+        {
+          "domain": "chrome-stats.com",
+          "url": "https://chrome-stats.com/d/com.litterbugs.app?hl=ko",
+          "languageCode": "ko"
+        },
+        {
+          "domain": "chrome-stats.com",
+          "url": "https://chrome-stats.com/d/com.litterbugs.app?hl=zh-CN",
+          "languageCode": "zh-CN"
+        }
+      ],
+      "targetVariants": {
+        "appagg.com": "https://litterbugs.app/?from=AppAgg.com&utm_campaign=AppAgg.com&utm_medium=referral&utm_source=AppAgg.com",
+        "chrome-stats.com": "https://litterbugs.app/"
+      },
+      "referringPageVerification": "All nine URLs read directly from GSC drilldowns November 13. Two representative source-page opens were inaccessible through web reader; current presence of every link was not independently verified."
     },
     "indexSummary": {
       "source": "Google Search Console Page indexing UI, observed November 13",
