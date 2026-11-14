@@ -24,6 +24,45 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-14 — Claude (public report pages: SEO, addresses, location, layout — deployed)
+
+- Live on litterbugs.app. Source `85adaad` on isolated release branch
+  `claude/report-pages-seo-20261114` (cut from the previous live source
+  `d142b2c`, pushed to GitHub). Production deployment
+  `dpl_6jERvD7hHf6wHekXmXt1p3ecL3K4`, built on Vercel and promoted after checks.
+  Previous deployment/rollback: `dpl_8MYNXYQc8CDo2aHCUTCgy3ATLFQT`.
+- Website only. No app changes, no database migrations, no native build. The
+  release branch deliberately excludes this checkout's unreleased work
+  (`cleanup-notifications` changes and `dev-review-preview` pages).
+- Report pages (open, completed, expired) now live at
+  `/litter-reports/<title>-<town>-<id>`. `/reports/<id>` redirects there (307) and
+  stays the address the mobile app, share links, photos and share images use; do
+  not put words into `/reports/<id>`, the published app only routes that shape.
+- Missing or non-public reports return a real 404 (checked in `proxy.ts`, one
+  small database read per report view; a failed read passes through).
+- Town and nearest street address come from OpenStreetMap Nominatim
+  (`lib/report-town-lookup.ts`), cached 90 days in the server Data Cache, one
+  request a second. Town lookups send a position rounded to ~1 km; address
+  lookups send ~10 m. Owner approved both.
+- Owner decision: report pages now show the address, coordinates and a live map
+  pin. The share dialog line "won't see the exact location" was removed.
+- Fund now shows on reports that already have funding (the page no longer treats
+  `funding_locked_at` as "cannot be funded") and on open reports outside Boone.
+- Also: head metadata for answer-engine crawlers (`htmlLimitedBots`), Article and
+  breadcrumb structured data, all photos with tap to enlarge, share dialog on
+  report pages, facts strip, timeline, nearby reports by distance, `llms.txt`,
+  sitemap with readable addresses and completion dates.
+- Checks: 1165 web tests, typecheck and lint passed on the release source. Live
+  spot checks passed for home, listings, map, admin analytics, a report page,
+  redirect, 404, photos, share image, sitemap and the app link file.
+- Pending: the same changes are committed locally on `codex/map-first-navigation`
+  but that branch is not pushed. Not done: town/ZIP listing pages, report page
+  caching, removing the loading shell for non-JS crawlers, clearer "bag/item"
+  numbers (needs the cleanup form). Cleanup time shows only when a cleaner
+  recorded it; no public report has one yet.
+- Do not undo: the `/reports/<id>` → readable-address redirect, the 307 status
+  (the address changes with title and town), or the Nominatim rate limiting.
+
 ### 2026-11-13 — Codex (owner analytics dashboard deployed)
 
 - Live at https://litterbugs.app/admin/analytics. Source `388c930`, isolated release
