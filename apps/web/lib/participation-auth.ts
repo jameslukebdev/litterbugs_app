@@ -1,3 +1,4 @@
+import { publicReportIdFromPath } from './public-report-url';
 import type { ParticipationAction } from './website-analytics';
 
 export const AUTH_RESULT_PARAM = 'participation_auth';
@@ -9,7 +10,7 @@ export function isSharedReportAuthProvider(value: unknown): value is SharedRepor
 }
 
 export function isSharedReportAuthEntry(url: URL, openedOnMap: boolean) {
-  if (/^\/reports\/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\/?$/i.test(url.pathname)) return true;
+  if (publicReportIdFromPath(url.pathname)) return true;
   return url.pathname === '/map' && Boolean(url.searchParams.get('report')) && !openedOnMap;
 }
 

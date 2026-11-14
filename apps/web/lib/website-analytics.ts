@@ -32,7 +32,8 @@ export function analyticsPage(pathname: string): string | null {
   if (pathname === '/locations/us-nc-boone') return pathname;
   const community = communityForPath(pathname);
   if (community) return pathname === community.href ? community.href : '/communities/cleanups';
-  if (/^\/reports\/[^/]+$/.test(pathname)) return '/reports/detail';
+  // Both address forms of a report page count as the same page.
+  if (/^\/(?:reports|litter-reports)\/[^/]+$/.test(pathname)) return '/reports/detail';
   if (pathname === MEMBER_PROFILE_PAGE || /^\/members\/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(pathname)) return MEMBER_PROFILE_PAGE;
   return null;
 }

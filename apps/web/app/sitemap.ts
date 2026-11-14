@@ -14,13 +14,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...communityDirectory.filter(isIndexableCommunity).map(community => ({
       url: `${site}${community.href}`, lastModified: community.reviewedAt!,
     })),
-    // Reports do not have a maintained content-updated timestamp. Omit lastmod
-    // rather than presenting creation time or the current render time as an edit.
+    // Reports do not have a maintained content-updated timestamp, so open reports
+    // omit lastmod rather than presenting creation or render time as an edit. A
+    // completed cleanup is the exception: its completion is the page's last real change.
     ...reports.map(report => {
-      const url = `${site}/reports/${report.id}`;
-      const images = [report.hasBeforePhoto ? `${url}/photo/before` : null,
-        report.hasAfterPhoto ? `${url}/photo/after` : null].filter((value): value is string => value !== null);
-      return { url, ...(images.length ? { images } : {}) };
+      // The page is listed at its readable address; its photos stay under the id address.
+      const url = `${site}${report.path}`;
+      const photos = `${site}/reports/${report.id}/photo`;
+      const images = [report.hasBeforePhoto ? `${photos}/before` : null,
+        report.hasAfterPhoto ? `${photos}/after` : null].filter((value): value is string => value !== null);
+      const completed = report.completedAt && Number.isFinite(Date.parse(report.completedAt)) ? new Date(report.completedAt) : null;
+      return { url, ...(completed ? { lastModified: completed } : {}), ...(images.length ? { images } : {}) };
     }),
   ];
 }

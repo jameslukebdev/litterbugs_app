@@ -2,6 +2,7 @@
 import { ResponsiveLink as Link } from '../responsive-link';
 import { BrandBug } from '@/components/brand-bug';
 import type { PublicReportShareModel } from '@/lib/public-report-share-model';
+import { publicReportHref } from '@/lib/public-report-url';
 import { PublicPhoto } from './public-photo';
 import styles from './home-cleanup-proof.module.css';
 import { PhotoBatch } from '../photo-batch';
@@ -32,7 +33,7 @@ export function HomeCleanupProof({ report, heading = 'Most recent cleanup', show
           <h3>{report.title}</h3>
           {meta && <p>{meta}</p>}
         </div>
-        <Link className={styles.cta} href={`/reports/${report.id}`}><BrandBug kind="flower" size={22} className="brand-action-icon" />See this cleanup</Link>
+        <Link className={styles.cta} href={publicReportHref(report)}><BrandBug kind="flower" size={22} className="brand-action-icon" />See this cleanup</Link>
       </div>
     </section>
   );

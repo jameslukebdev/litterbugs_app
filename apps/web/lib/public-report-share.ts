@@ -10,6 +10,9 @@ import {
   isExpiredPublicReport,
   type PublicReportShareModel,
 } from '@/lib/public-report-share-model';
+import { PAGE_TOWN_WAIT_MS, publicReportPlace } from '@/lib/public-report-place';
+import { publicReportPath } from '@/lib/public-report-url';
+import { lookupReportAddress } from '@/lib/report-town-lookup';
 import { createPublicClient } from '@/lib/supabase/public';
 import { embedSocialCardPhoto, loadSocialCardPhoto } from '@/lib/social-card-photo';
 import { loadLocalHistoryPhotoPreview } from '@/lib/local-history-photo-preview';
@@ -66,15 +69,16 @@ const loadPublicReportData = cache(async (reportId: string) => {
       .catch(() => ({ data: null }))
     : Promise.resolve({ data: null });
 
-  let attempt: Pick<CleanupAttempt, 'id' | 'cleaner_id' | 'completed_at' | 'final_submission_id'> | null = null;
-  let submission: Pick<CleanupSubmission, 'description' | 'bags_or_items_removed' | 'weight_pounds'> | null = null;
+  let attempt: Pick<CleanupAttempt, 'id' | 'cleaner_id' | 'claimed_at' | 'completed_at' | 'final_submission_id'> | null = null;
+  let submission: Pick<CleanupSubmission, 'description' | 'bags_or_items_removed' | 'weight_pounds' | 'duration_minutes'> | null = null;
   let cleaner: Pick<Profile, 'display_name' | 'username'> | null = null;
   let afterPhoto: Pick<CleanupSubmissionPhoto, 'storage_path'> | null = null;
+  let afterPhotoCount = 0;
 
   if (report.cleanup_state === 'completed') {
     const { data: attemptData } = await supabase
       .from('cleanup_attempts')
-      .select('id, cleaner_id, completed_at, final_submission_id')
+      .select('id, cleaner_id, claimed_at, completed_at, final_submission_id')
       .eq('report_id', report.id)
       .eq('status', 'completed')
       .not('final_submission_id', 'is', null)
@@ -87,7 +91,7 @@ const loadPublicReportData = cache(async (reportId: string) => {
       const [submissionResult, cleanerResult, photoResult] = await Promise.all([
         supabase
           .from('cleanup_submissions')
-          .select('description, bags_or_items_removed, weight_pounds')
+          .select('description, bags_or_items_removed, weight_pounds, duration_minutes')
           .eq('id', attempt.final_submission_id)
           .eq('cleanup_attempt_id', attempt.id)
           .maybeSingle(),
@@ -103,13 +107,15 @@ const loadPublicReportData = cache(async (reportId: string) => {
           .select('storage_path')
           .eq('submission_id', attempt.final_submission_id)
           .order('display_order', { ascending: true })
-          .limit(1)
-          .maybeSingle(),
+          .limit(MAX_PUBLIC_PHOTOS),
       ]);
 
       submission = submissionResult.data;
       cleaner = cleanerResult.data;
-      afterPhoto = photoResult.data;
+      // Photos are addressed by position, so the count is every row up to the page's limit.
+      const afterPhotos = photoResult.data ?? [];
+      afterPhoto = afterPhotos[0] ?? null;
+      afterPhotoCount = afterPhoto?.storage_path ? afterPhotos.length : 0;
     }
   }
 
@@ -117,15 +123,29 @@ const loadPublicReportData = cache(async (reportId: string) => {
 
   const expired = isExpiredPublicReport(report);
   const community = publicCommunityForPoint(report.latitude, report.longitude);
+  // The town: the editorial community when the report is inside one, else the OpenStreetMap lookup.
+  const [place, address] = await Promise.all([
+    publicReportPlace(report.latitude, report.longitude, PAGE_TOWN_WAIT_MS),
+    lookupReportAddress(report.latitude, report.longitude, PAGE_TOWN_WAIT_MS),
+  ]);
   const model: PublicReportShareModel = {
     id: report.id,
     state: expired ? 'expired' : report.cleanup_state === 'completed' ? 'completed' : report.cleanup_state === 'available' ? 'available' : 'in_progress',
-    fundingEligible: !expired && report.cleanup_state === 'available' && report.funding_eligibility === 'eligible' && report.renewal_status === 'active' && !report.funding_frozen_at && !report.funding_locked_at && !report.cancelled_at && !report.expired_at,
+    fundingEligible: !expired && report.cleanup_state === 'available' && report.funding_eligibility === 'eligible' && report.renewal_status === 'active' && !report.funding_frozen_at && !report.cancelled_at && !report.expired_at,
     rewardCents: !expired && report.cleanup_state === 'available' && report.funding_eligibility === 'eligible' ? Math.max(0, report.funded_amount_cents || 0) : 0,
     title: report.title?.trim() || 'Litter Report',
-    generalLocation: community?.label ?? 'Exact location shown only in Litterbugs',
+    generalLocation: place?.label ?? 'Location shown on the map',
+    // The street lookup can name a hamlet inside the town (e.g. "Moretz" within Boone); the address
+    // line uses the same town as the rest of the page so the two never disagree.
+    address: address && place && address.locality !== place.locality
+      ? { ...address, locality: place.locality,
+        line: [address.street, place.locality, [address.region, address.postalCode].filter(Boolean).join(' ')].filter(Boolean).join(', ') }
+      : address,
+    location: report.latitude != null && report.longitude != null && Number.isFinite(report.latitude) && Number.isFinite(report.longitude)
+      ? { latitude: report.latitude, longitude: report.longitude } : null,
     communitySlug: community?.slug,
-    localityLabel: community?.localityLabel,
+    localityLabel: place?.localityLabel,
+    place: place ? { locality: place.locality, region: place.region, countryCode: place.countryCode } : undefined,
     severity: report.severity,
     reporterName: displayName(reporter) || 'Community member',
     reporterId: report.user_id,
@@ -134,14 +154,20 @@ const loadPublicReportData = cache(async (reportId: string) => {
     reportDate: report.created_at,
     expiredDate: expired ? report.expired_at ?? report.expires_at : null,
     cleanerName: displayName(cleaner),
+    cleanerId: cleaner ? attempt?.cleaner_id ?? null : null,
     completionDate: attempt?.completed_at ?? null,
+    claimedDate: attempt?.claimed_at ?? null,
+    // Set once, when the first contribution succeeds.
+    fundedDate: report.funding_locked_at ?? null,
     cleanupDescription: submission?.description ?? null,
     bagsOrItemsRemoved: submission?.bags_or_items_removed ?? null,
     weightPounds: submission?.weight_pounds ?? null,
+    cleanupMinutes: submission?.duration_minutes ?? null,
     beforePhotoUrl: null,
     afterPhotoUrl: null,
+    afterPhotoCount,
     photoCount: Math.min(MAX_PUBLIC_PHOTOS, (report.photo_paths ?? []).filter(Boolean).length),
-    canonicalUrl: `${getSiteUrl()}/reports/${encodeURIComponent(report.id)}`,
+    canonicalUrl: `${getSiteUrl()}${publicReportPath(report.id, report.title?.trim() || 'Litter Report', place?.localityLabel)}`,
   };
 
   return { model, beforePath: report.photo_paths?.[0], afterPath: afterPhoto?.storage_path };

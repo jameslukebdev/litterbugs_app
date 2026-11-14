@@ -20,6 +20,7 @@ import { publicReportStatus } from '@/lib/public-report-status';
 import { EmptyBug, SlidingUnderline } from '@/components/bug-motion';
 import { ReadingProgress } from '../reading-progress';
 import { LITTER_MAP_HREF } from '@/lib/home-map-link';
+import { publicReportHref } from '@/lib/public-report-url';
 export { styles };
 
 const READING_PATHS: PublicPath[] = ['/photo-review', '/cleanup-safety', '/about', '/help', '/get-app', '/fund-a-cleanup', '/cleaner', '/report-litter', '/support'];
@@ -166,7 +167,7 @@ export function ReportCards({
           : day(report.reportDate);
         const status = publicReportStatus(report.state);
         return <article className="report-card-container" key={report.id}>
-          <Link prefetch={false} className="report-result" href={`/reports/${report.id}`}>
+          <Link prefetch={false} className="report-result" href={publicReportHref(report)}>
             <ReportCardContent
               photo={<span className={`report-result-photo${photos.length ? '' : ' report-result-photo-empty'}`}>
                 {photos.length ? photos.map((item, slide) => <span className="card-slide" data-active={slide === 0 || undefined} key={item.src}>

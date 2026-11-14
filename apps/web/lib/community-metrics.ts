@@ -40,7 +40,7 @@ export function communityClick(href: string, origin: string, slug: unknown, reso
     const resource = resourcesForCommunity(community).find(item => item.id === resourceId && item.href === url.href);
     return resource ? { event: 'community_resource_opened' as const, properties: { ...properties, resource_id: resource.id } } : null;
   }
-  if (/^\/reports\/[^/]+$/.test(url.pathname)) return { event: 'community_report_opened' as const, properties };
+  if (/^\/(?:reports|litter-reports)\/[^/]+$/.test(url.pathname)) return { event: 'community_report_opened' as const, properties };
   const action = participationLinkAction(url, origin);
   if (action) return { event: 'community_action_started', properties: { ...properties, action } };
   return null;

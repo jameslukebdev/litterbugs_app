@@ -25,6 +25,8 @@ function query(data: unknown, error: unknown = null) {
     select: vi.fn(() => q), eq: vi.fn(() => q), not: vi.fn(() => q),
     order: vi.fn(() => q), limit: vi.fn(() => q), range: vi.fn(() => q),
     maybeSingle: vi.fn(async () => ({ data, error })),
+    // Awaiting the query itself (no maybeSingle) returns rows, as the cleanup photo list does.
+    then: (resolve: (value: { data: unknown[]; error: unknown }) => void) => resolve({ data: data == null ? [] : [data].flat(), error }),
   };
   return q;
 }

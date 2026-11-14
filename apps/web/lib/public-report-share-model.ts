@@ -10,7 +10,13 @@ export type PublicReportShareModel = {
   fundingEligible?: boolean;
   generalLocation: string;
   localityLabel?: string;
+  /** The verified town behind `localityLabel`, from a community or the town lookup; absent when unknown. */
+  place?: { locality: string; region: string; countryCode: string };
   communitySlug?: string;
+  /** Nearest street address, so people can find the spot; absent when the lookup has no answer. */
+  address?: { street: string; line: string; locality: string | null; region: string | null; postalCode: string | null; countryCode: string | null } | null;
+  /** The report's position, for the page's map and directions link. */
+  location?: { latitude: number; longitude: number } | null;
   severity: string | null;
   reporterName?: string;
   reporterId?: string | null;
@@ -19,14 +25,23 @@ export type PublicReportShareModel = {
   reportDate: string | null;
   expiredDate?: string | null;
   cleanerName: string | null;
+  /** When the first contribution reached its cleanup fund. */
+  fundedDate?: string | null;
+  /** When the completed cleanup was claimed. */
+  claimedDate?: string | null;
+  cleanerId?: string | null;
   completionDate: string | null;
   cleanupDescription: string | null;
   bagsOrItemsRemoved: number | null;
+  /** Minutes the cleaner said the cleanup took. */
+  cleanupMinutes?: number | null;
   weightPounds: number | null;
   beforePhotoUrl: string | null;
   /** How many report photos there are; linked cards page through them with `?photo=N`. */
   photoCount?: number;
   afterPhotoUrl: string | null;
+  /** How many cleanup photos there are; the report page pages through them with `?photo=N`. */
+  afterPhotoCount?: number;
   canonicalUrl: string;
 };
 

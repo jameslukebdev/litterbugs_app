@@ -7,14 +7,14 @@ const get = (kind = 'before') => GET(new Request('https://litterbugs.app/reports
 });
 beforeEach(() => { loadPhoto.mockReset(); });
 describe('public report photo response', () => {
-  it('returns JPEG bytes without allowing stale public caches', async () => {
+  it('returns JPEG bytes that only the requesting browser may briefly reuse', async () => {
     loadPhoto.mockResolvedValue(Buffer.from([1, 2, 3]));
     const response = await get();
     expect(response.status).toBe(200);
     expect(new Uint8Array(await response.arrayBuffer())).toEqual(new Uint8Array([1, 2, 3]));
     expect(response.headers.get('content-type')).toBe('image/jpeg');
     expect(response.headers.get('content-length')).toBe('3');
-    expect(response.headers.get('cache-control')).toBe('private, no-store');
+    expect(response.headers.get('cache-control')).toBe('private, max-age=300');
     expect(response.headers.get('x-content-type-options')).toBe('nosniff');
   });
   it('rejects arbitrary photo selectors before loading', async () => {

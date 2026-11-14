@@ -3,6 +3,7 @@ import { HomeCleanupProof } from '@/components/public-website/home-cleanup-proof
 import { PublicPhoto } from '@/components/public-website/public-photo';
 import { cleanupCompletionDate, cleanupOutcome } from '@/lib/community-evidence';
 import type { PublicReportShareModel } from '@/lib/public-report-share-model';
+import { publicReportHref } from '@/lib/public-report-url';
 import styles from './community-results.module.css';
 
 function ResultFacts({ report }: { report: PublicReportShareModel }) {
@@ -30,8 +31,8 @@ export function CommunityResults({ reports, featured = true }: { reports: Public
     {rest.length > 0 && <div className={styles.grid}>{rest.map(report => {
       const photo = report.afterPhotoUrl || report.beforePhotoUrl;
       return <article key={report.id} className={styles.card}>
-        {photo && <Link prefetch={false} href={`/reports/${report.id}`} aria-label={`See ${report.title}`}><PublicPhoto src={photo} alt={`${report.afterPhotoUrl ? 'After' : 'Before'} cleanup: ${report.title}`} width={600} height={400} /></Link>}
-        <div className={styles.copy}><h3><Link prefetch={false} href={`/reports/${report.id}`}>{report.title}</Link></h3><ResultFacts report={report} />{report.cleanupDescription && <p>{report.cleanupDescription}</p>}</div>
+        {photo && <Link prefetch={false} href={publicReportHref(report)} aria-label={`See ${report.title}`}><PublicPhoto src={photo} alt={`${report.afterPhotoUrl ? 'After' : 'Before'} cleanup: ${report.title}`} width={600} height={400} /></Link>}
+        <div className={styles.copy}><h3><Link prefetch={false} href={publicReportHref(report)}>{report.title}</Link></h3><ResultFacts report={report} />{report.cleanupDescription && <p>{report.cleanupDescription}</p>}</div>
       </article>;
     })}</div>}
     {completed.length > 0 && <p className={styles.note}>Cleanup quantities are reported by the cleaner.</p>}

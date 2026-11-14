@@ -1,4 +1,7 @@
+import type { Community } from '@/lib/community-directory';
 import { getSiteUrl } from '@/lib/env';
+import { publicReportStructuredData } from '@/lib/public-report-structured-data';
+import type { PublicReportShareModel } from '@/lib/public-report-share-model';
 
 function JsonLd({ value }: { value: Record<string, unknown> }) {
   return <script type="application/ld+json" dangerouslySetInnerHTML={{
@@ -14,6 +17,10 @@ export function WebsiteStructuredData() {
     { '@type': 'WebSite', '@id': `${url}/#website`, name: 'Litterbugs', url,
       publisher: { '@id': `${url}/#organization` } },
   ] }} />;
+}
+
+export function ReportStructuredData({ report, community }: { report: PublicReportShareModel; community?: Community }) {
+  return <JsonLd value={publicReportStructuredData(report, community, getSiteUrl())} />;
 }
 
 export function CommunityBreadcrumbs({ name, path }: { name: string; path: string }) {

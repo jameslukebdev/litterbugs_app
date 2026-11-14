@@ -6,16 +6,18 @@ import sitemap from './sitemap';
 
 it('lists the directory and stable photo URLs without inventing modification dates', async () => {
   loadIndex.mockResolvedValue([
-    { id: 'open', hasBeforePhoto: true, hasAfterPhoto: false },
-    { id: 'done', hasBeforePhoto: true, hasAfterPhoto: true },
-    { id: 'no-photo', hasBeforePhoto: false, hasAfterPhoto: false },
+    { id: 'open', path: '/litter-reports/roadside-open', hasBeforePhoto: true, hasAfterPhoto: false },
+    { id: 'done', path: '/litter-reports/creek-done', hasBeforePhoto: true, hasAfterPhoto: true, completedAt: '2026-11-09T17:15:24Z' },
+    { id: 'no-photo', path: '/litter-reports/lot-no-photo', hasBeforePhoto: false, hasAfterPhoto: false },
   ]);
   const result = await sitemap();
   expect(result).toContainEqual({ url: 'https://litterbugs.app/reports' });
-  expect(result).toContainEqual({ url: 'https://litterbugs.app/reports/open', images: ['https://litterbugs.app/reports/open/photo/before'] });
-  expect(result).toContainEqual({ url: 'https://litterbugs.app/reports/done', images: ['https://litterbugs.app/reports/done/photo/before', 'https://litterbugs.app/reports/done/photo/after'] });
-  expect(result).toContainEqual({ url: 'https://litterbugs.app/reports/no-photo' });
-  expect(result.filter(item => item.url.includes('/reports/')).every(item => !item.lastModified)).toBe(true);
+  // Pages are listed at their readable address; photos stay under the id address.
+  expect(result).toContainEqual({ url: 'https://litterbugs.app/litter-reports/roadside-open', images: ['https://litterbugs.app/reports/open/photo/before'] });
+  expect(result).toContainEqual({ url: 'https://litterbugs.app/litter-reports/creek-done', lastModified: new Date('2026-11-09T17:15:24Z'), images: ['https://litterbugs.app/reports/done/photo/before', 'https://litterbugs.app/reports/done/photo/after'] });
+  expect(result).toContainEqual({ url: 'https://litterbugs.app/litter-reports/lot-no-photo' });
+  // Only a recorded completion counts as a modification; open reports stay undated.
+  expect(result.filter(item => item.url.includes('/litter-reports/') && !item.url.endsWith('-done')).every(item => !item.lastModified)).toBe(true);
   expect(result.some(item => /\/account|\/map|\?/.test(item.url))).toBe(false);
   expect(new Set(result.map(item => item.url)).size).toBe(result.length);
 });

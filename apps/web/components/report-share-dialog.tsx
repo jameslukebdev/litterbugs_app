@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import type { Report } from '@litterbugs/report-contract';
-import { FiCheck, FiCopy, FiExternalLink, FiMail, FiShare2 } from 'react-icons/fi';
+import { FiCheck, FiClock, FiCopy, FiExternalLink, FiMail, FiShare2 } from 'react-icons/fi';
 
 import { Icon } from '@/components/icon';
 import { moveDialogFocus } from '@/lib/dialog-focus';
@@ -45,7 +45,10 @@ export function ReportShareDialog({
   shareUrl,
   onClose,
   onShared,
+  expired = false,
 }: {
+  /** The public page of an expired report: its status and wording replace the cleanup ones. */
+  expired?: boolean;
   open: boolean;
   report: ShareableReport;
   previewPhotoUrl: string | null;
@@ -60,12 +63,16 @@ export function ReportShareDialog({
   const [emailOptionsOpen, setEmailOptionsOpen] = useState(false);
   const [instagramPrepared, setInstagramPrepared] = useState(false);
   const nativeShareAvailable = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
-  const { dialogTitle, title, message } = reportShareCopy(report);
+  const copy = reportShareCopy(report);
+  const { title } = copy;
+  // An expired report is shared as a record, not as a cleanup to join.
+  const dialogTitle = expired ? 'Share this report' : copy.dialogTitle;
+  const message = expired ? `See the litter report history for ${title} on Litterbugs.` : copy.message;
   const shareMessage = `${message}\n\n${shareUrl}`;
   const imageUrl = reportShareImageUrl(shareUrl);
   const imageFilename = reportShareImageFilename(title);
   const status = shareStatus(report.cleanup_state);
-  const showFund = report.funded_amount_cents > 0 && report.cleanup_state !== 'completed';
+  const showFund = !expired && report.funded_amount_cents > 0 && report.cleanup_state !== 'completed';
   const displayUrl = shareUrl.replace(/^https?:\/\//, '');
   const linkCopied = feedback?.message === 'Link copied.';
 
@@ -219,9 +226,11 @@ export function ReportShareDialog({
             )}
           </div>
           <div className={styles.previewCopy}>
-            <span className={styles.status} data-tone={status.tone}>
-              <img src={status.bug} alt="" aria-hidden="true" width={16} height={16} />{status.label}
-            </span>
+            {expired
+              ? <span className={styles.status} data-tone="muted"><FiClock aria-hidden="true" />Report expired</span>
+              : <span className={styles.status} data-tone={status.tone}>
+                <img src={status.bug} alt="" aria-hidden="true" width={16} height={16} />{status.label}
+              </span>}
             <strong>{title}</strong>
             {showFund ? (
               <span className={styles.fund}>
@@ -301,7 +310,6 @@ export function ReportShareDialog({
         >
           {feedback?.message ?? ''}
         </p>
-        <p className={styles.privacy}>People who open the link won’t see the exact location or anyone’s account details.</p>
       </div>
     </div>,
     document.body,

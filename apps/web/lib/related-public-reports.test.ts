@@ -33,8 +33,8 @@ it('excludes the current report, private/sample/withdrawn/expired rows and point
     { ...row, id: 'completed', cleanup_state: 'completed', expires_at: '2020-01-01' },
   ]);
   expect(await loadRelatedPublicReports('current', 'us-nc-boone')).toEqual([
-    { id: 'another', title: 'Roadside litter', state: 'available' },
-    { id: 'completed', title: 'Roadside litter', state: 'completed' },
+    { id: 'another', title: 'Roadside litter', state: 'available', path: '/litter-reports/roadside-litter-another' },
+    { id: 'completed', title: 'Roadside litter', state: 'completed', path: '/litter-reports/roadside-litter-completed' },
   ]);
   expect(q.neq).toHaveBeenCalledWith('id', 'current');
   expect(q.eq).toHaveBeenCalledWith('is_published', true);

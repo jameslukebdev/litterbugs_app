@@ -36,11 +36,11 @@ it('only advertises photos for public reports and their latest completed final e
   from.mockImplementation(table => ({ reports, cleanup_attempts: attempts, cleanup_submission_photos: photos })[table as 'reports']);
   const index = await loadPublicReportIndex();
   expect(index).toEqual([
-    { id: 'open', hasBeforePhoto: true, hasAfterPhoto: false },
-    { id: 'done', hasBeforePhoto: true, hasAfterPhoto: true },
-    { id: 'missing', hasBeforePhoto: false, hasAfterPhoto: false },
-    { id: 'pending', hasBeforePhoto: true, hasAfterPhoto: false },
-    { id: 'expired', hasBeforePhoto: true, hasAfterPhoto: false },
+    { id: 'open', path: '/litter-reports/litter-report-open', hasBeforePhoto: true, hasAfterPhoto: false },
+    { id: 'done', path: '/litter-reports/litter-report-done', hasBeforePhoto: true, hasAfterPhoto: true },
+    { id: 'missing', path: '/litter-reports/litter-report-missing', hasBeforePhoto: false, hasAfterPhoto: false },
+    { id: 'pending', path: '/litter-reports/litter-report-pending', hasBeforePhoto: true, hasAfterPhoto: false },
+    { id: 'expired', path: '/litter-reports/litter-report-expired', hasBeforePhoto: true, hasAfterPhoto: false },
   ]);
   expect(attempts.in).toHaveBeenCalledWith('report_id', ['done', 'missing']);
   expect(attempts.eq).toHaveBeenCalledWith('status', 'completed');
@@ -61,5 +61,5 @@ it('fails rather than returning a successful incomplete sitemap during an outage
 it('does not advertise after photos when final evidence has no public photo', async () => {
   from.mockReturnValueOnce(query([{ ...base, cleanup_state: 'completed' }]))
     .mockReturnValueOnce(query([]));
-  expect(await loadPublicReportIndex()).toEqual([{ id: 'open', hasBeforePhoto: true, hasAfterPhoto: false }]);
+  expect(await loadPublicReportIndex()).toEqual([{ id: 'open', path: '/litter-reports/litter-report-open', hasBeforePhoto: true, hasAfterPhoto: false }]);
 });
