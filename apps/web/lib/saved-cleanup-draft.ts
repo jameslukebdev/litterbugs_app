@@ -50,4 +50,4 @@ export async function loadCleanupDraft(userId: string, attemptId: string, correc
   }
   return draft;
 }
-export async function clearCleanupDraft(userId: string, attemptId: string) { await cloudDrafts.discard(userId, `cleanup:${attemptId}`); }
+export async function clearCleanupDraft(userId: string, attemptId: string, options?: { expectedRevision?: number }) { await cloudDrafts.discard(userId, `cleanup:${attemptId}`, options); }

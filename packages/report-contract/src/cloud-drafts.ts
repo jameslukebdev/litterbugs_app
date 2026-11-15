@@ -191,7 +191,7 @@ export function createCloudDraftSync<D>(adapter: {
     }),
     // Correction retries reset the account submission while retaining local
     // evidence. Normal user-initiated discard still removes both copies.
-    discard: (owner: string,key: string,options?: { preserveLocal?: boolean })=>serialize(owner,key,async()=>{
+    discard: (owner: string,key: string,options?: { preserveLocal?: boolean; expectedRevision?: number })=>serialize(owner,key,async()=>{
       clearTimeout(timers.get(identity(owner,key))); timers.delete(identity(owner,key));
       try {
         const m=await meta(owner,key); await dispatch(owner,key,m);
@@ -199,13 +199,19 @@ export function createCloudDraftSync<D>(adapter: {
         if(!remote?.payload) {
           await persist(owner,key,{revision:remote?.revision??0});
           if(!options?.preserveLocal) await adapter.clearLocal(owner,key);
-          status(owner,key,'local'); return;
+          status(owner,key,options?.preserveLocal?'local':'unsaved'); return;
+        }
+        // A draft list can confirm deletion without downloading/restoring its
+        // photos first. Only the exact revision the person saw may be removed.
+        if(options?.expectedRevision !== undefined) {
+          if(options.expectedRevision!==remote.revision) throw new DraftConflictError();
+          m.revision=remote.revision;
         }
         if(m.revision!==remote.revision) throw new DraftConflictError();
         m.pending={target_user_id:owner,target_key:key,expected_revision:remote.revision,operation_id:adapter.id(),action:'delete',draft_payload:null,draft_photos:[]};
         await persist(owner,key,m); await dispatch(owner,key,m);
         if(!options?.preserveLocal) await adapter.clearLocal(owner,key);
-        status(owner,key,'local');
+        status(owner,key,options?.preserveLocal?'local':'unsaved');
       } catch(error) { return failed(owner,key,error); }
     }),
   };

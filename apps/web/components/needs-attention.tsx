@@ -83,6 +83,6 @@ export function NeedsAttention({ userId, reports, renewals, attempts, incomplete
   return <section className="needs-attention member-panel" aria-label="Needs your attention"><h2>Needs your attention</h2>
     {incomplete && <p role="status">Some activity could not be refreshed. Tasks shown may be out of date; retry the affected sections before assuming there are no actions due.</p>}
     {items.map(item => <article key={item.id}><div><h3>{item.title}</h3><p>{item.reason}</p>{item.due && <time dateTime={item.due}>Due {new Date(item.due).toLocaleString()}</time>}</div><Link className="secondary-button" href={item.href}>{item.action}</Link></article>)}
-    {draftIssue && <p role="status">A draft needs saving or syncing. Open its entry in Resume your work to check the saved copies.</p>}
+    {draftIssue && <p role="status">A saved draft needs attention.</p>}
   </section>;
 }
