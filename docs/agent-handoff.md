@@ -24,6 +24,28 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-15 — Codex (Litterbugs added to Bing Webmaster Tools)
+
+- Added https://litterbugs.app/ to the existing signed-in Bing account using
+  manual HTML verification; no Google import/OAuth scope or other-site changes.
+  Litterbugs now opens its own dashboard and Bing reports initial data may take
+  up to48 hours. Public ownership tag msvalidate.01 is in the homepage head.
+- Submitted https://litterbugs.app/sitemap.xml. Initial Bing server error resolved
+  after one normal reload/retry; final UI lists1 known sitemap, submitted
+  11/15/2026, status Processing. Crawling/indexing are not yet confirmed. Direct
+  XML check returned200 with49 URLs, and robots.txt advertises that sitemap.
+- Website code5bc2553 (one metadata line), branch codex/bing-webmaster-20261115,
+  deployed as dpl_Ufyfut4xMLfRbV8TTyXxDaqDVLEx,
+  litterbugs-62wn931f6-grant-9890s-projects.vercel.app, promoted to litterbugs.app.
+  Build/typecheck passed; staged and live HTTP200 HTML heads contain correct
+  Bing and preserved Ahrefs tags. Rollback dpl_5175Z5xjx4AxjJdFBunt3BLEqUMx.
+- Preserve both verification tags in future deployments. No new analytics,
+  IndexNow automation, credentials, recurring job, DB or native app changes.
+  Local SEO CLI Bing API connection remains unset; browser setup is complete.
+  Bing property/sitemap tab retained for Grant. Code pushed to GitHub; all edits
+  in isolated release checkout, Claude's shared work and index untouched.
+
+
 ### 2026-11-15 — Codex (Ahrefs Free verified; backlinks and Bing checked)
 
 - Created verified Ahrefs Free project10711029 for litterbugs.app/subdomains.
