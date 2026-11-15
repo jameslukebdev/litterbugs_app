@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   description: 'Report litter and help keep your community clean.',
   other: {
     'ahrefs-site-verification': 'b81ec568ab833500263ace539a08d7937b0999ab1abf991738eb7db8e1b0d2fd',
+    'msvalidate.01': '3AB93DEC1F37F1127EC6C441E7497FC5',
   },
   icons: {
     icon: [{ url: '/brand/litterbugs-favicon-transparent.png', type: 'image/png', sizes: '256x256' }],
