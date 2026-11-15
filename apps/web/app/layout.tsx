@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: 'Litterbugs',
   description: 'Report litter and help keep your community clean.',
+  other: {
+    'ahrefs-site-verification': 'b81ec568ab833500263ace539a08d7937b0999ab1abf991738eb7db8e1b0d2fd',
+  },
   icons: {
     icon: [{ url: '/brand/litterbugs-favicon-transparent.png', type: 'image/png', sizes: '256x256' }],
     shortcut: '/brand/litterbugs-favicon-transparent.png',
