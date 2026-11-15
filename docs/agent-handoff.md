@@ -24,6 +24,27 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-15 — Codex (Ahrefs Free verified; backlinks and Bing checked)
+
+- Created verified Ahrefs Free project10711029 for litterbugs.app/subdomains.
+  Public HTML meta marker only; no Google OAuth connection, new visitor tracking,
+  paid plan or trial. Preserve the Ahrefs meta tag in future website deployments.
+- Website source7e244c9, branch codex/ahrefs-free-20261115, deployed as
+  dpl_5175Z5xjx4AxjJdFBunt3BLEqUMx; litterbugs.app alias, HTTP200 and head marker
+  verified; Ahrefs explicitly confirmed ownership. Build/typecheck passed.
+  Rollback dpl_Fym5dwuZjccVLABfPDT62TkEb7Mv. No product behavior changes.
+- Ahrefs:641 referring domains; first50 by DR all SPAM/zero estimated traffic;
+ 12 dofollow domains all SPAM; Non-spammy filter across all types returns0.
+  Expanded two homepage links show unrelated SEO/link-selling content. GSC
+  Manual actions for litterbugs.app returned No issues detected. Recommend
+  earned local/cleanup links; no disavow or link-removal outreach performed.
+- One-time free Site Audit shows Now Crawling; completed results still pending.
+  No recurring schedule/watcher. Bing account accessible after retry, but only
+  retirecityfinder.com/retirementlists.com registered; Litterbugs absent in this
+  account, not added. See docs/reviews/2026-11-15-ahrefs-free-backlinks.md.
+- Isolated checkout only; shared Claude work/index and native apps untouched.
+
+
 ### 2026-11-15 — Codex (free Semrush alternatives researched)
 
 - Verified current vendor documentation: recommend Ahrefs Free for verified-site
