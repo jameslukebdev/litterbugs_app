@@ -1,6 +1,6 @@
 import { AUTH_RESULT_PARAM, SHARED_REPORT_AUTH_PARAM, isSharedReportAuthProvider, type SharedReportAuthProvider } from './participation-auth';
 import { mapLoadingProperties, type MapLoadingSignal } from './map-loading-metrics';
-import { communityForEntry, communityForPath, communityProperties, type CommunityEngagementEvent, type CommunityProperties } from './community-metrics';
+import { communityForEntry, communityForPath, communityProperties, type CommunityProperties } from './community-metrics';
 // Bump when participation semantics/workflows change; compiled into each browser bundle.
 export const WORKFLOW_VERSION = 'web-participation-2026-11-12-v9';
 export const ANALYTICS_CONSENT_KEY = 'litterbugs:analytics-consent:v1';
