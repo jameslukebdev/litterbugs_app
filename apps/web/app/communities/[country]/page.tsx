@@ -3,6 +3,7 @@ import { Website } from '@/components/public-website';
 import { CommunityBreadcrumbs } from '@/components/public-website/structured-data';
 import { PlaceCrumbs } from '@/components/community-leaderboard/place-crumbs';
 import { TownList } from '@/components/community-leaderboard/town-list';
+import { LeaderboardTitle } from '@/components/community-leaderboard/leaderboard-title';
 import styles from '@/components/community-leaderboard/leaderboard.module.css';
 import { groupCommunities, loadCommunityDirectory, townActivity, townCount } from '@/lib/community-leaderboards';
 import { publicPageMetadata } from '@/lib/public-page-metadata';
@@ -39,7 +40,7 @@ export default async function CountryPage({ params }: Props) {
     <div role="main" id="main-content" tabIndex={-1} className={`${styles.page} ${styles.browse}`}>
       <header className={styles.top}>
         <PlaceCrumbs steps={[]} />
-        <h1>{country.name}</h1>
+        <LeaderboardTitle>{country.name}</LeaderboardTitle>
       </header>
       <TownList label={`Places in ${country.name}`} searchLabel={`Find a state in ${country.name}`} towns={regions.map(region => ({
         path: region.path,

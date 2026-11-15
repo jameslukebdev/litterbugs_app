@@ -2,6 +2,7 @@ import { HomeCleanupProof } from '@/components/public-website/home-cleanup-proof
 import homeStyles from './home.module.css';
 import { ReportStarter } from '@/components/public-website/report-starter';
 import { MapPreview } from '@/components/public-website/map-preview';
+import { HomeLeaders } from '@/components/public-website/home-leaders';
 import { loadBooneMapPreview } from '@/lib/map-preview';
 import { Suspense } from 'react';
 import { publicPageMetadata } from '@/lib/public-page-metadata';
@@ -107,6 +108,9 @@ export default async function HomePage({
           <ReportStarter />
           <Suspense fallback={<MapPreview pins={null} />}>
             <HomeMapPreview />
+          </Suspense>
+          <Suspense fallback={null}>
+            <HomeLeaders />
           </Suspense>
           <section className={styles.section}>
             <Suspense fallback={<HomeFeedLoading />}>

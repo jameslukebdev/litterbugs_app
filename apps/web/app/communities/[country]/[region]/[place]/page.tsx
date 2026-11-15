@@ -4,6 +4,7 @@ import { CommunityBreadcrumbs, GuideStructuredData } from '@/components/public-w
 import { LeaderboardBoards } from '@/components/community-leaderboard/leaderboard-boards';
 import { CommunityHelp } from '@/components/community-leaderboard/community-help';
 import { TownMap } from '@/components/community-leaderboard/town-map';
+import { LeaderboardTitle } from '@/components/community-leaderboard/leaderboard-title';
 import styles from '@/components/community-leaderboard/leaderboard.module.css';
 import { communityHelp } from '@/lib/community-help';
 import { communityLabel, communityStatsSentence, loadBoards, loadChampions, loadCommunity, monthInfo, placeTrail } from '@/lib/community-leaderboards';
@@ -58,7 +59,7 @@ export default async function CommunityPage({ params, searchParams }: Props) {
         updatedAt={new Date().toISOString()}
         top={<header className={styles.top}>
           <PlaceCrumbs steps={trail.slice(-1)} />
-          <h1>{label}</h1>
+          <LeaderboardTitle>{label}</LeaderboardTitle>
         </header>}
         side={<TownMap slug={community.slug} latitude={community.latitude} longitude={community.longitude} label={community.name} />}
       >

@@ -215,8 +215,8 @@
 .header .mapLink { --nav-tint: #fff4cc; --nav-ink: #775700; }
 .header .reportAction, .header [data-nav-family='Report'] { --nav-tint: #e5efff; --nav-ink: #2e539e; }
 .header .funding, .header [data-nav-family='Donate'] { --nav-tint: #fff4cc; --nav-ink: #775700; }
-.header .cleaning, .header [data-nav-family='Earn'] { --nav-tint: #ecf6e3; --nav-ink: #2f6b3a; }
-.header .help, .header [data-nav-family='Support'] { --nav-tint: #f7ebfb; --nav-ink: #783398; }
+.header .cleaning, .header [data-nav-family='Earn'] { --nav-tint: #f7ebfb; --nav-ink: #783398; }
+.header .help, .header [data-nav-family='Support'] { --nav-tint: #ecf6e3; --nav-ink: #2f6b3a; }
 .header .appLink { --nav-tint: #fff0ee; --nav-ink: #ac343b; }
 .header.header .mapLink .navLink { padding-inline: 14px; min-height: 44px; justify-content: center; border: 2px solid #ead89c; border-radius: 12px; color: #775700; box-shadow: none; }
 .header.header :is(.mapLink, .reportAction, .funding, .cleaning, .help) :is(.navLink, .menuTrigger):is(:hover, [aria-expanded='true']),
@@ -225,7 +225,7 @@
 .header.header .appLink a { padding-inline: 12px; border-radius: 12px; }
 .header.header .mobilePrimaryLinks a[href='/map']:hover { background: #fff4cc; color: #775700; }
 .header.header .mobilePrimaryLinks a[href='/report-litter']:hover { background: #e5efff; color: #2e539e; }
-.header.header .mobilePrimaryLinks a[href='/cleaner']:hover { background: #ecf6e3; color: #2f6b3a; }
+.header.header .mobilePrimaryLinks a[href='/cleaner']:hover { background: #f7ebfb; color: #783398; }
 
 /* Map toolbar: style only, preserving search/filter/view behavior and sizing. */
 .header + :global(.discovery-toolbar) { border-bottom-color: #ece6d5; background: #fff; }
@@ -560,22 +560,21 @@
 @keyframes logo-bee-loop { 0% { offset-distance: 0%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { offset-distance: 100%; opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .header.header.header .brandLink img.logoBee { display: none; } }
 
-/* Leaderboards (Nov 15, 2026): its own bug, the crowned champion beetle, which does a victory hop on hover.
+/* Leaderboards (Nov 15, 2026): a plain text link; its crowned beetle lives on the leaderboards pages instead.
    Priority as the bar narrows: "Get the app" goes first; Leaderboards stays as long as Report, Donate and Earn. */
-.header .leaderboards .navLink { gap: 6px; }
-.header .leaderboardBug { width: 26px; height: 26px; }
-.header .mobilePrimaryLinks .leaderboardBug { margin-right: 12px; }
 .header .mobilePrimaryLinks > a[href='/communities'] { justify-content: flex-start; }
+/* No bug in the phone menu, so its words line up with the words beside the other menus' bugs (26px bug + 12px gap). */
+.header .mobilePrimaryLinks > a[href='/communities'] .triggerLabel { padding-left: 38px; }
+/* Same box as the Report, Donate and Earn buttons beside it, so its hover tint matches theirs. */
+.header.header .leaderboards .navLink { padding-inline: 12px; min-height: 46px; }
 @media (min-width: 1100px) and (max-width: 1239px) {
   .header.header .appLink, .header.header .appLink > div { display: none; }
 }
 @media (min-width: 760px) and (max-width: 1239px) {
   .header.header .leaderboards { display: block; }
-  .header.header .leaderboards .navLink { padding-inline: 8px; }
 }
 @media (min-width: 760px) and (max-width: 1099px) {
-  .header.header .leaderboards .navLink { gap: 4px; font-size: inherit; }
-  .header.header .leaderboardBug { width: 22px; height: 22px; }
+  .header.header .leaderboards .navLink { font-size: inherit; }
 }
 @media (min-width: 900px) and (max-width: 1099px) {
   .header.header .mapDesktopLabel { display: none; }

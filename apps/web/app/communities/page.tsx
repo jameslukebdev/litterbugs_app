@@ -2,6 +2,7 @@ import { Website } from '@/components/public-website';
 import { LeaderboardBoards } from '@/components/community-leaderboard/leaderboard-boards';
 import { TownFinder, type FinderTown } from '@/components/community-leaderboard/town-finder';
 import { TownSide } from '@/components/community-leaderboard/town-side';
+import { LeaderboardTitle } from '@/components/community-leaderboard/leaderboard-title';
 import styles from '@/components/community-leaderboard/leaderboard.module.css';
 import { loadMyCommunities } from '@/lib/community-finder';
 import { communityLabel, loadBoards, loadCommunityDirectory, monthInfo, townActivity } from '@/lib/community-leaderboards';
@@ -40,7 +41,7 @@ export default async function LeaderboardsPage({ searchParams }: { searchParams:
         monthEnds={month.monthEnds}
         daysLeft={month.daysLeft}
         updatedAt={new Date().toISOString()}
-        top={<header className={styles.top}><h1>Global</h1></header>}
+        top={<header className={styles.top}><LeaderboardTitle>Global</LeaderboardTitle></header>}
         finder={directory.unavailable
           ? <p className={styles.finderMessage}>Towns couldn’t load right now. Please try again shortly.</p>
           : <TownFinder towns={towns} yourTowns={yourTowns} />}

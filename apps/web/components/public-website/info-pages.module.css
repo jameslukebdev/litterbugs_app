@@ -19,8 +19,8 @@
 .eyebrow img { width: 22px; height: 22px; object-fit: contain; }
 .eyebrow[data-tone='report'] { color: #2e539e; }
 .eyebrow[data-tone='donate'] { color: #8a5a00; }
-.eyebrow[data-tone='earn'] { color: #2f6b3a; }
-.eyebrow[data-tone='support'] { color: #8a3d99; }
+.eyebrow[data-tone='earn'] { color: #783398; }
+.eyebrow[data-tone='support'] { color: #2f6b3a; }
 
 /* ---------- Report lists: tabs with the map's bugs ---------- */
 .directoryNav { margin-top: 22px; }

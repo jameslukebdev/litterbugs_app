@@ -73,7 +73,7 @@ export function DirectoryNav({ current, cities }: { current: 'open' | 'completed
 const GUIDE_MENUS: Partial<Record<PublicPath, { label: string; bug: string; tone: string }>> = {
   '/report-litter': { label: 'Report', bug: '/brand/ranks/dragonfly.svg', tone: 'report' },
   '/fund-a-cleanup': { label: 'Donate', bug: '/brand/bugs/bee.png', tone: 'donate' },
-  '/cleaner': { label: 'Earn', bug: '/brand/ranks/caterpillar.svg', tone: 'earn' },
+  '/cleaner': { label: 'Earn', bug: '/brand/bugs/butterfly.png', tone: 'earn' },
 };
 export function Guide({
   title,

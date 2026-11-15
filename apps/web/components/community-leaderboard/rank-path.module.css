@@ -1,0 +1,81 @@
+/* Your path to the next rank bug, under Your standing: stepping stones on a faint winding line, one per point. */
+.card {
+  --ink: #292932; --body: #45434d; --muted: #686477; --faint: #9a96a8; --line: #e7e3ef; --edge: #ece8f2;
+  --purple: #5146ed; --stone: #fffdf7; --stone-edge: #e2d8bd;
+  --nunito: 'Playful Nunito', system-ui, sans-serif;
+  padding: 22px 24px 10px; border: 1px solid var(--line); border-radius: 22px; background: #fff; box-shadow: 0 5px 0 #eeeaf8; color: var(--ink);
+}
+.card :is(a, button):focus-visible { outline: 3px solid var(--purple); outline-offset: 3px; }
+
+/* Current rank: the bug, its name, and how far to the next one. */
+.head { display: flex; align-items: center; gap: 14px; }
+.head > img { width: 56px; height: 56px; object-fit: contain; }
+.head > span { display: grid; }
+.head strong { font-family: var(--nunito); font-size: 22px; font-weight: 900; line-height: 1.2; }
+.head > span > span { color: var(--muted); font-size: 14px; }
+
+/* ---------- The footpath ---------- */
+.path { position: relative; margin: 26px 0 0; padding: 0; list-style: none; }
+.line { position: absolute; top: 0; left: 50%; margin-left: -120px; overflow: visible; }
+.line path { fill: none; stroke: #e6e1ee; stroke-width: 3; stroke-linecap: round; }
+.stop { position: absolute; left: 0; right: 0; height: 92px; }
+.stop[data-open='true'] { z-index: 3; }
+.stop[data-more] { height: 69px; }
+
+/* A stepping stone: plain until a point fills it, then it shows the bug that filled it. */
+.stone { --edge-colour: var(--stone-edge); --tilt: -4deg; position: absolute; top: 50%; left: calc(50% + var(--x)); display: grid; place-items: center; width: 62px; height: 54px; margin: -31px 0 0 -31px; padding: 0; border: 3px solid var(--stone-edge); border-radius: 46% 54% 50% 50% / 56% 50% 50% 44%; background: var(--stone); box-shadow: 0 5px 0 var(--edge-colour); font: inherit; rotate: var(--tilt); }
+.stop:nth-child(3n) .stone { --tilt: 5deg; border-radius: 54% 46% 44% 56% / 48% 56% 44% 52%; }
+.stop:nth-child(3n + 1) .stone { --tilt: -2deg; border-radius: 50% 50% 56% 44% / 52% 44% 56% 48%; }
+.stone > * { rotate: calc(var(--tilt) * -1); }
+.stone > img { width: 32px; height: 32px; object-fit: contain; }
+button.stone { cursor: pointer; transition: translate 90ms ease, box-shadow 90ms ease; }
+.stone[data-state='report'] { --edge-colour: #9bbbf3; border-color: #9bbbf3; background: #e5efff; }
+.stone[data-state='clean'] { --edge-colour: #cfa2e5; border-color: #cfa2e5; background: #f7ebfb; }
+.stone[data-state='next'] { --edge-colour: #3528ac; width: 72px; height: 64px; margin: -36px 0 0 -36px; border-color: var(--purple); background: var(--purple); color: #fff; outline: 6px solid #efedff; outline-offset: 3px; }
+.stone[data-state='next'] b { font-family: var(--nunito); font-size: 21px; font-weight: 900; }
+button.stone:hover { translate: 0 -2px; }
+button.stone:is(:active, [aria-expanded='true']) { translate: 0 4px; box-shadow: 0 1px 0 var(--edge-colour); }
+
+.goal { position: absolute; top: 50%; left: calc(50% + var(--x)); display: grid; place-items: center; width: 84px; height: 84px; margin: -46px 0 0 -42px; border: 3px solid #e3dff0; border-radius: 50%; background: #fff; box-shadow: 0 6px 0 #e3dff0; }
+.goal img { width: 52px; height: 52px; object-fit: contain; filter: grayscale(1); opacity: .5; }
+.more { position: absolute; top: 50%; left: calc(50% + var(--x)); translate: -50% -50%; padding: 5px 14px; border: 2px dashed var(--stone-edge); border-radius: 999px; background: #fff; color: var(--faint); font-family: var(--nunito); font-size: 13px; font-weight: 900; white-space: nowrap; }
+
+/* Labels sit on the roomier side of the line. */
+.label { position: absolute; top: 50%; display: grid; gap: 1px; max-width: 190px; translate: 0 -50%; pointer-events: none; }
+.stop[data-side='right'] .label { left: calc(50% + var(--x) + 60px); right: 0; }
+.stop[data-side='left'] .label { right: calc(50% - var(--x) + 60px); left: 0; margin-left: auto; text-align: right; }
+.label strong { font-family: var(--nunito); font-size: 15px; font-weight: 900; line-height: 1.2; }
+.label span { color: var(--muted); font-size: 13px; }
+
+/* What opens under a stone. */
+.pop { position: absolute; top: calc(50% + 46px); left: 50%; display: grid; gap: 8px; width: min(340px, 100%); margin-left: max(-170px, -50%); padding: 12px; border: 2px solid var(--line); border-radius: 20px; background: #fff; box-shadow: 0 5px 0 var(--edge), 0 18px 40px #2a225a24; }
+.pop > a { --tint: #f6f5fa; --tone-ink: var(--ink); --rim: var(--line); display: grid; grid-template-columns: 32px minmax(0, 1fr); align-items: center; gap: 10px; min-height: 56px; padding: 8px 12px; border-radius: 14px; background: var(--tint); color: var(--ink); text-decoration: none; box-shadow: 0 3px 0 var(--rim); transition: translate 90ms ease, box-shadow 90ms ease; }
+.pop > a[data-tone='report'] { --tint: #e5efff; --tone-ink: #234485; --rim: #9bbbf3; }
+.pop > a[data-tone='earn'] { --tint: #f7ebfb; --tone-ink: #783398; --rim: #cfa2e5; }
+.pop > a[data-tone='donate'] { --tint: #fff4cc; --tone-ink: #775700; --rim: #e6c44f; }
+.pop > a:hover { translate: 0 -1px; box-shadow: 0 4px 0 var(--rim); }
+.pop > a:active { translate: 0 2px; box-shadow: 0 1px 0 var(--rim); }
+.pop img { width: 30px; height: 30px; object-fit: contain; }
+.pop > a > span { display: grid; }
+.pop strong { color: var(--tone-ink, var(--ink)); font-family: var(--nunito); font-size: 16px; font-weight: 900; line-height: 1.2; }
+.pop > a > span > span { color: var(--body); font-size: 13px; }
+.note { display: grid; gap: 2px; margin: 0; padding: 2px 4px; color: var(--body); font-size: 14px; }
+.note strong { color: var(--ink); font-family: var(--nunito); font-size: 16px; font-weight: 900; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .stone[data-state='next'] { animation: footpath-glow 2s ease-in-out infinite; }
+  .pop { animation: footpath-pop 160ms cubic-bezier(.3, 1.3, .5, 1) both; }
+}
+@keyframes footpath-glow { 50% { outline-color: #d9d4f5; } }
+@keyframes footpath-pop { from { opacity: 0; scale: .95; } }
+
+@media (max-width: 560px) {
+  .card { padding: 18px 16px 8px; }
+  .label { max-width: 120px; }
+  .label strong { font-size: 14px; }
+}
+
+/* Keep the stone shapes: the site rounds every expandable button to 10px, which would square them off. */
+.card .stone.stone { border-radius: 46% 54% 50% 50% / 56% 50% 50% 44%; }
+.card .stop:nth-child(3n) .stone.stone { border-radius: 54% 46% 44% 56% / 48% 56% 44% 52%; }
+.card .stop:nth-child(3n + 1) .stone.stone { border-radius: 50% 50% 56% 44% / 52% 44% 56% 48%; }

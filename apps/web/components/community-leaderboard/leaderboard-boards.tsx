@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { getHeaderProfile, getServerHeaderProfile, subscribeHeaderProfile } from '@/lib/header-profile-cache';
 import type { Board, Boards, Champion, LeaderboardRow, Period } from '@/lib/community-leaderboards';
 import { BOARD_COPY, daysLeftLabel, ordinal, rankFor } from './ranks';
+import { RankPath } from './rank-path';
 import styles from './leaderboard.module.css';
 
 const BOARDS: Board[] = ['clean', 'report', 'fund'];
@@ -173,6 +174,8 @@ export function LeaderboardBoards({ boards, scope, monthName, monthEnds, daysLef
             <Link className={styles.secondary} href={signInHref}>Sign in</Link>
           </>}
         </section>
+        {/* Signed-in members see their own path to the next rank bug right under where they stand. */}
+        {member?.userId && <RankPath userId={member.userId} />}
       </div>
 
       {hasSide && <aside className={styles.side} aria-label={scope.kind === 'community' ? `${where} map and champions` : 'Towns'}>

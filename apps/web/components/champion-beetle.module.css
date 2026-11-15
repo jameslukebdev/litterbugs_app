@@ -11,6 +11,11 @@
   :is(a, button):is(:hover, :focus-visible) .beetle .crown { animation: champion-crown 720ms cubic-bezier(.3, .7, .4, 1); }
   :is(a, button):is(:hover, :focus-visible) .beetle .sparkle { animation: champion-sparkle 720ms ease-out; }
   :is(a, button):is(:hover, :focus-visible) .beetle .sparkle + .sparkle { animation-delay: 80ms; }
+  /* A page title's beetle does the same hop once, shortly after the page opens. */
+  .arrive .body { animation: champion-hop 720ms cubic-bezier(.3, .7, .4, 1) 350ms both; }
+  .arrive .crown { animation: champion-crown 720ms cubic-bezier(.3, .7, .4, 1) 350ms both; }
+  .arrive .sparkle { animation: champion-sparkle 720ms ease-out 350ms both; }
+  .arrive .sparkle + .sparkle { animation-delay: 430ms; }
 }
 @keyframes champion-hop {
   0% { transform: none; }

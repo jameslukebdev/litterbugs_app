@@ -6,7 +6,6 @@ import { ResponsiveLink as Link } from './responsive-link';
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 
 import { AppLink } from '@/components/app-link';
-import { ChampionBeetle } from '@/components/champion-beetle';
 import { GetAppNavigation } from '@/components/app-promotion';
 
 import { HeaderAreaSearch } from './header-area-search';
@@ -70,8 +69,8 @@ type NavigationLinks = ReadonlyArray<readonly [PublicPath | '/report' | `/map?${
 const familyIntros: Record<string, { bug: string; text: string }> = {
   Report: { bug: '/brand/ranks/dragonfly.svg', text: 'Pin litter, earn cash' },
   Donate: { bug: '/brand/bugs/bee.png', text: 'Fund a cleanup nearby' },
-  Earn: { bug: '/brand/ranks/caterpillar.svg', text: 'Get paid to clean up litter' },
-  Support: { bug: '/brand/bugs/butterfly.png', text: 'Help, safety and our story' },
+  Earn: { bug: '/brand/bugs/butterfly.png', text: 'Get paid to clean up litter' },
+  Support: { bug: '/brand/ranks/caterpillar.svg', text: 'Help, safety and our story' },
 };
 
 function NavigationDropdown({ label, links, activePath, open, onToggle, onClose, onNavigate }: {
@@ -255,7 +254,7 @@ function NavigationMenu({ activePath }: { activePath: PublicPath }) {
           {([['Donate', fundingLinks], ['Earn', cleanupLinks]] as const).map(([label, links]) =>
             <NavigationDropdown key={label} label={label} links={links} activePath={activePath}
               open={openCategory === label} onToggle={() => setOpenCategory(openCategory === label ? null : label)} onClose={() => setOpenCategory(current => current === label ? null : current)} onNavigate={closeMenu} />)}
-          <HeaderLink href="/communities" activePath={activePath} onNavigate={closeMenu}><ChampionBeetle className={styles.leaderboardBug} /><span className={styles.triggerLabel}>Leaderboards</span></HeaderLink>
+          <HeaderLink href="/communities" activePath={activePath} onNavigate={closeMenu}><span className={styles.triggerLabel}>Leaderboards</span></HeaderLink>
           <NavigationDropdown label="Support" links={informationLinks} activePath={activePath}
             open={openCategory === 'Support'} onToggle={() => setOpenCategory(openCategory === 'Support' ? null : 'Support')} onClose={() => setOpenCategory(current => current === 'Support' ? null : current)} onNavigate={closeMenu} />
           {!member?.userId && <Link className={styles.navLink} href="/sign-in" onClick={closeMenu}>Log in / Sign up</Link>}
@@ -292,7 +291,7 @@ export function PublicSiteHeader({ activePath, action, reportAction, reportId, c
           <div className={styles.funding}><NavigationDropdown label="Donate" links={fundingLinks} activePath={activePath} open={openMenu === 'funding'} onToggle={() => toggleMenu('funding')} onClose={() => setOpenMenu(null)} /></div>
           <div className={styles.cleaning}><NavigationDropdown label="Earn" links={cleanupLinks} activePath={activePath} open={openMenu === 'cleaning'} onToggle={() => toggleMenu('cleaning')} onClose={() => setOpenMenu(null)} /></div>
           {/* Leaderboards serve reporters, funders and cleaners alike, so they sit outside the three families. */}
-          <div className={styles.leaderboards}><HeaderLink href="/communities" activePath={activePath}><ChampionBeetle className={styles.leaderboardBug} />Leaderboards</HeaderLink></div>
+          <div className={styles.leaderboards}><HeaderLink href="/communities" activePath={activePath}>Leaderboards</HeaderLink></div>
         </nav>
         <div className={styles.help}><NavigationDropdown label="Support" links={informationLinks} activePath={activePath} open={openMenu === 'help'} onToggle={() => toggleMenu('help')} onClose={() => setOpenMenu(null)} /></div>
         <div className={styles.appLink}><GetAppNavigation /><AppLink reportId={reportId} className={styles.smallAppLink}><IoPhonePortraitOutline aria-hidden />Get the app</AppLink></div>

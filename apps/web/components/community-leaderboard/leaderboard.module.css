@@ -291,3 +291,7 @@ a.row:hover .who strong { color: var(--purple-dark); }
   .skelDot, .skelBug, .skelName, .skelLine, .skelScore { animation: none; }
   .badge, .guide summary::after { transition: none; }
 }
+
+/* Page titles lead with the Leaderboards bug (the crowned beetle), as the homepage labels sections with a bug. */
+.page.page .top h1.title { display: flex; align-items: center; gap: .18em; }
+.titleBeetle { flex: none; width: .9em; height: .9em; margin-top: -.06em; }

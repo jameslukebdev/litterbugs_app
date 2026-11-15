@@ -3,6 +3,7 @@ import { Website } from '@/components/public-website';
 import { CommunityBreadcrumbs } from '@/components/public-website/structured-data';
 import { PlaceCrumbs } from '@/components/community-leaderboard/place-crumbs';
 import { TownList } from '@/components/community-leaderboard/town-list';
+import { LeaderboardTitle } from '@/components/community-leaderboard/leaderboard-title';
 import styles from '@/components/community-leaderboard/leaderboard.module.css';
 import { groupCommunities, loadCommunityDirectory, placeTrail, townActivity } from '@/lib/community-leaderboards';
 import { publicPageMetadata } from '@/lib/public-page-metadata';
@@ -43,7 +44,7 @@ export default async function RegionPage({ params }: Props) {
     <div role="main" id="main-content" tabIndex={-1} className={`${styles.page} ${styles.browse}`}>
       <header className={styles.top}>
         <PlaceCrumbs steps={trail.slice(0, 1)} />
-        <h1>{region.name}</h1>
+        <LeaderboardTitle>{region.name}</LeaderboardTitle>
       </header>
       <TownList label={`Towns in ${region.name}`} searchLabel={`Find a town in ${region.name}`} towns={region.towns.map(town => ({
         path: town.path,

@@ -10,9 +10,9 @@ const GOLD = '#ffbf1f';
  * on hover or keyboard focus: it springs up, the crown flips and lands, two sparkles flash.
  * Same drawing as /brand/bugs/champion-beetle.svg, inline so the crown and sparkles can move on their own.
  */
-export function ChampionBeetle({ className = '' }: { className?: string }) {
+export function ChampionBeetle({ className = '', arrive = false }: { className?: string; /** Do the victory hop once as it appears (page titles). */ arrive?: boolean }) {
   const cut = `beetle-cut-${useId().replace(/[^a-zA-Z0-9-]/g, '')}`;
-  return <svg className={`${styles.beetle} ${className}`} viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+  return <svg className={`${styles.beetle}${arrive ? ` ${styles.arrive}` : ''} ${className}`} viewBox="0 0 100 100" aria-hidden="true" focusable="false">
     <defs>
       <mask id={cut} maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
         <rect width="100" height="100" fill="#fff" />
