@@ -24,6 +24,28 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-15 — Claude (rank path, homepage leaders and nav tidy-up deployed)
+
+- LIVE: release branch `claude/rank-path-release-20261115` (pushed), commit `4ed9b42`
+  on `4c45227` (the leaderboards release). Deployment `dpl_BWUkHL1xU2W3u6uzPDjT3ZYJd3jL`
+  (litterbugs-e4ksqjja9), staged with `--skip-domain`, checked, then promoted.
+  Rollback: `dpl_9PofLNMspV89k5tNVELCBdo1WbsL`.
+- Leaderboards: signed-in members see their path to the next rank bug under Your
+  standing (`components/community-leaderboard/rank-path.tsx`, `lib/rank-path.ts`).
+  Every leaderboards title leads with the crowned beetle (`leaderboard-title.tsx`),
+  which hops once on arrival; the beetle is gone from the header.
+- Homepage: Top towns (cleanups only; All time when fewer than 3 towns have one this
+  month) and Cleanup leaderboard under the map (`public-website/home-leaders.tsx`).
+- Header: Earn = butterfly/plum, Support = caterpillar/green (also the Cleaner guide
+  label); Leaderboards link hover box matches Report/Donate/Earn.
+- Database (live, additive, applied before release at Grant's instruction):
+  `supabase/migrations/20261115192746_my_rank_point_events.sql` adds
+  `public.my_rank_point_events()` (caller's own events only; authenticated only).
+- Checks: typecheck, scoped lint, 1,173 web tests on the release tree; staged and
+  live pages verified with plain requests (no analytics).
+- Not released: `dev-review-preview/home-*` design mock-ups; this working folder's
+  other uncommitted edits were left untouched.
+
 ### 2026-11-15 — Claude (Leaderboards, town finder, site cleanup and Ahrefs fixes deployed)
 
 - LIVE: release branch `claude/leaderboards-release-20261115` (pushed), built on
