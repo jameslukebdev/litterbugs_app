@@ -44,9 +44,16 @@ export async function requireReportLocation(
 ): Promise<Coordinates & { capturedAt: string }> {
   const position = await new Promise<GeolocationPosition>((resolve, reject) => {
     if (!geolocation) { reject(new ReportLocationError('Turn on location access to continue.', 'location_unavailable')); return; }
-    geolocation.getCurrentPosition(resolve, (error) => reject(new ReportLocationError(error.code === 1 ? 'Allow location access in your browser, then try again.' : error.code === 3 ? 'Location took too long. Try again.' : 'Your location is unavailable. Try again.', error.code === 1 ? 'location_denied' : error.code === 3 ? 'location_timeout' : 'location_unavailable')), {
-      enableHighAccuracy: true, timeout: 20000, maximumAge: 0,
-    });
+    let settled = false;
+    const finish = (work: () => void) => { if (settled) return; settled = true; clearTimeout(timer); work(); };
+    // Browser timeouts can pause while the permission prompt is open. Bound the
+    // complete attempt so Retry becomes available even if no callback arrives.
+    const timer = setTimeout(() => finish(() => reject(new ReportLocationError('Location took too long. Try again.', 'location_timeout'))), 20000);
+    try {
+      geolocation.getCurrentPosition(position => finish(() => resolve(position)), error => finish(() => reject(new ReportLocationError(error.code === 1 ? 'Allow location access in your browser, then try again.' : error.code === 3 ? 'Location took too long. Try again.' : 'Your location is unavailable. Try again.', error.code === 1 ? 'location_denied' : error.code === 3 ? 'location_timeout' : 'location_unavailable'))), {
+        enableHighAccuracy: true, timeout: 20000, maximumAge: 0,
+      });
+    } catch { finish(() => reject(new ReportLocationError('Your location is unavailable. Try again.', 'location_unavailable'))); }
   });
   if (!Number.isFinite(position.timestamp) || Math.abs(Date.now() - position.timestamp) > 60000) {
     throw new ReportLocationError('Please try your location again.', 'location_stale');

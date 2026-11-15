@@ -13,6 +13,7 @@ import { useDraftEditorLock } from '@/lib/use-draft-editor-lock';
 import styles from './resumable-report-wizard.module.css';
 import { ModalShell } from '@/components/modal-shell';
 import { ReportWizard } from '@/components/report-wizard';
+import type { ReportSubmissionError } from '@/lib/report-location-error';
 import { clearReportDraft, loadReportDraft, loadReportPublication, saveReportDraft, type ReportPublicationJournal, type ReportWizardSnapshot, type SavedReportDraft } from '@/lib/saved-report-draft';
 
 export function ResumableReportWizard({ userId, submissionProgress, coordinates, selectingLocation, fundingEnabled, onCoordinatesChange, onRestorePublication, onChangeLocation, onClose, onSubmit }: {
@@ -25,7 +26,7 @@ export function ResumableReportWizard({ userId, submissionProgress, coordinates,
   onRestorePublication: (journal: ReportPublicationJournal | undefined) => void;
   onChangeLocation?: () => void;
   onClose: () => void;
-  onSubmit: (draft: ReportDraft, amount: number | null) => Promise<string | null>;
+  onSubmit: (draft: ReportDraft, amount: number | null) => Promise<ReportSubmissionError | null>;
 }) {
   const editorLock = useDraftEditorLock(userId, 'report');
   const [locked, setLocked] = useState(cloudDrafts.status(userId, 'report') === 'submitting');

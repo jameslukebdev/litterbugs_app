@@ -57,4 +57,14 @@ describe('simple owner analytics', () => {
     expect(screen.getByText('17.2%')).toBeTruthy();
     expect(screen.queryByText('29')).toBeNull();
   });
+  it('separates startup platforms and shows samples instead of a blended map speed', () => {
+    const data: AppData = { visits: 3, screens: 10, launches: 5, reports: 0, claims: 0, submissions: 0, approvals: 0, failures: 0, signIns: 0, reportReadyMedian: 800, reportReadySamples: 2, mapReadyMedian: 5500, mapReadySamples: 3, startup: { ios: { medianMs: 6000, samples: 2 }, android: { medianMs: 1200, samples: 1 } } };
+    render(<AnalyticsDashboard dashboard={{ ...dashboard, sources: { ...dashboard.sources, app: source(data) } }} view="app" />);
+    expect(screen.getByText('iPhone startup')).toBeTruthy();
+    expect(screen.getByText('6.0s')).toBeTruthy();
+    expect(screen.getByText('1.2s')).toBeTruthy();
+    expect(screen.queryByText('5.5s')).toBeNull();
+    expect(screen.getByText(/Includes the 4-second startup wait/)).toBeTruthy();
+    expect(screen.getByText('App measurement rules')).toBeTruthy();
+  });
 });

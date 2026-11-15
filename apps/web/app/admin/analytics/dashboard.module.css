@@ -56,6 +56,10 @@
 .action { display:inline-flex; gap:10px; align-items:center; padding:11px 15px; margin-top:18px; border:1px solid #8ed7c5; border-radius:10px; background:#b9e9dd; color:#224f45!important; font-weight:700; font-size:13px; }
 .action:hover { background:#a9dfd1; }
 .empty { color:var(--muted); font-size:13px; padding:24px 0; }
+.measurementRules { padding:14px 0; font-size:12px; color:var(--muted); }
+.measurementRules summary { cursor:pointer; color:var(--purple); padding:4px 0; }
+.measurementRules p { max-width:760px; line-height:1.6; margin:10px 0 0; }
+.timingNote { display:block; color:var(--muted); font-size:11px; line-height:1.5; margin-top:6px; }
 .appPending { padding:65px 24px; text-align:center; }
 .appPending>svg { width:36px; height:36px; color:var(--purple); margin-bottom:18px; }
 .appPending h2 { margin-bottom:10px; }.appPending p { color:var(--muted); font-size:14px; line-height:1.7; }

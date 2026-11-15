@@ -20,16 +20,30 @@ describe('owner analytics providers', () => {
     const timing = query.series[8];
     expect('properties' in timing && timing.properties).toContainEqual({ key: 'backgrounded', type: 'event', operator: 'exact', value: ['false'] });
     expect(query.series.some(row => 'event' in row && row.event === '$exception')).toBe(false);
-    expect(query.series.at(-1)).toMatchObject({ kind: 'GroupNode', operator: 'OR', math: 'unique_session' });
+    expect(query.series[12]).toMatchObject({ kind: 'GroupNode', operator: 'OR', math: 'unique_session' });
+    expect(query.properties).toContainEqual({ key: '$app_namespace', type: 'event', operator: 'exact', value: ['com.litterbugs.app'] });
+    const eligibility = query.properties.filter(row => row.type === 'hogql').map(row => row.key).join('\n');
+    expect(eligibility).toContain("properties.$app_build = '29'");
+    expect(eligibility).toContain("properties.$app_build = '26'");
+    expect(eligibility).toContain('distinct_id NOT IN');
+    expect(eligibility).toContain("properties.$app_build IN ('27', '28')");
+    expect(query.series[13]).toMatchObject({ event: 'app_timing', math: 'median', properties: expect.arrayContaining([{ key: 'map_signal', type: 'event', operator: 'exact', value: ['map_ready_fallback'] }, { key: '$os_name', type: 'event', operator: 'exact', value: ['iOS'] }]) });
+    expect(query.series[15]).toMatchObject({ event: 'app_timing', math: 'median', properties: expect.arrayContaining([{ key: 'map_signal', type: 'event', operator: 'exact', value: ['map_loaded'] }, { key: '$os_name', type: 'event', operator: 'exact', value: ['Android'] }]) });
   });
   it('does not call a missing app timing sample a zero-millisecond load', () => {
-    const values = [0,0,0,0,0,0,0,0,null,0,null,0,0];
+    const values = [0,0,0,0,0,0,0,0,null,0,null,0,0,null,0,null,0];
     const result = normalizeApp({ results: values.map(aggregated_value => ({ aggregated_value })) });
     expect(result.reportReadyMedian).toBeNull();
     expect(result.mapReadyMedian).toBeNull();
     expect(result.visits).toBe(0);
+    expect(result.startup).toEqual({ ios: { medianMs: null, samples: 0 }, android: { medianMs: null, samples: 0 } });
     values[9] = 1;
     expect(() => normalizeApp({ results: values.map(aggregated_value => ({ aggregated_value })) })).toThrow();
+  });
+  it('uses full-period platform timing medians and refuses a missing observed timing', () => {
+    const values = [12,8,0,0,0,0,0,0,800,4,5000,3,5,5500,2,1200,1];
+    expect(normalizeApp({ results: values.map(aggregated_value => ({ aggregated_value })) }).startup).toEqual({ ios: { medianMs: 5500, samples: 2 }, android: { medianMs: 1200, samples: 1 } });
+    expect(() => normalizeApp({ results: values.map((aggregated_value,index) => ({ aggregated_value: index === 15 ? null : aggregated_value })) })).toThrow('Missing timing');
   });
   it('uses full-period PostHog aggregates instead of summing daily unique values', () => {
     const results = [108,36,11,4,1,0,1,0,0,0].map(aggregated_value => ({ aggregated_value, data: [999], count: 999 }));

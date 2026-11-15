@@ -30,13 +30,14 @@ import { IoMapOutline, IoGridOutline, IoOptionsOutline, IoCloseCircleOutline, Io
 import { PlaceSearch } from '@/components/place-search';
 import { ClosestReportsAction } from '@/components/closest-reports-action';
 import { MapEmptyState } from '@/components/map-empty-state';
+import { MapLoadError } from '@/components/map-load-error';
 import { findClosestReport, type ClosestReport } from '@/lib/closest-report';
 import { LITTER_MAP_HREF, MAP_HOME_EVENT } from '@/lib/home-map-link';
 import { BOONE_MAP_BOUNDS } from '@/lib/map-preview-frame';
 import type { SearchPlace } from '@/lib/place-geography';
 import { ReportBrowser } from '@/components/report-browser';
 import { canManageReport, realUserId } from '@/lib/report-access';
-import { reportLocationFailureReason } from '@/lib/report-location-error';
+import { ReportLocationError, reportLocationFailureReason } from '@/lib/report-location-error';
 import { getBrowserLocation, requireReportLocation } from '@/lib/geolocation';
 import { clearReportEntryLocation, readReportEntryLocation, reportEntryLocationHref } from '@/lib/report-entry-location';
 import { ReportDetail } from '@/components/report-detail';
@@ -139,6 +140,7 @@ export function MapExperience({
   useEffect(() => { preferenceOwnerRef.current = userId ?? 'guest'; }, [userId]);
   const [mapReady, setMapReady] = useState(false);
   const [mapTilesReady, setMapTilesReady] = useState(false);
+  const [mapAttempt, setMapAttempt] = useState(0);
   const [searchPlace, setSearchPlace] = useState<SearchPlace | null>(initialPlace);
   const searchPlaceRef = useRef<SearchPlace | null>(initialPlace);
   useEffect(() => {
@@ -227,7 +229,7 @@ export function MapExperience({
     favorites: new Set<string>(),
     hidden: new Set<string>(),
   });
-  const canSearchReports = Boolean(discoveryArea || mapError);
+  const canSearchReports = Boolean(discoveryArea || mapError || mapAttempt > 0);
   // A searched place frames the map; its old Census/postal boundary must never
   // hide reports after the visitor pans or zooms beyond it.
   const geometry = undefined;
@@ -526,15 +528,55 @@ export function MapExperience({
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
+  function retryMap() {
+    setMapError(googleMapsKey && googleMapsMapId ? '' : 'The map is unavailable. You can still browse reports.');
+    setMapReady(false);
+    setMapTilesReady(false);
+    setClusterIds(null);
+    setMapAttempt(attempt => attempt + 1);
+  }
+
   useEffect(() => {
     if (!mapElementRef.current || mapRef.current) return;
+    const mapElement = mapElementRef.current;
+    const mapMarkers = markersRef.current;
+    const markerGlyphs = markerGlyphsRef.current;
+    const mapListeners: google.maps.MapsEventListener[] = [];
     let cancelled = false;
+    mapAuthFailed.current = false;
     const loadTracker = createMapLoadTracker(trackMapLoading, undefined, document.visibilityState === 'hidden');
     mapLoadTrackerRef.current = loadTracker;
-    const visibility = () => { if (document.visibilityState === 'hidden') loadTracker.background(); };
+    let tilesReady = false;
+    let startupFinished = false;
+    let startupTimeout: number | undefined;
+    let remainingStartupTime = 12000;
+    let visibleSince: number | null = null;
+    const pauseStartupTimeout = () => {
+      window.clearTimeout(startupTimeout);
+      startupTimeout = undefined;
+      if (visibleSince !== null) remainingStartupTime = Math.max(0, remainingStartupTime - (performance.now() - visibleSince));
+      visibleSince = null;
+    };
+    const stopStartupTimeout = () => { pauseStartupTimeout(); startupFinished = true; };
+    const resumeStartupTimeout = () => {
+      if (!googleMapsKey || !googleMapsMapId || cancelled || startupFinished || tilesReady || document.visibilityState === 'hidden' || visibleSince !== null) return;
+      visibleSince = performance.now();
+      startupTimeout = window.setTimeout(() => {
+        pauseStartupTimeout();
+        if (cancelled || document.visibilityState === 'hidden') return;
+        startupFinished = true;
+        loadTracker.fail('startup_timeout');
+        setMapError('The map is taking too long to load. Check your connection and try again, or browse reports without the map.');
+      }, remainingStartupTime);
+    };
+    const visibility = () => {
+      if (document.visibilityState === 'hidden') { loadTracker.background(); pauseStartupTimeout(); }
+      else resumeStartupTimeout();
+    };
     document.addEventListener('visibilitychange', visibility);
     const disposeTracking = () => {
       cancelled = true;
+      stopStartupTimeout();
       loadTracker.dispose();
       document.removeEventListener('visibilitychange', visibility);
       if (mapLoadTrackerRef.current === loadTracker) mapLoadTrackerRef.current = null;
@@ -548,16 +590,10 @@ export function MapExperience({
     });
     if (!googleMapsKey || !googleMapsMapId) return disposeTracking;
 
-    let tilesReady = false;
-    const startupTimeout = window.setTimeout(() => {
-      if (!cancelled && !tilesReady) {
-        loadTracker.fail('startup_timeout');
-        setMapError('The map is taking too long to load. You can still browse reports or reload to try again.');
-      }
-    }, 12000);
+    resumeStartupTimeout();
     const previousAuthFailure = window.gm_authFailure;
     window.gm_authFailure = () => {
-      window.clearTimeout(startupTimeout);
+      stopStartupTimeout();
       if (!cancelled) { loadTracker.fail('authorization_failed'); mapAuthFailed.current = true; discoveryRequest.current?.abort(); setDiscoveryArea(null); setMapReady(false); setMapError('The map is unavailable on this address. You can still browse reports.'); }
     };
     async function startMap() {
@@ -601,28 +637,28 @@ export function MapExperience({
           minZoom: 3,
         });
         advancedMarkerRef.current = AdvancedMarkerElement;
-        map.addListener('click', (event: google.maps.MapMouseEvent) => {
+        mapListeners.push(map.addListener('click', (event: google.maps.MapMouseEvent) => {
           if (event.latLng) mapClickRef.current({ latitude: event.latLng.lat(), longitude: event.latLng.lng() });
-        });
-        map.addListener('dragstart', () => {
+        }));
+        mapListeners.push(map.addListener('dragstart', () => {
           setClosestPreview(null);
           pendingPlaceSearch.current = null;
           placeSearchResults.current = null;
-        });
-        map.addListener('zoom_changed', () => {
+        }));
+        mapListeners.push(map.addListener('zoom_changed', () => {
           if (pendingPlaceSearch.current?.awaitingViewport) return;
           pendingPlaceSearch.current = null;
           placeSearchResults.current = null;
-        });
-        map.addListener('tilesloaded', () => {
+        }));
+        mapListeners.push(map.addListener('tilesloaded', () => {
           if (cancelled || mapAuthFailed.current) return;
           tilesReady = true;
-          window.clearTimeout(startupTimeout);
+          stopStartupTimeout();
           loadTracker.tilesReady();
           setMapTilesReady(true);
           setMapError('');
-        });
-        map.addListener('idle', () => {
+        }));
+        mapListeners.push(map.addListener('idle', () => {
           if (cancelled || mapAuthFailed.current) return;
           const bounds = map.getBounds()?.toJSON();
           const center = map.getCenter();
@@ -636,7 +672,7 @@ export function MapExperience({
           if (pendingPlaceSearch.current) pendingPlaceSearch.current.awaitingViewport = false;
           if (searchedViewport) setSettledSearchViewport(value => value + 1);
           setDiscoveryArea(current => current && Object.keys(area).every(key => current[key as keyof DiscoveryArea] === area[key as keyof DiscoveryArea]) ? current : area);
-        });
+        }));
         clustersRef.current = createReportClusters(map, AdvancedMarkerElement, ids => setClusterIds(ids));
         mapRef.current = map;
         if (!confirmedPin && selectedWhileLoading && !new URLSearchParams(window.location.search).has('report')) map.fitBounds(selectedWhileLoading.bounds, 60);
@@ -653,12 +689,21 @@ export function MapExperience({
           }).catch(() => { if (!cancelled) setToast('This search area could not be restored. Choose a city or address.'); });
         }
       } catch {
-        window.clearTimeout(startupTimeout);
+        stopStartupTimeout();
         if (!cancelled) { loadTracker.fail('initialization_failed'); setMapError('Google Maps could not load. Check the browser key and try again.'); }
       }
     }
-    return () => { disposeTracking(); window.clearTimeout(startupTimeout); window.gm_authFailure = previousAuthFailure; clustersRef.current?.dispose(); clustersRef.current = null; mapRef.current = null; };
-  }, [googleMapsKey, googleMapsMapId, initialMapReports]);
+    return () => {
+      disposeTracking();
+      window.gm_authFailure = previousAuthFailure;
+      mapListeners.forEach(listener => listener?.remove());
+      clustersRef.current?.dispose(); clustersRef.current = null;
+      mapMarkers.forEach(marker => { marker.map = null; });
+      mapMarkers.clear(); markerGlyphs.clear();
+      advancedMarkerRef.current = null; mapRef.current = null;
+      mapElement.replaceChildren();
+    };
+  }, [googleMapsKey, googleMapsMapId, initialMapReports, mapAttempt]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1082,7 +1127,7 @@ export function MapExperience({
         // evidence: the RPC locks the row and returns an already published report.
         let origin;
         try { origin = await requireReportLocation(previous); }
-        catch (error) { trackParticipationFailure('report', 'review', reportLocationFailureReason(error)); return error instanceof Error ? error.message : 'Your current location is required.'; }
+        catch (error) { trackParticipationFailure('report', 'review', reportLocationFailureReason(error)); return error instanceof ReportLocationError ? error : 'Your current location is required.'; }
         try { await saveReportPublication(pending); }
         catch { trackParticipationFailure('report', 'review', 'draft_save_failed'); return 'Your browser could not save the submission recovery record. Please try again.'; }
         const { data: retriedReport, error: retryError } = await supabase.rpc('publish_report', {
@@ -1102,7 +1147,7 @@ export function MapExperience({
     }
     if (!draft.photos.length) return 'Add at least one clear photo before saving this report.';
     try { await requireReportLocation(draftCoordinates); }
-    catch (error) { trackParticipationFailure('report', 'review', reportLocationFailureReason(error)); return error instanceof Error ? error.message : 'Your current location is required to post.'; }
+    catch (error) { trackParticipationFailure('report', 'review', reportLocationFailureReason(error)); return error instanceof ReportLocationError ? error : 'Your current location is required to post.'; }
     let reportId: string;
     try { reportId = await cloudDrafts.begin(authenticatedUserId, 'report'); }
     catch(error) { trackParticipationFailure('report', 'review', 'draft_save_failed'); return error instanceof Error ? error.message : 'Your draft must sync before submission. Please try again.'; }
@@ -1131,7 +1176,7 @@ export function MapExperience({
     catch (error) {
       trackParticipationFailure('report', 'review', reportLocationFailureReason(error));
       await supabase.storage.from('report_photos').remove(uploaded.paths);
-      return error instanceof Error ? error.message : 'Your current location is required to post.';
+      return error instanceof ReportLocationError ? error : 'Your current location is required to post.';
     }
     pendingPublication.current = { userId: authenticatedUserId, reportId, paths: uploaded.paths };
     setPublicationUncertain(true);
@@ -1280,7 +1325,7 @@ export function MapExperience({
             {selectingDraftLocation ? <IoLocationOutline aria-hidden="true" /> : reportMode ? <IoCloseCircleOutline aria-hidden="true" /> : <span className="map-report-bug" aria-hidden="true" />}<span>{selectingDraftLocation ? 'Keep location' : reportMode ? 'Cancel' : 'Report Litter'}</span>
           </button>
           {!mapError && <div className={`map-loading map-loading-cover${mapTilesReady ? ' map-loading-complete' : ''}`} aria-hidden={mapTilesReady} role="status" aria-label="Loading map"><span className="sr-only">Loading map…</span></div>}
-          {mapError && <div className="map-error"><Icon name="warning" /><strong>Map unavailable</strong><span>{mapError}</span></div>}
+          {mapError && <MapLoadError message={mapError} onRetry={retryMap} onBrowse={() => switchDiscoveryView('reports')} />}
           {!reportListOpen && !reportMode && (!selectedReport || hasDesktopReportPane) && !closestPreview && mapTilesReady && !mapError && mapEmptyResponse && (currentResponse?.error || !mapEmptyResponse.reports.length) && <MapEmptyState
             error={currentResponse?.error} filtered={hasDiscoveryFilters} closestAction={closestAction}
             onRetry={() => void refreshReports()}

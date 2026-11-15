@@ -7,7 +7,7 @@ export type GoogleData = { sessions: number; users: number | null; views: number
 export type SearchData = { clicks: number; impressions: number; ctr: number | null; position: number | null; daily: SeriesPoint[]; queries: Row[] };
 export type ProductData = { visits: number; mapVisits: number; reportOpens: number; cleanupStarts: number; cleanupClaims: number; cleanupSubmissions: number; failures: number; mapStarts: number; mapReady: number; mapFailures: number };
 export type FrictionData = { sessions: number | null; rageSessions: number | null; deadSessions: number | null; quickBackSessions: number | null; scriptErrorSessions: number | null; rageRate?: number | null; deadRate?: number | null; quickBackRate?: number | null; scriptErrorRate?: number | null };
-export type AppData = { visits: number | null; screens: number; launches: number; reports: number; claims: number; submissions: number; approvals: number; failures: number; signIns: number; reportReadyMedian: number | null; reportReadySamples: number; mapReadyMedian: number | null; mapReadySamples: number };
+export type AppData = { visits: number | null; screens: number; launches: number; reports: number; claims: number; submissions: number; approvals: number; failures: number; signIns: number; reportReadyMedian: number | null; reportReadySamples: number; mapReadyMedian: number | null; mapReadySamples: number; startup?: { ios: { medianMs: number | null; samples: number }; android: { medianMs: number | null; samples: number } } };
 export type BusinessData = {
   newReports: number; completedCleanups: number; fundedCents: number; refundedCents: number; contributors: number;
   paidCleanups: number; awaitingCleanup: number; fundedWaiting: number; oldestWaitingDays: number | null; awaitingReview: number;
@@ -91,6 +91,16 @@ export function validateData<K extends SourceId>(id: K, input: unknown): SourceD
   else {
     const rate = (key: string) => { const value = optional(key); if (value != null && value > 1) throw new Error('Invalid signal rate'); return value; };
     result = { sessions: optional('sessions'), rageSessions: optional('rageSessions'), deadSessions: optional('deadSessions'), quickBackSessions: optional('quickBackSessions'), scriptErrorSessions: optional('scriptErrorSessions'), rageRate: rate('rageRate'), deadRate: rate('deadRate'), quickBackRate: rate('quickBackRate'), scriptErrorRate: rate('scriptErrorRate') };
+  }
+  if (id === 'app' && d.startup != null) {
+    const startup = object(d.startup);
+    const timing = (value: unknown) => {
+      const row = object(value);
+      const samples = number(row.samples);
+      if (!Number.isSafeInteger(samples)) throw new Error('Invalid timing sample count');
+      return { samples, medianMs: samples ? number(row.medianMs) : null };
+    };
+    (result as AppData).startup = { ios: timing(startup.ios), android: timing(startup.android) };
   }
   return result as SourceData[K];
 }

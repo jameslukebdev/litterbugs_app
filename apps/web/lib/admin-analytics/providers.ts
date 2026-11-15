@@ -7,6 +7,7 @@ import { list, number, object, ratio, reportWindow, type Period, type Source, ty
 import { localGoogleEnabled, localGoogleReports } from './local-google';
 import { localClaritySource } from './local-clarity-cache';
 import { hostedClaritySource } from './hosted-clarity-cache';
+import { APP_ANALYTICS_POLICY, internalAppInstallFilter, publicAppReleaseFilter } from './app-release-policy';
 
 const TIMEOUT = 12_000;
 async function request(url: string, init: RequestInit = {}): Promise<unknown> {
@@ -102,21 +103,24 @@ export function appQuery(window: Window) {
   const event = (event: string, properties: unknown[] = [], math = 'total', math_property?: string) => ({ kind: 'EventsNode', event, math, properties, ...(math_property ? { math_property } : {}) });
   const step = (action: string, stage: string) => event('participation_step', [prop('action', [action]), prop('stage', [stage])]);
   const timing = (metric: string) => [prop('metric', [metric]), prop('outcome', ['ready']), prop('backgrounded', ['false'])];
-  return { ...productQuery(window), properties: [prop('surface', ['app']), prop('app_environment', ['production']), prop('$is_emulator', ['true'], 'is_not'), prop('is_test', ['true'], 'is_not'), prop('test_environment', undefined, 'is_not_set'), prop('test_run_id', undefined, 'is_not_set')], series: [
+  const startup = (os: string, signal: string) => [...timing('launch_to_map'), prop('$os_name', [os]), prop('map_signal', [signal])];
+  return { ...productQuery(window), properties: [prop('surface', ['app']), prop('app_environment', ['production']), prop('$app_namespace', ['com.litterbugs.app']), prop('$is_emulator', ['true'], 'is_not'), prop('is_test', ['true'], 'is_not'), prop('test_environment', undefined, 'is_not_set'), prop('test_run_id', undefined, 'is_not_set'), { type: 'hogql', key: publicAppReleaseFilter() }, { type: 'hogql', key: internalAppInstallFilter(window.end) }], series: [
     event('$screen'), event('Application Opened'), step('report', 'published'), step('clean', 'claim_confirmed'), step('clean', 'evidence_submitted'), event('cleanup_approved'), event('participation_failure'), event('app_sign_in', [prop('stage', ['succeeded'])]),
     event('app_timing', timing('report_details'), 'median', 'elapsed_ms'), event('app_timing', timing('report_details')),
     event('app_timing', timing('launch_to_map'), 'median', 'elapsed_ms'), event('app_timing', timing('launch_to_map')),
     { kind: 'GroupNode', operator: 'OR', math: 'unique_session', nodes: [event('$screen', [], 'unique_session'), event('Application Opened', [], 'unique_session')] },
+    event('app_timing', startup('iOS', 'map_ready_fallback'), 'median', 'elapsed_ms'), event('app_timing', startup('iOS', 'map_ready_fallback')),
+    event('app_timing', startup('Android', 'map_loaded'), 'median', 'elapsed_ms'), event('app_timing', startup('Android', 'map_loaded')),
   ] };
 }
 export function normalizeApp(raw: unknown): SourceData['app'] {
   const values = list(object(raw).results).map((row, index) => {
     const value = object(row).aggregated_value;
-    return (index === 8 || index === 10) && value == null ? null : number(value);
+    return [8, 10, 13, 15].includes(index) && value == null ? null : number(value);
   });
-  if (values.length !== 13) throw new Error('Incomplete app analytics');
-  if ((values[9] && values[8] == null) || (values[11] && values[10] == null)) throw new Error('Missing timing aggregate');
-  return { visits: values[12]!, screens: values[0]!, launches: values[1]!, reports: values[2]!, claims: values[3]!, submissions: values[4]!, approvals: values[5]!, failures: values[6]!, signIns: values[7]!, reportReadyMedian: values[9] ? values[8] : null, reportReadySamples: values[9]!, mapReadyMedian: values[11] ? values[10] : null, mapReadySamples: values[11]! };
+  if (values.length !== 17) throw new Error('Incomplete app analytics');
+  if ([8, 10, 13, 15].some(index => values[index + 1] && values[index] == null)) throw new Error('Missing timing aggregate');
+  return { visits: values[12]!, screens: values[0]!, launches: values[1]!, reports: values[2]!, claims: values[3]!, submissions: values[4]!, approvals: values[5]!, failures: values[6]!, signIns: values[7]!, reportReadyMedian: values[9] ? values[8] : null, reportReadySamples: values[9]!, mapReadyMedian: values[11] ? values[10] : null, mapReadySamples: values[11]!, startup: { ios: { medianMs: values[14] ? values[13] : null, samples: values[14]! }, android: { medianMs: values[16] ? values[15] : null, samples: values[16]! } } };
 }
 export async function fetchApp(window: Window) {
   return normalizeApp(await post('https://us.posthog.com/api/projects/695338/query/', process.env.ADMIN_ANALYTICS_POSTHOG_KEY ?? '', { query: appQuery(window), name: 'Litterbugs owner dashboard app' }));
@@ -159,7 +163,7 @@ export async function liveSource<K extends keyof SourceData>(id: K, window: Wind
   }
   try {
     return await unstable_cache(async () => ({ status: 'live' as const, updatedAt: new Date().toISOString(), window, data: await loader(), note }),
-      ['owner-analytics-live-v1', id, key, ...(id === 'clarity' ? [] : [window.start, window.end])], { revalidate: id === 'clarity' ? 21_600 : 900 })();
+      ['owner-analytics-live-v1', id, key, ...(id === 'app' ? [APP_ANALYTICS_POLICY] : []), ...(id === 'clarity' ? [] : [window.start, window.end])], { revalidate: id === 'clarity' ? 21_600 : 900 })();
   } catch {
     // Failed connections must not be cached as empty results for fifteen minutes.
     return { status: 'error', updatedAt: new Date().toISOString(), window, data: null, note: 'This source could not be reached. Its other reports are unaffected.' };

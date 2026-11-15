@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { FiArrowUpRight, FiBarChart2, FiCompass, FiDollarSign, FiFlag, FiMapPin, FiSmartphone, FiUsers } from 'react-icons/fi';
 import type { ReactNode } from 'react';
 
-import { SOURCE_LINKS, ratio, totalVisits, windowLabel, type BusinessData, type Dashboard, type Row, type SeriesPoint } from '@/lib/admin-analytics/model';
+import { SOURCE_LINKS, ratio, totalVisits, windowLabel, type AppData, type BusinessData, type Dashboard, type Row, type SeriesPoint } from '@/lib/admin-analytics/model';
 import styles from './dashboard.module.css';
 
 const count = (value: number | null | undefined) => value == null ? '—' : value.toLocaleString('en-US', { maximumFractionDigits: 1 });
@@ -41,6 +41,16 @@ function Breakdown({ rows, available = true }: { rows: Row[]; available?: boolea
   return rows.length ? <ul className={styles.rows}>{rows.map((row, i) => <li key={`${row.label}-${i}`}><span>{row.label || 'Other'}</span><strong>{count(row.value)}</strong></li>)}</ul> : <p className={styles.empty}>No activity to show yet.</p>;
 }
 
+function AppTimings({ data }: { data: AppData }) {
+  const wait = (median: number | null | undefined) => median == null ? '—' : `${(median / 1000).toFixed(1)}s`;
+  const samples = (value: number | undefined) => `${count(value)} ${value === 1 ? 'measurement' : 'measurements'}`;
+  return <section className={styles.section}><h2>Typical wait</h2><ul className={styles.rows}>
+    <li><span>Report ready<small className={styles.timingNote}>{count(data.reportReadySamples)} measured {data.reportReadySamples === 1 ? 'open' : 'opens'}</small></span><strong>{wait(data.reportReadyMedian)}</strong></li>
+    <li><span>iPhone startup<small className={styles.timingNote}>Includes the 4-second startup wait · {samples(data.startup?.ios.samples)}</small></span><strong>{wait(data.startup?.ios.medianMs)}</strong></li>
+    <li><span>Android map ready<small className={styles.timingNote}>Map loaded signal · {samples(data.startup?.android.samples)}</small></span><strong>{wait(data.startup?.android.medianMs)}</strong></li>
+  </ul></section>;
+}
+
 export function AnalyticsDashboard({ dashboard, view = 'overview' }: { dashboard: Dashboard; view?: 'overview' | 'website' | 'app' }) {
   const { ga, gsc, posthog, clarity, app } = dashboard.sources;
   const business = dashboard.business.data;
@@ -55,6 +65,7 @@ export function AnalyticsDashboard({ dashboard, view = 'overview' }: { dashboard
     </header>
     <div className={styles.intro}><h1>Analytics</h1><div className={styles.period}><span>{windowLabel(dateWindow)}</span><nav aria-label="Reporting period">{([7, 28] as const).map(days => <Link key={days} prefetch={false} aria-current={dashboard.period === days ? 'page' : undefined} href={`/admin/analytics?days=${days}&view=${view}`}>Last {days} days</Link>)}</nav></div></div>
     <nav className={styles.tabs} aria-label="Analytics view">{(['overview', 'website', 'app'] as const).map(tab => <Link key={tab} prefetch={false} aria-current={view === tab ? 'page' : undefined} href={`/admin/analytics?days=${dashboard.period}&view=${tab}`}>{tab === 'overview' ? 'Overview' : tab === 'app' ? 'App' : 'Website'}</Link>)}</nav>
+    {view !== 'website' && <details className={styles.measurementRules}><summary>App measurement rules</summary><p>Only verified public builds after their recorded release cutoff count. Withdrawn builds, emulators and known test installs are excluded, including later visits from those same installs. Staff using only public builds must turn off Analytics choices on their test device.</p><p>When only a publication date is known, that day is held out. New builds are included after publication is verified. Startup times are measured after the app’s code starts; they do not measure the full phone launch.</p></details>}
     {[dashboard.business, ...Object.values(dashboard.sources)].some(source => source.status === 'error') && <p role="status" className={styles.empty}>Some numbers couldn’t be updated. Please try again shortly.</p>}
 
     {view === 'overview' && <>
@@ -83,7 +94,7 @@ export function AnalyticsDashboard({ dashboard, view = 'overview' }: { dashboard
     </>}
 
     {view === 'app' && <>
-      {app.data ? <><section className={styles.metrics} aria-label="App activity"><Metric label="Visits" value={count(appVisits)} /><Metric label="Reports submitted" value={count(app.data.reports)} /><Metric label="Cleanups claimed" value={count(app.data.claims)} /></section><div className={styles.twoColumns}><section className={styles.section}><h2>Typical wait</h2><ul className={styles.rows}><li><span>Report ready</span><strong>{app.data.reportReadyMedian == null ? '—' : `${(app.data.reportReadyMedian / 1000).toFixed(1)}s`}</strong></li><li><span>Map ready</span><strong>{app.data.mapReadyMedian == null ? '—' : `${(app.data.mapReadyMedian / 1000).toFixed(1)}s`}</strong></li></ul></section><section className={styles.section}><h2>Participation</h2><ul className={styles.rows}><li><span>Signed in</span><strong>{count(app.data.signIns)}</strong></li><li><span>Cleanup photos sent</span><strong>{count(app.data.submissions)}</strong></li><li><span>Actions that failed</span><strong>{count(app.data.failures)}</strong></li></ul></section></div></> : <section className={styles.appPending}><FiSmartphone /><h2>App activity</h2><p>Visits and activity will appear here after the app update is live.</p></section>}
+      {app.data ? <><section className={styles.metrics} aria-label="App activity"><Metric label="Visits" value={count(appVisits)} /><Metric label="Reports submitted" value={count(app.data.reports)} /><Metric label="Cleanups claimed" value={count(app.data.claims)} /></section><div className={styles.twoColumns}><AppTimings data={app.data} /><section className={styles.section}><h2>Participation</h2><ul className={styles.rows}><li><span>Signed in</span><strong>{count(app.data.signIns)}</strong></li><li><span>Cleanup photos sent</span><strong>{count(app.data.submissions)}</strong></li><li><span>Actions that failed</span><strong>{count(app.data.failures)}</strong></li></ul></section></div></> : <section className={styles.appPending}><FiSmartphone /><h2>App activity</h2><p>Visits and activity will appear here after the app update is live.</p></section>}
     </>}
   </main></div>;
 }

@@ -9,6 +9,7 @@ const mock = vi.hoisted(() => ({
   signals: vi.fn(), importLibrary: vi.fn(), listeners: new Map<string, () => void>(),
   markerFails: false, reports: [] as MappableReport[],
   panTo: vi.fn(), setZoom: vi.fn(), setMapType: vi.fn(),
+  mapOptions: [] as Record<string, unknown>[],
 }));
 vi.mock('@/lib/website-analytics', async original => ({ ...await original<object>(), trackMapLoading: mock.signals }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }), useSearchParams: () => new URLSearchParams() }));
@@ -23,18 +24,21 @@ vi.mock('@/lib/synced-report-preferences', () => ({ reportPreferenceSync: {
 vi.mock('@/components/public-site-header', () => ({ PublicSiteHeader: () => null }));
 vi.mock('@/components/public-site-footer', () => ({ PublicSiteFooter: () => null }));
 vi.mock('@/components/place-search', () => ({ PlaceSearch: () => null }));
-vi.mock('@/components/report-browser', () => ({ ReportBrowser: function Browser({ onVisibleReportsChange }: { onVisibleReportsChange: (reports: MappableReport[]) => void }) {
+vi.mock('@/components/report-browser', () => ({ ReportBrowser: function Browser({ onVisibleReportsChange, open }: { onVisibleReportsChange: (reports: MappableReport[]) => void; open: boolean }) {
   useEffect(() => { onVisibleReportsChange(mock.reports); }, [onVisibleReportsChange]);
-  return null;
+  return <aside id="active-report-list" data-open={open}>Report list</aside>;
 } }));
 
 const props = { initialReports: [], initialUserId: null, googleMapsKey: 'test', googleMapsMapId: 'test', initialError: '' };
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] });
   vi.clearAllMocks(); localStorage.clear(); mock.listeners.clear(); mock.reports = []; mock.markerFails = false;
   window.history.replaceState({}, '', '/map');
+  mock.mapOptions = [];
+  Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
   window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() });
   mock.importLibrary.mockImplementation(async name => name === 'maps' ? { Map: class {
+    constructor(_element: HTMLElement, options: Record<string, unknown>) { mock.mapOptions.push(options); }
     addListener(name: string, handler: () => void) { mock.listeners.set(name, handler); }
     panTo = mock.panTo;
     setZoom = mock.setZoom;
@@ -43,7 +47,7 @@ beforeEach(() => {
     constructor() { if (mock.markerFails) throw new Error('private marker details'); }
   } });
 });
-afterEach(() => { cleanup(); delete window.gm_authFailure; Reflect.deleteProperty(navigator, 'geolocation'); vi.useRealTimers(); });
+afterEach(() => { cleanup(); delete window.gm_authFailure; Reflect.deleteProperty(navigator, 'geolocation'); Reflect.deleteProperty(document, 'visibilityState'); vi.useRealTimers(); });
 async function mount(missingKey = false) {
   const view = render(<StrictMode><MapExperience {...props} googleMapsKey={missingKey ? '' : props.googleMapsKey} /></StrictMode>);
   await act(async () => {});
@@ -77,6 +81,78 @@ it('reports a startup timeout then late recovery and clears the loading error', 
   await act(async () => { mock.listeners.get('tilesloaded')!(); });
   expect(mock.signals).toHaveBeenCalledWith(expect.objectContaining({ stage: 'recovered' }));
   expect(screen.queryByText('Map unavailable')).toBeNull();
+});
+function visibility(state: 'hidden' | 'visible') {
+  Object.defineProperty(document, 'visibilityState', { configurable: true, value: state });
+  fireEvent(document, new Event('visibilitychange'));
+}
+it('counts only visible time across repeated hidden periods and retains the remaining budget', async () => {
+  await mount();
+  await act(async () => { await vi.advanceTimersByTimeAsync(4000); });
+  act(() => visibility('hidden'));
+  await act(async () => { await vi.advanceTimersByTimeAsync(60000); });
+  expect(screen.queryByText('Map unavailable')).toBeNull();
+  expect(mock.signals.mock.calls.map(([signal]) => signal.stage)).toEqual(['started']);
+  act(() => visibility('visible'));
+  await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
+  act(() => visibility('hidden'));
+  await act(async () => { await vi.advanceTimersByTimeAsync(60000); });
+  act(() => visibility('visible'));
+  await act(async () => { await vi.advanceTimersByTimeAsync(4999); });
+  expect(screen.queryByText('Map unavailable')).toBeNull();
+  await act(async () => { await vi.advanceTimersByTimeAsync(1); });
+  expect(screen.getByText('Map unavailable')).toBeTruthy();
+  expect(mock.signals).toHaveBeenLastCalledWith(expect.objectContaining({ stage: 'failed', reason: 'startup_timeout', backgrounded: true }));
+});
+it('waits for visibility when mounted hidden and cancels the paused timer when tiles arrive', async () => {
+  visibility('hidden');
+  await mount();
+  await act(async () => { await vi.advanceTimersByTimeAsync(60000); });
+  expect(screen.queryByText('Map unavailable')).toBeNull();
+  await act(async () => { mock.listeners.get('tilesloaded')!(); });
+  act(() => visibility('visible'));
+  await act(async () => { await vi.advanceTimersByTimeAsync(15000); });
+  expect(mock.signals.mock.calls.map(([signal]) => signal.stage)).toEqual(['started', 'tiles_ready']);
+});
+it('retries only the map, retains the URL viewport/filters, and ignores old tile callbacks', async () => {
+  window.history.replaceState({}, '', '/map?view=map&funding=funded#map=35.5,-80.5,14.0');
+  await mount();
+  const oldTiles = mock.listeners.get('tilesloaded')!;
+  await act(async () => { await vi.advanceTimersByTimeAsync(12000); });
+  const url = window.location.href;
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Try again' })); });
+  expect(screen.queryByText('Map unavailable')).toBeNull();
+  expect(mock.mapOptions).toHaveLength(2);
+  expect(mock.mapOptions[1]).toMatchObject({ center: { lat: 35.5, lng: -80.5 }, zoom: 14 });
+  expect(window.location.href).toBe(url);
+  await act(async () => { oldTiles(); });
+  expect(mock.signals.mock.calls.map(([signal]) => signal.stage)).toEqual(['started', 'failed', 'started']);
+  expect(document.querySelector('.map-loading-complete')).toBeNull();
+  await act(async () => { mock.listeners.get('tilesloaded')!(); });
+  expect(mock.signals.mock.calls.map(([signal]) => signal.stage)).toEqual(['started', 'failed', 'started', 'tiles_ready']);
+  await act(async () => { await vi.advanceTimersByTimeAsync(15000); });
+  expect(screen.queryByText('Map unavailable')).toBeNull();
+});
+it('opens the existing report list after a map failure without discarding area or filters', async () => {
+  window.history.replaceState({}, '', '/map?view=map&funding=funded#map=35.5,-80.5,14.0');
+  await mount();
+  await act(async () => { await vi.advanceTimersByTimeAsync(12000); });
+  act(() => { fireEvent.click(screen.getByRole('button', { name: 'Browse reports' })); });
+  expect(document.querySelector('#active-report-list')?.getAttribute('data-open')).toBe('true');
+  const url = new URL(window.location.href);
+  expect(url.searchParams.get('view')).toBe('reports');
+  expect(url.searchParams.get('funding')).toBe('funded');
+  expect(url.hash).toBe('#map=35.5,-80.5,14.0');
+});
+it('keeps the configuration error actionable when retry cannot load an unconfigured map', async () => {
+  await mount(true);
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Try again' })); });
+  act(() => visibility('hidden'));
+  act(() => visibility('visible'));
+  await act(async () => { await vi.advanceTimersByTimeAsync(15000); });
+  expect(mock.importLibrary).not.toHaveBeenCalled();
+  expect(screen.getByText('Map unavailable')).toBeTruthy();
+  expect(mock.signals.mock.calls.some(([signal]) => signal.reason === 'startup_timeout')).toBe(false);
 });
 it('reports authorization failures once and suppresses later tile success', async () => {
   await mount();

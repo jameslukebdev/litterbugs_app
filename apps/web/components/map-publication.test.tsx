@@ -250,7 +250,7 @@ describe('map publication and funding handoff', () => {
     await choosePin();
     expect(getCurrentPosition).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Post without funds' }));
-    await waitFor(() => expect(state.saveResult).toHaveBeenCalledWith('Allow location access in your browser, then try again.'));
+    await waitFor(() => expect(state.saveResult).toHaveBeenCalledWith(expect.objectContaining({ reason: 'location_denied' })));
     expect(getCurrentPosition).toHaveBeenCalledTimes(1);
     expect(screen.getByLabelText('Selected latitude').textContent).toBe('0.5');
     expect(telemetry.failure).toHaveBeenCalledWith('report', 'review', 'location_denied');
@@ -318,7 +318,7 @@ describe('map publication and funding handoff', () => {
     await choosePin(1);
     expect(screen.getByLabelText('Selected latitude').textContent).toBe('1');
     fireEvent.click(screen.getByRole('button', { name: 'Post without funds' }));
-    await waitFor(() => expect(state.saveResult).toHaveBeenCalledWith(expect.stringContaining('within 50 miles')));
+    await waitFor(() => expect(state.saveResult).toHaveBeenCalledWith(expect.objectContaining({ reason: 'location_out_of_range' })));
     expect(telemetry.failure).toHaveBeenCalledWith('report', 'review', 'location_out_of_range');
     expect(screen.getByLabelText('Selected latitude').textContent).toBe('1');
     expect(state.upload).not.toHaveBeenCalled();

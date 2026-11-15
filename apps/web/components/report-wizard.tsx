@@ -31,6 +31,8 @@ import type { ReportWizardSnapshot } from '@/lib/saved-report-draft';
 
 import { Icon } from '@/components/icon';
 import { ModalShell } from '@/components/modal-shell';
+import { ReportLocationRecovery } from './report-location-recovery';
+import { ReportLocationError, type ReportSubmissionError } from '@/lib/report-location-error';
 import { formatUsd, parseContributionAmount } from '@/lib/funding';
 
 const MAX_REPORT_PHOTO_BYTES = 5 * 1024 * 1024;
@@ -109,7 +111,7 @@ export function ReportWizard({
   selectingLocation?: boolean;
   onChangeLocation?: () => void;
   onClose: () => void;
-  onSubmit: (draft: ReportDraft, startingContributionCents: number | null) => Promise<string | null>;
+  onSubmit: (draft: ReportDraft, startingContributionCents: number | null) => Promise<ReportSubmissionError | null>;
 }) {
   const [step, setStep] = useState(initialState?.step ?? 0);
   const locationHintId = useId();
@@ -121,6 +123,7 @@ export function ReportWizard({
   const [saving, setSaving] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [message, setMessage] = useState('');
+  const [locationError, setLocationError] = useState<ReportLocationError | null>(null);
   const [returnToReview, setReturnToReview] = useState(false);
   const [fundingChoice, setFundingChoice] = useState(initialState?.fundingChoice ?? 'none');
   const [customAmount, setCustomAmount] = useState(initialState?.customAmount ?? '');
@@ -185,8 +188,11 @@ export function ReportWizard({
     setMessage('');
     try {
       const error = await onSubmit(draft, contributionCents);
-      if (error) setMessage(error);
-    } catch {
+      if (error instanceof ReportLocationError) setLocationError(error);
+      else { setLocationError(null); if (error) setMessage(error); }
+    } catch (error) {
+      if (error instanceof ReportLocationError) { setLocationError(error); return; }
+      setLocationError(null);
       if (!isEditing) trackParticipationFailure('report', 'review', 'publication_unconfirmed');
       setMessage('Your report could not be confirmed. Check your connection and try again.');
     } finally {
@@ -289,14 +295,18 @@ export function ReportWizard({
             </dl>}
             {wantsFunding && <p>You’ll confirm payment separately after the report is saved and eligible for funding.</p>}
           </section>}
+
+        </section>}
+      </fieldset>
+      {/* Retry checks the original submission while its editable fields stay locked. */}
+      {step === 4 && (
           <div className={styles.submitActions}>
-            {message
+            {locationError ? <ReportLocationRecovery reason={locationError.reason} busy={saving} onRetry={() => void submit()} onDismiss={() => setLocationError(null)} /> : <>{message
               ? <p id={locationHintId} className="form-message error-message" role="alert">{message}</p>
               : !isEditing && <p id={locationHintId} className={styles.submitHint}>To post, allow location access and be within {MAX_REPORT_DISTANCE_MILES} miles of the pin.</p>}
-            <button type="button" className={`primary-button ${styles.submitButton}`} aria-describedby={message || !isEditing ? locationHintId : undefined} onClick={submit} disabled={saving || preparing || (wantsFunding && contributionCents == null)}>{saving ? submissionProgress || 'Saving report…' : isEditing ? 'Save changes' : 'Submit report'}</button>
+            <button type="button" className={`primary-button ${styles.submitButton}`} aria-describedby={message || !isEditing ? locationHintId : undefined} onClick={submit} disabled={saving || preparing || (wantsFunding && contributionCents == null)}>{saving ? submissionProgress || 'Saving report…' : isEditing ? 'Save changes' : 'Submit report'}</button></>}
           </div>
-        </section>}
-      </fieldset></div>
+      )}</div>
 
       {step !== 4 && message && <p className="form-message error-message wizard-message" role="alert">{message}</p>}
       <footer className="wizard-footer">
