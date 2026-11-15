@@ -24,6 +24,20 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-15 — Codex (free Semrush alternatives researched)
+
+- Verified current vendor documentation: recommend Ahrefs Free for verified-site
+  backlinks/ranking-keyword reports (1000 visible at once) and5000 monthly crawl
+  credits/project, alongside free Google Search Console for Google's own search
+  traffic/indexing/link evidence. Bing Webmaster Tools is another free option
+  for backlinks,keyword research and quota-limited Site Scan. Screaming Frog free
+  tier crawls500 URLs; not needed as an additional setup for this recommendation.
+- Ahrefs Free dashboard access does not include the direct API/MCP integration;
+  vendor says those require Lite or higher. No new service signup,verification,
+  OAuth access,purchase,installation,crawl,website edit or deployment performed.
+  No account-specific free-tool access or data coverage promised. Read-only
+  research notes committed in isolated checkout; Claude's work/index untouched.
+
 ### 2026-11-15 — Codex (limited Semrush review; no product changes)
 
 - Semrush connector discovery returned non-retryable no_api_units for domain,
