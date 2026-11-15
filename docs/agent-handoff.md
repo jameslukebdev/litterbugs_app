@@ -24,6 +24,23 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-15 — Codex (limited Semrush review; no product changes)
+
+- Semrush connector discovery returned non-retryable no_api_units for domain,
+  organic,backlink and project reports. No report executions or retries made.
+- Read owner's existing signed-in Semrush backlink UI for litterbugs.app:
+  network graph labels Dangerous/Direct link farms; overview partially shows
+  184 text backlinks,93 follow/91 nofollow;1 new backlink found5 days ago.
+  Daily report limit blocks fuller metrics. These are link counts,not unique
+  sites or measured visits. No complete toxicity audit,source-domain breakdown,
+  keyword rankings,search-traffic estimate or site-health score verified.
+- Recommend inspecting actual referring pages before deciding whether any link
+  action is warranted; Semrush's network label does not prove a Google penalty.
+  Google disavow guidance says most sites do not need the tool. No disavow,
+  outreach,paid upgrade,new campaign,crawl,provider-setting change or deployment.
+- Notes committed only in isolated release checkout; Claude's shared files and
+  index left untouched. Current live source66f823d/redeployFym5dwu unchanged.
+
 ### 2026-11-15 — Codex (owner-requested isolated website redeploy and GitHub push)
 
 - Redeployed the exact previously verified production source66f823d, using the
