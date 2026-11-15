@@ -24,6 +24,28 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-15 — Codex (owner-requested isolated website redeploy and GitHub push)
+
+- Redeployed the exact previously verified production source66f823d, using the
+  existing deployment artifact as source. New live deployment:
+  dpl_Fym5dwuZjccVLABfPDT62TkEb7Mv,
+  litterbugs-2ebn31ahk-grant-9890s-projects.vercel.app, READY and aliased to
+  litterbugs.app. Rollback: dpl_F9z1u3RoMSj71saxGCyr8qkjFJiW. No app-code change.
+- GitHub branch codex/website-recovery-20261115 contains e48e040 (website GPS
+  recovery,analytics eligibility/cache/timing and branded visible-time map
+  recovery) plus66f823d (branded saved drafts,plain copy,confirmed revision-guarded
+  deletion). Built from prior live85adaad; its report-page changes are preserved.
+- Fresh production build passed. Live map tiles loaded with no map/runtime
+  errors; account/report/admin-analytics returned200. Test browser analytics
+  declined. Prior exact-source1180 web/27 draft-sync passing tests remain valid;
+  unchanged code was not retested unnecessarily.
+- All work performed from this isolated checkout. Shared checkout's Claude
+  edits,previews,leaderboards,migration and staged Boone-page deletions were
+  neither changed,staged,committed nor deployed by this redeploy. This handoff
+  entry is committed/pushed only on our release branch to preserve that index.
+- No DB migration/provider settings/native build/OTA/store action. Earlier
+  mobile location recovery remains local pending separate mobile delivery.
+
 ### 2026-11-13 — Codex (owner analytics dashboard deployed)
 
 - Live at https://litterbugs.app/admin/analytics. Source `388c930`, isolated release
