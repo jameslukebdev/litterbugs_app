@@ -24,6 +24,36 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-15 — Claude (Leaderboards, town finder, site cleanup and Ahrefs fixes deployed)
+
+- LIVE: release branch `claude/leaderboards-release-20261115` (pushed), built on
+  Codex's live source `5bc2553` via `67e1f1c` (keeps the Ahrefs/Bing verification
+  tags). Commits `686c4b9` (feature) + `5968768` (unused import). Deployment
+  `dpl_9PofLNMspV89k5tNVELCBdo1WbsL` (litterbugs-mauqfyl87), staged with
+  `--skip-domain`, checked, then promoted. Rollback: `dpl_Ufyfut4xMLfRbV8TTyXxDaqDVLEx`.
+  Same changes as an unpushed local branch on the working history:
+  `claude/leaderboards-source-20261115` (`dface39`, parent `4c0d7b6`).
+- Leaderboards (menu item, crowned champion-beetle bug): automatic city/county
+  community pages with Cleaners/Reporters/Funders boards, Global home with town
+  finder (search, Near me, your towns), Busiest towns, country/state browse pages.
+  Opt-out switch in account settings; privacy sentence added (effective date not
+  yet changed). "Get the app" now collapses before Leaderboards in the header.
+- Removed the old editorial Communities system, Boone static pages, /locations,
+  /organizations, home previews and unused assets; 308 redirects in next.config.ts.
+- Ahrefs fixes: report towns now come from stored community-cell lookups (sitemap,
+  page canonical and redirects agree; 6 live sitemap entries were missing towns),
+  report titles ≤65 and descriptions ≤155 characters, full share tags on 10 pages.
+- Database (all live, additive): migrations 20261115160657 … 20261115173304 in
+  supabase/migrations (community tables/jobs/RPCs, finder, report towns, daily
+  cron-history purge, two unused functions dropped). Also compacted
+  net._http_response and deleted 158 orphaned photos with Grant's approval:
+  DB 372 → 25 MB, report photos 500 → 182 MB.
+- Checks: typecheck, scoped lint, 1,165 web tests on the release tree; staged and
+  live URLs verified (pages, redirects, finder, sitemap, report/rank share images).
+- Not done: mobile app opt-out switch, privacy effective date, leaderboard analytics
+  events. Working folder's uncommitted Codex edits (.claude/launch.json, this log)
+  and dev-review-preview pages were left untouched and not released.
+
 ### 2026-11-15 — Codex (Bing follow-up checked)
 
 - Refreshed Litterbugs Bing sitemap report: sitemap.xml now Success,49 URLs
