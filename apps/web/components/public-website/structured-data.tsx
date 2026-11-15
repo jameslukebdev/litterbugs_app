@@ -1,4 +1,3 @@
-import type { Community } from '@/lib/community-directory';
 import { getSiteUrl } from '@/lib/env';
 import { publicReportStructuredData } from '@/lib/public-report-structured-data';
 import type { PublicReportShareModel } from '@/lib/public-report-share-model';
@@ -19,17 +18,27 @@ export function WebsiteStructuredData() {
   ] }} />;
 }
 
-export function ReportStructuredData({ report, community }: { report: PublicReportShareModel; community?: Community }) {
-  return <JsonLd value={publicReportStructuredData(report, community, getSiteUrl())} />;
+export function ReportStructuredData({ report }: { report: PublicReportShareModel }) {
+  return <JsonLd value={publicReportStructuredData(report, getSiteUrl())} />;
 }
 
-export function CommunityBreadcrumbs({ name, path }: { name: string; path: string }) {
+/** Questions and answers from a town's cleanup guide, for search and answer engines. */
+export function GuideStructuredData({ questions }: { questions: { question: string; paragraphs: string[] }[] }) {
+  if (!questions.length) return null;
+  return <JsonLd value={{ '@context': 'https://schema.org', '@type': 'FAQPage',
+    mainEntity: questions.map(item => ({ '@type': 'Question', name: item.question,
+      acceptedAnswer: { '@type': 'Answer', text: item.paragraphs.join(' ') } })),
+  }} />;
+}
+
+/** Breadcrumbs for Leaderboards pages: Leaderboards, then each place down to this page (country, state, town). */
+export function CommunityBreadcrumbs({ trail }: { trail: { name: string; path: string }[] }) {
   const url = getSiteUrl();
   return <JsonLd value={{ '@context': 'https://schema.org', '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Litterbugs', item: url },
-      { '@type': 'ListItem', position: 2, name: 'Communities', item: `${url}/communities` },
-      { '@type': 'ListItem', position: 3, name, item: `${url}${path}` },
+      { '@type': 'ListItem', position: 2, name: 'Leaderboards', item: `${url}/communities` },
+      ...trail.map((step, index) => ({ '@type': 'ListItem', position: index + 3, name: step.name, item: `${url}${step.path}` })),
     ],
   }} />;
 }

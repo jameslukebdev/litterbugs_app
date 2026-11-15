@@ -6,6 +6,7 @@ import { ResponsiveLink as Link } from './responsive-link';
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 
 import { AppLink } from '@/components/app-link';
+import { ChampionBeetle } from '@/components/champion-beetle';
 import { GetAppNavigation } from '@/components/app-promotion';
 
 import { HeaderAreaSearch } from './header-area-search';
@@ -17,7 +18,7 @@ import { getHeaderProfile, getServerHeaderProfile, subscribeHeaderProfile } from
 
 import styles from './public-site-header.module.css';
 
-export type PublicPath = '/reports' | '/map' | '/report-litter' | '/cleaner' | '/fund-a-cleanup' | '/locations' | '/communities' | '/cleanups' | '/get-app' | '/' | '/support' | '/about' | '/cleanup-policy' | '/cleanup-safety' | '/privacy' | '/terms' | '/help' | '/photo-review';
+export type PublicPath = '/reports' | '/map' | '/report-litter' | '/cleaner' | '/fund-a-cleanup' | '/communities' | '/cleanups' | '/get-app' | '/' | '/support' | '/about' | '/cleanup-policy' | '/cleanup-safety' | '/privacy' | '/terms' | '/help' | '/photo-review';
 
 function HeaderLink({
   href,
@@ -54,7 +55,6 @@ const cleanupLinks = [
   [AVAILABLE_CLEANUPS_MAP_HREF, 'Find a cleanup on the map'],
   ['/cleaner', 'Claiming & getting paid'],
   ['/cleanups', 'Completed cleanups'],
-  ['/communities', 'Communities'],
   ['/cleanup-safety', 'Safety guidelines'],
 ] as const;
 const informationLinks = [
@@ -252,9 +252,12 @@ function NavigationMenu({ activePath }: { activePath: PublicPath }) {
           <Link href={LITTER_MAP_HREF} prefetch={true} className={`${styles.navLink} ${styles.mapEntry}`} aria-current={activePath === '/map' ? 'page' : undefined} onClick={closeMenu}><IoMapOutline aria-hidden /><span>Open map</span></Link>
           <NavigationDropdown label="Report" links={reportingLinks} activePath={activePath}
             open={openCategory === 'reporting'} onToggle={() => setOpenCategory(openCategory === 'reporting' ? null : 'reporting')} onClose={() => setOpenCategory(current => current === 'reporting' ? null : current)} onNavigate={closeMenu} />
-          {([['Donate', fundingLinks], ['Earn', cleanupLinks], ['Support', informationLinks]] as const).map(([label, links]) =>
+          {([['Donate', fundingLinks], ['Earn', cleanupLinks]] as const).map(([label, links]) =>
             <NavigationDropdown key={label} label={label} links={links} activePath={activePath}
               open={openCategory === label} onToggle={() => setOpenCategory(openCategory === label ? null : label)} onClose={() => setOpenCategory(current => current === label ? null : current)} onNavigate={closeMenu} />)}
+          <HeaderLink href="/communities" activePath={activePath} onNavigate={closeMenu}><ChampionBeetle className={styles.leaderboardBug} /><span className={styles.triggerLabel}>Leaderboards</span></HeaderLink>
+          <NavigationDropdown label="Support" links={informationLinks} activePath={activePath}
+            open={openCategory === 'Support'} onToggle={() => setOpenCategory(openCategory === 'Support' ? null : 'Support')} onClose={() => setOpenCategory(current => current === 'Support' ? null : current)} onNavigate={closeMenu} />
           {!member?.userId && <Link className={styles.navLink} href="/sign-in" onClick={closeMenu}>Log in / Sign up</Link>}
           <div className={styles.drawerSocial}><SocialLinks /></div>
         </nav>
@@ -288,6 +291,8 @@ export function PublicSiteHeader({ activePath, action, reportAction, reportId, c
           <div className={styles.reportAction}>{reportAction ?? (<NavigationDropdown label="Report" links={reportingLinks} activePath={activePath} open={openMenu === 'reporting'} onToggle={() => toggleMenu('reporting')} onClose={() => setOpenMenu(null)} />)}</div>
           <div className={styles.funding}><NavigationDropdown label="Donate" links={fundingLinks} activePath={activePath} open={openMenu === 'funding'} onToggle={() => toggleMenu('funding')} onClose={() => setOpenMenu(null)} /></div>
           <div className={styles.cleaning}><NavigationDropdown label="Earn" links={cleanupLinks} activePath={activePath} open={openMenu === 'cleaning'} onToggle={() => toggleMenu('cleaning')} onClose={() => setOpenMenu(null)} /></div>
+          {/* Leaderboards serve reporters, funders and cleaners alike, so they sit outside the three families. */}
+          <div className={styles.leaderboards}><HeaderLink href="/communities" activePath={activePath}><ChampionBeetle className={styles.leaderboardBug} />Leaderboards</HeaderLink></div>
         </nav>
         <div className={styles.help}><NavigationDropdown label="Support" links={informationLinks} activePath={activePath} open={openMenu === 'help'} onToggle={() => toggleMenu('help')} onClose={() => setOpenMenu(null)} /></div>
         <div className={styles.appLink}><GetAppNavigation /><AppLink reportId={reportId} className={styles.smallAppLink}><IoPhonePortraitOutline aria-hidden />Get the app</AppLink></div>

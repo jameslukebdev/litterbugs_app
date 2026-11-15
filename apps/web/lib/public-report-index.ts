@@ -1,6 +1,7 @@
 import 'server-only';
 import { createPublicClient } from '@/lib/supabase/public';
 import { LIST_TOWN_WAIT_MS, publicReportPlace } from '@/lib/public-report-place';
+import { loadReportCommunities } from '@/lib/report-communities';
 import { isPubliclyShareableReport } from '@/lib/public-report-share-model';
 import { publicReportPath } from '@/lib/public-report-url';
 
@@ -67,10 +68,11 @@ export async function loadPublicReportIndex() {
         if (firstPhoto.get(submissionId)) afterPhotos.add(reportId);
       }
     }
+    const communities = await loadReportCommunities(visible.map(report => report.id));
     reports.push(...await Promise.all(visible.map(async report => ({
       id: report.id,
       path: publicReportPath(report.id, report.title?.trim() || 'Litter Report',
-        (await publicReportPlace(report.latitude, report.longitude, LIST_TOWN_WAIT_MS))?.localityLabel),
+        (await publicReportPlace(report.latitude, report.longitude, LIST_TOWN_WAIT_MS, communities.get(report.id)))?.localityLabel),
       hasBeforePhoto: Boolean(report.photo_paths?.[0]),
       hasAfterPhoto: afterPhotos.has(report.id),
       ...(completedAt.has(report.id) ? { completedAt: completedAt.get(report.id) } : {}),

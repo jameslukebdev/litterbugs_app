@@ -1,4 +1,5 @@
 import { GetAppQr } from '@/components/get-app-qr';
+import { publicPageMetadata } from '@/lib/public-page-metadata';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import { Website } from '@/components/public-website';
@@ -7,7 +8,11 @@ import { APP_STORE_URL, GOOGLE_PLAY_URL, isInstagramStoreVisit } from '@/lib/app
 import seoStyles from '@/components/public-website/seo-pages.module.css';
 import styles from '@/components/app-promotion.module.css';
 
-export const metadata: Metadata = { title: 'Get the Litterbugs app', alternates: { canonical: '/get-app' } };
+export const metadata: Metadata = publicPageMetadata({
+  title: 'Get the Litterbugs app',
+  description: 'Get the Litterbugs app for iPhone and Android to report litter, fund cleanups and get paid to clean up.',
+  alternates: { canonical: '/get-app' },
+});
 
 export default async function GetAppPage({ searchParams }: { searchParams: Promise<{ report?: string; utm_source?: string }> }) {
   const { report, utm_source } = await searchParams;

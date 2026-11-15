@@ -27,11 +27,10 @@ export function analyticsAllowed(config: AnalyticsConfig, hostname: string) {
 export const MEMBER_PROFILE_PAGE = '/members/profile';
 export function analyticsPage(pathname: string): string | null {
   if (['/', '/map', '/report', '/report-litter', '/cleaner', '/fund-a-cleanup',
-    '/locations', '/communities', '/reports', '/reports/history', '/cleanups', '/get-app', '/about', '/help', '/support', '/terms', '/privacy',
+    '/communities', '/reports', '/reports/history', '/cleanups', '/get-app', '/about', '/help', '/support', '/terms', '/privacy',
     '/cleanup-policy', '/cleanup-safety', '/photo-review'].includes(pathname)) return pathname;
-  if (pathname === '/locations/us-nc-boone') return pathname;
   const community = communityForPath(pathname);
-  if (community) return pathname === community.href ? community.href : '/communities/cleanups';
+  if (community) return community.href;
   // Both address forms of a report page count as the same page.
   if (/^\/(?:reports|litter-reports)\/[^/]+$/.test(pathname)) return '/reports/detail';
   if (pathname === MEMBER_PROFILE_PAGE || /^\/members\/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(pathname)) return MEMBER_PROFILE_PAGE;
@@ -102,15 +101,6 @@ export function trackWebsiteOutcome(event: WebsiteEvent, id: string) {
     }
     if (event === 'report_published') trackParticipation('report', 'published');
   } catch { /* Analytics must never interrupt reporting or payment. */ }
-}
-
-/** Engagement is intentionally separate from confirmed publication/payment/approval. */
-export function trackCommunityEngagement(event: CommunityEngagementEvent, properties: CommunityProperties) {
-  try {
-    if (!analyticsProductionBrowser()) return;
-    const safe = communityProperties(properties);
-    if (safe) window.dispatchEvent(new CustomEvent(ANALYTICS_EVENT, { detail: { event, ...safe } }));
-  } catch { /* Optional measurement must not affect navigation or saves. */ }
 }
 
 const PARTICIPATION_STAGES = {

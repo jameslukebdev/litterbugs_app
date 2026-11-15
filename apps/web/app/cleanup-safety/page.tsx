@@ -1,13 +1,14 @@
 import type { Metadata } from 'next';
+import { publicPageMetadata } from '@/lib/public-page-metadata';
 import Link from 'next/link';
 import { Website } from '@/components/public-website';
 import styles from '../about/about-simple.module.css';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   alternates: { canonical: '/cleanup-safety' },
   title: 'Cleanup Safety | Litterbugs',
   description: 'Simple precautions for choosing a site, handling litter, and cleaning safely with Litterbugs.',
-};
+});
 
 export default function CleanupSafetyPage() {
   return <Website activePath="/cleanup-safety">

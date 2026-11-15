@@ -9,14 +9,46 @@ export function reportDateLabel(value: string | null) {
 
 /** Only locality verified by the public geography model belongs in search copy. */
 export function reportLocality(report: PublicReportShareModel) {
-  return (report.communitySlug || report.place) && report.localityLabel?.trim() ? report.localityLabel.trim() : null;
+  return report.place && report.localityLabel?.trim() ? report.localityLabel.trim() : null;
 }
 
-export function publicReportSearchTitle(report: PublicReportShareModel) {
-  const status = report.state === 'expired' ? 'Litter report history' : report.state === 'completed' ? 'Completed cleanup'
-    : report.state === 'in_progress' ? 'Cleanup in progress' : 'Litter report';
-  const locality = reportLocality(report);
-  return `${report.title} — ${status}${locality ? ` near ${locality}` : ''}`;
+/** Search results show about 60 characters of a title and about 155 of a description. */
+const TITLE_MAX = 65;
+const TITLE_SUFFIX = ' | Litterbugs';
+const DESCRIPTION_MAX = 155;
+
+/** `text` cut to `max` characters at a word, with an ellipsis when anything was cut. */
+function fitWords(text: string, max: number) {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max - 1);
+  const space = cut.lastIndexOf(' ');
+  return `${(space > max / 2 ? cut.slice(0, space) : cut).replace(/[\s,.;:–-]+$/, '')}…`;
+}
+
+function shortStatus(report: PublicReportShareModel) {
+  return report.state === 'expired' ? 'past report' : report.state === 'completed' ? 'cleaned up'
+    : report.state === 'in_progress' ? 'cleanup underway' : 'needs cleanup';
+}
+
+/**
+ * The search and share title, without the site name: the report's name, its town and where the cleanup
+ * stands, e.g. "Trash by the tracks, Greensboro – needs cleanup". The report's name is shortened, never the
+ * town or status, so the whole title with " | Litterbugs" stays within what search results show.
+ */
+export function publicReportSearchTitle(report: PublicReportShareModel, max = TITLE_MAX) {
+  const town = reportLocality(report) ? report.place?.locality?.trim() : null;
+  const tail = `${town ? `, ${town}` : ''} – ${shortStatus(report)}`;
+  return `${fitWords(report.title, Math.max(16, max - tail.length))}${tail}`;
+}
+
+/**
+ * The page's own title: the search title with " | Litterbugs" when it fits whole. When the site name would
+ * cut the report's name short, the site name is left out instead (search results show the site separately).
+ */
+export function publicReportPageTitle(report: PublicReportShareModel) {
+  const full = publicReportSearchTitle(report);
+  const withSite = `${full}${TITLE_SUFFIX}`;
+  return withSite.length <= TITLE_MAX ? withSite : full;
 }
 
 export function publicReportSummary(report: PublicReportShareModel) {
@@ -36,18 +68,24 @@ export function publicReportSummary(report: PublicReportShareModel) {
   return `This spot${where} needs a cleanup.`;
 }
 
+/**
+ * The search description: where the cleanup stands and where, what someone can do, then the litter, in whole
+ * sentences that fit in a search result (about 155 characters). The page itself tells the full story.
+ */
 export function publicReportSearchDescription(report: PublicReportShareModel) {
-  if (report.state === 'expired') {
-    return `${report.title}. ${publicReportSummary(report)} ${publicReportOriginalSummary(report)}`.trim() + ' A cleanup has not been confirmed.';
-  }
-  const evidence = report.state === 'completed' && report.beforePhotoUrl && report.afterPhotoUrl
-    ? ' See before-and-after photos from the cleanup.' : '';
-  // The same sentence the page opens with, then what the litter is and how many photos show it.
   const types = report.litterTypes.map(value => value.trim().toLowerCase()).filter(Boolean);
-  const litter = types.length ? ` Reported litter: ${types.length > 4 ? `${types.slice(0, 4).join(', ')} and more` : listFormat.format(types)}.` : '';
-  const photos = (report.beforePhotoUrl ? Math.max(1, report.photoCount ?? 1) : 0) + (report.afterPhotoUrl ? Math.max(1, report.afterPhotoCount ?? 1) : 0);
-  const shown = evidence || (photos > 0 ? ` ${photos} ${photos === 1 ? 'photo' : 'photos'}.` : '');
-  return `${report.title}. ${publicReportStorySummary(report)}${litter}${shown}`;
+  const litter = types.length ? `Litter: ${types.length > 3 ? `${types.slice(0, 3).join(', ')} and more` : listFormat.format(types)}.` : '';
+  const next = report.state === 'expired' ? 'A cleanup has not been confirmed.'
+    : report.state === 'completed' ? (report.beforePhotoUrl && report.afterPhotoUrl ? 'See before-and-after photos.' : '')
+      : report.state === 'in_progress' ? ''
+        : report.rewardCents && report.rewardCents > 0 ? `Its cleanup fund holds $${(report.rewardCents / 100).toFixed(2)}.`
+          : report.fundingEligible ? 'Fund it or clean it up on Litterbugs.' : 'Volunteers can clean it up on Litterbugs.';
+  const [first, ...rest] = [publicReportSummary(report), next, litter].filter(Boolean);
+  let description = fitWords(first, DESCRIPTION_MAX);
+  for (const sentence of rest) {
+    if (description.length + 1 + sentence.length <= DESCRIPTION_MAX) description += ` ${sentence}`;
+  }
+  return description;
 }
 
 const listFormat = new Intl.ListFormat('en-US', { style: 'long', type: 'conjunction' });
@@ -116,7 +154,9 @@ export function publicReportStorySummary(report: PublicReportShareModel) {
 /** The story sentence with the title and reported litter, for use away from the page. */
 export function publicReportStoryDescription(report: PublicReportShareModel) {
   // An expired report's search description already carries its evidence and outcome.
-  if (report.state === 'expired') return publicReportSearchDescription(report);
+  if (report.state === 'expired') {
+    return `${report.title}. ${publicReportSummary(report)} ${publicReportOriginalSummary(report)}`.trim() + ' A cleanup has not been confirmed.';
+  }
   const story = publicReportStorySummary(report);
   const types = report.litterTypes.map(value => value.trim()).filter(Boolean);
   return `${report.title}. ${story}${types.length ? ` The report listed ${listFormat.format(types)}.` : ''}`;

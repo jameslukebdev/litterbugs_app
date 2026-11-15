@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
+import { publicPageMetadata } from '@/lib/public-page-metadata';
 
 import { LegalPage } from '@/components/legal-page';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   alternates: { canonical: '/terms' },
   title: 'Terms | Litterbugs',
   description: 'Terms for Litterbugs reports, funded cleanups, contributions, and rewards.',
-};
+});
 
 export default function TermsPage() {
   return (

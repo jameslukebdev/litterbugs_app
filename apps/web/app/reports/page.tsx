@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Website, ReportCards, DirectoryNav, styles } from '@/components/public-website';
 import info from '@/components/public-website/info-pages.module.css';
-import { publishedCommunities } from '@/lib/community-directory';
+import { communityLabel, loadCommunityDirectory } from '@/lib/community-leaderboards';
 import { loadOpenReportDirectory, openReportPage } from '@/lib/open-report-directory';
 import { publicPageMetadata } from '@/lib/public-page-metadata';
 
@@ -21,15 +21,17 @@ export async function generateMetadata({ searchParams }: Props) {
 
 export default async function ReportsPage({ searchParams }: Props) {
   const page = openReportPage((await searchParams).page);
-  const feed = await loadOpenReportDirectory(page);
+  const [feed, directory] = await Promise.all([loadOpenReportDirectory(page), loadCommunityDirectory()]);
+  // The busiest towns, each linking to its leaderboard.
+  const towns = directory.communities.slice(0, 5);
   return <Website activePath="/reports">
     <main id="main-content" tabIndex={-1} className={styles.wide}>
       <header className={styles.directoryIntro}>
         <h1>Places that need a cleanup.</h1>
         <DirectoryNav current="open" cities={<nav className={info.cities} aria-label="Browse by city">
           <span>Browse by city</span>
-          {publishedCommunities().map(community => <Link key={community.slug} href={community.href}>{community.name}</Link>)}
-          <Link href="/communities">All communities</Link>
+          {towns.map(community => <Link key={community.slug} href={community.path}>{communityLabel(community)}</Link>)}
+          <Link href="/communities">All towns</Link>
         </nav>} />
       </header>
       <ReportCards showLocation feed={feed} empty="No open reports right now. Spotted litter? Add a report." />

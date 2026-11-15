@@ -1,5 +1,3 @@
-import { communityReturnPath } from '@/lib/community-journey';
-import { communityMapPlace } from '@/lib/community-map-place';
 import type { Report } from '@litterbugs/report-contract';
 
 import { withCompletedRewards } from '@/lib/cleanup-reward';
@@ -9,10 +7,7 @@ import { realUserIdFromClaims } from '@/lib/report-access';
 import { reportDiscoveryWindow } from '@/lib/report-visibility';
 import { createClient } from '@/lib/supabase/server';
 
-export default async function MapPage({ searchParams, initialView }: { searchParams?: Promise<{ area?: string | string[]; returnTo?: string | string[] }>; initialView?: 'map' }) {
-  const params = await searchParams;
-  const initialPlace = communityMapPlace(params?.area);
-  const returnToCommunity = communityReturnPath(params?.returnTo);
+export default async function MapPage({ initialView }: { initialView?: 'map' }) {
   let reports: Report[] = [];
   let userId: string | null = null;
   let initialError = '';
@@ -43,8 +38,6 @@ export default async function MapPage({ searchParams, initialView }: { searchPar
     <MapExperience
       initialView={initialView}
       initialReports={reports}
-      initialPlace={initialPlace}
-      returnToCommunity={returnToCommunity}
       initialUserId={userId}
       googleMapsKey={getGoogleMapsKey()}
       googleMapsMapId={getGoogleMapsMapId()}

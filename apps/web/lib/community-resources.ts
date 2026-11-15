@@ -1,9 +1,4 @@
 // Editorial directory records, distinct from participating organization accounts.
-import { getCommunity } from './community-directory';
-
-// Compatibility exports for callers outside the community section.
-export const booneCommunityHref = getCommunity('us-nc-boone')!.href;
-export const booneMapHref = getCommunity('us-nc-boone')!.mapHref;
 export const helpCategories = ['All help', 'Organized cleanups', 'Supplies & equipment', 'Disposal guidance', 'Local advice'] as const;
 export type HelpCategory = typeof helpCategories[number];
 export type CommunityResource = {
@@ -24,7 +19,8 @@ export const communityResources: CommunityResource[] = [
   { reviewedAt: '2026-10-30', id: 'ncdot-litter', organizationSlug: 'ncdot-litter-programs', name: 'NCDOT roadside cleanup help', type: 'State program', serviceArea: 'State-maintained roads in Watauga County', description: 'Ask the county litter coordinator about a suitable road and program participation. NCDOT’s Litter Sweep guidance describes volunteer supplies through county maintenance offices.', capabilities: ['Organized cleanups', 'Supplies & equipment', 'Disposal guidance', 'Local advice'], availability: 'Litter Sweep is seasonal. Confirm current arrangements, supplies, and bag collection before organizing a roadside pickup.', nextStep: 'Use the official county coordinator directory and find Watauga. Ask which program and collection arrangement fits your cleanup.', href: 'https://www.ncdot.gov/initiatives-policies/environmental/adoptahighway/Pages/coordinators.aspx', action: 'Find the county coordinator' },
 ];
 
+/** Reviewed resources whose organization serves the community (e.g. us-nc-boone). */
 export function resourcesForCommunity(slug: string) {
-  const ids = getCommunity(slug)?.resourceIds ?? [];
-  return communityResources.filter(resource => ids.includes(resource.id));
+  const organizations = new Set(communityOrganizations.filter(item => item.communitySlugs.includes(slug)).map(item => item.slug));
+  return communityResources.filter(resource => organizations.has(resource.organizationSlug));
 }

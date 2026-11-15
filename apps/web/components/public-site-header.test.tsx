@@ -33,9 +33,11 @@ describe('PublicSiteHeader', () => {
     expect(screen.getByRole('link', { name: 'Find a cleanup to fund' }).getAttribute('href')).toBe('/map?view=map&browse=1&status=available');
     fireEvent.click(main.getByRole('button', { name: 'Earn' }));
     expect(screen.queryByRole('link', { name: 'Fees, rewards & refunds' })).toBeNull();
-    for (const [name, href] of [['Find a cleanup on the map', '/map?view=map&browse=1&status=available'], ['Claiming & getting paid', '/cleaner'], ['Completed cleanups', '/cleanups'], ['Communities', '/communities'], ['Safety guidelines', '/cleanup-safety']]) {
+    for (const [name, href] of [['Find a cleanup on the map', '/map?view=map&browse=1&status=available'], ['Claiming & getting paid', '/cleaner'], ['Completed cleanups', '/cleanups'], ['Safety guidelines', '/cleanup-safety']]) {
       expect(screen.getByRole('link', { name }).getAttribute('href')).toBe(href);
     }
+    expect(screen.queryByRole('link', { name: 'Communities' })).toBeNull();
+    expect(main.getByRole('link', { name: 'Leaderboards' }).getAttribute('href')).toBe('/communities');
     fireEvent.click(screen.getByRole('button', { name: 'Support' }));
     for (const [name, href] of [['Reporting and rewards', '/report-litter'], ['Get help', '/help'], ['Safety guidelines', '/cleanup-safety'], ['About Litterbugs', '/about'], ['Support Litterbugs', '/support']]) {
       expect(screen.getByRole('link', { name }).getAttribute('href')).toBe(href);
@@ -105,7 +107,7 @@ describe('PublicSiteHeader', () => {
     render(<PublicSiteHeader activePath="/cleaner" />);
     const trigger = screen.getByRole('button', { name: 'Earn' });
     fireEvent.click(trigger);
-    screen.getByRole('link', { name: 'Communities' }).focus();
+    screen.getByRole('link', { name: 'Completed cleanups' }).focus();
     fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
     expect(document.activeElement).toBe(trigger);

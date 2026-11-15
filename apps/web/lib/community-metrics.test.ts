@@ -2,15 +2,16 @@ import { expect, it } from 'vitest';
 import { communityClick, communityForEntry, communityForPath, communityProperties } from './community-metrics';
 const origin = 'https://litterbugs.app';
 const slug = 'us-nc-boone';
-it('uses only a published community for page and entry context', () => {
-  expect(communityForPath('/communities/us/nc/boone/cleanups')?.slug).toBe(slug);
+it('recognises community pages by their address and ignores everything else', () => {
+  expect(communityForPath('/communities/us/nc/boone')?.slug).toBe(slug);
   expect(communityForPath('/communities/us/nc/boone/private')).toBeUndefined();
+  expect(communityForPath('/communities/rank-card')).toBeUndefined();
   expect(communityForEntry('?returnTo=%2Fcommunities%2Fus%2Fnc%2Fboone')).toBe(slug);
   expect(communityForEntry('?community=secret&returnTo=https://evil.example')).toBeNull();
 });
 it('discards raw URLs, report IDs, identity, unknown actions, and unreviewed resources', () => {
   expect(communityProperties({ community_id: slug, report_id: 'private', email: 'private', url: 'secret', action: 'private', resource_id: 'secret' })).toEqual({ community_id: slug });
-  expect(communityProperties({ community_id: 'secret' })).toBeNull();
+  expect(communityProperties({ community_id: 'https://evil.example' })).toBeNull();
 });
 it('separates discovery clicks and participation intent from confirmed outcomes', () => {
   expect(communityClick('/communities/us/nc/boone', origin, null)?.event).toBe('community_opened');

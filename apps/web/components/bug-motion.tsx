@@ -4,10 +4,6 @@ import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 're
 import { BUG_ART, clearFundBeforeCheckout, flyBug, peekFundBeforeCheckout, prefersReducedMotion, replayClass } from '@/lib/bug-motion';
 
 /** An ant walks along the bottom of a loading card. Put it inside an element with `bug-ant-host`. */
-export function AntWalk() {
-  return <span className="bug-ant-walk" aria-hidden="true"><img src={BUG_ART.ant} alt="" width={22} height={22} /></span>;
-}
-
 /** A curious ladybug walks into an empty list and looks around. */
 export function EmptyBug({ className = '' }: { className?: string }) {
   return <img className={`bug-empty-walker ${className}`} src={BUG_ART.ladybug} alt="" aria-hidden="true" width={36} height={36} />;

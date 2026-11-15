@@ -1,6 +1,6 @@
 /* One row of actions, with an optional search row inside the same header. */
 .header { position: sticky; top: 0; z-index: 50; background: #fff; border-bottom: 0; font-family: inherit; }
-.inner { position: relative; display: grid; grid-template-areas: "brand map report funding cleaning . help app search account"; grid-template-columns: auto auto auto auto auto minmax(16px, 1fr) auto auto auto auto; align-items: center; column-gap: clamp(12px, 1.5vw, 24px); width: min(1400px, 100%); min-height: 88px; padding: 10px clamp(12px, 2vw, 32px); margin: 0 auto; }
+.inner { position: relative; display: grid; grid-template-areas: "brand map report funding cleaning leaderboards . help app search account"; grid-template-columns: auto auto auto auto auto auto minmax(16px, 1fr) auto auto auto auto; align-items: center; column-gap: clamp(12px, 1.5vw, 24px); width: min(1400px, 100%); min-height: 88px; padding: 10px clamp(12px, 2vw, 32px); margin: 0 auto; }
 .brandLink { grid-area: brand; display: inline-flex; align-items: center; }
 .brandLink img { width: clamp(80px, 8vw, 104px); height: auto; aspect-ratio: 636 / 433; object-fit: contain; }
 .desktopNav { display: contents; }
@@ -8,6 +8,7 @@
 .reportAction { grid-area: report; }
 .funding { grid-area: funding; }
 .cleaning { grid-area: cleaning; }
+.leaderboards { grid-area: leaderboards; }
 .help { grid-area: help; }
 .appLink { grid-area: app; }
 .account { grid-area: account; min-width: 0; }
@@ -27,7 +28,7 @@
 
 @media (max-width: 1239px) {
   .inner { grid-template-areas: "brand . map app search account menu"; grid-template-columns: auto minmax(12px, 1fr) auto auto auto auto auto; gap: 12px; min-height: 88px; }
-  .funding, .cleaning, .help, .reportAction { display: none; }
+  .funding, .cleaning, .leaderboards, .help, .reportAction { display: none; }
   .appLink > div { display: none; }
   .smallAppLink { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; color: var(--green-dark); font-size: 18px; font-weight: 650; white-space: nowrap; text-decoration: none; }
   .smallAppLink svg { width: 19px; height: 19px; }
@@ -558,3 +559,25 @@
 }
 @keyframes logo-bee-loop { 0% { offset-distance: 0%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { offset-distance: 100%; opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .header.header.header .brandLink img.logoBee { display: none; } }
+
+/* Leaderboards (Nov 15, 2026): its own bug, the crowned champion beetle, which does a victory hop on hover.
+   Priority as the bar narrows: "Get the app" goes first; Leaderboards stays as long as Report, Donate and Earn. */
+.header .leaderboards .navLink { gap: 6px; }
+.header .leaderboardBug { width: 26px; height: 26px; }
+.header .mobilePrimaryLinks .leaderboardBug { margin-right: 12px; }
+.header .mobilePrimaryLinks > a[href='/communities'] { justify-content: flex-start; }
+@media (min-width: 1100px) and (max-width: 1239px) {
+  .header.header .appLink, .header.header .appLink > div { display: none; }
+}
+@media (min-width: 760px) and (max-width: 1239px) {
+  .header.header .leaderboards { display: block; }
+  .header.header .leaderboards .navLink { padding-inline: 8px; }
+}
+@media (min-width: 760px) and (max-width: 1099px) {
+  .header.header .leaderboards .navLink { gap: 4px; font-size: inherit; }
+  .header.header .leaderboardBug { width: 22px; height: 22px; }
+}
+@media (min-width: 900px) and (max-width: 1099px) {
+  .header.header .mapDesktopLabel { display: none; }
+  .header.header .mapMobileLabel { display: inline; }
+}

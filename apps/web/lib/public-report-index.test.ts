@@ -2,6 +2,8 @@ import { beforeEach, expect, it, vi } from 'vitest';
 const { from } = vi.hoisted(() => ({ from: vi.fn() }));
 vi.mock('server-only', () => ({}));
 vi.mock('./supabase/public', () => ({ createPublicClient: () => ({ from }) }));
+vi.mock('@/lib/report-communities', () => ({ loadReportCommunities: async () => new Map() }));
+vi.mock('@/lib/report-town-lookup', () => ({ lookupReportTown: async () => null }));
 import { loadPublicReportIndex } from './public-report-index';
 
 const base = {

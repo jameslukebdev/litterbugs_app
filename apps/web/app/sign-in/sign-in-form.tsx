@@ -1,6 +1,5 @@
 'use client';
 import { useState } from 'react';
-import { communityReturnFromEntry } from '@/lib/community-journey';
 import { useRouter } from 'next/navigation';
 import { AuthDialog, authEntryMode } from '@/components/auth-dialog';
 import { SHARED_REPORT_AUTH_PARAM } from '@/lib/participation-auth';
@@ -14,8 +13,6 @@ export function SignInForm({ next, message, fromSharedReport }: { next: string; 
   // The form sits over the live map. Closing leaves that map in place (no reload) and just
   // updates the address to the map's, so visitors keep exploring without a jump.
   const close = () => {
-    const community = communityReturnFromEntry(next);
-    if (community) { router.replace(community); return; }
     setOpen(false);
     const params = new URLSearchParams(window.location.search);
     params.delete('next'); params.delete('google'); params.set('view', 'map');

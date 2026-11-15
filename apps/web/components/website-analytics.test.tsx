@@ -201,7 +201,7 @@ it('measures SEO-page navigation once per visit in both providers', async () => 
   localStorage.setItem(ANALYTICS_CONSENT_KEY, 'accepted'); localStorage.setItem('litterbugs:analytics-replay-consent:v1', 'accepted');
   const view = render(<WebsiteAnalytics config={config} />);
   await waitFor(() => expect(mock.capture).toHaveBeenCalledWith('$pageview', { page_type: '/' }));
-  for (const path of ['/report-litter', '/fund-a-cleanup', '/cleaner', '/locations', '/locations/us-nc-boone', '/cleanups', '/get-app']) {
+  for (const path of ['/report-litter', '/fund-a-cleanup', '/cleaner', '/cleanups', '/get-app']) {
     mock.path = path;
     view.rerender(<WebsiteAnalytics config={config} />);
     await waitFor(() => expect(mock.capture).toHaveBeenCalledWith('$pageview', { page_type: path }));
@@ -251,8 +251,8 @@ it('keeps community engagement separate from confirmed outcomes and removes priv
   localStorage.setItem(ANALYTICS_CONSENT_KEY, 'accepted'); localStorage.setItem('litterbugs:analytics-replay-consent:v1', 'accepted');
   render(<WebsiteAnalytics config={config} />);
   await waitFor(() => expect(mock.capture).toHaveBeenCalledWith('$pageview', { page_type: '/' }));
-  act(() => window.dispatchEvent(new CustomEvent(ANALYTICS_EVENT, { detail: { event: 'community_saved', community_id: 'us-nc-boone', email: 'private@example.com' } })));
-  expect(mock.capture).toHaveBeenCalledWith('community_saved', { page_type: '/', community_id: 'us-nc-boone' });
+  act(() => window.dispatchEvent(new CustomEvent(ANALYTICS_EVENT, { detail: { event: 'community_opened', community_id: 'us-nc-boone', email: 'private@example.com' } })));
+  expect(mock.capture).toHaveBeenCalledWith('community_opened', { page_type: '/', community_id: 'us-nc-boone' });
   expect(mock.capture.mock.calls.filter(([name]) => ['report_published', 'contribution_confirmed', 'cleanup_approved'].includes(name))).toHaveLength(0);
   const options = mock.init.mock.calls[0][1];
   const safe = options.before_send({ properties: { community_id: 'us-nc-boone', action: 'fund', resource_id: 'secret', report_id: 'secret', email: 'private' } });

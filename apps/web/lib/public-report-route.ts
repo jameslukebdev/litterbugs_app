@@ -1,5 +1,6 @@
 import 'server-only';
 import { LIST_TOWN_WAIT_MS, publicReportPlace } from './public-report-place';
+import { loadReportCommunity } from './report-communities';
 import { isPubliclyShareableReport } from './public-report-share-model';
 import { isPublicReportPagePath, publicReportIdFromPath, publicReportPath, publicReportPathHasTitle } from './public-report-url';
 import { createPublicClient } from './supabase/public';
@@ -29,7 +30,7 @@ export async function resolvePublicReportRoute(pathname: string): Promise<Public
     if (error) return { kind: 'pass' };
     if (!data || !isPubliclyShareableReport(data)) return { kind: 'missing' };
     const title = data.title?.trim() || 'Litter Report';
-    const place = await publicReportPlace(data.latitude, data.longitude, LIST_TOWN_WAIT_MS);
+    const place = await publicReportPlace(data.latitude, data.longitude, LIST_TOWN_WAIT_MS, await loadReportCommunity(data.id));
     const path = publicReportPath(data.id, title, place?.localityLabel);
     // The town words come from a lookup that may not have answered yet, so an address with the
     // right title and id is served as it is; the page's canonical tag names the full address.

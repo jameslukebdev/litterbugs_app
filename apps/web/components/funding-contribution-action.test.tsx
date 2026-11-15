@@ -191,7 +191,7 @@ it('reserves the funding action while flags load without enabling payment premat
   expect(signIn).toHaveBeenCalledTimes(1);
 });
 
-it('preserves only the canonical community return in the Stripe confirmation URL', async () => {
+it('returns to the receipt without carrying page addresses or provider secrets', async () => {
   stripeMock.ready = true;
   stripeMock.confirmPayment.mockResolvedValue({ error: { message: 'Mock confirmation stopped' } });
   loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
@@ -206,7 +206,7 @@ it('preserves only the canonical community return in the Stripe confirmation URL
   expect(url.pathname).toBe('/payment-return');
   expect(url.searchParams.get('report')).toBe(report.id);
   expect(url.searchParams.get('contribution')).toBe('receipt');
-  expect(url.searchParams.get('returnTo')).toBe('/communities/us/nc/boone');
+  expect(url.searchParams.has('returnTo')).toBe(false);
   expect(url.searchParams.has('payment_intent_client_secret')).toBe(false);
   window.history.replaceState({}, '', '/');
 });

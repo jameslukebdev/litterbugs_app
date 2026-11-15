@@ -1,12 +1,9 @@
 import 'server-only';
-import { getCommunity } from './community-directory';
-import { publicCommunityForPoint } from './public-communities';
 import { lookupReportTown } from './report-town-lookup';
+import type { ReportCommunity } from './report-communities';
 
 /** What a report page may say about where a report is: a town, never an address or coordinates. */
 export type PublicReportPlace = {
-  /** Editorial community, when the report sits inside one. */
-  communitySlug?: string;
   /** "Boone, North Carolina, United States" */
   label: string;
   /** "Boone, North Carolina" */
@@ -22,17 +19,25 @@ export const PAGE_TOWN_WAIT_MS = 2500;
 export const LIST_TOWN_WAIT_MS = 300;
 
 /**
- * The town for a report. An editorial community wins when the report is inside
- * one; anywhere else the town comes from the OpenStreetMap lookup.
+ * The town for a report. When the report's community is a county named after its main town (Boone, for
+ * all of Watauga County), that town names it, as the old Boone boundary did, so report addresses keep
+ * their "boone-north-carolina" words. Anywhere else the town is the one the community job stored for the
+ * report's spot, so the page, its redirects and the sitemap always agree. Only a report the job has not
+ * reached yet (its first minute) falls back to a live lookup.
  */
-export async function publicReportPlace(latitude: number | null, longitude: number | null, waitMs: number): Promise<PublicReportPlace | null> {
-  const community = publicCommunityForPoint(latitude, longitude);
-  if (community) {
-    const record = getCommunity(community.slug);
-    if (record) {
-      return { communitySlug: community.slug, label: community.label, localityLabel: community.localityLabel,
-        locality: record.locality, region: record.administrativeArea, countryCode: record.countryCode };
-    }
+export async function publicReportPlace(
+  latitude: number | null, longitude: number | null, waitMs: number, community?: ReportCommunity | null,
+): Promise<PublicReportPlace | null> {
+  if (community && community.kind === 'county' && community.name !== community.areaName && community.regionName) {
+    const localityLabel = `${community.name}, ${community.regionName}`;
+    return { label: `${localityLabel}, ${community.countryName}`, localityLabel, locality: community.name,
+      region: community.regionName, countryCode: community.countryCode };
+  }
+  if (community?.town) {
+    const { locality, region, country, countryCode } = community.town;
+    if (!locality || !region || !country || !countryCode) return null;
+    const localityLabel = `${locality}, ${region}`;
+    return { label: `${localityLabel}, ${country}`, localityLabel, locality, region, countryCode };
   }
   const town = await lookupReportTown(latitude, longitude, waitMs);
   if (!town) return null;

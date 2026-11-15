@@ -12,7 +12,8 @@ export type PublicReportShareModel = {
   localityLabel?: string;
   /** The verified town behind `localityLabel`, from a community or the town lookup; absent when unknown. */
   place?: { locality: string; region: string; countryCode: string };
-  communitySlug?: string;
+  /** The community leaderboard for the report's town, when that page is public. */
+  community?: { slug: string; path: string; name: string };
   /** Nearest street address, so people can find the spot; absent when the lookup has no answer. */
   address?: { street: string; line: string; locality: string | null; region: string | null; postalCode: string | null; countryCode: string | null } | null;
   /** The report's position, for the page's map and directions link. */

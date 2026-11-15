@@ -52,7 +52,7 @@ describe('public shared report funding copy', () => {
 });
 
 it('connects an available Boone report to its own web funding and cleanup controls', async () => {
-  loadReport.mockResolvedValue({ ...report, communitySlug: 'us-nc-boone', generalLocation: 'Boone', fundingEligible: true });
+  loadReport.mockResolvedValue({ ...report, community: { slug: 'us-nc-boone', path: '/communities/us/nc/boone', name: 'Boone' }, place: { locality: 'Boone', region: 'North Carolina', countryCode: 'US' }, generalLocation: 'Boone', fundingEligible: true });
   render(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
   for (const [name, intent] of [['Fund', 'fund'], ['Clean', 'clean']]) {
     const entry = new URL(screen.getByRole('link', { name }).getAttribute('href')!, 'https://litterbugs.app');
@@ -61,33 +61,33 @@ it('connects an available Boone report to its own web funding and cleanup contro
     expect(url.pathname).toBe('/map');
     expect(url.searchParams.get('report')).toBe(report.id);
     expect(url.searchParams.get('intent')).toBe(intent);
-    expect(url.searchParams.get('returnTo')).toBe('/communities/us/nc/boone');
+    expect(url.searchParams.has('returnTo')).toBe(false);
   }
-  expect(screen.getByRole('link', { name: 'Back to Boone' }).getAttribute('href')).toBe('/communities/us/nc/boone');
+  expect(screen.getAllByRole('link', { name: 'Boone leaderboard' }).map(link => link.getAttribute('href'))).toEqual(['/communities/us/nc/boone', '/communities/us/nc/boone']);
 });
 it.each(['completed', 'in_progress'])('does not offer a new cleanup or payment on a %s report', async state => {
-  loadReport.mockResolvedValue({ ...report, state, communitySlug: 'us-nc-boone', fundingEligible: true });
+  loadReport.mockResolvedValue({ ...report, state, community: { slug: 'us-nc-boone', path: '/communities/us/nc/boone', name: 'Boone' }, place: { locality: 'Boone', region: 'North Carolina', countryCode: 'US' }, fundingEligible: true });
   render(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
   expect(screen.queryByRole('link', { name: 'Fund' })).toBeNull();
   expect(screen.queryByRole('link', { name: 'Clean' })).toBeNull();
   expect(screen.getByRole('link', { name: 'View on map' })).toBeTruthy();
 });
 it('does not advertise funding when the report is ineligible', async () => {
-  loadReport.mockResolvedValue({ ...report, communitySlug: 'us-nc-boone', fundingEligible: false });
+  loadReport.mockResolvedValue({ ...report, community: { slug: 'us-nc-boone', path: '/communities/us/nc/boone', name: 'Boone' }, place: { locality: 'Boone', region: 'North Carolina', countryCode: 'US' }, fundingEligible: false });
   render(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
   expect(screen.queryByRole('link', { name: 'Fund' })).toBeNull();
   expect(screen.getByRole('link', { name: 'Clean' })).toBeTruthy();
 });
-it('keeps completed Boone evidence connected to more local opportunities and results', async () => {
-  loadReport.mockResolvedValue({ ...report, state: 'completed', communitySlug: 'us-nc-boone', generalLocation: 'Boone', completionDate: '2026-10-28T12:00:00Z', cleanerName: 'Local cleaner', bagsOrItemsRemoved: 2, weightPounds: 12 });
+it('points completed Boone evidence to the next cleanup and the town leaderboard', async () => {
+  loadReport.mockResolvedValue({ ...report, state: 'completed', community: { slug: 'us-nc-boone', path: '/communities/us/nc/boone', name: 'Boone' }, place: { locality: 'Boone', region: 'North Carolina', countryCode: 'US' }, generalLocation: 'Boone', completionDate: '2026-10-28T12:00:00Z', cleanerName: 'Local cleaner', bagsOrItemsRemoved: 2, weightPounds: 12 });
   render(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
-  expect(screen.getByRole('link', { name: 'Find another cleanup in Boone' }).getAttribute('href')).toBe('/communities/us/nc/boone/cleanups?status=available');
-  expect(screen.getByRole('link', { name: 'Completed cleanups in Boone' }).getAttribute('href')).toBe('/communities/us/nc/boone/cleanups?status=completed');
+  expect(screen.getByRole('link', { name: 'Find another cleanup' }).getAttribute('href')).toBe('/reports');
+  expect(screen.getAllByRole('link', { name: 'Boone leaderboard' }).every(link => link.getAttribute('href') === '/communities/us/nc/boone')).toBe(true);
   expect(screen.getByText('Cleaned by Local cleaner')).toBeTruthy();
 });
 
 it('renders original context, cleanup evidence, dates and related report links in server HTML', async () => {
-  loadReport.mockResolvedValue({ ...report, state: 'completed', communitySlug: 'us-nc-boone', localityLabel: 'Boone, North Carolina', notes: 'Cans beside the creek', cleanupDescription: 'Collected two bags', reportDate: '2026-10-28T12:00:00Z', completionDate: '2026-11-02T12:00:00Z', beforePhotoUrl: '/photo/before', afterPhotoUrl: '/photo/after' });
+  loadReport.mockResolvedValue({ ...report, state: 'completed', community: { slug: 'us-nc-boone', path: '/communities/us/nc/boone', name: 'Boone' }, place: { locality: 'Boone', region: 'North Carolina', countryCode: 'US' }, localityLabel: 'Boone, North Carolina', notes: 'Cans beside the creek', cleanupDescription: 'Collected two bags', reportDate: '2026-10-28T12:00:00Z', completionDate: '2026-11-02T12:00:00Z', beforePhotoUrl: '/photo/before', afterPhotoUrl: '/photo/after' });
   loadRelated.mockResolvedValueOnce([{ id: 'another-report', title: 'Roadside litter', state: 'available' }]);
   const html = renderToStaticMarkup(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
   expect(html).toContain('The original report');
@@ -100,7 +100,7 @@ it('renders original context, cleanup evidence, dates and related report links i
 });
 
 it('shows the report before slow optional recommendations resolve, then streams those links', async () => {
-  loadReport.mockResolvedValue({ ...report, state: 'completed', communitySlug: 'us-nc-boone' });
+  loadReport.mockResolvedValue({ ...report, state: 'completed', community: { slug: 'us-nc-boone', path: '/communities/us/nc/boone', name: 'Boone' }, place: { locality: 'Boone', region: 'North Carolina', countryCode: 'US' } });
   let finish!: (rows: Array<{ id: string; title: string; state: 'available' }>) => void;
   loadRelated.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
   const page = await SharedReportPage({ params: Promise.resolve({ id: report.id }) });
@@ -112,11 +112,12 @@ it('shows the report before slow optional recommendations resolve, then streams 
   expect((await screen.findByRole('link', { name: 'Roadside litter' })).getAttribute('href')).toBe('/reports/another-report');
 });
 it('aligns search and sharing metadata with verified locality and available evidence', async () => {
-  loadReport.mockResolvedValue({ ...report, state: 'completed', communitySlug: 'us-nc-boone', localityLabel: 'Boone, North Carolina' });
+  loadReport.mockResolvedValue({ ...report, state: 'completed', community: { slug: 'us-nc-boone', path: '/communities/us/nc/boone', name: 'Boone' }, place: { locality: 'Boone', region: 'North Carolina', countryCode: 'US' }, localityLabel: 'Boone, North Carolina' });
   const metadata = await generateMetadata({ params: Promise.resolve({ id: report.id }) });
-  expect(metadata.title).toBe('Creek cleanup — Completed cleanup near Boone, North Carolina | Litterbugs');
+  expect(metadata.title).toBe('Creek cleanup, Boone – cleaned up | Litterbugs');
   expect(metadata.description).not.toContain('before-and-after');
-  expect(metadata.openGraph).toMatchObject({ title: 'Creek cleanup — Completed cleanup near Boone, North Carolina', description: metadata.description });
+  expect(metadata.openGraph).toMatchObject({ title: 'Creek cleanup, Boone – cleaned up', description: metadata.description });
+  expect((metadata.description as string).length).toBeLessThanOrEqual(155);
   expect(metadata.alternates?.canonical).toBe(report.canonicalUrl);
 });
 it('marks unavailable report metadata noindex', async () => {
@@ -125,7 +126,7 @@ it('marks unavailable report metadata noindex', async () => {
 });
 
 it('keeps an expired report readable without advertising current cleanup, funding or app actions', async () => {
-  loadReport.mockResolvedValue({ ...report, state: 'expired', expiredDate: '2026-10-01T12:00:00Z', fundingEligible: true, rewardCents: 1000, communitySlug: 'us-nc-boone' });
+  loadReport.mockResolvedValue({ ...report, state: 'expired', expiredDate: '2026-10-01T12:00:00Z', fundingEligible: true, rewardCents: 1000, community: { slug: 'us-nc-boone', path: '/communities/us/nc/boone', name: 'Boone' }, place: { locality: 'Boone', region: 'North Carolina', countryCode: 'US' } });
   render(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
   expect(screen.getByText('Report expired')).toBeTruthy();
   expect(screen.getByText(/A cleanup has not been confirmed/)).toBeTruthy();

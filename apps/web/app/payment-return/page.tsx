@@ -1,4 +1,3 @@
-import { communityReturnPath } from '@/lib/community-journey';
 import { PaymentReturnContent } from '@/components/payment-return-content';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
@@ -7,7 +6,6 @@ export default async function PaymentReturnPage({ searchParams }: { searchParams
   const query = await searchParams;
   const contribution = typeof query.contribution === 'string' ? query.contribution : '';
   const report = typeof query.report === 'string' ? query.report : '';
-  const returnTo = communityReturnPath(query.returnTo);
   const client = await createClient();
   const { data } = await client.auth.getClaims();
   if (!realUserIdFromClaims(data?.claims)) {
@@ -15,9 +13,8 @@ export default async function PaymentReturnPage({ searchParams }: { searchParams
     const nextQuery = new URLSearchParams();
     if (contribution) nextQuery.set('contribution', contribution);
     if (report) nextQuery.set('report', report);
-    if (returnTo) nextQuery.set('returnTo', returnTo);
     const next = `/payment-return${nextQuery.size ? `?${nextQuery}` : ''}`;
     redirect(`/sign-in?next=${encodeURIComponent(next)}`);
   }
-  return <PaymentReturnContent contribution={contribution} report={report} {...(returnTo ? { returnTo } : {})} />;
+  return <PaymentReturnContent contribution={contribution} report={report} />;
 }

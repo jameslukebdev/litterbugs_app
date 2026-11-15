@@ -1,14 +1,13 @@
 import { expect, it } from 'vitest';
-import { getCommunity } from './community-directory';
 import { publicReportStoryDescription, publicReportStorySummary } from './public-report-content';
 import type { PublicReportShareModel } from './public-report-share-model';
 import { publicReportStructuredData } from './public-report-structured-data';
 
 const site = 'https://litterbugs.app';
-const boone = getCommunity('us-nc-boone')!;
 const report: PublicReportShareModel = {
   id: 'report', title: 'Trash in and around cabin', state: 'completed',
-  generalLocation: boone.label, localityLabel: 'Boone, North Carolina', communitySlug: boone.slug,
+  generalLocation: 'Boone, North Carolina, United States', localityLabel: 'Boone, North Carolina',
+  place: { locality: 'Boone', region: 'North Carolina', countryCode: 'US' },
   notes: 'Scattered', litterTypes: ['Cans', 'Bottles'], severity: 'Medium',
   reporterName: 'Nevan', reporterId: 'member-1',
   reportDate: '2026-11-09T15:00:00Z', cleanerName: 'Nevan', completionDate: '2026-11-09T19:30:00Z',
@@ -17,8 +16,8 @@ const report: PublicReportShareModel = {
   canonicalUrl: `${site}/reports/report`,
 };
 type Graph = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any -- loose JSON-LD lookups
-const graph = (value: PublicReportShareModel, community: typeof boone | null = boone) =>
-  publicReportStructuredData(value, community ?? undefined, site)['@graph'] as unknown as [Graph, Graph];
+const graph = (value: PublicReportShareModel) =>
+  publicReportStructuredData(value, site)['@graph'] as unknown as [Graph, Graph];
 
 it('states who cleaned what, where and when in one sentence, attributing amounts to the cleaner', () => {
   expect(publicReportStorySummary(report)).toBe(
@@ -37,7 +36,7 @@ it('states who cleaned what, where and when in one sentence, attributing amounts
 
 it('does not invent a cleaner, a place, an amount or a date that was not recorded', () => {
   const sparse = { ...report, cleanerName: null, completionDate: null, bagsOrItemsRemoved: null, weightPounds: 0,
-    communitySlug: undefined, localityLabel: 'Unverified place' };
+    place: undefined, localityLabel: 'Unverified place' };
   expect(publicReportStorySummary(sparse)).toBe('A Litterbugs member cleaned up this spot.');
   expect(publicReportStorySummary({ ...report, state: 'available', rewardCents: 600 })).toBe(
     'Nevan reported litter at this spot near Boone, North Carolina, on November 9, 2026, and it still needs a cleanup. Its cleanup fund holds $6.00.');
@@ -56,7 +55,7 @@ it('describes a completed cleanup as an article with both photos, people, dates 
   const [article] = graph(report);
   expect(article).toMatchObject({
     '@type': 'Article', url: report.canonicalUrl, name: report.title,
-    headline: 'Trash in and around cabin — Completed cleanup near Boone, North Carolina',
+    headline: 'Trash in and around cabin, Boone – cleaned up',
     datePublished: '2026-11-09T15:00:00.000Z', dateModified: '2026-11-09T19:30:00.000Z',
     author: { '@type': 'Person', name: 'Nevan', url: `${site}/members/member-1` },
     contributor: { '@type': 'Person', name: 'Nevan' },
@@ -82,8 +81,8 @@ it('lists the breadcrumb trail through the listing tab the report sits under', (
 
 it('omits unrecorded people, photos and places, and never publishes embedded photo data', () => {
   const [article, breadcrumbs] = graph({ ...report, state: 'expired', reporterName: 'Community member', cleanerName: null,
-    communitySlug: undefined, localityLabel: undefined, beforePhotoUrl: 'data:image/jpeg;base64,AAAA', afterPhotoUrl: null,
-    reportDate: 'invalid', expiredDate: '2026-12-09T15:00:00Z' }, null);
+    place: undefined, localityLabel: undefined, beforePhotoUrl: 'data:image/jpeg;base64,AAAA', afterPhotoUrl: null,
+    reportDate: 'invalid', expiredDate: '2026-12-09T15:00:00Z' });
   for (const key of ['author', 'contributor', 'contentLocation', 'image', 'datePublished']) expect(article).not.toHaveProperty(key);
   expect(article.dateModified).toBe('2026-12-09T15:00:00.000Z');
   expect(breadcrumbs.itemListElement.map((entry: Graph) => entry.name)).toEqual(['Litterbugs', 'Expired reports', 'Trash in and around cabin']);

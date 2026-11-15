@@ -1,0 +1,35 @@
+/* Victory hop: the beetle springs up, lands with a squash; its crown flips up and settles; two sparkles flash.
+   Runs whenever the link or button holding it is hovered or focused from the keyboard. */
+.beetle { display: block; flex: none; overflow: visible; }
+.body, .crown, .sparkle { transform-box: fill-box; }
+.body { transform-origin: 50% 100%; }
+.crown { transform-origin: 50% 100%; }
+.sparkle { transform-origin: 50% 50%; opacity: 0; }
+
+@media (prefers-reduced-motion: no-preference) {
+  :is(a, button):is(:hover, :focus-visible) .beetle .body { animation: champion-hop 720ms cubic-bezier(.3, .7, .4, 1); }
+  :is(a, button):is(:hover, :focus-visible) .beetle .crown { animation: champion-crown 720ms cubic-bezier(.3, .7, .4, 1); }
+  :is(a, button):is(:hover, :focus-visible) .beetle .sparkle { animation: champion-sparkle 720ms ease-out; }
+  :is(a, button):is(:hover, :focus-visible) .beetle .sparkle + .sparkle { animation-delay: 80ms; }
+}
+@keyframes champion-hop {
+  0% { transform: none; }
+  28% { transform: translateY(-14%) rotate(-6deg); }
+  48% { transform: scale(1.1, .88); }
+  64% { transform: translateY(-4%) scale(.97, 1.04); }
+  82% { transform: scale(1.02, .98); }
+  100% { transform: none; }
+}
+@keyframes champion-crown {
+  0% { transform: none; }
+  28% { transform: translateY(-170%) rotate(-16deg); }
+  48% { transform: translateY(-60%) rotate(10deg); }
+  64% { transform: translateY(-60%) rotate(-4deg); }
+  82% { transform: translateY(5%); }
+  100% { transform: none; }
+}
+@keyframes champion-sparkle {
+  0%, 30% { opacity: 0; transform: scale(.2); }
+  55% { opacity: 1; transform: scale(1.15) rotate(20deg); }
+  100% { opacity: 0; transform: scale(.6) rotate(45deg); }
+}

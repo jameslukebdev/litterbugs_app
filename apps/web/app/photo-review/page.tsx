@@ -1,8 +1,9 @@
 import Link from 'next/link';
+import { publicPageMetadata } from '@/lib/public-page-metadata';
 import { Website } from '@/components/public-website';
 import styles from '../about/about-simple.module.css';
 
-export const metadata = { title: 'About photo review | Litterbugs', description: 'Learn how Litterbugs checks report and cleanup photos, and how to get help with a review.', alternates: { canonical: '/photo-review' } };
+export const metadata = publicPageMetadata({ title: 'About photo review | Litterbugs', description: 'Learn how Litterbugs checks report and cleanup photos, and how to get help with a review.', alternates: { canonical: '/photo-review' } });
 
 export default function Page() {
   return <Website activePath="/photo-review">

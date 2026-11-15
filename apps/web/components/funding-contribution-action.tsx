@@ -1,5 +1,5 @@
 'use client';
-import { contributionReturnPath } from '@/lib/community-journey';
+import { contributionReturnPath } from '@/lib/report-links';
 
 import { rememberContributionAttempt, trackParticipation, trackParticipationFailure, trackParticipationExit } from '@/lib/website-analytics';
 import { useGuestParticipationEntry } from '@/lib/use-guest-participation-entry';
@@ -60,7 +60,7 @@ function ContributionPaymentForm({
     const result = await stripe.confirmPayment({
       elements,
       confirmParams: {
-        return_url: `${window.location.origin}${contributionReturnPath(reportId, intent.contributionId, new URLSearchParams(window.location.search).get('returnTo'))}`,
+        return_url: `${window.location.origin}${contributionReturnPath(reportId, intent.contributionId)}`,
       },
       redirect: 'if_required',
     });

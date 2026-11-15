@@ -60,20 +60,57 @@ export function streetAddressFrom(address: Record<string, string | undefined> | 
 
 type ReverseResult = { address?: Record<string, string | undefined>; category?: string; type?: string; lat?: string; lon?: string };
 
-async function reverse(latitude: string, longitude: string, zoom: number): Promise<ReverseResult> {
-  // One request at a time, spaced out, however many reports ask at once.
+/** One OpenStreetMap request at a time, spaced out, however many pages ask at once. */
+async function nominatim<T>(endpoint: 'reverse' | 'search', params: Record<string, string>): Promise<T> {
   const turn = queue.then(() => new Promise(resolve => setTimeout(resolve, SPACING_MS)));
   const previous = queue;
   queue = turn.catch(() => undefined);
   await previous.catch(() => undefined);
-  const url = new URL('https://nominatim.openstreetmap.org/reverse');
-  url.search = new URLSearchParams({ format: 'jsonv2', lat: latitude, lon: longitude, zoom: String(zoom), addressdetails: '1', 'accept-language': 'en' }).toString();
+  const url = new URL(`https://nominatim.openstreetmap.org/${endpoint}`);
+  url.search = new URLSearchParams({ format: 'jsonv2', addressdetails: '1', 'accept-language': 'en', ...params }).toString();
   const response = await fetch(url, {
     headers: { 'User-Agent': 'litterbugs.app report pages (place names)', Accept: 'application/json' },
     cache: 'no-store', signal: AbortSignal.timeout(8000),
   });
   if (!response.ok) throw new Error(`Place lookup failed: ${response.status}`);
-  return await response.json() as ReverseResult;
+  return await response.json() as T;
+}
+
+const reverse = (latitude: string, longitude: string, zoom: number) =>
+  nominatim<ReverseResult>('reverse', { lat: latitude, lon: longitude, zoom: String(zoom) });
+
+/** A place someone typed, as OpenStreetMap understands it. */
+export type PlaceMatch = {
+  name: string;
+  type: string | null;
+  population: number | null;
+  address: Record<string, string | undefined>;
+};
+
+const MAX_WAITING_SEARCHES = 8;
+let waitingSearches = 0;
+
+/**
+ * Look up a typed place name ("Banner Elk") once, when someone asks, never while they type: OpenStreetMap
+ * does not allow search-as-you-type. Answers are cached for 30 days; failures are not cached. When too many
+ * searches are already waiting, this says so instead of queueing more.
+ */
+export async function searchPlace(query: string): Promise<PlaceMatch | null | 'busy'> {
+  const key = query.trim().toLowerCase().replace(/\s+/g, ' ');
+  if (key.length < 2 || key.length > 80) return null;
+  if (waitingSearches >= MAX_WAITING_SEARCHES) return 'busy';
+  waitingSearches += 1;
+  try {
+    return await unstable_cache(async () => {
+      const [first] = await nominatim<Array<ReverseResult & { name?: string; addresstype?: string; extratags?: Record<string, string> }>>(
+        'search', { q: key, limit: '1', extratags: '1' });
+      if (!first?.address) return null;
+      const population = Number((first.extratags?.population ?? '').replace(/[^0-9]/g, ''));
+      return { name: first.name ?? '', type: first.addresstype ?? null, population: population > 0 ? population : null, address: first.address };
+    }, ['place-search-v1', key], { revalidate: 30 * 24 * 60 * 60 })();
+  } finally {
+    waitingSearches -= 1;
+  }
 }
 
 const fetchTown = async (latitude: string, longitude: string) => townFromAddress((await reverse(latitude, longitude, 10)).address);

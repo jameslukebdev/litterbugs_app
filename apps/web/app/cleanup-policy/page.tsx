@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
+import { publicPageMetadata } from '@/lib/public-page-metadata';
 
 import { LegalPage } from '@/components/legal-page';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   alternates: { canonical: '/cleanup-policy' },
   title: 'Cleanup Policy | Litterbugs',
   description: 'Contribution, safety, photo review, dispute, refund, and cleaner reward rules.',
-};
+});
 
 export default function CleanupPolicyPage() {
   return (

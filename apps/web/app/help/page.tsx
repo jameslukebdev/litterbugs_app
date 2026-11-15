@@ -1,8 +1,9 @@
 import Link from 'next/link';
+import { publicPageMetadata } from '@/lib/public-page-metadata';
 import { Website } from '@/components/public-website';
 import styles from '../about/about-simple.module.css';
 
-export const metadata = { title: 'Get help | Litterbugs', description: 'Get help with your Litterbugs account, reports, cleanups, and payments. Contact the support team with your question.', alternates: { canonical: '/help' } };
+export const metadata = publicPageMetadata({ title: 'Get help | Litterbugs', description: 'Get help with your Litterbugs account, reports, cleanups, and payments. Contact the support team with your question.', alternates: { canonical: '/help' } });
 
 export default function Page() {
   return <Website activePath="/help">

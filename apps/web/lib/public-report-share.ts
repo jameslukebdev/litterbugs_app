@@ -3,7 +3,7 @@ import { cache } from 'react';
 
 import type { Database, Report } from '@litterbugs/report-contract';
 
-import { publicCommunityForPoint } from './public-communities';
+import { loadReportCommunity } from './report-communities';
 import { getSiteUrl } from '@/lib/env';
 import {
   isPubliclyShareableReport,
@@ -122,10 +122,10 @@ const loadPublicReportData = cache(async (reportId: string) => {
   const { data: reporter } = await reporterPromise;
 
   const expired = isExpiredPublicReport(report);
-  const community = publicCommunityForPoint(report.latitude, report.longitude);
-  // The town: the editorial community when the report is inside one, else the OpenStreetMap lookup.
+  const community = await loadReportCommunity(report.id);
+  // The town: the community's main town when it is named after one, else the OpenStreetMap lookup.
   const [place, address] = await Promise.all([
-    publicReportPlace(report.latitude, report.longitude, PAGE_TOWN_WAIT_MS),
+    publicReportPlace(report.latitude, report.longitude, PAGE_TOWN_WAIT_MS, community),
     lookupReportAddress(report.latitude, report.longitude, PAGE_TOWN_WAIT_MS),
   ]);
   const model: PublicReportShareModel = {
@@ -143,7 +143,8 @@ const loadPublicReportData = cache(async (reportId: string) => {
       : address,
     location: report.latitude != null && report.longitude != null && Number.isFinite(report.latitude) && Number.isFinite(report.longitude)
       ? { latitude: report.latitude, longitude: report.longitude } : null,
-    communitySlug: community?.slug,
+    // The town's leaderboard, once that community is public.
+    ...(community?.isPublic ? { community: { slug: community.slug, path: community.path, name: community.name } } : {}),
     localityLabel: place?.localityLabel,
     place: place ? { locality: place.locality, region: place.region, countryCode: place.countryCode } : undefined,
     severity: report.severity,

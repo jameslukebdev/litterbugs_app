@@ -861,7 +861,6 @@ a.member-activity-row { color: inherit; text-decoration: none; }
 .wizard-step-list [aria-current="step"] { color: #256329; font-weight: 800; }
 @media (max-width: 700px) { .wizard-step-list { display: none; } .draft-comparison { grid-template-columns: 1fr; } }
 
-.connection-status { position: relative; z-index: 60; padding: 10px 16px; color: #573500; background: #ffedbd; font-size: 14px; text-align: center; }
 .notification-unread { display: inline-block; padding: 3px 7px; margin: 0 8px 6px 0; border-radius: 5px; background: #e9f3e9; color: #256329; font-size: 12px; font-weight: 700; }
 .resume-drafts { margin: 18px 0; }
 .resume-drafts article { display: grid; gap: 10px; padding: 12px 0; border-top: 1px solid #e1e6e2; }
@@ -2205,7 +2204,6 @@ html, body { max-width: 100%; overflow-x: clip; }
 @keyframes bug-ripple { 0% { opacity: .9; transform: translateX(-50%) scale(.3); } 100% { opacity: 0; transform: translateX(-50%) scale(2); } }
 @keyframes bug-glow { from { filter: drop-shadow(0 0 0 rgba(255, 182, 0, 0)); transform: scale(.94); } to { filter: drop-shadow(0 0 7px rgba(255, 182, 0, .95)); transform: scale(1.06); } }
 @keyframes bug-wiggle { 0%, 100% { rotate: 0deg; } 20% { rotate: -14deg; } 40% { rotate: 11deg; } 60% { rotate: -7deg; } 80% { rotate: 4deg; } }
-@keyframes bug-ant-walk { from { left: -30px; } to { left: calc(100% + 10px); } }
 @keyframes bug-bob { from { translate: 0 0; } to { translate: 0 -2px; } }
 @keyframes bug-walk-in { 0% { opacity: 0; transform: translateX(-120px) rotate(80deg); } 70% { opacity: 1; transform: translateX(5px) rotate(80deg); } 100% { opacity: 1; transform: none; } }
 @keyframes bug-look { 0%, 100% { rotate: 0deg; } 25% { rotate: -14deg; } 50% { rotate: 0deg; } 75% { rotate: 12deg; } }
@@ -2240,8 +2238,6 @@ html, body { max-width: 100%; overflow-x: clip; }
 }
 /* 5: an ant walks along loading cards. */
 .bug-ant-host { position: relative; overflow: hidden; }
-.bug-ant-walk { position: absolute; left: 0; right: 0; bottom: 4px; height: 22px; pointer-events: none; }
-.bug-ant-walk img { position: absolute; left: -30px; bottom: 0; width: 22px; height: 22px; rotate: 108deg; animation: bug-ant-walk 2600ms linear infinite, bug-bob 220ms ease-in-out infinite alternate; }
 /* 7: the lightning bug glows while finding your location. */
 .bug-glow { animation: bug-glow 900ms ease-in-out infinite alternate; }
 /* 8: the cocoon wiggles on hover and once when it scrolls into view. */
@@ -2259,7 +2255,7 @@ html, body { max-width: 100%; overflow-x: clip; }
 .bug-tab-underline { position: absolute; left: 0; top: 0; height: 3px; border-radius: 3px; background: #5146ed; opacity: 0; pointer-events: none; transition: transform 340ms cubic-bezier(.4, 0, .2, 1), width 340ms cubic-bezier(.4, 0, .2, 1); }
 @media (prefers-reduced-motion: reduce) {
   :is(.bug-pin-land, .bug-pin-bloom, .bug-pin-posted, .bug-bloom, .bug-fund-pop, .community-rank-bar-fill, .community-rank-bar-bug, .bug-glow, .bug-wiggle, .bug-switch-bloom, .bug-heart-pop svg, .bug-empty-walker) { animation: none !important; }
-  .bug-pin-dragonfly, .bug-pin-ripple, .bug-ant-walk { display: none; }
+  .bug-pin-dragonfly, .bug-pin-ripple { display: none; }
   .bug-tab-underline { transition: none; }
 }
 

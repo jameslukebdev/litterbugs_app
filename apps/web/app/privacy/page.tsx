@@ -1,13 +1,14 @@
 import type { Metadata } from 'next';
+import { publicPageMetadata } from '@/lib/public-page-metadata';
 
 import { LegalPage } from '@/components/legal-page';
 import { AnalyticsPreferences } from '@/components/website-analytics';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   alternates: { canonical: '/privacy' },
   title: 'Privacy | Litterbugs',
   description: 'How Litterbugs handles account, report, payment, and cleanup-review data.',
-};
+});
 
 export default function PrivacyPage() {
   return (
@@ -98,7 +99,7 @@ export default function PrivacyPage() {
         },
         {
           title: 'Public and member-visible information',
-          content: <p>Report facts, general locations, report photos, cleanup status, and accepted cleanup evidence may be visible to other members or the public as part of the community map and completed-cleanup history. Pending private cleanup evidence is limited to the cleaner, reporter, authorized reviewers, and service providers needed for review. Do not submit information you do not want processed for these purposes.</p>,
+          content: <p>Report facts, general locations, report photos, cleanup status, and accepted cleanup evidence may be visible to other members or the public as part of the community map and completed-cleanup history. Community leaderboards publicly show your first name and last initial, your rank, and how many accepted reports, confirmed cleanups and funded cleanups you have in each town; you can turn this off in your account settings. Pending private cleanup evidence is limited to the cleaner, reporter, authorized reviewers, and service providers needed for review. Do not submit information you do not want processed for these purposes.</p>,
         },
         {
           title: 'Retention',

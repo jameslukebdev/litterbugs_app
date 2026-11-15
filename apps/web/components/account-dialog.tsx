@@ -346,6 +346,20 @@ export function AccountDialog({
     setMessage(error ? 'We couldn’t send a reset link. Try again.' : 'Password reset email sent.');
   }
 
+  /** Everyone appears on community leaderboards unless they turn it off here (database: profiles.show_on_leaderboards). */
+  async function toggleLeaderboards() {
+    if (!profile || !userId) return;
+    const current = (profile as Profile & { show_on_leaderboards?: boolean }).show_on_leaderboards !== false;
+    setBusyAction('leaderboards');
+    setProfile({ ...profile, show_on_leaderboards: !current } as Profile);
+    const { error } = await createClient().from('profiles').update({ show_on_leaderboards: !current } as never).eq('id', userId);
+    setBusyAction('');
+    if (error) {
+      setProfile({ ...profile, show_on_leaderboards: current } as Profile);
+      setMessage('Couldn’t change your leaderboard setting. Check your connection and try again.');
+    }
+  }
+
   // Confirmed on the page in DeleteAccountPanel (typed DELETE), not with a browser pop-up.
   async function deleteAccount() {
     setBusyAction('delete');
@@ -749,6 +763,12 @@ export function AccountDialog({
         <div className="account-v2-group" role="group" aria-label="Your account">
         <div className="account-v2-row account-v2-email"><span>Email</span><strong>{email || 'Not shared'}</strong></div>
         <button type="button" className="account-v2-row" onClick={startProfileEdit}><span>Edit profile</span><FiChevronRight aria-hidden="true" /></button>
+        <button type="button" className="account-v2-row account-v2-switch-row" role="switch"
+          aria-checked={(profile as (Profile & { show_on_leaderboards?: boolean }) | null)?.show_on_leaderboards !== false}
+          onClick={() => { void toggleLeaderboards(); }} disabled={!profile || busyAction === 'leaderboards'}>
+          <span><span>Show me on leaderboards</span><small>Your first name and last initial, with your counts, on community leaderboards</small></span>
+          <span className="account-v2-switch" aria-hidden="true" />
+        </button>
         <details className="member-panel"><summary>Sign-in methods</summary><p>{email || 'No email shared'}</p>{signInMethods.length ? signInMethods.map(provider => <p key={provider}>{provider === 'email' ? 'Email and password' : provider.charAt(0).toUpperCase() + provider.slice(1)} · Connected</p>) : <p>Sign-in method information is unavailable.</p>}<LinkSignInMethod connected={signInMethods} /></details>
             <details className="member-panel member-blocked-panel">
               <summary>Blocked accounts</summary>

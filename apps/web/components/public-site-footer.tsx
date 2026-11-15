@@ -36,7 +36,7 @@ export function PublicSiteFooter({ compact = false }: { compact?: boolean }) {
         <nav className={styles.links} aria-label="Footer navigation">
           <ul className={styles.group} data-tone="lavender">
             <li><Link href="/reports">Litter reports</Link></li>
-            <li><Link href="/communities">Communities</Link></li>
+            <li><Link href="/communities">Leaderboards</Link></li>
             <li><Link href="/about">About</Link></li>
             <li><Link href="/support">Support</Link></li>
           </ul>

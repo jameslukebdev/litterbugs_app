@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { publicPageMetadata } from '@/lib/public-page-metadata';
 
 import { LegalPage } from '@/components/legal-page';
 import {
@@ -10,11 +11,11 @@ import {
 
 import styles from '../cleanup-safety.module.css';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   alternates: { canonical: '/cleanup-safety/acknowledgment' },
   title: 'Cleanup Safety & Waiver | Litterbugs',
   description: 'The safety rules, acknowledgment, assumption of risk, and release shown before a Litterbugs cleanup claim.',
-};
+});
 
 export default function CleanupSafetyPage() {
   return (

@@ -36,7 +36,6 @@ export const SOURCE_LINKS: Record<SourceId, string> = {
   clarity: 'https://clarity.microsoft.com/projects/view/z60itnrbpn/dashboard',
   app: 'https://us.posthog.com/project/695338',
 };
-export const SOURCE_NAMES: Record<SourceId, string> = { ga: 'Google Analytics', gsc: 'Search Console', posthog: 'PostHog · website', clarity: 'Clarity', app: 'PostHog · app' };
 export function parsePeriod(value: unknown): Period { return value === '28' ? 28 : 7; }
 export function ratio(numerator: number | null | undefined, denominator: number | null | undefined): number | null {
   return numerator != null && denominator != null && denominator > 0 ? numerator / denominator : null;

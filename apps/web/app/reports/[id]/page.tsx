@@ -1,7 +1,4 @@
-import journey from '@/components/communities/community-journey.module.css';
-import { communityReportMapHref } from '@/lib/community-journey';
-import { communityListingHref } from '@/lib/community-listings';
-import { communityHref, getCommunity } from '@/lib/community-directory';
+import { reportMapHref } from '@/lib/report-links';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { FiChevronLeft, FiChevronRight, FiClock, FiMapPin } from 'react-icons/fi';
@@ -13,7 +10,7 @@ import { BrandBug } from '@/components/brand-bug';
 import { CommunityRank } from '@/components/community-rank';
 import { ReportStructuredData } from '@/components/public-website/structured-data';
 import { publicReportListing } from '@/lib/public-report-structured-data';
-import { publicReportSearchTitle, publicReportSearchDescription, publicReportOriginalSummary, publicReportHistorySummary, publicReportPhotoDescription, publicReportStorySummary, reportDateLabel as formatDate } from '@/lib/public-report-content';
+import { publicReportPageTitle, publicReportSearchTitle, publicReportSearchDescription, publicReportOriginalSummary, publicReportHistorySummary, publicReportPhotoDescription, publicReportStorySummary, reportDateLabel as formatDate } from '@/lib/public-report-content';
 import { loadRelatedPublicReports } from '@/lib/related-public-reports';
 import { loadPublicReportShare } from '@/lib/public-report-share';
 import { SHARED_REPORT_AUTH_PARAM } from '@/lib/participation-auth';
@@ -45,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const idUrl = `${new URL(report.canonicalUrl).origin}/reports/${encodeURIComponent(report.id)}`;
   const image = { url: `${idUrl}/opengraph-image/card`, width: 1200, height: 630, type: 'image/png', alt: `${title} | Litterbugs` };
   return {
-    title: `${title} | Litterbugs`,
+    title: publicReportPageTitle(report),
     description,
     alternates: { canonical: report.canonicalUrl },
     openGraph: {
@@ -76,7 +73,7 @@ export default async function SharedReportPage({ params }: Props) {
   if (!report) notFound();
 
   // Optional recommendations must not hold the report and its actions behind another database read.
-  const relatedLinks = loadRelatedPublicReports(report.id, report.communitySlug, report.location?.latitude, report.location?.longitude).then(related => related.length > 0 ? <ul className={styles.relatedList}>
+  const relatedLinks = loadRelatedPublicReports(report.id, report.location?.latitude, report.location?.longitude).then(related => related.length > 0 ? <ul className={styles.relatedList}>
     {related.map(item => {
       const itemStatus = publicReportStatus(item.state);
       return <li key={item.id}>
@@ -88,8 +85,9 @@ export default async function SharedReportPage({ params }: Props) {
   const completed = report.state === 'completed';
   const inProgress = report.state === 'in_progress';
   const expired = report.state === 'expired';
-  const community = report.communitySlug ? getCommunity(report.communitySlug) : undefined;
-  const localCommunityHref = report.communitySlug ? communityHref(report.communitySlug) : null;
+  // The town's leaderboard, when the report's community is public.
+  const community = report.community;
+  const localCommunityHref = community?.path ?? null;
   const impactFacts = [
     report.bagsOrItemsRemoved != null
       ? `${report.bagsOrItemsRemoved} ${report.bagsOrItemsRemoved === 1 ? 'bag/item' : 'bags/items'} removed`
@@ -105,7 +103,7 @@ export default async function SharedReportPage({ params }: Props) {
   const storySummary = publicReportStorySummary(report);
   // The listing this report belongs to: the same tabs a visitor browses, and the page's breadcrumb parent.
   const listing = publicReportListing(report.state);
-  const mapHref = communityReportMapHref(report.id, report.communitySlug, 'locate');
+  const mapHref = reportMapHref(report.id, 'locate');
 
   return (
     <Website infoPage><main data-community-slug={community?.slug} id="main-content" tabIndex={-1} className={styles.page}>
@@ -113,7 +111,7 @@ export default async function SharedReportPage({ params }: Props) {
         <nav className={styles.header} aria-label="Report navigation"><Link href={listing.path} className={styles.back}><FiChevronLeft aria-hidden="true" />{listing.name}</Link></nav>
 
         <article className={styles.story}>
-          <ReportStructuredData report={report} community={community} />
+          <ReportStructuredData report={report} />
           {/* Photos and the report's summary share the top of the page, so nothing sits beside empty space. */}
           <div className={styles.top}>
           <ReportPhotos key={report.id}
@@ -150,12 +148,12 @@ export default async function SharedReportPage({ params }: Props) {
               </Link> : <strong>{report.reporterName || 'Community member'}</strong>}
             </div>
             <div className={styles.nextSteps}>
-            {expired ? <Link className="primary-button button-link" href="/reports">Find a current cleanup</Link> : !completed && !inProgress ? <div className={`${journey.reportActions} ${styles.reportActions}`}>
-              {report.fundingEligible && <Link className="report-action-link button-link report-action-fund" prefetch={false} href={`/sign-in?${SHARED_REPORT_AUTH_PARAM}=1&next=${encodeURIComponent(communityReportMapHref(report.id, report.communitySlug, 'fund'))}`}><BrandBug kind="bee" size={21} className="bug-hop" />Fund</Link>}
-              <Link className="report-action-link button-link report-action-clean" prefetch={false} href={`/sign-in?${SHARED_REPORT_AUTH_PARAM}=1&next=${encodeURIComponent(communityReportMapHref(report.id, report.communitySlug, 'clean'))}`}><BrandBug kind="butterfly" size={21} className="bug-hop" />Clean</Link>
+            {expired ? <Link className="primary-button button-link" href="/reports">Find a current cleanup</Link> : !completed && !inProgress ? <div className={styles.reportActions}>
+              {report.fundingEligible && <Link className="report-action-link button-link report-action-fund" prefetch={false} href={`/sign-in?${SHARED_REPORT_AUTH_PARAM}=1&next=${encodeURIComponent(reportMapHref(report.id, 'fund'))}`}><BrandBug kind="bee" size={21} className="bug-hop" />Fund</Link>}
+              <Link className="report-action-link button-link report-action-clean" prefetch={false} href={`/sign-in?${SHARED_REPORT_AUTH_PARAM}=1&next=${encodeURIComponent(reportMapHref(report.id, 'clean'))}`}><BrandBug kind="butterfly" size={21} className="bug-hop" />Clean</Link>
             </div> : completed
               // A finished cleanup's best next step is the next one that needs doing.
-              ? <Link className="primary-button button-link" href={community ? communityListingHref(community) : '/reports'}>{community ? `Find another cleanup in ${community.name}` : 'Find another cleanup'}</Link>
+              ? <Link className="primary-button button-link" href="/reports">Find another cleanup</Link>
               : <Link className="primary-button button-link" href={mapHref}>View on map</Link>}
               <ReportShareButton reportId={report.id} title={report.title}
                 label={completed ? 'Share cleanup' : 'Share report'}
@@ -218,7 +216,7 @@ export default async function SharedReportPage({ params }: Props) {
             </div>
             <div className={styles.side}>
             <ul className={styles.links}>
-              {localCommunityHref && <li><Link href={localCommunityHref}>Back to {report.generalLocation}<FiChevronRight aria-hidden="true" /></Link></li>}
+              {localCommunityHref && community && <li><Link href={localCommunityHref}>{community.name} leaderboard<FiChevronRight aria-hidden="true" /></Link></li>}
               <li><Link href={expired ? "/report-litter" : completed ? mapHref : "/fund-a-cleanup"}>{expired ? "Report a spot" : completed ? "View on map" : "How funding works"}<FiChevronRight aria-hidden="true" /></Link></li>
               <li><Link href="/report-litter">How reporting works<FiChevronRight aria-hidden="true" /></Link></li>
               {!expired && <li><AppLink reportId={report.id} className={styles.appLink}>Open in Litterbugs</AppLink></li>}
@@ -234,17 +232,13 @@ export default async function SharedReportPage({ params }: Props) {
             kind={completed ? 'done' : inProgress ? 'busy' : expired ? 'muted' : 'open'} />}
         </article>
         <section className={styles.related} aria-labelledby="related-reports-heading">
-          <h2 id="related-reports-heading">{report.location ? 'Nearby reports' : community ? `More reports in ${community.name}` : 'Explore more litter reports'}</h2>
+          <h2 id="related-reports-heading">{report.location ? 'Nearby reports' : 'Explore more litter reports'}</h2>
           <Suspense fallback={null}>{relatedLinks}</Suspense>
           <div className={styles.browseLinks}>
-            {community && <>
-              <Link href={communityListingHref(community)}>Reports needing cleanup in {community.name}</Link>
-              <Link href={communityListingHref(community, 'completed')}>Completed cleanups in {community.name}</Link>
-            </>}
             <Link href="/reports">Browse reports needing cleanup</Link>
             <Link href="/reports/history">Expired reports</Link>
             <Link href="/cleanups">Browse all completed cleanups</Link>
-            <Link href="/communities">Explore communities</Link>
+            <Link href={community?.path ?? '/communities'}>{community ? `${community.name} leaderboard` : 'Leaderboards'}</Link>
           </div>
         </section>
       </div>

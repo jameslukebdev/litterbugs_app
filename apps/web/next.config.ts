@@ -19,6 +19,14 @@ const nextConfig: NextConfig = {
   redirects: async () => [
     { source: '/locations', destination: '/communities', permanent: true },
     { source: '/locations/us-nc-boone', destination: '/communities/us/nc/boone', permanent: true },
+    { source: '/locations/:slug', destination: '/communities', permanent: true },
+    // Organization pages were removed in Nov 2026; every listed group is in Boone's local help.
+    { source: '/organizations/:slug', destination: '/communities/us/nc/boone#local-help', permanent: true },
+    // Homepage design previews from October 2026.
+    { source: '/home-preview', destination: '/', permanent: true },
+    { source: '/home-playful', destination: '/', permanent: true },
+    // The old Boone cleanup listing; community pages now show leaderboards, not report lists.
+    { source: '/communities/us/nc/boone/cleanups', destination: '/communities/us/nc/boone', permanent: true },
     { source: '/how-it-works', destination: '/about', permanent: true },
     { source: '/safety', destination: '/cleanup-safety', permanent: true },
     { source: '/account/privacy', destination: '/privacy', permanent: true },

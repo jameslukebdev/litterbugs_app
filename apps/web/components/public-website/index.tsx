@@ -39,7 +39,7 @@ export function Website({
   infoPage?: boolean;
 }) {
   return (
-    <div data-public-page={activePath} className={`${styles.surface} ${infoPage ? info.info : ''} ${branded ? brand.brand : ''} ${['/report-litter', '/fund-a-cleanup', '/cleaner', '/cleanups', '/locations', '/communities', '/reports', '/get-app', '/about', '/help', '/support', '/cleanup-safety'].includes(activePath) ? seoStyles.page : ''}`}>
+    <div data-public-page={activePath} className={`${styles.surface} ${infoPage ? info.info : ''} ${branded ? brand.brand : ''} ${['/report-litter', '/fund-a-cleanup', '/cleaner', '/cleanups', '/communities', '/reports', '/get-app', '/about', '/help', '/support', '/cleanup-safety'].includes(activePath) ? seoStyles.page : ''}`}>
       <a className={styles.skipLink} href="#main-content">
         Skip to content
       </a>

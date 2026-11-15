@@ -9,7 +9,6 @@ export const BUG_ART = {
   bee: '/brand/bugs/bee.png',
   dragonfly: '/brand/ranks/dragonfly.svg',
   caterpillar: '/brand/ranks/caterpillar.svg',
-  ant: '/brand/bugs/ant.svg',
   lightning: '/brand/ranks/lightning-bug.svg',
   cocoon: '/brand/ranks/cocoon.svg',
 } as const;

@@ -1,11 +1,13 @@
-import { communityDirectory, isIndexableCommunity } from '@/lib/community-directory';
+import { communityLabel, communityStatsSentence, loadCommunityDirectory } from '@/lib/community-leaderboards';
 import { getSiteUrl } from '@/lib/env';
 
 /** A plain-text guide to the public site for answer engines (llmstxt.org). Wording follows /about. */
-export function GET() {
+export const dynamic = 'force-dynamic';
+
+export async function GET() {
   const site = getSiteUrl();
-  const communities = communityDirectory.filter(isIndexableCommunity)
-    .map(community => `- [${community.heading}](${site}${community.href}): ${community.summary}`);
+  const communities = (await loadCommunityDirectory()).communities.filter(community => community.isIndexable)
+    .map(community => `- [${communityLabel(community)} leaderboard](${site}${community.path}): ${communityStatsSentence(community)}`);
   const body = [
     '# Litterbugs',
     '',
@@ -28,9 +30,9 @@ export function GET() {
     `- [Expired reports](${site}/reports/history): past reports with no confirmed cleanup`,
     `- [Sitemap](${site}/sitemap.xml): every public report page and its photos`,
     '',
-    '## Communities',
+    '## Community leaderboards',
     ...communities,
-    `- [All communities](${site}/communities)`,
+    `- [All leaderboards](${site}/communities): top litter reporters, cleaners and funders, and every town's page`,
     '',
     '## Help',
     `- [Help](${site}/help)`,

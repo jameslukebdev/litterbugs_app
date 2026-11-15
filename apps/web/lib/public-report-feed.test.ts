@@ -3,7 +3,6 @@ const { from, loadReport } = vi.hoisted(() => ({ from: vi.fn(), loadReport: vi.f
 vi.mock('server-only', () => ({}));
 vi.mock('./supabase/public', () => ({ createPublicClient: () => ({ from }) }));
 vi.mock('./public-report-share', () => ({ loadPublicReportShare: loadReport }));
-vi.mock('./public-communities', () => ({ communityBounds: () => null, publicCommunityForPoint: () => null }));
 import { loadPublicReportFeed } from './public-report-feed';
 
 function fixture(error: unknown = null) {

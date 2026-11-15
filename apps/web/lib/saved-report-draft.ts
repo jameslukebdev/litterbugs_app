@@ -58,7 +58,6 @@ export async function loadLocalReportDraft(userId: string): Promise<SavedReportD
   }
   return value;
 }
-export const clearLocalReportDraft = async (userId: string) => { await transaction('drafts', userId, store => store.delete(userId)); forgetDeviceSave(userId, 'report'); };
 export const saveReportPublication = (journal: ReportPublicationJournal) => transaction('publications', journal.userId, store => store.put(journal, journal.userId));
 export async function loadReportPublication(userId: string): Promise<ReportPublicationJournal | undefined> {
   const value = await transaction<ReportPublicationJournal | undefined>('publications', userId, store => store.get(userId));

@@ -1,19 +1,24 @@
-import { publishedCommunities } from './community-directory';
 import { resourcesForCommunity } from './community-resources';
 
-export const COMMUNITY_ENGAGEMENT_EVENTS = ['community_opened', 'community_report_opened', 'community_action_started', 'community_resource_opened', 'community_saved', 'community_unsaved'] as const;
+export const COMMUNITY_ENGAGEMENT_EVENTS = ['community_opened', 'community_report_opened', 'community_action_started', 'community_resource_opened'] as const;
 export type CommunityEngagementEvent = typeof COMMUNITY_ENGAGEMENT_EVENTS[number];
 export type CommunityProperties = { community_id: string; action?: 'report' | 'fund' | 'clean'; resource_id?: string };
+
+/** Community pages live at /communities/<country>/<state>/<place>; their id is those three parts joined. */
+const COMMUNITY_PATH = /^\/communities\/([a-z]{2})\/([a-z0-9]+)\/([a-z0-9-]+)$/;
+const COMMUNITY_SLUG = /^[a-z]{2}-[a-z0-9]+-[a-z0-9-]+$/;
+
 export function publicCommunitySlug(value: unknown) {
-  return typeof value === 'string' && publishedCommunities().some(item => item.slug === value) ? value : null;
+  return typeof value === 'string' && value.length <= 120 && COMMUNITY_SLUG.test(value) ? value : null;
 }
 export function communityForPath(path: string) {
-  return publishedCommunities().find(item => path === item.href || path === `${item.href}/cleanups`);
+  const match = COMMUNITY_PATH.exec(path);
+  return match ? { slug: `${match[1]}-${match[2]}-${match[3]}`, href: path } : undefined;
 }
 export function communityForEntry(search: string) {
   const query = new URLSearchParams(search);
-  const slug = publicCommunitySlug(query.get('community'));
-  return slug ?? publishedCommunities().find(item => item.href === query.get('returnTo'))?.slug ?? null;
+  const returnTo = query.get('returnTo');
+  return publicCommunitySlug(query.get('community')) ?? (returnTo ? communityForPath(returnTo)?.slug ?? null : null);
 }
 /** Copy only a known public community and finite action/resource values. */
 export function communityProperties(value: unknown): CommunityProperties | null {
@@ -30,7 +35,7 @@ export function communityClick(href: string, origin: string, slug: unknown, reso
   let url: URL;
   try { url = new URL(href, origin); } catch { return null; }
   if (url.origin === origin) {
-    const opened = publishedCommunities().find(item => url.pathname === item.href);
+    const opened = communityForPath(url.pathname);
     if (opened && !publicCommunitySlug(slug)) return { event: 'community_opened' as const, properties: { community_id: opened.slug } };
   }
   const community = publicCommunitySlug(slug);

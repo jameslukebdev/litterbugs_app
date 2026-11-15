@@ -2,8 +2,6 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { SignInForm } from './sign-in-form';
-import { communityReportHref } from '@/lib/community-journey';
-import { getCommunity } from '@/lib/community-directory';
 const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => router }));
 vi.mock('@/components/auth-dialog', () => ({
@@ -11,11 +9,9 @@ vi.mock('@/components/auth-dialog', () => ({
   AuthDialog: ({ onClose, onSuccess, intent, initialMode }: { onClose: () => void; onSuccess: () => void; intent?: string | null; initialMode?: string }) => <><button onClick={onClose}>Close</button><button onClick={onSuccess}>Success</button><output data-testid="entry">{`${intent ?? 'none'}:${initialMode}`}</output></>,
 }));
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
-it('returns an abandoned community report entry to Boone while success resumes the exact entry', () => {
-  const next = communityReportHref(getCommunity('us-nc-boone')!);
+it('resumes the exact entry after signing in', () => {
+  const next = '/map?report=r1&intent=clean';
   render(<SignInForm next={next} />);
-  fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-  expect(router.replace).toHaveBeenCalledWith('/communities/us/nc/boone');
   fireEvent.click(screen.getByRole('button', { name: 'Success' }));
   expect(router.replace).toHaveBeenCalledWith(next);
   expect(router.refresh).toHaveBeenCalled();

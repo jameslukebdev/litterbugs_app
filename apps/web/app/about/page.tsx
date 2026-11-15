@@ -1,13 +1,14 @@
 import type { Metadata } from 'next';
+import { publicPageMetadata } from '@/lib/public-page-metadata';
 import Link from 'next/link';
 import { Website } from '@/components/public-website';
 import styles from './about-simple.module.css';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   alternates: { canonical: '/about' },
   title: 'How Litterbugs Works',
   description: 'See how neighbors report litter, build cleanup rewards, and verify completed work with Litterbugs.',
-};
+});
 
 /* eslint-disable @next/next/no-img-element -- the header menus' bugs label each role. */
 export default function AboutPage() {

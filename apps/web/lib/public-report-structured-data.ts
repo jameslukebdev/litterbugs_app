@@ -1,4 +1,3 @@
-import type { Community } from './community-directory';
 import { publicReportPhotoDescription, publicReportSearchTitle, publicReportStoryDescription, reportLocality } from './public-report-content';
 import type { PublicReportShareModel, PublicReportShareState } from './public-report-share-model';
 
@@ -16,7 +15,7 @@ const isoDate = (value: string | null | undefined) => value && Number.isFinite(D
  * dates and town, plus the breadcrumb trail. Only recorded, already-public fields
  * are used, including the address and position the page itself shows.
  */
-export function publicReportStructuredData(report: PublicReportShareModel, community: Community | undefined, site: string) {
+export function publicReportStructuredData(report: PublicReportShareModel, site: string) {
   const url = report.canonicalUrl;
   const absolute = (path: string) => new URL(path, site).toString();
   const organization = { '@type': 'Organization', '@id': `${site}/#organization`, name: 'Litterbugs', url: site,
@@ -37,7 +36,7 @@ export function publicReportStructuredData(report: PublicReportShareModel, commu
   const keywords = report.litterTypes.map(value => value.trim()).filter(Boolean);
   const place = reportLocality(report);
   const street = report.address ?? null;
-  const address = report.place ?? (community ? { locality: community.locality, region: community.administrativeArea, countryCode: community.countryCode } : null);
+  const address = report.place ?? null;
 
   const article = {
     '@type': 'Article',
