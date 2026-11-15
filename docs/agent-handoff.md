@@ -24,6 +24,41 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-15 — Codex (completed Ahrefs Site Audit reviewed; recommendations only)
+
+- Project10711029 history explicitly shows Completed,15m30s,450 URLs crawled,
+  193 internal pages,255 resources,health100%,1 internal URL with errors.
+  Overview:1 error,234 warning occurrences,651 notices; these are not distinct
+  affected pages. No new crawl,settings change,code fix or deployment this turn.
+- Priority1: stable report canonical/sitemap/internal-link URL generation.
+  Ahrefs flags sitemap entry /litter-reports/trash-by-the-tracks-d4a3dc34-edc1-4492-b6ac-e6dd82375a5c
+  whose canonical adds -greensboro-north-carolina before the id. Live raw HTML
+  and sitemap confirm mismatch persists. Related missing-sitemap report contains
+  that full canonical, /cleanup-safety/acknowledgment and /reports?page=2; do not
+  blindly add all3 without reviewing desired indexability. Read-only source
+  shows sitemap/list town budget300ms versus page2500ms; timing/cache dependency
+  is a plausible cause, not a fully tested diagnosis. Make URL generation stable.
+- Priority2: concise public-report search metadata,29 long titles/31 long
+  descriptions. Live New River Grill report matches117-character title and
+  323-character description. Preserve full report/body content. Seven short
+  descriptions include /get-app with inherited49-character generic summary;
+  prioritize useful app/about copy over padding legal descriptions for a score.
+- Priority3: complete Open Graph details on10 pages including /get-app,/about,
+  /help,/support,/cleanup-safety,/photo-review and policy pages. Live /about and
+  /get-app have og:title/description/image but no og:url or og:type. Retain brand
+  image and add appropriate URL/type defaults or page-specific values.
+- Lower priority:2 slow pages are Greensboro report (TTFB508ms,total1140ms) and
+  nonindexable Boone completed-cleanups page2 (TTFB84ms,total1869ms). Confirm
+  repeat performance evidence before optimization; these are crawler timings,
+  not Core Web Vitals. Schema flags are secondary, not guaranteed AI/rich results.
+- Noindex112/nofollow39 samples include sign-in,account,report forms,filtered maps
+  and cleanup lists. Do not remove exclusions wholesale. Titles/descriptions
+  have no hard Google character maximum; focus on concise relevant copy, not
+  treating vendor length warnings as penalties. Google guidance checked.
+- Notes committed in isolated release checkout only; Claude's shared work/index
+  and live website source5bc2553/deploymentUfyfut4 remain untouched.
+
+
 ### 2026-11-15 — Codex (Litterbugs added to Bing Webmaster Tools)
 
 - Added https://litterbugs.app/ to the existing signed-in Bing account using
