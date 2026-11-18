@@ -1,12 +1,11 @@
-import { GetAppQr } from '@/components/get-app-qr';
 import { publicPageMetadata } from '@/lib/public-page-metadata';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import { Website } from '@/components/public-website';
-import { AppLink, ContinueOnWebsiteLink } from '@/components/app-link';
+import { ContinueOnWebsiteLink } from '@/components/app-link';
 import { APP_STORE_URL, GOOGLE_PLAY_URL, isInstagramStoreVisit } from '@/lib/app-links';
-import seoStyles from '@/components/public-website/seo-pages.module.css';
-import styles from '@/components/app-promotion.module.css';
+import styles from './get-app.module.css';
+import { PhoneMap } from './phone-map';
 
 export const metadata: Metadata = publicPageMetadata({
   title: 'Get the Litterbugs app',
@@ -20,20 +19,27 @@ export default async function GetAppPage({ searchParams }: { searchParams: Promi
   const googlePlayUrl = isInstagramStoreVisit(utm_source)
     ? `${GOOGLE_PLAY_URL}&utm_source=instagram&utm_campaign=instagram_bio`
     : GOOGLE_PLAY_URL;
-  return <Website activePath="/get-app">
-    <main id="main-content" tabIndex={-1} className={`${styles.downloadPage} ${seoStyles.download}`}>
-      <Image className={styles.appIcon} src="/brand/app-icon-192.png" alt="Litterbugs app" width={72} height={72} priority />
-      <h1>Take Litterbugs with you</h1>
-      <p>Spot litter, share a report, and find your next cleanup. Keep your community close, wherever you go.</p>
-      <div className={seoStyles.downloadStores}>
-        <a href={APP_STORE_URL}><Image src="/brand/app-store-badge.svg" alt="Download on the App Store" width={144} height={48} unoptimized /></a>
-        <a href={googlePlayUrl}><Image src="/brand/google-play-badge.png" alt="Get it on Google Play" width={186} height={72} unoptimized /></a>
-      </div>
-      <p className={styles.installed}>Already have Litterbugs? <AppLink reportId={reportId}>Open the app</AppLink></p>
-      <div className={styles.desktopQr}>
-        <GetAppQr className={styles.qr} />
-      </div>
-      <ContinueOnWebsiteLink className="primary-button button-link" reportId={reportId} />
-    </main>
-  </Website>;
+  return (
+    <Website activePath="/get-app" infoPage={false}>
+      <main id="main-content" tabIndex={-1} className={styles.hero}>
+        <div className={styles.copy}>
+          <h1>See Litter? <span>Get paid to clean it up or report it</span></h1>
+          <div className={styles.download}>
+            <div className={styles.stores}>
+              <a href={APP_STORE_URL}>
+                <Image src="/brand/app-store-badge.svg" alt="Download on the App Store" width={144} height={48} unoptimized />
+              </a>
+              <a href={googlePlayUrl}>
+                <span className={styles.playBadge}>
+                  <Image src="/brand/google-play-badge.png" alt="Get it on Google Play" width={646} height={250} unoptimized />
+                </span>
+              </a>
+            </div>
+            <ContinueOnWebsiteLink className={styles.continue} reportId={reportId} />
+          </div>
+        </div>
+        <PhoneMap />
+      </main>
+    </Website>
+  );
 }

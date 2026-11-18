@@ -1,0 +1,208 @@
+.hero.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.03fr) minmax(0, 1fr);
+  grid-template-areas: "scene copy";
+  align-items: center;
+  gap: clamp(32px, 5.5vw, 82px);
+  width: min(1136px, calc(100% - 80px));
+  margin-inline: auto;
+  padding: 44px 0 52px;
+}
+
+.copy { grid-area: copy; color: #2e2840; }
+
+.hero .copy h1 {
+  margin: 0;
+  color: inherit;
+  font-size: clamp(43px, 4.65vw, 62px);
+  line-height: 1.02;
+  letter-spacing: -.049em;
+  text-wrap: initial;
+}
+
+.copy h1 span { display: block; text-wrap: balance; }
+
+.download { width: max-content; max-width: 100%; margin-top: 24px; }
+.stores { --badge-height: 44px; display: flex; align-items: center; gap: 11px; }
+.stores a { display: inline-flex; align-items: center; min-height: 48px; border-radius: 8px; }
+.stores a:hover { opacity: .84; }
+.stores img { display: block; width: auto; height: var(--badge-height); }
+
+/* The Google Play artwork has built-in clear space around the visible badge. */
+.playBadge {
+  position: relative;
+  display: block;
+  width: calc(var(--badge-height) * 3.357);
+  height: var(--badge-height);
+  overflow: hidden;
+}
+.playBadge img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  max-width: none;
+  height: calc(var(--badge-height) * 1.488);
+  transform: translate(-50%, -50%);
+}
+
+.continue {
+  display: grid;
+  place-items: center;
+  min-height: 47px;
+  margin-top: 10px;
+  padding: 8px 17px;
+  border: 2px solid #dbd2f6;
+  border-bottom-width: 5px;
+  border-radius: 14px;
+  background: #fff;
+  color: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+}
+.continue:hover { background: #f5f2ff; }
+
+.scene {
+  grid-area: scene;
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  aspect-ratio: 1.04;
+  padding: 15px 0 22px;
+}
+
+.scene::before, .scene::after { content: ''; position: absolute; z-index: -1; pointer-events: none; }
+.scene::before {
+  inset: 15% 6% 13% 4%;
+  rotate: -5deg;
+  background: #e9e3ff;
+  border-radius: 48% 44% 37% 43% / 53% 46% 36% 41%;
+}
+.scene::after {
+  inset: auto 11% 11% 9%;
+  height: 15%;
+  rotate: -3deg;
+  background: #b9e9dd;
+  border-radius: 50%;
+}
+
+.phone {
+  position: relative;
+  z-index: 1;
+  width: clamp(164px, 18vw, 234px);
+  padding: 5px 5px 7px;
+  border: 2px solid #24232a;
+  border-radius: 32px;
+  background: #33323a;
+  box-shadow: 2px 2px 0 #24232a, 7px 13px 24px #23213929;
+  transform: rotate(-4deg);
+}
+.screen {
+  position: relative;
+  container-type: inline-size;
+  overflow: hidden;
+  aspect-ratio: 1206 / 2622;
+  border-radius: 24px;
+  background: #dfebd5;
+  color: #292932;
+  font-family: 'Playful Nunito', system-ui, sans-serif;
+}
+.map { position: absolute; inset: 0 0 auto; display: block; width: 100%; height: auto; }
+.mapKey {
+  position: absolute;
+  top: 15.5%;
+  left: 3.7%;
+  display: grid;
+  width: 37.5%;
+  padding: 1.35cqw 2cqw;
+  border: 1px solid #e3dff0;
+  border-radius: 3.5cqw;
+  background: #fff;
+  font-size: 2.9cqw;
+  line-height: 1.27;
+}
+.mapKey span { display: flex; align-items: center; gap: 1cqw; white-space: nowrap; }
+.mapKey img { width: 3.5cqw; height: 3.5cqw; object-fit: contain; }
+.pin {
+  --pin-fill: #fff;
+  --pin-edge: #e6dff3;
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1cqw;
+  min-width: 9.4cqw;
+  height: 9.4cqw;
+  padding: 0 1.3cqw;
+  translate: -50% -50%;
+  border: 1px solid var(--pin-edge);
+  border-radius: 999px;
+  background: var(--pin-fill);
+  box-shadow: 0 1px 2px #2a225a38;
+  font-size: 4.65cqw;
+  line-height: 1;
+  white-space: nowrap;
+}
+.pin::after {
+  content: '';
+  position: absolute;
+  bottom: -1.1cqw;
+  left: calc(50% - 1.4cqw);
+  width: 2.8cqw;
+  height: 2.8cqw;
+  rotate: 45deg;
+  border: solid var(--pin-edge);
+  border-width: 0 1px 1px 0;
+  background: var(--pin-fill);
+}
+.pin img { width: 5.4cqw; height: 5.4cqw; object-fit: contain; }
+.pin[data-kind='paid'] { padding-inline: 1.8cqw; }
+
+.phoneTabs {
+  position: absolute;
+  right: 4.4%;
+  bottom: 5.2%;
+  left: 4.4%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  min-height: 15.6cqw;
+  padding: 1.2cqw 2cqw;
+  border: 1px solid #ece8f8;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 2px 5px #29293220;
+}
+.phoneTabs > span { display: grid; align-content: center; justify-items: center; gap: .8cqw; font-size: 2.8cqw; }
+.phoneTabs svg { width: 5.2cqw; height: 5.2cqw; }
+.selectedTab { border-radius: 999px; background: #efedff; color: #5146ed; }
+
+.scene > img { position: absolute; height: auto; pointer-events: none; }
+.ladybug { z-index: 2; width: 23%; left: 3%; bottom: 17%; rotate: -15deg; }
+.bee { z-index: 2; width: 18%; right: 7%; top: 18%; rotate: 13deg; }
+.lightning { z-index: 0; width: 15%; left: 10%; top: 17%; rotate: -17deg; }
+.flower { z-index: 2; width: 15%; right: 11%; bottom: 17%; rotate: 12deg; }
+
+@media (max-width: 1000px) {
+  .hero.hero { width: calc(100% - 60px); }
+  .phone { width: clamp(162px, 22vw, 208px); }
+}
+
+@media (max-width: 760px) {
+  .hero.hero {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "copy" "scene";
+    width: calc(100% - 38px);
+    gap: 30px;
+    padding: 34px 0 42px;
+  }
+  .copy { text-align: center; }
+  .hero .copy h1 { font-size: clamp(36px, 9.5vw, 58px); }
+  .download { margin: 18px auto 0; }
+  .stores { --badge-height: 40px; }
+  .scene { justify-self: center; width: min(100%, 440px); padding: 10px 0 16px; }
+  .phone { width: clamp(147px, 44vw, 188px); padding: 4px 4px 6px; border-radius: 24px; }
+  .screen { border-radius: 17px; }
+}
