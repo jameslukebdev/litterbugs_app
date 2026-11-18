@@ -7,7 +7,8 @@ import { TownMap } from '@/components/community-leaderboard/town-map';
 import { LeaderboardTitle } from '@/components/community-leaderboard/leaderboard-title';
 import styles from '@/components/community-leaderboard/leaderboard.module.css';
 import { communityHelp } from '@/lib/community-help';
-import { communityLabel, communityStatsSentence, loadBoards, loadChampions, loadCommunity, monthInfo, placeTrail } from '@/lib/community-leaderboards';
+import { communityLabel, loadBoards, loadChampions, loadCommunity, monthInfo, placeTrail } from '@/lib/community-leaderboards';
+import { communityMetaDescription } from '@/lib/community-metadata';
 import { PlaceCrumbs } from '@/components/community-leaderboard/place-crumbs';
 import { publicPageMetadata } from '@/lib/public-page-metadata';
 
@@ -29,7 +30,7 @@ export async function generateMetadata({ params }: Props) {
   const label = communityLabel(community);
   return publicPageMetadata({
     title: `${label} Litter Cleanups & Leaderboard | Litterbugs`,
-    description: `${communityStatsSentence(community)} See who is reporting litter, cleaning up and funding cleanups in ${community.name}.`,
+    description: communityMetaDescription(community),
     // A new town is public from its first accepted report, but is offered to search engines only once it has substance.
     robots: { index: community.isIndexable, follow: true },
     alternates: { canonical: community.path },
