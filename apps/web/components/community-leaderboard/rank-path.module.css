@@ -15,17 +15,19 @@
 .head > span > span { color: var(--muted); font-size: 14px; }
 
 /* ---------- The footpath ---------- */
-.path { position: relative; margin: 26px 0 0; padding: 0; list-style: none; }
-.line { position: absolute; top: 0; left: 50%; margin-left: -120px; overflow: visible; }
+.path { position: relative; isolation: isolate; margin: 26px 0 0; padding: 0; list-style: none; }
+.stop { --center: 46px; --next-center: 46px; position: relative; display: flow-root; }
+.stop[data-more] { --center: 34.5px; }
+.stop[data-before-more] { --next-center: 34.5px; }
+.row { position: relative; height: calc(var(--center) * 2); }
+/* Each segment stretches from its stone to the next, including when the row gains a panel. */
+.line { position: absolute; z-index: -1; top: var(--center); left: 50%; width: 240px; height: calc(100% - var(--center) + var(--next-center)); margin-left: -120px; overflow: visible; pointer-events: none; }
 .line path { fill: none; stroke: #e6e1ee; stroke-width: 3; stroke-linecap: round; }
-.stop { position: absolute; left: 0; right: 0; height: 92px; }
-.stop[data-open='true'] { z-index: 3; }
-.stop[data-more] { height: 69px; }
 
 /* A stepping stone: plain until a point fills it, then it shows the bug that filled it. */
 .stone { --edge-colour: var(--stone-edge); --tilt: -4deg; position: absolute; top: 50%; left: calc(50% + var(--x)); display: grid; place-items: center; width: 62px; height: 54px; margin: -31px 0 0 -31px; padding: 0; border: 3px solid var(--stone-edge); border-radius: 46% 54% 50% 50% / 56% 50% 50% 44%; background: var(--stone); box-shadow: 0 5px 0 var(--edge-colour); font: inherit; rotate: var(--tilt); }
-.stop:nth-child(3n) .stone { --tilt: 5deg; border-radius: 54% 46% 44% 56% / 48% 56% 44% 52%; }
-.stop:nth-child(3n + 1) .stone { --tilt: -2deg; border-radius: 50% 50% 56% 44% / 52% 44% 56% 48%; }
+.stop:nth-child(3n + 2) .stone { --tilt: 5deg; border-radius: 54% 46% 44% 56% / 48% 56% 44% 52%; }
+.stop:nth-child(3n) .stone { --tilt: -2deg; border-radius: 50% 50% 56% 44% / 52% 44% 56% 48%; }
 .stone > * { rotate: calc(var(--tilt) * -1); }
 .stone > img { width: 32px; height: 32px; object-fit: contain; }
 button.stone { cursor: pointer; transition: translate 90ms ease, box-shadow 90ms ease; }
@@ -47,8 +49,8 @@ button.stone:is(:active, [aria-expanded='true']) { translate: 0 4px; box-shadow:
 .label strong { font-family: var(--nunito); font-size: 15px; font-weight: 900; line-height: 1.2; }
 .label span { color: var(--muted); font-size: 13px; }
 
-/* What opens under a stone. */
-.pop { position: absolute; top: calc(50% + 46px); left: 50%; display: grid; gap: 8px; width: min(340px, 100%); margin-left: max(-170px, -50%); padding: 12px; border: 2px solid var(--line); border-radius: 20px; background: #fff; box-shadow: 0 5px 0 var(--edge), 0 18px 40px #2a225a24; }
+/* The panel is part of the path layout so its contents can grow between stones. */
+.pop { position: relative; display: grid; gap: 8px; width: min(340px, 100%); margin: 8px auto 16px; padding: 12px; border: 2px solid var(--line); border-radius: 20px; background: #fff; box-shadow: 0 5px 0 var(--edge), 0 18px 40px #2a225a24; }
 .pop > a { --tint: #f6f5fa; --tone-ink: var(--ink); --rim: var(--line); display: grid; grid-template-columns: 32px minmax(0, 1fr); align-items: center; gap: 10px; min-height: 56px; padding: 8px 12px; border-radius: 14px; background: var(--tint); color: var(--ink); text-decoration: none; box-shadow: 0 3px 0 var(--rim); transition: translate 90ms ease, box-shadow 90ms ease; }
 .pop > a[data-tone='report'] { --tint: #e5efff; --tone-ink: #234485; --rim: #9bbbf3; }
 .pop > a[data-tone='earn'] { --tint: #f7ebfb; --tone-ink: #783398; --rim: #cfa2e5; }
@@ -77,5 +79,5 @@ button.stone:is(:active, [aria-expanded='true']) { translate: 0 4px; box-shadow:
 
 /* Keep the stone shapes: the site rounds every expandable button to 10px, which would square them off. */
 .card .stone.stone { border-radius: 46% 54% 50% 50% / 56% 50% 50% 44%; }
-.card .stop:nth-child(3n) .stone.stone { border-radius: 54% 46% 44% 56% / 48% 56% 44% 52%; }
-.card .stop:nth-child(3n + 1) .stone.stone { border-radius: 50% 50% 56% 44% / 52% 44% 56% 48%; }
+.card .stop:nth-child(3n + 2) .stone.stone { border-radius: 54% 46% 44% 56% / 48% 56% 44% 52%; }
+.card .stop:nth-child(3n) .stone.stone { border-radius: 50% 50% 56% 44% / 52% 44% 56% 48%; }

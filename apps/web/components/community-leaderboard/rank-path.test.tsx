@@ -1,18 +1,39 @@
+// @vitest-environment jsdom
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 vi.mock('next/link', () => ({ default: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => <a href={href} {...props}>{children}</a> }));
 import { RankPathView } from './rank-path';
 
+afterEach(cleanup);
+
 describe('RankPathView', () => {
-  it('opens the ways to earn under a new member’s first stone', () => {
+  it('shows the first point without opening its options on arrival', () => {
     const html = renderToStaticMarkup(<RankPathView events={[]} />);
     expect(html).toContain('Gnat');
     expect(html).toContain('1 point to Ladybug');
     expect(html).toContain('Your first point');
-    expect(html).toContain('Report litter');
-    expect(html).toContain('Clean a spot');
-    expect(html).toContain('No points · counts on the Funders board');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).not.toContain('Ways to earn your next point');
+  });
+
+  it('toggles the ways to earn between the selected stone and the next row', () => {
+    render(<RankPathView events={[]} />);
+    const stone = screen.getByRole('button', { name: 'Point 1: ways to earn it' });
+    const stop = stone.closest('li');
+    expect(stop).toBeTruthy();
+    fireEvent.click(stone);
+    const panel = screen.getByRole('group', { name: 'Ways to earn your next point' });
+    expect(stone.getAttribute('aria-expanded')).toBe('true');
+    expect(stone.getAttribute('aria-controls')).toBe(panel.id);
+    expect(panel.parentElement).toBe(stop);
+    expect(panel.nextElementSibling).toBeNull();
+    expect(stop?.nextElementSibling?.textContent).toContain('Ladybug');
+    expect(within(panel).getAllByRole('link')).toHaveLength(3);
+    fireEvent.click(stone);
+    expect(stone.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByRole('group', { name: 'Ways to earn your next point' })).toBeNull();
   });
 
   it('shows each earned point with the bug of the route that earned it', () => {
