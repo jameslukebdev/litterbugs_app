@@ -13,3 +13,8 @@ export function notificationInboxHref(view: NotificationView, notice?: string) {
   const query = notificationViewQuery(view).toString();
   return `/account/notifications${query ? `?${query}` : ''}${notice ? `#notification-${encodeURIComponent(notice)}` : ''}`;
 }
+
+export function nearbyAlertHref(id: string, view?: NotificationView) {
+  const query = view ? notificationViewQuery(view) : new URLSearchParams();
+  return `/account/notifications/${encodeURIComponent(id)}${query.size ? `?${query}` : ''}`;
+}

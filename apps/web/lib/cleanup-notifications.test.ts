@@ -8,8 +8,8 @@ it('preserves refund receipt, payout and admin destinations', () => {
   expect(notificationHref({ event_type: 'cleanup_reward_sent', report_id: 'r', contribution_id: null })).toBe('/account/connect');
   expect(notificationHref({ event_type: 'admin_cleanup_needed', report_id: 'r', contribution_id: null })).toBe('/admin');
 });
-it('labels a daily nearby alert and opens the map filtered to available cleanups', () => {
-  const alert = { event_type: 'nearby_reports_daily', report_id: null, contribution_id: null };
+it('labels a daily nearby alert and opens its own results', () => {
+  const alert = { id: 'alert-id', event_type: 'nearby_reports_daily', report_id: null, contribution_id: null };
   expect(notificationPresentation(alert).title).toBe('New litter near you');
-  expect(notificationHref(alert)).toBe('/map?view=map&browse=1&status=available');
+  expect(notificationHref(alert, { filter: 'unread', page: 2 })).toBe('/account/notifications/alert-id?filter=unread&page=2');
 });

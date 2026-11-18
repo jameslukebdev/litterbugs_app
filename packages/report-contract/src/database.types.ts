@@ -717,6 +717,7 @@ export type Database = {
           created_at: string
           event_type: string
           id: string
+          nearby_report_ids?: string[] | null
           read_at: string | null
           report_id: string
           review_id: string | null
@@ -729,6 +730,7 @@ export type Database = {
           created_at?: string
           event_type: string
           id?: string
+          nearby_report_ids?: string[] | null
           read_at?: string | null
           report_id: string
           review_id?: string | null
@@ -741,6 +743,7 @@ export type Database = {
           created_at?: string
           event_type?: string
           id?: string
+          nearby_report_ids?: string[] | null
           read_at?: string | null
           report_id?: string
           review_id?: string | null
@@ -1049,6 +1052,17 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          user_id: string
+          latitude: number | null
+          longitude: number | null
+          location_updated_at: string | null
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_path: string | null
@@ -1172,6 +1186,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      report_preferences: {
+        Row: {
+          user_id: string
+          report_id: string
+          kind: string
+          enabled: boolean
+        }
+        Insert: never
+        Update: never
+        Relationships: []
       }
       reports: {
         Row: {

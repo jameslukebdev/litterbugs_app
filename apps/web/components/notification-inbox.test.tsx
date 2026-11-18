@@ -48,7 +48,7 @@ it('does not let an older fetch restore unread status after acknowledgement', as
   finish({ data: [notice('one')], error: null });
   await waitFor(() => expect(document.querySelector('.notification-unread')).toBeNull());
 });
-it('gives existing nearby alerts a map link and acknowledges the one that is opened', async () => {
+it('links each nearby alert to its own results and acknowledges only the one opened', async () => {
   const alert = { event_type: 'nearby_reports_daily', report_id: null, contribution_id: null, report: null };
   const otherAlert = { ...notice('nov-16'), ...alert, created_at: '2026-11-16T22:00:00Z' };
   const openedAlert = { ...notice('nov-17'), ...alert, created_at: '2026-11-17T22:00:00Z' };
@@ -58,8 +58,10 @@ it('gives existing nearby alerts a map link and acknowledges the one that is ope
   render(<NotificationInbox userId="owner" view={{ filter: 'unread', page: 1 }} />);
 
   const links = await screen.findAllByRole('link', { name: 'New litter near you' });
-  expect(links).toHaveLength(2);
-  for (const link of links) expect(link.getAttribute('href')).toBe('/map?view=map&browse=1&status=available');
+  expect(links.map(link => link.getAttribute('href'))).toEqual([
+    '/account/notifications/nov-17?filter=unread',
+    '/account/notifications/nov-16?filter=unread',
+  ]);
   fireEvent.click(links[0]);
 
   await waitFor(() => expect(screen.getAllByRole('link', { name: 'New litter near you' })).toHaveLength(1));

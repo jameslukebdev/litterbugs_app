@@ -1,5 +1,4 @@
-import { AVAILABLE_CLEANUPS_MAP_HREF } from './home-map-link';
-import { notificationViewQuery, type NotificationView } from './notification-view';
+import { nearbyAlertHref, notificationViewQuery, type NotificationView } from './notification-view';
 import type { Database } from '@litterbugs/report-contract';
 
 export type CleanupNotification = Database['public']['Tables']['cleanup_notifications']['Row'];
@@ -100,7 +99,7 @@ const CLEANUP_NOTIFICATION_CONTENT: Record<string, { title: string; message: str
   },
   nearby_reports_daily: {
     title: 'New litter near you',
-    message: 'New litter reports are available in your area for funding and cleanup.',
+    message: 'See the reports that prompted this alert.',
   },
 };
 
@@ -109,7 +108,7 @@ export function notificationPresentation(notice: Pick<CleanupNotification, 'even
 }
 export function notificationHref(notice: NotificationTarget, view?: NotificationView) {
   if (notice.event_type.startsWith('admin_')) return '/admin';
-  if (notice.event_type === 'nearby_reports_daily') return AVAILABLE_CLEANUPS_MAP_HREF;
+  if (notice.event_type === 'nearby_reports_daily') return notice.id ? nearbyAlertHref(notice.id, view) : '/account/notifications';
   if (notice.event_type === 'cleanup_contribution_refunded') return notice.contribution_id ? `/account/payments/${encodeURIComponent(notice.contribution_id)}` : '/account/payments';
   if (notice.event_type === 'cleanup_payout_failed' || notice.event_type === 'cleanup_reward_sent') return '/account/connect';
   if (notice.event_type === 'report_renewal_due') return '/account/reports';
