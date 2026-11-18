@@ -560,11 +560,8 @@
 @keyframes logo-bee-loop { 0% { offset-distance: 0%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { offset-distance: 100%; opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .header.header.header .brandLink img.logoBee { display: none; } }
 
-/* Leaderboards (Nov 15, 2026): a plain text link; its crowned beetle lives on the leaderboards pages instead.
-   Priority as the bar narrows: "Get the app" goes first; Leaderboards stays as long as Report, Donate and Earn. */
+/* As the desktop bar narrows, "Get the app" goes first; Leaderboards stays alongside Report, Donate and Earn. */
 .header .mobilePrimaryLinks > a[href='/communities'] { justify-content: flex-start; }
-/* No bug in the phone menu, so its words line up with the words beside the other menus' bugs (26px bug + 12px gap). */
-.header .mobilePrimaryLinks > a[href='/communities'] .triggerLabel { padding-left: 38px; }
 /* Same box as the Report, Donate and Earn buttons beside it, so its hover tint matches theirs. */
 .header.header .leaderboards .navLink { padding-inline: 12px; min-height: 46px; }
 @media (min-width: 1100px) and (max-width: 1239px) {

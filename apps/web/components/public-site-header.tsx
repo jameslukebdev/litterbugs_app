@@ -254,7 +254,10 @@ function NavigationMenu({ activePath }: { activePath: PublicPath }) {
           {([['Donate', fundingLinks], ['Earn', cleanupLinks]] as const).map(([label, links]) =>
             <NavigationDropdown key={label} label={label} links={links} activePath={activePath}
               open={openCategory === label} onToggle={() => setOpenCategory(openCategory === label ? null : label)} onClose={() => setOpenCategory(current => current === label ? null : current)} onNavigate={closeMenu} />)}
-          <HeaderLink href="/communities" activePath={activePath} onNavigate={closeMenu}><span className={styles.triggerLabel}>Leaderboards</span></HeaderLink>
+          <HeaderLink href="/communities" activePath={activePath} onNavigate={closeMenu}>
+            <Image className={styles.triggerBug} src="/brand/bugs/champion-beetle.svg" alt="" width={64} height={64} unoptimized />
+            <span className={styles.triggerLabel}>Leaderboards</span>
+          </HeaderLink>
           <NavigationDropdown label="Support" links={informationLinks} activePath={activePath}
             open={openCategory === 'Support'} onToggle={() => setOpenCategory(openCategory === 'Support' ? null : 'Support')} onClose={() => setOpenCategory(current => current === 'Support' ? null : current)} onNavigate={closeMenu} />
           {!member?.userId && <Link className={styles.navLink} href="/sign-in" onClick={closeMenu}>Log in / Sign up</Link>}
