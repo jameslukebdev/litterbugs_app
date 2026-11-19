@@ -17,9 +17,15 @@ export const metadata: Metadata = {
     'msvalidate.01': '3AB93DEC1F37F1127EC6C441E7497FC5',
   },
   icons: {
-    icon: [{ url: '/brand/litterbugs-favicon-transparent.png', type: 'image/png', sizes: '256x256' }],
-    shortcut: '/brand/litterbugs-favicon-transparent.png',
-    apple: '/brand/litterbugs-favicon-transparent.png',
+    icon: [
+      { url: '/favicon.ico', sizes: '16x16 32x32 48x48' },
+      { url: '/brand/litterbugs-favicon.svg', type: 'image/svg+xml' },
+      { url: '/brand/litterbugs-favicon-32.png', type: 'image/png', sizes: '32x32' },
+      { url: '/brand/litterbugs-favicon-48.png', type: 'image/png', sizes: '48x48' },
+      { url: '/brand/litterbugs-favicon-192.png', type: 'image/png', sizes: '192x192' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: [{ url: '/brand/litterbugs-apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
   },
 };
 
