@@ -652,6 +652,56 @@ it('does not count pending or failed map loads as empty, and records only settle
   expect(telemetry.discovery).not.toHaveBeenCalledWith('results_empty', expect.anything());
 });
 
+it('tracks a visible empty map once per appearance and stays quiet while placing a report pin', async () => {
+  const observers: Array<(ratio: number) => void> = [];
+  vi.stubGlobal('IntersectionObserver', class {
+    constructor(notify: IntersectionObserverCallback) {
+      observers.push(ratio => notify([{ isIntersecting: ratio > 0, intersectionRatio: ratio } as IntersectionObserverEntry], this as unknown as IntersectionObserver));
+    }
+    observe() {}
+    disconnect() {}
+  });
+  const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+  const impressions = () => telemetry.discovery.mock.calls.filter(([stage]) => stage === 'empty_state_seen');
+  try {
+    window.history.replaceState({}, '', '/map?view=map');
+    render(<MapExperience initialReports={[]} initialUserId="test-user" googleMapsKey="fixture" googleMapsMapId="fixture" initialError="" />);
+    await waitFor(() => expect(state.tiles).toBeTruthy());
+    act(() => { state.tiles!(); state.idle!(); });
+    await screen.findByRole('heading', { name: 'No reports in this map area' });
+    await waitFor(() => expect(observers).toHaveLength(1));
+
+    act(() => observers[0](1));
+    expect(impressions()).toHaveLength(0);
+    visibility.mockReturnValue('visible');
+    act(() => observers[0](0));
+    fireEvent(document, new Event('visibilitychange'));
+    expect(impressions()).toHaveLength(0);
+    visibility.mockReturnValue('hidden');
+    act(() => observers[0](1));
+    visibility.mockReturnValue('visible');
+    fireEvent(document, new Event('visibilitychange'));
+    act(() => { observers[0](1); observers[0](1); });
+    expect(impressions()).toEqual([['empty_state_seen', { surface: 'map', filtered: false }]]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Report Litter' }));
+    await screen.findByLabelText('Choose report location');
+    expect(screen.queryByRole('heading', { name: 'No reports in this map area' })).toBeNull();
+    expect(observers).toHaveLength(1);
+    expect(impressions()).toHaveLength(1);
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Cancel reporting' })[0]);
+    await screen.findByRole('heading', { name: 'No reports in this map area' });
+    await waitFor(() => expect(observers).toHaveLength(2));
+    act(() => observers[1](1));
+    expect(impressions()).toHaveLength(2);
+  } finally {
+    cleanup();
+    visibility.mockRestore();
+    vi.unstubAllGlobals();
+  }
+});
+
 it('previews and opens the closest report before the map results refresh', async () => {
   window.history.replaceState({}, '', '/map?view=map');
   const closest = { ...report(), is_published: true };

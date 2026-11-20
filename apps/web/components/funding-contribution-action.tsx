@@ -17,6 +17,7 @@ import { ModalShell } from '@/components/modal-shell';
 import { BrandBug } from '@/components/brand-bug';
 import { FlowDone } from '@/components/flow-done';
 import { FundingAmountPanel, FundingPayLayout, FundingUnavailablePanel } from '@/components/funding-panel';
+import { refreshContributionSupporters } from '@/components/contribution-supporters';
 import {
   loadContributionQuote,
   type ContributionQuote,
@@ -26,6 +27,7 @@ import {
   type ContributionIntent,
 } from '@/lib/funding';
 import { clearFundBeforeCheckout, rememberFundBeforeCheckout } from '@/lib/bug-motion';
+import supporterStyles from './contribution-supporters.module.css';
 
 function ContributionPaymentForm({
   intent,
@@ -71,7 +73,7 @@ function ContributionPaymentForm({
       setBusy(false);
       return;
     }
-    void observeContributionConfirmation(intent.contributionId);
+    void Promise.resolve(observeContributionConfirmation(intent.contributionId)).then(() => refreshContributionSupporters(reportId));
     await onComplete();
     } catch { trackParticipationFailure('fund', 'payment_submitted', 'payment_confirmation_unavailable'); setError('We couldn’t confirm this payment. Check Payments before trying again.'); }
     finally { setBusy(false); onBusyChange(false); }
@@ -81,10 +83,32 @@ function ContributionPaymentForm({
     <form className="funding-payment-form" onSubmit={submit}>
       <FundingPayLayout reportTitle={reportTitle} principalCents={intent.principalAmountCents} feeCents={intent.platformFeeCents} error={error}
         button={<button className="primary-button fund-pay" type="submit" disabled={!stripe || busy}>{busy ? 'Processing…' : `Pay ${formatUsd(intent.totalAmountCents)}`}</button>}>
+        {typeof intent.showContributorName === 'boolean' && <p>{intent.showContributorName ? 'Your name will be shown with this donation.' : 'You’ll be listed as Anonymous.'}</p>}
         <PaymentElement options={{ layout: 'tabs' }} onReady={() => trackParticipation('fund', 'payment_ready')} onLoadError={() => trackParticipationFailure('fund', 'payment_form', 'payment_form_failed')} />
       </FundingPayLayout>
     </form>
   );
+}
+
+type FundingContributionProps = {
+  report: Report;
+  userId: string | null;
+  onRequireSignIn?: () => void;
+  onChanged?: () => void | Promise<void>;
+  initialAmountCents?: number;
+  startOpen?: boolean;
+  autoOpen?: boolean;
+  onDismiss?: () => void;
+  onRefreshFunding?: () => Promise<void>;
+};
+
+function acceptsFunding(report: Report) {
+  return report.cleanup_state === 'available'
+    && report.funding_eligibility === 'eligible'
+    && report.renewal_status === 'active'
+    && !report.funding_frozen_at
+    && !report.cancelled_at
+    && !report.expired_at;
 }
 
 export function FundingContributionAction({
@@ -97,28 +121,14 @@ export function FundingContributionAction({
   autoOpen = false,
   onDismiss,
   onRefreshFunding,
-}: {
-  report: Report;
-  userId: string | null;
-  onRequireSignIn?: () => void;
-  onChanged?: () => void | Promise<void>;
-  initialAmountCents?: number;
-  startOpen?: boolean;
-  autoOpen?: boolean;
-  onDismiss?: () => void;
-  onRefreshFunding?: () => Promise<void>;
-}) {
+}: FundingContributionProps) {
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [manuallyOpen, setOpen] = useState(startOpen);
   const [dismissed, setDismissed] = useState(false);
-  const eligible = report.cleanup_state === 'available'
-    && report.funding_eligibility === 'eligible'
-    && report.renewal_status === 'active'
-    && !report.funding_frozen_at
-    && !report.cancelled_at
-    && !report.expired_at;
+  const eligible = acceptsFunding(report);
   const open = manuallyOpen || (autoOpen && !dismissed && Boolean(userId) && enabled === true && eligible);
   const [amount, setAmount] = useState(() => initialAmountCents == null ? '25' : (initialAmountCents / 100).toFixed(2));
+  const [showContributorName, setShowContributorName] = useState(true);
   const [previousContribution, setPreviousContribution] = useState<string | null>(null);
   const [intent, setIntent] = useState<ContributionIntent | null>(null);
   const [busy, setBusy] = useState(false);
@@ -201,6 +211,7 @@ export function FundingContributionAction({
     }
     setIntent(null);
     setPreviousContribution(null);
+    setShowContributorName(true);
     setMessage('');
     setPaid(false);
     setOpen(true);
@@ -211,7 +222,8 @@ export function FundingContributionAction({
     setBusy(true);
     setMessage('');
     try {
-      const result = await resumeOrCreatePayment(userId!, report.id, principalAmountCents, currentQuote?.pricingVersion);
+      if (!currentQuote?.supportsContributorVisibility) throw new Error('Payments are temporarily unavailable. No payment has been made. Please try again later.');
+      const result = await resumeOrCreatePayment(userId, report.id, principalAmountCents, currentQuote.pricingVersion, showContributorName);
       setAmount((result.amount / 100).toFixed(2));
       if (result.contributionId) setPreviousContribution(result.contributionId);
       else { setIntent(result.intent ?? null); if (result.amount !== principalAmountCents) setMessage('Resuming your previous unpaid contribution with its original amount.'); }
@@ -270,6 +282,11 @@ export function FundingContributionAction({
               message={message}
               busy={busy}
               onContinue={() => void continueToPayment()}
+              supporterChoice={currentQuote && <fieldset className={supporterStyles.choice} disabled={busy}>
+                <legend>Donation privacy</legend>
+                <label><input type="checkbox" checked={!showContributorName} onChange={event => setShowContributorName(!event.target.checked)} />Donate anonymously</label>
+                <p>{showContributorName ? 'Your name will be shown.' : 'Your name will be hidden.'} You can change this later in Your contributions.</p>
+              </fieldset>}
             />
           ) : stripe ? (
             <Elements stripe={stripe} options={{

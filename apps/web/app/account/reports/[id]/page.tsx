@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { realUserIdFromClaims } from '@/lib/report-access';
 import { AccountReport } from './report-page';
+import { withServerContributorCredits } from '@/lib/server-contributor-credits';
 
 export const metadata = { title: 'Your report | Litterbugs', robots: { index: false, follow: false } };
 export default async function Page({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ from?: string; task?: string; filter?: string; page?: string; notice?: string }> }) {
@@ -28,5 +29,6 @@ export default async function Page({ params, searchParams }: { params: Promise<{
     if (attempts.error || contributions.error) throw new Error('Your activity could not be checked. Please try again.');
     if (!attempts.data?.length && !contributions.data?.length) notFound();
   }
-  return <AccountReport report={report} userId={userId} back={back} task={task === 'cleanup' || task === 'review' ? task : undefined} />;
+  const [completeReport] = await withServerContributorCredits([report]);
+  return <AccountReport report={completeReport} userId={userId} back={back} task={task === 'cleanup' || task === 'review' ? task : undefined} />;
 }

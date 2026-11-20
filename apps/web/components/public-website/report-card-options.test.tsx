@@ -17,12 +17,13 @@ it('allows undo after the device save while cloud sync is still pending, without
   render(<ReportCardOptions reportId="report" title="Trail" />);
   await act(async () => {});
   fireEvent.click(screen.getByText('•••'));
-  fireEvent.click(screen.getByRole('button', { name: 'Hide report' }));
-  const undo = await screen.findByRole('button', { name: 'Unhide report' });
+  expect(screen.getByRole('link', { name: 'See full report' }).getAttribute('href')).toBe('/reports/report');
+  fireEvent.click(screen.getByRole('button', { name: 'Hide' }));
+  const undo = await screen.findByRole('button', { name: 'Unhide' });
   expect(undo.hasAttribute('disabled')).toBe(false);
   expect(screen.queryByText(/Saving|Opening/)).toBeNull();
   fireEvent.click(undo);
-  await screen.findByRole('button', { name: 'Hide report' });
+  await screen.findByRole('button', { name: 'Hide' });
   expect(mock.set.mock.calls.map(args => args[3])).toEqual([true, false]);
   await act(async () => { finish({ offline: false }); });
   expect(screen.getByRole('status').textContent).toBe('Report restored to map results.');
@@ -33,7 +34,7 @@ it('keeps the durable local result and explains a later offline sync', async () 
   render(<ReportCardOptions reportId="report" title="Trail" />);
   await act(async () => {});
   fireEvent.click(screen.getByText('•••'));
-  fireEvent.click(screen.getByRole('button', { name: 'Hide report' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Hide' }));
   await screen.findByText('Saved on this device. Changes will sync when you reconnect.');
-  expect(screen.getByRole('button', { name: 'Unhide report' }).hasAttribute('disabled')).toBe(false);
+  expect(screen.getByRole('button', { name: 'Unhide' }).hasAttribute('disabled')).toBe(false);
 });

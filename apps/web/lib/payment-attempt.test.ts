@@ -18,6 +18,13 @@ describe('web contribution recovery', () => {
     expect(create.mock.calls[1]).toEqual(create.mock.calls[0]);
     expect(create.mock.calls[1][1]).toBe(2500);
   });
+  it('keeps the donor’s anonymous choice when payment startup is retried', async () => {
+    create.mockRejectedValueOnce(new Error('network'));
+    await expect(resumeOrCreatePayment('u1', 'r1', 2500, 2, false)).rejects.toThrow('network');
+    await resumeOrCreatePayment('u1', 'r1', 2500, 2, true);
+    expect(create.mock.calls[1]).toEqual(create.mock.calls[0]);
+    expect(create.mock.calls[1][4]).toBe(false);
+  });
   it('opens status instead of creating another charge when Stripe is processing', async () => {
     await resumeOrCreatePayment('u1', 'r1', 2500);
     row.value = { id: 'contribution-1', status: 'payment_pending' };

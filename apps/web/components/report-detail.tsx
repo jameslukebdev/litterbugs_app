@@ -20,6 +20,8 @@ import { ReportAuthor } from '@/components/report-author';
 import { CleanupAction } from '@/components/cleanup-action';
 import { CleanupReviewAction } from '@/components/cleanup-review-action';
 import { FundingContributionAction } from '@/components/funding-contribution-action';
+import { ContributionSupporters } from '@/components/contribution-supporters';
+import type { WithContributorCredit } from '@/lib/contributor-credit';
 import { Icon } from '@/components/icon';
 import { PayoutSetupAction } from '@/components/payout-setup-action';
 import { ReportShareDialog } from '@/components/report-share-dialog';
@@ -72,7 +74,7 @@ export function ReportDetail({
   onHiddenChange,
   onNotify,
 }: {
-  report: Report;
+  report: WithContributorCredit<Report>;
   entryIntent?: string | null;
   closeLabel?: string;
   embedded?: boolean;
@@ -460,6 +462,7 @@ export function ReportDetail({
                 {hasLitterTypes && <p className="report-detail-fact"><strong>Litter</strong><span>{[...(report.litter_types ?? []), ...(report.types ? [report.types] : [])].join(', ')}</span></p>}
                 {!!report.notes_presets?.length && <p className="report-detail-fact"><strong>Notes</strong><span>{report.notes_presets.join(', ')}</span></p>}
                 {report.notes_other && <p className="report-detail-fact"><strong>Details</strong><span>{report.notes_other}</span></p>}
+                {(!closed || report.cleanup_state === 'completed') && <ContributionSupporters reportId={report.id} initialCredit={report.contributorCredit} />}
                 {!closed && userId && report.funded_amount_cents > 0 && report.cleanup_state !== 'completed' && <div className={styles.payout}><span>Cleaning this up? Set up payouts so you can get paid.</span><PayoutSetupAction compact /></div>}
                 <p className={styles.footnote}><AppLink reportId={report.id} className="report-open-app">Open in the app</AppLink><span aria-hidden="true"> · </span><span>Report ID {report.id.slice(0, 8)}</span></p>
               </div>

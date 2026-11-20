@@ -7,6 +7,9 @@ import { useDataRefresh } from '@/lib/use-data-refresh';
 import { formatUsd } from '@/lib/funding';
 import { trackWebsiteOutcome } from '@/lib/website-analytics';
 import { FlowDone } from '@/components/flow-done';
+import { refreshContributionSupporters } from '@/components/contribution-supporters';
+import { PaymentNameVisibility } from '@/components/payment-name-visibility';
+import { localContributionName } from '@/lib/local-contribution-client';
 
 type Contribution = Database['public']['Tables']['cleanup_contributions']['Row'];
 const messages: Record<string, string> = {
@@ -22,6 +25,8 @@ export function PaymentDetail({ contributionId, onOpenReport, standalone = false
   const [message, setMessage] = useState('');
   const [retry, setRetry] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [nameError, setNameError] = useState('');
+  const [localNameId, setLocalNameId] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -36,8 +41,13 @@ export function PaymentDetail({ contributionId, onOpenReport, standalone = false
       }
       const { data, error } = await client.from('cleanup_contributions').select('*').eq('id', contributionId).eq('contributor_id', auth.user.id).maybeSingle();
       if (error || !data) throw new Error('Payment details could not be loaded.');
+      let localName: boolean | undefined;
+      if (data.show_contributor_name === undefined && !data.refunded_at && ['succeeded', 'paid_out'].includes(data.status)) {
+        localName = await localContributionName(data.id).catch(() => undefined);
+      }
       if (!cancelled) {
-        setItem(data); setMessage('');
+        setLocalNameId(localName === undefined ? null : data.id);
+        setItem(localName === undefined ? data : { ...data, show_contributor_name: localName }); setMessage('');
         if (data.status === 'succeeded') trackWebsiteOutcome('contribution_confirmed', data.id);
       }
     }
@@ -54,10 +64,34 @@ export function PaymentDetail({ contributionId, onOpenReport, standalone = false
     } catch { setMessage('We couldn’t confirm this payment. Try again before paying again.'); }
     finally { setBusy(false); }
   }
+  async function changeNameVisibility(showName: boolean) {
+    if (!item || item.id !== contributionId || busy) return;
+    setBusy(true);
+    setNameError('');
+    try {
+      if (localNameId === item.id) {
+        const saved = await localContributionName(item.id, showName);
+        if (saved !== showName) throw new Error();
+      } else {
+        const { data, error } = await createClient().rpc('set_cleanup_contributor_visibility', { contribution_id: item.id, show_name: showName });
+        if (error || !data) throw new Error();
+      }
+      setItem(current => current?.id === item.id ? { ...current, show_contributor_name: showName } : current);
+      refreshContributionSupporters(item.report_id);
+      setRetry(value => value + 1);
+    } catch {
+      setNameError('Couldn’t save your choice. Try again.');
+    } finally { setBusy(false); }
+  }
   const Heading = standalone ? 'h1' : 'h2';
   const AmountHeading = standalone ? 'h2' : 'h3';
+  const canChangeName = item && item.id === contributionId && !item.refunded_at &&
+    item.show_contributor_name !== undefined && (item.status === 'succeeded' || item.status === 'paid_out');
+  const nameShown = item?.show_contributor_name !== false;
+  const nameSettings = canChangeName && <PaymentNameVisibility shown={nameShown} busy={busy} error={nameError}
+    heading={AmountHeading} onChange={shown => void changeNameVisibility(shown)} />;
   return <section className="payment-detail">{celebrate && item?.status === 'succeeded' && <FlowDone bug="bee" title="Thank you!">Your contribution is in the cleanup fund. Someone can now earn cash for cleaning this spot.</FlowDone>}<Heading>Payment details</Heading>
-    {item ? <><AmountHeading>{formatUsd(item.total_amount_cents)}</AmountHeading><p>{messages[item.status] || 'Payment status unavailable.'}</p><p>{new Date(item.created_at).toLocaleString()}</p><dl className="funding-summary"><div><dt>Cleanup contribution</dt><dd>{formatUsd(item.principal_amount_cents)}</dd></div><div><dt>Service fee</dt><dd>{formatUsd(item.platform_fee_cents)}</dd></div></dl>{item.refunded_at && <p>Refunded {new Date(item.refunded_at).toLocaleString()}</p>}{item.status === 'payment_pending' && <button className="secondary-button" disabled={busy} onClick={check}>{busy ? 'Checking…' : 'Check payment status'}</button>}<button className="primary-button" onClick={() => onOpenReport(item.report_id)}>View report</button></> : !message && <p role="status">Loading payment details…</p>}
+    {item ? <><AmountHeading>{formatUsd(item.total_amount_cents)}</AmountHeading><p>{messages[item.status] || 'Payment status unavailable.'}</p><p>{new Date(item.created_at).toLocaleString()}</p><dl className="funding-summary"><div><dt>Cleanup contribution</dt><dd>{formatUsd(item.principal_amount_cents)}</dd></div><div><dt>Service fee</dt><dd>{formatUsd(item.platform_fee_cents)}</dd></div></dl>{item.refunded_at && <p>Refunded {new Date(item.refunded_at).toLocaleString()}</p>}{item.status === 'payment_pending' && <button className="secondary-button" disabled={busy} onClick={check}>{busy ? 'Checking…' : 'Check payment status'}</button>}{nameSettings}<button className="primary-button" onClick={() => onOpenReport(item.report_id)}>View report</button></> : !message && <p role="status">Loading payment details…</p>}
     {message && <p role="status">{message}</p>}
     {!item && message && <button className="secondary-button" onClick={() => setRetry(value => value + 1)}>Retry</button>}
     <Link href="/help">Payment help</Link>

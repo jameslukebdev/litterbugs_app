@@ -1,4 +1,3 @@
-import { reportDateLabel } from '@/lib/public-report-content';
 import type { PublicReportShareModel } from '@/lib/public-report-share-model';
 import styles from './report-share.module.css';
 
@@ -67,33 +66,4 @@ export function ReportFacts({ report }: { report: PublicReportShareModel }) {
   );
 }
 
-/** The dated steps a report has been through, oldest first. */
-export function reportTimeline(report: PublicReportShareModel) {
-  const reporter = report.reporterName?.trim() && report.reporterName.trim() !== 'Community member' ? ` by ${report.reporterName.trim()}` : '';
-  const steps = [
-    { at: report.reportDate, label: `Reported${reporter}` },
-    { at: report.fundedDate, label: 'First contribution to its cleanup fund' },
-    { at: report.state === 'completed' ? report.claimedDate : null, label: 'Cleanup claimed' },
-    { at: report.state === 'completed' ? report.completionDate : null,
-      label: `Cleaned up${report.cleanerName?.trim() ? ` by ${report.cleanerName.trim()}` : ''}` },
-    { at: report.state === 'expired' ? report.expiredDate : null, label: 'Report expired without a confirmed cleanup' },
-  ];
-  return steps.flatMap(step => {
-    const date = reportDateLabel(step.at ?? null);
-    return date && step.at ? [{ at: step.at, date, label: step.label }] : [];
-  }).sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
-}
-
-export function ReportTimeline({ report }: { report: PublicReportShareModel }) {
-  const steps = reportTimeline(report);
-  // A single "Reported" line says nothing the header has not.
-  if (steps.length < 2) return null;
-  return (
-    <section className={styles.section} aria-labelledby="report-timeline-heading">
-      <h2 id="report-timeline-heading">Timeline</h2>
-      <ol className={styles.timeline}>
-        {steps.map(step => <li key={step.label}><time dateTime={step.at}>{step.date}</time><span>{step.label}</span></li>)}
-      </ol>
-    </section>
-  );
-}
+export { ReportTimeline, reportTimeline } from './report-timeline';

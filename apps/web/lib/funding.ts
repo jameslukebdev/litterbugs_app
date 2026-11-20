@@ -14,9 +14,10 @@ export type ContributionIntent = {
   totalAmountCents: number;
   currency: 'usd';
   pricingVersion?: number;
+  showContributorName?: boolean | null;
 };
 
-export type ContributionQuote = Pick<ContributionIntent, 'principalAmountCents' | 'platformFeeCents' | 'totalAmountCents' | 'currency'> & { pricingVersion: 1 | 2 };
+export type ContributionQuote = Pick<ContributionIntent, 'principalAmountCents' | 'platformFeeCents' | 'totalAmountCents' | 'currency'> & { pricingVersion: 1 | 2; supportsContributorVisibility?: boolean };
 
 export async function loadContributionQuote(principalAmountCents: number): Promise<ContributionQuote> {
   const { data, error } = await createClient().functions.invoke('create-cleanup-contribution', {
@@ -106,6 +107,7 @@ export async function createCleanupContribution(
   principalAmountCents: number,
   clientRequestId = crypto.randomUUID(),
   pricingVersion?: number,
+  showContributorName?: boolean,
 ): Promise<ContributionIntent> {
   const version = pricingVersion ?? (await loadContributionQuote(principalAmountCents)).pricingVersion;
   const { data, error } = await createClient().functions.invoke('create-cleanup-contribution', {
@@ -114,6 +116,7 @@ export async function createCleanupContribution(
       principalAmountCents,
       clientRequestId,
       pricingVersion: version,
+      ...(typeof showContributorName === 'boolean' ? { showContributorName } : {}),
     },
   });
   if (error || data?.error) {

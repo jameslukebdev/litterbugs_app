@@ -525,7 +525,17 @@ export function ReportBrowser({
                 </div>
               )}
               {onFavoriteChange && <button className="card-favorite" aria-label={`${favoriteReportIds.has(report.id) ? 'Unfavorite' : 'Favorite'} ${report.title || 'report'}`} aria-pressed={favoriteReportIds.has(report.id)} onClick={event => { if (!favoriteReportIds.has(report.id)) replayClass(event.currentTarget, 'bug-heart-pop'); onFavoriteChange(report.id, !favoriteReportIds.has(report.id)); }}><Icon name="heart" /></button>}
-              {onHiddenChange && <details className="card-options" onToggle={event => closeOtherCardMenus(event.currentTarget)}><summary aria-label={`Options for ${report.title || 'report'}`}>•••</summary><button onClick={event => { if (!hiddenReportIds.has(report.id)) scurryFrom(event.currentTarget.closest('article') ?? event.currentTarget); onHiddenChange(report.id, !hiddenReportIds.has(report.id)); }}>{hiddenReportIds.has(report.id) ? 'Unhide report' : 'Hide report'}</button></details>}
+              {onHiddenChange && <details className="card-options" onToggle={event => closeOtherCardMenus(event.currentTarget)} onKeyDown={event => {
+                if (event.key === 'Escape') {
+                  event.currentTarget.open = false;
+                  event.currentTarget.querySelector('summary')?.focus();
+                }
+              }}><summary aria-label={`Options for ${report.title || 'report'}`}>•••</summary>
+                <div className="card-options-panel">
+                  <a href={`/reports/${encodeURIComponent(report.id)}`}>See full report</a>
+                  <button type="button" onClick={event => { if (!hiddenReportIds.has(report.id)) scurryFrom(event.currentTarget.closest('article') ?? event.currentTarget); onHiddenChange(report.id, !hiddenReportIds.has(report.id)); }}>{hiddenReportIds.has(report.id) ? 'Unhide' : 'Hide'}</button>
+                </div>
+              </details>}
               {showAuthors && report.user_id && (authors[report.user_id] ? <ReportAuthor key={report.user_id} profileId={report.user_id} initialProfile={authors[report.user_id]} sourceReportId={report.id} onBlocked={onMemberBlocked} /> : <div className="report-author report-author-placeholder" aria-hidden="true"><span className="report-author-initial" /><span className="report-author-copy"><span>Community member</span></span></div>)}
               </article>
             );

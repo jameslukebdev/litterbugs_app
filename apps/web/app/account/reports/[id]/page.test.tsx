@@ -3,6 +3,7 @@ import Page from './page';
 const state = vi.hoisted(() => ({ userId: 'owner' as string | null, report: {} as Record<string, unknown>, participant: false, error: null as unknown }));
 vi.mock('next/navigation', () => ({ redirect: (url: string) => { throw new Error(`redirect:${url}`); }, notFound: () => { throw new Error('not-found'); } }));
 vi.mock('./report-page', () => ({ AccountReport: () => null }));
+vi.mock('@/lib/server-contributor-credits', () => ({ withServerContributorCredits: async (reports: unknown[]) => reports }));
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({
   auth: { getClaims: async () => ({ data: { claims: state.userId ? { sub: state.userId } : null } }) },
   from: () => {

@@ -7,6 +7,8 @@ import { notFound } from 'next/navigation';
 
 import { Website } from '@/components/public-website';
 import { BrandBug } from '@/components/brand-bug';
+import { ContributionSupporters } from '@/components/contribution-supporters';
+import { withServerContributorCredits } from '@/lib/server-contributor-credits';
 import { CommunityRank } from '@/components/community-rank';
 import { ReportStructuredData } from '@/components/public-website/structured-data';
 import { publicReportListing } from '@/lib/public-report-structured-data';
@@ -69,8 +71,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function SharedReportPage({ params }: Props) {
   const { id } = await params;
-  const report = await loadPublicReportShare(id, 'linked');
-  if (!report) notFound();
+  const source = await loadPublicReportShare(id, 'linked');
+  if (!source) notFound();
+  const [report] = await withServerContributorCredits([source]);
 
   // Optional recommendations must not hold the report and its actions behind another database read.
   const relatedLinks = loadRelatedPublicReports(report.id, report.location?.latitude, report.location?.longitude).then(related => related.length > 0 ? <ul className={styles.relatedList}>
@@ -212,6 +215,7 @@ export default async function SharedReportPage({ params }: Props) {
                   <dd>{report.litterTypes.join(', ')}</dd>
                 </div>}
               </dl>}
+              {!expired && <ContributionSupporters reportId={report.id} initialCredit={report.contributorCredit} />}
               <ReportTimeline report={report} />
             </div>
             <div className={styles.side}>

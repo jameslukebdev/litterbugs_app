@@ -3,6 +3,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { inBoundary, type BoundaryGeometry } from '@/lib/place-geography';
 import { withCompletedRewards, reportRewardCents } from '@/lib/cleanup-reward';
 import { reportDiscoveryWindow } from '@/lib/report-visibility';
+import { withContributorCredits } from '@/lib/contributor-credit';
+import { loadContributorCredits } from '@/lib/load-contributor-credits';
 
 export type DiscoveryFilters = {
   status: 'all' | 'available' | 'progress' | 'completed';
@@ -69,5 +71,7 @@ export async function loadDiscoveryReports(client: SupabaseClient<Database>, { f
     if (error) throw error;
     return withCompletedRewards(client, data ?? []);
   }, report => hasReportCoordinates(report) && matchesDiscovery(report, filters, area, favorites, hidden, geometry), limit);
-  return { ...result, reports: result.reports.filter(hasReportCoordinates) };
+  const reports = await withContributorCredits(result.reports.filter(hasReportCoordinates), loadContributorCredits);
+  if (signal?.aborted) throw new Error('Obsolete report search');
+  return { ...result, reports };
 }

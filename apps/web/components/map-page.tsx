@@ -1,6 +1,7 @@
 import type { Report } from '@litterbugs/report-contract';
 
 import { withCompletedRewards } from '@/lib/cleanup-reward';
+import { withServerContributorCredits } from '@/lib/server-contributor-credits';
 import { MapExperience } from '@/components/map-experience';
 import { getGoogleMapsKey, getGoogleMapsMapId } from '@/lib/env';
 import { realUserIdFromClaims } from '@/lib/report-access';
@@ -29,7 +30,7 @@ export default async function MapPage({ initialView }: { initialView?: 'map' }) 
 
     userId = realUserIdFromClaims(claimsData?.claims);
     if (reportsResult.error) throw reportsResult.error;
-    reports = await withCompletedRewards(supabase, reportsResult.data ?? []);
+    reports = await withServerContributorCredits(await withCompletedRewards(supabase, reportsResult.data ?? []));
   } catch (error) {
     initialError = error instanceof Error ? error.message : 'Reports could not be loaded.';
   }

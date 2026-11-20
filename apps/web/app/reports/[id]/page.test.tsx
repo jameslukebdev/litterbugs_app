@@ -8,6 +8,9 @@ const { loadReport, loadRelated } = vi.hoisted(() => ({ loadReport: vi.fn(), loa
 vi.mock('@/lib/related-public-reports', () => ({ loadRelatedPublicReports: loadRelated }));
 vi.mock('@/components/public-site-header', () => ({ PublicSiteHeader: () => null }));
 vi.mock('@/lib/public-report-share', () => ({ loadPublicReportShare: loadReport }));
+vi.mock('@/lib/server-contributor-credits', () => ({
+  withServerContributorCredits: async (reports: PublicReportShareModel[]) => reports.map(report => ({ ...report, contributorCredit: report.contributorCredit ?? null })),
+}));
 vi.mock('@/components/public-account-action', () => ({ PublicAccountAction: () => <button>Sign in</button> }));
 afterEach(cleanup);
 const report = {
@@ -18,6 +21,16 @@ const report = {
   canonicalUrl: 'https://litterbugs.app/reports/report-id', severity: 'Low', notes: null,
 } satisfies PublicReportShareModel;
 describe('public shared report funding copy', () => {
+  it('includes donor names and amounts in the initial report HTML', async () => {
+    loadReport.mockResolvedValue({ ...report, contributorCredit: {
+      report_id: report.id, names: ['Website Donor'], anonymous_count: 0,
+      donations: [{ name: 'Website Donor', amountCents: 600, donatedAt: '2026-11-19T16:00:00Z' }],
+    } });
+    const html = renderToStaticMarkup(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
+    expect(html).toContain('Website Donor');
+    expect(html).toContain('$6.00');
+    expect(html).toContain('dateTime="2026-11-19T16:00:00Z"');
+  });
   it('shows the actual reward on the visible page instead of labeling a funded cleanup volunteer-only', async () => {
     loadReport.mockResolvedValue(report);
     render(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));

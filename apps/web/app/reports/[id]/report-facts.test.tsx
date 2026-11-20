@@ -34,12 +34,31 @@ it('leaves out any number that was not recorded', () => {
 it('orders the dated steps and names who did them', () => {
   expect(reportTimeline(report).map(step => `${step.date}: ${step.label}`)).toEqual([
     'November 5, 2026: Reported by Hayden',
-    'November 6, 2026: First contribution to its cleanup fund',
+    'November 6, 2026: First donation received',
     'November 7, 2026: Cleanup claimed',
     'November 8, 2026: Cleaned up by Nevan',
   ]);
   const expired = reportTimeline({ ...report, state: 'expired', fundedDate: null, expiredDate: '2026-12-05T12:00:00Z' });
   expect(expired.map(step => step.label)).toEqual(['Reported by Hayden', 'Report expired without a confirmed cleanup']);
+});
+
+it('records every donation with its amount, visible donor name, and precise confirmation time', () => {
+  const timeline = reportTimeline({ ...report, contributorCredit: {
+    report_id: report.id, names: ['Donor'], anonymous_count: 1,
+    donations: [
+      { name: 'Donor', amountCents: 2500, donatedAt: '2026-11-06T21:47:00Z' },
+      { name: null, amountCents: 500, donatedAt: '2026-11-06T21:45:00Z' },
+      { name: 'Donor', amountCents: 2500, donatedAt: '2026-11-06T21:43:00Z' },
+    ],
+  } });
+  const donations = timeline.filter(step => step.label.includes('donated'));
+  expect(donations.map(step => step.label)).toEqual([
+    '$25.00 donated by Donor', '$5.00 donated anonymously', '$25.00 donated by Donor',
+  ]);
+  expect(donations.map(step => step.date)).toEqual([
+    'November 6, 2026 at 9:43 PM UTC', 'November 6, 2026 at 9:45 PM UTC', 'November 6, 2026 at 9:47 PM UTC',
+  ]);
+  expect(timeline.some(step => step.label === 'First donation received')).toBe(false);
 });
 
 it('words distances for people', () => {

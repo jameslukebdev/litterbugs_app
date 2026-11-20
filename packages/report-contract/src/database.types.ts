@@ -508,6 +508,7 @@ export type Database = {
           refund_requested_at: string | null
           refunded_at: string | null
           report_id: string
+          show_contributor_name: boolean | null
           status: string
           stripe_charge_id: string | null
           stripe_payment_intent_id: string | null
@@ -534,6 +535,7 @@ export type Database = {
           refund_requested_at?: string | null
           refunded_at?: string | null
           report_id: string
+          show_contributor_name?: boolean | null
           status?: string
           stripe_charge_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -560,6 +562,7 @@ export type Database = {
           refund_requested_at?: string | null
           refunded_at?: string | null
           report_id?: string
+          show_contributor_name?: boolean | null
           status?: string
           stripe_charge_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -1395,6 +1398,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_contributor_credits: {
+        Args: { report_ids: string[] }
+        Returns: { report_id: string; names: string[]; anonymous_count: number; donations: Json }[]
+      }
+      set_cleanup_contributor_visibility: {
+        Args: { contribution_id: string; show_name: boolean }
+        Returns: boolean
+      }
       owner_analytics_business: { Args: never; Returns: Json };
       owner_analytics_clarity_cache: { Args: { target_lease?: string; observed_source?: Json }; Returns: Json };
       write_customer_draft: { Args: DraftWrite; Returns: CloudDraft };

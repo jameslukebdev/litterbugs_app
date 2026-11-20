@@ -3,7 +3,9 @@
   "specifiers": {
     "jsr:@std/encoding@1": "1.0.11",
     "jsr:@supabase/functions-js@*": "2.110.7",
+    "npm:@electric-sql/pglite@0.5.17": "0.5.17",
     "npm:@supabase/supabase-js@2.87.1": "2.87.1",
+    "npm:@types/node@*": "24.2.0",
     "npm:jose@6.2.12": "6.2.12",
     "npm:openai@^4.52.5": "4.104.0",
     "npm:stripe@22.5.0": "22.5.0"
@@ -20,6 +22,9 @@
     }
   },
   "npm": {
+    "@electric-sql/pglite@0.5.17": {
+      "integrity": "sha512-8SvKjiUjaU+0O0dbxjOfN+jXz14TEqDWbwDkYOW1aQ11y/ph2JvFVI27ABBo5nfw+ZfSqy4hKCNlbnbB1TDE+g=="
+    },
     "@supabase/auth-js@2.87.1": {
       "integrity": "sha512-6RDeOf5TVoaXFtEstN188ykp3pXLZaU9qoAWfx8dc50FFAAqt+kcFJ96V0IvSmcpb4mDAWcpTJ7BegmVDn/WIw==",
       "dependencies": [

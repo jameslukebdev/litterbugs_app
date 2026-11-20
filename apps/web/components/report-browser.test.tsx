@@ -40,6 +40,23 @@ const report: MappableReport = {
 afterEach(() => { cleanup(); sessionStorage.clear(); window.history.replaceState(null, '', '/'); });
 
 describe('ReportBrowser', () => {
+  it('offers the full report and Hide in the card menu and closes it with Escape', () => {
+    const onSelect = vi.fn();
+    const onHiddenChange = vi.fn();
+    render(<ReportBrowser reports={[report]} open onToggle={vi.fn()} onSelect={onSelect} onHiddenChange={onHiddenChange} />);
+    const trigger = screen.getByLabelText('Options for Roadside bottles');
+    fireEvent.click(trigger);
+    expect(screen.getByRole('link', { name: 'See full report' }).getAttribute('href')).toBe('/reports/report-id');
+    expect(screen.getByRole('button', { name: 'Hide' })).toBeTruthy();
+    fireEvent.keyDown(trigger, { key: 'Escape' });
+    expect(trigger.closest('details')?.open).toBe(false);
+    expect(document.activeElement).toBe(trigger);
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole('button', { name: 'Hide' }));
+    expect(onHiddenChange).toHaveBeenCalledWith(report.id, true);
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
   it('makes live reports and the cleaner reward discoverable', () => {
     const onSelect = vi.fn();
     render(<ReportBrowser reports={[report]} open onToggle={vi.fn()} onSelect={onSelect} />);

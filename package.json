@@ -35,7 +35,8 @@
     "mobile:check-source": "node scripts/check-mobile-source.mjs",
     "mobile:test:native": "python3 scripts/run-mobile-native-regression.py",
     "mobile:update:preview": "node scripts/mobile-update.mjs production-preview",
-    "mobile:update:production": "node scripts/mobile-update.mjs production"
+    "mobile:update:production": "node scripts/mobile-update.mjs production",
+    "supabase:privacy:test": "npx --yes deno@2.5.4 test --allow-env --allow-read --config supabase/functions/deno.json --lock supabase/functions/deno.lock --frozen supabase/functions/_shared/contribution-privacy.integration.test.ts"
   },
   "devDependencies": {
     "eslint": "9.39.2",

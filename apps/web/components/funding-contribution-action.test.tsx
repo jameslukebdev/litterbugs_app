@@ -13,7 +13,8 @@ const telemetry = vi.hoisted(() => ({ step: vi.fn(), failure: vi.fn(), observe: 
 vi.mock('@/lib/website-analytics', async original => ({ ...await original<object>(), trackParticipation: telemetry.step, trackParticipationFailure: telemetry.failure }));
 vi.mock('@/lib/observe-contribution', () => ({ observeContributionConfirmation: telemetry.observe }));
 
-vi.mock('@/lib/payment-attempt', () => ({ resumeOrCreatePayment: (_user: string, report: string, amount: number) => createContribution(report, amount).then((intent: unknown) => ({ intent, amount })) }));
+vi.mock('@/lib/payment-attempt', () => ({ resumeOrCreatePayment: (_user: string, report: string, amount: number, _version?: number, showName?: boolean) =>
+  createContribution(report, amount, ...(showName === undefined ? [] : [showName])).then((intent: unknown) => ({ intent, amount })) }));
 
 vi.mock('@/lib/funding', async (importOriginal) => ({
   ...await importOriginal<typeof import('@/lib/funding')>(),
@@ -62,7 +63,7 @@ const report: Report = {
 
 beforeEach(() => {
   stripeMock.ready = false;
-  quote.mockImplementation(async (principalAmountCents: number) => ({ principalAmountCents, platformFeeCents: Math.floor((principalAmountCents + 5) / 10) + 50, totalAmountCents: principalAmountCents + Math.floor((principalAmountCents + 5) / 10) + 50, pricingVersion: 2, currency: 'usd' }));
+  quote.mockImplementation(async (principalAmountCents: number) => ({ principalAmountCents, platformFeeCents: Math.floor((principalAmountCents + 5) / 10) + 50, totalAmountCents: principalAmountCents + Math.floor((principalAmountCents + 5) / 10) + 50, pricingVersion: 2, currency: 'usd', supportsContributorVisibility: true }));
 });
 
 afterEach(() => {
@@ -113,6 +114,18 @@ describe('FundingContributionAction', () => {
     expect(screen.getByText(/full charge—including the fee—is refunded/i)).toBeTruthy();
     expect(loadStripe).not.toHaveBeenCalled();
   });
+
+  it.each([false, true])('shows names by default and sends the anonymous choice %s with the reservation', async (anonymous) => {
+    loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
+    quote.mockResolvedValue({ principalAmountCents: 500, platformFeeCents: 100, totalAmountCents: 600, pricingVersion: 2, currency: 'usd', supportsContributorVisibility: true });
+    createContribution.mockResolvedValue({ publishableKey: null });
+    render(<FundingContributionAction report={report} userId="member-id" initialAmountCents={500} startOpen />);
+    const choice = await screen.findByRole('checkbox', { name: 'Donate anonymously' }) as HTMLInputElement;
+    expect(choice.checked).toBe(false);
+    if (anonymous) fireEvent.click(choice);
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await waitFor(() => expect(createContribution).toHaveBeenCalledWith(report.id, 500, !anonymous));
+  });
 });
 
 
@@ -126,7 +139,7 @@ describe('report creation handoff', () => {
     expect(await screen.findByText('$6.00')).toBeTruthy();
     expect(createContribution).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
-    await waitFor(() => expect(createContribution).toHaveBeenCalledWith(report.id, 500));
+    await waitFor(() => expect(createContribution).toHaveBeenCalledWith(report.id, 500, true));
   });
 
   it('waits for eligibility without creating a payment or replacing the selected amount', async () => {
@@ -138,6 +151,17 @@ describe('report creation handoff', () => {
     rerender(<FundingContributionAction report={report} userId="member-id" initialAmountCents={100} startOpen />);
     expect((await screen.findByLabelText('Cleanup fund contribution amount') as HTMLInputElement).value).toBe('1.00');
   });
+});
+
+it('never starts a charge if the server cannot save the anonymous choice', async () => {
+  loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
+  quote.mockResolvedValue({ principalAmountCents: 500, platformFeeCents: 100, totalAmountCents: 600, pricingVersion: 2, currency: 'usd' });
+  render(<FundingContributionAction report={report} userId="member-id" initialAmountCents={500} startOpen />);
+  fireEvent.click(await screen.findByRole('checkbox', { name: 'Donate anonymously' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+  await screen.findByRole('alert');
+  expect(createContribution).not.toHaveBeenCalled();
+  expect(loadStripe).not.toHaveBeenCalled();
 });
 
 describe('server-confirmed pricing', () => {

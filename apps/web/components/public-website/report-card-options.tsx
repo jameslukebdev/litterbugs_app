@@ -52,8 +52,9 @@ export function ReportCardOptions({ reportId, title }: { reportId: string; title
     }
   }}>
     <summary aria-label={`Options for ${title}`}>•••</summary>
-    <div className="public-card-options-panel">
-      <button disabled={busy} aria-busy={busy || undefined} onClick={toggleHidden}>{hidden ? 'Unhide report' : 'Hide report'}</button>
+    <div className="card-options-panel public-card-options-panel">
+      <a href={`/reports/${encodeURIComponent(reportId)}`}>See full report</a>
+      <button type="button" disabled={busy} aria-busy={busy || undefined} onClick={toggleHidden}>{hidden ? 'Unhide' : 'Hide'}</button>
       {message && <p role="status">{message}</p>}
     </div>
   </details>;

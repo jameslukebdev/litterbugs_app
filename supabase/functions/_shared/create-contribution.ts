@@ -17,6 +17,7 @@ type RequestBody = {
   principalAmountCents?: unknown;
   clientRequestId?: unknown;
   pricingVersion?: unknown;
+  showContributorName?: unknown;
 };
 
 export async function createContributionResponse(request: Request, dependencies = {
@@ -56,7 +57,10 @@ export async function createContributionResponse(request: Request, dependencies 
     const fee = data.pricing_version === 2 ? Math.floor((principal + 2) / 5) + (principal < 500 ? 50 : 0) : Math.floor((principal + 5) / 10);
     // Read-only quote. Reservation rechecks this version under its pricing lock.
     return jsonResponse({ principalAmountCents: principal, platformFeeCents: fee,
-      totalAmountCents: principal + fee, pricingVersion: data.pricing_version, currency: 'usd' });
+      totalAmountCents: principal + fee, pricingVersion: data.pricing_version, currency: 'usd', supportsContributorVisibility: true });
+  }
+  if (body.showContributorName !== undefined && typeof body.showContributorName !== 'boolean') {
+    return jsonResponse({ error: 'Choose whether to show your name.' }, 400);
   }
   if (
     !isUuid(reportId)
@@ -71,13 +75,14 @@ export async function createContributionResponse(request: Request, dependencies 
   const stripe = stripeClient();
   try {
     const { data: contribution, error: reservationError } = await admin.rpc(
-      "reserve_cleanup_contribution", {
+      typeof body.showContributorName === 'boolean' ? "reserve_named_cleanup_contribution" : "reserve_cleanup_contribution", {
         target_report_id: reportId,
         target_contributor_id: user.id,
         target_client_request_id: clientRequestId,
         principal_cents: Number(principalAmountCents),
         expected_pricing_version: body.pricingVersion === undefined ? 1 : body.pricingVersion,
         receipt_email: user.email ?? null,
+        ...(typeof body.showContributorName === 'boolean' ? { show_name: body.showContributorName } : {}),
       },
     );
     if (reservationError) throw reservationError;
@@ -136,6 +141,7 @@ export async function createContributionResponse(request: Request, dependencies 
       platformFeeCents: contribution.platform_fee_cents,
       totalAmountCents: contribution.total_amount_cents,
       pricingVersion: contribution.pricing_version,
+      showContributorName: contribution.show_contributor_name ?? null,
       currency: "usd",
     });
   } catch (error) {

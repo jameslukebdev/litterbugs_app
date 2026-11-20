@@ -1,9 +1,11 @@
 import type { Report } from '@litterbugs/report-contract';
+import type { ContributorCredit } from './contributor-credit';
 
 export type PublicReportShareState = 'available' | 'in_progress' | 'completed' | 'expired';
 
 export type PublicReportShareModel = {
   id: string;
+  contributorCredit?: ContributorCredit | null;
   state: PublicReportShareState;
   title: string;
   rewardCents?: number;

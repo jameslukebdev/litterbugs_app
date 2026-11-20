@@ -217,7 +217,7 @@ function currentEntrySource(): EntrySource {
   return entrySourceForPath(window.location.pathname);
 }
 
-const MAP_STAGES = ['search_submitted', 'location_search_started', 'location_suggestions_shown', 'location_selected', 'location_search_empty', 'location_search_failed', 'search_results_loaded', 'search_results_empty', 'search_results_failed', 'search_report_opened', 'results_loaded', 'results_empty', 'results_failed', 'closest_requested', 'closest_found', 'closest_empty', 'closest_failed', 'closest_viewed', 'report_opened'] as const;
+const MAP_STAGES = ['search_submitted', 'location_search_started', 'location_suggestions_shown', 'location_selected', 'location_search_empty', 'location_search_failed', 'search_results_loaded', 'search_results_empty', 'search_results_failed', 'search_report_opened', 'results_loaded', 'results_empty', 'results_failed', 'empty_state_seen', 'closest_requested', 'closest_found', 'closest_empty', 'closest_failed', 'closest_viewed', 'report_opened'] as const;
 export type MapSearchSurface = 'toolbar_search' | 'empty_search';
 let mapSearchSelection: { placeId: string; surface: MapSearchSurface; started: number } | null = null;
 /** In-memory handoff for the homepage search → map route. Never sent or persisted. */

@@ -28,8 +28,9 @@ export function clarityJourney(event: WebsiteFlowEvent, properties: Record<strin
   }
   if (event === 'map_discovery') {
     const stage = String(fields.stage);
-    const name = ['results_empty', 'search_results_empty', 'closest_empty'].includes(stage) ? 'lb_map_empty'
-      : ['results_failed', 'search_results_failed', 'closest_failed', 'location_search_failed'].includes(stage) ? 'lb_map_results_failed' : null;
+    const name = stage === 'empty_state_seen' ? 'lb_map_empty_state_seen'
+      : ['results_empty', 'search_results_empty', 'closest_empty'].includes(stage) ? 'lb_map_empty'
+        : ['results_failed', 'search_results_failed', 'closest_failed', 'location_search_failed'].includes(stage) ? 'lb_map_results_failed' : null;
     return name ? { event: name, tags: { lb_map_result: stage, ...(typeof fields.filtered === 'boolean' ? { lb_map_filtered: String(fields.filtered) } : {}) } } : null;
   }
   if (fields.action !== 'clean') return null;

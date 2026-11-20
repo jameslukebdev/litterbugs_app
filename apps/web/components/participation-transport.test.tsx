@@ -272,6 +272,21 @@ function finishClarityLoad(clarity = vi.fn()) {
   return clarity;
 }
 
+it('delivers a separate empty-state impression to PostHog and Clarity', async () => {
+  const impression = { surface: 'map', filtered: true, latitude: 36 };
+  trackMapDiscovery('results_empty', { surface: 'map', filtered: true });
+  trackMapDiscovery('empty_state_seen', impression);
+  render(<WebsiteAnalytics config={recordingConfig} />);
+  await waitFor(() => expect(sdk.capture).toHaveBeenCalledWith('map_discovery', {
+    stage: 'empty_state_seen', surface: 'map', filtered: true, page_type: '/map',
+  }));
+  const clarity = finishClarityLoad();
+  await waitFor(() => expect(clarity.mock.calls.filter(([cmd]) => cmd === 'event')).toEqual([
+    ['event', 'lb_map_empty'], ['event', 'lb_map_empty_state_seen'],
+  ]));
+  expect(clarity).toHaveBeenCalledWith('set', 'lb_map_filtered', 'true');
+});
+
 it('preserves interleaved steps, failures and exits for late Clarity without resending to PostHog', async () => {
   trackParticipation('clean', 'action_tapped');
   trackParticipation('clean', 'safety_review');

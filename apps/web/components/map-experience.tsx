@@ -54,6 +54,8 @@ import { saveReportEdit } from '@/lib/save-report-edit';
 import { isDiscoverableReport } from '@/lib/report-visibility';
 import { resolvePlaceId } from '@/lib/place-search';
 import { DEFAULT_DISCOVERY_FILTERS, loadDiscoveryReports, type DiscoveryArea, type DiscoveryFilters } from '@/lib/report-discovery';
+import { withContributorCredits } from '@/lib/contributor-credit';
+import { loadContributorCredits } from '@/lib/load-contributor-credits';
 import { readDiscoveryMemory, saveDiscoveryMemory, readMapUrl, mapUrl, readDiscoveryView, readBrowserUrl, browserUrl } from '@/lib/discovery-memory';
 import { useDataRefresh } from '@/lib/use-data-refresh';
 import { createClient } from '@/lib/supabase/client';
@@ -319,7 +321,10 @@ export function MapExperience({
           url.searchParams.delete('report');
           window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
           setToast('This report is no longer available.');
-        } else setSelectedReport(data);
+        } else {
+          const [completeReport] = await withContributorCredits([data], loadContributorCredits);
+          if (!controller.signal.aborted && selectedReportIdRef.current === selectedId) setSelectedReport(completeReport);
+        }
       }
     } catch {
       if (!controller.signal.aborted) showDiscoveryError('Reports could not be refreshed. Check your connection and move the map or try another filter.');
@@ -494,6 +499,8 @@ export function MapExperience({
       } else await Promise.resolve();
       if (cancelled) return;
       if (!report) { setToast('This report is no longer available.'); return; }
+      const [completeReport] = await withContributorCredits([report], loadContributorCredits);
+      if (cancelled) return;
       if (measuredLinkedReport.current !== reportId) {
         measuredLinkedReport.current = reportId;
         trackMapDiscovery('report_opened', { source: 'report_link' });
@@ -501,7 +508,7 @@ export function MapExperience({
       linkedReportFocusRef.current = report;
       setDetailsMinimized(url.searchParams.get('intent') === 'locate');
       if (url.searchParams.get('intent') === 'locate') setReportListOpen(false);
-      setSelectedReport(report);
+      setSelectedReport(completeReport);
     }
     void openLinkedReport().catch(() => { if (!cancelled) setToast('The shared report could not be loaded. Please try opening its link again.'); });
     return () => { cancelled = true; };
@@ -988,7 +995,8 @@ export function MapExperience({
     try {
       const { data, error } = await createClient().from('reports').select('*').eq('id', reportId).eq('is_published', true).eq('is_sample', false).maybeSingle();
       if (error || !data || !hasReportCoordinates(data)) throw new Error();
-      setToast(''); openReport(data, 'account');
+      const [completeReport] = await withContributorCredits([data], loadContributorCredits);
+      setToast(''); openReport(completeReport, 'account');
     } catch { setToast('This report could not be opened. Try again from your activity.'); }
   }
 
