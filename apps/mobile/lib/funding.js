@@ -27,13 +27,16 @@ export async function loadContributionQuote(principalAmountCents) {
   return data;
 }
 
-export async function createCleanupContribution({ reportId, principalAmountCents, clientRequestId, pricingVersion }) {
+export async function createCleanupContribution({ reportId, principalAmountCents, clientRequestId, pricingVersion, showContributorName = true }) {
   const version = pricingVersion ?? (await loadContributionQuote(principalAmountCents)).pricingVersion;
   const { data, error } = await supabase.functions.invoke('create-cleanup-contribution', {
-    body: { reportId, principalAmountCents, clientRequestId, pricingVersion: version },
+    body: { reportId, principalAmountCents, clientRequestId, pricingVersion: version, showContributorName },
   });
   if (error) throw new Error(await edgeFunctionErrorMessage(data, error, 'Payment could not be started. Please try again.'));
   if (data?.error) throw new Error(data.error);
+  if (data?.showContributorName !== showContributorName) {
+    throw new Error('Your donation privacy choice could not be verified. Check Payment activity before paying again.');
+  }
   return data;
 }
 
@@ -85,7 +88,7 @@ export async function createPayoutDashboardLink() {
 export async function loadMyContribution(id, userId, { verify = true } = {}) {
   if (!id || !userId) return null;
   const { data, error } = await supabase.from('cleanup_contributions')
-    .select('id, report_id, principal_amount_cents, platform_fee_cents, total_amount_cents, status, created_at, refunded_at, report:reports(id,title,cleanup_state,funding_eligibility)')
+    .select('id, report_id, principal_amount_cents, platform_fee_cents, total_amount_cents, status, created_at, refunded_at, show_contributor_name, report:reports(id,title,cleanup_state,funding_eligibility)')
     .eq('id', id).eq('contributor_id', userId).maybeSingle();
   if (error) throw error;
   if (data?.status === 'payment_pending' && verify) {

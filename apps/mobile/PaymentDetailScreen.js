@@ -10,6 +10,7 @@ import { formatUsd, loadMyContribution } from './lib/funding';
 import PaymentStatus from './components/PaymentStatus';
 import { statusMessage, paymentDisplayStatus, formatContributionDate } from './lib/contributionPresentation';
 import { colors, fonts } from './lib/theme';
+import ContributionPrivacyControl from './components/ContributionPrivacyControl';
 
 export default function PaymentDetailScreen({ navigation, route }) {
   const { user } = useSession();
@@ -37,6 +38,7 @@ export default function PaymentDetailScreen({ navigation, route }) {
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignItems: 'center', justifyContent: 'space-between' }}><FeeExplanationLabel label="Service fee" /><Text>{formatUsd(item.platform_fee_cents)}</Text></View>
         {item.refunded_at ? <Text>Refunded: {formatContributionDate(item.refunded_at)}</Text> : null}
       </View>
+      {['succeeded', 'paid_out'].includes(item.status) && !item.refunded_at ? <ContributionPrivacyControl key={`${user.id}:${item.id}`} item={item} onSaved={record.refresh} /> : null}
       {item.report ? action('View cleanup report', () => navigation.popTo('App', { screen: 'Map', params: { reportId: item.report_id } })) : <Text style={{ color: colors.muted, lineHeight: 21 }}>The linked report is no longer available. Your payment record remains here.</Text>}
     </> : !loading && !error ? <Text>This payment record is unavailable.</Text> : null}
     {item || error ? action(loading ? 'Updating…' : 'Refresh payment details', load, loading) : null}

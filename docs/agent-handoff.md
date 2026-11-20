@@ -24,6 +24,31 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-20 — Codex (mobile funder details prepared; publication held)
+
+- Candidate based on frozen approved source 4835975. Changes are limited to
+  the donor reader/panel, anonymous checkout choice, owner donation visibility,
+  payment-choice recovery and tests. Map code/artwork/configuration/dependencies
+  are unchanged. The shared checkout's unrelated location-recovery work is excluded.
+- Final owner placement: donor panel directly below Get directions, above Litter
+  and Notes. Three donations initially, expandable list, separate amounts/dates,
+  names public by default, explicit anonymous choices retained. Existing live
+  website APIs reused; no migration or Edge Function deployment needed.
+- 677 mobile tests passed, 1 existing skip; lint and 229-module source check
+  passed. Single-worker iOS/Android Hermes exports passed. One existing iPhone
+  simulator reused; actual Roby Greene donors displayed as two $25 entries.
+  Native anonymous checkbox unchecked by default and checked state verified;
+  returned before creating a payment. No Android emulator was booted.
+- Simulator's missing artwork came from its stopped Metro asset server. Loaded
+  exact approved-source map/assets plus the feature through a local-only update
+  manifest; no EAS channel publication. Fixed Hermes RelativeTimeFormat absence
+  with dependency-free wording and a regression test. Temporary QA scroll
+  instrumentation was never loaded and is removed from candidate source.
+- Grant explicitly requires approval before ANY OTA publication. Nothing was
+  sent to production or preview channels; no native build/store submission,
+  website/backend deployment, charge, payout or donor-visibility mutation.
+  Kept one simulator and one export/test worker at a time, with capped heaps.
+
 ### 2026-11-13 — Codex (multi-size mobile audit; local responsive fixes)
 
 - Source `16582b9fc7cacd7248dfe8a09ab3eaabce0c3a14` keeps compact map pins, card grabber/X and

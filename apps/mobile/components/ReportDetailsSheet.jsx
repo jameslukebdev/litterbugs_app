@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import PrivateView from './PrivateView';
+import ContributionSupporters from './ContributionSupporters';
 import { Modal, View, Text, TouchableOpacity, ActivityIndicator, ScrollView, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CompletedCleanupStory from '../CompletedCleanupStory';
@@ -383,6 +384,8 @@ export default function ReportDetailsSheet({ state, actions }) {
             <Text style={styles.reportDirectionsText}>Get directions</Text>
           </TouchableOpacity>
         ) : null}
+
+        <ContributionSupporters reportId={selectedReport?.id} visible={Boolean(detailsOpen)} style={{ marginHorizontal: 22 }} />
 
         {geminiReviewEnabled
           && userOwnsSelectedReport

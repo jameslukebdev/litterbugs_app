@@ -1,5 +1,7 @@
 import { userMessage } from './lib/userMessage';
 import FeeExplanationLabel from './components/FeeExplanationLabel';
+import { AnonymousDonationChoice } from './components/DonationPrivacy';
+import { savedContributorVisibility } from './lib/contributorCredit';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { reconcileContribution } from './lib/reconcileContribution';
 import { replaceUnpaidContribution } from './lib/replaceUnpaidContribution';
@@ -100,6 +102,8 @@ function FundingContributionController({ navigation, route }) {
     return () => clearTimeout(timer);
   }, [paying]);
   const [receipt, setReceipt] = useState(null);
+  const [showContributorName, setShowContributorName] = useState(true);
+  const [nameChoiceLocked, setNameChoiceLocked] = useState(false);
   const [confirmationPending, setConfirmationPending] = useState(false);
   const previousFundingEligibility = useRef(null);
   const fundingEligibilityInitialized = useRef(false);
@@ -131,7 +135,7 @@ function FundingContributionController({ navigation, route }) {
       attempt,
       findContribution: async (requestId) => {
         const { data, error } = await withTimeout(supabase.from('cleanup_contributions')
-          .select('id,status,principal_amount_cents,total_amount_cents')
+          .select('id,status,principal_amount_cents,total_amount_cents,show_contributor_name')
           .eq('contributor_id', user.id).eq('client_request_id', requestId).maybeSingle(), 12000, 'Payment status is taking longer than expected.');
         if (error) throw error;
         return data;
@@ -144,7 +148,17 @@ function FundingContributionController({ navigation, route }) {
       clearAttempt: () => clearPaymentAttempt(user.id, reportId, attempt.clientRequestId),
     });
     if (!mounted.current) return 'obsolete';
-    attemptRef.current = result.attempt;
+    let recovered = result.attempt;
+    if (recovered) {
+      const shown = savedContributorVisibility(recovered, result.contribution);
+      recovered = { ...recovered, showContributorName: shown,
+        ...(recovered.intent ? { intent: { ...recovered.intent, showContributorName: shown } } : {}) };
+      await savePaymentAttempt(user.id, reportId, recovered, { updating: true });
+      if (!mounted.current) return 'obsolete';
+      setShowContributorName(shown);
+    }
+    attemptRef.current = recovered;
+    setNameChoiceLocked(Boolean(recovered));
     setConfirmationPending(result.attempt?.phase === 'submitted');
     if (result.state === 'received') {
       hapticSuccess();
@@ -290,21 +304,24 @@ function FundingContributionController({ navigation, route }) {
       if (!mounted.current) return;
       attemptRef.current = attempt;
       if (!attempt) {
-        attempt = { clientRequestId: Crypto.randomUUID(), principalAmountCents: principalCents, createdAt: Date.now(), phase: 'preparing' };
+        attempt = { clientRequestId: Crypto.randomUUID(), principalAmountCents: principalCents, showContributorName, createdAt: Date.now(), phase: 'preparing' };
         await savePaymentAttempt(user.id, reportId, attempt);
         attemptRef.current = attempt;
+        setNameChoiceLocked(true);
       }
       if (!attempt.intent && Date.now() - attempt.createdAt > 23 * 60 * 60 * 1000) {
         throw new Error('We haven’t confirmed your previous payment. Open payment history or get help before paying again.');
       }
-      const intent = attempt.intent || await createCleanupContribution({ reportId, principalAmountCents: attempt.principalAmountCents, clientRequestId: attempt.clientRequestId, pricingVersion: currentQuote?.pricingVersion });
+      const intent = attempt.intent || await createCleanupContribution({ reportId, principalAmountCents: attempt.principalAmountCents, clientRequestId: attempt.clientRequestId, pricingVersion: currentQuote?.pricingVersion, showContributorName: savedContributorVisibility(attempt) });
       attempt = { ...attempt, intent, phase: 'ready' };
       await savePaymentAttempt(user.id, reportId, attempt, { updating: true });
       attemptRef.current = attempt;
+      setShowContributorName(savedContributorVisibility(attempt));
+      setNameChoiceLocked(true);
       if (!mounted.current) return;
       const accepted = await new Promise((resolve) => Alert.alert(
         'Confirm contribution',
-        `Cleanup contribution: ${formatUsd(intent.principalAmountCents)}\nService fee: ${formatUsd(intent.platformFeeCents)}\nTotal payment: ${formatUsd(intent.totalAmountCents)}`,
+        `Cleanup contribution: ${formatUsd(intent.principalAmountCents)}\nService fee: ${formatUsd(intent.platformFeeCents)}\nTotal payment: ${formatUsd(intent.totalAmountCents)}\n\n${savedContributorVisibility(attempt) ? 'Your name will be shown with this donation.' : 'You’ll be listed as Anonymous.'}`,
         [{ text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
           { text: 'Continue to payment', onPress: () => resolve(true) }],
         { cancelable: true, onDismiss: () => resolve(false) },
@@ -528,6 +545,8 @@ function FundingContributionController({ navigation, route }) {
             <View style={[styles.line, styles.totalLine]}><Text style={styles.totalLabel}>Total</Text><Text style={styles.totalValue}>{currentQuote ? formatUsd(currentQuote.totalAmountCents) : 'Checking…'}</Text></View>
           </View>
         ) : null}
+
+        <AnonymousDonationChoice shown={showContributorName} onChange={setShowContributorName} disabled={paying || confirmationPending} locked={nameChoiceLocked} />
 
         {quoteError ? <View style={styles.card}><ErrorText>{quoteError}</ErrorText><TextLink align="start" label="Retry pricing" onPress={() => setQuoteRetry(value => value + 1)} /></View> : null}
         <View style={styles.termsCard}>
