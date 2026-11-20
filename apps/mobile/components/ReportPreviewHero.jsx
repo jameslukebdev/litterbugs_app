@@ -72,7 +72,7 @@ export default function ReportPreviewHero({
         <Text style={[styles.badgeText, { color: status.ink }]}>{status.tone === 'open' ? 'Available' : status.tone === 'busy' ? 'In progress' : status.tone === 'done' ? 'Cleaned' : status.label}</Text>
       </View>
       <TouchableOpacity
-        style={[styles.favorite, sheet && styles.sheetFavorite, isFavorite && styles.favoriteSelected]}
+        style={[styles.favorite, sheet && styles.sheetFavorite]}
         accessibilityRole="button"
         accessibilityLabel={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
         accessibilityState={{ selected: Boolean(isFavorite), disabled: !favoritesReady }}
@@ -85,7 +85,7 @@ export default function ReportPreviewHero({
             name={isFavorite ? 'heart' : 'heart-outline'}
             size={26}
             color={isFavorite ? colors.severityHigh : colors.white}
-            style={!isFavorite ? styles.favoriteOutline : undefined}
+            style={styles.favoriteOutline}
           />
         </HopOnTrue>
       </TouchableOpacity>
@@ -134,7 +134,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  favoriteSelected: { borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.94)' },
   // Leave the sheet's fixed close target clear of the favorite button's hit slop.
   sheetFavorite: { top: 14 },
   favoriteOutline: {

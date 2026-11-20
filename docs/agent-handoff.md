@@ -24,6 +24,20 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-20 — Codex (transparent favorite hearts; OTA still held)
+
+- Removed the selected white circle in shared ReportPreviewHero, covering map
+  previews and report/photo cards. Kept filled red selected hearts, white outline
+  unselected hearts, hit targets, favorite persistence, haptics and hop animation.
+  Subtle icon shadow now applies to both states, matching website photo contrast.
+- 32 focused preview/gesture/photo tests and scoped lint passed; single-worker
+  iOS Hermes export passed. Existing iPhone simulator visibly confirmed the
+  already-favorited Roby Greene card has a red heart directly over the photo.
+  No favorite toggle or production data mutation was needed for this check.
+- Added to the existing funder approval candidate, still based on 4835975.
+  Grant's explicit approval is required before any OTA channel publication.
+  No OTA, native build, store submission or backend/website deployment.
+
 ### 2026-11-20 — Codex (mobile funder details prepared; publication held)
 
 - Candidate based on frozen approved source 4835975. Changes are limited to
