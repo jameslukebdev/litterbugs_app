@@ -29,7 +29,7 @@ revoke all on private.weekly_email_preferences, private.weekly_email_preference_
 
 create function private.weekly_email_hash(address text) returns text
 language sql immutable strict set search_path = ''
-as $$ select encode(extensions.digest(lower(btrim(address)), 'sha256'), 'hex') $$;
+as $$ select encode(pg_catalog.sha256(pg_catalog.convert_to(lower(btrim(address)), 'UTF8')), 'hex') $$;
 revoke all on function private.weekly_email_hash(text) from public, anon, authenticated, service_role;
 
 create function private.log_weekly_email_preference() returns trigger

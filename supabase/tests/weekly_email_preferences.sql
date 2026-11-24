@@ -53,13 +53,16 @@ set local role authenticated;
 select pg_temp.expect_denied('select public.get_weekly_email_preferences()');
 select pg_temp.expect_denied('select public.set_weekly_email_preference(true)');
 reset role;
+insert into auth.users(id,email,email_confirmed_at,banned_until,deleted_at) values
+ ('00000000-0000-4000-8000-000000000008','suspended@example.com',now(),now()+interval '1 day',null),
+ ('00000000-0000-4000-8000-000000000009','deleted@example.com',now(),null,now());
 select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000001',true);
 set local role authenticated;
 select pg_temp.expect_denied('select public.admin_weekly_email_recipients()');
 select set_config('request.jwt.claim.aal','aal2',true);
 do $$ declare audience jsonb; begin
  audience:=public.admin_weekly_email_recipients();
- assert jsonb_array_length(audience)=4,'exclude anonymous, review and unconfirmed users';
+ assert jsonb_array_length(audience)=4,'exclude anonymous, review, unconfirmed, suspended and deleted users';
  assert not exists(select 1 from jsonb_array_elements(audience) r where r->>'email'='unknown@example.com'),'no enumeration of unknown suppression';
  assert exists(select 1 from jsonb_array_elements(audience) r where r->>'email'='new@example.com' and (r->>'subscribed')::boolean),'new account eligible';
 end $$;

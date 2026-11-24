@@ -1,8 +1,6 @@
 create role anon nologin;
 create role authenticated nologin;
 create role service_role nologin bypassrls;
-create schema extensions;
-create extension pgcrypto with schema extensions;
 create schema auth;
 create schema private;
 create table auth.users(id uuid primary key,email text,is_anonymous boolean default false,raw_app_meta_data jsonb default '{}',email_confirmed_at timestamptz,deleted_at timestamptz,banned_until timestamptz);
