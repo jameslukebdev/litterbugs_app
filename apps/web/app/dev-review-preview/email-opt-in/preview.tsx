@@ -3,17 +3,18 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import styles from './preview.module.css';
 
-export type PreviewScreen = 'account' | 'signup' | 'email' | 'unsubscribe' | 'preferences' | 'recipients';
-type Status = 'subscribed' | 'unsubscribed' | 'not_subscribed';
-type Member = { name: string; email: string; status: Status; source: 'Existing account' | 'Signup choice' | 'Account settings' };
+export type PreviewScreen = 'account' | 'signup' | 'email' | 'unsubscribe' | 'preferences' | 'recipients' | 'privacy';
+type Status = 'subscribed' | 'unsubscribed';
+type Member = { name: string; email: string; status: Status; source: 'Existing account' | 'Signup default' | 'Account settings' };
 
 const SCREENS: { id: PreviewScreen; title: string; description: string }[] = [
   { id: 'account', title: 'App settings', description: 'A current member starts with weekly emails switched on.' },
-  { id: 'signup', title: 'New account', description: 'New members can choose weekly emails. The box starts unchecked.' },
+  { id: 'signup', title: 'New account', description: 'New accounts start subscribed. Signup has no email checkbox or newsletter wording.' },
   { id: 'email', title: 'Weekly email', description: 'Luke sends from Gmail. The footer links to unsubscribe and preferences.' },
   { id: 'unsubscribe', title: 'Unsubscribe', description: 'One small page. Enter an email address; no sign-in required.' },
   { id: 'preferences', title: 'Website preferences', description: 'The same email choice, available from a member’s account.' },
   { id: 'recipients', title: 'Luke’s recipient list', description: 'Copy a fresh Bcc list or download a CSV before each weekly send.' },
+  { id: 'privacy', title: 'Privacy draft', description: 'Proposed disclosure for review only. Gmail’s sending-policy gap remains unresolved.' },
 ];
 
 function initialMembers(): Member[] {
@@ -79,8 +80,7 @@ function PreferenceForm({ subscribed, onSave, website = false }: { subscribed: b
   </form>;
 }
 
-function Signup({ onCreate }: { onCreate: (member: { name: string; email: string; subscribed: boolean }) => void }) {
-  const [weekly, setWeekly] = useState(false);
+function Signup({ onCreate }: { onCreate: (member: { name: string; email: string }) => void }) {
   const [name, setName] = useState('Jamie Parker');
   const [email, setEmail] = useState('jamie@example.com');
   const [created, setCreated] = useState(false);
@@ -88,17 +88,14 @@ function Signup({ onCreate }: { onCreate: (member: { name: string; email: string
     <span className={styles.successIcon}><Icon kind="check" size={30} /></span>
     <h1>You’re all set</h1>
     <p>Your Litterbugs account is ready.</p>
-    <p className={styles.reassurance}>{weekly ? 'You’ve also chosen to receive weekly Litterbugs emails.' : 'Weekly emails are off. You can turn them on later in your account settings.'}</p>
-    <button className={styles.primary} onClick={() => { setCreated(false); setWeekly(false); }}>Back to signup</button>
+    <button className={styles.primary} onClick={() => setCreated(false)}>Back to signup</button>
   </div>;
-  return <form className={styles.signupForm} onSubmit={e => { e.preventDefault(); onCreate({ name: name.trim(), email: email.trim(), subscribed: weekly }); setCreated(true); }}>
+  return <form className={styles.signupForm} onSubmit={e => { e.preventDefault(); onCreate({ name: name.trim(), email: email.trim() }); setCreated(true); }}>
     <Logo />
     <h1>Make a little difference</h1>
     <p className={styles.intro}>Create your free Litterbugs account.</p>
     <label className={styles.field}>Your name<input autoComplete="off" value={name} onChange={e => setName(e.target.value)} required /></label>
     <label className={styles.field}>Email address<input type="email" autoComplete="off" value={email} onChange={e => setEmail(e.target.value)} required /></label>
-    <label className={styles.signupChoice}><input type="checkbox" checked={weekly} onChange={e => setWeekly(e.target.checked)} /><span><strong>Send me weekly Litterbugs emails</strong><span>Cleanup opportunities, community stories, and ways to support cleanups. Unsubscribe anytime.</span></span></label>
-    <p className={styles.optional}>Optional. Your account works either way.</p>
     <button type="submit" className={styles.primary}>Create account</button>
     <p className={styles.terms}>By creating an account, you agree to the Terms and Privacy Policy.</p>
   </form>;
@@ -154,6 +151,21 @@ function Email({ onUnsubscribe, onPreferences }: { onUnsubscribe: () => void; on
   </div>;
 }
 
+function PrivacyDraft() {
+  return <div className={styles.website}>
+    <div className={styles.websiteNav}><Logo /><span>Draft · Not published</span></div>
+    <article className={styles.privacyDraft}>
+      <p className={styles.draftLabel}>Proposed addition to the privacy policy</p>
+      <h1>Account emails and community updates</h1>
+      <p>We use your account email address to send Litterbugs community news, cleanup opportunities, and ways to support cleanups, usually about once a week. Existing and new accounts are subscribed to these emails by default.</p>
+      <p>You can unsubscribe at any time using the link in an email or by turning off weekly emails in your account’s Email preferences. Unsubscribing does not close your account or stop essential account, security, payment, or support emails.</p>
+      <p>We use Google Gmail to send community emails. We retain your email preference and the information needed to honor unsubscribe requests.</p>
+      <p className={styles.draftReview}>Review note: the current policy does not describe weekly marketing. This is proposed wording for the requested concept; Gmail’s rules on unsolicited commercial mail still need to be resolved before sending.</p>
+      <a href="https://litterbugs.app/privacy" target="_blank" rel="noreferrer">Read the current published policy</a>
+    </article>
+  </div>;
+}
+
 function Recipients({ members, onEmail }: { members: Member[]; onEmail: () => void }) {
   const [filter, setFilter] = useState<'subscribed' | 'all' | 'unsubscribed'>('subscribed');
   const [query, setQuery] = useState('');
@@ -178,7 +190,7 @@ function Recipients({ members, onEmail }: { members: Member[]; onEmail: () => vo
     {copied ? <p className={styles.success} role="status">{subscribed.length} sample addresses copied. Paste them into Gmail’s Bcc field.</p> : null}
     {error ? <p role="alert" className={styles.error}>{error}</p> : null}
     <div className={styles.listTools}><div className={styles.filters} role="group" aria-label="Filter recipients">{(['subscribed', 'all', 'unsubscribed'] as const).map(value => <button key={value} aria-pressed={filter === value} onClick={() => setFilter(value)}>{value === 'all' ? 'All accounts' : value === 'subscribed' ? 'Subscribed' : 'Unsubscribed'}</button>)}</div><input className={styles.search} aria-label="Search sample recipients" placeholder="Search name or email" value={query} onChange={e => setQuery(e.target.value)} /></div>
-    <div className={styles.tableScroll}><table><thead><tr><th scope="col">Member</th><th scope="col">Weekly emails</th><th scope="col">How they joined</th></tr></thead><tbody>{visible.slice(0, 8).map(m => <tr key={m.email}><td><strong>{m.name}</strong><span>{m.email}</span></td><td><span className={m.status === 'subscribed' ? styles.subscribed : styles.muted}>{m.status === 'subscribed' ? 'Subscribed' : m.status === 'unsubscribed' ? 'Unsubscribed' : 'Not subscribed'}</span></td><td>{m.source}</td></tr>)}</tbody></table>{visible.length === 0 ? <p className={styles.empty}>No accounts match this view.</p> : null}</div>
+    <div className={styles.tableScroll}><table><thead><tr><th scope="col">Member</th><th scope="col">Weekly emails</th><th scope="col">How they joined</th></tr></thead><tbody>{visible.slice(0, 8).map(m => <tr key={m.email}><td><strong>{m.name}</strong><span>{m.email}</span></td><td><span className={m.status === 'subscribed' ? styles.subscribed : styles.muted}>{m.status === 'subscribed' ? 'Subscribed' : 'Unsubscribed'}</span></td><td>{m.source}</td></tr>)}</tbody></table>{visible.length === 0 ? <p className={styles.empty}>No accounts match this view.</p> : null}</div>
     <p className={styles.tableNote}>Showing {Math.min(8, visible.length)} of {visible.length} sample accounts. Addresses are examples, not your real mailing list.</p>
   </div>;
 }
@@ -202,11 +214,11 @@ function PreviewSession({ initialScreen, onReset }: { initialScreen: PreviewScre
   };
   const save = (next: boolean) => setMembers(list => list.map((m, index) => index === 0 ? { ...m, status: next ? 'subscribed' : 'unsubscribed', source: 'Account settings' } : m));
   const unsubscribe = (email: string) => setMembers(list => list.map(m => m.email.toLowerCase() === email.toLowerCase() ? { ...m, status: 'unsubscribed' } : m));
-  const create = ({ name, email, subscribed }: { name: string; email: string; subscribed: boolean }) => setMembers(list => list.some(m => m.email.toLowerCase() === email.toLowerCase()) ? list : [...list, { name, email, status: subscribed ? 'subscribed' : 'not_subscribed', source: 'Signup choice' }]);
+  const create = ({ name, email }: { name: string; email: string }) => setMembers(list => list.some(m => m.email.toLowerCase() === email.toLowerCase()) ? list : [...list, { name, email, status: 'subscribed', source: 'Signup default' }]);
   return <main className={styles.preview}>
     <header className={styles.previewHeader}><Logo /><div><strong>Email preferences preview</strong><span>Local demo · Sample data · No emails sent</span></div><button className={styles.reset} onClick={onReset}>Reset preview</button></header>
     <div className={styles.workspace}>
-      <aside className={styles.sidebar}><h2>The whole experience</h2><nav aria-label="Preview screens">{SCREENS.map((item, index) => <button key={item.id} aria-current={screen === item.id ? 'page' : undefined} onClick={() => navigate(item.id)}><span className={styles.stepNumber}>{index + 1}</span><span>{item.title}</span><Icon kind="arrow" size={16} /></button>)}</nav><div className={styles.policy}><strong>The starting point</strong><p>Current accounts stay subscribed until they unsubscribe. New accounts choose whether to join.</p></div><p className={styles.demoHelp}>Try <strong>alex@example.com</strong> on the unsubscribe page, then open Luke’s list to see it update.</p></aside>
+      <aside className={styles.sidebar}><h2>The whole experience</h2><nav aria-label="Preview screens">{SCREENS.map((item, index) => <button key={item.id} aria-current={screen === item.id ? 'page' : undefined} onClick={() => navigate(item.id)}><span className={styles.stepNumber}>{index + 1}</span><span>{item.title}</span><Icon kind="arrow" size={16} /></button>)}</nav><div className={styles.policy}><strong>The starting point</strong><p>Current and new accounts start subscribed. Anyone can unsubscribe from weekly emails.</p></div><p className={styles.demoHelp}>Try <strong>alex@example.com</strong> on the unsubscribe page, then open Luke’s list to see it update.</p></aside>
       <section className={styles.previewArea} aria-label={details.title}><div className={styles.sceneTitle}><div><h2>{details.title}</h2><p>{details.description}</p></div><span className={styles.viewLabel}>{screen === 'account' || screen === 'signup' ? 'App / mobile' : screen === 'email' ? 'Gmail' : 'Website'}</span></div>
         <div className={`${styles.stage} ${screen === 'recipients' ? styles.adminStage : ''}`}>
           {screen === 'account' ? <Phone><div className={styles.phoneNav}><span><Icon kind="back" />Settings</span></div><PreferenceForm subscribed={current.status === 'subscribed'} onSave={save} /></Phone> : null}
@@ -215,8 +227,9 @@ function PreviewSession({ initialScreen, onReset }: { initialScreen: PreviewScre
           {screen === 'unsubscribe' ? <div className={styles.publicPaper}><Unsubscribe onUnsubscribe={unsubscribe} onPreferences={() => navigate('preferences')} /></div> : null}
           {screen === 'preferences' ? <div className={styles.website}><div className={styles.websiteNav}><Logo /><span><Icon kind="user" size={18} />My account</span></div><div className={styles.webPreferences}><div className={styles.webBreadcrumb}>Account <span>/</span> Email preferences</div><PreferenceForm website subscribed={current.status === 'subscribed'} onSave={save} /></div></div> : null}
           {screen === 'recipients' ? <Recipients members={members} onEmail={() => navigate('email')} /> : null}
+          {screen === 'privacy' ? <PrivacyDraft /> : null}
         </div>
-        <p className={styles.sceneNote}>{screen === 'email' ? 'The business mailing address is a placeholder. Footer links open the matching preview screens.' : screen === 'recipients' ? 'Copy and CSV use sample addresses only. This screen does not send email or connect to Gmail.' : screen === 'signup' ? 'This previews the email choice during account setup. Google and Apple signups would get the same optional choice.' : 'Changes here affect this preview only. Reset preview restores all sample accounts.'}</p>
+        <p className={styles.sceneNote}>{screen === 'privacy' ? 'Draft only. The live privacy policy is unchanged. Adding this wording does not establish recipient consent or clear Gmail’s policy.' : screen === 'email' ? 'The business mailing address is a placeholder. Footer links open the matching preview screens.' : screen === 'recipients' ? 'Copy and CSV use sample addresses only. This screen does not send email or connect to Gmail.' : screen === 'signup' ? 'Sample signup only. Creating Jamie’s account adds one subscribed address to Luke’s list; it sends no email.' : 'Changes here affect this preview only. Reset preview restores all sample accounts.'}</p>
       </section>
     </div>
   </main>;

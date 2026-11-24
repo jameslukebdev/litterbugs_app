@@ -6,7 +6,7 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-const screens: PreviewScreen[] = ['account', 'signup', 'email', 'unsubscribe', 'preferences', 'recipients'];
+const screens: PreviewScreen[] = ['account', 'signup', 'email', 'unsubscribe', 'preferences', 'recipients', 'privacy'];
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ screen?: string }> }) {
   if (process.env.NODE_ENV !== 'development') notFound();
