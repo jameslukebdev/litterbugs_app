@@ -24,6 +24,18 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (localhost preferences error diagnosed; deployment hold preserved)
+
+- Confirmed localhost3000 uses the hosted Supabase project. Its application RPC
+  returns404/PGRST202: get_weekly_email_preferences is absent from schema cache.
+  The prepared email migration remains unapplied, so the real-account screen
+  cannot load there yet. Earlier passes used isolated local PostgreSQL/PostgREST
+  and synthetic Auth/native harnesses; they were not hosted-account verification.
+- Explained this distinction to Grant. No behavior/source changes, hosted schema
+  changes, website/app deployment, OTA or email sends. Existing hold preserved;
+  feature source remains dc4b506. A localhost UI does not make a hosted backend
+  migration a local-only change.
+
 ### 2026-11-24 — Codex (Android emulator repaired; local native email checks passed)
 
 - Replaced the failing disposable profile's incorrect system-partition mapping
