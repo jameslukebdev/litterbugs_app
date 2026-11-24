@@ -1,5 +1,39 @@
 # Mobile funders OTA readiness — November 24, 2026
 
+## Current simulator build completed; installation pending
+
+Grant explicitly approved the private-source upload to Expo and cleanup of
+unneeded old local builds. The earlier cloud-upload rejection is resolved.
+Simulator-only build `13bf4e5c-2f44-4e08-8883-6a234d489f46` finished successfully
+from committed `71d1d1c`. Downloaded via Expo's official helper, extracted and
+deep/strict codesign verified. Its actual native Info.plist version and Expo
+runtime are both **2.1.1**, target **iPhoneSimulator**, analytics disabled/internal.
+The simulator build counter is1; the released iPhone build remains30. This is
+a separate simulator build from the same current native/feature source.
+
+Saved app: `artifacts/mobile-funders-20261124/ios-simulator-current/unpacked/Litterbugs.app`.
+Saved archive SHA256: `b2b8e1e685d2d919557836f7900f39661cbfe28f757c76c578424967fc24d9f7`.
+The archived app is~40MB compressed/~132MB extracted. Its verification record
+is in the same folder. Production OTA exports remain unchanged and reverified.
+
+**Native installation/UI acceptance remains pending.** The existing iPhone17Pro
+simulator is shutdown and still has the older installed2.0.1 shell. Session
+simctl cannot connect to CoreSimulator, and native UI control cannot target
+Simulator without an open device window. Asked Grant to reopen the iPhone17Pro
+window; Finder is prepared at the current app. The next step is installation,
+verification of the installed native/runtime2.1.1, and the final UI checks.
+Do not publish or claim that latest-native iPhone acceptance passed yet.
+
+Owner-authorized cleanup removed28 untracked superseded local mobile build
+files, freeing1.74GiB, while retaining current2.1.1 originals, current OTA/source
+bundles and all evidence. Exact deletion paths, sizes and hashes are in
+`old-build-cleanup.json`. No local native compilation or multiple simulator
+guests ran. Extra Android/Xcode/monitor tools were closed; the last system-wide
+free-memory report was63%, with a green Activity Monitor pressure graph.
+
+This simulator build/upload approval does not approve OTA publication. Nothing
+was sent to production/preview OTA channels or either store.
+
 ## Latest-version simulator follow-up
 
 The owner requested emulator/simulator testing and explicitly required current

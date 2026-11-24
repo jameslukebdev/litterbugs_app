@@ -24,6 +24,32 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (current iPhone simulator app built; window handoff)
+
+- Owner-approved Expo simulator build13bf4e5c-2f44-4e08-8883-6a234d489f46
+  FINISHED from71d1d1c. Downloaded through Expo's official download helper.
+  Archive SHA256b2b8e1e685d2d919557836f7900f39661cbfe28f757c76c578424967fc24d9f7.
+  Extracted Info/Expo plists verify native/runtime2.1.1, iPhoneSimulator target,
+  analytics disabled/internal; codesign deep/strict verification passed.
+  Simulator build counter resolves to1 (separate from released iPhone30).
+  Native/feature source is current; no production mobile code/config changes.
+- Ready app: artifacts/mobile-funders-20261124/ios-simulator-current/unpacked/
+  Litterbugs.app. Archive/verification and the source bundles are preserved.
+  All78 production OTA files still pass checksum/source consistency checks.
+- INSTALL/UI CHECKS NOT COMPLETE: existing iPhone17Pro remains shutdown; its
+  old installed shell is2.0.1. Session simctl is unable to access CoreSimulator,
+  and CUA cannot target Simulator when no device window is open. Requested
+  Grant reopen the iPhone17Pro window; Finder is already open to the new app.
+  Next: install the fresh app, verify actual installed2.1.1 plists, then funders,
+  anonymous checkbox, payment-privacy display and heart/map regression checks.
+- Removed28 obsolete untracked old native build binaries,1.74GiB total; latest
+  store originals/current OTA/source backups and all evidence retained.
+  No local native compilation; Android emulator/Studio, Xcode and temporary
+  Activity Monitor were closed. Last memory_pressure check63% free percentage,
+  Activity Monitor pressure graph was green. One simulator at a time only.
+- No production/preview OTA, store submission/release, backend/website change
+  or payment/donor/favorite mutation. OTA publication still requires approval.
+
 ### 2026-11-24 — Codex (current simulator build authorized; QA ongoing)
 
 - Grant explicitly approved uploading the prepared source to Expo for the
