@@ -24,6 +24,38 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (latest OTA tutorial verified on both; silent-update research)
+
+- Grant requested actual latest OTA download/run and $35 tutorial checks plus
+  research into optional restart messaging. No new publication or app code edit.
+- Latest group22df191b verified natively: iOS01a20f3c-2fa6-79f0-afeb-1394efa0a864
+  downloaded and launched on current2.1.1 simulator,1 successful/0 failed launches;
+  Android01a20f3c-2fa6-73e4-8ccd-e4e81d54d573 downloaded/launched on released27
+  native QA harness,2 successful/0 failed launches. Cached SHA256s match latest
+  exports. Both visibly show tutorial pin $35 and card Pays $35. Android compact
+  720x1280 hides its card summary by design; normal-height720x1600 verifies Pays.
+- Screenshots/native DB/hash evidence: artifacts/mobile-tutorial-20261124/
+  device-activation/activation-verification.json and adjacent PNGs. No physical
+  phones connected; Android temporary-signature Maps limitation remains. Native
+  startup fatal-error scan zero. No real payment or donor/favorite mutation.
+- Device analytics explicitly excluded; Android's restored old snapshot had no
+  saved choice but embedded analytics-disabled config/simulator detection; opted
+  out before downloaded OTA activation. Its tutorial preference/display override
+  restored after checks. Android emulator/Studio stopped before reopening iPhone.
+  iPhone remains open, signed in, normal real map visible; local simulator-only
+  production request header retained so it can run latest published OTAs. Original
+  prepared production-preview app preserved; only local header/signature differ.
+- Used Refero Design/Firecrawl research: Expo documents default asynchronous
+  download/next cold-start activation; Slack/Spotify desktop offer optional
+  badge/menu restart; Refero REKKI user-initiated Settings check and FoodNoms/
+  Daylish What's New examples inspected. Evidence/links and caveats saved in
+  artifacts/mobile-tutorial-20261124/update-messaging-research.json.
+- Recommendation only: keep routine OTA fixes silent. For important updates,
+  optional dismissible Update ready / Restart now / Later notice after completed
+  download and outside active report/photo/payment/cleanup work. Applied means
+  already running; do not say applied and then ask to restart. No popup, update
+  lifecycle, website/backend/store or production configuration changes made.
+
 ### 2026-11-24 — Codex ($35 tutorial follow-up OTA published to both apps)
 
 - Grant explicitly requested publishing the $35 tutorial change to both apps.
