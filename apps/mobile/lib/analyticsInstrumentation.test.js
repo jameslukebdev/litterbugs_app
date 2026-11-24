@@ -289,7 +289,7 @@ describe('session replay on private screens', () => {
     expect(client.stopSessionRecording).toHaveBeenCalledTimes(1);
     expect(client.startSessionRecording).toHaveBeenCalledTimes(2);
     expect(client.startSessionRecording).toHaveBeenCalledWith(true);
-    for (const name of ['Auth', 'ResetPassword', 'Payments', 'PaymentDetail', 'Profile', 'EditProfile', 'CleanupFeedback', 'CleanupSubmission', 'Updates', 'ExpiredReports']) expect(replayAllowedOn(name)).toBe(false);
+    for (const name of ['Auth', 'ResetPassword', 'EmailPreferences', 'Payments', 'PaymentDetail', 'Profile', 'EditProfile', 'CleanupFeedback', 'CleanupSubmission', 'Updates', 'ExpiredReports']) expect(replayAllowedOn(name)).toBe(false);
     expect(replayAllowedOn('Reports')).toBe(true);
   });
   it('keeps the map itself out of replay, but records sheets that cover it', () => {

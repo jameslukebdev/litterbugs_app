@@ -517,6 +517,7 @@ export default function ProfileScreen({ navigation, route }) {
             <Text style={styles.emailText} selectable numberOfLines={1}>{user.email || 'Not shared'}</Text>
           </View>
           <ActionRow appearance="profile" divided label="Edit profile" icon="person-outline" onPress={() => openScreen('EditProfile')} />
+          <ActionRow appearance="profile" divided label="Email preferences" icon="mail-outline" onPress={() => openScreen('EmailPreferences')} />
           <ActionRow appearance="profile" divided label="Sign-in methods" icon="key-outline" onPress={() => openScreen('SignInMethods')} />
           <ActionRow appearance="profile" label="Blocked accounts" icon="ban-outline" onPress={() => openScreen('BlockedAccounts')} />
         </View>

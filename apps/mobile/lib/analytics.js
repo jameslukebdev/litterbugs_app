@@ -180,7 +180,7 @@ function send(event, properties) {
 export const PRIVATE_REPLAY_SCREENS = Object.freeze([
   'Auth', 'SignInMethods', 'ResetPassword', 'CompleteProfile', 'EditProfile',
   'Profile', 'MyActivity', 'Payments', 'PaymentDetail', 'ContributionHistory', 'Settings', 'SettingsInfo',
-  'NotificationSettings', 'BlockedAccounts', 'PublicProfile', 'ReportUser',
+  'NotificationSettings', 'EmailPreferences', 'BlockedAccounts', 'PublicProfile', 'ReportUser',
   'FundingContribution', 'PayoutSetup', 'CleanupReview', 'CleanupFeedback',
   'CleanupSubmission', 'Updates', 'ExpiredReports',
 ]);
