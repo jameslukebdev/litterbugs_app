@@ -748,6 +748,7 @@ export function AccountDialog({
       {!profileEditing && !dataLoading && section === 'settings' && <section className="member-settings account-section-ready">
         <div className="account-v2-group" role="group" aria-label="Your account">
         <div className="account-v2-row account-v2-email"><span>Email</span><strong>{email || 'Not shared'}</strong></div>
+        <Link className="account-v2-row" href="/account/email-preferences"><span>Email preferences</span><FiChevronRight aria-hidden="true" /></Link>
         <button type="button" className="account-v2-row" onClick={startProfileEdit}><span>Edit profile</span><FiChevronRight aria-hidden="true" /></button>
         <details className="member-panel"><summary>Sign-in methods</summary><p>{email || 'No email shared'}</p>{signInMethods.length ? signInMethods.map(provider => <p key={provider}>{provider === 'email' ? 'Email and password' : provider.charAt(0).toUpperCase() + provider.slice(1)} · Connected</p>) : <p>Sign-in method information is unavailable.</p>}<LinkSignInMethod connected={signInMethods} /></details>
             <details className="member-panel member-blocked-panel">
