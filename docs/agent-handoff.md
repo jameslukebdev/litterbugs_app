@@ -24,6 +24,30 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (Gmail email preference previews; sample data only)
+
+- Grant wants a simple Gmail workflow for Luke at teamlitterbugs@gmail.com;
+  explicitly excludes Resend for now and requested previews before live changes.
+  Current accounts should remain subscribed until withdrawal; new signup choice
+  starts unchecked. Existing account default is not represented as explicit consent.
+- Added development-only /dev-review-preview/email-opt-in with app preferences,
+  signup, sample Gmail/footer, public unsubscribe + confirmation, website
+  preferences, and recipient Bcc/CSV export. All 200 initial records are fake;
+  in-memory state only, no database/network writes or email sending. Reset restores
+  the fixtures. Production route returns notFound. Business address is a placeholder.
+- Source checkpoint 7ce0121 on codex/email-preference-previews-20261124 in
+  /tmp/litterbugs-mobile-funders-20261120; own files mirrored to shared checkout.
+  Existing Claude/shared edits preserved. No website, OTA, store or DB deployment.
+- Browser checks passed: current member starts on; saved opt-out and footer
+  unsubscribe update setting/list; unchecked signup stays out; checked signup
+  joins; CSV has 199 sample addresses after Alex opts out, excluding Alex.
+  Copy reports success but browser clipboard readback is empty, so independent
+  clipboard content verification is pending. Scoped ESLint/TypeScript passed;
+  desktop and 320/390px layouts checked, no console warnings/errors.
+- Local gallery: http://localhost:3000/dev-review-preview/email-opt-in.
+  Screenshots and QA evidence: /tmp/litterbugs-email-previews/. Live integration,
+  mailing address and actual Gmail copy/paste workflow remain future work.
+
 ### 2026-11-24 — Codex (email opt-in research recovered; silent OTA choice confirmed)
 
 - Grant explicitly chose to keep OTA updates silent for now; do not add a
