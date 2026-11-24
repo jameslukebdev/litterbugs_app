@@ -24,6 +24,34 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex ($35 tutorial follow-up OTA published to both apps)
+
+- Grant explicitly requested publishing the $35 tutorial change to both apps.
+  Published at15:25 EST from committed8855578 (feature505fb96), production
+  environment/channel/runtime2.1.1. Against the preceding publication2ab8143,
+  only FirstRunTour.jsx changes: both sample pin states and Pays label from
+  $6 to $35. All earlier funder/privacy/heart changes are retained. No native,
+  dependency, permission, real fund/payment, backend or website changes.
+- New latest group22df191b-5980-40c9-9a09-ec76a43cb2bb;
+  iOS01a20f3c-2fa6-79f0-afeb-1394efa0a864;
+  Android01a20f3c-2fa6-73e4-8ccd-e4e81d54d573. Both EAS source maps uploaded.
+  Earlier group1e72e3f9 remains history and is superseded for new downloads.
+- Both Hermes exports include Pays $35. Scoped lint/onboarding4 tests passed;
+  all78 saved files verified. Server/channel readback confirms exact latest IDs;
+  production manifests and downloaded bundles match the exports; all74 unique
+  hosted bundles/assets fetched and SHA256 verified. Artifacts/evidence live in
+  artifacts/mobile-tutorial-20261124/, including publication-verification.json.
+- The artifact publish helper's local JSON parser initially rejected an EAS
+  warning prefix AFTER successful publication. Recovered the IDs with read-only
+  server readback and corrected the parser. No second publication was attempted.
+  Ignore that local postpublication exit as an app/upload failure.
+- Native device activation was not repeated for this text-only follow-up;
+  both download/run paths passed on current2.1.1 native test devices for the
+  preceding group earlier today. No simulator/emulator change for this release.
+  Clients receive the newer complete bundle on normal launch/restart. No store
+  submission or new permission needed. Earlier local-only tutorial hold is
+  superseded; no publication remains pending. Shared unrelated work preserved.
+
 ### 2026-11-24 — Codex (tutorial example fund changed to $35; not published)
 
 - Owner requested replacing the tutorial's $6 example with $35. Updated
