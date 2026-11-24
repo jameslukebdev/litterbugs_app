@@ -24,6 +24,28 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (email opt-in research recovered; silent OTA choice confirmed)
+
+- Grant explicitly chose to keep OTA updates silent for now; do not add a
+  restart/applied popup without a new request. No lifecycle/UI change made.
+- Recovered original November20 research in Research email opt in setup,
+  ChatGPT6b006b52-0dc8-83ea-8d6f-149012600584, from its backing history.
+  Initial recommendations: optional unchecked signup choice, dismissible existing
+  member invitation, account Weekly emails setting, public confirmed subscription
+  form; consent/withdrawal evidence and sender unsubscribe/suppression sync.
+  Keep transactional mail separate; account creation alone is not opt-in.
+- It was research only; no marketing implementation or emails/list edits were
+  made. Current reviewed mobile notification settings remain phone-alert controls.
+  Resend Broadcasts was a candidate, not an established provider decision.
+- Luke's weekly sending service and current list consent provenance remain
+  unverified. Read-only Resend domain/broadcast discovery returned401 because
+  connector key is restricted to sending. No send, contact edit, expanded access
+  or retry with other credentials. Need Luke's sending-platform name to select
+  the integration. Recovered findings saved in
+  artifacts/email-opt-in-20261124/recovered-research.json.
+- No app/backend/website/OTA/store deployment or database change. Other shared
+  work preserved; research handoff checkpoint committed in isolated checkout.
+
 ### 2026-11-24 — Codex (latest OTA tutorial verified on both; silent-update research)
 
 - Grant requested actual latest OTA download/run and $35 tutorial checks plus
