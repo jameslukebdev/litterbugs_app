@@ -1,7 +1,7 @@
 // Local preparation only. This script never publishes an update or changes EAS.
 const { spawnSync, execFileSync } = require('node:child_process');
-const { readFileSync, writeFileSync, mkdirSync, readdirSync, lstatSync, realpathSync, unlinkSync, cpSync } = require('node:fs');
-const { resolve, join, relative } = require('node:path');
+const { readFileSync, writeFileSync, mkdirSync, readdirSync, lstatSync, realpathSync, unlinkSync, cpSync, existsSync, symlinkSync } = require('node:fs');
+const { resolve, join, relative, dirname } = require('node:path');
 const { createHash } = require('node:crypto');
 
 async function main() {
@@ -15,6 +15,11 @@ async function main() {
     const installedModules = realpathSync(mobileModules);
     unlinkSync(mobileModules);
     cpSync(installedModules, mobileModules, { recursive: true });
+  }
+  const contractLink = join(mobileModules, '@litterbugs/report-contract');
+  if (!existsSync(contractLink)) {
+    mkdirSync(dirname(contractLink), { recursive: true });
+    symlinkSync(relative(dirname(contractLink), join(root, 'packages/report-contract')), contractLink, 'dir');
   }
   const output = process.argv[2];
   if (!output || !require('node:path').isAbsolute(output)) throw new Error('Provide an absolute artifact output directory.');
