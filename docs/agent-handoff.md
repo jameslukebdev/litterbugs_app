@@ -24,6 +24,34 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (website then apps implemented; deployment explicitly held)
+
+- Grant authorized the approved default-on email concept to be built, website
+  first then apps, with no deployment. No signup checkbox or newsletter wording.
+- Website: /account/email-preferences, public /unsubscribe, existing-admin/MFA
+  /admin/email with fresh Bcc/CSV and copyable footer; prepared privacy text.
+  Migration20261124211058_weekly_email_preferences.sql is UNAPPLIED on hosted DB.
+  Private RLS/address-hash suppression/history; owner-only preference RPCs and
+  service-only unsubscribe; withdrawal survives recreation/email changes.
+- Both apps: Settings → Email preferences; shared RPC, server-confirmed saves,
+  focused/foreground refresh, replay disabled. Phone notifications unchanged.
+- Source checkpoints in isolated codex/email-preference-implementation-20261124:
+  website db31a0b; apps05dab6b; verification/hashing8094f48. Own edits mirrored to
+  shared checkout without reverting/staging others' changes. Review record:
+  docs/reviews/2026-11-24-email-preferences-implementation.md.
+- Website production build/TS/lint passed;19 selected web +3 shared +52 native
+  tests passed;232 native source modules clean; iOS and Android Hermes exports
+  passed locally. Disposable PostgreSQL migration/role tests passed. Actual public
+  page checked desktop/390px and signed-out access gates. No live authenticated
+  cross-device verification yet; backend is intentionally not deployed.
+- Existing account-dialog draft-deletion test fails also with pre-change source;
+  other24 tests pass. Existing social-card-bugs filesystem-tracing build warnings
+  remain. Neither issue was changed. Evidence in /tmp/litterbugs-email-implementation.
+- NO hosted migration, website deploy, app installation/upload, OTA, or email send.
+  No automation. Gmail silent-enrollment policy gap persists; postal address must
+  be supplied in real footers. Later authorized order: backend, verify, website,
+  apps/OTA. Preserve suppression on rollback. Existing unrelated work preserved.
+
 ### 2026-11-24 — Codex (default subscription concept; Gmail/privacy checks)
 
 - Grant superseded the unchecked signup concept: existing and new accounts start
