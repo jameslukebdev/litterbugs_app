@@ -24,6 +24,27 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (concise email UI; frequency wording removed)
+
+- Owner copy preference: new screens should rely on headings, field labels and
+  actions, without explanatory subheadings, directions or developer/meta copy.
+  No promised email frequency. Use Email list / Litterbugs emails in the UI.
+- Changed unsubscribe heading to Unsubscribe from email list; removed the two
+  helper paragraphs and example placeholder. Email input is empty. Removed the
+  standalone member email beneath Email preferences on website/apps/previews.
+- Simplified confirmation, preferences and admin/export/footer copy; preview
+  helpers removed. Prepared privacy disclosure no longer promises a frequency.
+  Essential form errors and privacy-policy disclosure remain functional.
+- Source fd4fbd9 on codex/email-preference-implementation-20261124 in isolated
+  checkout; mirrored own edits to shared, preserving unrelated work. TypeScript,
+  scoped lint,13 web and3 native screen tests passed. Browser confirmed blank
+  unsubscribe field/no placeholder, concise headings and no email subtitle.
+  Screenshots: /tmp/litterbugs-email-copy/. No backend/behavior changes.
+- Nothing deployed, no migration applied, no app/OTA published or email sent.
+  Earlier native export artifacts precede this copy pass; regenerate from final
+  committed source during any later authorized release. Existing release hold
+  and Gmail-policy finding remain in force.
+
 ### 2026-11-24 — Codex (website then apps implemented; deployment explicitly held)
 
 - Grant authorized the approved default-on email concept to be built, website

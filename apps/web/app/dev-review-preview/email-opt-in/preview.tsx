@@ -89,7 +89,7 @@ function Signup({ onCreate }: { onCreate: (member: { name: string; email: string
   return <form className={styles.signupForm} onSubmit={e => { e.preventDefault(); onCreate({ name: name.trim(), email: email.trim() }); setCreated(true); }}>
     <Logo />
     <h1>Make a little difference</h1>
-    
+
     <label className={styles.field}>Your name<input autoComplete="off" value={name} onChange={e => setName(e.target.value)} required /></label>
     <label className={styles.field}>Email address<input type="email" autoComplete="off" value={email} onChange={e => setEmail(e.target.value)} required /></label>
     <button type="submit" className={styles.primary}>Create account</button>

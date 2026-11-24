@@ -1,4 +1,4 @@
-# Weekly email preferences — implemented, not deployed
+# Email preferences — implemented, not deployed
 
 Grant authorized implementation after reviewing the samples: website first, then
 both apps. Existing and new accounts start subscribed; signup has no newsletter
@@ -103,3 +103,10 @@ use opt-in remain unresolved for silent default enrollment. Coding this feature,
 or adding the privacy text, does not clear that sending policy. The recorded
 sources are `artifacts/email-opt-in-20261124/gmail-policy-review.json`.
 Luke's valid business postal address must be used in actual email footers.
+
+## Copy revision
+
+Source `fd4fbd9` removes explanatory UI copy, email-address subtitles, example
+email placeholders and frequency claims across the website, apps and previews.
+The unsubscribe title is “Unsubscribe from email list”. Subsequent source
+exports must be regenerated before any future authorized release.
