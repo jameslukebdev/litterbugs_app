@@ -24,6 +24,30 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (both OTA packages ready; publication held)
+
+- Revalidated the isolated funder/privacy/heart app source `bf053f6` against
+  approved native baseline `4835975`. No app feature changes were needed.
+  Added local preparation and checksum-verification/release helpers; their
+  default paths do not publish. Export source `ba39bbe`.
+- 677 tests passed/1 existing skip, 229 modules/0 source errors, scoped lint
+  zero errors, all 46 installed direct dependencies match the lockfile.
+  Production iOS/Android Hermes exports passed with one worker and 3 GB heap;
+  EAS offline reader verified 67 assets each and all 78 saved files were hashed.
+  Fixed only isolated dependency/workspace links used for packaging.
+- Signed store artifacts both target runtime2.1.1/production; Apple public
+  listing now2.1.1. Older runtimes require the store2.1.1 update first. Existing
+  November20 iPhone simulator checks retained; no new emulator/native build.
+- Package/evidence/restorable committed source saved under shared workspace
+  `artifacts/mobile-funders-20261124/`; details and release/rollback commands in
+  `docs/reviews/2026-11-24-mobile-funders-ota-readiness.md`. EAS source-map upload
+  is prepared; PostHog secrets remain EAS-only, with matching maps saved locally.
+- Final read-only production-channel check still shows no update groups.
+  NO production/preview OTA, store upload/submission/release, backend/website
+  deployment, payment or donor-setting mutation. Grant must explicitly approve
+  publication. Preserve unrelated Claude/shared work. Shared handoff remains
+  uncommitted because shared .git is read-only; isolated candidate is committed.
+
 ### 2026-11-20 — Codex (transparent favorite hearts; OTA still held)
 
 - Removed the selected white circle in shared ReportPreviewHero, covering map
