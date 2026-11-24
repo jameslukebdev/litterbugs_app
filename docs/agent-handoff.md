@@ -24,6 +24,27 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (OTA publication authorized; session access blocks execution)
+
+- Grant explicitly instructed “Okay, do these things now” after the remaining
+  final simulator checks and publication of both OTAs were listed. Publication
+  of this exact prepared release is now authorized; do not request approval
+  again. Prior approval-hold entries are superseded for this release only.
+- Isolated committed source remains unchanged: export ba39bbe; current HEAD
+  bd336a7 before this documentation checkpoint. Verifier passed all78 saved
+  file hashes and app-source consistency. No rebuild or feature edit needed.
+- Current session still cannot connect to CoreSimulator. Read-only installed
+  plists confirm com.litterbugs.app remains2.0.1. Latest-native2.1.1 UI checks
+  remain pending, not passed or waived.
+- Expo prepublication channel check cannot reach the service: DNS resolution
+  fails for api.expo.dev and registry.npmjs.org. The npx registry wait was
+  canceled; installed EAS27.1.0 was used to independently check the service.
+  No publication command executed. No OTA group created or deployment claimed.
+- Needs a session with working native simulator access and Expo network access
+  to finish the authorized checks/release. Do not bypass sandbox restrictions.
+  No website/backend/store/payment/donor/favorite mutation. Shared .git remains
+  read-only; documentation checkpoint is committed in the isolated candidate.
+
 ### 2026-11-24 — Codex (simulator reopened; installation still blocked)
 
 - Grant reopened iPhone17Pro. CUA can operate its UI; simctl still fails with

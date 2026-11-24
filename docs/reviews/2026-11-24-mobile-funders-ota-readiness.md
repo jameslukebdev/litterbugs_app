@@ -1,5 +1,21 @@
 # Mobile funders OTA readiness — November 24, 2026
 
+## Owner publication instruction — November 24 follow-up
+
+Grant explicitly authorized the listed remaining checks and publication of both
+prepared OTA updates: “Okay, do these things now.” No further publication
+confirmation is needed for this exact release. Older approval-hold text below
+records the earlier state and is superseded by this instruction.
+
+All78 frozen export files and source consistency were reverified successfully.
+Execution is blocked by the current session: CoreSimulator access fails, the
+installed main iPhone simulator app remains2.0.1, and DNS cannot resolve
+api.expo.dev or registry.npmjs.org. Latest-native2.1.1 UI acceptance remains
+pending; it was not waived or recorded as passed. No publication command ran.
+Continue the final checks and approved release from a session with working
+simulator and Expo access; preserve the frozen artifacts and unrelated work.
+
+
 ## Current simulator build completed; installation pending
 
 Grant explicitly approved the private-source upload to Expo and cleanup of
