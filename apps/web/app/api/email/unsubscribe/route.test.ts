@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 const state = vi.hoisted(() => ({ rpc: vi.fn(), create: vi.fn() }));
 vi.mock('@supabase/supabase-js', () => ({ createClient: state.create }));
-vi.mock('@/lib/env', () => ({ getSupabaseEnv: () => ({ url: 'http://127.0.0.1:55439', publishableKey: 'public-test' }) }));
+vi.mock('@/lib/env', () => ({ getSupabaseEnv: () => ({ url: 'http://127.0.0.1:55439', publishableKey: 'public-test' }), getSiteUrl: () => 'https://litterbugs.app' }));
 import { POST } from './route';
 const request = (body: unknown, headers: Record<string,string> = {}) => new Request('https://litterbugs.app/api/email/unsubscribe', { method: 'POST', headers: { origin: 'https://litterbugs.app', 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
 beforeEach(() => { vi.stubEnv('SUPABASE_SECRET_KEY','server-test-secret'); state.create.mockReturnValue({ rpc: state.rpc }); state.rpc.mockResolvedValue({ error: null }); });
@@ -33,4 +33,12 @@ it('enforces the durable backend rate limit and does not mutate bot-trap submiss
   state.rpc.mockClear();
   expect((await POST(request({email:'a@example.com',website:'bot'}))).status).toBe(200);
   expect(state.rpc).not.toHaveBeenCalled();
+});
+
+it('accepts the configured public origin behind a reverse proxy and rejects arbitrary host origins', async () => {
+  const valid = new Request('http://internal:3000/api/email/unsubscribe', { method:'POST', headers:{origin:'https://litterbugs.app','content-type':'application/json'}, body:JSON.stringify({email:'a@example.com'}) });
+  expect((await POST(valid)).status).toBe(200);
+  state.rpc.mockClear();
+  const foreign = new Request('https://other.example/api/email/unsubscribe', { method:'POST', headers:{origin:'https://other.example','content-type':'application/json'}, body:JSON.stringify({email:'a@example.com'}) });
+  expect((await POST(foreign)).status).toBe(403); expect(state.rpc).not.toHaveBeenCalled();
 });

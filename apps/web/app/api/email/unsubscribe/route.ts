@@ -1,7 +1,7 @@
 import { createHmac } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import { normalizeWeeklyEmail, type Database } from '@litterbugs/report-contract';
-import { getSupabaseEnv } from '@/lib/env';
+import { getSiteUrl, getSupabaseEnv } from '@/lib/env';
 
 export const runtime = 'nodejs';
 const reply = (status: number) => Response.json({ ok: status === 200 }, { status, headers: { 'Cache-Control': 'no-store', ...(status === 429 ? { 'Retry-After': '3600' } : {}) } });
@@ -9,7 +9,11 @@ const reply = (status: number) => Response.json({ ok: status === 200 }, { status
 export async function POST(request: Request) {
   // GET never changes preferences, so link scanners cannot unsubscribe people.
   const origin = request.headers.get('origin');
-  if (!origin || origin !== new URL(request.url).origin || request.headers.get('sec-fetch-site') === 'cross-site') return reply(403);
+  // A reverse proxy may give Next an internal request URL. Trust the configured
+  // public site origin, rather than the proxy's internal host or forwarded input.
+  let siteOrigin: string;
+  try { siteOrigin = getSiteUrl(); } catch { return reply(503); }
+  if (!origin || origin !== siteOrigin || request.headers.get('sec-fetch-site') === 'cross-site') return reply(403);
   if (request.headers.get('content-type')?.split(';')[0].trim().toLowerCase() !== 'application/json') return reply(415);
   if (Number(request.headers.get('content-length') ?? 0) > 2048) return reply(413);
   let body;
