@@ -24,6 +24,33 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (default subscription concept; Gmail/privacy checks)
+
+- Grant superseded the unchecked signup concept: existing and new accounts start
+  subscribed, with no newsletter checkbox or email messaging in signup. Preview
+  only; no live implementation, account writes, sends or policy publication.
+- Updated seven-screen sample gallery, including a separate Privacy draft. New
+  sample Jamie increases subscribed count200→201, is labeled Signup default,
+  and unsubscribe restores200 with1 unsubscribed. No signup checkbox/marketing
+  copy in product form; desktop/390px reviewed, ESLint/targeted TS pass and no
+  console errors/warnings. Prior Gmail clipboard readback limitation remains.
+- Live Gmail program policy (updated Oct20) prohibits unsolicited commercial mail;
+  sender guidance recommends opt-in and discourages automatic subscription.
+  U.S. CAN-SPAM opt-out allowance is not Gmail approval. The requested silent
+  enrollment concept is NOT cleared for Gmail sends; a privacy update alone
+  does not establish permission. Consumer Gmail's published500-recipient/message
+  threshold is a separate volume limit, not consent or delivery assurance.
+- Live litterbugs.app/privacy describes operational email/providers but not weekly
+  marketing/default enrollment/email unsubscribe. Draft disclosure exists only
+  in preview; no live policy edit. Evidence with official Google/privacy links:
+  artifacts/email-opt-in-20261124/gmail-policy-review.json.
+- Source checkpoint2eb339b, branch codex/email-preference-previews-20261124 in
+  /tmp/litterbugs-mobile-funders-20261120; own files mirrored to shared checkout.
+  Preview: http://localhost:3000/dev-review-preview/email-opt-in?screen=signup.
+  New screenshots: /tmp/litterbugs-email-previews/signup-default-on.jpg and
+  privacy-draft.jpg. No deployment/migration/OTA/store work. Gmail permission,
+  actual sending workflow and business postal address remain unresolved.
+
 ### 2026-11-24 — Codex (Gmail email preference previews; sample data only)
 
 - Grant wants a simple Gmail workflow for Luke at teamlitterbugs@gmail.com;
