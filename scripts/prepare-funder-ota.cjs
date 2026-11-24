@@ -1,12 +1,21 @@
 // Local preparation only. This script never publishes an update or changes EAS.
 const { spawnSync, execFileSync } = require('node:child_process');
-const { readFileSync, writeFileSync, mkdirSync, readdirSync } = require('node:fs');
+const { readFileSync, writeFileSync, mkdirSync, readdirSync, lstatSync, realpathSync, unlinkSync, cpSync } = require('node:fs');
 const { resolve, join, relative } = require('node:path');
 const { createHash } = require('node:crypto');
 
 async function main() {
   const root = resolve(__dirname, '..');
   const mobile = join(root, 'apps/mobile');
+  // Metro cannot follow an entire app-level dependency directory symlink outside
+  // its workspace. Stage those small installed dependencies locally, preserving
+  // the shared checkout and leaving native versions/lockfiles unchanged.
+  const mobileModules = join(mobile, 'node_modules');
+  if (lstatSync(mobileModules).isSymbolicLink()) {
+    const installedModules = realpathSync(mobileModules);
+    unlinkSync(mobileModules);
+    cpSync(installedModules, mobileModules, { recursive: true });
+  }
   const output = process.argv[2];
   if (!output || !require('node:path').isAbsolute(output)) throw new Error('Provide an absolute artifact output directory.');
   const baseline = '4835975e5f444e6c7c669020e80b4074d812efab';
