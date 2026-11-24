@@ -24,6 +24,33 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (native QA follow-up; current iPhone shell pending)
+
+- Owner accepts emulator/simulator testing but explicitly requires latest
+  versions. Fresh Expo history/Apple listing confirms latest store sources
+  iOS2.1.1(30)/Android2.1.1(27), both4835975. Frozen78 OTA files unchanged.
+- Android16/API36 arm64 QA emulator used1GB RAM/two cores. Local APK embeds
+  exact prepared Hermes code in27 native components (80 native libraries and
+  seven DEX files identical). Analytics disabled/test signing only in this
+  local harness. Startup, report list/deep link/photos and funders placement
+  passed. Map tiles unverified: Google rejects the temporary QA certificate;
+  production maps configuration/signature unchanged. Android signed-in payment
+  controls not exercised. Screenshot/evidence saved in mobile-funders artifacts.
+- Rechecked iPhone funders and anonymous checkbox, then discovered its actual
+  installed native Info/Expo plist is2.0.1(1)/runtime2.0.1 despite current JS.
+  Do NOT claim latest2.1.1 native simulator acceptance. No current simulator
+  build exists locally or in Expo history; fresh2.1.1 build required.
+- Automatic approval review REJECTED cloud simulator build submission because
+  it uploads private source to Expo without explicit owner upload approval.
+  No build ID/replacement artifact; do not retry or bypass. Local native build
+  not started with only~2.7GB free disk. Prepared exact cloud-test plan; await
+  explicit approval for source upload, separate from OTA publication approval.
+- Android emulator/Studio stopped. Original AVD preserved; stopped QA AVD is
+  Small_Phone.avd, display name Litterbugs OTA QA. Generated APK project remains
+  ~/ApkProjects/universal. No payment, donor/favorite mutation, hosted OTA or
+  store/backend/website release. App code unchanged. Full follow-up is in the
+  November24 readiness review; shared .git remains read-only.
+
 ### 2026-11-24 — Codex (both OTA packages ready; publication held)
 
 - Revalidated the isolated funder/privacy/heart app source `bf053f6` against

@@ -1,5 +1,51 @@
 # Mobile funders OTA readiness — November 24, 2026
 
+## Latest-version simulator follow-up
+
+The owner requested emulator/simulator testing and explicitly required current
+versions. A fresh Expo build-history/public Apple listing check confirms the
+latest production sources remain iOS2.1.1(30) and Android2.1.1(27), both4835975.
+The saved production OTA exports still pass all78 checksum checks.
+
+Android was exercised in a dedicated Android16/API36 arm64 emulator,720x1280,
+1GB RAM/two CPU cores. A local test APK embeds the exact prepared Android
+Hermes bundle (SHA256`afaab81cf8772d8f15e484c9067d6a8d43b01c7ac6029328f5dd865b3ea83ffb`)
+in the released27 native components: all80 native libraries and7 DEX files are
+byte-identical. Only the embedded JS, test-only disabled analytics config and
+temporary local signing differ. App startup, onboarding, report list, real
+report deep link/photos/details and both funder rows under Get directions
+passed. No JavaScript/native app startup error was found. Android map tiles
+remain **unverified**: Google explicitly rejected the temporary test signing
+certificate; production key/configuration/signatures were not changed.
+Signed-in Android checkout/owner privacy controls were not exercised.
+
+The existing iPhone simulator passed funder placement and anonymous checkbox
+checks using current feature JS, but reading its installed Info.plist/Expo.plist
+revealed **native2.0.1(1), runtime2.0.1**, on production-preview. Its displayed
+JS2.1.1 version did not establish a current native shell. **Do not claim the
+current2.1.1 native iPhone simulator check is complete.** No current simulator
+build exists in local products or Expo history; a fresh2.1.1 simulator build is
+the remaining owner-requested verification step.
+
+Automatic approval review rejected submitting the production-simulator cloud
+build because uploading private project source to Expo was not explicitly
+authorized by the simulator-testing request. No build ID was returned and no
+replacement build was created. Do not retry or route around this rejection.
+The cloud build requires explicit owner approval for that source upload. A
+local native build was not started with only about2.7GB free disk space.
+The exact simulator-only build plan is saved with the evidence. This is
+separate from permission to publish any OTA or store release.
+
+Android emulator and Android Studio were stopped after testing. The original
+Litterbugs_API_36 AVD was preserved. The dedicated QA device remains stopped
+as Small_Phone.avd (display name Litterbugs OTA QA); Studio's generated APK
+project remains under ~/ApkProjects/universal. Evidence:
+`android-funders.png`, `android-local-test-repack.json`,
+`simulator-follow-up.json`, and `ios-simulator-build-plan.json` in the saved
+artifact directory. No real payment, donor-setting or favorite mutation was
+made. Earlier package readiness below remains valid, but the newly requested
+latest-native iPhone verification is pending. **Nothing is published.**
+
 **Ready locally for iOS and Android runtime 2.1.1. NOT PUBLISHED.**
 Grant must explicitly approve publication. This hold covers production and
 preview channels. This preparation did not submit anything to either store.
