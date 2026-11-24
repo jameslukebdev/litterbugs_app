@@ -24,6 +24,35 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (both published OTAs downloaded and run natively)
+
+- Owner requested actual app download/run verification after publication and
+  separately reported their phone appeared to update automatically. No physical
+  device was connected; direct testing used current2.1.1 simulator/emulator.
+- iPhone17Pro: device analytics explicitly opted out first. Temporarily changed
+  only the local simulator Expo request header to production and ad-hoc signature;
+  app JS/assets unchanged. Native expo-updates downloaded published iOS ID
+  01a20f2c-2b62-7481-93e2-45d21cc61d23. After restart its DB recorded1 successful
+  launch/0 failures; cached Hermes SHA256 exactly matches frozen/published iOS.
+  Real map, funded marker, report/photo and funder rows visibly passed while
+  running that OTA. Original production-preview native shell restored afterward;
+  original channel restoration removes the production cache selection/row.
+- Android16 QA emulator: existing native2.1.1(27) local harness, production
+  channel, unchanged80 native libraries/7 DEX, temporary test signing. Device
+  analytics opted out before launch. Native expo-updates downloaded exact Android
+  ID01a20f2c-2b62-7058-a37d-ef5a7dabd959; restart recorded1 successful launch/0
+  failures. Cached Hermes SHA256 matches published/frozen Android. Running UI
+  visible; zero scanned JS/native fatal startup errors. Known temporary-signing
+  Google Maps tile limitation remains; this is not physical-store Maps acceptance.
+- Evidence: artifacts/mobile-funders-20261124/ota-device-activation/
+  activation-verification.json, per-platform DB/hash readbacks and screenshots.
+  Only one virtual guest ran at a time. Android stopped; original iPhone simulator
+  reopened and app/map visible, analytics exclusion retained. No new OTA/build,
+  store/website/backend deployment, payment or donor/favorite mutation.
+  Production group/source unchanged; earlier device-activation-pending notes are
+  superseded by this scoped native verification. Documentation checkpoint saved
+  in the existing isolated candidate; unrelated shared changes preserved.
+
 ### 2026-11-24 — Codex (funder/privacy/heart checks passed; both production OTAs published)
 
 - Current installed iPhone17Pro native/runtime2.1.1 verified again; internal

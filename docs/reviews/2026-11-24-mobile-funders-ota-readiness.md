@@ -1,5 +1,34 @@
 # Mobile funders OTA readiness — November 24, 2026
 
+## Native download and execution verified — November 24 follow-up
+
+Both exact published OTAs subsequently passed actual native download and
+execution on current2.1.1 test devices. Each first launch downloaded through
+expo-updates; after a restart its native update database recorded the exact
+published ID with **1 successful launch and0 failed launches**. The downloaded
+Hermes files match the frozen/published SHA256s in the table below. This proves
+execution of the downloaded update, beyond the earlier HTTP delivery checks.
+
+The iPhone17Pro simulator temporarily used a production request header on the
+same simulator-only app, with no JS/assets changes. While running the downloaded
+iOS OTA, real map tiles, marker/preview, photos, report details and funder rows
+were verified visually. The original production-preview native shell/channel
+was restored afterward; its production cached selection/row was removed by the
+SDK following that restoration. Android used the existing local2.1.1(27) test
+APK from released native code with temporary QA signing. Its exact Android
+update launched successfully, with the running app visible and no scanned fatal
+JS/native startup errors. The earlier temporary-signing map-tile limitation
+still applies. No physical phone was connected; the owner separately reported
+their phone appeared to update automatically.
+
+Device analytics was explicitly excluded before each test. Android ran alone
+with1GB RAM/two cores, then stopped; the iPhone simulator was reopened with the
+original app and real map visible. Evidence:
+`artifacts/mobile-funders-20261124/ota-device-activation/activation-verification.json`,
+per-platform native DB/hash readbacks and screenshots. No new publication,
+build, store, website, backend or financial change was made. This section
+supersedes the device-activation-pending statement in the earlier release record.
+
 ## Published November 24, 2026 — current status
 
 Both prepared OTA updates are **published to production for runtime2.1.1**.
