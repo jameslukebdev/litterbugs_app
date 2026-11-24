@@ -225,11 +225,11 @@ export default function FirstRunTour({ visible, replay = false, reportButton, on
           <View pointerEvents="box-none" style={compact ? styles.compactDemoArea : StyleSheet.absoluteFill}
             onLayout={compact ? (event) => setDemoRoom(event.nativeEvent.layout.height) : undefined}>
           <View style={[styles.spot, compact ? styles.compactSpot : { bottom: reportButton.bottom }]}>
-            {/* The ladybug you would tap on the map: a spot that needs a cleanup, with $6 in its fund. */}
+            {/* The ladybug you would tap on the map: a spot that needs a cleanup, with $35 in its fund. */}
             <Animated.View ref={register('pin')} style={[styles.spotPin, { opacity: spot, transform: [{ translateY: spot.interpolate({ inputRange: [0, 1], outputRange: [-60, 0] }) }] }]}>
               {index === 1
-                ? <Highlight lit={lit} radius={22} onPress={next} label="Open this spot" style={styles.spotPinLit}><MapPin kind="open" text="$6" /></Highlight>
-                : <MapPin kind="open" text="$6" selected />}
+                ? <Highlight lit={lit} radius={22} onPress={next} label="Open this spot" style={styles.spotPinLit}><MapPin kind="open" text="$35" /></Highlight>
+                : <MapPin kind="open" text="$35" selected />}
             </Animated.View>
             {!compact || index > 1 ? <Animated.View pointerEvents={index > 1 ? 'auto' : 'none'} style={[styles.card, { opacity: card, transform: [{ translateY: card.interpolate({ inputRange: [0, 1], outputRange: [CARD_RISE, 0] }) }] }]}>
               {photoHeight >= 32 ? <View style={[styles.photo, { height: photoHeight }]}>
@@ -239,7 +239,7 @@ export default function FirstRunTour({ visible, replay = false, reportButton, on
               <View style={styles.cardBody}>
                 {!tightDemo ? <>
                 <Text style={styles.cardTitle} numberOfLines={1} maxFontSizeMultiplier={TEXT_MAX}>Cardboard and packaging by the road</Text>
-                <View style={styles.pays}><BrandBug kind="bee" size={17} /><Text style={styles.paysText} maxFontSizeMultiplier={TEXT_MAX}>Pays $6</Text></View>
+                <View style={styles.pays}><BrandBug kind="bee" size={17} /><Text style={styles.paysText} maxFontSizeMultiplier={TEXT_MAX}>Pays $35</Text></View>
                 <Text style={styles.summary} numberOfLines={1} maxFontSizeMultiplier={TEXT_MAX}>0.4 mi · Cardboard · Paper products · Near roadside</Text>
                 </> : null}
                 <View style={[styles.actions, tightDemo && { marginTop: 14 }]}>
