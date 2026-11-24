@@ -24,6 +24,18 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (tutorial example fund changed to $35; not published)
+
+- Owner requested replacing the tutorial's $6 example with $35. Updated
+  FirstRunTour.jsx: the resting pin, selected pin and Pays label now use $35;
+  shared component covers iPhone and Android. No real report fund changed.
+- Scoped lint passed; existing firstRun tests4/4 passed. Source commit505fb96
+  on codex/tutorial-fund-35-20261124 in the existing isolated mobile checkout;
+  shared source matches. Earlier frozen OTA artifacts/production group unchanged.
+- No new export, OTA publication, native/store build or backend/website change.
+  This additional tutorial change is local and is not in the earlier published
+  funder/privacy/heart OTA. Preserve unrelated shared website/mobile changes.
+
 ### 2026-11-24 — Codex (both published OTAs downloaded and run natively)
 
 - Owner requested actual app download/run verification after publication and
