@@ -24,6 +24,24 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (iPhone testing continued; verified installation helper)
+
+- Continued at Grant's explicit instruction. simctl remains inaccessible.
+  Alternate native-control runtime reports “Managed execution requires a usable
+  CODEX_CLI_PATH”; no native-control session started. Read-only saved config
+  confirms approval_policy=never and sandbox_mode=danger-full-access, matching
+  Grant's screenshot; no user restriction or rejection inferred.
+- Added scripts/verify-current-iphone.py, ready to run in owner's normal Terminal.
+  Installs only the prepared internal2.1.1 app onto the already-booted iPhone17Pro,
+  preserves app data, verifies actual installed native/runtime/bundle hash and
+  disabled analytics, launches and saves screenshot/JSON evidence. Never publishes,
+  creates payments or claims visual acceptance. Syntax and source-artifact
+  verification passed; source artifact codesign deep/strict passed again.
+- Awaiting execution outside this restricted session. Actual installed2.1.1 and
+  funder/privacy/heart visual acceptance remain pending. Existing authorization
+  to publish both frozen OTAs after final checks remains recorded; no reapproval
+  required. No production/store/backend/website/payment/favorite changes.
+
 ### 2026-11-24 — Codex (OTA publication authorized; session access blocks execution)
 
 - Grant explicitly instructed “Okay, do these things now” after the remaining
