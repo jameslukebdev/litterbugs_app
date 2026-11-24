@@ -1,5 +1,52 @@
 # Mobile funders OTA readiness — November 24, 2026
 
+## Published November 24, 2026 — current status
+
+Both prepared OTA updates are **published to production for runtime2.1.1**.
+Grant's explicit publication authorization was used; no further approval was
+requested. This status supersedes every historical hold, installation blocker
+and NOT PUBLISHED statement below.
+
+The current iPhone17Pro native/runtime2.1.1 passed the remaining visual checks:
+funders below Get directions, anonymous checkbox default/toggle, the existing
+payment owner's name-control display, and selected/unselected photo hearts on
+list cards and map previews. Existing Google sign-in succeeded. No charge was
+created or donor visibility changed. A temporary favorite toggle was restored.
+Analytics remained disabled in this internal test build. Screenshots and the
+precise check scope are saved in `current-iphone-feature-verification.json` and
+`ios-simulator-current/` under the artifact directory.
+
+Publication at15:08 EST used committed checkout
+`2ab8143363a5ff09d3dabec71a7f906c2d10b11f`, app/export source
+`ba39bbeaadeadadb92743e60741a84901056441a`, with all78 prepared files unchanged.
+Both EAS source maps uploaded successfully.
+
+| Item | Published value |
+| --- | --- |
+| Channel / branch | production / production |
+| Runtime |2.1.1 |
+| Update group |1e72e3f9-55ce-4ef8-8377-a8ca25d0bf4f |
+| iOS update |01a20f2c-2b62-7481-93e2-45d21cc61d23 |
+| Android update |01a20f2c-2b62-7058-a37d-ef5a7dabd959 |
+| iOS Hermes SHA256 |b6db2df03105619025ae8953997257532f50eff332c015d5015e83d17d2abf45 |
+| Android Hermes SHA256 |afaab81cf8772d8f15e484c9067d6a8d43b01c7ac6029328f5dd865b3ea83ffb |
+
+Production channel readback and native Expo protocol requests returned the
+correct platform update IDs. Both hosted bundles match the frozen files;
+all74 unique hosted bundles/assets returned HTTP200 and passed SHA256 checks.
+Expo supplies asset authorization in the multipart extensions; bare asset URLs
+return403 as designed. Saved public manifests, channel readback and
+`publication-verification.json` record delivery verification.
+
+Device activation is not claimed: the internal iPhone build uses
+production-preview, while the released store apps use production. Installed
+store2.1.1 clients can download on a cold launch and activate on a later full
+restart. Older runtimes need store2.1.1 first. Android's earlier temporary QA
+signing/map limitation and unexercised live owner-save remain documented; they
+were not relabeled as passed. No store, website or backend deployment occurred.
+The iPhone simulator remains open. No forced restart or automation was added.
+The rollback command below remains available but was not executed.
+
 ## Latest iPhone installation evidence
 
 The owner ran the prepared helper in normal Terminal. The actual installed

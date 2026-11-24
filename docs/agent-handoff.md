@@ -24,6 +24,37 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (funder/privacy/heart checks passed; both production OTAs published)
+
+- Current installed iPhone17Pro native/runtime2.1.1 verified again; internal
+  analytics disabled. Existing Google session signed in normally. Real Roby
+  Greene funders appear directly below Get directions, above Litter/Notes;
+  two separate $25 rows and relative dates verified. Anonymous checkbox starts
+  unchecked, toggles with correct text, and was restored before leaving checkout.
+- Existing paid-out Ridge Road donation shows Donation privacy, Your name is
+  shown and Hide my name. No payment or donor-visibility mutation. Selected red
+  photo hearts have no white circle on list/map previews; white outline verified.
+  Temporary favorite add/remove completed; original unselected state restored.
+- Under Grant's existing explicit authorization, published both frozen exports
+  to production/runtime2.1.1 at15:08 EST. Export source ba39bbe; publication
+  checkout2ab8143 (later documentation only). Group1e72e3f9-55ce-4ef8-8377-a8ca25d0bf4f;
+  iOS01a20f2c-2b62-7481-93e2-45d21cc61d23;
+  Android01a20f2c-2b62-7058-a37d-ef5a7dabd959. EAS source maps uploaded.
+- Production channel and native Expo delivery requests verify both exact IDs,
+  runtime and frozen Hermes SHA256s. All74 unique hosted bundles/assets fetched
+  with manifest-provided authorization and content hashes verified. All78 frozen
+  files remain unchanged. Evidence: artifacts/mobile-funders-20261124/
+  publication-verification.json and current-iphone-feature-verification.json;
+  screenshots in ios-simulator-current/. Documentation checkpoint is committed
+  in the isolated candidate; unrelated shared website/Claude work preserved.
+- Production-device OTA activation not claimed: internal simulator targets
+  production-preview. Existing store2.1.1 clients download on a cold launch and
+  activate on a later full restart; older runtimes need the store update first.
+  Android temporary-signing map limitation remains documented. No store/native,
+  website or backend release; no payment or lasting privacy/favorite change.
+  Simulator left open; no automation or forced restart added. No remaining
+  publication hold for these two now-published updates.
+
 ### 2026-11-24 — Codex (current iPhone installed and startup verified)
 
 - Grant ran scripts/verify-current-iphone.py in normal macOS Terminal. Saved
