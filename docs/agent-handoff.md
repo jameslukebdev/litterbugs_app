@@ -24,6 +24,30 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (local email flow verification; release still held)
+
+- Source dc4b506 fixes public unsubscribe origin validation behind a reverse
+  proxy using the configured site origin, and renames the remaining admin link
+  to Email list. Five endpoint tests passed; own edits mirrored to shared.
+- Actual website forms/admin and the production iOS preference screen passed
+  against disposable PostgreSQL17 + PostgREST16.4 using synthetic test sessions:
+  website save/reload, iOS save → website refresh, public unsubscribe → iOS focus
+  refresh, failed native save/retry, Admin → Email list, and fresh Bcc/CSV export
+  after resubscribe/withdrawal. Local-only helper auth and native harness; this
+  does not prove hosted Auth/MFA integration or physical-store-device behavior.
+- REST role checks passed: anon preferences denied; non-admin/non-MFA admin list
+  denied; signed-in member cannot call service-only unsubscribe. Latest full app
+  iOS/Android Hermes exports passed; native config/dependency diff from published
+  8855578 is empty, so the feature remains OTA-compatible with runtime2.1.1.
+- Android native runtime is NOT verified: local Android36 emulator fails its
+  first-stage partition mount before the app can launch. ADB discovery fixed
+  using the installed SDK path; failed emulator stopped. Pixel connection
+  requested for a separate QA-namespace test, without replacing its store app.
+- Evidence/logs/screenshots: /tmp/litterbugs-email-e2e/. Hosted migration remains
+  UNAPPLIED; no website deploy, OTA/store publication, real preference changes or
+  email sends. iOS QA app was isolated from the existing simulator app. Release
+  order remains backend → website → apps; hold and Gmail-policy finding persist.
+
 ### 2026-11-24 — Codex (concise email UI; frequency wording removed)
 
 - Owner copy preference: new screens should rely on headings, field labels and

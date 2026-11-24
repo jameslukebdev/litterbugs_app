@@ -110,3 +110,49 @@ Source `fd4fbd9` removes explanatory UI copy, email-address subtitles, example
 email placeholders and frequency claims across the website, apps and previews.
 The unsubscribe title is “Unsubscribe from email list”. Subsequent source
 exports must be regenerated before any future authorized release.
+
+
+## Local end-to-end verification (latest, November24)
+
+Source `dc4b506` fixes a real reverse-proxy origin mismatch in the public
+unsubscribe route, found while exercising the form through Next. The route now
+compares the browser Origin with the validated configured public site origin,
+without trusting arbitrary Host/forwarded input. Five endpoint tests pass,
+including a public-origin/internal-request-URL regression. The remaining admin
+home link now says Email list.
+
+A disposable PostgreSQL17 instance plus PostgREST16.4 ran the actual prepared
+migration. The actual website client/API and native iOS EmailPreferencesScreen
+used that backend. Auth sessions were synthetic local fixtures; this is not a
+hosted Auth/OAuth/MFA integration test. The iOS harness reused the2.1.1 native
+libraries in a separate QA bundle identifier, with remote updates and analytics
+disabled. The original simulator app and its data were preserved.
+
+Observed passes:
+- Website preference save, reload and persistence.
+- iOS preference save reflected by website reload.
+- Public unsubscribe confirmation reflected on iOS screen refocus.
+- Native failed save shows an error, with successful retry.
+- Admin home → Email list navigation and member suppression in the recipient list.
+- CSV export fetched fresh data after native resubscription (two recipients) and
+  public withdrawal (one), without manually refreshing the old admin table.
+  Bcc copy also returned only the one subscribed fixture address.
+- Real REST calls denied anonymous preference reads, member/non-MFA admin access,
+  and member access to the service-only unsubscribe function.
+- Latest full production-entry Hermes exports passed for both platforms in
+  `/tmp/litterbugs-email-e2e/production-export`; bundles contain the expected
+  project endpoint and no QA endpoint. Native configuration/dependencies match
+  published source8855578, so the JS-only feature is eligible for runtime2.1.1 OTA.
+
+Android runtime verification remains **pending**: Android36 fails to mount its
+first-stage system partitions before the app starts. ADB detection was corrected
+with the installed SDK binary; the failed emulator was stopped. A connected Pixel
+was requested for a separate QA-namespace test. Android compilation/export is
+passed, not native runtime. Test screenshots, request logs and REST results are
+in `/tmp/litterbugs-email-e2e/`. No real user preference was changed.
+
+These later local tests supersede the earlier 'not installed/authenticated' local
+QA status above. Nothing was deployed or published. Hosted backend/website
+verification must still follow an authorized backend deployment, before an app
+OTA. Luke's future path is Admin → Email list (`/admin/email`), using his existing
+admin account with MFA; that route is not live yet.
