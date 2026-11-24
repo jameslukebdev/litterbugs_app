@@ -24,6 +24,35 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (Android emulator repaired; local native email checks passed)
+
+- Replaced the failing disposable profile's incorrect system-partition mapping
+  with a valid isolated QA profile. Android16 reached home and completed a full
+  OS restart. Saved ADB GUI preference explicitly to the installed SDK binary.
+  New durable launcher: ~/Applications/Litterbugs Email QA.app; profile:
+  ~/.android/avd/Litterbugs_Email_QA.avd. Uses the installed emulator37.1.11,
+  cold boot/no snapshot saves. Newer37.3.10 was tested separately and removed.
+- Local Android production EmailPreferencesScreen/SessionProvider/Supabase client
+  ran in a native2.1.1 harness. Save persisted in real local PostgreSQL/PostgREST;
+  public website unsubscribe appeared after native refocus; simulated failed
+  save left DB unchanged and showed an error; retry and cold-app relaunch passed.
+  Native libraries/DEX/Kotlin resources matched the original payload. Corrected
+  QA-only package resource stripping and refreshed fixture auth; app source was
+  unchanged. This supersedes the previous Android-runtime pending status.
+- Fixtures use synthetic Auth against a disposable backend, not hosted login or
+  production preferences. No real user changes or sends. Tests/photos/results in
+  /tmp/litterbugs-email-e2e/. QA app removed after testing; local services stopped;
+  temporary index/client/Next config restored. Original app data preserved.
+- Disk cleanup removed generated QA builds/caches. Obsolete Small_Phone and
+  Litterbugs_API_36 Quick Boot caches were archived and verified under
+  ~/Library/Application Support/Litterbugs/QA/ before removing the raw caches.
+  Installed apps/userdata were preserved; recovery instructions are beside the
+  archives. The new launcher avoids RAM snapshots.
+- Source dc4b506 remains the latest feature fix; this pass changes verification
+  records only. NO hosted migration, website deployment, app/OTA/store publication
+  or email send. Backend/website/app deployment remains on hold; hosted checks
+  must follow a separately authorized release. Gmail-policy finding persists.
+
 ### 2026-11-24 — Codex (local email flow verification; release still held)
 
 - Source dc4b506 fixes public unsubscribe origin validation behind a reverse

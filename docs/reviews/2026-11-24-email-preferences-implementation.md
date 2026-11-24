@@ -156,3 +156,46 @@ QA status above. Nothing was deployed or published. Hosted backend/website
 verification must still follow an authorized backend deployment, before an app
 OTA. Luke's future path is Admin → Email list (`/admin/email`), using his existing
 admin account with MFA; that route is not live yet.
+
+
+## Android emulator repair and completed native checks (latest)
+
+The Android runtime blocker is resolved. The failed disposable profile generated
+an incorrect system boot-device mapping; a valid isolated configuration booted
+Android16, reached home and completed an OS restart. GUI ADB settings now use
+`/Users/grantgibson/Library/Android/sdk/platform-tools/adb` explicitly. The durable
+launcher is `/Users/grantgibson/Applications/Litterbugs Email QA.app`, using profile
+`Litterbugs_Email_QA` under the normal Android AVD directory. It uses installed
+emulator37.1.11 with cold boot and snapshot saving disabled. A separately tested
+37.3.10 package did not solve the profile issue and was removed.
+
+The actual production native EmailPreferencesScreen, SessionProvider, focused
+resource hook and Supabase client ran against disposable PostgreSQL/PostgREST.
+The harness uses synthetic Auth and a Settings entry. It does not substitute for
+hosted Auth or a published OTA activation test. Observed Android passes:
+
+- Save enabled preference, show Saved, and verify true in the local database.
+- Public website unsubscribe, reopen native screen, and observe toggle off.
+- Inject a failed write; show the save error and verify DB still false.
+- Retry, show Saved, verify DB true, then cold-launch app and retain that value.
+
+The QA APK preserved102 native libraries/DEX/Kotlin resources from the original
+payload. A QA repacking mistake that removed META-INF service resources was
+corrected, and fixture login now obtains a fresh local session at launch. These
+changes are confined to temporary test tooling; no production app code changed.
+Screenshots: `/tmp/litterbugs-email-e2e/android-{saved,after-unsubscribe,save-failure,cold-launch}.jpg`.
+SQL/REST results and request logs are in the same directory.
+
+The isolated QA app was removed after tests, the local backend/test website were
+stopped and temporary source overrides restored. Generated build caches and test
+packages were cleaned. The earlier Small_Phone and Litterbugs_API_36 Quick Boot snapshots were archived
+and verified under `/Users/grantgibson/Library/Application Support/Litterbugs/QA/`
+before removing their uncompressed caches to restore disk headroom. Recovery
+instructions are beside the archives. Original guest installed apps/userdata
+were preserved. The durable QA profile was freshened
+once the behavior tests completed and is separate from that original profile.
+
+Website, iPhone and Android preference behavior now pass locally. Production
+backend/website verification remains a later release step. No hosted migration,
+deployment, OTA, store upload/publication, real preference change or email send
+occurred. Source `dc4b506` and its OTA eligibility are unchanged.
