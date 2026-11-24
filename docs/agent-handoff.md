@@ -24,6 +24,27 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (current simulator build authorized; QA ongoing)
+
+- Grant explicitly approved uploading the prepared source to Expo for the
+  current simulator-only build and removing unneeded old builds. This resolves
+  the prior cloud-upload approval rejection; it does NOT approve OTA publication.
+- Submitted existing production-simulator profile from committed71d1d1c:
+  build13bf4e5c-2f44-4e08-8883-6a234d489f46, iOS2.1.1(30), simulator=true,
+  currently IN_PROGRESS. Native/app config and feature source unchanged.
+- Removed28 untracked superseded native build archives/APKs/IPAs/AABs from
+  older artifact folders, freeing1.74GiB. Kept both latest2.1.1 store binaries,
+  frozen OTA/source bundles, all tracked files, source and screenshots/logs.
+  Exact paths/sizes/checksums: old-build-cleanup.json in current OTA artifacts.
+- Heavy build is remote. Android emulator/Studio stopped; Xcode and the temporary
+  Activity Monitor were closed after checking normal/green memory pressure.
+  Read-only memory_pressure reported56–58% system-wide free percentage.
+- Current iPhone simulator remains shutdown/no device window. simctl cannot
+  connect from this session; CUA also cannot target Simulator without a device
+  window. Asked Grant to reopen iPhone17Pro while the build finishes. Do not
+  claim2.1.1 native UI acceptance until installed app Info/Expo plists and the
+  native funder/privacy/heart checks are verified. No OTA/store/backend release.
+
 ### 2026-11-24 — Codex (native QA follow-up; current iPhone shell pending)
 
 - Owner accepts emulator/simulator testing but explicitly requires latest
