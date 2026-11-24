@@ -13,7 +13,7 @@ it('loads the server preference, explicitly saves off, and confirms persistence'
  const toggle=await screen.findByRole('switch');expect((toggle as HTMLInputElement).checked).toBe(true);
  fireEvent.click(toggle);fireEvent.click(screen.getByRole('button',{name:'Save preferences'}));
  await waitFor(()=>expect(state.save).toHaveBeenCalledWith(false));
- expect(await screen.findByRole('status')).toHaveProperty('textContent','Preferences saved. Weekly emails are off.');
+ expect(await screen.findByRole('status')).toHaveProperty('textContent','Saved');
 });
 it('does not show a default-on switch or saved success when loading or saving fails',async()=>{
  state.load.mockRejectedValueOnce(Error('offline'));render(<EmailPreferences/>);

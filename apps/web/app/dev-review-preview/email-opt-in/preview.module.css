@@ -28,3 +28,5 @@
 }
 
 .privacyDraft{padding:32px;max-width:680px;margin:auto}.privacyDraft h1{font-family:EmailPreviewHeading,Arial,sans-serif;font-size:30px;line-height:1.2;margin:14px 0 22px}.privacyDraft>p{margin-bottom:20px;line-height:1.75}.draftLabel{font-size:12px;color:var(--muted)}.draftReview{border-top:1px solid var(--line);padding-top:20px;color:var(--muted);font-size:13px}.privacyDraft>a{font-size:13px}@media(max-width:480px){.privacyDraft{padding:25px 20px}.privacyDraft h1{font-size:26px}}
+
+.preferenceForm .preferenceBox{margin-top:24px;margin-bottom:22px}

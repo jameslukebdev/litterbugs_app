@@ -44,10 +44,10 @@ export function WeeklyEmailList() {
       if (!audience.length) { setMessage('There are no subscribed accounts to export.'); return; }
       if (kind === 'bcc') {
         await navigator.clipboard.writeText(weeklyEmailBcc(audience));
-        setMessage(`${audience.length} subscribed addresses copied. Paste them into Gmail’s Bcc field.`);
+        setMessage(`${audience.length} addresses copied.`);
       } else {
         const url = URL.createObjectURL(new Blob([weeklyEmailCsv(audience)], { type: 'text/csv;charset=utf-8' }));
-        const link = document.createElement('a'); link.href = url; link.download = `litterbugs-weekly-emails-${new Date().toISOString().slice(0,10)}.csv`; link.click();
+        const link = document.createElement('a'); link.href = url; link.download = `litterbugs-email-list-${new Date().toISOString().slice(0,10)}.csv`; link.click();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
         setMessage(`${audience.length} subscribed addresses exported.`);
       }
@@ -65,32 +65,29 @@ export function WeeklyEmailList() {
       if (typeof ClipboardItem !== 'undefined' && navigator.clipboard.write) {
         await navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([html], { type: 'text/html' }), 'text/plain': new Blob([plain], { type: 'text/plain' }) })]);
       } else await navigator.clipboard.writeText(plain);
-      setMessage('Email footer copied. Paste it at the bottom of your Gmail message.');
-    } catch { setError('The footer could not be copied. You can copy the text and links below.'); }
+      setMessage('Email footer copied.');
+    } catch { setError('Couldn’t copy the footer.'); }
   }
   const subscribed = rows?.filter(row => row.subscribed).length ?? 0;
   const visible = (rows ?? []).filter(row => (filter === 'all' || row.subscribed === (filter === 'subscribed')) && `${row.name} ${row.email}`.toLowerCase().includes(query.toLowerCase()));
   const pageCount = Math.max(1, Math.ceil(visible.length / 25));
   const currentPage = Math.min(page, pageCount - 1);
   return <section className={styles.panel} data-clarity-mask="true" data-ph-no-capture>
-    <p className={styles.intro}>The current audience for Luke’s next email from teamlitterbugs@gmail.com.</p>
     <div className={styles.counts}><div><strong>{rows ? subscribed : '—'}</strong><span>Subscribed</span></div><div><strong>{rows ? rows.length - subscribed : '—'}</strong><span>Unsubscribed</span></div><div><strong>{rows ? rows.length : '—'}</strong><span>Eligible accounts</span></div></div>
-    <div className={styles.export}><div><h2>Ready for Gmail</h2><p>Use a fresh list for each send. Paste addresses into <strong>Bcc</strong> to keep recipients private.</p></div><div className={styles.actions}><button onClick={() => { void exportList('bcc'); }} disabled={busy || !rows || !subscribed}>Copy Bcc list</button><button onClick={() => { void exportList('csv'); }} disabled={busy || !rows || !subscribed}>Download CSV</button></div></div>
+    <div className={styles.export}><div><h2>Recipients</h2></div><div className={styles.actions}><button onClick={() => { void exportList('bcc'); }} disabled={busy || !rows || !subscribed}>Copy Bcc list</button><button onClick={() => { void exportList('csv'); }} disabled={busy || !rows || !subscribed}>Download CSV</button></div></div>
     <div className={styles.tools}><div role="group" aria-label="Filter recipients">{['subscribed','unsubscribed','all'].map(value => <button key={value} onClick={() => { setFilter(value); setPage(0); }} aria-pressed={filter === value}>{value === 'all' ? 'All accounts' : value === 'subscribed' ? 'Subscribed' : 'Unsubscribed'}</button>)}</div><input aria-label="Search recipients" placeholder="Search name or email" value={query} onChange={e => { setQuery(e.target.value); setPage(0); }} /><button disabled={busy} onClick={() => { void refresh(); }}>{busy ? 'Refreshing…' : 'Refresh list'}</button></div>
     {error ? <p className={styles.error} role="alert">{error}</p> : null}
     {message ? <p className={styles.success} role="status">{message}</p> : null}
     {!rows ? <p role="status">{busy ? 'Loading the email list…' : 'The email list is unavailable.'}</p> : <>
-      <div className={styles.table}><table><thead><tr><th>Member</th><th>Weekly emails</th><th>Preference source</th></tr></thead><tbody>{visible.slice(currentPage*25,(currentPage+1)*25).map(row => <tr key={row.email}><td><strong>{row.name || 'Litterbugs member'}</strong><span>{row.email}</span></td><td>{row.subscribed ? 'Subscribed' : 'Unsubscribed'}</td><td>{SOURCE[row.source] ?? 'Account record'}</td></tr>)}</tbody></table></div>
+      <div className={styles.table}><table><thead><tr><th>Member</th><th>Litterbugs emails</th><th>Preference source</th></tr></thead><tbody>{visible.slice(currentPage*25,(currentPage+1)*25).map(row => <tr key={row.email}><td><strong>{row.name || 'Litterbugs member'}</strong><span>{row.email}</span></td><td>{row.subscribed ? 'Subscribed' : 'Unsubscribed'}</td><td>{SOURCE[row.source] ?? 'Account record'}</td></tr>)}</tbody></table></div>
       {!visible.length ? <p>No accounts match this view.</p> : null}
       <div className={styles.pagination}><span>{visible.length} matching accounts · Page {currentPage+1} of {pageCount}</span><button disabled={!currentPage} onClick={() => setPage(currentPage-1)}>Previous</button><button disabled={currentPage+1>=pageCount} onClick={() => setPage(currentPage+1)}>Next</button></div>
-      <p className={styles.note}>Only confirmed accounts with an email address appear. Guest, review, deleted, and currently suspended accounts are excluded. Default subscription does not mean the member explicitly opted in.</p>
     </>}
     <section className={styles.footer}>
-      <h2>Email footer</h2><p>Add this at the bottom of every weekly email.</p>
-      <label>Business mailing address<textarea rows={3} maxLength={500} value={address} onChange={e => setAddress(e.target.value)} placeholder="Your valid business postal address" /></label>
+      <h2>Email footer</h2>
+      <label>Business mailing address<textarea rows={3} maxLength={500} value={address} onChange={e => setAddress(e.target.value)} placeholder="Mailing address" /></label>
       <div className={styles.footerPreview}><p>Litterbugs Community Cleanup<br />{address || '[Business mailing address]'}</p><Link href="/privacy">Privacy policy</Link> | <Link href="/unsubscribe">Unsubscribe</Link> | <Link href="/account/email-preferences">Email preferences</Link></div>
       <button onClick={() => { void copyFooter(); }} disabled={!address.trim()}>Copy email footer</button>
-      <p className={styles.note}>This page does not send emails. Addresses already pasted into an old Gmail draft do not update automatically.</p>
     </section>
   </section>;
 }

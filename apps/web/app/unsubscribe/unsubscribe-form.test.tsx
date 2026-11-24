@@ -12,7 +12,7 @@ it('only submits on confirmation and shows the same response without displaying 
  fireEvent.click(screen.getByRole('button',{name:'Unsubscribe'}));
  await screen.findByRole('heading',{name:'You’re unsubscribed'});
  expect(send).toHaveBeenCalledWith('/api/email/unsubscribe',expect.objectContaining({method:'POST',body:JSON.stringify({email:'alex@example.com',website:''})}));
- expect(document.body.textContent).not.toContain('alex@example.com');expect(screen.getByRole('status').textContent).toContain('If that address');
+ expect(document.body.textContent).not.toContain('alex@example.com');expect(screen.getByRole('status').textContent).toBe('You’re unsubscribed');
 });
 it('keeps the form retryable when the server rejects the request',async()=>{
  send.mockResolvedValueOnce(new Response('{}',{status:503}));render(<UnsubscribeForm/>);

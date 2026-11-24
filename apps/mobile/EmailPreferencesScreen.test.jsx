@@ -22,11 +22,11 @@ it('starts on, saves off to the shared server, refreshes, and confirms it',async
  await render();expect(container.querySelector('input').checked).toBe(true);expect(container.querySelector('button').disabled).toBe(true);
  await act(async()=>container.querySelector('input').click());await act(async()=>container.querySelector('button').click());
  expect(fixture.save).toHaveBeenCalledWith('member',false);expect(fixture.refresh).toHaveBeenCalledOnce();
- expect(container.textContent).toContain('Weekly emails are off.');expect(container.querySelector('input').checked).toBe(false);
+ expect(container.textContent).toContain('Saved');expect(container.querySelector('input').checked).toBe(false);
 });
 it('never reports a failed save as saved',async()=>{
  fixture.save.mockRejectedValue(Error('offline'));await render();await act(async()=>container.querySelector('input').click());await act(async()=>container.querySelector('button').click());
- expect(container.textContent).toContain('not saved');expect(container.textContent).not.toContain('Preferences saved');
+ expect(container.textContent).toContain('not saved');expect(container.textContent).not.toContain('Saved');
 });
 it('hides stale controls on a failed refresh and shows the website withdrawal when reloaded',async()=>{
  fixture.resource={data:preference,error:Error('offline')};await render();expect(container.querySelector('input')).toBeNull();

@@ -51,20 +51,16 @@ export function EmailPreferences() {
   return <form className={styles.form} onSubmit={save} data-clarity-mask="true" data-ph-no-capture>
     <span className={styles.icon}><FiMail aria-hidden /></span>
     <h1>Email preferences</h1>
-    <p className={styles.intro}>A little news from your cleanup community.</p>
     {!preference ? <div className={styles.loading}>
       {error ? <><p role="alert">{error}</p><button type="button" className={styles.secondary} onClick={() => { void load(); }}>Try again</button></> : <p role="status">Loading email preferences…</p>}
     </div> : <>
-      <p className={styles.address}>{preference.email}</p>
       <div className={styles.box}>
-        <div className={styles.row}><label htmlFor="weekly-email"><strong>Weekly Litterbugs emails</strong><span>Cleanup opportunities, community stories, and ways to support cleanups.</span></label>
+        <div className={styles.row}><label htmlFor="weekly-email"><strong>Litterbugs emails</strong></label>
           <input className={styles.switch} id="weekly-email" type="checkbox" role="switch" checked={checked} disabled={busy} onChange={e => { setChecked(e.target.checked); setSaved(false); }} /></div>
-        <p className={styles.frequency}>About once a week. Unsubscribe anytime.</p>
       </div>
-      <p className={styles.note}>This choice only changes weekly emails. You’ll still receive essential account and payment emails.</p>
       {error ? <p className={styles.error} role="alert">{error}</p> : null}
       <button type="submit" className={styles.primary} disabled={busy || checked === preference.subscribed}>{busy ? 'Saving…' : 'Save preferences'}</button>
-      {saved ? <p className={styles.success} role="status"><FiCheck aria-hidden />Preferences saved. Weekly emails are {preference.subscribed ? 'on' : 'off'}.</p> : null}
+      {saved ? <p className={styles.success} role="status"><FiCheck aria-hidden />Saved</p> : null}
     </>}
   </form>;
 }

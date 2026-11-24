@@ -54,8 +54,8 @@ export default function PrivacyPage() {
         {
           title: 'Account emails and community updates',
           content: <>
-            <p>We use your account email address to send Litterbugs community news, cleanup opportunities, and ways to support cleanups, usually about once a week. Existing and new accounts are subscribed to these emails by default.</p>
-            <p>You can unsubscribe at any time using the link in an email or by turning off weekly emails in your account’s <Link href="/account/email-preferences">Email preferences</Link>. Unsubscribing does not close your account or stop essential account, security, payment, or support emails.</p>
+            <p>We use your account email address to send Litterbugs community news, cleanup opportunities, and ways to support cleanups. Existing and new accounts are subscribed to these emails by default.</p>
+            <p>You can unsubscribe at any time using the link in an email or by turning off Litterbugs emails in your account’s <Link href="/account/email-preferences">Email preferences</Link>. Unsubscribing does not close your account or stop essential account, security, payment, or support emails.</p>
             <p>We use Google Gmail to send community emails. We retain your email preference and a hash of your email address to honor unsubscribe requests, including if an account is recreated. This record is kept separately from your public profile.</p>
           </>,
         },

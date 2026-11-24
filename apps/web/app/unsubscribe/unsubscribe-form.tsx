@@ -30,21 +30,17 @@ export function UnsubscribeForm() {
     <img className={styles.brand} src="/brand/litterbugs-logo.png" alt="Litterbugs" />
     <span className={styles.icon}>{done ? <FiCheck aria-hidden /> : <FiMail aria-hidden />}</span>
     {done ? <>
-      <h1>You’re unsubscribed</h1>
-      <p role="status">If that address receives weekly Litterbugs emails, those emails are now turned off.</p>
-      <p className={styles.note}>You’ll still receive essential account and payment emails.</p>
-      <Link className={styles.secondary} href="/account/email-preferences">Go to email preferences</Link>
-      <button className={styles.secondary} style={{ marginTop: 12 }} onClick={() => setDone(false)}>Use a different email address</button>
+      <div role="status"><h1>You’re unsubscribed</h1></div>
+      <Link className={styles.secondary} href="/account/email-preferences">Email preferences</Link>
+      <button className={styles.secondary} style={{ marginTop: 12 }} onClick={() => setDone(false)}>Another email address</button>
     </> : <>
-      <h1>Unsubscribe from weekly emails</h1>
-      <p>Enter the email address that receives your Litterbugs emails.</p>
+      <h1>Unsubscribe from email list</h1>
       <form onSubmit={submit}>
-        <label className={styles.field}>Email address<input type="email" name="email" autoComplete="email" placeholder="you@example.com" required maxLength={254} value={email} disabled={busy} onChange={e => setEmail(e.target.value)} /></label>
+        <label className={styles.field}>Email address<input type="email" name="email" autoComplete="email" required maxLength={254} value={email} disabled={busy} onChange={e => setEmail(e.target.value)} /></label>
         <label className={styles.honeypot} aria-hidden>Leave this empty<input name="website" tabIndex={-1} autoComplete="off" value={website} onChange={e => setWebsite(e.target.value)} /></label>
         {error ? <p className={styles.error} role="alert">{error}</p> : null}
         <button className={styles.primary} type="submit" disabled={busy}>{busy ? 'Saving…' : 'Unsubscribe'}</button>
       </form>
-      <p className={styles.note}>No sign-in needed. This won’t affect your Litterbugs account.</p>
     </>}
     <nav className={styles.publicLinks} aria-label="Email links"><Link href="/privacy">Privacy policy</Link><Link href="/account/email-preferences">Email preferences</Link></nav>
   </section>;

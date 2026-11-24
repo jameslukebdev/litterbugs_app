@@ -21,19 +21,16 @@ export function WeeklyEmailControls({ preference, onSave, onEdit }) {
     finally { setBusy(false); }
   }
   return <>
-    <Text style={styles.email} selectable>{preference.email}</Text>
     <View style={styles.panel}>
       <View style={styles.row}>
-        <View style={styles.copy}><Text style={styles.label}>Weekly Litterbugs emails</Text><Text style={styles.caption}>Cleanup opportunities, community stories, and ways to support cleanups.</Text></View>
+        <View style={styles.copy}><Text style={styles.label}>Litterbugs emails</Text></View>
         <Switch value={checked} onValueChange={value => { setChecked(value); setError(''); onEdit?.(); }} disabled={busy}
-          accessibilityLabel="Weekly Litterbugs emails" accessibilityHint="About once a week. Unsubscribe anytime."
+          accessibilityLabel="Litterbugs emails"
           trackColor={{ false: colors.lineStrong, true: '#b9e9dd' }} thumbColor={checked ? '#283c37' : colors.white} ios_backgroundColor={colors.lineStrong} />
       </View>
-      <Text style={styles.frequency}>About once a week. Unsubscribe anytime.</Text>
     </View>
-    <Text style={styles.note}>This choice only changes weekly emails. You’ll still receive essential account and payment emails.</Text>
     {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
-    <PrimaryButton label="Save preferences" busyLabel="Saving…" onPress={save} busy={busy} disabled={busy || checked === preference.subscribed} />
+    <PrimaryButton style={{ marginTop: 22 }} label="Save preferences" busyLabel="Saving…" onPress={save} busy={busy} disabled={busy || checked === preference.subscribed} />
   </>;
 }
 
@@ -51,13 +48,12 @@ export default function EmailPreferencesScreen() {
   return <ScrollView style={styles.screen} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
     <View style={styles.icon}><Ionicons name="mail-outline" size={26} color={colors.primary} /></View>
     <Text style={styles.heading}>Email preferences</Text>
-    <Text style={styles.intro}>A little news from your cleanup community.</Text>
     {!user?.id || user.is_anonymous ? <Text style={styles.note}>Sign in to manage email preferences.</Text>
       : resource.error ? <LoadFailure title="Couldn’t load email preferences" onRetry={resource.refresh} />
       : resource.loading || !resource.data ? <LoadingBee label="Loading email preferences" style={{ marginTop: 40 }} />
       : <>
         <WeeklyEmailControls key={`${user.id}:${resource.updatedAt}`} preference={resource.data} onSave={save} onEdit={() => setNotice(null)} />
-        {notice?.owner === user.id && notice.subscribed === resource.data.subscribed ? <View style={styles.success} accessibilityRole="alert"><Ionicons name="checkmark-outline" size={20} color="#283c37" /><Text style={styles.successText}>Preferences saved. Weekly emails are {notice.subscribed ? 'on' : 'off'}.</Text></View> : null}
+        {notice?.owner === user.id && notice.subscribed === resource.data.subscribed ? <View style={styles.success} accessibilityRole="alert"><Ionicons name="checkmark-outline" size={20} color="#283c37" /><Text style={styles.successText}>Saved</Text></View> : null}
       </>}
   </ScrollView>;
 }
@@ -69,7 +65,7 @@ const styles = StyleSheet.create({
   heading: { color: colors.ink, fontFamily: fonts.heading, fontSize: 28, lineHeight: 35 },
   intro: { color: colors.muted, fontSize: 14, lineHeight: 22, marginTop: 10 },
   email: { color: colors.body, fontSize: 14, lineHeight: 21, marginTop: 22, marginBottom: 26 },
-  panel: { borderColor: colors.line, borderWidth: 1, borderRadius: 17, padding: 17 },
+  panel: { marginTop: 24, borderColor: colors.line, borderWidth: 1, borderRadius: 17, padding: 17 },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   copy: { flex: 1 },
   label: { color: colors.ink, fontSize: 16, lineHeight: 23, fontWeight: '600' },

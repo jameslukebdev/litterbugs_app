@@ -106,7 +106,7 @@ export function AdminAccess({ state, destination = 'inbox' }: { state: Exclude<A
     return (
       <section className={styles.accessCard}>
         <h2>Verify with your authenticator</h2>
-        <p>Enter the code from your authenticator app to open {destination === 'analytics' ? 'website analytics' : destination === 'email' ? 'the weekly email list' : 'the review inbox'}.</p>
+        {destination !== 'email' ? <p>Enter the code from your authenticator app to open {destination === 'analytics' ? 'website analytics' : 'the review inbox'}.</p> : null}
         {enrollment ? (
           <div className={styles.enrollment}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -127,7 +127,7 @@ export function AdminAccess({ state, destination = 'inbox' }: { state: Exclude<A
   return (
     <section className={styles.accessCard}>
       <h2>Admin sign in</h2>
-      <p>Sign in with your Litterbugs administrator account. You’ll then confirm a code from your authenticator app.</p>
+      {destination !== 'email' ? <p>Sign in with your Litterbugs administrator account. You’ll then confirm a code from your authenticator app.</p> : null}
       <button className={styles.googleButton} type="button" onClick={signInWithGoogle} disabled={busy} aria-busy={busy || undefined}>
         {busy && destination !== 'analytics' ? 'Opening Google…' : 'Continue with Google'}
       </button>
