@@ -24,6 +24,18 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (simulator reopened; installation still blocked)
+
+- Grant reopened iPhone17Pro. CUA can operate its UI; simctl still fails with
+  CoreSimulator connection/access errors from this session. The fresh2.1.1 app
+  is ready in Finder, but is not installed (existing installed app remains2.0.1).
+- Opened Apple's Accessibility Inspector while troubleshooting GUI placement;
+  Grant asked what it was. Explained it and quit it; app inventory confirms
+  Inspector/Xcode/Android Studio are closed. No app/security setting changes.
+- Requested one manual drag of Litterbugs.app from the prepared Finder folder
+  onto the open iPhone to finish installation, then resume latest-native checks.
+  Do not claim UI acceptance or publish OTA. Production78-file export unchanged.
+
 ### 2026-11-24 — Codex (current iPhone simulator app built; window handoff)
 
 - Owner-approved Expo simulator build13bf4e5c-2f44-4e08-8883-6a234d489f46
