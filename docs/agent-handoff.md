@@ -24,6 +24,26 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (current iPhone installed and startup verified)
+
+- Grant ran scripts/verify-current-iphone.py in normal macOS Terminal. Saved
+  installed-native-verification.json confirms main com.litterbugs.app native2.1.1,
+  runtime2.1.1, build1, disabled internal analytics, and exact prepared Hermes
+  SHA256cd2e3841e2e43ff79105b3881a8281dfc46a1d902ff74202719b1244a0a606b6.
+  App launched; reviewed current-iphone-installed.png shows real map tiles,
+  report markers, Boone search and normal controls/navigation; no error overlay.
+- Latest-native installation/startup gate is now passed. Feature visual checks
+  remain pending: funder placement, anonymous checkbox interaction, payment owner
+  name-control display, heart appearance. Do not mark these passed from startup.
+- This session still lacks functioning native UI controls; alternate runtime
+  reports missing CODEX_CLI_PATH. Owner asked how to remove restrictions. Saved
+  config already says never/danger-full-access; actual session profile differs.
+  Local Codex CLI help verified explicit --sandbox danger-full-access and
+  --ask-for-approval never flags for a fresh owner-launched local session.
+- Publication of both exact frozen OTAs is authorized; do not request approval
+  again. Source/artifacts unchanged. No OTA/store/backend/website/payment/donor
+  mutation. Continue actual visual checks then publish and verify delivery.
+
 ### 2026-11-24 — Codex (iPhone testing continued; verified installation helper)
 
 - Continued at Grant's explicit instruction. simctl remains inaccessible.

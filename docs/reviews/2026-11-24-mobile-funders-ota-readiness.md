@@ -1,5 +1,17 @@
 # Mobile funders OTA readiness — November 24, 2026
 
+## Latest iPhone installation evidence
+
+The owner ran the prepared helper in normal Terminal. The actual installed
+com.litterbugs.app is now native2.1.1/runtime2.1.1, internal analytics disabled,
+and its Hermes bundle matches the prepared simulator artifact. Saved evidence:
+`ios-simulator-current/installed-native-verification.json` and
+`ios-simulator-current/current-iphone-installed.png`. Screenshot review confirms
+app startup, real map tiles/markers, search and normal navigation without an
+error overlay. Funder/privacy/heart feature UI checks are still pending.
+The older installation-blocked text below is historical and superseded.
+
+
 ## Owner publication instruction — November 24 follow-up
 
 Grant explicitly authorized the listed remaining checks and publication of both
