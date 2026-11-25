@@ -24,6 +24,24 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-25 — Codex (full private issue/reply/resume preview)
+
+- Owner requested full interactive preview and privacy clarification; no build or
+  deployment. Previewe44cabe on existing isolated cleanup-issues branch, mirrored
+  only route/plan to shared3000. Start link: /dev-review-preview/cleanup-issues?walkthrough=1.
+- Added private reporter reply separate from public report edits, explicit persona
+  controls outside product, push/inbox preview, persistent response strip + Your
+  cleanup shortcut, newest answer first, earlier messages, fixed Resume cleanup
+  footer, retained claim/time, repeat follow-up and reread after resume.
+- Requests/replies scoped in design to cleaner/reporter/team; public report/Timeline
+  show no private text. Explicit public Additional information edit stays separate.
+  Browser happy/missed-notification/follow-up/safety/released-claim/public-edit,
+  app/web/390px/console/asset/lint checks pass. All simulated UI state; no actual
+  auth/RLS/notification/timer change is implemented or claimed tested.
+- No production source/backend/schema/website/OTA/store deployment; liveba1feca and
+  OTA63bc12bc preserved. Memory managed by reusing server/browser; viewport reset,
+  no native devices started. Unrelated shared edits and handoffs preserved.
+
 ### 2026-11-25 — Codex (report information communication research/preview)
 
 - Preview9f52ae5 extends prior isolated cleanup-issues concept, mirrored only route
