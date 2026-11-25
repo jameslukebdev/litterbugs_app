@@ -24,6 +24,31 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-25 — Codex (cleanup utility/layout and full local team review)
+
+- Local website250c0fd extends620b0d7 in /tmp/litterbugs-cleanup-issues-web-20261125.
+  Branded blue labeled Cleanup options replaces floating dots; aligned workspace,
+  compact resolved history. Account report now uses bounded photo/document flow,
+  one Timeline and role-correct cleanup action; duplicate progress/payout prompt
+  removed. Staff cases open directly to private issue with one Back to review.
+- New LOCAL-ONLY migration20261125175248_cleanup_issue_team_decisions.sql adds
+  MFA2/expected-version/idempotent staff hold/ready/close with required private note.
+  Close releases claims and queues full original contribution refunds, never payout
+  or completion. Old local no-note approval revoked. Nothing applied to hosted.
+- Browser full flow passed safety->reporter reply->MFA2 team hold->ready->cleaner
+  resume (same claim,+314s) and missing litter->reporter confirms->staff close,
+  released claim/3850 total refund_pending/no reward.139 regressions, extended SQL,
+  TypeScript/lint/diff checks pass. No real refunds, native changes or deployment.
+- Tester3001/local-testing/cleanup-issues now has scenario tabs and Use team with
+  real local TOTP MFA2 (server-only0600 fixture). Fresh safety/missing scenarios and
+  fresh access request347ca014-2032-4797-a49a-c3bcdd91227d await owner tests; open tab
+  is reporter with blank reply form. Old resolved notification is read-only history.
+- Cached edge-runtime stalled; stopped its own review container. Staff inbox uses
+  existing admin-cleanup-case source in loopback Node adapter62344 capped256MB,
+  real local Auth/RPC/Storage, dev-only proxy/read operations. Not deployed-Deno
+  verification; provider/payment operations disabled. Startup/evidence/limitations
+  in implementation plan. VM2GB/Next1.5GB; viewport reset; no simulators started.
+
 ### 2026-11-25 — Codex (real cleanup issue workflow, local website only)
 
 - Implemented620b0d7 in isolated /tmp/litterbugs-cleanup-issues-web-20261125,
