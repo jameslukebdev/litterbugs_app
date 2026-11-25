@@ -5,7 +5,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import SharedReportPage, { generateMetadata } from './page';
 import type { PublicReportShareModel } from '@/lib/public-report-share-model';
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
-vi.mock('@/lib/report-site', () => ({ loadReportSite: async () => null }));
+const { loadSite } = vi.hoisted(() => ({ loadSite: vi.fn().mockResolvedValue(null) }));
+vi.mock('@/lib/report-site', () => ({ loadReportSite: loadSite }));
 const { loadReport, loadRelated } = vi.hoisted(() => ({ loadReport: vi.fn(), loadRelated: vi.fn().mockResolvedValue([]) }));
 vi.mock('@/lib/related-public-reports', () => ({ loadRelatedPublicReports: loadRelated }));
 vi.mock('@/components/public-site-header', () => ({ PublicSiteHeader: () => null }));
@@ -165,4 +166,16 @@ it('renders the actual evidence and history of a photo-less expired report in se
   expect(html).not.toContain('This report is no longer active');
   expect(html).not.toContain('Cleanup result photo');
   expect((await generateMetadata({ params: Promise.resolve({ id: report.id }) })).alternates?.canonical).toBe(report.canonicalUrl);
+});
+
+it('keeps an older occurrence focused on its own Timeline and links the combined site history',async()=>{
+ const old={...report,state:'completed' as const,reportDate:'2026-11-01',completionDate:'2026-11-10',reporterName:'Original reporter'};
+ const newer={...report,id:'new-report',title:'New litter occurrence',reportDate:'2026-11-24',reporterName:'New reporter'};
+ loadReport.mockResolvedValue(old);loadRelated.mockResolvedValue([]);
+ loadSite.mockResolvedValue({id:'site-id',reports:[old,newer],currentReportId:newer.id,completedCount:1,canReportAgain:false});
+ render(await SharedReportPage({params:Promise.resolve({id:old.id})}));
+ expect(screen.getByRole('link',{name:'View site history'}).getAttribute('href')).toBe('/sites/site-id');
+ expect(screen.getAllByRole('heading',{name:'Timeline'})).toHaveLength(1);
+ expect(screen.queryByText('Reported by New reporter')).toBeNull();
+ loadSite.mockResolvedValue(null);
 });

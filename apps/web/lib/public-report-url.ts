@@ -41,6 +41,11 @@ export function publicReportHref(report: { id: string; canonicalUrl?: string | n
   return `/reports/${encodeURIComponent(report.id)}`;
 }
 
+/** Grouped directory cards open the site, while report/evidence URLs keep their identity. */
+export function publicReportCardHref(report: { id: string; canonicalUrl?: string | null; siteLink?: { href: string } }) {
+  return report.siteLink?.href ?? publicReportHref(report);
+}
+
 /** The report id in a readable address or its route parameter, whatever words precede it. */
 export function publicReportIdFromSlug(slug: string) {
   return new RegExp(`(?:^|-)(${UUID})$`, 'i').exec(slug)?.[1].toLowerCase() ?? null;

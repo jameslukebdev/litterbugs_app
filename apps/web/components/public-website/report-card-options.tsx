@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { reportPreferenceSync } from '@/lib/synced-report-preferences';
 
 /** Uses the same Hide/Unhide preferences as the map's existing card menu. */
-export function ReportCardOptions({ reportId, title }: { reportId: string; title: string }) {
+export function ReportCardOptions({ reportId, title, siteHref }: { reportId: string; title: string; siteHref?: string }) {
   const menu = useRef<HTMLDetailsElement>(null);
   const [hidden, setHidden] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -53,7 +53,7 @@ export function ReportCardOptions({ reportId, title }: { reportId: string; title
   }}>
     <summary aria-label={`Options for ${title}`}>•••</summary>
     <div className="card-options-panel public-card-options-panel">
-      <a href={`/reports/${encodeURIComponent(reportId)}`}>See full report</a>
+      <a href={siteHref ?? `/reports/${encodeURIComponent(reportId)}`}>{siteHref ? 'View site' : 'See full report'}</a>
       <button type="button" disabled={busy} aria-busy={busy || undefined} onClick={toggleHidden}>{hidden ? 'Unhide' : 'Hide'}</button>
       {message && <p role="status">{message}</p>}
     </div>

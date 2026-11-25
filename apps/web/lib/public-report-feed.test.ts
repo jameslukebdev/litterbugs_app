@@ -1,6 +1,7 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 const { from, loadReport } = vi.hoisted(() => ({ from: vi.fn(), loadReport: vi.fn() }));
 vi.mock('server-only', () => ({}));
+vi.mock('./public-site-feed', () => ({ loadPublicSiteFeed: async () => null }));
 vi.mock('./supabase/public', () => ({ createPublicClient: () => ({ from }) }));
 vi.mock('./public-report-share', () => ({ loadPublicReportShare: loadReport }));
 import { loadPublicReportFeed } from './public-report-feed';

@@ -1,6 +1,7 @@
 import { expect, it, vi } from 'vitest';
 const { loadIndex } = vi.hoisted(() => ({ loadIndex: vi.fn() }));
 vi.mock('@/lib/env', () => ({ getSiteUrl: () => 'https://litterbugs.app' }));
+vi.mock('@/lib/public-site-feed', () => ({ loadIndexableReportSites: async () => [{id:'site-id',lastActivityAt:'2026-11-24T12:00:00Z'}] }));
 vi.mock('@/lib/public-report-index', () => ({ loadPublicReportIndex: loadIndex }));
 vi.mock('@/lib/community-leaderboards', async importOriginal => ({
   ...await importOriginal<typeof import('@/lib/community-leaderboards')>(),
@@ -21,6 +22,7 @@ it('lists the directory and stable photo URLs without inventing modification dat
   ]);
   const result = await sitemap();
   expect(result).toContainEqual({ url: 'https://litterbugs.app/reports' });
+  expect(result).toContainEqual({url:'https://litterbugs.app/sites/site-id',lastModified:new Date('2026-11-24T12:00:00Z')});
   // Only community pages with substance are offered to search engines.
   expect(result).toContainEqual({ url: 'https://litterbugs.app/communities/us/nc/boone', lastModified: new Date('2026-11-10T12:00:00Z') });
   expect(result.some(item => item.url.endsWith('/greensboro'))).toBe(false);

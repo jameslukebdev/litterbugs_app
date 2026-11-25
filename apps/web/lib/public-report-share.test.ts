@@ -9,7 +9,7 @@ vi.mock('@/lib/env', () => ({ getSiteUrl: () => 'https://litterbugs.app' }));
 vi.mock('@/lib/supabase/public', () => ({ createPublicClient }));
 vi.mock('@/lib/social-card-photo', () => ({ embedSocialCardPhoto: embed, loadSocialCardPhoto: loadImage }));
 
-import { loadPublicReportPhoto, loadPublicReportShare } from './public-report-share';
+import { loadPublicReportPhoto, loadPublicReportShare, loadHostedPublicReportShare } from './public-report-share';
 
 const id = '11111111-1111-4111-8111-111111111111';
 const beforePath = 'owner/report/before.heic';
@@ -165,4 +165,9 @@ it('only uses local history copies after checking current anonymous publication 
   fixture({ ...base, expires_at: '2020-01-01', is_published: false });
   expect(await loadPublicReportPhoto(id, 'before', 640)).toBeNull();
   expect(localPreview).toHaveBeenCalledTimes(1);
+});
+
+it('does not use an anonymized unnamed source for local recurrence',async()=>{
+ fixture({...base,title:null,cleanup_state:'completed'});
+ expect(await loadHostedPublicReportShare(id,'linked',true)).toBeNull();
 });

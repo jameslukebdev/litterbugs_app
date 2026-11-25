@@ -1,13 +1,15 @@
 import { groupCommunities, loadCommunityDirectory } from '@/lib/community-leaderboards';
 import type { MetadataRoute } from 'next';
 import { getSiteUrl } from '@/lib/env';
+import { loadIndexableReportSites } from '@/lib/public-site-feed';
+import { sitePath } from '@/lib/report-site-model';
 import { loadPublicReportIndex } from '@/lib/public-report-index';
 
 export const dynamic = 'force-dynamic';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const site = getSiteUrl();
-  const [reports, directory] = await Promise.all([loadPublicReportIndex(), loadCommunityDirectory()]);
+  const [reports, directory, sites] = await Promise.all([loadPublicReportIndex(), loadCommunityDirectory(), loadIndexableReportSites()]);
   return [
     ...['', '/about', '/support', '/help', '/cleanup-safety', '/cleanup-policy', '/privacy', '/terms', '/photo-review', '/cleaner', '/report-litter', '/fund-a-cleanup', '/communities', '/reports', '/reports/history', '/cleanups', '/get-app']
       .map(path => ({ url: `${site}${path}` })),
@@ -21,6 +23,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .filter(group => group.isIndexable).map(group => ({
         url: `${site}${group.path}`, ...(group.lastActivityAt ? { lastModified: new Date(group.lastActivityAt) } : {}),
       })),
+    ...sites.map(location => ({url: `${site}${sitePath(location.id)}`, ...(location.lastActivityAt ? {lastModified:new Date(location.lastActivityAt)} : {})})),
     // Reports do not have a maintained content-updated timestamp, so open reports
     // omit lastmod rather than presenting creation or render time as an edit. A
     // completed cleanup is the exception: its completion is the page's last real change.

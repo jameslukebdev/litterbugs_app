@@ -28,10 +28,10 @@ describe('site activity', () => {
     mocks.submit.mockResolvedValue({ reportId: 'existing', alreadyReported: true });
     render(<ReportSiteActivity reportId="old" initialSite={reportSite([old], true)} />);
     fireEvent.click(screen.getByRole('button', { name: 'Needs cleaning again' }));
-    const dialog = screen.getByRole('dialog', { name: 'Report litter' });
+    const dialog = await screen.findByRole('dialog', { name: 'Report litter' });
     expect(within(dialog).getByText('Greenway Trail')).toBeTruthy();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Submit new occurrence' }));
-    await waitFor(() => expect(mocks.push).toHaveBeenCalledWith('/reports/existing?alreadyReported=1'));
+    await waitFor(() => expect(mocks.push).toHaveBeenCalledWith('/sites/old?alreadyReported=1'));
     expect(mocks.submit.mock.calls[0][0]).toBe('old');
   });
   it('dismisses the already-reported notice without a second reporting step', () => {

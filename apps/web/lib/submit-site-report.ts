@@ -7,26 +7,30 @@ import { alreadyReportedId } from './report-site-model';
 import { loadReportPublication, saveReportPublication, clearReportPublication } from './saved-report-draft';
 
 export async function submitSiteReport(sourceId: string, draft: ReportDraft, coordinates: Coordinates, local: boolean, progress: (message: string) => void) {
+  const client = createClient();
+  const { data } = await client.auth.getUser();
+  const user = data.user;
+  if (!user || user.is_anonymous) throw new Error('Sign in to report litter.');
   if (local) {
-    if (process.env.NODE_ENV !== 'development' || !['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)) throw new Error('Local test unavailable.');
-    const key = `litterbugs.local-site-submission.${sourceId}`;
-    const id = localStorage.getItem(key) || `f0000000-0000-4000-8000-${crypto.randomUUID().slice(-12)}`;
+    if (process.env.NODE_ENV !== 'development' || !['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)) throw new Error('Local reporting unavailable.');
+    progress('Checking your current location…');
+    const origin = await requireReportLocation(coordinates);
+    const key = `litterbugs.local-site-submission.${sourceId}.${user.id}`;
+    const id = localStorage.getItem(key) || crypto.randomUUID();
     localStorage.setItem(key, id);
     const data = new FormData();
     data.set('id', id);
+    data.set('sourceId', sourceId);
+    data.set('origin', JSON.stringify(origin));
     data.set('draft', JSON.stringify({ ...draft, photos: [] }));
     draft.photos.forEach(photo => data.append('photos', photo));
     progress('Saving report…');
-    const response = await fetch('/api/local/report-sites', { method: 'POST', body: data, credentials: 'same-origin' });
+    const response = await fetch('/api/local/site-reports', { method: 'POST', body: data, credentials: 'same-origin' });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'Report could not be saved.');
     localStorage.removeItem(key);
     return result as { reportId: string; alreadyReported: boolean };
   }
-  const client = createClient();
-  const { data } = await client.auth.getUser();
-  const user = data.user;
-  if (!user || user.is_anonymous) throw new Error('Sign in to report litter.');
   const key = `site:${sourceId}:${user.id}`;
   // Separate from an ordinary draft. Never consume or discard a report the member
   // was already composing elsewhere. IndexedDB keeps the uncertain publication ID.

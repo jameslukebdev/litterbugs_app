@@ -1,0 +1,6 @@
+.body { max-width:800px; margin-top:32px; padding-top:24px; border-top:1px solid #e9e7ed; }
+.latest { margin:0 0 24px; padding-bottom:24px; border-bottom:1px solid #e9e7ed; }
+.latest h2 { font-size:20px; margin:0 0 12px; }
+.latest p { margin:0; line-height:1.65; }
+.siteLink { display:inline-flex; gap:8px; align-items:center; margin-top:8px; color:#5744d9; }
+.subtle { color:#706a7d; font-size:14px; }

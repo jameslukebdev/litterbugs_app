@@ -11,6 +11,7 @@ import { ReportTimeline, reportTimeline } from '@/app/reports/[id]/report-timeli
 import { reportDateLabel } from '@/lib/public-report-content';
 import type { PublicReportShareModel } from '@/lib/public-report-share-model';
 import type { ReportSite } from '@/lib/report-site-model';
+import { sitePath } from '@/lib/report-site-model';
 import { submitSiteReport } from '@/lib/submit-site-report';
 import { ReportLocationError } from '@/lib/report-location-error';
 import styles from './report-site-activity.module.css';
@@ -64,7 +65,7 @@ export function ReportSiteActivity({ reportId, initialReport, initialSite, mode 
     }
   }, [site, mode]);
   async function begin() {
-    if (!site?.local) {
+    {
       const { data } = await createClient().auth.getUser();
       if (!data.user || data.user.is_anonymous) {
         const next = new URL(window.location.href); next.searchParams.set('reportAgain', '1');
@@ -78,6 +79,7 @@ export function ReportSiteActivity({ reportId, initialReport, initialSite, mode 
   if (loading) return mode !== 'actions' && initialReport ? <ReportTimeline report={initialReport} /> : null;
   if (failed) return <div className={styles.retry}><span>Timeline could not be loaded.</span><button className="secondary-button" onClick={() => { setLoading(true); setRevision(value => value + 1); }}>Try again</button></div>;
   if (!site) return mode !== 'actions' && initialReport ? <ReportTimeline report={initialReport} /> : null;
+  if (mode === 'actions' && !notice && !composing && !(site.canReportAgain && source?.location) && !(site.currentReportId && site.currentReportId !== reportId)) return null;
   return <div className={mode === 'actions' ? styles.actions : styles.activity}>
     {mode !== 'timeline' && <>
     {notice && <div className={styles.notice} role="status"><span>{notice}</span><button aria-label="Dismiss notice" onClick={() => { setNotice(''); const url = new URL(window.location.href); url.searchParams.delete('alreadyReported'); window.history.replaceState(window.history.state, '', url); }}><FiX /></button></div>}
@@ -89,7 +91,7 @@ export function ReportSiteActivity({ reportId, initialReport, initialSite, mode 
       try {
         const result = await submitSiteReport(source.id, draft, source.location!, Boolean(site.local), setProgress);
         setComposing(false);
-        router.push(`/reports/${result.reportId}${result.alreadyReported ? '?alreadyReported=1' : ''}`);
+        router.push(`${sitePath(site.id)}${result.alreadyReported ? '?alreadyReported=1' : ''}`);
         router.refresh();
         return null;
       } catch (error) { return error instanceof ReportLocationError ? error : error instanceof Error ? error.message : 'Report could not be saved. Try again.'; }

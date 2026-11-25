@@ -31,3 +31,7 @@ insert into public.reports(id,user_id,title,latitude,longitude,cleanup_state,fun
 insert into public.cleanup_contributions values('30000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001',3500,false);
 insert into public.reporter_rewards values('40000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001',100);
 insert into public.cleanup_attempts values('50000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000002','completed',3500);
+
+alter table public.cleanup_attempts add column final_submission_id uuid, add column completed_at timestamptz;
+update public.cleanup_attempts set final_submission_id=gen_random_uuid(),completed_at='2026-11-17T12:00:00Z' where status='completed';
+grant select on public.cleanup_attempts to anon,authenticated;

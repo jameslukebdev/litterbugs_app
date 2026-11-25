@@ -1438,7 +1438,15 @@ export type Database = {
       }
       report_site_history: {
         Args: { target_report_id: string }
-        Returns: { report_id: string }[]
+        Returns: { report_id: string; cleanup_site_id: string }[]
+      }
+      cleanup_site_reports: {
+        Args: { target_site_id: string }
+        Returns: { report_id: string; cleanup_site_id: string }[]
+      }
+      cleanup_site_directory: {
+        Args: { feed_kind: string; page_size?: number; page_offset?: number }
+        Returns: { cleanup_site_id: string; report_id: string; current_report_id: string | null; completed_count: number; report_count: number; last_activity_at: string | null }[]
       }
       accept_cleanup_waiver: {
         Args: {

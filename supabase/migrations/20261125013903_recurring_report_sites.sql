@@ -95,8 +95,8 @@ create trigger reports_guard_site_publication before insert or update of is_publ
 -- Public projection uses the same anonymous RLS as report pages. No draft,
 -- moderation queue, donor account or private profile data is exposed here.
 create function public.report_site_history(target_report_id uuid)
-returns table(report_id uuid) language sql stable security invoker set search_path = '' as $$
-  select r.id from public.reports r join public.reports source on source.id = target_report_id
+returns table(report_id uuid,cleanup_site_id uuid) language sql stable security invoker set search_path = '' as $$
+  select r.id,r.cleanup_site_id from public.reports r join public.reports source on source.id = target_report_id
   where r.cleanup_site_id = source.cleanup_site_id and source.is_published and not source.is_sample
     and source.moderated_at is null and nullif(trim(source.title),'') is not null
     and (source.cancelled_at is null or (source.expired_at is not null and source.renewal_status = 'closed'))
@@ -106,3 +106,57 @@ returns table(report_id uuid) language sql stable security invoker set search_pa
 $$;
 revoke all on function public.report_site_history(uuid) from public;
 grant execute on function public.report_site_history(uuid) to anon, authenticated;
+
+create function public.cleanup_site_reports(target_site_id uuid)
+returns table(report_id uuid,cleanup_site_id uuid) language sql stable security invoker set search_path = '' as $$
+  select r.id,r.cleanup_site_id from public.reports r
+  where r.cleanup_site_id = target_site_id and r.is_published and not r.is_sample
+    and r.moderated_at is null and nullif(trim(r.title),'') is not null
+    and (r.cancelled_at is null or (r.expired_at is not null and r.renewal_status = 'closed'))
+  order by r.created_at,r.id;
+$$;
+revoke all on function public.cleanup_site_reports(uuid) from public;
+grant execute on function public.cleanup_site_reports(uuid) to anon,authenticated;
+
+-- Group BEFORE pagination. Completed work stays in the cleanup directory even
+-- when that location has another open occurrence. Only IDs/counts already
+-- visible under caller RLS leave this projection; no donor or draft identities.
+create function public.cleanup_site_directory(feed_kind text,page_size integer default 12,page_offset integer default 0)
+returns table(cleanup_site_id uuid,report_id uuid,current_report_id uuid,completed_count integer,report_count integer,last_activity_at timestamptz)
+language sql stable security invoker set search_path = '' as $$
+  with visible as materialized (
+    select r.id,r.cleanup_site_id,r.created_at,r.cleanup_state,
+      (r.cancelled_at is null and r.expired_at is null
+        and r.cleanup_state in ('available','claimed','completion_submitted','changes_requested')
+        and (r.cleanup_state <> 'available' or r.expires_at is null or r.expires_at > now())) as is_current,
+      (select max(a.completed_at) from public.cleanup_attempts a
+        where a.report_id=r.id and a.status='completed' and a.final_submission_id is not null) as completed_at
+    from public.reports r
+    where r.is_published and not r.is_sample and r.moderated_at is null
+      and nullif(trim(r.title),'') is not null
+      and (r.cancelled_at is null or (r.expired_at is not null and r.renewal_status='closed'))
+  ), grouped as (
+    select v.cleanup_site_id,
+      (array_agg(v.id order by v.created_at desc nulls last,v.id desc))[1] as latest_report,
+      (array_agg(v.id order by v.created_at desc nulls last,v.id desc) filter(where v.is_current))[1] as current_report,
+      (array_agg(v.id order by coalesce(v.completed_at,v.created_at) desc nulls last,v.id desc)
+        filter(where v.cleanup_state='completed'))[1] as last_cleanup,
+      count(*) filter(where v.cleanup_state='completed')::integer as completions,
+      count(*)::integer as occurrences,
+      greatest(max(v.created_at),max(v.completed_at)) as activity_at,
+      max(coalesce(v.completed_at,v.created_at)) filter(where v.cleanup_state='completed') as last_cleanup_at,
+      max(v.created_at) filter(where v.is_current) as current_at
+    from visible v group by v.cleanup_site_id
+  )
+  select g.cleanup_site_id,
+    case feed_kind when 'completed' then g.last_cleanup when 'open' then g.current_report else g.latest_report end,
+    g.current_report,g.completions,g.occurrences,g.activity_at
+  from grouped g
+  where (feed_kind='completed' and g.last_cleanup is not null)
+    or (feed_kind='open' and g.current_report is not null)
+    or (feed_kind='all' and g.occurrences>1)
+  order by case feed_kind when 'completed' then g.last_cleanup_at when 'open' then g.current_at else g.activity_at end desc nulls last,g.cleanup_site_id
+  limit greatest(1,least(coalesce(page_size,12),500)) offset greatest(0,coalesce(page_offset,0));
+$$;
+revoke all on function public.cleanup_site_directory(text,integer,integer) from public;
+grant execute on function public.cleanup_site_directory(text,integer,integer) to anon,authenticated;

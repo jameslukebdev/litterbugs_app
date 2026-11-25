@@ -20,7 +20,8 @@ import { publicReportStatus } from '@/lib/public-report-status';
 import { AppLink } from '@/components/app-link';
 import { ReportFacts, distanceLabel } from './report-facts';
 import { ReportSiteActivity } from '@/components/report-site-activity';
-import { isLocalSiteReport } from '@/lib/local-report-site-ids';
+import { sitePath } from '@/lib/report-site-model';
+import { ReportTimeline } from './report-timeline';
 import { loadReportSite } from '@/lib/report-site';
 import { ReportLocation } from './report-location';
 import { ReportPhotos } from './report-photos';
@@ -76,7 +77,7 @@ export default async function SharedReportPage({ params }: Props) {
   const { id } = await params;
   const source = await loadPublicReportShare(id, 'linked');
   if (!source) notFound();
-  const [report] = isLocalSiteReport(id) ? [source] : await withServerContributorCredits([source]);
+  const [report] = source.localDevelopment ? [source] : await withServerContributorCredits([source]);
   const site = await loadReportSite(id).catch(() => null);
 
   // Optional recommendations must not hold the report and its actions behind another database read.
@@ -155,14 +156,17 @@ export default async function SharedReportPage({ params }: Props) {
               </Link> : <strong>{report.reporterName || 'Community member'}</strong>}
             </div>
             <div className={styles.nextSteps}>
-              <ReportSiteActivity reportId={report.id} initialSite={site} mode="actions" />
-            {expired ? <Link className="primary-button button-link" href="/reports">Find a current cleanup</Link> : !completed && !inProgress ? <div className={styles.reportActions}>
+              {site && site.reports.length > 1 ? <>
+                <Link className="secondary-button button-link" href={sitePath(site.id)}>View site history</Link>
+                {site.canReportAgain && <ReportSiteActivity reportId={report.id} initialSite={site} mode="actions" />}
+              </> : <ReportSiteActivity reportId={report.id} initialSite={site} mode="actions" />}
+            {expired ? <Link className="primary-button button-link" href="/reports">Find a current cleanup</Link> : !completed && !inProgress && !report.localDevelopment ? <div className={styles.reportActions}>
               {report.fundingEligible && <Link className="report-action-link button-link report-action-fund" prefetch={false} href={`/sign-in?${SHARED_REPORT_AUTH_PARAM}=1&next=${encodeURIComponent(reportMapHref(report.id, 'fund'))}`}><BrandBug kind="bee" size={21} className="bug-hop" />Fund</Link>}
               <Link className="report-action-link button-link report-action-clean" prefetch={false} href={`/sign-in?${SHARED_REPORT_AUTH_PARAM}=1&next=${encodeURIComponent(reportMapHref(report.id, 'clean'))}`}><BrandBug kind="butterfly" size={21} className="bug-hop" />Clean</Link>
             </div> : completed
               // A finished cleanup's best next step is the next one that needs doing.
               ? <Link className="primary-button button-link" href="/reports">Find another cleanup</Link>
-              : <Link className="primary-button button-link" href={mapHref}>View on map</Link>}
+              : !report.localDevelopment ? <Link className="primary-button button-link" href={mapHref}>View on map</Link> : null}
               <ReportShareButton reportId={report.id} title={report.title}
                 label={completed ? 'Share cleanup' : 'Share report'}
                 // The same share dialog the report cards open; an expired report gets its own status and wording there.
@@ -221,7 +225,7 @@ export default async function SharedReportPage({ params }: Props) {
                 </div>}
               </dl>}
               {!expired && <ContributionSupporters reportId={report.id} initialCredit={report.contributorCredit} />}
-              <ReportSiteActivity reportId={report.id} initialReport={report} initialSite={site} mode="timeline" />
+              <ReportTimeline report={report} />
             </div>
             <div className={styles.side}>
             <ul className={styles.links}>

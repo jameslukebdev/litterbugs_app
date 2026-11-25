@@ -16,7 +16,8 @@ import { lookupReportAddress } from '@/lib/report-town-lookup';
 import { createPublicClient } from '@/lib/supabase/public';
 import { embedSocialCardPhoto, loadSocialCardPhoto } from '@/lib/social-card-photo';
 import { loadLocalHistoryPhotoPreview } from '@/lib/local-history-photo-preview';
-import { isLocalSiteReport, readLocalSite } from './local-report-sites';
+import { isLocalWebsite,localOccurrence } from './local-site-store';
+import { headers } from 'next/headers';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type CleanupAttempt = Database['public']['Tables']['cleanup_attempts']['Row'];
@@ -172,16 +173,39 @@ const loadPublicReportData = cache(async (reportId: string) => {
     canonicalUrl: `${getSiteUrl()}${publicReportPath(report.id, report.title?.trim() || 'Litter Report', place?.localityLabel)}`,
   };
 
-  return { model, beforePath: report.photo_paths?.[0], afterPath: afterPhoto?.storage_path };
+  return { model, named: Boolean(report.title?.trim()), beforePath: report.photo_paths?.[0], afterPath: afterPhoto?.storage_path };
 });
 
 export async function loadPublicReportShare(
   reportId: string,
   photos: 'embedded' | 'linked' = 'embedded',
 ): Promise<PublicReportShareModel | null> {
-  if (isLocalSiteReport(reportId)) return (await readLocalSite()).reports.find(report => report.id === reportId) ?? null;
+  if(await isLocalWebsite()) {
+    const record=await localOccurrence(reportId);
+    if(record) {
+      // Recheck the real source through anonymous RLS on every request. Local
+      // reports cannot revive a removed/private source or its old identity.
+      const source=await loadHostedPublicReportShare(record.sourceReportId,'linked',true);
+      if(!source)return null;
+      const {data:profile}=await createPublicClient().from('profiles').select('display_name,username').eq('id',record.reporterId).maybeSingle();
+      const expires=Date.parse(record.createdAt)+30*86400000;
+      const expired=expires<=Date.now();
+      const host=(await headers()).get('host')!;
+      return {...source,id:record.id,title:record.title,reporterId:record.reporterId,reporterName:displayName(profile)||'Community member',
+        state:expired?'expired':'available',reportDate:record.createdAt,expiredDate:expired?new Date(expires).toISOString():null,
+        notes:record.notes||null,litterTypes:record.litterTypes,severity:record.severity,rewardCents:0,fundingEligible:false,
+        cleanerName:null,cleanerId:null,fundedDate:null,claimedDate:null,completionDate:null,cleanupDescription:null,bagsOrItemsRemoved:null,weightPounds:null,cleanupMinutes:null,
+        beforePhotoUrl:`/api/local/site-reports/${record.id}/photo`,photoCount:record.photoCount,afterPhotoUrl:null,afterPhotoCount:0,
+        contributorCredit:null,localDevelopment:true,canonicalUrl:`http://${host}${publicReportPath(record.id,record.title,source.localityLabel)}`};
+    }
+  }
+  return loadHostedPublicReportShare(reportId,photos);
+}
+
+/** Hosted reads only; exported so local publication can verify its real source. */
+export async function loadHostedPublicReportShare(reportId:string,photos:'embedded'|'linked'='linked',requireNamed=false):Promise<PublicReportShareModel|null> {
   const data = await loadPublicReportData(reportId);
-  if (!data) return null;
+  if (!data || (requireNamed && !data.named)) return null;
 
   if (photos === 'linked') {
     const photoBase = `/reports/${encodeURIComponent(data.model.id)}/photo`;

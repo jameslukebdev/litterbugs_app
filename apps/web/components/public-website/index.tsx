@@ -20,7 +20,7 @@ import { publicReportStatus } from '@/lib/public-report-status';
 import { EmptyBug, SlidingUnderline } from '@/components/bug-motion';
 import { ReadingProgress } from '../reading-progress';
 import { LITTER_MAP_HREF } from '@/lib/home-map-link';
-import { publicReportHref } from '@/lib/public-report-url';
+import { publicReportCardHref } from '@/lib/public-report-url';
 export { styles };
 
 const READING_PATHS: PublicPath[] = ['/photo-review', '/cleanup-safety', '/about', '/help', '/get-app', '/fund-a-cleanup', '/cleaner', '/report-litter', '/support'];
@@ -167,7 +167,7 @@ export function ReportCards({
           : day(report.reportDate);
         const status = publicReportStatus(report.state);
         return <article className="report-card-container" key={report.id}>
-          <Link prefetch={false} className="report-result" href={publicReportHref(report)}>
+          <Link prefetch={false} className="report-result" href={publicReportCardHref(report)}>
             <ReportCardContent
               photo={<span className={`report-result-photo${photos.length ? '' : ' report-result-photo-empty'}`}>
                 {photos.length ? photos.map((item, slide) => <span className="card-slide" data-active={slide === 0 || undefined} key={item.src}>
@@ -177,6 +177,10 @@ export function ReportCards({
                 {photos.length > 1 && <span className="report-result-dots" aria-hidden="true">{photos.slice(0, 5).map((item, dot) => <i key={item.src} data-active={dot === 0 || undefined} />)}</span>}
               </span>}
               title={report.title}
+              siteSummary={report.siteLink && report.siteLink.reportCount > 1 ? <span className={styles.siteCardSummary}>
+                <span>{report.siteLink.completedCount} {report.siteLink.completedCount === 1 ? 'cleanup' : 'cleanups'}</span>
+                {report.state === 'completed' && report.siteLink.hasActiveReport && <strong>New litter reported</strong>}
+              </span> : undefined}
               reward={reward}
               funded={funded}
               summary={[showLocation ? report.localityLabel : null, (report.litterTypes.length > 2 ? `${report.litterTypes.slice(0, 2).join(' · ')} +${report.litterTypes.length - 2}` : report.litterTypes.join(' · ')) || 'General litter'].filter(Boolean).join(' · ')}
@@ -187,7 +191,7 @@ export function ReportCards({
           {photos.length > 1 && <CardPhotoSwitch count={photos.length} title={report.title} />}
           <div className="public-card-footer">
             {report.reporterId ? <ReportAuthor profileId={report.reporterId} sourceReportId={report.id} /> : <span className="public-card-author-fallback">{report.reporterName || 'Community member'}</span>}
-            <ReportCardOptions reportId={report.id} title={report.title} />
+            <ReportCardOptions reportId={report.id} title={report.title} siteHref={report.siteLink && report.siteLink.reportCount > 1 ? report.siteLink.href : undefined} />
           </div>
         </article>;
       })}

@@ -65,6 +65,17 @@ do $$begin
  or (select count(*) from public.cleanup_attempts)<>1 then raise exception 'prior money or credit changed'; end if;
  if (select user_id from public.reports where id='10000000-0000-4000-8000-000000000001')<>'20000000-0000-4000-8000-000000000001' then raise exception 'old reporter changed'; end if;
 end$$;
+-- Both directories show one location, preserving the old cleanup when litter recurs.
+set role anon;
+do $$declare location uuid;begin
+ select cleanup_site_id into location from public.reports where id='10000000-0000-4000-8000-000000000001';
+ if (select count(*) from public.cleanup_site_directory('completed',1,0))<>1 then raise exception 'completed directory grouping failed'; end if;
+ if not exists(select 1 from public.cleanup_site_directory('completed',1,0) where report_id='10000000-0000-4000-8000-000000000001' and current_report_id='10000000-0000-4000-8000-000000000002' and completed_count=1 and report_count=2) then raise exception 'completed site lost history/current condition'; end if;
+ if not exists(select 1 from public.cleanup_site_directory('open',1,0) where report_id='10000000-0000-4000-8000-000000000002' and cleanup_site_id=location) then raise exception 'open directory wrong identity'; end if;
+ if exists(select 1 from public.cleanup_site_directory('completed',1,1)) then raise exception 'pagination duplicated location'; end if;
+ if (select count(*) from public.cleanup_site_reports(location))<>2 then raise exception 'site overview leaked draft'; end if;
+end$$;
+reset role;
 -- A removed source or child must not be revived through the history projection.
 update public.reports set moderated_at=now() where id='10000000-0000-4000-8000-000000000002';
 set role anon;

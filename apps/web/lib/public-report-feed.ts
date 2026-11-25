@@ -5,6 +5,7 @@ import { createPublicClient } from './supabase/public';
 import { reportDiscoveryWindow } from './report-visibility';
 import { loadPublicReportShare } from './public-report-share';
 import type { PublicReportShareModel } from './public-report-share-model';
+import { loadPublicSiteFeed } from './public-site-feed';
 
 export type PublicFeed = {
   reports: PublicReportShareModel[];
@@ -20,6 +21,10 @@ export const loadPublicReportFeed = cache(
   ): Promise<PublicFeed> => {
     try {
       const size = Math.min(24, Math.max(1, limit));
+      if (kind === 'open' || kind === 'completed') {
+        const grouped = await loadPublicSiteFeed(kind,size,Math.max(1,Math.min(1000,page)));
+        if (grouped) return grouped;
+      }
       const client = createPublicClient();
       function buildQuery() {
         let query = client

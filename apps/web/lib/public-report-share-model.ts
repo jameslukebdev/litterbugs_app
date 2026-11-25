@@ -5,6 +5,10 @@ export type PublicReportShareState = 'available' | 'in_progress' | 'completed' |
 
 export type PublicReportShareModel = {
   id: string;
+  /** Directory presentation only; the occurrence's canonicalUrl is unchanged. */
+  siteLink?: { id: string; href: string; completedCount: number; reportCount: number; hasActiveReport: boolean };
+  /** A real local submission, isolated from the hosted database. Never set by hosted records. */
+  localDevelopment?: boolean;
   contributorCredit?: ContributorCredit | null;
   state: PublicReportShareState;
   title: string;
