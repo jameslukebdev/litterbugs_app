@@ -29,6 +29,16 @@ function main() {
   if (!publish) return;
   const env = { ...process.env, ...profile.env, EXPO_NO_DOTENV: '1', NODE_OPTIONS: '--max-old-space-size=3072' };
   for (const key of ['EAS_BUILD', 'EAS_BUILD_PROFILE', 'EAS_BUILD_PLATFORM']) delete env[key];
+  if (metadata.previousPublishedGroup) {
+    const readback = spawnSync('npx', ['--yes', 'eas-cli@27.1.0', 'channel:view', 'production', '--limit', '1', '--json', '--non-interactive'], { cwd: mobile, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    if (readback.error || readback.status !== 0) throw new Error('Could not recheck the live OTA baseline. Nothing published.');
+    const current = JSON.parse(readback.stdout).currentPage;
+    const baseline = JSON.parse(readFileSync(join(output, 'channel-before.json'))).currentPage;
+    const latest = current.updateBranches.find(branch => branch.name === 'production')?.updateGroups[0];
+    if (current.id !== baseline.id || current.branchMapping !== baseline.branchMapping || !latest || latest.length !== 2 || latest.some(update => update.group !== metadata.previousPublishedGroup || update.gitCommitHash !== metadata.previousPublishedCommit || update.runtime.version !== metadata.runtime)) {
+      throw new Error('The live OTA changed after preparation. Reconcile and re-export before publishing; nothing published.');
+    }
+  }
   const result = spawnSync('npx', commandArgs, { cwd: mobile, env, stdio: 'inherit' });
   if (result.error || result.status !== 0) throw result.error || new Error(`EAS publish failed: ${result.status}`);
 }
