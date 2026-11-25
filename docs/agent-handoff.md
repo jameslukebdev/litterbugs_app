@@ -24,6 +24,28 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-25 — Codex (mobile cleanup issues local; desktop input interference)
+
+- Implemented in isolated `/private/tmp/litterbugs-cleanup-issues-mobile-20261125`,
+  branch `codex/cleanup-issues-mobile-20261125`; code `a06bcdc`, review `dce03b4`.
+  Based on crash-fix `aa836cc`; native patches, dependencies/config and submitted
+  iOS31 candidate unchanged. No website/backend/store/OTA publication.
+- Native issue requests/private conversations, funded report corrections,
+  notification routes, pause/resume guards and owner-requested heading/option
+  spacing are built. 727 mobile tests passed, one existing skip; 244-module
+  source check clean. iOS full local flow passed on b68ac79. Android request,
+  pause, reporter notification and funded correction passed; signed-photo bug
+  caught/fixed and final Android conversation photo visibly verified.
+- Shared desktop/clipboard interference picked up another project's text in an
+  UNSENT Android draft. Visibly cleared; local DB confirms only original message.
+  No foreign app source found. Android emulator stopped; other project's booted
+  iPhone simulator/build left untouched. Do not perform simultaneous desktop
+  keyboard/clipboard automation. No customer messages or credentials changed.
+- Pending: Android reply/attachment -> staff gate -> cleaner resume, final editor
+  photo visual check and final iOS signed-photo retest. Android map tiles remain
+  unverified due disposable QA signing credentials; production Maps unchanged.
+  Review: `docs/reviews/2026-11-25-cleanup-issues-mobile-local.md` in isolated tree.
+
 ### 2026-11-25 — Codex (returned-litter OTA published and native-verified on both)
 
 - Owner authorized publication. LIVE production group63bc12bc-4571-4650-8ed2-954de6bee32f
