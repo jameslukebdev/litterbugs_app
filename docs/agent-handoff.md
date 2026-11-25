@@ -24,6 +24,28 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-25 — Codex (mobile cleanup issues local acceptance complete)
+
+- Grant resumed testing after desktop interference. Code `a06bcdc` unchanged;
+  final verification review `3a98910` in isolated branch/worktree
+  `/private/tmp/litterbugs-cleanup-issues-mobile-20261125`.
+- Final iOS signed conversation/full-size/editor photos passed on a separate
+  Litterbugs Issues QA simulator A88A56B4-F6E9-49D8-ADBB-B315EEBB6ADB. Android
+  reporter private reply/photo, cleaner exact inbox, team hold/no premature
+  resume, simulated local staff-ready decision, follow-up/cancel and explicit
+  same-claim resume into the cleanup form all passed. Title/option spacing fixed.
+- Local assertions: exact paused time restored, $35 fund/contribution/payout
+  status unchanged, original evidence revision retained, outsider/guest private
+  access denied. 727 tests passed +1 existing skip; source244 modules/0 errors.
+- No app/backend/website/store/OTA publication. Crash-fix baseline aa836cc and
+  both native patches/config/dependencies preserved; submitted iOS31 untouched.
+  Android Maps tiles remain unverified for disposable QA signing certificate;
+  production keys unchanged. No physical phones/push/payment/provider tests.
+- Our dedicated iPhone and Android devices stopped after checks; other project's
+  pre-existing simulator/container left untouched. Final memory43% free. No more
+  clipboard paste used. Ready for owner local review; publication still held.
+  Details: `docs/reviews/2026-11-25-cleanup-issues-mobile-local.md` in isolated tree.
+
 ### 2026-11-25 — Codex (mobile cleanup issues local; desktop input interference)
 
 - Implemented in isolated `/private/tmp/litterbugs-cleanup-issues-mobile-20261125`,
