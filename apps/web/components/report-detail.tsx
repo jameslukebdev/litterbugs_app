@@ -17,6 +17,7 @@ import { useReportSheetDismiss } from '@/components/use-report-sheet-dismiss';
 import { PhotoExpandButton, ReportPhotoViewer } from '@/components/report-photo-viewer';
 import { AfterPhotos, CompletedCleanup, useCleanupImpact } from '@/components/completed-cleanup';
 import { ReportAuthor } from '@/components/report-author';
+import { ReportSiteActivity } from '@/components/report-site-activity';
 import { CleanupAction } from '@/components/cleanup-action';
 import { CleanupReviewAction } from '@/components/cleanup-review-action';
 import { FundingContributionAction } from '@/components/funding-contribution-action';
@@ -467,6 +468,7 @@ export function ReportDetail({
                 <p className={styles.footnote}><AppLink reportId={report.id} className="report-open-app">Open in the app</AppLink><span aria-hidden="true"> · </span><span>Report ID {report.id.slice(0, 8)}</span></p>
               </div>
               <div className={styles.byline}><ReportAuthor profileId={report.user_id} sourceReportId={report.id} onBlocked={() => { onClose(); void onReportChanged?.(); }} /></div>
+              <ReportSiteActivity key={report.id} reportId={report.id} />
             </div>
 
             <footer className="report-detail-footer" tabIndex={entryIntent ? -1 : undefined} aria-label="Cleanup and funding options">

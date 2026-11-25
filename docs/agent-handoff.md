@@ -24,6 +24,31 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (local recurring-cleanup website build; release held)
+
+- Existing report page/map detail now integrate one grouped Timeline and Needs
+  cleaning again via the existing five-step wizard. New occurrences keep the
+  new submitter; previous reporters, donations, evidence and cleanup credit stay.
+- Added persistent local review dataset at /reports/f0000000-0000-4000-8000-000000000002.
+  QA created Jamie occurrence f0000000-0000-4000-8000-6bb60bfff335 locally only.
+  Fixture saves/photos never write to hosted Supabase.
+- Prepared20261125013903_recurring_report_sites.sql, NOT APPLIED to hosted DB.
+  Isolated local PostgreSQL tests pass for identity/funds/idempotency/duplicate/
+  privacy gates.88 targeted web tests, full TS and scoped lint pass. CUA form/
+  server save/reload/Timeline/evidence checks pass; final console clean.
+- Owner reported application-memory exhaustion. Removed generated4.2GB Next
+  Turbopack cache and shut down test iPhone17 Pro without erasing data. Its
+  background services exited; about8.4GB disk available afterward. Personal
+  Chrome/Claude preserved; checks switched to sequential. No simulator restart.
+- Checkpoint on codex/recurring-cleanups-local-20261124, isolated worktree
+  /tmp/litterbugs-site-history-preview-20261124; own changes mirrored to shared3000.
+  Release still held: native work, map/list consolidation, recurrence form recovery
+  hardening, narrow rendered QA and full backend integration remain pending.
+- Review: docs/reviews/2026-11-24-recurring-cleanups-local.md; evidence:
+  /tmp/litterbugs-recurring-cleanups-20261124/. No deploy/hosted migration/native
+  change/OTA/store publication. Website00ed676 and OTA5c8ab976 unchanged.
+  Preserve unrelated shared work and previously published email/$35/funder/privacy/heart changes.
+
 ### 2026-11-24 — Codex (updated recurring-cleanup previews with existing Timeline)
 
 - Preview only: Jamie owns the new occurrence; Alex/Riley retain earlier reports.

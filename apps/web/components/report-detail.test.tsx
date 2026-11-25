@@ -5,6 +5,7 @@ import type { Report } from '@litterbugs/report-contract';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ReportDetail } from './report-detail';
+vi.mock('@/components/report-site-activity', () => ({ ReportSiteActivity: () => null }));
 
 const createSignedUrl = vi.fn(async (path: string) => ({
   data: { signedUrl: `https://storage.example/${path}` },

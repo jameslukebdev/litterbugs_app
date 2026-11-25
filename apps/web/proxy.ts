@@ -7,7 +7,12 @@ const PRODUCTION_HOSTS = ['litterbugs.app', 'www.litterbugs.app'];
 
 export async function proxy(request: NextRequest) {
   const production = PRODUCTION_HOSTS.includes(request.nextUrl.hostname);
-  if (request.method === 'GET' || request.method === 'HEAD') {
+  // Explicit local fixture IDs are backed by the development-only disk store,
+  // so the hosted public-report lookup must not decide their 404 status.
+  const localSiteExample = process.env.NODE_ENV === 'development' && !process.env.VERCEL
+    && ['localhost', '127.0.0.1', '[::1]'].includes(request.nextUrl.hostname)
+    && /^\/reports\/f0000000-0000-4000-8000-[0-9a-f]{12}$/.test(request.nextUrl.pathname);
+  if (!localSiteExample && (request.method === 'GET' || request.method === 'HEAD')) {
     const route = await resolvePublicReportRoute(request.nextUrl.pathname);
     if (route.kind === 'redirect') {
       const destination = request.nextUrl.clone();

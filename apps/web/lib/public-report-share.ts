@@ -16,6 +16,7 @@ import { lookupReportAddress } from '@/lib/report-town-lookup';
 import { createPublicClient } from '@/lib/supabase/public';
 import { embedSocialCardPhoto, loadSocialCardPhoto } from '@/lib/social-card-photo';
 import { loadLocalHistoryPhotoPreview } from '@/lib/local-history-photo-preview';
+import { isLocalSiteReport, readLocalSite } from './local-report-sites';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type CleanupAttempt = Database['public']['Tables']['cleanup_attempts']['Row'];
@@ -178,6 +179,7 @@ export async function loadPublicReportShare(
   reportId: string,
   photos: 'embedded' | 'linked' = 'embedded',
 ): Promise<PublicReportShareModel | null> {
+  if (isLocalSiteReport(reportId)) return (await readLocalSite()).reports.find(report => report.id === reportId) ?? null;
   const data = await loadPublicReportData(reportId);
   if (!data) return null;
 

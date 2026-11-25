@@ -18,7 +18,9 @@ import { loadPublicReportShare } from '@/lib/public-report-share';
 import { SHARED_REPORT_AUTH_PARAM } from '@/lib/participation-auth';
 import { publicReportStatus } from '@/lib/public-report-status';
 import { AppLink } from '@/components/app-link';
-import { ReportFacts, ReportTimeline, distanceLabel } from './report-facts';
+import { ReportFacts, distanceLabel } from './report-facts';
+import { ReportSiteActivity } from '@/components/report-site-activity';
+import { isLocalSiteReport } from '@/lib/local-report-site-ids';
 import { ReportLocation } from './report-location';
 import { ReportPhotos } from './report-photos';
 import { ReportShareButton } from './report-share-button';
@@ -73,7 +75,7 @@ export default async function SharedReportPage({ params }: Props) {
   const { id } = await params;
   const source = await loadPublicReportShare(id, 'linked');
   if (!source) notFound();
-  const [report] = await withServerContributorCredits([source]);
+  const [report] = isLocalSiteReport(id) ? [source] : await withServerContributorCredits([source]);
 
   // Optional recommendations must not hold the report and its actions behind another database read.
   const relatedLinks = loadRelatedPublicReports(report.id, report.location?.latitude, report.location?.longitude).then(related => related.length > 0 ? <ul className={styles.relatedList}>
@@ -216,7 +218,7 @@ export default async function SharedReportPage({ params }: Props) {
                 </div>}
               </dl>}
               {!expired && <ContributionSupporters reportId={report.id} initialCredit={report.contributorCredit} />}
-              <ReportTimeline report={report} />
+              <ReportSiteActivity reportId={report.id} initialReport={report} />
             </div>
             <div className={styles.side}>
             <ul className={styles.links}>

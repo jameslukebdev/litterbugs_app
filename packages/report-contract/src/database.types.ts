@@ -1203,6 +1203,9 @@ export type Database = {
       }
       reports: {
         Row: {
+          /** Absent on backends predating the recurring-cleanup migration. */
+          cleanup_site_id?: string
+          previous_report_id?: string | null
           cancelled_at: string | null
           cleanup_state: string
           created_at: string | null
@@ -1428,6 +1431,14 @@ export type Database = {
           location_captured_at: string
         }
         Returns: Database['public']['Tables']['reports']['Row']
+      }
+      reserve_site_report: {
+        Args: { source_report_id: string; new_report_id: string; draft: Json }
+        Returns: Database['public']['Tables']['reports']['Row']
+      }
+      report_site_history: {
+        Args: { target_report_id: string }
+        Returns: { report_id: string }[]
       }
       accept_cleanup_waiver: {
         Args: {

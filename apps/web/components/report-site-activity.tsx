@@ -1,0 +1,98 @@
+'use client';
+/* eslint-disable @next/next/no-img-element -- Evidence uses the existing public photo routes. */
+import { useEffect, useId, useRef, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { FiChevronDown, FiClock, FiPlus, FiX } from 'react-icons/fi';
+import { EMPTY_REPORT_DRAFT } from '@litterbugs/report-contract';
+import { ReportWizard } from './report-wizard';
+import { createClient } from '@/lib/supabase/client';
+import { ReportTimeline, reportTimeline } from '@/app/reports/[id]/report-timeline';
+import { reportDateLabel } from '@/lib/public-report-content';
+import type { PublicReportShareModel } from '@/lib/public-report-share-model';
+import type { ReportSite } from '@/lib/report-site-model';
+import { submitSiteReport } from '@/lib/submit-site-report';
+import { ReportLocationError } from '@/lib/report-location-error';
+import styles from './report-site-activity.module.css';
+
+export function SiteTimeline({ site, reportId }: { site: ReportSite; reportId: string }) {
+  const heading = useId();
+  const latest = site.reports.at(-1)?.id;
+  return <section className={styles.timeline} aria-labelledby={heading}>
+    <div className={styles.heading}><h2 id={heading}>Timeline</h2><span>{site.completedCount} {site.completedCount === 1 ? 'cleanup' : 'cleanups'}</span></div>
+    <ol className={styles.rounds}>{site.reports.map(report => <li key={report.id}>
+      <details open={report.id === reportId || report.id === latest}>
+        <summary className={styles.round}><span><strong>{reportDateLabel(report.reportDate)}</strong><small>Reported by {report.reporterName || 'Community member'}</small></span><span className={report.state === 'completed' ? styles.cleaned : styles.current}>{report.state === 'completed' ? 'Cleaned' : report.state === 'expired' ? 'Expired' : 'Current report'}</span><FiChevronDown aria-hidden /></summary>
+        <ol className={styles.events}>{reportTimeline(report).map((event, index) => <li key={`${event.at}-${index}`}><time dateTime={event.at}>{event.date}</time>
+          {report.state === 'completed' && event.at === report.completionDate ? <details className={styles.evidence}><summary>{event.label}<FiChevronDown aria-hidden /></summary><div>
+            <div className={styles.photos}>{([['before', report.beforePhotoUrl], ['after', report.afterPhotoUrl]] as const).map(([side, src]) => src ? <a key={side} href={src} target="_blank" rel="noopener noreferrer"><img src={src} alt={`${side === 'before' ? 'Before' : 'After'} cleanup on ${reportDateLabel(report.completionDate)}`} /><span>{side === 'before' ? 'Before' : 'After'}</span></a> : null)}</div>
+            {report.cleanupDescription && <p>{report.cleanupDescription}</p>}
+            <p>{[report.bagsOrItemsRemoved != null ? `${report.bagsOrItemsRemoved} bags/items` : null, report.weightPounds != null ? `${report.weightPounds} lb` : null, report.cleanupMinutes != null ? `${report.cleanupMinutes} min` : null].filter(Boolean).join(' · ')}</p>
+          </div></details> : <span>{event.label}</span>}
+        </li>)}</ol>
+        {report.id !== reportId && <Link className={styles.reportLink} href={`/reports/${report.id}`}>View report</Link>}
+      </details>
+    </li>)}</ol>
+  </section>;
+}
+
+export function ReportSiteActivity({ reportId, initialReport, initialSite }: { reportId: string; initialReport?: PublicReportShareModel; initialSite?: ReportSite | null }) {
+  const [site, setSite] = useState<ReportSite | null>(initialSite ?? null);
+  const [loading, setLoading] = useState(initialSite === undefined);
+  const [failed, setFailed] = useState(false);
+  const [revision, setRevision] = useState(0);
+  const [composing, setComposing] = useState(false);
+  const [progress, setProgress] = useState('');
+  const [notice, setNotice] = useState('');
+  const anchor = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  useEffect(() => {
+    if (initialSite !== undefined && revision === 0) return;
+    const controller = new AbortController();
+    void fetch(`/api/report-sites/${reportId}`, { cache: 'no-store', signal: controller.signal }).then(async response => {
+      if (!response.ok) throw new Error('Timeline unavailable');
+      return response.json() as Promise<ReportSite | null>;
+    }).then(value => { setSite(value); setFailed(false); setLoading(false); }).catch(() => { if (!controller.signal.aborted) { setFailed(true); setLoading(false); } });
+    return () => controller.abort();
+  }, [reportId, initialSite, revision]);
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Restore a notice carried across a full report navigation.
+    if (url.searchParams.get('alreadyReported') === '1') setNotice('New litter has already been reported.');
+    if (url.searchParams.get('reportAgain') === '1' && site?.canReportAgain) {
+      setComposing(true); url.searchParams.delete('reportAgain'); window.history.replaceState(window.history.state, '', url);
+    }
+  }, [site]);
+  async function begin() {
+    if (!site?.local) {
+      const { data } = await createClient().auth.getUser();
+      if (!data.user || data.user.is_anonymous) {
+        const next = new URL(window.location.href); next.searchParams.set('reportAgain', '1');
+        router.push(`/sign-in?next=${encodeURIComponent(next.pathname + next.search)}`);
+        return;
+      }
+    }
+    setComposing(true);
+  }
+  const source = site?.reports.filter(report => report.state === 'completed').at(-1);
+  if (loading) return initialReport ? <ReportTimeline report={initialReport} /> : null;
+  if (failed) return <div className={styles.retry}><span>Timeline could not be loaded.</span><button className="secondary-button" onClick={() => { setLoading(true); setRevision(value => value + 1); }}>Try again</button></div>;
+  if (!site) return initialReport ? <ReportTimeline report={initialReport} /> : null;
+  return <div className={styles.activity}>
+    {notice && <div className={styles.notice} role="status"><span>{notice}</span><button aria-label="Dismiss notice" onClick={() => { setNotice(''); const url = new URL(window.location.href); url.searchParams.delete('alreadyReported'); window.history.replaceState(window.history.state, '', url); }}><FiX /></button></div>}
+    {site.currentReportId && site.currentReportId !== reportId && <Link className="primary-button button-link" href={`/reports/${site.currentReportId}`}>View current report</Link>}
+    {site.canReportAgain && source?.location && <button className={`secondary-button ${styles.again}`} onClick={() => void begin()}><FiPlus aria-hidden />Needs cleaning again</button>}
+    {site.completedCount > 0 && <button className={styles.historyLink} onClick={() => anchor.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}><FiClock aria-hidden /><span><strong>{site.completedCount === 1 ? 'Cleaned once' : site.completedCount === 2 ? 'Cleaned twice' : `Cleaned ${site.completedCount} times`}</strong><small>View timeline</small></span><FiChevronDown aria-hidden /></button>}
+    <div ref={anchor}><SiteTimeline site={site} reportId={reportId} /></div>
+    {composing && source?.location && <ReportWizard initialDraft={{ ...EMPTY_REPORT_DRAFT, title: source.title }} isEditing={false} coordinates={source.location} submissionProgress={progress} onClose={() => setComposing(false)} onSubmit={async draft => {
+      try {
+        const result = await submitSiteReport(source.id, draft, source.location!, Boolean(site.local), setProgress);
+        setComposing(false);
+        router.push(`/reports/${result.reportId}${result.alreadyReported ? '?alreadyReported=1' : ''}`);
+        router.refresh();
+        return null;
+      } catch (error) { return error instanceof ReportLocationError ? error : error instanceof Error ? error.message : 'Report could not be saved. Try again.'; }
+      finally { setProgress(''); }
+    }} />}
+  </div>;
+}
