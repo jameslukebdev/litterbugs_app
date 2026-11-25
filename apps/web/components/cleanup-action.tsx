@@ -426,7 +426,7 @@ function CleanupActionForReport({
 
   const action = (() => {
     if (report.cleanup_state === 'completed') return null;
-    if (issuePaused) { const remaining=attempt?remainingClaimTime(attempt as typeof attempt & {issue_paused_at?:string|null}):null;return <p className="cleanup-unavailable-note">Cleanup paused{remaining!==null&&isMyAttempt?` · ${Math.floor(remaining/3600000)} hr ${Math.floor(remaining%3600000/60000)} min remaining`:''}</p>; }
+    if (issuePaused) { if(!showIssueShortcut&&!isMyAttempt)return null;const remaining=attempt?remainingClaimTime(attempt as typeof attempt & {issue_paused_at?:string|null}):null;return <p className="cleanup-unavailable-note">Cleanup paused{remaining!==null&&isMyAttempt?` · ${Math.floor(remaining/3600000)} hr ${Math.floor(remaining%3600000/60000)} min remaining`:''}</p>; }
     if (attemptFailed && !attempt) return null;
     if (attemptLoading) return <button className="primary-button compact-button report-action-clean" aria-label="Checking cleanup" disabled><BrandBug kind="butterfly" size={21} className="bug-hop" />{report.cleanup_state === 'available' ? 'Clean' : 'Cleanup details'}</button>;
     if (canSubmit && workspace) return null;

@@ -86,3 +86,11 @@
 .siteHistory > :first-child { margin-top:0; }
 
 .accountHistory{margin-top:32px;max-width:760px}.accountHistory:empty{display:none}
+
+/* Embedded account document: heading and utility own separate grid cells. */
+.accountTitleRow{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:12px;margin-bottom:10px}
+.v2.v2 .accountTitleRow h2{min-width:0;margin:0;overflow-wrap:anywhere}
+.v2.v2 .accountTitleRow :global(.report-detail-toolbar){position:static;min-height:44px;padding:0;border:0;align-self:start}
+.v2.v2 .accountTitleRow :global(.report-detail-toolbar-actions){margin:0}
+.v2.v2 .accountTitleRow :global(.report-detail-toolbar-actions) button{width:auto;min-width:44px;min-height:44px;gap:6px;padding:7px 8px;font-size:13px;white-space:nowrap}
+.v2.v2 .accountTitleRow :global(.report-detail-toolbar-actions) button span{position:static;width:auto;height:auto;overflow:visible;clip:auto;clip-path:none;white-space:nowrap}

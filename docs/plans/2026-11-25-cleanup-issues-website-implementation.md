@@ -153,3 +153,50 @@ Screenshots: branded-cleanup-options.jpg, revised-report-details.jpg,
 reporter-active-reply.jpg, team-held-review.jpg, team-closed-report.jpg and
 fresh-reporter-reply.jpg in the local fixture folder. Blue control is intentionally
 secondary; mint remains the positive-state color. No deployments.
+
+## November25 visual regression and broader local recheck
+
+Owner found Share overlapping the title and directions escaping the details column
+at medium widths. Earlier workflow/automated checks did not justify a blanket visual
+readiness claim. Fixed both: embedded account heading and Share now occupy distinct
+in-flow grid cells, with visible Share label (including resetting inherited clip-path).
+Account document explicitly owns grid/flex/block/overflow at every breakpoint;
+legacy map display:contents rules no longer flatten its panel/scroll container.
+At900px and below the report stacks into a bounded photo plus a single details column.
+Consolidated account/utility CSS overrides. Reporter sees Reply on an outstanding
+issue and no redundant paused-cleanup footer beside Edit report.
+
+Separate QA reports were created without changing the owner's pending scenarios.
+Browser-verified current code:
+- Actual report and a67-character title at1280/900/800/390/320: no title/Share
+  intersection, no horizontal overflow, Share text unclipped, directions within
+  panel and after heading. Measurements and screenshots saved outside repo.
+- Share opens/closes, photo viewer opens/closes, Escape works, menu Escape and
+ 320px menu/form work; primary button remains reachable in scrolling request modal.
+- Private request+processed photo -> reporter inbox -> reply -> funded public
+ description/information/photo replacement -> reload/re-login persistence ->
+ Still an issue -> second reply -> cleaner explicitly resumes same attempt.
+ Public revisions2/claim original1 retained, fund3500 unchanged,97s restored.
+- New safety request -> reporter reply -> real local MFA2 staff inbox -> hold ->
+ ready -> cleaner resume;112s restored, fund unchanged. New missing-litter request
+ -> reporter confirmation -> staff close+confirmation;3850 total refund_pending,
+ no completion or reward. These use existing documented local case-handler adapter.
+- Other member sees explicit public updates but no private message; private thread
+ returns not-found. Owner issue347ca014-2032-4797-a49a-c3bcdd91227d remains
+ awaiting_reporter. Reporter session and normal browser viewport restored.
+- No relevant console warnings/errors or framework overlays.139 regressions plus
+ 40 existing ReportDetail tests pass (179 total), TypeScript/scoped lint/diff pass.
+ No SQL/schema/new migration, hosted write, native source or deployment in this pass.
+
+Evidence prefix /tmp/litterbugs-cleanup-issues-local-20261125/recheck-:
+layout-measurements.json, report-{width}.jpg, long-title-{width}.jpg,
+fixed-header-desktop.jpg, fixed-report-mobile.jpg, public-editor-390.jpg,
+conversation-390.jpg, team-review-390.jpg, closed-800.jpg and check logs.
+For browser automation, await the local role switch's303 destination before a
+second navigation; its helper redirect otherwise races scripted goto calls.
+
+Remaining boundaries: this is local website QA, not native app/push/email/provider
+or real payment/refund verification; live delivery/Deno/provider limitations from
+prior sections remain. Public report presentation vs separate account route was
+explained to owner; consolidating those routes is a recommendation, not completed
+work or new scope authorization. Do not claim that consolidation has been built.

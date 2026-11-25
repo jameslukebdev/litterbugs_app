@@ -335,28 +335,12 @@ export function ReportDetail({
     window.requestAnimationFrame(() => shareButtonRef.current?.focus());
   }
 
-  return (
-    <div className={embedded ? "report-detail-embedded" : inline && !expandedLayout ? "report-detail-pane report-detail-context" : `report-detail-backdrop${expandedLayout ? ' report-detail-expanded' : ' report-detail-context'}`} role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <aside
-        ref={dialogRef}
-        className={`report-detail ${styles.v2}${photoPaths.length ? '' : ' report-detail-without-photo'}`}
-        role={embedded || (inline && !expandedLayout) ? "region" : "dialog"}
-        aria-modal={embedded || (inline && !expandedLayout) ? undefined : true}
-        tabIndex={-1}
-        aria-labelledby="report-detail-title"
-      >
-        {!embedded && (!inline || expandedLayout) && <button
-          type="button"
-          className="report-detail-dismiss-handle"
-          aria-label={closeLabel}
-          title="Swipe down or tap to return to map"
-          onClick={onClose}
-        ><span aria-hidden /></button>}
-        <header className="report-detail-toolbar">
-          <button ref={backButtonRef} type="button" className="report-detail-toolbar-back" onClick={onClose}>
+  const reportToolbar=(
+    <header className="report-detail-toolbar">
+          {!taskBase&&<button ref={backButtonRef} type="button" className="report-detail-toolbar-back" onClick={onClose}>
             <Icon name="chevron-left" />
             <span>{closeLabel.includes('community') ? 'Back to community' : 'Back to map'}</span>
-          </button>
+          </button>}
           {!embedded && <button className="report-layout-toggle" onClick={() => setExpandedLayout(value => !value)} aria-pressed={expandedLayout} aria-label={expandedLayout ? 'Compact view' : 'Larger view'} title={expandedLayout ? 'Compact view' : 'Larger view'}>{expandedLayout ? <FiMinimize2 aria-hidden="true" /> : <FiMaximize2 aria-hidden="true" />}</button>}
           <img className="report-detail-toolbar-logo" src="/brand/litterbugs-logo.png" alt="" aria-hidden />
           <nav className="report-detail-toolbar-actions" aria-label="Report actions">
@@ -384,6 +368,26 @@ export function ReportDetail({
           </nav>
           {actionStatus && <span className="report-detail-toolbar-status" role="status">{actionStatus}</span>}
         </header>
+  );
+
+  return (
+    <div className={embedded ? "report-detail-embedded" : inline && !expandedLayout ? "report-detail-pane report-detail-context" : `report-detail-backdrop${expandedLayout ? ' report-detail-expanded' : ' report-detail-context'}`} role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <aside
+        ref={dialogRef}
+        className={`report-detail ${styles.v2}${photoPaths.length ? '' : ' report-detail-without-photo'}`}
+        role={embedded || (inline && !expandedLayout) ? "region" : "dialog"}
+        aria-modal={embedded || (inline && !expandedLayout) ? undefined : true}
+        tabIndex={-1}
+        aria-labelledby="report-detail-title"
+      >
+        {!embedded && (!inline || expandedLayout) && <button
+          type="button"
+          className="report-detail-dismiss-handle"
+          aria-label={closeLabel}
+          title="Swipe down or tap to return to map"
+          onClick={onClose}
+        ><span aria-hidden /></button>}
+        {!taskBase&&reportToolbar}
         <div className="report-detail-layout">
           <div className="report-detail-visual">
             {hasAfterPhotos && photoPaths.length > 0 && <div className={styles.sideSwitch} role="group" aria-label="Choose photos">
@@ -446,7 +450,7 @@ export function ReportDetail({
           <div className="report-detail-panel">
             <div className="report-detail-scroll">
               <header className="report-detail-header">
-                <h2 id="report-detail-title">{report.title || 'Litter Report'}</h2>
+                <div className={taskBase?styles.accountTitleRow:undefined}><h2 id="report-detail-title">{report.title || 'Litter Report'}</h2>{taskBase&&reportToolbar}</div>
                 <p className={styles.status} data-tone={statusView.tone}>
                   {statusView.bug ? <img key={bloomCount} className={statusView.tone === 'done' && bloomCount ? 'bug-bloom' : undefined} src={statusView.bug} alt="" aria-hidden="true" width={18} height={18} /> : null}
                   {closed ? 'Report closed' : cleanupStatusLabel(report.cleanup_state)}

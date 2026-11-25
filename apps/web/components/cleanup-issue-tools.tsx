@@ -34,7 +34,7 @@ export function useReportCleanupIssue(reportId:string,userId:string|null) {
  return {issue:current?.issue??null,message:current?.message??null,loading:cleanupIssuesEnabled&&!!userId&&!current,failed:!!current?.failed,retry:()=>setRetry(v=>v+1)};
 }
 export function CleanupIssueShortcut({issue,message,userId}:{issue:CleanupIssue;message?:IssueMessage|null;userId:string}) {
- return <Link className={s.shortcut} data-resolved={issue.status==='resolved'} href={issueHref(issue.id)}><strong><IoLockClosedOutline />{issueStatus(issue,userId)}</strong>{message&&issue.status!=='resolved'&&<p>{message.body}</p>}<small>{issue.status==='resolved'?'View conversation':issue.status==='awaiting_cleaner'?'View response':'View conversation'}<IoChevronForward /></small></Link>;
+ return <Link className={s.shortcut} data-resolved={issue.status==='resolved'} href={issueHref(issue.id)}><strong><IoLockClosedOutline />{issueStatus(issue,userId)}</strong>{message&&issue.status!=='resolved'&&<p>{message.body}</p>}<small>{issue.status==='awaiting_reporter'&&userId===issue.reporter_id?'Reply':issue.status==='awaiting_cleaner'&&userId===issue.cleaner_id?'View response':'View conversation'}<IoChevronForward /></small></Link>;
 }
 export function ReportIssueAccess({reportId,userId}:{reportId:string;userId:string|null}) {
  const state=useReportCleanupIssue(reportId,userId);
