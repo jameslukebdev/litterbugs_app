@@ -255,3 +255,27 @@ simulators or native builds were stopped. Host free-memory snapshots35–40%; di
 remains constrained and fluctuates with other work. No production database,
 functions, website deployment, app build or OTA publication. Prior provider,
 external delivery, actual refunds and Deno-runtime limitations still apply.
+
+
+## Live-readiness check after consolidation — not released
+
+Owner asked whether the website is ready to deploy; this is an inspection, not
+publication approval. Read-only CLI confirmed litterbugs.app still resolves to
+READY deployment dpl_6dT24qAxFCwMi31yqS6ekiaCDYGW (prior websiteba1feca).
+Supabase connector denied the project read, but existing Supabase CLI access works;
+projectmvaygkflcjswtwchflrk is ACTIVE_HEALTHY. Migration history contains the prior
+recurring-site migration and neither cleanup-issue migration. No hosted DDL ran.
+Active functions include send-cleanup-notifications v25 and admin-cleanup-case v22.
+
+The release is NOT fully ready. Candidate notification sender source has no
+cleanup_issue_requested/replied/resolved/report_updated event templates and its
+push payload lacks issue_id. The local website inbox was verified; external phone
+alerts and navigation were not implemented/tested for these new events. Before
+publication, finish/review notification delivery and existing-client fallback;
+verify the real deployed-runtime staff path (local QA used a Node adapter), real
+media-provider configuration, production flag and migration/rollback sequence,
+and pass a production build/staged smoke test. Keep app releases unchanged.
+Use cloud build/staging for release validation: host has about300MiB available
+and memory pressure history; do not start a parallel local production build.
+Local feature source56758a1 and its129 passing tests remain unchanged. This check
+made no website/backend/function/app/OTA deployment and sent no notifications.

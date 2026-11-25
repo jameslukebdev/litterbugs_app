@@ -24,6 +24,19 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-25 — Codex (website live-readiness inspection; not ready yet)
+
+- Owner asked readiness only. Read-only Vercel inspection confirms prior live
+  dpl_6dT24qAxFCwMi31yqS6ekiaCDYGW/ba1feca still READY. Supabase connector read
+  denied; existing CLI works and confirms new issue migrations absent in hosted.
+- Local UI/flow56758a1 passes129 tests, but notification sender does not handle
+  new issue/reply events or carry issue destination. Phone delivery/navigation
+  remains unfinished; website inbox alone was tested. Also pending production
+  build/staging, real staff-runtime/media configuration and guarded DB release.
+- NOTHING deployed or applied. No sends/native/app/OTA change. Host disk about
+  300MiB: use cloud build for release checks; preserve existing memory caps.
+  Details appended to isolated cleanup-issues implementation plan.
+
 ### 2026-11-25 — Codex (one report page; local account actions consolidated)
 
 - Owner approved consolidation, explicitly no deployment/apps. Website56758a1
