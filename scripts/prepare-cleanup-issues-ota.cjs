@@ -47,8 +47,11 @@ async function main() {
   for (const table of ['reports?select=id,cleanup_issue_hold,content_revision,additional_information&limit=1', 'cleanup_issues?select=id&limit=1', 'cleanup_issue_messages?select=id&limit=1']) {
     const response = await fetch(`${backendUrl}/rest/v1/${table}`, { headers, signal: AbortSignal.timeout(20000) });
     const body = await response.json();
-    if (!response.ok || !Array.isArray(body) || (!table.startsWith('reports?') && body.length !== 0)) throw Error('Backend schema/access check failed: ' + table.split('?')[0]);
-    backend.push({ table: table.split('?')[0], status: response.status, ...(table.startsWith('reports?') ? {} : { anonymousRows: 0 }) });
+    const isPublic = table.startsWith('reports?');
+    const empty = response.ok && Array.isArray(body) && body.length === 0;
+    const denied = [401, 403].includes(response.status) && body.code === '42501';
+    if (isPublic ? !response.ok || !Array.isArray(body) : !empty && !denied) throw Error('Backend schema/access check failed: ' + table.split('?')[0]);
+    backend.push({ table: table.split('?')[0], status: response.status, ...(isPublic ? {} : { anonymousRows: 0 }) });
   }
   const rpc = await fetch(`${backendUrl}/rest/v1/rpc/resolve_cleanup_issue`, { method: 'POST', headers, body: JSON.stringify({ target_issue_id: '00000000-0000-4000-8000-000000000000', expected_version: 1 }), signal: AbortSignal.timeout(20000) });
   const denied = await rpc.json();
