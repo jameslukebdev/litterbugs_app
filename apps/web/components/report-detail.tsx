@@ -17,6 +17,8 @@ import { useReportSheetDismiss } from '@/components/use-report-sheet-dismiss';
 import { PhotoExpandButton, ReportPhotoViewer } from '@/components/report-photo-viewer';
 import { AfterPhotos, CompletedCleanup, useCleanupImpact } from '@/components/completed-cleanup';
 import { ReportAuthor } from '@/components/report-author';
+import { ReportIssueAccess } from '@/components/cleanup-issue-tools';
+import { cleanupIssuesEnabled } from '@/lib/cleanup-issues';
 import { ReportSiteActivity } from '@/components/report-site-activity';
 import { CleanupAction } from '@/components/cleanup-action';
 import { CleanupReviewAction } from '@/components/cleanup-review-action';
@@ -465,6 +467,9 @@ export function ReportDetail({
                 {hasLitterTypes && <p className="report-detail-fact"><strong>Litter</strong><span>{[...(report.litter_types ?? []), ...(report.types ? [report.types] : [])].join(', ')}</span></p>}
                 {!!report.notes_presets?.length && <p className="report-detail-fact"><strong>Notes</strong><span>{report.notes_presets.join(', ')}</span></p>}
                 {report.notes_other && <p className="report-detail-fact"><strong>Details</strong><span>{report.notes_other}</span></p>}
+                {(report as typeof report & {additional_information?:string|null}).additional_information&&<p className="report-detail-fact"><strong>Additional information</strong><span>{(report as typeof report & {additional_information?:string|null}).additional_information}</span></p>}
+                {cleanupIssuesEnabled&&taskBase&&<ReportIssueAccess reportId={report.id} userId={userId}/>}
+
                 {(!closed || report.cleanup_state === 'completed') && <ContributionSupporters reportId={report.id} initialCredit={report.contributorCredit} />}
                 {!closed && userId && report.funded_amount_cents > 0 && report.cleanup_state !== 'completed' && <div className={styles.payout}><span>Cleaning this up? Set up payouts so you can get paid.</span><PayoutSetupAction compact /></div>}
                 <div className={styles.siteHistory}><ReportSiteActivity key={`${report.id}-timeline`} reportId={report.id} mode="timeline" /></div>
@@ -478,7 +483,8 @@ export function ReportDetail({
                 void Promise.resolve(onDelete()).finally(() => { setDeleting(false); setConfirmingDelete(false); });
               }} /> : <>
               {onDelete && isOwner && !closed && report.cleanup_state === 'available' && !report.funding_locked_at && <button className={`danger-button compact-button ${dangerTriggerClass}`} onClick={() => setConfirmingDelete(true)}><Icon name="trash" />Delete</button>}
-              {onEdit && isOwner && !closed && report.cleanup_state === 'available' && !report.funding_locked_at && <button className="secondary-button compact-button" onClick={onEdit}><Icon name="edit" />Edit</button>}
+              {cleanupIssuesEnabled&&isOwner&&!closed&&['available','claimed'].includes(report.cleanup_state??'')&&<Link className="secondary-button compact-button" href={`/account/reports/${report.id}/edit`}>Edit report</Link>}
+              {!cleanupIssuesEnabled&&onEdit && isOwner && !closed && report.cleanup_state === 'available' && !report.funding_locked_at && <button className="secondary-button compact-button" onClick={onEdit}><Icon name="edit" />Edit</button>}
               {taskBase && isOwner && !closed && report.cleanup_state === 'completion_submitted' ? <Link className="secondary-button" href={`${taskBase}&task=review`}>Review cleanup</Link> : <CleanupReviewAction report={report} userId={userId} isOwner={isOwner} onChanged={onReportChanged} />}
               <FundingContributionAction report={report} userId={userId} autoOpen={entryIntent === 'fund'} onRequireSignIn={() => onRequireSignIn?.('fund')} onChanged={onReportChanged} />
               {!closed && (taskBase ? <Link className="primary-button" href={`${taskBase}&task=cleanup`}>Open cleanup workspace</Link> : <CleanupAction report={report} userId={userId} autoOpen={entryIntent === 'clean'} onRequireSignIn={() => onRequireSignIn?.('clean')} onChanged={onReportChanged} />)}

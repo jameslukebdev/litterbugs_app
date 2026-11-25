@@ -13,3 +13,8 @@ it('labels a daily nearby alert and opens its own results', () => {
   expect(notificationPresentation(alert).title).toBe('New litter near you');
   expect(notificationHref(alert, { filter: 'unread', page: 2 })).toBe('/account/notifications/alert-id?filter=unread&page=2');
 });
+it.each(['cleanup_issue_requested', 'cleanup_issue_replied', 'cleanup_issue_report_updated', 'cleanup_issue_resolved'])('opens the private thread for %s', event_type => {
+  const notification = { event_type, report_id: 'report-id', contribution_id: null, issue_id: 'issue-id' };
+  expect(notificationHref(notification)).toBe('/account/cleanup-issues/issue-id');
+  expect(notificationPresentation(notification).title).toBeTruthy();
+});

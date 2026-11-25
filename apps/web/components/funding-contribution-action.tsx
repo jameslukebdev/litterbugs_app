@@ -103,7 +103,7 @@ type FundingContributionProps = {
 };
 
 function acceptsFunding(report: Report) {
-  return report.cleanup_state === 'available'
+  return !(report as Report & {cleanup_issue_hold?:boolean}).cleanup_issue_hold && report.cleanup_state === 'available'
     && report.funding_eligibility === 'eligible'
     && report.renewal_status === 'active'
     && !report.funding_frozen_at

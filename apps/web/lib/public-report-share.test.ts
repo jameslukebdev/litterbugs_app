@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { from, embed, loadImage, createPublicClient, localPreview } = vi.hoisted(() => ({
-  from: vi.fn(), embed: vi.fn(), loadImage: vi.fn(), createPublicClient: vi.fn(), localPreview: vi.fn(),
+const { from, embed, loadImage, createPublicClient, localPreview, issueFeature } = vi.hoisted(() => ({
+  issueFeature: {enabled:false}, from: vi.fn(), embed: vi.fn(), loadImage: vi.fn(), createPublicClient: vi.fn(), localPreview: vi.fn(),
 }));
 vi.mock('@/lib/local-history-photo-preview', () => ({ loadLocalHistoryPhotoPreview: localPreview }));
+vi.mock('./cleanup-issues', () => ({get cleanupIssuesEnabled(){return issueFeature.enabled;},issueClient:(client:unknown)=>client}));
 vi.mock('server-only', () => ({}));
 vi.mock('@/lib/env', () => ({ getSiteUrl: () => 'https://litterbugs.app' }));
 vi.mock('@/lib/supabase/public', () => ({ createPublicClient }));
@@ -38,7 +39,7 @@ function fixture(report: unknown = base) {
   queries.set('profiles', query({ display_name: 'Cleaner' }));
 }
 beforeEach(() => {
-  vi.clearAllMocks(); queries.clear(); fixture();
+  issueFeature.enabled=false;vi.clearAllMocks(); queries.clear(); fixture();
   localPreview.mockResolvedValue(null);
   from.mockImplementation((table: string) => queries.get(table));
   createPublicClient.mockReturnValue({ from });
@@ -170,4 +171,14 @@ it('only uses local history copies after checking current anonymous publication 
 it('does not use an anonymized unnamed source for local recurrence',async()=>{
  fixture({...base,title:null,cleanup_state:'completed'});
  expect(await loadHostedPublicReportShare(id,'linked',true)).toBeNull();
+});
+
+it('keeps the claimed before-photo on a completed cleanup after the public report is edited', async () => {
+  issueFeature.enabled=true;
+  fixture({...base,cleanup_state:'completed',photo_paths:['owner/report/new.jpg']});
+  queries.set('cleanup_attempts',query({id:'attempt',report_content_revision:1,final_submission_id:'final'}));
+  queries.set('report_content_revisions',query({photo_paths:[beforePath]}));
+  await loadPublicReportPhoto(id,'before');
+  expect(queries.get('report_content_revisions')?.eq).toHaveBeenCalledWith('revision',1);
+  expect(loadImage).toHaveBeenCalledWith(expect.anything(),'report_photos',beforePath,1080);
 });

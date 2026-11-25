@@ -14,6 +14,7 @@ const ANSWER_ENGINE_CRAWLERS = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  experimental: { turbopackFileSystemCacheForDev: false },
   htmlLimitedBots: new RegExp(`${HTML_LIMITED_BOT_UA_RE.source}|${ANSWER_ENGINE_CRAWLERS.join('|')}`, 'i'),
   transpilePackages: ['@litterbugs/report-contract'],
   redirects: async () => [

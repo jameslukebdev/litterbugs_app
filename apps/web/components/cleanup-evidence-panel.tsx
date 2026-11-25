@@ -1,6 +1,7 @@
 'use client';
 /* eslint-disable @next/next/no-img-element -- Local object URLs and signed report photos. */
 import type { ReactNode } from 'react';
+import { cleanupIssuesEnabled } from '@/lib/cleanup-issues';
 import { Icon } from '@/components/icon';
 import { BugCelebration } from '@/components/bug-celebration';
 
@@ -121,7 +122,7 @@ export function CleanupEvidencePanel({
       {error && <p className="form-message error-message" role="alert">{error}</p>}
       {release ?? (
         <div className="cleaner-actions">
-          <button type="button" className="cleaner-release" onClick={() => onReleaseConfirming(true)} disabled={releaseDisabled}>I can&rsquo;t do this cleanup</button>
+          {!cleanupIssuesEnabled&&<button type="button" className="cleaner-release" onClick={() => onReleaseConfirming(true)} disabled={releaseDisabled}>I can&rsquo;t do this cleanup</button>}
           <div className="cleaner-buttons">
             {checking
               ? <><button type="button" className="secondary-button" onClick={onEdit} disabled={editDisabled}>Edit</button>

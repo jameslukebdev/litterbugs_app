@@ -28,6 +28,8 @@ export type PublicReportShareModel = {
   reporterName?: string;
   reporterId?: string | null;
   notes: string | null;
+  additionalInformation?:string|null;
+  cleanupIssueHold?:boolean;
   litterTypes: string[];
   reportDate: string | null;
   expiredDate?: string | null;

@@ -25,7 +25,7 @@ const ALLOWED_MIME_TYPES = new Set([
   'image/heif',
 ]);
 
-export type SecureMediaKind = 'report' | 'cleanup' | 'avatar';
+export type SecureMediaKind = 'report' | 'cleanup' | 'avatar' | 'issue';
 
 export interface SecureMediaRequest {
   kind: SecureMediaKind;
@@ -36,7 +36,7 @@ export interface SecureMediaRequest {
 }
 
 export interface ValidatedSecureMediaRequest extends SecureMediaRequest {
-  destinationBucket: 'report_photos' | 'cleanup_photos' | 'profile_avatars';
+  destinationBucket: 'report_photos' | 'cleanup_photos' | 'profile_avatars' | 'cleanup_issue_photos';
   destinationPath: string;
 }
 
@@ -82,7 +82,7 @@ export function validateSecureMediaRequest(
   if (!isUuid(userId) || !isRecord(value) || typeof value.kind !== 'string') {
     throw new MediaSecurityError('MEDIA_INVALID_REQUEST', 400, 'The photo request is invalid.');
   }
-  if (!['report', 'cleanup', 'avatar'].includes(value.kind)) {
+  if (!['report', 'cleanup', 'avatar', 'issue'].includes(value.kind)) {
     throw new MediaSecurityError('MEDIA_INVALID_REQUEST', 400, 'The photo request is invalid.');
   }
   const kind = value.kind as SecureMediaKind;
@@ -90,6 +90,10 @@ export function validateSecureMediaRequest(
     throw new MediaSecurityError('MEDIA_INVALID_REQUEST', 400, 'The photo request is invalid.');
   }
 
+  if (kind === 'issue') {
+    if (!hasExactKeys(value, ['kind', 'quarantinePath', 'subjectId']) || !isUuid(value.subjectId)) throw new MediaSecurityError('MEDIA_INVALID_REQUEST',400,'The photo request is invalid.');
+    return { kind, quarantinePath:value.quarantinePath as string, subjectId:value.subjectId, destinationBucket:'cleanup_issue_photos', destinationPath:`${userId}/${value.subjectId}/${createId()}.jpg` };
+  }
   if (kind === 'report') {
     if (!hasExactKeys(value, ['kind', 'quarantinePath', 'subjectId']) || !isUuid(value.subjectId)) {
       throw new MediaSecurityError('MEDIA_INVALID_REQUEST', 400, 'The photo request is invalid.');

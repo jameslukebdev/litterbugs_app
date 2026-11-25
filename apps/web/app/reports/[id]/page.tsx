@@ -224,6 +224,8 @@ export default async function SharedReportPage({ params }: Props) {
                   <dd>{report.litterTypes.join(', ')}</dd>
                 </div>}
               </dl>}
+              {report.cleanupIssueHold&&<p>Update requested</p>}
+              {report.additionalInformation&&<section className={styles.section}><h2>Additional information</h2><p style={{whiteSpace:'pre-wrap'}}>{report.additionalInformation}</p></section>}
               {!expired && <ContributionSupporters reportId={report.id} initialCredit={report.contributorCredit} />}
               <ReportTimeline report={report} />
             </div>

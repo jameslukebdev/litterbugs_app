@@ -3,6 +3,7 @@ import 'server-only';
 import { createClient as createSupabaseClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@litterbugs/report-contract';
 
+import { cleanupIssuesEnabled, issueClient } from '@/lib/cleanup-issues';
 import { getSupabaseEnv } from '@/lib/env';
 import { requireGooglePhotoReview } from '@/lib/photo-content-review';
 import {
@@ -42,6 +43,13 @@ async function authorizeDestination(
   userId: string,
 ) {
   if (request.kind === 'avatar') return true;
+  if (request.kind === 'issue') {
+    if(!cleanupIssuesEnabled)return false;
+    const {data:attempt,error}=await admin.from('cleanup_attempts').select('id,cleaner_id,reporter_id,status,claim_expires_at').eq('id',request.subjectId!).maybeSingle();
+    if(error||!attempt||![attempt.cleaner_id,attempt.reporter_id].includes(userId))return false;
+    const {data:issue,error:issueError}=await issueClient(admin).from('cleanup_issues').select('id').eq('cleanup_attempt_id',attempt.id).neq('status','resolved').limit(1).maybeSingle();
+    return !issueError&&(!!issue||(attempt.cleaner_id===userId&&attempt.status==='claimed'&&Date.parse(attempt.claim_expires_at)>Date.now()));
+  }
   if (request.kind === 'report') {
     const { data, error } = await admin
       .from('reports')

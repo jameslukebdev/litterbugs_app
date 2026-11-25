@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { cleanupIssuesEnabled, issueHref } from '@/lib/cleanup-issues';
 
 import { getWebCompatibleReportPhotoUrl } from '@/lib/report-photo';
 import { createClient } from '@/lib/supabase/client';
@@ -278,6 +280,10 @@ export function AdminInbox() {
               </p>
             </div>
 
+            {cleanupIssuesEnabled && typeof selected.case.context?.cleanup_issue_id === 'string' ? (
+              <Link href={issueHref(selected.case.context.cleanup_issue_id)} className={styles.primaryButton}>Review cleanup issue</Link>
+            ) : null}
+
             {selected.case.case_type === 'user_moderation' ? (
               <div className={styles.summaryCard}>
                 <h3>Member’s concern</h3>
@@ -344,7 +350,7 @@ export function AdminInbox() {
               <div className={styles.summaryCard}><h3>Cleaner’s description</h3><p>{selected.submissions.at(-1)?.description}</p></div>
             ) : null}
 
-            {selected.case.status === 'open' ? (
+            {selected.case.status === 'open' && !(cleanupIssuesEnabled && typeof selected.case.context?.cleanup_issue_id === 'string') ? (
               <div className={styles.decisionPanel}>
                 <p>{decisionGuidance[selected.case.case_type]}</p>
                 <label>Why are you making this decision? <span className={styles.required}>Required</span><textarea value={reason} onChange={(event) => setReason(event.target.value)} maxLength={1000} minLength={3} required aria-required="true" placeholder="Describe the photos, payment information, or safety facts that support your choice." /></label>

@@ -6,6 +6,7 @@ import sharp from 'sharp';
 import { isHeicReportPhoto, isReportCardPhoto } from '@/lib/report-photo';
 import { isDiscoverableReport, reportDiscoveryWindow } from '@/lib/report-visibility';
 import { createClient } from '@/lib/supabase/server';
+import {cleanupIssuesEnabled,issueClient} from '@/lib/cleanup-issues';
 import { realUserIdFromClaims } from '@/lib/report-access';
 import { loadDisplayPhoto, PhotoSourceError } from '@/lib/display-photo-cache';
 
@@ -70,7 +71,13 @@ export async function GET(request: Request) {
       const { data: report, error: reportError } = await supabase.from('reports')
         .select('id,user_id,photo_paths,is_published,is_sample').eq('id', accountReportId).maybeSingle();
       if (reportError) return errorResponse(502, 'Report access could not be checked.');
-      if (!report?.is_published || report.is_sample || !report.photo_paths?.includes(photoPath)) return errorResponse(404, 'Report photo not found.');
+      if (!report?.is_published || report.is_sample) return errorResponse(404, 'Report photo not found.');
+      if(!report.photo_paths?.includes(photoPath)) {
+        if(!cleanupIssuesEnabled)return errorResponse(404,'Report photo not found.');
+        const {data:revision,error}=await issueClient(supabase).from('report_content_revisions').select('id').eq('report_id',accountReportId).contains('photo_paths',[photoPath]).limit(1).maybeSingle();
+        if(error)return errorResponse(502,'Report photo history could not be checked.');
+        if(!revision)return errorResponse(404,'Report photo not found.');
+      }
       if (report.user_id !== userId) {
         const [attempts, contributions] = await Promise.all([
           supabase.from('cleanup_attempts').select('id').eq('report_id', accountReportId).eq('cleaner_id', userId).limit(1),
@@ -80,7 +87,7 @@ export async function GET(request: Request) {
         if (!attempts.data?.length && !contributions.data?.length) return errorResponse(404, 'Report photo not found.');
       }
     } else {
-      const { data: report, error: reportError } = await supabase
+      let { data: report, error: reportError } = await supabase
         .from('reports')
         .select('expires_at, cleanup_state, is_published, is_sample, cancelled_at, expired_at')
         .eq('is_sample', false)
@@ -92,6 +99,11 @@ export async function GET(request: Request) {
         .limit(1)
         .maybeSingle();
 
+      if(!reportError&&!report&&cleanupIssuesEnabled){
+        const prior=await issueClient(supabase).from('report_content_revisions').select('report_id').contains('photo_paths',[photoPath]).limit(1).maybeSingle();
+        if(prior.error)return errorResponse(502,'Report photo history could not be checked.');
+        if(prior.data){const result=await supabase.from('reports').select('expires_at, cleanup_state, is_published, is_sample, cancelled_at, expired_at').eq('id',prior.data.report_id).eq('is_published',true).eq('is_sample',false).is('cancelled_at',null).is('expired_at',null).or(reportDiscoveryWindow(now)).maybeSingle();report=result.data;reportError=result.error;}
+      }
       if (reportError) return errorResponse(502, 'Report photo could not be verified.');
       if (!report || !isDiscoverableReport(report, now)) return errorResponse(404, 'Report photo not found.');
       expiresAt = report.cleanup_state === 'completed'

@@ -1,5 +1,6 @@
 import 'server-only';
 import { cache } from 'react';
+import { cleanupIssuesEnabled, issueClient } from './cleanup-issues';
 
 import type { Database, Report } from '@litterbugs/report-contract';
 
@@ -42,6 +43,18 @@ function litterTypes(report: Report) {
     ...(report.litter_types ?? []),
     ...(report.types?.trim() ? [report.types.trim()] : []),
   ];
+}
+
+async function completedReportPhotos(supabase: ReturnType<typeof createPublicClient>, report: Report, attemptId?: string): Promise<string[]> {
+  const current = (report.photo_paths ?? []).filter(Boolean);
+  if (!cleanupIssuesEnabled || report.cleanup_state !== 'completed') return current;
+  const query = supabase.from('cleanup_attempts').select('*').eq('report_id', report.id).eq('status', 'completed');
+  const { data: attempt } = await (attemptId ? query.eq('id', attemptId) : query.order('completed_at', { ascending: false }).limit(1)).maybeSingle();
+  const revision = (attempt as (CleanupAttempt & { report_content_revision?: number }) | null)?.report_content_revision;
+  if (!revision) return current;
+  const { data: snapshot, error } = await issueClient(supabase).from('report_content_revisions').select('photo_paths').eq('report_id', report.id).eq('revision', revision).maybeSingle();
+  if (error) throw error;
+  return snapshot ? snapshot.photo_paths.filter(Boolean) : current;
 }
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -121,7 +134,8 @@ const loadPublicReportData = cache(async (reportId: string) => {
     }
   }
 
-  const { data: reporter } = await reporterPromise;
+  const [reporterResult, beforePaths] = await Promise.all([reporterPromise, completedReportPhotos(supabase, report, attempt?.id)]);
+  const reporter = reporterResult.data;
 
   const expired = isExpiredPublicReport(report);
   const community = await loadReportCommunity(report.id);
@@ -133,7 +147,7 @@ const loadPublicReportData = cache(async (reportId: string) => {
   const model: PublicReportShareModel = {
     id: report.id,
     state: expired ? 'expired' : report.cleanup_state === 'completed' ? 'completed' : report.cleanup_state === 'available' ? 'available' : 'in_progress',
-    fundingEligible: !expired && report.cleanup_state === 'available' && report.funding_eligibility === 'eligible' && report.renewal_status === 'active' && !report.funding_frozen_at && !report.cancelled_at && !report.expired_at,
+    fundingEligible: !(report as Report & {cleanup_issue_hold?:boolean}).cleanup_issue_hold && !expired && report.cleanup_state === 'available' && report.funding_eligibility === 'eligible' && report.renewal_status === 'active' && !report.funding_frozen_at && !report.cancelled_at && !report.expired_at,
     rewardCents: !expired && report.cleanup_state === 'available' && report.funding_eligibility === 'eligible' ? Math.max(0, report.funded_amount_cents || 0) : 0,
     title: report.title?.trim() || 'Litter Report',
     generalLocation: place?.label ?? 'Location shown on the map',
@@ -153,6 +167,8 @@ const loadPublicReportData = cache(async (reportId: string) => {
     reporterName: displayName(reporter) || 'Community member',
     reporterId: report.user_id,
     notes: reportNotes(report),
+    additionalInformation:(report as Report & {additional_information?:string|null}).additional_information,
+    cleanupIssueHold:(report as Report & {cleanup_issue_hold?:boolean}).cleanup_issue_hold,
     litterTypes: litterTypes(report),
     reportDate: report.created_at,
     expiredDate: expired ? report.expired_at ?? report.expires_at : null,
@@ -169,11 +185,11 @@ const loadPublicReportData = cache(async (reportId: string) => {
     beforePhotoUrl: null,
     afterPhotoUrl: null,
     afterPhotoCount,
-    photoCount: Math.min(MAX_PUBLIC_PHOTOS, (report.photo_paths ?? []).filter(Boolean).length),
+    photoCount: Math.min(MAX_PUBLIC_PHOTOS, beforePaths.length),
     canonicalUrl: `${getSiteUrl()}${publicReportPath(report.id, report.title?.trim() || 'Litter Report', place?.localityLabel)}`,
   };
 
-  return { model, named: Boolean(report.title?.trim()), beforePath: report.photo_paths?.[0], afterPath: afterPhoto?.storage_path };
+  return { model, named: Boolean(report.title?.trim()), beforePath: beforePaths[0], afterPath: afterPhoto?.storage_path };
 });
 
 export async function loadPublicReportShare(
@@ -237,7 +253,8 @@ export async function loadPublicReportPhoto(reportId: string, kind: 'before' | '
     .select('*').eq('id', reportId).eq('is_sample', false).eq('is_published', true).maybeSingle();
   if (error) throw error;
   if (!report || !isPubliclyShareableReport(report)) return null;
-  let path: string | undefined = (report.photo_paths ?? []).filter(Boolean)[kind === 'before' ? index : 0];
+  const beforePaths = kind === 'before' ? await completedReportPhotos(supabase, report) : [];
+  let path: string | undefined = beforePaths[index];
   if (kind === 'after') {
     if (report.cleanup_state !== 'completed') return null;
     const { data: attempt } = await supabase.from('cleanup_attempts')

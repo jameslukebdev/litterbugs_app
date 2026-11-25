@@ -33,6 +33,6 @@ export function AccountReport({ report, userId, back, task }: { report: Report; 
     </section> : <><ReportDetail embedded taskBase={base} report={report} userId={userId} isOwner={report.user_id === userId} onClose={() => router.push(back)} onReportChanged={() => router.refresh()} />
       {isDiscoverableReport(report) && <Link className="secondary-button" href={`/map?report=${report.id}&returnTo=${encodeURIComponent(back)}`}>Open on map</Link>}
     </>}
-    <CleanupProgress report={report} userId={userId} taskBase={base} currentTask={task} />
+    {!focused && !(report as Report & {cleanup_issue_hold?:boolean}).cleanup_issue_hold && <CleanupProgress report={report} userId={userId} taskBase={base} currentTask={task} />}
   </main>;
 }

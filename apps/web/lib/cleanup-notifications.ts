@@ -2,9 +2,13 @@ import { nearbyAlertHref, notificationViewQuery, type NotificationView } from '.
 import type { Database } from '@litterbugs/report-contract';
 
 export type CleanupNotification = Database['public']['Tables']['cleanup_notifications']['Row'];
-type NotificationTarget = Pick<CleanupNotification, 'event_type' | 'contribution_id'> & { report_id: string | null; id?: string };
+type NotificationTarget = Pick<CleanupNotification, 'event_type' | 'contribution_id'> & { report_id: string | null; id?: string; issue_id?: string | null };
 
 const CLEANUP_NOTIFICATION_CONTENT: Record<string, { title: string; message: string }> = {
+  cleanup_issue_requested:{title:'Cleanup issue reported',message:'The cleaner sent a private message about your report.'},
+  cleanup_issue_replied:{title:'New cleanup response',message:'There is a private response to your cleanup issue.'},
+  cleanup_issue_report_updated:{title:'Cleanup report updated',message:'The reporter updated the public report.'},
+  cleanup_issue_resolved:{title:'Cleanup issue resolved',message:'The cleanup issue has been resolved.'},
   admin_cleanup_needed: {
     title: 'Cleanup needs attention',
     message: 'A cleanup or payment issue needs your review. Open your admin inbox.',
@@ -107,6 +111,7 @@ export function notificationPresentation(notice: Pick<CleanupNotification, 'even
   return CLEANUP_NOTIFICATION_CONTENT[notice.event_type] ?? { title: 'Cleanup update', message: 'There is an update to one of your cleanups.' };
 }
 export function notificationHref(notice: NotificationTarget, view?: NotificationView) {
+  if(notice.event_type.startsWith('cleanup_issue_') && notice.issue_id)return `/account/cleanup-issues/${encodeURIComponent(notice.issue_id)}`;
   if (notice.event_type.startsWith('admin_')) return '/admin';
   if (notice.event_type === 'nearby_reports_daily') return notice.id ? nearbyAlertHref(notice.id, view) : '/account/notifications';
   if (notice.event_type === 'cleanup_contribution_refunded') return notice.contribution_id ? `/account/payments/${encodeURIComponent(notice.contribution_id)}` : '/account/payments';

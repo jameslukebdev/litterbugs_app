@@ -1,4 +1,6 @@
 'use client';
+import { CleanupIssueTools, CleanupIssueShortcut, useReportCleanupIssue } from '@/components/cleanup-issue-tools';
+import { cleanupIssuesEnabled, remainingClaimTime } from '@/lib/cleanup-issues';
 import { trackParticipation, trackParticipationFailure, trackParticipationExit } from '@/lib/website-analytics';
 import { useGuestParticipationEntry } from '@/lib/use-guest-participation-entry';
 import { trackDeviceSave } from '@/lib/device-save-state';
@@ -14,7 +16,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { CleanupFeedback } from '@/components/cleanup-feedback';
 import { CleanupDone, CleanupEvidencePanel, CleanupSafetyPanel } from '@/components/cleanup-evidence-panel';
-import { getReportCardPhotoUrl } from '@/lib/report-photo';
+import { useClaimedReportPhoto } from '@/lib/use-claimed-report-photo';
 import { BrandBug } from '@/components/brand-bug';
 import { ModalShell } from '@/components/modal-shell';
 import cleanupStartStyles from './cleanup-start-panel.module.css';
@@ -72,6 +74,8 @@ function CleanupActionForReport({
   onChanged?: () => void | Promise<void>;
 }) {
   const refreshRevision = useDataRefresh();
+  const issueState=useReportCleanupIssue(report.id,userId);
+  const issuePaused=cleanupIssuesEnabled && (Boolean((report as typeof report & {cleanup_issue_hold?:boolean}).cleanup_issue_hold)||Boolean(issueState.issue && issueState.issue.status!=='resolved'));
   const { attempt, loading: attemptLoading, failed: attemptFailed, refresh: refreshAttempt, clear: clearAttempt } = useCleanupAttempt(report.id, userId, false, refreshRevision, report.cleanup_state);
   const [busy, setBusy] = useState('');
   const [message, setMessage] = useState('');
@@ -102,13 +106,13 @@ function CleanupActionForReport({
   const openedFromEntry = useRef(false);
   useEffect(() => () => { entryRequest.current += 1; openedFromEntry.current = false; }, [userId, report.id]);
   const previewUrls = usePhotoPreviews(photos);
-  const reporterPhoto = report.photo_paths?.[0] ? getReportCardPhotoUrl(report.photo_paths[0]) : null;
+  const reporterPhoto = useClaimedReportPhoto(report,attempt,userId);
 
   const editorLock = useDraftEditorLock(submissionOpen ? userId : null, attempt ? `cleanup:${attempt.id}` : null);
   const [draftLocked, setDraftLocked] = useState(false);
   useEffect(() => cloudDrafts.subscribe((owner,key,status) => { if(owner===userId && key===`cleanup:${attempt?.id}`) setDraftLocked(status==='submitting'); }), [userId, attempt?.id]);
   const isMyAttempt = Boolean(attempt && attempt.cleaner_id === userId);
-  const canSubmit = isMyAttempt && ['claimed', 'changes_requested'].includes(attempt?.status ?? '');
+  const canSubmit = !issuePaused && isMyAttempt && ['claimed', 'changes_requested'].includes(attempt?.status ?? '');
   useEffect(() => {
     if (!userId || !attempt?.id || !canSubmit || !submissionOpen || editorLock !== 'ready') return;
     let cancelled = false;
@@ -420,8 +424,10 @@ function CleanupActionForReport({
 
   const action = (() => {
     if (report.cleanup_state === 'completed') return null;
+    if (issuePaused) { const remaining=attempt?remainingClaimTime(attempt as typeof attempt & {issue_paused_at?:string|null}):null;return <p className="cleanup-unavailable-note">Cleanup paused{remaining!==null&&isMyAttempt?` · ${Math.floor(remaining/3600000)} hr ${Math.floor(remaining%3600000/60000)} min remaining`:''}</p>; }
     if (attemptFailed && !attempt) return null;
     if (attemptLoading) return <button className="primary-button compact-button report-action-clean" aria-label="Checking cleanup" disabled><BrandBug kind="butterfly" size={21} className="bug-hop" />{report.cleanup_state === 'available' ? 'Clean' : 'Cleanup details'}</button>;
+    if (canSubmit && workspace) return null;
     if (canSubmit) return <button className="primary-button compact-button" onClick={() => setSubmissionOpen(true)}>{attempt?.status === 'changes_requested' ? 'Update cleanup photos' : 'Submit cleanup photos'}</button>;
     if (isMyAttempt && attempt?.status === 'completion_submitted') return <button className="secondary-button compact-button" disabled>Cleanup under review</button>;
     if (attempt && !isMyAttempt) return <span className="cleanup-unavailable-note">Another member is cleaning this report</span>;
@@ -435,6 +441,8 @@ function CleanupActionForReport({
       {message && (doneKind ? <CleanupDone kind={doneKind}>{message}</CleanupDone> : <span className="cleanup-action-message" role="status">{message}</span>)}
       {!waiverOpen && !(submissionOpen && attempt) && attemptNotice}
       {action}
+      {cleanupIssuesEnabled&&userId&&issueState.issue&&<CleanupIssueShortcut issue={issueState.issue} message={issueState.message} userId={userId}/>}
+      {cleanupIssuesEnabled&&isMyAttempt&&attempt?.status==='claimed'&&!issuePaused&&!(submissionOpen&&attempt)&&<CleanupIssueTools attemptId={attempt.id} reporterId={attempt.reporter_id} userId={userId!} disabled={!!busy||preparing} onGiveBack={()=>setReleaseConfirming(true)}/>}
       {payoutEntry?.userId === userId && payoutEntry.reportId === report.id && <PayoutSetupAction autoOpen onDismiss={reason => {
         if (reason === 'closed') trackParticipationExit('clean', 'payout_setup', 'cancelled');
         setPayoutEntry(null);
@@ -450,7 +458,7 @@ function CleanupActionForReport({
               <button type="button" className="danger-button compact-button" onClick={() => void releaseClaim()} disabled={attemptFailed || Boolean(busy) || preparing}>{busy === 'release' ? 'Giving it back…' : 'Give it back'}</button>
             </div>
           </div>
-        : <button className="secondary-button compact-button" onClick={() => setReleaseConfirming(true)} disabled={attemptFailed || Boolean(busy) || preparing}>I can&rsquo;t do this cleanup</button>)}
+        : !cleanupIssuesEnabled && <button className="secondary-button compact-button" onClick={() => setReleaseConfirming(true)} disabled={attemptFailed || Boolean(busy) || preparing}>I can&rsquo;t do this cleanup</button>)}
 
       {waiverOpen && waiver && (
         <ModalShell onClose={() => { trackParticipationExit('clean', 'safety_review', 'cancelled'); setWaiverOpen(false); }} label="Cleanup safety and funded reward acknowledgment" className={cleanupStartStyles.dialog} closeDisabled={busy === 'claim'}>
@@ -472,10 +480,10 @@ function CleanupActionForReport({
         </ModalShell>
       )}
 
-      {submissionOpen && attempt && (
+      {submissionOpen && attempt && !issuePaused && (
         <ModalShell embedded={workspace} onClose={() => { trackParticipationExit('clean', 'evidence_form', 'cancelled'); setSubmissionOpen(false); }} label="Submit cleanup evidence" className="cleanup-flow-dialog cleanup-evidence-workspace" closeDisabled={busy === 'submit' || preparing}>
           <CleanupEvidencePanel
-            notice={<>{attemptNotice}{editorLock === 'unavailable' && <p role="alert">This cleanup draft is open in another tab. Close that editor before continuing here.</p>}</>}
+            notice={<>{cleanupIssuesEnabled&&isMyAttempt&&attempt.status==='claimed'&&<div style={{display:'flex',justifyContent:'flex-end'}}><CleanupIssueTools attemptId={attempt.id} reporterId={attempt.reporter_id} userId={userId!} disabled={!!busy||preparing} onGiveBack={()=>setReleaseConfirming(true)}/></div>}{attemptNotice}{editorLock === 'unavailable' && <p role="alert">This cleanup draft is open in another tab. Close that editor before continuing here.</p>}</>}
             correction={attempt.status === 'changes_requested'}
             reportTitle={workspace ? null : report.title}
             due={deadline ?? null}
