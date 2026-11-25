@@ -24,6 +24,29 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (recurring-cleanup research and local preview only)
+
+- Researched FixMyStreet, SeeClickFix, TrashOut, NCDOT pickup records and Refero
+  activity/photo/reporting patterns. Recommended one site with separate linked
+  report occurrences; preserve previous photos, cleaner credit, funds and payouts.
+- Added development-only /dev-review-preview/site-history with App/Website views:
+  cleaned site, new photo report, review, active again, expandable dated history,
+  duplicate handling. Client-state fixtures only; no live report/API/payment writes.
+- CUA initial flow and Chrome visual checks pass at1440x1080 and390x900, no horizontal
+  overflow/broken images or console errors. Required-photo/submit/review/history/
+  duplicate/dialog loops passed; scoped TypeScript/ESLint passed. App view is a
+  browser mockup, not a native implementation. Viewport overrides restored.
+- Product copy stays concise. Existing mint/bugs/Nunito retained. New fund starts
+  at0; old35 payout stays in history; new photo reactions start at0. Sample photos
+  are from an already public report; all repeated events/names/dates are illustrative.
+- Plan: docs/plans/2026-11-24-recurring-cleanups-research-preview.md; evidence:
+  /tmp/litterbugs-site-history-research-20261124/. New preview files committed on
+  codex/site-history-preview-20261124, mirrored to shared preview server3000.
+- No deployment, schema migration, native app change or OTA. Email preference
+  production group5c8ab976-b063-4497-b5be-d15045622988 and website00ed676 unchanged.
+  Actual backend/site identity/concurrency/financial-history work remains pending.
+  Preserve unrelated shared work and in-progress public report timeline.
+
 ### 2026-11-24 — Codex (email website/backend published; app OTAs still held)
 
 - Grant explicitly authorized website/backend publication. LIVE source00ed676
