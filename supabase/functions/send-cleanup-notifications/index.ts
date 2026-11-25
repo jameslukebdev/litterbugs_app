@@ -1,17 +1,12 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.87.1";
 
-type CleanupPushDelivery = {
-  delivery_id: string;
-  notification_id: string;
-  push_device_id: string;
-  expo_push_token: string;
-  event_type: string;
-  report_id: string | null;
-  cleanup_attempt_id: string | null;
-  review_id: string | null;
-  submission_id: string | null;
-};
+import {
+  type CleanupPushDelivery,
+  cleanupPushMessage,
+  isCleanupIssueEvent,
+  notificationContent,
+} from "../_shared/cleanup-push-content.ts";
 
 type ExpoPushTicket = {
   status?: unknown;
@@ -20,7 +15,8 @@ type ExpoPushTicket = {
   details?: { error?: unknown };
 };
 
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const expoPushUrl = "https://exp.host/--/api/v2/push/send";
 
 const jsonResponse = (body: Record<string, unknown>, status = 200) =>
@@ -31,119 +27,6 @@ const jsonResponse = (body: Record<string, unknown>, status = 200) =>
       "Content-Type": "application/json; charset=utf-8",
     },
   });
-
-const notificationContent = (eventType: string) => {
-  switch (eventType) {
-    case "admin_cleanup_needed":
-      return { title: "Cleanup needs attention", body: "A cleanup or payment issue needs your review. Open your admin inbox." };
-    case "funded_cleanup_completed":
-      return { title: "Cleanup you funded is complete", body: "A cleanup you helped fund has been approved. Thank you for supporting it!" };
-    case "admin_moderation_needed":
-      return { title: "Community report needs review", body: "A member sent a concern to the Litterbugs team. Open your admin inbox to review it." };
-    case "report_claimed":
-      return {
-        title: "Report claimed",
-        body: "Your litter report has been claimed for cleanup.",
-      };
-    case "claim_expiring_soon":
-      return {
-        title: "Cleanup expires soon",
-        body: "Your cleanup claim expires soon.",
-      };
-    case "claim_expired":
-      return {
-        title: "Cleanup claim expired",
-        body: "Your cleanup claim expired and is available to other volunteers again.",
-      };
-    case "completion_submitted":
-      return {
-        title: "Cleanup ready for review",
-        body: "A cleanup was submitted for your review.",
-      };
-    case "changes_requested":
-      return {
-        title: "Changes requested",
-        body: "Changes were requested for your cleanup submission.",
-      };
-    case "cleanup_approved":
-      return {
-        title: "Cleanup approved",
-        body: "Your cleanup was approved. Thanks for helping keep the community clean!",
-      };
-    case "cleanup_auto_approved":
-      return {
-        title: "Cleanup automatically approved",
-        body: "Your cleanup was automatically approved.",
-      };
-    case "correction_expired":
-      return {
-        title: "Cleanup update window expired",
-        body: "The report is available to other volunteers again.",
-      };
-    case "paid_review_started":
-      return {
-        title: "Funded cleanup ready for review",
-        body: "Gemini accepted the photos. You have 48 hours to dispute the cleanup.",
-      };
-    case "paid_cleanup_disputed":
-      return {
-        title: "Cleanup disputed",
-        body: "The payout is paused while an administrator reviews the cleanup.",
-      };
-    case "cleanup_reward_sent":
-      return {
-        title: "Cleanup reward sent",
-        body: "Your cleanup reward was transferred to your Stripe account.",
-      };
-    case "cleanup_payout_failed":
-      return {
-        title: "Cleanup reward needs attention",
-        body: "Your cleanup is approved, but the reward transfer needs administrator review.",
-      };
-    case "cleanup_fund_increased":
-      return {
-        title: "Cleanup fund increased",
-        body: "A member added money to your report’s cleaner reward.",
-      };
-    case "cleanup_contribution_refunded":
-      return {
-        title: "Cleanup contribution refunded",
-        body: "Your full cleanup contribution and Litterbugs fee were refunded.",
-      };
-    case "report_renewal_due":
-      return {
-        title: "Renew or close your litter report",
-        body: "You have 7 days to renew it or its cleanup fund will be refunded.",
-      };
-    case "report_renewed":
-      return {
-        title: "Report renewed",
-        body: "Your report and its cleanup fund are active for another 30 days.",
-      };
-    case "report_funding_photos_needed":
-      return {
-        title: "Better report photos needed",
-        body: "Replace the original report photos before members can fund this cleanup.",
-      };
-    case "report_funding_review_required":
-      return {
-        title: "Cleanup fund safety review",
-        body: "Your report needs a quick administrator safety review before funding can begin.",
-      };
-    case "report_funding_approved":
-      return {
-        title: "Cleanup funding approved",
-        body: "Your report can now accept contributions. Adding funds is optional.",
-      };
-    case "report_funding_rejected":
-      return {
-        title: "Cleanup funding unavailable",
-        body: "Your report was reviewed and cannot accept cleanup funding.",
-      };
-    default:
-      return null;
-  }
-};
 
 Deno.serve(async (request: Request) => {
   if (request.method !== "POST") {
@@ -202,49 +85,88 @@ Deno.serve(async (request: Request) => {
     return jsonResponse({ claimed: 0, accepted: 0, failed: 0 });
   }
 
-  const validDeliveries = deliveries.filter((delivery) =>
+  let validDeliveries = deliveries.filter((delivery) =>
     notificationContent(delivery.event_type) !== null
   );
   const invalidDeliveries = deliveries.filter((delivery) =>
     notificationContent(delivery.event_type) === null
   );
 
-  await Promise.all(invalidDeliveries.map((delivery) =>
-    admin.rpc("complete_cleanup_push_delivery", {
-      target_delivery_id: delivery.delivery_id,
-      delivery_outcome: "failed",
-      target_ticket_id: null,
-      target_error_code: "unsupported_event",
-      target_error_message: "Unsupported cleanup notification event.",
-    })
-  ));
+  await Promise.all(
+    invalidDeliveries.map((delivery) =>
+      admin.rpc("complete_cleanup_push_delivery", {
+        target_delivery_id: delivery.delivery_id,
+        delivery_outcome: "failed",
+        target_ticket_id: null,
+        target_error_code: "unsupported_event",
+        target_error_message: "Unsupported cleanup notification event.",
+      })
+    ),
+  );
 
+  // Keep the old queue RPC contract intact for all existing clients/workers.
+  // Only new issue events need the service-only private destination lookup.
+  const issueDeliveries = validDeliveries.filter((delivery) =>
+    isCleanupIssueEvent(delivery.event_type)
+  );
+  let contextFailures = 0;
+  if (issueDeliveries.length) {
+    const { data: contexts, error } = await admin.rpc(
+      "cleanup_issue_push_context",
+      {
+        notification_ids: issueDeliveries.map((delivery) =>
+          delivery.notification_id
+        ),
+      },
+    );
+    if (error) {
+      console.error(
+        "Unable to load cleanup issue notification destinations",
+        error,
+      );
+      contextFailures = issueDeliveries.length;
+      await Promise.all(
+        issueDeliveries.map((delivery) =>
+          admin.rpc("complete_cleanup_push_delivery", {
+            target_delivery_id: delivery.delivery_id,
+            delivery_outcome: "failed",
+            target_ticket_id: null,
+            target_error_code: "issue_context_unavailable",
+            target_error_message:
+              "Cleanup issue destination temporarily unavailable.",
+          })
+        ),
+      );
+      validDeliveries = validDeliveries.filter((delivery) =>
+        !isCleanupIssueEvent(delivery.event_type)
+      );
+    } else {
+      const destinations = new Map(
+        (contexts ?? []).map((
+          row: { notification_id: string; issue_id: string | null },
+        ) => [row.notification_id, row.issue_id]),
+      );
+      validDeliveries = validDeliveries.map((delivery) =>
+        isCleanupIssueEvent(delivery.event_type)
+          ? {
+            ...delivery,
+            issue_id: destinations.get(delivery.notification_id) as
+              | string
+              | null
+              | undefined,
+          }
+          : delivery
+      );
+    }
+  }
   if (validDeliveries.length === 0) {
     return jsonResponse({
       claimed: deliveries.length,
       accepted: 0,
-      failed: invalidDeliveries.length,
+      failed: invalidDeliveries.length + contextFailures,
     });
   }
-
-  const messages = validDeliveries.map((delivery) => {
-    const content = notificationContent(delivery.event_type)!;
-    return {
-      to: delivery.expo_push_token,
-      title: content.title,
-      body: content.body,
-      sound: "default",
-      channelId: "cleanup-updates",
-      data: {
-        notificationId: delivery.notification_id,
-        eventType: delivery.event_type,
-        reportId: delivery.report_id,
-        cleanupId: delivery.cleanup_attempt_id,
-        reviewId: delivery.review_id,
-        submissionId: delivery.submission_id,
-      },
-    };
-  });
+  const messages = validDeliveries.map(cleanupPushMessage);
 
   const headers: Record<string, string> = {
     Accept: "application/json",
@@ -270,16 +192,20 @@ Deno.serve(async (request: Request) => {
       throw new Error("Expo Push Service returned an incomplete ticket batch");
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Expo Push Service request failed";
-    await Promise.all(validDeliveries.map((delivery) =>
-      admin.rpc("complete_cleanup_push_delivery", {
-        target_delivery_id: delivery.delivery_id,
-        delivery_outcome: "failed",
-        target_ticket_id: null,
-        target_error_code: "expo_request_failed",
-        target_error_message: message,
-      })
-    ));
+    const message = error instanceof Error
+      ? error.message
+      : "Expo Push Service request failed";
+    await Promise.all(
+      validDeliveries.map((delivery) =>
+        admin.rpc("complete_cleanup_push_delivery", {
+          target_delivery_id: delivery.delivery_id,
+          delivery_outcome: "failed",
+          target_ticket_id: null,
+          target_error_code: "expo_request_failed",
+          target_error_message: message,
+        })
+      ),
+    );
     console.error("Cleanup push request failed", error);
     return jsonResponse({
       claimed: deliveries.length,
@@ -289,7 +215,7 @@ Deno.serve(async (request: Request) => {
   }
 
   let accepted = 0;
-  let failed = invalidDeliveries.length;
+  let failed = invalidDeliveries.length + contextFailures;
 
   await Promise.all(tickets.map(async (ticket, index) => {
     const delivery = validDeliveries[index];
@@ -297,12 +223,14 @@ Deno.serve(async (request: Request) => {
       ? ticket.details.error
       : null;
     const ticketId = typeof ticket.id === "string" ? ticket.id : null;
-    const ticketMessage = typeof ticket.message === "string" ? ticket.message : null;
+    const ticketMessage = typeof ticket.message === "string"
+      ? ticket.message
+      : null;
     const outcome = ticket.status === "ok"
       ? "accepted"
       : errorCode === "DeviceNotRegistered"
-        ? "device_unregistered"
-        : "failed";
+      ? "device_unregistered"
+      : "failed";
 
     if (outcome === "accepted") accepted += 1;
     else failed += 1;

@@ -136,4 +136,13 @@ select pg_temp.assert_true((select status='resolved' and review_outcome='closed'
 select pg_temp.assert_true((select cancelled_at is not null and cleanup_state='available' and not cleanup_issue_hold and funded_amount_cents=0 from public.reports where id='bc200000-0000-4000-8000-000000000001'),'closed report is not a completed cleanup');
 select pg_temp.assert_true((select bool_and(status='refund_pending' and cleanup_attempt_id is null and principal_amount_cents=3500 and total_amount_cents=3850) from public.cleanup_contributions where report_id='bc200000-0000-4000-8000-000000000001'),'closure queues full original contribution for refund');
 select pg_temp.assert_true(not exists(select 1 from public.cleanup_attempts where report_id='bc200000-0000-4000-8000-000000000001' and (status='completed' or payout_status='paid')),'closure never creates reward');
+
+-- The push worker alone may resolve a private issue destination; legacy queue return type stays unchanged.
+select pg_temp.assert_true(not has_function_privilege('anon','public.cleanup_issue_push_context(uuid[])','EXECUTE'),'anonymous cannot read issue push destinations');
+select pg_temp.assert_true(not has_function_privilege('authenticated','public.cleanup_issue_push_context(uuid[])','EXECUTE'),'members cannot read service push destinations');
+select pg_temp.assert_true(has_function_privilege('service_role','public.cleanup_issue_push_context(uuid[])','EXECUTE'),'worker can resolve push destinations');
+set local role service_role;
+select pg_temp.assert_true((select count(*)>0 from public.cleanup_issue_push_context(array(select id from public.cleanup_notifications where report_id='bc200000-0000-4000-8000-000000000001'))),'worker can look up generated issue events');
+select pg_temp.assert_true(not exists(select 1 from public.cleanup_issue_push_context(array(select id from public.cleanup_notifications where report_id='bc200000-0000-4000-8000-000000000001')) c join public.cleanup_notifications n on n.id=c.notification_id where c.issue_id is distinct from n.issue_id or n.event_type not like 'cleanup_issue_%'),'worker gets only the correct private issue identity');
+reset role;
 rollback;
