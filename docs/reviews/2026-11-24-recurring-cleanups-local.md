@@ -141,3 +141,7 @@ The prior local QA occurrence URL is therefore currently archived, not public.
 19 activity/page tests, TS/lint and CUA open/close/one-Timeline checks pass.
 Current screenshot: /tmp/litterbugs-recurring-cleanups-20261124/corrected-actions.jpg.
 SEO recommendation is recorded separately; no SEO routing/canonical changes.
+
+## November25 verification update
+
+Source `d56f7c3` completes local full-stack lifecycle, interrupted/edited retry recovery and map grouping checks. Completed-page/map actions have been simplified and visually verified on real reports. See [full flow evidence](2026-11-25-recurring-cleanups-full-flow.md). Earlier hosted-path/draft-recovery/map-consolidation pending notes are superseded by that bounded verification; external provider sends/payments and native work remain unverified. Release hold remains: nothing deployed, prepared migration not applied hosted.

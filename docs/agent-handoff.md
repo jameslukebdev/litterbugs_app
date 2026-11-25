@@ -24,6 +24,26 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-25 — Codex (cleanup flow and action layout verified locally)
+
+- Source d56f7c3 on codex/recurring-cleanups-local-20261124, mirrored into shared3000.
+  Removed Find another cleanup; compact Share by the heading. Needs cleaning again
+  uses the existing blue dragonfly reporting style under Reported by; map Timeline
+  is inside the padded facts body. Real completed page/map +390px verified.
+- Full local Auth/Storage/RLS lifecycle and browser report→claim→evidence→approval→
+  recurrence pass; two cleanup cycles preserve original credit/evidence. Fixed
+  JSON-null draft reservation and durable/edited/uncertain publication recovery.
+  Map groups explicit site IDs; action/Timeline refresh shares one public read.
+- 146 scoped regression tests, opt-in full-stack lifecycle test, disposable SQL,
+  full TS and scoped lint pass. External verdicts/GPS are test fixtures; no real
+  payment or delivery. Review: docs/reviews/2026-11-25-recurring-cleanups-full-flow.md.
+- No deploy, hosted migration, native edit, OTA, store release or send. Prepared
+  20261125013903 migration remains NOT APPLIED hosted;00ed676/5c8ab976 unchanged.
+  Native work pending. Normal real-report localhost restored; QA VM/services
+  stopped, overrides cleared, retired4.2GB generated cache removed. Other shared
+  changes and Claude’s latest handoff entries preserved.
+
+
 ### 2026-11-24 — Codex (real website recurrence integration, local only)
 
 - Owner rejected fictional examples. Normal localhost /cleanups and /reports now
