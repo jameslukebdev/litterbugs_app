@@ -129,3 +129,48 @@ Scoped ESLint passes; browser console has no errors. Evidence:
 No native runtime/backend behavior is claimed tested: this is an interactive concept,
 not functioning notifications, database edits, claim pauses, media uploads or payments.
 No production source/schema, deployment or OTA changed. Nothing deployed.
+
+
+## November 25 follow-up: communicating added information
+
+Owner questioned whether access-specific notes fit every correction and whether
+updated reports have a useful place for extra information. Research now supersedes
+the initial suggestion to remove the field: use optional Additional information,
+with one stable label for all issue reasons. Do not force rewriting the original
+litter description just to answer an access, conditions or equipment question.
+
+Reference lock stays existing Litterbugs. Bounded references inspected:
+- Refero Linear13774021-f998-4003-849d-ad1533489547: original issue content plus
+  authored, timestamped activity; preserve context instead of silently overwriting.
+  Official https://linear.app/docs/comment-on-issues documents separate description,
+  comments/attachments and resolution. Borrow traceability, not a general chat system.
+- Refero Airbnb79ed2536-c72e-43cf-8d25-3eb7f240b7f1: structured practical details
+  sections distinct from Message host. Borrow scannable report facts, not booking UI.
+- https://www.civicplus.help/seeclickfix/docs/using-mobile-apps-to-manage-requests-in-the-field
+  supports public/internal comments and images for new information. Keep audience
+  clear; Litterbugs issue notes remain private and aren't copied into public facts.
+- https://www.civicplus.help/seeclickfix/docs/delete-an-issue-or-comment recommends
+  follow-up clarification to preserve records. Do not inherit its no-edit restriction:
+  owner explicitly wants editable funded descriptions/photos with preserved revisions.
+
+Design decision: Additional information is optional, public report content. Editor
+has a compact Public audience label, not explanatory paragraphs. Show populated
+information immediately below description, before Reported by/Timeline, with author
+and update time; no empty section. Display same current information to future cleaners.
+Timeline stores revisions; does not become the only place to find current directions.
+Notify active cleaner with report context and a deep link to the specific update.
+Keep issue resolution separate from saving information. No automatic safety clearance.
+No new chat/private reply field or audience dropdown in this first preview.
+Local preview adds a cleaner notification scene and optional general field; private
+cleaner notes stay in authenticated issue review, not the public information block.
+
+Follow-up visual QA: passed authored information-only save → cleaner notification →
+exact update review → cleaner confirmation → public report in browser. Blank optional
+field plus description-only edit produces no empty Additional information section.
+Current information is above Reported by and the single Timeline; original evidence,
+$35 and 0 cleanups retained. Save alone keeps Update requested. App/website previews
+and390px responsive width pass; no broken images/console errors; viewport reset.
+Evidence: /tmp/litterbugs-cleanup-issues-evidence-20261125/additional-information-phone.jpg
+and additional-information-website.jpg. Deep-link illustrative state:
+/dev-review-preview/cleanup-issues?screen=site&view=web&example=information.
+Preview state only; no account/report edit, upload, notification, DB or deployment.
