@@ -47,3 +47,28 @@ Use a new result path each run. The **LitterbugsFixtureRegression** scheme tests
 The base app must be rebuilt from this checkout: it includes the iOS `annotationZIndex` compatibility patch. The builder verifies the native property exists and refuses stale binaries. The fixture regression suite exposed real iOS annotation reordering and resizing problems, now addressed by stable marker order, a dedicated native layer-priority property, and fixed host bounds across collapsed/expanded states.
 
 Verified September 8, 2026: both fixture cases passed on iPhone 17 Pro and iPhone 13 mini with extra-extra-extra-large text. Both normal-app map regression cases also passed after the marker fixes. The mobile JavaScript suite passed 284 tests across 66 files.
+
+## Returned-litter native check — November 25
+
+`qa/site-history.js` is a separate UI entry for the actual ReportSiteActivity and
+five-step ReportWizardModal/useReportWizardNavigation. It reads the public Hobby
+Lobby cleanup through the live anonymous history API. It does not import the app
+bootstrap, sign in, publish a report, upload media or send analytics. The final
+wizard action is intercepted with a local confirmation. This is native UI QA;
+publication/recovery/RLS are checked separately by service and backend tests.
+
+Export with `expo export:embed --reset-cache`, an absolute **realpath** entry file,
+`--platform ios` or `android`, `--dev false --bytecode --max-workers 1` and an
+external bundle/assets destination. Set `EXPO_NO_DOTENV=1`,
+`EXPO_PUBLIC_SUPABASE_URL=https://qa.invalid`,
+`EXPO_PUBLIC_SUPABASE_ANON_KEY=local-native-ui-only`, analytics false, and PostHog
+symbol upload false. These dummy credentials only satisfy the unused cloud-draft
+module import; no QA session is created. Clear Metro cache when changing envs.
+
+Reuse existing 2.1.1 native code; disable Expo Updates in the **QA copy only**.
+iOS must use a separate simulator bundle ID `com.litterbugs.sitehistoryqa` with
+URL schemes removed. Android must use a disposable cloned QA AVD and local QA
+signature, never a physical device or the owner's existing app. Original apps,
+auth storage and emulator data remain intact. Test devices run sequentially.
+Production index.js never imports this entry, and prepared production bundles
+are checked for absence of its dummy endpoint and QA text.

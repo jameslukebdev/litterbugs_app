@@ -2,6 +2,8 @@ import { userMessage } from './lib/userMessage';
 import { finishAppOpen, pendingAppOpenSource, setMapCoveredForReplay, startTiming, trackLaunchToMap, trackParticipation, trackParticipationFailure } from './lib/analytics';
 import { requireReportLocation } from './lib/reportLocationCheck';
 import { publishReportDraft, clearReportSubmission } from './lib/reportSubmissionStore';
+import { publishSiteReport, clearSiteReportSubmission } from './lib/siteReportSubmission';
+import { saveSiteReportDraft, loadSiteReportDraft, clearSiteReportDraft } from './lib/siteReportDraft';
 import ReportDetailsSheet from './components/ReportDetailsSheet';
 import styles from './styles/MapScreen.styles';
 import { cloudDrafts } from './lib/cloudDrafts';
@@ -129,6 +131,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const [placementCoordinate, setPlacementCoordinate] = useState(null);
   const reportControlTransition = useRef(new Animated.Value(0)).current;
   const [formOpen, setFormOpen] = useState(false);
+  const [siteReportSource, setSiteReportSource] = useState(null);
   const { reportKeyboardVisible, reportKeyboardHeight } = useReportKeyboard(formOpen);
   const reportWizardScrollRef = useRef(null);
   const [form, setForm] = useState({
@@ -272,13 +275,13 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const reportFundingFeedback = useReportFundingFeedback({ geminiReviewEnabled, currentUserId, selectedReport });
   const [draftSaveError, setDraftSaveError] = useState(false);
   useEffect(() => {
-    if (!formOpen || isEditing || !currentUserId || !draftCoord || isSaving || cloudDrafts.status(currentUserId, 'report') === 'submitting') return undefined;
+    if (!formOpen || isEditing || !currentUserId || !draftCoord || isSaving || (!siteReportSource && cloudDrafts.status(currentUserId, 'report') === 'submitting')) return undefined;
     const timer = setTimeout(() => {
-      saveReportDraft(currentUserId, { form, coordinate: draftCoord, step: reportStep })
+      (siteReportSource ? saveSiteReportDraft(siteReportSource.id, currentUserId, { form, coordinate: draftCoord, step: reportStep }) : saveReportDraft(currentUserId, { form, coordinate: draftCoord, step: reportStep }))
         .then(() => setDraftSaveError(false)).catch(() => setDraftSaveError(true));
     }, 350);
     return () => clearTimeout(timer);
-  }, [form, formOpen, isEditing, currentUserId, draftCoord, reportStep, isSaving]);
+  }, [form, formOpen, isEditing, currentUserId, draftCoord, reportStep, isSaving, siteReportSource]);
 
   const fundingEnabled = paymentsEnabled && geminiReviewEnabled;
 
@@ -506,6 +509,7 @@ const beginReportAtCoordinate = (coord, savedForm = null, savedStep = 0, missing
     return;
   }
   editingDraftLocationRef.current = false;
+  setSiteReportSource(null);
   setDraftCoord(selectedCoordinate);
   setForm(savedForm || {
     title: '', selectedTypes: [], types: '', photos: [], severity: '',
@@ -515,6 +519,23 @@ const beginReportAtCoordinate = (coord, savedForm = null, savedStep = 0, missing
   setReportStep(savedStep);
   if (missingPhotoCount) Alert.alert('Add your photo again', 'A saved photo is no longer on this device. Your other answers have been kept.');
   setFormOpen(true);
+};
+
+const beginSiteReport = async source => {
+  if (!currentUserId) { showPermanentAccountRequired(); return; }
+  try {
+    const saved = await loadSiteReportDraft(source.id, currentUserId);
+    beginReportAtCoordinate(source.location, saved?.form || { title: source.title || '', selectedTypes: [], types: '', photos: [], severity: '', selectedNotes: [], notes: '', startingFundingChoice: 'none', startingFundingOther: '' }, saved?.step || 0, saved?.missingPhotoCount || 0);
+    setSiteReportSource(source);
+    setIsEditing(false); setEditingReportId(null); setDetailsOpen(false);
+  } catch { Alert.alert('Draft unavailable', 'Your saved report could not be opened. Please try again.'); }
+};
+const openSiteReport = async id => {
+  try {
+    const report = await getReportById(id);
+    if (!report || blockedIds.includes(report.user_id)) throw new Error('Report unavailable');
+    openReportDetails(report, 'site_timeline');
+  } catch { Alert.alert('Report unavailable', 'This report could not be opened. Please try again.'); }
 };
 
 useEffect(() => {
@@ -799,6 +820,20 @@ const openPayoutSetupForWorkflow = (action) => {
             );
           }
         }
+      } else if (siteReportSource) {
+        const result = await publishSiteReport({ sourceId: siteReportSource.id, userId, payload: createPayload, form, coordinate: draftCoord, upload: uploadReportPhotos, onProgress: setSaveStage });
+        data = result.report;
+        if (result.alreadyReported) {
+          const current = await getReportById(data.id);
+          if (!current || blockedIds.includes(current.user_id)) throw new Error('This report is unavailable.');
+          await clearSiteReportSubmission(siteReportSource.id, userId);
+          setSiteReportSource(null); setDraftCoord(null); setFormOpen(false); resetReportWizard();
+          upsertReport(current); openReportDetails(current, 'site_timeline');
+          void refreshReports({ showRefresh: false });
+          submissionTiming.current?.finish('ready');
+          Alert.alert('Already reported', 'New litter has already been reported.');
+          return;
+        }
       } else {
         data = await publishReportDraft({ userId, payload: createPayload, form, coordinate: draftCoord, upload: uploadReportPhotos, onProgress: setSaveStage });
       }
@@ -844,8 +879,14 @@ const openPayoutSetupForWorkflow = (action) => {
         setPostedPinId(data.id);
         setTimeout(() => setPostedPinId(null), 4000);
         if (geminiReviewEnabled) refreshReportAfterFundingReview(data.id, 'Report photo review deferred:');
-        await clearReportDraft(currentUserId).catch(error => console.log('Published draft cleanup deferred:', error));
-        await clearReportSubmission(currentUserId).catch(error => console.log('Published submission cleanup deferred:', error));
+        if (siteReportSource) {
+          await clearSiteReportDraft(siteReportSource.id, currentUserId).catch(error => console.log('Published site draft cleanup deferred:', error));
+          await clearSiteReportSubmission(siteReportSource.id, currentUserId).catch(error => console.log('Published site submission cleanup deferred:', error));
+          void refreshReports({ showRefresh: false });
+        } else {
+          await clearReportDraft(currentUserId).catch(error => console.log('Published draft cleanup deferred:', error));
+          await clearReportSubmission(currentUserId).catch(error => console.log('Published submission cleanup deferred:', error));
+        }
       }
       upsertReport({ ...data, reporter: data.reporter || currentProfile });
       if (isEditing) await refreshReports({ showRefresh: false });
@@ -853,6 +894,7 @@ const openPayoutSetupForWorkflow = (action) => {
         console.log('Profile refresh deferred after report save:', profileError);
       });
 
+      setSiteReportSource(null);
       setDraftCoord(null);
       setFormOpen(false);
         setIsEditing(false);
@@ -945,7 +987,11 @@ const submitReport = async () => {
 
   // Cancel Report
   const discardDraft = () => {
-    if (!isEditing && currentUserId) clearReportDraft(currentUserId).catch(() => setDraftSaveError(true));
+    if (!isEditing && currentUserId) {
+      const clear = siteReportSource ? Promise.all([clearSiteReportDraft(siteReportSource.id, currentUserId), clearSiteReportSubmission(siteReportSource.id, currentUserId)]) : clearReportDraft(currentUserId);
+      clear.catch(() => setDraftSaveError(true));
+    }
+    setSiteReportSource(null);
     setDraftCoord(null);
     setFormOpen(false);
     setIsEditing(false);
@@ -979,7 +1025,11 @@ const submitReport = async () => {
       [
         { text: 'Keep editing', style: 'cancel' },
         ...(!isEditing ? [{ text: 'Save for later', onPress: async () => {
-          try { await saveReportDraft(currentUserId, { form, coordinate: draftCoord, step: reportStep }); setFormOpen(false); setDraftCoord(null); }
+          try {
+            if (siteReportSource) await saveSiteReportDraft(siteReportSource.id, currentUserId, { form, coordinate: draftCoord, step: reportStep });
+            else await saveReportDraft(currentUserId, { form, coordinate: draftCoord, step: reportStep });
+            setFormOpen(false); setDraftCoord(null); setSiteReportSource(null);
+          }
           catch { Alert.alert('Draft not saved', 'Keep this screen open and try again.'); }
         } }] : []),
         { text: 'Discard', style: 'destructive', onPress: discardDraft },
@@ -1147,6 +1197,7 @@ const openReportDetails = (report, source = 'preview_card', timing = null) => {
 const editReportPhotos = (report) => {
   if (!canEditOrDeleteReport(report, currentUser) || report.funding_locked_at) return false;
   reopenReportOnFocus.current = false;
+  setSiteReportSource(null);
   setSelectedReport(report);
   setForm({
     title: report.title || '', selectedTypes: report.litter_types || [],
@@ -1729,7 +1780,8 @@ const revealBottomReportField = () => {
   beginReportAtCoordinate={beginReportAtCoordinate}
   canAdvanceFromStep={canAdvanceFromStep}
   cancelDraft={cancelDraft}
-  changeDraftLocation={changeDraftLocation}
+  changeDraftLocation={siteReportSource ? undefined : changeDraftLocation}
+  siteReport={Boolean(siteReportSource)}
   currentUserId={currentUserId}
   draftCoord={draftCoord}
   draftSaveError={draftSaveError}
@@ -1773,8 +1825,8 @@ const revealBottomReportField = () => {
 {/* Redesigned Report Detail View */}
 {/* ============================= */}
 
-<ReportDetailsSheet state={{ detailsOpen, reportShareSheetOpen, reportShareBusyAction, selectedReport, insets, region, reportDetailsPreparing, selectedReportHasUtilityActions, completedCleanupImpact, completedCleanupImpactLoading, completedCleanupImpactError, reportHeroWidth, currentUserId, reportPhotoUrls, photosLoading, geminiReviewEnabled, userOwnsSelectedReport, reportFundingFeedback, cleanupDiscoverable, cleanupStatus, currentUserIsCleaner, selectedCleanupAttempt, cleanupAttemptLoading, cleanupActionBusy, canEditOrDeleteSelectedReport, selectedReportCanOpenFunding, payoutGateBusy, selectedReportIsShareable, isFavorite: favoriteIds.includes(selectedReport?.id), favoritesReady }}
-  actions={{ setReportShareSheetOpen, closeReportDetails, setDetailsOpen, setSelectedReport, setPreviewId, navigation, commitMapRegion, setCompletedCleanupImpact, setCompletedCleanupImpactError, setCompletedCleanupImpactLoading, setCompletedCleanupImpactReloadKey, openCleanupNavigation, openCleanupSubmission, confirmCleanupRelease, openCleanupFeedback, openCleanupReview, beginCleanupClaim, openFundingContribution, removeReport, setForm, setEditingReportId, setIsEditing, setDraftCoord, resetReportWizard, setFormOpen, shareSelectedReport, shareSelectedReportLink, shareSelectedReportToInstagram, editReportPhotos, toggleFavorite }} />
+<ReportDetailsSheet state={{ detailsOpen, reportShareSheetOpen, reportShareBusyAction, selectedReport, insets, region, reportDetailsPreparing, selectedReportHasUtilityActions, completedCleanupImpact, completedCleanupImpactLoading, completedCleanupImpactError, reportHeroWidth, currentUserId, reportPhotoUrls, photosLoading, geminiReviewEnabled, userOwnsSelectedReport, reportFundingFeedback, cleanupDiscoverable, cleanupStatus, currentUserIsCleaner, selectedCleanupAttempt, cleanupAttemptLoading, cleanupActionBusy, canEditOrDeleteSelectedReport, selectedReportCanOpenFunding, payoutGateBusy, selectedReportIsShareable, isFavorite: favoriteIds.includes(selectedReport?.id), favoritesReady, blockedIds }}
+  actions={{ setReportShareSheetOpen, closeReportDetails, setDetailsOpen, setSelectedReport, setPreviewId, navigation, commitMapRegion, setCompletedCleanupImpact, setCompletedCleanupImpactError, setCompletedCleanupImpactLoading, setCompletedCleanupImpactReloadKey, openCleanupNavigation, openCleanupSubmission, confirmCleanupRelease, openCleanupFeedback, openCleanupReview, beginCleanupClaim, openFundingContribution, removeReport, setForm, setEditingReportId, setIsEditing, setDraftCoord, resetReportWizard, setFormOpen, shareSelectedReport, shareSelectedReportLink, shareSelectedReportToInstagram, editReportPhotos, toggleFavorite, beginSiteReport, openSiteReport }} />
 
 <CleanupWaiverModal
   visible={cleanupWaiverOpen}

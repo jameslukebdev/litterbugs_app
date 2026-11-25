@@ -1,3 +1,4 @@
+import { siteRepresentatives } from './reportSites';
 import { reportPreferenceSync } from './syncedReportPreferences';
 import { useSession } from './session';
 import { Alert, AppState } from 'react-native';
@@ -205,10 +206,12 @@ export function ReportsProvider({ children, initialDiscovery = null }) {
   }, []);
 
   const reports = useMemo(() => {
-    if (blockedIds.length === 0) return allReports;
+    // Group before detailed filters; saved favorites/hidden stay report-specific.
+    const eligible = allReports.filter(report => matchesReportFilters(report, { ...DEFAULT_REPORT_FILTERS, status: filters.status }, mapRegion));
+    const grouped = filters.favoritesOnly || filters.visibility === 'hidden' ? eligible : siteRepresentatives(eligible);
     const blocked = new Set(blockedIds);
-    return allReports.filter((report) => !blocked.has(report.user_id));
-  }, [allReports, blockedIds]);
+    return grouped.filter(report => !blocked.has(report.user_id));
+  }, [allReports, blockedIds, filters.status, filters.favoritesOnly, filters.visibility, mapRegion]);
 
   const filteredReports = useMemo(() => reports.filter((report) => matchesReportFilters(report, filters, mapRegion, favoriteIds, hiddenIds) && matchesGeography(report, mapRegion, searchPlace)), [reports, filters, mapRegion, searchPlace, favoriteIds, hiddenIds]);
 

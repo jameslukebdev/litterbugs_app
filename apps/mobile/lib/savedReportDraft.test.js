@@ -102,3 +102,18 @@ it('still reports genuinely missing photos without losing the other answers', as
   expect(restored.form.title).toBe('Bottles');
   expect(restored.step).toBe(0);
 });
+
+it('isolates site drafts, evidence and discards from ordinary drafts and other accounts', async () => {
+  const { saveSiteReportDraft, loadSiteReportDraft, clearSiteReportDraft } = await import('./siteReportDraft');
+  await saveReportDraft('alice', draft);
+  const ordinary = m.storage.get('litterbugs.report-draft.alice');
+  await saveSiteReportDraft('site-one', 'alice', { ...draft, form: { ...draft.form, title: 'Returned litter' } });
+  await saveSiteReportDraft('site-two', 'alice', { ...draft, form: { ...draft.form, title: 'Another site' } });
+  expect((await loadSiteReportDraft('site-one', 'alice')).form.title).toBe('Returned litter');
+  expect(await loadSiteReportDraft('site-one', 'bob')).toBeNull();
+  await clearSiteReportDraft('site-one', 'alice');
+  expect(await loadSiteReportDraft('site-one', 'alice')).toBeNull();
+  expect((await loadSiteReportDraft('site-two', 'alice')).form.title).toBe('Another site');
+  expect(m.storage.get('litterbugs.report-draft.alice')).toBe(ordinary);
+  expect((await loadReportDraft('alice')).form.photos).toHaveLength(1);
+});

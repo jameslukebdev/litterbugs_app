@@ -472,7 +472,7 @@ export default function ReportWizardSteps({ form, coordinate, onChangeLocation, 
             <View style={styles.reportReviewMediaSection}>
               <View style={styles.reportReviewHeader}>
                 <Text style={styles.reportReviewLabel}>Location</Text>
-                {!isEditing ? (
+                {!isEditing && onChangeLocation ? (
                   <TouchableOpacity onPress={onChangeLocation} disabled={isSaving} accessibilityRole="button"
                     accessibilityLabel="Change report location" style={[styles.reportReviewEditButton, { marginTop: 0 }]}>
                     <Text style={styles.reviewEdit}>Edit</Text>

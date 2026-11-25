@@ -37,21 +37,19 @@ export async function loadDiscoveryReports({ area, filters, searchPlace, blocked
         if (filters.status === 'available') query = query.eq('cleanup_state', 'available');
         if (filters.status === 'completed') query = query.eq('cleanup_state', 'completed');
         if (filters.status === 'progress') query = query.in('cleanup_state', ['claimed', 'completion_submitted', 'changes_requested']);
-        if (filters.status === 'available' && filters.funding === 'funded') query = query.gt('funded_amount_cents', 0);
-        if (filters.status === 'available' && filters.funding === 'volunteer') query = query.or('funded_amount_cents.lte.0,funded_amount_cents.is.null');
-        if (filters.severity !== 'all') query = query.ilike('severity', filters.severity);
         const { data, error: reportsError } = await query.order('created_at', { ascending: false }).order('id').range(offset, offset + pageSize - 1).abortSignal(signal);
         if (signal?.aborted) throw new Error('Obsolete discovery request');
         if (reportsError) throw reportsError;
         return withCompletedRewards(data || []);
       };
       const accepts = within => report => !blocked.has(report.user_id) && matchesReportFilters(report, filters, area, favoriteIds, hiddenIds) && matchesGeography(report, within, searchPlace);
-      if (!includeNearby) return collectReportMatches(fetchPage, accepts(area), { limit: MAP_REPORT_LIMIT });
+      const identity = !filters.favoritesOnly && filters.visibility !== 'hidden' ? report => report.cleanup_site_id || report.id : undefined;
+      if (!includeNearby) return collectReportMatches(fetchPage, accepts(area), { limit: MAP_REPORT_LIMIT, identity });
       // For the map, keep the reports around the view as well (the whole fetched area), so pins
       // are already there to land the moment the map is swiped; the map only draws the ones in
       // view. Where that is more than the budget, keep only the view, as before.
       const around = { ...area, latitudeDelta: latitudeSpan * 2, longitudeDelta: longitudeSpan * 2 };
-      const nearby = await collectReportMatches(fetchPage, accepts(around), { limit: MAP_REPORT_LIMIT });
+      const nearby = await collectReportMatches(fetchPage, accepts(around), { limit: MAP_REPORT_LIMIT, identity });
       if (!nearby.truncated) return { reports: nearby.reports, truncated: false };
-      return collectReportMatches(fetchPage, accepts(area), { limit: MAP_REPORT_LIMIT });
+      return collectReportMatches(fetchPage, accepts(area), { limit: MAP_REPORT_LIMIT, identity });
 }

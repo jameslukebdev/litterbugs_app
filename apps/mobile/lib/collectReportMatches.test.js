@@ -18,3 +18,19 @@ it('does not mistake an exactly full result for truncation or swallow failures',
   expect((await collectReportMatches((offset, size) => Promise.resolve(rows.slice(offset, offset + size)), () => true)).truncated).toBe(false);
   await expect(collectReportMatches(() => Promise.reject(new Error('offline')), () => true)).rejects.toThrow('offline');
 });
+
+it('keeps the newest explicit site round before matching filters across pages', async () => {
+  const rows = [
+    { id: 'new', cleanup_site_id: 'site', funded_amount_cents: 0 },
+    { id: 'old', cleanup_site_id: 'site', funded_amount_cents: 3500 },
+    { id: 'other', funded_amount_cents: 3500 },
+  ];
+  const fetchPage = async (offset, size) => rows.slice(offset, offset + size);
+  const funded = report => report.funded_amount_cents > 0;
+  const identity = report => report.cleanup_site_id || report.id;
+  const result = await collectReportMatches(fetchPage, funded, { pageSize: 1, identity });
+  expect(result.reports.map(report => report.id)).toEqual(['other']);
+  // Favorites and hidden history can deliberately retain individual rounds.
+  const saved = await collectReportMatches(fetchPage, funded, { pageSize: 1 });
+  expect(saved.reports.map(report => report.id)).toEqual(['old', 'other']);
+});
