@@ -11,6 +11,7 @@ try {
   if (meta.status !== 'PREPARED_NOT_PUBLISHED' || meta.publicationAuthorized !== false || !['2.1.1', '2.1.2'].includes(meta.runtime) || meta.channel !== 'production' || meta.environment !== 'production' || meta.project !== 'df0d0855-71d9-4943-b278-d1f083ab6b06' || !meta.platforms.includes('ios') || (meta.runtime === '2.1.1' && !meta.platforms.includes('android'))) throw Error('Wrong artifact target.');
   const scope = ['apps/mobile', 'packages/report-contract', 'package-lock.json', 'patches'];
   for (const args of [['diff', '--exit-code', meta.source, 'HEAD', '--', ...scope], ['diff', '--exit-code', 'HEAD', '--', ...scope]]) cp.execFileSync('git', args, { cwd: root, stdio: 'pipe' });
+  if (crypto.createHash('sha256').update(fs.readFileSync(path.join(output, 'app-config.json'))).digest('hex') !== meta.publicConfigSHA256) throw Error('Production config snapshot changed.');
   for (const entry of meta.files) {
     const file = path.resolve(output, 'dist', entry.path);
     if (!file.startsWith(path.resolve(output, 'dist') + path.sep) || crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex') !== entry.sha256) throw Error('Artifact hash mismatch: ' + entry.path);

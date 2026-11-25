@@ -42,6 +42,8 @@ async function main() {
   if (new URL(backendUrl).hostname !== 'mvaygkflcjswtwchflrk.supabase.co') throw Error('Wrong backend.');
   const { exp } = require('@expo/config').getConfig(mobile);
   if (exp.version !== runtime || exp.runtimeVersion.policy !== 'appVersion' || exp.extra.eas.projectId !== 'df0d0855-71d9-4943-b278-d1f083ab6b06' || exp.ios.bundleIdentifier !== 'com.litterbugs.app' || exp.android.package !== 'com.litterbugs.app' || !exp.extra.analytics.enabled || exp.extra.analytics.environment !== 'production') throw Error('Wrong production app config.');
+  const publicConfig = { ...appConfig, extra: exp.extra };
+  fs.writeFileSync(path.join(output, 'app-config.json'), JSON.stringify(publicConfig, null, 2) + '\n');
   const headers = { apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY, Authorization: `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' };
   const backend = [];
   for (const table of ['reports?select=id,cleanup_issue_hold,content_revision,additional_information&limit=1', 'cleanup_issues?select=id&limit=1', 'cleanup_issue_messages?select=id&limit=1']) {
@@ -82,6 +84,7 @@ async function main() {
   if (removed.length) throw Error('Previous source removed: ' + removed.join(', '));
   const unchangedFiles = [...oldTree].filter(([file, info]) => newTree.get(file) === info).map(([file]) => file);
   const readiness = { preparedAt: new Date().toISOString(), status: 'PREPARED_NOT_PUBLISHED', publicationAuthorized: false, source, testedCode: tested, crashFixSource: nativeBase, previousPublishedCommit: previous, previousPublishedGroup: previousGroup, project: exp.extra.eas.projectId, runtime, channel: 'production', environment: 'production', platforms, message: 'Private cleanup issues, reporter corrections and safe cleanup resume', noSourceRemoved: true, unchangedSourceFileCount: unchangedFiles.length, preservedAssets, nativeCrashPatchesUnchanged: true, dependenciesUnchanged: true, productionAnalyticsEnabled: true, simulatorAnalyticsExcludedByExistingCode: true, backend, exportMetadata: metadata, files };
+  readiness.publicConfigSHA256 = sha(fs.readFileSync(path.join(output, 'app-config.json')));
   fs.writeFileSync(path.join(output, 'readiness.json'), JSON.stringify(readiness, null, 2) + '\n');
   console.log(JSON.stringify({ status: readiness.status, source, runtime, files: files.length, unchangedSourceFileCount: unchangedFiles.length, preservedAssets }));
 }
