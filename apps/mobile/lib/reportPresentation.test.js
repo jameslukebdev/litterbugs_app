@@ -11,3 +11,7 @@ it('distinguishes active lifecycle states', () => {
   const states = ['claimed', 'completion_submitted', 'changes_requested'].map(cleanup_state => reportPresentation({cleanup_state}).status);
   expect(new Set(states).size).toBe(3);
 });
+
+it('shows a neutral public status for a held site', () => {
+  expect(reportPresentation({ cleanup_state: 'claimed', cleanup_issue_hold: true }).status).toBe('Update requested');
+});

@@ -4,6 +4,9 @@ import { colors } from './theme';
 // Same labels, bugs and inks as the website's report cards and share card.
 export function reportStatePresentation(report) {
   const state = report?.cleanup_state;
+  if (report?.cleanup_issue_hold && !report.cancelled_at && !report.expired_at && state !== 'completed') {
+    return { label: 'Update requested', bug: null, ink: colors.reportInk, tone: 'held' };
+  }
   if (state === 'completed') {
     return { label: 'Cleaned up', bug: 'flower', ink: colors.done, tone: 'done' };
   }
