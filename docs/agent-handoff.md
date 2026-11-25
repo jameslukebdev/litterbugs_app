@@ -24,6 +24,33 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (real website recurrence integration, local only)
+
+- Owner rejected fictional examples. Normal localhost /cleanups and /reports now
+  read actual published reports through anonymous RLS and group explicit site IDs
+  before pagination. Existing unrelated/nearby reports are never auto-merged.
+- Needs cleaning again on real completed pages opens the normal five-step form.
+  Local recurrence verifies the real permanent member and fresh nearby GPS;
+  new photos and occurrence metadata save only under the OS temporary directory
+  litterbugs-local-website-sites. No hosted report/upload/financial write occurs.
+- Added /sites/<site-id> for combined Timeline/current condition; recurring cards
+  link there. Original readable report URLs, self canonicals, evidence and each
+  occurrence's own Timeline remain. Prepared grouped RPCs and sitemap additions;
+  20261125013903_recurring_report_sites.sql remains NOT APPLIED to hosted DB.
+- CUA verified actual directories, real Hobby Lobby cleanup action/form, site
+  overview and evidence.390px rendered width: no overflow, one Timeline; viewport
+  restored, final console clean. Save/auth/location/concurrency, SEO, feed/page,
+  existing wizard/detail tests, disposable SQL, full TS and scoped lint pass.
+- Source8e904b9 on codex/recurring-cleanups-local-20261124, mirrored into shared3000.
+  Evidence: /tmp/litterbugs-recurring-cleanups-20261124/real-cleanup-desktop.jpg and
+  real-site-phone.jpg. Prior f000 fixture flow is retired from actual report loaders.
+  No false recurrence was posted to a real site during browser QA.
+- Still pending: isolated hosted-path quarantine/funding/claim/cleanup/notification
+  integration, durable edited-draft recovery, map consolidation and native work.
+  Local-only new reports deliberately cannot enter hosted fund/claim transactions.
+  No deploy, hosted migration, OTA, store release, send or search submission.
+  Website00ed676 / OTA5c8ab976 unchanged; unrelated shared changes preserved.
+
 ### 2026-11-24 — Codex (local recurrence actions simplified; SEO architecture review)
 
 - Moved Needs cleaning again / View latest report into the existing public-page

@@ -3,7 +3,58 @@
 November 24, 2026. Owner authorized a local-server build and explicitly prohibited
 deployment. Website first; native apps and release work remain pending.
 
-## What is running locally
+## Current checkpoint — real local website (supersedes fixture notes below)
+
+Source8e904b9. The owner's latest instruction was to use the actual local website,
+not examples. Open http://localhost:3000/cleanups . Actual public report rows and
+photos come from existing anonymous hosted reads. The real completed report
+`e930e42c-a238-4786-b0e5-dd0ce1e5b319` now has Needs cleaning again below Reported by.
+Its normal five-step form requires new photos; existing cleanup evidence is retained.
+The real site overview is http://localhost:3000/sites/e930e42c-a238-4786-b0e5-dd0ce1e5b319 .
+
+New recurrences use authenticated permanent members and fresh GPS within the usual
+report distance. The server derives the author from getUser, strips photo metadata,
+and stores actual local submissions under the temporary directory
+`litterbugs-local-website-sites`. This is separate from the retired fictional store.
+Writes are serialized across server bundles, competing submissions return the
+existing report, and retries preserve a committed occurrence and its original photos.
+Photos/read models recheck the real public source, including its nonempty title.
+No hosted report, photo, money, notification, email or moderation write is made.
+Local-only new reports cannot start hosted fund/claim transactions; those complete
+lifecycle paths still require an isolated Supabase integration environment.
+
+Normal /cleanups and /reports group explicit site identities before pagination.
+No existing nearby reports are inferred to be one location. A completed site remains
+in /cleanups when new litter is reported; its card shows New litter reported and
+opens the site overview. The latest open occurrence appears once in /reports.
+The site overview contains the full combined Timeline; original occurrence pages
+keep their own Timeline, original self canonical and a site-history link. Each
+original dated story/evidence URL remains addressable. Singletons retain the
+original report card URL/canonical. Prepared site overview sitemap rows supplement
+original report URLs only for recurring sites, with real recorded modification dates.
+The grouped directory/history RPC migration remains prepared and unapplied.
+
+CUA verified real directories and actual form open/close, actual overview, cleanup
+evidence expansion and a390x844 rendered viewport (innerWidth390, document375,
+one Timeline). Viewport restored. Final browser errors empty. No fabricated litter
+report was submitted at a real location during browser QA. Isolated API/store tests
+cover fresh photos, real-member identity, auth/host/origin/location rejection,
+concurrent requests, idempotency and deployed-environment storage isolation.
+Focused UI/feed/SEO/sitemap/privacy suites and existing report/wizard regressions
+pass; full TypeScript and scoped ESLint pass. Disposable PostgreSQL ran the actual
+migration and original publish_report, including grouped directory pagination,
+current/completed identity, draft/moderation exclusion and unchanged prior finances.
+
+Evidence: /tmp/litterbugs-recurring-cleanups-20261124/real-cleanup-desktop.jpg and
+real-site-phone.jpg. Existing local dev server retained; sequential tests, no new
+simulator/server or production build. Disk had about10GB available at the last check.
+Release gates still include isolated hosted lifecycle/media integration, durable
+edited-draft recovery, map/list consolidation, native implementation and release QA.
+No deployment/hosted migration/OTA/publication was performed.
+
+## Historical first checkpoint — illustrative store (retired from actual website)
+
+## What was running in the first checkpoint
 
 - Existing public report page and map detail integrate ReportSiteActivity.
   One Timeline groups each report's reported/donation/claim/cleanup events,

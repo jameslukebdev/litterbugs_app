@@ -1,6 +1,16 @@
 # Recurring cleanup SEO — architecture recommendation
 
-November24,2026. Discussion/research only. No canonical, sitemap, redirect or
+Owner subsequently approved local implementation. Source8e904b9 implements grouped
+normal directories and /sites/<stable-id> overviews for recurring locations,
+retaining every original report URL/self canonical and occurrence Timeline.
+Singletons keep original card URLs/canonicals. The overview has factual WebPage,
+Place, ItemList and breadcrumb markup; new sitemap rows supplement old report rows.
+The real local pages use current public reports, not illustrative fixture records.
+Local responses remain noindex; hosted migration and deployment are still prohibited.
+This is implementation/renderer verification, not a Google indexing or ranking result.
+See the current local implementation review for verified paths and release limits.
+
+Original review: November24,2026. Discussion/research only. No canonical, sitemap, redirect or
 search submission change authorized or implemented in this review.
 
 Preserve the existing /reports and /cleanups directories as separately useful
