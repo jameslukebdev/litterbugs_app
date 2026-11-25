@@ -24,6 +24,31 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (email preferences OTA published and native-verified on both)
+
+- Grant explicitly authorized publishing and download/run checks. LIVE production
+  group5c8ab976-b063-4497-b5be-d15045622988 at7:31p.m. Eastern, runtime2.1.1.
+  iOS01a2101d-affe-71ae-91a6-3520ab426438;
+  Android01a2101d-affe-7799-af82-c27f73cba200. Frozen app source4cb2161;
+  EAS publication commit3db81d5 (identical app scope, later tooling/docs only).
+- Both native updaters downloaded the exact published bundles; each launched twice,
+  zero failures. Real review-account Settings/preference save/reload/cross-platform
+  sync passed; Android cold restart persisted sign-in and preference. Original on
+  preference restored and confirmed in production DB. Temporary password copy removed.
+- $35 tutorial visually retained on both; funders/privacy/hearts source unchanged,
+ 426 inherited files and67 assets/platform unchanged. Only12 email-related files
+  differ from prior live8855578. All74 hosted unique asset/bundle checksums pass.
+- Final channel/group readback and runtime checks pass. Scope is existing iPhone
+  simulator and Android QA emulator with released27 native code/local QA signature;
+  no physical phones connected. Known Android QA-certificate map tiles limitation.
+- No new website/schema/store build, payments or sends. Silent updates retained;
+  both staff devices analytics excluded and apps left open. Previous email OTA
+  publication hold is superseded. Website/backend remains00ed676; provider exclusions
+  unchanged. Shared unrelated edits preserved, no shared reset/staging.
+- Review: docs/reviews/2026-11-24-email-preferences-ota-publication.md; full evidence:
+  artifacts/mobile-email-preferences-20261124/. Recovery republishes prior22df191b
+  group to preserve previous OTA improvements; never rollback to embedded.
+
 ### 2026-11-24 — Codex (both email-settings OTAs ready; prior updates preserved)
 
 - Prepared, NOT PUBLISHED, full production iOS/Android Hermes OTA exports for2.1.1

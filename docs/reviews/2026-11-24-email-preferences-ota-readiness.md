@@ -1,5 +1,9 @@
 # Email preferences OTA readiness — November 24, 2026
 
+> Published and native-verified later November 24 under explicit owner authorization.
+> See [publication record](2026-11-24-email-preferences-ota-publication.md).
+> The preparation status and hold below are historical.
+
 Both production iOS and Android OTA payloads are prepared and verified for runtime
 2.1.1. **Neither payload has been published.** Website/backend source `00ed676`
 is already live; this preparation changed no hosted database, production channel,
