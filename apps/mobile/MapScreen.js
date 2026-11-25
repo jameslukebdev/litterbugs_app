@@ -1,6 +1,7 @@
 import { userMessage } from './lib/userMessage';
 import { finishAppOpen, pendingAppOpenSource, setMapCoveredForReplay, startTiming, trackLaunchToMap, trackParticipation, trackParticipationFailure } from './lib/analytics';
-import { requireReportLocation } from './lib/reportLocationCheck';
+import { requireReportLocation, reportLocationFailureReason } from './lib/reportLocationCheck';
+import ReportLocationRecovery from './components/ReportLocationRecovery';
 import { publishReportDraft, clearReportSubmission } from './lib/reportSubmissionStore';
 import { publishSiteReport, clearSiteReportSubmission } from './lib/siteReportSubmission';
 import { saveSiteReportDraft, loadSiteReportDraft, clearSiteReportDraft } from './lib/siteReportDraft';
@@ -32,7 +33,7 @@ import { saveReportDraft, loadReportDraft, clearReportDraft } from './lib/savedR
 import ReportFilters from './components/ReportFilters';
 // MapScreen.js
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Platform, Alert, Animated, Easing, useWindowDimensions } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Platform, Alert, Animated, Easing, Keyboard, useWindowDimensions } from 'react-native';
 import { polygonParts } from './lib/searchGeography';
 import { Marker, Polygon } from 'react-native-maps';
 import ClusteredMapView from 'react-native-map-clustering';
@@ -188,6 +189,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   const [isCentering, setIsCentering] = useState(false);
   const [isLocatingReportLocation, setIsLocatingReportLocation] = useState(false);
   const [isCheckingReportLocation, setIsCheckingReportLocation] = useState(false);
+  const [locationRecovery, setLocationRecovery] = useState(null);
   const reportLocationCheckRef = useRef(null);
   const mapViewRef = useRef(null);
   const [mapReady, setMapReady] = useState(false);
@@ -399,6 +401,7 @@ export default function MapScreen({ route, navigation, onLaunchReady }) {
   useEffect(() => navigation.addListener('blur', () => {
     reportLocationCheckRef.current = null;
     setIsCheckingReportLocation(false);
+    setLocationRecovery(null);
     setReportPlacementActive(false);
     setPlacementCoordinate(null);
   }), [navigation]);
@@ -663,10 +666,9 @@ const confirmReportLocation = async () => {
     }
   } catch (error) {
     if (reportLocationCheckRef.current === request && navigation.isFocused()) {
-      const message = String(error?.message ?? '');
-      trackParticipationFailure('report', 'location_confirmed', /Allow location/i.test(message) ? 'location_denied'
-        : /50 miles/i.test(message) ? 'location_out_of_range' : /fresh location/i.test(message) ? 'location_stale' : 'location_unavailable');
-      Alert.alert('Choose a nearby report location', userMessage(error, 'Your current location could not be checked. Please try again.'));
+      const reason = reportLocationFailureReason(error) || 'location_unavailable';
+      trackParticipationFailure('report', 'location_confirmed', reason);
+      setLocationRecovery({ reason, context: 'placement' });
     }
   } finally {
     if (reportLocationCheckRef.current === request) {
@@ -917,10 +919,12 @@ const openPayoutSetupForWorkflow = (action) => {
       }
     } catch (e) {
       console.error('Unexpected save error:', e);
+      const locationReason = reportLocationFailureReason(e);
       if (!isEditing) {
-        trackParticipationFailure('report', 'review', e?.photoStep === 'prepare' ? 'photo_prepare_failed' : e?.photoStep === 'upload' ? 'photo_upload_failed' : 'publication_unconfirmed');
+        trackParticipationFailure('report', 'review', locationReason || (e?.photoStep === 'prepare' ? 'photo_prepare_failed' : e?.photoStep === 'upload' ? 'photo_upload_failed' : 'publication_unconfirmed'));
         submissionTiming.current?.finish('failed');
       }
+      if (locationReason) { Keyboard.dismiss(); setLocationRecovery({ reason: locationReason, context: 'submission' }); return; }
       Alert.alert(
         'Couldn’t finish saving report',
         isEditing ? userMessage(e, 'Your changes haven’t been saved. Please try again.') : `${userMessage(e, 'The upload was interrupted.')} Your answers remain here. Try submitting again to continue.`
@@ -1776,7 +1780,15 @@ const revealBottomReportField = () => {
       />
 
 {/* Multi-step Report Form */}
+<ReportLocationRecovery
+  reason={locationRecovery?.context === 'placement' ? locationRecovery.reason : null}
+  onDismiss={() => setLocationRecovery(null)}
+  onRetry={() => { setLocationRecovery(null); void confirmReportLocation(); }}
+/>
 <ReportWizardModal
+  locationRecovery={locationRecovery?.context === 'submission' ? locationRecovery.reason : null}
+  dismissLocationRecovery={() => setLocationRecovery(null)}
+  retryLocationRecovery={() => { setLocationRecovery(null); void submitReport(); }}
   beginReportAtCoordinate={beginReportAtCoordinate}
   canAdvanceFromStep={canAdvanceFromStep}
   cancelDraft={cancelDraft}

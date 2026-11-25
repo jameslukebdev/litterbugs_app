@@ -57,3 +57,10 @@ work/
 .claude/
 .codex/
 **/dev-review-preview/
+
+# This candidate builds the mobile app only.
+apps/web/
+services/
+supabase/
+node_modules
+apps/mobile/node_modules

@@ -7,6 +7,7 @@ import SlideUp from './SlideUp';
 import { LITTER_OPTIONS, NOTES_OPTIONS, REPORT_STEPS } from '../lib/reportOptions';
 import { colors } from '../lib/theme';
 import styles from '../styles/MapScreen.styles';
+import { ReportLocationRecoveryContent, locationRecoveryStyles } from './ReportLocationRecovery';
 
 // The report form sheet: saving overlay, header, the animated step page and the
 // Back / Next footer. Layout moved out of MapScreen unchanged; MapScreen still
@@ -55,6 +56,9 @@ export default function ReportWizardModal(props) {
     photoReviewAccepted,
     setPhotoReviewAccepted,
     wantsStartingFunding,
+    locationRecovery,
+    dismissLocationRecovery,
+    retryLocationRecovery,
   } = props;
 
   return (
@@ -62,11 +66,17 @@ export default function ReportWizardModal(props) {
       visible={formOpen}
       animationType="fade"
       transparent
-      onRequestClose={cancelDraft}
+      onRequestClose={locationRecovery ? dismissLocationRecovery : cancelDraft}
     >
       <View style={styles.modalBackdrop}>
         <SlideUp open={Boolean(formOpen)} style={styles.wizardKeyboardView} distance={80}>
           <View style={styles.wizardSheet}>
+
+            {locationRecovery ? <View style={locationRecoveryStyles.overlay}>
+              <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}>
+                <ReportLocationRecoveryContent reason={locationRecovery} inForm onRetry={retryLocationRecovery} onDismiss={dismissLocationRecovery} />
+              </ScrollView>
+            </View> : null}
 
             {isSaving && (
               <View

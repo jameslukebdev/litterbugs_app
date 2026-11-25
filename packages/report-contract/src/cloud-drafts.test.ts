@@ -102,6 +102,21 @@ describe('account draft continuity',()=>{
     await a.sync.save('alice','report');await a.sync.discard('alice','report');await vi.advanceTimersByTimeAsync(2000);
     expect(a.local.size).toBe(0);expect(f.remote.get('alice:report')?.payload).toBeNull();
   });
+  it('deletes an account-only listed revision without downloading it first',async()=>{
+    const f=fixture(),a=f.device(),b=f.device();a.edit('Listed draft');
+    const record=await a.sync.save('alice','report');
+    await b.sync.discard('alice','report',{expectedRevision:record!.revision});
+    expect(f.remote.get('alice:report')?.payload).toBeNull();
+    expect(b.local.size).toBe(0);
+    expect(b.sync.status('alice','report')).toBe('unsaved');
+  });
+  it('preserves a newer remote draft when the listed revision is stale',async()=>{
+    const f=fixture(),a=f.device(),b=f.device();a.edit('Listed draft');
+    const record=await a.sync.save('alice','report');
+    a.edit('Newer draft');await a.sync.save('alice','report');
+    await expect(b.sync.discard('alice','report',{expectedRevision:record!.revision})).rejects.toBeInstanceOf(DraftConflictError);
+    expect(f.remote.get('alice:report')?.payload).toMatchObject({text:'Newer draft'});
+  });
   it('retains correction evidence while resetting the submission identity',async()=>{
     const f=fixture(),a=f.device(),key='cleanup:attempt';a.edit('Keep evidence','alice',key);
     const original=await a.sync.save('alice',key);
