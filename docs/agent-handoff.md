@@ -24,6 +24,26 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-25 — Codex (returned-litter OTA published; native verification continuing)
+
+- Owner explicitly approved OTA publication. Published production group
+  63bc12bc-4571-4650-8ed2-954de6bee32f at11:01a.m. Eastern, runtime2.1.1.
+  iOS01a21370-92e6-7d80-9e82-20a381a5f128;
+  Android01a21370-92e6-746c-830f-17d9dd394ee2. Frozen code2797676;
+  EAS records8c9a0eb (identical app scope, documentation only).
+- Exact frozen exports published without rebuilding; both source maps uploaded,
+  zero new assets. Production channel mapping unchanged; all74 unique hosted
+  bundles/assets downloaded and hashed against the export. Prior OTA features
+  and all67 prior assets/platform retained. Website/backend untouched.
+- iPhone original native updater downloaded exact new bundle and launched twice,
+  zero failed launches. Real completed report loads. Android verification pending;
+  continuing sequential simulator/emulator acceptance with memory management.
+- No account has been blocked. Profile menu was inspected read-only and closed;
+  owner explicitly said not to block accounts. Preserve all account/block settings.
+- Evidence: artifacts/mobile-recurring-cleanups-20261125/. Prior publication hold
+  superseded for this exact candidate. Recover by republishing5c8ab976, never
+  embedded. Other assistants' shared app/website/store screenshot work preserved.
+
 ### 2026-11-25 — Codex (returned-litter mobile OTAs prepared; publication held)
 
 - Prepared both full production2.1.1 Hermes exports from2797676 on isolated branch
@@ -74,6 +94,14 @@ They cannot talk to each other directly. This file is how they share context.
   sign-in) to Treatment A, replacing the old 3. To edit, the waiting submission
   2b604be7 was cancelled and the test resubmitted (Waiting for Review again).
   Files: `ipad-2064x2752/`, `source/ipad/`; `node render.cjs ipad`.
+- Update 2: Grant signed the iPad simulator into his own account so Report Litter
+  and Donate could be captured (draft report discarded, no payment). iPad set is
+  now the same 8 slides/order as iPhone; submission 31cac5cb cancelled and the
+  test resubmitted (Waiting for Review). Google: the approved phone screenshots
+  were PUBLISHED (Last published Nov 25); new 7" and 10" tablet sets (same 8,
+  1440x2560, `gtablet-1440x2560/`, `node render.cjs gtablet`) sent for review.
+  Still pending: publish the Google tablet change once approved (managed
+  publishing ON) and apply Apple Treatment A once approved.
 
 ### 2026-11-25 — Codex (recurring-cleanup website published)
 

@@ -1,5 +1,7 @@
 # Returned-litter mobile OTA readiness — November 25, 2026
 
+**Publication update November25:** owner approved and both frozen OTAs are now live in group `63bc12bc-4571-4650-8ed2-954de6bee32f`; native verification is continuing. Preparation/hold notes below are historical.
+
 **Prepared, NOT PUBLISHED.** Grant authorized implementation and simulator/emulator
 checks, with publication held until a later approval. No EAS update command,
 preview publication, store build/upload, website deployment or hosted schema change
