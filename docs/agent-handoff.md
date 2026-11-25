@@ -24,6 +24,29 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-25 — Codex (report header/responsive regression fixed; broader local QA)
+
+- Website9b5084e in existing isolated cleanup-issues worktree. Owner found Share
+  overlaying heading and medium-width directions escaping the details column.
+  Fixed with distinct in-flow title/action cells and account-owned grid/flex/block
+  layout; removed inherited display:contents/clip-path leakage. At<=900px the
+  report stacks. Consolidated duplicate CSS. Pending reporter shortcut says Reply;
+  redundant paused footer suppressed. No map styling/native source changes.
+- Real rendered checks at1280/900/800/390/320 on normal and long titles: no overlap,
+  no horizontal overflow, Share label visible, directions correctly placed. Share,
+  photo viewer, Escape, menu,320px request, reply/edit/follow-up/resume and staff
+  hold/ready/close paths rechecked with separate local QA reports. Zero relevant
+  browser errors/warnings;139 regressions+40 ReportDetail tests, TS/lint/diff pass.
+- Real local QA: private photo request/reply, funded public photo/info replacement,
+  reload/re-login, second reply/resume retained claim original1/current revision2,
+  fund3500,+97s. Safety staff-review resume+112s; missing closure3850 refund_pending,
+  no payout/completion. Outsider private denial/public-only updates confirmed.
+  Owner's347ca014 issue remains awaiting_reporter; reporter session/viewport restored.
+- NOTHING deployed; no new schema/migration in this pass. Local adapter/provider/
+  real delivery/refund limitations remain. Public/account duplicate page purpose
+  explained; consolidation into public presentation is recommended, NOT built or
+  silently authorized. Evidence and details in existing implementation plan.
+
 ### 2026-11-25 — Codex (cleanup utility/layout and full local team review)
 
 - Local website250c0fd extends620b0d7 in /tmp/litterbugs-cleanup-issues-web-20261125.
