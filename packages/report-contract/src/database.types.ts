@@ -1406,6 +1406,11 @@ export type Database = {
         Args: { contribution_id: string; show_name: boolean }
         Returns: boolean
       }
+      get_weekly_email_preferences: { Args: Record<PropertyKey, never>; Returns: Json };
+      set_weekly_email_preference: { Args: { target_subscribed: boolean }; Returns: Json };
+      admin_weekly_email_recipients: { Args: Record<PropertyKey, never>; Returns: Json };
+      unsubscribe_weekly_email: { Args: { target_email: string; target_request_key: string }; Returns: undefined };
+
       owner_analytics_business: { Args: never; Returns: Json };
       owner_analytics_clarity_cache: { Args: { target_lease?: string; observed_source?: Json }; Returns: Json };
       write_customer_draft: { Args: DraftWrite; Returns: CloudDraft };

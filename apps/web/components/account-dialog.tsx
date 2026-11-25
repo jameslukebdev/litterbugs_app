@@ -762,6 +762,7 @@ export function AccountDialog({
       {!profileEditing && !dataLoading && section === 'settings' && <section className="member-settings account-section-ready">
         <div className="account-v2-group" role="group" aria-label="Your account">
         <div className="account-v2-row account-v2-email"><span>Email</span><strong>{email || 'Not shared'}</strong></div>
+        <Link className="account-v2-row" href="/account/email-preferences"><span>Email preferences</span><FiChevronRight aria-hidden="true" /></Link>
         <button type="button" className="account-v2-row" onClick={startProfileEdit}><span>Edit profile</span><FiChevronRight aria-hidden="true" /></button>
         <button type="button" className="account-v2-row account-v2-switch-row" role="switch"
           aria-checked={(profile as (Profile & { show_on_leaderboards?: boolean }) | null)?.show_on_leaderboards !== false}

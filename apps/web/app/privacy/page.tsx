@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { publicPageMetadata } from '@/lib/public-page-metadata';
+import Link from 'next/link';
 
 import { LegalPage } from '@/components/legal-page';
 import { AnalyticsPreferences } from '@/components/website-analytics';
@@ -17,7 +18,7 @@ export default function PrivacyPage() {
       eyebrow="LITTERBUGS PRIVACY"
       title="Privacy policy"
       summary="This policy explains how Litterbugs collects, uses, shares, and protects information when providing our services."
-      effectiveDate="November 13, 2026"
+      effectiveDate="November 24, 2026"
       sections={[
         {
           title: 'Scope and responsible company',
@@ -50,6 +51,14 @@ export default function PrivacyPage() {
             <li>Reconcile payment records and comply with legal, tax, sanctions, payment-network, and App Store requirements.</li>
             <li>Analyze and improve reliability, accessibility, usability, and the performance of Litterbugs.</li>
           </ul>,
+        },
+        {
+          title: 'Account emails and community updates',
+          content: <>
+            <p>We use your account email address to send Litterbugs community news, cleanup opportunities, and ways to support cleanups. Existing and new accounts are subscribed to these emails by default.</p>
+            <p>You can unsubscribe at any time using the link in an email or by turning off Litterbugs emails in your account’s <Link href="/account/email-preferences">Email preferences</Link>. Unsubscribing does not close your account or stop essential account, security, payment, or support emails.</p>
+            <p>We use Google Gmail to send community emails. We retain your email preference and a hash of your email address to honor unsubscribe requests, including if an account is recreated. This record is kept separately from your public profile.</p>
+          </>,
         },
         {
           title: 'Photos, locations, and Gemini review',

@@ -10,7 +10,7 @@ import styles from './admin.module.css';
 
 type TotpEnrollment = { id: string; qrCode: string; secret: string };
 
-export function AdminAccess({ state, destination = 'inbox' }: { state: Exclude<AdminAccessState, 'authorized'>; destination?: 'inbox' | 'analytics' }) {
+export function AdminAccess({ state, destination = 'inbox' }: { state: Exclude<AdminAccessState, 'authorized'>; destination?: 'inbox' | 'analytics' | 'email' }) {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -68,7 +68,7 @@ export function AdminAccess({ state, destination = 'inbox' }: { state: Exclude<A
     setMessage('');
     const { error } = await createClient().auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=${destination === 'analytics' ? '/admin/analytics' : '/admin'}` },
+      options: { redirectTo: `${window.location.origin}/auth/callback?next=${destination === 'analytics' ? '/admin/analytics' : destination === 'email' ? '/admin/email' : '/admin'}` },
     });
     if (error) {
       setBusy(false);
@@ -106,7 +106,7 @@ export function AdminAccess({ state, destination = 'inbox' }: { state: Exclude<A
     return (
       <section className={styles.accessCard}>
         <h2>Verify with your authenticator</h2>
-        <p>Enter the code from your authenticator app to open {destination === 'analytics' ? 'website analytics' : 'the review inbox'}.</p>
+        {destination !== 'email' ? <p>Enter the code from your authenticator app to open {destination === 'analytics' ? 'website analytics' : 'the review inbox'}.</p> : null}
         {enrollment ? (
           <div className={styles.enrollment}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -117,7 +117,7 @@ export function AdminAccess({ state, destination = 'inbox' }: { state: Exclude<A
         <form className={styles.accessForm} onSubmit={verifyMfa}>
           <label>6-digit code<input inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ''))} /></label>
           {message && <p className={styles.error} role="alert">{message}</p>}
-          <button className={styles.primaryButton} aria-busy={busy || undefined} disabled={busy || !factorId}>{destination === 'analytics' ? 'Verify and view analytics' : busy ? 'Verifying…' : 'Verify and open inbox'}</button>
+          <button className={styles.primaryButton} aria-busy={busy || undefined} disabled={busy || !factorId}>{destination === 'analytics' ? 'Verify and view analytics' : destination === 'email' ? 'Verify and view email list' : busy ? 'Verifying…' : 'Verify and open inbox'}</button>
         </form>
         <button className={styles.linkButton} onClick={signOut}>Use another account</button>
       </section>
@@ -127,7 +127,7 @@ export function AdminAccess({ state, destination = 'inbox' }: { state: Exclude<A
   return (
     <section className={styles.accessCard}>
       <h2>Admin sign in</h2>
-      <p>Sign in with your Litterbugs administrator account. You’ll then confirm a code from your authenticator app.</p>
+      {destination !== 'email' ? <p>Sign in with your Litterbugs administrator account. You’ll then confirm a code from your authenticator app.</p> : null}
       <button className={styles.googleButton} type="button" onClick={signInWithGoogle} disabled={busy} aria-busy={busy || undefined}>
         {busy && destination !== 'analytics' ? 'Opening Google…' : 'Continue with Google'}
       </button>
