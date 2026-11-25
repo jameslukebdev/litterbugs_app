@@ -15,6 +15,10 @@ vi.mock('@/lib/server-contributor-credits', () => ({
   withServerContributorCredits: async (reports: PublicReportShareModel[]) => reports.map(report => ({ ...report, contributorCredit: report.contributorCredit ?? null })),
 }));
 vi.mock('@/components/public-account-action', () => ({ PublicAccountAction: () => <button>Sign in</button> }));
+vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({ auth: {
+  getUser: async () => ({ data: { user: null } }),
+  onAuthStateChange: () => ({ data: { subscription: { unsubscribe: vi.fn() } } }),
+} }) }));
 afterEach(cleanup);
 const report = {
   id: 'report-id', title: 'Creek cleanup', state: 'available', rewardCents: 600,

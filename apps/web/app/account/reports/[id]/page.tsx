@@ -9,6 +9,9 @@ export const metadata = { title: 'Your report | Litterbugs', robots: { index: fa
 export default async function Page({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ from?: string; task?: string; filter?: string; page?: string; notice?: string }> }) {
   const [{ id }, { from, task, filter, page, notice }] = await Promise.all([params, searchParams]);
   if (!/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(id)) notFound();
+  // Old activity, receipt and notification links now open the one public report.
+  // Cleanup/review URLs remain focused task forms, never a second report summary.
+  if (task !== 'cleanup' && task !== 'review') redirect(`/reports/${id}`);
   const inbox = notificationView({ filter, page });
   const inboxQuery = notificationViewQuery(inbox);
   if (notice) inboxQuery.set('notice', notice);
@@ -36,5 +39,5 @@ export default async function Page({ params, searchParams }: { params: Promise<{
     isActiveCleaner=Boolean(attempts?.some(attempt=>['claimed','changes_requested','completion_submitted'].includes(attempt.status)));
   }
   const [completeReport] = await withServerContributorCredits([report]);
-  return <AccountReport isActiveCleaner={isActiveCleaner} report={completeReport} userId={userId} back={back} task={task === 'cleanup' || task === 'review' ? task : undefined} />;
+  return <AccountReport isActiveCleaner={isActiveCleaner} report={completeReport} userId={userId} back={back} task={task} />;
 }

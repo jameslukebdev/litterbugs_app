@@ -12,7 +12,7 @@ export default async function Page({params,searchParams}:{params:Promise<{id:str
  const {data:report,error}=await client.from('reports').select('*').eq('id',id).eq('user_id',userId).maybeSingle();
  if(error)throw new Error('Your report could not be loaded. Please try again.');
  if(!report?.is_published||(report as typeof report & {moderated_at?:string|null}).moderated_at||report.cancelled_at||!['available','claimed'].includes(report.cleanup_state))notFound();
- let back=`/account/reports/${id}`;
+ let back=`/reports/${id}`;
  if(issue&&/^[0-9a-f-]{36}$/i.test(issue)){
   const {data:thread}=await issueClient(client).from('cleanup_issues').select('id').eq('id',issue).eq('report_id',id).maybeSingle();
   if(thread)back=`/account/cleanup-issues/${thread.id}`;

@@ -26,6 +26,7 @@ import { loadReportSite } from '@/lib/report-site';
 import { ReportLocation } from './report-location';
 import { ReportPhotos } from './report-photos';
 import { ReportShareButton } from './report-share-button';
+import { ReportAccountActions } from '@/components/report-account-actions';
 
 import styles from './report-share.module.css';
 import { Suspense } from 'react';
@@ -175,10 +176,10 @@ export default async function SharedReportPage({ params }: Props) {
                 <Link className="secondary-button button-link" href={sitePath(site.id)}>View site history</Link>
                 {site.canReportAgain && <ReportSiteActivity reportId={report.id} initialSite={site} mode="actions" />}
               </> : <ReportSiteActivity reportId={report.id} initialSite={site} mode="actions" />}
-            {expired ? <Link className="primary-button button-link" href="/reports">Find a current cleanup</Link> : !completed && !inProgress && !report.localDevelopment ? <div className={styles.reportActions}>
+            <ReportAccountActions reportId={report.id}>{expired ? <Link className="primary-button button-link" href="/reports">Find a current cleanup</Link> : !completed && !inProgress && !report.localDevelopment ? <div className={styles.reportActions}>
               {report.fundingEligible && <Link className="report-action-link button-link report-action-fund" prefetch={false} href={`/sign-in?${SHARED_REPORT_AUTH_PARAM}=1&next=${encodeURIComponent(reportMapHref(report.id, 'fund'))}`}><BrandBug kind="bee" size={21} className="bug-hop" />Fund</Link>}
               <Link className="report-action-link button-link report-action-clean" prefetch={false} href={`/sign-in?${SHARED_REPORT_AUTH_PARAM}=1&next=${encodeURIComponent(reportMapHref(report.id, 'clean'))}`}><BrandBug kind="butterfly" size={21} className="bug-hop" />Clean</Link>
-            </div> : !completed && !report.localDevelopment ? <Link className="primary-button button-link" href={mapHref}>View on map</Link> : null}
+            </div> : !completed && !report.localDevelopment ? <Link className="primary-button button-link" href={mapHref}>View on map</Link> : null}</ReportAccountActions>
 
             </div>
           </header>

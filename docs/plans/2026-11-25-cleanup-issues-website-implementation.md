@@ -200,3 +200,58 @@ or real payment/refund verification; live delivery/Deno/provider limitations fro
 prior sections remain. Public report presentation vs separate account route was
 explained to owner; consolidating those routes is a recommendation, not completed
 work or new scope authorization. Do not claim that consolidation has been built.
+
+
+## November 25 — consolidate account actions into the existing report
+
+Owner approved removing the duplicate account report summary, keeping the private
+conversation separate, with no deployment or native changes. Design target is the
+existing public report layout previously supplied by the owner, not another new
+report presentation. Its photos, status/share row, typography, single Timeline,
+location, canonical metadata and structured data remain the presentation.
+
+Implemented a client-only account-actions island on the public report: reporter
+Edit report, assigned-cleaner Continue cleanup, owner Review cleanup, submitted
+cleaner status, and participant-only private issue shortcut. Reads use signed-in
+RLS; private excerpts/actions are absent from anonymous server HTML. Available
+report owners retain the public Fund/Clean controls alongside Edit. Guests and
+other members keep public actions. Closed/completed records have no active task
+controls. Role changes clear old participant actions; failed reads offer retry.
+
+Old /account/reports/[id] summary links redirect to /reports/[id], which resolves
+to the unchanged readable canonical URL. The old ReportDetail summary rendering
+was removed. Explicit task=cleanup/review routes remain focused submission/review
+forms. Their Back link, the editor default return and conversation Back link all
+point to the existing report. Explicit Resume still opens the cleaner task form.
+Private conversations, receipts and staff review retain their authorization;
+withdrawn/moderated public records are not republished by this consolidation.
+
+Verification:
+- 129 targeted tests pass in 9 files: role actions/SSR/private content/sign-out/
+  retries/closed states, alias redirects and task authorization, public page,
+  canonical routing/structured data, site history, and existing ReportDetail.
+  TypeScript, scoped ESLint and git diff --check pass.
+- Real local browser: old account link redirects through the id route to the
+  readable report URL; reporter Edit form returns to it; private conversation
+  remains separate. Cleaner Continue opens the existing branded utility/form.
+- New isolated local report11925729-8fe6-4ce8-b978-050808087802: cleaner request,
+  reporter Reply shortcut -> separate conversation -> reply, cleaner Response
+  ready shortcut -> Resume -> cleanup form. Same attempt retained, issue resolved,
+  pause cleared, synthetic fund3500 unchanged. No completion/payout generated.
+- Outsider: no private message/action/shortcut on the report; direct issue URL
+  renders not-found. Anonymous HTTP HTML contains neither local private test text
+  nor Edit action; canonical unchanged. Only observed browser warning was existing
+  header-logo LCP guidance, with no app errors.
+- Layout at1280/900/390/320: no horizontal overflow, controls within viewport,
+  one Timeline; desktop screenshot visually inspected. Default viewport restored.
+  Original pending issue347ca014 remains awaiting_reporter, reporter session restored.
+  Final screenshot: /tmp/litterbugs-cleanup-issues-local-20261125/consolidated-report-final.jpg.
+
+Resource management: stopped only owned dev server while serial tests ran, cleared
+its disposable .next output and reduced restart heap cap from1536MB to1024MB.
+Turbopack disk cache remains disabled. Existing Chrome test tab stalled at CDP
+focus setup; used and closed one temporary QA tab. No other chats, user tabs,
+simulators or native builds were stopped. Host free-memory snapshots35–40%; disk
+remains constrained and fluctuates with other work. No production database,
+functions, website deployment, app build or OTA publication. Prior provider,
+external delivery, actual refunds and Deno-runtime limitations still apply.

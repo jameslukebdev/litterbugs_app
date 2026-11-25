@@ -1,0 +1,5 @@
+.actions { display: grid; gap: 10px; min-width: 0; }
+.actions > a { width: 100%; min-width: 0; }
+.status { margin: 0; color: #666278; font-weight: 600; }
+.error { margin: 0; font-size: .875rem; }
+.error button { color: #4c3ff0; font: inherit; text-decoration: underline; cursor: pointer; background: none; border: 0; padding: 0; }

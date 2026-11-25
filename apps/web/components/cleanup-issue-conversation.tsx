@@ -31,7 +31,8 @@ export function CleanupIssueConversation({initialIssue,initialMessages,userId,ti
  const ready=cleaner&&issue.status==='awaiting_cleaner'&&!issue.requires_team_review&&!resolved;
  const canReply=(cleaner||reporter)&&!resolved;
  const teamView=isAdmin&&!cleaner&&!reporter;
- const back=teamView?'/admin':`/account/reports/${issue.report_id}${cleaner?'?from=current&task=cleanup':''}`;
+ const back=teamView?'/admin':`/reports/${issue.report_id}`;
+ const resumeDestination=cleaner&&issue.keeps_claim?`/account/reports/${issue.report_id}?task=cleanup`:back;
  useEffect(()=>{
   let active=true;
   const client=issueClient(createClient());
@@ -74,7 +75,7 @@ export function CleanupIssueConversation({initialIssue,initialMessages,userId,ti
    const result=await client.rpc('resolve_cleanup_issue',{target_issue_id:issue.id,expected_version:issue.version});
    if(result.error)throw result.error;
    setIssue(result.data);notifyDataChanged();
-   router.push(back);router.refresh();
+   router.push(resumeDestination);router.refresh();
   }catch(failure){setError(issueError(failure));}finally{setBusy('');}
  }
  async function saveReview(){
