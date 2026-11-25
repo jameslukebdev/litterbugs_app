@@ -84,3 +84,5 @@
 .siteHistory { min-width:0; margin-top:24px; }
 .siteHistory:empty { display:none; }
 .siteHistory > :first-child { margin-top:0; }
+
+.accountHistory{margin-top:32px;max-width:760px}.accountHistory:empty{display:none}

@@ -20,6 +20,8 @@ export function CleanupIssueConversation({initialIssue,initialMessages,userId,ti
  const [issue,setIssue]=useState(initialIssue),[messages,setMessages]=useState(initialMessages);
  const [reportUpdate,setReportUpdate]=useState<ReportContentRevision|null>(null);
  const [body,setBody]=useState(''),[files,setFiles]=useState<File[]>([]),[busy,setBusy]=useState(''),[error,setError]=useState(''),[uploadsLocked,setUploadsLocked]=useState(false);
+ const [decision,setDecision]=useState<'hold'|'ready'|'closed'>('hold'),[reviewReason,setReviewReason]=useState(''),[confirmClose,setConfirmClose]=useState(false);
+ const reviewRequest=useRef(crypto.randomUUID());
  const [failed,setFailed]=useState(false),[retry,setRetry]=useState(0),[followUp,setFollowUp]=useState(false);
  const requestId=useRef(crypto.randomUUID()),paths=useRef<string[]>([]),previewUrls=usePhotoPreviews(files);
  const cleaner=userId===issue.cleaner_id, reporter=userId===issue.reporter_id;
@@ -28,7 +30,8 @@ export function CleanupIssueConversation({initialIssue,initialMessages,userId,ti
  const resolved=issue.status==='resolved';
  const ready=cleaner&&issue.status==='awaiting_cleaner'&&!issue.requires_team_review&&!resolved;
  const canReply=(cleaner||reporter)&&!resolved;
- const back=`/account/reports/${issue.report_id}${cleaner?'?from=current&task=cleanup':''}`;
+ const teamView=isAdmin&&!cleaner&&!reporter;
+ const back=teamView?'/admin':`/account/reports/${issue.report_id}${cleaner?'?from=current&task=cleanup':''}`;
  useEffect(()=>{
   let active=true;
   const client=issueClient(createClient());
@@ -64,15 +67,24 @@ export function CleanupIssueConversation({initialIssue,initialMessages,userId,ti
    setIssue(result.data);setBody('');setFiles([]);paths.current=[];setUploadsLocked(false);requestId.current=crypto.randomUUID();setFollowUp(false);setRetry(v=>v+1);notifyDataChanged();
   } catch(failure){setError(issueError(failure));}finally{setBusy('');}
  }
- async function resolve(admin=false) {
-  if(busy)return;setBusy(admin?'Saving…':'Resuming…');setError('');
+ async function resolve() {
+  if(busy)return;setBusy('Resuming…');setError('');
   try{
    const client=issueClient(createClient());
-   const result=admin?await client.rpc('review_cleanup_issue',{target_issue_id:issue.id,expected_version:issue.version})
-    :await client.rpc('resolve_cleanup_issue',{target_issue_id:issue.id,expected_version:issue.version});
+   const result=await client.rpc('resolve_cleanup_issue',{target_issue_id:issue.id,expected_version:issue.version});
    if(result.error)throw result.error;
    setIssue(result.data);notifyDataChanged();
-   if(!admin){router.push(back);router.refresh();}
+   router.push(back);router.refresh();
+  }catch(failure){setError(issueError(failure));}finally{setBusy('');}
+ }
+ async function saveReview(){
+  if(busy||reviewReason.trim().length<3)return;
+  if(decision==='closed'&&!confirmClose){setConfirmClose(true);return;}
+  setBusy('Saving review…');setError('');
+  try{
+   const {data,error:failure}=await issueClient(createClient()).rpc('decide_cleanup_issue',{target_issue_id:issue.id,expected_version:issue.version,decision_id:reviewRequest.current,decision,reason:reviewReason.trim()});
+   if(failure)throw failure;
+   setIssue(data);setReviewReason('');setConfirmClose(false);reviewRequest.current=crypto.randomUUID();setRetry(v=>v+1);notifyDataChanged();
   }catch(failure){setError(issueError(failure));}finally{setBusy('');}
  }
  async function addFiles(selected:File[]) {
@@ -81,11 +93,11 @@ export function CleanupIssueConversation({initialIssue,initialMessages,userId,ti
   catch(failure){setError(failure instanceof Error?failure.message:'The photo could not be prepared.');}finally{setBusy('');}
  }
  const message=(row:IssueMessage)=><article className={s.message} data-reporter={row.author_id===issue.reporter_id} key={row.id}>
-  <div className={s.author}><span className={s.avatar}>{((row.author_id?names[row.author_id]:'')||'M')[0]}</span><div><strong>{(row.author_id?names[row.author_id]:null)||'Former member'}</strong><time dateTime={row.created_at}>{new Date(row.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</time></div></div>
+  <div className={s.author}><span className={s.avatar}>{((row.author_id?names[row.author_id]:'')||'L')[0]}</span><div><strong>{(row.author_id?names[row.author_id]||'Litterbugs team':null)||'Former member'}</strong><time dateTime={row.created_at}>{new Date(row.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</time></div></div>
   <p>{row.body}</p>{!!row.photo_paths.length&&<div className={s.photos}>{row.photo_paths.map(path=><img key={path} src={`/api/cleanup-issues/${issue.id}/photos?${new URLSearchParams({path})}`} alt="Photo attached to private cleanup message" />)}</div>}
  </article>;
  return <main className={s.page}>
-  <Link className={s.back} href={back}><IoArrowBack />Back to report</Link>
+  <Link className={s.back} href={back}><IoArrowBack />{teamView?'Back to review':'Back to report'}</Link>
   <header className={s.header}><div className={s.headerActions}><span className={s.tag} data-resolved={resolved}>{issueStatus(issue,userId)}</span>{reporter&&!resolved&&<Link className={s.utility} href={`/account/reports/${issue.report_id}/edit?issue=${issue.id}`}>Edit public report</Link>}</div><h1>{issueReasons.find(([value])=>value===issue.reason)?.[1]||'Cleanup issue'}</h1><p>{title}</p></header>
   <div className={s.privacy}><IoLockClosedOutline /><strong>Private</strong><small>{names[issue.cleaner_id??'']||'Cleaner'}, {names[issue.reporter_id??'']||'Reporter'} &amp; Litterbugs</small></div>
   {failed&&<p className={s.error} role="alert">Updates could not be refreshed. <button className={s.utility} onClick={()=>setRetry(v=>v+1)}>Try again</button></p>}
@@ -100,7 +112,7 @@ export function CleanupIssueConversation({initialIssue,initialMessages,userId,ti
    <div className={s.actions}><button className={s.primary} disabled={!body.trim()||!!busy||failed} onClick={()=>void send()}>{busy||'Send reply'}</button>{followUp&&<button className={s.utility} disabled={!!busy} onClick={()=>setFollowUp(false)}>Cancel</button>}</div>
   </section>}
   {ready&&!followUp&&<div className={s.reviewBar}><div className={s.actions}><button className={s.primary} disabled={!!busy||failed} onClick={()=>void resolve()}>{busy||(issue.keeps_claim?'Resume cleanup':'Confirm update')}</button><button className={s.utility} disabled={!!busy} onClick={()=>setFollowUp(true)}>Still an issue</button></div></div>}
-  {isAdmin&&issue.requires_team_review&&!resolved&&<div className={s.actions}><button className={s.primary} disabled={!!busy||failed} onClick={()=>void resolve(true)}>{busy||'Approve site for cleanup'}</button></div>}
+  {isAdmin&&issue.requires_team_review&&!resolved&&<section className={s.teamReview} aria-label="Team review"><h2>Review site</h2><fieldset disabled={!!busy}><legend>Decision</legend>{([['hold','Keep site paused'],['ready','Ready to clean'],['closed','Close report']] as const).map(([value,label])=><label className={s.reviewChoice} key={value}><input type="radio" name="team-decision" checked={decision===value} onChange={()=>{setDecision(value);setConfirmClose(false);}}/>{label}</label>)}</fieldset><label className={s.field}>Review note<textarea value={reviewReason} maxLength={1000} onChange={event=>setReviewReason(event.target.value)} disabled={!!busy}/></label>{confirmClose&&<p className={s.status}>Close this report and queue refunds for its remaining contributions? This does not record a completed cleanup or pay a reward.</p>}<div className={s.actions}><button className={decision==='closed'?s.danger:s.primary} disabled={!!busy||failed||reviewReason.trim().length<3} onClick={()=>void saveReview()}>{busy||(confirmClose?'Close report and queue refunds':'Save review')}</button>{confirmClose&&<button className={s.utility} disabled={!!busy} onClick={()=>setConfirmClose(false)}>Cancel</button>}</div></section>}
   {error&&<p className={s.error} role="alert">{error}</p>}
  </main>;
 }

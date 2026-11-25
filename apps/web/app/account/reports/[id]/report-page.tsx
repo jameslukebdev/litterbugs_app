@@ -4,12 +4,13 @@ import { useRouter } from 'next/navigation';
 import { useDataRefresh } from '@/lib/use-data-refresh';
 import { useEffect } from 'react';
 import type { Report } from '@litterbugs/report-contract';
-import { CleanupProgress } from '@/components/cleanup-progress';
+import { cleanupIssuesEnabled } from '@/lib/cleanup-issues';
+import styles from '@/components/cleanup-issues.module.css';
 import { ReportDetail } from '@/components/report-detail';
 import { CleanupAction } from '@/components/cleanup-action';
 import { CleanupReviewAction } from '@/components/cleanup-review-action';
 import { isDiscoverableReport, isReportClosed } from '@/lib/report-visibility';
-export function AccountReport({ report, userId, back, task }: { report: Report; userId: string; back: string; task?: 'cleanup' | 'review' }) {
+export function AccountReport({ report, userId, back, task, isActiveCleaner=false }: { isActiveCleaner?:boolean; report: Report; userId: string; back: string; task?: 'cleanup' | 'review' }) {
   const router = useRouter();
   const revision = useDataRefresh();
   useEffect(() => { if (revision) router.refresh(); }, [revision, router]);
@@ -20,19 +21,19 @@ export function AccountReport({ report, userId, back, task }: { report: Report; 
   const base = `/account/reports/${report.id}?from=${from}${context.size ? `&${context}` : ''}`;
   const closed = isReportClosed(report);
   const reviewable = !closed && report.user_id === userId && report.cleanup_state === 'completion_submitted';
-  const cleaning = !closed && task === 'cleanup' && ['claimed', 'changes_requested'].includes(report.cleanup_state ?? '');
+  const cleaning = isActiveCleaner && !closed && task === 'cleanup' && ['claimed', 'changes_requested'].includes(report.cleanup_state ?? '');
   const focused = (task === 'review' && reviewable) || cleaning;
-  return <main className="account-report-page">
+  return <main className={`account-report-page ${cleanupIssuesEnabled?styles.accountPage:''} ${task?styles.focusedPage:''}`}>
     <Link className="secondary-button account-back-link" href={task ? base : back}>{task ? 'Back to report' : from === 'notifications' ? 'Back to notifications' : from === 'payments' ? 'Back to payments' : 'Back to my activity'}</Link>
-    <h1>{task === 'cleanup' ? 'Your cleanup' : task === 'review' ? 'Review cleanup' : isDiscoverableReport(report) ? 'Your report activity' : 'Report history'}</h1>
+    <h1>{task === 'cleanup' ? (isActiveCleaner?'Your cleanup':'Cleanup') : task === 'review' ? 'Review cleanup' : isDiscoverableReport(report) ? 'Report details' : 'Report history'}</h1>
     {!isDiscoverableReport(report) && <p>This report is no longer listed on the map.</p>}
     {focused && <p className="account-task-report">{report.title || 'Litter report'}</p>}
     {task ? <section className="account-task-workspace" data-task={focused ? 'focused' : task}>{!focused && <><h2>{report.title || 'Litter report'}</h2>
       <p>Current status: {closed ? 'Report closed' : report.cleanup_state === 'claimed' ? 'Cleanup in progress' : report.cleanup_state === 'completion_submitted' ? 'Cleanup photos under review' : report.cleanup_state === 'changes_requested' ? 'Updated evidence requested' : report.cleanup_state === 'completed' ? 'Cleanup complete' : 'Available to clean'}.</p></>}
       {closed ? <p>This cleanup is closed.</p> : task === 'cleanup' ? <CleanupAction key={report.id} workspace report={report} userId={userId} onChanged={() => router.refresh()} /> : reviewable ? <CleanupReviewAction workspace report={report} userId={userId} isOwner onChanged={() => router.refresh()} /> : <p>No cleanup evidence currently needs your review.</p>}
-    </section> : <><ReportDetail embedded taskBase={base} report={report} userId={userId} isOwner={report.user_id === userId} onClose={() => router.push(back)} onReportChanged={() => router.refresh()} />
+    </section> : <><ReportDetail embedded isActiveCleaner={isActiveCleaner} taskBase={base} report={report} userId={userId} isOwner={report.user_id === userId} onClose={() => router.push(back)} onReportChanged={() => router.refresh()} />
       {isDiscoverableReport(report) && <Link className="secondary-button" href={`/map?report=${report.id}&returnTo=${encodeURIComponent(back)}`}>Open on map</Link>}
     </>}
-    {!focused && !(report as Report & {cleanup_issue_hold?:boolean}).cleanup_issue_hold && <CleanupProgress report={report} userId={userId} taskBase={base} currentTask={task} />}
+
   </main>;
 }

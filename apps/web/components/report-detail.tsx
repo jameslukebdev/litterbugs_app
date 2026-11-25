@@ -64,6 +64,7 @@ export function ReportDetail({
   embedded = false,
   inline = false,
   taskBase,
+  isActiveCleaner=false,
   isOwner,
   onClose,
   onEdit,
@@ -83,6 +84,7 @@ export function ReportDetail({
   embedded?: boolean;
   inline?: boolean;
   taskBase?: string;
+  isActiveCleaner?:boolean;
   isOwner: boolean;
   onClose: () => void;
   onEdit?: () => void;
@@ -471,8 +473,8 @@ export function ReportDetail({
                 {cleanupIssuesEnabled&&taskBase&&<ReportIssueAccess reportId={report.id} userId={userId}/>}
 
                 {(!closed || report.cleanup_state === 'completed') && <ContributionSupporters reportId={report.id} initialCredit={report.contributorCredit} />}
-                {!closed && userId && report.funded_amount_cents > 0 && report.cleanup_state !== 'completed' && <div className={styles.payout}><span>Cleaning this up? Set up payouts so you can get paid.</span><PayoutSetupAction compact /></div>}
-                <div className={styles.siteHistory}><ReportSiteActivity key={`${report.id}-timeline`} reportId={report.id} mode="timeline" /></div>
+                {!taskBase && !closed && userId && report.funded_amount_cents > 0 && report.cleanup_state !== 'completed' && <div className={styles.payout}><span>Cleaning this up? Set up payouts so you can get paid.</span><PayoutSetupAction compact /></div>}
+                <div className={styles.siteHistory}>{!taskBase&&<ReportSiteActivity key={`${report.id}-timeline`} reportId={report.id} mode="timeline" />}</div>
                 <p className={styles.footnote}><AppLink reportId={report.id} className="report-open-app">Open in the app</AppLink><span aria-hidden="true"> · </span><span>Report ID {report.id.slice(0, 8)}</span></p>
               </div>
             </div>
@@ -487,11 +489,12 @@ export function ReportDetail({
               {!cleanupIssuesEnabled&&onEdit && isOwner && !closed && report.cleanup_state === 'available' && !report.funding_locked_at && <button className="secondary-button compact-button" onClick={onEdit}><Icon name="edit" />Edit</button>}
               {taskBase && isOwner && !closed && report.cleanup_state === 'completion_submitted' ? <Link className="secondary-button" href={`${taskBase}&task=review`}>Review cleanup</Link> : <CleanupReviewAction report={report} userId={userId} isOwner={isOwner} onChanged={onReportChanged} />}
               <FundingContributionAction report={report} userId={userId} autoOpen={entryIntent === 'fund'} onRequireSignIn={() => onRequireSignIn?.('fund')} onChanged={onReportChanged} />
-              {!closed && (taskBase ? <Link className="primary-button" href={`${taskBase}&task=cleanup`}>Open cleanup workspace</Link> : <CleanupAction report={report} userId={userId} autoOpen={entryIntent === 'clean'} onRequireSignIn={() => onRequireSignIn?.('clean')} onChanged={onReportChanged} />)}
+              {!closed && (taskBase&&isActiveCleaner ? <Link className="primary-button" href={`${taskBase}&task=cleanup`}>Continue cleanup</Link> : <CleanupAction showIssueShortcut={!taskBase} report={report} userId={userId} autoOpen={entryIntent === 'clean'} onRequireSignIn={() => onRequireSignIn?.('clean')} onChanged={onReportChanged} />)}
               </>}
             </footer>
           </div>
         </div>
+        {taskBase&&<div className={styles.accountHistory}><ReportSiteActivity key={`${report.id}-account-timeline`} reportId={report.id} mode="timeline" /></div>}
         <ReportShareDialog
           open={shareDialogOpen}
           report={report}

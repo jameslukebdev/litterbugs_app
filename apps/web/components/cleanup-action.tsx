@@ -64,9 +64,11 @@ function CleanupActionForReport({
   onRequireSignIn,
   onChanged,
   workspace = false,
+  showIssueShortcut = true,
   autoOpen = false,
 }: {
   workspace?: boolean;
+  showIssueShortcut?:boolean;
   autoOpen?: boolean;
   report: Report;
   userId: string | null;
@@ -441,7 +443,7 @@ function CleanupActionForReport({
       {message && (doneKind ? <CleanupDone kind={doneKind}>{message}</CleanupDone> : <span className="cleanup-action-message" role="status">{message}</span>)}
       {!waiverOpen && !(submissionOpen && attempt) && attemptNotice}
       {action}
-      {cleanupIssuesEnabled&&userId&&issueState.issue&&<CleanupIssueShortcut issue={issueState.issue} message={issueState.message} userId={userId}/>}
+      {showIssueShortcut&&cleanupIssuesEnabled&&userId&&issueState.issue&&<CleanupIssueShortcut issue={issueState.issue} message={issueState.message} userId={userId}/>}
       {cleanupIssuesEnabled&&isMyAttempt&&attempt?.status==='claimed'&&!issuePaused&&!(submissionOpen&&attempt)&&<CleanupIssueTools attemptId={attempt.id} reporterId={attempt.reporter_id} userId={userId!} disabled={!!busy||preparing} onGiveBack={()=>setReleaseConfirming(true)}/>}
       {payoutEntry?.userId === userId && payoutEntry.reportId === report.id && <PayoutSetupAction autoOpen onDismiss={reason => {
         if (reason === 'closed') trackParticipationExit('clean', 'payout_setup', 'cancelled');
@@ -483,7 +485,8 @@ function CleanupActionForReport({
       {submissionOpen && attempt && !issuePaused && (
         <ModalShell embedded={workspace} onClose={() => { trackParticipationExit('clean', 'evidence_form', 'cancelled'); setSubmissionOpen(false); }} label="Submit cleanup evidence" className="cleanup-flow-dialog cleanup-evidence-workspace" closeDisabled={busy === 'submit' || preparing}>
           <CleanupEvidencePanel
-            notice={<>{cleanupIssuesEnabled&&isMyAttempt&&attempt.status==='claimed'&&<div style={{display:'flex',justifyContent:'flex-end'}}><CleanupIssueTools attemptId={attempt.id} reporterId={attempt.reporter_id} userId={userId!} disabled={!!busy||preparing} onGiveBack={()=>setReleaseConfirming(true)}/></div>}{attemptNotice}{editorLock === 'unavailable' && <p role="alert">This cleanup draft is open in another tab. Close that editor before continuing here.</p>}</>}
+            tools={cleanupIssuesEnabled&&isMyAttempt&&attempt.status==='claimed'?<CleanupIssueTools attemptId={attempt.id} reporterId={attempt.reporter_id} userId={userId!} disabled={!!busy||preparing} onGiveBack={()=>setReleaseConfirming(true)}/>:undefined}
+            notice={<>{attemptNotice}{editorLock === 'unavailable' && <p role="alert">This cleanup draft is open in another tab. Close that editor before continuing here.</p>}</>}
             correction={attempt.status === 'changes_requested'}
             reportTitle={workspace ? null : report.title}
             due={deadline ?? null}

@@ -94,3 +94,62 @@ in-app notifications are real local paths. Production notification-worker native
 routing must be integrated/reviewed against current source before a future release.
 No automatic unresponsive-party timeout is introduced; held cases remain held until
 participant/staff resolution. Apps are unchanged and require their own later work.
+
+## Follow-up: utility, report document and team review
+
+Owner screenshots supersede the initial local styling. Existing Litterbugs owns
+all typography/bugs/tokens. Refero Airbnb style2b556363-5cb0-443f-a550-7273d108fea9
+supplies grouped controls/white stages; Notion9ebdf4f5-e978-4e1f-8c60-e5fdbd3b3c4a
+supplies compact labeled secondary controls; Airbnb support screen
+c512d201-72ae-425a-8ec7-e4f724d4cf57 supplies icon+text contextual help choices.
+Borrow hierarchy only; do not import their palette/typography/marketing layout.
+
+- Cleanup options is now help-circle+label+chevron with brand pale-blue fill,
+  #9bbbf3 border, #234485 text, Nunito800,46px touch target, rounded corners and
+  subtle bottom edge. Group with evidence heading. Workspace width matches form.
+- Resolved conversation becomes quiet history with explicit Resolved status.
+- Account report uses a bounded4:3 photo/document layout, one full-width Timeline,
+  one role-correct Continue cleanup. No duplicate Cleanup progress/payout prompt.
+  Map styling is untouched. Reporter sees their own available actions, not a
+  misleading Continue cleanup. Staff case opens directly to private conversation
+  with one Back to review; no unrelated payment-review stack.
+- Staff choices hold/ready/close require a note; close requires confirmation.
+  Notes become immutable private messages. Reporter replies never clear safety.
+
+Migration20261125175248_cleanup_issue_team_decisions.sql is LOCAL ONLY. New
+MFA2-only versioned/idempotent decision RPC records outcome/note/actor/time. Old
+local no-note approval is revoked. Hold keeps site/case paused; ready resolves
+staff case but leaves explicit cleaner resume; close releases retained claim,
+uses existing full refund queue, closes case/thread, notifies both participants,
+never creates completion/reward. PostgREST schema cache reloaded after local SQL.
+
+Browser: unsafe request -> reporter inbox/composer/reply -> real TOTP MFA2 staff
+inbox -> hold -> cleaner stays paused -> ready -> cleaner resumes same claim,
+314 seconds restored. Missing litter -> reporter reply -> staff close/confirmation
+-> released claim, closed report,3500 principal+350 fee/3850 total refund_pending,
+no payout/completion. Both cases resolved. Extended SQL suite passes MFA/member,
+required-note, stale-version, retry, held/resume/close/full-refund/no-payout checks.
+Fresh safety/missing scenarios remain for owner testing; default access request
+awaits reporter, and its new notification has a working reply form. Old resolved
+notification is deliberately read-only history. Desktop/390px responsive bounds
+checked; temporary viewport reset. Evidence/logs in existing local fixture folder.
+
+Tester now has scenario tabs and Use team. This dedicated local admin uses real
+GoTrue TOTP challenge verification/AAL2; no personal credentials or core MFA bypass.
+Secret is server-only in0600 browser-users.json, never rendered. Cached Edge Runtime
+stalled before binding; its review container is stopped. Local review-adapter.cjs
+runs existing admin-cleanup-case source in Node capped256MB on loopback62344, with
+real local Auth/RPC/Storage. Dev-only guarded proxy permits list/get/read-alert only;
+all case RPCs retain MFA/RLS. Providers/payments disabled; installed Supabase SDK
+used. This does not verify deployed Deno runtime. Start via start-review-adapter.cjs
+in the local fixture folder; logs review-adapter.log. New decisions use real RPC.
+No hosted schema/web/function/OTA/store/mobile deployment or native source change.
+
+Final verification:139 tests/12 files pass, extended SQL transaction rolls back
+successfully, TypeScript/scoped lint/git diff checks pass. Temporary viewport reset;
+no mobile source files changed. Current fresh Access issue347ca014-2032-4797-a49a-
+c3bcdd91227d is open as reporter, with a blank reply box ready for owner testing.
+Screenshots: branded-cleanup-options.jpg, revised-report-details.jpg,
+reporter-active-reply.jpg, team-held-review.jpg, team-closed-report.jpg and
+fresh-reporter-reply.jpg in the local fixture folder. Blue control is intentionally
+secondary; mint remains the positive-state color. No deployments.

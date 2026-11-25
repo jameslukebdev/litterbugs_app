@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { IoChevronForward, IoClose, IoEllipsisHorizontal, IoFlagOutline, IoImageOutline, IoLockClosedOutline, IoReturnUpBackOutline } from 'react-icons/io5';
+import { IoChevronForward, IoClose, IoChevronDown, IoHelpCircleOutline, IoFlagOutline, IoImageOutline, IoLockClosedOutline, IoReturnUpBackOutline } from 'react-icons/io5';
 import { ModalShell } from '@/components/modal-shell';
 import { cleanupIssuesEnabled, issueClient, issueError, issueHref, issueReasons, issueStatus, type CleanupIssue, type IssueMessage, type IssueReason } from '@/lib/cleanup-issues';
 import { createClient } from '@/lib/supabase/client';
@@ -34,7 +34,7 @@ export function useReportCleanupIssue(reportId:string,userId:string|null) {
  return {issue:current?.issue??null,message:current?.message??null,loading:cleanupIssuesEnabled&&!!userId&&!current,failed:!!current?.failed,retry:()=>setRetry(v=>v+1)};
 }
 export function CleanupIssueShortcut({issue,message,userId}:{issue:CleanupIssue;message?:IssueMessage|null;userId:string}) {
- return <Link className={s.shortcut} href={issueHref(issue.id)}><strong><IoLockClosedOutline />{issueStatus(issue,userId)}</strong>{message&&<p>{message.body}</p>}<small>{issue.status==='resolved'?'View conversation':issue.status==='awaiting_cleaner'?'View response':'View conversation'}<IoChevronForward /></small></Link>;
+ return <Link className={s.shortcut} data-resolved={issue.status==='resolved'} href={issueHref(issue.id)}><strong><IoLockClosedOutline />{issueStatus(issue,userId)}</strong>{message&&issue.status!=='resolved'&&<p>{message.body}</p>}<small>{issue.status==='resolved'?'View conversation':issue.status==='awaiting_cleaner'?'View response':'View conversation'}<IoChevronForward /></small></Link>;
 }
 export function ReportIssueAccess({reportId,userId}:{reportId:string;userId:string|null}) {
  const state=useReportCleanupIssue(reportId,userId);
@@ -52,11 +52,12 @@ export function CleanupIssueTools({attemptId,reporterId,userId,onGiveBack,disabl
   return()=>{document.removeEventListener('pointerdown',close);window.removeEventListener('keydown',escape);};
  },[menu]);
  if(!cleanupIssuesEnabled)return null;
- return <><div className={s.utilityMenu} ref={anchor}><button className={s.iconButton} aria-label="Cleanup options" aria-haspopup="menu" aria-expanded={menu} disabled={disabled} onClick={()=>setMenu(v=>!v)}><IoEllipsisHorizontal/></button>{menu&&<div className={s.menu} role="menu">{reporterId!==userId&&<button role="menuitem" onClick={()=>{setMenu(false);setRequest(true);}}><IoFlagOutline/>Report an issue</button>}<button role="menuitem" onClick={()=>{setMenu(false);onGiveBack();}}><IoReturnUpBackOutline/>Give back cleanup</button></div>}</div>{request&&<CleanupIssueRequest key={attemptId} attemptId={attemptId} userId={userId} onClose={()=>setRequest(false)}/>}</>;
+ return <><div className={s.utilityMenu} ref={anchor}><button className={s.optionsButton} aria-label="Cleanup options" aria-haspopup="menu" aria-expanded={menu} disabled={disabled} onClick={()=>setMenu(v=>!v)}><IoHelpCircleOutline/><span>Cleanup options</span><IoChevronDown/></button>{menu&&<div className={s.menu} role="menu">{reporterId!==userId&&<button role="menuitem" onClick={()=>{setMenu(false);setRequest(true);}}><IoFlagOutline/>Report an issue</button>}<button role="menuitem" onClick={()=>{setMenu(false);onGiveBack();}}><IoReturnUpBackOutline/>Give back cleanup</button></div>}</div>{request&&<CleanupIssueRequest key={attemptId} attemptId={attemptId} userId={userId} onClose={()=>setRequest(false)}/>}</>;
 }
 function CleanupIssueRequest({attemptId,userId,onClose}:{attemptId:string;userId:string;onClose:()=>void}) {
  const router=useRouter(),[reason,setReason]=useState<IssueReason>('access'),[body,setBody]=useState(''),[keep,setKeep]=useState(true);
  const [files,setFiles]=useState<File[]>([]),[busy,setBusy]=useState(''),[error,setError]=useState(''),[uploadsLocked,setUploadsLocked]=useState(false);
+ const needsReview=['unsafe','moved','missing'].includes(reason);
  const requestId=useRef(crypto.randomUUID()),paths=useRef<string[]>([]),previews=usePhotoPreviews(files);
  async function addFiles(selected:File[]){if(busy||paths.current.length)return;setBusy('Preparing photo…');setError('');try{const prepared=await prepareBrowserPhotos(selected.slice(0,3-files.length));setFiles(value=>[...value,...prepared]);}catch(failure){setError(failure instanceof Error?failure.message:'The photo could not be prepared.');}finally{setBusy('');}}
  async function send(){
@@ -75,8 +76,8 @@ function CleanupIssueRequest({attemptId,userId,onClose}:{attemptId:string;userId
   <label className={s.photoUtility}><IoImageOutline/>Add photo<input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" multiple disabled={!!busy||files.length>=3||uploadsLocked} onChange={event=>{void addFiles(Array.from(event.target.files??[]));event.target.value='';}}/></label>
   {!!files.length&&<div className={s.photoPreviews}>{files.map((file,index)=><div key={`${file.name}-${index}`}>{previews[index]&&<img src={previews[index]} alt={file.name}/>}<button disabled={!!busy||uploadsLocked} aria-label={`Remove ${file.name}`} onClick={()=>setFiles(value=>value.filter((_,i)=>i!==index))}><IoClose/></button></div>)}</div>}
   <fieldset disabled={!!busy}><legend>Your cleanup</legend><div className={s.choice}><label><input type="radio" name="keep-claim" checked={keep} onChange={()=>setKeep(true)}/>Keep it</label><label><input type="radio" name="keep-claim" checked={!keep} onChange={()=>setKeep(false)}/>Give it back</label></div></fieldset>
-  <p className={s.status}>{keep?'Claim clock pauses until the issue is resolved.':'The site stays paused until the issue is resolved.'}</p>
+  <p className={s.status}>{needsReview?'Litterbugs review required.':keep?'Claim clock pauses until the issue is resolved.':'The site stays paused until the issue is resolved.'}</p>
   {error&&<p className={s.error} role="alert">{error}</p>}
-  <div className={s.actions}><button className={s.primary} onClick={()=>void send()} disabled={!body.trim()||!!busy}>{busy||'Notify reporter'}</button></div>
+  <div className={s.actions}><button className={s.primary} onClick={()=>void send()} disabled={!body.trim()||!!busy}>{busy||(needsReview?'Send for review':'Notify reporter')}</button></div>
  </ModalShell>;
 }

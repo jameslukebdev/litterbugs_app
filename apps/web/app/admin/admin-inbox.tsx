@@ -122,6 +122,10 @@ export function adminDecisionSuccessMessage(action: string) {
 }
 
 async function invokeAdmin(body: Record<string, unknown>) {
+  if(process.env.NODE_ENV==='development'&&cleanupIssuesEnabled&&['127.0.0.1','localhost'].includes(window.location.hostname)){
+    const response=await fetch('/api/local/cleanup-issues/review',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const data=await response.json();if(!response.ok||data?.error)throw new Error(data?.error||'Local review could not be loaded.');return data;
+  }
   const { data, error } = await createClient().functions.invoke('admin-cleanup-case', { body });
   if (error) {
     // Show the server's own explanation, not the library's "Edge Function returned a non-2xx status code".
@@ -202,7 +206,10 @@ export function AdminInbox() {
     setConfirming(null);
     setMessage('');
     try {
-      setSelected(await invokeAdmin({ operation: 'get', caseId: item.id }) as CaseDetail);
+      const detail=await invokeAdmin({ operation: 'get', caseId: item.id }) as CaseDetail;
+      const issueId=detail.case.context?.cleanup_issue_id;
+      if(cleanupIssuesEnabled&&typeof issueId==='string'){window.location.assign(issueHref(issueId));return;}
+      setSelected(detail);
       setReason('');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Case unavailable');

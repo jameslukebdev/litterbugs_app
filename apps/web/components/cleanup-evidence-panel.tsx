@@ -8,11 +8,11 @@ import { BugCelebration } from '@/components/bug-celebration';
 const when = (iso: string) => new Date(iso).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 const PHOTO_TYPES = 'image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif';
 
-function FlowHead({ title, children }: { title: string; children?: ReactNode }) {
+function FlowHead({ title, children, tools }: { title: string; children?: ReactNode; tools?: ReactNode }) {
   return (
     <header className="cleaner-head">
       <img src="/brand/ranks/caterpillar.svg" alt="" aria-hidden="true" width={44} height={44} />
-      <div><h2>{title}</h2>{children && <p>{children}</p>}</div>
+      <div><h2>{title}</h2>{children && <p>{children}</p>}</div>{tools}
     </header>
   );
 }
@@ -31,7 +31,7 @@ export function CleanupEvidencePanel({
   checking, onCheck, onEdit, onSubmit, paid,
   fieldsDisabled, checkDisabled, submitDisabled, editDisabled, busy,
   releaseConfirming, onRelease, onReleaseConfirming, releaseDisabled,
-  feedback, notice, status, error,
+  feedback, notice, status, error, tools,
 }: {
   correction: boolean; reportTitle?: string | null; due: string | null; reporterPhoto: string | null;
   photos: EvidencePhoto[]; maxPhotos: number; onAddFiles: (files: File[]) => void; onRemovePhoto: (index: number) => void;
@@ -40,7 +40,7 @@ export function CleanupEvidencePanel({
   checking: boolean; onCheck: () => void; onEdit: () => void; onSubmit: () => void; paid: boolean;
   fieldsDisabled: boolean; checkDisabled: boolean; submitDisabled: boolean; editDisabled: boolean; busy: string;
   releaseConfirming: boolean; onRelease: () => void; onReleaseConfirming: (value: boolean) => void; releaseDisabled: boolean;
-  feedback?: ReactNode; notice?: ReactNode; status?: ReactNode; error?: string;
+  feedback?: ReactNode; notice?: ReactNode; status?: ReactNode; error?: string; tools?: ReactNode;
 }) {
   const full = photos.length >= maxPhotos;
   const release = releaseConfirming ? (
@@ -55,7 +55,7 @@ export function CleanupEvidencePanel({
   return (
     <div className="cleaner-flow">
       {notice}
-      <FlowHead title={checking ? 'Ready to send?' : correction ? 'Update your cleanup photos' : 'Show what you cleaned'}>
+      <FlowHead tools={tools} title={checking ? 'Ready to send?' : correction ? 'Update your cleanup photos' : 'Show what you cleaned'}>
         {due && <>Send by {when(due)}</>}{due && reportTitle && ' · '}{reportTitle}
       </FlowHead>
       {!checking && feedback}

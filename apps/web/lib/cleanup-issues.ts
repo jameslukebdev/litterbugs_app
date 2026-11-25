@@ -12,6 +12,7 @@ export type CleanupIssue = {
   id: string; report_id: string; cleanup_attempt_id: string; reporter_id: string|null; cleaner_id: string|null;
   reason: IssueReason; status: 'awaiting_reporter' | 'awaiting_cleaner' | 'team_review' | 'resolved';
   requires_team_review: boolean; keeps_claim: boolean; version: number;
+  review_outcome?: 'hold'|'ready'|'closed'|null; review_reason?:string|null; reviewed_by?:string|null; reviewed_at?:string|null;
   created_at: string; updated_at: string; resolved_at: string | null; resolved_by: string | null;
 };
 export type IssueMessage = { id: string; issue_id: string; author_id: string|null; body: string; photo_paths: string[]; created_at: string };
@@ -28,7 +29,7 @@ export type IssueDatabase = Omit<Database,'public'> & { public: Omit<Database['p
   open_cleanup_issue: Fn<{ target_cleanup_id:string; request_id:string; issue_reason:IssueReason; message_body:string; keeps_claim:boolean; message_photos?:string[] },CleanupIssue>;
   reply_cleanup_issue: Fn<{ target_issue_id:string; message_id:string; expected_version:number; message_body:string; message_photos?:string[] },CleanupIssue>;
   resolve_cleanup_issue: Fn<{ target_issue_id:string; expected_version:number },CleanupIssue>;
-  review_cleanup_issue: Fn<{ target_issue_id:string; expected_version:number },CleanupIssue>;
+  decide_cleanup_issue: Fn<{target_issue_id:string;expected_version:number;decision_id:string;decision:'hold'|'ready'|'closed';reason:string},CleanupIssue>;
   update_report_content: Fn<{ target_report_id:string; expected_revision:number; update_id:string; new_description:string; new_information:string; new_photo_paths:string[] },Database['public']['Tables']['reports']['Row']>;
  };
 }};
@@ -36,7 +37,8 @@ export type IssueDatabase = Omit<Database,'public'> & { public: Omit<Database['p
 export const issueClient = (client: SupabaseClient<Database>) => client as unknown as SupabaseClient<IssueDatabase>;
 export const issueHref = (id:string) => `/account/cleanup-issues/${encodeURIComponent(id)}`;
 export function issueStatus(issue:CleanupIssue, userId:string) {
- if (issue.status==='resolved') return issue.keeps_claim ? 'Cleanup resumed' : 'Issue resolved';
+ if(issue.review_outcome==='closed')return 'Report closed';
+ if (issue.status==='resolved') return issue.keeps_claim ? 'Resolved · Cleanup resumed' : 'Resolved';
  if (issue.requires_team_review || issue.status==='team_review') return 'Litterbugs review';
  if (issue.status==='awaiting_cleaner') return userId===issue.cleaner_id ? 'Response ready' : 'Awaiting cleaner';
  return userId===issue.reporter_id ? 'Reply needed' : 'Awaiting reply';
