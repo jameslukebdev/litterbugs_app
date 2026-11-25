@@ -1,6 +1,7 @@
 # Cleanup issues: mobile implementation and local verification
 
-Status: local work only; not ready for publication. Source `a06bcdc` on
+Status: requested local implementation/flow checks complete; publication held.
+Code source `a06bcdc` on
 `codex/cleanup-issues-mobile-20261125`, isolated checkout
 `/private/tmp/litterbugs-cleanup-issues-mobile-20261125`.
 
@@ -49,13 +50,35 @@ Cleanup options is a compact labeled branded flag utility before report photos.
   bucket. Fixed with the existing signed-photo resolver in `a06bcdc`; final
   Android bundle installed and updated conversation photo visibly loaded.
   Regression tests also verify unauthorized editors cannot mint photo previews.
+- Final iOS bundle `a06bcdc` installed on a separately named Litterbugs Issues QA
+  simulator (`A88A56B4-F6E9-49D8-ADBB-B315EEBB6ADB`). Actual local reporter sign-in,
+  existing inbox destination, updated conversation photo/full-size viewer, and
+  funded editor photo all passed. The prior iPhone full-flow results remain
+  applicable; the final signed-photo correction has now been visually retested.
+- Final Android bundle: funded editor photo, native photo picker, checked private
+  attachment upload, exactly one reporter reply, full-size private photo, cleaner
+  inbox destination, and readable response/public correction passed. A reply
+  leaves the safety hold intact and exposes no Resume action. The authenticated
+  cleaner RPC also rejects premature resume with `issue_not_ready_to_resume`.
+- A simulated local AAL2 staff decision called the existing `decide_cleanup_issue`
+  RPC with decision `ready` and a reason. This is backend staff-decision testing,
+  not native admin UI or fresh admin MFA testing. The cleaner's visible screen
+  refreshed to Response ready with the team message, Resume cleanup and Still an
+  issue. Follow-up composer/cancel worked. Explicit Resume cleanup opened the
+  original claim's actual cleanup submission form.
+- Final Android backend assertions passed: same claim; hold cleared only on
+  explicit resume; exact paused-clock extension1736364ms; report fund3500 and
+  contribution3850 unchanged; payout status unchanged; report revision2 and
+  original claim evidence revision1 retained; private photo available to the
+  participant, denied to outsider/guest; outsider cannot read the conversation.
+  Private result: `android-final-verification.json`.
 
-## Incomplete acceptance and testing limitations
+## Acceptance boundaries and testing limitations
 
-Android reporter attachment/reply, local staff decision, subsequent cleaner
-resume, final editor-photo visual check, and final iOS signed-photo retest remain
-pending. Do not treat the Android end-to-end flow or final iOS bundle as passed.
-Earlier iOS functional acceptance is recorded at its actual tested source.
+The previously pending Android request/reply/review/resume acceptance and final
+photo checks are complete. Earlier iOS functional acceptance is recorded at its
+actual tested source; final iOS photo/spacing/editor checks passed on `a06bcdc`.
+No additional production release acceptance is implied by local testing.
 
 Android Maps tiles are unauthorized for the disposable emulator signing
 certificate. Production Google Maps keys/settings were not changed. Android map
@@ -79,10 +102,14 @@ its original cleaner message. No unrelated app source was found in mobile or
 shared package code. Treat this as desktop input interference, not a passed
 product regression check or evidence of source contamination.
 
-Keyboard-driven testing stopped and our Android emulator was shut down. Do not
-resume clipboard/keyboard automation while another assistant/user is operating
-the shared desktop. Do not overwrite or clear the user's clipboard. Preserve
-other apps/processes and the other chat's simulator containers.
+Keyboard-driven testing stopped and our Android emulator was shut down. After
+Grant explicitly resumed testing, the original shared iPhone still switched to
+the other app, so a separately named device was created for Litterbugs. The final
+iOS checks used that device; Android used its own existing QA wrapper. No further
+clipboard paste was used; text was entered through focused native controls and
+verified before submission. The exact stored reporter body was also asserted.
+No other app's data/container/settings or user's clipboard was cleared. Avoid
+simultaneous desktop keyboard/clipboard automation in future passes.
 
 ## Artifacts and resources
 
@@ -92,14 +119,17 @@ into documentation or commits. Evidence includes `ios-heading-spacing-fixed.png`
 `android-heading-spacing-fixed.jpg`, `android-cleanup-paused.jpg`,
 `android-signed-report-photo.jpg`, `privacy-clock-verification.json`, and native
 preservation manifests. Some earlier `.png` screenshots contain JPEG bytes.
+Final evidence also includes `ios-final-signed-photo.jpg`,
+`ios-final-editor-photo.jpg`, `android-final-editor-photo.jpg`,
+`android-reporter-photo-reply.jpg`, `android-held-after-reply.jpg`, and
+`android-response-ready.jpg`.
 
-Only one test device was booted at a time; Metro used one worker and a1GB heap,
-and the local backend kept its prior resource caps. Final memory observation was
-34% free before shutting down Android. Android is stopped. Our iOS QA session
-had been shut down before Android testing; the shared iPhone simulator was
-subsequently booted by the other project's work and has been left untouched.
+Only one of our QA devices ran at a time; the other project's pre-existing iPhone
+remained booted and was left untouched. Metro used one worker and a1GB heap, and
+the local backend kept its prior resource caps. Memory was monitored throughout;
+the final observation was43% free. Our dedicated iPhone was shut down before
+Android started, and Android was shut down after successful resume verification.
 
-Next: finish the pending native checks in a desktop session without competing
-UI input, then prepare a separate release assessment. Publication still requires
+Next: owner local review, then a separate release assessment. Publication requires
 the owner's later authorization; runtime2.1.2 native crash fixes cannot be OTA'd
 to runtime2.1.1 binaries.
