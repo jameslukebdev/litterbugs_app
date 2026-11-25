@@ -1,6 +1,21 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useState } from 'react';
+import PrivateView from './PrivateView';
+import { Image, Modal, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts } from '../lib/theme';
+
+export function IssuePhoto({ uri, label }) {
+  const [open, setOpen] = useState(false);
+  return <>
+    <TouchableOpacity accessibilityRole="button" accessibilityLabel={`View ${label.toLowerCase()}`} onPress={() => setOpen(true)}><Image source={{ uri }} style={issueStyles.photo} /></TouchableOpacity>
+    <Modal visible={open} onRequestClose={() => setOpen(false)} animationType="fade">
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}><PrivateView style={{ flex: 1, padding: 18, gap: 14 }}>
+        <TouchableOpacity style={{ minHeight: 44, alignSelf: 'flex-end', justifyContent: 'center', paddingHorizontal: 12 }} accessibilityRole="button" accessibilityLabel="Close photo" onPress={() => setOpen(false)}><Ionicons name="close" size={26} color={colors.ink} /></TouchableOpacity>
+        <Image source={{ uri }} style={{ flex: 1 }} resizeMode="contain" accessibilityLabel={label} />
+      </PrivateView></SafeAreaView>
+    </Modal>
+  </>;
+}
 
 export function IssueUtility({ label = 'Cleanup options', onPress, disabled = false, expanded }) {
   return <TouchableOpacity onPress={onPress} disabled={disabled} accessibilityRole="button" accessibilityLabel={label}
