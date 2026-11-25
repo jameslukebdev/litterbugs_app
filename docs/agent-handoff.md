@@ -24,6 +24,27 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-25 — Codex (one report page; local account actions consolidated)
+
+- Owner approved consolidation, explicitly no deployment/apps. Website56758a1
+  in /tmp/litterbugs-cleanup-issues-web-20261125 adds role-specific Edit/Continue/
+  Review and participant-only private issue shortcut to the existing public report.
+  Removed duplicate account summary; old summary links redirect to existing report
+  and unchanged readable canonical. Cleanup/review task forms remain focused;
+  form/editor/conversation Back links return to report. Resume opens cleanup form.
+- Real local request->reply->response shortcut->resume passed with new isolated
+  report11925729; same claim, fund3500, pause cleared, no payout/completion. Outsider
+  has no private shortcut/text; direct issue denied. Anonymous HTML excludes private
+  content/actions.129 tests, TS/lint/diff pass;1280/900/390/320 fit with one Timeline.
+  Original347ca014 request untouched/awaiting_reporter; reporter session restored.
+- NOTHING deployed; no schema/native/OTA change. Prior live websiteba1feca and
+  OTA63bc12bc preserved. Existing external/provider/refund/Deno limits remain.
+  Server3001 heap reduced1.5GB->1GB; own compiled output cleared during serial
+  tests; one temporary Chrome QA tab closed, viewport reset. Other chats, user
+  tabs and simulator/native crash work untouched. Existing test tab374 stalled
+  in CDP focus setup; refresh/open local report link to see consolidated view.
+  Implementation record and final screenshot live in existing local plan/temp folder.
+
 ### 2026-11-25 — Codex (report header/responsive regression fixed; broader local QA)
 
 - Website9b5084e in existing isolated cleanup-issues worktree. Owner found Share
