@@ -24,6 +24,23 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-25 — Codex (cleanup issue research and utility preview only)
+
+- Owner requested Refero research and a preview; no feature build/deploy authorized.
+  Preview d541d92 on codex/cleanup-issues-preview-20261125 in
+  /tmp/litterbugs-cleanup-issues-preview-20261125, mirrored only new route/plan to3000.
+- Local /dev-review-preview/cleanup-issues compares Your cleanup ellipsis > Report
+  an issue with inline flag/text. Reason/details/photo, keep/give back, reporter inbox,
+  funded editor retaining original evidence, cleaner/team review and one Timeline.
+  All names/data illustrative; state is browser-only, nothing sent or persisted.
+- Refero Linear/komoot utilities and Buy Me a Coffee reason form inspected visually;
+  official civic-request/fundraiser workflows cited in the research plan. Proposed
+  versioned funded edits need DB/RLS/media changes; current funded guards untouched.
+- Chrome flows/390px layout, assets/console and scoped lint pass. No production
+  backend, mobile source, website deployment or OTA changed; live ba1feca/63bc12bc
+  preserved. Safety/closure rules and escalation timing remain recommendations.
+  Other shared edits preserved. No simulator/emulator started; shared server reused.
+
 ### 2026-11-25 — Codex (website release readiness; no deployment)
 
 - Optimized Next16.3/Turbopack production build of d56f7c3 passed, including TS
