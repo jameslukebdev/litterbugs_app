@@ -1,7 +1,9 @@
 import { localCleanupIssueTesting, localTotp } from '@/lib/local-cleanup-issue-testing';
 import { createClient } from '@/lib/supabase/server';
 export async function POST(request:Request){
- const body=await request.formData(),scenario=body.get('scenario');
+ if(!await localCleanupIssueTesting())return new Response(null,{status:404});
+ let body:FormData;try{body=await request.formData();}catch{return new Response(null,{status:400});}
+ const scenario=body.get('scenario');
  const config=await localCleanupIssueTesting(scenario==='safety'||scenario==='missing'?scenario:'access');if(!config)return new Response(null,{status:404});
  const host=request.headers.get('host')??'';const origin=request.headers.get('origin');if(origin&&new URL(origin).host!==host)return new Response(null,{status:403});
  const role=body.get('role');

@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 export const metadata={title:'Local cleanup testing | Litterbugs',robots:{index:false,follow:false}};
 export const dynamic='force-dynamic';
 export default async function Page({searchParams}:{searchParams:Promise<{scenario?:string}>}){
+ if(process.env.NODE_ENV!=='development'||process.env.VERCEL)notFound();
  const {scenario}=await searchParams;
  const config=await localCleanupIssueTesting(scenario==='safety'||scenario==='missing'?scenario:'access');if(!config)notFound();
  const client=await createClient(),{data}=await client.auth.getUser();
