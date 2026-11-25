@@ -24,6 +24,21 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-25 — Codex (report information communication research/preview)
+
+- Preview9f52ae5 extends prior isolated cleanup-issues concept, mirrored only route
+  and research plan to shared3000. No production feature/backend/deployment or OTA.
+- Follow-up Refero Linear activity/Airbnb practical-detail sections and official
+  SeeClickFix researched. Recommend optional public Additional information for all
+  reasons, directly below description, authored/time-stamped, above Reported by and
+  existing Timeline. Private issue notes remain separate; funded evidence retained.
+- Added cleaner notification scene linking to update review. Save alone leaves issue
+  open; no empty section on description-only edits.390px/app/web/console/scoped lint
+  pass. Viewports reset; no VM/server added. Illustrative deep link:
+  /dev-review-preview/cleanup-issues?screen=site&view=web&example=information.
+- This supersedes prior Access notes label/removal suggestion in this concept only.
+  Live websiteba1feca/OTA63bc12bc and all unrelated shared edits preserved.
+
 ### 2026-11-25 — Codex (cleanup issue research and utility preview only)
 
 - Owner requested Refero research and a preview; no feature build/deploy authorized.
