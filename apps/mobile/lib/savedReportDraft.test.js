@@ -116,4 +116,26 @@ it('isolates site drafts, evidence and discards from ordinary drafts and other a
   expect((await loadSiteReportDraft('site-two', 'alice')).form.title).toBe('Another site');
   expect(m.storage.get('litterbugs.report-draft.alice')).toBe(ordinary);
   expect((await loadReportDraft('alice')).form.photos).toHaveLength(1);
+  await clearReportDraft('alice');
+  expect((await loadSiteReportDraft('site-two', 'alice')).form.photos).toHaveLength(1);
+});
+
+it('restores site evidence after container relocation and exposes missing photos', async () => {
+  const { loadSiteReportDraft } = await import('./siteReportDraft');
+  const path = 'site-report-drafts/alice/site-one/photo.jpg';
+  m.files.add(`file://documents/${path}`);
+  m.storage.set('litterbugs.site-report-draft.alice.site-one', JSON.stringify({ ...draft, workflowVersion: 2, form: { ...draft.form, photos: [`file:///old-container/Documents/${path}`] } }));
+  expect((await loadSiteReportDraft('site-one', 'alice')).form.photos).toEqual([`file://documents/${path}`]);
+  m.files.delete(`file://documents/${path}`);
+  const restored = await loadSiteReportDraft('site-one', 'alice');
+  expect(restored.missingPhotoCount).toBe(1);
+  expect(restored.step).toBe(0);
+  expect(restored.form.title).toBe('Bottles');
+});
+
+it('drains site autosave before discard without resurrecting evidence', async () => {
+  const { saveSiteReportDraft, loadSiteReportDraft, clearSiteReportDraft } = await import('./siteReportDraft');
+  await Promise.all([saveSiteReportDraft('site', 'alice', draft), clearSiteReportDraft('site', 'alice')]);
+  expect(await loadSiteReportDraft('site', 'alice')).toBeNull();
+  expect([...m.files].some(path => path.startsWith('file://documents/site-report-drafts/alice/'))).toBe(false);
 });

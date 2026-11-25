@@ -2,6 +2,7 @@ import { cloudDrafts } from './cloudDrafts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import { waitForReportDraftWrites } from './savedReportDraft';
+import { waitForSiteReportDraftWrites } from './siteReportDraft';
 import { waitForCleanupDraftWrites } from './savedCleanupDraft';
 import { reportPreferenceSync } from './syncedReportPreferences';
 import { waitForFavoriteWrites } from './reportFavorites';
@@ -17,7 +18,7 @@ export async function clearDeletedAccountData(userId) {
   await AsyncStorage.setItem(pendingKey, 'pending');
   await reportPreferenceSync.retire(userId);
   await cloudDrafts.retire(userId);
-  await Promise.all([waitForReportDraftWrites(), waitForCleanupDraftWrites(), waitForFavoriteWrites()]);
+  await Promise.all([waitForReportDraftWrites(), waitForSiteReportDraftWrites(), waitForCleanupDraftWrites(), waitForFavoriteWrites()]);
   const exact = new Set([
     `litterbugs.preferences.v2:${userId}`,
     `litterbugs.report-draft.${userId}`,
@@ -25,6 +26,8 @@ export async function clearDeletedAccountData(userId) {
     `litterbugs.report-favorites.v1.${userId}`,
   ]);
   const prefixes = [
+    `litterbugs.site-report-draft.${userId}.`,
+    `litterbugs.site-report-submission.${userId}.`,
     `litterbugs.cleanup-draft.${userId}.`,
     `litterbugs.cloud-draft.${userId}.`,
     `cleanup-review:${userId}:`,
@@ -33,7 +36,7 @@ export async function clearDeletedAccountData(userId) {
   const keys = (await AsyncStorage.getAllKeys()).filter(key =>
     exact.has(key) || prefixes.some(prefix => key.startsWith(prefix)));
   if (keys.length) await AsyncStorage.multiRemove(keys);
-  for (const folder of ['report-drafts', 'cleanup-drafts']) {
+  for (const folder of ['report-drafts', 'site-report-drafts', 'cleanup-drafts']) {
     await FileSystem.deleteAsync(`${FileSystem.documentDirectory}${folder}/${userId}/`, { idempotent: true });
   }
   await AsyncStorage.removeItem(pendingKey);

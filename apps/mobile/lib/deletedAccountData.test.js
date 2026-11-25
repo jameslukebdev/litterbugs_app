@@ -15,6 +15,7 @@ vi.mock('expo-file-system/legacy', () => ({
   },
 }));
 vi.mock('./savedReportDraft', () => ({ waitForReportDraftWrites: () => m.drain }));
+vi.mock('./siteReportDraft', () => ({ waitForSiteReportDraftWrites: () => m.drain }));
 vi.mock('./savedCleanupDraft', () => ({ waitForCleanupDraftWrites: async () => {} }));
 vi.mock('./syncedReportPreferences', () => ({ reportPreferenceSync: { retire: async () => {} } }));
 vi.mock('./reportFavorites', () => ({ waitForFavoriteWrites: async () => {} }));
@@ -22,10 +23,10 @@ import { clearDeletedAccountData, retryDeletedAccountDataCleanup } from './delet
 beforeEach(() => { m.storage.clear(); m.files.clear(); m.fail = false; m.drain = Promise.resolve(); });
 
 it('removes all deleted-account drafts and preserves another account and device preferences', async () => {
-  const own = ['litterbugs.cloud-draft.alice.report', 'litterbugs.preferences.v2:alice', 'litterbugs.report-draft.alice', 'litterbugs.report-submission.alice', 'litterbugs.report-favorites.v1.alice', 'litterbugs.cleanup-draft.alice.one', 'cleanup-review:alice:one:two', 'payment-check:v1:alice:one'];
-  const other = ['litterbugs.report-draft.alice2', 'litterbugs.cleanup-draft.alice2.one', 'cleanup-review:alice2:one:two', 'litterbugs.welcome-seen.v1'];
+  const own = ['litterbugs.cloud-draft.alice.report', 'litterbugs.preferences.v2:alice', 'litterbugs.report-draft.alice', 'litterbugs.report-submission.alice', 'litterbugs.report-favorites.v1.alice', 'litterbugs.cleanup-draft.alice.one', 'cleanup-review:alice:one:two', 'payment-check:v1:alice:one', 'litterbugs.site-report-draft.alice.site', 'litterbugs.site-report-submission.alice.site'];
+  const other = ['litterbugs.report-draft.alice2', 'litterbugs.cleanup-draft.alice2.one', 'cleanup-review:alice2:one:two', 'litterbugs.welcome-seen.v1', 'litterbugs.site-report-draft.alice2.site'];
   [...own, ...other].forEach(k => m.storage.set(k, 'saved'));
-  ['report-drafts/alice/a.jpg', 'cleanup-drafts/alice/one/a.jpg', 'report-drafts/alice2/a.jpg'].forEach(p => m.files.add(`file://documents/${p}`));
+  ['report-drafts/alice/a.jpg', 'cleanup-drafts/alice/one/a.jpg', 'site-report-drafts/alice/site/a.jpg', 'report-drafts/alice2/a.jpg'].forEach(p => m.files.add(`file://documents/${p}`));
   await clearDeletedAccountData('alice');
   expect([...m.storage.keys()]).toEqual(other);
   expect([...m.files]).toEqual(['file://documents/report-drafts/alice2/a.jpg']);

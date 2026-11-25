@@ -7,10 +7,12 @@ import { requireReportLocation } from './reportLocationCheck';
 import { submitRecoverableReport } from './reportSubmission';
 import { saveSiteReportDraft, loadSiteReportDraft } from './siteReportDraft';
 import { alreadyReportedId } from './reportSites';
-const key = (sourceId, userId) => `litterbugs.site-report-submission.${sourceId}.${userId}`;
+import { cloudDrafts } from './cloudDrafts';
+const key = (sourceId, userId) => `litterbugs.site-report-submission.${userId}.${sourceId}`;
 export const clearSiteReportSubmission = (sourceId, userId) => AsyncStorage.removeItem(key(sourceId, userId));
 const inFlight = new Map();
 async function publish({ sourceId, userId, payload, form, coordinate, upload, onProgress }) {
+  if (cloudDrafts.isRetired?.(userId)) throw new Error('Sign in to report litter.');
   const { data: auth, error: authError } = await supabase.auth.getUser();
   if (authError || !auth.user || auth.user.is_anonymous || auth.user.id !== userId) throw new Error('Sign in to report litter.');
   const journalKey = key(sourceId, userId);
@@ -34,14 +36,21 @@ async function publish({ sourceId, userId, payload, form, coordinate, upload, on
   try {
     const report = await submitRecoverableReport({
       journal, onProgress,
-      persist: value => AsyncStorage.setItem(journalKey, JSON.stringify(value)),
+      persist: value => {
+        if (cloudDrafts.isRetired?.(userId)) throw new Error('This account was deleted.');
+        return AsyncStorage.setItem(journalKey, JSON.stringify(value));
+      },
       reserve: async (id, draft) => {
         const { data, error } = await supabase.rpc('reserve_site_report', { source_report_id: sourceId, new_report_id: id, draft });
         if (error) throw error;
         return data;
       },
-      upload: async (uri, id) => (await upload([uri], id, userId, onProgress))[0],
+      upload: async (uri, id) => {
+        if (cloudDrafts.isRetired?.(userId)) throw new Error('This account was deleted.');
+        return (await upload([uri], id, userId, onProgress))[0];
+      },
       publish: async (id, paths) => {
+        if (cloudDrafts.isRetired?.(userId)) throw new Error('This account was deleted.');
         const origin = await requireReportLocation(Location, coordinate);
         const { data, error } = await supabase.rpc('publish_report', { target_report_id: id, target_photo_paths: paths, current_latitude: origin.latitude, current_longitude: origin.longitude, location_captured_at: origin.capturedAt });
         if (error) throw error;
