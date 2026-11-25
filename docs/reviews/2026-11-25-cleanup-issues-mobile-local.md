@@ -133,3 +133,13 @@ Android started, and Android was shut down after successful resume verification.
 Next: owner local review, then a separate release assessment. Publication requires
 the owner's later authorization; runtime2.1.2 native crash fixes cannot be OTA'd
 to runtime2.1.1 binaries.
+
+## OTA readiness assessment after local acceptance
+
+Fresh read-only EAS production-channel lookup confirms both published platforms
+remain on runtime2.1.1 / group63bc12bc / source8c9a0eb3. The tested source inherits
+app version2.1.2 with appVersion runtime policy. The local-backend simulator
+exports must not be published. Production-environment exports, runtime targeting
+and compatible native-shell acceptance remain release-preparation work. Local
+feature acceptance is complete; a production OTA package is not yet prepared.
+No channel or production update changed during this check.

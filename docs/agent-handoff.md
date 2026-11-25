@@ -24,6 +24,18 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-25 — Codex (OTA readiness assessed; packaging still required)
+
+- Fresh read-only EAS production-channel check confirms both live platforms still
+  use runtime2.1.1, group63bc12bc / publication source8c9a0eb3. No update published.
+- Cleanup-issue source a06bcdc is tested locally but app.json inherits2.1.2 with
+  appVersion runtime policy. Existing local test exports are not production OTA
+  artifacts. Prepare/validate production-environment bundles for the intended
+  installed runtimes before calling this publish-ready; do not use the default
+ 2.1.2 export as an update for2.1.1 clients. Preserve submitted native crash fix.
+- Native iOS map correction still requires its2.1.2 store binary; OTA cannot add
+  that native patch to2.1.1. User asked readiness only; publication hold unchanged.
+
 ### 2026-11-25 — Codex (mobile cleanup issues local acceptance complete)
 
 - Grant resumed testing after desktop interference. Code `a06bcdc` unchanged;
