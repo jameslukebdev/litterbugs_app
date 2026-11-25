@@ -3,8 +3,8 @@
 import { useEffect, useId, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FiChevronDown, FiPlus, FiX } from 'react-icons/fi';
-import { EMPTY_REPORT_DRAFT } from '@litterbugs/report-contract';
+import { FiChevronDown, FiX } from 'react-icons/fi';
+import { EMPTY_REPORT_DRAFT, type ReportDraft } from '@litterbugs/report-contract';
 import { ReportWizard } from './report-wizard';
 import { createClient } from '@/lib/supabase/client';
 import { ReportTimeline, reportTimeline } from '@/app/reports/[id]/report-timeline';
@@ -13,8 +13,24 @@ import type { PublicReportShareModel } from '@/lib/public-report-share-model';
 import type { ReportSite } from '@/lib/report-site-model';
 import { sitePath } from '@/lib/report-site-model';
 import { submitSiteReport } from '@/lib/submit-site-report';
+import { loadSiteReportPublication } from '@/lib/saved-report-draft';
+import { useDataRefresh } from '@/lib/use-data-refresh';
 import { ReportLocationError } from '@/lib/report-location-error';
 import styles from './report-site-activity.module.css';
+
+// Share only simultaneous public reads; release immediately so later visits stay fresh.
+const pendingSites = new Map<string, Promise<ReportSite | null>>();
+function fetchSite(reportId: string) {
+  let pending = pendingSites.get(reportId);
+  if (!pending) {
+    pending = fetch(`/api/report-sites/${reportId}`, { cache: 'no-store' }).then(async response => {
+      if (!response.ok) throw new Error('Timeline unavailable');
+      return response.json() as Promise<ReportSite | null>;
+    }).finally(() => pendingSites.delete(reportId));
+    pendingSites.set(reportId, pending);
+  }
+  return pending;
+}
 
 export function SiteTimeline({ site, reportId }: { site: ReportSite; reportId: string }) {
   const heading = useId();
@@ -43,18 +59,17 @@ export function ReportSiteActivity({ reportId, initialReport, initialSite, mode 
   const [failed, setFailed] = useState(false);
   const [revision, setRevision] = useState(0);
   const [composing, setComposing] = useState(false);
+  const [restoredDraft, setRestoredDraft] = useState<ReportDraft | null>(null);
+  const refreshRevision = useDataRefresh();
   const [progress, setProgress] = useState('');
   const [notice, setNotice] = useState('');
   const router = useRouter();
   useEffect(() => {
-    if (initialSite !== undefined && revision === 0) return;
-    const controller = new AbortController();
-    void fetch(`/api/report-sites/${reportId}`, { cache: 'no-store', signal: controller.signal }).then(async response => {
-      if (!response.ok) throw new Error('Timeline unavailable');
-      return response.json() as Promise<ReportSite | null>;
-    }).then(value => { setSite(value); setFailed(false); setLoading(false); }).catch(() => { if (!controller.signal.aborted) { setFailed(true); setLoading(false); } });
-    return () => controller.abort();
-  }, [reportId, initialSite, revision]);
+    if (initialSite !== undefined && revision === 0 && refreshRevision === 0) return;
+    let active = true;
+    void fetchSite(reportId).then(value => { if (active) { setSite(value); setFailed(false); setLoading(false); } }).catch(() => { if (active) { setFailed(true); setLoading(false); } });
+    return () => { active = false; };
+  }, [reportId, initialSite, revision, refreshRevision]);
   useEffect(() => {
     if (mode === 'timeline') return;
     const url = new URL(window.location.href);
@@ -72,6 +87,11 @@ export function ReportSiteActivity({ reportId, initialReport, initialSite, mode 
         router.push(`/sign-in?next=${encodeURIComponent(next.pathname + next.search)}`);
         return;
       }
+      const source = site?.reports.filter(report => report.state === 'completed').at(-1);
+      if (source && !site?.local) {
+        try { setRestoredDraft((await loadSiteReportPublication(source.id, data.user.id))?.draft ?? null); }
+        catch { setNotice('Your saved report could not be opened. Try again.'); return; }
+      }
     }
     setComposing(true);
   }
@@ -84,10 +104,10 @@ export function ReportSiteActivity({ reportId, initialReport, initialSite, mode 
     {mode !== 'timeline' && <>
     {notice && <div className={styles.notice} role="status"><span>{notice}</span><button aria-label="Dismiss notice" onClick={() => { setNotice(''); const url = new URL(window.location.href); url.searchParams.delete('alreadyReported'); window.history.replaceState(window.history.state, '', url); }}><FiX /></button></div>}
     {site.currentReportId && site.currentReportId !== reportId && <Link className="primary-button button-link" href={`/reports/${site.currentReportId}`}>View latest report</Link>}
-    {site.canReportAgain && source?.location && <button className={`secondary-button ${styles.again}`} onClick={() => void begin()}><FiPlus aria-hidden />Needs cleaning again</button>}
+    {site.canReportAgain && source?.location && <button className={styles.again} onClick={() => void begin()}><span className={styles.reportBug} aria-hidden />Needs cleaning again</button>}
     </>}
     {mode !== 'actions' && <SiteTimeline site={site} reportId={reportId} />}
-    {composing && source?.location && <ReportWizard initialDraft={{ ...EMPTY_REPORT_DRAFT, title: source.title }} isEditing={false} coordinates={source.location} submissionProgress={progress} onClose={() => setComposing(false)} onSubmit={async draft => {
+    {composing && source?.location && <ReportWizard initialDraft={restoredDraft ?? { ...EMPTY_REPORT_DRAFT, title: source.title }} initialState={restoredDraft ? { draft: restoredDraft, step: 4, fundingChoice: 'none', customAmount: '' } : undefined} isEditing={false} coordinates={source.location} submissionProgress={progress} onClose={() => setComposing(false)} onSubmit={async draft => {
       try {
         const result = await submitSiteReport(source.id, draft, source.location!, Boolean(site.local), setProgress);
         setComposing(false);

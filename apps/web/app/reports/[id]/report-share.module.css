@@ -99,8 +99,10 @@
 .side { display: grid; gap: 20px; min-width: 0; }
 .page.page .nextSteps > a:global(.primary-button) { width: 100%; }
 .nextSteps { display: grid; gap: 10px; margin-top: 20px; }
-.share { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; padding: 10px 18px; border: 1px solid #d9d5e6; border-radius: 14px; background: #fff; color: var(--purple); font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; }
-.share:hover { border-color: #b9b3d6; background: #f7f6fc; }
+.headingTools { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+.headingTools .status { margin:0; }
+.share { display:inline-flex; flex:none; align-items:center; justify-content:center; gap:6px; min-height:44px; padding:6px 8px; border:0; border-radius:8px; background:transparent; color:var(--purple); font:inherit; font-size:14px; font-weight:700; cursor:pointer; box-shadow:none; }
+.share:hover { background:#f4f1ff; text-decoration:underline; text-underline-offset:3px; }
 .share svg { flex: none; width: 18px; height: 18px; }
 .reportActions.reportActions { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin: 0; }
 .page.page a:global(.primary-button) { display: inline-flex; align-items: center; justify-content: center; min-height: 50px; padding: 12px 22px; border: 0; border-radius: 14px; color: #fff; background: #5146ed; box-shadow: 0 4px 0 #3528ac; font-weight: 800; }

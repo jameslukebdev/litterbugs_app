@@ -72,9 +72,9 @@ export function ReportShareButton({ reportId, label, title, message, dialog }: {
 
   return (
     <>
-      <button type="button" ref={button} className={styles.share} onClick={share}>
+      <button type="button" ref={button} className={styles.share} aria-label={label} title={label} onClick={share}>
         <Icon name="share" aria-hidden="true" />
-        <span aria-live="polite">{status || label}</span>
+        <span aria-live="polite">{status || 'Share'}</span>
       </button>
       {dialog && <ReportShareDialog expired={dialog.expired} open={Boolean(shareUrl)} report={dialog.report} previewPhotoUrl={dialog.previewPhotoUrl}
         shareUrl={shareUrl} onShared={() => setStatus('Shared')}

@@ -51,7 +51,7 @@ export default async function SitePage({params}:Props) {
         <div className={styles.top}>
           <ReportPhotos key={report.id} beforePhotoUrl={report.beforePhotoUrl} afterPhotoUrl={report.afterPhotoUrl} beforeCount={report.photoCount} afterCount={report.afterPhotoCount} beforeDescription={publicReportPhotoDescription(report,'before')} afterDescription={publicReportPhotoDescription(report,'after')} />
           <header className={styles.hero}>
-            <p className={styles.status} data-tone={status.tone}>{status.bug && <img src={status.bug} alt="" aria-hidden width={20} height={20} />}{status.label}</p>
+            <div className={styles.headingTools}><p className={styles.status} data-tone={status.tone}>{status.bug && <img src={status.bug} alt="" aria-hidden width={20} height={20} />}{status.label}</p><SiteShareAction path={sitePath(site.id)} title={title} /></div>
             <h1>{title}</h1>
             <p className={styles.meta}><span>{report.generalLocation}</span>{completed&&report.completionDate?<span>Last cleaned {reportDateLabel(report.completionDate)}</span>:report.reportDate?<span>Reported {reportDateLabel(report.reportDate)}</span>:null}</p>
             <ReportFacts report={report} />
@@ -65,7 +65,6 @@ export default async function SitePage({params}:Props) {
                 <Link className="report-action-link button-link report-action-clean" prefetch={false} href={`/sign-in?${SHARED_REPORT_AUTH_PARAM}=1&next=${encodeURIComponent(reportMapHref(report.id,'clean'))}`}><BrandBug kind="butterfly" size={21} />Clean</Link>
               </div>}
               {report.state==='in_progress'&&<Link className="primary-button button-link" href={reportMapHref(report.id,'locate')}>View cleanup</Link>}
-              <SiteShareAction path={sitePath(site.id)} title={title} />
             </div>
           </header>
         </div>

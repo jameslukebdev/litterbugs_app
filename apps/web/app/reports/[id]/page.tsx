@@ -129,10 +129,25 @@ export default async function SharedReportPage({ params }: Props) {
             afterDescription={publicReportPhotoDescription(report, 'after')}
           />
           <header className={styles.hero}>
-            <p className={styles.status} data-tone={status.tone}>
+            <div className={styles.headingTools}>
+              <p className={styles.status} data-tone={status.tone}>
               {status.bug ? <img src={status.bug} alt="" aria-hidden="true" width={20} height={20} /> : <FiClock aria-hidden="true" />}
               {status.label}
             </p>
+              <ReportShareButton reportId={report.id} title={report.title}
+                label={completed ? 'Share cleanup' : 'Share report'}
+                // The same share dialog the report cards open; an expired report gets its own status and wording there.
+                dialog={{
+                  expired,
+                  report: { cleanup_state: completed ? 'completed' : inProgress ? 'claimed' : 'available', title: report.title,
+                    funded_amount_cents: report.rewardCents ?? 0, litter_types: report.litterTypes, severity: report.severity, types: null },
+                  previewPhotoUrl: (completed ? report.afterPhotoUrl ?? report.beforePhotoUrl : report.beforePhotoUrl)
+                    ? `${completed ? report.afterPhotoUrl ?? report.beforePhotoUrl : report.beforePhotoUrl}?width=640` : null,
+                }}
+                message={completed ? `See the cleanup impact for ${report.title} on Litterbugs.`
+                  : expired ? `See the litter report history for ${report.title} on Litterbugs.`
+                    : `View ${report.title} and help clean it up with Litterbugs.`} />
+            </div>
             <h1>{report.title}</h1>
             <p className={styles.meta}>
               {/* The address line below already names the town; show the town here only when there is no address. */}
@@ -163,23 +178,8 @@ export default async function SharedReportPage({ params }: Props) {
             {expired ? <Link className="primary-button button-link" href="/reports">Find a current cleanup</Link> : !completed && !inProgress && !report.localDevelopment ? <div className={styles.reportActions}>
               {report.fundingEligible && <Link className="report-action-link button-link report-action-fund" prefetch={false} href={`/sign-in?${SHARED_REPORT_AUTH_PARAM}=1&next=${encodeURIComponent(reportMapHref(report.id, 'fund'))}`}><BrandBug kind="bee" size={21} className="bug-hop" />Fund</Link>}
               <Link className="report-action-link button-link report-action-clean" prefetch={false} href={`/sign-in?${SHARED_REPORT_AUTH_PARAM}=1&next=${encodeURIComponent(reportMapHref(report.id, 'clean'))}`}><BrandBug kind="butterfly" size={21} className="bug-hop" />Clean</Link>
-            </div> : completed
-              // A finished cleanup's best next step is the next one that needs doing.
-              ? <Link className="primary-button button-link" href="/reports">Find another cleanup</Link>
-              : !report.localDevelopment ? <Link className="primary-button button-link" href={mapHref}>View on map</Link> : null}
-              <ReportShareButton reportId={report.id} title={report.title}
-                label={completed ? 'Share cleanup' : 'Share report'}
-                // The same share dialog the report cards open; an expired report gets its own status and wording there.
-                dialog={{
-                  expired,
-                  report: { cleanup_state: completed ? 'completed' : inProgress ? 'claimed' : 'available', title: report.title,
-                    funded_amount_cents: report.rewardCents ?? 0, litter_types: report.litterTypes, severity: report.severity, types: null },
-                  previewPhotoUrl: (completed ? report.afterPhotoUrl ?? report.beforePhotoUrl : report.beforePhotoUrl)
-                    ? `${completed ? report.afterPhotoUrl ?? report.beforePhotoUrl : report.beforePhotoUrl}?width=640` : null,
-                }}
-                message={completed ? `See the cleanup impact for ${report.title} on Litterbugs.`
-                  : expired ? `See the litter report history for ${report.title} on Litterbugs.`
-                    : `View ${report.title} and help clean it up with Litterbugs.`} />
+            </div> : !completed && !report.localDevelopment ? <Link className="primary-button button-link" href={mapHref}>View on map</Link> : null}
+
             </div>
           </header>
           </div>

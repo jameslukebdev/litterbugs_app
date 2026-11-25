@@ -27,3 +27,7 @@ it('cannot read or write local occurrences on a deployed environment',async()=>{
  expect(await readLocalOccurrences()).toEqual([]);
  await expect(saveLocalOccurrence(record,[Buffer.from('a')])).rejects.toThrow('unavailable');
 });
+it('uses the actual lifecycle when the website is connected to a loopback Supabase stack',async()=>{
+ await setup();vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL','http://127.0.0.1:62331');
+ expect(await isLocalWebsite()).toBe(false);
+});

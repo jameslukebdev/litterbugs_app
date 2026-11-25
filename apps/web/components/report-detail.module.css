@@ -75,3 +75,12 @@
 
 /* Breathing room between the toolbar and the first thing in the photo area (switch or photo). */
 .v2.v2 :global(.report-detail-visual) { padding-top: 14px; }
+
+/* Recurrence is a reporting action near the current condition; history stays in the body. */
+.headerByline { margin-top:12px; }
+.headerByline:has(:global(.report-author))::before { padding:0; margin-bottom:4px; }
+.v2.v2 .headerByline :global(.report-author) { padding:4px 0; background:transparent; }
+.siteActions:not(:empty) { margin-top:14px; }
+.siteHistory { min-width:0; margin-top:24px; }
+.siteHistory:empty { display:none; }
+.siteHistory > :first-child { margin-top:0; }

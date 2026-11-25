@@ -70,6 +70,31 @@ export async function loadReportPublication(userId: string): Promise<ReportPubli
 }
 export const clearReportPublication = (userId: string) => transaction('publications', userId, store => store.delete(userId));
 
+// Recurrence journals have their own keys and retain File bytes. Ordinary report
+// publication records keep their stricter, already-uploaded path contract.
+export type SiteReportPublication = ReportPublicationJournal & {
+  sourceId: string;
+  draft: ReportDraft;
+  fingerprint: string;
+};
+const sitePublicationKey = (sourceId: string, userId: string) => `site:${sourceId}:${userId}`;
+export const saveSiteReportPublication = (journal: SiteReportPublication) => transaction('publications', journal.userId, store => store.put(journal, sitePublicationKey(journal.sourceId, journal.userId)));
+export const clearSiteReportPublication = (sourceId: string, userId: string) => transaction('publications', userId, store => store.delete(sitePublicationKey(sourceId, userId)));
+export async function loadSiteReportPublication(sourceId: string, userId: string): Promise<SiteReportPublication | undefined> {
+  const value = await transaction<SiteReportPublication | undefined>('publications', userId, store => store.get(sitePublicationKey(sourceId, userId)));
+  if (!value) return undefined;
+  const draft = value.draft;
+  if (value.userId !== userId || value.sourceId !== sourceId || !value.reportId || typeof value.fingerprint !== 'string'
+    || !draft || !['title', 'types', 'severity', 'notes'].every(key => typeof draft[key as keyof ReportDraft] === 'string')
+    || ![draft.selectedTypes, draft.selectedNotes].every(list => Array.isArray(list) && list.every(item => typeof item === 'string'))
+    || !Array.isArray(draft.photos) || draft.photos.length < 1 || draft.photos.length > 3 || !draft.photos.every(photo => photo instanceof File)
+    || !Array.isArray(value.paths) || value.paths.length > draft.photos.length
+    || !value.paths.every(path => typeof path === 'string' && path.startsWith(`${userId}/${value.reportId}/`))) {
+    throw new Error('The previous site report could not be read.');
+  }
+  return value;
+}
+
 export const clearPublishedReport = async (userId: string) => { await transaction('drafts', userId, (store, tx) => {
   tx.objectStore('publications').delete(userId);
   return store.delete(userId);

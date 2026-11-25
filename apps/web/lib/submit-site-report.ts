@@ -4,7 +4,7 @@ import { createClient } from './supabase/client';
 import { requireReportLocation } from './geolocation';
 import { uploadSecureBrowserMedia } from './secure-media-upload';
 import { alreadyReportedId } from './report-site-model';
-import { loadReportPublication, saveReportPublication, clearReportPublication } from './saved-report-draft';
+import { loadSiteReportPublication, saveSiteReportPublication, clearSiteReportPublication } from './saved-report-draft';
 
 export async function submitSiteReport(sourceId: string, draft: ReportDraft, coordinates: Coordinates, local: boolean, progress: (message: string) => void) {
   const client = createClient();
@@ -31,25 +31,30 @@ export async function submitSiteReport(sourceId: string, draft: ReportDraft, coo
     localStorage.removeItem(key);
     return result as { reportId: string; alreadyReported: boolean };
   }
-  const key = `site:${sourceId}:${user.id}`;
+  const fingerprint = JSON.stringify({ ...draft, photos: await Promise.all(draft.photos.map(async photo => ({
+    name: photo.name, type: photo.type,
+    hash: Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', await photo.arrayBuffer())), byte => byte.toString(16).padStart(2, '0')).join(''),
+  }))) });
   // Separate from an ordinary draft. Never consume or discard a report the member
   // was already composing elsewhere. IndexedDB keeps the uncertain publication ID.
-  let journal = await loadReportPublication(key);
+  let journal = await loadSiteReportPublication(sourceId, user.id);
   if (journal) {
     const { data: existing, error } = await client.from('reports').select('id,is_published').eq('id', journal.reportId).eq('user_id', user.id).maybeSingle();
     if (error) throw new Error('Your previous submission could not be checked. Try again.');
-    if (existing?.is_published) { await clearReportPublication(key); return { reportId: existing.id, alreadyReported: false }; }
+    if (existing?.is_published) { await clearSiteReportPublication(sourceId, user.id); return { reportId: existing.id, alreadyReported: false }; }
   }
   progress('Checking your current location…');
   await requireReportLocation(coordinates);
-  journal ??= { userId: user.id, reportId: crypto.randomUUID(), paths: [] };
-  await saveReportPublication({ ...journal, userId: key });
+  // Once an uncertain commit has been checked, edited evidence gets a new private
+  // reservation. Never publish old metadata or photo paths under a changed form.
+  if (!journal || journal.fingerprint !== fingerprint) journal = { userId: user.id, sourceId, reportId: crypto.randomUUID(), paths: [], draft, fingerprint };
+  await saveSiteReportPublication(journal);
   const fields = reportInsertFromDraft(draft, coordinates, user.id);
   const { data: reserved, error: reserveError } = await client.rpc('reserve_site_report', { source_report_id: sourceId, new_report_id: journal.reportId, draft: fields as Json });
   const duplicate = alreadyReportedId(reserveError);
-  if (duplicate) { await clearReportPublication(key); return { reportId: duplicate, alreadyReported: true }; }
+  if (duplicate) { await clearSiteReportPublication(sourceId, user.id); return { reportId: duplicate, alreadyReported: true }; }
   if (reserveError || !reserved) throw new Error('This site could not be checked. Try again.');
-  if (reserved.is_published) { await clearReportPublication(key); return { reportId: reserved.id, alreadyReported: false }; }
+  if (reserved.is_published) { await clearSiteReportPublication(sourceId, user.id); return { reportId: reserved.id, alreadyReported: false }; }
   if (!journal.paths.length) {
     const paths: string[] = [];
     for (const photo of draft.photos) {
@@ -57,14 +62,14 @@ export async function submitSiteReport(sourceId: string, draft: ReportDraft, coo
       paths.push(await uploadSecureBrowserMedia({ supabase: client, userId: user.id, kind: 'report', file: photo, subjectId: reserved.id }));
     }
     journal = { ...journal, paths };
-    await saveReportPublication({ ...journal, userId: key });
+    await saveSiteReportPublication(journal);
   }
   const origin = await requireReportLocation(coordinates);
   progress('Publishing report…');
   const { data: published, error } = await client.rpc('publish_report', { target_report_id: reserved.id, target_photo_paths: journal.paths, current_latitude: origin.latitude, current_longitude: origin.longitude, location_captured_at: origin.capturedAt });
   const raced = alreadyReportedId(error);
-  if (raced) { await clearReportPublication(key); return { reportId: raced, alreadyReported: true }; }
+  if (raced) { await clearSiteReportPublication(sourceId, user.id); return { reportId: raced, alreadyReported: true }; }
   if (error || !published) throw new Error('Publication is not confirmed. Try again to check the same report.');
-  await clearReportPublication(key);
+  await clearSiteReportPublication(sourceId, user.id);
   return { reportId: published.id, alreadyReported: false };
 }

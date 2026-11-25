@@ -453,6 +453,8 @@ export function ReportDetail({
                   {report.created_at && <span>Reported {formatDate(report.created_at)}</span>}
                   {!closed && report.cleanup_state === 'available' && report.expires_at && <span>Open until {formatDate(report.expires_at)}</span>}
                 </p>
+                <div className={`${styles.byline} ${styles.headerByline}`}><ReportAuthor profileId={report.user_id} sourceReportId={report.id} onBlocked={() => { onClose(); void onReportChanged?.(); }} /></div>
+                <div className={styles.siteActions}><ReportSiteActivity key={`${report.id}-actions`} reportId={report.id} mode="actions" /></div>
               </header>
               {report.cleanup_state === 'completed' && <CompletedCleanup key={report.id} reportId={report.id} cleanup={cleanup} showPhotos={!hasAfterPhotos} />}
 
@@ -465,10 +467,9 @@ export function ReportDetail({
                 {report.notes_other && <p className="report-detail-fact"><strong>Details</strong><span>{report.notes_other}</span></p>}
                 {(!closed || report.cleanup_state === 'completed') && <ContributionSupporters reportId={report.id} initialCredit={report.contributorCredit} />}
                 {!closed && userId && report.funded_amount_cents > 0 && report.cleanup_state !== 'completed' && <div className={styles.payout}><span>Cleaning this up? Set up payouts so you can get paid.</span><PayoutSetupAction compact /></div>}
+                <div className={styles.siteHistory}><ReportSiteActivity key={`${report.id}-timeline`} reportId={report.id} mode="timeline" /></div>
                 <p className={styles.footnote}><AppLink reportId={report.id} className="report-open-app">Open in the app</AppLink><span aria-hidden="true"> · </span><span>Report ID {report.id.slice(0, 8)}</span></p>
               </div>
-              <div className={styles.byline}><ReportAuthor profileId={report.user_id} sourceReportId={report.id} onBlocked={() => { onClose(); void onReportChanged?.(); }} /></div>
-              <ReportSiteActivity key={report.id} reportId={report.id} />
             </div>
 
             <footer className="report-detail-footer" tabIndex={entryIntent ? -1 : undefined} aria-label="Cleanup and funding options">

@@ -50,6 +50,23 @@ describe('bounded report discovery', () => {
     const result = await collectDiscoveryMatches(async (offset, size) => rows.slice(offset, offset + size), () => true, 2, 2);
     expect(result).toEqual({ reports: [0, 1], truncated: true });
   });
+  it('keeps one explicit site across pages before counting the result limit', async () => {
+    const rows = [
+      { id: 'new', site: 'a' }, { id: 'old', site: 'a' },
+      { id: 'other', site: 'b' }, { id: 'older', site: 'a' },
+    ];
+    const result = await collectDiscoveryMatches(async (offset, size) => rows.slice(offset, offset + size), () => true, 2, 2, row => row.site);
+    expect(result).toEqual({ reports: [rows[0], rows[2]], truncated: false });
+  });
+  it('does not substitute an older matching cleanup for the current condition', async () => {
+    const rows = [
+      { ...report, id: 'new', cleanup_site_id: 'a', severity: 'High' },
+      { ...report, id: 'old', cleanup_site_id: 'a', severity: 'Low' },
+      { ...report, id: 'unrelated', cleanup_site_id: undefined, severity: 'Low' },
+    ];
+    const result = await collectDiscoveryMatches(async (offset, size) => rows.slice(offset, offset + size), row => matchesDiscovery(row, { ...DEFAULT_DISCOVERY_FILTERS, severity: 'low' }), 1000, 1, row => row.cleanup_site_id ?? row.id);
+    expect(result.reports.map(row => row.id)).toEqual(['unrelated']);
+  });
   it('combines filters across the dateline and requires a usable origin for distance', () => {
     const filters = { ...DEFAULT_DISCOVERY_FILTERS, severity: 'high' as const, funding: 'funded' as const, radius: 5 as const, query: 'country ROAD' };
     expect(matchesDiscovery(report, filters, { latitude: 0, longitude: -179.99 })).toBe(true);
@@ -68,7 +85,7 @@ describe('bounded report discovery', () => {
     await loadDiscoveryReports(client, { filters: { ...DEFAULT_DISCOVERY_FILTERS, status: 'progress', funding: 'funded', severity: 'high' }, area: { latitude: 0, longitude: 180, north: 1, south: -1, west: 179, east: -179 }, signal: controller.signal });
     expect(chain.or).toHaveBeenCalledWith('longitude.gte.179,longitude.lte.-179');
     expect(chain.in).toHaveBeenCalledWith('cleanup_state', ['claimed', 'completion_submitted', 'changes_requested']);
-    expect(chain.ilike).toHaveBeenCalledWith('severity', 'high');
+    expect(chain.ilike).not.toHaveBeenCalled();
     expect(chain.order).toHaveBeenCalledWith('id');
     expect(chain.range).toHaveBeenCalledWith(0, 499);
     controller.abort();

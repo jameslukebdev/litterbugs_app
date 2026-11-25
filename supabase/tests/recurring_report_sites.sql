@@ -1,6 +1,14 @@
 \set ON_ERROR_STOP on
 set role authenticated;
 set request.jwt.claim.sub='20000000-0000-4000-8000-000000000003';
+-- Ordinary draft serialization uses null for unused notes and Other-only litter.
+select public.reserve_site_report('10000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000005','{"title":"Other litter","severity":"Low","litter_types":null,"types":"Packaging","notes_presets":null}');
+do $$begin
+ begin
+  perform public.reserve_site_report('10000000-0000-4000-8000-000000000001',gen_random_uuid(),'{"severity":"Low","litter_types":{},"notes_presets":[]}');
+  raise exception 'non-array choice accepted';
+ exception when check_violation then null; end;
+end$$;
 -- New submitter, exact old location, clean financial state, idempotent reservation.
 select public.reserve_site_report('10000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000002','{"title":"Litter again","severity":"Medium","litter_types":["Bottles"],"notes_presets":[]}');
 select public.reserve_site_report('10000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000002','{"title":"Litter again","severity":"Medium","litter_types":["Bottles"],"notes_presets":[]}');

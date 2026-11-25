@@ -14,6 +14,8 @@ declare
   source public.reports%rowtype;
   reserved public.reports%rowtype;
   current_id uuid;
+  litter jsonb;
+  presets jsonb;
 begin
   if actor is null or not coalesce(public.is_permanent_user(), false) then
     raise insufficient_privilege using message = 'permanent_account_required';
@@ -37,16 +39,24 @@ begin
   if current_id is not null then
     raise unique_violation using message = 'site_already_reported', detail = current_id::text;
   end if;
-  if draft is null or jsonb_typeof(draft) <> 'object'
-    or length(coalesce(draft->>'title','')) > 80 or length(coalesce(draft->>'notes_other','')) > 500
+  if draft is null or jsonb_typeof(draft) <> 'object' then
+    raise check_violation using message = 'invalid_report_details';
+  end if;
+  -- The ordinary web/mobile draft serializes unused choices as JSON null.
+  litter := coalesce(nullif(draft->'litter_types','null'::jsonb),'[]'::jsonb);
+  presets := coalesce(nullif(draft->'notes_presets','null'::jsonb),'[]'::jsonb);
+  if jsonb_typeof(litter) <> 'array' or jsonb_typeof(presets) <> 'array' then
+    raise check_violation using message = 'invalid_report_details';
+  end if;
+  if length(coalesce(draft->>'title','')) > 80 or length(coalesce(draft->>'notes_other','')) > 500
     or coalesce(draft->>'severity','') not in ('Low','Medium','High')
-    or (coalesce(jsonb_array_length(draft->'litter_types'),0) = 0 and nullif(trim(draft->>'types'),'') is null) then
+    or (jsonb_array_length(litter) = 0 and nullif(trim(draft->>'types'),'') is null) then
     raise check_violation using message = 'invalid_report_details';
   end if;
   insert into public.reports(id,user_id,title,latitude,longitude,litter_types,types,severity,notes_presets,notes_other,is_published,photo_paths,cleanup_site_id,previous_report_id)
   values (new_report_id,actor,coalesce(nullif(trim(draft->>'title'),''),source.title),source.latitude,source.longitude,
-    array(select jsonb_array_elements_text(draft->'litter_types')),nullif(trim(draft->>'types'),''),draft->>'severity',
-    array(select jsonb_array_elements_text(draft->'notes_presets')),nullif(trim(draft->>'notes_other'),''),false,'{}',source.cleanup_site_id,source.id)
+    array(select jsonb_array_elements_text(litter)),nullif(trim(draft->>'types'),''),draft->>'severity',
+    array(select jsonb_array_elements_text(presets)),nullif(trim(draft->>'notes_other'),''),false,'{}',source.cleanup_site_id,source.id)
   returning * into reserved;
   return reserved;
 end;

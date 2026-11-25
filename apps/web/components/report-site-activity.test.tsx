@@ -1,13 +1,15 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PublicReportShareModel } from '@/lib/public-report-share-model';
+import { notifyDataChanged } from '@/lib/use-data-refresh';
 import { reportSite } from '@/lib/report-site-model';
 import { ReportSiteActivity } from './report-site-activity';
 
 const mocks = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), submit: vi.fn(), user: { id: 'member', is_anonymous: false } }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: mocks.push, refresh: mocks.refresh }) }));
 vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({ auth: { getUser: async () => ({ data: { user: mocks.user } }) } }) }));
+vi.mock('@/lib/saved-report-draft', () => ({ loadSiteReportPublication: async () => undefined }));
 vi.mock('@/lib/submit-site-report', () => ({ submitSiteReport: (...args: unknown[]) => mocks.submit(...args) }));
 vi.mock('./report-wizard', () => ({ ReportWizard: ({ initialDraft, onSubmit }: { initialDraft: { title: string }; onSubmit: (draft: unknown) => Promise<unknown> }) => <div role="dialog" aria-label="Report litter"><span>{initialDraft.title}</span><button onClick={() => void onSubmit(initialDraft)}>Submit new occurrence</button></div> }));
 const old: PublicReportShareModel = { id: 'old', state: 'completed', title: 'Greenway Trail', generalLocation: 'Boone', location: { latitude: 36.2, longitude: -81.6 }, reportDate: '2026-11-15T12:00:00Z', reporterName: 'Riley', severity: 'Medium', litterTypes: ['Bottles'], notes: null, cleanerName: 'Morgan', completionDate: '2026-11-17T12:00:00Z', claimedDate: '2026-11-16T12:00:00Z', bagsOrItemsRemoved: 4, weightPounds: 27, cleanupMinutes: 60, cleanupDescription: 'Cleared the trail.', beforePhotoUrl: '/before.jpg', afterPhotoUrl: '/after.jpg', canonicalUrl: '/reports/old' };
@@ -41,5 +43,19 @@ describe('site activity', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Dismiss notice' }));
     expect(screen.queryByRole('status')).toBeNull();
     expect(window.location.search).toBe('');
+  });  it('refreshes actions and history together after cleanup approval with one public read', async () => {
+    const pending = { ...old, state: 'in_progress' as const, completionDate: null, cleanerName: null };
+    const fetch = vi.fn(async () => ({ ok: true, json: async () => reportSite([old]) }));
+    vi.stubGlobal('fetch', fetch);
+    try {
+      render(<><ReportSiteActivity reportId="old" initialSite={reportSite([pending])} mode="actions" /><ReportSiteActivity reportId="old" initialSite={reportSite([pending])} mode="timeline" /></>);
+      expect(screen.queryByRole('button', { name: 'Needs cleaning again' })).toBeNull();
+      await act(async () => notifyDataChanged());
+      await screen.findByRole('button', { name: 'Needs cleaning again' });
+      expect(screen.getByText('1 cleanup')).toBeTruthy();
+      expect(screen.getAllByRole('heading', { name: 'Timeline' })).toHaveLength(1);
+      expect(fetch).toHaveBeenCalledTimes(1);
+    } finally { vi.unstubAllGlobals(); }
   });
+
 });

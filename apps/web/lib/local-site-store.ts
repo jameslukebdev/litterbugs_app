@@ -14,6 +14,8 @@ const directory=()=>process.env.LITTERBUGS_LOCAL_SITE_DIR||join(tmpdir(),'litter
 const file=()=>join(directory(),'occurrences.json');
 export async function isLocalWebsite() {
   if(!enabled())return false;
+  // A complete loopback Supabase stack uses the real lifecycle, not the disk overlay.
+  try {if (['localhost','127.0.0.1','[::1]'].includes(new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').hostname)) return false;} catch {}
   try {const host=(await headers()).get('host');return !!host&&['localhost','127.0.0.1','[::1]'].includes(new URL(`http://${host}`).hostname);}
   catch{return false;}
 }

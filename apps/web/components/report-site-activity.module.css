@@ -1,9 +1,11 @@
 .activity { margin-top:24px; color:var(--text,#292832); }
 .actions { display:grid; gap:12px; }
-.again { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:48px; }
-.actions .again { width:100%; }
-.activity>.again,.activity>a { margin-bottom:24px; }
+.again { display:inline-flex; width:100%; align-items:center; justify-content:center; gap:9px; min-height:48px; padding:10px 16px; border:2px solid #9bbbf3; border-radius:16px; background:#f2f7ff; color:#2e539e; font:inherit; font-weight:800; line-height:1.25; cursor:pointer; box-shadow:none; }
+.again:hover { background:#e5efff; border-color:#84aaeb; color:#234485; }
+.again:focus-visible { outline:3px solid #84aaeb; outline-offset:3px; }
+.reportBug { flex:none; width:26px; height:26px; background:url('/brand/ranks/dragonfly.svg') no-repeat center / contain; }
 .timeline { margin-top:24px; scroll-margin-top:24px; }
+.activity > .timeline:first-child { margin-top:0; }
 .heading { display:flex; align-items:baseline; flex-wrap:wrap; gap:8px 16px; justify-content:space-between; margin-bottom:14px; }
 .heading h2 { margin:0; font-size:22px; }
 .heading>span { font-size:13px; color:#73717d; }

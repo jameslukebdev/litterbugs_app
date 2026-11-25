@@ -94,10 +94,11 @@ it('does not advertise funding when the report is ineligible', async () => {
   expect(screen.queryByRole('link', { name: 'Fund' })).toBeNull();
   expect(screen.getByRole('link', { name: 'Clean' })).toBeTruthy();
 });
-it('points completed Boone evidence to the next cleanup and the town leaderboard', async () => {
+it('keeps completed Boone evidence focused on the cleanup and town leaderboard', async () => {
   loadReport.mockResolvedValue({ ...report, state: 'completed', community: { slug: 'us-nc-boone', path: '/communities/us/nc/boone', name: 'Boone' }, place: { locality: 'Boone', region: 'North Carolina', countryCode: 'US' }, generalLocation: 'Boone', completionDate: '2026-10-28T12:00:00Z', cleanerName: 'Local cleaner', bagsOrItemsRemoved: 2, weightPounds: 12 });
   render(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
-  expect(screen.getByRole('link', { name: 'Find another cleanup' }).getAttribute('href')).toBe('/reports');
+  expect(screen.queryByRole('link', { name: 'Find another cleanup' })).toBeNull();
+  expect(screen.getByRole('button', { name: 'Share cleanup' })).toBeTruthy();
   expect(screen.getAllByRole('link', { name: 'Boone leaderboard' }).every(link => link.getAttribute('href') === '/communities/us/nc/boone')).toBe(true);
   expect(screen.getByText('Cleaned by Local cleaner')).toBeTruthy();
 });
