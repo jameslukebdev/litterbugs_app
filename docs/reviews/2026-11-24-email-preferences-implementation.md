@@ -1,5 +1,7 @@
 # Email preferences — implemented, not deployed
 
+Website/backend deployment update (November24): released source00ed676 and migration20261124211058. See [the website release record](2026-11-24-email-preferences-website-release.md) for live verification. App OTA publication remains on hold. Earlier hold/status sections below describe the pre-release phase.
+
 Grant authorized implementation after reviewing the samples: website first, then
 both apps. Existing and new accounts start subscribed; signup has no newsletter
 checkbox or marketing-email wording. No Resend integration or email sending.
