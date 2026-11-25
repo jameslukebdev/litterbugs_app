@@ -16,7 +16,7 @@ function main() {
     if (crypto.createHash('sha256').update(fs.readFileSync(absolute)).digest('hex') !== file.sha256) throw Error('Prepared artifact changed: ' + file.path);
   }
   const args = ['--yes', 'eas-cli@27.1.0', 'update', '--skip-bundler', '--input-dir', path.join(output, 'dist'), '--channel', 'production', '--environment', 'production', '--platform', 'all', '--upload-source-maps', '--message', metadata.message, '--non-interactive', '--json'];
-  const result = { mode: 'VERIFY_ONLY_NOT_PUBLISHED', source: metadata.source, previousPublishedCommit: metadata.previousPublishedCommit, previousPublishedGroup: metadata.previousPublishedGroup, runtime: metadata.runtime, platforms: metadata.platforms, filesVerified: metadata.files.length, publicationRequiresLaterAuthorization: true, futurePublicationCommand: { command: 'npx', args } };
+  const result = { mode: 'VERIFY_ONLY_NOT_PUBLISHED', source: metadata.source, previousPublishedCommit: metadata.previousPublishedCommit, previousPublishedGroup: metadata.previousPublishedGroup, runtime: metadata.runtime, platforms: metadata.platforms, filesVerified: metadata.files.length, publicationRequiresLaterAuthorization: true, futurePublicationCommand: { command: 'npx', args }, requiredPublicationWrapper: 'Run EAS env:exec production with scripts/prepared-mobile-ota.cjs ARTIFACT_DIRECTORY --publish only after explicit authorization; that helper applies the production profile and disables local dotenv.' };
   fs.writeFileSync(path.join(output, 'verification.json'), JSON.stringify(result, null, 2) + '\n');
   console.log(JSON.stringify(result, null, 2));
 }

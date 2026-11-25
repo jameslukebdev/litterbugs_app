@@ -22,7 +22,8 @@ function main() {
     if (hash !== file.sha256) throw new Error(`Prepared artifact changed: ${file.path}`);
   }
   const profile = JSON.parse(readFileSync(join(mobile, 'eas.json'))).build.production;
-  const commandArgs = ['--yes', 'eas-cli@27.1.0', 'update', '--skip-bundler', '--input-dir', join(output, 'dist'), '--channel', 'production', '--environment', 'production', '--platform', 'all', '--upload-source-maps', '--message', 'Report funders, optional anonymous donations, payment name controls, and photo hearts', '--non-interactive', '--json'];
+  const message = metadata.message || 'Report funders, optional anonymous donations, payment name controls, and photo hearts';
+  const commandArgs = ['--yes', 'eas-cli@27.1.0', 'update', '--skip-bundler', '--input-dir', join(output, 'dist'), '--channel', 'production', '--environment', 'production', '--platform', 'all', '--upload-source-maps', '--message', message, '--non-interactive', '--json'];
   const publish = args.includes('--publish');
   console.log(JSON.stringify({ mode: publish ? 'PUBLISH' : 'VERIFY_ONLY_NOT_PUBLISHED', source: metadata.source, runtime: metadata.runtime, platforms: metadata.platforms, filesVerified: metadata.files.length, command: 'npx', args: commandArgs }, null, 2));
   if (!publish) return;
