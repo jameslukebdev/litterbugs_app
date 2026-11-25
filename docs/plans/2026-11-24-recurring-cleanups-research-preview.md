@@ -10,6 +10,39 @@ The photo picker creates a local object URL; it does not upload. Sample photo,
 approval simulation and research notes live outside the product screen. Native app
 screens are browser mockups in the established Litterbugs style, not an app update.
 
+## Follow-up discussion — attribution, existing workflow and Timeline
+
+Owner's intended attribution: whoever submits the new occurrence is its reporter.
+Keep the original reporter on the original occurrence. New reporter ownership,
+cleanup-review responsibility and any reporter reward follow the ordinary rules
+for that new report; the original reporter does not become permanent owner of all
+future reports at the location. The existing Renew action for an open report keeps
+its original ownership; Needs cleaning again starts a separate linked occurrence.
+
+Reuse the normal new-report workflow and existing validation, funding, claim,
+completion review and settlement rules. The extra behavior is preselected site
+identity/location, linkage to earlier occurrences and duplicate/concurrency checks.
+Do not bypass normal photo/safety/funding eligibility checks or reuse old balances.
+
+The owner confirmed an existing website Timeline. Inspected its report/donation/
+claim/completion events in `apps/web/app/reports/[id]/report-timeline.tsx` and its
+public-page integration. Recommended revision (not yet applied to the preview):
+use one site Timeline, with events grouped by reporting/cleanup occurrence and
+expandable cleanup evidence. Replace the preview's separate chronological Cleanup
+history surface with a short cleanup-count link into that Timeline. Keep event
+ordering consistent with the current Timeline. The member account's My activity /
+Cleanup history remains a separate personal activity view and is not being removed.
+
+Already reported is an exception state for an existing active report, including
+stale pages or two simultaneous submissions; it is not another normal reporting
+step. The separate preview scene illustrates that case. Recommended final treatment:
+open the existing current report with a short notice, preserving a draft where
+appropriate, rather than a dedicated extra page or a second pin/fund. Server-side
+checks still apply even when the normal UI hides Needs cleaning again on active sites.
+
+This turn only records discussion and recommendations. Initial preview UI remains
+unchanged; no new Timeline, report, schema, workflow or release implementation.
+
 ## Recommended product model
 
 **One site, with separate reports/cleanups over time.** The site's current condition

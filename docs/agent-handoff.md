@@ -24,6 +24,19 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (recurring-cleanup ownership and Timeline discussion)
+
+- Recorded owner's intended new-report attribution: the new submitter owns that
+  occurrence; normal reporting/cleanup/review/reward rules apply. Existing Renew
+  for an open report keeps its author and remains a different operation.
+- Checked existing website Timeline. Recommended one expanded site Timeline with
+  grouped occurrences/cleanup evidence, instead of a duplicate chronological history.
+  Already reported is a stale/concurrent-report exception; recommend opening current
+  report with a notice rather than another normal-flow page. These are discussion
+  recommendations, not implemented preview changes or deployment approvals.
+- Updated recurring-cleanup research plan on codex/site-history-preview-20261124.
+  Preview, production website/backend and all OTA updates unchanged.
+
 ### 2026-11-24 — Codex (recurring-cleanup research and local preview only)
 
 - Researched FixMyStreet, SeeClickFix, TrashOut, NCDOT pickup records and Refero
