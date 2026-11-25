@@ -26,21 +26,25 @@ They cannot talk to each other directly. This file is how they share context.
 
 ### 2026-11-25 — Codex (returned-litter mobile OTAs prepared; publication held)
 
-- Prepared both full production2.1.1 Hermes exports fromb18dda0 on isolated branch
+- Prepared both full production2.1.1 Hermes exports from2797676 on isolated branch
   codex/recurring-cleanups-mobile-20261125; NOT PUBLISHED, pending owner approval.
   Current production group5c8ab976 and both update IDs/mapping remain unchanged.
 - Added single Timeline below Reported by in opened detail; blue dragonfly Needs
   cleaning again opens ordinary five-step flow with fresh photos/new owner/fixed
   site. Separate durable drafts/journals, retry/race guards, linked-site browsing;
   historical ownership/evidence/funds retained. Websiteba1feca/backend already live.
--702 mobile tests pass/1 existing skip;236-module check/lint pass. Both production
-  exports/78 hashes verified.427 inherited files, all67 assets/platform retained;
+-705 mobile tests pass/1 existing skip;236-module check/lint pass. Both production
+  exports/78 hashes verified.425 inherited files, all67 assets/platform retained;
   $35/funders/privacy/hearts/email preserved; native/dependencies unchanged.
 - Sequential iPhone/Android native UI harness checks with real public history pass
   through Review/cancel; no report/upload/provider write. Full production exports
   compile; actual OTA download/activation awaits publication. Android local QA
   signature map-tile limitation retained. Original apps/data unchanged; owned test
   devices stopped, memory65% free. No store/backend/website publication in this task.
+- Final draft-store correction separates site photos from ordinary cleanup; local
+  deleted-account purging covers new keys/files. Two-way draft isolation and
+  journal-retirement checks pass. Initialb18dda0 export archived/superseded and
+  publication disabled; final UI source is unchanged from native-tested version.
 - Review: docs/reviews/2026-11-25-recurring-cleanups-mobile-ota-readiness.md;
   artifacts/mobile-recurring-cleanups-20261125/. Use frozen source/export, not dirty
   shared tree. Recover by republishing5c8ab976, never embedded. Other assistants'

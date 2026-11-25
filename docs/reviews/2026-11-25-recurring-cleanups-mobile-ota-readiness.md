@@ -7,7 +7,7 @@ was performed for this mobile task.
 
 ## Frozen candidate
 
-- Source: `b18dda09d76312b524307c5a7dc2684552163e3d`.
+- Source: `279767621a548220c47658efeaf1a13d03bb3f05`.
 - Branch: `codex/recurring-cleanups-mobile-20261125`.
 - Isolated checkout: `/tmp/litterbugs-recurring-cleanups-mobile-20261125`.
 - Both production Hermes exports, source maps and assets are under
@@ -53,16 +53,16 @@ independent. Earlier rounds remain accessible in Timeline.
 
 ## Validation and preservation
 
-- Full mobile suite: **702 passed /1 existing skip**,128 passing files/1 skipped.
+- Full mobile suite: **705 passed /1 existing skip**,128 passing files/1 skipped.
 -236-module source check, scoped ESLint and diff whitespace checks pass.
-- Focused native model, activity, draft and submission tests:30 passed. Includes
+- Focused native model, activity, draft and submission tests:37 passed. Includes
   ownership, duplicate recovery, edited retries, interrupted uploads, ordinary
-  draft/evidence preservation, donor anonymity, blocked history, foreground
+  draft/evidence preservation in both directions, account-local purging, donor anonymity, blocked history, foreground
   refresh and latest-site selection across fetched pages.
 - Both **full production app** exports passed using existing EAS production env,
   fresh Metro cache and one worker. Production config/backend/runtime assertions
   passed.78 exported file hashes verified by both offline helpers.
-- Compared with the exact live OTA:427 inherited source files unchanged, zero
+- Compared with the exact live OTA:425 inherited source files unchanged, zero
   removals; all67 prior assets per platform byte-identical. The $35 tutorial,
   funder/privacy/heart/email implementations, shared contracts, app/native config,
   assets, package manifests, lockfile and native patches are retained. Unchanged
@@ -73,6 +73,15 @@ independent. Earlier rounds remain accessible in Timeline.
 - Final readback confirms channel ID/mapping and both live update IDs/group are
   unchanged. `publication-hold.json` explicitly records NOT_PUBLISHED.
 
+The first unpublished export (`b18dda0`) was superseded before approval after a
+final cross-check found that ordinary draft cleanup could remove nested site
+photos. The final store uses its own `site-report-drafts/<user>/<site>` directory
+and account-scoped keys. Regression checks prove clearing either draft type
+preserves the other. Deleted-account local purging drains the new queue and
+removes its keys/evidence; a retired account cannot recreate a submission journal.
+Only local cleanup tests were run, with no real account deletion. The archived
+first export is explicitly marked `SUPERSEDED_DO_NOT_PUBLISH`.
+
 ## Native checks and limits
 
 Ran devices sequentially using existing2.1.1 native code, with analytics and OTA
@@ -81,7 +90,8 @@ analytics and silent updates. iPhone17Pro/iOS26.5 used separate bundle ID
 `com.litterbugs.sitehistoryqa`. Android/API36 used a disposable COW clone
 `SiteHistoryQA`,1024MB RAM/two cores and local QA signature;87 native/DEX files
 were byte-identical to the original shell. Original installed apps, sign-in and
-emulator data were retained. Owned test devices were stopped; free memory65%.
+emulator data were retained. Owned test devices were stopped; free memory measured
+65% immediately after shutdown.
 
 The QA entry imports the actual ReportSiteActivity, ReportWizardModal and wizard
 navigation, reading the **real public** Hobby Lobby cleanup. On both platforms:
@@ -100,6 +110,11 @@ cleanup-cycle integration and browser flow cover the unchanged backend contracts
 no new claim is made of native live report submission, payment/provider delivery,
 waiver acceptance or account deletion testing. No real report was posted, no
 photos uploaded and no hosted account/data change was needed for these UI checks.
+
+The native UI was checked at `b18dda0`; source comparison proves all component,
+MapScreen and QA UI code is identical in the final candidate. The subsequent
+storage-only correction passed the full705-test suite and both fresh production
+exports. The review screenshots remain valid for the unchanged UI.
 
 Actual updater download, activation and relaunch of this candidate remain pending
 publication approval. No unapproved preview update was used as a shortcut.
