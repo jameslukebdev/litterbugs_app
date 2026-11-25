@@ -384,6 +384,8 @@ export default function ReportDetailsSheet({ state, actions }) {
           </>
         ) : null}
 
+        {cleanupCardFirst ? <View style={{ paddingHorizontal: 22 }}><ReportIssueActions report={selectedReport} attempt={selectedCleanupAttempt} userId={currentUserId} visible={detailsOpen} onIssue={openIssue} onEdit={openContentEdit} onRelease={confirmCleanupRelease} /></View> : null}
+
         {selectedReport?.cleanup_state !== 'completed' ? (
           <ReportPhotoGallery report={displayedReport} urls={displayedPhotoUrls} loading={photosLoading} width={reportHeroWidth} />
         ) : null}
@@ -395,8 +397,6 @@ export default function ReportDetailsSheet({ state, actions }) {
             <Text style={styles.reportDirectionsText}>Get directions</Text>
           </TouchableOpacity>
         ) : null}
-
-        {cleanupCardFirst ? <View style={{ paddingHorizontal: 22 }}><ReportIssueActions report={selectedReport} attempt={selectedCleanupAttempt} userId={currentUserId} visible={detailsOpen} onIssue={openIssue} onEdit={openContentEdit} onRelease={confirmCleanupRelease} /></View> : null}
 
         <ContributionSupporters reportId={selectedReport?.id} visible={Boolean(detailsOpen)} style={{ marginHorizontal: 22 }} />
 
