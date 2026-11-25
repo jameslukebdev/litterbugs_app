@@ -24,24 +24,22 @@ completion review and settlement rules. The extra behavior is preselected site
 identity/location, linkage to earlier occurrences and duplicate/concurrency checks.
 Do not bypass normal photo/safety/funding eligibility checks or reuse old balances.
 
-The owner confirmed an existing website Timeline. Inspected its report/donation/
-claim/completion events in `apps/web/app/reports/[id]/report-timeline.tsx` and its
-public-page integration. Recommended revision (not yet applied to the preview):
-use one site Timeline, with events grouped by reporting/cleanup occurrence and
-expandable cleanup evidence. Replace the preview's separate chronological Cleanup
-history surface with a short cleanup-count link into that Timeline. Keep event
-ordering consistent with the current Timeline. The member account's My activity /
-Cleanup history remains a separate personal activity view and is not being removed.
+The owner confirmed an existing website Timeline. The revised local preview
+uses one embedded Timeline grouped by report occurrence, preserving reporting,
+donations, claiming and cleanup events. Its oldest-first ordering, labels, mint
+markers and donation amount/time formatting follow the existing website.
+Cleaned twice / View timeline jumps into that same surface. Expand a cleanup
+event for its photos and impact; no second chronological cleanup-history page.
 
-Already reported is an exception state for an existing active report, including
-stale pages or two simultaneous submissions; it is not another normal reporting
-step. The separate preview scene illustrates that case. Recommended final treatment:
-open the existing current report with a short notice, preserving a draft where
-appropriate, rather than a dedicated extra page or a second pin/fund. Server-side
-checks still apply even when the normal UI hides Needs cleaning again on active sites.
+Jamie is attributed to the new report; Alex and Riley retain earlier ones.
+The normal report/review workflow is simulated. Already reported is a stale or
+concurrent-submission exception: the preview opens Taylor's current report with
+a short inline notice, without adding Jamie as another public occurrence.
+Local form evidence is retained. A preview-only control simulates this case.
 
-This turn only records discussion and recommendations. Initial preview UI remains
-unchanged; no new Timeline, report, schema, workflow or release implementation.
+Only the local previews were revised. The actual website Timeline, backend,
+native apps, schema and releases remain unchanged. The member account's personal
+My activity / Cleanup history is a separate view and is not being removed.
 
 ## Recommended product model
 
@@ -49,7 +47,7 @@ unchanged; no new Timeline, report, schema, workflow or release implementation.
 can change; each successful earlier cleanup remains a dated achievement.
 
 1. A cleaned site's details offers **Needs cleaning again**, alongside its most
-   recent cleanup and a **Cleanup history** row.
+   recent cleanup and a **Cleaned twice / View timeline** link.
 2. Signed-in reporting starts at that same location, without another pin drop or
    retyping its title. Require newly supplied photos; details can be optional.
 3. Use the report/photo review pipeline before changing the site's public condition.
@@ -59,11 +57,10 @@ can change; each successful earlier cleanup remains a dated achievement.
 4. Once approved, the site becomes **Needs a cleanup** with current photos and its own
    new report/funding/claim lifecycle. Show one current map pin, not overlapping
    active incidents for the same site.
-5. **Cleanup history** lists accepted cleanups newest first. Expand one to view its
+5. **Timeline** groups report/donation/claim/cleanup events by occurrence, oldest first. Expand one to view its
    own before/after photos, cleaner, date, impact and appropriate payment status.
    New reports can appear as dated events without increasing the completed count.
-6. An already-active site opens **View current report**, rather than another active
-   report. A concurrent pending candidate needs a corresponding private-safe response.
+6. An already-active site opens its current report with a short inline notice. A concurrent pending candidate needs a corresponding private-safe response.
 
 Do not automatically mark a place dirty after a timer. Actual new litter needs a
 new observation. Also distinguish **new litter after a valid cleanup** from
@@ -107,7 +104,7 @@ photo-backed location issue reporting. Primary behavioral references are above.
 | Existing report styling and bug roles | Current Litterbugs UI; Duolingo's bounded friendly tone | The feature should feel like part of the current app, with no redesign. |
 | Short labels, no directional subheadings | Owner preferences; Tally's concrete action language | The action and fields explain themselves. |
 | Mint completed state / red new-litter state | Current Litterbugs semantic colors | Preserve what each status color already means. |
-| One history row opening a dedicated history view | Existing report detail + Aboard/Maps evidence | Keeps the normal detail screen compact; longer history can scroll separately. |
+| One embedded Timeline reached by cleanup-count link | Owner confirmation + existing website Timeline | Preserves all event types without duplicate chronology. |
 | Collapsible dated cleanups with their own photos | Aboard and Google Maps screenshot evidence | Read at a glance; inspect the proof when needed. |
 | Location already selected in recurrence form | Existing site context + Pool flow | Avoid unnecessary location entry and duplicate pins. |
 | Review state before new public availability | Current photo-review infrastructure; preservation requirement | A new report should not invalidate a verified earlier cleanup on a single unsupported tap. |
@@ -188,7 +185,7 @@ Flow checked through CUA browser UI:
 
 Cleaned site → Needs cleaning again → required photo form → sample evidence →
 Submit report → Photo review → View site (old cleanup intact) → simulated passed
-review → Needs a cleanup ($0, new photo hearts0) → history → expand prior cleanup
+review → Needs a cleanup ($0, new photo hearts0) → embedded Timeline → expand prior cleanup
 → before/after photo dialog → Escape closes. Duplicate report opens current report.
 Removing the photo disables Submit again. Reset restores the initial fixture.
 
@@ -196,12 +193,14 @@ Removing the photo disables Submit again. Reset restores the initial fixture.
 | --- | --- |
 | Local page title/URL and meaningful content | Pass |
 | No framework error overlay | Pass |
-| Browser console | Zero errors/warnings in checked Chrome preview |
+| Browser console | Initial prototype clean; revision had one historical editing-time Fast Refresh warning. No new warning/error after reload and Timeline render. |
 | 1440×1080 desktop Website + App mockup | Pass; wide website uses two columns |
 | 390×900 narrow Website + App | Pass; no horizontal overflow or broken images |
 | Photo-required submit / add / remove | Pass |
 | Review preserves previous cleanup; approval changes current condition | Pass |
-| Duplicate report and history/photo interactions | Pass |
+| Reporter attribution / one embedded product Timeline | Pass; Jamie current, Alex/Riley historical |
+| Concurrent report / inline notice / dismissal | Pass; Taylor current, no duplicate Jamie public event |
+| Timeline groups / cleanup evidence / photo interactions | Pass |
 | Scoped ESLint and TypeScript | Pass |
 | Production backend/native/store/OTA implementation | Not part of this preview |
 
@@ -217,3 +216,12 @@ photo uploads or payments from the prototype. Only pre-existing public photo ass
 were downloaded for its illustrative media. No schema migrations, release branch
 promotion, native changes or OTA publication. Current production email preference
 OTA and all previous updates are unchanged.
+
+## Updated preview verification
+
+Current revision evidence: /tmp/litterbugs-site-timeline-preview-20261124/
+(website-timeline.png, app-timeline.png, already-reported-inline.png, browser-qa.json).
+CUA checks covered both views at1440×1080 and390×900; no horizontal overflow or
+broken images. Scoped ESLint and TypeScript pass. The page's external preview
+toolbar also says Timeline when that scene is selected; the mocked product has
+one Timeline. Existing production Timeline files were not edited.

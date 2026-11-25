@@ -24,6 +24,22 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (updated recurring-cleanup previews with existing Timeline)
+
+- Preview only: Jamie owns the new occurrence; Alex/Riley retain earlier reports.
+  Normal reporting/review remains simulated. Existing Renew stays separate.
+- One embedded Timeline groups report/donation/claim/cleanup events and expandable
+  evidence. Cleaned twice jumps to it in App and Website mockups.
+- Concurrent submission opens Taylor's current report with an inline notice,
+  without another public Jamie report/pin/fund. Product copy remains concise.
+- Scoped TypeScript/ESLint and interaction checks pass;1440x1080 and390x900 layouts
+  have no overflow/broken images. One editing-time Fast Refresh warning did not
+  recur after reload. Evidence: /tmp/litterbugs-site-timeline-preview-20261124/.
+- Committed on codex/site-history-preview-20261124; mirrored to shared localhost3000.
+  No production build/deploy, schema, actual Timeline/native/OTA change.
+  Website00ed676 and email OTA group5c8ab976-b063-4497-b5be-d15045622988 unchanged.
+  Actual site identity/concurrency/financial integration remains pending.
+
 ### 2026-11-24 — Codex (recurring-cleanup ownership and Timeline discussion)
 
 - Recorded owner's intended new-report attribution: the new submitter owns that
