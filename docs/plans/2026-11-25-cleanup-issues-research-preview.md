@@ -174,3 +174,52 @@ Evidence: /tmp/litterbugs-cleanup-issues-evidence-20261125/additional-informatio
 and additional-information-website.jpg. Deep-link illustrative state:
 /dev-review-preview/cleanup-issues?screen=site&view=web&example=information.
 Preview state only; no account/report edit, upload, notification, DB or deployment.
+
+
+## Full cleaner journey and privacy preview follow-up
+
+Owner requested a clickable full journey, not production implementation, and asked
+whether the exchange is private. Keep the existing Refero/brand reference lock.
+Private cleanup issue conversation is scoped to cleaner/reporter/authorized team;
+no public copy of requests/replies. Public Additional information is a separate,
+explicit report edit, still optional. A private reply can resolve the access query
+without publishing directions or changing the original report at all.
+Preview transition: Your cleanup > ellipsis > request > paused > role switch to
+reporter inbox > private reply > reporter confirmation > role switch to cleaner >
+push/inbox > exact issue conversation > Resume cleanup > same retained claim/time.
+Role-switch controls are outside the product frame; no explanatory product prose.
+Cleaner response persists in Your cleanup as an excerpt + View response; notification
+read state cannot remove that route. Reopening after resolution shows history without
+another resume action. Existing Additional information section holds public facts.
+Resume action is explicit, only after a response and for routine kept claims. Team
+review remains for unsafe/moved/no-litter; released claims are never resumed.
+Still an issue sends private follow-up and keeps the same conversation/paused clock.
+Original evidence, fund/donations, and single public Timeline remain; private reply
+text must never appear in public report, public Timeline or lock-screen push preview.
+
+Full journey QA (Chrome localhost, preview state only) passed:
+- Fresh walkthrough through actual ellipsis request, notification, paused claim,
+  reporter inbox, private answer, reporter confirmation, cleaner push/inbox and
+  exact response review. No production sends/writes or backend tests performed.
+- Notification missed/read: top-of-cleanup pending response row and Your cleanup
+  excerpt both open response. Newest reply shown first; earlier messages expand.
+  Fixed review footer keeps Resume cleanup visible. Resume retains23h40m example
+  time, enables Add cleanup photos, preserves$35 and keeps View response afterward.
+- Still an issue → private follow-up → second private answer → Resume passes;
+  waiting for response keeps photos disabled. Reopening after resume has no second
+  resume action. Unsafe reply cannot self-resume; returned normal claim confirms
+  availability without restoring cleaner claim. All simulated funds/history remain.
+- Private request/reply text absent from public report and Timeline, before and
+  after resolution. Separate public Additional information edit appears publicly
+  and sends a public-update notification, without copying private conversation.
+  Lock-screen push preview contains generic context, no reply content/directions.
+- App + website layouts and390px width pass; no horizontal overflow or broken
+  assets, console error-free, scoped ESLint and diff whitespace checks pass.
+  Temporary viewport reset. No native device/server started; existing3000 reused.
+- Evidence /tmp/litterbugs-cleanup-issues-evidence-20261125/:
+  full-flow-notification.jpg, full-flow-response-on-cleanup.jpg,
+  full-flow-latest-private-response.jpg, full-flow-resumed-final.jpg.
+- Deliverable starts /dev-review-preview/cleanup-issues?walkthrough=1, with example
+  drafts for a click-through. Start full walkthrough resets it. Role-switch controls
+  remain outside product UI. All privacy/timers/notifications are design simulation,
+  not implemented authorization/RLS/push/claim-resumption behavior.
