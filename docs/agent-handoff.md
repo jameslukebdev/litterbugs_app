@@ -24,6 +24,30 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (local recurrence actions simplified; SEO architecture review)
+
+- Moved Needs cleaning again / View latest report into the existing public-page
+  action stack below Reported by. Removed the redundant Cleaned twice / View
+  timeline row from the actual local feature; count stays in the Timeline heading.
+  Site data is loaded once on the server and passed to separate action/Timeline
+  renderings; there is still one visible Timeline.
+- Archived the local QA reports.json under the OS temporary directory (not erased)
+  so the cleaned sample again offers Needs cleaning again. CUA confirmed its form
+  opens, clean layout after closing, one Timeline, no redundant row, clean console.
+ 19 activity/page tests, TypeScript and scoped lint pass. No new simulator/build.
+- Owner raised SEO integration: reviewed existing readable report URLs, metadata,
+  canonical, sitemap, structured data and active/completed listings. Recommend
+  preserving occurrence URLs and both directories, with a distinct stable site
+  overview for recurring locations; no SEO routing/canonical change implemented.
+- Three-URL live SEO sample returned200 for both directories and a completed report
+  (existing id URL307 to readable URL). No GSC/GA evidence joined. Raw HTML canonical
+  placement warning requires rendered verification because Next streams metadata;
+  it is not a confirmed indexing/ranking defect. One external TikTok check blocked.
+- Source on codex/recurring-cleanups-local-20261124; all shared unrelated work
+  preserved. No deploy, hosted migration, native change, OTA, send or search submission.
+  Evidence: /tmp/litterbugs-recurring-cleanups-20261124/corrected-actions.jpg.
+  Previous readiness limitations remain; see the local implementation review.
+
 ### 2026-11-24 — Codex (local recurring-cleanup website build; release held)
 
 - Existing report page/map detail now integrate one grouped Timeline and Needs

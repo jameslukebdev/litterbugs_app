@@ -77,3 +77,16 @@ or Claude session was closed. Subsequent verification was sequential.
 
 Website00ed676 and email OTA group5c8ab976-b063-4497-b5be-d15045622988 remain live
 and unchanged. No migration, deployment, OTA, store change or send was performed.
+
+## Action placement follow-up
+
+Needs cleaning again now sits in the public page action stack below Reported by.
+An older report with an active successor instead shows View latest report there.
+Removed the redundant cleanup-count jump row; the count remains beside Timeline.
+The actual site result is fetched on the server and passed to the two renderings,
+with a single visible Timeline. Archived QA data in the OS temp directory to
+restore the cleaned review fixture; old data is preserved in reports-before-layout-review-*.
+The prior local QA occurrence URL is therefore currently archived, not public.
+19 activity/page tests, TS/lint and CUA open/close/one-Timeline checks pass.
+Current screenshot: /tmp/litterbugs-recurring-cleanups-20261124/corrected-actions.jpg.
+SEO recommendation is recorded separately; no SEO routing/canonical changes.

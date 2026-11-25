@@ -1,9 +1,9 @@
 'use client';
 /* eslint-disable @next/next/no-img-element -- Evidence uses the existing public photo routes. */
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FiChevronDown, FiClock, FiPlus, FiX } from 'react-icons/fi';
+import { FiChevronDown, FiPlus, FiX } from 'react-icons/fi';
 import { EMPTY_REPORT_DRAFT } from '@litterbugs/report-contract';
 import { ReportWizard } from './report-wizard';
 import { createClient } from '@/lib/supabase/client';
@@ -36,7 +36,7 @@ export function SiteTimeline({ site, reportId }: { site: ReportSite; reportId: s
   </section>;
 }
 
-export function ReportSiteActivity({ reportId, initialReport, initialSite }: { reportId: string; initialReport?: PublicReportShareModel; initialSite?: ReportSite | null }) {
+export function ReportSiteActivity({ reportId, initialReport, initialSite, mode = 'all' }: { reportId: string; initialReport?: PublicReportShareModel; initialSite?: ReportSite | null; mode?: 'all' | 'actions' | 'timeline' }) {
   const [site, setSite] = useState<ReportSite | null>(initialSite ?? null);
   const [loading, setLoading] = useState(initialSite === undefined);
   const [failed, setFailed] = useState(false);
@@ -44,7 +44,6 @@ export function ReportSiteActivity({ reportId, initialReport, initialSite }: { r
   const [composing, setComposing] = useState(false);
   const [progress, setProgress] = useState('');
   const [notice, setNotice] = useState('');
-  const anchor = useRef<HTMLDivElement>(null);
   const router = useRouter();
   useEffect(() => {
     if (initialSite !== undefined && revision === 0) return;
@@ -56,13 +55,14 @@ export function ReportSiteActivity({ reportId, initialReport, initialSite }: { r
     return () => controller.abort();
   }, [reportId, initialSite, revision]);
   useEffect(() => {
+    if (mode === 'timeline') return;
     const url = new URL(window.location.href);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- Restore a notice carried across a full report navigation.
     if (url.searchParams.get('alreadyReported') === '1') setNotice('New litter has already been reported.');
     if (url.searchParams.get('reportAgain') === '1' && site?.canReportAgain) {
       setComposing(true); url.searchParams.delete('reportAgain'); window.history.replaceState(window.history.state, '', url);
     }
-  }, [site]);
+  }, [site, mode]);
   async function begin() {
     if (!site?.local) {
       const { data } = await createClient().auth.getUser();
@@ -75,15 +75,16 @@ export function ReportSiteActivity({ reportId, initialReport, initialSite }: { r
     setComposing(true);
   }
   const source = site?.reports.filter(report => report.state === 'completed').at(-1);
-  if (loading) return initialReport ? <ReportTimeline report={initialReport} /> : null;
+  if (loading) return mode !== 'actions' && initialReport ? <ReportTimeline report={initialReport} /> : null;
   if (failed) return <div className={styles.retry}><span>Timeline could not be loaded.</span><button className="secondary-button" onClick={() => { setLoading(true); setRevision(value => value + 1); }}>Try again</button></div>;
-  if (!site) return initialReport ? <ReportTimeline report={initialReport} /> : null;
-  return <div className={styles.activity}>
+  if (!site) return mode !== 'actions' && initialReport ? <ReportTimeline report={initialReport} /> : null;
+  return <div className={mode === 'actions' ? styles.actions : styles.activity}>
+    {mode !== 'timeline' && <>
     {notice && <div className={styles.notice} role="status"><span>{notice}</span><button aria-label="Dismiss notice" onClick={() => { setNotice(''); const url = new URL(window.location.href); url.searchParams.delete('alreadyReported'); window.history.replaceState(window.history.state, '', url); }}><FiX /></button></div>}
-    {site.currentReportId && site.currentReportId !== reportId && <Link className="primary-button button-link" href={`/reports/${site.currentReportId}`}>View current report</Link>}
+    {site.currentReportId && site.currentReportId !== reportId && <Link className="primary-button button-link" href={`/reports/${site.currentReportId}`}>View latest report</Link>}
     {site.canReportAgain && source?.location && <button className={`secondary-button ${styles.again}`} onClick={() => void begin()}><FiPlus aria-hidden />Needs cleaning again</button>}
-    {site.completedCount > 0 && <button className={styles.historyLink} onClick={() => anchor.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}><FiClock aria-hidden /><span><strong>{site.completedCount === 1 ? 'Cleaned once' : site.completedCount === 2 ? 'Cleaned twice' : `Cleaned ${site.completedCount} times`}</strong><small>View timeline</small></span><FiChevronDown aria-hidden /></button>}
-    <div ref={anchor}><SiteTimeline site={site} reportId={reportId} /></div>
+    </>}
+    {mode !== 'actions' && <SiteTimeline site={site} reportId={reportId} />}
     {composing && source?.location && <ReportWizard initialDraft={{ ...EMPTY_REPORT_DRAFT, title: source.title }} isEditing={false} coordinates={source.location} submissionProgress={progress} onClose={() => setComposing(false)} onSubmit={async draft => {
       try {
         const result = await submitSiteReport(source.id, draft, source.location!, Boolean(site.local), setProgress);

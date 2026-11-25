@@ -21,6 +21,7 @@ import { AppLink } from '@/components/app-link';
 import { ReportFacts, distanceLabel } from './report-facts';
 import { ReportSiteActivity } from '@/components/report-site-activity';
 import { isLocalSiteReport } from '@/lib/local-report-site-ids';
+import { loadReportSite } from '@/lib/report-site';
 import { ReportLocation } from './report-location';
 import { ReportPhotos } from './report-photos';
 import { ReportShareButton } from './report-share-button';
@@ -76,6 +77,7 @@ export default async function SharedReportPage({ params }: Props) {
   const source = await loadPublicReportShare(id, 'linked');
   if (!source) notFound();
   const [report] = isLocalSiteReport(id) ? [source] : await withServerContributorCredits([source]);
+  const site = await loadReportSite(id).catch(() => null);
 
   // Optional recommendations must not hold the report and its actions behind another database read.
   const relatedLinks = loadRelatedPublicReports(report.id, report.location?.latitude, report.location?.longitude).then(related => related.length > 0 ? <ul className={styles.relatedList}>
@@ -153,6 +155,7 @@ export default async function SharedReportPage({ params }: Props) {
               </Link> : <strong>{report.reporterName || 'Community member'}</strong>}
             </div>
             <div className={styles.nextSteps}>
+              <ReportSiteActivity reportId={report.id} initialSite={site} mode="actions" />
             {expired ? <Link className="primary-button button-link" href="/reports">Find a current cleanup</Link> : !completed && !inProgress ? <div className={styles.reportActions}>
               {report.fundingEligible && <Link className="report-action-link button-link report-action-fund" prefetch={false} href={`/sign-in?${SHARED_REPORT_AUTH_PARAM}=1&next=${encodeURIComponent(reportMapHref(report.id, 'fund'))}`}><BrandBug kind="bee" size={21} className="bug-hop" />Fund</Link>}
               <Link className="report-action-link button-link report-action-clean" prefetch={false} href={`/sign-in?${SHARED_REPORT_AUTH_PARAM}=1&next=${encodeURIComponent(reportMapHref(report.id, 'clean'))}`}><BrandBug kind="butterfly" size={21} className="bug-hop" />Clean</Link>
@@ -218,7 +221,7 @@ export default async function SharedReportPage({ params }: Props) {
                 </div>}
               </dl>}
               {!expired && <ContributionSupporters reportId={report.id} initialCredit={report.contributorCredit} />}
-              <ReportSiteActivity reportId={report.id} initialReport={report} />
+              <ReportSiteActivity reportId={report.id} initialReport={report} initialSite={site} mode="timeline" />
             </div>
             <div className={styles.side}>
             <ul className={styles.links}>

@@ -1,10 +1,8 @@
 .activity { margin-top:24px; color:var(--text,#292832); }
-.again { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:48px; margin-bottom:12px; }
-.historyLink { display:flex; align-items:center; gap:12px; width:100%; padding:18px 0; background:none; border:0; border-top:1px solid #e9e7ed; border-bottom:1px solid #e9e7ed; color:inherit; text-align:left; cursor:pointer; }
-.historyLink>svg:first-child { color:#6655ce; background:#f0edff; box-sizing:content-box; padding:10px; border-radius:12px; }
-.historyLink>svg:last-child { margin-left:auto; }
-.historyLink strong,.historyLink small { display:block; }
-.historyLink small { margin-top:4px; color:#73717d; }
+.actions { display:grid; gap:12px; }
+.again { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:48px; }
+.actions .again { width:100%; }
+.activity>.again,.activity>a { margin-bottom:24px; }
 .timeline { margin-top:24px; scroll-margin-top:24px; }
 .heading { display:flex; align-items:baseline; flex-wrap:wrap; gap:8px 16px; justify-content:space-between; margin-bottom:14px; }
 .heading h2 { margin:0; font-size:22px; }

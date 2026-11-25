@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import SharedReportPage, { generateMetadata } from './page';
 import type { PublicReportShareModel } from '@/lib/public-report-share-model';
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
+vi.mock('@/lib/report-site', () => ({ loadReportSite: async () => null }));
 const { loadReport, loadRelated } = vi.hoisted(() => ({ loadReport: vi.fn(), loadRelated: vi.fn().mockResolvedValue([]) }));
 vi.mock('@/lib/related-public-reports', () => ({ loadRelatedPublicReports: loadRelated }));
 vi.mock('@/components/public-site-header', () => ({ PublicSiteHeader: () => null }));
