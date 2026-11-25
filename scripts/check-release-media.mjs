@@ -26,7 +26,7 @@ if (process.env.LITTERBUGS_RELEASE_MEDIA_CHECK === '1') {
           const bytes=readFileSync(${JSON.stringify(join(root, 'apps/web/public/dev-review-preview/site-history/before.jpg'))});
           (async()=>{
             for(const [name,check] of [
-              ['malware',()=>requireCleanMalwareScan(bytes)],
+              ['malware',()=>requireCleanMalwareScan(bytes,'image/jpeg')],
               ['content',()=>requireAppropriatePhoto(bytes)],
               ['google',()=>requireGooglePhotoReview(bytes)]
             ]){

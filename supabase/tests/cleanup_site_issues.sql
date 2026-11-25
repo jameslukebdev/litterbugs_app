@@ -145,4 +145,22 @@ set local role service_role;
 select pg_temp.assert_true((select count(*)>0 from public.cleanup_issue_push_context(array(select id from public.cleanup_notifications where report_id='bc200000-0000-4000-8000-000000000001'))),'worker can look up generated issue events');
 select pg_temp.assert_true(not exists(select 1 from public.cleanup_issue_push_context(array(select id from public.cleanup_notifications where report_id='bc200000-0000-4000-8000-000000000001')) c join public.cleanup_notifications n on n.id=c.notification_id where c.issue_id is distinct from n.issue_id or n.event_type not like 'cleanup_issue_%'),'worker gets only the correct private issue identity');
 reset role;
+
+-- Published older apps use direct edits for an available, unfunded report.
+insert into public.reports(id,user_id,title,latitude,longitude,photo_paths,notes_other,is_published)
+ values('bc200000-0000-4000-8000-000000000002','bc100000-0000-4000-8000-000000000001','Legacy mobile edit',36,-81,
+ array['bc100000-0000-4000-8000-000000000001/bc200000-0000-4000-8000-000000000001/original.jpg'],'Earlier cleanup evidence',true);
+select private.snapshot_report_content('bc200000-0000-4000-8000-000000000002');
+select set_config('request.jwt.claims','{"sub":"bc100000-0000-4000-8000-000000000001","is_anonymous":false,"role":"authenticated","aal":"aal1"}',true);
+set local role authenticated;
+update public.reports set notes_other='Updated from an unchanged older app' where id='bc200000-0000-4000-8000-000000000002';
+select pg_temp.expect_error($q$update public.reports set content_revision=99 where id='bc200000-0000-4000-8000-000000000002'$q$,'permission denied');
+reset role;
+select pg_temp.assert_true((select content_revision=2 from public.reports where id='bc200000-0000-4000-8000-000000000002'),'legacy edit advances version safely');
+select pg_temp.assert_true((select notes_other='Earlier cleanup evidence' from public.report_content_revisions where report_id='bc200000-0000-4000-8000-000000000002' and revision=1),'legacy edit retains prior cleanup evidence');
+select set_config('request.jwt.claims','{"sub":"bc100000-0000-4000-8000-000000000002","is_anonymous":false,"role":"authenticated","aal":"aal1"}',true);
+set local role authenticated;
+select public.claim_cleanup('bc200000-0000-4000-8000-000000000002');
+reset role;
+select pg_temp.assert_true((select notes_other='Updated from an unchanged older app' from public.report_content_revisions where report_id='bc200000-0000-4000-8000-000000000002' and revision=2),'next claim snapshots edited content');
 rollback;

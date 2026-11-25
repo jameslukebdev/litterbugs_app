@@ -76,7 +76,17 @@ create function private.protect_cleanup_issue_fields() returns trigger language 
    if new.cleanup_issue_hold is distinct from old.cleanup_issue_hold or new.content_revision is distinct from old.content_revision
       or new.additional_information is distinct from old.additional_information then
     raise insufficient_privilege using message='report_content_requires_revision'; end if;
-   if (new.notes_other is distinct from old.notes_other or new.photo_paths is distinct from old.photo_paths) and exists(select 1 from public.report_content_revisions where report_id=old.id) then raise check_violation using message='report_content_requires_revision'; end if;
+   if new.notes_other is distinct from old.notes_other or new.photo_paths is distinct from old.photo_paths then
+    -- Existing apps still edit an available, unfunded report directly. Advance
+    -- its version so a future claim snapshots the new content; old evidence stays.
+    if auth.uid()=old.user_id and old.cleanup_state='available' and new.cleanup_state=old.cleanup_state
+       and old.funding_locked_at is null and coalesce(old.funded_amount_cents,0)=0
+       and old.cancelled_at is null and old.expired_at is null then
+     new.content_revision:=old.content_revision+1;
+    elsif exists(select 1 from public.report_content_revisions where report_id=old.id) then
+     raise check_violation using message='report_content_requires_revision';
+    end if;
+   end if;
   elsif new.issue_paused_at is distinct from old.issue_paused_at or new.issue_pause_total is distinct from old.issue_pause_total
     or new.report_content_revision is distinct from old.report_content_revision then
    raise insufficient_privilege using message='cleanup_pause_is_server_managed';
