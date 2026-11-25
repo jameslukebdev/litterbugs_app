@@ -90,7 +90,7 @@ export default function useSelectedReportLoaders({
     return () => {
       active = false;
     };
-  }, [currentUserId, selectedReport?.cleanup_state, selectedReport?.id, reportOpenRevision]);
+  }, [currentUserId, selectedReport?.cleanup_state, selectedReport?.cleanup_issue_hold, selectedReport?.id, reportOpenRevision]);
 
   useEffect(() => {
     let active = true;

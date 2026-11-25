@@ -1398,6 +1398,9 @@ useEffect(() => {
       if (!current || current.id !== latestReport.id) return current;
       if (
         current.funded_amount_cents === latestReport.funded_amount_cents
+        && current.cleanup_issue_hold === latestReport.cleanup_issue_hold
+        && current.cleanup_state === latestReport.cleanup_state
+        && current.content_revision === latestReport.content_revision
         && current.funding_locked_at === latestReport.funding_locked_at
         && current.funding_eligibility === latestReport.funding_eligibility
         && current.funding_hold_reason === latestReport.funding_hold_reason
@@ -1407,6 +1410,12 @@ useEffect(() => {
       }
       return {
         ...current,
+        cleanup_issue_hold: latestReport.cleanup_issue_hold,
+        cleanup_state: latestReport.cleanup_state,
+        content_revision: latestReport.content_revision,
+        notes_other: latestReport.notes_other,
+        additional_information: latestReport.additional_information,
+        photo_paths: latestReport.photo_paths,
         funded_amount_cents: latestReport.funded_amount_cents,
         funding_locked_at: latestReport.funding_locked_at,
         funding_eligibility: latestReport.funding_eligibility,

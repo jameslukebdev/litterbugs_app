@@ -1,3 +1,4 @@
+import { claimedReportPhotoPaths } from './claimedReportContent';
 import { supabase } from './supabase';
 import { reportAfterPhotoUrl } from './reportPhotoUrls';
 
@@ -26,7 +27,7 @@ export async function loadCompletedCleanupImpact(reportId) {
 
   const { data: attempt, error: attemptError } = await supabase
     .from('cleanup_attempts')
-    .select('id, report_id, cleaner_id, status, completed_at, approval_method, is_self_cleanup, final_submission_id')
+    .select('id, report_id, cleaner_id, status, report_content_revision, completed_at, approval_method, is_self_cleanup, final_submission_id')
     .eq('report_id', reportId)
     .eq('status', 'completed')
     .not('final_submission_id', 'is', null)
@@ -72,7 +73,14 @@ export async function loadCompletedCleanupImpact(reportId) {
   );
   const afterPhotos = signedAfterPhotos.filter(({ url }) => url);
 
+  const beforePhotoPaths = await claimedReportPhotoPaths(attempt, null);
+  const beforePhotoUrls = beforePhotoPaths ? await Promise.all(beforePhotoPaths.map(async path => {
+    const { data, error } = await supabase.storage.from('report_photos').createSignedUrl(path, SIGNED_PHOTO_DURATION_SECONDS);
+    if (error) throw error;
+    return data.signedUrl;
+  })) : null;
   return {
+    beforePhotoPaths, beforePhotoUrls,
     attempt,
     submission: submissionResult.data,
     cleaner: cleanerResult.data ?? null,

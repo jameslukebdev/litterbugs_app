@@ -9,6 +9,8 @@ vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 vi.mock('../styles/MapScreen.styles', () => ({ default: {} }));
 vi.mock('../CompletedCleanupStory', () => ({ default: () => <div>Cleanup story</div> }));
 vi.mock('./ReportPhotoGallery', () => ({ default: () => <div>Original photos</div> }));
+vi.mock('./ReportIssueActions', () => ({ default: () => null }));
+vi.mock('../lib/cleanupIssues', () => ({ canEditReportContent: () => false }));
 vi.mock('./ReportSiteActivity', () => ({ default: () => null }));
 vi.mock('./ContributionSupporters', () => ({ default: () => null }));
 vi.mock('../ReporterIdentity', () => ({ default: () => null }));

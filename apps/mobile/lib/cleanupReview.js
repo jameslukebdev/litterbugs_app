@@ -1,3 +1,4 @@
+import { claimedReportPhotoPaths } from './claimedReportContent';
 import { PUBLIC_PROFILE_FIELDS } from './profile';
 import { supabase } from './supabase';
 
@@ -15,7 +16,7 @@ export const createSignedPhotoUrl = async (bucket, path) => {
 export async function loadCleanupReviewContext(cleanupId, userId) {
   const { data: attempt, error: attemptError } = await supabase
     .from('cleanup_attempts')
-    .select('id, report_id, cleaner_id, reporter_id, status, review_due_at, is_self_cleanup, is_paid, reward_amount_cents, financial_review_status, financial_review_summary, first_paid_admin_status, dispute_status, disputed_at, dispute_reason')
+    .select('id, report_id, cleaner_id, reporter_id, status, report_content_revision, review_due_at, is_self_cleanup, is_paid, reward_amount_cents, financial_review_status, financial_review_summary, first_paid_admin_status, dispute_status, disputed_at, dispute_reason')
     .eq('id', cleanupId)
     .maybeSingle();
 
@@ -65,9 +66,10 @@ export async function loadCleanupReviewContext(cleanupId, userId) {
     throw new Error('cleanup_review_evidence_unavailable');
   }
 
+  const beforePaths = await claimedReportPhotoPaths(attempt, reportResult.data.photo_paths ?? []);
   const [beforePhotoUrls, afterPhotoUrls] = await Promise.all([
     Promise.all(
-      (reportResult.data.photo_paths ?? []).map((path) => (
+      beforePaths.map((path) => (
         createSignedPhotoUrl('report_photos', path)
       ))
     ),
@@ -83,7 +85,7 @@ export async function loadCleanupReviewContext(cleanupId, userId) {
     report: reportResult.data,
     submission: submissionResult.data,
     cleaner: cleanerResult.data ?? null,
-    beforePhotoPaths: reportResult.data.photo_paths ?? [],
+    beforePhotoPaths: beforePaths,
     afterPhotoPaths: photoRecords.map(photo => photo.storage_path),
     beforePhotoUrls: beforePhotoUrls,
     afterPhotoUrls: afterPhotoUrls,

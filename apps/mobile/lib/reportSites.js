@@ -1,5 +1,5 @@
 // Public site history is projected by the website through anonymous RLS.
-const ORIGIN = 'https://litterbugs.app';
+const ORIGIN = process.env.EXPO_PUBLIC_WEBSITE_URL || 'https://litterbugs.app';
 const uuid = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 export async function loadReportSite(reportId, signal) {
   if (!uuid.test(reportId || '')) return null;

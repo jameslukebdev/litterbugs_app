@@ -1,3 +1,4 @@
+import ReportIssueActions from './components/ReportIssueActions';
 import PhotoReviewChoice from './components/PhotoReviewChoice';
 import { usePreventRemove } from '@react-navigation/native';
 import * as Crypto from 'expo-crypto';
@@ -263,7 +264,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
   };
 
   const submit = async () => {
-    if (submitting || !context || !photoReviewAccepted) return;
+    if (submitting || !context || context.attempt.issue_paused_at || context.report.cleanup_issue_hold || !photoReviewAccepted) return;
     const validation = currentValidation();
     setErrors(validation.errors);
     if (!validation.valid) {
@@ -328,7 +329,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
     }
   };
 
-  if ((loading && !context) || (!draftReady && userId && cleanupId)) return <LoadingState />;
+  if ((loading && !context && !loadError) || (!draftReady && userId && cleanupId && !loadError)) return <LoadingState />;
 
   if (loadError || !context) {
     const recovery = cleanupLoadErrorPresentation(loadError);
@@ -339,6 +340,8 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
       </View>
     );
   }
+
+  if (context.attempt.issue_paused_at || context.report.cleanup_issue_hold) return <ScrollView style={styles.container} contentContainerStyle={{ padding: 22, gap: 16 }}><Text style={styles.title}>Cleanup paused</Text><Text style={styles.reportTitle}>{context.report.title}</Text><ReportIssueActions report={context.report} attempt={context.attempt} userId={userId} visible onIssue={params => navigation.navigate('CleanupIssue', params)} /></ScrollView>;
 
   if (draftLoadError) return <View style={styles.centerState}>
     <EmptyState icon={<Ionicons name="alert-circle-outline" size={40} color={colors.red} />} title="Couldn’t restore your draft" text="Retry before adding evidence so your saved draft is not replaced." action={{ label: 'Retry saved draft', onPress: () => setDraftRestoreAttempt(attempt => attempt + 1) }} />
@@ -411,6 +414,8 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
             {sendBy ? <Text style={styles.reportTitle}>Send by {sendBy}</Text> : null}
           </View>
         </View>
+
+        {!isCorrection ? <ReportIssueActions report={context.report} attempt={context.attempt} userId={userId} visible onIssue={params => navigation.navigate('CleanupIssue', params)} utilityOnly /> : null}
 
         {isCorrection && step === 'form' ? (
           <View style={styles.correctionNotice}>

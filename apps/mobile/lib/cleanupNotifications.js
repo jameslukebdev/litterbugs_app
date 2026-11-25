@@ -1,4 +1,8 @@
 const CLEANUP_NOTIFICATION_CONTENT = Object.freeze({
+  cleanup_issue_requested: { title: 'Cleanup needs your help', message: 'A cleaner has a question about your report.' },
+  cleanup_issue_replied: { title: 'New cleanup reply', message: 'There’s a reply to your cleanup issue.' },
+  cleanup_issue_report_updated: { title: 'Report updated', message: 'The reporter updated the cleanup details.' },
+  cleanup_issue_resolved: { title: 'Cleanup issue resolved', message: 'The cleanup issue has been resolved.' },
   admin_cleanup_needed: {
     title: 'Cleanup needs attention',
     message: 'A cleanup or payment issue needs your review. Open your admin inbox.',
@@ -127,6 +131,8 @@ export function cleanupNotificationPresentation(notices) {
 export function cleanupNotificationDestination(notification) {
   const eventType = notification?.event_type ?? notification?.eventType;
   const reportId = notification?.report_id ?? notification?.reportId;
+  const issueId = notification?.issue_id ?? notification?.issueId;
+  if (eventType?.startsWith('cleanup_issue_') && issueId) return { name: 'CleanupIssue', label: 'View conversation', params: { issueId } };
   const cleanupId = notification?.cleanup_attempt_id ?? notification?.cleanupId;
 
   if (eventType === 'admin_moderation_needed' || eventType === 'admin_cleanup_needed') {

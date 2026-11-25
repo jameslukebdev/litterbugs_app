@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import PrivateView from './PrivateView';
 import ContributionSupporters from './ContributionSupporters';
+import ReportIssueActions from './ReportIssueActions';
+import { canEditReportContent } from '../lib/cleanupIssues';
 import ReportSiteActivity from './ReportSiteActivity';
 import { Modal, View, Text, TouchableOpacity, ActivityIndicator, ScrollView, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,7 +32,14 @@ const formatShortDate = value => new Date(value).toLocaleDateString('en-US', { m
 export default function ReportDetailsSheet({ state, actions }) {
   const { detailsOpen, reportShareSheetOpen, reportShareBusyAction, selectedReport, insets, reportDetailsPreparing, selectedReportHasUtilityActions, completedCleanupImpact, completedCleanupImpactLoading, completedCleanupImpactError, reportHeroWidth, currentUserId, reportPhotoUrls, photosLoading, geminiReviewEnabled, userOwnsSelectedReport, reportFundingFeedback, cleanupDiscoverable, cleanupStatus, currentUserIsCleaner, selectedCleanupAttempt, cleanupAttemptLoading, cleanupActionBusy, canEditOrDeleteSelectedReport, selectedReportCanOpenFunding, payoutGateBusy, selectedReportIsShareable, isFavorite, favoritesReady, blockedIds } = state;
   const { setReportShareSheetOpen, closeReportDetails, setDetailsOpen, setSelectedReport, navigation, setCompletedCleanupImpact, setCompletedCleanupImpactError, setCompletedCleanupImpactLoading, setCompletedCleanupImpactReloadKey, openCleanupNavigation, openCleanupSubmission, confirmCleanupRelease, openCleanupFeedback, openCleanupReview, beginCleanupClaim, openFundingContribution, removeReport, setForm, setEditingReportId, setIsEditing, setDraftCoord, resetReportWizard, setFormOpen, shareSelectedReport, shareSelectedReportLink, shareSelectedReportToInstagram, editReportPhotos, toggleFavorite, beginSiteReport, openSiteReport } = actions;
+  const openIssue = params => { setDetailsOpen(false); navigation.getParent()?.navigate('CleanupIssue', params); };
+  const openContentEdit = () => { setDetailsOpen(false); navigation.getParent()?.navigate('ReportContentEdit', { reportId: selectedReport.id }); };
+  const contentEditable = canEditReportContent(selectedReport, currentUserId);
+  const issueHeld = Boolean(selectedReport?.cleanup_issue_hold || selectedCleanupAttempt?.issue_paused_at);
   const editSelectedReport = () => editReportPhotos(selectedReport);
+  const displayedReport = selectedReport?.cleanup_state === 'completed' && completedCleanupImpact?.beforePhotoPaths
+    ? { ...selectedReport, photo_paths: completedCleanupImpact.beforePhotoPaths } : selectedReport;
+  const displayedPhotoUrls = completedCleanupImpact?.beforePhotoUrls || reportPhotoUrls;
   const confirmDeleteReport = () => {
 
               Alert.alert(
@@ -90,7 +99,7 @@ export default function ReportDetailsSheet({ state, actions }) {
   }, [cleanupActionBusy, detailsOpen]);
   // The cleanup status card. For the member doing the cleanup it is the next step,
   // so it sits right under the title; for everyone else it stays lower down.
-  const cleanupCard = cleanupStatus && selectedReport?.cleanup_state !== 'completed' ? (
+  const cleanupCard = !issueHeld && cleanupStatus && selectedReport?.cleanup_state !== 'completed' ? (
             <View
               style={[
                 styles.cleanupProgressCard,
@@ -312,6 +321,7 @@ export default function ReportDetailsSheet({ state, actions }) {
           const closed = Boolean(selectedReport?.cancelled_at || selectedReport?.expired_at);
           const cleanupState = selectedReport?.cleanup_state;
           const statusText = closed ? 'Report closed'
+            : selectedReport?.cleanup_issue_hold ? 'Update requested'
             : cleanupState === 'claimed' ? 'Cleanup in progress'
             : cleanupState === 'completion_submitted' ? 'Cleanup photos under review'
             : cleanupState === 'changes_requested' ? 'Cleaner is updating photos'
@@ -329,7 +339,7 @@ export default function ReportDetailsSheet({ state, actions }) {
               {!closed && cleanupState !== 'completed' && funded ? (
                 <FundAmount reportId={selectedReport.id} cents={Number(selectedReport.funded_amount_cents)} rowStyle={styles.websiteReportState} textStyle={[styles.websiteReportStateText, { color: colors.yellow }]} />
               ) : null}
-              {cleanupCardFirst && selectedCleanupAttempt?.claim_expires_at ? (
+              {!issueHeld && cleanupCardFirst && selectedCleanupAttempt?.claim_expires_at ? (
                 <Text style={styles.cleanerDeadline}>You’re cleaning this one. Send your after photos by {new Date(selectedCleanupAttempt.claim_expires_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}.</Text>
               ) : null}
               <View style={styles.websiteReportMeta}>
@@ -351,7 +361,7 @@ export default function ReportDetailsSheet({ state, actions }) {
               loading={completedCleanupImpactLoading}
               error={completedCleanupImpactError}
               photoWidth={reportHeroWidth}
-              beforePhotos={<ReportPhotoGallery report={selectedReport} urls={reportPhotoUrls} loading={photosLoading} width={reportHeroWidth} aspect={4 / 3} />}
+              beforePhotos={<ReportPhotoGallery report={displayedReport} urls={displayedPhotoUrls} loading={photosLoading} width={reportHeroWidth} aspect={4 / 3} />}
               onRetry={() => {
                 setCompletedCleanupImpact(null);
                 setCompletedCleanupImpactError(null);
@@ -375,7 +385,7 @@ export default function ReportDetailsSheet({ state, actions }) {
         ) : null}
 
         {selectedReport?.cleanup_state !== 'completed' ? (
-          <ReportPhotoGallery report={selectedReport} urls={reportPhotoUrls} loading={photosLoading} width={reportHeroWidth} />
+          <ReportPhotoGallery report={displayedReport} urls={displayedPhotoUrls} loading={photosLoading} width={reportHeroWidth} />
         ) : null}
 
         {/* Website report sheet: directions sit right under the photos. */}
@@ -385,6 +395,8 @@ export default function ReportDetailsSheet({ state, actions }) {
             <Text style={styles.reportDirectionsText}>Get directions</Text>
           </TouchableOpacity>
         ) : null}
+
+        {cleanupCardFirst ? <View style={{ paddingHorizontal: 22 }}><ReportIssueActions report={selectedReport} attempt={selectedCleanupAttempt} userId={currentUserId} visible={detailsOpen} onIssue={openIssue} onEdit={openContentEdit} onRelease={confirmCleanupRelease} /></View> : null}
 
         <ContributionSupporters reportId={selectedReport?.id} visible={Boolean(detailsOpen)} style={{ marginHorizontal: 22 }} />
 
@@ -445,7 +457,7 @@ export default function ReportDetailsSheet({ state, actions }) {
               <Ionicons name="images-outline" size={20} color={colors.muted} />
               <Text style={styles.beforePhotoHeadingText}>Before cleanup</Text>
             </View>
-            <ReportPhotoGallery report={selectedReport} urls={reportPhotoUrls} loading={photosLoading} width={reportHeroWidth} />
+            <ReportPhotoGallery report={displayedReport} urls={displayedPhotoUrls} loading={photosLoading} width={reportHeroWidth} />
           </>
         ) : null}
 
@@ -473,7 +485,7 @@ export default function ReportDetailsSheet({ state, actions }) {
             return (
               // Notes and the reporter's name stay out of session replay.
               <PrivateView style={styles.websiteAbout}>
-                {[['Litter', litter.join(', ')], ['Notes', conditions.join(', ')], ['Details', selectedReport?.notes_other]].filter(([, value]) => value).map(([label, value]) => (
+                {[['Litter', litter.join(', ')], ['Notes', conditions.join(', ')], ['Details', selectedReport?.notes_other], ['Additional information', selectedReport?.additional_information]].filter(([, value]) => value).map(([label, value]) => (
                   <View key={label} style={styles.websiteFact}>
                     <Text style={styles.websiteFactLabel}>{label}</Text>
                     <Text style={styles.websiteAboutText}>{value}</Text>
@@ -503,12 +515,14 @@ export default function ReportDetailsSheet({ state, actions }) {
           })()}
 
 
+          {!cleanupCardFirst ? <ReportIssueActions report={selectedReport} attempt={selectedCleanupAttempt} userId={currentUserId} visible={detailsOpen} onIssue={openIssue} onEdit={openContentEdit} onRelease={confirmCleanupRelease} /> : null}
+
           <ReportSiteActivity key={selectedReport?.id} report={selectedReport} visible={Boolean(detailsOpen && selectedReport)} blockedIds={blockedIds} onReportAgain={beginSiteReport} onOpenReport={openSiteReport} />
 
           {cleanupCardFirst ? null : cleanupCard}
 
           {userOwnsSelectedReport && (
-            selectedReport?.funding_locked_at || !canEditOrDeleteSelectedReport
+            !contentEditable && (selectedReport?.funding_locked_at || !canEditOrDeleteSelectedReport)
           ) ? (
             <View style={styles.ownerReportLockCard}>
               <Ionicons name="lock-closed-outline" size={20} color={colors.muted} />
@@ -529,7 +543,7 @@ export default function ReportDetailsSheet({ state, actions }) {
         </>}
       </ScrollView>
 
-      {cleanupDiscoverable || selectedReportCanOpenFunding ? <View style={[styles.reportDetailActionFooter, { paddingBottom: canEditOrDeleteSelectedReport && !selectedReport?.funding_locked_at ? 4 : Math.max(insets.bottom, 12) }]}>
+      {!issueHeld && (cleanupDiscoverable || selectedReportCanOpenFunding) ? <View style={[styles.reportDetailActionFooter, { paddingBottom: canEditOrDeleteSelectedReport && !selectedReport?.funding_locked_at ? 4 : Math.max(insets.bottom, 12) }]}>
       {/* Website footer: Fund (bee, yellow) then Clean (butterfly, lilac), side by side. */}
       <View style={styles.reportActionRow}>
           {selectedReportCanOpenFunding ? (
@@ -573,7 +587,7 @@ export default function ReportDetailsSheet({ state, actions }) {
       </View> : null}
 
       {/* The cleaner's next steps live in the pinned bar, like Fund and Clean do. */}
-      {cleanupCardFirst && cleanupStatus?.showClaimActions && !cleanupAttemptLoading ? (
+      {!issueHeld && cleanupCardFirst && cleanupStatus?.showClaimActions && !cleanupAttemptLoading ? (
         <View style={[styles.reportDetailActionFooter, { paddingBottom: Math.max(insets.bottom, 12) }]}>
           <View style={styles.reportActionRow}>
             <TouchableOpacity
@@ -617,7 +631,7 @@ export default function ReportDetailsSheet({ state, actions }) {
       {/* Persistent Footer             */}
       {/* ============================= */}
 
-      {canEditOrDeleteSelectedReport && !selectedReport?.funding_locked_at ? (
+      {canEditOrDeleteSelectedReport && !selectedReport?.funding_locked_at && !issueHeld ? (
         <View style={[styles.reportOwnerFooter, { paddingBottom: Math.max(insets.bottom, 12) }]}>
           <TouchableOpacity style={styles.reportManageButton} onPress={showOwnerActions} accessibilityRole="button" accessibilityLabel="Manage your report" accessibilityState={{ expanded: ownerMenuOpen }}>
             <Ionicons name="options-outline" size={18} color={colors.muted} />

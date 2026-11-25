@@ -32,6 +32,8 @@ import AuthScreen from './AuthScreen';
 import SignInMethodsScreen from './SignInMethodsScreen';
 import SettingsInfoScreen from './SettingsInfoScreen';
 import UpdatesScreen from './UpdatesScreen';
+import CleanupIssueScreen from './CleanupIssueScreen';
+import ReportContentEditScreen from './ReportContentEditScreen';
 import NotificationSettingsScreen from './NotificationSettingsScreen';
 import EmailPreferencesScreen from './EmailPreferencesScreen';
 import BlockedAccountsScreen from './BlockedAccountsScreen';
@@ -310,6 +312,8 @@ function AppNavigation({
         <Stack.Screen name="Payments" component={ProfileScreen} initialParams={{ section: 'payments' }} options={{ ...headerOptions, title: 'Payments' }} />
         <Stack.Screen name="SignInMethods" component={SignInMethodsScreen} options={{ ...headerOptions, title: 'Sign-in methods' }} />
         <Stack.Screen name="Updates" component={UpdatesScreen} options={{ ...headerOptions, title: 'Updates' }} />
+        <Stack.Screen name="CleanupIssue" component={CleanupIssueScreen} options={{ ...headerOptions, title: 'Cleanup issue' }} />
+        <Stack.Screen name="ReportContentEdit" component={ReportContentEditScreen} options={{ ...headerOptions, title: 'Edit report' }} />
         <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ ...headerOptions, title: 'Notifications' }} />
         <Stack.Screen name="EmailPreferences" component={EmailPreferencesScreen} options={{ ...headerOptions, title: 'Email preferences' }} />
         <Stack.Screen name="SettingsInfo" component={SettingsInfoScreen} options={{ ...headerOptions, title: 'Settings' }} />

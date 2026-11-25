@@ -78,6 +78,14 @@ describe('secure mobile media upload', () => {
     ]);
   });
 
+  it('quarantines issue attachments and sends them through the authenticated safety review', async () => {
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify({ path: 'user/attempt/private.jpg', contentType: 'image/jpeg' }), { status: 200 }));
+    await uploadSecureMedia({ userId: 'user', kind: 'issue', subjectId: 'attempt', bytes: new Uint8Array([1]), mimeType: 'image/jpeg', fetchImpl });
+    expect(upload.mock.calls[0][0]).toContain('user/issue/');
+    expect(JSON.parse(fetchImpl.mock.calls[0][1].body)).toMatchObject({ kind: 'issue', subjectId: 'attempt' });
+    expect(fetchImpl.mock.calls[0][1].headers.Authorization).toBe('Bearer signed-user-token');
+  });
+
   it('never uploads unsupported client-declared content types', async () => {
     await expect(uploadSecureMedia({
       userId: '11111111-1111-4111-8111-111111111111',

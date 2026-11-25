@@ -73,7 +73,7 @@ export async function chooseCleanupPhotos(source, selectionLimit) {
 export async function loadCleanupSubmissionContext(cleanupId, userId) {
   const { data: attempt, error: attemptError } = await supabase
     .from('cleanup_attempts')
-    .select('id, report_id, cleaner_id, status, claimed_at, claim_expires_at, correction_due_at, is_paid, reward_amount_cents')
+    .select('id, report_id, cleaner_id, status, claimed_at, claim_expires_at, correction_due_at, issue_paused_at, is_paid, reward_amount_cents')
     .eq('id', cleanupId)
     .maybeSingle();
 
@@ -84,7 +84,7 @@ export async function loadCleanupSubmissionContext(cleanupId, userId) {
   if (!['claimed', 'changes_requested'].includes(attempt.status)) {
     throw new Error('cleanup_submission_invalid_state');
   }
-  if (attempt.status === 'claimed' && (!attempt.claim_expires_at || Date.parse(attempt.claim_expires_at) <= Date.now())) {
+  if (attempt.status === 'claimed' && !attempt.issue_paused_at && (!attempt.claim_expires_at || Date.parse(attempt.claim_expires_at) <= Date.now())) {
     throw new Error('cleanup_claim_expired');
   }
   if (
@@ -96,7 +96,7 @@ export async function loadCleanupSubmissionContext(cleanupId, userId) {
 
   const { data: report, error: reportError } = await supabase
     .from('reports')
-    .select('id, title, severity, cleanup_state')
+    .select('id, user_id, title, severity, cleanup_state, cleanup_issue_hold')
     .eq('id', attempt.report_id)
     .maybeSingle();
 
