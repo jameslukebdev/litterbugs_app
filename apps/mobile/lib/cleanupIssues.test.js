@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-const { rpc } = vi.hoisted(() => ({ rpc: vi.fn() }));
-vi.mock('./supabase', () => ({ supabase: { rpc } }));
-import { canEditReportContent, issueActions, issueStatus, isTeamIssue, openIssue, replyIssue, resumeIssue, updateReportContent } from './cleanupIssues';
+const { rpc, from } = vi.hoisted(() => ({ rpc: vi.fn(), from: vi.fn() }));
+vi.mock('./supabase', () => ({ supabase: { rpc, from } }));
+import { canEditReportContent, issueActions, issueStatus, isTeamIssue, loadEditableReport, openIssue, replyIssue, resumeIssue, updateReportContent } from './cleanupIssues';
 import { cleanupNotificationDestination, cleanupNotificationPresentation } from './cleanupNotifications';
 import { isCleanupAvailable } from './cleanupEligibility';
 
@@ -61,5 +61,23 @@ describe('issue alert destinations', () => {
   });
   it('preserves the report fallback for older incomplete payloads', () => {
     expect(cleanupNotificationDestination({ eventType: 'cleanup_issue_replied', reportId: 'report', cleanupId: 'claim' })).toMatchObject({ name: 'App', params: { screen: 'Map', params: { reportId: 'report' } } });
+  });
+});
+
+describe('private report photo previews', () => {
+  const report = { user_id: 'reporter', cleanup_state: 'claimed', is_published: true, photo_paths: ['reporter/report/original.jpg'] };
+  beforeEach(() => {
+    from.mockReturnValue({ select: () => ({ eq: () => ({ single: async () => ({ data: report, error: null }) }) }) });
+  });
+  it('resolves originals through the existing signed-photo loader', async () => {
+    const getPhotoUrl = vi.fn(async () => 'https://storage.test/object/sign/original.jpg?token=short-lived');
+    const loaded = await loadEditableReport('report', 'reporter', getPhotoUrl);
+    expect(getPhotoUrl).toHaveBeenCalledWith(report.photo_paths[0]);
+    expect(loaded.photoUrls[report.photo_paths[0]]).toContain('/object/sign/');
+  });
+  it('does not mint original-photo previews for a different account', async () => {
+    const getPhotoUrl = vi.fn();
+    await expect(loadEditableReport('report', 'outsider', getPhotoUrl)).rejects.toThrow('report_edit_not_allowed');
+    expect(getPhotoUrl).not.toHaveBeenCalled();
   });
 });

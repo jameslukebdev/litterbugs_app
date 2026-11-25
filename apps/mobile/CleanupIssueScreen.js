@@ -11,7 +11,6 @@ import { IssuePhoto, issueStyles as s } from './components/CleanupIssueUI';
 import { ISSUE_REASONS, isTeamIssue, issueActions, issueError, issueStatus, loadIssue, loadIssueRequest, openIssue, replyIssue, resumeIssue } from './lib/cleanupIssues';
 import { uploadIssueMedia } from './lib/cleanupIssueMedia';
 import { chooseCleanupPhotos } from './lib/cleanupSubmission';
-import { supabase } from './lib/supabase';
 import { useSession } from './lib/session';
 import { permanentUserId } from './lib/reportAccess';
 import { useReports } from './lib/reports';
@@ -21,13 +20,13 @@ import { colors } from './lib/theme';
 export default function CleanupIssueScreen({ navigation, route }) {
   const { user } = useSession();
   const userId = permanentUserId(user);
-  const { refreshReports } = useReports();
+  const { refreshReports, getReportPhotoUrl } = useReports();
   const { issueId, cleanupId } = route.params || {};
   const creating = !issueId;
   const resource = useFocusedResource(useCallback(() => {
     if (!userId) throw new Error('issue_not_allowed');
-    return creating ? loadIssueRequest(cleanupId, userId) : loadIssue(issueId, userId);
-  }, [creating, cleanupId, issueId, userId]));
+    return creating ? loadIssueRequest(cleanupId, userId) : loadIssue(issueId, userId, getReportPhotoUrl);
+  }, [creating, cleanupId, issueId, userId, getReportPhotoUrl]));
   useFocusEffect(useCallback(() => {
     if (creating) return undefined;
     const timer = setInterval(resource.refresh, 15000);
@@ -130,7 +129,7 @@ export default function CleanupIssueScreen({ navigation, route }) {
         </View> : <>
           {latest && renderMessage(latest)}
           {data.messages.length > 1 && <><TextLink align="start" label={`${earlierOpen ? 'Hide' : 'Earlier'} messages (${data.messages.length - 1})`} onPress={() => setEarlierOpen(value => !value)} />{earlierOpen && data.messages.slice(0, -1).map(renderMessage)}</>}
-          {Number(report.content_revision) > 1 && <View style={{ gap: 8 }}><Text style={s.label}>Public report updated</Text><Text style={s.text}>{report.notes_other}</Text>{!!report.additional_information && <><Text style={s.label}>Additional information</Text><Text style={s.text}>{report.additional_information}</Text></>}<View style={s.photos}>{report.photo_paths.map(path => <IssuePhoto key={path} uri={supabase.storage.from('report_photos').getPublicUrl(path).data.publicUrl} label="Updated public report photo" />)}</View></View>}
+          {Number(report.content_revision) > 1 && <View style={{ gap: 8 }}><Text style={s.label}>Public report updated</Text><Text style={s.text}>{report.notes_other}</Text>{!!report.additional_information && <><Text style={s.label}>Additional information</Text><Text style={s.text}>{report.additional_information}</Text></>}<View style={s.photos}>{report.photo_paths.map(path => <IssuePhoto key={path} uri={data.reportPhotoUrls[path]} label="Updated public report photo" />)}</View></View>}
           {actions.canEdit && <SecondaryButton label="Edit public report" disabled={busy} onPress={() => navigation.navigate('ReportContentEdit', { reportId: issue.report_id })} />}
         </>}
         {canCompose && <View style={s.field}>

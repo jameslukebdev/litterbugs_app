@@ -49,7 +49,14 @@ export async function loadIssueRequest(cleanupId, userId) {
   const report = checked(await supabase.from('reports').select('id,title,cleanup_issue_hold').eq('id', attempt.report_id).single());
   return { attempt, report };
 }
-export async function loadIssue(issueId, userId) {
+const signedReportPhoto = async path => {
+  const data = checked(await supabase.storage.from('report_photos').createSignedUrl(path, 3600));
+  return data.signedUrl;
+};
+async function reportPhotoSources(paths, getUrl) {
+  return Object.fromEntries(await Promise.all(paths.map(async path => [path, await getUrl(path)])));
+}
+export async function loadIssue(issueId, userId, getPhotoUrl = signedReportPhoto) {
   const issue = checked(await supabase.from('cleanup_issues').select('*').eq('id', issueId).single());
   if (![issue.cleaner_id, issue.reporter_id].includes(userId)) throw new Error('issue_not_allowed');
   const [messageResult, reportResult] = await Promise.all([
@@ -65,17 +72,18 @@ export async function loadIssue(issueId, userId) {
   for (const path of [...new Set(messages.flatMap(row => row.photo_paths || []))]) {
     photos[path] = checked(await supabase.storage.from('cleanup_issue_photos').createSignedUrl(path, 60)).signedUrl;
   }
-  return { issue, messages, report, names, photos };
+  const reportPhotoUrls = Number(report.content_revision) > 1 ? await reportPhotoSources(report.photo_paths || [], getPhotoUrl) : {};
+  return { issue, messages, report, names, photos, reportPhotoUrls };
 }
 export async function openIssue(payload) { return checked(await supabase.rpc('open_cleanup_issue', payload)); }
 export async function replyIssue(payload) { return checked(await supabase.rpc('reply_cleanup_issue', payload)); }
 export async function resumeIssue(issue) {
   return checked(await supabase.rpc('resolve_cleanup_issue', { target_issue_id: issue.id, expected_version: issue.version }));
 }
-export async function loadEditableReport(reportId, userId) {
+export async function loadEditableReport(reportId, userId, getPhotoUrl = signedReportPhoto) {
   const report = checked(await supabase.from('reports').select('*').eq('id', reportId).single());
   if (!canEditReportContent(report, userId)) throw new Error('report_edit_not_allowed');
-  return report;
+  return { ...report, photoUrls: await reportPhotoSources(report.photo_paths || [], getPhotoUrl) };
 }
 export async function updateReportContent(payload) {
   return checked(await supabase.rpc('update_report_content', payload));

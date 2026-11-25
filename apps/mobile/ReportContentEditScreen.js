@@ -9,7 +9,6 @@ import { issueStyles as s } from './components/CleanupIssueUI';
 import { loadEditableReport, updateReportContent, issueError } from './lib/cleanupIssues';
 import { uploadIssueMedia } from './lib/cleanupIssueMedia';
 import { chooseCleanupPhotos } from './lib/cleanupSubmission';
-import { supabase } from './lib/supabase';
 import { useSession } from './lib/session';
 import { permanentUserId } from './lib/reportAccess';
 import { useReports } from './lib/reports';
@@ -20,8 +19,8 @@ export default function ReportContentEditScreen({ navigation, route }) {
   const { user } = useSession();
   const userId = permanentUserId(user);
   const reportId = route.params?.reportId;
-  const { refreshReports } = useReports();
-  const resource = useFocusedResource(useCallback(() => loadEditableReport(reportId, userId), [reportId, userId]));
+  const { refreshReports, getReportPhotoUrl } = useReports();
+  const resource = useFocusedResource(useCallback(() => loadEditableReport(reportId, userId, getReportPhotoUrl), [reportId, userId, getReportPhotoUrl]));
   const [description, setDescription] = useState('');
   const [information, setInformation] = useState('');
   const [existing, setExisting] = useState([]);
@@ -64,7 +63,7 @@ export default function ReportContentEditScreen({ navigation, route }) {
     <Text accessibilityRole="header" style={s.title}>Update report</Text>
     {!!report.funded_amount_cents && <View style={{ borderRadius: 14, backgroundColor: colors.yellowPale, padding: 16, flexDirection: 'row', justifyContent: 'space-between' }}><Text style={s.label}>Cleanup fund</Text><Text style={s.label}>${(report.funded_amount_cents / 100).toFixed(2)}</Text></View>}
     <View style={s.field}><Text style={s.label}>Photos</Text><View style={s.photos}>
-      {existing.map((path, index) => <TouchableOpacity key={path} disabled={locked} accessibilityRole="button" accessibilityLabel={`Remove report photo ${index + 1}`} onPress={() => setExisting(value => value.filter(p => p !== path))}><Image source={{ uri: supabase.storage.from('report_photos').getPublicUrl(path).data.publicUrl }} style={s.photo} /><Text style={s.time}>Remove</Text></TouchableOpacity>)}
+      {existing.map((path, index) => <TouchableOpacity key={path} disabled={locked} accessibilityRole="button" accessibilityLabel={`Remove report photo ${index + 1}`} onPress={() => setExisting(value => value.filter(p => p !== path))}><Image source={{ uri: report.photoUrls[path] }} style={s.photo} /><Text style={s.time}>Remove</Text></TouchableOpacity>)}
       {assets.map((asset, index) => <TouchableOpacity key={`${asset.uri}-${index}`} disabled={locked} accessibilityRole="button" accessibilityLabel={`Remove new report photo ${index + 1}`} onPress={() => setAssets(value => value.filter((_, i) => i !== index))}><Image source={{ uri: asset.uri }} style={s.photo} /><Text style={s.time}>Remove</Text></TouchableOpacity>)}
     </View><TextLink label="Add photos" align="start" disabled={locked || existing.length + assets.length >= 3} onPress={addPhotos} /></View>
     <View style={s.field}><Text style={s.label}>Description</Text><TextInput accessibilityLabel="Report description" value={description} onChangeText={setDescription} multiline maxLength={2000} editable={!locked} style={s.input} /></View>
