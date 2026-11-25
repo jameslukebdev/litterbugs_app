@@ -24,6 +24,25 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (both email-settings OTAs ready; prior updates preserved)
+
+- Prepared, NOT PUBLISHED, full production iOS/Android Hermes OTA exports for2.1.1
+  from4cb2161; toolingd4e06f4. Website/backend00ed676 already live and unchanged.
+- Compared against current live8855578/group22df191b-5980-40c9-9a09-ec76a43cb2bb:
+  $35 tutorial/funders/donation privacy/hearts retained,426 inherited files unchanged,
+  zero removals, all67 prior assets/platform byte-identical. Only12 email-related
+  app/shared files differ; native configuration/dependencies unchanged.
+- 683 mobile tests pass/1 existing skip;231-module check and scoped lint pass.
+  Both full frozen exports/78 hashes and EAS offline inputs validated. Prior local
+  native flow checks passed; actual published OTA download remains pending.
+- Production channel/group unchanged. Publication tool now stops if the live OTA
+  baseline changes; simulated freshness guards pass, no actual update invoked.
+  Recovery plan republishes the prior OTA group, never rolls back to embedded.
+- Evidence: artifacts/mobile-email-preferences-20261124/; review:
+  docs/reviews/2026-11-24-email-preferences-ota-readiness.md. Use isolated mobile
+  checkout/source bundle, not the website branch or dirty shared tree. Publication
+  remains held; no store builds, sends or unrelated shared changes.
+
 ### 2026-11-24 — Codex (email website/backend published; app OTAs still held)
 
 - Grant explicitly authorized website/backend publication. LIVE source00ed676
