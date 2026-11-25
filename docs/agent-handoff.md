@@ -24,6 +24,30 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-25 — Codex (real cleanup issue workflow, local website only)
+
+- Implemented620b0d7 in isolated /tmp/litterbugs-cleanup-issues-web-20261125,
+  branch codex/cleanup-issues-web-20261125 from356c2d9/liveba1feca. Quiet cleanup
+  ellipsis, private processed-photo request/reply, inbox links, persistent shortcut,
+  explicit resume with exact paused time, safety/staff review and released-claim
+  guards. Funded public description/photos/Additional information edits retain
+  original revisions/evidence; public changes visible inside private conversation.
+  One back link, no stacked separators/repeated report/fund/footer navigation.
+- Real loopback Auth/Postgres/Storage/browser flow passes: request+photo, reporter
+  inbox/reply/public edit, cleaner response/resume, outsider exclusion. Same attempt
+  retained;306 seconds restored; $35 anonymous test fund unchanged. SQL/RLS/retry/
+  stale-version/safety/release/expiry tests pass;139 regressions, TypeScript/lint pass.
+- Test http://127.0.0.1:3001/local-testing/cleanup-issues (cleaner/reporter/other
+  local account buttons). Dedicated DB litterbugs_cleanup_issues_20261125/API62341
+  in2GB colima-litterbugs-audit; Next1.5GB. Shared3000/app sources untouched. Local
+  cloned cron disabled to prevent outbound jobs. Cleared own disposable Next cache
+  after disk-full and disabled Turbopack disk persistence. No simulators started.
+- NOTHING deployed. New migration20261125171211_cleanup_site_issues.sql applied
+  only to isolated local DB. Live website/OTA63bc12bc preserved. Actual external
+  scan/AI responses use local fixtures; native push/email delivery not verified.
+  Future release needs notification worker/native routing integration against
+  latest source. See implementation plan for local recovery/testing paths.
+
 ### 2026-11-25 — Codex (full private issue/reply/resume preview)
 
 - Owner requested full interactive preview and privacy clarification; no build or
