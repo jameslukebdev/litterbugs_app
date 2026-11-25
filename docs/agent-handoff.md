@@ -24,6 +24,31 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-24 — Codex (email website/backend published; app OTAs still held)
+
+- Grant explicitly authorized website/backend publication. LIVE source00ed676
+  on codex/email-preferences-web-release-20261124, based on exact liveee03802;
+  only the prepared email feature was merged. Shared unrelated work preserved.
+- Vercel production dpl_ChohVa5bmXref91Qze5TH8a8Ewr7 promoted from the checked
+  production build to litterbugs.app. Rollback: dpl_CmFQNjduJ1pyQboeKs1nM7bBdtsS.
+- APPLIED20261124211058_weekly_email_preferences.sql to mvaygkflcjswtwchflrk,
+  exact migration history/source hash verified;93 non-guest addresses backfilled
+  default-on. No Edge Function, email sending, schedule or financial change.
+- All1219 web tests/167 files,3 shared tests, local SQL/role checks, TypeScript
+  and cloud production build passed. Lint zero errors/four inherited warnings.
+- Live staff browser: Settings link, preference load, public unsubscribe, off
+  after reload, save on and reload persistence passed. Staff preference restored
+  to true. Anonymous/private/member/MFA/service guards passed; test SQL writes
+  rolled back. Advisors58→58, zero new; runtime error scan zero records.
+- Privacy disclosure is live (November24). Luke's list: /admin/email with existing
+  admin+MFA; local dashboard/export UI and live DB role checks passed. No new
+  administrator/MFA setup or emails. Checking browser analytics excluded.
+- App OTAs remain UNPUBLISHED/held. Use the prepared mobile implementation branch
+  for any later OTA, not this website branch's unchanged mobile source. Preserve
+  suppression on rollback. Gmail sending-policy finding remains; no sends enabled.
+- Details: docs/reviews/2026-11-24-email-preferences-website-release.md; evidence:
+  /tmp/litterbugs-email-web-deploy-20261124/. No shared reset or force-push.
+
 ### 2026-11-19 — Codex (donor privacy released; Vercel authenticated)
 
 - LIVE: source `ee03802e163b0ce47fe750a2bbbf2dd9938b8eb0` on GitHub branch
