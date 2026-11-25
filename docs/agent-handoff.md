@@ -24,25 +24,27 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
-### 2026-11-25 — Codex (returned-litter OTA published; native verification continuing)
+### 2026-11-25 — Codex (returned-litter OTA published and native-verified on both)
 
-- Owner explicitly approved OTA publication. Published production group
-  63bc12bc-4571-4650-8ed2-954de6bee32f at11:01a.m. Eastern, runtime2.1.1.
-  iOS01a21370-92e6-7d80-9e82-20a381a5f128;
-  Android01a21370-92e6-746c-830f-17d9dd394ee2. Frozen code2797676;
-  EAS records8c9a0eb (identical app scope, documentation only).
-- Exact frozen exports published without rebuilding; both source maps uploaded,
-  zero new assets. Production channel mapping unchanged; all74 unique hosted
-  bundles/assets downloaded and hashed against the export. Prior OTA features
-  and all67 prior assets/platform retained. Website/backend untouched.
-- iPhone original native updater downloaded exact new bundle and launched twice,
-  zero failed launches. Real completed report loads. Android verification pending;
-  continuing sequential simulator/emulator acceptance with memory management.
-- No account has been blocked. Profile menu was inspected read-only and closed;
-  owner explicitly said not to block accounts. Preserve all account/block settings.
-- Evidence: artifacts/mobile-recurring-cleanups-20261125/. Prior publication hold
-  superseded for this exact candidate. Recover by republishing5c8ab976, never
-  embedded. Other assistants' shared app/website/store screenshot work preserved.
+- Owner authorized publication. LIVE production group63bc12bc-4571-4650-8ed2-954de6bee32f
+  at11:01a.m. Eastern, runtime2.1.1. iOS01a21370-92e6-7d80-9e82-20a381a5f128;
+  Android01a21370-92e6-746c-830f-17d9dd394ee2. Frozen app2797676; EAS publication
+  source8c9a0eb (identical app scope; documentation only).
+- Both real native updaters downloaded exact frozen/hosted bundles, launched twice,
+  zero failures. Actual live Timeline/attribution and Needs cleaning again verified
+  on both; fresh wizard has no old photos/Next disabled. Local test drafts discarded,
+  no real report or upload. Owner assisted one iPhone scroll; assistant observed
+  actual Timeline and tested action. Android cold relaunch passes. Devices stopped.
+- All74 hosted bundle/asset hashes pass;425 inherited files and67 assets/platform
+  preserved. $35/funders/privacy/hearts/email retained.705 tests/1 existing skip;
+  native/runtime unchanged. Silent updates; staff analytics excluded. Websiteba1feca,
+  hosted schema and stores untouched. No account blocked or block settings changed.
+- Review: docs/reviews/2026-11-25-recurring-cleanups-mobile-ota-publication.md;
+  evidence/source bundles: artifacts/mobile-recurring-cleanups-20261125/. Use this
+  published source for future mobile work; shared dirty app/website/other-assistant
+  store edits preserved. Prior hold superseded. Recovery republishes5c8ab976,
+  never embedded. No further publication or deployment is pending for this release.
+
 
 ### 2026-11-25 — Codex (returned-litter mobile OTAs prepared; publication held)
 
