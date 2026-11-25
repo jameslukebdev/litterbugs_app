@@ -24,6 +24,24 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-25 — Codex (website release readiness; no deployment)
+
+- Optimized Next16.3/Turbopack production build of d56f7c3 passed, including TS
+  and all37 static pages, using one page worker. Log:
+  /tmp/litterbugs-website-readiness-20261125/production-build-final.log.
+- Confirmed candidate descends from live00ed676 and contains no mobile source or
+  Edge Function change. Recurrence migration is additive; ordinary report/cleanup
+  RPC signatures and earlier report/evidence/fund identities remain intact.
+- Website implementation is ready for release. Operational blocker: Vercel CLI
+  rejected the saved authentication; whoami found no usable login. Stopped its
+  automatic device-login wait; no new credential/access was granted. Refresh
+  Vercel authentication before a hosted build/promotion. Secret env values are
+  omitted by env pull; local build used the existing public Supabase project key.
+- No deployment, hosted migration, mobile release, OTA or send. Existing holds
+  remain. Shared localhost retained; only ignored build/dependency artifacts in
+  the isolated worktree. Generated next-env change restored; other work preserved.
+
+
 ### 2026-11-25 — Codex (cleanup flow and action layout verified locally)
 
 - Source d56f7c3 on codex/recurring-cleanups-local-20261124, mirrored into shared3000.

@@ -56,3 +56,11 @@ Evidence (OS temporary directory; not production assets):
 `/tmp/litterbugs-cleanup-flow-20261125/browser-recovered-publication.png`
 
 Private local API/user configs remain mode0600 under that temp directory and are not committed. No screenshots/test photos, generated output or credentials are included in the source commit.
+
+## November25 website release-readiness check
+
+The optimized production build of `d56f7c3` passed locally using the default Next16.3 Turbopack bundler: compilation, TypeScript and all37 static pages, with one page worker. Existing social-card filesystem tracing warnings remain inherited. Evidence: `/tmp/litterbugs-website-readiness-20261125/production-build-final.log`. Initial local setup attempts lacked nested test dependencies and the secret-redacted public project key; completing that local setup resolved those failures without source changes. Build used existing public Supabase project credentials because Vercel excludes Secret values from environment pulls. No production preview/runtime is claimed from this build alone.
+
+Candidate ancestry includes live website `00ed676`; no mobile source or Edge Function files differ. The migration adds site columns/defaults/indexes, narrow new functions and a recurrence-only publication guard. Existing publish/claim/review signatures stay intact; ordinary reports bypass the recurrence guard. The already recorded local lifecycle/finance-identity checks still apply. Native apps continue their current per-report interface until native work is separately completed; the shared backend additions are part of the website release.
+
+Implementation readiness: **ready for website release**. Operational access: **Vercel CLI authentication needs refreshing**. A read-only env pull rejected the saved token; whoami had no usable login and opened a device flow, which was stopped without granting credentials. No environment value, hosted schema, deployment, domain, mobile build or OTA was changed. Before publishing: restore Vercel access, stage the production-environment build, apply only the prepared migration in a guarded transaction, verify backend compatibility, promote and smoke-test. Keep the additive schema/history on any website rollback. Publication has not been requested in this readiness question.
