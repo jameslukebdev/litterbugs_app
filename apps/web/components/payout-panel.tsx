@@ -10,7 +10,7 @@ type Stage = 'loading' | 'not_started' | 'pending' | 'restricted' | 'enabled';
 const STAGE: Record<Exclude<Stage, 'loading'>, { title: string; button: string }> = {
   not_started: {
     title: 'Get paid for cleanups',
-    button: 'Add bank with Stripe',
+    button: 'Add bank or debit card',
   },
   pending: {
     title: 'Almost there',
@@ -74,7 +74,7 @@ export function PayoutPanel({ status, eligibleConfirmed, onEligible, busy, openi
       {message && <p className="form-message error-message" role="alert">{message}</p>}
       {/* Nothing is left to do once payouts are ready, so Manage is a quieter button. */}
       <button className={stage === 'enabled' ? `secondary-button ${payoutStyles.manage}` : 'primary-button payout-go'} onClick={onContinue} disabled={busy || (needsConfirm && !eligibleConfirmed)}>
-        {stage === 'enabled' && openingStripe ? 'Opening Stripe…' : bankAlreadyShown ? 'Manage payouts' : startingBankSetup ? 'Add bank with Stripe' : copy?.button ?? 'Try again'}
+        {stage === 'enabled' && openingStripe ? 'Opening Stripe…' : bankAlreadyShown ? 'Manage payouts' : startingBankSetup ? 'Add bank or debit card' : copy?.button ?? 'Try again'}
       </button>
       {message && onFallback && <button className="secondary-button" disabled={busy || !status || (needsConfirm && !eligibleConfirmed)} onClick={onFallback}>{openingStripe ? 'Opening Stripe…' : 'Continue on Stripe'}</button>}
       <PayoutTrust />

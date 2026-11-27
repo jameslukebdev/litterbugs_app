@@ -48,7 +48,7 @@ async function open() {
 it('explains a first-time setup and only continues after the eligibility confirmation', async () => {
   await open();
   await screen.findByRole('heading', { name: 'Get paid for cleanups' });
-  const go = screen.getByRole('button', { name: 'Add bank with Stripe' }) as HTMLButtonElement;
+  const go = screen.getByRole('button', { name: 'Add bank or debit card' }) as HTMLButtonElement;
   expect(go.disabled).toBe(true);
   fireEvent.click(screen.getByRole('checkbox'));
   expect(go.disabled).toBe(false);
@@ -111,7 +111,7 @@ it('opens embedded onboarding after confirmation and only celebrates server-conf
   createPayoutSession.mockResolvedValue({ clientSecret: 'test_secret', publishableKey: 'pk_test_fixture', expiresAt: 1900000000 });
   await open();
   fireEvent.click(await screen.findByRole('checkbox'));
-  fireEvent.click(screen.getByRole('button', { name: 'Add bank with Stripe' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Add bank or debit card' }));
   await screen.findByRole('heading', { name: 'Set up your payouts' });
   expect(createPayoutConnect).toHaveBeenCalledOnce();
   expect(createPayoutLink).not.toHaveBeenCalled();
@@ -141,7 +141,7 @@ it('opens embedded onboarding after confirmation and only celebrates server-conf
 it('offers hosted recovery after an embedded session fails without redirecting automatically', async () => {
   await open();
   fireEvent.click(await screen.findByRole('checkbox'));
-  fireEvent.click(screen.getByRole('button', { name: 'Add bank with Stripe' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Add bank or debit card' }));
   fireEvent.click(await screen.findByRole('button', { name: 'Continue on Stripe' }));
   await waitFor(() => expect(createPayoutLink).toHaveBeenCalledWith('link'));
 });
@@ -150,7 +150,7 @@ it('invalidating the signed-in session closes the embedded payout form', async (
   createPayoutSession.mockResolvedValue({ clientSecret: 'test_secret', publishableKey: 'pk_test_fixture', expiresAt: 1900000000 });
   await open();
   fireEvent.click(await screen.findByRole('checkbox'));
-  fireEvent.click(screen.getByRole('button', { name: 'Add bank with Stripe' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Add bank or debit card' }));
   await screen.findByRole('heading', { name: 'Set up your payouts' });
   const { act } = await import('@testing-library/react');
   act(() => createPayoutConnect.mock.calls[0][1]());
@@ -278,8 +278,8 @@ it('embeds the connected bank editor without opening a dashboard', async () => {
 
 it('opens Stripe’s form directly, on the page, when eligibility was confirmed beside the button', async () => {
   createPayoutSession.mockResolvedValue({ clientSecret: 'secret', publishableKey: 'pk_test_x', expiresAt: 1900000000 });
-  render(<PayoutSetupAction buttonLabel="Add bank with Stripe" confirmed inlineClassName="inline" />);
-  fireEvent.click(await screen.findByRole('button', { name: 'Add bank with Stripe' }));
+  render(<PayoutSetupAction buttonLabel="Add bank or debit card" confirmed inlineClassName="inline" />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Add bank or debit card' }));
   await waitFor(() => expect(createPayoutSession).toHaveBeenCalledOnce());
   expect(await screen.findByRole('button', { name: 'Exit secure form' })).toBeTruthy();
   expect(screen.queryByRole('checkbox')).toBeNull();
@@ -288,14 +288,14 @@ it('opens Stripe’s form directly, on the page, when eligibility was confirmed 
 });
 
 it('keeps the setup button disabled until eligibility is confirmed', async () => {
-  render(<PayoutSetupAction buttonLabel="Add bank with Stripe" disabled inlineClassName="inline" />);
-  const button = await screen.findByRole('button', { name: 'Add bank with Stripe' }) as HTMLButtonElement;
+  render(<PayoutSetupAction buttonLabel="Add bank or debit card" disabled inlineClassName="inline" />);
+  const button = await screen.findByRole('button', { name: 'Add bank or debit card' }) as HTMLButtonElement;
   expect(button.disabled).toBe(true);
 });
 
 it('never asks for the 18+ confirmation again after it was given beside the button', async () => {
-  render(<PayoutSetupAction buttonLabel="Add bank with Stripe" confirmed inlineClassName="inline" />);
-  fireEvent.click(await screen.findByRole('button', { name: 'Add bank with Stripe' }));
+  render(<PayoutSetupAction buttonLabel="Add bank or debit card" confirmed inlineClassName="inline" />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Add bank or debit card' }));
   // Stripe is unavailable in tests, so the fallback screen appears.
   await screen.findByText('Stripe is unavailable in tests.');
   expect(screen.queryByRole('checkbox')).toBeNull();

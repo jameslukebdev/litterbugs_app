@@ -11,8 +11,8 @@ export function PayoutTrust({ compact = false }: { compact?: boolean }) {
     <p>
       <strong>Secured by Stripe.</strong>{' '}
       {compact
-        ? 'Litterbugs never receives your full bank-account number.'
-        : 'Stripe checks your identity and sends your payouts. Litterbugs never receives your full bank-account number.'}
+        ? 'Litterbugs never receives your full bank or card number.'
+        : 'Stripe checks your identity and sends your payouts. Litterbugs never receives your full bank or card number.'}
     </p>
   </div>;
 }

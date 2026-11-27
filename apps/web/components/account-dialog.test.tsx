@@ -515,22 +515,22 @@ describe('Payments & payouts: one Stripe payout panel', () => {
   it('shows payouts inside Litterbugs, with no sample earnings, wallets or second dashboard', async () => {
     render(<AccountPage destination="payments" userId="member-id" bankReady />);
     const payouts = await screen.findByRole('region', { name: 'Payouts' });
-    expect(payouts.textContent).toContain('Bank connected through Stripe');
+    expect(payouts.textContent).toContain('Connected through Stripe');
     expect(await screen.findByRole('region', { name: 'Stripe payouts preview' })).toBeTruthy();
     expect(screen.queryByText(/Venmo|PayPal|Neighborhood cleanup/)).toBeNull();
     expect(screen.queryByRole('button', { name: /Stripe dashboard/ })).toBeNull();
   });
   it('asks for one eligibility confirmation beside one Stripe bank setup button', async () => {
     render(<AccountPage destination="payments" userId="member-id" bankReady={false} />);
-    expect(await screen.findByText('No bank connected')).toBeTruthy();
-    expect(screen.getAllByRole('button', { name: 'Add bank with Stripe' })).toHaveLength(1);
+    expect(await screen.findByText('No bank or card yet')).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: 'Add bank or debit card' })).toHaveLength(1);
     expect(screen.getByRole('checkbox', { name: /at least 18/ })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Payout settings' })).toBeNull();
   });
   it('lets a returning cleaner finish setup without confirming eligibility again', async () => {
     render(<AccountPage destination="payments" userId="member-id" bankReady={false} payoutSetup={{ started: true, ageConfirmed: true }} />);
-    expect(await screen.findByText('Bank setup not finished')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Add bank with Stripe' })).toBeTruthy();
+    expect(await screen.findByText('Setup not finished')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Add bank or debit card' })).toBeTruthy();
     expect(screen.queryByRole('checkbox', { name: /at least 18/ })).toBeNull();
   });
 });

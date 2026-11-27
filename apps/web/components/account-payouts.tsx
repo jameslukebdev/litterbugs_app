@@ -21,9 +21,9 @@ export function AccountPayouts({ bankReady, setup, onBankSettingsClosed }: {
   const [eligible, setEligible] = useState(false);
   const confirmed = Boolean(setup?.ageConfirmed) || eligible;
   const unfinished = bankReady === false && Boolean(setup?.started);
-  const status = bankReady ? 'Bank connected through Stripe'
-    : unfinished ? 'Bank setup not finished'
-      : bankReady === false ? 'No bank connected' : 'Couldn’t check your bank';
+  const status = bankReady ? 'Connected through Stripe'
+    : unfinished ? 'Setup not finished'
+      : bankReady === false ? 'No bank or card yet' : 'Couldn’t check your payouts';
 
   return (
     <section className={`member-panel ${styles.getPaid}`} aria-labelledby="account-payouts-heading">
@@ -37,7 +37,7 @@ export function AccountPayouts({ bankReady, setup, onBankSettingsClosed }: {
           <span>I’m at least 18 and eligible to receive payouts in the United States.</span>
         </label>}
         <PayoutSetupAction
-          buttonLabel={bankReady === null ? 'Payout settings' : 'Add bank with Stripe'}
+          buttonLabel={bankReady === null ? 'Payout settings' : 'Add bank or debit card'}
           primary={bankReady === false} confirmed={bankReady === false && confirmed}
           disabled={bankReady === false && !confirmed} inlineClassName={styles.bankSetupPanel}
           onReady={onBankSettingsClosed} onDismiss={onBankSettingsClosed} />
