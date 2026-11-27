@@ -181,7 +181,8 @@ export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, 
     trackPayoutSetup('opened');
     setConnectInstance(null);
     setStatus(null);
-    setEligibleConfirmed(false);
+    // Confirmed beside the button already: never ask again on a later or fallback screen.
+    setEligibleConfirmed(confirmed);
     setOpen(true);
     setPending('prepare');
     setMessage('');
@@ -310,6 +311,7 @@ export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, 
     /> : <PayoutPanel
       status={status}
       eligibleConfirmed={eligibleConfirmed}
+      confirmed={confirmed}
       onEligible={setEligibleConfirmed}
       busy={busy}
       openingStripe={pending === 'redirect'}

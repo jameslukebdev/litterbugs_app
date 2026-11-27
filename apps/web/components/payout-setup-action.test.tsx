@@ -292,3 +292,12 @@ it('keeps the setup button disabled until eligibility is confirmed', async () =>
   const button = await screen.findByRole('button', { name: 'Add bank with Stripe' }) as HTMLButtonElement;
   expect(button.disabled).toBe(true);
 });
+
+it('never asks for the 18+ confirmation again after it was given beside the button', async () => {
+  render(<PayoutSetupAction buttonLabel="Add bank with Stripe" confirmed inlineClassName="inline" />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Add bank with Stripe' }));
+  // Stripe is unavailable in tests, so the fallback screen appears.
+  await screen.findByText('Stripe is unavailable in tests.');
+  expect(screen.queryByRole('checkbox')).toBeNull();
+  expect((screen.getByRole('button', { name: 'Continue on Stripe' }) as HTMLButtonElement).disabled).toBe(false);
+});

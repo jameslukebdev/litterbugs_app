@@ -37,7 +37,7 @@ export function AccountPayouts({ bankReady, setup, onBankSettingsClosed }: {
           <span>I’m at least 18 and eligible to receive payouts in the United States.</span>
         </label>}
         <PayoutSetupAction
-          buttonLabel={bankReady === null ? 'Payout settings' : unfinished ? 'Finish bank setup' : 'Add bank with Stripe'}
+          buttonLabel={bankReady === null ? 'Payout settings' : 'Add bank with Stripe'}
           primary={bankReady === false} confirmed={bankReady === false && confirmed}
           disabled={bankReady === false && !confirmed} inlineClassName={styles.bankSetupPanel}
           onReady={onBankSettingsClosed} onDismiss={onBankSettingsClosed} />

@@ -41,9 +41,11 @@ export function payoutStage(status: PayoutStatus | null): Stage {
  * Payout setup in plain words: where you are (not set up / in progress / needs info / ready), one
  * confirmation, and one button that opens Stripe's form inside Litterbugs. Earn family green, like the cleaner flow.
  */
-export function PayoutPanel({ status, eligibleConfirmed, onEligible, busy, openingStripe = false, message, onContinue, onFallback, celebrate = false, inline = false }: {
+export function PayoutPanel({ status, eligibleConfirmed, onEligible, busy, openingStripe = false, message, onContinue, onFallback, celebrate = false, inline = false, confirmed = false }: {
   status: PayoutStatus | null; eligibleConfirmed: boolean; onEligible: (value: boolean) => void;
   busy: boolean; openingStripe?: boolean; message: string; onContinue: () => void; onFallback?: () => void; celebrate?: boolean; inline?: boolean;
+  /** Eligibility was already confirmed on the page, so this screen never asks again. */
+  confirmed?: boolean;
 }) {
   const stage = payoutStage(status);
   const bankAlreadyShown = inline && stage === 'enabled';
@@ -51,7 +53,7 @@ export function PayoutPanel({ status, eligibleConfirmed, onEligible, busy, openi
   const copy = stage === 'loading' ? null : STAGE[stage];
   // Only a first-time setup asks for the age/eligibility confirmation; anyone already part-way through
   // confirmed it when they started (the server keeps that record).
-  const needsConfirm = payoutNeedsConfirmation(status);
+  const needsConfirm = !confirmed && payoutNeedsConfirmation(status);
   return (
     <div className="payout-flow">
       {!bankAlreadyShown && <header className="payout-head">

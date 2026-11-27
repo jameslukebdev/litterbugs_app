@@ -530,7 +530,7 @@ describe('Payments & payouts: one Stripe payout panel', () => {
   it('lets a returning cleaner finish setup without confirming eligibility again', async () => {
     render(<AccountPage destination="payments" userId="member-id" bankReady={false} payoutSetup={{ started: true, ageConfirmed: true }} />);
     expect(await screen.findByText('Bank setup not finished')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Finish bank setup' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Add bank with Stripe' })).toBeTruthy();
     expect(screen.queryByRole('checkbox', { name: /at least 18/ })).toBeNull();
   });
 });
