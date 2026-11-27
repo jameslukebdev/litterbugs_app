@@ -9,6 +9,7 @@
   "workers_dev": true,
   "preview_urls": false,
   "keep_vars": true,
+  "routes": [{ "pattern": "beta.litterbugs.app", "custom_domain": true }],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
