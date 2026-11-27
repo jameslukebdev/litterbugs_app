@@ -19,6 +19,10 @@
       "service": "litterbugs-web-production"
     }
   ],
+  "limits": {
+    // The existing photo share card can take more than one CPU second to render.
+    "cpu_ms": 5000
+  },
   "observability": {
     "enabled": false
   },
