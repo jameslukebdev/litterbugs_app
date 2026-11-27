@@ -1,0 +1,48 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "litterbugs-web-production",
+  "account_id": "faccfcc33a9c5b3800416063b6f8bfa5",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-08-27",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Use the Worker hostname to verify this release before attaching the live domain.
+  "workers_dev": true,
+  "preview_urls": false,
+  "keep_vars": true,
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "litterbugs-web-production"
+    }
+  ],
+  "observability": {
+    "enabled": false
+  },
+  "vars": {
+    "LITTERBUGS_DEPLOYMENT_ENV": "production",
+    "NEXT_PUBLIC_SITE_URL": "https://litterbugs.app",
+    "WEBSITE_ANALYTICS_ENABLED": "true",
+    "LITTERBUGS_IMAGE_RUNTIME": "cloudflare",
+    "REPORT_MEDIA_MALWARE_SCANNER_ENABLED": "true",
+    "REPORT_MEDIA_MALWARE_SCANNER_PROVIDER": "cloudmersive",
+    "GEMINI_RELAY_URL": "https://photo-content-20261113---litterbugs-gemini-relay-qhwmumj2fa-uc.a.run.app"
+  },
+  "secrets": {
+    "required": [
+      "REPORT_MEDIA_MALWARE_SCANNER_API_KEY",
+      "GEMINI_RELAY_SHARED_SECRET",
+      "SUPABASE_SECRET_KEY",
+      "WEBSITE_CLARITY_ID",
+      "WEBSITE_GA_MEASUREMENT_ID",
+      "WEBSITE_POSTHOG_HOST",
+      "WEBSITE_POSTHOG_KEY"
+    ]
+  },
+  "images": {
+    "binding": "IMAGES"
+  }
+}

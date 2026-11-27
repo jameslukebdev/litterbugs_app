@@ -1,7 +1,6 @@
 import 'server-only';
+import { renderCloudflareImage, usesCloudflareImages } from '@/lib/cloudflare-images';
 
-import convert from 'heic-convert';
-import sharp from 'sharp';
 
 import { isHeicReportPhoto, isReportCardPhoto } from '@/lib/report-photo';
 import { isDiscoverableReport, reportDiscoveryWindow } from '@/lib/report-visibility';
@@ -120,21 +119,28 @@ export async function GET(request: Request) {
       if (source.size > MAX_SOURCE_BYTES) throw new PhotoSourceError(413, 'Report photo is too large.');
 
       const sourceBuffer = new Uint8Array(await source.arrayBuffer());
+      if (usesCloudflareImages()) {
+        return renderCloudflareImage(sourceBuffer, variant === 'card'
+          ? { width: 720, height: 405, cover: true, format: 'image/webp', quality: 76 }
+          : variant === 'detail'
+            ? { width: 1600, height: 1200, format: 'image/webp', quality: 82 }
+            : { format: 'image/jpeg', quality: 82 });
+      }
       const browserImage = isHeicReportPhoto(photoPath)
-        ? Buffer.from(await convert({
+        ? Buffer.from(await (await import('heic-convert')).default({
           buffer: sourceBuffer,
           format: 'JPEG',
           quality: 0.82,
         }))
         : Buffer.from(sourceBuffer);
       return variant === 'card'
-        ? await sharp(browserImage)
+        ? await (await import('sharp')).default(browserImage)
           .rotate()
           .resize({ width: 720, height: 405, fit: 'cover', position: 'centre', withoutEnlargement: true })
           .webp({ quality: 76 })
           .toBuffer()
         : variant === 'detail'
-          ? await sharp(browserImage)
+          ? await (await import('sharp')).default(browserImage)
             .rotate()
             .resize({ width: 1600, height: 1200, fit: 'inside', withoutEnlargement: true })
             .webp({ quality: 82 })

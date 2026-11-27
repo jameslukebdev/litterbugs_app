@@ -1,7 +1,6 @@
 import 'server-only';
+import { renderCloudflareImage, usesCloudflareImages } from '@/lib/cloudflare-images';
 
-import convert from 'heic-convert';
-import sharp from 'sharp';
 
 import { isHeicReportPhoto } from '@/lib/report-photo';
 import { loadDisplayPhoto, PhotoSourceError } from '@/lib/display-photo-cache';
@@ -34,14 +33,17 @@ export async function loadSocialCardPhoto(
       if (source.size > MAX_SOURCE_BYTES) throw new PhotoSourceError(413, 'Photo is too large.');
 
       const sourceBytes = new Uint8Array(await source.arrayBuffer());
+      if (usesCloudflareImages()) {
+        return renderCloudflareImage(sourceBytes, { width, height: width, format: 'image/jpeg', quality: width === 640 ? 75 : 82 });
+      }
       const browserImage = isHeicReportPhoto(path)
-        ? Buffer.from(await convert({
+        ? Buffer.from(await (await import('heic-convert')).default({
           buffer: sourceBytes,
           format: 'JPEG',
           quality: 0.82,
         }))
         : Buffer.from(sourceBytes);
-      const cardImage = await sharp(browserImage)
+      const cardImage = await (await import('sharp')).default(browserImage)
         .rotate()
         .resize({
           width,

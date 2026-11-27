@@ -54,3 +54,7 @@ output/
 *.swp
 release-assets/**/*.zip
 /seelitterad*
+
+# Cloudflare website build output
+apps/web/.open-next/
+apps/web/.wrangler/

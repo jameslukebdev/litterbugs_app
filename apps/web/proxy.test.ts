@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 const { updateSession, resolveRoute } = vi.hoisted(() => ({ updateSession: vi.fn(), resolveRoute: vi.fn() }));
 vi.mock('@/lib/supabase/proxy', () => ({ updateSession }));
 vi.mock('@/lib/public-report-route', () => ({ resolvePublicReportRoute: resolveRoute }));
+vi.mock('@/lib/local-site-store', () => ({ localOccurrence: vi.fn() }));
 import { proxy } from './proxy';
 beforeEach(() => {
   vi.clearAllMocks();

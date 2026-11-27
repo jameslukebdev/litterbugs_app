@@ -1,4 +1,6 @@
 import 'server-only';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { usesCloudflareImages } from '@/lib/cloudflare-images';
 
 import { createHash } from 'node:crypto';
 import { unstable_cache } from 'next/cache';
@@ -29,6 +31,25 @@ export async function loadDisplayPhoto(
   if (existing) return existing;
 
   const request = (async () => {
+    if (usesCloudflareImages()) {
+      // A named, server-only cache is never served by public fetch/default CDN
+      // lookup. Callers still check current visibility/ownership before this call.
+      const cacheKey = new Request(`https://display-photo-cache.invalid/v2/${key}`);
+      let cache: Cache | undefined;
+      try {
+        if (typeof caches !== 'undefined') cache = await caches.open('litterbugs-display-photos-v2');
+        const hit = await cache?.match(cacheKey);
+        if (hit?.ok) return Buffer.from(await hit.arrayBuffer());
+      } catch { /* A cache outage must not prevent photo display. */ }
+      const output = await generate();
+      if (cache && output.length <= MAX_CACHED_BYTES) {
+        const write = cache.put(cacheKey, new Response(new Uint8Array(output), {
+          headers: { 'Cache-Control': `max-age=${REVALIDATE_SECONDS}`, 'Content-Type': 'application/octet-stream' },
+        })).catch(() => undefined);
+        try { getCloudflareContext().ctx.waitUntil(write); } catch { await write; }
+      }
+      return output;
+    }
     let attemptedGeneration = false;
     let generated: Buffer | undefined;
     try {

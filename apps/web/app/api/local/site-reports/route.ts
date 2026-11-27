@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateReportDraft, EMPTY_REPORT_DRAFT, isWithinReportDistance } from '@litterbugs/report-contract';
-import sharp from 'sharp';
 import { localContributionRequest } from '@/lib/local-contribution-privacy';
 import { createClient } from '@/lib/supabase/server';
 import { loadReportSite } from '@/lib/report-site';
@@ -32,7 +31,7 @@ export async function POST(request: NextRequest) {
     const parsed = {...EMPTY_REPORT_DRAFT,...JSON.parse(String(data.get('draft'))),photos};
     if (Object.keys(validateReportDraft(parsed)).length) throw new Error('Check your report details.');
     const images:Buffer[]=[];
-    for (const photo of photos) images.push(await sharp(Buffer.from(await photo.arrayBuffer()),{limitInputPixels:40000000}).rotate().resize(1080,1080,{fit:'inside',withoutEnlargement:true}).jpeg({quality:80}).toBuffer());
+    for (const photo of photos) images.push(await (await import('sharp')).default(Buffer.from(await photo.arrayBuffer()),{limitInputPixels:40000000}).rotate().resize(1080,1080,{fit:'inside',withoutEnlargement:true}).jpeg({quality:80}).toBuffer());
     const result=await saveLocalOccurrence({id,siteId:site.id,sourceReportId:sourceId,reporterId:user.id,createdAt:new Date().toISOString(),title:parsed.title.trim()||'Litter Report',litterTypes:[...parsed.selectedTypes,...(parsed.types.trim()?[parsed.types.trim()]:[])],severity:parsed.severity,notes:[...parsed.selectedNotes,parsed.notes.trim()].filter(Boolean).join(' · '),photoCount:images.length},images);
     return NextResponse.json(result,{headers:{'Cache-Control':'no-store'}});
   } catch(error) {

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { localContributionRequest } from '@/lib/local-contribution-privacy';
 import { saveLocalSiteReport } from '@/lib/local-report-sites';
 import { validateReportDraft, EMPTY_REPORT_DRAFT } from '@litterbugs/report-contract';
-import sharp from 'sharp';
 
 export async function POST(request: NextRequest) {
   const blocked = localContributionRequest(request);
@@ -18,7 +17,7 @@ export async function POST(request: NextRequest) {
     const parsed = { ...EMPTY_REPORT_DRAFT, ...draft, photos };
     if (Object.keys(validateReportDraft(parsed)).length) throw new Error('Check your report details.');
     const images = await Promise.all(photos.map(async photo => {
-      const bytes = await sharp(Buffer.from(await photo.arrayBuffer()), { limitInputPixels: 40000000 }).rotate().resize(1080, 1080, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 80 }).toBuffer();
+      const bytes = await (await import('sharp')).default(Buffer.from(await photo.arrayBuffer()), { limitInputPixels: 40000000 }).rotate().resize(1080, 1080, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 80 }).toBuffer();
       return `data:image/jpeg;base64,${bytes.toString('base64')}`;
     }));
     const result = await saveLocalSiteReport({ id, title: parsed.title.trim(), litterTypes: [...parsed.selectedTypes, ...(parsed.types.trim() ? [parsed.types.trim()] : [])], severity: parsed.severity, notes: [...parsed.selectedNotes, parsed.notes.trim()].filter(Boolean).join(' · '), photos: images });

@@ -10,7 +10,7 @@ describe('Google content moderation transport', () => {
     const [url,init] = fetchImpl.mock.calls[0];
     expect(url.toString()).toBe('https://relay.example/v1/content-check');
     expect(JSON.parse(String(init!.body))).toEqual({mimeType:'image/jpeg',data:'AQID'});
-    expect(init).toMatchObject({redirect:'error',credentials:'omit',cache:'no-store'});
+    expect(init).toMatchObject({redirect:'manual',credentials:'omit',cache:'no-store'});
   });
   it('rejects a prohibited-content verdict', async () => {
     await expect(requireGooglePhotoReview(new Uint8Array([1]), {env,fetchImpl:async()=>response({decision:'reject'})})).rejects.toMatchObject({code:'MEDIA_CONTENT_REJECTED',status:422});
@@ -20,6 +20,6 @@ describe('Google content moderation transport', () => {
   });
   it('fails closed for missing/unsafe configuration, provider failure and timeout', async () => {
     for(const value of [{}, {...env,GEMINI_RELAY_URL:'http://relay.example'}, {...env,GEMINI_RELAY_URL:'https://relay.example/other'}, {...env,GEMINI_RELAY_SHARED_SECRET:'short'}]) await expect(requireGooglePhotoReview(new Uint8Array([1]), {env:value})).rejects.toMatchObject({code:'MEDIA_CONTENT_UNAVAILABLE'});
-    for(const fetchImpl of [async()=>response({},429),async()=>{throw new Error('timeout');}]) await expect(requireGooglePhotoReview(new Uint8Array([1]),{env,fetchImpl})).rejects.toMatchObject({code:'MEDIA_CONTENT_UNAVAILABLE'});
+    for(const fetchImpl of [async()=>response({},429),async()=>Response.redirect('https://other.example',307),async()=>{throw new Error('timeout');}]) await expect(requireGooglePhotoReview(new Uint8Array([1]),{env,fetchImpl})).rejects.toMatchObject({code:'MEDIA_CONTENT_UNAVAILABLE'});
   });
 });

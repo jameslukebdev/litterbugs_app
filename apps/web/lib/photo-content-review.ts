@@ -20,7 +20,7 @@ export async function requireGooglePhotoReview(
   if (secret.length < 32 || /\s/.test(secret)) throw unavailable('configuration-secret');
   try {
     const response = await (options.fetchImpl ?? fetch)(endpoint, {
-      method: 'POST', redirect: 'error', cache: 'no-store', credentials: 'omit',
+      method: 'POST', redirect: 'manual', cache: 'no-store', credentials: 'omit',
       headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ mimeType: 'image/jpeg', data: Buffer.from(bytes).toString('base64') }),
       signal: AbortSignal.timeout(30_000),
