@@ -159,20 +159,22 @@ export type PayoutSession = {
   expiresAt: number;
 };
 
+export type PayoutSessionMode = 'session' | 'manage';
+
 /** A fresh, short-lived session for the signed-in member. Never persist or track its secret. */
-export async function createPayoutSession(): Promise<PayoutSession> {
+export async function createPayoutSession(mode: PayoutSessionMode = 'session'): Promise<PayoutSession> {
   if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined'
     && ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)) {
     const response = await fetch('/api/local/payout-session', {
       method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ confirmAge18: true }),
+      body: JSON.stringify(mode === 'manage' ? { mode } : { confirmAge18: true }),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Your payout form couldn’t open. Please try again.');
     return verifiedPayoutSession(data);
   }
   const { data, error } = await createClient().functions.invoke('create-cleaner-onboarding-link', {
-    body: { mode: 'session', returnTarget: 'web', confirmAge18: true },
+    body: mode === 'manage' ? { mode } : { mode, returnTarget: 'web', confirmAge18: true },
   });
   if (error) throw new Error('The secure payout form didn’t load here. Try again, or continue on Stripe’s website.');
   return verifiedPayoutSession(data);

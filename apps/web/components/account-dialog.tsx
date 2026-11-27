@@ -151,6 +151,7 @@ export function AccountDialog({
   initialActivityTab = 'current',
   initialRenewalId,
   embedded = false,
+  hideCleanupPayoutAction = false,
   onNavigateSection,
 }: {
   onClose: () => void;
@@ -163,6 +164,7 @@ export function AccountDialog({
   initialActivityTab?: 'current' | 'history' | 'reports';
   initialRenewalId?: string;
   embedded?: boolean;
+  hideCleanupPayoutAction?: boolean;
   onNavigateSection?: (section: 'profile' | 'activity' | 'payments' | 'settings') => void;
 }) {
   const refreshRevision = useDataRefresh();
@@ -738,7 +740,7 @@ export function AccountDialog({
 
             {((section === 'activity' && activityTab === 'history') || section === 'payments') && <section className="member-panel">
               <header className={section === 'payments' ? undefined : 'account-v2-repeat'}><div><h3>{section === 'payments' ? 'Cleanup earnings' : 'Completed cleanups'}</h3></div></header>
-              {section === 'payments' && <div className="member-payout-action"><PayoutSetupAction /></div>}
+              {section === 'payments' && !hideCleanupPayoutAction && <div className="member-payout-action"><PayoutSetupAction /></div>}
               <div className="member-activity-list">
                 {(section === 'payments' ? completedCleanups.filter(attempt => attempt.is_paid) : completedCleanups).map((attempt) => (
                   <ActivityLink embedded={embedded} href={`/account/reports/${attempt.report_id}?from=${section === 'payments' ? 'payments' : activityTab}`} key={attempt.id} className="member-activity-row member-completed-row" onClick={() => openReport(attempt.report_id)}>

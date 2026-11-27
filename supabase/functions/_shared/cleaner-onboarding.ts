@@ -49,7 +49,9 @@ export async function cleanerOnboardingResponse(request: Request, deps = depende
   } catch {
     return jsonResponse({ error: "Invalid request" }, 400);
   }
-  const mode = body.mode === "session"
+  const mode = body.mode === "manage"
+    ? "manage"
+    : body.mode === "session"
     ? "session"
     : body.mode === "status"
     ? "status"
@@ -59,8 +61,10 @@ export async function cleanerOnboardingResponse(request: Request, deps = depende
   const returnTarget: StripeOnboardingReturnTarget = body.returnTarget === "web"
     ? "web"
     : "mobile";
-  if (mode === "session" && body.returnTarget !== "web") {
-    return jsonResponse({ error: "Embedded payout setup is available on the website" }, 400);
+  // Embedded payout setup runs on the website and, from app builds that carry Stripe's
+  // embedded Connect components, inside the app. Both must say which they are.
+  if (mode === "session" && body.returnTarget !== "web" && body.returnTarget !== "mobile") {
+    return jsonResponse({ error: "Embedded payout setup needs a return target" }, 400);
   }
   if ((mode === "link" || mode === "session") && body.confirmAge18 !== true) {
     return jsonResponse({ error: "You must confirm that you are at least 18" }, 400);
@@ -68,7 +72,7 @@ export async function cleanerOnboardingResponse(request: Request, deps = depende
 
   try {
     // Check configuration before creating or changing an account. The secret key never leaves the server.
-    const publishableKey = mode === "session" ? requiredEnv("STRIPE_PUBLISHABLE_KEY") : null;
+    const publishableKey = mode === "session" || mode === "manage" ? requiredEnv("STRIPE_PUBLISHABLE_KEY") : null;
     if (publishableKey && !/^pk_(live|test)_/.test(publishableKey)) throw new Error("Invalid Stripe publishable key");
     const { data: existing, error: existingError } = await admin
       .from("cleaner_payout_accounts")
@@ -76,6 +80,43 @@ export async function cleanerOnboardingResponse(request: Request, deps = depende
       .eq("user_id", user.id)
       .maybeSingle();
     if (existingError) throw existingError;
+
+    if (mode === "manage") {
+      if (!existing?.stripe_account_id) return jsonResponse({ error: "Connect a bank before editing its details" }, 409);
+      const account = await retrieveStripeRecipientAccount(existing.stripe_account_id);
+      if (!stripeRecipientState(account).payoutsEnabled) {
+        return jsonResponse({ error: "Finish bank setup before editing its details" }, 409);
+      }
+      const session = await stripeClient().accountSessions.create({
+        account: account.id,
+        components: {
+          // One Litterbugs payouts view: balance, payouts, bank and anything Stripe still needs.
+          payouts: {
+            enabled: true,
+            features: {
+              external_account_collection: true,
+              instant_payouts: false,
+              standard_payouts: false,
+              edit_payout_schedule: false,
+              disable_stripe_user_authentication: false,
+            },
+          },
+          notification_banner: {
+            enabled: true,
+            features: { external_account_collection: true, disable_stripe_user_authentication: false },
+          },
+          account_management: {
+            enabled: true,
+            features: { external_account_collection: true, disable_stripe_user_authentication: false },
+          },
+        },
+      });
+      return jsonResponse({
+        clientSecret: session.client_secret,
+        expiresAt: session.expires_at,
+        publishableKey,
+      });
+    }
 
     if (mode === "status" && !existing?.stripe_account_id) {
       return jsonResponse({

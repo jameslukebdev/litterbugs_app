@@ -2,7 +2,7 @@
 
 import { loadConnectAndInitialize, type StripeConnectInstance } from '@stripe/connect-js';
 import { createClient } from '@/lib/supabase/client';
-import { createPayoutSession, type PayoutSession } from '@/lib/funding';
+import { createPayoutSession, type PayoutSession, type PayoutSessionMode } from '@/lib/funding';
 
 // Keep the existing payout screen's white canvas, ink, purple actions and rounded controls.
 export const payoutConnectAppearance = {
@@ -30,7 +30,7 @@ export const payoutConnectAppearance = {
 
 // Stripe says to logout on app sign-out, not on ordinary modal closure. Retain this listener
 // after the form unmounts so closed forms' sessions are also invalidated on sign-out/account change.
-const sessions = new Map<StripeConnectInstance, { userId: string; publishableKey: string; onInvalidated: () => void; invalidate: () => void }>();
+const sessions = new Map<StripeConnectInstance, { userId: string; publishableKey: string; mode: PayoutSessionMode; onInvalidated: () => void; invalidate: () => void }>();
 let watchingAuth = false;
 let authRevision = 0;
 let pendingOwner: { userId: string; onInvalidated: () => void } | null = null;
@@ -57,13 +57,13 @@ function watchPayoutAuth() {
 }
 
 /** Reuse the signed-in member's Connect instance. Secrets still refresh through Stripe's callback. */
-export async function reusePayoutConnect(onInvalidated: () => void) {
+export async function reusePayoutConnect(onInvalidated: () => void, mode: PayoutSessionMode = 'session') {
   watchPayoutAuth();
   const revision = authRevision;
   const { data } = await createClient().auth.getSession();
   if (!data.session || revision !== authRevision) throw new Error('Please sign in again to set up payouts.');
   for (const [instance, owner] of sessions) {
-    if (owner.userId === data.session.user.id) {
+    if (owner.userId === data.session.user.id && owner.mode === mode) {
       owner.onInvalidated = onInvalidated;
       return instance;
     }
@@ -72,7 +72,7 @@ export async function reusePayoutConnect(onInvalidated: () => void) {
   return null;
 }
 
-export async function createPayoutConnect(firstSession: PayoutSession, onInvalidated: () => void) {
+export async function createPayoutConnect(firstSession: PayoutSession, onInvalidated: () => void, mode: PayoutSessionMode = 'session') {
   const supabase = createClient();
   watchPayoutAuth();
   const revision = authRevision;
@@ -81,7 +81,7 @@ export async function createPayoutConnect(firstSession: PayoutSession, onInvalid
   const userId = data.session.user.id;
   if (pendingOwner?.userId === userId) pendingOwner = null;
   for (const [instance, owner] of sessions) {
-    if (owner.userId === userId && owner.publishableKey === firstSession.publishableKey) {
+    if (owner.userId === userId && owner.publishableKey === firstSession.publishableKey && owner.mode === mode) {
       owner.onInvalidated = onInvalidated;
       return instance;
     }
@@ -93,7 +93,7 @@ export async function createPayoutConnect(firstSession: PayoutSession, onInvalid
     appearance: payoutConnectAppearance,
     fetchClientSecret: async () => {
       if (!valid) throw new Error('Payout session has ended. Please sign in again.');
-      const next = initial && initial.expiresAt * 1000 > Date.now() ? initial : await createPayoutSession();
+      const next = initial && initial.expiresAt * 1000 > Date.now() ? initial : await createPayoutSession(mode);
       initial = null;
       if (!valid || next.publishableKey !== firstSession.publishableKey) {
         throw new Error('Your payout session changed. Close this window and open payout setup again.');
@@ -101,7 +101,7 @@ export async function createPayoutConnect(firstSession: PayoutSession, onInvalid
       return next.clientSecret;
     },
   });
-  const owner = { userId, publishableKey: firstSession.publishableKey, onInvalidated,
+  const owner = { userId, publishableKey: firstSession.publishableKey, mode, onInvalidated,
     invalidate: () => { valid = false; initial = null; owner.onInvalidated(); } };
   sessions.set(instance, owner);
   return instance;

@@ -1,14 +1,14 @@
 'use client';
 
 import { trackPayoutSetup } from '@/lib/website-analytics';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import type { StripeConnectInstance } from '@stripe/connect-js';
 
 import { notifyDataChanged, useDataRefresh } from '@/lib/use-data-refresh';
 import { ModalShell } from '@/components/modal-shell';
 import { PayoutPanel, payoutNeedsConfirmation } from '@/components/payout-panel';
-import { PayoutPreparing } from '@/components/payout-preparing';
+import { PayoutPreparing, PayoutProgress } from '@/components/payout-preparing';
 
 const PayoutEmbedded = dynamic(() => import('@/components/payout-embedded'), {
   loading: () => <PayoutPreparing />,
@@ -36,12 +36,20 @@ import {
   createPayoutSession,
   loadCleanupFeatureFlags,
   loadPayoutStatus,
+  type PayoutSessionMode,
   type PayoutStatus,
 } from '@/lib/funding';
 
-export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, onDismiss }: {
+export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, onDismiss, buttonLabel = 'Payout settings', inlineClassName, primary = false, confirmed = false, disabled = false }: {
   compact?: boolean; autoOpen?: boolean; onReady?: () => void; onDismiss?: (reason: 'closed' | 'session_ended') => void;
+  buttonLabel?: string;
+  inlineClassName?: string;
+  primary?: boolean;
+  /** The caller already collected the 18+/eligibility confirmation, so open Stripe's form directly. */
+  confirmed?: boolean;
+  disabled?: boolean;
 }) {
+  const inlinePanelId = useId();
   const refresh = useDataRefresh();
   // Cleanup entry has just checked the server's status endpoint, including its payments flag.
   // Opening still rechecks status; normal account/settings buttons retain their flag check.
@@ -185,9 +193,12 @@ export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, 
       setStatus(next);
       observeStatus(next);
       if (resumeCleanup(next)) return;
-      if (!next.payoutsEnabled && !payoutNeedsConfirmation(next)) {
+      if (!next.payoutsEnabled && (confirmed || !payoutNeedsConfirmation(next))) {
         startingForm = true;
         await openEmbedded(version);
+      } else if (next.payoutsEnabled && inlineClassName) {
+        startingForm = true;
+        await openEmbedded(version, 'manage');
       }
     } catch (error) {
       if (version !== opening.current) return;
@@ -198,19 +209,19 @@ export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, 
     }
   }
 
-  async function openEmbedded(version: number) {
+  async function openEmbedded(version: number, mode: PayoutSessionMode = 'session') {
     const { createPayoutConnect, reusePayoutConnect } = await import('@/lib/payout-connect');
     const onInvalidated = () => {
       if (version !== opening.current) return;
       trackPayoutSetup('session_ended'); close('session_ended');
     };
     if (version !== opening.current) return;
-    let instance = await reusePayoutConnect(onInvalidated);
+    let instance = await reusePayoutConnect(onInvalidated, mode);
     if (version !== opening.current) return;
     if (!instance) {
-      const session = await createPayoutSession();
+      const session = await createPayoutSession(mode);
       if (version !== opening.current) return;
-      instance = await createPayoutConnect(session, onInvalidated);
+      instance = await createPayoutConnect(session, onInvalidated, mode);
     }
     if (version !== opening.current) return;
     setConnectInstance(instance);
@@ -219,7 +230,14 @@ export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, 
 
   async function continueToStripe(hosted = false) {
     if (!status || busy || requestBusy.current || (payoutNeedsConfirmation(status) && !eligibleConfirmed)) return;
-    const redirect = hosted || status.payoutsEnabled;
+    if (status.payoutsEnabled && !hosted) {
+      // Payouts are managed on the Litterbugs Payouts page, never in a separate Stripe dashboard.
+      // A full load closes this dialog and its Stripe session cleanly from any page.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.assign('/account/payments');
+      return;
+    }
+    const redirect = hosted;
     requestBusy.current = true;
     setPending(redirect ? 'redirect' : 'prepare');
     // A hosted fallback may be visible because of this message. Keep it mounted until navigation.
@@ -269,33 +287,56 @@ export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, 
     }
   }
 
+  function closeFromButton() {
+    trackPayoutSetup('closed');
+    close();
+  }
+
+  const panel = !open ? null : (
+    pending === 'prepare' && !connectInstance ? (inlineClassName ? <PayoutProgress /> : <PayoutPreparing />) : connectInstance ? <PayoutEmbedded
+      key="embedded"
+      instance={connectInstance}
+      inline={Boolean(inlineClassName)}
+      manage={Boolean(inlineClassName && status?.payoutsEnabled)}
+      busy={busy}
+      openingStripe={pending === 'redirect'}
+      message={message}
+      onExit={() => void finishEmbedded()}
+      onFallback={() => void continueToStripe(true)}
+      onBack={() => {
+        if (inlineClassName && status?.payoutsEnabled) { closeFromButton(); return; }
+        trackPayoutSetup('back'); setConnectInstance(null); setMessage('');
+      }}
+    /> : <PayoutPanel
+      status={status}
+      eligibleConfirmed={eligibleConfirmed}
+      onEligible={setEligibleConfirmed}
+      busy={busy}
+      openingStripe={pending === 'redirect'}
+      message={message}
+      onContinue={() => void (status ? continueToStripe() : show())}
+      onFallback={status?.payoutsEnabled ? undefined : () => void continueToStripe(true)}
+      celebrate={celebrate}
+      inline={Boolean(inlineClassName)}
+    />
+  );
+
   return (
     <>
-      {!autoOpen && <button className={`secondary-button${compact ? ' compact-button' : ''}`} onPointerEnter={() => void warmPayoutSetup()} onFocus={() => void warmPayoutSetup()} onPointerDown={() => void warmPayoutSetup()} onClick={show}>Payout settings</button>}
-      {open && (
-        <ModalShell onClose={() => { trackPayoutSetup('closed'); close(); }} label="Payout setup" className="payout-dialog flow-page payout-page">
-          {pending === 'prepare' && !connectInstance ? <PayoutPreparing /> : connectInstance ? <PayoutEmbedded
-            key="embedded"
-            instance={connectInstance}
-            busy={busy}
-            openingStripe={pending === 'redirect'}
-            message={message}
-            onExit={() => void finishEmbedded()}
-            onFallback={() => void continueToStripe(true)}
-            onBack={() => { trackPayoutSetup('back'); setConnectInstance(null); setMessage(''); }}
-          /> : <PayoutPanel
-            status={status}
-            eligibleConfirmed={eligibleConfirmed}
-            onEligible={setEligibleConfirmed}
-            busy={busy}
-            openingStripe={pending === 'redirect'}
-            message={message}
-            onContinue={() => void (status ? continueToStripe() : show())}
-            onFallback={status?.payoutsEnabled ? undefined : () => void continueToStripe(true)}
-            celebrate={celebrate}
-          />}
-        </ModalShell>
-      )}
+      {!autoOpen && <button type="button" className={`${primary && !open ? 'primary-button' : 'secondary-button'}${compact ? ' compact-button' : ''}`}
+        aria-expanded={inlineClassName ? open : undefined}
+        aria-controls={inlineClassName && open ? inlinePanelId : undefined}
+        onPointerEnter={() => void warmPayoutSetup()} onFocus={() => void warmPayoutSetup()}
+        onPointerDown={() => void warmPayoutSetup()}
+        disabled={disabled && !open}
+        onClick={() => { if (inlineClassName && open) closeFromButton(); else void show(); }}>
+        {inlineClassName && open ? 'Cancel' : buttonLabel}
+      </button>}
+      {panel && (inlineClassName
+        ? <div id={inlinePanelId} className={inlineClassName}>{panel}</div>
+        : <ModalShell onClose={closeFromButton} label="Payout setup" className="payout-dialog flow-page payout-page">
+          {panel}
+        </ModalShell>)}
     </>
   );
 }

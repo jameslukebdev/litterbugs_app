@@ -24,9 +24,11 @@ export async function localPayoutSession(request: Request, deps: Dependencies) {
     const { data: { user }, error: authError } = await client.auth.getUser();
     if (authError || !user || user.is_anonymous) return reply({ error: 'Please sign in again to set up payouts.' }, 401);
     const body = await request.json();
-    if (body.confirmAge18 !== true) return reply({ error: 'Please confirm your payout eligibility first.' }, 400);
+    // 'manage' shows an existing, ready account's payouts and bank inside Litterbugs.
+    const manage = body.mode === 'manage';
+    if (!manage && body.confirmAge18 !== true) return reply({ error: 'Please confirm your payout eligibility first.' }, 400);
     const readAccount = () => client.from('cleaner_payout_accounts')
-      .select('stripe_account_id, age_18_confirmed_at').eq('user_id', user.id).maybeSingle();
+      .select('stripe_account_id, age_18_confirmed_at, payouts_enabled').eq('user_id', user.id).maybeSingle();
     const [{ data: flag, error: flagError }, initialAccount] = await Promise.all([
       client.from('cleanup_feature_flags').select('enabled').eq('name', 'payments_enabled').single(),
       readAccount(),
@@ -49,7 +51,10 @@ export async function localPayoutSession(request: Request, deps: Dependencies) {
 
     let account = initialAccount;
     if (account.error) throw new Error('Account lookup failed');
-    if (!account.data?.stripe_account_id || !account.data.age_18_confirmed_at) {
+    if (manage && (!account.data?.stripe_account_id || !account.data.payouts_enabled)) {
+      return reply({ error: 'Add a bank before managing payouts.' }, 409);
+    }
+    if (!manage && (!account.data?.stripe_account_id || !account.data.age_18_confirmed_at)) {
       // The existing authenticated service creates the recipient and records eligibility.
       // Discard its hosted URL; the cleaner stays in the local embedded flow.
       const initialized = await client.functions.invoke('create-cleaner-onboarding-link', {
@@ -64,7 +69,20 @@ export async function localPayoutSession(request: Request, deps: Dependencies) {
     }
 
     // Recipient profile/activity defaults remain owned by the existing onboarding service.
-    const session = await stripe('account_sessions', new URLSearchParams({
+    const session = await stripe('account_sessions', new URLSearchParams(manage ? {
+      account: accountId,
+      // Balance, payouts and bank in one Litterbugs view. Payout timing stays Stripe's default:
+      // no instant payouts (fees) and no schedule edits. Stripe still verifies it's the cleaner.
+      'components[payouts][enabled]': 'true',
+      'components[payouts][features][external_account_collection]': 'true',
+      'components[payouts][features][instant_payouts]': 'false',
+      'components[payouts][features][standard_payouts]': 'false',
+      'components[payouts][features][edit_payout_schedule]': 'false',
+      'components[payouts][features][disable_stripe_user_authentication]': 'false',
+      'components[notification_banner][enabled]': 'true',
+      'components[notification_banner][features][external_account_collection]': 'true',
+      'components[notification_banner][features][disable_stripe_user_authentication]': 'false',
+    } : {
       account: accountId,
       'components[account_onboarding][enabled]': 'true',
       'components[account_onboarding][features][external_account_collection]': 'true',

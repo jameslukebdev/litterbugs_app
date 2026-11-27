@@ -10,7 +10,7 @@ type Stage = 'loading' | 'not_started' | 'pending' | 'restricted' | 'enabled';
 const STAGE: Record<Exclude<Stage, 'loading'>, { title: string; button: string }> = {
   not_started: {
     title: 'Get paid for cleanups',
-    button: 'Set up payouts',
+    button: 'Add bank with Stripe',
   },
   pending: {
     title: 'Almost there',
@@ -38,46 +38,41 @@ export function payoutStage(status: PayoutStatus | null): Stage {
 }
 
 /**
- * Payout setup in plain words: where you are (not set up / in progress / needs info / ready), what the
- * three steps are, one confirmation, and one button to Stripe. Earn family green, like the cleaner flow.
+ * Payout setup in plain words: where you are (not set up / in progress / needs info / ready), one
+ * confirmation, and one button that opens Stripe's form inside Litterbugs. Earn family green, like the cleaner flow.
  */
-export function PayoutPanel({ status, eligibleConfirmed, onEligible, busy, openingStripe = false, message, onContinue, onFallback, celebrate = false }: {
+export function PayoutPanel({ status, eligibleConfirmed, onEligible, busy, openingStripe = false, message, onContinue, onFallback, celebrate = false, inline = false }: {
   status: PayoutStatus | null; eligibleConfirmed: boolean; onEligible: (value: boolean) => void;
-  busy: boolean; openingStripe?: boolean; message: string; onContinue: () => void; onFallback?: () => void; celebrate?: boolean;
+  busy: boolean; openingStripe?: boolean; message: string; onContinue: () => void; onFallback?: () => void; celebrate?: boolean; inline?: boolean;
 }) {
   const stage = payoutStage(status);
+  const bankAlreadyShown = inline && stage === 'enabled';
+  const startingBankSetup = inline && stage === 'not_started';
   const copy = stage === 'loading' ? null : STAGE[stage];
   // Only a first-time setup asks for the age/eligibility confirmation; anyone already part-way through
   // confirmed it when they started (the server keeps that record).
   const needsConfirm = payoutNeedsConfirmation(status);
   return (
     <div className="payout-flow">
-      <header className="payout-head">
+      {!bankAlreadyShown && <header className="payout-head">
         {celebrate && stage === 'enabled' && <BugCelebration down />}
         <img src="/brand/ranks/caterpillar.svg" alt="" aria-hidden="true" width={42} height={42} />
         {/* First time ready: the title is the celebration, so nothing else repeats it. */}
-        <h2>{celebrate && stage === 'enabled' ? 'You’re all set to earn cash' : copy?.title ?? 'Payout settings'}</h2>
-      </header>
+        <h2>{celebrate && stage === 'enabled' ? 'You’re all set to earn cash' : startingBankSetup ? 'Bank setup' : copy?.title ?? 'Payout settings'}</h2>
+      </header>}
       {/* No intro line under the title: each screen says only what the title doesn't. */}
-      {stage !== 'loading' && stage !== 'enabled' && (
-        <ol className="payout-steps">
-          <li data-done={stage !== 'not_started' || undefined} data-current={stage === 'not_started' || undefined}><span aria-hidden="true">1</span><div><strong>Confirm you can be paid</strong></div></li>
-          <li data-current={stage !== 'not_started' || undefined}><span aria-hidden="true">2</span><div><strong>Verify your name and choose your bank</strong><small>Then review and accept Stripe&rsquo;s terms. Phone verification is part of Stripe&rsquo;s setup.</small></div></li>
-          <li><span aria-hidden="true">3</span><div><strong>Get paid</strong></div></li>
-        </ol>
-      )}
-      {stage === 'enabled' && <p className={payoutStyles.readyLine}><FiCheckCircle aria-hidden="true" />Cash from approved cleanups goes to the bank account you added with Stripe.</p>}
+      {stage === 'enabled' && !bankAlreadyShown && <p className={payoutStyles.readyLine}><FiCheckCircle aria-hidden="true" />Cash from approved cleanups goes to the bank account you added with Stripe.</p>}
       {stage === 'restricted' && status && status.requirementsDue.length > 0 && <p className="payout-note">Stripe is asking for {status.requirementsDue.length} more {status.requirementsDue.length === 1 ? 'detail' : 'details'}.</p>}
       {needsConfirm && (
         <label className="cleaner-check payout-check">
           <input type="checkbox" checked={eligibleConfirmed} onChange={event => onEligible(event.target.checked)} />
-          <span>I confirm that I am at least 18 and eligible to receive payouts in the United States.</span>
+          <span>I’m at least 18 and eligible to receive payouts in the United States.</span>
         </label>
       )}
       {message && <p className="form-message error-message" role="alert">{message}</p>}
       {/* Nothing is left to do once payouts are ready, so Manage is a quieter button. */}
       <button className={stage === 'enabled' ? `secondary-button ${payoutStyles.manage}` : 'primary-button payout-go'} onClick={onContinue} disabled={busy || (needsConfirm && !eligibleConfirmed)}>
-        {stage === 'enabled' && openingStripe ? 'Opening Stripe…' : copy?.button ?? 'Try again'}
+        {stage === 'enabled' && openingStripe ? 'Opening Stripe…' : bankAlreadyShown ? 'Manage payouts' : startingBankSetup ? 'Add bank with Stripe' : copy?.button ?? 'Try again'}
       </button>
       {message && onFallback && <button className="secondary-button" disabled={busy || !status || (needsConfirm && !eligibleConfirmed)} onClick={onFallback}>{openingStripe ? 'Opening Stripe…' : 'Continue on Stripe'}</button>}
       <PayoutTrust />

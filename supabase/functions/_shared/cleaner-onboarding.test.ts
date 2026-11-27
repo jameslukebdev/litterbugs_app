@@ -70,13 +70,40 @@ Deno.test('embedded session is restricted to the caller-owned account and only o
   assert(!body.url && !body.secretKey && !body.accountId);
 });
 
-Deno.test('signed-out, anonymous, disabled payments, unconfirmed age, and native session calls cannot create sessions', async () => {
+Deno.test('the app can create an embedded session', async () => {
+  const f = fixture();
+  assert((await f.call({ returnTarget: 'mobile' })).status === 200);
+  assert(f.calls.session);
+});
+
+Deno.test('bank management requires the caller’s ready account and grants only the management component', async () => {
+  const f = fixture();
+  f.existing = false;
+  const body = { mode: 'manage', confirmAge18: false, account: 'acct_other' };
+  assert((await f.call(body)).status === 409);
+  f.existing = true;
+  assert((await f.call(body)).status === 409);
+  assert(!f.calls.session && !f.calls.accountCreates && !f.calls.updates);
+  f.ready = true;
+  const response = await f.call(body);
+  assert(response.status === 200 && response.headers.get('Cache-Control') === 'no-store');
+  assert(f.calls.session?.account === 'acct_owned');
+  assert(JSON.stringify(f.calls.session?.components) === JSON.stringify({
+    payouts: { enabled: true, features: { external_account_collection: true, instant_payouts: false,
+      standard_payouts: false, edit_payout_schedule: false, disable_stripe_user_authentication: false } },
+    notification_banner: { enabled: true, features: { external_account_collection: true, disable_stripe_user_authentication: false } },
+    account_management: { enabled: true, features: { external_account_collection: true, disable_stripe_user_authentication: false } },
+  }));
+  assert(!f.calls.accountCreates && !f.calls.updates);
+});
+
+Deno.test('signed-out, anonymous, disabled payments, unconfirmed age, and untargeted session calls cannot create sessions', async () => {
   for (const [change, body, status] of [
     [(f: ReturnType<typeof fixture>) => { f.signedIn = false; }, {}, 401],
     [(f: ReturnType<typeof fixture>) => { f.anonymous = true; }, {}, 401],
     [(f: ReturnType<typeof fixture>) => { f.payments = false; }, {}, 409],
     [() => {}, { confirmAge18: false }, 400],
-    [() => {}, { returnTarget: 'mobile' }, 400],
+    [() => {}, { returnTarget: 'elsewhere' }, 400],
   ] as const) {
     const f = fixture(); change(f);
     assert((await f.call(body)).status === status);

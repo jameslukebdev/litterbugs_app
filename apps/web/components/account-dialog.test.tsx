@@ -31,8 +31,9 @@ vi.mock('@/lib/saved-cleanup-draft', () => ({ clearAccountCleanupDrafts: vi.fn(a
 vi.mock('@/lib/saved-report-draft', () => ({ clearPublishedReport: clearDraft, reportDraftLocation: vi.fn(async () => undefined) }));
 
 vi.mock('@/components/payout-setup-action', () => ({
-  PayoutSetupAction: () => null,
+  PayoutSetupAction: ({ buttonLabel = 'Payout settings' }: { buttonLabel?: string }) => <button>{buttonLabel}</button>,
 }));
+vi.mock('./payout-dashboard', () => ({ default: () => <section aria-label="Stripe payouts preview" /> }));
 
 const expiredReport: Report = {
   is_published: true,
@@ -508,4 +509,28 @@ it('Cancel profile discards selected photo without a profile update', async () =
   expect(profileUpdate).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', {name:'Edit profile'}));
   expect(screen.getByText('Choose photo')).toBeTruthy();
+});
+
+describe('Payments & payouts: one Stripe payout panel', () => {
+  it('shows payouts inside Litterbugs, with no sample earnings, wallets or second dashboard', async () => {
+    render(<AccountPage destination="payments" userId="member-id" bankReady />);
+    const payouts = await screen.findByRole('region', { name: 'Payouts' });
+    expect(payouts.textContent).toContain('Bank connected through Stripe');
+    expect(await screen.findByRole('region', { name: 'Stripe payouts preview' })).toBeTruthy();
+    expect(screen.queryByText(/Venmo|PayPal|Neighborhood cleanup/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /Stripe dashboard/ })).toBeNull();
+  });
+  it('asks for one eligibility confirmation beside one Stripe bank setup button', async () => {
+    render(<AccountPage destination="payments" userId="member-id" bankReady={false} />);
+    expect(await screen.findByText('No bank connected')).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: 'Add bank with Stripe' })).toHaveLength(1);
+    expect(screen.getByRole('checkbox', { name: /at least 18/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Payout settings' })).toBeNull();
+  });
+  it('lets a returning cleaner finish setup without confirming eligibility again', async () => {
+    render(<AccountPage destination="payments" userId="member-id" bankReady={false} payoutSetup={{ started: true, ageConfirmed: true }} />);
+    expect(await screen.findByText('Bank setup not finished')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Finish bank setup' })).toBeTruthy();
+    expect(screen.queryByRole('checkbox', { name: /at least 18/ })).toBeNull();
+  });
 });

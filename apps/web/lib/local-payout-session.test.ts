@@ -4,7 +4,7 @@ import type { createClient } from '@/lib/supabase/server';
 
 const env = { NODE_ENV: 'development', LITTERBUGS_LOCAL_STRIPE_SECRET_KEY: 'rk_live_fixture',
   LITTERBUGS_LOCAL_STRIPE_PUBLISHABLE_KEY: 'pk_live_fixture' } as NodeJS.ProcessEnv;
-let account: { stripe_account_id: string; age_18_confirmed_at: string } | null;
+let account: { stripe_account_id: string; age_18_confirmed_at: string; payouts_enabled?: boolean } | null;
 const auth = vi.fn(); const flag = vi.fn(); const invoke = vi.fn(); const eq = vi.fn();
 const network = vi.fn();
 const client = { auth: { getUser: auth }, functions: { invoke }, from: (name: string) => ({ select: () => ({
@@ -14,7 +14,7 @@ const client = { auth: { getUser: auth }, functions: { invoke }, from: (name: st
   },
 }) }) };
 const deps = () => ({ env, createClient: (async () => client) as unknown as typeof createClient, fetch: network as typeof fetch });
-const request = (body = { confirmAge18: true, account: 'acct_ATTACKER' }, origin = 'http://localhost:3000', host = 'localhost:3000') => new Request('http://localhost:3000/api/local/payout-session', {
+const request = (body: object = { confirmAge18: true, account: 'acct_ATTACKER' }, origin = 'http://localhost:3000', host = 'localhost:3000') => new Request('http://localhost:3000/api/local/payout-session', {
   method: 'POST', headers: { origin, host, 'Content-Type': 'application/json' }, body: JSON.stringify(body),
 });
 beforeEach(() => {
@@ -83,4 +83,25 @@ it('hides provider failures and never forwards credentials or raw errors', async
   const response = await localPayoutSession(request(), deps());
   expect(response.status).toBe(502);
   expect(await response.text()).not.toMatch(/rk_live|provider failure|acct_/);
+});
+it('opens the in-Litterbugs payouts view only for a ready account and never confirms eligibility for it', async () => {
+  account = { stripe_account_id: 'acct_MEMBER', age_18_confirmed_at: '2026-11-07T00:00:00Z', payouts_enabled: true };
+  const response = await localPayoutSession(request({ mode: 'manage', account: 'acct_ATTACKER' }), deps());
+  expect(response.status).toBe(200);
+  const [, options] = network.mock.calls.at(-1)!;
+  expect(Object.fromEntries(options.body)).toMatchObject({ account: 'acct_MEMBER',
+    'components[payouts][enabled]': 'true',
+    'components[payouts][features][instant_payouts]': 'false',
+    'components[payouts][features][edit_payout_schedule]': 'false',
+    'components[payouts][features][disable_stripe_user_authentication]': 'false',
+    'components[notification_banner][enabled]': 'true' });
+  expect(Object.fromEntries(options.body)).not.toHaveProperty('components[account_onboarding][enabled]');
+
+  network.mockClear();
+  for (const notReady of [null, { stripe_account_id: 'acct_MEMBER', age_18_confirmed_at: '', payouts_enabled: false }]) {
+    account = notReady;
+    expect((await localPayoutSession(request({ mode: 'manage' }), deps())).status).toBe(409);
+  }
+  expect(invoke).not.toHaveBeenCalled();
+  expect(network.mock.calls.some(([url]) => String(url).endsWith('/account_sessions'))).toBe(false);
 });

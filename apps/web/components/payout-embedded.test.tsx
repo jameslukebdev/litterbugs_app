@@ -9,16 +9,22 @@ vi.mock('@/lib/website-analytics', () => ({ trackPayoutSetup: tracking }));
 vi.mock('@/lib/payout-connect', () => ({ payoutConnectAppearance: { variables: { colorPrimary: '#5146ed' } } }));
 vi.mock('@stripe/react-connect-js', () => ({
   ConnectComponentsProvider: ({ children }: { children: React.ReactNode }) => children,
+  ConnectAccountManagement: () => <button>Sign in to see details</button>,
   ConnectAccountOnboarding: ({ onExit, onLoadError, onLoaderStart, onStepChange, collectionOptions }: {
     onStepChange: () => void; onExit: () => void; onLoadError: () => void; onLoaderStart: () => void; collectionOptions: unknown;
   }) => <div><span>{JSON.stringify(collectionOptions)}</span><button onClick={onExit}>Exit Stripe form</button><button onClick={onLoadError}>Fail Stripe form</button><button onClick={onLoaderStart}>Stripe starts loading</button><button onClick={onStepChange}>Stripe form step shown</button></div>,
 }));
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
-function open(message = '') {
+function open(message = '', manage = false) {
   const update = vi.fn(); const onExit = vi.fn(); const onFallback = vi.fn(); const onBack = vi.fn();
-  render(<PayoutEmbedded instance={{ update } as unknown as StripeConnectInstance} busy={false} message={message} onExit={onExit} onFallback={onFallback} onBack={onBack} />);
+  render(<PayoutEmbedded instance={{ update } as unknown as StripeConnectInstance} busy={false} message={message} onExit={onExit} onFallback={onFallback} onBack={onBack} manage={manage} />);
   return { update, onExit, onFallback, onBack };
 }
+it('explains why Stripe verifies the signed-in member before showing bank details', () => {
+  open('', true);
+  expect(screen.getByText('You’re signed in to Litterbugs. Stripe verifies it’s you before showing your bank details.')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Sign in to see details' })).toBeTruthy();
+});
 it('uses site appearance and Stripe-managed current requirements without bypassing terms', () => {
   const f = open();
   expect(f.update).toHaveBeenCalledWith({ appearance: { variables: { colorPrimary: '#5146ed' } } });
