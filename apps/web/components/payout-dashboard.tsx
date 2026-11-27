@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { StripeConnectInstance } from '@stripe/connect-js';
 import { ConnectComponentsProvider, ConnectNotificationBanner, ConnectPayouts } from '@stripe/react-connect-js';
 import { createPayoutSession } from '@/lib/funding';
-import { payoutConnectAppearance } from '@/lib/payout-connect';
+import { payoutDashboardAppearance } from '@/lib/payout-connect';
 import { PayoutProgress } from '@/components/payout-preparing';
 import styles from './account-payouts.module.css';
 
@@ -39,7 +39,7 @@ export default function PayoutDashboard() {
     return () => { attempts.current++; };
   }, [open]);
 
-  useEffect(() => { instance?.update({ appearance: payoutConnectAppearance }); }, [instance]);
+  useEffect(() => { instance?.update({ appearance: payoutDashboardAppearance }); }, [instance]);
 
   if (failed) {
     return <div className={styles.dashboardError}>

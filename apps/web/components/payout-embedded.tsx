@@ -3,7 +3,7 @@ import { trackPayoutSetup } from '@/lib/website-analytics';
 import { useEffect, useRef, useState } from 'react';
 import type { StripeConnectInstance } from '@stripe/connect-js';
 import { ConnectAccountManagement, ConnectAccountOnboarding, ConnectComponentsProvider } from '@stripe/react-connect-js';
-import { payoutConnectAppearance } from '@/lib/payout-connect';
+import { payoutConnectAppearance, payoutDashboardAppearance } from '@/lib/payout-connect';
 import { PayoutHeading, PayoutProgress } from '@/components/payout-preparing';
 import { PayoutTrust } from '@/components/payout-trust';
 
@@ -17,7 +17,7 @@ export default function PayoutEmbedded({ instance, busy, openingStripe = false, 
   const observed = useRef({ loader: false, form: false, error: false });
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
-  useEffect(() => { instance.update({ appearance: payoutConnectAppearance }); }, [instance]);
+  useEffect(() => { instance.update({ appearance: manage ? payoutDashboardAppearance : payoutConnectAppearance }); }, [instance, manage]);
 
   function startLoadingForm() {
     setLoading(false);

@@ -28,6 +28,22 @@ export const payoutConnectAppearance = {
   },
 };
 
+/**
+ * The payouts view (balance, payouts list, bank) is a utility screen: compact, quiet buttons such as
+ * Export, so they don't compete with the page. Onboarding keeps the larger purple actions above.
+ */
+export const payoutDashboardAppearance = {
+  ...payoutConnectAppearance,
+  variables: {
+    ...payoutConnectAppearance.variables,
+    fontSizeBase: '15px',
+    buttonBorderRadius: '10px', buttonPaddingX: '12px', buttonPaddingY: '6px',
+    buttonLabelFontSize: '14px', buttonLabelFontWeight: '600',
+    buttonSecondaryColorBackground: '#ffffff', buttonSecondaryColorBorder: '#e3dff0', buttonSecondaryColorText: '#45434d',
+    headingLgFontSize: '18px', headingMdFontSize: '16px',
+  },
+};
+
 // Stripe says to logout on app sign-out, not on ordinary modal closure. Retain this listener
 // after the form unmounts so closed forms' sessions are also invalidated on sign-out/account change.
 const sessions = new Map<StripeConnectInstance, { userId: string; publishableKey: string; mode: PayoutSessionMode; onInvalidated: () => void; invalidate: () => void }>();
@@ -90,7 +106,7 @@ export async function createPayoutConnect(firstSession: PayoutSession, onInvalid
   let valid = true;
   const instance = loadConnectAndInitialize({
     publishableKey: firstSession.publishableKey,
-    appearance: payoutConnectAppearance,
+    appearance: mode === 'manage' ? payoutDashboardAppearance : payoutConnectAppearance,
     fetchClientSecret: async () => {
       if (!valid) throw new Error('Payout session has ended. Please sign in again.');
       const next = initial && initial.expiresAt * 1000 > Date.now() ? initial : await createPayoutSession(mode);

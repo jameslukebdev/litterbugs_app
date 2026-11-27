@@ -6,7 +6,7 @@ import PayoutEmbedded from './payout-embedded';
 
 const tracking = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/website-analytics', () => ({ trackPayoutSetup: tracking }));
-vi.mock('@/lib/payout-connect', () => ({ payoutConnectAppearance: { variables: { colorPrimary: '#5146ed' } } }));
+vi.mock('@/lib/payout-connect', () => ({ payoutConnectAppearance: { variables: { colorPrimary: '#5146ed' } }, payoutDashboardAppearance: { variables: { colorPrimary: '#5146ed', buttonLabelFontSize: '14px' } } }));
 vi.mock('@stripe/react-connect-js', () => ({
   ConnectComponentsProvider: ({ children }: { children: React.ReactNode }) => children,
   ConnectAccountManagement: () => <button>Sign in to see details</button>,
