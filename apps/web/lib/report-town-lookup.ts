@@ -1,4 +1,5 @@
 import 'server-only';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { unstable_cache } from 'next/cache';
 
 /**
@@ -19,7 +20,15 @@ export type ReportTown = { locality: string; region: string; country: string; co
 const REVALIDATE_SECONDS = 90 * 24 * 60 * 60;
 const SPACING_MS = 1100;
 const pending = new Map<string, Promise<ReportTown | null>>();
-let queue: Promise<unknown> = Promise.resolve();
+const MAX_QUEUE_WAIT_MS = 8 * SPACING_MS;
+let nextLookupAt = 0;
+
+function keepLookupRunning(lookup: Promise<ReportTown | ReportAddress | null>) {
+  if (process.env.LITTERBUGS_IMAGE_RUNTIME !== 'cloudflare') return;
+  // The page may stop waiting before the lookup completes. Its request must
+  // remain alive until the cached value and any other waiting requests settle.
+  getCloudflareContext().ctx.waitUntil(lookup);
+}
 
 /** Pick the town-level name from a Nominatim address, or null when it has none. */
 export function townFromAddress(address: Record<string, string | undefined> | null | undefined): ReportTown | null {
@@ -60,12 +69,14 @@ export function streetAddressFrom(address: Record<string, string | undefined> | 
 
 type ReverseResult = { address?: Record<string, string | undefined>; category?: string; type?: string; lat?: string; lon?: string };
 
-/** One OpenStreetMap request at a time, spaced out, however many pages ask at once. */
+/** Space OpenStreetMap requests without waiting on a timer owned by another request. */
 async function nominatim<T>(endpoint: 'reverse' | 'search', params: Record<string, string>): Promise<T> {
-  const turn = queue.then(() => new Promise(resolve => setTimeout(resolve, SPACING_MS)));
-  const previous = queue;
-  queue = turn.catch(() => undefined);
-  await previous.catch(() => undefined);
+  const now = Date.now();
+  const startAt = Math.max(now, nextLookupAt);
+  const wait = startAt - now;
+  if (wait > MAX_QUEUE_WAIT_MS) throw new Error('Place lookup queue is busy.');
+  nextLookupAt = startAt + SPACING_MS;
+  if (wait > 0) await new Promise(resolve => setTimeout(resolve, wait));
   const url = new URL(`https://nominatim.openstreetmap.org/${endpoint}`);
   url.search = new URLSearchParams({ format: 'jsonv2', addressdetails: '1', 'accept-language': 'en', ...params }).toString();
   const response = await fetch(url, {
@@ -166,6 +177,7 @@ export async function lookupReportAddress(latitude: number | null, longitude: nu
       .catch(() => null)
       .finally(() => { pendingAddresses.delete(key); });
     pendingAddresses.set(key, lookup);
+    keepLookupRunning(lookup);
   }
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<null>(resolve => { timer = setTimeout(() => resolve(null), waitMs); });
@@ -188,6 +200,7 @@ export async function lookupReportTown(latitude: number | null, longitude: numbe
       .catch(() => null)
       .finally(() => { pending.delete(key); });
     pending.set(key, lookup);
+    keepLookupRunning(lookup);
   }
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<null>(resolve => { timer = setTimeout(() => resolve(null), waitMs); });
