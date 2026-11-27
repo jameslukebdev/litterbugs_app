@@ -5,11 +5,14 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-08-27",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-  // Use the Worker hostname to verify this release before attaching the live domain.
+  // Keep the noindex hostname available for staging and smoke checks.
   "workers_dev": true,
   "preview_urls": false,
   "keep_vars": true,
-  "routes": [{ "pattern": "beta.litterbugs.app", "custom_domain": true }],
+  "routes": [
+    { "pattern": "litterbugs.app/*", "zone_name": "litterbugs.app" },
+    { "pattern": "beta.litterbugs.app", "custom_domain": true }
+  ],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
@@ -44,7 +47,11 @@
       "WEBSITE_CLARITY_ID",
       "WEBSITE_GA_MEASUREMENT_ID",
       "WEBSITE_POSTHOG_HOST",
-      "WEBSITE_POSTHOG_KEY"
+      "WEBSITE_POSTHOG_KEY",
+      "ADMIN_ANALYTICS_GOOGLE_OAUTH",
+      "ADMIN_ANALYTICS_HOSTED_CONNECTIONS",
+      "ADMIN_ANALYTICS_CLARITY_TOKEN",
+      "ADMIN_ANALYTICS_POSTHOG_KEY"
     ]
   },
   "images": {
