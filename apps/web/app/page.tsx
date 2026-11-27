@@ -32,6 +32,7 @@ export const metadata: Metadata = publicPageMetadata({
   description:
     'Spot litter, add photos and a location, and help get it cleaned up. Explore cleanup opportunities and learn how eligible reports can earn rewards.',
   alternates: { canonical: '/' },
+  other: { 'ilc-site-verification': 'ILC-Y1Q2AA' },
 });
 
 export default async function HomePage({
