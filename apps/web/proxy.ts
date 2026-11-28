@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { resolveMissingPage } from '@/lib/missing-page-route';
 import { resolvePublicReportRoute } from '@/lib/public-report-route';
 import { localOccurrence } from '@/lib/local-site-store';
 import { publicReportIdFromSlug } from '@/lib/public-report-url';
@@ -26,8 +27,9 @@ export async function proxy(request: NextRequest) {
       if (!production) redirect.headers.set('X-Robots-Tag', 'noindex, nofollow');
       return redirect;
     }
-    if (route.kind === 'missing') {
-      // No page matches this address, so the site's not-found page is served with a real 404.
+    // No page matches this address (a missing report, tip, member, site, town or archive page),
+    // so the site's not-found page is served with a real 404 before anything streams.
+    if (route.kind === 'missing' || await resolveMissingPage(request.nextUrl) === 'missing') {
       const missing = NextResponse.rewrite(new URL('/report-not-found', request.url), { status: 404 });
       missing.headers.set('X-Robots-Tag', 'noindex, nofollow');
       return missing;
