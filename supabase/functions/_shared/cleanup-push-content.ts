@@ -163,6 +163,11 @@ export const notificationContent = (eventType: string) => {
         body:
           "Your report can now accept contributions. Adding funds is optional.",
       };
+    case "reporter_payout_waiting":
+      return {
+        title: "A payout is waiting for you",
+        body: "A spot you reported was cleaned up. Set up payouts to receive your reporter payout.",
+      };
     case "tip_received":
       return {
         title: "You got a tip",

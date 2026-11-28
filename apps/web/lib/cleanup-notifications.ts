@@ -5,6 +5,10 @@ export type CleanupNotification = Database['public']['Tables']['cleanup_notifica
 type NotificationTarget = Pick<CleanupNotification, 'event_type' | 'contribution_id'> & { report_id: string | null; id?: string; issue_id?: string | null };
 
 const CLEANUP_NOTIFICATION_CONTENT: Record<string, { title: string; message: string }> = {
+  reporter_payout_waiting: {
+    title: 'A payout is waiting for you',
+    message: 'A spot you reported was cleaned up. Set up payouts to receive your reporter payout.',
+  },
   tip_received: {
     title: 'You got a tip',
     message: 'Someone thanked you with a tip.',
@@ -127,7 +131,7 @@ export function notificationPresentation(notice: Pick<CleanupNotification, 'even
 }
 export function notificationHref(notice: NotificationTarget, view?: NotificationView) {
   if(notice.event_type.startsWith('cleanup_issue_') && notice.issue_id)return `/account/cleanup-issues/${encodeURIComponent(notice.issue_id)}`;
-  if (notice.event_type === 'tip_received') return '/account/payments';
+  if (notice.event_type === 'tip_received' || notice.event_type === 'reporter_payout_waiting') return '/account/payments';
   if (notice.event_type.startsWith('admin_')) return '/admin';
   if (notice.event_type === 'nearby_reports_daily') return notice.id ? nearbyAlertHref(notice.id, view) : '/account/notifications';
   if (notice.event_type === 'cleanup_contribution_refunded') return notice.contribution_id ? `/account/payments/${encodeURIComponent(notice.contribution_id)}` : '/account/payments';

@@ -17,3 +17,8 @@ Deno.test('tip push falls back to plain wording and links to Updates', () => {
   assert(full.title === 'Jo tipped you $3.00');
   assert(cleanupPushMessage({ ...base, event_type: 'report_claimed', report_id: 'r' }).title === 'Report claimed');
 });
+
+Deno.test('a reporter whose payout is waiting gets a real push, not an unsupported-event failure', () => {
+  const content = notificationContent('reporter_payout_waiting');
+  assert(content?.title === 'A payout is waiting for you');
+});

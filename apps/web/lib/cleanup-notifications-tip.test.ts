@@ -9,3 +9,8 @@ it('shows who tipped, how much and their note, and opens Payments', () => {
   expect(notificationPresentation({ event_type: 'tip_received' }).title).toBe('You got a tip');
   expect(notificationHref({ event_type: 'tip_received', contribution_id: null, report_id: null })).toBe('/account/payments');
 });
+
+it('tells a reporter their payout is waiting and opens Payments', () => {
+  expect(notificationPresentation({ event_type: 'reporter_payout_waiting' }).title).toBe('A payout is waiting for you');
+  expect(notificationHref({ event_type: 'reporter_payout_waiting', contribution_id: null, report_id: 'r' })).toBe('/account/payments');
+});
